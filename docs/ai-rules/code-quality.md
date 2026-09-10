@@ -42,8 +42,8 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 // Services
-import { useTasks } from "@/services/tasks";
+import { useLogin } from "@/services/auth";
 
 // Types
-import type { Task } from "@harness-monorepo/contracts";
+import type { User } from "@harness-monorepo/contracts";
 ```

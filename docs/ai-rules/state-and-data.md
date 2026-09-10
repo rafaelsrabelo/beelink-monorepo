@@ -17,10 +17,10 @@
 
 - One folder per domain. Request functions and their query hooks live together.
 - Request and response types come from `@harness-monorepo/contracts`. A component imports them from there — it never redeclares a wire shape.
-- **Query keys are factories, not constants** — `tasksKeys.list(filter)`, so a key is built from its inputs at call time.
+- **Query keys are factories, not constants** — `usersKeys.detail(id)`, so a key is built from its inputs at call time.
 
 ## Zustand
 
 - One store per domain, in `src/stores/<domain>.ts`.
-- Select one field per subscription — `useTasksFilter((s) => s.status)`, never the whole store. A component that reads the whole store re-renders on every change to any of it.
+- Select one field per subscription — `useTableFilters((s) => s.status)`, never the whole store. A component that reads the whole store re-renders on every change to any of it.
 - Server data never enters a store. If it came from the API, it belongs to TanStack Query, which already owns caching, refetching and invalidation.

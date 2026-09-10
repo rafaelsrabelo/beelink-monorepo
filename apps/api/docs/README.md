@@ -8,18 +8,13 @@
 src/
 ├── main.ts                 # Fastify · pino · helmet · CORS · validation · Swagger
 ├── app.module.ts
+├── app.setup.ts            # the request pipeline — main.ts and the e2e tests boot the same one
 ├── health.controller.ts
-├── shared/
-│   ├── config/env.ts       # the only reader of process.env
-│   ├── prisma/             # PrismaService + PrismaModule
-│   └── swagger/            # setupSwagger()
-└── modules/
-    └── tasks/              # the example domain
-        ├── dto/
-        ├── tasks.controller.ts
-        ├── tasks.module.ts
-        └── tasks.service.ts
-prisma/schema.prisma
+└── shared/
+    ├── config/env.ts       # the only reader of process.env
+    ├── http/               # ApiExceptionFilter — every error leaves as ApiErrorBody
+    ├── prisma/             # PrismaService + PrismaModule
+    └── swagger/            # setupSwagger()
 ```
 
 ## Environment
@@ -33,15 +28,13 @@ Every variable is declared in [../.env.example](../.env.example) and validated i
 | `API_PREFIX` | `api` | every route lives under it |
 | `DATABASE_URL` | — | Postgres connection string; required |
 | `CORS_ORIGINS` | `http://localhost:3000` | comma-separated list |
+| `LOG_LEVEL` | `info` | pino level |
 
 ## Endpoints
 
 | Verb | Path | What |
 |---|---|---|
-| `GET` | `/api/health` | liveness |
-| `GET` | `/api/tasks` | the list, most recently updated first |
-| `POST` | `/api/tasks` | create — every task starts as `todo` |
-| `PATCH` | `/api/tasks/:id/status` | move one step; an illegal move answers `409 TASK_INVALID_TRANSITION` |
+| `GET` | `/api/health` | liveness — does not touch the database |
 
 ## Adding a module
 

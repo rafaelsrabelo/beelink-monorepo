@@ -12,7 +12,7 @@ description: Open or update a pull request — Conventional Commit title, the re
 
 ## Title
 
-A Conventional Commit in English, scoped to the workspace: `feat(web): list tasks by status`.
+A Conventional Commit in English, scoped to the workspace: `feat(web): sign in with e-mail and password`.
 
 ## Body
 

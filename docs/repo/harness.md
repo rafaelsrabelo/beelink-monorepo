@@ -25,7 +25,7 @@ Point 3 exists because a private, untracked file loads with equal weight in ever
 
 ## Why a product tier exists
 
-Product facts — what a task is, which transitions are legal — outlive every app. Stored inside one app's folder, they become unreachable the moment that app is frozen or rewritten, and an agent obeying the rules can no longer find them. The test: if the knowledge outlives every app, it belongs in `docs/product/`.
+Product facts — what an account is, when a session ends — outlive every app. Stored inside one app's folder, they become unreachable the moment that app is frozen or rewritten, and an agent obeying the rules can no longer find them. The test: if the knowledge outlives every app, it belongs in `docs/product/`.
 
 ## The gates
 
@@ -75,7 +75,7 @@ This is not gated — no script can tell a legitimate append from a rewrite. It 
 
 Run these in a **fresh session with no prior context** and record three numbers each: correct y/n · files opened before answering · did it open a file it did not need.
 
-1. "The API returns a task and the web renders it — where is the type?" → `packages/contracts`, imported as `type` by the API.
+1. "The API returns the signed-in user and the web renders it — where is the type?" → `packages/contracts`, imported as `type` by the API.
 2. "Two web components share a filter — `useState`, TanStack Query or Zustand?" → a Zustand store → `docs/ai-rules/state-and-data.md`.
 3. "Can this change ship to the app over the air?" → `pnpm --filter mobile ota:check` → `apps/mobile/docs/release-ota.md`.
 4. "Where does a rule about NestJS DTOs go?" → `apps/api/AGENTS.md` — one workspace, so not `docs/ai-rules/`.

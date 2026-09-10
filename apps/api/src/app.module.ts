@@ -6,7 +6,6 @@ import { LoggerModule } from 'nestjs-pino';
 
 // App
 import { HealthController } from './health.controller.js';
-import { TasksModule } from './modules/tasks/tasks.module.js';
 import { env } from './shared/config/env.js';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
 
@@ -24,7 +23,6 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
       },
     }),
     PrismaModule,
-    TasksModule,
   ],
   controllers: [HealthController],
 })
