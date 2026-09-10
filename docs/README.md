@@ -39,3 +39,4 @@ Every workspace, and nothing else. `docs-gate` fails when a workspace is added w
 | `apps/api` | [apps/api/AGENTS.md](../apps/api/AGENTS.md) |
 | `apps/mobile` | [apps/mobile/AGENTS.md](../apps/mobile/AGENTS.md) |
 | `packages/contracts` | [packages/contracts/AGENTS.md](../packages/contracts/AGENTS.md) |
+| `packages/ui` | [packages/ui/AGENTS.md](../packages/ui/AGENTS.md) |

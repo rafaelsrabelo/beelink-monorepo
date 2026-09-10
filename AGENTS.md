@@ -36,6 +36,7 @@ Index of every doc: [docs/README.md](docs/README.md). How the harness itself wor
 | `apps/api` | NestJS 12 on Fastify · Prisma · pino · Swagger | [AGENTS.md](apps/api/AGENTS.md) |
 | `apps/mobile` | Expo SDK 57 · EAS Build · EAS Update (OTA) | [AGENTS.md](apps/mobile/AGENTS.md) |
 | `packages/contracts` | Wire types shared by the three apps — types only | [AGENTS.md](packages/contracts/AGENTS.md) |
+| `packages/ui` | The web's design system — tokens, shadcn primitives, blocks · Storybook | [AGENTS.md](packages/ui/AGENTS.md) |
 
 ## Non-Negotiables
 
@@ -67,7 +68,8 @@ harness-monorepo/
 │   ├── api/          # NestJS — the backend
 │   └── mobile/       # Expo — iOS + Android, updated over the air
 ├── packages/
-│   └── contracts/    # wire types, types only — the one place a shape is defined
+│   ├── contracts/    # wire types, types only — the one place a shape is defined
+│   └── ui/           # the web's design system — tokens, primitives, blocks, Storybook
 ├── docs/             # product · repo · ai-rules · plans
 ├── scripts/          # gates + the local CI mirror — plain shell, any tool can run them
 ├── .claude/skills/   # the workflows an agent runs: implement, deliver, learn
