@@ -19,6 +19,9 @@
     "arch-gates": "bash scripts/arch-gates.sh",
     "docs-gate": "bash scripts/docs-gate.sh",
     "db:up": "docker compose up -d db",
+    "db:migrate": "pnpm --filter api exec prisma migrate dev",
+    "stack:up": "docker compose up -d --wait",
+    "stack:down": "docker compose down",
     "changeset": "changeset",
     "prepare": "husky"
   },
