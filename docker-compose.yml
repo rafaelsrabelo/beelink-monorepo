@@ -16,5 +16,13 @@ services:
       timeout: 3s
       retries: 10
 
+  # Catches every e-mail the API sends in development and in tests — nothing leaves the machine.
+  # SMTP on 1025; the inbox and its REST API on http://localhost:8025.
+  mail:
+    image: axllent/mailpit:v1.31.1
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   db-data:
