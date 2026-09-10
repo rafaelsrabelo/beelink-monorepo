@@ -1,0 +1,7 @@
+# Fast structural gates only — this must stay in the seconds range, or people
+# reach for --no-verify and the hook stops existing. Type-check, tests and
+# builds are the pre-push hook's job. See docs/repo/ci.md.
+set -e
+
+bash scripts/arch-gates.sh
+bash scripts/docs-gate.sh

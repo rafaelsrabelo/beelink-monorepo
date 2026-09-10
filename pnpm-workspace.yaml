@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 runs no dependency install script unless it is listed here. Prisma
+# downloads its migration engine in one; the rest are skipped on purpose.
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - prisma
+  - esbuild
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+  - "@nestjs/core"

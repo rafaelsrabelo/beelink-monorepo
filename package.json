@@ -1,0 +1,32 @@
+{
+  "name": "harness-monorepo",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10 <11"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "turbo dev --filter=web",
+    "dev:api": "turbo dev --filter=api",
+    "dev:mobile": "pnpm --filter mobile exec expo start",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "type-check": "turbo type-check",
+    "test": "turbo test",
+    "ci-check": "bash scripts/ci-check.sh",
+    "arch-gates": "bash scripts/arch-gates.sh",
+    "docs-gate": "bash scripts/docs-gate.sh",
+    "db:up": "docker compose up -d db",
+    "changeset": "changeset",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.2",
+    "husky": "^9.1.7",
+    "prettier": "^3.9.6",
+    "turbo": "^2.10.12",
+    "typescript": "~6.0.3"
+  }
+}

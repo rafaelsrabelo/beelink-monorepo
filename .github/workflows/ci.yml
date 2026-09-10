@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# dorny/paths-filter lists the PR's files through the API, which needs
+# pull-requests: read — without it the changes job fails and every path-gated
+# job is skipped.
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # Which workspaces this change touches. Filtering per JOB and never through
+  # on.<event>.paths is deliberate: a workflow filtered out at the trigger
+  # reports no status at all, which leaves a required check pending forever. A
+  # job skipped by `if:` reports "skipped", which branch protection accepts.
+  changes:
+    name: changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      api: ${{ steps.filter.outputs.api }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+            api:
+              - 'apps/api/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+            mobile:
+              - 'apps/mobile/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+
+  gates:
+    name: architecture + docs gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/arch-gates.sh
+      - run: bash scripts/docs-gate.sh
+
+  web:
+    name: web
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo type-check lint build --filter=web
+
+  api:
+    name: api
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api exec prisma generate
+      - run: pnpm turbo type-check lint test build --filter=api
+
+  mobile:
+    name: mobile
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo type-check lint --filter=mobile
+      - run: pnpm --filter mobile exec expo-doctor
+
+  # The app's version is its OTA runtime, so a PR that changes the app owes a
+  # changeset — that is what decides whether the next build is a new runtime.
+  changeset:
+    name: changeset present (mobile)
+    needs: changes
+    if: >-
+      needs.changes.outputs.mobile == 'true'
+      && github.event_name == 'pull_request'
+      && !contains(github.event.pull_request.labels.*.name, 'skip-changeset')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require a changeset
+        run: |
+          added=$(git diff --name-only --diff-filter=A "origin/${{ github.base_ref }}"...HEAD -- '.changeset/*.md')
+          if [ -z "$added" ]; then
+            echo "::error::apps/mobile changed but no changeset was added. Run 'pnpm changeset', or label the PR skip-changeset."
+            exit 1
+          fi

@@ -1,0 +1,5 @@
+# The heavier mirror of CI, once per push instead of once per commit. expo-doctor
+# needs the network and runs in CI. See docs/repo/ci.md.
+set -e
+
+pnpm ci-check --no-doctor
