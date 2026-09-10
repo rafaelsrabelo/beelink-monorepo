@@ -79,32 +79,38 @@ gate "api/fastify-only" \
   "apps/api/src" \
   "@nestjs/platform-express|from[[:space:]]+['\"]express['\"]"
 
+# src/generated is the Prisma client, written by `prisma generate` — not code anyone edits.
 gate "api/no-console" \
   "The API logs through pino; console.* bypasses the structured logger (apps/api/AGENTS.md)." \
   "apps/api/src" \
   "console\.(log|info|warn|error|debug)\(" \
-  --exclude='*.spec.ts'
+  --exclude='*.spec.ts' --exclude-dir=generated
 
 gate "api/env-through-schema" \
   "Configuration is read once, through the zod schema in src/shared/config — nothing else reads process.env (apps/api/AGENTS.md)." \
   "apps/api/src" \
   "process\.env" \
-  --exclude-dir=config
+  --exclude-dir=config --exclude-dir=generated
 
 gate "web/no-fetch-in-components" \
-  "Components never call fetch — a service function plus a TanStack Query hook does (docs/ai-rules/state-and-data.md)." \
-  "apps/web/src/components" \
+  "Components never call fetch — a service function plus a TanStack Query hook does, and packages/ui blocks take data through props (docs/ai-rules/state-and-data.md)." \
+  "apps/web/src/components packages/ui/src" \
   "(^|[^a-zA-Z0-9_])fetch\("
 
 gate "web/no-hex-colors" \
   "No hardcoded colours — tokens only, as CSS variables (docs/ai-rules/styling.md)." \
-  "apps/web/src" \
+  "apps/web/src packages/ui/src" \
   "#[0-9a-fA-F]{6}([^0-9a-fA-F]|$)|\[#[0-9a-fA-F]{3,8}\]"
 
+gate "web/no-web-storage" \
+  "Nothing about a session lives in localStorage or sessionStorage — tokens travel in httpOnly cookies only (apps/web/AGENTS.md)." \
+  "apps/web/src packages/ui/src" \
+  "(localStorage|sessionStorage)"
+
 gate "mobile/no-web-imports" \
-  "The mobile app imports no web-only module — no next/*, no react-dom (apps/mobile/AGENTS.md)." \
+  "The mobile app imports no web-only module — no next/*, no react-dom, no @harness-monorepo/ui (apps/mobile/AGENTS.md)." \
   "apps/mobile/src apps/mobile/App.tsx" \
-  "from[[:space:]]+['\"](next|react-dom)(/[^'\"]*)?['\"]"
+  "from[[:space:]]+['\"](next|react-dom|@harness-monorepo/ui)(/[^'\"]*)?['\"]"
 
 echo ""
 if [ -n "$failed" ]; then
