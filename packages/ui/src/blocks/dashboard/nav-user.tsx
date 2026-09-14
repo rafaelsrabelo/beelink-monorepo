@@ -1,10 +1,10 @@
 "use client"
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@harness-monorepo/ui/components/avatar"
+// Libs
+import { EllipsisVerticalIcon, LogOutIcon } from "lucide-react"
+
+// UI
+import { Avatar, AvatarFallback, AvatarImage } from "@harness-monorepo/ui/components/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,36 +20,34 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@harness-monorepo/ui/components/sidebar"
-import { EllipsisVerticalIcon, CircleUserRoundIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
+// Block
+import { initialsOf, type DashboardUser } from "./dashboard-types"
+
+export interface NavUserProps {
+  user: DashboardUser
+  onSignOut: () => void | Promise<void>
+  signingOut?: boolean
+}
+
+export function NavUser({ user, onSignOut, signingOut = false }: NavUserProps) {
   const { isMobile } = useSidebar()
+  const initials = initialsOf(user.name)
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
-            }
+            render={<SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />}
           >
             <Avatar className="size-8 rounded-lg grayscale">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+              {user.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={user.name} /> : null}
+              <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs text-foreground/70">
-                {user.email}
-              </span>
+              <span className="truncate text-xs text-foreground/70">{user.email}</span>
             </div>
             <EllipsisVerticalIcon className="ml-auto size-4" />
           </DropdownMenuTrigger>
@@ -63,41 +61,20 @@ export function NavUser({
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="size-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                    {user.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={user.name} /> : null}
+                    <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {user.email}
-                    </span>
+                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                   </div>
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <CircleUserRoundIcon
-                />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon
-                />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOutIcon
-              />
-              Log out
+            <DropdownMenuItem onClick={onSignOut} disabled={signingOut}>
+              <LogOutIcon />
+              {signingOut ? "Saindo…" : "Sair"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

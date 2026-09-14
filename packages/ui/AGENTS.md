@@ -9,9 +9,9 @@
 ## Rules in addition to the root's
 
 1. **Presentational only.** Nothing here fetches, routes or reads a session. Data, callbacks and links arrive through props — which is why every block renders in Storybook with no server behind it. Gate: `web/no-fetch-in-components` scans this package too.
-2. **Every primitive and block has a story; every block has a test.** The story is the catalogue and the a11y panel; the test — Testing Library plus an axe check — is what CI runs.
+2. **Every block has a story and a test.** The story is the catalogue and the a11y panel; the test — Testing Library plus an axe check — is what CI runs. A primitive earns its own story the day someone edits it: from then on it is ours, not the registry's.
 3. **Tokens are defined once, in `src/styles/globals.css`.** Light and dark share variable names; a component uses a token's Tailwind class, never a colour. Gate: `web/no-hex-colors` scans this package too.
-4. **Links are injected.** A block that navigates takes a `linkComponent` prop, `<a>` by default. The web passes `next/link`; Storybook keeps the default. Nothing here imports `next/*`.
+4. **Links are injected.** A block that navigates takes a `linkComponent` prop, `<a>` by default. The web passes `next/link`; Storybook keeps the default. Nothing here imports `next/*`. A link component passes every prop through — the primitives inject `aria-current`, data attributes and handlers, and swallowing them loses behaviour, not just styling.
 5. **Copy is pt-BR and overridable.** A block ships its text as default props, so a screen changes one sentence without forking the block. Error sentences arrive ready-made from the screen — this package never sees an `errorCode`.
 6. **Primitives are owned code.** `shadcn add` writes them here and they are ours to edit — but a primitive's change reaches every screen, so its story changes in the same commit.
 

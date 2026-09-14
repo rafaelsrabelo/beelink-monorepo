@@ -79,3 +79,22 @@ Each step is a commit that leaves the tree green.
 **Form state lives in the blocks.** An auth block owns its fields — react-hook-form with a zod schema for format — and hands valid values to `onSubmit`. The screen owns what happens next: the request, the server's error, the redirect. Every block stays interactive in Storybook with no server behind it.
 
 **Pinned against npm's `latest` tag.** Vitest 4.1.11 — latest is 5.0, which the coverage plugin and Storybook's Vitest integration do not accept alongside 4 (root trap 5). `dotenv-expand` ^13 — latest is 1000.0.0, which runs shell commands during expansion. Prisma 7.10.0 — latest is an 8.0 RC.
+
+## 2026-09-14 — What the design system kept, and what it dropped
+
+**The dashboard's data table is not part of the starter.** `shadcn add dashboard-01` writes a
+`data-table.tsx` of 883 lines — drag-to-reorder rows of invented documents, its own zod schema, a
+drawer per row. It breaks non-negotiable 6 (250 lines) by more than three times, and none of it
+belongs to a product about accounts. The dashboard keeps the sidebar, the header, the cards and the
+chart, which is enough to show the design system and who is signed in. Anyone who wants the table
+can `shadcn add` it and split it; that is a decision with an owner, not a default.
+
+**Blocks take their data through props, so the sample content moved out.** The generated blocks
+carried hardcoded users, revenue and 90 days of traffic. Those became props, and the fixtures that
+feed the stories live beside them — the app passes its own. It is also what makes every block
+render in Storybook with no server.
+
+**A link component must pass every prop through.** The first version of `AnchorLink` accepted only
+`href`, `className` and `children`. The sidebar primitive injects `aria-current`, data attributes
+and handlers through the same prop, so a narrower link silently dropped behaviour. An accessibility
+test caught it.

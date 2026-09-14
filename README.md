@@ -21,7 +21,7 @@ The auth starter is ticket AUTH-1. Its Definition of Done, decisions and commit 
 | Design-system workspace and its contract | done | [packages/ui/AGENTS.md](packages/ui/AGENTS.md) |
 | Dependencies, Prisma 7 schema and first migration | done | [apps/api/prisma](apps/api/prisma/schema.prisma) |
 | API — register, verify, log in, refresh, log out, forgot and reset password, `/users/me`, Swagger, rate limits | done | [apps/api/docs](apps/api/docs/README.md) |
-| Design system — tokens, shadcn primitives, auth and dashboard blocks, Storybook | next | `packages/ui` |
+| Design system — tokens, shadcn primitives, auth and dashboard blocks, Storybook | done | [packages/ui/docs](packages/ui/docs/README.md) |
 | Web — auth screens, dashboard, httpOnly session, proxy | next | `apps/web` |
 | Tests — API unit and e2e against Postgres and Mailpit, components with axe, one Playwright journey | next | |
 
