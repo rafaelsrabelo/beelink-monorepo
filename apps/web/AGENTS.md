@@ -27,7 +27,7 @@ pnpm --filter web exec shadcn add <name>  # primitives land in packages/ui, bloc
 ## Traps
 
 - **`next dev` appends its own agent block** to the end of this file. Keep it: removing it only re-creates the change on the next run.
-- **Server code reads `API_URL`; the browser reads `NEXT_PUBLIC_API_URL`.** A `NEXT_PUBLIC_` value is inlined at build time — changing it needs a rebuild, not a restart.
+- **The browser never calls the API.** Every request from a page goes to a route handler under `src/app/api/`, which calls the API through `API_URL`, a server-only variable. A `NEXT_PUBLIC_` URL would be inlined into the bundle at build time — and would invite calls that cannot carry the httpOnly token.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
