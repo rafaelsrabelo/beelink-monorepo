@@ -19,8 +19,8 @@ The auth starter is ticket AUTH-1. Its Definition of Done, decisions and commit 
 | Postgres 18 and Mailpit, one command | done | [docker-compose.yml](docker-compose.yml) |
 | Gates for the design system, and for session state in web storage | done | [scripts/arch-gates.sh](scripts/arch-gates.sh) |
 | Design-system workspace and its contract | done | [packages/ui/AGENTS.md](packages/ui/AGENTS.md) |
-| Dependencies, Prisma 7 schema and first migration | in progress | `apps/api/prisma` |
-| API — register, verify, log in, refresh, log out, forgot and reset password, `/users/me`, Swagger, rate limits | next | `apps/api/src/modules` |
+| Dependencies, Prisma 7 schema and first migration | done | [apps/api/prisma](apps/api/prisma/schema.prisma) |
+| API — register, verify, log in, refresh, log out, forgot and reset password, `/users/me`, Swagger, rate limits | done | [apps/api/docs](apps/api/docs/README.md) |
 | Design system — tokens, shadcn primitives, auth and dashboard blocks, Storybook | next | `packages/ui` |
 | Web — auth screens, dashboard, httpOnly session, proxy | next | `apps/web` |
 | Tests — API unit and e2e against Postgres and Mailpit, components with axe, one Playwright journey | next | |
@@ -38,8 +38,6 @@ pnpm stack:up          # Postgres on :5432 · Mailpit on :1025 (SMTP) and :8025 
 pnpm db:migrate        # create the schema
 pnpm dev               # web :3000 · api :3001
 ```
-
-> Until the foundation step of AUTH-1 lands, the API does not compile — its code imports packages that are not declared yet. The status table says when that changes.
 
 | Service | URL |
 |---|---|
