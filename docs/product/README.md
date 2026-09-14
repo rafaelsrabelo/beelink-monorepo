@@ -4,7 +4,9 @@
 
 ## Language
 
-Every surface speaks Brazilian Portuguese (`pt-BR`): screens, e-mails and error messages. Identifiers, comments and the repository's documentation stay in English.
+Every surface speaks the reader's language, between Brazilian Portuguese (`pt-BR`, the default) and English. A person's choice is remembered; without one, the browser's `Accept-Language` decides. Screens, e-mails and the sentences a person reads follow it.
+
+What the API sends is a stable `errorCode`, never a sentence — the apps own the words, so adding a language never touches the backend. Identifiers, comments and the repository's documentation stay in English.
 
 ## Accounts
 

@@ -22,7 +22,7 @@ The auth starter is ticket AUTH-1. Its Definition of Done, decisions and commit 
 | Dependencies, Prisma 7 schema and first migration | done | [apps/api/prisma](apps/api/prisma/schema.prisma) |
 | API — register, verify, log in, refresh, log out, forgot and reset password, `/users/me`, Swagger, rate limits | done | [apps/api/docs](apps/api/docs/README.md) |
 | Design system — tokens, shadcn primitives, auth and dashboard blocks, Storybook | done | [packages/ui/docs](packages/ui/docs/README.md) |
-| Web — auth screens, dashboard, httpOnly session, proxy | next | `apps/web` |
+| Web — auth screens, dashboard, httpOnly session, proxy, pt-BR and English | done | [apps/web/docs](apps/web/docs/README.md) |
 | Tests — API unit and e2e against Postgres and Mailpit, components with axe, one Playwright journey | next | |
 
 This table moves as the work lands. The plan is the fixed record of what was decided and why.
