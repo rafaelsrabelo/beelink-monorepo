@@ -22,6 +22,27 @@ const envSchema = z.object({
         .filter(Boolean),
     ),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
+
+  /** Signs the access token. Rotating it invalidates every access token still in flight. */
+  JWT_SECRET: z.string().min(32),
+
+  /** Mailpit in development and tests; a transactional provider in production. */
+  SMTP_URL: z.url().default('smtp://localhost:1025'),
+  MAIL_FROM: z.string().min(1).default('Harness <nao-responda@harness.local>'),
+
+  /** Where the links inside e-mails point — the web app, not the API. */
+  WEB_URL: z.url().default('http://localhost:3000'),
+
+  /** Per IP, on the unauthenticated auth routes. Raised in tests, which hammer them. */
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  AUTH_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+
+  /**
+   * Which addresses may claim a client IP through x-forwarded-for. Every browser call arrives
+   * through the web app's route handlers, so without this the rate limit sees one address for
+   * everyone. Accepts Fastify's syntax: `loopback`, a CIDR, a comma-separated list, or `false`.
+   */
+  TRUST_PROXY: z.string().default('loopback'),
 });
 
 /**

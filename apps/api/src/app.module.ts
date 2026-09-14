@@ -1,12 +1,17 @@
 // Nest
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 
 // Libs
 import { LoggerModule } from 'nestjs-pino';
 
 // App
 import { HealthController } from './health.controller.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { JwtAuthGuard } from './modules/auth/jwt-auth.guard.js';
+import { UsersModule } from './modules/users/users.module.js';
 import { env } from './shared/config/env.js';
+import { MailModule } from './shared/mail/mail.module.js';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
 
 @Module({
@@ -23,7 +28,14 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
       },
     }),
     PrismaModule,
+    MailModule,
+    AuthModule,
+    UsersModule,
   ],
   controllers: [HealthController],
+  providers: [
+    // Every route is closed unless it carries @Public().
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+  ],
 })
 export class AppModule {}

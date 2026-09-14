@@ -1,6 +1,5 @@
 // Nest
 import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Libs
@@ -8,12 +7,12 @@ import { Logger } from 'nestjs-pino';
 
 // App
 import { AppModule } from './app.module.js';
-import { configureApp } from './app.setup.js';
+import { configureApp, createFastifyAdapter } from './app.setup.js';
 import { env } from './shared/config/env.js';
 import { setupSwagger } from './shared/swagger/setup-swagger.js';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
+  const app = await NestFactory.create<NestFastifyApplication>(AppModule, createFastifyAdapter(), {
     bufferLogs: true,
   });
 

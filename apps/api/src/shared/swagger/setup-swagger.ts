@@ -8,9 +8,15 @@ import { env } from '../config/env.js';
 export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
     .setTitle('Harness API')
-    .setDescription('The example API of harness-monorepo.')
+    .setDescription(
+      'Accounts and sessions. Every error answers `{ statusCode, errorCode, message }`; clients switch on `errorCode`.',
+    )
     .setVersion('1.0')
+    // The name must match @ApiBearerAuth() on the protected controllers.
+    .addBearerAuth()
     .build();
 
-  SwaggerModule.setup(`${env.API_PREFIX}/docs`, app, SwaggerModule.createDocument(app, config));
+  SwaggerModule.setup(`${env.API_PREFIX}/docs`, app, SwaggerModule.createDocument(app, config), {
+    swaggerOptions: { persistAuthorization: true },
+  });
 }
