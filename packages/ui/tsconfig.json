@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    // Primitives import each other by package name, as `shadcn add` writes them.
+    "paths": { "@harness-monorepo/ui/*": ["./src/*"] }
+  },
+  "include": ["src", ".storybook", "*.ts"]
+}

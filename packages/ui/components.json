@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@harness-monorepo/ui/components",
+    "ui": "@harness-monorepo/ui/components",
+    "utils": "@harness-monorepo/ui/lib/utils",
+    "hooks": "@harness-monorepo/ui/hooks",
+    "lib": "@harness-monorepo/ui/lib"
+  }
+}
