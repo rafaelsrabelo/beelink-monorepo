@@ -65,3 +65,17 @@ Each step is a commit that leaves the tree green.
 - OAuth providers (Google, ORCID). They add a way to start a session, not a new session model.
 - A production e-mail provider and a deploy. `SMTP_URL` is the seam.
 - Account deletion and data export.
+
+## 2026-09-10 — Corrections after the version research
+
+**The browser talks only to Next.** The plan sent the calls that carry no token — register, verify, resend, forgot, reset — from the browser straight to the API. They go through route handlers instead, like login: one origin for the browser, so the API needs no CORS for it, and every call forwards the client's address. Without that, the API's per-IP rate limit would see only the Next server and throttle everyone as one. `NEXT_PUBLIC_API_URL` is dropped; the web reads `API_URL`, on the server only.
+
+**The API trusts a forwarded address from the proxy only.** Fastify's `trustProxy` is limited to the loopback by default and configurable, so `request.ip` is the browser's address when Next forwards it, and a direct caller cannot spoof it.
+
+**A spent refresh token has a 20-second grace.** Two requests from one browser — two tabs, a prefetch — can present the same refresh token once the access token has expired. Without a grace the second looks like theft and signs the person out. Within 20 seconds of its rotation a spent token rotates again; after that, reuse revokes the session, as planned.
+
+**Base UI, not Radix, under shadcn.** The shadcn CLI's default style since July 2026 is `base-nova`, built on Base UI, and `dashboard-01` and the login and signup blocks are published for it. Its components compose through a `render` prop, not `asChild`.
+
+**Form state lives in the blocks.** An auth block owns its fields — react-hook-form with a zod schema for format — and hands valid values to `onSubmit`. The screen owns what happens next: the request, the server's error, the redirect. Every block stays interactive in Storybook with no server behind it.
+
+**Pinned against npm's `latest` tag.** Vitest 4.1.11 — latest is 5.0, which the coverage plugin and Storybook's Vitest integration do not accept alongside 4 (root trap 5). `dotenv-expand` ^13 — latest is 1000.0.0, which runs shell commands during expansion. Prisma 7.10.0 — latest is an 8.0 RC.

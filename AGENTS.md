@@ -98,6 +98,7 @@ Each is a rule because it breaks something **without an error message** pointing
 2. **TypeScript is 6.0, not the npm `latest` 7.0.** 7 is the native rewrite; the Nest CLI 12 bundles `~6.0.2` and the Expo 57 template pins `~6.0.3`. Upgrade every workspace together, on purpose.
 3. **One React for web and mobile: 19.2.3.** Expo SDK 57 pins it and Next accepts any `^19`. Two physical copies of React is an "Invalid hook call" at runtime, with nothing in the diff to explain it.
 4. **Prisma is pinned to a stable release.** Its npm `latest` tag points at a release candidate, so a bare `pnpm add prisma` installs an RC.
+5. **Vitest is pinned to 4.1.11 in every workspace.** npm's `latest` is 5.0: `@vitest/coverage-v8` pins its Vitest exactly, and Storybook 10's Vitest integration accepts only 4. Add any `vitest` or `@vitest/*` package with an explicit version.
 
 ## CI / verification
 

@@ -15,6 +15,8 @@
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "test": "turbo test",
+    "test:e2e": "turbo test:e2e --concurrency=1",
+    "storybook": "turbo storybook --filter=@harness-monorepo/ui",
     "ci-check": "bash scripts/ci-check.sh",
     "arch-gates": "bash scripts/arch-gates.sh",
     "docs-gate": "bash scripts/docs-gate.sh",
