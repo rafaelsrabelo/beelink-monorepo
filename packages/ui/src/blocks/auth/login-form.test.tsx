@@ -6,6 +6,9 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
+// Locales
+import { en } from "../../locales/en"
+
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { LoginForm } from "./login-form"
@@ -58,6 +61,21 @@ describe("LoginForm", () => {
 
     expect(screen.getByText("Criar conta").closest("a")).toHaveAttribute("href", "/cadastro")
     expect(screen.getAllByTestId("app-link").length).toBeGreaterThan(0)
+  })
+
+  it("renders in English when the screen hands it the English dictionary", async () => {
+    const onSubmit = vi.fn()
+    render(<LoginForm onSubmit={onSubmit} messages={en} />)
+
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument()
+    expect(screen.queryByText("Entrar")).not.toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText("E-mail"), "nao-e-email")
+    await userEvent.type(screen.getByLabelText("Password"), "uma-senha-comprida")
+    await userEvent.click(screen.getByRole("button", { name: "Sign in" }))
+
+    // Even the validation the block runs itself speaks the screen's language.
+    expect(await screen.findByText("Enter a valid e-mail address")).toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {

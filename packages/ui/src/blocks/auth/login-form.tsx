@@ -15,10 +15,14 @@ import {
 } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
 
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
 // Block
 import { AuthCard } from "./auth-card"
 import { AnchorLink, type LinkComponent } from "./auth-link"
-import { loginSchema, type LoginValues } from "./auth-schemas"
+import { createLoginSchema, type LoginValues } from "./auth-schemas"
 
 export interface LoginFormProps {
   onSubmit: (values: LoginValues) => void | Promise<void>
@@ -27,6 +31,8 @@ export interface LoginFormProps {
   signupHref?: string
   forgotPasswordHref?: string
   linkComponent?: LinkComponent
+  /** Every sentence this block renders. Defaults to the product's own language. */
+  messages?: UiMessages
 }
 
 export function LoginForm({
@@ -36,22 +42,24 @@ export function LoginForm({
   signupHref = "/signup",
   forgotPasswordHref = "/forgot-password",
   linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
 }: LoginFormProps) {
+  const text = messages.login
   const form = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(createLoginSchema(messages.validation)),
     defaultValues: { email: "", password: "" },
   })
 
   return (
     <AuthCard
-      title="Entrar"
-      description="Use o e-mail e a senha da sua conta"
+      title={text.title}
+      description={text.description}
       error={error}
       footer={
         <>
-          Ainda não tem conta?{" "}
+          {text.noAccount}{" "}
           <Link href={signupHref} className="underline underline-offset-4">
-            Criar conta
+            {text.signUp}
           </Link>
         </>
       }
@@ -59,12 +67,12 @@ export function LoginForm({
       <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="email">E-mail</FieldLabel>
+            <FieldLabel htmlFor="email">{text.emailLabel}</FieldLabel>
             <Input
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="voce@exemplo.com"
+              placeholder={text.emailPlaceholder}
               aria-invalid={Boolean(form.formState.errors.email)}
               {...form.register("email")}
             />
@@ -73,12 +81,12 @@ export function LoginForm({
 
           <Field>
             <div className="flex items-center">
-              <FieldLabel htmlFor="password">Senha</FieldLabel>
+              <FieldLabel htmlFor="password">{text.passwordLabel}</FieldLabel>
               <Link
                 href={forgotPasswordHref}
                 className="ml-auto text-sm underline-offset-4 hover:underline"
               >
-                Esqueceu a senha?
+                {text.forgotPassword}
               </Link>
             </div>
             <Input
@@ -93,10 +101,10 @@ export function LoginForm({
 
           <Field>
             <Button type="submit" disabled={pending}>
-              {pending ? "Entrando…" : "Entrar"}
+              {pending ? text.submitting : text.submit}
             </Button>
             <FieldDescription className="text-center">
-              Você recebe um e-mail de confirmação ao criar a conta.
+              {text.hint}
             </FieldDescription>
           </Field>
         </FieldGroup>

@@ -14,6 +14,10 @@ import {
   SidebarMenuItem,
 } from "@harness-monorepo/ui/components/sidebar"
 
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { DashboardNavItem, DashboardUser } from "./dashboard-types"
@@ -32,6 +36,7 @@ export interface AppSidebarProps extends ComponentProps<typeof Sidebar> {
   brandHref?: string
   brandIcon?: ReactNode
   linkComponent?: LinkComponent
+  messages?: UiMessages
 }
 
 /** The shell around every signed-in screen. It knows who is signed in, and nothing else. */
@@ -46,6 +51,7 @@ export function AppSidebar({
   brandHref = "/dashboard",
   brandIcon,
   linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
   ...props
 }: AppSidebarProps) {
   return (
@@ -70,7 +76,7 @@ export function AppSidebar({
         ) : null}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} onSignOut={onSignOut} signingOut={signingOut} />
+        <NavUser user={user} onSignOut={onSignOut} signingOut={signingOut} messages={messages} />
       </SidebarFooter>
     </Sidebar>
   )

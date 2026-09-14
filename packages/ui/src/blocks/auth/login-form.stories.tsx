@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { fn } from "storybook/test"
 
+import { en } from "../../locales/en"
 import { LoginForm } from "./login-form"
 
 const meta = {
@@ -26,4 +27,9 @@ export const EmailNaoConfirmado: Story = {
 
 export const Enviando: Story = {
   args: { pending: true },
+}
+
+/** The same block, handed the English dictionary. Nothing else changes. */
+export const EmIngles: Story = {
+  args: { messages: en },
 }

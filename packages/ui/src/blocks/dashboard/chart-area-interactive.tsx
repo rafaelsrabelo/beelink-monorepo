@@ -4,6 +4,10 @@ import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 
 import { useIsMobile } from "@harness-monorepo/ui/hooks/use-mobile"
+
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import {
   Card,
   CardAction,
@@ -30,22 +34,14 @@ import {
   ToggleGroupItem,
 } from "@harness-monorepo/ui/components/toggle-group"
 
-export const description = "An interactive area chart"
-
-
-const chartConfig = {
-  visitors: {
-    label: "Visitantes",
-  },
-  desktop: {
-    label: "Computador",
-    color: "var(--primary)",
-  },
-  mobile: {
-    label: "Celular",
-    color: "var(--primary)",
-  },
-} satisfies ChartConfig
+/** The series names follow the screen's language, so the config is built per render. */
+function chartConfigFor(messages: UiMessages): ChartConfig {
+  return {
+    visitors: { label: messages.dashboard.seriesVisitors },
+    desktop: { label: messages.dashboard.seriesDesktop, color: "var(--primary)" },
+    mobile: { label: messages.dashboard.seriesMobile, color: "var(--primary)" },
+  }
+}
 
 export interface ChartPoint {
   /** ISO date, so the axis can order and format it. */
@@ -58,13 +54,17 @@ export interface ChartAreaInteractiveProps {
   data: ChartPoint[]
   title?: string
   description?: string
+  messages?: UiMessages
 }
 
 export function ChartAreaInteractive({
   data,
-  title = "Visitantes",
-  description = "Total dos últimos 3 meses",
+  title,
+  description,
+  messages = defaultMessages,
 }: ChartAreaInteractiveProps) {
+  const text = messages.dashboard
+  const chartConfig = chartConfigFor(messages)
   const isMobile = useIsMobile()
   const [selectedRange, setSelectedRange] = React.useState("90d")
 
@@ -89,12 +89,12 @@ export function ChartAreaInteractive({
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle>{title ?? text.chartTitle}</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
-            {description}
+            {description ?? text.chartDescription}
           </span>
-          <span className="@[540px]/card:hidden">Últimos 3 meses</span>
+          <span className="@[540px]/card:hidden">{text.chartShortDescription}</span>
         </CardDescription>
         <CardAction>
           <ToggleGroup
@@ -106,9 +106,9 @@ export function ChartAreaInteractive({
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:px-4! @[767px]/card:flex"
           >
-            <ToggleGroupItem value="90d">3 meses</ToggleGroupItem>
-            <ToggleGroupItem value="30d">30 dias</ToggleGroupItem>
-            <ToggleGroupItem value="7d">7 dias</ToggleGroupItem>
+            <ToggleGroupItem value="90d">{text.range90}</ToggleGroupItem>
+            <ToggleGroupItem value="30d">{text.range30}</ToggleGroupItem>
+            <ToggleGroupItem value="7d">{text.range7}</ToggleGroupItem>
           </ToggleGroup>
           <Select
             value={timeRange}
@@ -123,17 +123,17 @@ export function ChartAreaInteractive({
               size="sm"
               aria-label="Select a value"
             >
-              <SelectValue placeholder="3 meses" />
+              <SelectValue placeholder={text.rangePlaceholder} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               <SelectItem value="90d" className="rounded-lg">
-                3 meses
+                {text.range90}
               </SelectItem>
               <SelectItem value="30d" className="rounded-lg">
-                30 dias
+                {text.range30}
               </SelectItem>
               <SelectItem value="7d" className="rounded-lg">
-                7 dias
+                {text.range7}
               </SelectItem>
             </SelectContent>
           </Select>

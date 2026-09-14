@@ -9,10 +9,14 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
 
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
 // Block
 import { AuthCard } from "./auth-card"
 import { AnchorLink, type LinkComponent } from "./auth-link"
-import { forgotPasswordSchema, type ForgotPasswordValues } from "./auth-schemas"
+import { createForgotPasswordSchema, type ForgotPasswordValues } from "./auth-schemas"
 
 export interface ForgotPasswordFormProps {
   onSubmit: (values: ForgotPasswordValues) => void | Promise<void>
@@ -22,6 +26,7 @@ export interface ForgotPasswordFormProps {
   sent?: boolean
   loginHref?: string
   linkComponent?: LinkComponent
+  messages?: UiMessages
 }
 
 export function ForgotPasswordForm({
@@ -31,48 +36,39 @@ export function ForgotPasswordForm({
   sent = false,
   loginHref = "/login",
   linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
 }: ForgotPasswordFormProps) {
+  const text = messages.forgotPassword
   const form = useForm<ForgotPasswordValues>({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(createForgotPasswordSchema(messages.validation)),
     defaultValues: { email: "" },
   })
 
   const footer = (
     <Link href={loginHref} className="underline underline-offset-4">
-      Voltar para entrar
+      {text.backToSignIn}
     </Link>
   )
 
   if (sent) {
     return (
-      <AuthCard
-        title="Confira seu e-mail"
-        description="Se houver uma conta com esse endereço, enviamos um link para criar uma nova senha."
-        footer={footer}
-      >
-        <p className="text-sm text-muted-foreground">
-          O link vale por 1 hora e só pode ser usado uma vez. Não esqueça de olhar o spam.
-        </p>
+      <AuthCard title={text.sentTitle} description={text.sentDescription} footer={footer}>
+        <p className="text-sm text-muted-foreground">{text.sentHint}</p>
       </AuthCard>
     )
   }
 
   return (
-    <AuthCard
-      title="Esqueceu a senha?"
-      description="Enviamos um link para você criar uma nova"
-      error={error}
-      footer={footer}
-    >
+    <AuthCard title={text.title} description={text.description} error={error} footer={footer}>
       <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="email">E-mail</FieldLabel>
+            <FieldLabel htmlFor="email">{text.emailLabel}</FieldLabel>
             <Input
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="voce@exemplo.com"
+              placeholder={text.emailPlaceholder}
               aria-invalid={Boolean(form.formState.errors.email)}
               {...form.register("email")}
             />
@@ -81,7 +77,7 @@ export function ForgotPasswordForm({
 
           <Field>
             <Button type="submit" disabled={pending}>
-              {pending ? "Enviando…" : "Enviar link"}
+              {pending ? text.submitting : text.submit}
             </Button>
           </Field>
         </FieldGroup>

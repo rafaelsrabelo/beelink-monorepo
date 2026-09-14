@@ -15,10 +15,14 @@ import {
 } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
 
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
 // Block
 import { AuthCard } from "./auth-card"
 import { AnchorLink, type LinkComponent } from "./auth-link"
-import { resetPasswordSchema, type ResetPasswordValues } from "./auth-schemas"
+import { createResetPasswordSchema, type ResetPasswordValues } from "./auth-schemas"
 
 export interface ResetPasswordFormProps {
   onSubmit: (values: ResetPasswordValues) => void | Promise<void>
@@ -26,6 +30,7 @@ export interface ResetPasswordFormProps {
   error?: string
   loginHref?: string
   linkComponent?: LinkComponent
+  messages?: UiMessages
 }
 
 export function ResetPasswordForm({
@@ -34,27 +39,29 @@ export function ResetPasswordForm({
   error,
   loginHref = "/login",
   linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
 }: ResetPasswordFormProps) {
+  const text = messages.resetPassword
   const form = useForm<ResetPasswordValues>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(createResetPasswordSchema(messages.validation)),
     defaultValues: { password: "", passwordConfirmation: "" },
   })
 
   return (
     <AuthCard
-      title="Criar nova senha"
-      description="Ao salvar, você sai de todos os aparelhos conectados"
+      title={text.title}
+      description={text.description}
       error={error}
       footer={
         <Link href={loginHref} className="underline underline-offset-4">
-          Voltar para entrar
+          {text.backToSignIn}
         </Link>
       }
     >
       <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="password">Nova senha</FieldLabel>
+            <FieldLabel htmlFor="password">{text.passwordLabel}</FieldLabel>
             <Input
               id="password"
               type="password"
@@ -62,12 +69,12 @@ export function ResetPasswordForm({
               aria-invalid={Boolean(form.formState.errors.password)}
               {...form.register("password")}
             />
-            <FieldDescription>De 8 a 128 caracteres.</FieldDescription>
+            <FieldDescription>{text.passwordHint}</FieldDescription>
             <FieldError errors={[form.formState.errors.password]} />
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="passwordConfirmation">Repita a nova senha</FieldLabel>
+            <FieldLabel htmlFor="passwordConfirmation">{text.confirmationLabel}</FieldLabel>
             <Input
               id="passwordConfirmation"
               type="password"
@@ -80,7 +87,7 @@ export function ResetPasswordForm({
 
           <Field>
             <Button type="submit" disabled={pending}>
-              {pending ? "Salvando…" : "Salvar senha"}
+              {pending ? text.submitting : text.submit}
             </Button>
           </Field>
         </FieldGroup>

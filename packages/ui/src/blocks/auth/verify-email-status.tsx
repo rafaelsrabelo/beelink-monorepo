@@ -2,6 +2,10 @@
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
 // Block
 import { AuthCard } from "./auth-card"
 import { AnchorLink, type LinkComponent } from "./auth-link"
@@ -16,6 +20,7 @@ export interface VerifyEmailStatusProps {
   resent?: boolean
   loginHref?: string
   linkComponent?: LinkComponent
+  messages?: UiMessages
 }
 
 export function VerifyEmailStatus({
@@ -25,10 +30,13 @@ export function VerifyEmailStatus({
   resent = false,
   loginHref = "/login",
   linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
 }: VerifyEmailStatusProps) {
+  const text = messages.verifyEmail
+
   if (state === "checking") {
     return (
-      <AuthCard title="Confirmando seu e-mail" description="Isso leva só um instante">
+      <AuthCard title={text.checkingTitle} description={text.checkingDescription}>
         <div className="flex flex-col gap-3" aria-busy="true" aria-live="polite">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
@@ -41,43 +49,37 @@ export function VerifyEmailStatus({
   if (state === "verified") {
     return (
       <AuthCard
-        title="E-mail confirmado"
-        description="Sua conta está pronta para uso"
+        title={text.verifiedTitle}
+        description={text.verifiedDescription}
         footer={
           <Link href={loginHref} className="underline underline-offset-4">
-            Ir para a tela de entrada
+            {text.goToSignIn}
           </Link>
         }
       >
-        <p className="text-sm text-muted-foreground">
-          Agora é só entrar com o e-mail e a senha que você cadastrou.
-        </p>
+        <p className="text-sm text-muted-foreground">{text.verifiedBody}</p>
       </AuthCard>
     )
   }
 
   return (
     <AuthCard
-      title="Link inválido ou expirado"
-      description="Um link de confirmação vale por 24 horas e só pode ser usado uma vez"
+      title={text.invalidTitle}
+      description={text.invalidDescription}
       footer={
         <Link href={loginHref} className="underline underline-offset-4">
-          Voltar para entrar
+          {text.backToSignIn}
         </Link>
       }
     >
       {resent ? (
-        <p className="text-sm text-muted-foreground">
-          Enviamos um novo link. Confira sua caixa de entrada e o spam.
-        </p>
+        <p className="text-sm text-muted-foreground">{text.resentBody}</p>
       ) : (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-muted-foreground">
-            Peça um novo link e tente de novo.
-          </p>
+          <p className="text-sm text-muted-foreground">{text.invalidBody}</p>
           {onResend ? (
             <Button type="button" onClick={onResend} disabled={resendPending}>
-              {resendPending ? "Enviando…" : "Enviar novo link"}
+              {resendPending ? text.resending : text.resend}
             </Button>
           ) : null}
         </div>

@@ -8,7 +8,9 @@
     "./components/*": "./src/components/*.tsx",
     "./blocks/*": "./src/blocks/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
-    "./lib/*": "./src/lib/*.ts"
+    "./lib/*": "./src/lib/*.ts",
+    "./locales": "./src/locales/index.ts",
+    "./locales/*": "./src/locales/*.ts"
   },
   "scripts": {
     "type-check": "tsc --noEmit",

@@ -1,38 +1,53 @@
 // Libs
 import { z } from "zod"
 
+// Locales
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+type ValidationMessages = UiMessages["validation"]
+
 /**
  * Shape checks only — whether the e-mail looks like one, whether the password is long enough.
  * Whether the account exists, or the password is right, is the API's answer, never the form's.
- * The messages are copy, so they follow the product's locale.
+ * The messages come from the screen's locale, so the schema is built per language.
  */
-const email = z.email("Informe um e-mail válido")
-const password = z
-  .string()
-  .min(8, "A senha precisa ter ao menos 8 caracteres")
-  .max(128, "A senha pode ter no máximo 128 caracteres")
+function emailField(messages: ValidationMessages) {
+  return z.email(messages.emailInvalid)
+}
 
-export const loginSchema = z.object({
-  email,
-  password: z.string().min(1, "Informe sua senha"),
-})
+function passwordField(messages: ValidationMessages) {
+  return z.string().min(8, messages.passwordMin).max(128, messages.passwordMax)
+}
 
-export const signupSchema = z.object({
-  name: z.string().trim().min(2, "Informe seu nome"),
-  email,
-  password,
-})
-
-export const forgotPasswordSchema = z.object({ email })
-
-export const resetPasswordSchema = z
-  .object({ password, passwordConfirmation: z.string() })
-  .refine((values) => values.password === values.passwordConfirmation, {
-    path: ["passwordConfirmation"],
-    message: "As senhas não são iguais",
+export function createLoginSchema(messages: ValidationMessages) {
+  return z.object({
+    email: emailField(messages),
+    password: z.string().min(1, messages.passwordRequired),
   })
+}
 
-export type LoginValues = z.infer<typeof loginSchema>
-export type SignupValues = z.infer<typeof signupSchema>
-export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
-export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
+export function createSignupSchema(messages: ValidationMessages) {
+  return z.object({
+    name: z.string().trim().min(2, messages.nameMin),
+    email: emailField(messages),
+    password: passwordField(messages),
+  })
+}
+
+export function createForgotPasswordSchema(messages: ValidationMessages) {
+  return z.object({ email: emailField(messages) })
+}
+
+export function createResetPasswordSchema(messages: ValidationMessages) {
+  return z
+    .object({ password: passwordField(messages), passwordConfirmation: z.string() })
+    .refine((values) => values.password === values.passwordConfirmation, {
+      path: ["passwordConfirmation"],
+      message: messages.passwordsDoNotMatch,
+    })
+}
+
+export type LoginValues = z.infer<ReturnType<typeof createLoginSchema>>
+export type SignupValues = z.infer<ReturnType<typeof createSignupSchema>>
+export type ForgotPasswordValues = z.infer<ReturnType<typeof createForgotPasswordSchema>>
+export type ResetPasswordValues = z.infer<ReturnType<typeof createResetPasswordSchema>>

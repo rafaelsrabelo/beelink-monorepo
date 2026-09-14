@@ -21,6 +21,10 @@ import {
   useSidebar,
 } from "@harness-monorepo/ui/components/sidebar"
 
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
 // Block
 import { initialsOf, type DashboardUser } from "./dashboard-types"
 
@@ -28,9 +32,10 @@ export interface NavUserProps {
   user: DashboardUser
   onSignOut: () => void | Promise<void>
   signingOut?: boolean
+  messages?: UiMessages
 }
 
-export function NavUser({ user, onSignOut, signingOut = false }: NavUserProps) {
+export function NavUser({ user, onSignOut, signingOut = false, messages = defaultMessages }: NavUserProps) {
   const { isMobile } = useSidebar()
   const initials = initialsOf(user.name)
 
@@ -74,7 +79,7 @@ export function NavUser({ user, onSignOut, signingOut = false }: NavUserProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onSignOut} disabled={signingOut}>
               <LogOutIcon />
-              {signingOut ? "Saindo…" : "Sair"}
+              {signingOut ? messages.dashboard.signingOut : messages.dashboard.signOut}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
