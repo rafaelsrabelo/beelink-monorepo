@@ -1,0 +1,81 @@
+// The client is generated into src/generated (gitignored) and compiled with the rest of src by tsc.
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+// The connection URL lives in prisma.config.ts, not here — Prisma 7 reads it from there.
+datasource db {
+  provider = "postgresql"
+}
+
+/// A person with an account. The rules are in docs/product/README.md, "Accounts".
+model User {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  name            String
+  /// Stored trimmed and lower-cased, so uniqueness ignores case.
+  email           String    @unique
+  passwordHash    String
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions    Session[]
+  emailTokens EmailToken[]
+
+  @@map("users")
+}
+
+/// One signed-in device. Every refresh token it was ever given belongs to it, so reusing a spent
+/// token can revoke the whole session at once.
+model Session {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  sessionId String    @db.Uuid
+  session   Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the token, hex — the token itself is never stored.
+  tokenHash String    @unique
+  expiresAt DateTime
+  /// Set when the token is rotated. A token presented again after that is a leak.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([sessionId])
+  @@map("refresh_tokens")
+}
+
+enum EmailTokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+/// The single-use token behind an e-mailed link.
+model EmailToken {
+  id        String            @id @default(uuid(7)) @db.Uuid
+  userId    String            @db.Uuid
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   EmailTokenPurpose
+  /// SHA-256 of the token, hex.
+  tokenHash String            @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+
+  @@index([userId, purpose])
+  @@map("email_tokens")
+}
