@@ -14,6 +14,7 @@
 4. **Screens compose; `packages/ui` draws.** Primitives and presentational blocks come from `@harness-monorepo/ui`. This workspace wires them to data — services, form submission, routing. A block that needs a new look changes in `packages/ui`, with its story.
 5. **Routes are grouped by who may see them:** `(auth)` for signed-out screens, `(app)` for signed-in ones. Each group owns its layout.
 6. **An API `errorCode` becomes copy in one place:** `src/components/auth/auth-error-copy.ts`. Services throw the code; the screen asks that map for the sentence.
+7. **No sentence is written inside a component.** Copy lives in `src/locales/`, one file per language, behind an interface — a missing key is a compile error, not a word in the wrong language on someone's screen. The server picks the language from the `locale` cookie, then from `Accept-Language`, and hands the dictionaries down as props; they are plain data, so they survive the trip to a Client Component.
 
 ## Commands
 
