@@ -28,7 +28,7 @@ export function NavMain({ items, activeHref, linkComponent: Link = AnchorLink }:
             const isCurrent = item.href === activeHref
 
             return (
-            <SidebarMenuItem key={item.href}>
+            <SidebarMenuItem key={`${item.href}:${item.title}`}>
               <SidebarMenuButton
                 tooltip={item.title}
                 isActive={isCurrent}

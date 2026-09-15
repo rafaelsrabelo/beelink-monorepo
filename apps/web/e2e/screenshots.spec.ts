@@ -78,7 +78,7 @@ test("@screenshot the dashboard, in both themes and both languages", async ({ pa
 
   // The same session, read in English.
   await page.context().addCookies([
-    { name: "locale", value: "en", url: "http://localhost:3000" },
+    { name: "locale", value: "en", url: "http://localhost:3100" },
   ])
   await page.reload()
   await expect(page.getByText("Welcome back, Ana Souza")).toBeVisible()
@@ -89,7 +89,7 @@ test("@screenshot the dashboard, in both themes and both languages", async ({ pa
   const dark = await browser.newContext({ colorScheme: "dark", viewport: { width: 1280, height: 860 } })
   const darkPage = await dark.newPage()
   await dark.addCookies(await page.context().cookies())
-  await dark.addCookies([{ name: "locale", value: "pt-BR", url: "http://localhost:3000" }])
+  await dark.addCookies([{ name: "locale", value: "pt-BR", url: "http://localhost:3100" }])
   await darkPage.goto("/dashboard")
   await expect(darkPage.getByText("Bem-vindo de volta, Ana Souza")).toBeVisible()
   await expect(darkPage.locator(".recharts-area-area").first()).toBeVisible()

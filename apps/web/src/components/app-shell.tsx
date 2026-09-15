@@ -50,15 +50,9 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
             },
           })
         }
-        navMain={[
-          { title: web.dashboard.navDashboard, href: "/dashboard" },
-          { title: web.dashboard.navReports, href: "/dashboard" },
-          { title: web.dashboard.navTeam, href: "/dashboard" },
-        ]}
-        navSecondary={[
-          { title: web.dashboard.navSettings, href: "/dashboard" },
-          { title: web.dashboard.navHelp, href: "/dashboard" },
-        ]}
+        // Only what exists. A product built from this starter adds its own routes here; three
+        // items pointing at the same page is a menu that lies about where it goes.
+        navMain={[{ title: web.dashboard.navDashboard, href: "/dashboard" }]}
       />
       <SidebarInset>
         <SiteHeader

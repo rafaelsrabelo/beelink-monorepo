@@ -23,10 +23,6 @@ export interface WebMessages {
   dashboard: {
     title: string
     navDashboard: string
-    navReports: string
-    navTeam: string
-    navSettings: string
-    navHelp: string
     cardRevenue: string
     cardNewAccounts: string
     cardActiveAccounts: string

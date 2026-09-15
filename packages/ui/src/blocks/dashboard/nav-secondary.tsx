@@ -27,7 +27,7 @@ export function NavSecondary({ items, linkComponent: Link = AnchorLink, ...props
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
-            <SidebarMenuItem key={item.href}>
+            <SidebarMenuItem key={`${item.href}:${item.title}`}>
               <SidebarMenuButton size="sm" render={<Link href={item.href} />}>
                 {item.icon}
                 <span>{item.title}</span>

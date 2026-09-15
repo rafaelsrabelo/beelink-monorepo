@@ -19,10 +19,6 @@ export const en: WebMessages = {
   dashboard: {
     title: "Dashboard",
     navDashboard: "Dashboard",
-    navReports: "Reports",
-    navTeam: "Team",
-    navSettings: "Settings",
-    navHelp: "Help",
     cardRevenue: "Total revenue",
     cardNewAccounts: "New accounts",
     cardActiveAccounts: "Active accounts",

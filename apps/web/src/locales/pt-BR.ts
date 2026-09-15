@@ -19,10 +19,6 @@ export const ptBR: WebMessages = {
   dashboard: {
     title: "Painel",
     navDashboard: "Painel",
-    navReports: "Relatórios",
-    navTeam: "Equipe",
-    navSettings: "Configurações",
-    navHelp: "Ajuda",
     cardRevenue: "Receita total",
     cardNewAccounts: "Novas contas",
     cardActiveAccounts: "Contas ativas",
