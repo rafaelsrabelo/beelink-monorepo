@@ -170,6 +170,39 @@ describe('living with a session', () => {
     });
   });
 
+  it('stops answering to the access token the moment the session ends', async () => {
+    const session = await signUpAndSignIn(app, newEmail('logout-corta-acesso'));
+    expect((await me(session.accessToken)).statusCode).toBe(200);
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/logout',
+      payload: { refreshToken: session.refreshToken },
+    });
+
+    // Not in fifteen minutes, when the token would have expired on its own.
+    const afterLogout = await me(session.accessToken);
+    expect(afterLogout.statusCode).toBe(401);
+    expect(afterLogout.json<ApiErrorBody>().errorCode).toBe('AUTH_UNAUTHENTICATED');
+  });
+
+  it('cuts every access token when the password is reset', async () => {
+    const email = newEmail('reset-corta-acesso');
+    const session = await signUpAndSignIn(app, email);
+    await clearInbox();
+
+    await app.inject({ method: 'POST', url: '/api/auth/forgot-password', payload: { email } });
+    const token = tokenFromLink((await waitForMessage(email)).Text, '/reset-password');
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: { token, password: 'senha-nova-bem-comprida' },
+    });
+
+    // Someone resetting a password is closing a window, and the window has to close now.
+    expect((await me(session.accessToken)).statusCode).toBe(401);
+  });
+
   it('answers forgot-password the same for an address with no account', async () => {
     const known = await app.inject({
       method: 'POST',

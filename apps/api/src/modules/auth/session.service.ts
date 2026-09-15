@@ -70,6 +70,20 @@ export class SessionService {
     if (record) await this.revokeSession(record.sessionId);
   }
 
+  /**
+   * Whether the session behind an access token is still alive. One indexed read per authenticated
+   * request, which is what makes signing out and resetting a password take effect at once instead
+   * of when the 15-minute token happens to expire.
+   */
+  async isActive(sessionId: string): Promise<boolean> {
+    const session = await this.prisma.session.findFirst({
+      where: { id: sessionId, revokedAt: null },
+      select: { id: true },
+    })
+
+    return session !== null
+  }
+
   /** Used when the password changes: every device has to sign in again. */
   async revokeAllForUser(userId: string): Promise<void> {
     await this.prisma.session.updateMany({

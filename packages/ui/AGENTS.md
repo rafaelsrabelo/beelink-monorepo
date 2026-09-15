@@ -14,6 +14,7 @@
 4. **Links are injected.** A block that navigates takes a `linkComponent` prop, `<a>` by default. The web passes `next/link`; Storybook keeps the default. Nothing here imports `next/*`. A link component passes every prop through — the primitives inject `aria-current`, data attributes and handlers, and swallowing them loses behaviour, not just styling.
 5. **Copy is pt-BR and overridable.** A block ships its text as default props, so a screen changes one sentence without forking the block. Error sentences arrive ready-made from the screen — this package never sees an `errorCode`.
 6. **Primitives are owned code.** `shadcn add` writes them here and they are ours to edit — but a primitive's change reaches every screen, so its story changes in the same commit.
+7. **The 250-line rule covers what we write, not what the registry writes.** A primitive is a whole family in one file — `sidebar.tsx` exports fifteen components in 723 lines — and splitting it would end any chance of `shadcn add` updating it. Blocks, screens and services stay under the limit.
 
 ## Exports
 

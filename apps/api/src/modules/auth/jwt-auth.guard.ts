@@ -9,6 +9,7 @@ import type { AuthenticatedUser } from './auth.decorators.js';
 
 // App
 import { IS_PUBLIC_KEY } from './auth.decorators.js';
+import { SessionService } from './session.service.js';
 
 interface AccessTokenPayload {
   sub: string;
@@ -18,14 +19,17 @@ interface AccessTokenPayload {
 /**
  * Registered globally, so a new route is closed unless it says otherwise with `@Public()`.
  *
- * The token is checked by signature alone, with no database round trip: revoking a session stops
- * the refresh chain, and the access token it already handed out dies on its own within 15 minutes.
+ * A valid signature is not enough: the session it names has to still be alive. Signing out and
+ * resetting a password revoke sessions, and without this read the access token already handed out
+ * would keep working for up to fifteen minutes — which is exactly the window someone resets their
+ * password to close.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly jwt: JwtService,
+    private readonly sessions: SessionService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,17 +45,29 @@ export class JwtAuthGuard implements CanActivate {
     }>();
 
     const header = request.headers.authorization;
-    const token = typeof header === 'string' && header.startsWith('Bearer ') ? header.slice(7) : undefined;
+    const token =
+      typeof header === 'string' && header.startsWith('Bearer ')
+        ? header.slice(7)
+        : undefined;
 
     if (!token) throw this.unauthenticated();
 
+    let payload: AccessTokenPayload;
+
     try {
-      const payload = await this.jwt.verifyAsync<AccessTokenPayload>(token);
-      request.user = { id: payload.sub, sessionId: payload.sid };
-      return true;
+      payload = await this.jwt.verifyAsync<AccessTokenPayload>(token);
     } catch {
       throw this.unauthenticated();
     }
+
+    // Outside the try, so a revoked session is refused for being revoked and not mistaken for a
+    // malformed token — and so a database error surfaces instead of reading as "signed out".
+    if (!(await this.sessions.isActive(payload.sid)))
+      throw this.unauthenticated();
+
+    request.user = { id: payload.sub, sessionId: payload.sid };
+
+    return true;
   }
 
   private unauthenticated(): UnauthorizedException {

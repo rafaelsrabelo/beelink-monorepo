@@ -43,7 +43,9 @@ export function AuthCard({ title, description, error, children, footer, classNam
         </CardContent>
       </Card>
       {footer ? (
-        <div className="px-6 text-center text-sm text-muted-foreground">{footer}</div>
+        // Not text-muted-foreground: the footer sits outside the card, on the layout's muted
+        // background, where that token measures 4.34:1 — under the 4.5:1 WCAG AA asks for.
+        <div className="px-6 text-center text-sm text-foreground/80">{footer}</div>
       ) : null}
     </div>
   )

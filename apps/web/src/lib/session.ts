@@ -30,9 +30,13 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   return (await response.json()) as User
 })
 
-/** For a screen that has no signed-out version. The proxy usually redirects first. */
+/**
+ * For a screen that has no signed-out version. It sends people through the route that clears the
+ * cookies rather than straight to /login: the cookie is still in the browser, so the proxy would
+ * read it as a live session and bounce them back here.
+ */
 export const requireUser = cache(async (): Promise<User> => {
   const user = await getCurrentUser()
-  if (!user) redirect("/login")
+  if (!user) redirect("/api/session/expired")
   return user
 })

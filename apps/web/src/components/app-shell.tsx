@@ -65,7 +65,8 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
           title={web.dashboard.title}
           actions={<LocaleSwitcher locale={locale} messages={web} />}
         />
-        <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">{children}</div>
+        {/* @container/main is what the cards and the chart size themselves against. */}
+        <div className="@container/main flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   )

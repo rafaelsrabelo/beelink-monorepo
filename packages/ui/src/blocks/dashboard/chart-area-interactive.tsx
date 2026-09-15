@@ -4,6 +4,7 @@ import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 
 import { useIsMobile } from "@harness-monorepo/ui/hooks/use-mobile"
+import { useReducedMotion } from "@harness-monorepo/ui/hooks/use-reduced-motion"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -66,15 +67,19 @@ export function ChartAreaInteractive({
   const text = messages.dashboard
   const chartConfig = chartConfigFor(messages)
   const isMobile = useIsMobile()
+  const reducedMotion = useReducedMotion()
   const [selectedRange, setSelectedRange] = React.useState("90d")
 
   // A phone hides the range toggle, so it always shows the last 7 days. Derived here rather than
   // pushed through an effect, which would render twice on every viewport change.
   const timeRange = isMobile ? "7d" : selectedRange
 
+  // The registry block hardcoded a date in 2024, which silently empties the chart for any other
+  // data. The range is measured back from the newest point instead.
+  const referenceDate = new Date(data.at(-1)?.date ?? Date.now())
+
   const filteredData = data.filter((item) => {
     const date = new Date(item.date)
-    const referenceDate = new Date("2024-06-30")
     let daysToSubtract = 90
     if (timeRange === "30d") {
       daysToSubtract = 30
@@ -201,6 +206,7 @@ export function ChartAreaInteractive({
               }
             />
             <Area
+              isAnimationActive={!reducedMotion}
               dataKey="mobile"
               type="natural"
               fill="url(#fillMobile)"
@@ -208,6 +214,7 @@ export function ChartAreaInteractive({
               stackId="a"
             />
             <Area
+              isAnimationActive={!reducedMotion}
               dataKey="desktop"
               type="natural"
               fill="url(#fillDesktop)"
