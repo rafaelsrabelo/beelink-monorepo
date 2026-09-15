@@ -19,12 +19,13 @@
 
 ## Commands
 
-```bash
-pnpm --filter api dev                       # watch mode on :3001
-pnpm --filter api test                      # Vitest unit tests
-pnpm --filter api exec prisma migrate dev   # create and apply migrations
-pnpm --filter api exec prisma studio        # browse the database
-```
+| Command | What it does |
+|---|---|
+| `pnpm --filter api dev` | watch mode on `:3001` |
+| `pnpm --filter api test` | Vitest unit tests |
+| `pnpm --filter api test:e2e` | e2e against real Postgres and Mailpit (`pnpm stack:up` first) |
+| `pnpm --filter api exec prisma migrate dev` | create and apply migrations |
+| `pnpm --filter api exec prisma studio` | browse the database |
 
 ## Traps
 

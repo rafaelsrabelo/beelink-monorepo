@@ -30,12 +30,12 @@ Source files, compiled by the consumer — `apps/web`'s Next build.
 
 ## Commands
 
-```bash
-pnpm storybook                                   # http://localhost:6006
-pnpm --filter @harness-monorepo/ui test          # component tests, with axe
-pnpm --filter @harness-monorepo/ui build-storybook
-pnpm --filter web exec shadcn add <name>         # run from the app: primitives land here
-```
+| Command | What it does |
+|---|---|
+| `pnpm storybook` | http://localhost:6006 |
+| `pnpm --filter @harness-monorepo/ui test` | component tests, each with axe |
+| `pnpm --filter @harness-monorepo/ui build-storybook` | the static build CI runs |
+| `pnpm --filter web exec shadcn add <name>` | run from the app; primitives land here |
 
 ## Traps
 

@@ -60,7 +60,7 @@ When the API cannot be reached, a refresh answers `unavailable` and the session 
 
 ## Tests
 
-```bash
-pnpm --filter web test        # route handlers, proxy, services, error copy
-pnpm --filter web test:e2e    # Playwright — needs pnpm stack:up and both servers
-```
+| Command | What it does |
+|---|---|
+| `pnpm --filter web test` | route handlers, proxy, services, error copy |
+| `pnpm --filter web test:e2e` | Playwright — needs `pnpm stack:up` and a build |

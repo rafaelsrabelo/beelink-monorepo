@@ -47,7 +47,7 @@ Build numbers are managed by EAS (`appVersionSource: remote`, `autoIncrement` on
 ## Can this change go over the air? — `ota:check`
 
 ```bash
-pnpm --filter mobile ota:check                   # origin/main...HEAD
+pnpm --filter mobile ota:check
 pnpm --filter mobile ota:check -- <base> <head>
 ```
 
@@ -67,7 +67,7 @@ The root `package.json`, `pnpm-lock.yaml` and `.npmrc` count as native risk too:
 
 ```bash
 pnpm --filter mobile ota -- "fix: correct the empty-state copy"
-pnpm --filter mobile ota -- --dry-run "fix: …"   # prints the command, publishes nothing
+pnpm --filter mobile ota -- --dry-run "fix: …"
 ```
 
 It refuses to run unless:
@@ -89,8 +89,8 @@ The template is not bound to any Expo account — that is yours to run, once:
 ```bash
 cd apps/mobile
 pnpm exec eas login
-pnpm exec eas init                 # creates the project; writes extra.eas.projectId
-pnpm exec eas update:configure     # writes updates.url
+pnpm exec eas init
+pnpm exec eas update:configure
 ```
 
 Commit the fields they add to `app.json`. Then replace `ios.bundleIdentifier` and `android.package` — they are placeholders, and permanent once an app is in a store.

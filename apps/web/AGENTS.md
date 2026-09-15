@@ -18,12 +18,12 @@
 
 ## Commands
 
-```bash
-pnpm dev:web                              # http://localhost:3000 (needs the API on :3001)
-pnpm --filter web test                    # Vitest — services, hooks, screens
-pnpm --filter web test:e2e                # Playwright — needs pnpm stack:up and both servers
-pnpm --filter web exec shadcn add <name>  # primitives land in packages/ui, blocks in src/components
-```
+| Command | What it does |
+|---|---|
+| `pnpm dev:web` | http://localhost:3000 — needs the API on `:3001` |
+| `pnpm --filter web test` | Vitest — route handlers, proxy, services |
+| `pnpm --filter web test:e2e` | Playwright — needs `pnpm stack:up` and a build |
+| `pnpm --filter web exec shadcn add <name>` | primitives land in `packages/ui`, blocks here |
 
 ## Traps
 

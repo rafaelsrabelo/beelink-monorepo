@@ -60,10 +60,12 @@ Needs Node 22 or newer (CI uses the version in `.nvmrc`), pnpm 10 and Docker.
 ```bash
 pnpm install
 cp apps/api/.env.example apps/api/.env
-pnpm stack:up          # Postgres on :5432 · Mailpit on :1025 (SMTP) and :8025 (inbox)
-pnpm db:migrate        # create the schema
-pnpm dev               # web :3000 · api :3001
+pnpm stack:up
+pnpm db:migrate
+pnpm dev
 ```
+
+`stack:up` starts Postgres and Mailpit, `db:migrate` creates the schema, and `dev` runs both apps in watch mode.
 
 Then open http://localhost:3000, create an account, and read the confirmation e-mail at http://localhost:8025. Nothing leaves the machine.
 
@@ -201,8 +203,10 @@ The full design, and how to tell whether it is working: [docs/repo/harness.md](d
 ## Verification
 
 ```bash
-pnpm ci-check          # type-check · lint · test · expo-doctor · arch-gates · docs-gate
-pnpm ci-check --e2e    # the same, plus the suites that need Postgres, Mailpit and a browser
+pnpm ci-check
+pnpm ci-check --e2e
 ```
+
+The first runs type-check, lint, tests, `expo-doctor` and both gates. `--e2e` adds the suites that need Postgres, Mailpit and a browser.
 
 CI runs the same checks per workspace touched, and `pre-push` runs the Docker-free half for you.

@@ -16,13 +16,13 @@
 
 ## Commands
 
-```bash
-pnpm dev:mobile                         # Expo dev server (from the root)
-pnpm --filter mobile ota:check          # can this diff ship over the air?
-pnpm --filter mobile ota -- "fix: …"    # publish to the production channel
-pnpm --filter mobile build:preview      # internal build, preview channel
-pnpm --filter mobile build:production   # store build, production channel
-```
+| Command | What it does |
+|---|---|
+| `pnpm dev:mobile` | Expo dev server, from the root |
+| `pnpm --filter mobile ota:check` | can this diff ship over the air? |
+| `pnpm --filter mobile ota -- "fix: …"` | publish to the production channel |
+| `pnpm --filter mobile build:preview` | internal build, preview channel |
+| `pnpm --filter mobile build:production` | store build, production channel |
 
 ## Traps
 

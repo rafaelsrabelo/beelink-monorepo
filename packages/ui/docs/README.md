@@ -37,8 +37,8 @@ The form blocks validate shape only — a well-formed e-mail, a long-enough pass
 
 ## Commands
 
-```bash
-pnpm storybook                              # http://localhost:6006
-pnpm --filter @harness-monorepo/ui test     # component tests, with axe
-pnpm --filter @harness-monorepo/ui build-storybook
-```
+| Command | What it does |
+|---|---|
+| `pnpm storybook` | http://localhost:6006 |
+| `pnpm --filter @harness-monorepo/ui test` | component tests, each with axe |
+| `pnpm --filter @harness-monorepo/ui build-storybook` | the static build CI runs |

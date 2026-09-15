@@ -72,10 +72,10 @@ Swagger documents all of it at `/api/docs`, with an Authorize button that holds 
 
 ## Tests
 
-```bash
-pnpm --filter api test        # unit
-pnpm --filter api test:e2e    # needs `pnpm stack:up`: real Postgres and Mailpit
-```
+| Command | What it does |
+|---|---|
+| `pnpm --filter api test` | unit tests |
+| `pnpm --filter api test:e2e` | e2e against real Postgres and Mailpit — needs `pnpm stack:up` |
 
 The e2e suites run against `harness_test`, created and migrated on demand; the reset helper refuses any database whose name does not end in `_test`.
 
