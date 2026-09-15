@@ -107,6 +107,72 @@ jobs:
       - run: pnpm turbo type-check lint --filter=mobile
       - run: pnpm --filter mobile exec expo-doctor
 
+
+  # The suites that need a database and a mail server. They run through pnpm --filter rather than
+  # turbo: strict env mode would filter the job's variables out of a turbo task.
+  e2e:
+    name: e2e (api + web)
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: harness
+          POSTGRES_PASSWORD: harness
+          POSTGRES_DB: harness_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U harness -d harness_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      mailpit:
+        image: axllent/mailpit:v1.31.1
+        ports:
+          - 1025:1025
+          - 8025:8025
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://harness:harness@localhost:5432/harness_test
+      TEST_DATABASE_URL: postgresql://harness:harness@localhost:5432/harness_test
+      JWT_SECRET: a-ci-only-secret-with-at-least-32-characters
+      SMTP_URL: smtp://localhost:1025
+      MAILPIT_URL: http://localhost:8025
+      WEB_URL: http://localhost:3000
+      API_URL: http://localhost:3001/api
+      CORS_ORIGINS: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api exec prisma migrate deploy
+      - name: API e2e against real Postgres and Mailpit
+        run: pnpm --filter api test:e2e
+      - name: Build both apps the way Playwright serves them
+        run: pnpm --filter api build && pnpm --filter web build
+      - name: Install Chromium
+        run: pnpm --filter web exec playwright install --with-deps --only-shell chromium
+      - name: Playwright
+        run: pnpm --filter web test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
+
   # The app's version is its OTA runtime, so a PR that changes the app owes a
   # changeset — that is what decides whether the next build is a new runtime.
   changeset:

@@ -19,6 +19,7 @@ The local mirror of CI. It runs **every** step even after one fails, then summar
 - `run_step` — blocking.
 - `run_warn_step` — **report-only**: for a check that has a known backlog. It runs and reports, but does not fail, until the backlog is zero and it is promoted to `run_step`. Nothing in this template starts report-only; the helper is there for the day a new lint rule lands on existing code.
 - `--no-doctor` skips `expo-doctor`, the one step that needs the network.
+- `--e2e` adds the suites that need Postgres and Mailpit — `pnpm stack:up` first, since they build both apps and drive a browser. `pre-push` leaves them out on purpose: a hook that takes minutes is a hook people bypass.
 
 ## The CI jobs — [.github/workflows/ci.yml](../../.github/workflows/ci.yml)
 
@@ -29,7 +30,12 @@ The local mirror of CI. It runs **every** step even after one fails, then summar
 | `web` | web or packages changed | type-check · lint · build |
 | `api` | api or packages changed | Prisma generate · type-check · lint · test · build |
 | `mobile` | mobile or packages changed | type-check · lint · `expo-doctor` |
+| `e2e` | api or web changed | API e2e against a real Postgres and Mailpit, then Playwright through a real browser |
 | `changeset` | mobile changed | a PR touching the app must add a changeset — the app's version is its OTA runtime |
+
+### Why `e2e` calls pnpm directly instead of turbo
+
+Turborepo's strict env mode passes a task only the variables a `turbo.json` task declares, and a job's `env:` block is not one of them. `pnpm --filter api test:e2e` keeps the job's `DATABASE_URL`, `SMTP_URL` and the rest, without teaching `turbo.json` about CI's secrets. Service containers also start before the checkout, so the test database is created by the image's `POSTGRES_DB` rather than by the init script that local compose uses.
 
 ### Why jobs are filtered inside the workflow, not with `on.paths`
 

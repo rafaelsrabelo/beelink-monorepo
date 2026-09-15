@@ -3,14 +3,17 @@
 # failure, then summarises — one run tells you everything that is red.
 #
 # Usage:
-#   pnpm ci-check              # everything CI runs
+#   pnpm ci-check              # everything CI runs without Docker
 #   pnpm ci-check --no-doctor  # skip expo-doctor, the one step that needs the network
+#   pnpm ci-check --e2e        # also the suites that need Postgres and Mailpit (pnpm stack:up)
 set -u
 
 WITH_DOCTOR=1
+WITH_E2E=0
 for arg in "$@"; do
   case "$arg" in
     --no-doctor) WITH_DOCTOR=0 ;;
+    --e2e) WITH_E2E=1 ;;
   esac
 done
 
@@ -51,6 +54,13 @@ run_step "test" pnpm turbo test
 if [ "$WITH_DOCTOR" -eq 1 ]; then
   run_step "expo-doctor" pnpm --filter mobile exec expo-doctor
 fi
+# Opt-in: these need `pnpm stack:up` and a build, which is why pre-push does not run them.
+if [ "$WITH_E2E" -eq 1 ]; then
+  run_step "build" pnpm turbo build
+  run_step "api e2e" pnpm --filter api test:e2e
+  run_step "web e2e" pnpm --filter web test:e2e
+fi
+
 run_step "arch-gates" bash scripts/arch-gates.sh
 run_step "docs-gate" bash scripts/docs-gate.sh
 
