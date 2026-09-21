@@ -15,10 +15,12 @@ import type {
   StoreSocialNetworks,
   StoreType,
   StorefrontRouteWords,
+  PublicStoreShowcase,
+  ShowcaseLayout,
 } from '@harness-monorepo/contracts';
 
 // App
-import { PAYMENT_METHODS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.constants.js';
+import { PAYMENT_METHODS, SHOWCASE_LAYOUTS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.constants.js';
 
 /** Documents the shapes for Swagger; the wire types themselves live in packages/contracts. */
 
@@ -76,6 +78,17 @@ export class StorefrontRouteWordsResponse implements StorefrontRouteWords {
   @ApiProperty({ example: 'carrinho' }) cart!: string;
 }
 
+/** One block of the shopkeeper's landing page. */
+export class PublicStoreShowcaseResponse implements PublicStoreShowcase {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty({ example: 'Creatina Ultramesh' }) title!: string;
+  @ApiProperty({ nullable: true, example: 'MESH 500' }) subtitle!: string | null;
+  @ApiProperty() imageUrl!: string;
+  @ApiProperty({ nullable: true, description: 'A path in the shop or a full URL. Null draws no arrow.' })
+  href!: string | null;
+  @ApiProperty({ enum: SHOWCASE_LAYOUTS }) layout!: ShowcaseLayout;
+}
+
 /**
  * What `/stores/:slug/public` answers: everything the storefront renders and nothing more. Adding a
  * field here adds it to every shop page in Google's index, so the absences are deliberate.
@@ -110,6 +123,9 @@ export class PublicStoreResponse implements PublicStore {
 
   @ApiProperty({ enum: PAYMENT_METHODS, isArray: true, minItems: 1 })
   paymentMethods!: PaymentMethod[];
+
+  @ApiProperty({ type: [PublicStoreShowcaseResponse], description: "The landing page's own blocks." })
+  showcases!: PublicStoreShowcaseResponse[];
 }
 
 /** The shop as its owner edits it in the panel. */

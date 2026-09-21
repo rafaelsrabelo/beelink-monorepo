@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 
 // UI
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
+import { StorefrontShowcase } from "@harness-monorepo/ui/blocks/storefront/storefront-showcase"
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
@@ -77,14 +78,28 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
     <StorefrontFrame
       store={store}
       categories={index.categories}
-      // The pitch and the cover are the home's alone: an inner page is about the goods, and
-      // repeating the shop's paragraph above them pushes what someone came for below the fold.
-      description={store.description}
+      // No pitch band. It used to sit right under the cover — the shop's name, a line about the
+      // shop and a WhatsApp button — and the shop owner was right that it reads as a profile page
+      // rather than a landing page: three lines of prose between the cover and the first thing for
+      // sale. The name is in the header and the WhatsApp is in the footer and on every product.
       showBanner
       showHighlights
       year={new Date().getFullYear()}
       messages={ui}
     >
+      {/*
+        The page's heading, for the accessibility tree only. Dropping the pitch band dropped the
+        one `h1` this page had, and a landing page whose heading is a logo is a page a screen
+        reader opens with no idea whose shop it is.
+      */}
+      <h1 className="sr-only">{store.name}</h1>
+
+      {/*
+        What the shopkeeper put on their own landing page, before anything the catalogue generated:
+        three cards with a name and a line, then two banners. They come ordered and already grouped
+        by shape, so what runs here is their arrangement and not ours.
+      */}
+      <StorefrontShowcase items={store.showcases} />
       {/*
         One band per category, in the shopkeeper's own order — they know what they want to sell
         first. A category with nothing available in it draws nothing: the rail returns null on an

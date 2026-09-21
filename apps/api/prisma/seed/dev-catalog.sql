@@ -141,6 +141,45 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "product_images" pi WHERE pi."productId" = p.id AND pi.position = i.n
 );
 
+-- ---------------------------------------------------------------- the landing page's own blocks
+-- What the shopkeeper writes over their own artwork. The `href` is built from the shop's slug and
+-- the PT_BR route words, because these shops are on PT_BR — a fixture may know that; the app may
+-- not, which is why every link the app renders comes from `routeWords`.
+CREATE TEMP VIEW seed_showcase (segment, slug, title, subtitle, href_suffix, layout, position) AS
+VALUES
+  -- suplementos: três cartões e dois banners, como o site de referência
+  ('suplementos', 'creatina-ultramesh', 'Creatina Ultramesh',   'MESH 500, 100% pura',                    '/produtos/creatina-mono-300g',     'THIRDS', 0),
+  ('suplementos', 'pre-workout',        'Pré-treino Insano',    'Zero sódio. 200 mg de cafeína.',         '/produtos/pre-treino-insano-300g', 'THIRDS', 1),
+  ('suplementos', 'whey-concentrado',   'Whey Concentrado',     'Proteína concentrada pura, sem blends',  '/produtos/whey-concentrado-900g',  'THIRDS', 2),
+  ('suplementos', 'linha-proteinas',    'É mais proteína',      'A linha inteira, do whey à albumina',    '/proteinas',                       'HALVES', 3),
+  ('suplementos', 'invoque-treinos',    'Invoque seus treinos', 'Pré-treino, creatina e beta-alanina',    '/pre-treino',                      'HALVES', 4),
+  -- moda
+  ('moda',        'alfaiataria',        'Alfaiataria',          'Calça, colete e blazer que conversam',   '/calcas',                          'THIRDS', 0),
+  ('moda',        'vestidos-festa',     'Vestidos de festa',    'Cetim, seda e fenda',                    '/vestidos',                        'THIRDS', 1),
+  ('moda',        'basicos',            'Básicos que ficam',    'Malha canelada e linho puro',            '/blusas',                          'THIRDS', 2),
+  ('moda',        'novo-verao',         'Novo verão',           'A coleção inteira no ar',                '/produtos',                        'HALVES', 3),
+  ('moda',        'acessorios-banner',  'Fecha o look',         'Bolsas, cintos e calçados',              '/acessorios',                      'HALVES', 4);
+
+INSERT INTO "store_showcases" ("id", "storeId", "title", "subtitle", "imageUrl", "href", "layout", "position", "isActive", "createdAt", "updatedAt")
+SELECT
+  uuidv7(), sh.store_id, w.title, w.subtitle,
+  'https://picsum.photos/seed/' || sh.store_slug || '-showcase-' || w.slug || '/1200/900',
+  '/' || sh.store_slug || w.href_suffix,
+  w.layout::"ShowcaseLayout", w.position, true, now(), now()
+FROM shop_segment sh
+JOIN seed_showcase w ON w.segment = sh.segment
+WHERE NOT EXISTS (
+  SELECT 1 FROM "store_showcases" ex WHERE ex."storeId" = sh.store_id AND ex.title = w.title
+);
+
+-- The same "make the database match this file" rule the catalogue follows.
+DELETE FROM "store_showcases" ss
+USING shop_segment sh
+WHERE ss."storeId" = sh.store_id
+  AND EXISTS (SELECT 1 FROM seed_showcase w WHERE w.segment = sh.segment)
+  AND NOT EXISTS (SELECT 1 FROM seed_showcase w WHERE w.segment = sh.segment AND w.title = ss.title);
+
+DROP VIEW seed_showcase;
 DROP VIEW shop_segment;
 DROP VIEW seed_category;
 DROP VIEW seed_product;

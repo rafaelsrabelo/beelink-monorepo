@@ -26,6 +26,52 @@ enum RouteVocabulary {
   EN
 }
 
+/// How wide a showcase card sits on the landing page.
+///
+/// Two values and not a number of columns, because the shopkeeper is choosing a shape rather than a
+/// grid: three-across is a product card with room for a name and a line, two-across is a banner with
+/// room for artwork. A free integer would let someone pick seven and get a row of stamps.
+enum ShowcaseLayout {
+  THIRDS
+  HALVES
+}
+
+/// A block the shopkeeper puts on their landing page: a picture, a name, a line, and somewhere to go.
+///
+/// It is not a Product and must not become one. What is on the card is what the shopkeeper typed —
+/// "Creatina Ultramesh / MESH 500" over their own artwork — and the thing it links to may be a
+/// product, a category, or a page that is not theirs at all. Deriving it from a product would mean a
+/// price change edits the poster, and a product going out of stock silently empties the landing page.
+model StoreShowcase {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  title    String  @db.VarChar(120)
+  /// The line under the name. Null for a card whose artwork already says it.
+  subtitle String? @db.VarChar(200)
+  /// The stored image URL. The bytes go to Cloudinary through `modules/uploads`, as everywhere else.
+  imageUrl String
+
+  /// Where the card goes: a path inside the shop or a full URL. Null makes it a picture rather than
+  /// a promise — and the storefront then renders no arrow, because an arrow that goes nowhere is the
+  /// same lie as a cart icon that does.
+  href String?
+
+  layout   ShowcaseLayout @default(THIRDS)
+  /// The shopkeeper's order. Ties break on creation, so the list is never arbitrary.
+  position Int            @default(0)
+  /// Hiding a card keeps it. A seasonal banner comes back next year rather than being retyped.
+  isActive Boolean        @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The landing page's read, in one index scan.
+  @@index([storeId, isActive, position])
+  @@map("store_showcases")
+}
+
 /// What the shop takes at the door. A label carried to the shopkeeper's WhatsApp, not a gateway.
 enum PaymentMethod {
   MONEY
@@ -141,6 +187,7 @@ model Store {
 
   productCategories ProductCategory[]
   products          Product[]
+  showcases         StoreShowcase[]
 
   @@index([ownerId])
   @@index([categoryId])

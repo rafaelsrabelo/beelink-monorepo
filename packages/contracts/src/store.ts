@@ -139,6 +139,29 @@ export interface StoreColorPreset {
  * the shape the cached, indexable read path answers, so anything added here is added to every page
  * in Google's index.
  */
+/**
+ * How wide a showcase card sits. A shape rather than a column count: three-across is a product card
+ * with room for a name and a line, two-across is a banner with room for artwork.
+ */
+export type ShowcaseLayout = "THIRDS" | "HALVES";
+
+/**
+ * A block the shopkeeper put on their landing page.
+ *
+ * Not a product. What is on the card is what they typed over their own artwork, and where it goes
+ * may be a product, a category, or somewhere else entirely — deriving it from a product would let a
+ * price change edit the poster and a sold-out item silently empty the landing page.
+ */
+export interface PublicStoreShowcase {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string;
+  /** Null makes it a picture rather than a promise, and the window then draws no arrow. */
+  href: string | null;
+  layout: ShowcaseLayout;
+}
+
 export interface PublicStore {
   id: string;
   slug: string;
@@ -170,6 +193,8 @@ export interface PublicStore {
   layoutSettings: StoreLayoutSettings;
   /** Never empty: the checkout has nothing to offer a customer otherwise. */
   paymentMethods: PaymentMethod[];
+  /** The landing page's own blocks, in the shopkeeper's order. Empty draws nothing. */
+  showcases: PublicStoreShowcase[];
 }
 
 /** The shop as its owner edits it in the panel: the public shape plus what only the owner may see. */
