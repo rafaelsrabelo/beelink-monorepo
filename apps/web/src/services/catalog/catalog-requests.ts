@@ -1,8 +1,11 @@
 // Types
 import type {
   CreateProductCategoryPayload,
+  CreateProductPayload,
+  Product,
   ProductCategory,
   UpdateProductCategoryPayload,
+  UpdateProductPayload,
 } from "@harness-monorepo/contracts"
 
 /**
@@ -80,4 +83,35 @@ export function updateProductCategory(
  */
 export function deleteProductCategory(slug: string, categoryId: string): Promise<unknown> {
   return call<unknown>(`${categoriesPath(slug)}/${encodeURIComponent(categoryId)}`, { method: "DELETE" })
+}
+
+const productsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/products`
+
+/**
+ * Every product the shop has, the unavailable ones included.
+ *
+ * Deliberately not the storefront's catalogue, which hides them: this is the screen where one is
+ * put back on sale, and a list that left it out would make that impossible.
+ */
+export function fetchProducts(slug: string): Promise<Product[]> {
+  return call<Product[]>(productsPath(slug), { method: "GET" })
+}
+
+export function createProduct(slug: string, payload: CreateProductPayload): Promise<Product> {
+  return call<Product>(productsPath(slug), { method: "POST", body: JSON.stringify(payload) })
+}
+
+export function updateProduct(
+  slug: string,
+  productId: string,
+  payload: UpdateProductPayload,
+): Promise<Product> {
+  return call<Product>(`${productsPath(slug)}/${encodeURIComponent(productId)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteProduct(slug: string, productId: string): Promise<unknown> {
+  return call<unknown>(`${productsPath(slug)}/${encodeURIComponent(productId)}`, { method: "DELETE" })
 }

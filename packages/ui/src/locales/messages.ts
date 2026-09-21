@@ -245,6 +245,47 @@ export interface UiMessages {
   }
   /** The panel's catalogue screens: what a shopkeeper fills in, never what a visitor reads. */
   catalog: {
+    products: {
+      title: string
+      description: string
+      create: string
+      edit: string
+      empty: string
+      emptyHint: string
+      nameLabel: string
+      namePlaceholder: string
+      slugLabel: string
+      slugHelp: string
+      descriptionLabel: string
+      /**
+       * The price, typed in reais and stored in whole cents. The field says the currency out loud
+       * because the number it takes and the number the database keeps are not the same number.
+       */
+      priceLabel: string
+      priceHelp: string
+      compareLabel: string
+      compareHelp: string
+      categoryLabel: string
+      categoryNone: string
+      availableLabel: string
+      availableHelp: string
+      imagesLabel: string
+      imagesHelp: string
+      imageAdd: string
+      imageRemove: string
+      save: string
+      cancel: string
+      delete: string
+      deleteConfirm: string
+      /** Marks a row the shopkeeper took off sale; the window shows none of it. */
+      unavailable: string
+      uncategorised: string
+      /** Said when the price typed is not a number, or is zero. */
+      priceInvalid: string
+      /** Said when the "was" price is not above the price — a discount that is not one. */
+      compareInvalid: string
+    }
+
     categories: {
       title: string
       description: string
