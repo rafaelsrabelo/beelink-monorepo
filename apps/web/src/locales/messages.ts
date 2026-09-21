@@ -48,6 +48,33 @@ export interface WebMessages {
     missingToken: string
   }
   dashboard: {
+    /**
+     * The panel's own figures. Orders and sales are not among them because neither exists yet —
+     * a card reading "0 pedidos" over a product that cannot take one is a lie with a number on it.
+     * What a shopkeeper setting up genuinely needs is what is still missing, and that is real data.
+     */
+    readiness: {
+      title: string
+      /** "{done} de {total} prontos" */
+      done: string
+      complete: string
+      /** "Falta: {items}" */
+      missing: string
+      storeLabel: string
+      allStores: string
+      openedOn: string
+      located: string
+      onMap: string
+      offMap: string
+      items: {
+        description: string
+        category: string
+        logo: string
+        banner: string
+        address: string
+        whatsapp: string
+      }
+    }
     title: string
     /** `{name}` is replaced at render; a function would not survive the server-to-client hop. */
     welcome: string
@@ -59,6 +86,8 @@ export interface WebMessages {
    */
   stores: {
     nav: {
+      /** The panel's home: the shopkeeper's own figures. */
+      dashboard: string
       list: string
       overview: string
       settings: string

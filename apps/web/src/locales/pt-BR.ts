@@ -17,12 +17,33 @@ export const ptBR: WebMessages = {
     missingToken: "Este endereço não tem um link válido. Abra o link direto do e-mail.",
   },
   dashboard: {
+    readiness: {
+      title: "Preparo da loja",
+      done: "{done} de {total} prontos",
+      complete: "Tudo pronto para vender",
+      missing: "Falta: {items}",
+      storeLabel: "Loja",
+      allStores: "Todas as lojas",
+      openedOn: "Aberta em",
+      located: "Endereço",
+      onMap: "Localizada no mapa",
+      offMap: "Sem ponto no mapa",
+      items: {
+        description: "descrição",
+        category: "categoria",
+        logo: "logo",
+        banner: "banner",
+        address: "endereço",
+        whatsapp: "WhatsApp",
+      },
+    },
     title: "Painel",
     welcome: "Bem-vindo de volta, {name}",
     unverifiedBadge: "E-mail não confirmado",
   },
   stores: {
     nav: {
+      dashboard: "Dashboard",
       list: "Minhas lojas",
       overview: "Visão geral",
       settings: "Configurações da loja",

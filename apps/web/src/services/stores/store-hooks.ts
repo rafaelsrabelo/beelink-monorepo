@@ -44,7 +44,13 @@ export function useMyStores(): UseQueryResult<Store[], Error> {
 }
 
 export function useStore(slug: string): UseQueryResult<Store, Error> {
-  return useQuery({ queryKey: storeKeys.detail(slug), queryFn: () => fetchStore(slug) })
+  return useQuery({
+    queryKey: storeKeys.detail(slug),
+    queryFn: () => fetchStore(slug),
+    // Without this the shell fires `fetchStore("")` on every page that is not inside a shop —
+    // a 404 per navigation, and a query key of `["stores","detail",""]` caching the refusal.
+    enabled: slug !== "",
+  })
 }
 
 /**

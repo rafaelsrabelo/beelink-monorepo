@@ -17,12 +17,33 @@ export const en: WebMessages = {
     missingToken: "This address carries no valid link. Open the link straight from the e-mail.",
   },
   dashboard: {
+    readiness: {
+      title: "Shop readiness",
+      done: "{done} of {total} ready",
+      complete: "Ready to sell",
+      missing: "Missing: {items}",
+      storeLabel: "Shop",
+      allStores: "All shops",
+      openedOn: "Opened on",
+      located: "Address",
+      onMap: "Located on the map",
+      offMap: "No point on the map",
+      items: {
+        description: "description",
+        category: "category",
+        logo: "logo",
+        banner: "banner",
+        address: "address",
+        whatsapp: "WhatsApp",
+      },
+    },
     title: "Dashboard",
     welcome: "Welcome back, {name}",
     unverifiedBadge: "E-mail not confirmed",
   },
   stores: {
     nav: {
+      dashboard: "Dashboard",
       list: "My shops",
       overview: "Overview",
       settings: "Shop settings",

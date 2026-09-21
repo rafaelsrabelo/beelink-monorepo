@@ -48,3 +48,24 @@ export const ComIcones: Story = {
 export const SemItemAtivo: Story = {
   args: { activeHref: "/outra-pagina" },
 }
+
+/**
+ * A shop's pages, inside the item they belong to. Nothing opens: the children are simply there
+ * whenever a shop is open, which is what says "these are inside that".
+ */
+export const ComLojaAberta: Story = {
+  args: {
+    activeHref: "/admin/padaria-da-ana/store",
+    items: [
+      { title: "Dashboard", href: "/dashboard" },
+      {
+        title: "Minhas lojas",
+        href: "/admin",
+        items: [
+          { title: "Padaria da Ana", href: "/admin/padaria-da-ana" },
+          { title: "Configurações da loja", href: "/admin/padaria-da-ana/store" },
+        ],
+      },
+    ],
+  },
+}

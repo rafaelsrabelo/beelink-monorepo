@@ -12,6 +12,20 @@ export interface DashboardNavItem {
   title: string
   href: string
   icon?: ReactNode
+  /**
+   * How the item decides it is the current page.
+   *
+   * `exact` by default, because `/admin/<slug>` is a prefix of every page inside that shop and a
+   * prefix rule would light it on all of them. `prefix` is for an item whose page has children of
+   * its own — a product list that opens a product — where an exact rule lights nothing and the
+   * `aria-current` a screen reader depends on silently stops being written.
+   */
+  match?: "exact" | "prefix"
+  /**
+   * What sits under it. One level only, always visible, never collapsible: a menu that opens is a
+   * menu with state to remember, and one that defaults to open is the thing this replaced.
+   */
+  items?: DashboardNavItem[]
 }
 
 export interface DashboardCard {
