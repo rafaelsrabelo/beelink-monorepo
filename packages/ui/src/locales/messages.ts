@@ -225,13 +225,12 @@ export interface UiMessages {
       whatsappPlaceholder: string
       whatsappHint: string
       instagramLabel: string
-      instagramPlaceholder: string
+      /** One placeholder for every handle field: the prefix beside it says which network it is. */
+      handlePlaceholder: string
       tiktokLabel: string
-      tiktokPlaceholder: string
       spotifyLabel: string
       spotifyPlaceholder: string
       youtubeLabel: string
-      youtubePlaceholder: string
     }
     appearance: {
       layoutLegend: string

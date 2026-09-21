@@ -68,7 +68,7 @@ export const sampleStoreSettingsValues: StoreSettingsValues = {
     state: "SP",
   },
   social: {
-    whatsapp: "5511999998888",
+    whatsapp: "11999998888",
     instagram: "docesdaana",
     tiktok: "",
     spotify: "",

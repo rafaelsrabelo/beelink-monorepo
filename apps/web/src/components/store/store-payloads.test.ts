@@ -39,6 +39,28 @@ const STORE: Store = {
 }
 
 describe("toSettingsValues", () => {
+  /**
+   * The round trip that matters: a shop saved with eleven digits comes back with thirteen, because
+   * the DTO puts the country code on. Handing those thirteen to the field shows the shopkeeper a
+   * number they never typed, and the mask gives up past eleven digits — so the panel would display
+   * 5585994100683 in a field whose placeholder promises (85) 99410-0683.
+   */
+  it.each([
+    ["5585994100683", "85994100683"],
+    ["558533334444", "8533334444"],
+    // Not a Brazilian number at that length: handed back as it was stored rather than guessed at.
+    ["12025550123", "12025550123"],
+    ["5511", "5511"],
+    ["", ""],
+  ])("hands back %s as %s", (stored, shown) => {
+    const values = toSettingsValues({
+      ...STORE,
+      socialNetworks: { ...STORE.socialNetworks, whatsapp: stored },
+    })
+
+    expect(values.social.whatsapp).toBe(shown)
+  })
+
   it("turns every absent field into the empty string the inputs hold", () => {
     const values = toSettingsValues(STORE)
 

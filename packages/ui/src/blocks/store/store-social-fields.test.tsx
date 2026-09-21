@@ -8,7 +8,7 @@ import { en } from "../../locales/en"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
-import { StoreSocialFields } from "./store-social-fields"
+import { StoreSocialFields, maskPhone } from "./store-social-fields"
 import { sampleStoreSettingsValues } from "./store.fixtures"
 
 const values = sampleStoreSettingsValues.social
@@ -26,6 +26,58 @@ describe("StoreSocialFields", () => {
     await userEvent.type(screen.getByLabelText("WhatsApp"), "9")
 
     expect(onChange).toHaveBeenCalledWith({ ...values, whatsapp: `${values.whatsapp}9` })
+  })
+
+  describe("the WhatsApp mask", () => {
+    // The screen sends digits — toCreatePayload strips this — so the mask is only what is seen.
+    it.each([
+      ["", ""],
+      ["8", "(8"],
+      ["85", "(85"],
+      ["8599", "(85) 99"],
+      ["8599410068", "(85) 9941-0068"],
+      ["85994100683", "(85) 99410-0683"],
+      // Past eleven digits it is a number with a country code, and those have no single shape.
+      ["5585994100683", "5585994100683"],
+    ])("formats %s as %s", (typed, shown) => {
+      expect(maskPhone(typed)).toBe(shown)
+    })
+
+    it("is the same whether the digits arrive typed or already formatted", () => {
+      expect(maskPhone("(85) 99410-0683")).toBe("(85) 99410-0683")
+    })
+
+    it("drops anything that is not a digit, however it was pasted", () => {
+      expect(maskPhone("+55 (85) 99410-0683")).toBe("5585994100683")
+      expect(maskPhone("85 99410 0683")).toBe("(85) 99410-0683")
+    })
+
+    it("shows a stored number formatted, rather than the digits it is saved as", () => {
+      renderFields({ value: { ...values, whatsapp: "85994100683" } })
+
+      expect(screen.getByLabelText("WhatsApp")).toHaveValue("(85) 99410-0683")
+    })
+  })
+
+  it("names the network beside each handle field, so the prefix says where it goes", () => {
+    renderFields()
+
+    expect(screen.getByText("instagram.com/")).toBeInTheDocument()
+    expect(screen.getByText("tiktok.com/@")).toBeInTheDocument()
+    expect(screen.getByText("youtube.com/@")).toBeInTheDocument()
+    // Spotify keeps the whole URL: an artist, a playlist and a user live on different paths.
+    expect(screen.queryByText(/spotify\.com\//)).not.toBeInTheDocument()
+  })
+
+  it("marks each field with its own brand, and hides them from a screen reader", () => {
+    const { container } = render(<StoreSocialFields value={values} onChange={vi.fn()} />)
+
+    for (const brand of ["WhatsApp", "Instagram", "TikTok", "YouTube", "Spotify"]) {
+      const icon = container.querySelector(`[data-brand="${brand}"]`)
+      expect(icon, brand).not.toBeNull()
+      // The label already names the network; an icon that repeats it makes every field read twice.
+      expect(icon).toHaveAttribute("aria-hidden", "true")
+    }
   })
 
   it("stores a handle without the @ someone typed in front of it", async () => {

@@ -48,6 +48,23 @@ function digitsOf(value: string): string {
   return value.replace(/\D/g, "")
 }
 
+/**
+ * The number as its owner knows it. The column keeps the country code — `wa.me/<this>` is built
+ * from it — and the DTO puts the 55 there when a shop is saved with ten or eleven digits. Handing
+ * all thirteen back to the field would show a shopkeeper a number they never typed, and the mask
+ * beside it would give up on it: past eleven digits there is no single shape to format.
+ *
+ * Only 55 is stripped, and only at the length a Brazilian number has. The API makes the same
+ * assumption in the same words — a product whose addresses are a CEP and a UF has no other
+ * reading — and a number that is not one is handed back untouched rather than guessed at.
+ */
+function localPhone(stored: string): string {
+  const digits = digitsOf(stored)
+  const isBrazilianWithCountryCode = (digits.length === 12 || digits.length === 13) && digits.startsWith("55")
+
+  return isBrazilianWithCountryCode ? digits.slice(2) : digits
+}
+
 /** The shop as the panel's five tabs show it. */
 export function toSettingsValues(store: Store): StoreSettingsValues {
   return {
@@ -68,7 +85,7 @@ export function toSettingsValues(store: Store): StoreSettingsValues {
       state: store.address.state ?? "",
     },
     social: {
-      whatsapp: store.socialNetworks.whatsapp ?? "",
+      whatsapp: localPhone(store.socialNetworks.whatsapp ?? ""),
       instagram: store.socialNetworks.instagram ?? "",
       tiktok: store.socialNetworks.tiktok ?? "",
       spotify: store.socialNetworks.spotify ?? "",
