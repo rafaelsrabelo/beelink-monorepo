@@ -9,6 +9,8 @@ import { ptBR } from "./pt-BR"
 
 export type { WebMessages } from "./messages"
 export type { Locale } from "@harness-monorepo/ui/locales/messages"
+/** Defined next to the dictionaries it fills, so the blocks reach it too. */
+export { format } from "@harness-monorepo/ui/locales/index"
 
 export const LOCALES: Locale[] = ["pt-BR", "en"]
 export const DEFAULT_LOCALE: Locale = "pt-BR"
@@ -27,9 +29,4 @@ export function isLocale(value: string | undefined): value is Locale {
 
 export function messagesFor(locale: Locale): { web: WebMessages; ui: UiMessages } {
   return { web: webMessages[locale], ui: uiMessages[locale] }
-}
-
-/** Fills `{name}`-style placeholders. Keeps dictionaries plain data, which crosses to the client. */
-export function format(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match)
 }

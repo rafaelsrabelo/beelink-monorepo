@@ -5,6 +5,12 @@ import type { StoreType } from "../blocks/store/store-types"
  * missing key is a compile error rather than a word in the wrong language on someone's screen.
  */
 export interface UiMessages {
+  /**
+   * The language these sentences are written in. A block builds its own `Intl` formatters from it,
+   * which is how a number or a list is spelled correctly without a formatter — an unserialisable
+   * object — having to live in the dictionary.
+   */
+  locale: Locale
   validation: {
     emailInvalid: string
     passwordRequired: string
@@ -144,15 +150,19 @@ export interface UiMessages {
        * enforces, so the promise and the refusal cannot disagree. The list arrives unjoined and
        * the size in megabytes: which connector and which decimal mark to use is this file's call.
        */
-      specFormats: (formats: string[], maxSizeMb: number) => string
+      /** `{formats}` and `{size}`, both already spelled for the locale by the field. */
+      specFormats: string
       /** "Dimensão recomendada: 1600 x 838 pixels." Rendered only when a size is recommended. */
-      specDimensions: (width: number, height: number) => string
+      /** `{width}` and `{height}`, in pixels. */
+      specDimensions: string
       /**
        * The block's own verdict on a file it refused to send anywhere. Not an errorCode — nothing
        * was asked of the API, so there is no code to translate (rule 5 stands).
        */
-      tooLarge: (maxSizeMb: number) => string
-      wrongFormat: (formats: string[]) => string
+      /** `{size}`, in megabytes. */
+      tooLarge: string
+      /** `{formats}`. */
+      wrongFormat: string
       uploading: string
       replace: string
       clear: string

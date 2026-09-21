@@ -1,10 +1,8 @@
 // Locales
 import type { UiMessages } from "./messages"
 
-const formatList = new Intl.ListFormat("en", { type: "disjunction" })
-const decimal = new Intl.NumberFormat("en", { maximumFractionDigits: 1 })
-
 export const en: UiMessages = {
+  locale: "en",
   validation: {
     emailInvalid: "Enter a valid e-mail address",
     passwordRequired: "Enter your password",
@@ -132,11 +130,10 @@ export const en: UiMessages = {
     image: {
       dropCta: "Click or drag the image here",
       dropActive: "Drop the image to upload",
-      specFormats: (formats, maxSizeMb) =>
-        `Accepted formats: ${formatList.format(formats)} up to ${decimal.format(maxSizeMb)} MB.`,
-      specDimensions: (width, height) => `Recommended size: ${width} x ${height} pixels.`,
-      tooLarge: (maxSizeMb) => `The image is over ${decimal.format(maxSizeMb)} MB. Choose a smaller one.`,
-      wrongFormat: (formats) => `Unsupported format. Use ${formatList.format(formats)}.`,
+      specFormats: "Accepted formats: {formats} up to {size} MB.",
+      specDimensions: "Recommended size: {width} x {height} pixels.",
+      tooLarge: "The image is over {size} MB. Choose a smaller one.",
+      wrongFormat: "Unsupported format. Use {formats}.",
       uploading: "Uploading…",
       replace: "Replace image",
       clear: "Remove image",

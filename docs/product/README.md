@@ -30,7 +30,8 @@ A **store** is the tenant. Everything else in the product — products, orders, 
 
 - A store has an **owner**, which is one account. An account may own more than one store.
 - A store has a **slug**, unique across the product, and the slug is its public address: the shop window is `/<slug>` and the panel is `/admin/<slug>`. A slug is what a shopkeeper prints on a flyer, so it changes rarely and never silently.
-- A store has a **kind** — a shop, or a restaurant — which changes what the shop window emphasises, not what the product can do.
+- A store has a **kind**, which says how it sells rather than what it sells, and changes what the shop window emphasises, not what the product can do. One kind exists: a shop that sells online end to end. A second one is earned by a shop window that has to behave differently — never by a new line of business.
+- A store has a **category**, chosen from a list the product seeds. That is where a line of business lives — supplements, fashion, groceries — and it is directory data: it tells a visitor what the shop is, and changes nothing about how the shop works.
 - A store carries its own **brand**: a name, a logo, and colours that the shop window wears. The colours are data the shopkeeper chooses, not a theme the product ships.
 - A store has an **address** and a position on the map. That position is what delivery distance is measured from.
 - **Only the owner may read or change anything of theirs.** This is decided by the product, once, at the point the data is served — not by the screen that happens to be asking. Two shopkeepers are strangers to each other.

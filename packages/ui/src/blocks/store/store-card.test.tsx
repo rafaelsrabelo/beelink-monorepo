@@ -74,8 +74,8 @@ describe("StoreCard", () => {
     const { container } = render(
       <StoreCard
         store={sampleStores[1]}
-        panelHref="/admin/cantina-do-ze"
-        storefrontHref="/cantina-do-ze"
+        panelHref="/admin/nutri-suplementos"
+        storefrontHref="/nutri-suplementos"
       />,
     )
 

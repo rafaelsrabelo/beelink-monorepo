@@ -17,7 +17,7 @@ import {
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
@@ -124,6 +124,13 @@ export function StoreImageField({
   const maxSizeMb = maxSizeBytes / MEGABYTE
   const specsId = `${id}-specs`
 
+  // Built here rather than held in the dictionary: an Intl formatter is an object React cannot
+  // serialise, and the dictionary is a prop that crosses into this Client Component.
+  const formatList = new Intl.ListFormat(messages.locale, { type: "disjunction" })
+  const decimal = new Intl.NumberFormat(messages.locale, { maximumFractionDigits: 1 })
+  const formatNames = formatList.format(formats)
+  const sizeMb = decimal.format(maxSizeMb)
+
   const accepts = (file: File) =>
     types.some((type) =>
       type.endsWith("/*") ? file.type.startsWith(type.slice(0, -1)) : file.type === type,
@@ -135,11 +142,11 @@ export function StoreImageField({
     // Refused here, before a byte leaves the browser: an upload that was always going to be
     // rejected is a round trip the shopkeeper waits through for no reason.
     if (types.length > 0 && !accepts(file)) {
-      setRefusal(text.wrongFormat(formats))
+      setRefusal(format(text.wrongFormat, { formats: formatNames }))
       return
     }
     if (file.size > maxSizeBytes) {
-      setRefusal(text.tooLarge(maxSizeMb))
+      setRefusal(format(text.tooLarge, { size: sizeMb }))
       return
     }
 
@@ -272,9 +279,14 @@ export function StoreImageField({
         </div>
 
         <div id={specsId} className="flex flex-1 flex-col gap-1 text-sm text-muted-foreground">
-          <p>{text.specFormats(formats, maxSizeMb)}</p>
+          <p>{format(text.specFormats, { formats: formatNames, size: sizeMb })}</p>
           {recommendedSize ? (
-            <p>{text.specDimensions(recommendedSize.width, recommendedSize.height)}</p>
+            <p>
+              {format(text.specDimensions, {
+                width: String(recommendedSize.width),
+                height: String(recommendedSize.height),
+              })}
+            </p>
           ) : null}
         </div>
       </div>

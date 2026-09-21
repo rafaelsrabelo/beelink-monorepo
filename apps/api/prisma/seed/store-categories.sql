@@ -26,8 +26,6 @@
 INSERT INTO "store_categories" ("id", "slug", "name", "description", "icon", "color", "createdAt", "updatedAt")
 VALUES
   (uuidv7(), 'alimentacao', 'Alimentação', 'Comida em geral, produtos artesanais e congelados', 'utensils-crossed', '#F97316', now(), now()),
-  (uuidv7(), 'restaurante', 'Restaurante', 'Pratos feitos, marmitas e delivery de refeições', 'chef-hat', '#EF4444', now(), now()),
-  (uuidv7(), 'lanchonete', 'Lanchonete', 'Lanches, pizzas, salgados e porções', 'sandwich', '#F59E0B', now(), now()),
   (uuidv7(), 'padaria', 'Padaria', 'Pães, bolos de padaria e café da manhã', 'croissant', '#F59E0B', now(), now()),
   (uuidv7(), 'doces-e-bolos', 'Doces e Bolos', 'Confeitaria, bolos por encomenda e sobremesas', 'cake', '#EC4899', now(), now()),
   (uuidv7(), 'bebidas', 'Bebidas', 'Adega, distribuidora e bebidas geladas', 'wine', '#8B5CF6', now(), now()),
@@ -37,7 +35,8 @@ VALUES
   (uuidv7(), 'casa-e-decoracao', 'Casa e Decoração', 'Utilidades domésticas, móveis e decoração', 'lamp', '#14B8A6', now(), now()),
   (uuidv7(), 'eletronicos', 'Eletrônicos', 'Celulares, informática e acessórios', 'smartphone', '#3B82F6', now(), now()),
   (uuidv7(), 'petshop', 'Petshop', 'Ração, acessórios e cuidados para animais', 'paw-print', '#10B981', now(), now()),
-  (uuidv7(), 'saude', 'Saúde e Farmácia', 'Farmácia, suplementos e produtos de saúde', 'pill', '#14B8A6', now(), now()),
+  (uuidv7(), 'suplementos', 'Suplementos', 'Whey, creatina, vitaminas e nutrição esportiva', 'dumbbell', '#22C55E', now(), now()),
+  (uuidv7(), 'saude', 'Saúde e Farmácia', 'Farmácia, produtos de saúde e cuidados pessoais', 'pill', '#14B8A6', now(), now()),
   (uuidv7(), 'servicos', 'Serviços', 'Serviços agendados, reparos e assistência', 'wrench', '#3B82F6', now(), now()),
   (uuidv7(), 'outros', 'Outros', 'Para o que não se encaixa nas demais categorias', 'store', '#8B5CF6', now(), now())
 ON CONFLICT ("slug") DO UPDATE SET
