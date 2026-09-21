@@ -1,5 +1,5 @@
 // Nest
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 // App
 import { env } from '../../shared/config/env.js';
@@ -64,6 +64,8 @@ export function toCloudinaryConfig(source: {
  */
 @Injectable()
 export class CloudinaryService {
+  private readonly logger = new Logger(CloudinaryService.name);
+
   /** The configuration this deployment runs with, or `null` when uploads are switched off. */
   config(): CloudinaryConfig | null {
     return toCloudinaryConfig(env);
@@ -100,14 +102,30 @@ export class CloudinaryService {
       // Every refusal from Cloudinary is "unavailable" to this product: a rejected signature, a
       // suspended account and a full quota are all operator problems, and none of them is something
       // the shopkeeper can fix by choosing a different picture.
-      if (!response.ok) return { status: 'unavailable' };
+      //
+      // But the operator has to be able to tell them apart. Collapsing the reason and logging
+      // nothing is how a misconfigured cloud name reaches someone as a bare 502 with no trail —
+      // so the sentence Cloudinary gave is written to the log before it is dropped, and only the
+      // caller is spared it.
+      if (!response.ok) {
+        this.logger.error(
+          { status: response.status, cloudName: config.cloudName, folder: config.folder, cloudinary: await reasonOf(response) },
+          'Cloudinary refused an upload',
+        );
+        return { status: 'unavailable' };
+      }
 
       payload = await response.json();
-    } catch {
+    } catch (error) {
+      this.logger.error({ err: error, cloudName: config.cloudName }, 'Cloudinary did not answer');
       return { status: 'unavailable' };
     }
 
     const url = secureUrlOf(payload);
+
+    if (!url) {
+      this.logger.error({ cloudName: config.cloudName }, 'Cloudinary answered 200 with no secure_url');
+    }
 
     // A 200 with no usable address is not a success. Answering `uploaded` with an empty string
     // would write `""` into `logoUrl` and lose the shop's picture with no error anywhere.
@@ -132,6 +150,26 @@ async function sign(params: Record<string, string>, apiSecret: string): Promise<
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
+}
+
+/**
+ * Cloudinary's own explanation, for the log and never for the caller. Read defensively: a refusal
+ * from a proxy in front of it is not JSON, and a diagnostic that throws while reporting a failure
+ * replaces the real error with its own.
+ */
+async function reasonOf(response: Response): Promise<string> {
+  try {
+    const body: unknown = await response.json();
+    if (typeof body === 'object' && body !== null && 'error' in body) {
+      const error = (body as { error: unknown }).error;
+      if (typeof error === 'object' && error !== null && 'message' in error) {
+        return String((error as { message: unknown }).message);
+      }
+    }
+    return JSON.stringify(body).slice(0, 200);
+  } catch {
+    return '(no readable body)';
+  }
 }
 
 /** `secure_url` and never `url`: the plain one is http, and the panel is served over https. */

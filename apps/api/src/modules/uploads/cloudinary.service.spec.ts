@@ -2,6 +2,9 @@
 import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+// Nest
+import { Logger } from '@nestjs/common';
+
 // App
 import type { CloudinaryConfig } from './cloudinary.service.js';
 import { CloudinaryService, toCloudinaryConfig } from './cloudinary.service.js';
@@ -154,6 +157,44 @@ describe('CloudinaryService.upload', () => {
     expect(await service.upload(imageOf(), config)).toEqual({ status: 'unavailable' });
   });
 
+  /**
+   * The caller gets one outcome, and the operator gets the reason. Without this, a cloud name
+   * typed into the wrong variable reaches someone as a bare 502 with nothing behind it — which is
+   * exactly how this was found, by reproducing the call by hand because the log said nothing.
+   */
+  it("writes Cloudinary's own explanation to the log before dropping it", async () => {
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    stubCloudinary(Response.json({ error: { message: 'Invalid cloud_name xpto' } }, { status: 401 }));
+
+    await service.upload(imageOf(), config);
+
+    expect(error).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 401, cloudinary: 'Invalid cloud_name xpto' }),
+      'Cloudinary refused an upload',
+    );
+    error.mockRestore();
+  });
+
+  it('logs a 200 that carried no address, which is the silent failure of the two', async () => {
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    stubCloudinary(Response.json({ public_id: 'logo' }));
+
+    await service.upload(imageOf(), config);
+
+    expect(error).toHaveBeenCalledWith(expect.anything(), 'Cloudinary answered 200 with no secure_url');
+    error.mockRestore();
+  });
+
+  it('never puts the secret in the log', async () => {
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    stubCloudinary(Response.json({ error: { message: 'nope' } }, { status: 401 }));
+
+    await service.upload(imageOf(), config);
+
+    expect(JSON.stringify(error.mock.calls)).not.toContain(config.apiSecret);
+    error.mockRestore();
+  });
+
   it('survives a network that never answered', async () => {
     vi.stubGlobal(
       'fetch',
@@ -165,8 +206,8 @@ describe('CloudinaryService.upload', () => {
     expect(await service.upload(imageOf(), config)).toEqual({ status: 'unavailable' });
   });
 
-  it('reports uploads as switched off when the environment configures none', () => {
-    // The unit-test environment sets only what env.ts requires, and Cloudinary is not among it.
-    expect(service.config()).toBeNull();
-  });
+  // `config()` is deliberately not asserted here. env.ts calls dotenv at import, so a unit test
+  // reads whatever .env the machine running it happens to have: this passed on CI and failed on a
+  // developer's laptop, and printed their live API secret into the terminal while failing. The
+  // decision it makes lives in `toCloudinaryConfig`, which is pure and is tested above.
 });
