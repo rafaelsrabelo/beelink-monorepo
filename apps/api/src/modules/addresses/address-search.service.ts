@@ -52,6 +52,16 @@ const MAP_STYLE = 'streets-v2';
 const MAP_SIZE = { width: 640, height: 260 };
 const MAP_ZOOM = 16;
 
+/**
+ * Sent on every MapTiler call so the key can be restricted to it.
+ *
+ * A key used from a server cannot be restricted by origin — a server sends no `Origin` and no
+ * `Referer`, so MapTiler treats it as "unknown" and refuses it the moment any origin is listed.
+ * The user-agent restriction is the one that fits: put `bee-link` in that field on the key and
+ * nothing else can spend it, while the key itself stays where no browser can read it.
+ */
+const USER_AGENT = 'bee-link/1.0 (+https://github.com/beecoders/beelink-monorepo)';
+
 /** A suggestion that arrives after the next keystroke is worse than none. */
 const TIMEOUT_MS = 3_000;
 
@@ -110,7 +120,10 @@ export class AddressSearchService {
       `?key=${encodeURIComponent(key)}&autocomplete=true&country=br&language=pt&limit=${MAX_RESULTS}`;
 
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+      const response = await fetch(url, {
+        headers: { 'user-agent': USER_AGENT },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
 
       if (!response.ok) {
         // The key is in the URL, so the URL never reaches the log.
@@ -149,7 +162,10 @@ export async function fetchStaticMap(
     `?key=${encodeURIComponent(key)}&markers=${encodeURIComponent(`${longitude},${latitude}`)}`;
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const response = await fetch(url, {
+      headers: { 'user-agent': USER_AGENT },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
 
     // MapTiler refuses with a picture — a PNG saying "no", 200-shaped to anything that only looks
     // at the content type — and puts the reason in a `statustext` header. Without reading it, a
