@@ -261,7 +261,7 @@ export const en: UiMessages = {
   store: {
     typeLabels: { ECOMMERCE: "Shop" },
     card: {
-      manage: "Manage",
+      manage: "Open",
       loading: "Loading your shops",
       viewStorefront: "View shop",
       logoAlt: "Shop logo",

@@ -353,6 +353,11 @@ export interface UiMessages {
     /** Keyed by the union, so adding a selling mode is a compile error in every dictionary. */
     typeLabels: Record<StoreType, string>
     card: {
+      /**
+       * Entering the shop, not configuring it. It used to read "Gerenciar" and point at the
+       * settings page — which made the front door of a shop the one screen inside it that is about
+       * paperwork rather than about the shop.
+       */
       manage: string
       loading: string
       viewStorefront: string

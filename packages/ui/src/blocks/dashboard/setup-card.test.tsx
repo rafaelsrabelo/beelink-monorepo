@@ -49,9 +49,9 @@ describe("SetupCard", () => {
 
   /**
    * It navigates, so it is a link — in the tab order as one, middle-clickable into a new tab, with
-   * "copy address" on the right click. It was a `<Button render={<a/>}>` for one commit, which Base
-   * UI refuses out loud: a component acting as a button expects a real `<button>`, and anything
-   * else strips the semantics forms and assistive technology lean on.
+   * "copy address" on the right click. For one commit it was the Button primitive rendered as an
+   * anchor, which Base UI refuses out loud: a component acting as a button expects a real
+   * `<button>`, and anything else strips the semantics forms and assistive technology lean on.
    */
   it("is an anchor and not a button pretending to be one", () => {
     renderCard()

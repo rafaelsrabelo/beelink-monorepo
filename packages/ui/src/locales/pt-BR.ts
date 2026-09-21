@@ -261,7 +261,7 @@ export const ptBR: UiMessages = {
   store: {
     typeLabels: { ECOMMERCE: "Loja" },
     card: {
-      manage: "Gerenciar",
+      manage: "Entrar",
       loading: "Carregando suas lojas",
       viewStorefront: "Ver loja",
       logoAlt: "Logo da loja",

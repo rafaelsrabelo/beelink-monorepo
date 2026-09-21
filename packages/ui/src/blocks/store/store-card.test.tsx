@@ -25,7 +25,7 @@ describe("StoreCard", () => {
   it("names the shop in the link, so a list of cards does not repeat one word", () => {
     render(<StoreCard store={sampleStore} panelHref="/admin/doces-da-ana" />)
 
-    expect(screen.getByRole("link", { name: "Gerenciar Doces da Ana" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Entrar Doces da Ana" })).toHaveAttribute(
       "href",
       "/admin/doces-da-ana",
     )
@@ -66,7 +66,7 @@ describe("StoreCard", () => {
   it("renders in English when the screen hands it the English dictionary", () => {
     render(<StoreCard store={sampleStore} panelHref="/admin/doces-da-ana" messages={en} />)
 
-    expect(screen.getByRole("link", { name: "Manage Doces da Ana" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Open Doces da Ana" })).toBeInTheDocument()
     expect(screen.getByText("Shop")).toBeInTheDocument()
   })
 

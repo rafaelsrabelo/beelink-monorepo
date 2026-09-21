@@ -97,6 +97,17 @@ gate "web/no-fetch-in-components" \
   "apps/web/src/components packages/ui/src" \
   "(^|[^a-zA-Z0-9_])fetch\("
 
+# A link is a link. Base UI's Button expects a real <button> under it, and rendering an anchor
+# there strips the native semantics forms and assistive technology rely on — it throws a console
+# error saying so. It is also wrong before that: something that navigates belongs in the tab order
+# as a link, middle-clicks into a new tab and offers "copy address". `buttonVariants` is how a link
+# wears the button's clothes, and store-card.tsx and store-empty-state.tsx are the precedent.
+# This has been written by mistake twice; hence a gate.
+gate "ui/no-button-as-link" \
+  "A Button rendered as an anchor loses native button semantics (Base UI refuses it). Use <Link className={buttonVariants()}> instead — see packages/ui/src/blocks/store/store-card.tsx." \
+  "apps/web/src packages/ui/src" \
+  "<Button[^>]*render=\\{<(a |Link|AppLink|AnchorLink)"
+
 gate "web/no-hex-colors" \
   "No hardcoded colours — tokens only, as CSS variables (docs/ai-rules/styling.md)." \
   "apps/web/src packages/ui/src" \
