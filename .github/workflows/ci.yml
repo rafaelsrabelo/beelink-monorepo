@@ -66,7 +66,12 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo type-check lint build --filter=web
+      # `web...` and not `web`, `test` and not silence. Without the trailing dots turbo selects
+      # exactly one package, so nothing in packages/ui ran here — not its tests, not its lint, not
+      # even its type-check — while the paths filter above listed `packages/**` and made the job
+      # look as though it covered them. And `test` was missing outright, so apps/web's own suite
+      # never ran either. The api job two blocks down always had it; this one never did.
+      - run: pnpm turbo type-check lint test build --filter=web...
 
   api:
     name: api
@@ -83,7 +88,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter api exec prisma generate
-      - run: pnpm turbo type-check lint test build --filter=api
+      - run: pnpm turbo type-check lint test build --filter=api...
 
   # The suites that need a database and a mail server. They run through pnpm --filter rather than
   # turbo: strict env mode would filter the job's variables out of a turbo task.
