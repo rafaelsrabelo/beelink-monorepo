@@ -246,3 +246,32 @@ export type StoreErrorCode =
   | "STORE_SLUG_RESERVED"
   | "STORE_FORBIDDEN"
   | "STORE_CATEGORY_NOT_FOUND";
+
+/**
+ * One option in the address box, as both apps have to agree it is.
+ *
+ * Everything but `label` is what the panel writes into the form when the shopkeeper picks it, and
+ * every field can come back empty: a search provider answers with what it knows, and a suggestion
+ * that names a street but no postcode is still a useful suggestion. The field merges rather than
+ * assigns, exactly as the postcode lookup does.
+ */
+export interface AddressSuggestion {
+  /** Stable for the life of one answer, for React keys and nothing else. */
+  id: string;
+  /** The whole address on one line, as the list shows it. */
+  label: string;
+  street: string;
+  neighborhood: string;
+  city: string;
+  /** The two-letter UF, upper case. */
+  state: string;
+  /** Digits only, no mask — the same normalisation the payload mapper applies. */
+  zipCode: string;
+  /**
+   * Where the search says this is. Kept because the shop's coordinates are what delivery distance
+   * is measured from, and a point that arrives with the address costs nothing to keep — where
+   * geocoding the same address again later costs a call and may answer differently.
+   */
+  latitude: number;
+  longitude: number;
+}

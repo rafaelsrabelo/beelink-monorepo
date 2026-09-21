@@ -91,3 +91,21 @@ export interface StoreZipCodeAddress {
   city: string
   state: string
 }
+
+/**
+ * One option in the address box. Structurally the contract's `AddressSuggestion`, declared here
+ * for the same reason `StoreZipCodeAddress` is: this package depends on no other, so a block is
+ * never the thing that drags a wire type into the design system. The two are checked against each
+ * other the moment a screen passes its suggestions in.
+ *
+ * Every field but the label may be empty, which is why the block merges rather than assigns.
+ */
+export interface StoreAddressSuggestion {
+  id: string
+  label: string
+  street: string
+  neighborhood: string
+  city: string
+  state: string
+  zipCode: string
+}

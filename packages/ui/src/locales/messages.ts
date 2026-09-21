@@ -202,6 +202,9 @@ export interface UiMessages {
       hint: string
       zipCodeLabel: string
       zipCodePlaceholder: string
+      /** Shown inside the suggestion list while a search is in flight. */
+      searching: string
+      noSuggestions: string
       zipCodeHint: string
       lookup: string
       lookingUp: string

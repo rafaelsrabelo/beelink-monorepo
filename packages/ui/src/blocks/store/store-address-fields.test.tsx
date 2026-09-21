@@ -1,5 +1,6 @@
 // Libs
 import { render, screen, waitFor } from "@testing-library/react"
+import { useState } from "react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -20,6 +21,114 @@ function renderFields(overrides: Partial<Parameters<typeof StoreAddressFields>[0
 }
 
 describe("StoreAddressFields", () => {
+  /**
+   * The box is driven by what is in the field, so a test that holds the value still is testing a
+   * field nobody uses. This is how the form drives it: state in, state out.
+   */
+  function ControlledFields({
+    initial,
+    ...props
+  }: { initial: typeof values } & Partial<Parameters<typeof StoreAddressFields>[0]>) {
+    const [value, setValue] = useState(initial)
+    return (
+      <StoreAddressFields
+        {...props}
+        value={value}
+        onChange={(next) => {
+          setValue(next)
+          props.onChange?.(next)
+        }}
+      />
+    )
+  }
+
+  describe("the address box", () => {
+    const suggestion = {
+      id: "address.1",
+      label: "Rua Lavras, 120, Aldeota, Fortaleza, CE",
+      street: "Rua Lavras, 120",
+      neighborhood: "Aldeota",
+      city: "Fortaleza",
+      state: "CE",
+      zipCode: "60170070",
+    }
+
+    function renderBox(overrides: Partial<Parameters<typeof StoreAddressFields>[0]> = {}, initial = values) {
+      const onChange = vi.fn()
+      const onAddressSearch = vi.fn()
+      render(
+        <ControlledFields
+          initial={initial}
+          onChange={onChange}
+          onAddressSearch={onAddressSearch}
+          suggestions={[suggestion]}
+          {...overrides}
+        />,
+      )
+      return { onChange, onAddressSearch }
+    }
+
+    it("reports what is typed, so the screen can search — it never searches itself", async () => {
+      const { onAddressSearch } = renderBox({}, { ...values, street: "" })
+
+      await userEvent.type(screen.getByLabelText("Rua"), "Rua Lav")
+
+      expect(onAddressSearch).toHaveBeenLastCalledWith("Rua Lav")
+    })
+
+    it("fills the whole address from one pick, not just the street", async () => {
+      const { onChange } = renderBox({}, { ...values, street: "", neighborhood: "", city: "", state: "", zipCode: "" })
+
+      await userEvent.type(screen.getByLabelText("Rua"), "Rua Lav")
+      await userEvent.click(await screen.findByText(suggestion.label))
+
+      expect(onChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          street: "Rua Lavras, 120",
+          neighborhood: "Aldeota",
+          city: "Fortaleza",
+          state: "CE",
+          zipCode: "60170070",
+        }),
+      )
+    })
+
+    /**
+     * No search returns a flat or a block. Writing an empty number through is the one mistake in
+     * this merge that costs a delivery, so the number is never touched.
+     */
+    it("never touches the number or the complement", async () => {
+      const { onChange } = renderBox({}, { ...values, street: "", number: "120", complement: "Apto 101" })
+
+      await userEvent.type(screen.getByLabelText("Rua"), "Rua Lav")
+      await userEvent.click(await screen.findByText(suggestion.label))
+
+      expect(onChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ number: "120", complement: "Apto 101" }),
+      )
+    })
+
+    it("keeps a field the suggestion knew nothing about", async () => {
+      const { onChange } = renderBox(
+        { suggestions: [{ ...suggestion, neighborhood: "" }] },
+        { ...values, street: "", neighborhood: "Centro" },
+      )
+
+      await userEvent.type(screen.getByLabelText("Rua"), "Rua Lav")
+      await userEvent.click(await screen.findByText(suggestion.label))
+
+      expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ neighborhood: "Centro" }))
+    })
+
+    it("stays a plain field when no search is wired up", async () => {
+      const { onChange } = renderBox({ onAddressSearch: undefined }, { ...values, street: "" })
+
+      await userEvent.type(screen.getByLabelText("Rua"), "R")
+
+      expect(onChange).toHaveBeenLastCalledWith({ ...values, street: "R" })
+    })
+  })
+
   it("hands the whole address back when one field changes", async () => {
     const { onChange } = renderFields()
 

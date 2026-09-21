@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import { useState } from "react"
+
 // Next
 import { useRouter } from "next/navigation"
 
@@ -17,6 +20,8 @@ import type { StoreCreateValues } from "@/components/store/store-payloads"
 import { StoreErrorAlert } from "@/components/store/store-error-alert"
 import { firstStoreErrorCopy, storeErrorCopy } from "@/components/store/store-error-copy"
 import { toCreatePayload } from "@/components/store/store-payloads"
+import { useAddressSearch, DEBOUNCE_MS } from "@/services/addresses/address-hooks"
+import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useZipCodeLookup } from "@/services/cep/cep-hooks"
 import { useCreateStore, useStoreCategories, useStoreColorPresets } from "@/services/stores/store-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
@@ -43,6 +48,9 @@ export function StoreCreateScreen({ ui, web }: StoreCreateScreenProps) {
   const presets = useStoreColorPresets()
   const create = useCreateStore()
   const zipCode = useZipCodeLookup()
+  // The block reports every keystroke; this is where it stops being one request each.
+  const [addressQuery, setAddressQuery] = useState("")
+  const addresses = useAddressSearch(useDebouncedValue(addressQuery, DEBOUNCE_MS))
   const image = useImageUpload()
 
   if (presets.isPending || categories.isPending) return <StoreSettingsSkeleton messages={ui} />
@@ -62,6 +70,9 @@ export function StoreCreateScreen({ ui, web }: StoreCreateScreenProps) {
       categories={categories.data ?? []}
       colorPresets={presets.data}
       onZipCodeLookup={zipCode.lookup}
+      onAddressSearch={setAddressQuery}
+      suggestions={addresses.suggestions}
+      addressSearchPending={addresses.pending}
       zipCodeLookupPending={zipCode.pending}
       onImageUpload={image.upload}
       imageUploadPending={image.pending}

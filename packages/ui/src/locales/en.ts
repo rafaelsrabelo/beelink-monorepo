@@ -173,6 +173,8 @@ export const en: UiMessages = {
       hint: "The address is never shown to a customer. It is used to work out delivery.",
       zipCodeLabel: "Postcode",
       zipCodePlaceholder: "12345-678",
+      searching: "Searching addresses…",
+      noSuggestions: "No address found. You can fill it in by hand.",
       zipCodeHint: "Enter the postcode to fill the address automatically.",
       lookup: "Look up postcode",
       lookingUp: "Looking up…",

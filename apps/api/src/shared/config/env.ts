@@ -65,7 +65,21 @@ const envSchema = z.object({
   /** Where the files land inside the account, so one Cloudinary can serve more than this product. */
   CLOUDINARY_FOLDER: z.string().min(1).default('bee-link'),
 
+  /**
+   * MapTiler, for the panel's address box and the map beside it. Optional: without it the address
+   * is typed by hand and the map is not drawn, which is a state worth being able to run in.
+   *
+   * Server-side only. The geocoding call is billable, so it goes out from here where a bearer
+   * token is actually verified — a search proxy behind nothing but a cookie is a free geocoder
+   * spending this account's quota.
+   */
+  MAPTILER_API_KEY: z.string().min(1).optional(),
+
   /** Uploads cost money and bandwidth, so they are limited harder than an ordinary write. */
+  /** Typing produces requests: this is the limit that protects a billable key. */
+  ADDRESS_SEARCH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
+  ADDRESS_SEARCH_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+
   UPLOAD_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   UPLOAD_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
 

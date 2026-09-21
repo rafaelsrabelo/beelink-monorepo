@@ -31,7 +31,12 @@ import { StoreIdentityFields } from "./store-identity-fields"
 import { StorePaymentMethodsFields } from "./store-payment-methods-fields"
 import { createStoreSettingsSchema, type StoreSettingsValues } from "./store-schemas"
 import { StoreSocialFields } from "./store-social-fields"
-import type { StoreCategoryOption, StoreColorPreset, StoreZipCodeAddress } from "./store-types"
+import type {
+  StoreAddressSuggestion,
+  StoreCategoryOption,
+  StoreColorPreset,
+  StoreZipCodeAddress,
+} from "./store-types"
 
 /** Which tab holds which slice, so a refused save can open the tab that was refused. */
 const TAB_OF_SLICE = {
@@ -55,6 +60,10 @@ export interface StoreSettingsFormProps {
    */
   onZipCodeLookup?: (zipCode: string) => Promise<StoreZipCodeAddress | null>
   zipCodeLookupPending?: boolean
+  /** What is in the street field, for the screen to search with. It debounces; this does not. */
+  onAddressSearch?: (query: string) => void
+  suggestions?: readonly StoreAddressSuggestion[]
+  addressSearchPending?: boolean
   /**
    * Hands one image to whoever keeps bytes and answers with its URL. One callback serves the logo
    * and the banner alike, because one upload endpoint serves both — where the bytes land is the
@@ -81,6 +90,9 @@ export function StoreSettingsForm({
   colorPresets,
   onZipCodeLookup,
   zipCodeLookupPending,
+  onAddressSearch,
+  suggestions,
+  addressSearchPending,
   onImageUpload,
   imageUploadPending,
   pending = false,
@@ -167,6 +179,9 @@ export function StoreSettingsForm({
                     errors={errors.address}
                     onZipCodeLookup={onZipCodeLookup}
                     lookupPending={zipCodeLookupPending}
+                    onAddressSearch={onAddressSearch}
+                    suggestions={suggestions}
+                    searchPending={addressSearchPending}
                     disabled={pending}
                     messages={messages}
                   />

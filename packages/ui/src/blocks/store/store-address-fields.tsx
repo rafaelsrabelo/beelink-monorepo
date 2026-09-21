@@ -3,6 +3,10 @@
 // React
 import { useRef } from "react"
 
+// Libs
+import { Autocomplete } from "@base-ui/react/autocomplete"
+import { Loader2Icon, MapPinIcon } from "lucide-react"
+
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
 import {
@@ -13,6 +17,7 @@ import {
   FieldLabel,
 } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -20,7 +25,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { StoreAddressValues } from "./store-schemas"
-import type { FieldIssues, StoreZipCodeAddress } from "./store-types"
+import type { FieldIssues, StoreAddressSuggestion, StoreZipCodeAddress } from "./store-types"
 
 export interface StoreAddressFieldsProps {
   value: StoreAddressValues
@@ -36,6 +41,15 @@ export interface StoreAddressFieldsProps {
    */
   onZipCodeLookup?: (zipCode: string) => Promise<StoreZipCodeAddress | null>
   lookupPending?: boolean
+  /**
+   * What has been typed into the street field so far, for the screen to search with. The block
+   * does not search — it does not know a provider exists — and the screen debounces before it
+   * asks, because a request per keystroke is a bill per keystroke.
+   */
+  onAddressSearch?: (query: string) => void
+  /** What the screen's search answered. Absent means no search is wired up and the field is plain. */
+  suggestions?: readonly StoreAddressSuggestion[]
+  searchPending?: boolean
   disabled?: boolean
   messages?: UiMessages
 }
@@ -47,6 +61,9 @@ export function StoreAddressFields({
   errors,
   onZipCodeLookup,
   lookupPending = false,
+  onAddressSearch,
+  suggestions = [],
+  searchPending = false,
   disabled = false,
   messages = defaultMessages,
 }: StoreAddressFieldsProps) {
@@ -99,14 +116,88 @@ export function StoreAddressFields({
       <div className="grid gap-4 @md/main:grid-cols-3">
         <Field className="@md/main:col-span-2">
           <FieldLabel htmlFor="store-street">{text.streetLabel}</FieldLabel>
-          <Input
-            id="store-street"
-            value={value.street}
-            disabled={disabled}
-            placeholder={text.streetPlaceholder}
-            aria-invalid={Boolean(errors?.street)}
-            onChange={(event) => onChange({ ...value, street: event.target.value })}
-          />
+          {onAddressSearch ? (
+            <Autocomplete.Root
+              items={suggestions as StoreAddressSuggestion[]}
+              value={value.street}
+              // The search already decided what matches; filtering the answer again here would
+              // hide a suggestion whose street reads differently from what was typed, which is
+              // most of them — "Lavras" finding "Rua Lavras" is the whole point.
+              filter={null}
+              // One handler for both, because there is only one event. Pressing an item also
+              // changes the value, and handling the press separately meant the merge ran and was
+              // then overwritten a tick later by this — with a stale copy of the group, so the
+              // four fields it had just filled went back to empty.
+              onValueChange={(street, details) => {
+                if (details.reason === "item-press") {
+                  // Matched on the label because that is what an item turns into: Autocomplete
+                  // takes the item's own text, and this item renders exactly the label. Keep the
+                  // two together — a second line inside the item would break this lookup silently.
+                  const picked = suggestions.find((suggestion) => suggestion.label === street)
+                  if (picked) {
+                    onChange(fillFromSuggestion(value, picked))
+                    return
+                  }
+                }
+
+                onChange({ ...value, street })
+                onAddressSearch(street)
+              }}
+            >
+              <div className="relative">
+                <Autocomplete.Input
+                  render={
+                    <Input
+                      id="store-street"
+                      disabled={disabled}
+                      placeholder={text.streetPlaceholder}
+                      aria-invalid={Boolean(errors?.street)}
+                    />
+                  }
+                />
+                {searchPending ? (
+                  <Loader2Icon
+                    aria-hidden="true"
+                    className="absolute top-1/2 right-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                  />
+                ) : null}
+              </div>
+
+              <Autocomplete.Portal>
+                <Autocomplete.Positioner sideOffset={4} className="z-50 w-[var(--anchor-width)]">
+                  <Autocomplete.Popup className="max-h-64 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md">
+                    <Autocomplete.Empty className="px-2 py-1.5 text-sm text-muted-foreground">
+                      {searchPending ? text.searching : text.noSuggestions}
+                    </Autocomplete.Empty>
+                    <Autocomplete.List>
+                      {(suggestion: StoreAddressSuggestion) => (
+                        <Autocomplete.Item
+                          key={suggestion.id}
+                          value={suggestion}
+                          className={cn(
+                            "flex cursor-default items-start gap-2 rounded-md px-2 py-1.5 text-sm",
+                            "data-highlighted:bg-accent data-highlighted:text-accent-foreground",
+                          )}
+                        >
+                          <MapPinIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                          <span>{suggestion.label}</span>
+                        </Autocomplete.Item>
+                      )}
+                    </Autocomplete.List>
+                  </Autocomplete.Popup>
+                </Autocomplete.Positioner>
+              </Autocomplete.Portal>
+            </Autocomplete.Root>
+          ) : (
+            <Input
+              id="store-street"
+              value={value.street}
+              disabled={disabled}
+              placeholder={text.streetPlaceholder}
+              aria-invalid={Boolean(errors?.street)}
+              onChange={(event) => onChange({ ...value, street: event.target.value })}
+            />
+          )}
           <FieldError errors={[errors?.street]} />
         </Field>
 
@@ -194,5 +285,24 @@ function fillFrom(current: StoreAddressValues, found: StoreZipCodeAddress): Stor
     neighborhood: found.neighborhood || current.neighborhood,
     city: found.city || current.city,
     state: found.state || current.state,
+  }
+}
+
+/**
+ * A picked suggestion fills everything it knows and keeps everything it does not — the same rule
+ * the postcode lookup follows, and for the same reason: a provider answers with what it has, and a
+ * blank field written through would erase what the shopkeeper had already typed.
+ *
+ * The number is never touched. No search returns a flat or a block, and overwriting "Apto 101"
+ * with nothing is the one mistake that costs a delivery.
+ */
+function fillFromSuggestion(current: StoreAddressValues, found: StoreAddressSuggestion): StoreAddressValues {
+  return {
+    ...current,
+    street: found.street || current.street,
+    neighborhood: found.neighborhood || current.neighborhood,
+    city: found.city || current.city,
+    state: found.state || current.state,
+    zipCode: found.zipCode || current.zipCode,
   }
 }

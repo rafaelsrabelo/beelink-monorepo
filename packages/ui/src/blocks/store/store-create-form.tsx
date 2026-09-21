@@ -32,7 +32,12 @@ import { StoreIdentityFields } from "./store-identity-fields"
 import { createStoreCreateSchema, type StoreCreateValues } from "./store-schemas"
 import { slugify } from "./store-slug"
 import { StoreSocialFields } from "./store-social-fields"
-import type { StoreCategoryOption, StoreColorPreset, StoreZipCodeAddress } from "./store-types"
+import type {
+  StoreAddressSuggestion,
+  StoreCategoryOption,
+  StoreColorPreset,
+  StoreZipCodeAddress,
+} from "./store-types"
 
 /** Which tab holds which slice. The slug sits with the identity it is derived from. */
 const TAB_OF_SLICE = {
@@ -55,6 +60,10 @@ export interface StoreCreateFormProps {
    */
   onZipCodeLookup?: (zipCode: string) => Promise<StoreZipCodeAddress | null>
   zipCodeLookupPending?: boolean
+  /** What is in the street field, for the screen to search with. It debounces; this does not. */
+  onAddressSearch?: (query: string) => void
+  suggestions?: readonly StoreAddressSuggestion[]
+  addressSearchPending?: boolean
   /** One callback for every image, as in the settings form — one upload endpoint serves both. */
   onImageUpload?: (file: File) => Promise<string>
   imageUploadPending?: boolean
@@ -79,6 +88,9 @@ export function StoreCreateForm({
   colorPresets,
   onZipCodeLookup,
   zipCodeLookupPending,
+  onAddressSearch,
+  suggestions,
+  addressSearchPending,
   onImageUpload,
   imageUploadPending,
   pending = false,
@@ -199,6 +211,9 @@ export function StoreCreateForm({
                     errors={errors.address}
                     onZipCodeLookup={onZipCodeLookup}
                     lookupPending={zipCodeLookupPending}
+                    onAddressSearch={onAddressSearch}
+                    suggestions={suggestions}
+                    searchPending={addressSearchPending}
                     disabled={pending}
                     messages={messages}
                   />

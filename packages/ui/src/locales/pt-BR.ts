@@ -173,6 +173,8 @@ export const ptBR: UiMessages = {
       hint: "O endereço não aparece para o cliente. Ele é usado para calcular a entrega.",
       zipCodeLabel: "CEP",
       zipCodePlaceholder: "12345-678",
+      searching: "Buscando endereços…",
+      noSuggestions: "Nenhum endereço encontrado. Você pode preencher à mão.",
       zipCodeHint: "Informe o CEP para preencher o endereço automaticamente.",
       lookup: "Buscar CEP",
       lookingUp: "Buscando…",

@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import { useState } from "react"
+
 // UI
 import { StoreSettingsForm } from "@harness-monorepo/ui/blocks/store/store-settings-form"
 import { StoreSettingsSkeleton } from "@harness-monorepo/ui/blocks/store/store-settings-skeleton"
@@ -12,6 +15,8 @@ import type { WebMessages } from "@/locales"
 import { StoreErrorAlert } from "@/components/store/store-error-alert"
 import { firstStoreErrorCopy, storeErrorCopy } from "@/components/store/store-error-copy"
 import { toSettingsValues, toUpdatePayload } from "@/components/store/store-payloads"
+import { useAddressSearch, DEBOUNCE_MS } from "@/services/addresses/address-hooks"
+import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useZipCodeLookup } from "@/services/cep/cep-hooks"
 import { useStore, useStoreCategories, useStoreColorPresets, useUpdateStore } from "@/services/stores/store-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
@@ -36,6 +41,9 @@ export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps)
   const presets = useStoreColorPresets()
   const update = useUpdateStore(slug)
   const zipCode = useZipCodeLookup()
+  // The block reports every keystroke; this is where it stops being one request each.
+  const [addressQuery, setAddressQuery] = useState("")
+  const addresses = useAddressSearch(useDebouncedValue(addressQuery, DEBOUNCE_MS))
   const image = useImageUpload()
 
   if (store.isPending) return <StoreSettingsSkeleton messages={ui} />
@@ -59,6 +67,9 @@ export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps)
         categories={categories.data ?? []}
         colorPresets={presets.data}
         onZipCodeLookup={zipCode.lookup}
+        onAddressSearch={setAddressQuery}
+        suggestions={addresses.suggestions}
+        addressSearchPending={addresses.pending}
         zipCodeLookupPending={zipCode.pending}
         onImageUpload={image.upload}
         imageUploadPending={image.pending}
