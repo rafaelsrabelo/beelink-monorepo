@@ -64,7 +64,9 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
           <WorkspaceSwitcher
             current={workspaces.find((workspace) => workspace.slug === shopSlug) ?? null}
             workspaces={workspaces}
-            allHref="/admin"
+            // "Change shop", not "all shops": there is nowhere to be that is every shop at once,
+            // so this goes to the doorway and the doorway sends you into one.
+            allHref="/admin?switching=1"
             createHref="/create-store"
             loading={stores.isPending}
             linkComponent={AppLink}
@@ -72,7 +74,7 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
           />
         }
         brandName={web.metadata.title}
-        brandHref="/dashboard"
+        brandHref={shopSlug ? `/admin/${shopSlug}` : "/admin"}
         linkComponent={AppLink}
         activeHref={pathname}
         signingOut={signOut.isPending}
@@ -106,10 +108,10 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
                 { title: web.stores.nav.products, href: `/admin/${shopSlug}/products`, match: "prefix" },
                 { title: web.stores.nav.customers, href: `/admin/${shopSlug}/customers`, match: "prefix" },
               ]
-            : [
-                { title: web.stores.nav.dashboard, href: "/dashboard" },
-                { title: web.stores.nav.list, href: "/admin", match: "prefix" },
-              ]
+            : // Unreachable in practice, and empty rather than something: this shell only wraps
+              // pages inside a shop, and the one screen that comes before a shop — choosing it —
+              // has a layout of its own precisely so that no menu has to be invented for it.
+              []
         }
         // At the bottom and away from the four, as every panel of this shape puts it.
         navSecondary={

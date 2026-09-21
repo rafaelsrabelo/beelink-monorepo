@@ -96,7 +96,7 @@ export const en: UiMessages = {
   workspace: {
     label: "Shop",
     switchLabel: "Switch shop",
-    all: "All shops",
+    all: "Change shop",
     create: "New shop",
     loading: "Loading…",
   },

@@ -38,10 +38,15 @@ describe("proxy", () => {
     expect(response.headers.get("location")).toBeNull()
   })
 
+  /**
+   * `/admin` and not `/dashboard`: there is no account-wide screen any more. A shopkeeper is always
+   * inside one shop, and `/admin` is the doorway that picks which — walking straight through when
+   * there is only one shop or one they were last in.
+   */
   it("keeps a signed-in person away from the sign-in screen", async () => {
     const response = await proxy(request("/login", "bl_access=token"))
 
-    expect(response.headers.get("location")).toBe("http://localhost:3000/dashboard")
+    expect(response.headers.get("location")).toBe("http://localhost:3000/admin")
   })
 
   it("refreshes an expired access token and lets the page render signed in", async () => {
@@ -86,8 +91,26 @@ describe("proxy", () => {
 
     const response = await proxy(request("/login", "bl_refresh=old-refresh"))
 
-    expect(response.headers.get("location")).toBe("http://localhost:3000/dashboard")
+    expect(response.headers.get("location")).toBe("http://localhost:3000/admin")
     expect(response.cookies.get("bl_access")?.value).toBe("new-access")
+  })
+
+  /**
+   * The proxy is the only place that can write it: a Server Component renders the page and cannot
+   * set a cookie on the way out, and a client effect would write it a beat after the page it is
+   * about is already on screen. It is a hint about where to land and never a permission — the page
+   * it points at asks the API who owns that shop exactly as it would have anyway.
+   */
+  it("remembers which shop the panel is inside", async () => {
+    const response = await proxy(request("/admin/lessari/products", "bl_access=token"))
+
+    expect(response.cookies.get("bl_shop")?.value).toBe("lessari")
+  })
+
+  it("remembers nothing on a page that belongs to no shop", async () => {
+    const response = await proxy(request("/admin", "bl_access=token"))
+
+    expect(response.cookies.get("bl_shop")).toBeUndefined()
   })
 })
 
