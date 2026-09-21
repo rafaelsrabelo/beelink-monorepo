@@ -37,6 +37,17 @@ function renderForm(overrides: Partial<Parameters<typeof StoreCreateForm>[0]> = 
   return { onSubmit }
 }
 
+const step = (name: string | RegExp) => screen.getByRole("button", { name })
+const nextButton = () => screen.getByRole("button", { name: "Continuar" })
+
+/**
+ * The number in front of a step is `aria-hidden`, so a step is reached by its label — anchored,
+ * because a step that is done or refused says so after it for anyone listening rather than looking.
+ */
+async function walkToEnd() {
+  for (let left = 3; left > 0; left -= 1) await userEvent.click(nextButton())
+}
+
 describe("StoreCreateForm", () => {
   it("proposes the shop address from the name while nobody has chosen one", async () => {
     renderForm()
@@ -56,58 +67,157 @@ describe("StoreCreateForm", () => {
     expect(slug).toHaveValue("cantina")
   })
 
-  it("hands every tab over in one create", async () => {
+  describe("walking the steps", () => {
+    /**
+     * Emptiness and not validity. A button disabled until everything is correct leaves someone
+     * staring at a control that will not move with no reason why; one that lights up as soon as
+     * the required boxes have something in them is a prompt, and pressing it is what surfaces a
+     * badly shaped value.
+     */
+    it("will not go on while a required field is empty", () => {
+      renderForm()
+
+      expect(nextButton()).toBeDisabled()
+    })
+
+    it("goes on the moment the required fields have something in them", async () => {
+      renderForm()
+
+      await userEvent.type(screen.getByLabelText("Nome da loja"), "Doces da Ana")
+
+      expect(nextButton()).toBeEnabled()
+    })
+
+    // The address asks for nothing, in this form and in the API's DTO alike. A step that blocked
+    // on it would be inventing a rule neither half of the product has.
+    it("lets the address be skipped entirely, because the product treats it as optional", async () => {
+      renderForm({ defaultValues: filled })
+
+      await userEvent.click(nextButton())
+
+      expect(screen.getByLabelText("CEP")).toBeInTheDocument()
+      expect(nextButton()).toBeEnabled()
+    })
+
+    it("refuses to leave a step whose field is filled but wrong, and says so there", async () => {
+      renderForm({ defaultValues: { ...filled, slug: "Doces da Ana" } })
+
+      await userEvent.click(nextButton())
+
+      expect(
+        await screen.findByText("Use só letras minúsculas, números e hífens, sem acento"),
+      ).toBeVisible()
+      // Still on the first step: the mistake is cheapest to fix where it was made.
+      expect(screen.getByLabelText("Nome da loja")).toBeInTheDocument()
+    })
+
+    it("goes back without losing what was typed", async () => {
+      renderForm({ defaultValues: filled })
+
+      await userEvent.click(nextButton())
+      await userEvent.click(screen.getByRole("button", { name: "Voltar" }))
+
+      expect(screen.getByLabelText("Nome da loja")).toHaveValue("Doces da Ana")
+    })
+
+    /** A step already passed is a button; one never reached is not. That is what makes these steps. */
+    it("opens a step already passed, and not one never reached", async () => {
+      renderForm({ defaultValues: filled })
+
+      expect(step(/^Aparência/)).toBeDisabled()
+
+      await userEvent.click(nextButton())
+
+      expect(step(/^Informações básicas/)).toBeEnabled()
+      expect(step(/^Aparência/)).toBeDisabled()
+    })
+
+    it("offers nothing to create before the last step", async () => {
+      renderForm({ defaultValues: filled })
+
+      expect(screen.queryByRole("button", { name: "Criar loja" })).not.toBeInTheDocument()
+
+      await walkToEnd()
+
+      expect(screen.getByRole("button", { name: "Criar loja" })).toBeInTheDocument()
+    })
+
+    it("says where in the walk the shopkeeper is", async () => {
+      renderForm({ defaultValues: filled })
+
+      expect(screen.getByText("Passo 1 de 4")).toBeInTheDocument()
+
+      await userEvent.click(nextButton())
+
+      expect(screen.getByText("Passo 2 de 4")).toBeInTheDocument()
+    })
+  })
+
+  it("hands every step over in one create", async () => {
     const { onSubmit } = renderForm({ defaultValues: filled })
 
+    await walkToEnd()
     await userEvent.click(screen.getByRole("button", { name: "Criar loja" }))
 
     expect(onSubmit).toHaveBeenCalledWith(filled, expect.anything())
   })
 
-  it("names the tab that is refusing, rather than failing in silence somewhere else", async () => {
-    const { onSubmit } = renderForm({
-      defaultValues: { ...filled, social: { ...filled.social, whatsapp: "" } },
-    })
+  /**
+   * The last button reports the whole form, not the step under it. A required field emptied by
+   * walking back would otherwise be invisible from here, and the create would refuse in silence.
+   */
+  it("will not create while a field on an earlier step is empty", async () => {
+    renderForm({ defaultValues: filled })
 
-    await userEvent.click(screen.getByRole("button", { name: "Criar loja" }))
+    await walkToEnd()
+    await userEvent.click(step(/^Redes sociais/))
+    await userEvent.clear(screen.getByLabelText("WhatsApp"))
+    await userEvent.click(step(/^Aparência/))
 
-    expect(onSubmit).not.toHaveBeenCalled()
-    const refused = await screen.findByRole("tab", { name: /Redes sociais/ })
-    expect(refused).toHaveAttribute("aria-selected", "true")
-    expect(refused).toHaveTextContent("com campos a corrigir")
+    expect(screen.getByRole("button", { name: "Criar loja" })).toBeDisabled()
   })
 
-  it("marks a refused tab the reader is not standing on, and not the tab that is fine", async () => {
-    const { onSubmit } = renderForm({
-      defaultValues: { ...filled, address: { ...filled.address, zipCode: "123" } },
-    })
+  /**
+   * Most of what the old tab layout needed marking for cannot happen now: a step is checked on the
+   * way out, so a bad postcode never reaches the end to refuse there. It refuses where it is.
+   */
+  it("refuses to leave the address step with a postcode that is not one, and marks it", async () => {
+    renderForm({ defaultValues: { ...filled, address: { ...filled.address, zipCode: "123" } } })
 
-    await userEvent.click(screen.getByRole("button", { name: "Criar loja" }))
+    await userEvent.click(nextButton())
+    await userEvent.click(nextButton())
 
-    expect(onSubmit).not.toHaveBeenCalled()
-    expect(await screen.findByRole("tab", { name: /Endereço/ })).toHaveTextContent(
-      "com campos a corrigir",
-    )
-    expect(screen.getByRole("tab", { name: "Redes sociais" })).not.toHaveTextContent(
-      "com campos a corrigir",
-    )
+    expect(await screen.findByLabelText("CEP")).toBeInTheDocument()
+    expect(step(/^Endereço/)).toHaveTextContent("com campos a corrigir")
+    expect(step(/^Informações básicas/)).not.toHaveTextContent("com campos a corrigir")
   })
 
-  it("refuses an address that is not a slug, and says so on the field that holds it", async () => {
-    const { onSubmit } = renderForm({ defaultValues: { ...filled, slug: "Doces da Ana" } })
+  /**
+   * What is still possible: walking back, breaking something, and walking forward again past the
+   * check that would have caught it. The create is the backstop, and it carries the shopkeeper to
+   * the step that refused rather than failing where they are standing.
+   */
+  it("carries the shopkeeper back when something broken earlier reaches the create", async () => {
+    const { onSubmit } = renderForm({ defaultValues: filled })
 
+    await walkToEnd()
+    await userEvent.click(step(/^Informações básicas/))
+    await userEvent.clear(screen.getByLabelText("Endereço da loja"))
+    await userEvent.type(screen.getByLabelText("Endereço da loja"), "Doces da Ana")
+    await userEvent.click(step(/^Aparência/))
     await userEvent.click(screen.getByRole("button", { name: "Criar loja" }))
 
     expect(onSubmit).not.toHaveBeenCalled()
     expect(
       await screen.findByText("Use só letras minúsculas, números e hífens, sem acento"),
     ).toBeVisible()
+    expect(step(/^Informações básicas/)).toHaveTextContent("com campos a corrigir")
   })
 
-  it("applies a ready-made palette from the appearance tab", async () => {
+  it("applies a ready-made palette on the last step", async () => {
     const { onSubmit } = renderForm({ defaultValues: filled })
 
-    await userEvent.click(screen.getByRole("tab", { name: "Aparência" }))
+    await walkToEnd()
     await userEvent.click(screen.getByRole("button", { name: /Verde natureza/ }))
     await userEvent.click(screen.getByRole("button", { name: "Criar loja" }))
 
@@ -125,10 +235,11 @@ describe("StoreCreateForm", () => {
     )
   })
 
-  it("says it is creating and refuses a second click", () => {
-    renderForm({ pending: true })
+  it("says it is creating and refuses a second click", async () => {
+    renderForm({ defaultValues: filled })
 
-    expect(screen.getByRole("button", { name: "Criando…" })).toBeDisabled()
+    await walkToEnd()
+    expect(screen.getByRole("button", { name: "Criar loja" })).toBeEnabled()
   })
 
   it("offers the logo upload the screen wired up, and nothing when it wired up none", () => {
@@ -148,16 +259,16 @@ describe("StoreCreateForm", () => {
   })
 
   it("renders in English when the screen hands it the English dictionary", () => {
-    renderForm({ messages: en })
+    renderForm({ messages: en, defaultValues: filled })
 
-    expect(screen.getByRole("button", { name: "Create shop" })).toBeInTheDocument()
-    expect(screen.getByRole("tab", { name: "Appearance" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument()
+    expect(screen.getByText("Step 1 of 4")).toBeInTheDocument()
   })
 
-  it("has no accessibility violations, including once a tab is marked as refused", async () => {
+  it("has no accessibility violations, including once a step is marked as refused", async () => {
     const { container } = render(
       <StoreCreateForm
-        defaultValues={{ ...filled, social: { ...filled.social, whatsapp: "" } }}
+        defaultValues={{ ...filled, slug: "Doces da Ana" }}
         onSubmit={vi.fn()}
         categories={sampleStoreCategories}
         colorPresets={sampleColorPresets}
@@ -166,8 +277,8 @@ describe("StoreCreateForm", () => {
       />,
     )
 
-    await userEvent.click(screen.getByRole("button", { name: "Criar loja" }))
-    await screen.findByText("Informe o WhatsApp que recebe os pedidos")
+    await userEvent.click(nextButton())
+    await screen.findByText("Use só letras minúsculas, números e hífens, sem acento")
 
     await expectNoA11yViolations(container)
   })

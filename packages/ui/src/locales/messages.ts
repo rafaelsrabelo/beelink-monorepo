@@ -134,6 +134,12 @@ export interface UiMessages {
       tabAppearance: string
       /** Read only by a screen reader: a coloured dot alone is not a verdict. */
       tabHasError: string
+      next: string
+      back: string
+      /** "Passo 2 de 4", read by a screen reader and shown above the steps. */
+      stepProgress: (current: number, total: number) => string
+      /** Read only by a screen reader, after a step that is already filled in. */
+      stepDone: string
       submit: string
       submitting: string
     }
