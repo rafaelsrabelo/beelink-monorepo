@@ -3,8 +3,8 @@ import type { WebMessages } from "./messages"
 
 export const ptBR: WebMessages = {
   metadata: {
-    title: "Harness",
-    description: "Starter de autenticação do harness-monorepo",
+    title: "bee-link",
+    description: "Sua loja online com pedidos pelo WhatsApp. Monte a vitrine, receba os pedidos, converse com o cliente.",
   },
   auth: {
     signupSuccessTitle: "Confira seu e-mail",

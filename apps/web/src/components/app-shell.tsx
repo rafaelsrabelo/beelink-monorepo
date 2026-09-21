@@ -51,6 +51,11 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
       <AppSidebar
         user={{ name: user.name, email: user.email }}
         messages={ui}
+        // Passed, because the default is the template's own name and nobody was passing anything:
+        // a shopkeeper's panel said "Harness" over their shop. `metadata.title` is the product's
+        // name and already the one in the browser tab, so there is one place it is written.
+        brandName={web.metadata.title}
+        brandHref="/dashboard"
         linkComponent={AppLink}
         activeHref={pathname}
         signingOut={signOut.isPending}

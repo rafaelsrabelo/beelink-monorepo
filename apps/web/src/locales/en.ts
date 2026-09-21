@@ -3,8 +3,8 @@ import type { WebMessages } from "./messages"
 
 export const en: WebMessages = {
   metadata: {
-    title: "Harness",
-    description: "The auth starter of harness-monorepo",
+    title: "bee-link",
+    description: "Your online shop, with orders over WhatsApp. Build the window, take the orders, keep the conversation.",
   },
   auth: {
     signupSuccessTitle: "Check your e-mail",
