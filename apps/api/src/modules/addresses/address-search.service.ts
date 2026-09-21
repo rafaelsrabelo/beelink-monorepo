@@ -22,9 +22,11 @@ interface MapTilerFeature {
   id?: unknown;
   text?: unknown;
   place_name?: unknown;
+  /** The house number, when the query carried one. `properties.ref` is an OSM id and never this. */
+  address?: unknown;
   geometry?: { coordinates?: unknown };
   context?: unknown;
-  properties?: { ref?: unknown; postcode?: unknown };
+  properties?: { postcode?: unknown };
 }
 
 /**
@@ -102,6 +104,12 @@ function textOf(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
+/** A house number arrives as a string, but a number is a number and JSON does not always agree. */
+function numberish(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  return typeof value === 'number' ? String(value) : '';
+}
+
 /**
  * MapTiler names each parent by a prefixed id — `municipality.123`, `region.4`, `postal_code.9`.
  * Several prefixes can mean the same thing depending on how the place is administered, which is
@@ -177,16 +185,35 @@ export function toSuggestion(raw: unknown): AddressSuggestion | null {
   const [longitude, latitude] = coordinates as unknown[];
   if (typeof longitude !== 'number' || typeof latitude !== 'number') return null;
 
-  const houseNumber = textOf(feature.properties?.ref);
-  const street = textOf(feature.text);
+  // `feature.address`, not `properties.ref`. The latter is an OSM identifier — reading it as a
+  // house number produced "Travessa Lavras do Sul, osm:w158084972" in the box, on every result.
+  const houseNumber = numberish(feature.address);
+  // Whitespace only. One of MapTiler's Brazilian sources answers "AVENIDA  PAULISTA" with a double
+  // space; collapsing it is safe, where fixing the case would be rewriting a street name on a
+  // guess — and some of them really are spelled that way.
+  const street = textOf(feature.text).replace(/\s+/g, ' ').trim();
 
   return {
     id: textOf(feature.id) || `${latitude},${longitude}`,
     label: textOf(feature.place_name) || street,
     street: houseNumber ? `${street}, ${houseNumber}` : street,
-    neighborhood: contextText(feature, ['neighbourhood', 'subdistrict', 'suburb', 'district']),
+    // `municipal_district` last on purpose. In São Paulo it is the bairro ("Bela Vista"), and in
+    // Natal it is a zone of the city ("Região Sul") — a wrong bairro. Where a real neighbourhood
+    // exists it is named, and it wins.
+    neighborhood: contextText(feature, [
+      'neighbourhood',
+      'subdistrict',
+      'suburb',
+      'district',
+      'municipal_district',
+    ]),
+    // `place` is a locality inside the municipality — "Conjunto Monte Belo" inside Natal — so it
+    // only answers where there is no municipality to ask.
     city: contextText(feature, ['municipality', 'place', 'city']),
-    state: toUf(contextText(feature, ['region', 'state'])),
+    // `subregion` and never `region`: in Brazil MapTiler puts the UF in the former and the macro
+    // region in the latter, so reading `region` gives "Região Nordeste" for every address in nine
+    // states. It cost nothing only because `toUf` refuses a name it does not know.
+    state: toUf(contextText(feature, ['subregion', 'state'])),
     zipCode: textOf(feature.properties?.postcode).replace(/\D/g, '') || contextText(feature, ['postal_code']).replace(/\D/g, ''),
     latitude,
     longitude,
