@@ -26,3 +26,7 @@ blob-report/
 
 # TypeScript incremental build state
 *.tsbuildinfo
+
+# Snapshots a Playwright MCP session drops where it was run. They are a debugging by-product,
+# never an input to anything here.
+.playwright-mcp/

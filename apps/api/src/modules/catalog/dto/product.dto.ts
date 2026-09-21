@@ -1,0 +1,142 @@
+// Nest
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+// Libs
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+
+// Types
+import type {
+  CreateProductPayload,
+  ProductImagePayload,
+  UpdateProductPayload,
+} from '@harness-monorepo/contracts';
+
+// App
+import {
+  DESCRIPTION_MAX_LENGTH,
+  IMAGE_ALT_MAX_LENGTH,
+  PRICE_CENTS_MAX,
+  PRODUCT_IMAGES_MAX,
+  PRODUCT_NAME_MAX_LENGTH,
+  PRODUCT_SLUG_MAX_LENGTH,
+} from '../catalog.constants.js';
+import { blankToNull, imageUrl, trim } from '../../stores/dto/store-fields.dto.js';
+
+export class ProductImageDto implements ProductImagePayload {
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/blusa.jpg' })
+  @imageUrl
+  url!: string;
+
+  @ApiPropertyOptional({ nullable: true, maxLength: IMAGE_ALT_MAX_LENGTH })
+  @IsOptional()
+  @IsString()
+  @MaxLength(IMAGE_ALT_MAX_LENGTH)
+  @blankToNull
+  alt?: string | null;
+}
+
+export class CreateProductDto implements CreateProductPayload {
+  @ApiProperty({ example: 'Blusa Feminina Tomara Que Caia', minLength: 2, maxLength: PRODUCT_NAME_MAX_LENGTH })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(PRODUCT_NAME_MAX_LENGTH)
+  @trim
+  name!: string;
+
+  @ApiPropertyOptional({
+    example: 'blusa-feminina-tomara-que-caia',
+    maxLength: PRODUCT_SLUG_MAX_LENGTH,
+    description: 'Absent derives it from the name. Normalised either way.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(PRODUCT_SLUG_MAX_LENGTH)
+  @trim
+  slug?: string;
+
+  @ApiPropertyOptional({ nullable: true, maxLength: DESCRIPTION_MAX_LENGTH })
+  @IsOptional()
+  @IsString()
+  @MaxLength(DESCRIPTION_MAX_LENGTH)
+  @blankToNull
+  description?: string | null;
+
+  /**
+   * Whole cents. `@Type(() => Number)` is declared because the global pipe deliberately runs without
+   * `enableImplicitConversion` — see apps/api/AGENTS.md rule 6 — so a JSON number arrives typed but
+   * a query string would not, and the annotation is what makes the two agree.
+   */
+  @ApiProperty({ example: 4990, minimum: 0, maximum: PRICE_CENTS_MAX, description: 'Whole cents.' })
+  @IsInt()
+  @Min(0)
+  @Max(PRICE_CENTS_MAX)
+  @Type(() => Number)
+  priceCents!: number;
+
+  @ApiPropertyOptional({
+    example: 7990,
+    nullable: true,
+    description: 'What it cost before. Must be above priceCents; absent means no discount.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(PRICE_CENTS_MAX)
+  @Type(() => Number)
+  compareAtPriceCents?: number | null;
+
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @IsOptional()
+  @IsUUID()
+  @blankToNull
+  categoryId?: string | null;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
+
+  @ApiPropertyOptional({ type: [ProductImageDto], maxItems: PRODUCT_IMAGES_MAX })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(PRODUCT_IMAGES_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => ProductImageDto)
+  images?: ProductImageDto[];
+}
+
+/**
+ * Every field optional. Sending `images` replaces the gallery whole, in the order sent; omitting it
+ * leaves the photos alone. That is the difference the service's comment spells out.
+ */
+export class UpdateProductDto extends CreateProductDto implements UpdateProductPayload {
+  @ApiPropertyOptional({ minLength: 2, maxLength: PRODUCT_NAME_MAX_LENGTH })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(PRODUCT_NAME_MAX_LENGTH)
+  @trim
+  declare name: string;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: PRICE_CENTS_MAX, description: 'Whole cents.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(PRICE_CENTS_MAX)
+  @Type(() => Number)
+  declare priceCents: number;
+}

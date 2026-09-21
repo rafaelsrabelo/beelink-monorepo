@@ -13,6 +13,19 @@ enum StoreLayoutType {
   BANNER
 }
 
+/// Which words a shop's public URLs are built from — `/lessari/produtos/<slug>` or
+/// `/lessari/products/<slug>`. A database enum and not a text column: every value a shopkeeper
+/// could type would become a reserved word, so a product word of `blusas` would shadow a category
+/// of that name. Adding a value is a migration, on purpose.
+///
+/// Unlike `Store.slug` this one may be changed. That is safe only because the storefront resolver
+/// accepts the words of every vocabulary and answers a canonical path, so the previous word keeps
+/// resolving and redirects permanently instead of 404ing a link already printed on a card.
+enum RouteVocabulary {
+  PT_BR
+  EN
+}
+
 /// What the shop takes at the door. A label carried to the shopkeeper's WhatsApp, not a gateway.
 enum PaymentMethod {
   MONEY
@@ -74,6 +87,10 @@ model Store {
   layoutType             StoreLayoutType @default(DEFAULT)
   showProductsByCategory Boolean         @default(false)
 
+  /// The words this shop's public URLs are built from. Sent to the web as `routeWords`, so no
+  /// component holds the literal "produtos" and changing this changes every link at once.
+  routeVocabulary RouteVocabulary @default(PT_BR)
+
   /// Four columns and not a blob: every one is required for the storefront to render, and the legacy
   /// JSON could be missing a key, which is why three separate call sites repeated the same fallback.
   /// The defaults are the legacy platform theme.
@@ -121,6 +138,9 @@ model Store {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  productCategories ProductCategory[]
+  products          Product[]
 
   @@index([ownerId])
   @@index([categoryId])

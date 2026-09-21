@@ -159,6 +159,29 @@ export class StoresService {
   }
 
   /**
+   * The same ownership rule, for a module that needs the shop's id and nothing else about it.
+   *
+   * It exists so the catalogue does not copy `assertOwnership` — which is exactly how the legacy
+   * ended up with 25 inconsistent versions of this check. It selects two columns rather than
+   * reusing the private method, because a product write has no use for the shop's address, colours
+   * and taxonomy row, and this runs on every one of them.
+   */
+  async ownedStoreId(slug: string, userId: string): Promise<string> {
+    const row = await this.prisma.store.findUnique({
+      where: { slug },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
+
+    if (row.ownerId !== userId) {
+      throw new ForbiddenException(storeError('STORE_FORBIDDEN', `"${slug}" belongs to someone else`));
+    }
+
+    return row.id;
+  }
+
+  /**
    * This method is what replaced the Supabase RLS policy the legacy leaned on — whose update rule
    * was `USING (auth.role() = 'authenticated')`, letting any signed-in person edit any shop — and
    * the 25 route handlers that then copied the check by hand, inconsistently. Every owner-facing

@@ -1,0 +1,116 @@
+/// The shopkeeper's own taxonomy of what they sell, and the second segment of a public URL:
+/// `/lessari/blusas`. Not `StoreCategory`, which is the platform's taxonomy of shops.
+model ProductCategory {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Unique inside the shop and nowhere else: two shops both selling `blusas` is the normal case,
+  /// and a platform-wide unique would make the hundredth shop's onboarding a scavenger hunt.
+  /// Stored already normalised by `src/shared/slug.ts`, the same function the shop's own slug and
+  /// the design system use, so the unique index means what it says without a case-insensitive
+  /// collation. The API refuses a value in RESERVED_PATH_SEGMENTS: a category on `produtos` would
+  /// be unreachable, because the segment is read as a route word before it is looked up here.
+  slug String @db.VarChar(80)
+  name String @db.VarChar(120)
+
+  description String?
+  imageUrl    String?
+
+  /// The order the shopkeeper chose. The storefront shows them in it, because the shopkeeper knows
+  /// what they want to sell first. Ties break on name so the list is never arbitrary.
+  position Int     @default(0)
+  /// Hiding a category keeps its products. It is not a delete, and the products stay reachable at
+  /// their own URLs.
+  isActive Boolean @default(true)
+
+  /// Every slug this category has answered to before, oldest first, bounded at 10 by the service.
+  /// A column and not a `SlugRedirect` table because that table's target would be polymorphic — a
+  /// product or a category — which Prisma cannot constrain, so it would buy a discriminator, a
+  /// second cascade and a join on the cold path in exchange for a `createdAt` nobody reads. Here
+  /// the redirect lookup folds into the same query that does the live one, and it cascades free.
+  slugHistory String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@unique([storeId, slug])
+  /// The storefront's category list, in one index scan.
+  @@index([storeId, isActive, position])
+  @@map("product_categories")
+}
+
+/// One thing a shop sells. Its URL is `/<shop>/<product word>/<slug>` and never nests under a
+/// category: a product in two categories would otherwise have two URLs, and re-categorising one
+/// would break every link already shared.
+model Product {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// SetNull, not Cascade: retiring a category must never delete what was in it.
+  categoryId String?          @db.Uuid
+  category   ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  /// Normalised exactly as a category slug is, by the same function. A product and a category may
+  /// share a slug — they live at different depths, so no URL is ambiguous.
+  slug String @db.VarChar(120)
+  name String @db.VarChar(160)
+
+  description String?
+
+  /// Whole cents, and the `Cents` suffix is here so the ambiguity cannot return by inattention.
+  /// The legacy kept reais, cents and "R$ 25,00" in one column and chose between them with
+  /// `if (price < 1000)`, which is why a product could be sold for a hundredth of its price.
+  priceCents Int
+  /// What the price was before. Null means no discount; the percentage is computed where it is
+  /// rendered rather than stored, so a stored percentage can never disagree with the two numbers
+  /// it was derived from. The API refuses a value at or below `priceCents`.
+  compareAtPriceCents Int?
+
+  position     Int     @default(0)
+  /// Marking a product unavailable hides it from the shop window without losing it, which is what
+  /// a shopkeeper does when something is out of stock rather than discontinued.
+  isAvailable  Boolean @default(true)
+
+  /// See ProductCategory.slugHistory. A product slug is derived from a name the shopkeeper will
+  /// fix within the hour, and these links are shared on WhatsApp, where a 404 is the most visible
+  /// failure this product can produce.
+  slugHistory String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images ProductImage[]
+
+  @@unique([storeId, slug])
+  /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
+  @@index([storeId, isAvailable, position])
+  @@index([categoryId, isAvailable, position])
+  @@map("products")
+}
+
+/// A product's photos, in the order the shopkeeper arranged them. There is no `isPrimary` flag:
+/// the first row is the card's image, which cannot be two rows at once and so needs no partial
+/// unique index to defend it — the legacy used a trigger that rewrote the other rows instead of
+/// refusing the wrong write.
+model ProductImage {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  productId String  @db.Uuid
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// The stored URL. The bytes go to Cloudinary through `modules/uploads`; nothing here holds them.
+  url String
+  /// What a screen reader says. Null falls back to the product's name where it is rendered — never
+  /// to the file name, which is what an empty alt attribute effectively announces.
+  alt String? @db.VarChar(200)
+
+  position Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId, position])
+  @@map("product_images")
+}
