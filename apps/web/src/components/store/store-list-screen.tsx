@@ -22,8 +22,9 @@ export interface StoreListScreenProps {
 }
 
 /**
- * The shops this person owns. No `storefrontHref` is handed to the cards: `/<slug>` is the phase
- * that builds the shop window, and a button that 404s is worse than no button.
+ * The shops this person owns, each with a way into its panel and a way to see it as a customer
+ * does. The storefront link was withheld while `/<slug>` did not exist — a button that 404s is
+ * worse than no button — and that page is now built.
  */
 export function StoreListScreen({ ui, web }: StoreListScreenProps) {
   const stores = useMyStores()
@@ -54,6 +55,7 @@ export function StoreListScreen({ ui, web }: StoreListScreenProps) {
             // content was a card of the shop you had just clicked — a step that showed you a link
             // to where you were already going.
             panelHref={`/admin/${store.slug}/store`}
+            storefrontHref={`/${store.slug}`}
             linkComponent={AppLink}
             messages={ui}
           />

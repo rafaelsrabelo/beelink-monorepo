@@ -103,6 +103,18 @@ export const en: UiMessages = {
     seriesDesktop: "Desktop",
     seriesMobile: "Mobile",
   },
+  storefront: {
+    logoAlt: "Shop logo",
+    order: "Order on WhatsApp",
+    socialLabel: "The shop's networks",
+    networks: {
+      whatsapp: "WhatsApp",
+      instagram: "Instagram",
+      tiktok: "TikTok",
+      youtube: "YouTube",
+      spotify: "Spotify",
+    },
+  },
   store: {
     typeLabels: { ECOMMERCE: "Shop" },
     card: {

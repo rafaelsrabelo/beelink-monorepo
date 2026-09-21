@@ -111,6 +111,23 @@ export interface UiMessages {
     seriesDesktop: string
     seriesMobile: string
   }
+  /**
+   * The shop window. Its copy is the design system's because the window is a block like any other
+   * — what is the shopkeeper's is the four colours it wears, not the words.
+   */
+  storefront: {
+    logoAlt: string
+    order: string
+    socialLabel: string
+    /** An icon with no words announces itself as "link" and nothing else. */
+    networks: {
+      whatsapp: string
+      instagram: string
+      tiktok: string
+      youtube: string
+      spotify: string
+    }
+  }
   store: {
     /** Keyed by the union, so adding a selling mode is a compile error in every dictionary. */
     typeLabels: Record<StoreType, string>

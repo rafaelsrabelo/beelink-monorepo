@@ -103,6 +103,18 @@ export const ptBR: UiMessages = {
     seriesDesktop: "Computador",
     seriesMobile: "Celular",
   },
+  storefront: {
+    logoAlt: "Logo da loja",
+    order: "Fazer pedido no WhatsApp",
+    socialLabel: "Redes da loja",
+    networks: {
+      whatsapp: "WhatsApp",
+      instagram: "Instagram",
+      tiktok: "TikTok",
+      youtube: "YouTube",
+      spotify: "Spotify",
+    },
+  },
   store: {
     typeLabels: { ECOMMERCE: "Loja" },
     card: {
