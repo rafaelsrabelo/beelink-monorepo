@@ -1,8 +1,8 @@
 // Libs
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 // App
-import { fetchStaticMap, toSuggestion, toUf } from './address-search.service.js';
+import { toSuggestion, toUf } from './address-search.service.js';
 
 /**
  * A feature copied from what MapTiler actually answers for a Brazilian address — not from the
@@ -168,48 +168,3 @@ describe('toUf', () => {
   });
 });
 
-
-describe('fetchStaticMap', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('answers the bytes the provider drew', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/png' } })),
-    );
-
-    expect(await fetchStaticMap({ latitude: -3.7, longitude: -38.5 }, 'k')).toMatchObject({
-      contentType: 'image/png',
-    });
-  });
-
-  /**
-   * A refusal from MapTiler is a PNG that says no, with the reason in a `statustext` header.
-   * Reading only the content type makes a key that is fine for geocoding and not for rendered
-   * maps look like a network hiccup — which is what it looked like for an afternoon.
-   */
-  it('carries the reason out of the refusal, rather than a picture that says no', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(new Uint8Array([1]), {
-            status: 403,
-            headers: { 'content-type': 'image/png', statustext: '403 Access to rendered maps not allowed' },
-          }),
-      ),
-    );
-
-    expect(await fetchStaticMap({ latitude: -3.7, longitude: -38.5 }, 'k')).toEqual({
-      refused: '403 Access to rendered maps not allowed',
-    });
-  });
-
-  it('is null when the provider never answered', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('ECONNRESET'); }));
-
-    expect(await fetchStaticMap({ latitude: -3.7, longitude: -38.5 }, 'k')).toBeNull();
-  });
-});

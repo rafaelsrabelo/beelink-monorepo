@@ -67,7 +67,8 @@ export interface StoreSettingsFormProps {
   addressSearchPending?: boolean
   /** Where a picked suggestion says the shop is; the screen turns it into `mapSrc`. */
   onPointChange?: (point: StorePoint) => void
-  mapSrc?: string
+  point?: StorePoint | null
+  mapTileUrl?: string
   /**
    * Hands one image to whoever keeps bytes and answers with its URL. One callback serves the logo
    * and the banner alike, because one upload endpoint serves both — where the bytes land is the
@@ -98,7 +99,8 @@ export function StoreSettingsForm({
   suggestions,
   addressSearchPending,
   onPointChange,
-  mapSrc,
+  point,
+  mapTileUrl,
   onImageUpload,
   imageUploadPending,
   pending = false,
@@ -189,7 +191,8 @@ export function StoreSettingsForm({
                     suggestions={suggestions}
                     searchPending={addressSearchPending}
                     onPointChange={onPointChange}
-                    mapSrc={mapSrc}
+                    point={point}
+                    mapTileUrl={mapTileUrl}
                     disabled={pending}
                     messages={messages}
                   />

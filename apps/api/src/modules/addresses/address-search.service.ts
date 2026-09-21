@@ -43,16 +43,6 @@ interface MapTilerFeature {
 const MAPTILER_GEOCODING = 'https://api.maptiler.com/geocoding';
 
 /**
- * A picture of where the shop is, drawn by MapTiler and passed through. It is fetched per request
- * and never written down: their terms allow a stored geocoding result but not a stored tile, and
- * "map content from a server-side cache" is the phrase they use for what this must not become.
- */
-const MAPTILER_STATIC = 'https://api.maptiler.com/maps';
-const MAP_STYLE = 'streets-v2';
-const MAP_SIZE = { width: 640, height: 260 };
-const MAP_ZOOM = 16;
-
-/**
  * Sent on every MapTiler call so the key can be restricted to it.
  *
  * A key used from a server cannot be restricted by origin — a server sends no `Origin` and no
@@ -81,26 +71,6 @@ export class AddressSearchService {
 
   configured(): boolean {
     return this.key() !== null;
-  }
-
-  /** `null` when uploads of the map are not configured, or when the provider would not draw it. */
-  async map(point: { latitude: number; longitude: number }): Promise<{ bytes: Buffer; contentType: string } | null> {
-    const key = this.key();
-    if (!key) return null;
-
-    const drawn = await fetchStaticMap(point, key);
-
-    if (!drawn) {
-      this.logger.warn('Static map: the provider did not answer');
-      return null;
-    }
-
-    if ('refused' in drawn) {
-      this.logger.warn(`Static map refused: ${drawn.refused}`);
-      return null;
-    }
-
-    return drawn;
   }
 
   /**
@@ -140,47 +110,6 @@ export class AddressSearchService {
       this.logger.warn({ err: error }, 'Address search did not answer');
       return [];
     }
-  }
-}
-
-/**
- * Bytes, not a URL. The key is in the path of the address this builds, so handing the address to a
- * browser would hand it the key — and a key in a page is a key in everyone's browser.
- *
- * `null` for anything it cannot draw, which the controller turns into a 404 rather than a broken
- * image: a form that shows a torn picture beside an address is worse than one that shows none.
- */
-export async function fetchStaticMap(
-  point: { latitude: number; longitude: number },
-  key: string,
-): Promise<{ bytes: Buffer; contentType: string } | { refused: string } | null> {
-  const { longitude, latitude } = point;
-  const centre = `${longitude},${latitude},${MAP_ZOOM}`;
-  const size = `${MAP_SIZE.width}x${MAP_SIZE.height}@2x`;
-  const url =
-    `${MAPTILER_STATIC}/${MAP_STYLE}/static/${centre}/${size}.png` +
-    `?key=${encodeURIComponent(key)}&markers=${encodeURIComponent(`${longitude},${latitude}`)}`;
-
-  try {
-    const response = await fetch(url, {
-      headers: { 'user-agent': USER_AGENT },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-
-    // MapTiler refuses with a picture — a PNG saying "no", 200-shaped to anything that only looks
-    // at the content type — and puts the reason in a `statustext` header. Without reading it, a
-    // key that is fine for geocoding and not for rendered maps looks exactly like a network
-    // hiccup, which is an afternoon of guessing.
-    if (!response.ok) {
-      return { refused: response.headers.get('statustext') ?? `HTTP ${response.status}` };
-    }
-
-    return {
-      bytes: Buffer.from(await response.arrayBuffer()),
-      contentType: response.headers.get('content-type') ?? 'image/png',
-    };
-  } catch {
-    return null;
   }
 }
 

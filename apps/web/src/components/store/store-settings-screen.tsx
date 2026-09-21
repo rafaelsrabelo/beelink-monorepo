@@ -16,8 +16,8 @@ import { StoreErrorAlert } from "@/components/store/store-error-alert"
 import { firstStoreErrorCopy, storeErrorCopy } from "@/components/store/store-error-copy"
 import { toSettingsValues, toUpdatePayload } from "@/components/store/store-payloads"
 import { useAddressSearch, DEBOUNCE_MS } from "@/services/addresses/address-hooks"
-import { mapSrcFor, pointOf } from "@/services/addresses/map-src"
-import type { Point } from "@/services/addresses/map-src"
+import { mapTileUrl, pointOf } from "@/services/addresses/map-tiles"
+import type { Point } from "@/services/addresses/map-tiles"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useZipCodeLookup } from "@/services/cep/cep-hooks"
 import { useStore, useStoreCategories, useStoreColorPresets, useUpdateStore } from "@/services/stores/store-hooks"
@@ -76,7 +76,8 @@ export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps)
         suggestions={addresses.suggestions}
         addressSearchPending={addresses.pending}
         onPointChange={setPicked}
-        mapSrc={mapSrcFor(picked ?? pointOf(current))}
+        point={picked ?? pointOf(current)}
+        mapTileUrl={mapTileUrl()}
         zipCodeLookupPending={zipCode.pending}
         onImageUpload={image.upload}
         imageUploadPending={image.pending}

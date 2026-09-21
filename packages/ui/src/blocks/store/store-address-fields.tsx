@@ -25,6 +25,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { StoreAddressValues } from "./store-schemas"
+import { StoreMap } from "./store-map"
 import type { FieldIssues, StoreAddressSuggestion, StorePoint, StoreZipCodeAddress } from "./store-types"
 
 export interface StoreAddressFieldsProps {
@@ -56,12 +57,26 @@ export interface StoreAddressFieldsProps {
    * neither.
    */
   onPointChange?: (point: StorePoint) => void
-  /** A picture of that point, addressed by the screen. Absent means no map, which is a fine state. */
-  mapSrc?: string
-  mapAlt?: string
+  /** Where the shop is, as the screen knows it — a picked suggestion, or a shop's stored point. */
+  point?: StorePoint | null
+  /**
+   * The tile template for the map, key and all. Absent means no map, which is a fine state: a
+   * deployment without a tile key still fills every field, it just does not draw them.
+   */
+  mapTileUrl?: string
+  mapAttribution?: string
   disabled?: boolean
   messages?: UiMessages
 }
+
+/**
+ * What the map looks at before an address is picked. The whole country, because a shop can be
+ * anywhere in it and a guess at a city would be wrong more often than it is right.
+ */
+const BRAZIL: StorePoint = { latitude: -14.235, longitude: -51.9253 }
+
+/** MapTiler's licence asks for this visibly, and the free plan is the one that asks hardest. */
+const MAP_ATTRIBUTION = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
 /** Where the shop is. A visitor never sees it; the delivery radius is measured from it. */
 export function StoreAddressFields({
@@ -74,8 +89,9 @@ export function StoreAddressFields({
   suggestions = [],
   searchPending = false,
   onPointChange,
-  mapSrc,
-  mapAlt,
+  point,
+  mapTileUrl,
+  mapAttribution = MAP_ATTRIBUTION,
   disabled = false,
   messages = defaultMessages,
 }: StoreAddressFieldsProps) {
@@ -247,16 +263,22 @@ export function StoreAddressFields({
         <FieldError errors={[errors?.zipCode]} />
       </Field>
 
-      {mapSrc ? (
-        <figure className="overflow-hidden rounded-lg border border-border">
-          {/*
-            A picture and not a map you can drag. What it is for is confirming that the address
-            above landed where the shopkeeper meant — and an interactive canvas invites moving the
-            pin, which would be a second source of truth for a position the address already
-            decides.
-          */}
-          <img src={mapSrc} alt={mapAlt ?? text.mapAlt} className="h-40 w-full object-cover" />
-        </figure>
+      {/*
+        Drawn from the moment the tab opens, not once an address exists. A map that appears
+        halfway through filling a form reads as something having gone right or wrong; one that is
+        always there is just where the shop is, and the pin arrives when the address does.
+
+        There is no pin to drag. The position follows the address, and a pin someone can move
+        would be a second answer to a question the address already settles.
+      */}
+      {mapTileUrl ? (
+        <StoreMap
+          tileUrl={mapTileUrl}
+          attribution={mapAttribution}
+          point={point}
+          fallbackCenter={BRAZIL}
+          label={text.mapAlt}
+        />
       ) : null}
 
       <div className="grid gap-4 @md/main:grid-cols-3">

@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/*
+ * Leaflet's own stylesheet, imported here rather than from the component that uses it. A CSS
+ * side-effect import inside a .tsx needs a module declaration TypeScript does not ship, and this
+ * package already has one stylesheet that every app consuming it loads — which is the honest place
+ * for a third party's CSS anyway.
+ */
+@import "leaflet/dist/leaflet.css";
+
 /* Tailwind scans the app that imports this file; this line makes it read the design system too. */
 @source "../**/*.{ts,tsx}";
 

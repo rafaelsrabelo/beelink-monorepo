@@ -67,7 +67,8 @@ export interface StoreCreateFormProps {
   addressSearchPending?: boolean
   /** Where a picked suggestion says the shop is; the screen turns it into `mapSrc`. */
   onPointChange?: (point: StorePoint) => void
-  mapSrc?: string
+  point?: StorePoint | null
+  mapTileUrl?: string
   /** One callback for every image, as in the settings form — one upload endpoint serves both. */
   onImageUpload?: (file: File) => Promise<string>
   imageUploadPending?: boolean
@@ -96,7 +97,8 @@ export function StoreCreateForm({
   suggestions,
   addressSearchPending,
   onPointChange,
-  mapSrc,
+  point,
+  mapTileUrl,
   onImageUpload,
   imageUploadPending,
   pending = false,
@@ -221,7 +223,8 @@ export function StoreCreateForm({
                     suggestions={suggestions}
                     searchPending={addressSearchPending}
                     onPointChange={onPointChange}
-                    mapSrc={mapSrc}
+                    point={point}
+                    mapTileUrl={mapTileUrl}
                     disabled={pending}
                     messages={messages}
                   />
