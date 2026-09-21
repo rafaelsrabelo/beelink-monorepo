@@ -14,6 +14,7 @@ import type {
   StoreLayoutType,
   StoreSocialNetworks,
   StoreType,
+  StorefrontRouteWords,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -64,12 +65,30 @@ export class StoreCategoryResponse implements StoreCategory {
 }
 
 /**
+ * The words this shop's own URLs are built from, resolved from its `RouteVocabulary`. A class and
+ * not an inline object literal because Swagger would otherwise document it as `{}`, and the web
+ * builds every storefront link out of these three strings.
+ */
+export class StorefrontRouteWordsResponse implements StorefrontRouteWords {
+  @ApiProperty({ example: 'produtos' }) products!: string;
+  @ApiProperty({ example: 'categorias' }) categories!: string;
+  @ApiProperty({ example: 'busca' }) search!: string;
+}
+
+/**
  * What `/stores/:slug/public` answers: everything the storefront renders and nothing more. Adding a
  * field here adds it to every shop page in Google's index, so the absences are deliberate.
  */
 export class PublicStoreResponse implements PublicStore {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ example: 'padaria-do-bairro' }) slug!: string;
+
+  @ApiProperty({
+    type: StorefrontRouteWordsResponse,
+    description: "Resolved from the shop's RouteVocabulary; every storefront link is built from it.",
+  })
+  routeWords!: StorefrontRouteWordsResponse;
+
   @ApiProperty({ example: 'Padaria do Bairro' }) name!: string;
   @ApiProperty({ nullable: true }) description!: string | null;
   @ApiProperty({ enum: STORE_TYPES }) type!: StoreType;

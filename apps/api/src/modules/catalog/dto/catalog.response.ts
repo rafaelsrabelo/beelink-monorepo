@@ -9,7 +9,11 @@ import type {
   PublicProductCard,
   PublicProductCategory,
   PublicProductImage,
+  StorefrontCatalog,
 } from '@harness-monorepo/contracts';
+
+// App
+import { PRODUCTS_PAGE_SIZE } from '../catalog.constants.js';
 
 /**
  * The shapes out, for Swagger. Each `implements` its contract type, so a field added to the wire
@@ -72,10 +76,25 @@ export class ProductResponse extends PublicProductResponse implements Product {
  * Everything a shop window needs to draw itself, in one answer. Two round trips for a page that
  * cannot render without both would be two chances for one of them to be stale against the other.
  */
-export class StorefrontCatalogResponse {
-  @ApiProperty({ type: [PublicProductCategoryResponse] })
+export class StorefrontCatalogResponse implements StorefrontCatalog {
+  @ApiProperty({
+    type: [PublicProductCategoryResponse],
+    description: 'Every category the shop has, not the ones this filter left.',
+  })
   categories!: PublicProductCategory[];
 
-  @ApiProperty({ type: [PublicProductCardResponse] })
+  @ApiProperty({ type: [PublicProductCardResponse], description: 'One page of the match.' })
   products!: PublicProductCard[];
+
+  @ApiProperty({
+    example: 137,
+    description: 'How many products the filter matched altogether, never how many this page carries.',
+  })
+  total!: number;
+
+  @ApiProperty({ example: 1, minimum: 1, description: '1-based, and the page actually served.' })
+  page!: number;
+
+  @ApiProperty({ example: PRODUCTS_PAGE_SIZE, description: 'The page size actually served.' })
+  pageSize!: number;
 }

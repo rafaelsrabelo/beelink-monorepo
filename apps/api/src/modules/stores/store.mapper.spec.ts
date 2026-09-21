@@ -26,6 +26,7 @@ const row = {
   },
   layoutType: 'BANNER',
   showProductsByCategory: true,
+  routeVocabulary: 'PT_BR',
   colorBackground: '#F0F9FF',
   colorPrimary: '#3B7AF7',
   colorText: '#1A202C',
@@ -77,6 +78,10 @@ describe('toStore', () => {
     expect(toStore(row).createdAt).toBe('2026-09-10T12:00:00.000Z');
   });
 
+  it('carries the words to the panel as well, which renders the same links', () => {
+    expect(toStore(row).routeWords).toMatchObject({ products: 'produtos' });
+  });
+
   it('carries the taxonomy row without its timestamps', () => {
     expect(toStore(row).category).toEqual({
       id: '0199a0f1-0000-7000-8000-0000000000c1',
@@ -90,6 +95,26 @@ describe('toStore', () => {
 });
 
 describe('toPublicStore', () => {
+  // The words and not the enum: the web builds every storefront link from these, so a shop whose
+  // vocabulary changes moves every link at once and no component holds "produtos" of its own.
+  it('sends the words the shop addresses itself with, for the vocabulary it is on', () => {
+    expect(toPublicStore(row).routeWords).toEqual({
+      products: 'produtos',
+      categories: 'categorias',
+      search: 'busca',
+    });
+  });
+
+  it('follows the vocabulary rather than a default, so EN answers the English words', () => {
+    const store = toPublicStore({ ...row, routeVocabulary: 'EN' } as unknown as StoreRow);
+
+    expect(store.routeWords).toEqual({
+      products: 'products',
+      categories: 'categories',
+      search: 'search',
+    });
+  });
+
   it('keeps the owner, the address, the coordinates and the timestamps off the storefront', () => {
     const json = JSON.stringify(toPublicStore(row));
 

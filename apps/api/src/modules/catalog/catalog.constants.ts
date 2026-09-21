@@ -7,8 +7,8 @@ import type { RouteVocabulary, StorefrontRouteWords } from '@harness-monorepo/co
  * literal "produtos", and changing a shop's vocabulary changes every link it renders at once.
  */
 export const ROUTE_WORDS = {
-  PT_BR: { products: 'produtos' },
-  EN: { products: 'products' },
+  PT_BR: { products: 'produtos', categories: 'categorias', search: 'busca' },
+  EN: { products: 'products', categories: 'categories', search: 'search' },
 } as const satisfies Record<RouteVocabulary, StorefrontRouteWords>;
 
 export const ROUTE_VOCABULARIES = ['PT_BR', 'EN'] as const satisfies readonly RouteVocabulary[];
@@ -31,13 +31,16 @@ export const ROUTE_VOCABULARIES = ['PT_BR', 'EN'] as const satisfies readonly Ro
  * somewhere already has a category called `contato`. The legacy checked none of this.
  */
 export const RESERVED_PATH_SEGMENTS: readonly string[] = [
-  // Every vocabulary's words, spelled out rather than derived: a reader has to be able to see the
-  // whole list, and a derived list would silently shrink if a vocabulary were ever removed.
+  // Every value of ROUTE_WORDS, spelled out rather than derived: a reader has to be able to see the
+  // whole list, and a derived list would silently shrink if a vocabulary were ever removed. A word
+  // added to ROUTE_WORDS and not to this list is a category a shop can take today and lose tomorrow.
   'produtos',
   'products',
-  // Reserved for the storefront's own routes, in both languages.
+  'categorias',
+  'categories',
   'busca',
   'search',
+  // Reserved for the storefront's own routes, in both languages.
   'carrinho',
   'cart',
   'checkout',
@@ -79,6 +82,13 @@ export const SLUG_HISTORY_LIMIT = 10;
 
 /** A product grid on the storefront, and the page size the panel's list asks for. */
 export const PRODUCTS_PAGE_SIZE = 24;
+
+/**
+ * The most one request may be served, however large a page it asks for. The page size reaches this
+ * API as a number in a public URL, so without a ceiling one address could ask a shop of ten
+ * thousand products for all of them — and be answered, as often as it asked.
+ */
+export const PRODUCTS_PAGE_SIZE_MAX = 96;
 
 /**
  * The ceiling on one product's photos. The panel uploads them one at a time through

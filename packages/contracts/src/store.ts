@@ -1,3 +1,5 @@
+import type { StorefrontRouteWords } from "./catalog.js";
+
 /**
  * How a shop sells — not what it sells. The storefront's wording follows it, and from phase 2 so
  * does the catalogue. A shop's vertical (supplements, fashion, groceries) is `StoreCategory`, a
@@ -140,6 +142,14 @@ export interface StoreColorPreset {
 export interface PublicStore {
   id: string;
   slug: string;
+  /**
+   * The words this shop's own URLs are built from. It travels in the public shape because it is
+   * what lets the storefront build every link it renders — `/<slug>/<routeWords.products>/<slug>`
+   * — without a single component holding the literal `"produtos"`. That is the whole point of
+   * `RouteVocabulary`: one column decides every address at once, where literals scattered through
+   * components would move only where somebody remembered to move them.
+   */
+  routeWords: StorefrontRouteWords;
   name: string;
   /**
    * Plain text, at most **2000 characters** — the single stated bound. The API enforces it and

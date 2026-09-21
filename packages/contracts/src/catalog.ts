@@ -18,6 +18,13 @@ export type RouteVocabulary = "PT_BR" | "EN";
 export interface StorefrontRouteWords {
   /** The segment that introduces a product: `/<shop>/<products>/<product slug>`. */
   products: string;
+  /**
+   * The index of every category. A single category has no word in front of it — `/<shop>/<blusas>`
+   * — which is what makes this one a reserved segment rather than a prefix.
+   */
+  categories: string;
+  /** Where the shop's search box posts, its term in `?q=`: `/<shop>/<search>?q=croche`. */
+  search: string;
 }
 
 /**
@@ -76,6 +83,33 @@ export interface PublicProduct extends PublicProductCard {
   description: string | null;
   images: PublicProductImage[];
   category: PublicProductCategory | null;
+}
+
+/**
+ * One answer for one shop-window page: the navigation and a page of what the filter matched. Two
+ * round trips for a page that renders neither without the other would be two chances for one of
+ * them to be stale against the other.
+ *
+ * `categories` is every category the shop has and never the ones the current filter left standing:
+ * navigation that empties as it is used is navigation a visitor cannot get back out of.
+ */
+export interface StorefrontCatalog {
+  categories: PublicProductCategory[];
+  /** One page of the match, in the shopkeeper's order — not the whole catalogue. */
+  products: PublicProductCard[];
+  /**
+   * How many products the filter matched altogether, which is what the pager divides and what the
+   * results line reads. It is never `products.length`: a last page of six of four hundred would
+   * otherwise report four hundred as six and offer no page after it.
+   */
+  total: number;
+  /** 1-based, as the URL spells it — there is no page zero to link to. */
+  page: number;
+  /**
+   * How many one page holds. The answer states it rather than the caller assuming it, because a
+   * request above the ceiling is served at the ceiling instead of refused.
+   */
+  pageSize: number;
 }
 
 /* ── what the panel reads and writes ─────────────────────────────────────── */

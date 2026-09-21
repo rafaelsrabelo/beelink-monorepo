@@ -10,6 +10,7 @@ import type { ReorderDto } from './dto/reorder.dto.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
+import { PRODUCTS_PAGE_SIZE } from './catalog.constants.js';
 import { productInclude, toProduct, toPublicProduct, toPublicProductCard } from './catalog.mapper.js';
 
 function isUniqueViolation(error: unknown): boolean {
@@ -47,37 +48,54 @@ export class ProductsService {
   }
 
   /**
-   * The storefront's list: what a shop published, in the order the shopkeeper arranged it.
+   * The storefront's list: one page of what a shop published, in the order the shopkeeper arranged it.
    *
    * Unavailable products are absent rather than greyed out — a window that shows what it will not
    * sell teaches a visitor to distrust the rest of it. The filters are here and not in the browser
    * because a shop with three hundred products would otherwise ship all three hundred to render
    * six, and because a search the server did is a search a crawler can follow.
+   *
+   * `total` counts the filter and not the page, because that is what the pager divides. The count
+   * runs over the same `where` inside one transaction: read separately, the two could fall either
+   * side of a write and disagree, and a pager that disagrees with its pages offers a last page that
+   * is empty or hides one that is not.
    */
-  async listPublic(storeId: string, filters: { category?: string; search?: string } = {}): Promise<PublicProductCard[]> {
+  async listPublic(
+    storeId: string,
+    filters: { category?: string; search?: string; page?: number; pageSize?: number } = {},
+  ): Promise<{ products: PublicProductCard[]; total: number }> {
     const search = filters.search?.trim();
+    const pageSize = filters.pageSize ?? PRODUCTS_PAGE_SIZE;
+    const page = filters.page ?? 1;
 
-    const rows = await this.prisma.product.findMany({
-      where: {
-        storeId,
-        isAvailable: true,
-        ...(filters.category ? { category: { slug: filters.category, isActive: true } } : {}),
-        // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
-        // and someone searching "crochê" means to find it.
-        ...(search
-          ? {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' as const } },
-                { description: { contains: search, mode: 'insensitive' as const } },
-              ],
-            }
-          : {}),
-      },
-      include: productInclude,
-      orderBy: [{ position: 'asc' }, { name: 'asc' }],
-    });
+    const where = {
+      storeId,
+      isAvailable: true,
+      ...(filters.category ? { category: { slug: filters.category, isActive: true } } : {}),
+      // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
+      // and someone searching "crochê" means to find it.
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { description: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
 
-    return rows.map(toPublicProductCard);
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        include: productInclude,
+        orderBy: [{ position: 'asc' }, { name: 'asc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return { products: rows.map(toPublicProductCard), total };
   }
 
   /**

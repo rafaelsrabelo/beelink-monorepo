@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 
 // App
 import { CatalogSlugService } from './catalog-slug.service.js';
+import { ROUTE_WORDS } from './catalog.constants.js';
 
 const slugs = new CatalogSlugService();
 
@@ -22,6 +23,23 @@ describe('CatalogSlugService.resolve', () => {
     // switching its vocabulary later would orphan the category.
     expect(() => slugs.resolve('produtos', 'x')).toThrow(BadRequestException);
     expect(() => slugs.resolve('products', 'x')).toThrow(BadRequestException);
+  });
+
+  it("refuses the index of categories, which a category of that name would hide", () => {
+    // `/<shop>/categorias` is the index; `/<shop>/blusas` is one category. A shop allowed to slug a
+    // category `categorias` owns a page the resolver reads as the index and never reaches.
+    expect(() => slugs.resolve('categorias', 'x')).toThrow(BadRequestException);
+    expect(() => slugs.resolve('categories', 'x')).toThrow(BadRequestException);
+  });
+
+  it('refuses every word of every vocabulary, so adding one cannot orphan a category', () => {
+    // The invariant the reserved list exists for: a word added to ROUTE_WORDS and not reserved is a
+    // slug a shop can take today and lose the day that word starts resolving.
+    for (const words of Object.values(ROUTE_WORDS)) {
+      for (const word of Object.values(words)) {
+        expect(() => slugs.resolve(word, 'x')).toThrow(BadRequestException);
+      }
+    }
   });
 
   it('refuses a segment the storefront will need later', () => {

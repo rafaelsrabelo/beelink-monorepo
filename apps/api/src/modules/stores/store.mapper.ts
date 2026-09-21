@@ -7,6 +7,7 @@ import type {
 import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
 
 // App
+import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 
 /** Every read that becomes a `Store` asks for the taxonomy row, so the mapper can demand it. */
@@ -35,6 +36,9 @@ export function toPublicStore(row: StoreModel): PublicStore {
   return {
     id: row.id,
     slug: row.slug,
+    // The words, never the enum: the web builds every storefront link from these, so a shop that
+    // switches vocabulary moves all of them at once and no component holds "produtos" itself.
+    routeWords: ROUTE_WORDS[row.routeVocabulary],
     name: row.name,
     description: row.description,
     type: row.type,
