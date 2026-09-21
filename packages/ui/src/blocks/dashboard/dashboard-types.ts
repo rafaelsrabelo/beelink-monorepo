@@ -21,11 +21,6 @@ export interface DashboardNavItem {
    * `aria-current` a screen reader depends on silently stops being written.
    */
   match?: "exact" | "prefix"
-  /**
-   * What sits under it. One level only, always visible, never collapsible: a menu that opens is a
-   * menu with state to remember, and one that defaults to open is the thing this replaced.
-   */
-  items?: DashboardNavItem[]
 }
 
 export interface DashboardCard {

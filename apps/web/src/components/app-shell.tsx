@@ -22,16 +22,6 @@ import type { Locale, WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { useSignOut } from "@/services/auth/auth-hooks"
-import { useStore } from "@/services/stores/store-hooks"
-
-/**
- * The shop whose panel is open, read from the address rather than passed down: the shell is
- * rendered by a layout that is shared by /dashboard and every /admin/<slug> page, and a layout
- * that awaited the params would block the navigation the Suspense boundary exists to cover.
- */
-function storeSlugOf(pathname: string): string | null {
-  return /^\/admin\/([^/]+)/.exec(pathname)?.[1] ?? null
-}
 
 export interface AppShellProps {
   user: User
@@ -45,14 +35,6 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
   const router = useRouter()
   const pathname = usePathname()
   const signOut = useSignOut()
-  const slug = storeSlugOf(pathname)
-  /**
-   * The shop's own name for the menu. The slug is in the address at first paint and the detail
-   * query is already warm — every page inside a shop fetches it — so the name arrives without a
-   * request of its own, and the slug stands in until it does. Never a skeleton where a name goes.
-   */
-  const store = useStore(slug ?? "")
-  const storeName = store.data?.name ?? slug
 
   return (
     <SidebarProvider>
@@ -74,25 +56,12 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
             },
           })
         }
-        // Two items, always, and a shop's pages nested inside the one they belong to. They used to
-        // be appended to this list, which put an account item and a shop item at the same indent
-        // with nothing naming which shop the shop ones were for.
-        //
-        // Only what exists: the catalogue, the orders and the delivery settings arrive with the
-        // phases that build them, and an item pointing at a page that is not there is a menu that
-        // lies.
+        // Two items, and only ever two. A shop's own pages do not belong here: the list of
+        // shops is what /admin is for, and a menu that grows a branch when you open a shop is a
+        // menu that changes shape under you.
         navMain={[
           { title: web.stores.nav.dashboard, href: "/dashboard" },
-          {
-            title: web.stores.nav.list,
-            href: "/admin",
-            items: slug
-              ? [
-                  { title: storeName ?? slug, href: `/admin/${slug}` },
-                  { title: web.stores.nav.settings, href: `/admin/${slug}/store` },
-                ]
-              : undefined,
-          },
+          { title: web.stores.nav.list, href: "/admin", match: "prefix" },
         ]}
       />
       <SidebarInset>

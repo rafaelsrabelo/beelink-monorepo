@@ -64,60 +64,11 @@ describe("NavMain", () => {
   })
 })
 
-describe("NavMain, nested", () => {
-  const nested = [
-    { title: "Dashboard", href: "/dashboard" },
-    {
-      title: "Minhas lojas",
-      href: "/admin",
-      items: [
-        { title: "Padaria da Ana", href: "/admin/padaria-da-ana" },
-        { title: "Configurações", href: "/admin/padaria-da-ana/store" },
-      ],
-    },
-  ]
-
+describe("NavMain, matching the current page", () => {
   /**
-   * The defect this replaced: the shell appended a shop's pages to the top-level list, so an
-   * account item and a shop item sat at the same indent with nothing naming which shop the shop
-   * ones belonged to. Nesting is what says "these are inside that".
+   * `href === activeHref` lights nothing the day a list gains a detail page, and the
+   * `aria-current` a screen reader depends on silently stops being written.
    */
-  it("puts a shop's pages inside the item they belong to", () => {
-    renderNav({ items: nested })
-
-    const parent = screen.getByRole("link", { name: "Minhas lojas" })
-    const child = screen.getByRole("link", { name: "Configurações" })
-
-    expect(parent.closest("li")).toContainElement(child)
-  })
-
-  it("shows the children without anything to open first", () => {
-    renderNav({ items: nested })
-
-    expect(screen.getByRole("link", { name: "Padaria da Ana" })).toBeVisible()
-    // Nothing collapses: a menu that opens is a menu with state to remember.
-    expect(screen.queryByRole("button", { name: /Minhas lojas/ })).not.toBeInTheDocument()
-  })
-
-  it("marks the child that is the current page, and not its parent", () => {
-    renderNav({ items: nested, activeHref: "/admin/padaria-da-ana/store" })
-
-    expect(screen.getByRole("link", { name: "Configurações" })).toHaveAttribute("aria-current", "page")
-    expect(screen.getByRole("link", { name: "Minhas lojas" })).not.toHaveAttribute("aria-current")
-  })
-
-  /**
-   * `/admin/<slug>` is a prefix of every page inside that shop, so a blanket prefix rule would
-   * mark the overview current on the settings page too. Exact is the default for that reason.
-   */
-  it("keeps an exact item from claiming the pages beneath it", () => {
-    renderNav({ items: nested, activeHref: "/admin/padaria-da-ana/store" })
-
-    expect(screen.getByRole("link", { name: "Padaria da Ana" })).not.toHaveAttribute("aria-current")
-  })
-
-  // An item whose page has children of its own — a product list that opens a product — asks for
-  // prefix, or an exact rule lights nothing and the aria-current silently stops being written.
   it("lets an item claim its own detail pages when it asks to", () => {
     renderNav({
       items: [{ title: "Produtos", href: "/admin/ana/produtos", match: "prefix" }],
@@ -127,6 +78,7 @@ describe("NavMain, nested", () => {
     expect(screen.getByRole("link", { name: "Produtos" })).toHaveAttribute("aria-current", "page")
   })
 
+  // By segment, not by string: a sibling whose address merely starts the same way is not this page.
   it("does not mistake a sibling whose address merely starts the same way", () => {
     renderNav({
       items: [{ title: "Produtos", href: "/admin/ana/produtos", match: "prefix" }],
@@ -134,5 +86,15 @@ describe("NavMain, nested", () => {
     })
 
     expect(screen.getByRole("link", { name: "Produtos" })).not.toHaveAttribute("aria-current")
+  })
+
+  // Exact is the default because /admin/<slug> is a prefix of every page inside that shop.
+  it("keeps an exact item from claiming the pages beneath it", () => {
+    renderNav({
+      items: [{ title: "Visão geral", href: "/admin/ana" }],
+      activeHref: "/admin/ana/store",
+    })
+
+    expect(screen.getByRole("link", { name: "Visão geral" })).not.toHaveAttribute("aria-current")
   })
 })

@@ -7,9 +7,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@harness-monorepo/ui/components/sidebar"
 
 // Block
@@ -33,16 +30,12 @@ function isCurrent(item: DashboardNavItem, activeHref?: string): boolean {
 }
 
 /**
- * The panel's menu, one level deep.
+ * The panel's menu: one level, and one level is the design.
  *
- * Children are always visible. They were not before — the shell appended a shop's pages to the
- * top-level list, so an account item and a shop item sat at the same indent with nothing naming
- * which shop the shop ones belonged to. Nesting is what says "these are inside that".
- *
- * Nothing collapses, deliberately. A collapsible menu needs its open state remembered across
- * navigations or it shuts the section someone is working in, and open by default is what this
- * replaced. `SidebarMenuSub` was already exported and already styled; it had simply never been
- * used.
+ * It briefly grew a second, to put a shop's pages under the item they belong to. That was the
+ * wrong answer to a real complaint — a sidebar is for the handful of places the product has, and
+ * which shop you are editing belongs to the page, not to a branch that appears and disappears as
+ * you navigate. What survived is `match`, which is about something else entirely.
  */
 export function NavMain({ items, activeHref, linkComponent: Link = AnchorLink }: NavMainProps) {
   return (
@@ -65,26 +58,6 @@ export function NavMain({ items, activeHref, linkComponent: Link = AnchorLink }:
                   <span>{item.title}</span>
                 </SidebarMenuButton>
 
-                {item.items?.length ? (
-                  <SidebarMenuSub>
-                    {item.items.map((child) => {
-                      const childCurrent = isCurrent(child, activeHref)
-
-                      return (
-                        <SidebarMenuSubItem key={`${child.href}:${child.title}`}>
-                          <SidebarMenuSubButton
-                            isActive={childCurrent}
-                            aria-current={childCurrent ? "page" : undefined}
-                            render={<Link href={child.href} />}
-                          >
-                            {child.icon}
-                            <span>{child.title}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      )
-                    })}
-                  </SidebarMenuSub>
-                ) : null}
               </SidebarMenuItem>
             )
           })}

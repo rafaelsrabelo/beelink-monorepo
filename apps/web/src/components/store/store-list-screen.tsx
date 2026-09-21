@@ -50,7 +50,10 @@ export function StoreListScreen({ ui, web }: StoreListScreenProps) {
           <StoreCard
             key={store.id}
             store={store}
-            panelHref={`/admin/${store.slug}`}
+            // Straight to the page that edits it. It used to point at an overview whose only
+            // content was a card of the shop you had just clicked — a step that showed you a link
+            // to where you were already going.
+            panelHref={`/admin/${store.slug}/store`}
             linkComponent={AppLink}
             messages={ui}
           />
