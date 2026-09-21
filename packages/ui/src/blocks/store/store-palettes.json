@@ -1,0 +1,35 @@
+{
+  "$comment": "Sample shop palettes for stories and tests — the six the legacy panel offered. A shop's palette is a row of the database, not a token, so it is kept as data in a JSON file rather than written into a module: a .json file can hold no className, no style attribute and no component, which is exactly what `web/no-hex-colors` exists to stop. The production list reaches a block through the `colorPresets` prop.",
+  "presets": [
+    {
+      "id": "azul-profissional",
+      "name": "Azul profissional",
+      "colors": { "background": "#F0F9FF", "primary": "#3B82F6", "text": "#1A202C", "header": "#3B82F6" }
+    },
+    {
+      "id": "verde-natureza",
+      "name": "Verde natureza",
+      "colors": { "background": "#F0FDF4", "primary": "#10B981", "text": "#1A202C", "header": "#10B981" }
+    },
+    {
+      "id": "roxo-elegante",
+      "name": "Roxo elegante",
+      "colors": { "background": "#FAF5FF", "primary": "#8B5CF6", "text": "#1A202C", "header": "#8B5CF6" }
+    },
+    {
+      "id": "rosa-moderno",
+      "name": "Rosa moderno",
+      "colors": { "background": "#FDF2F8", "primary": "#EC4899", "text": "#1A202C", "header": "#EC4899" }
+    },
+    {
+      "id": "laranja-energia",
+      "name": "Laranja energia",
+      "colors": { "background": "#FFF7ED", "primary": "#F97316", "text": "#1A202C", "header": "#F97316" }
+    },
+    {
+      "id": "vermelho-classico",
+      "name": "Vermelho clássico",
+      "colors": { "background": "#FEF2F2", "primary": "#EF4444", "text": "#1A202C", "header": "#EF4444" }
+    }
+  ]
+}

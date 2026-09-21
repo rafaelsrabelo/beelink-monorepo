@@ -1,3 +1,5 @@
+import type { StoreType } from "../blocks/store/store-types"
+
 /**
  * Every sentence the blocks render, in one shape. A new language implements this interface, so a
  * missing key is a compile error rather than a word in the wrong language on someone's screen.
@@ -10,6 +12,20 @@ export interface UiMessages {
     passwordMax: string
     nameMin: string
     passwordsDoNotMatch: string
+    storeNameMin: string
+    storeNameMax: string
+    storeDescriptionMax: string
+    textTooLong: string
+    urlInvalid: string
+    whatsappRequired: string
+    whatsappInvalid: string
+    zipCodeInvalid: string
+    ufInvalid: string
+    colorInvalid: string
+    paymentMethodsMin: string
+    slugMin: string
+    slugMax: string
+    slugInvalid: string
   }
   login: {
     title: string
@@ -88,6 +104,149 @@ export interface UiMessages {
     seriesVisitors: string
     seriesDesktop: string
     seriesMobile: string
+  }
+  store: {
+    /** Keyed by the union, so adding a selling mode is a compile error in every dictionary. */
+    typeLabels: Record<StoreType, string>
+    card: {
+      manage: string
+      loading: string
+      viewStorefront: string
+      logoAlt: string
+    }
+    empty: {
+      title: string
+      description: string
+      action: string
+    }
+    create: {
+      title: string
+      description: string
+      tabIdentity: string
+      tabAddress: string
+      tabSocial: string
+      tabAppearance: string
+      /** Read only by a screen reader: a coloured dot alone is not a verdict. */
+      tabHasError: string
+      submit: string
+      submitting: string
+    }
+    image: {
+      fileLabel: string
+      fileHint: string
+      urlLabel: string
+      urlPlaceholder: string
+      uploading: string
+      clear: string
+      empty: string
+    }
+    settings: {
+      title: string
+      description: string
+      tabIdentity: string
+      tabAddress: string
+      tabSocial: string
+      tabAppearance: string
+      tabPayment: string
+      save: string
+      saving: string
+      loading: string
+    }
+    identity: {
+      legend: string
+      nameLabel: string
+      namePlaceholder: string
+      slugLabel: string
+      slugHint: string
+      slugEditableHint: string
+      descriptionLabel: string
+      descriptionPlaceholder: string
+      descriptionHint: string
+      categoryLabel: string
+      categoryPlaceholder: string
+      categoryNone: string
+      logoLabel: string
+      logoPlaceholder: string
+      logoHint: string
+      logoAlt: string
+    }
+    address: {
+      legend: string
+      hint: string
+      zipCodeLabel: string
+      zipCodePlaceholder: string
+      zipCodeHint: string
+      lookup: string
+      lookingUp: string
+      streetLabel: string
+      streetPlaceholder: string
+      numberLabel: string
+      numberPlaceholder: string
+      complementLabel: string
+      complementPlaceholder: string
+      neighborhoodLabel: string
+      neighborhoodPlaceholder: string
+      cityLabel: string
+      cityPlaceholder: string
+      stateLabel: string
+      statePlaceholder: string
+    }
+    social: {
+      legend: string
+      hint: string
+      whatsappLabel: string
+      whatsappPlaceholder: string
+      whatsappHint: string
+      instagramLabel: string
+      instagramPlaceholder: string
+      tiktokLabel: string
+      tiktokPlaceholder: string
+      spotifyLabel: string
+      spotifyPlaceholder: string
+      youtubeLabel: string
+      youtubePlaceholder: string
+    }
+    appearance: {
+      layoutLegend: string
+      layoutDefault: string
+      layoutDefaultHint: string
+      layoutBanner: string
+      layoutBannerHint: string
+      bannerImageLabel: string
+      bannerImagePlaceholder: string
+      bannerImageHint: string
+      bannerAlt: string
+      cardLayoutLegend: string
+      cardLayoutGrid: string
+      cardLayoutGridHint: string
+      cardLayoutHorizontal: string
+      cardLayoutHorizontalHint: string
+      categoriesLabel: string
+      categoriesHint: string
+      colorsLegend: string
+      colorsHint: string
+      presetsLabel: string
+      colorPickerSuffix: string
+      backgroundLabel: string
+      primaryLabel: string
+      textLabel: string
+      headerLabel: string
+      previewLabel: string
+      previewSample: string
+      previewAction: string
+    }
+    payment: {
+      legend: string
+      hint: string
+      money: string
+      moneyHint: string
+      pix: string
+      pixHint: string
+      creditCard: string
+      creditCardHint: string
+      debitCard: string
+      debitCardHint: string
+    }
   }
 }
 
