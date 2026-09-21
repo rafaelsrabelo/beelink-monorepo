@@ -136,8 +136,12 @@ export interface UiMessages {
       tabHasError: string
       next: string
       back: string
-      /** "Passo 2 de 4", read by a screen reader and shown above the steps. */
-      stepProgress: (current: number, total: number) => string
+      /**
+       * "Passo {current} de {total}". Filled with `format()`, never a function — see the note on
+       * that helper. A dictionary is handed to a Client Component as a prop and React serialises
+       * every prop, so one function anywhere in it fails the whole tree.
+       */
+      stepProgress: string
       /** Read only by a screen reader, after a step that is already filled in. */
       stepDone: string
       submit: string

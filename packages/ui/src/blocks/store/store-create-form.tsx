@@ -21,7 +21,7 @@ import {
 import { cn } from "@harness-monorepo/ui/lib/utils";
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index";
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index";
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages";
 
 // Block
@@ -246,7 +246,7 @@ export function StoreCreateForm({
           */}
           <ol
             className="flex w-full items-center gap-2 overflow-x-auto"
-            aria-label={text.stepProgress(index + 1, STEP_ORDER.length)}
+            aria-label={format(text.stepProgress, { current: String(index + 1), total: String(STEP_ORDER.length) })}
           >
             {steps.map((entry, at) => {
               const reached = at <= furthest;
@@ -419,7 +419,7 @@ export function StoreCreateForm({
       */}
       <div className="sticky bottom-0 mt-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-6 py-4 shadow-sm">
         <p aria-hidden="true" className="text-sm text-muted-foreground">
-          {text.stepProgress(index + 1, STEP_ORDER.length)}
+          {format(text.stepProgress, { current: String(index + 1), total: String(STEP_ORDER.length) })}
         </p>
 
         <div className="flex items-center gap-2">

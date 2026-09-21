@@ -126,7 +126,7 @@ export const ptBR: UiMessages = {
       tabHasError: "com campos a corrigir",
       next: "Continuar",
       back: "Voltar",
-      stepProgress: (current, total) => `Passo ${current} de ${total}`,
+      stepProgress: "Passo {current} de {total}",
       stepDone: "concluído",
       submit: "Criar loja",
       submitting: "Criando…",

@@ -126,7 +126,7 @@ export const en: UiMessages = {
       tabHasError: "has fields to fix",
       next: "Continue",
       back: "Back",
-      stepProgress: (current, total) => `Step ${current} of ${total}`,
+      stepProgress: "Step {current} of {total}",
       stepDone: "done",
       submit: "Create shop",
       submitting: "Creating…",
