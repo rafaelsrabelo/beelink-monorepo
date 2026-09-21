@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react"
+
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 import { StorefrontCatalog } from "./storefront-catalog"
@@ -42,4 +44,25 @@ export const SemResultado: Story = {
 /** A shop that quotes instead of pricing — the numbers come off, the catalogue stays. */
 export const SemPrecos: Story = {
   args: { showPrice: false },
+}
+
+/**
+ * Hover a card: the title is clamped to two lines, and the tooltip is the rest of the name.
+ * The shop colours are set here because the tooltip borrows them, and outside a shop window
+ * nothing defines them.
+ */
+export const TituloLongo: Story = {
+  args: {
+    products: products.map((product, index) => ({
+      ...product,
+      name: `${product.name} em crochê artesanal com alça de couro, forro interno e bolso ${index + 1}`,
+    })),
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ "--shop-text": "oklch(0.2 0 0)", "--shop-background": "oklch(1 0 0)" } as CSSProperties}>
+        <Story />
+      </div>
+    ),
+  ],
 }

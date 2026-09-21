@@ -52,7 +52,9 @@ export function StorefrontProductCard({
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
-            alt={product.name}
+            // Decorative on purpose: the title sits right below, so naming the photograph after
+            // the product makes a screen reader read the same name twice per card.
+            alt=""
             loading="lazy"
             className="size-full object-cover transition-transform group-hover:scale-105"
           />
@@ -65,7 +67,26 @@ export function StorefrontProductCard({
         )}
       </div>
 
-      <p className="line-clamp-2 text-sm font-medium">{product.name}</p>
+      <div className="relative">
+        <p className="line-clamp-2 text-sm font-medium">{product.name}</p>
+
+        {/*
+          The title is clamped to two lines, so a long one ends mid-word and the card stops
+          answering "which one is this?". The tooltip is the rest of the name.
+
+          It is aria-hidden on purpose: line-clamp truncates the picture, not the DOM, so a
+          screen reader already reads the whole name — announcing it twice would be noise.
+          That also keeps the card renderable on the server: a CSS-only reveal costs the
+          catalogue grid no hydration, which a Base UI tooltip on every card would.
+        */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-full left-0 z-10 mb-1 w-max max-w-64 rounded-md px-2 py-1 text-xs opacity-0 shadow-sm transition-opacity group-focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
+          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-background)" }}
+        >
+          {product.name}
+        </span>
+      </div>
 
       {showPrice ? (
         <StorefrontPrice

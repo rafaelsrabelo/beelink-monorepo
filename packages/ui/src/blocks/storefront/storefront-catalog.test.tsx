@@ -61,6 +61,27 @@ describe("StorefrontCatalog", () => {
     expect(screen.getByRole("link", { name: /Bolsa Amora/ })).toBeInTheDocument()
   })
 
+  /**
+   * line-clamp truncates the picture and not the DOM, so a screen reader already reads the whole
+   * name. The tooltip repeats it for the eye only — announcing it twice would be noise, and would
+   * leave the card with an accessible name that says everything twice.
+   */
+  it("completes a clamped title on hover without announcing it twice", () => {
+    const name = "Bolsa Amora em crochê com alça de couro, forro interno e bolso lateral"
+    renderCatalog({ products: [{ ...products[0], name }] })
+
+    const [title, tooltip] = screen.getAllByText(name)
+    expect(title).toHaveClass("line-clamp-2")
+    expect(tooltip).toHaveAttribute("aria-hidden", "true")
+
+    // Both nodes live inside the card, and the accessibility tree still sees the name once.
+    // Both nodes live inside the card, and the accessibility tree still hears the name once.
+    const card = screen.getByRole("link", {
+      name: (accessibleName: string) => accessibleName.split(name).length - 1 === 1,
+    })
+    expect(within(card).getAllByText(name)).toHaveLength(2)
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = renderCatalog()
 
