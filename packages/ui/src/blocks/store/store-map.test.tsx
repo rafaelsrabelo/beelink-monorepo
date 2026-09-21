@@ -1,5 +1,5 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 // Block
@@ -33,30 +33,33 @@ describe("StoreMap", () => {
    * MapTiler's licence asks for the credit visibly, and the free plan asks hardest. Leaflet draws
    * it in the corner from what it is handed, so what is asserted is that it was handed something.
    */
-  it("credits the provider, which the licence requires", () => {
+  it("credits the provider, which the licence requires", async () => {
     const { container } = renderMap()
 
-    expect(container.querySelector(".leaflet-control-attribution")?.textContent).toContain("MapTiler")
+    await waitFor(() =>
+      expect(container.querySelector(".leaflet-control-attribution")?.textContent).toContain("MapTiler"),
+    )
   })
 
-  it("draws the tiles the screen addressed, and holds no provider of its own", () => {
+  it("draws the tiles the screen addressed, and holds no provider of its own", async () => {
     const { container } = renderMap()
 
     // The template reaches Leaflet as given: a key belongs to the screen, and a block that built
     // this string would be a block that knew a provider.
-    expect(container.querySelector(".leaflet-tile-pane")).not.toBeNull()
+    await waitFor(() => expect(container.querySelector(".leaflet-tile-pane")).not.toBeNull())
   })
 
-  it("shows no pin until something says where the shop is", () => {
+  it("shows no pin until something says where the shop is", async () => {
     const { container } = renderMap()
 
+    await waitFor(() => expect(container.querySelector(".leaflet-tile-pane")).not.toBeNull())
     expect(container.querySelector(".leaflet-marker-icon")).toBeNull()
   })
 
-  it("drops a pin once a point arrives", () => {
+  it("drops a pin once a point arrives", async () => {
     const { container } = renderMap({ point: { latitude: -3.7436, longitude: -38.4998 } })
 
-    expect(container.querySelector(".leaflet-marker-icon")).not.toBeNull()
+    await waitFor(() => expect(container.querySelector(".leaflet-marker-icon")).not.toBeNull())
   })
 
   /**
@@ -64,8 +67,10 @@ describe("StoreMap", () => {
    * bundler moves that stylesheet somewhere the images are not. Ours is inline SVG, so there is
    * nothing to 404.
    */
-  it("draws its own pin rather than loading one", () => {
+  it("draws its own pin rather than loading one", async () => {
     const { container } = renderMap({ point: { latitude: -3.7436, longitude: -38.4998 } })
+
+    await waitFor(() => expect(container.querySelector(".leaflet-marker-icon")).not.toBeNull())
     const pin = container.querySelector(".leaflet-marker-icon")
 
     expect(pin?.querySelector("svg")).not.toBeNull()
@@ -75,6 +80,7 @@ describe("StoreMap", () => {
   it("has no accessibility violations", async () => {
     const { container } = renderMap({ point: { latitude: -3.7436, longitude: -38.4998 } })
 
+    await waitFor(() => expect(container.querySelector(".leaflet-marker-icon")).not.toBeNull())
     await expectNoA11yViolations(container)
   })
 })

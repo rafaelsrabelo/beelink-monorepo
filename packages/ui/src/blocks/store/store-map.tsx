@@ -1,10 +1,10 @@
 "use client"
 
 // React
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
-// Libs
-import L from "leaflet"
+// Types
+import type * as Leaflet from "leaflet"
 
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
@@ -43,7 +43,7 @@ export interface StoreMapProps {
  * bug in this library. Ours is inline SVG on a token colour, which also means it is not a hex
  * literal (`web/no-hex-colors`).
  */
-function pinIcon(): L.DivIcon {
+function pinIcon(L: typeof Leaflet): Leaflet.DivIcon {
   return L.divIcon({
     className: "",
     iconSize: [28, 28],
@@ -65,8 +65,14 @@ function pinIcon(): L.DivIcon {
  * picture, so the fallback view is something to look at before an address exists — which is the
  * whole reason it is drawn before one does.
  *
- * Leaflet owns a DOM node and React must not touch it, which is why everything below happens in an
- * effect against a ref. The map is created once; later renders move it.
+ * **Leaflet is imported inside the effect, and that is load-bearing.** It reads `window` while its
+ * module is evaluating, so a top-level import throws during server rendering — `"use client"` does
+ * not prevent that, because a client component is still rendered on the server for the first HTML.
+ * An effect never runs there, so the import cannot happen there either. The type import above is
+ * erased at compile time and costs nothing.
+ *
+ * Leaflet owns a DOM node and React must not touch it, which is why everything below happens
+ * against a ref. The map is created once; later renders move it.
  *
  * Its stylesheet is imported from `src/styles/globals.css`, not from here — see the note there.
  */
@@ -81,27 +87,41 @@ export function StoreMap({
   className,
 }: StoreMapProps) {
   const container = useRef<HTMLDivElement>(null)
-  const map = useRef<L.Map | null>(null)
-  const marker = useRef<L.Marker | null>(null)
+  const leaflet = useRef<typeof Leaflet | null>(null)
+  const map = useRef<Leaflet.Map | null>(null)
+  const marker = useRef<Leaflet.Marker | null>(null)
+  /** Only so the effect below re-runs once the map exists; a ref alone would not wake it. */
+  const [drawn, setDrawn] = useState(false)
 
   useEffect(() => {
-    if (!container.current || map.current) return
+    let abandoned = false
 
-    const created = L.map(container.current, {
-      center: [fallbackCenter.latitude, fallbackCenter.longitude],
-      zoom: fallbackZoom,
-      // A form is a column someone scrolls. A map that swallows the wheel traps them inside it.
-      scrollWheelZoom: false,
-      attributionControl: true,
-    })
+    void (async () => {
+      const L = (await import("leaflet")).default
 
-    L.tileLayer(tileUrl, { attribution, maxZoom: 19 }).addTo(created)
-    map.current = created
+      // The component may have gone while the module was loading.
+      if (abandoned || !container.current || map.current) return
+
+      const created = L.map(container.current, {
+        center: [fallbackCenter.latitude, fallbackCenter.longitude],
+        zoom: fallbackZoom,
+        // A form is a column someone scrolls. A map that swallows the wheel traps them inside it.
+        scrollWheelZoom: false,
+        attributionControl: true,
+      })
+
+      L.tileLayer(tileUrl, { attribution, maxZoom: 19 }).addTo(created)
+      leaflet.current = L
+      map.current = created
+      setDrawn(true)
+    })()
 
     return () => {
-      created.remove()
+      abandoned = true
+      map.current?.remove()
       map.current = null
       marker.current = null
+      setDrawn(false)
     }
     // Created once. The tile URL changing would mean a different provider mid-session, which does
     // not happen, and rebuilding the map on it would throw away the view the shopkeeper is reading.
@@ -109,8 +129,9 @@ export function StoreMap({
   }, [])
 
   useEffect(() => {
+    const L = leaflet.current
     const current = map.current
-    if (!current) return
+    if (!L || !current) return
 
     if (!point) {
       marker.current?.remove()
@@ -118,13 +139,13 @@ export function StoreMap({
       return
     }
 
-    const position: L.LatLngExpression = [point.latitude, point.longitude]
+    const position: Leaflet.LatLngExpression = [point.latitude, point.longitude]
 
     if (marker.current) marker.current.setLatLng(position)
-    else marker.current = L.marker(position, { icon: pinIcon(), keyboard: false }).addTo(current)
+    else marker.current = L.marker(position, { icon: pinIcon(L), keyboard: false }).addTo(current)
 
     current.flyTo(position, pointZoom, { duration: 0.6 })
-  }, [point, pointZoom])
+  }, [point, pointZoom, drawn])
 
   return (
     <div
