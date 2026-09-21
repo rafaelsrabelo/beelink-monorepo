@@ -24,7 +24,8 @@
 | `pnpm --filter api dev` | watch mode on `:3001` |
 | `pnpm --filter api test` | Vitest unit tests |
 | `pnpm --filter api test:e2e` | e2e against real Postgres and Mailpit (`pnpm stack:up` first) |
-| `pnpm --filter api exec prisma migrate dev` | create and apply migrations |
+| `pnpm --filter api exec prisma migrate dev` | create and apply migrations — and run the seed |
+| `pnpm --filter api db:seed` | platform data only, upserted on its slug; safe to repeat |
 | `pnpm --filter api exec prisma studio` | browse the database |
 
 ## Traps

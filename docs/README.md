@@ -11,7 +11,7 @@ Every document under `docs/` is linked from this page; `docs-gate` fails the bui
 
 ## Product
 
-- [product/README.md](product/README.md) — what the product is, independent of any app
+- [product/README.md](product/README.md) — what bee-link is, independent of any app
 
 ## Repo
 
@@ -29,6 +29,8 @@ Every document under `docs/` is linked from this page; `docs-gate` fails the bui
 
 - [plans/README.md](plans/README.md) — naming, and why a plan is never rewritten
 
+The plan files themselves are **not** listed here, and their absence is deliberate: `docs-gate` excludes `plans/` from every gate, because a snapshot is allowed to go stale and an index of snapshots would claim they had not. Read the folder.
+
 ## Workspace map
 
 Every workspace, and nothing else. `docs-gate` fails when a workspace is added without a row here, or a row outlives its workspace.
@@ -37,6 +39,7 @@ Every workspace, and nothing else. `docs-gate` fails when a workspace is added w
 |---|---|
 | `apps/web` | [apps/web/AGENTS.md](../apps/web/AGENTS.md) |
 | `apps/api` | [apps/api/AGENTS.md](../apps/api/AGENTS.md) |
-| `apps/mobile` | [apps/mobile/AGENTS.md](../apps/mobile/AGENTS.md) |
 | `packages/contracts` | [packages/contracts/AGENTS.md](../packages/contracts/AGENTS.md) |
 | `packages/ui` | [packages/ui/AGENTS.md](../packages/ui/AGENTS.md) |
+
+`apps/web` is the bee-link web app. The workspace keeps the template's name on purpose — [the root contract](../AGENTS.md) says why.
