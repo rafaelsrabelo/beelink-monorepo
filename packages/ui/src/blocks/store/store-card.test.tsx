@@ -48,10 +48,10 @@ describe("StoreCard", () => {
     )
   })
 
-  it("says a restaurant is a restaurant", () => {
-    render(<StoreCard store={sampleStores[1]} panelHref="/admin/cantina-do-ze" />)
+  it("names the shop's selling mode on the badge", () => {
+    render(<StoreCard store={sampleStores[1]} panelHref="/admin/nutri-suplementos" />)
 
-    expect(screen.getByText("Restaurante")).toBeInTheDocument()
+    expect(screen.getByText("Loja")).toBeInTheDocument()
   })
 
   it("navigates through the link the app injects, not one of its own", () => {

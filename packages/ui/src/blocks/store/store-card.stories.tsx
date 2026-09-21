@@ -24,9 +24,13 @@ export const SemLogo: Story = {
   args: { store: { ...sampleStore, logoUrl: null } },
 }
 
-/** A restaurant says so on the badge — the storefront's wording follows the same field. */
-export const Restaurante: Story = {
-  args: { store: sampleStores[1], panelHref: "/admin/cantina-do-ze", storefrontHref: "/cantina-do-ze" },
+/** A shop that has a logo: the avatar carries the brand instead of the initials. */
+export const ComLogo: Story = {
+  args: {
+    store: sampleStores[1],
+    panelHref: "/admin/nutri-suplementos",
+    storefrontHref: "/nutri-suplementos",
+  },
 }
 
 /** Before the shop is published there is nowhere to send a visitor, so the second link is absent. */
