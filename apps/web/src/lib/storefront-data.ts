@@ -17,8 +17,18 @@ import { catalogTag, storeTag } from "./revalidate"
  * this way and nothing cached here can be one visitor's answer handed to the next.
  */
 
-/** How many products the home's rail asks for. A landing shows a selection, not the shop. */
+/** How many products one rail asks for. A landing shows a selection, not the shop. */
 export const RAIL_PAGE_SIZE = 12
+
+/**
+ * How many category rails the home will draw.
+ *
+ * The home asks for one page per rail, so this is also how many round trips it makes. A shop with
+ * thirty categories would otherwise turn its most visited address into thirty-one requests, and
+ * nobody scrolls past the sixth band anyway. The categories band at the top still lists every one
+ * of them, so nothing becomes unreachable — it just stops being on the home.
+ */
+export const HOME_RAILS_MAX = 6
 
 export async function shopAt(slug: string): Promise<PublicStore | null> {
   const response = await callPublicApi({ path: `/stores/${slug}/public`, tags: [storeTag(slug)] })

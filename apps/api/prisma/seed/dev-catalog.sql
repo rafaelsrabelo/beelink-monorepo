@@ -4,53 +4,106 @@
 --
 -- Run it by hand:  pnpm --filter api db:seed:dev
 --
--- It fills whatever shops exist rather than naming them, so it works on any developer's database,
--- and it is idempotent on (storeId, slug) like the platform seed. Re-running after editing a name
--- or a price corrects the row instead of duplicating it.
+-- It is keyed on the shop's SEGMENT (`store_categories.slug`), not on the shop's own slug, so it
+-- works on any developer's database and a supplement shop stops selling crochet bags. Two shops on
+-- the same segment get the same catalogue, which is what "by segment" means: to tell `lessari`
+-- apart from `bewave-store` they need different segments, not different fixtures.
 --
--- The images are picsum.photos, addressed by seed so each product keeps the same picture across
--- runs. A stable fake is worth more than a pretty one: a card that changes photo on every reload
--- makes a layout impossible to judge.
+-- IT DELETES. Any category or product of a shop whose segment this file knows, whose slug is not
+-- in that segment's list below, is removed — otherwise the generic catalogue every shop used to
+-- get would sit alongside the new one and every window would show both. That is the right
+-- behaviour for a fixture ("make the database match this file") and the wrong behaviour for
+-- anything holding real rows, which is why this file is run by hand and never by a migration.
+--
+-- Idempotent on (storeId, slug), so re-running after editing a name or a price corrects the row.
+-- The images are picsum.photos addressed by seed, so a product keeps its picture across runs: a
+-- card that changes photo on every reload makes a layout impossible to judge.
 
--- ---------------------------------------------------------------- categories, for every shop
+-- ---------------------------------------------------------------- dev fixture: the segment
+-- The one place a shop is named. It is this developer's supplement shop sitting on `saude`, and
+-- everything below keys on the segment, so the fixture is wrong until this is right.
+UPDATE "stores"
+SET "categoryId" = (SELECT id FROM "store_categories" WHERE slug = 'suplementos'), "updatedAt" = now()
+WHERE slug = 'mutante-performance'
+  AND "categoryId" IS DISTINCT FROM (SELECT id FROM "store_categories" WHERE slug = 'suplementos');
+
+-- ---------------------------------------------------------------- what each segment sells
+-- Temporary views, so nothing below repeats the join or the lists.
+CREATE TEMP VIEW shop_segment AS
+SELECT s.id AS store_id, s.slug AS store_slug, c.slug AS segment
+FROM "stores" s
+JOIN "store_categories" c ON c.id = s."categoryId";
+
+CREATE TEMP VIEW seed_category (segment, slug, name, description, position) AS
+VALUES
+  -- suplementos
+  ('suplementos', 'proteinas',   'Proteínas',  'Whey, albumina e veganas',        0),
+  ('suplementos', 'creatina',    'Creatina',   'Força em cada repetição',         1),
+  ('suplementos', 'pre-treino',  'Pré-treino', 'Energia para o treino inteiro',   2),
+  ('suplementos', 'vitaminas',   'Vitaminas',  'A base que sustenta o resto',     3),
+  ('suplementos', 'snacks',      'Snacks',     'Proteína para levar na mochila',  4),
+  -- moda
+  ('moda',        'blusas',      'Blusas',     'Do básico ao que sai à noite',    0),
+  ('moda',        'vestidos',    'Vestidos',   'Midi, longo e slip',              1),
+  ('moda',        'calcas',      'Calças',     'Alfaiataria, wide leg e jeans',   2),
+  ('moda',        'calcados',    'Calçados',   'Tênis, rasteira e bota',          3),
+  ('moda',        'acessorios',  'Acessórios', 'O que fecha o look',              4);
+
+CREATE TEMP VIEW seed_product (segment, category, slug, name, description, price, compare_at, position) AS
+VALUES
+  -- ------------------------------------------------------------- suplementos
+  ('suplementos', 'proteinas',  'whey-concentrado-900g',  'Whey Protein Concentrado 900g', 'Concentrado de soro, 24 g de proteína por dose. Chocolate belga.',  13990, 16900,  0),
+  ('suplementos', 'proteinas',  'whey-isolado-900g',      'Whey Protein Isolado 900g',     'Isolado por microfiltração, baixo em lactose. Baunilha.',           18990, 22900,  1),
+  ('suplementos', 'proteinas',  'albumina-500g',          'Albumina 500g',                 'Proteína da clara do ovo, liberação lenta. Sem sabor.',              5990,  NULL,  2),
+  ('suplementos', 'creatina',   'creatina-mono-300g',     'Creatina Monohidratada 300g',   '100% pura, sem aditivos. 3 g por dose, cem doses.',                  8990, 10990,  3),
+  ('suplementos', 'creatina',   'creatina-creapure-250g', 'Creatina Creapure 250g',        'Creapure alemã, com laudo por lote.',                               12990,  NULL,  4),
+  ('suplementos', 'pre-treino', 'pre-treino-insano-300g', 'Pré-treino Insano 300g',        'Cafeína, beta-alanina e citrulina. Frutas vermelhas.',               9990, 12990,  5),
+  ('suplementos', 'pre-treino', 'beta-alanina-200g',      'Beta-alanina 200g',             'Retarda a fadiga em séries longas. Sem sabor.',                      7490,  NULL,  6),
+  ('suplementos', 'vitaminas',  'multivitaminico-120',    'Multivitamínico Essencial',     '120 cápsulas, 23 vitaminas e minerais. Um mês e meio.',              5490,  6990,  7),
+  ('suplementos', 'vitaminas',  'vitamina-d3-k2-60',      'Vitamina D3 + K2',              '60 cápsulas. Absorção de cálcio e saúde óssea.',                     3990,  NULL,  8),
+  ('suplementos', 'vitaminas',  'omega-3-120',            'Ômega 3 Ultra 120 cápsulas',    'EPA e DHA concentrados, óleo de peixe purificado.',                  6490,  7990,  9),
+  ('suplementos', 'snacks',     'barra-proteina-12un',    'Barra de Proteína (12 un)',     '20 g de proteína por barra. Caixa com doze, sabores sortidos.',      8990, 10490, 10),
+  ('suplementos', 'snacks',     'pasta-amendoim-1kg',     'Pasta de Amendoim 1kg',         'Integral, sem açúcar. Amendoim e nada mais.',                        3490,  NULL, 11),
+  -- ------------------------------------------------------------- moda
+  ('moda',        'blusas',     'blusa-canelada',         'Blusa Canelada',                'Malha canelada de algodão, modelagem justa, gola redonda.',          8900, 11900,  0),
+  ('moda',        'blusas',     'cropped-gola-alta',      'Cropped Gola Alta',             'Manga longa, comprimento curto, tecido com elastano.',               7900,  NULL,  1),
+  ('moda',        'blusas',     'camisa-linho',           'Camisa de Linho',               'Linho puro, corte solto, botões de madrepérola.',                   16900, 19900,  2),
+  ('moda',        'vestidos',   'vestido-midi-floral',    'Vestido Midi Floral',           'Viscose leve, manga bufante, comprimento midi.',                    22900, 28900,  3),
+  ('moda',        'vestidos',   'vestido-slip-cetim',     'Vestido Slip de Cetim',         'Alça fina, corte enviesado, caimento fluido.',                      24900,  NULL,  4),
+  ('moda',        'calcas',     'calca-wide-leg',         'Calça Wide Leg',                'Cintura alta, perna ampla, tecido com caimento pesado.',            19900, 24900,  5),
+  ('moda',        'calcas',     'calca-alfaiataria',      'Calça de Alfaiataria',          'Pregas na frente, bolso faca, forro na cintura.',                   21900,  NULL,  6),
+  ('moda',        'calcas',     'jeans-mom',              'Jeans Mom',                     'Lavagem clara, cintura alta, barra desfiada.',                      17900, 21900,  7),
+  ('moda',        'calcados',   'tenis-branco',           'Tênis Branco',                  'Couro liso, solado de borracha, cabedal sem costura aparente.',     27900, 34900,  8),
+  ('moda',        'calcados',   'rasteira-trancada',      'Rasteira Trançada',             'Tiras trançadas à mão, palmilha acolchoada.',                       12900,  NULL,  9),
+  ('moda',        'acessorios', 'bolsa-tiracolo',         'Bolsa Tiracolo',                'Alça regulável, fecho magnético, bolso interno.',                   18900, 23900, 10),
+  ('moda',        'acessorios', 'cinto-couro',            'Cinto de Couro',                'Couro legítimo, fivela escovada, três centímetros de largura.',      8900,  NULL, 11);
+
+-- ---------------------------------------------------------------- categories
 INSERT INTO "product_categories" ("id", "storeId", "slug", "name", "description", "imageUrl", "position", "isActive", "slugHistory", "createdAt", "updatedAt")
 SELECT
-  uuidv7(), s.id, c.slug, c.name, c.description,
-  'https://picsum.photos/seed/' || s.slug || '-' || c.slug || '/400/400',
+  uuidv7(), sh.store_id, c.slug, c.name, c.description,
+  'https://picsum.photos/seed/' || sh.store_slug || '-' || c.slug || '/400/400',
   c.position, true, '{}', now(), now()
-FROM "stores" s
-CROSS JOIN (VALUES
-  ('mais-vendidos', 'Mais vendidos',  'O que sai mais da prateleira',        0),
-  ('novidades',     'Novidades',      'Chegou agora',                        1),
-  ('promocoes',     'Promoções',      'Por tempo limitado',                  2),
-  ('acessorios',    'Acessórios',     'Para completar',                      3)
-) AS c(slug, name, description, position)
+FROM shop_segment sh
+JOIN seed_category c ON c.segment = sh.segment
 ON CONFLICT ("storeId", "slug") DO UPDATE
   SET "name" = EXCLUDED."name",
       "description" = EXCLUDED."description",
       "imageUrl" = EXCLUDED."imageUrl",
       "position" = EXCLUDED."position",
+      "isActive" = true,
       "updatedAt" = now();
 
--- ---------------------------------------------------------------- products, for every shop
--- compareAtPriceCents is set on some and not others on purpose: the window computes the
--- percentage from the pair, so a catalogue with both kinds is the only way to see that it does.
+-- ---------------------------------------------------------------- products
+-- compareAtPriceCents is set on some and not others on purpose: the window computes the percentage
+-- from the pair, so a catalogue with both kinds is the only way to see that it does.
 INSERT INTO "products" ("id", "storeId", "categoryId", "slug", "name", "description", "priceCents", "compareAtPriceCents", "position", "isAvailable", "slugHistory", "createdAt", "updatedAt")
 SELECT
-  uuidv7(), s.id,
-  (SELECT pc.id FROM "product_categories" pc WHERE pc."storeId" = s.id AND pc.slug = p.category),
+  uuidv7(), sh.store_id,
+  (SELECT pc.id FROM "product_categories" pc WHERE pc."storeId" = sh.store_id AND pc.slug = p.category),
   p.slug, p.name, p.description, p.price, p.compare_at, p.position, true, '{}', now(), now()
-FROM "stores" s
-CROSS JOIN (VALUES
-  ('bolsa-amora',        'Bolsa Amora',        'Bolsa de crochê feita à mão em fio de algodão, com alça ajustável.', 18900,  24900, 0, 'mais-vendidos'),
-  ('bolsa-serena',       'Bolsa Serena',       'Modelo estruturado, forro interno e bolso para celular.',            22500,   NULL, 1, 'mais-vendidos'),
-  ('necessaire-luna',    'Necessaire Luna',    'Tamanho de viagem, fecho de zíper e forro impermeável.',              8900,  11900, 2, 'acessorios'),
-  ('chaveiro-flor',      'Chaveiro Flor',      'Pequeno, feito com as sobras de fio de cada bolsa.',                  2500,   NULL, 3, 'acessorios'),
-  ('bolsa-praia-maré',   'Bolsa Praia Maré',   'Trama aberta, leve, secagem rápida.',                                19900,  25900, 4, 'novidades'),
-  ('porta-copos-par',    'Porta-copos (par)',  'Dois porta-copos em crochê, cores combinando.',                       3900,   NULL, 5, 'novidades'),
-  ('bolsa-carteiro',     'Bolsa Carteiro',     'Alça longa, aba com botão de madeira.',                              24900,  31900, 6, 'promocoes'),
-  ('kit-presente',       'Kit Presente',       'Uma necessaire, um chaveiro e um par de porta-copos, embalados.',    13900,  17900, 7, 'promocoes')
-) AS p(slug, name, description, price, compare_at, position, category)
+FROM shop_segment sh
+JOIN seed_product p ON p.segment = sh.segment
 ON CONFLICT ("storeId", "slug") DO UPDATE
   SET "name" = EXCLUDED."name",
       "description" = EXCLUDED."description",
@@ -58,7 +111,23 @@ ON CONFLICT ("storeId", "slug") DO UPDATE
       "compareAtPriceCents" = EXCLUDED."compareAtPriceCents",
       "position" = EXCLUDED."position",
       "categoryId" = EXCLUDED."categoryId",
+      "isAvailable" = true,
       "updatedAt" = now();
+
+-- ---------------------------------------------------------------- what this file no longer sells
+-- Only for shops on a segment this file knows: a shop on `petshop` keeps whatever it has, because
+-- this file has no opinion about it. Products go first — the category is their parent.
+DELETE FROM "products" p
+USING shop_segment sh
+WHERE p."storeId" = sh.store_id
+  AND EXISTS (SELECT 1 FROM seed_product sp WHERE sp.segment = sh.segment)
+  AND NOT EXISTS (SELECT 1 FROM seed_product sp WHERE sp.segment = sh.segment AND sp.slug = p.slug);
+
+DELETE FROM "product_categories" pc
+USING shop_segment sh
+WHERE pc."storeId" = sh.store_id
+  AND EXISTS (SELECT 1 FROM seed_category sc WHERE sc.segment = sh.segment)
+  AND NOT EXISTS (SELECT 1 FROM seed_category sc WHERE sc.segment = sh.segment AND sc.slug = pc.slug);
 
 -- ---------------------------------------------------------------- two images per product
 -- Two, not one: the product page has a gallery and a single image never exercises it.
@@ -71,3 +140,7 @@ CROSS JOIN (VALUES (0), (1)) AS i(n)
 WHERE NOT EXISTS (
   SELECT 1 FROM "product_images" pi WHERE pi."productId" = p.id AND pi.position = i.n
 );
+
+DROP VIEW shop_segment;
+DROP VIEW seed_category;
+DROP VIEW seed_product;

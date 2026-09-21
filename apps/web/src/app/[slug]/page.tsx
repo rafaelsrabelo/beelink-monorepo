@@ -3,24 +3,26 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 // UI
-import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
-import { StorefrontSection } from "@harness-monorepo/ui/blocks/storefront/storefront-section"
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { getMessages } from "@/lib/locale"
-import { RAIL_PAGE_SIZE, catalogueAt, shopAt } from "@/lib/storefront-data"
+import { HOME_RAILS_MAX, RAIL_PAGE_SIZE, catalogueAt, shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
  * A shop's front door, at its own address.
  *
- * A landing and not the catalogue. It shows the shop's categories, a band of products running
- * sideways, and a way through to everything — the shape of every Brazilian shop this was measured
- * against, and what the shop owner asked for by name. The grid of everything lives one click away,
- * at the catalogue, where it can be filtered and paged without the home carrying that weight on
- * the one page most visitors ever see.
+ * A landing and not the catalogue: one band of products per category, each running sideways, each
+ * with a way into the category it came from. The grid of everything lives one click away, where it
+ * can be filtered and paged without the home carrying that weight on the page most visitors ever
+ * see.
+ *
+ * It shows no index of categories. It used to, and the shop owner was right that it was repeating
+ * itself — every category is already named in the band under the header, so a grid of the same
+ * names underneath is the same navigation twice and neither copy shows a single thing for sale.
+ * What a category is worth on a landing page is what is inside it.
  *
  * Nothing here filters. A search goes to the search page and a category to its own address, so
  * every view a visitor can reach is a page they can bookmark, share, and be sent to by Google.
@@ -56,12 +58,17 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
 
-  const [{ ui }, catalogue] = await Promise.all([
-    getMessages(),
-    // Only what the rail shows. A home that asked for the whole catalogue and sliced it here would
-    // put every product a shop has into the HTML of its most visited address.
-    catalogueAt(slug, { pageSize: RAIL_PAGE_SIZE }),
-  ])
+  // The smallest ask that still answers with every category the shop has: the catalogue endpoint
+  // returns both halves together, and the home needs the list before it knows what to ask for.
+  const [{ ui }, index] = await Promise.all([getMessages(), catalogueAt(slug, { pageSize: 1 })])
+
+  const shown = index.categories.slice(0, HOME_RAILS_MAX)
+  const rails = await Promise.all(
+    shown.map(async (category) => ({
+      category,
+      products: (await catalogueAt(slug, { category: category.slug, pageSize: RAIL_PAGE_SIZE })).products,
+    })),
+  )
 
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
@@ -69,7 +76,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   return (
     <StorefrontFrame
       store={store}
-      categories={catalogue.categories}
+      categories={index.categories}
       // The pitch and the cover are the home's alone: an inner page is about the goods, and
       // repeating the shop's paragraph above them pushes what someone came for below the fold.
       description={store.description}
@@ -79,43 +86,24 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       messages={ui}
     >
       {/*
-        The rail carries its own heading and its own "see all", because a scrollable region has to
-        be named after the band it is. Wrapping it in a StorefrontSection would put the same words
-        in a second heading directly above it.
+        One band per category, in the shopkeeper's own order — they know what they want to sell
+        first. A category with nothing available in it draws nothing: the rail returns null on an
+        empty list, so a shop mid-restock is a shorter page rather than a row of empty headings.
       */}
-      <StorefrontProductRail
-        products={catalogue.products}
-        productHref={routes.product}
-        seeAllHref={routes.catalog()}
-        label={ui.storefront.featuredEyebrow}
-        locale="pt-BR"
-        showPrice={layout.showProductPrice ?? true}
-        showBadge={layout.showProductBadges ?? true}
-        messages={ui}
-      />
-
-      {/*
-        h2, like the rail's own heading. The shop's name in band 5 is this page's h1 and these two
-        bands are its peers; axe cannot see a broken outline — every heading is valid on its own —
-        so the level is the page's decision and is made here, once.
-      */}
-      {catalogue.categories.length ? (
-        <StorefrontSection
-          title={ui.storefront.categoriesTitle}
-          label={ui.storefront.categoriesEyebrow}
-          moreHref={routes.categories()}
-          headingLevel={2}
+      {rails.map(({ category, products }) => (
+        <StorefrontProductRail
+          key={category.id}
+          products={products}
+          productHref={routes.product}
+          title={category.name}
+          label={category.description ?? undefined}
+          seeAllHref={routes.category(category.slug)}
+          locale="pt-BR"
+          showPrice={layout.showProductPrice ?? true}
+          showBadge={layout.showProductBadges ?? true}
           messages={ui}
-        >
-          <StorefrontCategoryGrid
-            categories={catalogue.categories}
-            href={routes.category}
-            catalogHref={routes.catalog()}
-            locale="pt-BR"
-            messages={ui}
-          />
-        </StorefrontSection>
-      ) : null}
+        />
+      ))}
     </StorefrontFrame>
   )
 }
