@@ -42,17 +42,30 @@ describe("StorefrontWindow", () => {
       expect(screen.getByRole("banner").querySelector("a")).toHaveAttribute("href", "/padaria-da-ana")
     })
 
-    it("searches through the address, so a result can be shared", () => {
-      renderWindow({ searchAction: "/padaria-da-ana", searchValue: "bolo" })
+    /**
+     * The window places the search and hands it one address; what the field itself does is
+     * `storefront-search.test.tsx`. The address is this file's business because searching now
+     * leaves for a page of its own — a form posting to the page it stands on is the old single
+     * filtered page, not a search.
+     */
+    it("points the header's search at the address the screen gave it", () => {
+      renderWindow({ searchAction: "/padaria-da-ana/busca", searchValue: "bolo" })
 
       const form = within(screen.getByRole("banner")).getByRole("search")
       expect(form).toHaveAttribute("method", "get")
-      expect(screen.getByRole("searchbox")).toHaveValue("bolo")
+      expect(form).toHaveAttribute("action", "/padaria-da-ana/busca")
+      expect(screen.getByRole("searchbox", { name: "Buscar nesta loja" })).toHaveValue("bolo")
     })
 
-    it("carries the open category through a search rather than dropping it", () => {
+    it("draws no search when the screen has nowhere to send one", () => {
+      renderWindow()
+
+      expect(screen.queryByRole("search")).not.toBeInTheDocument()
+    })
+
+    it("carries what the screen pinned to the search rather than dropping it on the way", () => {
       const { container } = renderWindow({
-        searchAction: "/padaria-da-ana",
+        searchAction: "/padaria-da-ana/busca",
         searchHidden: { categoria: "promocoes" },
       })
 
@@ -156,9 +169,18 @@ describe("StorefrontWindow", () => {
   })
 
   it("renders in English when the screen hands it the English dictionary", () => {
-    renderWindow({ messages: en, description: "Bread and cakes.", orderHref: "https://wa.me/1" })
+    renderWindow({
+      messages: en,
+      description: "Bread and cakes.",
+      orderHref: "https://wa.me/1",
+      searchAction: "/ana-bakery/search",
+    })
 
     expect(screen.getByRole("link", { name: "Order on WhatsApp" })).toBeInTheDocument()
+    // The dictionary has to reach the bands the window hands to another block, not only the
+    // sentences it renders itself: a Portuguese field inside an English shop looks like a bug
+    // in the shop, and nothing else in this file would see it.
+    expect(screen.getByRole("searchbox", { name: "Search this shop" })).toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {

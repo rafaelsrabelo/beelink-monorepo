@@ -128,11 +128,68 @@ export interface UiMessages {
     noPhoto: string
     search: string
     searchAction: string
+    /**
+     * Distinct from `search`, which is the field's accessible name: a placeholder is gone the
+     * moment someone types, so it can never be the only label a field has (WCAG 3.3.2).
+     */
+    searchPlaceholder: string
+    /** A link back to the unfiltered address, never a button that empties a field in place. */
+    searchClear: string
+    /** The search page's own title, which is what it has before anyone has typed anything. */
+    searchHeading: string
+    /**
+     * "{count} resultados para {term}". `{count}` arrives already spelled by the block's own
+     * `Intl.NumberFormat`, since a formatter cannot live in a dictionary.
+     */
+    searchResults: string
+    /**
+     * The `{count} === 1` form. A key rather than a branch, because choosing between them cannot
+     * be a function; both languages have exactly these two forms and no third.
+     */
+    searchResultsOne: string
+    /** `{term}`. Says back what was searched for, because "nothing found" alone hides a typo. */
+    searchEmpty: string
     categoriesLabel: string
     allCategories: string
     empty: string
     emptyHint: string
     productsHeading: string
+    /**
+     * "{count} produtos", under the catalogue's title and on a category's card. One pair serves
+     * both because it is the same sentence about the same things.
+     */
+    productCount: string
+    /** The `{count} === 1` form; see `searchResultsOne`. */
+    productCountOne: string
+    /** The catalogue page, which is the whole shop — the home is a landing and shows a selection. */
+    catalogTitle: string
+    /** Rendered only while a filter is on: an offer to clear nothing reads as a broken control. */
+    clearFilters: string
+    /** The order the list is asked for. The screen renders the picker only if it can ask for one. */
+    sortLabel: string
+    sortNewest: string
+    sortPriceAsc: string
+    sortPriceDesc: string
+    /** The categories index, and the same heading over the home's band of them. */
+    categoriesTitle: string
+    /** A shop is allowed to sell without categories, and that page still has to say something. */
+    categoriesEmpty: string
+    /** Names the nav for a screen reader, which otherwise reads a row of digits with no purpose. */
+    paginationLabel: string
+    paginationPrevious: string
+    paginationNext: string
+    /** "Página {current} de {total}". */
+    paginationStatus: string
+    /** `{page}`. The accessible name of a numbered link, whose text is a digit and nothing more. */
+    paginationPage: string
+    /** The home's band of products: a selection with a way into the catalogue, not the catalogue. */
+    featuredHeading: string
+    seeAll: string
+    /**
+     * `{section}`. The accessible name of a "see all" link, because a home with three of them
+     * hands a screen reader the same two words three times (WCAG 2.4.4).
+     */
+    seeAllOf: string
     logoAlt: string
     order: string
     socialLabel: string

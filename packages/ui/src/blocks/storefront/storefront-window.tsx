@@ -2,7 +2,7 @@
 import type { CSSProperties, ReactNode } from "react"
 
 // Libs
-import { SearchIcon, ShoppingBagIcon, UserRoundIcon } from "lucide-react"
+import { ShoppingBagIcon, UserRoundIcon } from "lucide-react"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -18,6 +18,7 @@ import {
   WhatsAppIcon,
   YouTubeIcon,
 } from "../store/store-brand-icons"
+import { StorefrontSearch } from "./storefront-search"
 
 /** The four colours a shop dresses its window in. They are data, chosen by the shopkeeper. */
 export interface StorefrontColors {
@@ -57,7 +58,15 @@ export interface StorefrontWindowProps {
   homeHref: string
   colors: StorefrontColors
 
-  /** Band 1 — the header. Absent hrefs mean the icon does not render: nothing here is decorative. */
+  /**
+   * Band 1 — the header. Absent hrefs mean the icon does not render: nothing here is decorative.
+   *
+   * The search arrives as an address and not as a ready-made node, unlike `categories`. The two
+   * bands are not the same kind of thing: band 2 is a list whose every href only the screen can
+   * build, so the screen builds it; a search is complete once it knows where to send the term,
+   * and handing the window a node instead would hand every page the header's proportions to
+   * get right on its own — six pages, six headers. No `searchAction`, no search.
+   */
   searchAction?: string
   searchValue?: string
   searchHidden?: Record<string, string>
@@ -184,30 +193,15 @@ export function StorefrontWindow({
             <span className="hidden text-base font-semibold sm:inline">{name}</span>
           </Link>
 
+          {/* Never autofocused: the header is on every page, and a caret that jumps into it puts
+              a phone keyboard over the shop on every arrival. */}
           {searchAction ? (
-            <form method="get" action={searchAction} role="search" className="relative min-w-0 flex-1">
-              <label htmlFor="storefront-search" className="sr-only">
-                {text.search}
-              </label>
-              <SearchIcon
-                aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 opacity-60"
-              />
-              <input
-                id="storefront-search"
-                type="search"
-                name="busca"
-                defaultValue={searchValue}
-                placeholder={text.search}
-                className="h-10 w-full rounded-full border border-current/15 bg-transparent pr-3 pl-9 text-sm outline-none focus-visible:border-current/40"
-              />
-              {Object.entries(searchHidden ?? {}).map(([key, value]) => (
-                <input key={key} type="hidden" name={key} value={value} />
-              ))}
-              <button type="submit" className="sr-only">
-                {text.searchAction}
-              </button>
-            </form>
+            <StorefrontSearch
+              action={searchAction}
+              value={searchValue}
+              hidden={searchHidden}
+              messages={messages}
+            />
           ) : null}
 
           <div className="flex shrink-0 items-center gap-1">
