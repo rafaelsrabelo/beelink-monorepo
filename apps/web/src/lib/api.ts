@@ -12,13 +12,39 @@ export interface ApiCall {
   accessToken?: string
   /** The browser's address, so the API's per-IP rate limit sees people and not this server. */
   clientIp?: string | null
+  /**
+   * A body handed through untouched, for the one call that carries a file.
+   *
+   * Streamed rather than read and rebuilt: this app never holds the bytes, so the only ceiling on
+   * an upload is the API's, stated once. Buffering here to check a size would be a second number
+   * to keep in step with the first, and the pair would disagree inside a quarter.
+   */
+  rawBody?: { stream: ReadableStream<Uint8Array>; contentType: string }
 }
 
 /** Only the server talks to the API; everything the browser sends passes through a route handler. */
-export async function callApi({ path, method = "POST", body, accessToken, clientIp }: ApiCall): Promise<Response> {
-  const headers: Record<string, string> = { "content-type": "application/json" }
+export async function callApi({ path, method = "POST", body, accessToken, clientIp, rawBody }: ApiCall): Promise<Response> {
+  const headers: Record<string, string> = {}
   if (accessToken) headers.authorization = `Bearer ${accessToken}`
   if (clientIp) headers["x-forwarded-for"] = clientIp
+
+  if (rawBody) {
+    // The caller's own content-type, boundary and all. Writing one by hand produces a multipart
+    // body the API cannot parse, because the boundary would no longer match the one in the bytes.
+    headers["content-type"] = rawBody.contentType
+
+    // `duplex` is required to send a stream and is missing from the DOM lib's RequestInit; the
+    // cast is that gap and nothing more.
+    return fetch(`${serverEnv.API_URL}${path}`, {
+      method,
+      headers,
+      body: rawBody.stream,
+      cache: "no-store",
+      duplex: "half",
+    } as RequestInit & { duplex: "half" })
+  }
+
+  headers["content-type"] = "application/json"
 
   return fetch(`${serverEnv.API_URL}${path}`, {
     method,

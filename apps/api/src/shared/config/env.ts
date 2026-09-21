@@ -51,6 +51,24 @@ const envSchema = z.object({
    * through the web app's route handlers, so without this the rate limit sees one address for
    * everyone. Accepts Fastify's syntax: `loopback`, a CIDR, a comma-separated list, or `false`.
    */
+  /**
+   * Cloudinary, for the image uploads. Optional as a group: an API without them serves everything
+   * else and refuses uploads with UPLOAD_NOT_CONFIGURED, which is a state worth being able to run
+   * in — a reviewer's preview needs no storage account.
+   *
+   * All three or none is enforced where they are read. Half a configuration is a deployment that
+   * looks switched on and fails at the first file.
+   */
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
+  /** Where the files land inside the account, so one Cloudinary can serve more than this product. */
+  CLOUDINARY_FOLDER: z.string().min(1).default('bee-link'),
+
+  /** Uploads cost money and bandwidth, so they are limited harder than an ordinary write. */
+  UPLOAD_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  UPLOAD_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+
   TRUST_PROXY: z.string().default('loopback'),
 });
 

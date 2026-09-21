@@ -85,6 +85,8 @@ export interface SignedInCall {
   path: string
   method: "GET" | "POST" | "PUT" | "DELETE"
   body?: unknown
+  /** Passed straight through, for the one call that carries a file. See `ApiCall.rawBody`. */
+  rawBody?: { stream: ReadableStream<Uint8Array>; contentType: string }
 }
 
 /** What the API answered, already parsed — never null, so a handler has one shape to forward. */
@@ -114,6 +116,7 @@ export async function forwardSignedIn(request: NextRequest, call: SignedInCall):
     path: call.path,
     method: call.method,
     body: call.body,
+    rawBody: call.rawBody,
     accessToken,
     clientIp: clientIpOf(request),
   })

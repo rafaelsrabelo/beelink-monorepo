@@ -6,11 +6,13 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 // Libs
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 
 // App
 import { env } from './shared/config/env.js';
 import { ApiExceptionFilter } from './shared/http/api-exception.filter.js';
+import { MAX_UPLOAD_BYTES } from './modules/uploads/uploads.constants.js';
 
 /**
  * `trustProxy` decides whose x-forwarded-for the server believes. Every browser call arrives
@@ -45,6 +47,11 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
     },
   });
   await app.register(cors, { origin: env.CORS_ORIGINS });
+
+  // The uploads route is the only multipart one. The ceiling here is the plugin's own backstop —
+  // it stops reading rather than buffering whatever arrives — and the controller is what turns a
+  // truncated read into 413. One more byte than the limit, so a file exactly at it still passes.
+  await app.register(multipart, { limits: { fileSize: MAX_UPLOAD_BYTES + 1, files: 1, fields: 4 } });
 
   // Registered before Nest declares its routes, which is what lets a route opt in with @RouteConfig.
   // The builder returns an HttpException on purpose: the plugin throws whatever it gets, and only an
