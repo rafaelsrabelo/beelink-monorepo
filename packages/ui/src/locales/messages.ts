@@ -184,6 +184,13 @@ export interface UiMessages {
     paginationPage: string
     /** The home's band of products: a selection with a way into the catalogue, not the catalogue. */
     featuredHeading: string
+    /**
+     * The line above a band's heading. Platform copy and not the shopkeeper's, so it says what is
+     * true of every shop — a shop's own words for its bands belong to a panel field that does not
+     * exist yet, and inventing a voice for someone else's shop is worse than a plain sentence.
+     */
+    featuredEyebrow: string
+    categoriesEyebrow: string
     seeAll: string
     /**
      * `{section}`. The accessible name of a "see all" link, because a home with three of them
@@ -193,6 +200,22 @@ export interface UiMessages {
     logoAlt: string
     order: string
     socialLabel: string
+    /**
+     * What the shop takes, said to a customer rather than to the shopkeeper. `admin.store.payment`
+     * has the same four names, and they are not reusable here: its hints explain a checkbox to the
+     * person ticking it ("Pagamento em espécie na entrega"), which is not what a band above the
+     * products is for.
+     */
+    payments: {
+      money: string
+      moneyDetail: string
+      pix: string
+      pixDetail: string
+      creditCard: string
+      creditCardDetail: string
+      debitCard: string
+      debitCardDetail: string
+    }
     /** An icon with no words announces itself as "link" and nothing else. */
     networks: {
       whatsapp: string

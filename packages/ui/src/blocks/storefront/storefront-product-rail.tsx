@@ -14,6 +14,8 @@ export interface StorefrontProductRailProps {
   locale: string
   /** The band's title, and the name the scrollable region answers to. Defaults to "Destaques". */
   title?: string
+  /** The small line above the title. `aria-hidden`, for the reason StorefrontSection's is. */
+  label?: string
   /** The catalogue. Without it the band is a selection with no way through to the rest. */
   seeAllHref?: string
   showPrice?: boolean
@@ -51,6 +53,7 @@ export function StorefrontProductRail({
   productHref,
   locale,
   title,
+  label,
   seeAllHref,
   showPrice = true,
   showBadge = true,
@@ -67,7 +70,18 @@ export function StorefrontProductRail({
   return (
     <section className="flex w-full flex-col gap-3">
       <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-lg font-semibold">{heading}</h2>
+        <div className="flex flex-col gap-1">
+          {label ? (
+            <p
+              aria-hidden="true"
+              className="text-xs font-semibold tracking-widest uppercase"
+              style={{ color: "var(--shop-primary)" }}
+            >
+              {label}
+            </p>
+          ) : null}
+          <h2 className="text-lg font-semibold">{heading}</h2>
+        </div>
 
         {seeAllHref ? (
           <Link

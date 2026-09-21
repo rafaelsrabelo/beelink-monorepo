@@ -10,6 +10,12 @@ import type { StorefrontCategory } from "./storefront-categories"
 export interface StorefrontCategoryGridItem extends StorefrontCategory {
   /** The whole category, never the page being shown: it is the promise the card makes. */
   productCount: number
+  /**
+   * The shopkeeper's own line about the category. It has been a column since the beginning and
+   * nothing rendered it, so every card said the same thing — a number — about categories the
+   * shopkeeper had already taken the trouble to describe.
+   */
+  description?: string | null
 }
 
 export interface StorefrontCategoryGridProps {
@@ -112,11 +118,27 @@ export function StorefrontCategoryGrid({
                 )}
               </div>
 
-              <p className="line-clamp-2 text-sm font-medium">{category.name}</p>
-              <p className="text-xs opacity-70">
-                {format(category.productCount === 1 ? text.productCountOne : text.productCount, {
-                  count: new Intl.NumberFormat(locale).format(category.productCount),
-                })}
+              <p className="line-clamp-2 text-sm font-semibold">{category.name}</p>
+
+              {/*
+                The shopkeeper's line when there is one, and how much is behind the card when there
+                is not — never both. Two lines of grey under every name is what turns a page of
+                categories into a wall, and the number is the weaker of the two: it says how many,
+                where the description says why.
+
+                The arrow is part of the same sentence and hidden from the accessibility tree: the
+                whole card is already a link, and an arrow announced after the text is a second
+                thing to step through that goes exactly where the first one did.
+              */}
+              <p className="line-clamp-1 text-xs opacity-70">
+                {category.description?.trim()
+                  ? category.description
+                  : format(category.productCount === 1 ? text.productCountOne : text.productCount, {
+                      count: new Intl.NumberFormat(locale).format(category.productCount),
+                    })}
+                <span aria-hidden="true" className="ml-1 transition-transform group-hover:ml-2 inline-block">
+                  →
+                </span>
               </p>
             </Link>
           </li>

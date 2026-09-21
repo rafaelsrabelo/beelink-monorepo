@@ -74,6 +74,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       // repeating the shop's paragraph above them pushes what someone came for below the fold.
       description={store.description}
       showBanner
+      showHighlights
       messages={ui}
     >
       {/*
@@ -85,6 +86,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
         products={catalogue.products}
         productHref={routes.product}
         seeAllHref={routes.catalog()}
+        label={ui.storefront.featuredEyebrow}
         locale="pt-BR"
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}
@@ -99,6 +101,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       {catalogue.categories.length ? (
         <StorefrontSection
           title={ui.storefront.categoriesTitle}
+          label={ui.storefront.categoriesEyebrow}
           moreHref={routes.categories()}
           headingLevel={2}
           messages={ui}

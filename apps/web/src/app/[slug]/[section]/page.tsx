@@ -191,6 +191,7 @@ export default async function StorefrontSectionPage({
       categories={catalogue.categories}
       activeCategory={category?.slug ?? null}
       searchValue={term}
+      showHighlights
       messages={ui}
     >
       {/*

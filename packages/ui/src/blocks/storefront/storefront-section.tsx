@@ -18,6 +18,11 @@ export type StorefrontSectionHeadingLevel = 2 | 3 | 4 | 5 | 6
 export interface StorefrontSectionProps {
   /** The band's heading, and the `{section}` its "see all" link names itself after. */
   title: string
+  /**
+   * The small line above the heading. Decorative in the accessibility tree on purpose: it is a
+   * flourish over the title, and read out it arrives as a fragment before the words that matter.
+   */
+  label?: string
   description?: string
   /** Where the band's real page lives. Without one there is no link: there is nowhere to send them. */
   moreHref?: string
@@ -55,6 +60,7 @@ export interface StorefrontSectionProps {
  */
 export function StorefrontSection({
   title,
+  label,
   description,
   moreHref,
   moreLabel,
@@ -70,6 +76,15 @@ export function StorefrontSection({
     <section aria-label={title} className="flex w-full flex-col gap-4">
       <div className="flex items-baseline justify-between gap-4">
         <div className="flex flex-col gap-1">
+          {label ? (
+            <p
+              aria-hidden="true"
+              className="text-xs font-semibold tracking-widest uppercase"
+              style={{ color: "var(--shop-primary)" }}
+            >
+              {label}
+            </p>
+          ) : null}
           <Heading className="text-lg font-semibold">{title}</Heading>
           {description ? <p className="max-w-prose text-sm opacity-70">{description}</p> : null}
         </div>

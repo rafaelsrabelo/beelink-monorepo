@@ -10,6 +10,7 @@ import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefr
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { paymentHighlightsOf } from "./storefront-highlights"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
@@ -25,6 +26,11 @@ export interface StorefrontFrameProps {
   description?: string | null
   /** The cover, which only the home shows, and only when the shopkeeper chose that layout. */
   showBanner?: boolean
+  /**
+   * The band of what the shop takes, which belongs above a shelf and not above one product: on a
+   * product page the thing someone came to see is what has to be at the top.
+   */
+  showHighlights?: boolean
   messages: UiMessages
   children: ReactNode
 }
@@ -48,6 +54,7 @@ export function StorefrontFrame({
   searchValue,
   description = null,
   showBanner = false,
+  showHighlights = false,
   messages,
   children,
 }: StorefrontFrameProps) {
@@ -77,6 +84,7 @@ export function StorefrontFrame({
           ? { imageUrl: store.bannerImageUrl }
           : null
       }
+      highlights={showHighlights ? paymentHighlightsOf(store, messages) : []}
       links={storefrontLinksOf(store)}
       orderHref={description ? orderHrefOf(store) : undefined}
       addressLine={addressLineOf(store)}
