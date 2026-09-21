@@ -17,6 +17,7 @@ const meta = {
     hint: ptBR.store.identity.logoHint,
     previewAlt: ptBR.store.identity.logoAlt,
     value: "",
+    recommendedSize: { width: 400, height: 400 },
     onChange: fn(),
     onUpload: fn(async () => sampleImage),
   },
@@ -39,6 +40,7 @@ export const Banner: Story = {
     hint: ptBR.store.appearance.bannerImageHint,
     previewAlt: ptBR.store.appearance.bannerAlt,
     aspect: "wide",
+    recommendedSize: { width: 1200, height: 400 },
     value: sampleImage,
   },
 }
@@ -47,13 +49,25 @@ export const Enviando: Story = {
   args: { pending: true },
 }
 
-/** No upload wired up: the block degrades to the address field alone, and nothing else changes. */
+/** No upload wired up: the area goes inert rather than pretending it can take a file. */
 export const SemEnvio: Story = {
-  args: { onUpload: undefined, value: sampleImage },
+  args: { onUpload: undefined },
+}
+
+/** The specs follow the props, so a different ceiling is a different sentence and nothing else. */
+export const OutrosLimites: Story = {
+  args: {
+    label: ptBR.store.appearance.bannerImageLabel,
+    hint: ptBR.store.appearance.bannerImageHint,
+    previewAlt: ptBR.store.appearance.bannerAlt,
+    accept: "image/jpeg,image/gif,image/png",
+    maxSizeBytes: 5 * 1024 * 1024,
+    recommendedSize: { width: 1200, height: 400 },
+  },
 }
 
 export const ComErro: Story = {
-  args: { value: "nao-e-um-endereco", error: { message: "Informe um endereço válido" } },
+  args: { error: { message: "Escolha uma imagem para a loja" } },
 }
 
 export const EmIngles: Story = {

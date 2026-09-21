@@ -83,6 +83,10 @@ export function StoreAppearanceFields({
           hint={text.bannerImageHint}
           previewAlt={text.bannerAlt}
           aspect="wide"
+          // bee-link's own banner size, not the one from the form this layout was modelled on.
+          // The area and the preview take their shape from it, so what is cropped while choosing
+          // is what is cropped in the shop window.
+          recommendedSize={{ width: 1200, height: 400 }}
           value={value.bannerImageUrl}
           error={errors?.bannerImageUrl}
           onUpload={onBannerUpload}

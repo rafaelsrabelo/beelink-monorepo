@@ -1,6 +1,9 @@
 // Locales
 import type { UiMessages } from "./messages"
 
+const formatList = new Intl.ListFormat("pt-BR", { type: "disjunction" })
+const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 })
+
 export const ptBR: UiMessages = {
   validation: {
     emailInvalid: "Informe um e-mail válido",
@@ -127,13 +130,17 @@ export const ptBR: UiMessages = {
       submitting: "Criando…",
     },
     image: {
-      fileLabel: "Enviar arquivo",
-      fileHint: "PNG, JPG ou WebP.",
-      urlLabel: "Ou cole o endereço da imagem",
-      urlPlaceholder: "https://…",
+      dropCta: "Clique ou arraste a imagem aqui",
+      dropActive: "Solte a imagem para enviar",
+      specFormats: (formats, maxSizeMb) =>
+        `Formatos aceitos: ${formatList.format(formats)} de até ${decimal.format(maxSizeMb)} MB.`,
+      specDimensions: (width, height) =>
+        `Dimensão recomendada: ${width} x ${height} pixels.`,
+      tooLarge: (maxSizeMb) => `A imagem passa de ${decimal.format(maxSizeMb)} MB. Escolha uma menor.`,
+      wrongFormat: (formats) => `Formato não aceito. Use ${formatList.format(formats)}.`,
       uploading: "Enviando…",
+      replace: "Trocar imagem",
       clear: "Remover imagem",
-      empty: "Nenhuma imagem escolhida",
     },
     settings: {
       title: "Minha loja",
@@ -162,7 +169,7 @@ export const ptBR: UiMessages = {
       categoryNone: "Sem categoria",
       logoLabel: "Logo da loja",
       logoPlaceholder: "https://…",
-      logoHint: "Uma imagem quadrada fica melhor. Cerca de 400 por 400 pixels.",
+      logoHint: "Uma imagem quadrada fica melhor.",
       logoAlt: "Pré-visualização da logo",
     },
     address: {
@@ -209,7 +216,7 @@ export const ptBR: UiMessages = {
       layoutBannerHint: "Uma imagem larga abre a loja, e os produtos vêm abaixo.",
       bannerImageLabel: "Imagem do banner",
       bannerImagePlaceholder: "https://…",
-      bannerImageHint: "Use uma imagem deitada, de cerca de 1200 por 400 pixels.",
+      bannerImageHint: "Use uma imagem deitada.",
       bannerAlt: "Pré-visualização do banner",
       cardLayoutLegend: "Estilo dos cards de produto",
       cardLayoutGrid: "Vertical",

@@ -140,11 +140,11 @@ describe("StoreCreateForm", () => {
         onImageUpload={vi.fn(async () => "https://cdn.exemplo.com/logo.png")}
       />,
     )
-    expect(screen.getByLabelText("Enviar arquivo")).toBeInTheDocument()
+    expect(screen.getByLabelText("Clique ou arraste a imagem aqui")).toBeEnabled()
     unmount()
 
     renderForm()
-    expect(screen.queryByLabelText("Enviar arquivo")).not.toBeInTheDocument()
+    expect(screen.getByLabelText("Clique ou arraste a imagem aqui")).toBeDisabled()
   })
 
   it("renders in English when the screen hands it the English dictionary", () => {

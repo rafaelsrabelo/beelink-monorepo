@@ -1,6 +1,9 @@
 // Locales
 import type { UiMessages } from "./messages"
 
+const formatList = new Intl.ListFormat("en", { type: "disjunction" })
+const decimal = new Intl.NumberFormat("en", { maximumFractionDigits: 1 })
+
 export const en: UiMessages = {
   validation: {
     emailInvalid: "Enter a valid e-mail address",
@@ -127,13 +130,16 @@ export const en: UiMessages = {
       submitting: "Creating…",
     },
     image: {
-      fileLabel: "Upload a file",
-      fileHint: "PNG, JPG or WebP.",
-      urlLabel: "Or paste the image address",
-      urlPlaceholder: "https://…",
+      dropCta: "Click or drag the image here",
+      dropActive: "Drop the image to upload",
+      specFormats: (formats, maxSizeMb) =>
+        `Accepted formats: ${formatList.format(formats)} up to ${decimal.format(maxSizeMb)} MB.`,
+      specDimensions: (width, height) => `Recommended size: ${width} x ${height} pixels.`,
+      tooLarge: (maxSizeMb) => `The image is over ${decimal.format(maxSizeMb)} MB. Choose a smaller one.`,
+      wrongFormat: (formats) => `Unsupported format. Use ${formatList.format(formats)}.`,
       uploading: "Uploading…",
+      replace: "Replace image",
       clear: "Remove image",
-      empty: "No image chosen",
     },
     settings: {
       title: "My shop",
@@ -162,7 +168,7 @@ export const en: UiMessages = {
       categoryNone: "No category",
       logoLabel: "Shop logo",
       logoPlaceholder: "https://…",
-      logoHint: "A square image works best. Around 400 by 400 pixels.",
+      logoHint: "A square image works best.",
       logoAlt: "Logo preview",
     },
     address: {
@@ -209,7 +215,7 @@ export const en: UiMessages = {
       layoutBannerHint: "A wide image opens the shop, with the products below it.",
       bannerImageLabel: "Banner image",
       bannerImagePlaceholder: "https://…",
-      bannerImageHint: "Use a landscape image of about 1200 by 400 pixels.",
+      bannerImageHint: "Use a landscape image.",
       bannerAlt: "Banner preview",
       cardLayoutLegend: "Product card style",
       cardLayoutGrid: "Vertical",

@@ -1,5 +1,5 @@
 // Libs
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -11,6 +11,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { StoreImageField } from "./store-image-field"
 
 const sampleImage = "https://cdn.exemplo.com/logo.png"
+const CTA = "Clique ou arraste a imagem aqui"
 
 function renderField(overrides: Partial<Parameters<typeof StoreImageField>[0]> = {}) {
   const onChange = vi.fn()
@@ -29,26 +30,111 @@ function renderField(overrides: Partial<Parameters<typeof StoreImageField>[0]> =
   return { onChange, onUpload }
 }
 
-function pngNamed(name: string): File {
-  return new File(["bytes"], name, { type: "image/png" })
+function imageNamed(name: string, type = "image/png", size = 1024): File {
+  const file = new File(["bytes"], name, { type })
+  // `new File` sizes itself from its contents, and a test that needs a 3 MB file should not have to
+  // allocate one.
+  Object.defineProperty(file, "size", { value: size })
+  return file
 }
 
 describe("StoreImageField", () => {
   it("hands the chosen file to whoever stores bytes, and reports back the URL it answers", async () => {
     const { onChange, onUpload } = renderField()
 
-    const file = pngNamed("logo.png")
-    await userEvent.upload(screen.getByLabelText("Enviar arquivo"), file)
+    const file = imageNamed("logo.png")
+    await userEvent.upload(screen.getByLabelText(CTA), file)
 
     expect(onUpload).toHaveBeenCalledWith(file)
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(sampleImage))
   })
 
+  it("takes a file dropped on the area, not only one picked through the dialog", async () => {
+    const { onChange, onUpload } = renderField()
+
+    const file = imageNamed("logo.png")
+    const area = screen.getByLabelText(CTA).parentElement as HTMLElement
+
+    fireEvent.dragOver(area, { dataTransfer: { files: [file] } })
+    expect(screen.getByText("Solte a imagem para enviar")).toBeInTheDocument()
+
+    fireEvent.drop(area, { dataTransfer: { files: [file] } })
+
+    expect(onUpload).toHaveBeenCalledWith(file)
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(sampleImage))
+  })
+
+  it("returns to the resting call to action when the drag leaves without a drop", () => {
+    renderField()
+    const area = screen.getByLabelText(CTA).parentElement as HTMLElement
+
+    fireEvent.dragOver(area, { dataTransfer: { files: [] } })
+    fireEvent.dragLeave(area)
+
+    expect(screen.getByText(CTA)).toBeInTheDocument()
+    expect(screen.queryByText("Solte a imagem para enviar")).not.toBeInTheDocument()
+  })
+
+  it("quotes the formats and the ceiling it actually enforces", () => {
+    renderField({
+      accept: "image/jpeg,image/gif,image/png",
+      maxSizeBytes: 2 * 1024 * 1024,
+      recommendedSize: { width: 1600, height: 838 },
+    })
+
+    expect(screen.getByText("Formatos aceitos: JPEG, GIF ou PNG de até 2 MB.")).toBeInTheDocument()
+    expect(screen.getByText("Dimensão recomendada: 1600 x 838 pixels.")).toBeInTheDocument()
+  })
+
+  it("says nothing about dimensions when none are recommended", () => {
+    renderField()
+
+    expect(screen.queryByText(/Dimensão recomendada/)).not.toBeInTheDocument()
+  })
+
+  it("refuses a file over the ceiling without sending a byte", async () => {
+    const { onUpload } = renderField({ maxSizeBytes: 2 * 1024 * 1024 })
+
+    await userEvent.upload(
+      screen.getByLabelText(CTA),
+      imageNamed("grande.png", "image/png", 3 * 1024 * 1024),
+    )
+
+    expect(onUpload).not.toHaveBeenCalled()
+    expect(screen.getByRole("alert")).toHaveTextContent("A imagem passa de 2 MB")
+  })
+
+  // Through the dialog a wrong type cannot arrive — the picker honours `accept`, and so does
+  // userEvent. A drop does not: dragging a file onto the area bypasses `accept` entirely, which is
+  // the whole reason the guard exists rather than trusting the attribute.
+  it("refuses a dropped type outside accept without sending a byte", () => {
+    const { onUpload } = renderField({ accept: "image/png,image/jpeg" })
+    const area = screen.getByLabelText(CTA).parentElement as HTMLElement
+
+    fireEvent.drop(area, { dataTransfer: { files: [imageNamed("arquivo.gif", "image/gif")] } })
+
+    expect(onUpload).not.toHaveBeenCalled()
+    expect(screen.getByRole("alert")).toHaveTextContent("Formato não aceito")
+  })
+
+  it("drops its own refusal once an acceptable file replaces the bad one", async () => {
+    const { onUpload } = renderField({ maxSizeBytes: 2 * 1024 * 1024 })
+    const input = screen.getByLabelText<HTMLInputElement>(CTA)
+
+    await userEvent.upload(input, imageNamed("grande.png", "image/png", 3 * 1024 * 1024))
+    expect(screen.getByRole("alert")).toBeInTheDocument()
+
+    await userEvent.upload(input, imageNamed("ok.png"))
+
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument())
+    expect(onUpload).toHaveBeenCalledTimes(1)
+  })
+
   it("clears the input after an upload, so picking the same file twice still fires", async () => {
     const { onUpload } = renderField()
 
-    const input = screen.getByLabelText<HTMLInputElement>("Enviar arquivo")
-    await userEvent.upload(input, pngNamed("logo.png"))
+    const input = screen.getByLabelText<HTMLInputElement>(CTA)
+    await userEvent.upload(input, imageNamed("logo.png"))
 
     await waitFor(() => expect(input.value).toBe(""))
     expect(onUpload).toHaveBeenCalledTimes(1)
@@ -70,8 +156,8 @@ describe("StoreImageField", () => {
       />,
     )
 
-    const input = screen.getByLabelText<HTMLInputElement>("Enviar arquivo")
-    await userEvent.upload(input, pngNamed("logo.png"))
+    const input = screen.getByLabelText<HTMLInputElement>(CTA)
+    await userEvent.upload(input, imageNamed("logo.png"))
 
     await waitFor(() => expect(input.value).toBe(""))
     expect(onChange).not.toHaveBeenCalled()
@@ -81,16 +167,19 @@ describe("StoreImageField", () => {
   it("keeps a real file input rather than a div someone can only click", () => {
     renderField()
 
-    const input = screen.getByLabelText("Enviar arquivo")
+    const input = screen.getByLabelText(CTA)
     expect(input.tagName).toBe("INPUT")
     expect(input).toHaveAttribute("type", "file")
     expect(input).toHaveAttribute("accept", "image/png,image/jpeg,image/webp")
+    // sr-only, not hidden: hiding it is what takes it out of the tab order.
+    expect(input).toHaveClass("sr-only")
   })
 
-  it("shows the picture the shop has now, and a way to drop it", async () => {
+  it("shows the picture the shop has now, with a way to replace it and a way to drop it", async () => {
     const { onChange } = renderField({ value: sampleImage })
 
     expect(screen.getByAltText("Pré-visualização da logo")).toHaveAttribute("src", sampleImage)
+    expect(screen.getByRole("button", { name: "Trocar imagem" })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole("button", { name: "Remover imagem" }))
 
@@ -101,38 +190,34 @@ describe("StoreImageField", () => {
     renderField()
 
     expect(screen.queryByRole("button", { name: "Remover imagem" })).not.toBeInTheDocument()
-    expect(screen.getByRole("img", { name: "Nenhuma imagem escolhida" })).toBeInTheDocument()
+    expect(screen.getByText(CTA)).toBeInTheDocument()
   })
 
-  it("drops to the address field alone when no upload is wired up", () => {
-    renderField({ onUpload: undefined, value: sampleImage })
+  it("leaves the area inert when no upload is wired up", () => {
+    renderField({ onUpload: undefined })
 
-    expect(screen.queryByLabelText("Enviar arquivo")).not.toBeInTheDocument()
-    expect(screen.getByLabelText("Ou cole o endereço da imagem")).toHaveValue(sampleImage)
+    expect(screen.getByLabelText(CTA)).toBeDisabled()
   })
 
   it("takes no new file while the screen's upload is in flight", () => {
     renderField({ pending: true })
 
-    expect(screen.getByLabelText("Enviar arquivo")).toBeDisabled()
-    expect(screen.getByText("Enviando…")).toBeInTheDocument()
+    expect(screen.getByLabelText("Enviando…")).toBeDisabled()
   })
 
   it("renders the verdict the screen's form handed it", () => {
-    renderField({ value: "nao-e-um-endereco", error: { message: "Informe um endereço válido" } })
+    renderField({ error: { message: "Informe um endereço válido" } })
 
     expect(screen.getByRole("alert")).toHaveTextContent("Informe um endereço válido")
-    expect(screen.getByLabelText("Ou cole o endereço da imagem")).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    )
+    expect(screen.getByLabelText(CTA)).toHaveAttribute("aria-invalid", "true")
   })
 
   it("renders in English when the screen hands it the English dictionary", () => {
-    renderField({ messages: en })
+    renderField({ messages: en, recommendedSize: { width: 1600, height: 838 } })
 
-    expect(screen.getByLabelText("Upload a file")).toBeInTheDocument()
-    expect(screen.queryByLabelText("Enviar arquivo")).not.toBeInTheDocument()
+    expect(screen.getByLabelText("Click or drag the image here")).toBeInTheDocument()
+    expect(screen.getByText("Recommended size: 1600 x 838 pixels.")).toBeInTheDocument()
+    expect(screen.queryByLabelText(CTA)).not.toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {
@@ -142,10 +227,11 @@ describe("StoreImageField", () => {
         label="Logo da loja"
         hint="Uma imagem quadrada fica melhor."
         previewAlt="Pré-visualização da logo"
-        value={sampleImage}
+        recommendedSize={{ width: 512, height: 512 }}
+        value=""
         onChange={vi.fn()}
         onUpload={vi.fn(async () => sampleImage)}
-        error={{ message: "Informe um endereço válido" }}
+        error={{ message: "Escolha uma imagem" }}
       />,
     )
 

@@ -43,7 +43,7 @@ describe("StoreAppearanceFields", () => {
       <StoreAppearanceFields value={{ ...values, layoutType: "BANNER" }} onChange={vi.fn()} />,
     )
     expect(screen.getByText("Imagem do banner")).toBeInTheDocument()
-    expect(screen.getByLabelText("Ou cole o endereço da imagem")).toBeInTheDocument()
+    expect(screen.getByLabelText("Clique ou arraste a imagem aqui")).toBeInTheDocument()
   })
 
   it("offers the banner upload the screen wired up, and only then", async () => {
@@ -54,7 +54,7 @@ describe("StoreAppearanceFields", () => {
     })
 
     const file = new File(["bytes"], "banner.png", { type: "image/png" })
-    await userEvent.upload(screen.getByLabelText("Enviar arquivo"), file)
+    await userEvent.upload(screen.getByLabelText("Clique ou arraste a imagem aqui"), file)
 
     expect(onBannerUpload).toHaveBeenCalledWith(file)
     await waitFor(() =>

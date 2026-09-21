@@ -146,6 +146,9 @@ export function StoreIdentityFields({
         label={text.logoLabel}
         hint={text.logoHint}
         previewAlt={text.logoAlt}
+        // The number the product has always quoted to shopkeepers. It now lives here alone: the
+        // hint beside it used to repeat it, and a number written twice disagrees with itself.
+        recommendedSize={{ width: 400, height: 400 }}
         value={value.logoUrl}
         error={errors?.logoUrl}
         onUpload={onLogoUpload}

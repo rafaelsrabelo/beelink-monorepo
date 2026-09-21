@@ -132,13 +132,30 @@ export interface UiMessages {
       submitting: string
     }
     image: {
-      fileLabel: string
-      fileHint: string
-      urlLabel: string
-      urlPlaceholder: string
+      /**
+       * The call to action inside the drop area, and the file input's accessible name — the same
+       * string on purpose. A control should be called what it is seen to say (WCAG 2.5.3).
+       */
+      dropCta: string
+      /** Replaces the call to action while a file is held over the area. */
+      dropActive: string
+      /**
+       * "Formatos aceitos: JPEG, GIF ou PNG de até 2 MB." Composed from what the field actually
+       * enforces, so the promise and the refusal cannot disagree. The list arrives unjoined and
+       * the size in megabytes: which connector and which decimal mark to use is this file's call.
+       */
+      specFormats: (formats: string[], maxSizeMb: number) => string
+      /** "Dimensão recomendada: 1600 x 838 pixels." Rendered only when a size is recommended. */
+      specDimensions: (width: number, height: number) => string
+      /**
+       * The block's own verdict on a file it refused to send anywhere. Not an errorCode — nothing
+       * was asked of the API, so there is no code to translate (rule 5 stands).
+       */
+      tooLarge: (maxSizeMb: number) => string
+      wrongFormat: (formats: string[]) => string
       uploading: string
+      replace: string
       clear: string
-      empty: string
     }
     settings: {
       title: string

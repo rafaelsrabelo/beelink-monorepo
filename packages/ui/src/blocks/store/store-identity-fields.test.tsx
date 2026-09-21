@@ -88,7 +88,7 @@ describe("StoreIdentityFields", () => {
     const { onChange } = renderFields({ onLogoUpload })
 
     const file = new File(["bytes"], "logo.png", { type: "image/png" })
-    await userEvent.upload(screen.getByLabelText("Enviar arquivo"), file)
+    await userEvent.upload(screen.getByLabelText("Clique ou arraste a imagem aqui"), file)
 
     expect(onLogoUpload).toHaveBeenCalledWith(file)
     await waitFor(() =>

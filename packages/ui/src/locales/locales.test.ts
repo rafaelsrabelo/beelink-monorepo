@@ -13,6 +13,18 @@ function paths(value: unknown, prefix = ""): string[] {
   )
 }
 
+/**
+ * A message is either a sentence or a function that builds one, and both have to end up as words on
+ * a screen. A function is called with stand-ins because what this asserts is that it renders at all
+ * — a key that returns "" or nothing is the bug being hunted, whatever arguments produced it.
+ */
+function renders(value: unknown): boolean {
+  if (typeof value === "string") return value.trim() !== ""
+  if (typeof value !== "function") return false
+  const built = (value as (...args: unknown[]) => unknown)(["AAA", "BBB"], 2, 3)
+  return typeof built === "string" && built.trim() !== ""
+}
+
 describe("message dictionaries", () => {
   it("carry exactly the same keys, so no screen falls back to another language", () => {
     expect(paths(en)).toEqual(paths(ptBR))
@@ -22,7 +34,7 @@ describe("message dictionaries", () => {
     for (const [name, dictionary] of [["pt-BR", ptBR], ["en", en]] as const) {
       const empty = paths(dictionary).filter((path) => {
         const value = path.split(".").reduce<unknown>((node, key) => (node as Record<string, unknown>)[key], dictionary)
-        return typeof value !== "string" || value.trim() === ""
+        return !renders(value)
       })
 
       expect(empty, `${name} has empty entries`).toEqual([])
