@@ -1,7 +1,8 @@
 // Next
 import { redirect } from "next/navigation";
 
-// Signed-out visitors never reach this: src/proxy.ts sends them to /login first.
+// "/" is outside the proxy matcher, because bee-link serves a public site: a signed-out
+// visitor does reach this and is forwarded to /dashboard, which the proxy does guard.
 export default function Home() {
   redirect("/dashboard");
 }

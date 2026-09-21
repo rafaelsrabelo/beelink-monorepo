@@ -56,10 +56,10 @@ test.describe("a person's first day", () => {
         session: JSON.stringify(window.sessionStorage),
       }))
 
-      expect(readable.cookie).not.toContain("hm_access")
-      expect(readable.cookie).not.toContain("hm_refresh")
-      expect(readable.local).not.toContain("hm_")
-      expect(readable.session).not.toContain("hm_")
+      expect(readable.cookie).not.toContain("bl_access")
+      expect(readable.cookie).not.toContain("bl_refresh")
+      expect(readable.local).not.toContain("bl_")
+      expect(readable.session).not.toContain("bl_")
     })
 
     await test.step("signs out, and the dashboard stops answering", async () => {

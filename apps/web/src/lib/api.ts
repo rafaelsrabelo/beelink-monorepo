@@ -6,7 +6,8 @@ import { serverEnv } from "./server-env"
 
 export interface ApiCall {
   path: string
-  method?: "GET" | "POST" | "DELETE"
+  /** PUT is here because the panel replaces a shop whole, as the legacy PUT already did. */
+  method?: "GET" | "POST" | "PUT" | "DELETE"
   body?: unknown
   accessToken?: string
   /** The browser's address, so the API's per-IP rate limit sees people and not this server. */

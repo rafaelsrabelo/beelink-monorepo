@@ -68,6 +68,24 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  // The route handlers under /api manage their own cookies and must not be redirected.
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"],
+  // An allow-list, and it has to stay one. Every path absent from this list is public on purpose:
+  // `/<slug>` is a storefront, anonymous and meant to be indexed, and the rule above — no session
+  // cookie, go to /login — would answer a crawler with a 302 for the whole public site. The
+  // template this repo grew from matches the inverse, excluding a handful of paths and guarding
+  // everything else; copying that matcher back in is the one edit that breaks bee-link silently.
+  // The route handlers under /api are absent for a second reason: they write their own cookies.
+  matcher: [
+    "/dashboard",
+    "/dashboard/:path*",
+    "/admin",
+    "/admin/:path*",
+    // Signed in like the two above. It is on the API's reserved-slug list, so no shop can ever
+    // take it and turn a guarded path into a storefront.
+    "/create-store",
+    "/login",
+    "/signup",
+    "/verify-email",
+    "/forgot-password",
+    "/reset-password",
+  ],
 }

@@ -13,8 +13,11 @@ export type { Locale } from "@harness-monorepo/ui/locales/messages"
 export const LOCALES: Locale[] = ["pt-BR", "en"]
 export const DEFAULT_LOCALE: Locale = "pt-BR"
 
-/** The cookie a person's choice lands in; the proxy and the server layout both read it. */
-export const LOCALE_COOKIE = "locale"
+/**
+ * The cookie a person's choice lands in; the server layout reads it. Prefixed like the session
+ * cookies: on a shared parent domain a bare `locale` would be one setting for every app under it.
+ */
+export const LOCALE_COOKIE = "bl_locale"
 
 const webMessages: Record<Locale, WebMessages> = { "pt-BR": ptBR, en }
 

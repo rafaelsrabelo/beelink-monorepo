@@ -2,8 +2,14 @@
 import type { AuthSession } from "@harness-monorepo/contracts"
 import type { NextResponse } from "next/server"
 
-export const ACCESS_COOKIE = "hm_access"
-export const REFRESH_COOKIE = "hm_refresh"
+/**
+ * `bl_` names the product, and the rename off the harness template's `hm_` is not cosmetic: a
+ * cookie set on a shared parent domain reaches every app under it, and two sessions answering to
+ * one name would hand each other's tokens around. The cart and the language cookie carry the same
+ * prefix for the same reason.
+ */
+export const ACCESS_COOKIE = "bl_access"
+export const REFRESH_COOKIE = "bl_refresh"
 
 type CookieJar = NextResponse["cookies"]
 

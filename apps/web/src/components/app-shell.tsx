@@ -4,7 +4,7 @@
 import type { ReactNode } from "react"
 
 // Next
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 // Types
 import type { User } from "@harness-monorepo/contracts"
@@ -23,6 +23,15 @@ import { AppLink } from "@/components/app-link"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { useSignOut } from "@/services/auth/auth-hooks"
 
+/**
+ * The shop whose panel is open, read from the address rather than passed down: the shell is
+ * rendered by a layout that is shared by /dashboard and every /admin/<slug> page, and a layout
+ * that awaited the params would block the navigation the Suspense boundary exists to cover.
+ */
+function storeSlugOf(pathname: string): string | null {
+  return /^\/admin\/([^/]+)/.exec(pathname)?.[1] ?? null
+}
+
 export interface AppShellProps {
   user: User
   ui: UiMessages
@@ -33,7 +42,9 @@ export interface AppShellProps {
 
 export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const signOut = useSignOut()
+  const slug = storeSlugOf(pathname)
 
   return (
     <SidebarProvider>
@@ -41,7 +52,7 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
         user={{ name: user.name, email: user.email }}
         messages={ui}
         linkComponent={AppLink}
-        activeHref="/dashboard"
+        activeHref={pathname}
         signingOut={signOut.isPending}
         onSignOut={() =>
           signOut.mutate(undefined, {
@@ -50,16 +61,25 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
             },
           })
         }
-        // Only what exists. A product built from this starter adds its own routes here; three
-        // items pointing at the same page is a menu that lies about where it goes.
-        navMain={[{ title: web.dashboard.navDashboard, href: "/dashboard" }]}
+        // Only what exists, which is why the shop's own two entries appear only once a shop is
+        // open: the catalogue, the orders and the delivery settings arrive with the phases that
+        // build them, and an item pointing at a page that is not there is a menu that lies.
+        navMain={[
+          { title: web.stores.nav.list, href: "/dashboard" },
+          ...(slug
+            ? [
+                { title: web.stores.nav.overview, href: `/admin/${slug}` },
+                { title: web.stores.nav.settings, href: `/admin/${slug}/store` },
+              ]
+            : []),
+        ]}
       />
       <SidebarInset>
         <SiteHeader
           title={web.dashboard.title}
           actions={<LocaleSwitcher locale={locale} messages={web} />}
         />
-        {/* @container/main is what the cards and the chart size themselves against. */}
+        {/* @container/main is what the shop cards and the address grid size themselves against. */}
         <div className="@container/main flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>

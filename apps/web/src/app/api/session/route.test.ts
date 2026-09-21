@@ -41,8 +41,8 @@ describe("POST /api/session", () => {
     expect(body).toEqual(SESSION.user)
     expect(JSON.stringify(body)).not.toContain("access-token")
 
-    const access = cookies.find((cookie) => cookie.name === "hm_access")
-    const refresh = cookies.find((cookie) => cookie.name === "hm_refresh")
+    const access = cookies.find((cookie) => cookie.name === "bl_access")
+    const refresh = cookies.find((cookie) => cookie.name === "bl_refresh")
     expect(access).toMatchObject({ value: "access-token", httpOnly: true, sameSite: "lax", path: "/" })
     expect(refresh).toMatchObject({ value: "refresh-token", httpOnly: true })
   })
@@ -88,23 +88,23 @@ describe("DELETE /api/session", () => {
     const fetchSpy = vi.fn(async () => new Response(null, { status: 204 }))
     vi.stubGlobal("fetch", fetchSpy)
 
-    const response = await DELETE(request({ method: "DELETE", cookie: "hm_refresh=refresh-token" }))
+    const response = await DELETE(request({ method: "DELETE", cookie: "bl_refresh=refresh-token" }))
 
     expect(response.status).toBe(204)
     expect(fetchSpy).toHaveBeenCalledWith(
       "http://api.test/api/auth/logout",
       expect.objectContaining({ body: JSON.stringify({ refreshToken: "refresh-token" }) }),
     )
-    expect(response.cookies.get("hm_access")?.value).toBe("")
-    expect(response.cookies.get("hm_refresh")?.value).toBe("")
+    expect(response.cookies.get("bl_access")?.value).toBe("")
+    expect(response.cookies.get("bl_refresh")?.value).toBe("")
   })
 
   it("still signs the browser out when the API cannot be reached", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("connection refused") }))
 
-    const response = await DELETE(request({ method: "DELETE", cookie: "hm_refresh=refresh-token" }))
+    const response = await DELETE(request({ method: "DELETE", cookie: "bl_refresh=refresh-token" }))
 
     expect(response.status).toBe(204)
-    expect(response.cookies.get("hm_access")?.value).toBe("")
+    expect(response.cookies.get("bl_access")?.value).toBe("")
   })
 })

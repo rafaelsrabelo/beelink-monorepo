@@ -10,7 +10,7 @@ describe("GET /api/session/expired", () => {
     const response = GET(new NextRequest("http://localhost:3000/api/session/expired"))
 
     expect(response.headers.get("location")).toBe("http://localhost:3000/login")
-    expect(response.cookies.get("hm_access")?.value).toBe("")
-    expect(response.cookies.get("hm_refresh")?.value).toBe("")
+    expect(response.cookies.get("bl_access")?.value).toBe("")
+    expect(response.cookies.get("bl_refresh")?.value).toBe("")
   })
 })

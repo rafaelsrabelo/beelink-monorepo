@@ -72,27 +72,29 @@ test("@screenshot the dashboard, in both themes and both languages", async ({ pa
   await page.getByRole("button", { name: "Entrar" }).click()
   await expect(page).toHaveURL(/\/dashboard$/)
   await expect(page.getByText("Bem-vindo de volta, Ana Souza")).toBeVisible()
-  // The chart draws after it measures its container; without this the picture shows empty axes.
-  await expect(page.locator(".recharts-area-area").first()).toBeVisible()
+  // /dashboard is the shop list now, not the harness's chart. The heading renders on the server and
+  // the list arrives afterwards, so waiting on the heading alone photographs the skeleton — this
+  // account owns no shop, so the empty state is what the list resolves to.
+  await expect(page.getByRole("link", { name: "Criar minha loja" })).toBeVisible()
   await page.screenshot({ path: `${RESULT_DIR}/dashboard.png` })
 
   // The same session, read in English.
   await page.context().addCookies([
-    { name: "locale", value: "en", url: "http://localhost:3100" },
+    { name: "bl_locale", value: "en", url: "http://localhost:3100" },
   ])
   await page.reload()
   await expect(page.getByText("Welcome back, Ana Souza")).toBeVisible()
-  await expect(page.locator(".recharts-area-area").first()).toBeVisible()
+  await expect(page.getByRole("link", { name: "Create my shop" })).toBeVisible()
   await page.screenshot({ path: `${RESULT_DIR}/dashboard-en.png` })
 
   // And in the dark, which is a token swap and nothing else.
   const dark = await browser.newContext({ colorScheme: "dark", viewport: { width: 1280, height: 860 } })
   const darkPage = await dark.newPage()
   await dark.addCookies(await page.context().cookies())
-  await dark.addCookies([{ name: "locale", value: "pt-BR", url: "http://localhost:3100" }])
+  await dark.addCookies([{ name: "bl_locale", value: "pt-BR", url: "http://localhost:3100" }])
   await darkPage.goto("/dashboard")
   await expect(darkPage.getByText("Bem-vindo de volta, Ana Souza")).toBeVisible()
-  await expect(darkPage.locator(".recharts-area-area").first()).toBeVisible()
+  await expect(darkPage.getByRole("link", { name: "Criar minha loja" })).toBeVisible()
   await darkPage.screenshot({ path: `${RESULT_DIR}/dashboard-dark.png` })
   await dark.close()
 })
