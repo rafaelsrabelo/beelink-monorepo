@@ -1,3 +1,6 @@
+// Libs
+import { BanknoteIcon, CreditCardIcon, QrCodeIcon, WalletIcon } from "lucide-react"
+
 // Types
 import type { PaymentMethod, PublicStore } from "@harness-monorepo/contracts"
 import type { StorefrontHighlight } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
@@ -18,11 +21,24 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 export function paymentHighlightsOf(store: PublicStore, messages: UiMessages): StorefrontHighlight[] {
   const text = messages.storefront.payments
 
+  // The glyph is chosen here and not in the block: which mark stands for PIX is knowledge about
+  // what a Brazilian shop takes at the door, and a design-system block holds none of that. PIX is
+  // a QR code to anyone who has paid with it, which is what makes it recognisable without words.
   const byMethod: Record<PaymentMethod, StorefrontHighlight> = {
-    MONEY: { id: "MONEY", title: text.money, detail: text.moneyDetail },
-    PIX: { id: "PIX", title: text.pix, detail: text.pixDetail },
-    CREDIT_CARD: { id: "CREDIT_CARD", title: text.creditCard, detail: text.creditCardDetail },
-    DEBIT_CARD: { id: "DEBIT_CARD", title: text.debitCard, detail: text.debitCardDetail },
+    MONEY: { id: "MONEY", title: text.money, detail: text.moneyDetail, icon: <BanknoteIcon className="size-5" /> },
+    PIX: { id: "PIX", title: text.pix, detail: text.pixDetail, icon: <QrCodeIcon className="size-5" /> },
+    CREDIT_CARD: {
+      id: "CREDIT_CARD",
+      title: text.creditCard,
+      detail: text.creditCardDetail,
+      icon: <CreditCardIcon className="size-5" />,
+    },
+    DEBIT_CARD: {
+      id: "DEBIT_CARD",
+      title: text.debitCard,
+      detail: text.debitCardDetail,
+      icon: <WalletIcon className="size-5" />,
+    },
   }
 
   // In the shopkeeper's order, not the enum's: the first one they ticked is the one they push.

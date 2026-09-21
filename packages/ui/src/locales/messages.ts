@@ -152,6 +152,12 @@ export interface UiMessages {
     searchResultsOne: string
     /** `{term}`. Says back what was searched for, because "nothing found" alone hides a typo. */
     searchEmpty: string
+    /** Names the list that opens under the field, which is otherwise announced as "list". */
+    searchSuggestionsLabel: string
+    /** "Ver todos os {count} resultados" — the way out of a list that only shows the first few. */
+    searchSeeAll: string
+    /** Said while the list is being fetched, so a slow connection is not silence. */
+    searchLoading: string
     categoriesLabel: string
     allCategories: string
     empty: string

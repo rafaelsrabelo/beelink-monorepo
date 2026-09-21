@@ -55,6 +55,12 @@ export interface StorefrontHighlight {
   id: string
   title: string
   detail?: string
+  /**
+   * The mark beside the words. A node and not an icon name, because the block would otherwise hold
+   * a table mapping "pix" to a glyph — which is knowledge about what a shop takes at the door, and
+   * belongs to the screen that already knows it.
+   */
+  icon?: ReactNode
 }
 
 export interface StorefrontBanner {
@@ -87,6 +93,15 @@ export interface StorefrontWindowProps {
   searchAction?: string
   searchValue?: string
   searchHidden?: Record<string, string>
+  /**
+   * A search of the screen's own making, put where the plain one would go.
+   *
+   * The live one answers while someone types, which needs a client component, a request and a
+   * cache — none of which belongs in a design-system block. So the screen builds it and hands it
+   * over, and the header keeps deciding the proportions, which is the whole reason the plain
+   * search arrives as an address instead of a node. A screen passes one or the other, never both.
+   */
+  searchSlot?: ReactNode
   cartHref?: string
   cartCount?: number
   accountHref?: string
@@ -125,8 +140,16 @@ const ICONS: Record<StorefrontNetwork, typeof WhatsAppIcon> = {
   spotify: SpotifyIcon,
 }
 
-/** Every band is full-bleed; what is centred is the content inside it. */
-const BAND = "mx-auto w-full max-w-6xl px-4 sm:px-6"
+/**
+ * Every band is full-bleed; what is centred is the content inside it.
+ *
+ * 1440 and not the 1152 it started at. The shop owner said the page read as too centred and he was
+ * right: at 1152 a wide monitor shows a column of shop with a hand's width of empty page on each
+ * side, and a rail of four product cards inside it has cards the size of stamps. Every shop this
+ * was measured against runs to about this width and then stops — stopping matters too, because a
+ * line of body text the full width of a 27-inch screen is a line nobody finishes.
+ */
+const BAND = "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10"
 
 function Banner({ banner, Link, tall }: { banner: StorefrontBanner; Link: LinkComponent; tall?: boolean }) {
   const picture = (
@@ -171,6 +194,7 @@ export function StorefrontWindow({
   homeHref,
   colors,
   announcement,
+  searchSlot,
   searchAction,
   searchValue = "",
   searchHidden,
@@ -245,15 +269,16 @@ export function StorefrontWindow({
 
           {/* Never autofocused: the header is on every page, and a caret that jumps into it puts
               a phone keyboard over the shop on every arrival. */}
-          {searchAction ? (
-            <StorefrontSearch
-              action={searchAction}
-              value={searchValue}
-              hidden={searchHidden}
-              tone="panel"
-              messages={messages}
-            />
-          ) : null}
+          {searchSlot ??
+            (searchAction ? (
+              <StorefrontSearch
+                action={searchAction}
+                value={searchValue}
+                hidden={searchHidden}
+                tone="panel"
+                messages={messages}
+              />
+            ) : null)}
 
           <div className="flex shrink-0 items-center gap-1">
             {accountHref ? (
@@ -292,12 +317,29 @@ export function StorefrontWindow({
 
       {/* ---------------------------------------------------------------- 4 · what the shop promises */}
       {highlights.length ? (
-        <div className="w-full" style={{ backgroundColor: "color-mix(in oklab, var(--shop-header) 12%, transparent)" }}>
-          <ul className={cn(BAND, "grid grid-cols-2 gap-4 py-5 sm:grid-cols-4")}>
+        <div className="w-full" style={{ backgroundColor: "color-mix(in oklab, var(--shop-header) 10%, transparent)" }}>
+          <ul className={cn(BAND, "grid grid-cols-2 gap-x-6 gap-y-5 py-6 sm:grid-cols-4")}>
             {highlights.map((highlight) => (
-              <li key={highlight.id} className="text-center text-xs">
-                <p className="font-semibold">{highlight.title}</p>
-                {highlight.detail ? <p className="opacity-70">{highlight.detail}</p> : null}
+              // Icon beside the words and not above them: four stacked icons read as a row of
+              // buttons, and none of these is one. Left-aligned for the same reason — a centred
+              // two-line block with a mark on top is a feature grid, and this is a receipt.
+              <li key={highlight.id} className="flex items-center gap-3">
+                {highlight.icon ? (
+                  <span
+                    aria-hidden="true"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: "color-mix(in oklab, var(--shop-primary) 14%, transparent)",
+                      color: "var(--shop-primary)",
+                    }}
+                  >
+                    {highlight.icon}
+                  </span>
+                ) : null}
+                <div className="flex min-w-0 flex-col">
+                  <p className="text-sm font-semibold">{highlight.title}</p>
+                  {highlight.detail ? <p className="text-xs opacity-70">{highlight.detail}</p> : null}
+                </div>
               </li>
             ))}
           </ul>

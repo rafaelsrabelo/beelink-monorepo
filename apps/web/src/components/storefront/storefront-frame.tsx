@@ -11,6 +11,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { paymentHighlightsOf } from "./storefront-highlights"
+import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
@@ -94,8 +95,17 @@ export function StorefrontFrame({
       logoUrl={store.logoUrl}
       homeHref={routes.home}
       colors={store.colors}
-      searchAction={routes.search()}
-      searchValue={searchValue}
+      // The live one, which answers while someone types. It replaces the plain form rather than
+      // sitting beside it, and falls back to exactly that form when scripting is off.
+      searchSlot={
+        <StorefrontSearchLive
+          slug={store.slug}
+          routeWords={store.routeWords}
+          initialTerm={searchValue}
+          locale="pt-BR"
+          messages={messages}
+        />
+      }
       // Both icons, on every page. They were held back while they had nowhere to go; the basket
       // has an address now, and the account is the sign-in the platform already has.
       cartHref={routes.cart()}
