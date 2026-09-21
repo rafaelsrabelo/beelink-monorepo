@@ -14,7 +14,7 @@ What the API sends is a stable `errorCode`, never a sentence — the apps own th
 
 ## Accounts
 
-An **account** is how a shopkeeper proves who they are. Customers do not have accounts — see [Customers](#customers).
+An **account** is how a person proves who they are, to bee-link. A shopkeeper has one. So does a customer who chose to be remembered — the same kind of account, reached through a different door, and the two are never the same session.
 
 - It has a **name**, an **e-mail** and a **password**. No two accounts share an e-mail, compared without case and without surrounding spaces.
 - A password has between 8 and 128 characters.
@@ -57,7 +57,13 @@ The panel at `/admin/<slug>` is where the shopkeeper works: the catalogue, the o
 
 ## Customers
 
-A **customer** is not an account. They are a name, a phone number and an address, remembered by the store they bought from so they do not retype it next time. The phone number identifies them **within one store**: the same person buying from two stores is two customers, and neither store learns about the other.
+A **customer** is a store's own record of someone who bought from it: a name, a phone number and an address, remembered so they do not retype it next time. The phone number identifies them **within one store**: the same person buying from two stores is two customers, and neither store learns about the other.
+
+A customer may be **linked to an account**, and that link is what lets an address follow them. The account is bee-link's; the customer record is the shopkeeper's. **No shopkeeper ever reads the account**, which is what keeps the sentence above literally true: a person with one bee-link account who buys from two stores is still two customers, and neither store can tell.
+
+The link is optional, and a customer without one is not a lesser customer. Shops carried over from the legacy product arrive with no e-mail on file at all.
+
+**Buying requires a verified identity; reaching the checkout does not.** The shop window, the cart and the checkout form open for anyone, so the delivery fee is visible before anything is asked. What requires an account is **placing the order**, and for most people the account is what the purchase leaves behind rather than what it demanded up front.
 
 ## Orders
 
