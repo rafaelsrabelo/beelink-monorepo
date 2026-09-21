@@ -38,6 +38,15 @@ const envSchema = z.object({
   AUTH_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
 
   /**
+   * Per IP, on the two routes that write a shop. Its own pair rather than the auth one: those
+   * numbers are sized for an anonymous stranger guessing a password, and a signed-in shopkeeper
+   * saving the settings form five times in a minute is ordinary. What this bounds is the outbound
+   * geocoding call each write can make, which waits on a third party for up to four seconds.
+   */
+  STORE_WRITE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  STORE_WRITE_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+
+  /**
    * Which addresses may claim a client IP through x-forwarded-for. Every browser call arrives
    * through the web app's route handlers, so without this the rate limit sees one address for
    * everyone. Accepts Fastify's syntax: `loopback`, a CIDR, a comma-separated list, or `false`.

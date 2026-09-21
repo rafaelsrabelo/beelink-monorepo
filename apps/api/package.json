@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "prisma generate && nest build",
+    "db:seed": "prisma db seed",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "lint": "oxlint src/ test/ --ignore-pattern 'src/generated/**'",

@@ -1,16 +1,3 @@
-// The client is generated into src/generated (gitignored) and compiled with the rest of src by tsc.
-generator client {
-  provider            = "prisma-client"
-  output              = "../src/generated/prisma"
-  moduleFormat        = "esm"
-  importFileExtension = "js"
-}
-
-// The connection URL lives in prisma.config.ts, not here — Prisma 7 reads it from there.
-datasource db {
-  provider = "postgresql"
-}
-
 /// A person with an account. The rules are in docs/product/README.md, "Accounts".
 model User {
   id              String    @id @default(uuid(7)) @db.Uuid
@@ -24,6 +11,8 @@ model User {
 
   sessions    Session[]
   emailTokens EmailToken[]
+  /// A shopkeeper is this same account: the product adds no second notion of one.
+  stores      Store[]
 
   @@map("users")
 }

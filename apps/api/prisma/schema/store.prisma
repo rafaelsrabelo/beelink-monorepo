@@ -1,0 +1,128 @@
+/// How a shop sells — not what it sells. The storefront's wording follows it, and from phase 2 so
+/// does the catalogue. A shop's vertical is StoreCategory, a seeded row: adding one there is a line
+/// of SQL, adding one here is a migration. So a value belongs here only when it changes the way the
+/// shop window behaves. One value today — the product sells online, end to end.
+enum StoreType {
+  ECOMMERCE
+}
+
+/// The storefront template. It replaces the legacy `store_layouts` lookup table: three rows nothing
+/// joined on, whose slugs the panel compared against string literals anyway.
+enum StoreLayoutType {
+  DEFAULT
+  BANNER
+}
+
+/// What the shop takes at the door. A label carried to the shopkeeper's WhatsApp, not a gateway.
+enum PaymentMethod {
+  MONEY
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+}
+
+/// The platform's own taxonomy of shops. Rows are seeded by the platform; a shopkeeper picks one and
+/// never edits one, which is why nothing here carries an owner.
+model StoreCategory {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  /// The key the seed and the legacy import match on. The legacy table's integer id is not carried over.
+  slug        String   @unique @db.VarChar(40)
+  name        String   @db.VarChar(80)
+  description String?
+  /// A lucide icon name the web resolves — never a URL.
+  icon        String?  @db.VarChar(40)
+  /// "#RRGGBB". Brand data, not a design token.
+  color       String?  @db.VarChar(9)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stores Store[]
+
+  @@map("store_categories")
+}
+
+/// The shop is the tenant. Everything else in the product hangs off it, and the owner is the User
+/// that auth already knows — there is no second notion of an account.
+model Store {
+  id      String @id @default(uuid(7)) @db.Uuid
+  ownerId String @db.Uuid
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// The public URL segment: /<slug> is the shop window and /admin/<slug> the panel. Unique across
+  /// the platform and stored already normalised to lower-case [a-z0-9-], so the unique index means
+  /// what it says without a case-insensitive collation. It is never updated: printed links, shared
+  /// links and every order placed through one point at this exact string, and the API also refuses a
+  /// slug that would shadow a route of the app itself, such as `admin` or `api`.
+  slug String    @unique @db.VarChar(40)
+  name String    @db.VarChar(120)
+  type StoreType @default(ECOMMERCE)
+
+  /// Unbounded on purpose: the bound is a product decision, stated once on `PublicStore.description`
+  /// in packages/contracts and enforced by the DTO at 2000 characters. Keeping the column `text`
+  /// means raising or lowering that number is one line and never a migration — and it is why a shop
+  /// carried over from the legacy, whose column was equally unbounded, imports without truncation.
+  description    String?
+  /// The stored image URL. The bytes never move through this API; the upload adapter is phase 2.
+  logoUrl        String?
+  /// The single banner, shown when layoutType is BANNER. The carousel's images live in layoutSettings.
+  bannerImageUrl String?
+
+  categoryId String?        @db.Uuid
+  /// SetNull, not Cascade: retiring a taxonomy row must never delete a shop.
+  category   StoreCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  layoutType             StoreLayoutType @default(DEFAULT)
+  showProductsByCategory Boolean         @default(false)
+
+  /// Four columns and not a blob: every one is required for the storefront to render, and the legacy
+  /// JSON could be missing a key, which is why three separate call sites repeated the same fallback.
+  /// The defaults are the legacy platform theme.
+  colorBackground String @default("#F0F9FF") @db.VarChar(9)
+  colorPrimary    String @default("#3B7AF7") @db.VarChar(9)
+  colorText       String @default("#1A202C") @db.VarChar(9)
+  colorHeader     String @default("#3B7AF7") @db.VarChar(9)
+
+  /// Digits only, country code included, no `+` — `wa.me/<this>` is built from it. Nullable for shops
+  /// carried over without one; the API requires it on create and on update, as the legacy panel did.
+  whatsappPhone String? @db.VarChar(20)
+  /// Handles, no leading `@`. Spotify is a full profile URL, since it has no handle to expand.
+  instagram     String? @db.VarChar(120)
+  tiktok        String? @db.VarChar(120)
+  spotify       String?
+  youtube       String? @db.VarChar(120)
+
+  /// Columns and not a blob: the address is geocoded, and city/state/zip are the axes any shop
+  /// directory or delivery query will filter on. Each is nullable because a shop exists before the
+  /// panel's address tab is filled in.
+  addressStreet       String?
+  addressNumber       String? @db.VarChar(20)
+  addressComplement   String?
+  addressNeighborhood String?
+  addressCity         String? @db.VarChar(120)
+  /// The two-letter UF, upper case.
+  addressState        String? @db.Char(2)
+  /// CEP as eight digits, no mask: the legacy stored "12345-678" from one screen and "12345678" from
+  /// another, so neither could be compared.
+  addressZipCode      String? @db.VarChar(8)
+
+  /// Geocoded server-side from the address when it changes, never sent by the browser. Null until the
+  /// address has street, city and state. Phase 4 measures the delivery radius from here.
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+
+  /// Presentation-only switches, open-ended by design and read and written whole — the one blob that
+  /// stays a blob. Its shape is StoreLayoutSettings in packages/contracts, and the DTO refuses a key
+  /// that shape does not declare.
+  layoutSettings Json @default("{}")
+
+  /// A native enum array, not JSON: the values are closed, and the checkout asks whether a shop has
+  /// a given method. The API refuses an empty list.
+  paymentMethods PaymentMethod[] @default([MONEY, PIX, CREDIT_CARD, DEBIT_CARD])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@map("stores")
+}

@@ -21,6 +21,9 @@ export default defineConfig({
       WEB_URL: 'http://localhost:3000',
       // The suites hammer the auth routes; the limit itself has its own spec, which lowers it.
       AUTH_RATE_LIMIT_MAX: '1000',
+      // Same reason: one app instance serves a whole file from one address, so every shop write in
+      // it shares a bucket that one real shopkeeper would never fill.
+      STORE_WRITE_RATE_LIMIT_MAX: '1000',
     },
   },
 });

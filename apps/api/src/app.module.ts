@@ -9,6 +9,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health.controller.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard.js';
+import { StoresModule } from './modules/stores/stores.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { env } from './shared/config/env.js';
 import { MailModule } from './shared/mail/mail.module.js';
@@ -31,6 +32,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     MailModule,
     AuthModule,
     UsersModule,
+    StoresModule,
   ],
   controllers: [HealthController],
   providers: [

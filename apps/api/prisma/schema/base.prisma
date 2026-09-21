@@ -1,0 +1,15 @@
+// The generator and the datasource. Prisma allows exactly one of each across the whole schema
+// folder, so every other *.prisma file here holds models only.
+
+// The client is generated into src/generated (gitignored) and compiled with the rest of src by tsc.
+generator client {
+  provider            = "prisma-client"
+  output              = "../../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+// The connection URL lives in prisma.config.ts, not here — Prisma 7 reads it from there.
+datasource db {
+  provider = "postgresql"
+}
