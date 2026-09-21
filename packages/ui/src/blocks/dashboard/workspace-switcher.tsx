@@ -41,8 +41,6 @@ export interface WorkspaceSwitcherProps {
   /** The shop being worked in, or null on a screen that belongs to no shop. */
   current: WorkspaceOption | null
   workspaces: readonly WorkspaceOption[]
-  /** Where the list of every shop lives. */
-  allHref: string
   createHref: string
   loading?: boolean
   linkComponent?: LinkComponent
@@ -64,7 +62,6 @@ export interface WorkspaceSwitcherProps {
 export function WorkspaceSwitcher({
   current,
   workspaces,
-  allHref,
   createHref,
   loading = false,
   linkComponent: Link = AnchorLink,
@@ -98,7 +95,7 @@ export function WorkspaceSwitcher({
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="text-foreground/70 truncate text-xs">{text.label}</span>
               <span className="truncate font-medium">
-                {current?.name ?? (loading ? text.loading : text.all)}
+                {current?.name ?? (loading ? text.loading : text.none)}
               </span>
             </div>
             <ChevronsUpDownIcon aria-hidden="true" className="ml-auto size-4" />
@@ -136,10 +133,11 @@ export function WorkspaceSwitcher({
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem render={<Link href={allHref} />}>
-              <StoreIcon aria-hidden="true" className="size-4" />
-              {text.all}
-            </DropdownMenuItem>
+            {/*
+              No "change shop" item. The list above IS the change: clicking a shop goes to it, and
+              a second control that only leads back to a screen offering the same list is a step
+              that shows you a link to where you were already going.
+            */}
             <DropdownMenuItem render={<Link href={createHref} />}>
               <PlusIcon aria-hidden="true" className="size-4" />
               {text.create}

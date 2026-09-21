@@ -64,10 +64,6 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
           <WorkspaceSwitcher
             current={workspaces.find((workspace) => workspace.slug === shopSlug) ?? null}
             workspaces={workspaces}
-            // "Change shop", not "all shops": there is nowhere to be that is every shop at once,
-            // so this goes back to the doorway, which asks which one — every time, because being
-            // asked is the point of it.
-            allHref="/admin"
             createHref="/create-store"
             loading={stores.isPending}
             linkComponent={AppLink}

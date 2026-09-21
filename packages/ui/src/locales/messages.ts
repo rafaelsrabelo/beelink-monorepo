@@ -108,8 +108,11 @@ export interface UiMessages {
     label: string
     /** Names the list for a screen reader, which otherwise reads a column of shop names. */
     switchLabel: string
-    /** The way out of every shop, to the list of them. */
-    all: string
+    /**
+     * Stands where the shop's name goes when there is none to put there — a slug in the address
+     * this person does not own, which is the only way to reach the panel without a shop.
+     */
+    none: string
     create: string
     /** Said while the shops are still loading, so the bar is never a blank rectangle. */
     loading: string

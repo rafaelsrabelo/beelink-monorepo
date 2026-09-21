@@ -96,7 +96,7 @@ export const ptBR: UiMessages = {
   workspace: {
     label: "Loja",
     switchLabel: "Trocar de loja",
-    all: "Trocar de loja",
+    none: "Nenhuma loja",
     create: "Nova loja",
     loading: "Carregando…",
   },

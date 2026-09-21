@@ -21,7 +21,6 @@ function renderSwitcher(overrides: Partial<Parameters<typeof WorkspaceSwitcher>[
       <WorkspaceSwitcher
         current={workspaces[0]}
         workspaces={workspaces}
-        allHref="/admin"
         createHref="/create-store"
         {...overrides}
       />
@@ -48,7 +47,8 @@ describe("WorkspaceSwitcher", () => {
     await user.click(screen.getByRole("button", { name: "Trocar de loja" }))
 
     expect(await screen.findByRole("menu")).toBeInTheDocument()
-    expect(screen.getAllByText("Trocar de loja").length).toBeGreaterThan(1)
+    // The group label, which is the part that used to throw: it reads the group's context.
+    expect(screen.getByText("Trocar de loja")).toBeInTheDocument()
   })
 
   /**
@@ -81,6 +81,23 @@ describe("WorkspaceSwitcher", () => {
       "aria-current",
       "true",
     )
+  })
+
+  /**
+   * The list is the change. A second control leading back to a screen that offers the same list is
+   * a step that shows you a link to where you were already going.
+   */
+  it("offers no way to switch other than the list itself", async () => {
+    const user = userEvent.setup()
+    renderSwitcher()
+
+    await user.click(screen.getByRole("button", { name: "Trocar de loja" }))
+
+    // The shops, and the way to make another. Nothing else — in particular nothing that leads back
+    // to a screen offering the same list.
+    expect(await screen.findAllByRole("menuitem")).toHaveLength(3)
+    expect(screen.queryByRole("menuitem", { name: /Trocar de loja/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Nova loja" })).toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {
