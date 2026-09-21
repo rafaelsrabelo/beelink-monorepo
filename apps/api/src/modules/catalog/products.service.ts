@@ -2,7 +2,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { Product } from '@harness-monorepo/contracts';
+import type { Product, PublicProduct, PublicProductCard } from '@harness-monorepo/contracts';
 import type { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
 import type { ReorderDto } from './dto/reorder.dto.js';
 
@@ -10,7 +10,7 @@ import type { ReorderDto } from './dto/reorder.dto.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
-import { productInclude, toProduct } from './catalog.mapper.js';
+import { productInclude, toProduct, toPublicProduct, toPublicProductCard } from './catalog.mapper.js';
 
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
@@ -44,6 +44,55 @@ export class ProductsService {
     });
 
     return rows.map(toProduct);
+  }
+
+  /**
+   * The storefront's list: what a shop published, in the order the shopkeeper arranged it.
+   *
+   * Unavailable products are absent rather than greyed out — a window that shows what it will not
+   * sell teaches a visitor to distrust the rest of it. The filters are here and not in the browser
+   * because a shop with three hundred products would otherwise ship all three hundred to render
+   * six, and because a search the server did is a search a crawler can follow.
+   */
+  async listPublic(storeId: string, filters: { category?: string; search?: string } = {}): Promise<PublicProductCard[]> {
+    const search = filters.search?.trim();
+
+    const rows = await this.prisma.product.findMany({
+      where: {
+        storeId,
+        isAvailable: true,
+        ...(filters.category ? { category: { slug: filters.category, isActive: true } } : {}),
+        // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
+        // and someone searching "crochê" means to find it.
+        ...(search
+          ? {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' as const } },
+                { description: { contains: search, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
+      include: productInclude,
+      orderBy: [{ position: 'asc' }, { name: 'asc' }],
+    });
+
+    return rows.map(toPublicProductCard);
+  }
+
+  /**
+   * One product, by the slug in its address. `slugHistory` is not consulted here: a renamed
+   * product's old address is a redirect the web app owns, not a second name the API answers to.
+   */
+  async publicBySlug(storeId: string, slug: string): Promise<PublicProduct> {
+    const row = await this.prisma.product.findFirst({
+      where: { storeId, slug, isAvailable: true },
+      include: productInclude,
+    });
+
+    if (!row) throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product at "${slug}"`));
+
+    return toPublicProduct(row);
   }
 
   async byId(storeSlug: string, productId: string, userId: string): Promise<Product> {

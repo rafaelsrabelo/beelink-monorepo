@@ -166,6 +166,19 @@ export class StoresService {
    * reusing the private method, because a product write has no use for the shop's address, colours
    * and taxonomy row, and this runs on every one of them.
    */
+  /**
+   * The same lookup with no owner: a visitor reading a shop window is nobody, and the catalogue
+   * they are served is the one the shopkeeper published. It selects the id alone for the same
+   * reason `ownedStoreId` selects two columns — this runs on every storefront read.
+   */
+  async publicStoreId(slug: string): Promise<string> {
+    const row = await this.prisma.store.findUnique({ where: { slug }, select: { id: true } });
+
+    if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
+
+    return row.id;
+  }
+
   async ownedStoreId(slug: string, userId: string): Promise<string> {
     const row = await this.prisma.store.findUnique({
       where: { slug },

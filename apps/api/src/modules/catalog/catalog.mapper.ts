@@ -21,7 +21,15 @@ import type {
 export type ProductCategoryRow = ProductCategoryModel & { _count: { products: number } };
 
 /** The one query shape the category mappers accept. */
-export const productCategoryInclude = { _count: { select: { products: true } } } as const;
+/**
+ * The count is of AVAILABLE products, which is what `PublicProductCategory.productCount` promises
+ * and what the storefront hides an empty category by. Without the `where` it counted hidden ones
+ * too, so a category holding ten unavailable products reported ten and was shown with nothing
+ * behind it — the exact thing `listPublic` filters that category out to avoid.
+ */
+export const productCategoryInclude = {
+  _count: { select: { products: { where: { isAvailable: true } } } },
+} as const;
 
 /** Images are always read with a product: the card needs the first one and the page needs them all. */
 export type ProductRow = ProductModel & {

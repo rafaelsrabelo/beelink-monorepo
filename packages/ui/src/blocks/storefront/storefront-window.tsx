@@ -156,7 +156,12 @@ export function StorefrontWindow({
           </nav>
         ) : null}
 
-        {children}
+        {/*
+          Left, not centred. The header above is a poster and centring reads as one; a catalogue
+          and a product description are text to be read, and centred prose is slower to scan —
+          which is why all three shops this was measured against align theirs left.
+        */}
+        {children ? <div className="w-full text-left">{children}</div> : null}
       </main>
     </div>
   )

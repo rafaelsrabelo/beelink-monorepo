@@ -6,6 +6,7 @@
   "scripts": {
     "build": "prisma generate && nest build",
     "db:seed": "prisma db seed",
+    "db:seed:dev": "prisma db execute --file prisma/seed/dev-catalog.sql",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "lint": "oxlint src/ test/ --ignore-pattern 'src/generated/**'",

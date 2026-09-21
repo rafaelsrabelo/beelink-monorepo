@@ -3,16 +3,17 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 // Types
-import type { PublicStore } from "@harness-monorepo/contracts"
+import type { PublicProductCard, PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
+import { StorefrontCatalog } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
 import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
 
 // App
 import { orderHrefOf, storefrontLinksOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
 import { callPublicApi } from "@/lib/public-api"
-import { storeTag } from "@/lib/revalidate"
+import { catalogTag, storeTag } from "@/lib/revalidate"
 
 /**
  * A shop's window, at its own address.
@@ -32,6 +33,35 @@ async function shopAt(slug: string): Promise<PublicStore | null> {
   if (!response.ok) return null
 
   return (await response.json()) as PublicStore
+}
+
+interface Catalogue {
+  categories: PublicProductCategory[]
+  products: PublicProductCard[]
+}
+
+/**
+ * The catalogue, filtered as the address asks. Under `catalogTag` and not `storeTag`: a price
+ * change should not drop the shop's colours from the cache, and a colour change should not drop
+ * every filtered catalogue page with it.
+ */
+async function catalogueAt(slug: string, category?: string, search?: string): Promise<Catalogue> {
+  const query = new URLSearchParams()
+  if (category) query.set("categoria", category)
+  if (search) query.set("busca", search)
+  const suffix = query.size ? `?${query.toString()}` : ""
+
+  const response = await callPublicApi({
+    path: `/stores/${slug}/catalog${suffix}`,
+    tags: [catalogTag(slug)],
+  })
+
+  // A catalogue that would not load is an empty shelf, never a broken page: the shop's name, its
+  // description and its WhatsApp are worth serving on their own.
+  if (!response.ok) return { categories: [], products: [] }
+
+  return (await response.json()) as Catalogue
+
 }
 
 export async function generateMetadata({ params }: PageProps<"/[slug]">): Promise<Metadata> {
@@ -54,15 +84,20 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
   }
 }
 
-export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
+export default async function StorefrontPage({ params, searchParams }: PageProps<"/[slug]">) {
   const { slug } = await params
+  const { categoria, busca } = await searchParams
+  const category = typeof categoria === "string" ? categoria : undefined
+  const search = typeof busca === "string" ? busca : undefined
+
   const store = await shopAt(slug)
 
   // 404 and not an error page: a slug nobody claimed is a page that does not exist, and telling a
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
 
-  const { ui } = await getMessages()
+  const [{ ui }, catalogue] = await Promise.all([getMessages(), catalogueAt(slug, category, search)])
+  const layout = store.layoutSettings
 
   return (
     <StorefrontWindow
@@ -76,6 +111,25 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       links={storefrontLinksOf(store)}
       orderHref={orderHrefOf(store)}
       messages={ui}
-    />
+    >
+      <StorefrontCatalog
+        categories={catalogue.categories}
+        products={catalogue.products}
+        activeCategory={category ?? null}
+        search={search ?? ""}
+        searchAction={`/${slug}`}
+        // The address is what says which catalogue you are looking at, so every filter is a link
+        // and the search is a GET form. Bookmarkable, shareable, indexable, and it works before
+        // any JavaScript arrives.
+        categoryHref={(next) => (next ? `/${slug}?categoria=${encodeURIComponent(next)}` : `/${slug}`)}
+        productHref={(productSlug) => `/${slug}/produtos/${productSlug}`}
+        locale="pt-BR"
+        productsPerRow={layout.productsPerRow ?? 3}
+        showPrice={layout.showProductPrice ?? true}
+        showBadge={layout.showProductBadges ?? true}
+        showCategoryImages={layout.showCategoryIcons ?? true}
+        messages={ui}
+      />
+    </StorefrontWindow>
   )
 }

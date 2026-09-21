@@ -66,3 +66,16 @@ export class ProductResponse extends PublicProductResponse implements Product {
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }
+
+
+/**
+ * Everything a shop window needs to draw itself, in one answer. Two round trips for a page that
+ * cannot render without both would be two chances for one of them to be stale against the other.
+ */
+export class StorefrontCatalogResponse {
+  @ApiProperty({ type: [PublicProductCategoryResponse] })
+  categories!: PublicProductCategory[];
+
+  @ApiProperty({ type: [PublicProductCardResponse] })
+  products!: PublicProductCard[];
+}

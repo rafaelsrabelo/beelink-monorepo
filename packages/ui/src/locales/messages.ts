@@ -116,6 +116,19 @@ export interface UiMessages {
    * — what is the shopkeeper's is the four colours it wears, not the words.
    */
   storefront: {
+    /** "-40%", computed from the pair of prices and never stored beside them. */
+    discount: string
+    backToShop: string
+    orderThis: string
+    /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
+    photoOf: string
+    noPhoto: string
+    search: string
+    searchAction: string
+    allCategories: string
+    empty: string
+    emptyHint: string
+    productsHeading: string
     logoAlt: string
     order: string
     socialLabel: string

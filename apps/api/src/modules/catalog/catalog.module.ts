@@ -7,6 +7,7 @@ import { CatalogSlugService } from './catalog-slug.service.js';
 import { ProductCategoriesController } from './product-categories.controller.js';
 import { ProductCategoriesService } from './product-categories.service.js';
 import { ProductsController } from './products.controller.js';
+import { StorefrontController } from './storefront.controller.js';
 import { ProductsService } from './products.service.js';
 
 /**
@@ -18,7 +19,7 @@ import { ProductsService } from './products.service.js';
  */
 @Module({
   imports: [StoresModule],
-  controllers: [ProductCategoriesController, ProductsController],
+  controllers: [StorefrontController, ProductCategoriesController, ProductsController],
   providers: [CatalogSlugService, ProductCategoriesService, ProductsService],
   exports: [ProductCategoriesService, ProductsService],
 })
