@@ -89,6 +89,17 @@ export const ptBR: UiMessages = {
     resentBody: "Enviamos um novo link. Confira sua caixa de entrada e o spam.",
     backToSignIn: "Voltar para entrar",
   },
+  setup: {
+    done: "Feito",
+  },
+
+  workspace: {
+    label: "Loja",
+    switchLabel: "Trocar de loja",
+    all: "Todas as lojas",
+    create: "Nova loja",
+    loading: "Carregando…",
+  },
   dashboard: {
     signOut: "Sair",
     signingOut: "Saindo…",

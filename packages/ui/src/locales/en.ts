@@ -89,6 +89,17 @@ export const en: UiMessages = {
     resentBody: "We sent a new link. Check your inbox and the spam folder.",
     backToSignIn: "Back to sign in",
   },
+  setup: {
+    done: "Done",
+  },
+
+  workspace: {
+    label: "Shop",
+    switchLabel: "Switch shop",
+    all: "All shops",
+    create: "New shop",
+    loading: "Loading…",
+  },
   dashboard: {
     signOut: "Sign out",
     signingOut: "Signing out…",

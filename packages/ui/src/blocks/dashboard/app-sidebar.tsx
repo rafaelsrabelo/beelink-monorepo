@@ -35,6 +35,14 @@ export interface AppSidebarProps extends ComponentProps<typeof Sidebar> {
   brandName?: string
   brandHref?: string
   brandIcon?: ReactNode
+  /**
+   * Replaces the brand row at the top.
+   *
+   * It exists for the workspace switcher, which needs a shop list and a dropdown — neither of which
+   * a design-system block may fetch or own. So the screen builds it and hands it over, and the
+   * sidebar keeps deciding what that row looks like beside everything under it.
+   */
+  brandSlot?: ReactNode
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -50,6 +58,7 @@ export function AppSidebar({
   brandName = "Harness",
   brandHref = "/dashboard",
   brandIcon,
+  brandSlot,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
   ...props
@@ -57,17 +66,19 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<Link href={brandHref} />}
-            >
-              {brandIcon}
-              <span className="text-base font-semibold">{brandName}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {brandSlot ?? (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className="data-[slot=sidebar-menu-button]:p-1.5!"
+                render={<Link href={brandHref} />}
+              >
+                {brandIcon}
+                <span className="text-base font-semibold">{brandName}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} activeHref={activeHref} linkComponent={Link} />

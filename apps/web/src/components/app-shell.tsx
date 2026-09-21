@@ -11,6 +11,7 @@ import type { User } from "@harness-monorepo/contracts"
 
 // UI
 import { AppSidebar } from "@harness-monorepo/ui/blocks/dashboard/app-sidebar"
+import { WorkspaceSwitcher } from "@harness-monorepo/ui/blocks/dashboard/workspace-switcher"
 import { SiteHeader } from "@harness-monorepo/ui/blocks/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@harness-monorepo/ui/components/sidebar"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -22,6 +23,7 @@ import type { Locale, WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { useSignOut } from "@/services/auth/auth-hooks"
+import { useMyStores } from "@/services/stores/store-hooks"
 
 export interface AppShellProps {
   user: User
@@ -40,14 +42,35 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
   // which is what keeps that page from rendering a menu for a shop nobody has opened.
   const shopSlug = pathname.match(/^\/admin\/([^/]+)/)?.[1] ?? null
 
+  // The shops this person owns, for the switcher. It is the same query the list page runs, so
+  // opening a shop from that page costs no second request — the cache already holds the answer.
+  const stores = useMyStores()
+  const workspaces = (stores.data ?? []).map((store) => ({
+    slug: store.slug,
+    name: store.name,
+    logoUrl: store.logoUrl,
+    href: `/admin/${store.slug}`,
+  }))
+
   return (
     <SidebarProvider>
       <AppSidebar
         user={{ name: user.name, email: user.email }}
         messages={ui}
-        // Passed, because the default is the template's own name and nobody was passing anything:
-        // a shopkeeper's panel said "Harness" over their shop. `metadata.title` is the product's
-        // name and already the one in the browser tab, so there is one place it is written.
+        // Which shop is being worked in, where the product's own name used to be. A shopkeeper
+        // with three shops is three shopkeepers as far as every screen below is concerned, and the
+        // one thing they must always be able to answer is whose products these are.
+        brandSlot={
+          <WorkspaceSwitcher
+            current={workspaces.find((workspace) => workspace.slug === shopSlug) ?? null}
+            workspaces={workspaces}
+            allHref="/admin"
+            createHref="/create-store"
+            loading={stores.isPending}
+            linkComponent={AppLink}
+            messages={ui}
+          />
+        }
         brandName={web.metadata.title}
         brandHref="/dashboard"
         linkComponent={AppLink}
@@ -69,21 +92,28 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
           shopkeeper has already used. The first item is the door back out, so the swap is never a
           trap, and outside a shop the two original items are exactly what they were.
         */
+        /*
+          Four items inside a shop, which is what the shop owner asked for by name. Categories are
+          not among them on purpose: a category is chosen while a product is being written, so it
+          belongs to that form rather than to a page of its own in the menu — the page still exists
+          and the form links to it, but it is not a fifth thing to scan past every day.
+        */
         navMain={
           shopSlug
             ? [
-                { title: web.stores.nav.back, href: "/admin" },
-                // No "overview" item: `/admin/<slug>` redirects to the settings page, and a menu
-                // entry that lands on another menu entry is a bug with a label on it. It comes back
-                // the day that address is a page of its own.
+                { title: web.stores.nav.home, href: `/admin/${shopSlug}` },
+                { title: web.stores.nav.orders, href: `/admin/${shopSlug}/orders`, match: "prefix" },
                 { title: web.stores.nav.products, href: `/admin/${shopSlug}/products`, match: "prefix" },
-                { title: web.stores.nav.categories, href: `/admin/${shopSlug}/categories`, match: "prefix" },
-                { title: web.stores.nav.settings, href: `/admin/${shopSlug}/store` },
+                { title: web.stores.nav.customers, href: `/admin/${shopSlug}/customers`, match: "prefix" },
               ]
             : [
                 { title: web.stores.nav.dashboard, href: "/dashboard" },
                 { title: web.stores.nav.list, href: "/admin", match: "prefix" },
               ]
+        }
+        // At the bottom and away from the four, as every panel of this shape puts it.
+        navSecondary={
+          shopSlug ? [{ title: web.stores.nav.settings, href: `/admin/${shopSlug}/store` }] : []
         }
       />
       <SidebarInset>

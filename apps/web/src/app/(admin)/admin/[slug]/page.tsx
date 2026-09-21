@@ -1,15 +1,17 @@
-// Next
-import { redirect } from "next/navigation"
+// App
+import { ShopHomeScreen } from "@/components/catalog/shop-home-screen"
+import { getMessages } from "@/lib/locale"
 
 /**
- * There is no shop overview, and there was never much of one: this route rendered a card of the
- * shop you had just clicked to get here, which is a page whose content is a link to itself.
+ * The panel's home for one shop.
  *
- * It stays as a redirect rather than disappearing, because it is the address every menu, bookmark
- * and e-mail built while it existed — and because `/admin/<slug>` is the natural thing to type.
+ * It used to redirect to the settings page, on the grounds that there was no overview worth the
+ * address. There is one now: every shop is a workspace, and this is where you land when you open
+ * one — what is left to set up, and the way into each of those things.
  */
-export default async function StorePage({ params }: PageProps<"/admin/[slug]">) {
+export default async function ShopHomePage({ params }: PageProps<"/admin/[slug]">) {
   const { slug } = await params
+  const { ui, web } = await getMessages()
 
-  redirect(`/admin/${slug}/store`)
+  return <ShopHomeScreen slug={slug} ui={ui} web={web} />
 }

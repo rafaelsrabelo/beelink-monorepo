@@ -97,6 +97,24 @@ export interface UiMessages {
     resentBody: string
     backToSignIn: string
   }
+  /** A card on the panel's home: one thing left to set up, or one already done. */
+  setup: {
+    /** Marks a card whose thing is already done. The tick alone says nothing out loud. */
+    done: string
+  }
+
+  /** The bar at the top of the sidebar that says which shop you are working in. */
+  workspace: {
+    label: string
+    /** Names the list for a screen reader, which otherwise reads a column of shop names. */
+    switchLabel: string
+    /** The way out of every shop, to the list of them. */
+    all: string
+    create: string
+    /** Said while the shops are still loading, so the bar is never a blank rectangle. */
+    loading: string
+  }
+
   dashboard: {
     signOut: string
     signingOut: string

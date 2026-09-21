@@ -1,0 +1,146 @@
+"use client"
+
+// Libs
+import { ChevronsUpDownIcon, PlusIcon, StoreIcon } from "lucide-react"
+
+// UI
+import { Avatar, AvatarFallback, AvatarImage } from "@harness-monorepo/ui/components/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@harness-monorepo/ui/components/dropdown-menu"
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@harness-monorepo/ui/components/sidebar"
+
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// Block
+import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { initialsOf } from "./dashboard-types"
+
+export interface WorkspaceOption {
+  slug: string
+  name: string
+  logoUrl?: string | null
+  /** Built by the screen: a block never knows a shop's panel lives at `/admin/<slug>`. */
+  href: string
+}
+
+export interface WorkspaceSwitcherProps {
+  /** The shop being worked in, or null on a screen that belongs to no shop. */
+  current: WorkspaceOption | null
+  workspaces: readonly WorkspaceOption[]
+  /** Where the list of every shop lives. */
+  allHref: string
+  createHref: string
+  loading?: boolean
+  linkComponent?: LinkComponent
+  messages?: UiMessages
+}
+
+/**
+ * Which shop you are working in, and how to work in another.
+ *
+ * Every shop is a workspace, and the panel is only ever inside one of them — which is why this sits
+ * where the product's own name used to. A shopkeeper with three shops is three shopkeepers as far
+ * as the screens below are concerned, and the one thing they must always be able to answer is
+ * "whose products am I looking at".
+ *
+ * The scope lives in the URL and not in here. Switching is a link to the other shop's panel, so a
+ * page is bookmarkable, shareable and survives a reload — a switcher that kept the choice in state
+ * would hand two tabs the same shop and no way to tell which.
+ */
+export function WorkspaceSwitcher({
+  current,
+  workspaces,
+  allHref,
+  createHref,
+  loading = false,
+  linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
+}: WorkspaceSwitcherProps) {
+  const text = messages.workspace
+  const { isMobile } = useSidebar()
+
+  const face = (workspace: WorkspaceOption) => (
+    <Avatar className="size-8 rounded-lg">
+      {workspace.logoUrl ? <AvatarImage src={workspace.logoUrl} alt="" /> : null}
+      <AvatarFallback className="rounded-lg text-xs">{initialsOf(workspace.name)}</AvatarFallback>
+    </Avatar>
+  )
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />}
+            aria-label={text.switchLabel}
+          >
+            {current ? (
+              face(current)
+            ) : (
+              <span className="bg-muted flex size-8 items-center justify-center rounded-lg">
+                <StoreIcon aria-hidden="true" className="size-4" />
+              </span>
+            )}
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="text-foreground/70 truncate text-xs">{text.label}</span>
+              <span className="truncate font-medium">
+                {current?.name ?? (loading ? text.loading : text.all)}
+              </span>
+            </div>
+            <ChevronsUpDownIcon aria-hidden="true" className="ml-auto size-4" />
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            className="min-w-56"
+            side={isMobile ? "bottom" : "right"}
+            align="start"
+          >
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
+              {text.switchLabel}
+            </DropdownMenuLabel>
+
+            <DropdownMenuGroup>
+              {workspaces.map((workspace) => (
+                <DropdownMenuItem
+                  key={workspace.slug}
+                  // The current one is marked rather than hidden: a list that drops the shop you
+                  // are in makes a three-shop switcher show two, and you count to work out which.
+                  aria-current={workspace.slug === current?.slug ? "true" : undefined}
+                  render={<Link href={workspace.href} />}
+                >
+                  {face(workspace)}
+                  <span className="truncate">{workspace.name}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem render={<Link href={allHref} />}>
+              <StoreIcon aria-hidden="true" className="size-4" />
+              {text.all}
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href={createHref} />}>
+              <PlusIcon aria-hidden="true" className="size-4" />
+              {text.create}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}

@@ -92,11 +92,41 @@ export interface WebMessages {
       overview: string
       settings: string
       /** Inside a shop the menu becomes that shop's. These are its items. */
-      categories: string
+      home: string
+      orders: string
       products: string
-      showcases: string
-      /** The way out of a shop, back to the list of them. */
-      back: string
+      customers: string
+      categories: string
+    }
+    /** The panel's home for one shop: what is left to set up, and how the shop is doing. */
+    home: {
+      /** "Olá, {name}" is the dashboard's; this one names the shop, because that is the scope. */
+      greeting: string
+      subtitle: string
+      cards: {
+        identityTitle: string
+        identityText: string
+        identityAction: string
+        productsTitle: string
+        productsText: string
+        productsAction: string
+        categoriesTitle: string
+        categoriesText: string
+        categoriesAction: string
+        showcaseTitle: string
+        showcaseText: string
+        showcaseAction: string
+        viewTitle: string
+        viewText: string
+        viewAction: string
+      }
+    }
+    /** Screens that exist so the menu does not lie, and say plainly that nothing is here yet. */
+    soon: {
+      ordersTitle: string
+      ordersText: string
+      customersTitle: string
+      customersText: string
     }
     list: {
       description: string
