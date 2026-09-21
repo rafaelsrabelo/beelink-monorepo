@@ -46,9 +46,6 @@ const row = {
   longitude: { toNumber: () => -46.6565 },
   layoutSettings: { showBanner: true, cartPosition: 'bottom-left', legacyKeyNobodyDeclared: 1 },
   paymentMethods: ['MONEY', 'PIX'],
-  // Empty and not absent: `storeInclude` always asks for them, so a row without the key is a row
-  // some call site forgot the include on — which is exactly what the mapper's type now refuses.
-  showcases: [],
   createdAt: new Date('2026-09-10T12:00:00.000Z'),
   updatedAt: new Date('2026-09-11T12:00:00.000Z'),
 } as unknown as StoreRow;

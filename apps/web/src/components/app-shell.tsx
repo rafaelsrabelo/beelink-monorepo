@@ -78,7 +78,6 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
                 // the day that address is a page of its own.
                 { title: web.stores.nav.products, href: `/admin/${shopSlug}/products`, match: "prefix" },
                 { title: web.stores.nav.categories, href: `/admin/${shopSlug}/categories`, match: "prefix" },
-                { title: web.stores.nav.showcases, href: `/admin/${shopSlug}/showcases`, match: "prefix" },
                 { title: web.stores.nav.settings, href: `/admin/${shopSlug}/store` },
               ]
             : [

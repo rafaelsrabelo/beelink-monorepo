@@ -4,33 +4,17 @@ import type {
   Store as WireStore,
   StoreCategory as WireStoreCategory,
 } from '@harness-monorepo/contracts';
-import type { StoreCategoryModel, StoreModel, StoreShowcaseModel } from '../../generated/prisma/models.js';
+import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
 
 // App
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 
-/**
- * What the public shape is built from. The showcases are part of it and not an extra argument: a
- * landing page with no blocks and a landing page whose blocks were forgotten in the `include` look
- * identical from here, and only the type can tell them apart.
- */
-export type PublicStoreRow = StoreModel & { showcases: StoreShowcaseModel[] };
+/** Every read that becomes a `Store` asks for the taxonomy row, so the mapper can demand it. */
+export type StoreRow = StoreModel & { category: StoreCategoryModel | null };
 
-/** Every read that becomes a `Store` asks for the taxonomy row too, so the mapper can demand it. */
-export type StoreRow = PublicStoreRow & { category: StoreCategoryModel | null };
-
-/**
- * The one query shape `toStore` accepts, so a call site cannot forget the include.
- *
- * The hidden showcases are filtered here rather than in the mapper: a card the shopkeeper switched
- * off should not travel to a storefront at all, and a `where` on the include is the only place that
- * is true of every read at once.
- */
-export const storeInclude = {
-  category: true,
-  showcases: { where: { isActive: true }, orderBy: { position: 'asc' } },
-} as const;
+/** The one query shape `toStore` accepts, so a call site cannot forget the include. */
+export const storeInclude = { category: true } as const;
 
 export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
   return {
@@ -48,7 +32,7 @@ export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
  * are absent by construction rather than by a `select` somebody has to remember: this shape is what
  * ends up in Google's index, so a field is added here only on purpose.
  */
-export function toPublicStore(row: PublicStoreRow): PublicStore {
+export function toPublicStore(row: StoreModel): PublicStore {
   return {
     id: row.id,
     slug: row.slug,
@@ -78,14 +62,6 @@ export function toPublicStore(row: PublicStoreRow): PublicStore {
     },
     layoutSettings: parseLayoutSettings(row.layoutSettings),
     paymentMethods: row.paymentMethods,
-    showcases: row.showcases.map((showcase) => ({
-      id: showcase.id,
-      title: showcase.title,
-      subtitle: showcase.subtitle,
-      imageUrl: showcase.imageUrl,
-      href: showcase.href,
-      layout: showcase.layout,
-    })),
   } satisfies PublicStore;
 }
 

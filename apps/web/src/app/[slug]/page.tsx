@@ -74,6 +74,19 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
+  // A poster is a category with a shape. The picture is required — a card of solid colour with
+  // words on it is not a banner — so one without a photograph is quietly not a poster yet.
+  const showcases = index.categories
+    .filter((category) => category.showcaseLayout && category.imageUrl)
+    .map((category) => ({
+      id: category.id,
+      title: category.name,
+      subtitle: category.description,
+      imageUrl: category.imageUrl as string,
+      href: routes.category(category.slug),
+      layout: category.showcaseLayout as "FULL" | "HALVES" | "THIRDS",
+    }))
+
   return (
     <StorefrontFrame
       store={store}
@@ -95,11 +108,11 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       <h1 className="sr-only">{store.name}</h1>
 
       {/*
-        What the shopkeeper put on their own landing page, before anything the catalogue generated:
-        three cards with a name and a line, then two banners. They come ordered and already grouped
-        by shape, so what runs here is their arrangement and not ours.
+        The categories the shopkeeper gave a shape to, as posters — in their own order, so what runs
+        here is their arrangement and not ours. A category with no shape stays off this band and is
+        still in the menu, in the rails below and at its own address.
       */}
-      <StorefrontShowcase items={store.showcases} />
+      <StorefrontShowcase items={showcases} />
       {/*
         One band per category, in the shopkeeper's own order — they know what they want to sell
         first. A category with nothing available in it draws nothing: the rail returns null on an

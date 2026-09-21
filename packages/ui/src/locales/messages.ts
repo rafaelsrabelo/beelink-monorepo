@@ -267,6 +267,13 @@ export interface UiMessages {
       parentHelp: string
       activeLabel: string
       activeHelp: string
+      /** The shape it takes on the landing page. There is no separate banner: the poster is this. */
+      showcaseLabel: string
+      showcaseHelp: string
+      showcaseNone: string
+      showcaseFull: string
+      showcaseHalves: string
+      showcaseThirds: string
       save: string
       cancel: string
       delete: string

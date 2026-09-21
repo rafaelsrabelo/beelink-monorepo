@@ -1,5 +1,5 @@
 // Types
-import type { PaymentMethod, ShowcaseLayout, StoreLayoutType, StoreType } from '@harness-monorepo/contracts';
+import type { PaymentMethod, StoreLayoutType, StoreType } from '@harness-monorepo/contracts';
 
 /**
  * The slugs a shop may never take. `/<slug>` is a catch-all sibling of the web app's own top-level
@@ -71,6 +71,3 @@ export const STOREFRONT_RATE_LIMIT = { max: 300, timeWindow: '1 minute' };
 // The limit on the two writes is deliberately not in this file: it reads `env`, and this file is
 // imported by the DTOs and by their unit tests, which must load without a `.env`. It is built in
 // stores.controller.ts, beside the routes it guards, exactly as auth.controller.ts builds its own.
-
-/** The shapes a landing-page block may take. Spelled out, like every other enum the wire carries. */
-export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies readonly ShowcaseLayout[];

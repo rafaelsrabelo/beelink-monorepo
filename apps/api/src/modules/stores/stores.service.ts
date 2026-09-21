@@ -152,10 +152,7 @@ export class StoresService {
 
   /** The anonymous read. It answers the narrow shape, so nothing private can leak by forgetting a select. */
   async publicBySlug(slug: string): Promise<PublicStore> {
-    // The landing page's blocks come with the shop and not on a second round trip: they are the
-    // shop's own furniture, they expire on the same write, and `storeInclude` is what keeps the
-    // hidden ones from travelling at all.
-    const row = await this.prisma.store.findUnique({ where: { slug }, include: storeInclude });
+    const row = await this.prisma.store.findUnique({ where: { slug } });
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
 
     return toPublicStore(row);

@@ -46,12 +46,15 @@ const HEIGHT: Record<StorefrontShowcaseLayout, string> = {
 }
 
 /**
- * The shopkeeper's own blocks on their landing page: a picture, a name, a line and a way in.
+ * The shop's own posters on its landing page: a picture, a name, a line and a way in.
  *
- * Nothing here is derived from a product. The shop owner asked to *write* these — "Creatina
- * Ultramesh / MESH 500" over artwork they made — and a card that read a product's fields would be
- * edited by a price change and emptied by a sold-out item. What it links to is a separate question
- * the shopkeeper answers, which is why `href` is its own field and may be null.
+ * What feeds it is the shopkeeper's categories — the ones they gave a shape to. There is no second
+ * "banner" entity, and there was one for a while: it carried a title, a picture and a description a
+ * category already had, and a destination that for a category is the category. Two names for one
+ * thing is two screens to keep in step, and the shopkeeper keeping them in step is the shopkeeper.
+ *
+ * It stays generic on purpose — id, title, line, picture, shape, somewhere to go — so it never has
+ * to know it is being handed categories.
  *
  * The text sits over the photograph, so the photograph gets a gradient under it rather than a flat
  * tint: an image whose bottom third is already dark would go black under a tint, and one that is

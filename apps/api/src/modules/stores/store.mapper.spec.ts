@@ -49,16 +49,6 @@ const row = {
   paymentMethods: ['MONEY', 'PIX'],
   createdAt: new Date('2026-09-10T12:00:00.000Z'),
   updatedAt: new Date('2026-09-11T12:00:00.000Z'),
-  showcases: [
-    {
-      id: '0199a0f1-0000-7000-8000-0000000000e1',
-      title: 'Creatina Ultramesh',
-      subtitle: 'MESH 500',
-      imageUrl: 'https://cdn/creatina.png',
-      href: '/padaria-do-bairro/produtos/creatina',
-      layout: 'THIRDS',
-    },
-  ],
 } as unknown as StoreRow;
 
 describe('toStore', () => {
@@ -105,24 +95,6 @@ describe('toStore', () => {
 });
 
 describe('toPublicStore', () => {
-  /**
-   * The landing page's blocks are the shopkeeper's own words over their own artwork, so they travel
-   * whole. What is deliberately NOT here is anything derived from a product: a card that read a
-   * price would be edited by a price change, and one that read stock would empty itself.
-   */
-  it('carries the landing page blocks as the shopkeeper typed them', () => {
-    expect(toPublicStore(row).showcases).toEqual([
-      {
-        id: '0199a0f1-0000-7000-8000-0000000000e1',
-        title: 'Creatina Ultramesh',
-        subtitle: 'MESH 500',
-        imageUrl: 'https://cdn/creatina.png',
-        href: '/padaria-do-bairro/produtos/creatina',
-        layout: 'THIRDS',
-      },
-    ]);
-  });
-
   // The words and not the enum: the web builds every storefront link from these, so a shop whose
   // vocabulary changes moves every link at once and no component holds "produtos" of its own.
   it('sends the words the shop addresses itself with, for the vocabulary it is on', () => {

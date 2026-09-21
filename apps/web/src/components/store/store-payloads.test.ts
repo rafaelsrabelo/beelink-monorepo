@@ -23,7 +23,6 @@ const STORE: Store = {
   socialNetworks: { whatsapp: null, instagram: null, tiktok: null, spotify: null, youtube: null },
   layoutSettings: { showBanner: true, productsPerRow: 3 },
   paymentMethods: ["MONEY", "PIX"],
-  showcases: [],
   address: {
     street: null,
     number: null,

@@ -36,23 +36,27 @@ JOIN "store_categories" c ON c.id = s."categoryId";
 
 -- `parent` is the slug of the category this one sits under, or NULL for a top level. Two levels and
 -- no third, which the API refuses on the way in — the URL `/<shop>/<category>` is flat.
-CREATE TEMP VIEW seed_category (segment, slug, name, description, parent, position) AS
+--
+-- `showcase` is the shape the category takes on the landing page, or NULL to keep it off. There is
+-- no separate "banner" list any more: the poster IS the category, so the picture, the name and the
+-- line on it are the ones below, and it goes to the category it is.
+CREATE TEMP VIEW seed_category (segment, slug, name, description, parent, showcase, position) AS
 VALUES
   -- suplementos
-  ('suplementos', 'proteinas',   'Proteínas',  'Whey, albumina e veganas',        NULL,          0),
-  ('suplementos', 'whey',        'Whey',       'Concentrado e isolado',           'proteinas',   0),
-  ('suplementos', 'albumina',    'Albumina',   'Liberação lenta',                 'proteinas',   1),
-  ('suplementos', 'creatina',    'Creatina',   'Força em cada repetição',         NULL,          1),
-  ('suplementos', 'pre-treino',  'Pré-treino', 'Energia para o treino inteiro',   NULL,          2),
-  ('suplementos', 'vitaminas',   'Vitaminas',  'A base que sustenta o resto',     NULL,          3),
-  ('suplementos', 'snacks',      'Snacks',     'Proteína para levar na mochila',  NULL,          4),
+  ('suplementos', 'proteinas',   'Proteínas',  'Whey, albumina e veganas',        NULL,        'FULL',   0),
+  ('suplementos', 'whey',        'Whey',       'Concentrado e isolado',           'proteinas', 'HALVES', 0),
+  ('suplementos', 'albumina',    'Albumina',   'Liberação lenta',                 'proteinas',  NULL,    1),
+  ('suplementos', 'creatina',    'Creatina',   'Força em cada repetição',         NULL,        'THIRDS', 1),
+  ('suplementos', 'pre-treino',  'Pré-treino', 'Energia para o treino inteiro',   NULL,        'THIRDS', 2),
+  ('suplementos', 'vitaminas',   'Vitaminas',  'A base que sustenta o resto',     NULL,        'THIRDS', 3),
+  ('suplementos', 'snacks',      'Snacks',     'Proteína para levar na mochila',  NULL,        'HALVES', 4),
   -- moda
-  ('moda',        'blusas',      'Blusas',     'Do básico ao que sai à noite',    NULL,          0),
-  ('moda',        'vestidos',    'Vestidos',   'Midi, longo e slip',              NULL,          1),
-  ('moda',        'calcas',      'Calças',     'Alfaiataria, wide leg e jeans',   NULL,          2),
-  ('moda',        'calcados',    'Calçados',   'Tênis, rasteira e bota',          NULL,          3),
-  ('moda',        'tenis',       'Tênis',      'Do branco liso ao corrida',       'calcados',    0),
-  ('moda',        'acessorios',  'Acessórios', 'O que fecha o look',              NULL,          4);
+  ('moda',        'vestidos',    'Vestidos',   'Midi, longo e slip',              NULL,        'FULL',   0),
+  ('moda',        'blusas',      'Blusas',     'Do básico ao que sai à noite',    NULL,        'THIRDS', 1),
+  ('moda',        'calcas',      'Calças',     'Alfaiataria, wide leg e jeans',   NULL,        'THIRDS', 2),
+  ('moda',        'calcados',    'Calçados',   'Tênis, rasteira e bota',          NULL,        'THIRDS', 3),
+  ('moda',        'tenis',       'Tênis',      'Do branco liso ao corrida',       'calcados',  'HALVES', 0),
+  ('moda',        'acessorios',  'Acessórios', 'O que fecha o look',              NULL,        'HALVES', 4);
 
 CREATE TEMP VIEW seed_product (segment, category, slug, name, description, price, compare_at, position) AS
 VALUES
@@ -84,10 +88,14 @@ VALUES
   ('moda',        'acessorios', 'cinto-couro',            'Cinto de Couro',                'Couro legítimo, fivela escovada, três centímetros de largura.',      8900,  NULL, 11);
 
 -- ---------------------------------------------------------------- categories
-INSERT INTO "product_categories" ("id", "storeId", "slug", "name", "description", "imageUrl", "position", "isActive", "slugHistory", "createdAt", "updatedAt")
+INSERT INTO "product_categories" ("id", "storeId", "slug", "name", "description", "imageUrl", "showcaseLayout", "position", "isActive", "slugHistory", "createdAt", "updatedAt")
 SELECT
   uuidv7(), sh.store_id, c.slug, c.name, c.description,
-  'https://picsum.photos/seed/' || sh.store_slug || '-' || c.slug || '/400/400',
+  -- Landscape for a poster, square for a menu tile. The shape decides, because a 400×400 stretched
+  -- across a full-width band is a blurred band.
+  'https://picsum.photos/seed/' || sh.store_slug || '-' || c.slug ||
+    CASE WHEN c.showcase IS NULL THEN '/400/400' ELSE '/1200/675' END,
+  c.showcase::"ShowcaseLayout",
   c.position, true, '{}', now(), now()
 FROM shop_segment sh
 JOIN seed_category c ON c.segment = sh.segment
@@ -95,6 +103,7 @@ ON CONFLICT ("storeId", "slug") DO UPDATE
   SET "name" = EXCLUDED."name",
       "description" = EXCLUDED."description",
       "imageUrl" = EXCLUDED."imageUrl",
+      "showcaseLayout" = EXCLUDED."showcaseLayout",
       "position" = EXCLUDED."position",
       "isActive" = true,
       "updatedAt" = now();
@@ -160,63 +169,6 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "product_images" pi WHERE pi."productId" = p.id AND pi.position = i.n
 );
 
--- ---------------------------------------------------------------- the landing page's own blocks
--- What the shopkeeper writes over their own artwork. The `href` is built from the shop's slug and
--- the PT_BR route words, because these shops are on PT_BR — a fixture may know that; the app may
--- not, which is why every link the app renders comes from `routeWords`.
-CREATE TEMP VIEW seed_showcase (segment, slug, title, subtitle, href_suffix, layout, position) AS
-VALUES
-  -- suplementos: o pôster, três cartões e dois banners, como o site de referência.
-  -- Cada um aponta para algum lugar: um produto, uma categoria ou o catálogo inteiro.
-  ('suplementos', 'hero-performance',   'Suplementação para quem leva o treino a sério', 'Fórmulas objetivas, matéria-prima selecionada e laudo por lote.', '/produtos',    'FULL',   0),
-  ('suplementos', 'creatina-ultramesh', 'Creatina Ultramesh',   'MESH 500, 100% pura',                    '/produtos/creatina-mono-300g',     'THIRDS', 1),
-  ('suplementos', 'pre-workout',        'Pré-treino Insano',    'Zero sódio. 200 mg de cafeína.',         '/produtos/pre-treino-insano-300g', 'THIRDS', 2),
-  ('suplementos', 'whey-concentrado',   'Whey Concentrado',     'Proteína concentrada pura, sem blends',  '/produtos/whey-concentrado-900g',  'THIRDS', 3),
-  ('suplementos', 'linha-proteinas',    'É mais proteína',      'A linha inteira, do whey à albumina',    '/proteinas',                       'HALVES', 4),
-  ('suplementos', 'invoque-treinos',    'Invoque seus treinos', 'Pré-treino, creatina e beta-alanina',    '/pre-treino',                      'HALVES', 5),
-  -- moda
-  ('moda',        'hero-colecao',       'A coleção nova já está no ar', 'Alfaiataria, linho e cetim, para o dia e para a noite.',  '/produtos',    'FULL',   0),
-  ('moda',        'alfaiataria',        'Alfaiataria',          'Calça, colete e blazer que conversam',   '/calcas',                          'THIRDS', 1),
-  ('moda',        'vestidos-festa',     'Vestidos de festa',    'Cetim, seda e fenda',                    '/vestidos',                        'THIRDS', 2),
-  ('moda',        'basicos',            'Básicos que ficam',    'Malha canelada e linho puro',            '/blusas',                          'THIRDS', 3),
-  ('moda',        'novo-verao',         'Novo verão',           'A coleção inteira no ar',                '/produtos',                        'HALVES', 4),
-  ('moda',        'acessorios-banner',  'Fecha o look',         'Bolsas, cintos e calçados',              '/acessorios',                      'HALVES', 5);
-
-INSERT INTO "store_showcases" ("id", "storeId", "title", "subtitle", "imageUrl", "href", "layout", "position", "isActive", "createdAt", "updatedAt")
-SELECT
-  uuidv7(), sh.store_id, w.title, w.subtitle,
-  'https://picsum.photos/seed/' || sh.store_slug || '-showcase-' || w.slug || '/1200/900',
-  '/' || sh.store_slug || w.href_suffix,
-  w.layout::"ShowcaseLayout", w.position, true, now(), now()
-FROM shop_segment sh
-JOIN seed_showcase w ON w.segment = sh.segment
-WHERE NOT EXISTS (
-  SELECT 1 FROM "store_showcases" ex WHERE ex."storeId" = sh.store_id AND ex.title = w.title
-);
-
--- The insert above only ever adds, so an edit to a position, a subtitle or a destination would
--- never reach a row that is already there — which is how the poster ended up sharing position 0
--- with the card that used to hold it. A fixture has to mirror its file, not append to it.
-UPDATE "store_showcases" ss
-SET "subtitle" = w.subtitle,
-    "href" = '/' || sh.store_slug || w.href_suffix,
-    "layout" = w.layout::"ShowcaseLayout",
-    "position" = w.position,
-    "isActive" = true,
-    "updatedAt" = now()
-FROM shop_segment sh, seed_showcase w
-WHERE ss."storeId" = sh.store_id
-  AND w.segment = sh.segment
-  AND w.title = ss.title;
-
--- The same "make the database match this file" rule the catalogue follows.
-DELETE FROM "store_showcases" ss
-USING shop_segment sh
-WHERE ss."storeId" = sh.store_id
-  AND EXISTS (SELECT 1 FROM seed_showcase w WHERE w.segment = sh.segment)
-  AND NOT EXISTS (SELECT 1 FROM seed_showcase w WHERE w.segment = sh.segment AND w.title = ss.title);
-
-DROP VIEW seed_showcase;
 DROP VIEW shop_segment;
 DROP VIEW seed_category;
 DROP VIEW seed_product;

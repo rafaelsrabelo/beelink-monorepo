@@ -1,5 +1,5 @@
 // Types
-import type { RouteVocabulary, StorefrontRouteWords } from '@harness-monorepo/contracts';
+import type { RouteVocabulary, ShowcaseLayout, StorefrontRouteWords } from '@harness-monorepo/contracts';
 
 /**
  * Which words each vocabulary builds a shop's URLs from. The table is the only place these strings
@@ -98,3 +98,9 @@ export const PRODUCT_IMAGES_MAX = 10;
 
 /** Cents. A product priced above this is a typo — R$ 1.000.000,00 — not a sale. */
 export const PRICE_CENTS_MAX = 100_000_000;
+
+/**
+ * The shapes a category may take on the landing page. Spelled out rather than derived, like every
+ * other enum the wire carries: a reader has to be able to see the whole list.
+ */
+export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies readonly ShowcaseLayout[];
