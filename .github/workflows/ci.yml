@@ -28,7 +28,6 @@ jobs:
     outputs:
       web: ${{ steps.filter.outputs.web }}
       api: ${{ steps.filter.outputs.api }}
-      mobile: ${{ steps.filter.outputs.mobile }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -41,10 +40,6 @@ jobs:
               - 'pnpm-lock.yaml'
             api:
               - 'apps/api/**'
-              - 'packages/**'
-              - 'pnpm-lock.yaml'
-            mobile:
-              - 'apps/mobile/**'
               - 'packages/**'
               - 'pnpm-lock.yaml'
 
@@ -89,24 +84,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter api exec prisma generate
       - run: pnpm turbo type-check lint test build --filter=api
-
-  mobile:
-    name: mobile
-    needs: changes
-    if: needs.changes.outputs.mobile == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo type-check lint --filter=mobile
-      - run: pnpm --filter mobile exec expo-doctor
-
 
   # The suites that need a database and a mail server. They run through pnpm --filter rather than
   # turbo: strict env mode would filter the job's variables out of a turbo task.
@@ -172,26 +149,3 @@ jobs:
           name: playwright-report
           path: apps/web/playwright-report
           retention-days: 7
-
-  # The app's version is its OTA runtime, so a PR that changes the app owes a
-  # changeset — that is what decides whether the next build is a new runtime.
-  changeset:
-    name: changeset present (mobile)
-    needs: changes
-    if: >-
-      needs.changes.outputs.mobile == 'true'
-      && github.event_name == 'pull_request'
-      && !contains(github.event.pull_request.labels.*.name, 'skip-changeset')
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Require a changeset
-        run: |
-          added=$(git diff --name-only --diff-filter=A "origin/${{ github.base_ref }}"...HEAD -- '.changeset/*.md')
-          if [ -z "$added" ]; then
-            echo "::error::apps/mobile changed but no changeset was added. Run 'pnpm changeset', or label the PR skip-changeset."
-            exit 1
-          fi

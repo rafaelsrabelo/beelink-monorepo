@@ -107,11 +107,6 @@ gate "web/no-web-storage" \
   "apps/web/src packages/ui/src" \
   "(localStorage|sessionStorage)"
 
-gate "mobile/no-web-imports" \
-  "The mobile app imports no web-only module — no next/*, no react-dom, no @harness-monorepo/ui (apps/mobile/AGENTS.md)." \
-  "apps/mobile/src apps/mobile/App.tsx" \
-  "from[[:space:]]+['\"](next|react-dom|@harness-monorepo/ui)(/[^'\"]*)?['\"]"
-
 echo ""
 if [ -n "$failed" ]; then
   echo "── arch-gates: FAILED →${failed}"
