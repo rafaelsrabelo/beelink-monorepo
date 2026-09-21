@@ -47,6 +47,10 @@ export const ptBR: WebMessages = {
       list: "Minhas lojas",
       overview: "Visão geral",
       settings: "Configurações da loja",
+      categories: "Categorias",
+      products: "Produtos",
+      showcases: "Destaques",
+      back: "Todas as lojas",
     },
     list: {
       description: "Escolha uma loja para gerenciar ou crie mais uma.",

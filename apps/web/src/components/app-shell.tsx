@@ -36,6 +36,10 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
   const pathname = usePathname()
   const signOut = useSignOut()
 
+  // `/admin/<slug>/...`, and nothing else. `/admin` itself is the list of shops and has no slug,
+  // which is what keeps that page from rendering a menu for a shop nobody has opened.
+  const shopSlug = pathname.match(/^\/admin\/([^/]+)/)?.[1] ?? null
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -56,13 +60,32 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
             },
           })
         }
-        // Two items, and only ever two. A shop's own pages do not belong here: the list of
-        // shops is what /admin is for, and a menu that grows a branch when you open a shop is a
-        // menu that changes shape under you.
-        navMain={[
-          { title: web.stores.nav.dashboard, href: "/dashboard" },
-          { title: web.stores.nav.list, href: "/admin", match: "prefix" },
-        ]}
+        /*
+          Inside a shop the menu becomes that shop's, and outside it the list of shops.
+
+          It used to be two items and only ever two, on the grounds that a menu growing a branch
+          when you open a shop changes shape under you. That objection stands and this is not it:
+          nothing grows — the menu is replaced, the way it is in every multi-tenant panel a
+          shopkeeper has already used. The first item is the door back out, so the swap is never a
+          trap, and outside a shop the two original items are exactly what they were.
+        */
+        navMain={
+          shopSlug
+            ? [
+                { title: web.stores.nav.back, href: "/admin" },
+                // No "overview" item: `/admin/<slug>` redirects to the settings page, and a menu
+                // entry that lands on another menu entry is a bug with a label on it. It comes back
+                // the day that address is a page of its own.
+                { title: web.stores.nav.products, href: `/admin/${shopSlug}/products`, match: "prefix" },
+                { title: web.stores.nav.categories, href: `/admin/${shopSlug}/categories`, match: "prefix" },
+                { title: web.stores.nav.showcases, href: `/admin/${shopSlug}/showcases`, match: "prefix" },
+                { title: web.stores.nav.settings, href: `/admin/${shopSlug}/store` },
+              ]
+            : [
+                { title: web.stores.nav.dashboard, href: "/dashboard" },
+                { title: web.stores.nav.list, href: "/admin", match: "prefix" },
+              ]
+        }
       />
       <SidebarInset>
         <SiteHeader

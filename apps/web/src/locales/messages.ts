@@ -91,6 +91,12 @@ export interface WebMessages {
       list: string
       overview: string
       settings: string
+      /** Inside a shop the menu becomes that shop's. These are its items. */
+      categories: string
+      products: string
+      showcases: string
+      /** The way out of a shop, back to the list of them. */
+      back: string
     }
     list: {
       description: string

@@ -47,6 +47,10 @@ export const en: WebMessages = {
       list: "My shops",
       overview: "Overview",
       settings: "Shop settings",
+      categories: "Categories",
+      products: "Products",
+      showcases: "Highlights",
+      back: "All shops",
     },
     list: {
       description: "Pick a shop to manage, or create another one.",

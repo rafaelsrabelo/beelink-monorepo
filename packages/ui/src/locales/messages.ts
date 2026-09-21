@@ -243,6 +243,46 @@ export interface UiMessages {
       spotify: string
     }
   }
+  /** The panel's catalogue screens: what a shopkeeper fills in, never what a visitor reads. */
+  catalog: {
+    categories: {
+      title: string
+      description: string
+      /** The button that opens an empty form, and the heading of that form. */
+      create: string
+      edit: string
+      empty: string
+      emptyHint: string
+      nameLabel: string
+      namePlaceholder: string
+      slugLabel: string
+      /** Says what the segment becomes, so a shopkeeper sees the address before saving it. */
+      slugHelp: string
+      descriptionLabel: string
+      descriptionHelp: string
+      imageLabel: string
+      /** The select that puts a category under another. Two levels, so a child cannot be chosen. */
+      parentLabel: string
+      parentNone: string
+      parentHelp: string
+      activeLabel: string
+      activeHelp: string
+      save: string
+      cancel: string
+      delete: string
+      /** Said before a delete, because the products survive it and the subcategories do not. */
+      deleteConfirm: string
+      /** "{count} produtos" — the same sentence the window says, on the row of a list. */
+      productCount: string
+      productCountOne: string
+      /** Marks a row the shopkeeper switched off; the window shows none of it. */
+      hidden: string
+      subcategoryOf: string
+      saved: string
+      removed: string
+    }
+  }
+
   store: {
     /** Keyed by the union, so adding a selling mode is a compile error in every dictionary. */
     typeLabels: Record<StoreType, string>
