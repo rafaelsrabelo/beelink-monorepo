@@ -7,10 +7,11 @@ import type { PublicProductCard, PublicProductCategory, PublicStore } from "@har
 
 // UI
 import { StorefrontCatalog } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
+import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
 import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
 
 // App
-import { orderHrefOf, storefrontLinksOf } from "@/components/storefront/storefront-links"
+import { addressLineOf, orderHrefOf, storefrontLinksOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
 import { callPublicApi } from "@/lib/public-api"
 import { catalogTag, storeTag } from "@/lib/revalidate"
@@ -99,35 +100,49 @@ export default async function StorefrontPage({ params, searchParams }: PageProps
   const [{ ui }, catalogue] = await Promise.all([getMessages(), catalogueAt(slug, category, search)])
   const layout = store.layoutSettings
 
+  const categoryHref = (next: string | null) =>
+    next ? `/${slug}?categoria=${encodeURIComponent(next)}` : `/${slug}`
+
   return (
     <StorefrontWindow
       name={store.name}
       description={store.description}
       logoUrl={store.logoUrl}
+      homeHref={`/${slug}`}
+      colors={store.colors}
+      searchAction={`/${slug}`}
+      searchValue={search ?? ""}
+      // The open category travels with a search: filtering and then searching should narrow, not
+      // start over.
+      searchHidden={category ? { categoria: category } : undefined}
+      categories={
+        <StorefrontCategories
+          categories={catalogue.categories}
+          active={category ?? null}
+          href={categoryHref}
+          withImages={layout.showCategoryIcons ?? true}
+        />
+      }
       // Only when the shopkeeper chose the banner layout. A shop that uploaded one and then went
       // back to the default is not showing it by accident.
-      bannerImageUrl={store.layoutType === "BANNER" ? store.bannerImageUrl : null}
-      colors={store.colors}
+      banner={
+        store.layoutType === "BANNER" && store.bannerImageUrl
+          ? { imageUrl: store.bannerImageUrl }
+          : null
+      }
       links={storefrontLinksOf(store)}
       orderHref={orderHrefOf(store)}
+      addressLine={addressLineOf(store)}
       messages={ui}
     >
       <StorefrontCatalog
-        categories={catalogue.categories}
         products={catalogue.products}
-        activeCategory={category ?? null}
-        search={search ?? ""}
-        searchAction={`/${slug}`}
-        // The address is what says which catalogue you are looking at, so every filter is a link
-        // and the search is a GET form. Bookmarkable, shareable, indexable, and it works before
-        // any JavaScript arrives.
-        categoryHref={(next) => (next ? `/${slug}?categoria=${encodeURIComponent(next)}` : `/${slug}`)}
         productHref={(productSlug) => `/${slug}/produtos/${productSlug}`}
+        clearHref={category || search ? `/${slug}` : undefined}
         locale="pt-BR"
         productsPerRow={layout.productsPerRow ?? 3}
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}
-        showCategoryImages={layout.showCategoryIcons ?? true}
         messages={ui}
       />
     </StorefrontWindow>

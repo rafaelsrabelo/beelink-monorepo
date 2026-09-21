@@ -34,3 +34,20 @@ export function orderHrefOf(store: PublicStore): string | undefined {
 
   return digits ? `https://wa.me/${digits}` : undefined
 }
+
+/**
+ * Where the shop is, on one line, for the footer. Only what a customer would use to find it: the
+ * street and the number say where to knock, and the city says which "Rua das Flores" it is.
+ *
+ * `null` for a shop that filled none of it in — a footer with a lone comma reads as a bug.
+ */
+export function addressLineOf(store: PublicStore & { address?: { street?: string | null; number?: string | null; neighborhood?: string | null; city?: string | null; state?: string | null } }): string | null {
+  const address = store.address
+  if (!address) return null
+
+  const street = [address.street, address.number].filter(Boolean).join(", ")
+  const place = [address.neighborhood, address.city, address.state].filter(Boolean).join(" · ")
+  const line = [street, place].filter(Boolean).join(" — ")
+
+  return line || null
+}

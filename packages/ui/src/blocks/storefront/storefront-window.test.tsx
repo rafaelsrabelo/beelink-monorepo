@@ -1,5 +1,5 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 // Locales
@@ -15,16 +15,12 @@ import { StorefrontWindow } from "./storefront-window"
 const colors = sampleStoreColors
 
 function renderWindow(overrides: Partial<Parameters<typeof StorefrontWindow>[0]> = {}) {
-  return render(<StorefrontWindow name="Padaria da Ana" colors={colors} {...overrides} />)
+  return render(
+    <StorefrontWindow name="Padaria da Ana" homeHref="/padaria-da-ana" colors={colors} {...overrides} />,
+  )
 }
 
 describe("StorefrontWindow", () => {
-  it("names the shop as the page's one heading", () => {
-    renderWindow()
-
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Padaria da Ana")
-  })
-
   /**
    * The panel is ours and looks like us; the window is the shopkeeper's and must not. The colours
    * arrive as data and become custom properties, which is also why the no-hex-colors gate is
@@ -36,72 +32,131 @@ describe("StorefrontWindow", () => {
 
     expect(dressed.style.getPropertyValue("--shop-primary")).toBe(colors.primary)
     expect(dressed.style.getPropertyValue("--shop-background")).toBe(colors.background)
-    // Not a token: what is asserted is that the shop's own value reached the page.
     expect(colors.primary).toMatch(/^#[0-9A-Fa-f]{6}$/)
   })
 
-  it("offers the order button only when the shop has a WhatsApp to send it to", () => {
-    renderWindow()
-    expect(screen.queryByRole("link", { name: /WhatsApp/ })).not.toBeInTheDocument()
+  describe("the header", () => {
+    it("takes the logo home, so a product page has a way back", () => {
+      renderWindow({ logoUrl: "https://cdn/logo.png" })
 
-    renderWindow({ orderHref: "https://wa.me/5585999998888" })
-    expect(screen.getByRole("link", { name: "Fazer pedido no WhatsApp" })).toHaveAttribute(
-      "href",
-      "https://wa.me/5585999998888",
-    )
-  })
-
-  // An icon with no words announces itself as "link" and nothing else.
-  it("names each network, so a row of icons is not a row of unlabelled links", () => {
-    renderWindow({
-      links: [
-        { network: "instagram", href: "https://instagram.com/padaria" },
-        { network: "tiktok", href: "https://tiktok.com/@padaria" },
-      ],
+      expect(screen.getByRole("banner").querySelector("a")).toHaveAttribute("href", "/padaria-da-ana")
     })
 
-    expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
-      "href",
-      "https://instagram.com/padaria",
-    )
-    expect(screen.getByRole("link", { name: "TikTok" })).toBeInTheDocument()
+    it("searches through the address, so a result can be shared", () => {
+      renderWindow({ searchAction: "/padaria-da-ana", searchValue: "bolo" })
+
+      const form = within(screen.getByRole("banner")).getByRole("search")
+      expect(form).toHaveAttribute("method", "get")
+      expect(screen.getByRole("searchbox")).toHaveValue("bolo")
+    })
+
+    it("carries the open category through a search rather than dropping it", () => {
+      const { container } = renderWindow({
+        searchAction: "/padaria-da-ana",
+        searchHidden: { categoria: "promocoes" },
+      })
+
+      expect(container.querySelector('input[name="categoria"]')).toHaveValue("promocoes")
+    })
+
+    /**
+     * There is no cart and no buyer account in the product. An icon that goes nowhere teaches a
+     * visitor that the rest of the page is a mockup, so neither renders until the screen has an
+     * address to give it.
+     */
+    it("offers no cart and no account until the screen has somewhere to send them", () => {
+      renderWindow()
+
+      expect(screen.queryByRole("link", { name: "Carrinho" })).not.toBeInTheDocument()
+      expect(screen.queryByRole("link", { name: "Minha conta" })).not.toBeInTheDocument()
+    })
+
+    it("shows them, counted, once it does", () => {
+      renderWindow({ cartHref: "/padaria-da-ana/carrinho", cartCount: 3, accountHref: "/padaria-da-ana/conta" })
+
+      expect(screen.getByRole("link", { name: "Carrinho" })).toHaveAttribute("href", "/padaria-da-ana/carrinho")
+      expect(screen.getByRole("link", { name: "Minha conta" })).toBeInTheDocument()
+      expect(screen.getByText("3")).toBeInTheDocument()
+    })
   })
 
-  it("shows the banner the shopkeeper supplied, and a coloured bar when there is none", () => {
-    const { container: withBanner } = renderWindow({ bannerImageUrl: "https://cdn/banner.png" })
-    expect(withBanner.querySelector("img[src='https://cdn/banner.png']")).not.toBeNull()
+  describe("the bands", () => {
+    // A band with no data does not render, so a shop with six bags and no banner is a short page
+    // rather than a page of empty strips.
+    it("draws no band for what the shop has not filled in", () => {
+      const { container } = renderWindow()
 
-    const { container: without } = renderWindow()
-    expect(without.querySelector("img")).toBeNull()
+      expect(container.querySelectorAll("img")).toHaveLength(0)
+      expect(screen.queryByRole("navigation")).not.toBeInTheDocument()
+    })
+
+    it("draws the cover, and links it when the shopkeeper gave it somewhere to go", () => {
+      renderWindow({ banner: { imageUrl: "https://cdn/capa.png", href: "/padaria-da-ana?categoria=promocoes" } })
+
+      expect(screen.getByRole("link", { name: "" })).toHaveAttribute(
+        "href",
+        "/padaria-da-ana?categoria=promocoes",
+      )
+    })
+
+    /** A banner whose words are painted into the JPEG has nothing a screen reader can read. */
+    it("hides a wordless cover from a screen reader, and describes one that was described", () => {
+      const { container, rerender } = renderWindow({ banner: { imageUrl: "https://cdn/a.png" } })
+      expect(container.querySelector("img")).toHaveAttribute("aria-hidden", "true")
+
+      rerender(
+        <StorefrontWindow
+          name="Padaria da Ana"
+          homeHref="/padaria-da-ana"
+          colors={colors}
+          banner={{ imageUrl: "https://cdn/a.png", alt: "Bolos de aniversário" }}
+        />,
+      )
+      expect(screen.getByAltText("Bolos de aniversário")).not.toHaveAttribute("aria-hidden")
+    })
+
+    it("states what the shop promises, and nothing when it promises nothing", () => {
+      renderWindow({ highlights: [{ id: "1", title: "Entrega no bairro", detail: "Sem taxa acima de R$ 60" }] })
+
+      expect(screen.getByText("Entrega no bairro")).toBeInTheDocument()
+      expect(screen.getByText("Sem taxa acima de R$ 60")).toBeInTheDocument()
+    })
+
+    it("renders the catalogue the screen put under it", () => {
+      renderWindow({ children: <p>A grade de produtos</p> })
+
+      expect(screen.getByText("A grade de produtos")).toBeInTheDocument()
+    })
   })
 
-  /**
-   * Decorative, deliberately: the shop's name is the heading below it, and a described banner
-   * makes a screen reader announce the name twice before saying anything useful.
-   */
-  it("hides the banner from a screen reader", () => {
-    const { container } = renderWindow({ bannerImageUrl: "https://cdn/banner.png" })
+  describe("the footer", () => {
+    it("names the shop and where it is", () => {
+      renderWindow({ addressLine: "Rua das Flores, 120 — Fortaleza" })
 
-    expect(container.querySelector("img[src='https://cdn/banner.png']")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    )
+      expect(within(screen.getByRole("contentinfo")).getByText("Rua das Flores, 120 — Fortaleza")).toBeInTheDocument()
+    })
+
+    // An icon with no words announces itself as "link" and nothing else.
+    it("names every network it links to", () => {
+      renderWindow({ links: [{ network: "instagram", href: "https://instagram.com/padaria" }] })
+
+      expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
+        "href",
+        "https://instagram.com/padaria",
+      )
+    })
   })
 
-  it("leaves the description out rather than printing an empty line", () => {
-    renderWindow({ description: null })
+  it("offers the order button only when the shop has a WhatsApp to send it to", () => {
+    renderWindow({ description: "Pães e bolos." })
+    expect(screen.queryByRole("link", { name: /WhatsApp/ })).not.toBeInTheDocument()
 
-    expect(screen.getByRole("heading", { level: 1 }).parentElement?.children).toHaveLength(1)
-  })
-
-  it("renders what the screen put under it", () => {
-    renderWindow({ children: <p>O catálogo vem aqui</p> })
-
-    expect(screen.getByText("O catálogo vem aqui")).toBeInTheDocument()
+    renderWindow({ description: "Pães e bolos.", orderHref: "https://wa.me/5585999998888" })
+    expect(screen.getByRole("link", { name: "Fazer pedido no WhatsApp" })).toBeInTheDocument()
   })
 
   it("renders in English when the screen hands it the English dictionary", () => {
-    renderWindow({ messages: en, orderHref: "https://wa.me/1" })
+    renderWindow({ messages: en, description: "Bread and cakes.", orderHref: "https://wa.me/1" })
 
     expect(screen.getByRole("link", { name: "Order on WhatsApp" })).toBeInTheDocument()
   })
@@ -112,11 +167,20 @@ describe("StorefrontWindow", () => {
         name="Padaria da Ana"
         description="Pães e bolos feitos no dia."
         logoUrl="https://cdn/logo.png"
-        bannerImageUrl="https://cdn/banner.png"
+        homeHref="/padaria-da-ana"
         colors={colors}
+        searchAction="/padaria-da-ana"
+        cartHref="/padaria-da-ana/carrinho"
+        cartCount={2}
+        accountHref="/padaria-da-ana/conta"
+        banner={{ imageUrl: "https://cdn/capa.png", alt: "Bolos" }}
+        highlights={[{ id: "1", title: "Entrega no bairro" }]}
         orderHref="https://wa.me/5585999998888"
         links={[{ network: "instagram", href: "https://instagram.com/padaria" }]}
-      />,
+        addressLine="Rua das Flores, 120"
+      >
+        <p>Produtos</p>
+      </StorefrontWindow>,
     )
 
     await expectNoA11yViolations(container)

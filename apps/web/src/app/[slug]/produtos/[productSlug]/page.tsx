@@ -10,7 +10,7 @@ import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/
 import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
 
 // App
-import { orderHrefOf, storefrontLinksOf } from "@/components/storefront/storefront-links"
+import { addressLineOf, orderHrefOf, storefrontLinksOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
 import { callPublicApi } from "@/lib/public-api"
 import { catalogTag, storeTag } from "@/lib/revalidate"
@@ -76,11 +76,15 @@ export default async function ProductPage({ params }: PageProps<"/[slug]/produto
   return (
     <StorefrontWindow
       name={store.name}
+      // No description and no cover here: this page is about one product, and repeating the
+      // shop's pitch above it pushes the thing someone came to see below the fold.
       description={null}
       logoUrl={store.logoUrl}
-      bannerImageUrl={null}
+      homeHref={`/${slug}`}
       colors={store.colors}
+      searchAction={`/${slug}`}
       links={storefrontLinksOf(store)}
+      addressLine={addressLineOf(store)}
       messages={ui}
     >
       <StorefrontProductDetail

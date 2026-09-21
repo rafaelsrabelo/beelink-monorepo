@@ -122,9 +122,13 @@ export interface UiMessages {
     orderThis: string
     /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
     photoOf: string
+    /** Only rendered when the screen hands over an address; there is no cart yet. */
+    cart: string
+    account: string
     noPhoto: string
     search: string
     searchAction: string
+    categoriesLabel: string
     allCategories: string
     empty: string
     emptyHint: string

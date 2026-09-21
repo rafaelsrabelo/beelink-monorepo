@@ -1,9 +1,6 @@
 // React
 import type { ReactNode } from "react"
 
-// Libs
-import { SearchIcon } from "lucide-react"
-
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -13,31 +10,15 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { StorefrontProductCard, type StorefrontProduct } from "./storefront-product-card"
 
-export interface StorefrontCategory {
-  id: string
-  slug: string
-  name: string
-  imageUrl: string | null
-}
-
 export interface StorefrontCatalogProps {
-  categories: readonly StorefrontCategory[]
   products: readonly StorefrontProduct[]
-  /** The category currently shown, or null for all of them. */
-  activeCategory?: string | null
-  /** What is in the search box — the screen owns it, because the address does. */
-  search?: string
-  /** Where the search form submits. A form and not a listener: a search must survive no JavaScript. */
-  searchAction: string
-  /** `(categorySlug | null) => href`, built by the screen. */
-  categoryHref: (slug: string | null) => string
   productHref: (productSlug: string) => string
+  /** Where "see everything" goes when a filter left nothing behind. */
+  clearHref?: string
   locale: string
   productsPerRow?: 2 | 3 | 4
   showPrice?: boolean
   showBadge?: boolean
-  /** Categories as image tiles, as most Brazilian shops show them, or as plain chips. */
-  showCategoryImages?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
   children?: ReactNode
@@ -50,29 +31,23 @@ const COLUMNS: Record<2 | 3 | 4, string> = {
 }
 
 /**
- * The catalogue: a search, the shop's categories, and what matches.
+ * What the shop is selling, as a grid.
  *
- * The search is a `<form method="get">` and the categories are links, not buttons with handlers.
- * Both facts follow from the same decision — the address is what says which catalogue you are
- * looking at. A filtered shop is therefore bookmarkable, shareable, indexable and survives the
- * back button, and the whole thing works before any JavaScript arrives.
+ * The search lives in the header and the categories are a band of their own, because both belong
+ * to the page rather than to the list — a shop with one category still has a search, and a
+ * product page still has both. What is left here is the list and what to say when it is empty.
  *
- * The category row keeps every category the shop has, never only the ones the current filter
- * left: navigation that disappears when you use it is navigation you cannot get back out of.
+ * An empty result is a sentence and a way out, never a blank page: someone who filtered into a
+ * corner needs the door more than they need an explanation.
  */
 export function StorefrontCatalog({
-  categories,
   products,
-  activeCategory = null,
-  search = "",
-  searchAction,
-  categoryHref,
   productHref,
+  clearHref,
   locale,
   productsPerRow = 3,
   showPrice = true,
   showBadge = true,
-  showCategoryImages = true,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
   children,
@@ -81,72 +56,6 @@ export function StorefrontCatalog({
 
   return (
     <section className="flex w-full flex-col gap-6">
-      <form method="get" action={searchAction} role="search" className="relative w-full">
-        <label htmlFor="storefront-search" className="sr-only">
-          {text.search}
-        </label>
-        <SearchIcon
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 opacity-60"
-        />
-        <input
-          id="storefront-search"
-          type="search"
-          name="busca"
-          defaultValue={search}
-          placeholder={text.search}
-          className="h-11 w-full rounded-xl border border-current/15 bg-transparent pr-3 pl-9 text-base outline-none focus-visible:border-current/40"
-        />
-        {/* A shop's category filter must survive a search: the form carries it along. */}
-        {activeCategory ? <input type="hidden" name="categoria" value={activeCategory} /> : null}
-        <button type="submit" className="sr-only">
-          {text.searchAction}
-        </button>
-      </form>
-
-      {categories.length ? (
-        <nav aria-label={text.productsHeading} className="-mx-4 overflow-x-auto px-4">
-          <ul className="flex items-start gap-3">
-            {[null, ...categories.map((category) => category.slug)].map((slug) => {
-              const category = categories.find((entry) => entry.slug === slug)
-              const current = activeCategory === slug
-              const label = category?.name ?? text.allCategories
-
-              return (
-                <li key={slug ?? "all"}>
-                  <Link
-                    href={categoryHref(slug)}
-                    aria-current={current ? "page" : undefined}
-                    className={cn(
-                      "flex shrink-0 flex-col items-center gap-2 text-center text-xs",
-                      showCategoryImages ? "w-20" : "",
-                      current ? "font-semibold" : "opacity-75",
-                    )}
-                  >
-                    {showCategoryImages ? (
-                      <span
-                        className={cn(
-                          "size-16 overflow-hidden rounded-full bg-black/5",
-                          current && "ring-2 ring-offset-2",
-                        )}
-                        style={current ? { boxShadow: "0 0 0 2px var(--shop-primary)" } : undefined}
-                      >
-                        {category?.imageUrl ? (
-                          <img src={category.imageUrl} alt="" aria-hidden="true" className="size-full object-cover" />
-                        ) : null}
-                      </span>
-                    ) : null}
-                    <span className={showCategoryImages ? "line-clamp-2" : "rounded-full border border-current/20 px-3 py-1.5"}>
-                      {label}
-                    </span>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-      ) : null}
-
       {products.length ? (
         <ul className={cn("grid gap-3", COLUMNS[productsPerRow])}>
           {products.map((product) => (
@@ -164,9 +73,18 @@ export function StorefrontCatalog({
           ))}
         </ul>
       ) : (
-        <div className="flex flex-col items-center gap-1 py-12 text-center">
+        <div className="flex flex-col items-center gap-2 py-16 text-center">
           <p className="font-medium">{text.empty}</p>
           <p className="text-sm opacity-70">{text.emptyHint}</p>
+          {clearHref ? (
+            <Link
+              href={clearHref}
+              className="mt-2 rounded-xl px-4 py-2 text-sm font-medium"
+              style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
+            >
+              {text.allCategories}
+            </Link>
+          ) : null}
         </div>
       )}
 

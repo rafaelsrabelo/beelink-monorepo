@@ -3,6 +3,11 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { sampleColorPresets } from "../store/store.fixtures"
 import { StorefrontWindow } from "./storefront-window"
 
+const links = [
+  { network: "instagram" as const, href: "https://instagram.com/padariadaana" },
+  { network: "tiktok" as const, href: "https://tiktok.com/@padariadaana" },
+]
+
 const meta = {
   title: "Blocos/Vitrine/Janela da loja",
   component: StorefrontWindow,
@@ -10,37 +15,45 @@ const meta = {
   args: {
     name: "Padaria da Ana",
     description: "Pães, bolos e café da manhã, feitos no dia e entregues na região.",
-    logoUrl: "https://res.cloudinary.com/demo/image/upload/w_200,h_200,c_fill/sample.jpg",
+    logoUrl: "https://picsum.photos/seed/padaria-logo/200/200",
+    homeHref: "/padaria-da-ana",
     colors: sampleColorPresets[4].colors,
+    searchAction: "/padaria-da-ana",
     orderHref: "https://wa.me/5585999998888",
-    links: [
-      { network: "instagram" as const, href: "https://instagram.com/padariadaana" },
-      { network: "tiktok" as const, href: "https://tiktok.com/@padariadaana" },
-    ],
+    links,
+    addressLine: "Rua das Flores, 120 · Aldeota, Fortaleza — CE",
   },
 } satisfies Meta<typeof StorefrontWindow>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Padrao: Story = {}
+/** The median bee-link shop: a name, a description, a WhatsApp. No banner, no promises, no cart. */
+export const LojaPequena: Story = {}
 
-/** The banner layout, when the shopkeeper chose one and supplied an image. */
-export const ComBanner: Story = {
-  args: { bannerImageUrl: "https://res.cloudinary.com/demo/image/upload/w_1200,h_400,c_fill/sample.jpg" },
-}
-
-/** Four different colours, to show the window is the shopkeeper's and not ours. */
-export const OutraLoja: Story = {
+/** Every band at once, as the big Brazilian shops lay them out. */
+export const Completa: Story = {
   args: {
-    name: "Bewave Store",
-    description: "Suplementos e acessórios para treino.",
-    colors: sampleColorPresets[2].colors,
-    links: [{ network: "instagram" as const, href: "https://instagram.com/bewave" }],
+    banner: { imageUrl: "https://picsum.photos/seed/capa/1600/600", href: "/padaria-da-ana?categoria=promocoes" },
+    bannerBelow: { imageUrl: "https://picsum.photos/seed/rodape/1600/400" },
+    highlights: [
+      { id: "1", title: "Entrega no bairro", detail: "Sem taxa acima de R$ 60" },
+      { id: "2", title: "Pague no PIX", detail: "Confirmação na hora" },
+      { id: "3", title: "Feito no dia", detail: "Saiu do forno hoje" },
+      { id: "4", title: "Fale direto", detail: "WhatsApp, sem robô" },
+    ],
   },
 }
 
-/** A shop with no WhatsApp on file offers no order button, rather than one that goes nowhere. */
+/**
+ * The cart and the account icon appear only when the screen hands over an address for them, and
+ * today it hands over neither — there is no cart and no buyer account in the product. This story
+ * exists to show what the header becomes on the day there is.
+ */
+export const ComCarrinho: Story = {
+  args: { cartHref: "/padaria-da-ana/carrinho", cartCount: 3, accountHref: "/padaria-da-ana/conta" },
+}
+
 export const SemWhatsapp: Story = {
   args: { orderHref: undefined },
 }
