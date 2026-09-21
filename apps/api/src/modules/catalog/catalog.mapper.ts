@@ -18,7 +18,10 @@ import type {
  * `_count`. Demanding it in the row type is what stops a call site forgetting the `_count` and
  * shipping a category that claims to hold nothing.
  */
-export type ProductCategoryRow = ProductCategoryModel & { _count: { products: number } };
+export type ProductCategoryRow = ProductCategoryModel & {
+  _count: { products: number };
+  parent: { slug: string } | null;
+};
 
 /** The one query shape the category mappers accept. */
 /**
@@ -29,6 +32,9 @@ export type ProductCategoryRow = ProductCategoryModel & { _count: { products: nu
  */
 export const productCategoryInclude = {
   _count: { select: { products: { where: { isAvailable: true } } } },
+  // The slug and not the id: the wire speaks in slugs, because that is what a URL carries, and a
+  // web app holding a parent's uuid could do nothing with it.
+  parent: { select: { slug: true } },
 } as const;
 
 /** Images are always read with a product: the card needs the first one and the page needs them all. */
@@ -49,6 +55,9 @@ export function toPublicProductCategory(row: ProductCategoryRow): PublicProductC
     name: row.name,
     description: row.description,
     imageUrl: row.imageUrl,
+    parentSlug: row.parent?.slug ?? null,
+    // Direct children only. A parent's real total is rolled up in the service, which is the one
+    // place that has the whole tree in hand — a mapper sees one row and cannot count a subtree.
     productCount: row._count.products,
   } satisfies PublicProductCategory;
 }

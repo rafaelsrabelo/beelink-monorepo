@@ -2,7 +2,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 // Types
 import type {
@@ -55,6 +55,16 @@ export class CreateProductCategoryDto implements CreateProductCategoryPayload {
   @imageUrl
   @blankToNull
   imageUrl?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    format: 'uuid',
+    description: 'The category this goes under. Null or absent is a top level; there is no third.',
+  })
+  @IsOptional()
+  @IsUUID()
+  @blankToNull
+  parentId?: string | null;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()

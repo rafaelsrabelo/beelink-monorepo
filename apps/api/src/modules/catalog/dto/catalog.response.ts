@@ -26,7 +26,18 @@ export class PublicProductCategoryResponse implements PublicProductCategory {
   @ApiProperty({ example: 'Blusas' }) name!: string;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
-  @ApiProperty({ description: 'Available products in it. The storefront hides a category with none.' })
+
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    example: 'proteinas',
+    description: 'The category this sits under. Null is a top level; there is no third.',
+  })
+  parentSlug!: string | null;
+
+  @ApiProperty({
+    description: 'Available products in it AND in its subcategories. Zero hides it from the window.',
+  })
   productCount!: number;
 }
 

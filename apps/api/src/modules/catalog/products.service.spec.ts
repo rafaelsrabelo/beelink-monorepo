@@ -64,7 +64,13 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
     expect(count.mock.calls[0]?.[0].where).toMatchObject({
       storeId: STORE,
       isAvailable: true,
-      category: { slug: 'blusas', isActive: true },
+      category: {
+        isActive: true,
+        // The shelf of a parent holds what is under it. Without the second arm, filtering
+        // `Proteínas` in a shop that files every whey under `Proteínas → Whey` answers with
+        // nothing — and the shopkeeper reports it as "my category is empty".
+        OR: [{ slug: 'blusas' }, { parent: { slug: 'blusas', isActive: true } }],
+      },
     });
   });
 

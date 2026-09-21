@@ -47,7 +47,17 @@ export interface PublicProductCategory {
   name: string;
   description: string | null;
   imageUrl: string | null;
-  /** How many available products sit in it — the storefront hides a category with none. */
+  /**
+   * The category this one sits under, or null for a top level. Exactly two levels: the URL is
+   * `/<shop>/<category>` flat, so a grandchild would have nowhere to live that its grandparent
+   * does not already occupy.
+   */
+  parentSlug: string | null;
+  /**
+   * How many available products sit in it, **its subcategories included** — the storefront hides a
+   * category with none, and a parent whose products are all one level down would otherwise be a
+   * heading that vanishes from the menu while the things under it are still for sale.
+   */
   productCount: number;
 }
 
@@ -150,6 +160,14 @@ export interface CreateProductCategoryPayload {
   slug?: string;
   description?: string | null;
   imageUrl?: string | null;
+  /**
+   * The category this one goes under. Null, or absent, makes it a top level.
+   *
+   * The API refuses a parent that already has one: two levels, because the URL is
+   * `/<shop>/<category>` flat and a grandchild has nowhere to live its grandparent does not
+   * already occupy. It also refuses a category becoming its own parent.
+   */
+  parentId?: string | null;
   isActive?: boolean;
 }
 
@@ -197,4 +215,6 @@ export type CatalogErrorCode =
   | "CATALOG_SLUG_RESERVED"
   | "CATALOG_SLUG_EMPTY"
   | "CATALOG_PRICE_INVALID"
-  | "CATALOG_REORDER_MISMATCH";
+  | "CATALOG_REORDER_MISMATCH"
+  /** The parent asked for already has one, or is the category itself. Two levels, no third. */
+  | "PRODUCT_CATEGORY_DEPTH";

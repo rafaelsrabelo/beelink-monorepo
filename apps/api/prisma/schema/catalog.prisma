@@ -17,6 +17,20 @@ model ProductCategory {
   description String?
   imageUrl    String?
 
+  /// The category this one sits under. Null is a top level.
+  ///
+  /// Exactly two levels deep, and the service refuses a third: the URL is `/<shop>/<category>` flat,
+  /// so a grandchild would either need a second segment the router has no room for, or share the
+  /// namespace with its grandparent and be indistinguishable from it. Two levels is also what a
+  /// shopkeeper actually fills in — "Proteínas → Whey" — and a tree nobody prunes is a menu nobody
+  /// can read.
+  ///
+  /// Cascade, because a subcategory outliving its parent is a category with a parent that is not
+  /// there, and the storefront would have to invent a place to show it.
+  parentId String?          @db.Uuid
+  parent   ProductCategory? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children ProductCategory[] @relation("CategoryTree")
+
   /// The order the shopkeeper chose. The storefront shows them in it, because the shopkeeper knows
   /// what they want to sell first. Ties break on name so the list is never arbitrary.
   position Int     @default(0)
@@ -39,6 +53,8 @@ model ProductCategory {
   @@unique([storeId, slug])
   /// The storefront's category list, in one index scan.
   @@index([storeId, isActive, position])
+  /// One parent's children, which is what a category page asks for.
+  @@index([parentId, isActive, position])
   @@map("product_categories")
 }
 

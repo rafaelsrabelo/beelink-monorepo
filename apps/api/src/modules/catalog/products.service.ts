@@ -71,7 +71,17 @@ export class ProductsService {
     const where = {
       storeId,
       isAvailable: true,
-      ...(filters.category ? { category: { slug: filters.category, isActive: true } } : {}),
+      // A parent's shelf holds what is under it. Filtering `Proteínas` and getting nothing because
+      // every whey is filed under `Proteínas → Whey` is the failure this avoids — and it is the one
+      // a shopkeeper reports as "my category is empty" without ever mentioning subcategories.
+      ...(filters.category
+        ? {
+            category: {
+              isActive: true,
+              OR: [{ slug: filters.category }, { parent: { slug: filters.category, isActive: true } }],
+            },
+          }
+        : {}),
       // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
       // and someone searching "crochê" means to find it.
       ...(search

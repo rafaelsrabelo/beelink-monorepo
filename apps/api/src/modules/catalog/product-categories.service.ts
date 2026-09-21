@@ -1,5 +1,5 @@
 // Nest
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
 import type { ProductCategory, PublicProductCategory } from '@harness-monorepo/contracts';
@@ -42,19 +42,80 @@ export class ProductCategoriesService {
    * The storefront's list. Hidden categories are absent, and so are empty ones: a shop window that
    * offers a category and then shows nothing behind it reads as broken rather than as new.
    */
+  /**
+   * Every category a visitor may see, parents and children alike, with each parent's count rolled
+   * up from the level below it.
+   *
+   * The empty ones are dropped here rather than in the query, and that is the whole reason this is
+   * not one `where`. A shop that files every whey under `Proteínas → Whey` has a `Proteínas` with
+   * no products of its own: `products: { some: … }` would drop it, and the menu would lose the
+   * heading while everything under it was still for sale. Only code holding the whole tree can
+   * tell "empty" from "empty at this level".
+   *
+   * One query, because a shop's categories are tens of rows and the rollup is arithmetic.
+   */
   async listPublic(storeId: string): Promise<PublicProductCategory[]> {
     const rows = await this.prisma.productCategory.findMany({
-      where: { storeId, isActive: true, products: { some: { isAvailable: true } } },
+      where: { storeId, isActive: true },
       include: productCategoryInclude,
       orderBy: [{ position: 'asc' }, { name: 'asc' }],
     });
 
-    return rows.map(toPublicProductCategory);
+    const categories = rows.map(toPublicProductCategory);
+    const directById = new Map(rows.map((row) => [row.id, row._count.products]));
+
+    // A child's products count for its parent as well. Two levels deep by construction, so this is
+    // one pass and never a walk.
+    for (const row of rows) {
+      if (!row.parentId) continue;
+
+      directById.set(row.parentId, (directById.get(row.parentId) ?? 0) + row._count.products);
+    }
+
+    return categories
+      .map((category, index) => ({ ...category, productCount: directById.get(rows[index].id) ?? 0 }))
+      .filter((category) => category.productCount > 0);
+  }
+
+  /**
+   * The parent a category may actually have: one in this shop, that is a top level itself, and is
+   * not the category being edited.
+   *
+   * Two levels is the whole rule, and it is enforced here rather than in the schema because no
+   * database constraint can say "this row's parent must have none" — a check would have to read
+   * another row. What it protects is the URL: `/<shop>/<category>` is flat, so a grandchild has
+   * nowhere to live that its grandparent does not already occupy.
+   *
+   * The `storeId` check matters as much as the depth one: without it a shopkeeper could file their
+   * category under another shop's, which is a tenant boundary and not a taxonomy question.
+   */
+  private async parentFor(storeId: string, parentId: string, selfId?: string): Promise<string> {
+    if (selfId && parentId === selfId) {
+      throw new BadRequestException(catalogError('PRODUCT_CATEGORY_DEPTH', 'A category cannot be its own parent'));
+    }
+
+    const parent = await this.prisma.productCategory.findFirst({
+      where: { id: parentId, storeId },
+      select: { id: true, parentId: true },
+    });
+
+    if (!parent) {
+      throw new NotFoundException(catalogError('PRODUCT_CATEGORY_NOT_FOUND', `No category at "${parentId}"`));
+    }
+
+    if (parent.parentId) {
+      throw new BadRequestException(
+        catalogError('PRODUCT_CATEGORY_DEPTH', 'Categories go two levels deep; this parent already has one'),
+      );
+    }
+
+    return parent.id;
   }
 
   async create(storeSlug: string, userId: string, dto: CreateProductCategoryDto): Promise<ProductCategory> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const slug = this.slugs.resolve(dto.slug, dto.name);
+    const parentId = dto.parentId ? await this.parentFor(storeId, dto.parentId) : null;
 
     // New rows go last, which is where a shopkeeper looks for what they just added. Ordering is
     // per shop, so the aggregate is scoped rather than global.
@@ -71,6 +132,7 @@ export class ProductCategoriesService {
           name: dto.name,
           description: dto.description ?? null,
           imageUrl: dto.imageUrl ?? null,
+          parentId,
           isActive: dto.isActive ?? true,
           position: (last._max.position ?? -1) + 1,
         },
@@ -100,6 +162,10 @@ export class ProductCategoriesService {
     const renaming = dto.slug !== undefined || dto.name !== undefined;
     const slug = renaming ? this.slugs.resolve(dto.slug, dto.name ?? current.name) : current.slug;
 
+    // Checked before the write, and with `categoryId` in hand: a category made its own parent is a
+    // row Postgres accepts happily and every read of the tree then walks in circles.
+    const parentId = dto.parentId ? await this.parentFor(storeId, dto.parentId, categoryId) : null;
+
     try {
       const row = await this.prisma.productCategory.update({
         where: { id: categoryId },
@@ -111,6 +177,7 @@ export class ProductCategoriesService {
           // a field, and `undefined` is Prisma's own "leave this column alone".
           ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
           ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl ?? null } : {}),
+          ...(dto.parentId !== undefined ? { parentId } : {}),
           ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         },
         include: productCategoryInclude,

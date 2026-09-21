@@ -17,7 +17,11 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
 
 export interface StorefrontFrameProps {
   store: PublicStore
-  /** Every category the shop has, never the ones a filter left: navigation must not vanish in use. */
+  /**
+   * Every category the shop has, parents and children alike, never the ones a filter left:
+   * navigation must not vanish in use. The menu draws the first level; the second belongs to the
+   * page of the category it hangs off.
+   */
   categories: readonly PublicProductCategory[]
   /** The category being shown, so the band marks it. Null on every page that is not one. */
   activeCategory?: string | null
@@ -69,6 +73,15 @@ export function StorefrontFrame({
   const routes = storefrontRoutes(store)
   const text = messages.storefront
 
+  // The menu is the first level. A shop with five headings and nineteen subheadings in one row is
+  // not a menu, and the subcategories are one click away on the page of the category they are in.
+  const topLevel = categories.filter((category) => !category.parentSlug)
+
+  // A subcategory being open marks its parent up here: the heading the visitor is standing under
+  // is the one the menu can show, and marking nothing would say they are nowhere.
+  const openCategory = categories.find((category) => category.slug === activeCategory)
+  const markedCategory = openCategory?.parentSlug ?? activeCategory
+
   // The shop's own pages, and how to reach a person. Built here and not in the block for the
   // reason every href is: a block that knew "Produtos" links to `routeWords.products` would be
   // holding the very word this whole scheme exists to keep out of components.
@@ -111,10 +124,10 @@ export function StorefrontFrame({
       cartHref={routes.cart()}
       accountHref="/login"
       categories={
-        categories.length ? (
+        topLevel.length ? (
           <StorefrontCategories
-            categories={categories}
-            active={activeCategory}
+            categories={topLevel}
+            active={markedCategory}
             href={(categorySlug) => (categorySlug ? routes.category(categorySlug) : routes.catalog())}
             // The menu, unless the shopkeeper asked for the row of photographs. The switch in the
             // panel is called "ícones de categoria", and that is exactly what it now chooses.

@@ -34,27 +34,32 @@ SELECT s.id AS store_id, s.slug AS store_slug, c.slug AS segment
 FROM "stores" s
 JOIN "store_categories" c ON c.id = s."categoryId";
 
-CREATE TEMP VIEW seed_category (segment, slug, name, description, position) AS
+-- `parent` is the slug of the category this one sits under, or NULL for a top level. Two levels and
+-- no third, which the API refuses on the way in — the URL `/<shop>/<category>` is flat.
+CREATE TEMP VIEW seed_category (segment, slug, name, description, parent, position) AS
 VALUES
   -- suplementos
-  ('suplementos', 'proteinas',   'Proteínas',  'Whey, albumina e veganas',        0),
-  ('suplementos', 'creatina',    'Creatina',   'Força em cada repetição',         1),
-  ('suplementos', 'pre-treino',  'Pré-treino', 'Energia para o treino inteiro',   2),
-  ('suplementos', 'vitaminas',   'Vitaminas',  'A base que sustenta o resto',     3),
-  ('suplementos', 'snacks',      'Snacks',     'Proteína para levar na mochila',  4),
+  ('suplementos', 'proteinas',   'Proteínas',  'Whey, albumina e veganas',        NULL,          0),
+  ('suplementos', 'whey',        'Whey',       'Concentrado e isolado',           'proteinas',   0),
+  ('suplementos', 'albumina',    'Albumina',   'Liberação lenta',                 'proteinas',   1),
+  ('suplementos', 'creatina',    'Creatina',   'Força em cada repetição',         NULL,          1),
+  ('suplementos', 'pre-treino',  'Pré-treino', 'Energia para o treino inteiro',   NULL,          2),
+  ('suplementos', 'vitaminas',   'Vitaminas',  'A base que sustenta o resto',     NULL,          3),
+  ('suplementos', 'snacks',      'Snacks',     'Proteína para levar na mochila',  NULL,          4),
   -- moda
-  ('moda',        'blusas',      'Blusas',     'Do básico ao que sai à noite',    0),
-  ('moda',        'vestidos',    'Vestidos',   'Midi, longo e slip',              1),
-  ('moda',        'calcas',      'Calças',     'Alfaiataria, wide leg e jeans',   2),
-  ('moda',        'calcados',    'Calçados',   'Tênis, rasteira e bota',          3),
-  ('moda',        'acessorios',  'Acessórios', 'O que fecha o look',              4);
+  ('moda',        'blusas',      'Blusas',     'Do básico ao que sai à noite',    NULL,          0),
+  ('moda',        'vestidos',    'Vestidos',   'Midi, longo e slip',              NULL,          1),
+  ('moda',        'calcas',      'Calças',     'Alfaiataria, wide leg e jeans',   NULL,          2),
+  ('moda',        'calcados',    'Calçados',   'Tênis, rasteira e bota',          NULL,          3),
+  ('moda',        'tenis',       'Tênis',      'Do branco liso ao corrida',       'calcados',    0),
+  ('moda',        'acessorios',  'Acessórios', 'O que fecha o look',              NULL,          4);
 
 CREATE TEMP VIEW seed_product (segment, category, slug, name, description, price, compare_at, position) AS
 VALUES
   -- ------------------------------------------------------------- suplementos
-  ('suplementos', 'proteinas',  'whey-concentrado-900g',  'Whey Protein Concentrado 900g', 'Concentrado de soro, 24 g de proteína por dose. Chocolate belga.',  13990, 16900,  0),
-  ('suplementos', 'proteinas',  'whey-isolado-900g',      'Whey Protein Isolado 900g',     'Isolado por microfiltração, baixo em lactose. Baunilha.',           18990, 22900,  1),
-  ('suplementos', 'proteinas',  'albumina-500g',          'Albumina 500g',                 'Proteína da clara do ovo, liberação lenta. Sem sabor.',              5990,  NULL,  2),
+  ('suplementos', 'whey',       'whey-concentrado-900g',  'Whey Protein Concentrado 900g', 'Concentrado de soro, 24 g de proteína por dose. Chocolate belga.',  13990, 16900,  0),
+  ('suplementos', 'whey',       'whey-isolado-900g',      'Whey Protein Isolado 900g',     'Isolado por microfiltração, baixo em lactose. Baunilha.',           18990, 22900,  1),
+  ('suplementos', 'albumina',   'albumina-500g',          'Albumina 500g',                 'Proteína da clara do ovo, liberação lenta. Sem sabor.',              5990,  NULL,  2),
   ('suplementos', 'creatina',   'creatina-mono-300g',     'Creatina Monohidratada 300g',   '100% pura, sem aditivos. 3 g por dose, cem doses.',                  8990, 10990,  3),
   ('suplementos', 'creatina',   'creatina-creapure-250g', 'Creatina Creapure 250g',        'Creapure alemã, com laudo por lote.',                               12990,  NULL,  4),
   ('suplementos', 'pre-treino', 'pre-treino-insano-300g', 'Pré-treino Insano 300g',        'Cafeína, beta-alanina e citrulina. Frutas vermelhas.',               9990, 12990,  5),
@@ -73,7 +78,7 @@ VALUES
   ('moda',        'calcas',     'calca-wide-leg',         'Calça Wide Leg',                'Cintura alta, perna ampla, tecido com caimento pesado.',            19900, 24900,  5),
   ('moda',        'calcas',     'calca-alfaiataria',      'Calça de Alfaiataria',          'Pregas na frente, bolso faca, forro na cintura.',                   21900,  NULL,  6),
   ('moda',        'calcas',     'jeans-mom',              'Jeans Mom',                     'Lavagem clara, cintura alta, barra desfiada.',                      17900, 21900,  7),
-  ('moda',        'calcados',   'tenis-branco',           'Tênis Branco',                  'Couro liso, solado de borracha, cabedal sem costura aparente.',     27900, 34900,  8),
+  ('moda',        'tenis',      'tenis-branco',           'Tênis Branco',                  'Couro liso, solado de borracha, cabedal sem costura aparente.',     27900, 34900,  8),
   ('moda',        'calcados',   'rasteira-trancada',      'Rasteira Trançada',             'Tiras trançadas à mão, palmilha acolchoada.',                       12900,  NULL,  9),
   ('moda',        'acessorios', 'bolsa-tiracolo',         'Bolsa Tiracolo',                'Alça regulável, fecho magnético, bolso interno.',                   18900, 23900, 10),
   ('moda',        'acessorios', 'cinto-couro',            'Cinto de Couro',                'Couro legítimo, fivela escovada, três centímetros de largura.',      8900,  NULL, 11);
@@ -93,6 +98,19 @@ ON CONFLICT ("storeId", "slug") DO UPDATE
       "position" = EXCLUDED."position",
       "isActive" = true,
       "updatedAt" = now();
+
+-- The tree, in a second pass: a child needs its parent's id, which only exists once the parent row
+-- has been written. Matching on the slug is what lets the list above name a parent in words.
+UPDATE "product_categories" child
+SET "parentId" = parent.id, "updatedAt" = now()
+FROM shop_segment sh, seed_category c, "product_categories" parent
+WHERE child."storeId" = sh.store_id
+  AND c.segment = sh.segment
+  AND c.slug = child.slug
+  AND c.parent IS NOT NULL
+  AND parent."storeId" = sh.store_id
+  AND parent.slug = c.parent
+  AND child."parentId" IS DISTINCT FROM parent.id;
 
 -- ---------------------------------------------------------------- products
 -- compareAtPriceCents is set on some and not others on purpose: the window computes the percentage
@@ -123,6 +141,7 @@ WHERE p."storeId" = sh.store_id
   AND EXISTS (SELECT 1 FROM seed_product sp WHERE sp.segment = sh.segment)
   AND NOT EXISTS (SELECT 1 FROM seed_product sp WHERE sp.segment = sh.segment AND sp.slug = p.slug);
 
+-- Cascade takes the children of a deleted parent, so order does not matter here.
 DELETE FROM "product_categories" pc
 USING shop_segment sh
 WHERE pc."storeId" = sh.store_id

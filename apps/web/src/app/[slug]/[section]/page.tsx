@@ -7,6 +7,7 @@ import type { PublicProductCategory, PublicStore, StorefrontCatalog } from "@har
 
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
+import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
 import { StorefrontCatalog as StorefrontCatalogGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
 import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
@@ -182,6 +183,18 @@ export default async function StorefrontSectionPage({
 
   const heading = headingOf(loaded)
   const subtitle = subtitleOf(loaded, locale)
+
+  // Only on a category's own page, and only its own children: the catalogue is every category at
+  // once and has the menu for that.
+  const subcategories = category
+    ? catalogue.categories.filter((entry) => entry.parentSlug === category.slug)
+    : []
+
+  // The shelf this one sits on, for the trail. Null for a top level, and for a child whose parent
+  // has been hidden — a crumb pointing at a category a visitor cannot open is worse than no crumb.
+  const parentCategory = category?.parentSlug
+    ? (catalogue.categories.find((entry) => entry.slug === category.parentSlug) ?? null)
+    : null
   const pageCount = pageCountOf(catalogue.total, catalogue.pageSize)
 
   // Where this shelf's pager sends you. Each section pages on its own address, so the number in the
@@ -211,14 +224,22 @@ export default async function StorefrontSectionPage({
       */}
       <header className="flex flex-col gap-3">
         {/*
-          A category sits under the catalogue, so its trail passes through it. The others hang
-          straight off the front door — there is no shelf above "Busca".
+          A category sits under the catalogue, and a subcategory under its parent — the trail is the
+          only place in the shop that says so, because the URL is flat and `/loja/whey` gives away
+          nothing about `Proteínas`. The others hang straight off the front door; there is no shelf
+          above "Busca".
         */}
         <StorefrontBreadcrumb
           homeHref={routes.home}
           items={
             category
-              ? [{ label: ui.storefront.catalogTitle, href: routes.catalog() }, { label: category.name }]
+              ? [
+                  { label: ui.storefront.catalogTitle, href: routes.catalog() },
+                  ...(parentCategory
+                    ? [{ label: parentCategory.name, href: routes.category(parentCategory.slug) }]
+                    : []),
+                  { label: category.name },
+                ]
               : [{ label: heading }]
           }
           messages={ui}
@@ -226,6 +247,25 @@ export default async function StorefrontSectionPage({
 
         <h1 className="text-2xl font-semibold">{heading}</h1>
         {subtitle ? <p className="text-sm opacity-70">{subtitle}</p> : null}
+
+        {/*
+          The level below this one, where it belongs. The menu at the top of the shop draws the
+          first level only — nineteen subheadings in one row is not a menu — so a category's own
+          page is where its subcategories become reachable.
+
+          "Tudo" here points back at this category, not at the catalogue: from inside Proteínas,
+          everything means every protein.
+        */}
+        {subcategories.length ? (
+          <StorefrontCategories
+            categories={subcategories}
+            active={null}
+            href={(childSlug) =>
+              childSlug ? routes.category(childSlug) : routes.category(category?.slug ?? "")
+            }
+            messages={ui}
+          />
+        ) : null}
       </header>
 
       {loaded.section.kind === "cart" ? (
