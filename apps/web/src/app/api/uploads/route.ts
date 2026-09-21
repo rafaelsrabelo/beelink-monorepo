@@ -19,8 +19,10 @@ import { ACCESS_COOKIE } from "@/lib/session-cookies"
  * the sentence the shopkeeper reads — is finished and does not change when the adapter lands.
  *
  * Until then it refuses honestly. `UPLOAD_NOT_CONFIGURED` has an entry in the web's error
- * dictionary, so the shopkeeper is told that uploads are not switched on yet and that pasting a
- * URL still works — rather than being shown "Algo deu errado" and left to guess.
+ * dictionary, so the shopkeeper is told uploads are not configured rather than being shown "Algo
+ * deu errado" and left to guess. The sentence used to end by telling them to paste a URL instead;
+ * that field is gone, and a refusal that points at a control which does not exist is worse than
+ * the refusal alone.
  *
  * `refuseForeignOrigin` and not `refuseCrossOrigin`: a file is posted as `multipart/form-data`,
  * which `refuseCrossOrigin`'s JSON check would reject outright. The session cookie is still

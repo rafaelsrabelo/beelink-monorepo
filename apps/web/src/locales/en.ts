@@ -71,7 +71,7 @@ export const en: WebMessages = {
     CEP_INVALID: "A postcode is eight digits. Check what you typed.",
     CEP_NOT_FOUND: "No address for this postcode. Check the digits, or fill the address in by hand.",
     CEP_UNAVAILABLE: "The postcode service did not answer. Fill the address in by hand — this does not stop you saving.",
-    UPLOAD_NOT_CONFIGURED: "File upload is not switched on yet. Paste the image address in the field beside it.",
+    UPLOAD_NOT_CONFIGURED: "Image upload is not configured in this environment yet.",
     UNKNOWN: "Something went wrong. Try again in a moment.",
   },
 }

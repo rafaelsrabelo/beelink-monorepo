@@ -71,7 +71,7 @@ export const ptBR: WebMessages = {
     CEP_INVALID: "Um CEP tem oito dígitos. Confira o que você digitou.",
     CEP_NOT_FOUND: "Não encontramos este CEP. Confira os números ou preencha o endereço à mão.",
     CEP_UNAVAILABLE: "A busca de CEP não respondeu. Preencha o endereço à mão — isso não impede de salvar.",
-    UPLOAD_NOT_CONFIGURED: "O envio de arquivos ainda não está ligado. Cole o endereço da imagem no campo ao lado.",
+    UPLOAD_NOT_CONFIGURED: "O envio de imagens ainda não está configurado neste ambiente.",
     UNKNOWN: "Algo deu errado. Tente de novo em instantes.",
   },
 }
