@@ -32,7 +32,7 @@ import { StoreIdentityFields } from "./store-identity-fields"
 import { createStoreCreateSchema, type StoreCreateValues } from "./store-schemas"
 import { slugify } from "./store-slug"
 import { StoreSocialFields } from "./store-social-fields"
-import type { StoreCategoryOption, StoreColorPreset } from "./store-types"
+import type { StoreCategoryOption, StoreColorPreset, StoreZipCodeAddress } from "./store-types"
 
 /** Which tab holds which slice. The slug sits with the identity it is derived from. */
 const TAB_OF_SLICE = {
@@ -49,7 +49,11 @@ export interface StoreCreateFormProps {
   onSubmit: (values: StoreCreateValues) => void | Promise<void>
   categories: StoreCategoryOption[]
   colorPresets?: StoreColorPreset[]
-  onZipCodeLookup?: (zipCode: string) => void
+  /**
+   * Asked to fill the address from the postcode, and its answer is used — `void` here is what made
+   * the lookup run, resolve, and discard what it found, with no complaint from the compiler.
+   */
+  onZipCodeLookup?: (zipCode: string) => Promise<StoreZipCodeAddress | null>
   zipCodeLookupPending?: boolean
   /** One callback for every image, as in the settings form — one upload endpoint serves both. */
   onImageUpload?: (file: File) => Promise<string>

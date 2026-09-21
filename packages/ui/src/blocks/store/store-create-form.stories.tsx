@@ -16,7 +16,7 @@ const meta = {
   args: {
     defaultValues: sampleStoreCreateValues,
     onSubmit: fn(),
-    onZipCodeLookup: fn(),
+    onZipCodeLookup: fn(async () => null),
     onImageUpload: fn(async () => "https://res.cloudinary.com/demo/image/upload/sample.jpg"),
     categories: sampleStoreCategories,
     colorPresets: sampleColorPresets,

@@ -75,3 +75,19 @@ export type FieldIssue = { message?: string } | undefined
 
 /** The verdicts for one group of fields, keyed by the field name. */
 export type FieldIssues<TValues> = Partial<Record<keyof TValues, FieldIssue>>
+
+/**
+ * What a postcode lookup can fill in. Structurally the app's `ZipCodeAddress`, declared here
+ * because a block may not import from an app — and nothing is lost by that: the two are checked
+ * against each other the moment a screen passes its `lookup` in.
+ *
+ * Every field can come back empty, and that is not an error. A town with a single postcode answers
+ * with a street and a neighbourhood of `""`, which is why the field merges rather than assigns.
+ */
+export interface StoreZipCodeAddress {
+  zipCode: string
+  street: string
+  neighborhood: string
+  city: string
+  state: string
+}

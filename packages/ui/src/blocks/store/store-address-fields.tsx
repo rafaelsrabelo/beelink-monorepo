@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import { useRef } from "react"
+
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
 import {
@@ -17,17 +20,21 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { StoreAddressValues } from "./store-schemas"
-import type { FieldIssues } from "./store-types"
+import type { FieldIssues, StoreZipCodeAddress } from "./store-types"
 
 export interface StoreAddressFieldsProps {
   value: StoreAddressValues
   onChange: (value: StoreAddressValues) => void
   errors?: FieldIssues<StoreAddressValues>
   /**
-   * Asked to fill the address from the postcode. The screen owns the lookup and hands back a whole
-   * address through `onChange` — a block never calls anything itself.
+   * Asked to fill the address from the postcode. The screen owns the lookup — where ViaCEP is
+   * reached and how a refusal becomes a sentence is its business — and this block owns what happens
+   * to the answer, which is to merge it into the fields.
+   *
+   * It resolves with `null` when there is nothing to fill, and never rejects: an unhandled
+   * rejection inside a form is a blank screen over a postcode that can still be typed by hand.
    */
-  onZipCodeLookup?: (zipCode: string) => void
+  onZipCodeLookup?: (zipCode: string) => Promise<StoreZipCodeAddress | null>
   lookupPending?: boolean
   disabled?: boolean
   messages?: UiMessages
@@ -44,6 +51,14 @@ export function StoreAddressFields({
   messages = defaultMessages,
 }: StoreAddressFieldsProps) {
   const text = messages.store.address
+
+  /**
+   * What is on screen *now*, not what was on screen when the button was pressed. The lookup may
+   * take up to four seconds and only the button is disabled while it runs, so a shopkeeper can
+   * type a street number into the closure's stale copy and watch it vanish when the answer lands.
+   */
+  const latest = useRef(value)
+  latest.current = value
 
   return (
     <FieldGroup>
@@ -67,7 +82,11 @@ export function StoreAddressFields({
               type="button"
               variant="outline"
               disabled={disabled || lookupPending}
-              onClick={() => onZipCodeLookup(value.zipCode)}
+              onClick={() => {
+                void onZipCodeLookup(value.zipCode).then((address) => {
+                  if (address) onChange(fillFrom(latest.current, address))
+                })
+              }}
             >
               {lookupPending ? text.lookingUp : text.lookup}
             </Button>
@@ -157,4 +176,23 @@ export function StoreAddressFields({
       </div>
     </FieldGroup>
   )
+}
+
+/**
+ * Fills what came back and keeps what did not.
+ *
+ * ViaCEP answers 200 for a town with a single postcode and leaves `logradouro` and `bairro` empty
+ * — 88870-000 and 76890-000 both do. Assigning those through would erase a street the shopkeeper
+ * had already typed, which is the opposite of a convenience. The postcode itself is left alone on
+ * the same principle: what they typed is what they keep seeing, and the payload mapper strips the
+ * mask at submit.
+ */
+function fillFrom(current: StoreAddressValues, found: StoreZipCodeAddress): StoreAddressValues {
+  return {
+    ...current,
+    street: found.street || current.street,
+    neighborhood: found.neighborhood || current.neighborhood,
+    city: found.city || current.city,
+    state: found.state || current.state,
+  }
 }

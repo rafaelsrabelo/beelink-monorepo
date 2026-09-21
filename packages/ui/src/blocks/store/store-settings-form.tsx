@@ -31,7 +31,7 @@ import { StoreIdentityFields } from "./store-identity-fields"
 import { StorePaymentMethodsFields } from "./store-payment-methods-fields"
 import { createStoreSettingsSchema, type StoreSettingsValues } from "./store-schemas"
 import { StoreSocialFields } from "./store-social-fields"
-import type { StoreCategoryOption, StoreColorPreset } from "./store-types"
+import type { StoreCategoryOption, StoreColorPreset, StoreZipCodeAddress } from "./store-types"
 
 /** Which tab holds which slice, so a refused save can open the tab that was refused. */
 const TAB_OF_SLICE = {
@@ -49,7 +49,11 @@ export interface StoreSettingsFormProps {
   onSubmit: (values: StoreSettingsValues) => void | Promise<void>
   categories: StoreCategoryOption[]
   colorPresets?: StoreColorPreset[]
-  onZipCodeLookup?: (zipCode: string) => void
+  /**
+   * Asked to fill the address from the postcode, and its answer is used — `void` here is what made
+   * the lookup run, resolve, and discard what it found, with no complaint from the compiler.
+   */
+  onZipCodeLookup?: (zipCode: string) => Promise<StoreZipCodeAddress | null>
   zipCodeLookupPending?: boolean
   /**
    * Hands one image to whoever keeps bytes and answers with its URL. One callback serves the logo

@@ -12,7 +12,7 @@ const meta = {
   args: {
     value: sampleStoreSettingsValues.address,
     onChange: fn(),
-    onZipCodeLookup: fn(),
+    onZipCodeLookup: fn(async () => null),
   },
 } satisfies Meta<typeof StoreAddressFields>
 
