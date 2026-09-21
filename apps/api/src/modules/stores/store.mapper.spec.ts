@@ -102,6 +102,7 @@ describe('toPublicStore', () => {
       products: 'produtos',
       categories: 'categorias',
       search: 'busca',
+      cart: 'carrinho',
     });
   });
 
@@ -112,6 +113,7 @@ describe('toPublicStore', () => {
       products: 'products',
       categories: 'categories',
       search: 'search',
+      cart: 'cart',
     });
   });
 

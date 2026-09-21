@@ -122,8 +122,11 @@ export interface UiMessages {
     orderThis: string
     /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
     photoOf: string
-    /** Only rendered when the screen hands over an address; there is no cart yet. */
+    /** The header's basket, which now has an address of its own. */
     cart: string
+    /** The basket's own page. Empty until there is anything that can put a line in it. */
+    cartEmpty: string
+    cartEmptyHint: string
     account: string
     noPhoto: string
     search: string
@@ -200,6 +203,11 @@ export interface UiMessages {
     logoAlt: string
     order: string
     socialLabel: string
+    /** Names a footer column. The links inside are addresses, so the screen builds them. */
+    footerShop: string
+    footerContact: string
+    /** "© {year} {name}. Todos os direitos reservados." — the year is the screen's. */
+    copyright: string
     /**
      * What the shop takes, said to a customer rather than to the shopkeeper. `admin.store.payment`
      * has the same four names, and they are not reusable here: its hints explain a checkbox to the

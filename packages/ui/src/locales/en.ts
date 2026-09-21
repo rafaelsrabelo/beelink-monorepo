@@ -109,6 +109,8 @@ export const en: UiMessages = {
     orderThis: "Ask for this on WhatsApp",
     photoOf: "Photo {n} of {total}",
     cart: "Cart",
+    cartEmpty: "Your cart is empty.",
+    cartEmptyHint: "Pick something and message the shop on WhatsApp.",
     account: "My account",
     noPhoto: "No photo",
     search: "Search this shop",
@@ -147,6 +149,9 @@ export const en: UiMessages = {
     logoAlt: "Shop logo",
     order: "Order on WhatsApp",
     socialLabel: "The shop's networks",
+    footerShop: "The shop",
+    footerContact: "Get in touch",
+    copyright: "© {year} {name}. All rights reserved.",
     payments: {
       money: "Cash",
       moneyDetail: "On delivery",

@@ -36,6 +36,20 @@ export interface StorefrontLink {
   href: string
 }
 
+/** The strip above the header: what the shop is shouting this week, on each side of the page. */
+export interface StorefrontAnnouncement {
+  left: string
+  /** Dropped on a phone rather than wrapped: two lines of small caps is a banner, not a strip. */
+  right?: string
+}
+
+/** One column of the footer. The screen builds them, because a block knows no address. */
+export interface StorefrontFooterColumn {
+  id: string
+  title: string
+  items: readonly { label: string; href: string }[]
+}
+
 /** One of the promises a shop makes above its products — free delivery, instalments, PIX. */
 export interface StorefrontHighlight {
   id: string
@@ -57,6 +71,9 @@ export interface StorefrontWindowProps {
   /** The shop's own address, for the logo to link home from a product page. */
   homeHref: string
   colors: StorefrontColors
+
+  /** Band 0 — the strip over everything. Absent means no strip, never an empty bar. */
+  announcement?: StorefrontAnnouncement | null
 
   /**
    * Band 1 — the header. Absent hrefs mean the icon does not render: nothing here is decorative.
@@ -89,6 +106,9 @@ export interface StorefrontWindowProps {
   children?: ReactNode
 
   /** Band 7 — the footer. */
+  footerColumns?: readonly StorefrontFooterColumn[]
+  /** The line under everything. Built by the screen: the year and the name are the shop's. */
+  copyright?: string
   links?: readonly StorefrontLink[]
   orderHref?: string
   addressLine?: string | null
@@ -150,6 +170,7 @@ export function StorefrontWindow({
   logoUrl,
   homeHref,
   colors,
+  announcement,
   searchAction,
   searchValue = "",
   searchHidden,
@@ -161,6 +182,8 @@ export function StorefrontWindow({
   bannerBelow,
   highlights = [],
   children,
+  footerColumns = [],
+  copyright,
   links = [],
   orderHref,
   addressLine,
@@ -180,10 +203,37 @@ export function StorefrontWindow({
 
   return (
     <div style={dressed} className="flex min-h-svh flex-col">
-      {/* ---------------------------------------------------------------- 1 · header */}
+      {/* ---------------------------------------------------------------- 0 · the strip */}
+      {announcement ? (
+        <div
+          className="w-full text-[11px] font-medium tracking-wide uppercase"
+          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-background)" }}
+        >
+          <div className={cn(BAND, "flex h-8 items-center justify-center gap-6 sm:justify-between")}>
+            <p>{announcement.left}</p>
+            {announcement.right ? <p className="hidden sm:block">{announcement.right}</p> : null}
+          </div>
+        </div>
+      ) : null}
+
+      {/*
+        ------------------------------------------------------------- 1 · header + 2 · the menu
+
+        One painted block and not two bands, because they are one thing to look at: the shops this
+        was measured against put the logo, the search and the menu on a single dark slab, and a
+        menu painted in the page's own background reads as content that happens to be at the top.
+
+        It is painted in `--shop-header`, which is the point of the column. The shopkeeper's panel
+        has always had a "Cor do topo" field, and the top was drawn in `--shop-background` — so the
+        one colour named after this band was the one band that ignored it.
+
+        One `<header>` wraps both, so the banner landmark is the whole slab: the menu is part of
+        the shop's masthead, and a reader jumping to the banner should land on the thing that has
+        the search and the categories in it, not on a strip with a logo.
+      */}
       <header
-        className="sticky top-0 z-30 w-full border-b border-current/10 backdrop-blur"
-        style={{ backgroundColor: "color-mix(in oklab, var(--shop-background) 88%, transparent)" }}
+        className="sticky top-0 z-30 w-full"
+        style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-background)" }}
       >
         <div className={cn(BAND, "flex h-16 items-center gap-3 sm:gap-6")}>
           <Link href={homeHref} className="flex shrink-0 items-center gap-2">
@@ -200,6 +250,7 @@ export function StorefrontWindow({
               action={searchAction}
               value={searchValue}
               hidden={searchHidden}
+              tone="panel"
               messages={messages}
             />
           ) : null}
@@ -225,14 +276,16 @@ export function StorefrontWindow({
             ) : null}
           </div>
         </div>
-      </header>
 
-      {/* ---------------------------------------------------------------- 2 · categories */}
-      {categories ? (
-        <div className="w-full border-b border-current/10">
-          <div className={cn(BAND, "py-3")}>{categories}</div>
-        </div>
-      ) : null}
+        {categories ? (
+          <div
+            className="w-full border-t"
+            style={{ borderColor: "color-mix(in oklab, var(--shop-background) 18%, transparent)" }}
+          >
+            <div className={BAND}>{categories}</div>
+          </div>
+        ) : null}
+      </header>
 
       {/* ---------------------------------------------------------------- 3 · the cover */}
       {banner ? <Banner banner={banner} Link={Link} tall /> : null}
@@ -279,13 +332,28 @@ export function StorefrontWindow({
       {bannerBelow ? <Banner banner={bannerBelow} Link={Link} /> : null}
 
       {/* ---------------------------------------------------------------- 7 · footer */}
-      <footer className="w-full border-t border-current/10">
-        <div className={cn(BAND, "flex flex-col items-center gap-4 py-8 text-center text-sm")}>
-          <p className="font-semibold">{name}</p>
-          {addressLine ? <p className="opacity-70">{addressLine}</p> : null}
+      {/*
+        Painted in `--shop-header` like the top of the page: the two ends of a shop are the same
+        furniture, and a footer in the page's own background just looks like the page running out.
+
+        Columns and not one centred stack, because a footer is a map — the shop's own pages on one
+        side and who the shop is on the other. The screen builds the columns: a block that knew
+        what "Produtos" links to would be a block holding the route word this whole scheme exists
+        to keep out of components.
+      */}
+      <footer className="w-full" style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-background)" }}>
+        <div className={cn(BAND, "flex flex-col gap-10 py-12 sm:flex-row sm:justify-between")}>
+          <div className="flex max-w-xs flex-col gap-4">
+            <div className="flex items-center gap-2">
+              {logoUrl ? (
+                <img src={logoUrl} alt="" aria-hidden="true" className="size-9 rounded-lg object-cover" />
+              ) : null}
+              <p className="text-base font-semibold">{name}</p>
+            </div>
+            {addressLine ? <p className="text-sm opacity-70">{addressLine}</p> : null}
 
           {links.length ? (
-            <nav aria-label={text.socialLabel} className="flex items-center gap-4">
+            <nav aria-label={text.socialLabel} className="flex items-center gap-3">
               {links.map((link) => {
                 const Icon = ICONS[link.network]
 
@@ -298,13 +366,42 @@ export function StorefrontWindow({
                     className="rounded-full p-2 opacity-80 transition-opacity hover:opacity-100"
                     aria-label={text.networks[link.network]}
                   >
-                    <Icon className="size-6" />
+                    <Icon className="size-5" />
                   </a>
                 )
               })}
             </nav>
           ) : null}
+          </div>
+
+          {footerColumns.length ? (
+            <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+              {footerColumns.map((column) => (
+                <nav key={column.id} aria-label={column.title} className="flex flex-col gap-3">
+                  <p className="text-xs font-semibold tracking-widest uppercase opacity-60">{column.title}</p>
+                  <ul className="flex flex-col gap-2 text-sm">
+                    {column.items.map((item) => (
+                      <li key={item.href}>
+                        <Link href={item.href} className="opacity-80 transition-opacity hover:opacity-100">
+                          {item.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              ))}
+            </div>
+          ) : null}
         </div>
+
+        {copyright ? (
+          <div
+            className="w-full border-t"
+            style={{ borderColor: "color-mix(in oklab, var(--shop-background) 15%, transparent)" }}
+          >
+            <div className={cn(BAND, "py-5 text-xs opacity-60")}>{copyright}</div>
+          </div>
+        ) : null}
       </footer>
     </div>
   )

@@ -31,6 +31,12 @@ export interface StorefrontFrameProps {
    * product page the thing someone came to see is what has to be at the top.
    */
   showHighlights?: boolean
+  /**
+   * The year on the footer's last line. It arrives from the page rather than from `new Date()` in
+   * here, because a component that reads the clock renders differently on the server and in the
+   * browser on the thirty-first of December and hydration says so out loud.
+   */
+  year: number
   messages: UiMessages
   children: ReactNode
 }
@@ -55,10 +61,31 @@ export function StorefrontFrame({
   description = null,
   showBanner = false,
   showHighlights = false,
+  year,
   messages,
   children,
 }: StorefrontFrameProps) {
   const routes = storefrontRoutes(store)
+  const text = messages.storefront
+
+  // The shop's own pages, and how to reach a person. Built here and not in the block for the
+  // reason every href is: a block that knew "Produtos" links to `routeWords.products` would be
+  // holding the very word this whole scheme exists to keep out of components.
+  const whatsapp = orderHrefOf(store)
+  const footerColumns = [
+    {
+      id: "shop",
+      title: text.footerShop,
+      items: [
+        { label: text.catalogTitle, href: routes.catalog() },
+        { label: text.categoriesTitle, href: routes.categories() },
+        { label: text.cart, href: routes.cart() },
+      ],
+    },
+    ...(whatsapp
+      ? [{ id: "contact", title: text.footerContact, items: [{ label: text.order, href: whatsapp }] }]
+      : []),
+  ]
 
   return (
     <StorefrontWindow
@@ -69,13 +96,19 @@ export function StorefrontFrame({
       colors={store.colors}
       searchAction={routes.search()}
       searchValue={searchValue}
+      // Both icons, on every page. They were held back while they had nowhere to go; the basket
+      // has an address now, and the account is the sign-in the platform already has.
+      cartHref={routes.cart()}
+      accountHref="/login"
       categories={
         categories.length ? (
           <StorefrontCategories
             categories={categories}
             active={activeCategory}
             href={(categorySlug) => (categorySlug ? routes.category(categorySlug) : routes.catalog())}
-            withImages={store.layoutSettings.showCategoryIcons ?? true}
+            // The menu, unless the shopkeeper asked for the row of photographs. The switch in the
+            // panel is called "ícones de categoria", and that is exactly what it now chooses.
+            variant={store.layoutSettings.showCategoryIcons ? "tiles" : "bar"}
           />
         ) : undefined
       }
@@ -85,6 +118,8 @@ export function StorefrontFrame({
           : null
       }
       highlights={showHighlights ? paymentHighlightsOf(store, messages) : []}
+      footerColumns={footerColumns}
+      copyright={text.copyright.replace("{year}", String(year)).replace("{name}", store.name)}
       links={storefrontLinksOf(store)}
       orderHref={description ? orderHrefOf(store) : undefined}
       addressLine={addressLineOf(store)}

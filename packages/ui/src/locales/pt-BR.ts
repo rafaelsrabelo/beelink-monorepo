@@ -109,6 +109,8 @@ export const ptBR: UiMessages = {
     orderThis: "Pedir este pelo WhatsApp",
     photoOf: "Foto {n} de {total}",
     cart: "Carrinho",
+    cartEmpty: "Seu carrinho está vazio.",
+    cartEmptyHint: "Escolha um produto e fale com a loja pelo WhatsApp.",
     account: "Minha conta",
     noPhoto: "Sem foto",
     search: "Buscar nesta loja",
@@ -147,6 +149,9 @@ export const ptBR: UiMessages = {
     logoAlt: "Logo da loja",
     order: "Fazer pedido no WhatsApp",
     socialLabel: "Redes da loja",
+    footerShop: "A loja",
+    footerContact: "Atendimento",
+    copyright: "© {year} {name}. Todos os direitos reservados.",
     payments: {
       money: "Dinheiro",
       moneyDetail: "Na entrega",

@@ -38,6 +38,7 @@ export type StorefrontSection =
   | { kind: "catalog" }
   | { kind: "categories" }
   | { kind: "search" }
+  | { kind: "cart" }
   | { kind: "category"; slug: string }
 
 export interface CatalogueQuery {
@@ -93,6 +94,9 @@ export function storefrontRoutes(shop: StorefrontShop) {
     search: (term?: string, { page }: { page?: number } = {}) =>
       withQuery(`${home}/${routeWords.search}`, { [SEARCH_KEY]: term, [PAGE_KEY]: page }),
 
+    /** The basket, which the header's icon points at from the first day. */
+    cart: () => `${home}/${routeWords.cart}`,
+
     /** One product. It never nests under a category: a product in two would have two addresses. */
     product: (productSlug: string) => `${home}/${routeWords.products}/${productSlug}`,
   }
@@ -117,6 +121,7 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (segment === routeWords.products) return { kind: "catalog" }
   if (segment === routeWords.categories) return { kind: "categories" }
   if (segment === routeWords.search) return { kind: "search" }
+  if (segment === routeWords.cart) return { kind: "cart" }
 
   return { kind: "category", slug: segment }
 }

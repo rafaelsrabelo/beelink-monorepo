@@ -28,14 +28,18 @@ export const ComUmaAberta: Story = {
   args: { active: "promocoes" },
 }
 
+/** The row of photographs, for a shop that has photographed its categories. */
+export const EmTiles: Story = {
+  args: { variant: "tiles" },
+}
+
 /**
  * No photograph anywhere — which is every real shop today, because there is no panel screen for
  * categories yet. The initial on the shop's own colour, never an empty grey circle.
  */
-export const SemFotos: Story = {
-  args: { categories: categories.map((category) => ({ ...category, imageUrl: null })) },
-}
-
-export const ComoChips: Story = {
-  args: { withImages: false },
+export const TilesSemFotos: Story = {
+  args: {
+    variant: "tiles",
+    categories: categories.map((category) => ({ ...category, imageUrl: null })),
+  },
 }

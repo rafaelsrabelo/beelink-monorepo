@@ -73,6 +73,7 @@ export class StorefrontRouteWordsResponse implements StorefrontRouteWords {
   @ApiProperty({ example: 'produtos' }) products!: string;
   @ApiProperty({ example: 'categorias' }) categories!: string;
   @ApiProperty({ example: 'busca' }) search!: string;
+  @ApiProperty({ example: 'carrinho' }) cart!: string;
 }
 
 /**

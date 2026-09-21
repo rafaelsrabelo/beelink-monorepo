@@ -89,6 +89,7 @@ export default async function ProductPage({ params }: PageProps<"/[slug]/[sectio
       // No category band on a product page: this page is about one thing, and a row of every
       // category above it is a row of doors out of the page someone just chose to open.
       categories={[]}
+      year={new Date().getFullYear()}
       messages={ui}
     >
       <StorefrontProductDetail

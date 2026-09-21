@@ -24,6 +24,13 @@ export interface StorefrontSearchProps {
   hidden?: Record<string, string>
   /** A page whose whole purpose is the search may take the caret; a header must never steal it. */
   autoFocus?: boolean
+  /**
+   * `inherit` borrows the page's own colours, which is right on a page that is already the shop's
+   * background. `panel` paints the field in the shop's background colour, for the header, which is
+   * painted in the shop's header colour — a transparent field on a dark bar is a dark field, and a
+   * dark field with a placeholder in it reads as disabled.
+   */
+  tone?: "inherit" | "panel"
   messages?: UiMessages
 }
 
@@ -50,6 +57,7 @@ export function StorefrontSearch({
   value = "",
   hidden,
   autoFocus = false,
+  tone = "inherit",
   messages = defaultMessages,
 }: StorefrontSearchProps) {
   const text = messages.storefront
@@ -60,7 +68,8 @@ export function StorefrontSearch({
         <span className="sr-only">{text.search}</span>
         <SearchIcon
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 opacity-60"
+          className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 opacity-60"
+          style={tone === "panel" ? { color: "var(--shop-text)" } : undefined}
         />
         <input
           type="search"
@@ -69,6 +78,11 @@ export function StorefrontSearch({
           placeholder={text.searchPlaceholder}
           autoFocus={autoFocus}
           className="h-10 w-full rounded-full border border-current/15 bg-transparent pr-3 pl-9 text-sm outline-none focus-visible:border-current/40"
+          style={
+            tone === "panel"
+              ? { backgroundColor: "var(--shop-background)", color: "var(--shop-text)", borderColor: "transparent" }
+              : undefined
+          }
         />
       </label>
 

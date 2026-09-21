@@ -25,6 +25,13 @@ export interface StorefrontRouteWords {
   categories: string;
   /** Where the shop's search box posts, its term in `?q=`: `/<shop>/<search>?q=croche`. */
   search: string;
+  /**
+   * The basket. It has a word before it holds anything, because the header carries its icon from
+   * the first day and an icon that goes nowhere teaches a visitor the rest of the page is a
+   * mock-up. `RESERVED_PATH_SEGMENTS` has held `carrinho` and `cart` since the beginning for
+   * exactly this.
+   */
+  cart: string;
 }
 
 /**

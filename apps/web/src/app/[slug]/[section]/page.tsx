@@ -70,10 +70,10 @@ async function load(slug: string, segment: string, query: Query): Promise<Loaded
       page,
       ...(section.kind === "category" ? { category: section.slug } : {}),
       ...(section.kind === "search" ? { search: term } : {}),
-      // The index of categories renders no products at all, and the catalogue endpoint answers
-      // both halves together. Asking for the smallest page is what keeps that one round trip from
-      // also carrying two dozen products nothing on the page will render.
-      ...(section.kind === "categories" ? { pageSize: 1 } : {}),
+      // Neither the index of categories nor the basket renders a product, and the catalogue
+      // endpoint answers both halves together. Asking for the smallest page is what keeps that one
+      // round trip from also carrying two dozen products nothing on the page will show.
+      ...(section.kind === "categories" || section.kind === "cart" ? { pageSize: 1 } : {}),
     }),
   ])
 
@@ -101,6 +101,8 @@ function headingOf({ section, category, messages }: Loaded): string {
       return text.categoriesTitle
     case "search":
       return text.searchHeading
+    case "cart":
+      return text.cart
     case "category":
       return category?.name ?? text.catalogTitle
   }
@@ -111,7 +113,7 @@ function subtitleOf({ section, catalogue, messages, term }: Loaded, locale: stri
   const text = messages.storefront
   const count = new Intl.NumberFormat(locale).format(catalogue.total)
 
-  if (section.kind === "categories") return undefined
+  if (section.kind === "categories" || section.kind === "cart") return undefined
 
   if (section.kind === "search") {
     if (!term) return undefined
@@ -147,14 +149,19 @@ export async function generateMetadata({
         ? routes.categories()
         : loaded.section.kind === "search"
           ? routes.search()
-          : routes.catalog()
+          : loaded.section.kind === "cart"
+            ? routes.cart()
+            : routes.catalog()
 
   return {
     title: `${heading} · ${loaded.store.name}`,
     description: loaded.store.description ?? undefined,
     alternates: { canonical },
     // A paged or searched shelf is not a landing page; it is the same shelf, reached differently.
-    robots: loaded.page > 1 || loaded.term ? { index: false, follow: true } : undefined,
+    robots:
+      loaded.page > 1 || loaded.term || loaded.section.kind === "cart"
+        ? { index: false, follow: true }
+        : undefined,
   }
 }
 
@@ -191,7 +198,8 @@ export default async function StorefrontSectionPage({
       categories={catalogue.categories}
       activeCategory={category?.slug ?? null}
       searchValue={term}
-      showHighlights
+      showHighlights={loaded.section.kind !== "cart"}
+      year={new Date().getFullYear()}
       messages={ui}
     >
       {/*
@@ -205,7 +213,28 @@ export default async function StorefrontSectionPage({
         {subtitle ? <p className="text-sm opacity-70">{subtitle}</p> : null}
       </header>
 
-      {loaded.section.kind === "categories" ? (
+      {loaded.section.kind === "cart" ? (
+        /*
+          The basket has an address before it has a line in it, which is the point: the header
+          carries its icon on every page, and an icon that goes nowhere teaches a visitor that the
+          rest of the shop is a mock-up too. Until something can add to it, this is an empty state
+          and a way back to the shelf — not a placeholder pretending to be a checkout.
+        */
+        <section className="flex flex-col items-center gap-2 py-16 text-center">
+          <p className="font-medium">{ui.storefront.cartEmpty}</p>
+          <p className="text-sm opacity-70">{ui.storefront.cartEmptyHint}</p>
+          {/* A plain anchor, like every other link in the shop window: `typedRoutes` types
+              `next/link` against the routes it generated, and these addresses are built at runtime
+              from the shopkeeper's own words — there is no literal for it to have seen. */}
+          <a
+            href={routes.catalog()}
+            className="mt-2 rounded-xl px-4 py-2 text-sm font-medium"
+            style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
+          >
+            {ui.storefront.catalogTitle}
+          </a>
+        </section>
+      ) : loaded.section.kind === "categories" ? (
         <StorefrontCategoryGrid
           categories={catalogue.categories}
           href={routes.category}

@@ -138,3 +138,21 @@
     @apply font-sans;
     }
 }
+/**
+ * A row that scrolls sideways without the bar underneath it.
+ *
+ * The shop owner asked for this by name, looking at the product rail: on a desktop the bar sits
+ * under the cards as a grey stripe across the band and it is the first thing the eye lands on.
+ *
+ * It is safe here and would not be elsewhere. What replaces the bar as the sign that the row keeps
+ * going is the card cut by the right edge, which the rail sizes deliberately, and the row stays
+ * reachable by keyboard because the scroller is focusable and named. A scrolling region with no
+ * bar, no peek and no focus is a region a person cannot tell is there.
+ */
+@utility no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

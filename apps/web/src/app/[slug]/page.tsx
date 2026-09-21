@@ -75,6 +75,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       description={store.description}
       showBanner
       showHighlights
+      year={new Date().getFullYear()}
       messages={ui}
     >
       {/*

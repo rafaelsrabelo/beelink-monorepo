@@ -45,8 +45,9 @@ const CARD_WIDTH = "w-44 sm:w-52 lg:w-64"
  * A scroll container, never a carousel. A carousel is state: a slide index, arrows that do nothing
  * until JavaScript arrives, cards held out of the document until their turn. Here the browser
  * scrolls and snaps by itself, so the band works on first paint with scripting off and every card
- * is in the HTML for a crawler to follow. The scrollbar is left visible for that same reason: with
- * no arrows it is the only standing sign that there is more to the right.
+ * is in the HTML for a crawler to follow. The scrollbar itself is hidden — the shop owner asked,
+ * and the card cut by the right edge is what says the row keeps going, which is why the card has
+ * a fixed width at every breakpoint rather than a fluid one.
  */
 export function StorefrontProductRail({
   products,
@@ -116,7 +117,7 @@ export function StorefrontProductRail({
         tabIndex={0}
         role="group"
         aria-label={heading}
-        className="-mx-4 overflow-x-auto overscroll-x-contain scroll-px-4 snap-x snap-mandatory focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="no-scrollbar -mx-4 overflow-x-auto overscroll-x-contain scroll-px-4 snap-x snap-mandatory focus-visible:outline-2 focus-visible:outline-offset-2"
         style={{ outlineColor: "var(--shop-primary)" }}
       >
         <ul className="flex gap-3 px-4">

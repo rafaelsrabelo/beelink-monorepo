@@ -51,14 +51,15 @@ describe("StorefrontCategories", () => {
   })
 
   /**
-   * There is no panel screen for categories yet, so every `imageUrl` in a real shop is null today
-   * — and a row of empty grey circles reads as a page that failed to load.
+   * The default is the menu, and a menu is words. The shop owner saw the row of circles and said
+   * so: a circle is a picture, and no panel screen uploads one, so every shop got a row of single
+   * letters where its menu should be.
    */
-  it("draws an initial for a category with no photograph", () => {
+  it("is a bar of words by default, with no photographs in it", () => {
     const { container } = renderCategories()
 
-    expect(container.textContent).toContain("P")
-    expect(container.querySelectorAll("img")).toHaveLength(1)
+    expect(container.querySelectorAll("img")).toHaveLength(0)
+    expect(screen.getByRole("link", { name: /Promoções/ })).toBeInTheDocument()
   })
 
   it("renders nothing at all for a shop with no categories", () => {
@@ -67,11 +68,15 @@ describe("StorefrontCategories", () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it("can be chips instead of tiles", () => {
-    const { container } = renderCategories({ withImages: false })
+  /**
+   * There is no panel screen for categories yet, so every `imageUrl` in a real shop is null today
+   * — and a row of empty grey circles reads as a page that failed to load.
+   */
+  it("draws an initial for a photographless category, in the tile variant", () => {
+    const { container } = renderCategories({ variant: "tiles" })
 
-    expect(container.querySelectorAll("img")).toHaveLength(0)
-    expect(screen.getByRole("link", { name: /Promoções/ })).toBeInTheDocument()
+    expect(container.textContent).toContain("P")
+    expect(container.querySelectorAll("img")).toHaveLength(1)
   })
 
   it("has no accessibility violations", async () => {
