@@ -126,6 +126,8 @@ export const ptBR: UiMessages = {
     searchLoading: "Buscando…",
     categoriesLabel: "Categorias da loja",
     allCategories: "Tudo",
+    breadcrumbLabel: "Você está em",
+    breadcrumbHome: "Início",
     empty: "Nada encontrado por aqui.",
     emptyHint: "Tente outra busca ou veja todas as categorias.",
     productsHeading: "Produtos",

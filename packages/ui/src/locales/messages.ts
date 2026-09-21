@@ -160,6 +160,10 @@ export interface UiMessages {
     searchLoading: string
     categoriesLabel: string
     allCategories: string
+    /** Names the trail for a screen reader, which otherwise reads a row of links with no purpose. */
+    breadcrumbLabel: string
+    /** The first crumb. The shop's own name would repeat the logo standing right above it. */
+    breadcrumbHome: string
     empty: string
     emptyHint: string
     productsHeading: string

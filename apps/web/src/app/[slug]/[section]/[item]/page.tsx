@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 // UI
+import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
 import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
 
 // App
@@ -92,6 +93,23 @@ export default async function ProductPage({ params }: PageProps<"/[slug]/[sectio
       year={new Date().getFullYear()}
       messages={ui}
     >
+      {/*
+        The deepest trail in the shop, and the page that needs it most: someone who arrived here
+        from Google or from a WhatsApp link has no history to go back through, and this is the only
+        thing on the page saying the product sits in a category inside a shop.
+      */}
+      <StorefrontBreadcrumb
+        homeHref={routes.home}
+        items={[
+          { label: ui.storefront.catalogTitle, href: routes.catalog() },
+          ...(product.category
+            ? [{ label: product.category.name, href: routes.category(product.category.slug) }]
+            : []),
+          { label: product.name },
+        ]}
+        messages={ui}
+      />
+
       <StorefrontProductDetail
         name={product.name}
         description={product.description}

@@ -147,18 +147,21 @@ WHERE NOT EXISTS (
 -- not, which is why every link the app renders comes from `routeWords`.
 CREATE TEMP VIEW seed_showcase (segment, slug, title, subtitle, href_suffix, layout, position) AS
 VALUES
-  -- suplementos: três cartões e dois banners, como o site de referência
-  ('suplementos', 'creatina-ultramesh', 'Creatina Ultramesh',   'MESH 500, 100% pura',                    '/produtos/creatina-mono-300g',     'THIRDS', 0),
-  ('suplementos', 'pre-workout',        'Pré-treino Insano',    'Zero sódio. 200 mg de cafeína.',         '/produtos/pre-treino-insano-300g', 'THIRDS', 1),
-  ('suplementos', 'whey-concentrado',   'Whey Concentrado',     'Proteína concentrada pura, sem blends',  '/produtos/whey-concentrado-900g',  'THIRDS', 2),
-  ('suplementos', 'linha-proteinas',    'É mais proteína',      'A linha inteira, do whey à albumina',    '/proteinas',                       'HALVES', 3),
-  ('suplementos', 'invoque-treinos',    'Invoque seus treinos', 'Pré-treino, creatina e beta-alanina',    '/pre-treino',                      'HALVES', 4),
+  -- suplementos: o pôster, três cartões e dois banners, como o site de referência.
+  -- Cada um aponta para algum lugar: um produto, uma categoria ou o catálogo inteiro.
+  ('suplementos', 'hero-performance',   'Suplementação para quem leva o treino a sério', 'Fórmulas objetivas, matéria-prima selecionada e laudo por lote.', '/produtos',    'FULL',   0),
+  ('suplementos', 'creatina-ultramesh', 'Creatina Ultramesh',   'MESH 500, 100% pura',                    '/produtos/creatina-mono-300g',     'THIRDS', 1),
+  ('suplementos', 'pre-workout',        'Pré-treino Insano',    'Zero sódio. 200 mg de cafeína.',         '/produtos/pre-treino-insano-300g', 'THIRDS', 2),
+  ('suplementos', 'whey-concentrado',   'Whey Concentrado',     'Proteína concentrada pura, sem blends',  '/produtos/whey-concentrado-900g',  'THIRDS', 3),
+  ('suplementos', 'linha-proteinas',    'É mais proteína',      'A linha inteira, do whey à albumina',    '/proteinas',                       'HALVES', 4),
+  ('suplementos', 'invoque-treinos',    'Invoque seus treinos', 'Pré-treino, creatina e beta-alanina',    '/pre-treino',                      'HALVES', 5),
   -- moda
-  ('moda',        'alfaiataria',        'Alfaiataria',          'Calça, colete e blazer que conversam',   '/calcas',                          'THIRDS', 0),
-  ('moda',        'vestidos-festa',     'Vestidos de festa',    'Cetim, seda e fenda',                    '/vestidos',                        'THIRDS', 1),
-  ('moda',        'basicos',            'Básicos que ficam',    'Malha canelada e linho puro',            '/blusas',                          'THIRDS', 2),
-  ('moda',        'novo-verao',         'Novo verão',           'A coleção inteira no ar',                '/produtos',                        'HALVES', 3),
-  ('moda',        'acessorios-banner',  'Fecha o look',         'Bolsas, cintos e calçados',              '/acessorios',                      'HALVES', 4);
+  ('moda',        'hero-colecao',       'A coleção nova já está no ar', 'Alfaiataria, linho e cetim, para o dia e para a noite.',  '/produtos',    'FULL',   0),
+  ('moda',        'alfaiataria',        'Alfaiataria',          'Calça, colete e blazer que conversam',   '/calcas',                          'THIRDS', 1),
+  ('moda',        'vestidos-festa',     'Vestidos de festa',    'Cetim, seda e fenda',                    '/vestidos',                        'THIRDS', 2),
+  ('moda',        'basicos',            'Básicos que ficam',    'Malha canelada e linho puro',            '/blusas',                          'THIRDS', 3),
+  ('moda',        'novo-verao',         'Novo verão',           'A coleção inteira no ar',                '/produtos',                        'HALVES', 4),
+  ('moda',        'acessorios-banner',  'Fecha o look',         'Bolsas, cintos e calçados',              '/acessorios',                      'HALVES', 5);
 
 INSERT INTO "store_showcases" ("id", "storeId", "title", "subtitle", "imageUrl", "href", "layout", "position", "isActive", "createdAt", "updatedAt")
 SELECT
@@ -171,6 +174,21 @@ JOIN seed_showcase w ON w.segment = sh.segment
 WHERE NOT EXISTS (
   SELECT 1 FROM "store_showcases" ex WHERE ex."storeId" = sh.store_id AND ex.title = w.title
 );
+
+-- The insert above only ever adds, so an edit to a position, a subtitle or a destination would
+-- never reach a row that is already there — which is how the poster ended up sharing position 0
+-- with the card that used to hold it. A fixture has to mirror its file, not append to it.
+UPDATE "store_showcases" ss
+SET "subtitle" = w.subtitle,
+    "href" = '/' || sh.store_slug || w.href_suffix,
+    "layout" = w.layout::"ShowcaseLayout",
+    "position" = w.position,
+    "isActive" = true,
+    "updatedAt" = now()
+FROM shop_segment sh, seed_showcase w
+WHERE ss."storeId" = sh.store_id
+  AND w.segment = sh.segment
+  AND w.title = ss.title;
 
 -- The same "make the database match this file" rule the catalogue follows.
 DELETE FROM "store_showcases" ss

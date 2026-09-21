@@ -126,6 +126,8 @@ export const en: UiMessages = {
     searchLoading: "Searching…",
     categoriesLabel: "The shop's categories",
     allCategories: "Everything",
+    breadcrumbLabel: "You are in",
+    breadcrumbHome: "Home",
     empty: "Nothing found here.",
     emptyHint: "Try another search, or browse every category.",
     productsHeading: "Products",

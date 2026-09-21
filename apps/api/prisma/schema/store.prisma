@@ -28,12 +28,14 @@ enum RouteVocabulary {
 
 /// How wide a showcase card sits on the landing page.
 ///
-/// Two values and not a number of columns, because the shopkeeper is choosing a shape rather than a
-/// grid: three-across is a product card with room for a name and a line, two-across is a banner with
-/// room for artwork. A free integer would let someone pick seven and get a row of stamps.
+/// Three shapes and not a number of columns, because the shopkeeper is choosing a shape rather than
+/// a grid: full width is the poster at the top, two-across is a banner with room for artwork,
+/// three-across is a card with room for a name and a line. A free integer would let someone pick
+/// seven and get a row of stamps.
 enum ShowcaseLayout {
-  THIRDS
+  FULL
   HALVES
+  THIRDS
 }
 
 /// A block the shopkeeper puts on their landing page: a picture, a name, a line, and somewhere to go.

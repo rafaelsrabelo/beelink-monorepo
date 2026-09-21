@@ -140,10 +140,11 @@ export interface StoreColorPreset {
  * in Google's index.
  */
 /**
- * How wide a showcase card sits. A shape rather than a column count: three-across is a product card
- * with room for a name and a line, two-across is a banner with room for artwork.
+ * How wide a showcase card sits. A shape rather than a column count: full width is the poster at the
+ * top, two-across is a banner with room for artwork, three-across is a card with room for a name and
+ * a line.
  */
-export type ShowcaseLayout = "THIRDS" | "HALVES";
+export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
 
 /**
  * A block the shopkeeper put on their landing page.

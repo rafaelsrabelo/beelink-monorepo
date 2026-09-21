@@ -7,7 +7,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 
-export type StorefrontShowcaseLayout = "THIRDS" | "HALVES"
+export type StorefrontShowcaseLayout = "FULL" | "HALVES" | "THIRDS"
 
 export interface StorefrontShowcaseItem {
   id: string
@@ -25,17 +25,24 @@ export interface StorefrontShowcaseProps {
 }
 
 /**
- * Three across for a card carrying a name and a line; two across for artwork with room to breathe.
- * Both collapse to one on a phone: half of a card this dark is unreadable, not half as useful.
+ * Full width for the poster at the top; two across for artwork with room to breathe; three across
+ * for a card carrying a name and a line. They all collapse to one on a phone — half of a card this
+ * dark is unreadable rather than half as useful.
  */
 const COLUMNS: Record<StorefrontShowcaseLayout, string> = {
-  THIRDS: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+  FULL: "grid-cols-1",
   HALVES: "grid-cols-1 lg:grid-cols-2",
+  THIRDS: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
 }
 
+/**
+ * A poster that keeps its cinema ratio on a phone is a letterbox two fingers tall with a headline
+ * that will not fit, so the full-width one gets taller as the screen gets narrower.
+ */
 const HEIGHT: Record<StorefrontShowcaseLayout, string> = {
-  THIRDS: "aspect-[4/3]",
+  FULL: "aspect-[4/3] sm:aspect-[2/1] lg:aspect-[21/9]",
   HALVES: "aspect-[16/9]",
+  THIRDS: "aspect-[4/3]",
 }
 
 /**
@@ -99,9 +106,23 @@ export function StorefrontShowcase({ items, linkComponent: Link = AnchorLink }: 
                   style={{ color: "var(--shop-background)" }}
                 >
                   <div className="flex min-w-0 flex-col gap-1">
-                    <p className="text-lg leading-tight font-semibold text-balance">{item.title}</p>
+                    <p
+                      className={cn(
+                        "leading-tight font-semibold text-balance",
+                        row.layout === "FULL" ? "text-2xl sm:text-4xl" : "text-lg",
+                      )}
+                    >
+                      {item.title}
+                    </p>
                     {item.subtitle ? (
-                      <p className="line-clamp-2 text-sm opacity-85">{item.subtitle}</p>
+                      <p
+                        className={cn(
+                          "line-clamp-2 opacity-85",
+                          row.layout === "FULL" ? "max-w-xl text-sm sm:text-base" : "text-sm",
+                        )}
+                      >
+                        {item.subtitle}
+                      </p>
                     ) : null}
                   </div>
 

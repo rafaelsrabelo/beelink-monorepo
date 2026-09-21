@@ -73,4 +73,4 @@ export const STOREFRONT_RATE_LIMIT = { max: 300, timeWindow: '1 minute' };
 // stores.controller.ts, beside the routes it guards, exactly as auth.controller.ts builds its own.
 
 /** The shapes a landing-page block may take. Spelled out, like every other enum the wire carries. */
-export const SHOWCASE_LAYOUTS = ['THIRDS', 'HALVES'] as const satisfies readonly ShowcaseLayout[];
+export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies readonly ShowcaseLayout[];

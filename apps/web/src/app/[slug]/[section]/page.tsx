@@ -6,6 +6,7 @@ import type { Metadata } from "next"
 import type { PublicProductCategory, PublicStore, StorefrontCatalog } from "@harness-monorepo/contracts"
 
 // UI
+import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
 import { StorefrontCatalog as StorefrontCatalogGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
 import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
@@ -208,7 +209,21 @@ export default async function StorefrontSectionPage({
         to say what it is itself. Without this the catalogue, the categories and the search would
         each be a page with no heading at all — the shop's name in band 5 belongs to the home.
       */}
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col gap-3">
+        {/*
+          A category sits under the catalogue, so its trail passes through it. The others hang
+          straight off the front door — there is no shelf above "Busca".
+        */}
+        <StorefrontBreadcrumb
+          homeHref={routes.home}
+          items={
+            category
+              ? [{ label: ui.storefront.catalogTitle, href: routes.catalog() }, { label: category.name }]
+              : [{ label: heading }]
+          }
+          messages={ui}
+        />
+
         <h1 className="text-2xl font-semibold">{heading}</h1>
         {subtitle ? <p className="text-sm opacity-70">{subtitle}</p> : null}
       </header>
