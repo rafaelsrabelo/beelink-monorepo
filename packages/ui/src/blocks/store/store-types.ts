@@ -104,8 +104,18 @@ export interface StoreAddressSuggestion {
   id: string
   label: string
   street: string
+  number: string
   neighborhood: string
   city: string
   state: string
   zipCode: string
+  /** Where the search says this is. The screen turns it into a picture; the block never does. */
+  latitude: number
+  longitude: number
+}
+
+/** A point on the earth, as the address tab passes one around. */
+export interface StorePoint {
+  latitude: number
+  longitude: number
 }

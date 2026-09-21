@@ -206,6 +206,8 @@ export interface UiMessages {
       searching: string
       noSuggestions: string
       zipCodeHint: string
+      /** Read by a screen reader in place of the map, which carries no information of its own. */
+      mapAlt: string
       lookup: string
       lookingUp: string
       streetLabel: string

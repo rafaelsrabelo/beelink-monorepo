@@ -25,7 +25,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { StoreAddressValues } from "./store-schemas"
-import type { FieldIssues, StoreAddressSuggestion, StoreZipCodeAddress } from "./store-types"
+import type { FieldIssues, StoreAddressSuggestion, StorePoint, StoreZipCodeAddress } from "./store-types"
 
 export interface StoreAddressFieldsProps {
   value: StoreAddressValues
@@ -50,6 +50,15 @@ export interface StoreAddressFieldsProps {
   /** What the screen's search answered. Absent means no search is wired up and the field is plain. */
   suggestions?: readonly StoreAddressSuggestion[]
   searchPending?: boolean
+  /**
+   * Where a picked suggestion says the shop is. The block reports it and forgets it: turning a
+   * point into a picture means knowing a provider and holding a key, and this package knows
+   * neither.
+   */
+  onPointChange?: (point: StorePoint) => void
+  /** A picture of that point, addressed by the screen. Absent means no map, which is a fine state. */
+  mapSrc?: string
+  mapAlt?: string
   disabled?: boolean
   messages?: UiMessages
 }
@@ -64,6 +73,9 @@ export function StoreAddressFields({
   onAddressSearch,
   suggestions = [],
   searchPending = false,
+  onPointChange,
+  mapSrc,
+  mapAlt,
   disabled = false,
   messages = defaultMessages,
 }: StoreAddressFieldsProps) {
@@ -81,37 +93,6 @@ export function StoreAddressFields({
     <FieldGroup>
       <FieldDescription>{text.hint}</FieldDescription>
 
-      <Field>
-        <FieldLabel htmlFor="store-zip-code">{text.zipCodeLabel}</FieldLabel>
-        <div className="flex items-start gap-2">
-          <Input
-            id="store-zip-code"
-            inputMode="numeric"
-            maxLength={9}
-            value={value.zipCode}
-            disabled={disabled}
-            placeholder={text.zipCodePlaceholder}
-            aria-invalid={Boolean(errors?.zipCode)}
-            onChange={(event) => onChange({ ...value, zipCode: event.target.value })}
-          />
-          {onZipCodeLookup ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={disabled || lookupPending}
-              onClick={() => {
-                void onZipCodeLookup(value.zipCode).then((address) => {
-                  if (address) onChange(fillFrom(latest.current, address))
-                })
-              }}
-            >
-              {lookupPending ? text.lookingUp : text.lookup}
-            </Button>
-          ) : null}
-        </div>
-        <FieldDescription>{text.zipCodeHint}</FieldDescription>
-        <FieldError errors={[errors?.zipCode]} />
-      </Field>
 
       <div className="grid gap-4 @md/main:grid-cols-3">
         <Field className="@md/main:col-span-2">
@@ -136,6 +117,7 @@ export function StoreAddressFields({
                   const picked = suggestions.find((suggestion) => suggestion.label === street)
                   if (picked) {
                     onChange(fillFromSuggestion(value, picked))
+                    onPointChange?.({ latitude: picked.latitude, longitude: picked.longitude })
                     return
                   }
                 }
@@ -226,6 +208,57 @@ export function StoreAddressFields({
         />
       </Field>
 
+      {/*
+        Below the street, not above it. The postcode used to come first because the legacy
+        wizard asked for it first, and that was the only way in. Now the address box is: a
+        shopkeeper types their street, picks it, and every field under it fills — including
+        this one. What is left here is the other way round, for someone who knows the number
+        by heart or whose street the search does not have.
+      */}
+      <Field>
+        <FieldLabel htmlFor="store-zip-code">{text.zipCodeLabel}</FieldLabel>
+        <div className="flex items-start gap-2">
+          <Input
+            id="store-zip-code"
+            inputMode="numeric"
+            maxLength={9}
+            value={value.zipCode}
+            disabled={disabled}
+            placeholder={text.zipCodePlaceholder}
+            aria-invalid={Boolean(errors?.zipCode)}
+            onChange={(event) => onChange({ ...value, zipCode: event.target.value })}
+          />
+          {onZipCodeLookup ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={disabled || lookupPending}
+              onClick={() => {
+                void onZipCodeLookup(value.zipCode).then((address) => {
+                  if (address) onChange(fillFrom(latest.current, address))
+                })
+              }}
+            >
+              {lookupPending ? text.lookingUp : text.lookup}
+            </Button>
+          ) : null}
+        </div>
+        <FieldDescription>{text.zipCodeHint}</FieldDescription>
+        <FieldError errors={[errors?.zipCode]} />
+      </Field>
+
+      {mapSrc ? (
+        <figure className="overflow-hidden rounded-lg border border-border">
+          {/*
+            A picture and not a map you can drag. What it is for is confirming that the address
+            above landed where the shopkeeper meant — and an interactive canvas invites moving the
+            pin, which would be a second source of truth for a position the address already
+            decides.
+          */}
+          <img src={mapSrc} alt={mapAlt ?? text.mapAlt} className="h-40 w-full object-cover" />
+        </figure>
+      ) : null}
+
       <div className="grid gap-4 @md/main:grid-cols-3">
         <Field>
           <FieldLabel htmlFor="store-neighborhood">{text.neighborhoodLabel}</FieldLabel>
@@ -293,13 +326,15 @@ function fillFrom(current: StoreAddressValues, found: StoreZipCodeAddress): Stor
  * the postcode lookup follows, and for the same reason: a provider answers with what it has, and a
  * blank field written through would erase what the shopkeeper had already typed.
  *
- * The number is never touched. No search returns a flat or a block, and overwriting "Apto 101"
- * with nothing is the one mistake that costs a delivery.
+ * The number is filled, because the search knows one — but the complement never is. No provider
+ * returns a flat or a block, and overwriting "Apto 101" with nothing is the one mistake here that
+ * costs a delivery.
  */
 function fillFromSuggestion(current: StoreAddressValues, found: StoreAddressSuggestion): StoreAddressValues {
   return {
     ...current,
     street: found.street || current.street,
+    number: found.number || current.number,
     neighborhood: found.neighborhood || current.neighborhood,
     city: found.city || current.city,
     state: found.state || current.state,

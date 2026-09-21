@@ -260,7 +260,14 @@ export interface AddressSuggestion {
   id: string;
   /** The whole address on one line, as the list shows it. */
   label: string;
+  /** The street alone. The number is its own field, because the form has its own field for it. */
   street: string;
+  /**
+   * The house number the search matched, which is a starting point and not an answer: a shopkeeper
+   * searching their street gets whichever number the provider knows, and theirs may be the one
+   * next door. The form fills it and lets them correct it without editing the street.
+   */
+  number: string;
   neighborhood: string;
   city: string;
   /** The two-letter UF, upper case. */

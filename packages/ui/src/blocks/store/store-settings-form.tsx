@@ -35,6 +35,7 @@ import type {
   StoreAddressSuggestion,
   StoreCategoryOption,
   StoreColorPreset,
+  StorePoint,
   StoreZipCodeAddress,
 } from "./store-types"
 
@@ -64,6 +65,9 @@ export interface StoreSettingsFormProps {
   onAddressSearch?: (query: string) => void
   suggestions?: readonly StoreAddressSuggestion[]
   addressSearchPending?: boolean
+  /** Where a picked suggestion says the shop is; the screen turns it into `mapSrc`. */
+  onPointChange?: (point: StorePoint) => void
+  mapSrc?: string
   /**
    * Hands one image to whoever keeps bytes and answers with its URL. One callback serves the logo
    * and the banner alike, because one upload endpoint serves both — where the bytes land is the
@@ -93,6 +97,8 @@ export function StoreSettingsForm({
   onAddressSearch,
   suggestions,
   addressSearchPending,
+  onPointChange,
+  mapSrc,
   onImageUpload,
   imageUploadPending,
   pending = false,
@@ -182,6 +188,8 @@ export function StoreSettingsForm({
                     onAddressSearch={onAddressSearch}
                     suggestions={suggestions}
                     searchPending={addressSearchPending}
+                    onPointChange={onPointChange}
+                    mapSrc={mapSrc}
                     disabled={pending}
                     messages={messages}
                   />

@@ -8,7 +8,8 @@ import type { AddressSuggestion } from '@harness-monorepo/contracts';
 export class AddressSuggestionResponse implements AddressSuggestion {
   @ApiProperty({ example: 'address.1234' }) id!: string;
   @ApiProperty({ example: 'Rua Lavras, 120, Aldeota, Fortaleza, CE' }) label!: string;
-  @ApiProperty({ example: 'Rua Lavras, 120' }) street!: string;
+  @ApiProperty({ example: 'Rua Lavras da Mangabeira' }) street!: string;
+  @ApiProperty({ example: '143', description: 'What the search matched; the shopkeeper may correct it.' }) number!: string;
   @ApiProperty({ example: 'Aldeota' }) neighborhood!: string;
   @ApiProperty({ example: 'Fortaleza' }) city!: string;
   @ApiProperty({ example: 'CE' }) state!: string;

@@ -36,6 +36,7 @@ import type {
   StoreAddressSuggestion,
   StoreCategoryOption,
   StoreColorPreset,
+  StorePoint,
   StoreZipCodeAddress,
 } from "./store-types"
 
@@ -64,6 +65,9 @@ export interface StoreCreateFormProps {
   onAddressSearch?: (query: string) => void
   suggestions?: readonly StoreAddressSuggestion[]
   addressSearchPending?: boolean
+  /** Where a picked suggestion says the shop is; the screen turns it into `mapSrc`. */
+  onPointChange?: (point: StorePoint) => void
+  mapSrc?: string
   /** One callback for every image, as in the settings form — one upload endpoint serves both. */
   onImageUpload?: (file: File) => Promise<string>
   imageUploadPending?: boolean
@@ -91,6 +95,8 @@ export function StoreCreateForm({
   onAddressSearch,
   suggestions,
   addressSearchPending,
+  onPointChange,
+  mapSrc,
   onImageUpload,
   imageUploadPending,
   pending = false,
@@ -214,6 +220,8 @@ export function StoreCreateForm({
                     onAddressSearch={onAddressSearch}
                     suggestions={suggestions}
                     searchPending={addressSearchPending}
+                    onPointChange={onPointChange}
+                    mapSrc={mapSrc}
                     disabled={pending}
                     messages={messages}
                   />

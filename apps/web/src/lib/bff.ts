@@ -103,6 +103,26 @@ export interface ApiAnswer {
  * It answers with the body already parsed instead of a NextResponse, so a handler that has to drop
  * what the storefront cached can read the slug out of what it is about to send back.
  */
+/**
+ * The same lane, for an answer that is not JSON.
+ *
+ * It gives back the API's `Response` untouched so a handler can pass bytes on — a picture, today —
+ * rather than parsing something that was never text. Everything else is `forwardSignedIn`: this
+ * exists because the map is an image, not because it is special.
+ */
+export async function forwardSignedInRaw(request: NextRequest, call: SignedInCall): Promise<Response | null> {
+  const accessToken = request.cookies.get(ACCESS_COOKIE)?.value
+
+  if (!accessToken) return null
+
+  return callApi({
+    path: call.path,
+    method: call.method,
+    accessToken,
+    clientIp: clientIpOf(request),
+  })
+}
+
 export async function forwardSignedIn(request: NextRequest, call: SignedInCall): Promise<ApiAnswer> {
   const accessToken = request.cookies.get(ACCESS_COOKIE)?.value
 

@@ -46,11 +46,14 @@ describe("StoreAddressFields", () => {
     const suggestion = {
       id: "address.1",
       label: "Rua Lavras, 120, Aldeota, Fortaleza, CE",
-      street: "Rua Lavras, 120",
+      street: "Rua Lavras da Mangabeira",
+      number: "143",
       neighborhood: "Aldeota",
       city: "Fortaleza",
       state: "CE",
       zipCode: "60170070",
+      latitude: -3.7436,
+      longitude: -38.4998,
     }
 
     function renderBox(overrides: Partial<Parameters<typeof StoreAddressFields>[0]> = {}, initial = values) {
@@ -84,7 +87,8 @@ describe("StoreAddressFields", () => {
 
       expect(onChange).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          street: "Rua Lavras, 120",
+          street: "Rua Lavras da Mangabeira",
+      number: "143",
           neighborhood: "Aldeota",
           city: "Fortaleza",
           state: "CE",
@@ -94,18 +98,44 @@ describe("StoreAddressFields", () => {
     })
 
     /**
-     * No search returns a flat or a block. Writing an empty number through is the one mistake in
-     * this merge that costs a delivery, so the number is never touched.
+     * The number belongs in the number field, not glued to the street. Gluing it left the street
+     * reading "Rua Lavras da Mangabeira, 143" with the number box empty beside it, and no way to
+     * correct the number without editing the street around it.
      */
-    it("never touches the number or the complement", async () => {
-      const { onChange } = renderBox({}, { ...values, street: "", number: "120", complement: "Apto 101" })
+    it("puts the house number in the number field, and leaves the street alone", async () => {
+      const { onChange } = renderBox({}, { ...values, street: "", number: "" })
 
       await userEvent.type(screen.getByLabelText("Rua"), "Rua Lav")
       await userEvent.click(await screen.findByText(suggestion.label))
 
       expect(onChange).toHaveBeenLastCalledWith(
-        expect.objectContaining({ number: "120", complement: "Apto 101" }),
+        expect.objectContaining({ street: "Rua Lavras da Mangabeira", number: "143" }),
       )
+    })
+
+    /**
+     * No provider returns a flat or a block. Writing an empty complement through is the one
+     * mistake in this merge that costs a delivery.
+     */
+    it("never touches the complement", async () => {
+      const { onChange } = renderBox({}, { ...values, street: "", complement: "Apto 101" })
+
+      await userEvent.type(screen.getByLabelText("Rua"), "Rua Lav")
+      await userEvent.click(await screen.findByText(suggestion.label))
+
+      expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ complement: "Apto 101" }))
+    })
+
+    it("keeps a number already typed when the suggestion carries none", async () => {
+      const { onChange } = renderBox(
+        { suggestions: [{ ...suggestion, number: "" }] },
+        { ...values, street: "", number: "500" },
+      )
+
+      await userEvent.type(screen.getByLabelText("Rua"), "Rua Lav")
+      await userEvent.click(await screen.findByText(suggestion.label))
+
+      expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ number: "500" }))
     })
 
     it("keeps a field the suggestion knew nothing about", async () => {

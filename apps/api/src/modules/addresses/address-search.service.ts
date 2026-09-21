@@ -42,6 +42,16 @@ interface MapTilerFeature {
  */
 const MAPTILER_GEOCODING = 'https://api.maptiler.com/geocoding';
 
+/**
+ * A picture of where the shop is, drawn by MapTiler and passed through. It is fetched per request
+ * and never written down: their terms allow a stored geocoding result but not a stored tile, and
+ * "map content from a server-side cache" is the phrase they use for what this must not become.
+ */
+const MAPTILER_STATIC = 'https://api.maptiler.com/maps';
+const MAP_STYLE = 'streets-v2';
+const MAP_SIZE = { width: 640, height: 260 };
+const MAP_ZOOM = 16;
+
 /** A suggestion that arrives after the next keystroke is worse than none. */
 const TIMEOUT_MS = 3_000;
 
@@ -61,6 +71,26 @@ export class AddressSearchService {
 
   configured(): boolean {
     return this.key() !== null;
+  }
+
+  /** `null` when uploads of the map are not configured, or when the provider would not draw it. */
+  async map(point: { latitude: number; longitude: number }): Promise<{ bytes: Buffer; contentType: string } | null> {
+    const key = this.key();
+    if (!key) return null;
+
+    const drawn = await fetchStaticMap(point, key);
+
+    if (!drawn) {
+      this.logger.warn('Static map: the provider did not answer');
+      return null;
+    }
+
+    if ('refused' in drawn) {
+      this.logger.warn(`Static map refused: ${drawn.refused}`);
+      return null;
+    }
+
+    return drawn;
   }
 
   /**
@@ -97,6 +127,44 @@ export class AddressSearchService {
       this.logger.warn({ err: error }, 'Address search did not answer');
       return [];
     }
+  }
+}
+
+/**
+ * Bytes, not a URL. The key is in the path of the address this builds, so handing the address to a
+ * browser would hand it the key — and a key in a page is a key in everyone's browser.
+ *
+ * `null` for anything it cannot draw, which the controller turns into a 404 rather than a broken
+ * image: a form that shows a torn picture beside an address is worse than one that shows none.
+ */
+export async function fetchStaticMap(
+  point: { latitude: number; longitude: number },
+  key: string,
+): Promise<{ bytes: Buffer; contentType: string } | { refused: string } | null> {
+  const { longitude, latitude } = point;
+  const centre = `${longitude},${latitude},${MAP_ZOOM}`;
+  const size = `${MAP_SIZE.width}x${MAP_SIZE.height}@2x`;
+  const url =
+    `${MAPTILER_STATIC}/${MAP_STYLE}/static/${centre}/${size}.png` +
+    `?key=${encodeURIComponent(key)}&markers=${encodeURIComponent(`${longitude},${latitude}`)}`;
+
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+
+    // MapTiler refuses with a picture — a PNG saying "no", 200-shaped to anything that only looks
+    // at the content type — and puts the reason in a `statustext` header. Without reading it, a
+    // key that is fine for geocoding and not for rendered maps looks exactly like a network
+    // hiccup, which is an afternoon of guessing.
+    if (!response.ok) {
+      return { refused: response.headers.get('statustext') ?? `HTTP ${response.status}` };
+    }
+
+    return {
+      bytes: Buffer.from(await response.arrayBuffer()),
+      contentType: response.headers.get('content-type') ?? 'image/png',
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -187,6 +255,10 @@ export function toSuggestion(raw: unknown): AddressSuggestion | null {
 
   // `feature.address`, not `properties.ref`. The latter is an OSM identifier — reading it as a
   // house number produced "Travessa Lavras do Sul, osm:w158084972" in the box, on every result.
+  //
+  // It is kept apart from the street rather than glued on. The form has a field for it, and a
+  // street that already reads "Rua Lavras da Mangabeira, 143" leaves that field empty and the
+  // number in a place nobody can correct without editing the street around it.
   const houseNumber = numberish(feature.address);
   // Whitespace only. One of MapTiler's Brazilian sources answers "AVENIDA  PAULISTA" with a double
   // space; collapsing it is safe, where fixing the case would be rewriting a street name on a
@@ -196,7 +268,8 @@ export function toSuggestion(raw: unknown): AddressSuggestion | null {
   return {
     id: textOf(feature.id) || `${latitude},${longitude}`,
     label: textOf(feature.place_name) || street,
-    street: houseNumber ? `${street}, ${houseNumber}` : street,
+    street,
+    number: houseNumber,
     // `municipal_district` last on purpose. In São Paulo it is the bairro ("Bela Vista"), and in
     // Natal it is a zone of the city ("Região Sul") — a wrong bairro. Where a real neighbourhood
     // exists it is named, and it wins.

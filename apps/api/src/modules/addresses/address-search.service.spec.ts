@@ -1,8 +1,8 @@
 // Libs
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // App
-import { toSuggestion, toUf } from './address-search.service.js';
+import { fetchStaticMap, toSuggestion, toUf } from './address-search.service.js';
 
 /**
  * A feature copied from what MapTiler actually answers for a Brazilian address — not from the
@@ -34,7 +34,8 @@ describe('toSuggestion', () => {
     expect(toSuggestion(feature())).toEqual({
       id: 'address.1234',
       label: 'Rua Lavras 120, Aldeota, Fortaleza, Ceará 60170-070, Brasil',
-      street: 'Rua Lavras, 120',
+      street: 'Rua Lavras',
+      number: '120',
       neighborhood: 'Aldeota',
       city: 'Fortaleza',
       state: 'CE',
@@ -62,7 +63,7 @@ describe('toSuggestion', () => {
       feature({ address: undefined, context: [{ id: 'municipality.7', text: 'Sobral' }] }),
     );
 
-    expect(partial).toMatchObject({ street: 'Rua Lavras', city: 'Sobral', neighborhood: '', state: '', zipCode: '' });
+    expect(partial).toMatchObject({ street: 'Rua Lavras', number: '', city: 'Sobral', neighborhood: '', state: '', zipCode: '' });
   });
 
   /**
@@ -71,9 +72,18 @@ describe('toSuggestion', () => {
    * `feature.address`, and it is only there when the query carried one.
    */
   it('takes the house number from address, never from the OSM reference', () => {
-    expect(toSuggestion(feature())?.street).toBe('Rua Lavras, 120');
-    expect(toSuggestion(feature({ address: undefined }))?.street).toBe('Rua Lavras');
+    expect(toSuggestion(feature())?.number).toBe('120');
+    expect(toSuggestion(feature({ address: undefined }))?.number).toBe('');
     expect(JSON.stringify(toSuggestion(feature()))).not.toContain('osm:');
+  });
+
+  /**
+   * Apart, not glued. The form has a field for the number, and a street that already reads
+   * "Rua Lavras da Mangabeira, 143" leaves that field empty with the number somewhere nobody can
+   * correct without editing the street around it.
+   */
+  it('keeps the number out of the street', () => {
+    expect(toSuggestion(feature())?.street).toBe('Rua Lavras');
   });
 
   /**
@@ -131,7 +141,7 @@ describe('toSuggestion', () => {
   });
 
   it('reads a house number that arrived as a number rather than a string', () => {
-    expect(toSuggestion(feature({ address: 120 }))?.street).toBe('Rua Lavras, 120');
+    expect(toSuggestion(feature({ address: 120 }))?.number).toBe('120');
   });
 });
 
@@ -155,5 +165,51 @@ describe('toUf', () => {
   it('gives nothing for a name it does not know', () => {
     expect(toUf('Provincia de Buenos Aires')).toBe('');
     expect(toUf('')).toBe('');
+  });
+});
+
+
+describe('fetchStaticMap', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('answers the bytes the provider drew', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/png' } })),
+    );
+
+    expect(await fetchStaticMap({ latitude: -3.7, longitude: -38.5 }, 'k')).toMatchObject({
+      contentType: 'image/png',
+    });
+  });
+
+  /**
+   * A refusal from MapTiler is a PNG that says no, with the reason in a `statustext` header.
+   * Reading only the content type makes a key that is fine for geocoding and not for rendered
+   * maps look like a network hiccup — which is what it looked like for an afternoon.
+   */
+  it('carries the reason out of the refusal, rather than a picture that says no', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(new Uint8Array([1]), {
+            status: 403,
+            headers: { 'content-type': 'image/png', statustext: '403 Access to rendered maps not allowed' },
+          }),
+      ),
+    );
+
+    expect(await fetchStaticMap({ latitude: -3.7, longitude: -38.5 }, 'k')).toEqual({
+      refused: '403 Access to rendered maps not allowed',
+    });
+  });
+
+  it('is null when the provider never answered', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('ECONNRESET'); }));
+
+    expect(await fetchStaticMap({ latitude: -3.7, longitude: -38.5 }, 'k')).toBeNull();
   });
 });
