@@ -2,80 +2,43 @@
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
-// Types
-import type { PublicProductCard, PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
-
 // UI
-import { StorefrontCatalog } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
-import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
-import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
+import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
+import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
+import { StorefrontSection } from "@harness-monorepo/ui/blocks/storefront/storefront-section"
 
 // App
-import { addressLineOf, orderHrefOf, storefrontLinksOf } from "@/components/storefront/storefront-links"
+import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { getMessages } from "@/lib/locale"
-import { callPublicApi } from "@/lib/public-api"
-import { catalogTag, storeTag } from "@/lib/revalidate"
+import { RAIL_PAGE_SIZE, catalogueAt, shopAt } from "@/lib/storefront-data"
+import { storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
- * A shop's window, at its own address.
+ * A shop's front door, at its own address.
+ *
+ * A landing and not the catalogue. It shows the shop's categories, a band of products running
+ * sideways, and a way through to everything — the shape of every Brazilian shop this was measured
+ * against, and what the shop owner asked for by name. The grid of everything lives one click away,
+ * at the catalogue, where it can be filtered and paged without the home carrying that weight on
+ * the one page most visitors ever see.
+ *
+ * Nothing here filters. A search goes to the search page and a category to its own address, so
+ * every view a visitor can reach is a page they can bookmark, share, and be sent to by Google.
  *
  * Anonymous by construction. `src/proxy.ts` is an allow-list and does not name this path, so no
- * session is read, nothing is redirected, and a crawler is served the same HTML a person is. It
- * goes through `callPublicApi` rather than `callApi` for the same reason: no token ever travels
- * this way, so nothing cached here can be one visitor's answer handed to the next.
- *
- * It is a dynamic segment at the root, so every static route wins over it — `/login` is the login
- * screen and not a shop called "login". The API refuses those names anyway (RESERVED_SLUGS), so
- * the two halves agree instead of relying on each other.
+ * session is read and a crawler is served the same HTML a person is.
  */
-async function shopAt(slug: string): Promise<PublicStore | null> {
-  const response = await callPublicApi({ path: `/stores/${slug}/public`, tags: [storeTag(slug)] })
-
-  if (!response.ok) return null
-
-  return (await response.json()) as PublicStore
-}
-
-interface Catalogue {
-  categories: PublicProductCategory[]
-  products: PublicProductCard[]
-}
-
-/**
- * The catalogue, filtered as the address asks. Under `catalogTag` and not `storeTag`: a price
- * change should not drop the shop's colours from the cache, and a colour change should not drop
- * every filtered catalogue page with it.
- */
-async function catalogueAt(slug: string, category?: string, search?: string): Promise<Catalogue> {
-  const query = new URLSearchParams()
-  if (category) query.set("categoria", category)
-  if (search) query.set("busca", search)
-  const suffix = query.size ? `?${query.toString()}` : ""
-
-  const response = await callPublicApi({
-    path: `/stores/${slug}/catalog${suffix}`,
-    tags: [catalogTag(slug)],
-  })
-
-  // A catalogue that would not load is an empty shelf, never a broken page: the shop's name, its
-  // description and its WhatsApp are worth serving on their own.
-  if (!response.ok) return { categories: [], products: [] }
-
-  return (await response.json()) as Catalogue
-
-}
-
 export async function generateMetadata({ params }: PageProps<"/[slug]">): Promise<Metadata> {
   const { slug } = await params
   const store = await shopAt(slug)
 
   if (!store) return {}
 
-  // The shop's own name and words, not the product's: this page is indexed as the shop, and a
-  // title reading "bee-link" on every one of them would put them all in one another's way.
+  // The shop's own name and words, not a product's: this page is indexed as the shop.
   return {
     title: store.name,
     description: store.description ?? undefined,
+    alternates: { canonical: `/${slug}` },
     openGraph: {
       title: store.name,
       description: store.description ?? undefined,
@@ -85,66 +48,70 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
   }
 }
 
-export default async function StorefrontPage({ params, searchParams }: PageProps<"/[slug]">) {
+export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   const { slug } = await params
-  const { categoria, busca } = await searchParams
-  const category = typeof categoria === "string" ? categoria : undefined
-  const search = typeof busca === "string" ? busca : undefined
-
   const store = await shopAt(slug)
 
   // 404 and not an error page: a slug nobody claimed is a page that does not exist, and telling a
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
 
-  const [{ ui }, catalogue] = await Promise.all([getMessages(), catalogueAt(slug, category, search)])
+  const [{ ui }, catalogue] = await Promise.all([
+    getMessages(),
+    // Only what the rail shows. A home that asked for the whole catalogue and sliced it here would
+    // put every product a shop has into the HTML of its most visited address.
+    catalogueAt(slug, { pageSize: RAIL_PAGE_SIZE }),
+  ])
+
+  const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
-  const categoryHref = (next: string | null) =>
-    next ? `/${slug}?categoria=${encodeURIComponent(next)}` : `/${slug}`
-
   return (
-    <StorefrontWindow
-      name={store.name}
+    <StorefrontFrame
+      store={store}
+      categories={catalogue.categories}
+      // The pitch and the cover are the home's alone: an inner page is about the goods, and
+      // repeating the shop's paragraph above them pushes what someone came for below the fold.
       description={store.description}
-      logoUrl={store.logoUrl}
-      homeHref={`/${slug}`}
-      colors={store.colors}
-      searchAction={`/${slug}`}
-      searchValue={search ?? ""}
-      // The open category travels with a search: filtering and then searching should narrow, not
-      // start over.
-      searchHidden={category ? { categoria: category } : undefined}
-      categories={
-        <StorefrontCategories
-          categories={catalogue.categories}
-          active={category ?? null}
-          href={categoryHref}
-          withImages={layout.showCategoryIcons ?? true}
-        />
-      }
-      // Only when the shopkeeper chose the banner layout. A shop that uploaded one and then went
-      // back to the default is not showing it by accident.
-      banner={
-        store.layoutType === "BANNER" && store.bannerImageUrl
-          ? { imageUrl: store.bannerImageUrl }
-          : null
-      }
-      links={storefrontLinksOf(store)}
-      orderHref={orderHrefOf(store)}
-      addressLine={addressLineOf(store)}
+      showBanner
       messages={ui}
     >
-      <StorefrontCatalog
+      {/*
+        The rail carries its own heading and its own "see all", because a scrollable region has to
+        be named after the band it is. Wrapping it in a StorefrontSection would put the same words
+        in a second heading directly above it.
+      */}
+      <StorefrontProductRail
         products={catalogue.products}
-        productHref={(productSlug) => `/${slug}/produtos/${productSlug}`}
-        clearHref={category || search ? `/${slug}` : undefined}
+        productHref={routes.product}
+        seeAllHref={routes.catalog()}
         locale="pt-BR"
-        productsPerRow={layout.productsPerRow ?? 3}
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}
         messages={ui}
       />
-    </StorefrontWindow>
+
+      {/*
+        h2, like the rail's own heading. The shop's name in band 5 is this page's h1 and these two
+        bands are its peers; axe cannot see a broken outline — every heading is valid on its own —
+        so the level is the page's decision and is made here, once.
+      */}
+      {catalogue.categories.length ? (
+        <StorefrontSection
+          title={ui.storefront.categoriesTitle}
+          moreHref={routes.categories()}
+          headingLevel={2}
+          messages={ui}
+        >
+          <StorefrontCategoryGrid
+            categories={catalogue.categories}
+            href={routes.category}
+            catalogHref={routes.catalog()}
+            locale="pt-BR"
+            messages={ui}
+          />
+        </StorefrontSection>
+      ) : null}
+    </StorefrontFrame>
   )
 }
