@@ -12,7 +12,6 @@ import type { FieldErrors } from "react-hook-form"
 import { Button } from "@harness-monorepo/ui/components/button"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -131,11 +130,6 @@ export function StoreSettingsForm({
         <CardHeader>
           <CardTitle>{text.title}</CardTitle>
           <CardDescription>{text.description}</CardDescription>
-          <CardAction>
-            <Button type="submit" disabled={pending}>
-              {pending ? text.saving : text.save}
-            </Button>
-          </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           {error ? (
@@ -254,6 +248,21 @@ export function StoreSettingsForm({
           </Tabs>
         </CardContent>
       </Card>
+
+      {/*
+        The same foot the create form grew, for the same reason: a save button beside the title is
+        beside nothing it saves. The tabs stay — editing is random access, and a shopkeeper who
+        opens the panel to change one colour should not walk through four screens to reach it — but
+        where the decision lives is the same in both, because it is the same decision.
+
+        Outside the Card: `Card` is `overflow-hidden`, and a clipping ancestor turns
+        `position: sticky` into `position: static` with nothing in the DOM to say why.
+      */}
+      <div className="sticky bottom-0 mt-4 flex items-center justify-end gap-3 rounded-lg border border-border bg-card px-6 py-4 shadow-sm">
+        <Button type="submit" disabled={pending}>
+          {pending ? text.saving : text.save}
+        </Button>
+      </div>
     </form>
   )
 }

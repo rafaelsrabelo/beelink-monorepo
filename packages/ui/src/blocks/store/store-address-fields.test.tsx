@@ -42,6 +42,40 @@ describe("StoreAddressFields", () => {
     )
   }
 
+  describe("the map", () => {
+    const TILES = "https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=abc"
+
+    /**
+     * The link between "a key is configured" and "a map is on screen". Everything either side of
+     * it was tested and the map still showed nowhere, because nothing asserted the middle.
+     */
+    it("draws the map as soon as the screen hands it tiles", async () => {
+      renderFields({ mapTileUrl: TILES })
+
+      expect(await screen.findByRole("region", { name: /Mapa/ })).toBeInTheDocument()
+    })
+
+    it("draws none when no tiles were wired up, and the fields still work", () => {
+      renderFields()
+
+      expect(screen.queryByRole("region", { name: /Mapa/ })).not.toBeInTheDocument()
+      expect(screen.getByLabelText("CEP")).toBeInTheDocument()
+    })
+
+    it("shows the country before an address is picked, and the shop once one is", async () => {
+      const { container } = render(
+        <StoreAddressFields
+          value={values}
+          onChange={vi.fn()}
+          mapTileUrl={TILES}
+          point={{ latitude: -3.7436, longitude: -38.4998 }}
+        />,
+      )
+
+      await waitFor(() => expect(container.querySelector(".leaflet-marker-icon")).not.toBeNull())
+    })
+  })
+
   describe("the address box", () => {
     const suggestion = {
       id: "address.1",
