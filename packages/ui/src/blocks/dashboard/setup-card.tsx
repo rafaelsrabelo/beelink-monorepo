@@ -3,7 +3,7 @@ import { ArrowRightIcon, CheckIcon } from "lucide-react"
 
 // UI
 import { Badge } from "@harness-monorepo/ui/components/badge"
-import { Button } from "@harness-monorepo/ui/components/button"
+import { buttonVariants } from "@harness-monorepo/ui/components/button"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -45,16 +45,28 @@ export function SetupCard({
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: SetupCardProps) {
+  /*
+    A link wearing the button's clothes, which is what `buttonVariants` is for and what every other
+    block here does — `store-card` and `store-empty-state` both.
+
+    `<Button render={<a/>}>` was the first attempt and it is wrong twice. Base UI says so out loud:
+    a component that acts as a button expects a real `<button>`, and rendering something else
+    strips the native semantics forms and assistive technology rely on. It is also wrong before any
+    of that: this navigates, so it is a link — it belongs in the tab order as one, opens in a new
+    tab on the middle click, and offers "copy address" on a right click. A button does none of it.
+  */
+  const look = buttonVariants({ variant: done ? "outline" : "default" })
+
   const action = external ? (
-    <Button variant={done ? "outline" : "default"} render={<a href={href} target="_blank" rel="noreferrer" />}>
+    <a href={href} target="_blank" rel="noreferrer" className={look}>
       {actionLabel}
       <ArrowRightIcon aria-hidden="true" className="size-4" />
-    </Button>
+    </a>
   ) : (
-    <Button variant={done ? "outline" : "default"} render={<Link href={href} />}>
+    <Link href={href} className={look}>
       {actionLabel}
       <ArrowRightIcon aria-hidden="true" className="size-4" />
-    </Button>
+    </Link>
   )
 
   return (

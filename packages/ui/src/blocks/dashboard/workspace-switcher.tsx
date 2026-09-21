@@ -109,11 +109,17 @@ export function WorkspaceSwitcher({
             side={isMobile ? "bottom" : "right"}
             align="start"
           >
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {text.switchLabel}
-            </DropdownMenuLabel>
-
+            {/*
+              The label lives INSIDE the group, and that is not a style choice: it renders as Base
+              UI's `Menu.GroupLabel`, which reads the group's context to name it for a screen reader.
+              Outside one it throws at runtime — which is what it did, because this block shipped
+              without a test that opened it.
+            */}
             <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-muted-foreground text-xs">
+                {text.switchLabel}
+              </DropdownMenuLabel>
+
               {workspaces.map((workspace) => (
                 <DropdownMenuItem
                   key={workspace.slug}

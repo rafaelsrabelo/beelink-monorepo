@@ -47,6 +47,20 @@ describe("SetupCard", () => {
     expect(screen.queryByText("Feito")).not.toBeInTheDocument()
   })
 
+  /**
+   * It navigates, so it is a link — in the tab order as one, middle-clickable into a new tab, with
+   * "copy address" on the right click. It was a `<Button render={<a/>}>` for one commit, which Base
+   * UI refuses out loud: a component acting as a button expects a real `<button>`, and anything
+   * else strips the semantics forms and assistive technology lean on.
+   */
+  it("is an anchor and not a button pretending to be one", () => {
+    renderCard()
+
+    const action = screen.getByRole("link", { name: /Cadastrar/ })
+    expect(action.tagName).toBe("A")
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
+  })
+
   /** The shop's own window is not the panel: it opens where a customer would see it. */
   it("opens an outside address in its own tab", () => {
     renderCard({ external: true, href: "https://loja.exemplo/lessari" })

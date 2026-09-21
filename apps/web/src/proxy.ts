@@ -4,13 +4,7 @@ import type { NextRequest } from "next/server"
 
 // App
 import { refreshSession } from "@/lib/refresh-session"
-import {
-  ACCESS_COOKIE,
-  REFRESH_COOKIE,
-  clearSessionCookies,
-  rememberShop,
-  setSessionCookies,
-} from "@/lib/session-cookies"
+import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, setSessionCookies } from "@/lib/session-cookies"
 
 /** Screens a signed-in person has no business seeing. */
 const AUTH_PATHS = ["/login", "/signup", "/verify-email", "/forgot-password", "/reset-password"]
@@ -70,15 +64,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL("/admin", request.url))
   }
 
-  const answer = NextResponse.next()
-
-  // Which shop the panel is inside, written on the way through. The proxy is the only place that
-  // can: a Server Component renders the page and cannot set a cookie on the way out, and a client
-  // effect would write it a beat after the page it is about is already on screen.
-  const shop = pathname.match(/^\/admin\/([^/]+)/)?.[1]
-  if (shop) rememberShop(answer.cookies, shop)
-
-  return answer
+  return NextResponse.next()
 }
 
 export const config = {

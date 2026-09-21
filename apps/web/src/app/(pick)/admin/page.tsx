@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 import { StoreListScreen } from "@/components/store/store-list-screen"
 import { getMessages } from "@/lib/locale"
 import { callApi } from "@/lib/api"
-import { ACCESS_COOKIE, SHOP_COOKIE } from "@/lib/session-cookies"
+import { ACCESS_COOKIE } from "@/lib/session-cookies"
 import { requireUser } from "@/lib/session"
 import { format } from "@/locales"
 
@@ -29,9 +29,8 @@ async function shopsOf(accessToken: string) {
   return (await response.json()) as { slug: string; name: string }[]
 }
 
-export default async function WorkspacePickPage({ searchParams }: PageProps<"/admin">) {
+export default async function WorkspacePickPage() {
   const user = await requireUser()
-  const { switching } = await searchParams
   const jar = await cookies()
   const accessToken = jar.get(ACCESS_COOKIE)?.value ?? ""
 
@@ -40,15 +39,15 @@ export default async function WorkspacePickPage({ searchParams }: PageProps<"/ad
   // Nothing to choose between. A shop has to exist before any of this means anything.
   if (!shops.length) redirect("/create-store")
 
-  if (!switching) {
-    // One shop is not a choice.
-    if (shops.length === 1) redirect(`/admin/${shops[0].slug}`)
+  /*
+    One shop is not a choice, so that one walks through. Anything more stops here.
 
-    // The one they were last in, if they still have it. A hint and never a permission: the page it
-    // sends them to checks ownership itself, so a stale cookie costs a redirect and nothing else.
-    const remembered = jar.get(SHOP_COOKIE)?.value
-    if (remembered && shops.some((shop) => shop.slug === remembered)) redirect(`/admin/${remembered}`)
-  }
+    It used to remember the last shop in a cookie and walk through that too, and that was me
+    over-thinking it: the shop owner asked to CHOOSE on signing in, and a door that opens itself
+    because of what you did yesterday is not a door you chose to walk through. The remembering is
+    gone rather than switched off — a cookie nothing reads is a thing to explain later.
+  */
+  if (shops.length === 1) redirect(`/admin/${shops[0].slug}`)
 
   const { ui, web } = await getMessages()
 
