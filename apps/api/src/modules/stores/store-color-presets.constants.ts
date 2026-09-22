@@ -2,8 +2,19 @@
 import type { StoreColorPreset } from '@harness-monorepo/contracts';
 
 /**
- * The six palettes the legacy shop-settings screen offered, carried over value for value so a shop
- * that had picked one still matches it after the import.
+ * The six palettes the legacy shop-settings screen offered, carried over so a shop that had picked
+ * one still matches it after the import — with one value changed on purpose.
+ *
+ * **Every background is white.** The legacy palettes each tinted the page a wash of their own
+ * brand colour, and the shop owner said the public page should be white. It is the right call for
+ * a second reason the storefront makes plain: `--shop-background` does double duty there. It
+ * paints the page AND it is the colour of every word printed on a coloured surface — the header,
+ * the footer, the price badge, the WhatsApp button. A near-white tint on a coloured button is a
+ * smudge; white is the contrast that was wanted all along, and every story in the design system
+ * was already written with `oklch(1 0 0)`.
+ *
+ * The colour stays a column and stays editable. A shopkeeper who wants a cream page still picks
+ * one — this changes where the palettes start, not what a shop is allowed to be.
  *
  * **A constant and not a table.** Nothing references a preset: applying one writes its four colours
  * onto the shop, and the shop keeps the colours, not the choice. A table would buy a migration, a
@@ -21,31 +32,31 @@ export const STORE_COLOR_PRESETS = [
   {
     id: 'roxo-elegante',
     name: 'Roxo Elegante',
-    colors: { background: '#F8F9FA', primary: '#8B5CF6', text: '#1A202C', header: '#8B5CF6' },
+    colors: { background: '#FFFFFF', primary: '#8B5CF6', text: '#1A202C', header: '#8B5CF6' },
   },
   {
     id: 'azul-profissional',
     name: 'Azul Profissional',
-    colors: { background: '#F0F9FF', primary: '#3B82F6', text: '#1A202C', header: '#3B82F6' },
+    colors: { background: '#FFFFFF', primary: '#3B82F6', text: '#1A202C', header: '#3B82F6' },
   },
   {
     id: 'verde-natureza',
     name: 'Verde Natureza',
-    colors: { background: '#F0FDF4', primary: '#10B981', text: '#1A202C', header: '#10B981' },
+    colors: { background: '#FFFFFF', primary: '#10B981', text: '#1A202C', header: '#10B981' },
   },
   {
     id: 'rosa-moderno',
     name: 'Rosa Moderno',
-    colors: { background: '#FDF2F8', primary: '#EC4899', text: '#1A202C', header: '#EC4899' },
+    colors: { background: '#FFFFFF', primary: '#EC4899', text: '#1A202C', header: '#EC4899' },
   },
   {
     id: 'laranja-energia',
     name: 'Laranja Energia',
-    colors: { background: '#FFF7ED', primary: '#F97316', text: '#1A202C', header: '#F97316' },
+    colors: { background: '#FFFFFF', primary: '#F97316', text: '#1A202C', header: '#F97316' },
   },
   {
     id: 'vermelho-classico',
     name: 'Vermelho Clássico',
-    colors: { background: '#FEF2F2', primary: '#EF4444', text: '#1A202C', header: '#EF4444' },
+    colors: { background: '#FFFFFF', primary: '#EF4444', text: '#1A202C', header: '#EF4444' },
   },
 ] as const satisfies readonly StoreColorPreset[];

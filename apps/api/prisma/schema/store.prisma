@@ -94,7 +94,7 @@ model Store {
   /// Four columns and not a blob: every one is required for the storefront to render, and the legacy
   /// JSON could be missing a key, which is why three separate call sites repeated the same fallback.
   /// The defaults are the legacy platform theme.
-  colorBackground String @default("#F0F9FF") @db.VarChar(9)
+  colorBackground String @default("#FFFFFF") @db.VarChar(9)
   colorPrimary    String @default("#3B7AF7") @db.VarChar(9)
   colorText       String @default("#1A202C") @db.VarChar(9)
   colorHeader     String @default("#3B7AF7") @db.VarChar(9)
