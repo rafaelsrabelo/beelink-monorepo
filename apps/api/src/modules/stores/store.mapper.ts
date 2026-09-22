@@ -71,7 +71,7 @@ export function toPublicStore(row: StoreRow): PublicStore {
     colors: {
       background: row.colorBackground,
       primary: row.colorPrimary,
-      text: row.colorText,
+      footer: row.colorFooter,
       header: row.colorHeader,
     },
     socialNetworks: {

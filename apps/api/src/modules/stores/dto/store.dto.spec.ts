@@ -29,7 +29,7 @@ const updateBody = {
   type: 'ECOMMERCE',
   layoutType: 'DEFAULT',
   showProductsByCategory: false,
-  colors: { background: '#F0F9FF', primary: '#3B7AF7', text: '#1A202C', header: '#3B7AF7' },
+  colors: { background: '#FFFFFF', primary: '#3B7AF7', header: '#3B7AF7', footer: '#3B7AF7' },
   socialNetworks: { whatsapp: '5511999998888' },
   paymentMethods: ['PIX'],
 };

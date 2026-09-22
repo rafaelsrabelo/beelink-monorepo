@@ -169,3 +169,70 @@ Fica uma pergunta em aberto, e ela é de produto: **`primary` e `text` continuam
 `primary` pinta todo botão, todo selo de preço e toda seta; `text` pinta as palavras. Se o painel
 oferecer só três, esses dois passam a ser derivados — e derivar uma cor de marca é uma decisão
 sobre a identidade da loja, não sobre a tela.
+
+---
+
+## Adendo — o contraste responde a pergunta das cores, e apaga o tema dark
+
+> "footer, header, e background, tema dark/light tambem viu se possivel, e se cor de fundo for
+> preto as fonters tem que contratastar"
+
+### Não existe tema dark. Existe um fundo escuro que o dono escolheu
+
+Essas duas frases são a mesma frase. Um tema dark é um fundo preto com letras claras; se a letra
+**deriva** do fundo, escolher preto já é o tema. Dois mecanismos para um resultado seria dois
+lugares para discordarem um do outro — e o primeiro relato seria "escolhi dark e o rodapé ficou
+branco".
+
+Então: **um mecanismo.** O dono escolhe três cores; tudo que é escrito por cima de qualquer uma
+delas é derivado dela.
+
+### Isto conserta um defeito que já existe
+
+`--shop-background` hoje faz dois trabalhos: pinta a página **e** é a cor de toda palavra escrita
+sobre superfície colorida — topo, rodapé, selo de preço, botão do WhatsApp. Funciona enquanto o
+fundo é claro e o topo é colorido. **Escolha preto para os dois e a loja fica preto no preto.**
+
+O acerto é por superfície, não global: cada superfície carrega o primeiro plano derivado **dela**.
+
+```
+--shop-background  +  --shop-on-background
+--shop-header      +  --shop-on-header
+--shop-footer      +  --shop-on-footer
+--shop-primary     +  --shop-on-primary
+```
+
+Cada `--shop-on-*` é branco ou preto, escolhido pela luminância relativa da superfície — a fórmula
+da WCAG, que é aritmética e não gosto. Calculado onde as variáveis já são escritas, em
+`storefront-window.tsx`, para estar no HTML na primeira pintura: a vitrine é pré-renderizada, e uma
+cor decidida depois da hidratação é um flash de texto ilegível em toda visita.
+
+Nada de `#hex` nisso: os dois extremos são `oklch(0 0 0)` e `oklch(1 0 0)`, que é o que as
+histórias deste pacote já usam, e o portão `web/no-hex-colors` continua em zero absoluto.
+
+### As cores, decididas
+
+| Cor | Quem decide |
+|---|---|
+| `background` | o dono |
+| `header` | o dono |
+| `footer` | **nova**, o dono. Default igual ao `header`, para nenhuma loja mudar de aparência |
+| `primary` | o dono. É a cor da marca — botão, preço, seta — e derivar isso seria o produto escolhendo a identidade da loja |
+| `text` | **derivado.** Deixa de ser escolha: é o primeiro plano do fundo |
+
+São quatro escolhas, não três, e a diferença é deliberada: `primary` é marca, `text` é legibilidade.
+
+### Product Grid e Category Grid são dois blocos, e nenhum é obrigatório
+
+> "hoje a pagina feed so tem todas os produtos sem opcao de tambem trazer toads as categorias, ou
+> somente um ou outro"
+
+`PRODUCTS` e `CATEGORIES` viram dois tipos independentes. A página inicial pode ter os dois, um, ou
+nenhum — é a lista que decide, como qualquer outro bloco. `storefront-category-grid.tsx` já está
+escrito e sem nenhum importador; ligá-lo é o trabalho.
+
+### Testimonials, Countdown e Newsletter ficam fora
+
+O dono confirmou que os três não existem ainda. Eles entram um por vez, inteiros, e cada um carrega
+a pergunta que o adendo anterior nomeou — o relógio contra o cache, o iframe na página indexada, e
+o fato de que newsletter é funcionalidade e não bloco.

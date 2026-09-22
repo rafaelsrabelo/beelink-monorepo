@@ -60,7 +60,7 @@ export class StoresService {
             ? {
                 colorBackground: dto.colors.background,
                 colorPrimary: dto.colors.primary,
-                colorText: dto.colors.text,
+                colorFooter: dto.colors.footer,
                 colorHeader: dto.colors.header,
               }
             : {}),
@@ -131,7 +131,7 @@ export class StoresService {
         showProductsByCategory: dto.showProductsByCategory,
         colorBackground: dto.colors.background,
         colorPrimary: dto.colors.primary,
-        colorText: dto.colors.text,
+        colorFooter: dto.colors.footer,
         colorHeader: dto.colors.header,
         whatsappPhone: dto.socialNetworks.whatsapp,
         instagram: dto.socialNetworks.instagram ?? null,

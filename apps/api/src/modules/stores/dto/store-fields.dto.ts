@@ -58,7 +58,7 @@ const upperCase = Transform(({ value }: { value: unknown }) =>
 const HANDLE = /^[A-Za-z0-9._-]+$/;
 
 export class StoreColorsDto implements StoreColors {
-  @ApiProperty({ example: '#F0F9FF', pattern: HEX_COLOR.source })
+  @ApiProperty({ example: '#FFFFFF', pattern: HEX_COLOR.source })
   @Matches(HEX_COLOR)
   background!: string;
 
@@ -66,13 +66,17 @@ export class StoreColorsDto implements StoreColors {
   @Matches(HEX_COLOR)
   primary!: string;
 
-  @ApiProperty({ example: '#1A202C', pattern: HEX_COLOR.source })
-  @Matches(HEX_COLOR)
-  text!: string;
-
   @ApiProperty({ example: '#3B7AF7', pattern: HEX_COLOR.source })
   @Matches(HEX_COLOR)
   header!: string;
+
+  @ApiProperty({
+    example: '#3B7AF7',
+    pattern: HEX_COLOR.source,
+    description: "The foot. There is no text colour: every word is derived from what it sits on.",
+  })
+  @Matches(HEX_COLOR)
+  footer!: string;
 }
 
 export class StoreSocialNetworksDto implements StoreSocialNetworksPayload {

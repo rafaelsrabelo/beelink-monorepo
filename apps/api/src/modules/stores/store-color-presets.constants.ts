@@ -32,31 +32,31 @@ export const STORE_COLOR_PRESETS = [
   {
     id: 'roxo-elegante',
     name: 'Roxo Elegante',
-    colors: { background: '#FFFFFF', primary: '#8B5CF6', text: '#1A202C', header: '#8B5CF6' },
+    colors: { background: '#FFFFFF', primary: '#8B5CF6', header: '#8B5CF6', footer: '#8B5CF6' },
   },
   {
     id: 'azul-profissional',
     name: 'Azul Profissional',
-    colors: { background: '#FFFFFF', primary: '#3B82F6', text: '#1A202C', header: '#3B82F6' },
+    colors: { background: '#FFFFFF', primary: '#3B82F6', header: '#3B82F6', footer: '#3B82F6' },
   },
   {
     id: 'verde-natureza',
     name: 'Verde Natureza',
-    colors: { background: '#FFFFFF', primary: '#10B981', text: '#1A202C', header: '#10B981' },
+    colors: { background: '#FFFFFF', primary: '#10B981', header: '#10B981', footer: '#10B981' },
   },
   {
     id: 'rosa-moderno',
     name: 'Rosa Moderno',
-    colors: { background: '#FFFFFF', primary: '#EC4899', text: '#1A202C', header: '#EC4899' },
+    colors: { background: '#FFFFFF', primary: '#EC4899', header: '#EC4899', footer: '#EC4899' },
   },
   {
     id: 'laranja-energia',
     name: 'Laranja Energia',
-    colors: { background: '#FFFFFF', primary: '#F97316', text: '#1A202C', header: '#F97316' },
+    colors: { background: '#FFFFFF', primary: '#F97316', header: '#F97316', footer: '#F97316' },
   },
   {
     id: 'vermelho-classico',
     name: 'Vermelho Clássico',
-    colors: { background: '#FFFFFF', primary: '#EF4444', text: '#1A202C', header: '#EF4444' },
+    colors: { background: '#FFFFFF', primary: '#EF4444', header: '#EF4444', footer: '#EF4444' },
   },
 ] as const satisfies readonly StoreColorPreset[];

@@ -573,7 +573,7 @@ export const en: UiMessages = {
       colorPickerSuffix: "colour picker",
       backgroundLabel: "Background colour",
       primaryLabel: "Primary colour",
-      textLabel: "Text colour",
+      footerLabel: "Footer colour",
       headerLabel: "Header colour",
       previewLabel: "Colour preview",
       previewSample: "This is how your shop looks to a customer",

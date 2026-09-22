@@ -573,7 +573,7 @@ export const ptBR: UiMessages = {
       colorPickerSuffix: "seletor de cor",
       backgroundLabel: "Cor de fundo",
       primaryLabel: "Cor principal",
-      textLabel: "Cor do texto",
+      footerLabel: "Cor do rodapé",
       headerLabel: "Cor do topo",
       previewLabel: "Prévia das cores",
       previewSample: "Assim a sua loja aparece para o cliente",

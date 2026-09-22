@@ -96,8 +96,11 @@ model Store {
   /// The defaults are the legacy platform theme.
   colorBackground String @default("#FFFFFF") @db.VarChar(9)
   colorPrimary    String @default("#3B7AF7") @db.VarChar(9)
-  colorText       String @default("#1A202C") @db.VarChar(9)
   colorHeader     String @default("#3B7AF7") @db.VarChar(9)
+  /// The foot, which used to borrow the top's colour. There is no `colorText`: every word written
+  /// on a surface is derived from that surface, so a black page gets white words without anyone
+  /// choosing them — and a black page under a black top is no longer black on black.
+  colorFooter     String @default("#3B7AF7") @db.VarChar(9)
 
   /// Digits only, country code included, no `+` — `wa.me/<this>` is built from it. Nullable for shops
   /// carried over without one; the API requires it on create and on update, as the legacy panel did.

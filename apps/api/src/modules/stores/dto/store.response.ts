@@ -26,7 +26,7 @@ import { PAYMENT_METHODS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.cons
 export class StoreColorsResponse implements StoreColors {
   @ApiProperty({ example: '#F0F9FF' }) background!: string;
   @ApiProperty({ example: '#3B7AF7' }) primary!: string;
-  @ApiProperty({ example: '#1A202C' }) text!: string;
+  @ApiProperty({ example: '#1A202C' }) footer!: string;
   @ApiProperty({ example: '#3B7AF7' }) header!: string;
 }
 

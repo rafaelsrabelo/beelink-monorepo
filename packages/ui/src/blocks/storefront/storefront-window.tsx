@@ -7,6 +7,7 @@ import { ShoppingBagIcon, UserRoundIcon } from "lucide-react"
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { readableOn } from "@harness-monorepo/ui/lib/contrast"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
@@ -24,8 +25,9 @@ import { StorefrontSearch } from "./storefront-search"
 export interface StorefrontColors {
   background: string
   primary: string
-  text: string
   header: string
+  /** The foot, which used to borrow the header's. There is no `text`: it is derived per surface. */
+  footer: string
 }
 
 export type StorefrontNetwork = "whatsapp" | "instagram" | "tiktok" | "youtube" | "spotify"
@@ -228,13 +230,35 @@ export function StorefrontWindow({
 }: StorefrontWindowProps) {
   const text = messages.storefront
 
+  /*
+    Four surfaces the shopkeeper chose, and one readable foreground derived from each.
+
+    Per surface and not one global ink, which is the defect this replaces: `--shop-background` used
+    to paint the page AND colour every word printed on a coloured surface. That holds only while
+    the page is pale and the top is not — choose black for both and the shop is black on black.
+
+    Computed here, where the variables are already written, so it is in the HTML on the first
+    paint. The shop window is prerendered; a colour decided after hydration is a flash of
+    unreadable text on every visit.
+
+    `--shop-text` survives as a name because it is also a *surface* — the announcement strip, the
+    logo chip and the poster's gradient are all drawn in it — and it is exactly the page's ink, so
+    the two are one value rather than two that can disagree.
+  */
+  const ink = readableOn(colors.background)
   const dressed = {
     "--shop-background": colors.background,
+    "--shop-on-background": ink,
     "--shop-primary": colors.primary,
-    "--shop-text": colors.text,
+    "--shop-on-primary": readableOn(colors.primary),
     "--shop-header": colors.header,
+    "--shop-on-header": readableOn(colors.header),
+    "--shop-footer": colors.footer,
+    "--shop-on-footer": readableOn(colors.footer),
+    "--shop-text": ink,
+    "--shop-on-text": colors.background,
     backgroundColor: "var(--shop-background)",
-    color: "var(--shop-text)",
+    color: "var(--shop-on-background)",
   } as CSSProperties
 
   return (
@@ -243,7 +267,7 @@ export function StorefrontWindow({
       {announcement ? (
         <div
           className="w-full text-[11px] font-medium tracking-wide uppercase"
-          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-background)" }}
+          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-on-text)" }}
         >
           <div className={cn(BAND, "flex h-8 items-center justify-center gap-6 sm:justify-between")}>
             <p>{announcement.left}</p>
@@ -269,7 +293,7 @@ export function StorefrontWindow({
       */}
       <header
         className="sticky top-0 z-30 w-full"
-        style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-background)" }}
+        style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-on-header)" }}
       >
         <div className={cn(BAND, "flex h-16 items-center gap-3 sm:gap-6")}>
           {/*
@@ -310,7 +334,7 @@ export function StorefrontWindow({
                 {cartCount ? (
                   <span
                     className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px] font-semibold"
-                    style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
+                    style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
                   >
                     {cartCount}
                   </span>
@@ -323,7 +347,7 @@ export function StorefrontWindow({
         {categories ? (
           <div
             className="w-full border-t"
-            style={{ borderColor: "color-mix(in oklab, var(--shop-background) 18%, transparent)" }}
+            style={{ borderColor: "color-mix(in oklab, var(--shop-on-header) 18%, transparent)" }}
           >
             <div className={BAND}>{categories}</div>
           </div>
@@ -379,7 +403,7 @@ export function StorefrontWindow({
                 rel="noreferrer"
                 target="_blank"
                 className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-medium"
-                style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
+                style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
               >
                 <WhatsAppIcon className="size-5" />
                 {text.order}
@@ -405,7 +429,7 @@ export function StorefrontWindow({
         what "Produtos" links to would be a block holding the route word this whole scheme exists
         to keep out of components.
       */}
-      <footer className="w-full" style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-background)" }}>
+      <footer className="w-full" style={{ backgroundColor: "var(--shop-footer)", color: "var(--shop-on-footer)" }}>
         <div className={cn(BAND, "flex flex-col gap-10 py-12 sm:flex-row sm:justify-between")}>
           <div className="flex max-w-xs flex-col gap-4">
             {/* Same rule as the masthead: the logo replaces the name, and says it. */}
@@ -463,7 +487,7 @@ export function StorefrontWindow({
         {copyright ? (
           <div
             className="w-full border-t"
-            style={{ borderColor: "color-mix(in oklab, var(--shop-background) 15%, transparent)" }}
+            style={{ borderColor: "color-mix(in oklab, var(--shop-on-footer) 15%, transparent)" }}
           >
             <div className={cn(BAND, "py-5 text-xs opacity-60")}>{copyright}</div>
           </div>

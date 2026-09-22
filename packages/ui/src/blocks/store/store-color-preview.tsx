@@ -6,6 +6,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { readableOn } from "@harness-monorepo/ui/lib/contrast"
 import type { StoreColors } from "./store-types"
 
 export interface StoreColorPreviewProps {
@@ -34,8 +35,9 @@ export function StoreColorPreview({ colors, messages = defaultMessages }: StoreC
         {
           "--store-background": colors.background,
           "--store-primary": colors.primary,
-          "--store-text": colors.text,
+          "--store-text": readableOn(colors.background),
           "--store-header": colors.header,
+          "--store-footer": colors.footer,
         } as CSSProperties
       }
     >

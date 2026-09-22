@@ -86,7 +86,7 @@ export function createStoreColorsSchema(messages: ValidationMessages) {
   return z.object({
     background: colorField(messages),
     primary: colorField(messages),
-    text: colorField(messages),
+    footer: colorField(messages),
     header: colorField(messages),
   })
 }

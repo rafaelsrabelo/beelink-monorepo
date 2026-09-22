@@ -28,7 +28,7 @@ const UPDATE = {
   type: "ECOMMERCE",
   layoutType: "DEFAULT",
   showProductsByCategory: false,
-  colors: { background: "", primary: "", text: "", header: "" },
+  colors: { background: "", primary: "", header: "", footer: "" },
   socialNetworks: { whatsapp: "5511999998888" },
   paymentMethods: ["PIX"],
 } satisfies UpdateStorePayload

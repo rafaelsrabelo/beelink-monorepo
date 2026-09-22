@@ -29,10 +29,16 @@ export type PaymentMethod = "MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
  * as CSS custom properties on its root, so no component holds a literal colour.
  */
 export interface StoreColors {
+  /** The page. Every word written on it is derived from it — see `lib/contrast.ts`. */
   background: string;
+  /** The brand: the buttons, the price badges, the arrows. Chosen, never derived. */
   primary: string;
-  text: string;
   header: string;
+  /**
+   * The foot. It used to borrow the header's colour, and a shop that wanted a dark foot under a
+   * coloured top had no way to say so.
+   */
+  footer: string;
 }
 
 /** Every handle the storefront links to. Absent means the link is not rendered. */

@@ -7,6 +7,7 @@ import { en } from "../../locales/en"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
+import { readableOn } from "../../lib/contrast"
 import { StoreColorPreview } from "./store-color-preview"
 import { sampleStoreColors } from "./store.fixtures"
 
@@ -17,7 +18,9 @@ describe("StoreColorPreview", () => {
     const preview = screen.getByRole("img", { name: "Prévia das cores" })
     expect(preview.style.getPropertyValue("--store-background")).toBe(sampleStoreColors.background)
     expect(preview.style.getPropertyValue("--store-primary")).toBe(sampleStoreColors.primary)
-    expect(preview.style.getPropertyValue("--store-text")).toBe(sampleStoreColors.text)
+    // Derived, not chosen: the swatch has to use the same rule the shop window does, or it
+    // flatters a choice the live page would have refused.
+    expect(preview.style.getPropertyValue("--store-text")).toBe(readableOn(sampleStoreColors.background))
     expect(preview.style.getPropertyValue("--store-header")).toBe(sampleStoreColors.header)
   })
 

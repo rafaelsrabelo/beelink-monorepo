@@ -20,7 +20,7 @@ const STORE: Store = {
   sections: [],
   layoutType: "DEFAULT",
   showProductsByCategory: false,
-  colors: { background: "", primary: "", text: "", header: "" },
+  colors: { background: "", primary: "", header: "", footer: "" },
   socialNetworks: { whatsapp: null, instagram: null, tiktok: null, spotify: null, youtube: null },
   layoutSettings: { showBanner: true, productsPerRow: 3 },
   paymentMethods: ["MONEY", "PIX"],

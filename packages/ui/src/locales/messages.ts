@@ -753,7 +753,8 @@ export interface UiMessages {
       colorPickerSuffix: string
       backgroundLabel: string
       primaryLabel: string
-      textLabel: string
+      /** The foot. There is no ink label: the ink is derived from what it sits on. */
+      footerLabel: string
       headerLabel: string
       previewLabel: string
       previewSample: string

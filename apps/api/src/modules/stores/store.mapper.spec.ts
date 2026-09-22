@@ -30,7 +30,7 @@ const row = {
   routeVocabulary: 'PT_BR',
   colorBackground: '#F0F9FF',
   colorPrimary: '#3B7AF7',
-  colorText: '#1A202C',
+  colorFooter: '#3B7AF7',
   colorHeader: '#3B7AF7',
   whatsappPhone: '5511999998888',
   instagram: 'minhaloja',
@@ -57,7 +57,7 @@ describe('toStore', () => {
     expect(toStore(row).colors).toEqual({
       background: '#F0F9FF',
       primary: '#3B7AF7',
-      text: '#1A202C',
+      footer: '#3B7AF7',
       header: '#3B7AF7',
     });
   });

@@ -38,8 +38,9 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
 export interface StoreColors {
   background: string
   primary: string
-  text: string
   header: string
+  /** The foot, which used to borrow the header's. There is no `text`: it is derived per surface. */
+  footer: string
 }
 
 /** A shop as the shopkeeper's list of shops shows it. */

@@ -126,7 +126,7 @@ export function StorefrontShowcase({
 
                 <div
                   className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5"
-                  style={{ color: "var(--shop-background)" }}
+                  style={{ color: "var(--shop-on-text)" }}
                 >
                   <div className="flex min-w-0 flex-col gap-1">
                     <p
