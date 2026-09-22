@@ -285,6 +285,9 @@ export interface UiMessages {
     emptyHint: string
     /** The grip. It names the banner, because a list of "drag" tells a screen reader nothing. */
     dragHandle: string
+    /** The product bands, as a row in the arrangement. It is dragged like a poster. */
+    productList: string
+    productListHint: string
     sizeLabel: string
     sizeFull: string
     sizeHalves: string

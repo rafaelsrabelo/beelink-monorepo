@@ -196,6 +196,8 @@ export const ptBR: UiMessages = {
     empty: "Nenhum banner para arrumar.",
     emptyHint: "Crie um banner primeiro e ele aparece aqui.",
     dragHandle: "Arrastar",
+    productList: "Lista de produtos",
+    productListHint: "Arraste para mudar o que vem antes dela.",
     sizeLabel: "Tamanho",
     sizeFull: "Cheio",
     sizeHalves: "Metade",

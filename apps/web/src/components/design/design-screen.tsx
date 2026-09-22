@@ -9,6 +9,7 @@ import type { Banner, PublicProductCard, PublicProductCategory, PublicStore } fr
 // UI
 import {
   BannerArrangement,
+  PRODUCTS_ROW_ID,
   type ArrangementLayout,
 } from "@harness-monorepo/ui/blocks/design/banner-arrangement"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
@@ -44,6 +45,7 @@ interface Draft {
   imageUrl: string
   layout: ArrangementLayout
   isActive: boolean
+  belowProducts: boolean
 }
 
 /** An anchor with no `href` navigates nowhere and takes no tab stop. */
@@ -58,6 +60,7 @@ function toDraft(banner: Banner): Draft {
     imageUrl: banner.imageUrl,
     layout: banner.layout,
     isActive: banner.isActive,
+    belowProducts: banner.belowProducts,
   }
 }
 
@@ -122,20 +125,25 @@ export function DesignScreen({ store, categories, products, year, messages }: De
     return undefined
   }
 
-  const showcases = rows
-    .filter((row) => row.isActive)
-    .map((row) => {
-      const banner = byId.get(row.id)
+  function showcasesOf(side: readonly Draft[]) {
+    return side
+      .filter((row) => row.isActive)
+      .map((row) => {
+        const banner = byId.get(row.id)
 
-      return {
-        id: row.id,
-        title: row.title,
-        subtitle: banner?.subtitle ?? null,
-        imageUrl: row.imageUrl,
-        layout: row.layout,
-        ...(banner ? { href: hrefOf(banner), external: banner.target === "EXTERNAL" } : {}),
-      }
-    })
+        return {
+          id: row.id,
+          title: row.title,
+          subtitle: banner?.subtitle ?? null,
+          imageUrl: row.imageUrl,
+          layout: row.layout,
+          ...(banner ? { href: hrefOf(banner), external: banner.target === "EXTERNAL" } : {}),
+        }
+      })
+  }
+
+  const above = rows.filter((row) => !row.belowProducts)
+  const below = rows.filter((row) => row.belowProducts)
 
   function edit(next: Draft[]) {
     setDraft(next)
@@ -157,17 +165,29 @@ export function DesignScreen({ store, categories, products, year, messages }: De
     const ids = rows.map((row) => row.id)
     const orderChanged = banners.data.some((banner, at) => banner.id !== ids[at])
 
-    // One patch per banner whose size or visibility moved, and none for the ones that did not:
-    // a write per row would touch `updatedAt` on posters nobody edited.
+    // One patch per banner whose size, visibility or side moved, and none for the ones that did
+    // not: a write per row would touch `updatedAt` on posters nobody edited.
     const changed = rows.filter((row) => {
       const saved = byId.get(row.id)
-      return saved && (saved.layout !== row.layout || saved.isActive !== row.isActive)
+      return (
+        saved &&
+        (saved.layout !== row.layout ||
+          saved.isActive !== row.isActive ||
+          saved.belowProducts !== row.belowProducts)
+      )
     })
 
     Promise.all([
       ...(orderChanged ? [reorder.mutateAsync(ids)] : []),
       ...changed.map((row) =>
-        update.mutateAsync({ bannerId: row.id, payload: { layout: row.layout, isActive: row.isActive } }),
+        update.mutateAsync({
+          bannerId: row.id,
+          payload: {
+            layout: row.layout,
+            isActive: row.isActive,
+            belowProducts: row.belowProducts,
+          },
+        }),
       ),
     ])
       .then(() => {
@@ -228,7 +248,7 @@ export function DesignScreen({ store, categories, products, year, messages }: De
               linkComponent={InertLink}
               messages={messages}
             >
-              <StorefrontShowcase items={showcases} linkComponent={InertLink} />
+              <StorefrontShowcase items={showcasesOf(above)} linkComponent={InertLink} />
               <StorefrontProductRail
                 products={products}
                 productHref={routes.product}
@@ -238,6 +258,7 @@ export function DesignScreen({ store, categories, products, year, messages }: De
                 linkComponent={InertLink}
                 messages={messages}
               />
+              <StorefrontShowcase items={showcasesOf(below)} linkComponent={InertLink} />
             </StorefrontFrame>
           </DesignPreview>
         </div>
@@ -251,8 +272,24 @@ export function DesignScreen({ store, categories, products, year, messages }: De
             </>
           ) : (
             <BannerArrangement
-              items={rows}
-              onReorder={(ids) => edit(ids.map((id) => rows.find((row) => row.id === id)).filter((row) => !!row))}
+              items={above}
+              itemsBelow={below}
+              // The products' own id is in this list, and where it landed is the answer: everything
+              // before it is above the bands, everything after is under them. The same drop that
+              // reorders is the drop that changes a side, so there is no second gesture to learn.
+              onReorder={(ids) => {
+                const at = ids.indexOf(PRODUCTS_ROW_ID)
+
+                edit(
+                  ids
+                    .filter((id) => id !== PRODUCTS_ROW_ID)
+                    .map((id, position) => {
+                      const row = rows.find((candidate) => candidate.id === id)
+                      return row ? { ...row, belowProducts: position >= at } : null
+                    })
+                    .filter((row) => !!row),
+                )
+              }}
               onToggle={(id, isActive) =>
                 edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
               }

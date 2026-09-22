@@ -62,6 +62,7 @@ export class BannersService {
         ...target,
         position: (last._max.position ?? -1) + 1,
         isActive: dto.isActive ?? true,
+        belowProducts: dto.belowProducts ?? false,
       },
       include: bannerInclude,
     });
@@ -100,6 +101,7 @@ export class BannersService {
         ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
         ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        ...(dto.belowProducts !== undefined ? { belowProducts: dto.belowProducts } : {}),
         // Spreading null adds nothing, so the four destination columns are simply left alone.
         ...target,
       },

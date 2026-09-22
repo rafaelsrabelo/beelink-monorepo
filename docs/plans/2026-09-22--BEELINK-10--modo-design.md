@@ -160,3 +160,49 @@ tarefa própria, não um ajuste desta.
 Entrou no lugar um botão **Descartar**, que já tinha chave no dicionário e não tinha botão: sem
 ele, a única saída de um rascunho não publicado era recarregar a página — exatamente o gesto que o
 aviso de saída existe para desencorajar.
+
+---
+
+## Adendo, 2026-09-22 — o painel deixa de ser centralizado, e um banner pode ficar sob os produtos
+
+Dois pedidos do dono, depois de ver a tela funcionando.
+
+### O painel inteiro preenchia mil pixels e deixava o resto vazio
+
+`admin-shell.tsx` prendia todo conteúdo em `max-w-[62.375rem]` com `mx-auto`. Numa janela de
+1800px isso são 998px de tela usada e 740px de nada — e no modo design, que tem preview à esquerda
+e editor à direita, é onde mais dói: a superfície da loja saía em `scale(0.414)`.
+
+O teto saiu do shell. Ele cuida do chrome; **a medida é assunto de cada tela** — uma tabela quer a
+coluna inteira, um formulário quer um comprimento de linha que alguém consiga ler. As duas telas
+que eram formulário sem medida própria (configurações da loja e editor de produto) ganharam
+`max-w-5xl` **sem** `mx-auto`: alinhado à esquerda, não centralizado, que era a queixa.
+
+Medido depois: a superfície do preview passou de `scale(0.414)` para `scale(0.898)`.
+
+### Um banner pode ficar abaixo da lista de produtos
+
+O arranjo só ordenava banners entre si. Agora `StoreBanner.belowProducts` diz de que lado da faixa
+de produtos o cartaz mora, e a vitrine desenha duas faixas de cartazes com os trilhos no meio.
+
+**Um lado e não um índice.** A landing tem exatamente uma corrida de produtos, então "onde fica
+este cartaz" é um sim-ou-não, e `position` já ordena cada lado. Um índice teria de ser guardado
+fora do banner — na loja — e aí duas linhas podem discordar sobre onde os produtos estão. Um
+booleano com default `false` também é a página de hoje escrita por extenso: a faixa de cartazes
+sempre veio antes dos trilhos, então nenhuma loja existente muda de aparência.
+
+Custo zero de endpoint: o `PUT` de banner que já existia carrega o campo, e o publish já mandava
+um patch por banner alterado.
+
+**A lista de produtos virou uma linha do arranjo**, com `PRODUCTS_ROW_ID`, arrastável como
+qualquer cartaz — e não uma divisória desenhada entre duas listas. Divisória é coisa que se
+empurra cartaz a cartaz; como linha, arrastá-la uma vez põe todos os cartazes embaixo. Ela não tem
+olho nem tamanho: uma loja sem os produtos não é um arranjo que alguém queira, e "que largura" é
+pergunta sobre cartaz. O `onReorder` devolve a lista inteira com esse id no lugar em que caiu, e a
+tela lê o lado de cada banner a partir dele.
+
+### Fora deste adendo
+
+- **Arrastar dentro do preview.** Pedido junto com os dois acima. A superfície está sob
+  `transform: scale()`, e o dnd-kit translada o elemento no espaço escalado dele — o bloco anda
+  mais devagar que o dedo. Tem conserto, e é o próximo passo.

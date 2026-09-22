@@ -82,7 +82,13 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
     href: banner.href,
     external: banner.external,
     layout: banner.layout,
+    belowProducts: banner.belowProducts,
   }))
+
+  // Two bands, one on each side of the products. A poster that is neither is not possible: the
+  // page has exactly one run of products, so a banner is above it or under it and nothing else.
+  const above = showcases.filter((banner) => !banner.belowProducts)
+  const below = showcases.filter((banner) => banner.belowProducts)
 
   return (
     <StorefrontFrame
@@ -109,7 +115,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
         here is their arrangement and not ours. A category with no shape stays off this band and is
         still in the menu, in the rails below and at its own address.
       */}
-      <StorefrontShowcase items={showcases} />
+      <StorefrontShowcase items={above} />
       {/*
         The bands, in the shopkeeper's own order — they know what they want to sell first. A band
         with nothing available in it draws nothing: the rail returns null on an empty list, so a
@@ -146,6 +152,8 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
           />
         ),
       )}
+      {/* And the posters the shopkeeper dragged under the products. */}
+      <StorefrontShowcase items={below} />
     </StorefrontFrame>
   )
 }

@@ -70,6 +70,10 @@ model StoreBanner {
 
   /// The order the shopkeeper chose. Ties break on title so the page is never arbitrary.
   position Int     @default(0)
+
+  /// Under the product bands rather than above them. See the contract's note: a side, not an index.
+  belowProducts Boolean @default(false)
+
   /// Hiding a banner keeps it. It is not a delete, and the picture is not re-uploaded to undo it.
   isActive Boolean @default(true)
 
@@ -77,6 +81,6 @@ model StoreBanner {
   updatedAt DateTime @updatedAt
 
   /// The storefront's read, in one index scan.
-  @@index([storeId, isActive, position])
+  @@index([storeId, isActive, belowProducts, position])
   @@map("store_banners")
 }

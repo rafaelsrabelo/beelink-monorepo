@@ -196,6 +196,8 @@ export const en: UiMessages = {
     empty: "No banners to arrange.",
     emptyHint: "Make a banner first and it shows up here.",
     dragHandle: "Drag",
+    productList: "Product list",
+    productListHint: "Drag it to change what comes before it.",
     sizeLabel: "Size",
     sizeFull: "Full",
     sizeHalves: "Half",

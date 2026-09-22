@@ -22,7 +22,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { EyeIcon, EyeOffIcon, GripVerticalIcon } from "lucide-react"
+import { EyeIcon, EyeOffIcon, GripVerticalIcon, LayoutGridIcon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
@@ -35,6 +35,19 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 export type ArrangementLayout = "FULL" | "HALVES" | "THIRDS"
 
+/**
+ * The product bands, as a row in the same list.
+ *
+ * They are one row and not a boundary drawn between two lists, because a boundary is a thing you
+ * push banners past one at a time. As a row it is dragged itself: moving it up once puts every
+ * poster under it. It is the only id in this list that is not a banner's, and the screen reads it
+ * back to decide which side each banner landed on.
+ */
+export const PRODUCTS_ROW_ID = "__products__"
+
+/** The products as a list entry. Only its id is ever read; it carries no banner's fields. */
+const PRODUCTS_ROW = { id: PRODUCTS_ROW_ID } as const
+
 export interface ArrangementItem {
   id: string
   title: string
@@ -44,8 +57,15 @@ export interface ArrangementItem {
 }
 
 export interface BannerArrangementProps {
+  /** The posters above the product bands, in order. */
   items: readonly ArrangementItem[]
-  /** The whole list in its new order. The API accepts nothing less, so neither does this. */
+  /** The posters below them, in order. */
+  itemsBelow?: readonly ArrangementItem[]
+  /**
+   * The whole list in its new order, `PRODUCTS_ROW_ID` included and in its place — which is what
+   * says where the products ended up. The API accepts nothing less than every banner, so neither
+   * does this.
+   */
   onReorder: (ids: string[]) => void
   onToggle: (id: string, isActive: boolean) => void
   onLayoutChange: (id: string, layout: ArrangementLayout) => void
@@ -67,6 +87,7 @@ export interface BannerArrangementProps {
  */
 export function BannerArrangement({
   items,
+  itemsBelow = [],
   onReorder,
   onToggle,
   onLayoutChange,
@@ -74,6 +95,14 @@ export function BannerArrangement({
 }: BannerArrangementProps) {
   const text = messages.design
   const context = useId()
+
+  // One list, with the products in it. Every id the sortable context knows lives here, in the
+  // order the landing page draws them.
+  const rows: readonly (ArrangementItem | { id: typeof PRODUCTS_ROW_ID })[] = [
+    ...items,
+    PRODUCTS_ROW,
+    ...itemsBelow,
+  ]
 
   const sensors = useSensors(
     // A small distance before a drag starts, so a click on the eye or the size select is a click.
@@ -97,11 +126,14 @@ export function BannerArrangement({
   }
 
   function indexOf(id: string | number) {
-    return items.findIndex((item) => item.id === id)
+    return rows.findIndex((row) => row.id === id)
   }
 
   function nameOf(id: string | number) {
-    return items[indexOf(id)]?.title ?? ""
+    const row = rows[indexOf(id)]
+    if (!row) return ""
+
+    return "title" in row ? row.title : text.productList
   }
 
   function handleEnd(event: DragEndEvent) {
@@ -112,14 +144,14 @@ export function BannerArrangement({
     const to = indexOf(over.id)
     if (from < 0 || to < 0) return
 
-    const ids = items.map((item) => item.id)
+    const ids = rows.map((row) => row.id)
     const [moved] = ids.splice(from, 1)
     if (moved) ids.splice(to, 0, moved)
 
     onReorder(ids)
   }
 
-  if (!items.length) {
+  if (!items.length && !itemsBelow.length) {
     return (
       <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed py-10 text-center">
         <p className="font-medium">{text.empty}</p>
@@ -139,20 +171,67 @@ export function BannerArrangement({
       accessibility={{ announcements }}
       onDragEnd={handleEnd}
     >
-      <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={rows.map((row) => row.id)} strategy={verticalListSortingStrategy}>
         <ul className="flex flex-col gap-2">
-          {items.map((item) => (
-            <ArrangementRow
-              key={item.id}
-              item={item}
-              onToggle={onToggle}
-              onLayoutChange={onLayoutChange}
-              messages={messages}
-            />
-          ))}
+          {rows.map((row) =>
+            "title" in row ? (
+              <ArrangementRow
+                key={row.id}
+                item={row}
+                onToggle={onToggle}
+                onLayoutChange={onLayoutChange}
+                messages={messages}
+              />
+            ) : (
+              <ProductsRow key={row.id} messages={messages} />
+            ),
+          )}
         </ul>
       </SortableContext>
     </DndContext>
+  )
+}
+
+/**
+ * The product bands, as a row that is dragged like any other.
+ *
+ * It has no eye and no size select: a shop's landing page without its products is not an
+ * arrangement anyone wants, and "how wide" is a question about a poster, not about a rail.
+ */
+function ProductsRow({ messages }: { messages: UiMessages }) {
+  const text = messages.design
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: PRODUCTS_ROW_ID,
+  })
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn(
+        "border-primary/40 bg-primary/5 flex items-center gap-2 rounded-xl border border-dashed p-2",
+        isDragging && "z-10 opacity-80 shadow-md",
+      )}
+    >
+      <button
+        type="button"
+        aria-label={`${text.dragHandle}: ${text.productList}`}
+        className="text-muted-foreground hover:text-foreground cursor-grab touch-none rounded-md p-1"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVerticalIcon aria-hidden="true" className="size-4" />
+      </button>
+
+      <span className="bg-primary/10 text-primary flex h-9 w-14 shrink-0 items-center justify-center rounded-md">
+        <LayoutGridIcon aria-hidden="true" className="size-4" />
+      </span>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <p className="truncate text-sm font-medium">{text.productList}</p>
+        <p className="text-muted-foreground truncate text-xs">{text.productListHint}</p>
+      </div>
+    </li>
   )
 }
 

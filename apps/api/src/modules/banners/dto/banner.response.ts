@@ -25,6 +25,8 @@ export class PublicBannerResponse implements PublicBanner {
   href!: string | null;
   @ApiProperty({ description: 'Opens in a new tab. On the wire so nobody has to guess from the href.' })
   external!: boolean;
+  @ApiProperty({ description: 'Under the product bands instead of above them.' })
+  belowProducts!: boolean;
 }
 
 export class BannerResponse implements Banner {
@@ -38,6 +40,8 @@ export class BannerResponse implements Banner {
   @ApiPropertyOptional({ nullable: true, type: String }) productSlug!: string | null;
   @ApiPropertyOptional({ nullable: true, type: String }) externalUrl!: string | null;
   @ApiProperty() position!: number;
+  @ApiProperty({ description: 'Under the product bands instead of above them.' })
+  belowProducts!: boolean;
   @ApiProperty() isActive!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;

@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
-import { BannerArrangement, type ArrangementItem } from "./banner-arrangement"
+import { BannerArrangement, PRODUCTS_ROW_ID, type ArrangementItem } from "./banner-arrangement"
 
 const items: ArrangementItem[] = [
   { id: "1", title: "Coleção de inverno", imageUrl: "/a.jpg", layout: "FULL", isActive: true },
@@ -57,6 +57,40 @@ describe("BannerArrangement", () => {
     // The select holds "HALVES"; a shopkeeper reads "Metade". Base UI shows the raw value unless
     // the trigger is given a render function, and that regression is invisible in a type-check.
     expect(screen.getByRole("combobox", { name: "Tamanho: Frete grátis" })).toHaveTextContent("Metade")
+  })
+
+  it("puts the products in the list, draggable like a poster", () => {
+    renderList()
+
+    // Not a divider between two lists: as a row it is dragged itself, so moving every poster
+    // under the products is one drag rather than one per poster.
+    expect(screen.getByText("Lista de produtos")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Arrastar: Lista de produtos" })).toBeInTheDocument()
+  })
+
+  it("gives the products no eye and no size", () => {
+    renderList()
+
+    // A shop's landing page without its products is not an arrangement anyone wants, and "how
+    // wide" is a question about a poster.
+    expect(screen.queryByRole("button", { name: /loja: Lista de produtos/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("combobox", { name: /Lista de produtos/ })).not.toBeInTheDocument()
+  })
+
+  it("draws the two sides in the order the landing page does", () => {
+    renderList({ items: [items[0]!], itemsBelow: [items[1]!] })
+
+    const rows = screen.getAllByRole("listitem").map((row) => row.textContent)
+
+    expect(rows[0]).toContain("Coleção de inverno")
+    expect(rows[1]).toContain("Lista de produtos")
+    expect(rows[2]).toContain("Frete grátis")
+  })
+
+  it("keeps the products' own id, which is how a side is read back", () => {
+    // The screen splits `onReorder` on this id. A rename here silently sends every poster to one
+    // side, and nothing else in either file would fail.
+    expect(PRODUCTS_ROW_ID).toBe("__products__")
   })
 
   it("invites a first banner instead of drawing an empty list", () => {
