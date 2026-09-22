@@ -16,6 +16,37 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    /*
+     * The admin chrome, as its own namespace.
+     *
+     * A namespace and not a remap: `--border`, `--accent` and `--radius` are read by 11, 5 and 32
+     * files respectively, so redefining them to Shopify's palette would restyle every screen in the
+     * product to fix one. These names are new, so nothing that does not ask for them can change.
+     *
+     * The header is the one permanently dark surface, and it stays dark in either theme — it is
+     * chrome with its own contrast, not a surface that inverts.
+     */
+    --color-header: var(--header);
+    --color-header-foreground: var(--header-foreground);
+    --color-header-border: var(--header-border);
+    --color-header-field: var(--header-field);
+    --color-header-field-hover: var(--header-field-hover);
+    --color-header-accent: var(--header-accent);
+    --color-header-accent-foreground: var(--header-accent-foreground);
+
+    --color-shell: var(--shell);
+    --color-shell-content: var(--shell-content);
+    --color-shell-surface: var(--shell-surface);
+    --color-shell-border: var(--shell-border);
+    --color-shell-text: var(--shell-text);
+    --color-shell-muted: var(--shell-muted);
+
+    --color-nav-hover: var(--nav-hover);
+    --color-nav-active: var(--nav-active);
+    --color-nav-active-foreground: var(--nav-active-foreground);
+
+    --spacing-header: var(--header-height);
+    --spacing-sidebar: var(--sidebar-width);
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
@@ -91,6 +122,44 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
+
+    /*
+     * Shopify's admin palette, which is achromatic apart from the one green — so every value here
+     * is oklch with zero chroma, in the same form as the tokens above. Hex is legal in this file
+     * and nowhere else a component can reach: `web/no-hex-colors` scans .ts and .tsx only, which is
+     * exactly why a colour that has to be written down lives in CSS.
+     *
+     * The header keeps its own foreground and field colours because it is dark on a light page: the
+     * page's --foreground would be unreadable on it, and reaching for a token that happens to be
+     * light is how a theme change later turns the header into black on black.
+     */
+    --header: oklch(0.205 0 0);                    /* #1a1a1a */
+    --header-foreground: oklch(0.922 0 0);         /* #e3e3e3 */
+    --header-border: oklch(1 0 0 / 12%);
+    --header-field: oklch(1 0 0 / 10%);
+    --header-field-hover: oklch(1 0 0 / 16%);
+    /* The one chromatic value: the badge behind a shop's initials, and the unread dot. */
+    --header-accent: oklch(0.878 0.176 164.5);     /* #36fba1 */
+    --header-accent-foreground: oklch(0.343 0.077 163.7); /* #0c5132 */
+
+    /* The rail, a shade darker than the page it sits beside — which is what separates the two
+       without a border, the way the reference does it. */
+    --shell: oklch(0.945 0 0);                     /* #ebebeb */
+    /* The page the cards sit on. Lighter than the rail and still not white, so a white card reads
+       as a card rather than as the background with text on it. */
+    --shell-content: oklch(0.975 0 0);             /* #f7f7f7 */
+    --shell-surface: oklch(1 0 0);                 /* #ffffff */
+    --shell-border: oklch(0.922 0 0);              /* #e3e3e3 */
+    --shell-text: oklch(0.286 0 0);                /* #303030 */
+    --shell-muted: oklch(0.487 0 0);               /* #616161 */
+
+    --nav-hover: oklch(0.922 0 0);                 /* #e3e3e3 */
+    --nav-active: oklch(1 0 0);                    /* #ffffff */
+    --nav-active-foreground: oklch(0.286 0 0);     /* #303030 */
+
+    --header-height: 3.5rem;                       /* 56px */
+    --sidebar-width: 15rem;                        /* 240px */
+
 }
 
 .dark {

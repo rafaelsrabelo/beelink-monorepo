@@ -36,8 +36,10 @@ export default async function WorkspacePickPage() {
 
   const shops = await shopsOf(accessToken)
 
-  // Nothing to choose between. A shop has to exist before any of this means anything.
-  if (!shops.length) redirect("/create-store")
+  // Nothing to choose between yet. Back to Início, which is where a shopkeeper with no shop is
+  // told what is missing and offered the way to fix it — rather than being dropped on the bare
+  // form, which is what this did and what made signing up feel like landing mid-task.
+  if (!shops.length) redirect("/dashboard")
 
   /*
     One shop is not a choice, so that one walks through. Anything more stops here.

@@ -266,6 +266,59 @@ export interface UiMessages {
   }
   /** The panel's catalogue screens: what a shopkeeper fills in, never what a visitor reads. */
   catalog: {
+    /** The description's toolbar. What it writes is Markdown; see blocks/catalog/rich-text.ts. */
+    editor: {
+      toolbar: string
+      bold: string
+      italic: string
+      bulletList: string
+      numberedList: string
+    }
+    /** A product's photos: dropped or picked, several at once, ordered by the shopkeeper. */
+    media: {
+      label: string
+      drop: string
+      hint: string
+      help: string
+      uploading: string
+      cover: string
+      /** `{number}` — which photo, because the remove and reorder buttons count them. */
+      photo: string
+      remove: string
+      moveEarlier: string
+    }
+    /** The sections the product form is cut into, in the order they are read. */
+    sections: {
+      basics: string
+      basicsHint: string
+      media: string
+      organization: string
+      organizationHint: string
+      pricing: string
+      pricingHint: string
+      inventory: string
+      inventoryHint: string
+      shipping: string
+      shippingHint: string
+    }
+    fields: {
+      costLabel: string
+      costHint: string
+      skuLabel: string
+      skuHint: string
+      barcodeLabel: string
+      trackStockLabel: string
+      trackStockHint: string
+      stockLabel: string
+      weightLabel: string
+      weightHint: string
+      dimensionsLabel: string
+      dimensionsHint: string
+      lengthLabel: string
+      widthLabel: string
+      heightLabel: string
+      newCategory: string
+    }
     products: {
       title: string
       description: string
@@ -295,6 +348,7 @@ export interface UiMessages {
       imageAdd: string
       imageRemove: string
       save: string
+      saving: string
       cancel: string
       delete: string
       deleteConfirm: string
@@ -352,6 +406,32 @@ export interface UiMessages {
     }
   }
 
+  /**
+   * The admin chrome: the dark bar across the top and the rail down the side.
+   *
+   * `searchShortcut` ships as two finished strings rather than a symbol the block picks apart,
+   * because ⌘ on Windows is simply wrong and a dictionary cannot hold a function to choose. The
+   * machine-readable form is `aria-keyshortcuts`, which is ARIA token syntax and never translated.
+   */
+  shell: {
+    brand: string
+    menuOpen: string
+    navLabel: string
+    searchPlaceholder: string
+    searchLabel: string
+    searchShortcut: string
+    searchShortcutApple: string
+    notifications: string
+    /** `{count}` — how many are unread. */
+    notificationsUnread: string
+    notificationsUnreadOne: string
+    storeMenu: string
+    yourStores: string
+    noStore: string
+    createStore: string
+    language: string
+    signOut: string
+  }
   store: {
     /** Keyed by the union, so adding a selling mode is a compile error in every dictionary. */
     typeLabels: Record<StoreType, string>

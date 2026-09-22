@@ -21,6 +21,15 @@ export interface DashboardNavItem {
    * `aria-current` a screen reader depends on silently stops being written.
    */
   match?: "exact" | "prefix"
+  /**
+   * Shown, but not a way anywhere. It exists for the panel's own menu before the shopkeeper has a
+   * shop: every item needs a slug it does not have yet, and a menu that empties instead would make
+   * the first screen after signing up look broken rather than new.
+   *
+   * `href` is ignored while this is set — there is no address to ignore, which is the whole reason
+   * the item is disabled.
+   */
+  disabled?: boolean
 }
 
 export interface DashboardCard {

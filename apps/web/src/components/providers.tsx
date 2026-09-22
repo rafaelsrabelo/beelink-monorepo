@@ -26,7 +26,17 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      {/*
+        Pinned to light, and the provider stays mounted.
+
+        Dark mode here was never chosen by anyone: it is entirely OS-driven and there is no toggle
+        anywhere in the product. Nobody drew the panel dark, and on the storefront it is actively
+        wrong — a dark OS puts `.dark` on <html> and repaints the primitives nested inside a shop's
+        own light-by-data palette. Removing the provider would not help: Toaster falls back to
+        `theme="system"` and resolves dark by media query on its own. One prop, reversible in one
+        line, the day a designer draws it.
+      */}
+      <ThemeProvider attribute="class" forcedTheme="light" disableTransitionOnChange>
         {children}
       </ThemeProvider>
     </QueryClientProvider>
