@@ -20,6 +20,7 @@ import {
   createProductCategory,
   deleteProduct,
   deleteProductCategory,
+  fetchProduct,
   fetchProductCategories,
   fetchProducts,
   updateProduct,
@@ -36,6 +37,8 @@ export const catalogKeys = {
   all: ["catalog"] as const,
   categories: (slug: string) => [...catalogKeys.all, slug, "categories"] as const,
   products: (slug: string) => [...catalogKeys.all, slug, "products"] as const,
+  product: (slug: string, productId: string) =>
+    [...catalogKeys.products(slug), productId] as const,
 }
 
 export function useProductCategories(slug: string): UseQueryResult<ProductCategory[], Error> {
@@ -90,6 +93,22 @@ export function useProducts(slug: string): UseQueryResult<Product[], Error> {
     queryKey: catalogKeys.products(slug),
     queryFn: () => fetchProducts(slug),
     enabled: slug !== "",
+  })
+}
+
+/**
+ * One product, for the page that edits it. `enabled` is false while there is no id — the same
+ * screen serves "new", and a query for an empty id would be a request for nothing.
+ */
+export function useProduct(
+  slug: string,
+  productId: string,
+  options?: { enabled?: boolean },
+): UseQueryResult<Product, Error> {
+  return useQuery({
+    queryKey: catalogKeys.product(slug, productId),
+    queryFn: () => fetchProduct(slug, productId),
+    enabled: options?.enabled ?? Boolean(productId),
   })
 }
 

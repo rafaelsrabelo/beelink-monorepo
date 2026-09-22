@@ -97,6 +97,10 @@ export function fetchProducts(slug: string): Promise<Product[]> {
   return call<Product[]>(productsPath(slug), { method: "GET" })
 }
 
+export function fetchProduct(slug: string, productId: string): Promise<Product> {
+  return call<Product>(`${productsPath(slug)}/${encodeURIComponent(productId)}`, { method: "GET" })
+}
+
 export function createProduct(slug: string, payload: CreateProductPayload): Promise<Product> {
   return call<Product>(productsPath(slug), { method: "POST", body: JSON.stringify(payload) })
 }
