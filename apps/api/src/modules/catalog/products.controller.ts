@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -21,7 +21,8 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { ProductsService } from './products.service.js';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
-import { ProductResponse } from './dto/catalog.response.js';
+import { ProductPageResponse, ProductResponse } from './dto/catalog.response.js';
+import { ListProductsDto } from './dto/list-products.dto.js';
 import { ReorderDto } from './dto/reorder.dto.js';
 
 @ApiTags('catalog')
@@ -34,13 +35,17 @@ export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
   @Get()
-  @ApiOperation({ summary: "The shop's products, unavailable ones included, in the chosen order" })
-  @ApiOkResponse({ type: ProductResponse, isArray: true })
+  @ApiOperation({ summary: "One page of the shop's products, drafts included, in the chosen order" })
+  @ApiOkResponse({ type: ProductPageResponse })
   list(
     @Param('storeSlug') storeSlug: string,
     @CurrentUser() current: AuthenticatedUser,
-  ): Promise<ProductResponse[]> {
-    return this.products.list(storeSlug, current.id);
+    // A DTO and not seven `@Query()` parameters: the allowed values live in one place that the
+    // global ValidationPipe already refuses anything outside of, so `?status=SOLD` is a 400 before
+    // the handler runs rather than a filter that silently matched nothing.
+    @Query() query: ListProductsDto,
+  ): Promise<ProductPageResponse> {
+    return this.products.list(storeSlug, current.id, query);
   }
 
   @Post()

@@ -160,7 +160,9 @@ export function ProductOrganizationFields({
           disabled={disabled}
         >
           <SelectTrigger id="product-status">
-            <SelectValue>{value.status === "ACTIVE" ? text.statusActive : text.statusDraft}</SelectValue>
+            <SelectValue>
+              {(selected: string) => (selected === "DRAFT" ? text.statusDraft : text.statusActive)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ACTIVE">{text.statusActive}</SelectItem>
@@ -173,17 +175,29 @@ export function ProductOrganizationFields({
       <Field>
         <FieldLabel htmlFor="product-origin">{text.originLabel}</FieldLabel>
         <Select
-          value={value.origin}
-          onValueChange={(next) => onChange({ ...value, origin: next as ProductFormValues["origin"] })}
           disabled={disabled}
+          // The same `"none"` sentinel the category select above uses, for the same reason: an
+          // empty string is how Base UI spells "nothing chosen", so an item carrying one cannot be
+          // chosen back once something else has been.
+          value={value.origin === "" ? "none" : value.origin}
+          onValueChange={(next: string | null) =>
+            onChange({
+              ...value,
+              origin: !next || next === "none" ? "" : (next as ProductFormValues["origin"]),
+            })
+          }
         >
           <SelectTrigger id="product-origin">
-            {/* Base UI renders the raw value, so an unset origin would show the empty string as a
-                blank trigger. The render function is what puts a sentence there instead. */}
-            <SelectValue>{originLabel(value.origin)}</SelectValue>
+            {/* A render function, not a bare <SelectValue />: Base UI shows the raw value unless it
+                is told how to read it, and the trigger would say "none" on screen. */}
+            <SelectValue>
+              {(selected: string) =>
+                originLabel(selected === "none" || !selected ? "" : (selected as ProductFormValues["origin"]))
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{text.originUnset}</SelectItem>
+            <SelectItem value="none">{text.originUnset}</SelectItem>
             <SelectItem value="IN_HOUSE">{text.originInHouse}</SelectItem>
             <SelectItem value="RESALE">{text.originResale}</SelectItem>
           </SelectContent>

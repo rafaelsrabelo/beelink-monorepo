@@ -5,7 +5,7 @@ import type { CatalogSlugService } from './catalog-slug.service.js';
 import type { ProductRow } from './catalog.mapper.js';
 
 // App
-import { PRODUCTS_PAGE_SIZE } from './catalog.constants.js';
+import { PRODUCTS_PAGE_SIZE, PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
 import { ProductsService } from './products.service.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -99,3 +99,114 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
     expect(findMany.mock.calls[0]?.[0]).toMatchObject({ skip: 0, take: PRODUCTS_PAGE_SIZE });
   });
 });
+
+describe('ProductsService.list — the panel, filtered', () => {
+  /**
+   * The owner's shape carries the dates and the private columns, which `rows()` leaves out because
+   * the storefront never sees them. `toProduct` reads them, so they have to be here.
+   */
+  function ownerRows(count: number): ProductRow[] {
+    const stamp = new Date('2026-09-22T12:00:00.000Z');
+
+    return rows(count).map((row) => ({
+      ...row,
+      position: 0,
+      status: 'ACTIVE',
+      origin: null,
+      costCents: null,
+      sku: null,
+      barcode: null,
+      trackStock: false,
+      stockQuantity: null,
+      weightGrams: null,
+      lengthMm: null,
+      widthMm: null,
+      heightMm: null,
+      description: null,
+      createdAt: stamp,
+      updatedAt: stamp,
+    })) as unknown as ProductRow[];
+  }
+
+  /** The owned-store check is the only collaborator this method needs beyond Prisma. */
+  function buildOwned(page: ProductRow[], total: number) {
+    const built = build(page, total);
+    const stores = { ownedStoreId: vi.fn().mockResolvedValue(STORE) } as unknown as StoresService;
+
+    return {
+      ...built,
+      service: new ProductsService(
+        { product: { findMany: built.findMany, count: built.count }, $transaction: built.transaction } as never,
+        stores,
+        {} as CatalogSlugService,
+      ),
+    };
+  }
+
+  /**
+   * The bug this method is one careless spread away from. "Out of stock" carries an `OR`, and so
+   * does the search; in one object literal the second silently overwrites the first, and the
+   * filtered search answers the search alone — with a total that agrees with it, so nothing looks
+   * wrong until a shopkeeper counts by hand.
+   */
+  it('keeps the stock filter and the search as separate conditions', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { stock: 'OUT_OF_STOCK', search: 'whey' });
+
+    const and = findMany.mock.calls[0]?.[0].where.AND as { OR?: unknown[]; trackStock?: boolean }[];
+    expect(and).toHaveLength(2);
+    expect(and[0]).toMatchObject({ trackStock: true });
+    expect(and[1]?.OR).toHaveLength(3);
+  });
+
+  it('matches the name, the code and the barcode — whichever the shopkeeper has in hand', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { search: 'WH-900' });
+
+    const [condition] = findMany.mock.calls[0]?.[0].where.AND as { OR: Record<string, unknown>[] }[];
+    expect(condition?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode']);
+  });
+
+  /**
+   * A shop that does not count a product is not a shop that has none of it. Asking for "untracked"
+   * must not also demand a quantity, or every made-to-order product disappears from its own filter.
+   */
+  it('asks only that counting is off when the filter is "untracked"', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { stock: 'UNTRACKED' });
+
+    expect(findMany.mock.calls[0]?.[0].where.AND).toEqual([{ trackStock: false }]);
+  });
+
+  /** A counted product with no quantity yet is, from the shelf, none left. */
+  it('counts a null quantity as out of stock, not as unknown', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { stock: 'OUT_OF_STOCK' });
+
+    const [condition] = findMany.mock.calls[0]?.[0].where.AND as { OR: unknown[] }[];
+    expect(condition?.OR).toEqual([{ stockQuantity: { lte: 0 } }, { stockQuantity: null }]);
+  });
+
+  it('answers the bounds it used, never the ones it was asked for', async () => {
+    const { service } = buildOwned(ownerRows(1), 400);
+
+    const answer = await service.list('lessari', 'user-1', { page: 0, pageSize: 5_000 });
+
+    expect(answer.page).toBe(1);
+    expect(answer.pageSize).toBe(PRODUCTS_PAGE_SIZE_MAX);
+    expect(answer.total).toBe(400);
+  });
+
+  /** Drafts are the reason this screen exists; a panel that hid them could not publish one. */
+  it('does not filter by status unless asked, so drafts are in the list', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', {});
+
+    expect(findMany.mock.calls[0]?.[0].where).not.toHaveProperty('status');
+  });
+})

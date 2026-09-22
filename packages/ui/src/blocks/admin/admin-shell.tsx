@@ -37,7 +37,12 @@ export function AdminShell({ header, sidebar, children }: AdminShellProps) {
           dark showing through — the header's colour, a long way from the header.
         */}
         <div className="bg-shell shrink-0 lg:rounded-tl-xl">{sidebar}</div>
-        <main className="bg-shell-content min-w-0 flex-1 rounded-t-xl px-4 py-5 lg:rounded-tl-none lg:px-6">
+        {/*
+          `@container/main` is what the screens inside size against, and it has to be the page
+          column rather than the viewport: the rail takes 240px above `lg`, so a viewport breakpoint
+          here lays out a table for space this element does not have.
+        */}
+        <main className="bg-shell-content @container/main min-w-0 flex-1 rounded-t-xl px-4 py-5 lg:rounded-tl-none lg:px-6">
           <div className="mx-auto w-full max-w-[62.375rem]">{children}</div>
         </main>
       </div>

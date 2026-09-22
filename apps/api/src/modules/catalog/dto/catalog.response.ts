@@ -5,6 +5,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type {
   Product,
   ProductCategory,
+  ProductPage,
   ProductOrigin,
   ProductStatus,
   PublicProduct,
@@ -103,6 +104,20 @@ export class ProductResponse extends PublicProductResponse implements Product {
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }
 
+
+/**
+ * One page of the panel's list, and what it is a page of.
+ *
+ * `total` counts the filter and not the page — it is what the pager divides. `page` and `pageSize`
+ * are the bounds that were actually used, never the ones that were asked for, so a pager drawn from
+ * this answer cannot offer a page that is not there.
+ */
+export class ProductPageResponse implements ProductPage {
+  @ApiProperty({ type: [ProductResponse] }) products!: ProductResponse[];
+  @ApiProperty({ description: 'How many match the filter, across every page.' }) total!: number;
+  @ApiProperty({ description: '1-based.' }) page!: number;
+  @ApiProperty() pageSize!: number;
+}
 
 /**
  * Everything a shop window needs to draw itself, in one answer. Two round trips for a page that

@@ -40,6 +40,13 @@ export interface ProductTableProps {
   products: readonly ProductTableItem[]
   onEdit: (productId: string) => void
   onDelete: (productId: string) => void
+  /**
+   * What to say when there is nothing to show. It is a prop because "no products yet" and "no
+   * product matches this filter" are different facts, and telling a shopkeeper with 200 products
+   * to "cadastre o primeiro" because they mistyped a search is the worse of the two mistakes.
+   */
+  emptyTitle?: string
+  emptyHint?: string
   locale?: string
   currency?: string
   busyId?: string | null
@@ -62,6 +69,8 @@ export function ProductTable({
   products,
   onEdit,
   onDelete,
+  emptyTitle,
+  emptyHint,
   locale = defaultLocale,
   currency = "BRL",
   busyId = null,
@@ -74,8 +83,8 @@ export function ProductTable({
   if (!products.length) {
     return (
       <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed py-12 text-center">
-        <p className="font-medium">{text.empty}</p>
-        <p className="text-muted-foreground text-sm">{text.emptyHint}</p>
+        <p className="font-medium">{emptyTitle ?? text.empty}</p>
+        <p className="text-muted-foreground text-sm">{emptyHint ?? text.emptyHint}</p>
       </div>
     )
   }
@@ -125,7 +134,10 @@ export function ProductTable({
               </TableCell>
 
               <TableCell>
-                <Badge variant={product.status === "ACTIVE" ? "default" : "secondary"}>
+                {/* `outline` and not `secondary` for a draft: secondary is near-white on this
+                    surface, and the draft is the row a shopkeeper is scanning for. The one state
+                    worth spotting must not be the one that reads as plain text. */}
+                <Badge variant={product.status === "ACTIVE" ? "default" : "outline"}>
                   {product.status === "ACTIVE" ? text.statusActive : text.statusDraft}
                 </Badge>
               </TableCell>

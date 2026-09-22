@@ -222,6 +222,43 @@ export interface Product extends PublicProduct, ProductStock, ProductParcel {
   updatedAt: string;
 }
 
+/**
+ * How the panel's product list is narrowed. Every field is optional, and an absent one means "all"
+ * — so an empty query is the whole catalogue, which is what the screen opens with.
+ *
+ * It is answered by the server and not filtered in the browser for the same reason the storefront's
+ * catalogue is: a shop with three hundred products would otherwise ship all three hundred to draw
+ * twenty. It also means a filtered list has an address, so the shopkeeper can return to it.
+ */
+export interface ProductListQuery {
+  /** Matched against the name, the SKU and the barcode — the three things a shopkeeper types. */
+  search?: string;
+  status?: ProductStatus;
+  categoryId?: string;
+  origin?: ProductOrigin;
+  stock?: ProductStockFilter;
+  /** 1-based. Below the first page is served as the first page rather than refused. */
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * The three answers to "how many are left", which are not one number.
+ *
+ * `UNTRACKED` is a shop that does not count this product at all — made to order — and it is not a
+ * stock of zero. Collapsing the two is what sends a shopkeeper looking for a stock problem that
+ * does not exist.
+ */
+export type ProductStockFilter = "IN_STOCK" | "OUT_OF_STOCK" | "UNTRACKED";
+
+/** One page of the panel's list, and what it is a page of. `total` counts the filter, not the page. */
+export interface ProductPage {
+  products: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface CreateProductCategoryPayload {
   name: string;
   /** Absent derives it from the name; sent explicitly it is still normalised the same way. */

@@ -2,15 +2,27 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { Product, PublicProduct, PublicProductCard } from '@harness-monorepo/contracts';
+import type {
+  Product,
+  ProductListQuery,
+  ProductPage,
+  ProductStockFilter,
+  PublicProduct,
+  PublicProductCard,
+} from '@harness-monorepo/contracts';
 import type { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
 import type { ReorderDto } from './dto/reorder.dto.js';
+import type { ProductWhereInput } from '../../generated/prisma/models/Product.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
-import { PRODUCTS_PAGE_SIZE } from './catalog.constants.js';
+import {
+  PRODUCTS_ADMIN_PAGE_SIZE,
+  PRODUCTS_PAGE_SIZE,
+  PRODUCTS_PAGE_SIZE_MAX,
+} from './catalog.constants.js';
 import { productInclude, toProduct, toPublicProduct, toPublicProductCard } from './catalog.mapper.js';
 
 function isUniqueViolation(error: unknown): boolean {
@@ -26,6 +38,22 @@ function imageRows(images: CreateProductDto['images']): { url: string; alt: stri
   }));
 }
 
+/**
+ * The three answers to "how many are left", as a `where` fragment.
+ *
+ * `UNTRACKED` is a shop that does not count this product — made to order — and is not a stock of
+ * zero. `OUT_OF_STOCK` also catches a null quantity on a counted product, which is a shopkeeper who
+ * turned counting on and has not said how many: from the shelf, that is none.
+ */
+function stockFilter(stock: ProductStockFilter | undefined): ProductWhereInput | null {
+  if (stock === 'UNTRACKED') return { trackStock: false };
+  if (stock === 'IN_STOCK') return { trackStock: true, stockQuantity: { gt: 0 } };
+  if (stock === 'OUT_OF_STOCK') {
+    return { trackStock: true, OR: [{ stockQuantity: { lte: 0 } }, { stockQuantity: null }] };
+  }
+  return null;
+}
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -34,17 +62,65 @@ export class ProductsService {
     private readonly slugs: CatalogSlugService,
   ) {}
 
-  /** The panel's list: unavailable products included, in the order the shopkeeper chose. */
-  async list(storeSlug: string, userId: string): Promise<Product[]> {
+  /**
+   * The panel's list: one page of it, drafts included, in the order the shopkeeper chose.
+   *
+   * Drafts are here and marked rather than hidden. This is the screen where one is published, so
+   * leaving it out would make that impossible — and the storefront's list is a different method
+   * for exactly that reason.
+   *
+   * The filters run here and not in the browser because a shop with three hundred products would
+   * otherwise ship all three hundred to draw twenty. `total` counts the filter and not the page,
+   * because that is what the pager divides, and the count runs over the same `where` inside one
+   * transaction: read separately, the two could fall either side of a write and disagree.
+   */
+  async list(storeSlug: string, userId: string, query: ProductListQuery = {}): Promise<ProductPage> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
-    const rows = await this.prisma.product.findMany({
-      where: { storeId },
-      include: productInclude,
-      orderBy: [{ position: 'asc' }, { name: 'asc' }],
-    });
+    const search = query.search?.trim();
+    const page = Math.max(query.page ?? 1, 1);
+    const pageSize = Math.min(Math.max(query.pageSize ?? PRODUCTS_ADMIN_PAGE_SIZE, 1), PRODUCTS_PAGE_SIZE_MAX);
 
-    return rows.map(toProduct);
+    // The two fragments that carry an `OR` — the stock filter and the search — are held in `AND`
+    // rather than spread into one object. Spread, the second `OR` would overwrite the first, and
+    // "out of stock" plus a search term would quietly answer the search alone.
+    const stock = stockFilter(query.stock);
+    const where = {
+      storeId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+      ...(query.origin ? { origin: query.origin } : {}),
+      AND: [
+        ...(stock ? [stock] : []),
+        // The name, the code and the barcode. A shopkeeper looking for one row types whichever of
+        // the three they have in front of them, and a box that only matches the name is a box that
+        // fails the person holding the product.
+        ...(search
+          ? [
+              {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' as const } },
+                  { sku: { contains: search, mode: 'insensitive' as const } },
+                  { barcode: { contains: search, mode: 'insensitive' as const } },
+                ],
+              },
+            ]
+          : []),
+      ],
+    };
+
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        include: productInclude,
+        orderBy: [{ position: 'asc' }, { name: 'asc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return { products: rows.map(toProduct), total, page, pageSize };
   }
 
   /**
@@ -261,7 +337,16 @@ export class ProductsService {
       dto.ids.map((id, position) => this.prisma.product.update({ where: { id }, data: { position } })),
     );
 
-    return this.list(storeSlug, userId);
+    // Its own read rather than `list`, which is paged now: reorder already demands every product
+    // of the shop in the body, so answering with a page of them would be answering with less than
+    // was sent.
+    const rows = await this.prisma.product.findMany({
+      where: { storeId },
+      include: productInclude,
+      orderBy: [{ position: 'asc' }, { name: 'asc' }],
+    });
+
+    return rows.map(toProduct);
   }
 
   /**

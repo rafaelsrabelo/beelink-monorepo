@@ -367,6 +367,32 @@ export interface UiMessages {
        * their own object because a header is not a field label: "Estoque" heads a column of
        * numbers, while the field that sets it is a checkbox called "Controlar estoque".
        */
+      /**
+       * The toolbar over the table. `any*` are the "no filter" options, named after what they let
+       * through rather than "Todos", which reads as a filter that selects everything.
+       */
+      filters: {
+        searchLabel: string
+        searchPlaceholder: string
+        anyStatus: string
+        anyCategory: string
+        anyOrigin: string
+        anyStock: string
+        inStock: string
+        outOfStock: string
+        /** A product the shop does not count at all — not one with none left. */
+        untracked: string
+        clear: string
+        /** Said in place of the table when a filter matches nothing. */
+        noResults: string
+        noResultsHint: string
+      }
+      pager: {
+        previous: string
+        next: string
+        /** "{from}–{to} de {total}" — the range, because the page number is not the question. */
+        range: string
+      }
       table: {
         code: string
         name: string
@@ -398,7 +424,7 @@ export interface UiMessages {
       nameLabel: string
       namePlaceholder: string
       slugLabel: string
-      /** Says what the segment becomes, so a shopkeeper sees the address before saving it. */
+      /** Shows the whole public URL, so a shopkeeper sees the address before saving it. */
       slugHelp: string
       descriptionLabel: string
       descriptionHelp: string

@@ -32,7 +32,8 @@ export interface ShopHomeScreenProps {
 export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
   const text = web.stores.home
   const store = useStore(slug)
-  const products = useProducts(slug)
+  // One row is enough: the card asks whether the shop has any product, not how many.
+  const products = useProducts(slug, { pageSize: 1 })
   const categories = useProductCategories(slug)
 
   const loading = store.isPending || products.isPending || categories.isPending
@@ -76,7 +77,7 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
       description: text.cards.productsText,
       actionLabel: text.cards.productsAction,
       href: `/admin/${slug}/products`,
-      done: (products.data?.length ?? 0) > 0,
+      done: (products.data?.total ?? 0) > 0,
     },
     {
       title: text.cards.categoriesTitle,

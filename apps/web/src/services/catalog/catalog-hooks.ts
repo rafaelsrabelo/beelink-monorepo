@@ -10,6 +10,8 @@ import type {
   CreateProductPayload,
   Product,
   ProductCategory,
+  ProductListQuery,
+  ProductPage,
   UpdateProductCategoryPayload,
   UpdateProductPayload,
 } from "@harness-monorepo/contracts"
@@ -37,6 +39,12 @@ export const catalogKeys = {
   all: ["catalog"] as const,
   categories: (slug: string) => [...catalogKeys.all, slug, "categories"] as const,
   products: (slug: string) => [...catalogKeys.all, slug, "products"] as const,
+  /**
+   * One filtered page. It nests under `products(slug)`, so every write below still invalidates it
+   * by prefix without knowing which filters happen to be on screen.
+   */
+  productList: (slug: string, query: ProductListQuery) =>
+    [...catalogKeys.products(slug), "list", query] as const,
   product: (slug: string, productId: string) =>
     [...catalogKeys.products(slug), productId] as const,
 }
@@ -88,11 +96,23 @@ export function useDeleteProductCategory(slug: string): UseMutationResult<unknow
   })
 }
 
-export function useProducts(slug: string): UseQueryResult<Product[], Error> {
+/**
+ * One page of the shop's products, filtered as the screen asks.
+ *
+ * The query is part of the key, so changing a filter is a different query rather than a refetch of
+ * the same one — which is what lets TanStack serve a page already seen instantly while the new one
+ * loads. `placeholderData` keeps the previous page on screen while the next arrives: without it the
+ * table empties and the pager jumps on every keystroke of the search box.
+ */
+export function useProducts(
+  slug: string,
+  query: ProductListQuery = {},
+): UseQueryResult<ProductPage, Error> {
   return useQuery({
-    queryKey: catalogKeys.products(slug),
-    queryFn: () => fetchProducts(slug),
+    queryKey: catalogKeys.productList(slug, query),
+    queryFn: () => fetchProducts(slug, query),
     enabled: slug !== "",
+    placeholderData: (previous) => previous,
   })
 }
 
