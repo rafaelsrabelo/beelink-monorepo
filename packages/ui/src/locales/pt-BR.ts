@@ -211,6 +211,8 @@ export const ptBR: UiMessages = {
     targetCategory: "Uma categoria",
     targetProduct: "Um produto",
     targetExternal: "Um endereço fora da loja",
+    targetNone: "Nenhum — só informativo",
+    targetNoneHelp: "O banner aparece e não leva a lugar nenhum. Bom para um aviso ou uma foto.",
     categoryLabel: "Categoria",
     categoryNone: "Escolha uma categoria",
     productLabel: "Produto",

@@ -44,4 +44,7 @@ export const ParaForaDaLoja: Story = {
   args: { value: { ...EMPTY_BANNER, target: "EXTERNAL", externalUrl: "https://wa.me/5585999998888" } },
 }
 
+/** Um pôster que fala e não leva a lugar nenhum — um aviso, uma foto, uma estação. */
+export const SoInformativo: Story = { args: { value: { ...EMPTY_BANNER, target: "NONE" } } }
+
 export const EmIngles: Story = { args: { messages: en } }

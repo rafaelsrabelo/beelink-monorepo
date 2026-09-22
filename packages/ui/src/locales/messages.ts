@@ -299,6 +299,9 @@ export interface UiMessages {
     targetCategory: string
     targetProduct: string
     targetExternal: string
+    /** A poster that says something and goes nowhere. */
+    targetNone: string
+    targetNoneHelp: string
     categoryLabel: string
     categoryNone: string
     productLabel: string

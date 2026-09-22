@@ -153,6 +153,9 @@ export class BannersService {
     target: BannerTarget,
     dto: { categorySlug?: string | null; productSlug?: string | null; externalUrl?: string | null },
   ): Promise<TargetColumns> {
+    // Nowhere to go is a destination too, and the only one with nothing to look up.
+    if (target === 'NONE') return { target, categoryId: null, productId: null, externalUrl: null };
+
     if (target === 'CATEGORY') {
       if (!dto.categorySlug) {
         throw new BadRequestException(bannerError('BANNER_TARGET_INVALID', 'A category banner needs a category'));

@@ -211,6 +211,8 @@ export const en: UiMessages = {
     targetCategory: "A category",
     targetProduct: "A product",
     targetExternal: "An address outside the shop",
+    targetNone: "Nowhere — just a notice",
+    targetNoneHelp: "The banner shows and leads nowhere. Good for a notice or a picture.",
     categoryLabel: "Category",
     categoryNone: "Pick a category",
     productLabel: "Product",

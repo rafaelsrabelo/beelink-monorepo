@@ -14,6 +14,10 @@ enum BannerTarget {
   CATEGORY
   PRODUCT
   EXTERNAL
+  /// A poster that says something and goes nowhere — a season, a promise about delivery, a
+  /// picture. The window draws it without an arrow and without making it clickable: a card that
+  /// looks interactive and is not is worse than one that never offered.
+  NONE
 }
 
 /// A poster on a shop's landing page.

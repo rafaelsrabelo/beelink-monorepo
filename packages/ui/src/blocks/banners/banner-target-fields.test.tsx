@@ -50,6 +50,19 @@ describe("BannerTargetFields", () => {
     expect(screen.getByLabelText("Categoria")).toHaveTextContent("Escolha uma categoria")
   })
 
+  /** The only target with no field under it — nothing further is asked because nothing exists. */
+  it("asks for nothing when the banner goes nowhere, and says why", async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+
+    await user.click(screen.getByLabelText("Para onde leva"))
+    await user.click(await screen.findByRole("option", { name: "Nenhum — só informativo" }))
+
+    expect(screen.queryByLabelText("Categoria")).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("Endereço")).not.toBeInTheDocument()
+    expect(screen.getByText(/não leva a lugar nenhum/)).toBeInTheDocument()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<Harness />)
 

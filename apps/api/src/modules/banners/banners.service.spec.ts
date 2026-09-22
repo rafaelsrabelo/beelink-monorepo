@@ -99,6 +99,25 @@ describe('BannersService — where a banner points', () => {
     });
   });
 
+  /**
+   * The fourth target, and the only one with nothing to look up. A poster that says "entrega em
+   * todo o Brasil" has nowhere to send anyone, and that is what it is for.
+   */
+  it('keeps nothing at all when the banner goes nowhere', async () => {
+    const { service, create, prisma } = build();
+
+    await service.create('lessari', 'user-1', { ...base, target: 'NONE', categorySlug: 'blusas' });
+
+    expect(create.mock.calls[0][0].data).toMatchObject({
+      target: 'NONE',
+      categoryId: null,
+      productId: null,
+      externalUrl: null,
+    });
+    // And it does not go looking: there is nothing to resolve.
+    expect(prisma.productCategory.findUnique).not.toHaveBeenCalled();
+  });
+
   it('refuses a target that names a destination it was not given', async () => {
     const { service } = build();
 

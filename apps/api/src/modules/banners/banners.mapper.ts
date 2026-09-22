@@ -31,11 +31,14 @@ export const bannerInclude = {
  * this is the API's side of that same rule — the word comes from the shop's own vocabulary, never
  * from a literal.
  */
-function hrefOf(row: BannerRow, shopSlug: string, words: StorefrontRouteWords): string {
+function hrefOf(row: BannerRow, shopSlug: string, words: StorefrontRouteWords): string | null {
   if (row.target === 'CATEGORY') return `/${shopSlug}/${row.category?.slug ?? ''}`;
   if (row.target === 'PRODUCT') return `/${shopSlug}/${words.products}/${row.product?.slug ?? ''}`;
+  // Null rather than an empty string: the window reads it as "no link" and draws a poster. An
+  // empty href is a link to the current page, which is a card that looks live and does nothing.
+  if (row.target === 'NONE') return null;
 
-  return row.externalUrl ?? '';
+  return row.externalUrl ?? null;
 }
 
 export function toPublicBanner(

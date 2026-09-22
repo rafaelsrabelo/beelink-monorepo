@@ -45,7 +45,13 @@ export function BannerTargetFields({
     onChange({ ...value, [key]: next })
 
   const targetLabel = (target: string) =>
-    target === "PRODUCT" ? text.targetProduct : target === "EXTERNAL" ? text.targetExternal : text.targetCategory
+    target === "PRODUCT"
+      ? text.targetProduct
+      : target === "EXTERNAL"
+        ? text.targetExternal
+        : target === "NONE"
+          ? text.targetNone
+          : text.targetCategory
 
   const picker = (
     key: "categorySlug" | "productSlug",
@@ -102,8 +108,12 @@ export function BannerTargetFields({
             <SelectItem value="CATEGORY">{text.targetCategory}</SelectItem>
             <SelectItem value="PRODUCT">{text.targetProduct}</SelectItem>
             <SelectItem value="EXTERNAL">{text.targetExternal}</SelectItem>
+            <SelectItem value="NONE">{text.targetNone}</SelectItem>
           </SelectContent>
         </Select>
+        {/* The only target with no field under it, so the description is where the rule is said:
+            nothing further is asked because nothing further exists. */}
+        {value.target === "NONE" ? <FieldDescription>{text.targetNoneHelp}</FieldDescription> : null}
       </Field>
 
       {value.target === "CATEGORY" ? picker("categorySlug", categories, text.categoryLabel, text.categoryNone) : null}

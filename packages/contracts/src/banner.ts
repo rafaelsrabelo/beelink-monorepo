@@ -25,8 +25,13 @@ export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
  * rendered, from the slug the row has now, so renaming the thing a banner points at moves the
  * banner with it. `EXTERNAL` is the only one that stores a string, because there is nothing in this
  * database to point at — another website, or a `wa.me` link.
+ *
+ * `NONE` is a poster that says something and goes nowhere: a season, a promise about delivery, a
+ * picture. It is not a banner someone forgot to finish — the shop window draws it without an arrow
+ * and without making it clickable, because a card that looks interactive and is not is worse than
+ * a card that never offered.
  */
-export type BannerTarget = "CATEGORY" | "PRODUCT" | "EXTERNAL";
+export type BannerTarget = "CATEGORY" | "PRODUCT" | "EXTERNAL" | "NONE";
 
 /**
  * A banner as a visitor is served it: already resolved, so the storefront never joins anything.
@@ -43,7 +48,8 @@ export interface PublicBanner {
   imageUrl: string;
   /** Full width, two across, three across — the same three shapes a category poster had. */
   layout: ShowcaseLayout;
-  href: string;
+  /** Null when the banner goes nowhere. The window then draws a poster rather than a link. */
+  href: string | null;
   external: boolean;
 }
 

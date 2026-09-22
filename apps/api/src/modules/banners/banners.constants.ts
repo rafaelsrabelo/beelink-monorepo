@@ -7,8 +7,19 @@ import type { BannerTarget, ShowcaseLayout } from '@harness-monorepo/contracts';
  */
 export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies readonly ShowcaseLayout[];
 
-/** Where a banner may point. See the BannerTarget enum for why two of the three are foreign keys. */
-export const BANNER_TARGETS = ['CATEGORY', 'PRODUCT', 'EXTERNAL'] as const satisfies readonly BannerTarget[];
+/**
+ * Where a banner may point. See the BannerTarget enum for why two of the four are foreign keys.
+ *
+ * `satisfies readonly BannerTarget[]` does not catch a missing value — a subset satisfies it just
+ * as well — so this list is the one place where forgetting one is silent. What it would break is
+ * `@IsIn`, which would then refuse a target the database accepts.
+ */
+export const BANNER_TARGETS = [
+  'CATEGORY',
+  'PRODUCT',
+  'EXTERNAL',
+  'NONE',
+] as const satisfies readonly BannerTarget[];
 
 export const BANNER_TITLE_MAX_LENGTH = 120;
 export const BANNER_SUBTITLE_MAX_LENGTH = 200;

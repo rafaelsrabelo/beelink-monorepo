@@ -17,8 +17,12 @@ export class PublicBannerResponse implements PublicBanner {
   @ApiProperty({ nullable: true, type: String }) subtitle!: string | null;
   @ApiProperty() imageUrl!: string;
   @ApiProperty({ enum: SHOWCASE_LAYOUTS }) layout!: ShowcaseLayout;
-  @ApiProperty({ description: 'Already resolved: built from the target\'s current slug, or stored.' })
-  href!: string;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: "Already resolved, or null when the banner goes nowhere.",
+  })
+  href!: string | null;
   @ApiProperty({ description: 'Opens in a new tab. On the wire so nobody has to guess from the href.' })
   external!: boolean;
 }

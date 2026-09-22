@@ -5,7 +5,7 @@
  * and the screen turns it back. Only the one `target` names is sent — see the screen's `toPayload`.
  */
 export type BannerFormLayout = "FULL" | "HALVES" | "THIRDS"
-export type BannerFormTarget = "CATEGORY" | "PRODUCT" | "EXTERNAL"
+export type BannerFormTarget = "CATEGORY" | "PRODUCT" | "EXTERNAL" | "NONE"
 
 export interface BannerFormValues {
   title: string
