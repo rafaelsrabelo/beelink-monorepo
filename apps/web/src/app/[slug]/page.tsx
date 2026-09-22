@@ -9,16 +9,20 @@ import { StorefrontShowcase } from "@harness-monorepo/ui/blocks/storefront/store
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { getMessages } from "@/lib/locale"
-import { HOME_RAILS_MAX, RAIL_PAGE_SIZE, catalogueAt, shopAt } from "@/lib/storefront-data"
+import { homeAt, shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
  * A shop's front door, at its own address.
  *
- * A landing and not the catalogue: one band of products per category, each running sideways, each
- * with a way into the category it came from. The grid of everything lives one click away, where it
- * can be filtered and paged without the home carrying that weight on the page most visitors ever
- * see.
+ * A landing and not the catalogue: products running sideways, with a way through to the rest. The
+ * grid of everything lives one click away, where it can be filtered and paged without the home
+ * carrying that weight on the page most visitors ever see.
+ *
+ * One band or one per category is the shopkeeper's choice, and `Store.showProductsByCategory` is
+ * where they made it — the checkbox has been in the panel's appearance tab all along, saving and
+ * loading, while no page on the shop window read it. It defaults to off, so a shop that never
+ * touched it gets the single band.
  *
  * It shows no index of categories. It used to, and the shop owner was right that it was repeating
  * itself — every category is already named in the band under the header, so a grid of the same
@@ -59,24 +63,17 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
 
-  // The smallest ask that still answers with every category the shop has: the catalogue endpoint
-  // returns both halves together, and the home needs the list before it knows what to ask for.
-  const [{ ui }, index] = await Promise.all([getMessages(), catalogueAt(slug, { pageSize: 1 })])
-
-  const shown = index.categories.slice(0, HOME_RAILS_MAX)
-  const rails = await Promise.all(
-    shown.map(async (category) => ({
-      category,
-      products: (await catalogueAt(slug, { category: category.slug, pageSize: RAIL_PAGE_SIZE })).products,
-    })),
-  )
+  const [{ ui }, home] = await Promise.all([
+    getMessages(),
+    homeAt(slug, store.showProductsByCategory),
+  ])
 
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
   // A poster is a category with a shape. The picture is required — a card of solid colour with
   // words on it is not a banner — so one without a photograph is quietly not a poster yet.
-  const showcases = index.categories
+  const showcases = home.categories
     .filter((category) => category.showcaseLayout && category.imageUrl)
     .map((category) => ({
       id: category.id,
@@ -90,7 +87,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   return (
     <StorefrontFrame
       store={store}
-      categories={index.categories}
+      categories={home.categories}
       // No pitch band. It used to sit right under the cover — the shop's name, a line about the
       // shop and a WhatsApp button — and the shop owner was right that it reads as a profile page
       // rather than a landing page: three lines of prose between the cover and the first thing for
@@ -114,24 +111,41 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       */}
       <StorefrontShowcase items={showcases} />
       {/*
-        One band per category, in the shopkeeper's own order — they know what they want to sell
-        first. A category with nothing available in it draws nothing: the rail returns null on an
-        empty list, so a shop mid-restock is a shorter page rather than a row of empty headings.
+        The bands, in the shopkeeper's own order — they know what they want to sell first. A band
+        with nothing available in it draws nothing: the rail returns null on an empty list, so a
+        shop mid-restock is a shorter page rather than a row of empty headings.
+
+        The copy is chosen here and not in `homeAt`: a data module that carried a heading would be
+        a data module that has to be told a language.
       */}
-      {rails.map(({ category, products }) => (
-        <StorefrontProductRail
-          key={category.id}
-          products={products}
-          productHref={routes.product}
-          title={category.name}
-          label={category.description ?? undefined}
-          seeAllHref={routes.category(category.slug)}
-          locale="pt-BR"
-          showPrice={layout.showProductPrice ?? true}
-          showBadge={layout.showProductBadges ?? true}
-          messages={ui}
-        />
-      ))}
+      {home.bands.map((band) =>
+        band.kind === "all" ? (
+          <StorefrontProductRail
+            key="all"
+            products={band.products}
+            productHref={routes.product}
+            title={ui.storefront.catalogTitle}
+            seeAllHref={routes.catalog()}
+            locale="pt-BR"
+            showPrice={layout.showProductPrice ?? true}
+            showBadge={layout.showProductBadges ?? true}
+            messages={ui}
+          />
+        ) : (
+          <StorefrontProductRail
+            key={band.category.id}
+            products={band.products}
+            productHref={routes.product}
+            title={band.category.name}
+            label={band.category.description ?? undefined}
+            seeAllHref={routes.category(band.category.slug)}
+            locale="pt-BR"
+            showPrice={layout.showProductPrice ?? true}
+            showBadge={layout.showProductBadges ?? true}
+            messages={ui}
+          />
+        ),
+      )}
     </StorefrontFrame>
   )
 }

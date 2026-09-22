@@ -5,6 +5,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { ScrollRail } from "./scroll-rail"
 import { StorefrontProductCard, type StorefrontProduct } from "./storefront-product-card"
 
 export interface StorefrontProductRailProps {
@@ -42,12 +43,12 @@ const CARD_WIDTH = "w-44 sm:w-52 lg:w-64"
  * The home is a landing and not the catalogue, so it shows one titled band and a door into the
  * whole shop — which is what the shop owner asked for, pointing at the shops he buys from.
  *
- * A scroll container, never a carousel. A carousel is state: a slide index, arrows that do nothing
- * until JavaScript arrives, cards held out of the document until their turn. Here the browser
+ * A scroll container with arrows on top of it, never a carousel that replaces it. The browser
  * scrolls and snaps by itself, so the band works on first paint with scripting off and every card
- * is in the HTML for a crawler to follow. The scrollbar itself is hidden — the shop owner asked,
- * and the card cut by the right edge is what says the row keeps going, which is why the card has
- * a fixed width at every breakpoint rather than a fluid one.
+ * is in the HTML for a crawler to follow; the arrows are an addition, and ./scroll-rail.tsx
+ * records why the shadcn carousel is not what draws them. The scrollbar itself is hidden — the
+ * shop owner asked, and the card cut by the right edge is what says the row keeps going, which is
+ * why the card has a fixed width at every breakpoint rather than a fluid one.
  */
 export function StorefrontProductRail({
   products,
@@ -98,27 +99,10 @@ export function StorefrontProductRail({
         ) : null}
       </div>
 
-      {/*
-        `tabindex={0}` and a named `role="group"`: a region that scrolls sideways cannot be reached
-        by a keyboard unless it can hold focus, because the arrow keys scroll whatever is focused
-        and a div is nothing. The links inside only hide it — the day a card carries no link (a
-        rail of photographs, a shop with its prices off) the region is unreachable outright. That
-        is WCAG 2.1.1, and axe does not catch it here: jsdom lays nothing out, so nothing measures
-        as scrollable and the rule never fires. The name is the band's own title, since "group" on
-        its own tells a visitor nothing about what they just landed in.
-
-        The negative margin is the fix for the last card: a rail inside a centred container ends at
-        the container's padding, so the final card sits jammed against the text edge. The band
-        bleeds a gutter wider than the page and pays it back as padding on the track itself — not
-        on the scroller, where an end padding is the one browsers have historically dropped — so
-        the first card still lines up under the heading and the last one ends with air after it.
-      */}
-      <div
-        tabIndex={0}
-        role="group"
-        aria-label={heading}
-        className="no-scrollbar -mx-4 overflow-x-auto overscroll-x-contain scroll-px-4 snap-x snap-mandatory focus-visible:outline-2 focus-visible:outline-offset-2"
-        style={{ outlineColor: "var(--shop-primary)" }}
+      <ScrollRail
+        label={heading}
+        previousLabel={text.railPrevious}
+        nextLabel={text.railNext}
       >
         <ul className="flex gap-3 px-4">
           {products.map((product) => (
@@ -135,7 +119,7 @@ export function StorefrontProductRail({
             </li>
           ))}
         </ul>
-      </div>
+      </ScrollRail>
     </section>
   )
 }

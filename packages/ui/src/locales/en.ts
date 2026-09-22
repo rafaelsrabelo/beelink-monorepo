@@ -160,6 +160,8 @@ export const en: UiMessages = {
     paginationStatus: "Page {current} of {total}",
     paginationPage: "Page {page}",
     featuredHeading: "Featured",
+    railPrevious: "Previous",
+    railNext: "Next",
     featuredEyebrow: "Picked by the shop",
     categoriesEyebrow: "Find what you are after",
     seeAll: "See all",
