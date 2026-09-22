@@ -48,6 +48,21 @@ export interface StorefrontRouteWords {
  */
 export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
 
+/**
+ * Whether a product is on sale or still being written. ACTIVE is visible in the shop's sales
+ * channels; DRAFT is visible to nobody but its owner.
+ *
+ * It is not stock. A shop selling made to order counts nothing and is still on sale, and a shop
+ * that has run out is on sale with none left — three states a single boolean could not tell apart.
+ */
+export type ProductStatus = "ACTIVE" | "DRAFT";
+
+/**
+ * Whether the shop makes the thing or buys it to resell — not who manufactured it. A name would be
+ * free text, and free text is how `Nike`, `NIKE` and `nike` become three brands in one filter.
+ */
+export type ProductOrigin = "IN_HOUSE" | "RESALE";
+
 export interface PublicProductCategory {
   id: string;
   /** Unique inside the shop. Two shops both selling `blusas` is the normal case. */
@@ -112,6 +127,18 @@ export interface PublicProductCard {
 
 /** One product's own page: the card plus everything only that page renders. */
 export interface PublicProduct extends PublicProductCard {
+  /**
+   * The shelf is empty — the shop counts this product and has none left.
+   *
+   * It is on the page's shape and not on the card's because a card never carries one that is true:
+   * the grid, the category and the search exclude a sold-out product entirely. The page is the
+   * exception, and deliberately so — its address is what goes out on WhatsApp, so it keeps
+   * answering and drops the way to order instead of the page.
+   *
+   * Derived, never the count. How many a shop has left is its own business, and a number on the
+   * public wire is one anybody can read off the page every morning.
+   */
+  soldOut: boolean;
   description: string | null;
   images: PublicProductImage[];
   category: PublicProductCategory | null;
@@ -165,8 +192,10 @@ export interface ProductStock {
    */
   trackStock: boolean;
   /**
-   * Read only while `trackStock`. Null and zero are different facts: null is "nobody counts
-   * this", zero is "there are none left" — and only the second hides the product.
+   * Read only while `trackStock` — and that flag, not this column, is what says "nobody counts
+   * this". On a counted product null and zero mean the same thing: a shopkeeper who turned
+   * counting on and has not said how many, which from the shelf is none. Both take the product off
+   * the shelf; see `soldOut`.
    */
   stockQuantity: number | null;
 }
@@ -188,8 +217,14 @@ export interface ProductCategory extends PublicProductCategory {
 /** A product as its owner edits it. */
 export interface Product extends PublicProduct, ProductStock, ProductParcel {
   position: number;
-  /** Marking a product unavailable hides it from the shop window without losing it. */
-  isAvailable: boolean;
+  /**
+   * What the shopkeeper intends, and only half of what a visitor sees — the other half is stock.
+   * A draft is visible to nobody but its owner; an active product is in the window unless its
+   * shelf is empty. See `soldOut`.
+   */
+  status: ProductStatus;
+  /** Null is a shopkeeper who has not said, never a third kind of product. */
+  origin: ProductOrigin | null;
   /**
    * Whole cents, and owner-only — it is deliberately absent from `PublicProduct`. What a shop paid
    * is nobody's business but theirs, and a field on the public shape is a field in Google's index.
@@ -203,6 +238,43 @@ export interface Product extends PublicProduct, ProductStock, ProductParcel {
   createdAt: string;
   /** ISO-8601. */
   updatedAt: string;
+}
+
+/**
+ * How the panel's product list is narrowed. Every field is optional, and an absent one means "all"
+ * — so an empty query is the whole catalogue, which is what the screen opens with.
+ *
+ * It is answered by the server and not filtered in the browser for the same reason the storefront's
+ * catalogue is: a shop with three hundred products would otherwise ship all three hundred to draw
+ * twenty. It also means a filtered list has an address, so the shopkeeper can return to it.
+ */
+export interface ProductListQuery {
+  /** Matched against the name, the SKU and the barcode — the three things a shopkeeper types. */
+  search?: string;
+  status?: ProductStatus;
+  categoryId?: string;
+  origin?: ProductOrigin;
+  stock?: ProductStockFilter;
+  /** 1-based. Below the first page is served as the first page rather than refused. */
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * The three answers to "how many are left", which are not one number.
+ *
+ * `UNTRACKED` is a shop that does not count this product at all — made to order — and it is not a
+ * stock of zero. Collapsing the two is what sends a shopkeeper looking for a stock problem that
+ * does not exist.
+ */
+export type ProductStockFilter = "IN_STOCK" | "OUT_OF_STOCK" | "UNTRACKED";
+
+/** One page of the panel's list, and what it is a page of. `total` counts the filter, not the page. */
+export interface ProductPage {
+  products: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface CreateProductCategoryPayload {
@@ -238,7 +310,8 @@ export interface CreateProductPayload {
   compareAtPriceCents?: number | null;
   costCents?: number | null;
   categoryId?: string | null;
-  isAvailable?: boolean;
+  status?: ProductStatus;
+  origin?: ProductOrigin | null;
   sku?: string | null;
   barcode?: string | null;
   trackStock?: boolean;

@@ -18,7 +18,7 @@ const categories = [
 
 const base: ProductFormValues = {
   name: "", slug: "", description: "", price: "", compareAtPrice: "", cost: "",
-  categoryId: "", isAvailable: true, imageUrls: [], sku: "", barcode: "",
+  categoryId: "", status: "ACTIVE", origin: "", imageUrls: [], sku: "", barcode: "",
   trackStock: false, stock: "", weight: "", length: "", width: "", height: "",
 }
 

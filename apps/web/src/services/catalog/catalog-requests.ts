@@ -4,6 +4,8 @@ import type {
   CreateProductPayload,
   Product,
   ProductCategory,
+  ProductListQuery,
+  ProductPage,
   UpdateProductCategoryPayload,
   UpdateProductPayload,
 } from "@harness-monorepo/contracts"
@@ -88,13 +90,23 @@ export function deleteProductCategory(slug: string, categoryId: string): Promise
 const productsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/products`
 
 /**
- * Every product the shop has, the unavailable ones included.
+ * One page of the shop's products, drafts included.
  *
  * Deliberately not the storefront's catalogue, which hides them: this is the screen where one is
- * put back on sale, and a list that left it out would make that impossible.
+ * published, and a list that left it out would make that impossible.
+ *
+ * An empty or absent field is left out of the query string entirely rather than sent blank, so
+ * `?status=` — which the API would read as a filter on nothing — never leaves this function.
  */
-export function fetchProducts(slug: string): Promise<Product[]> {
-  return call<Product[]>(productsPath(slug), { method: "GET" })
+export function fetchProducts(slug: string, query: ProductListQuery = {}): Promise<ProductPage> {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null && value !== "") params.set(key, String(value))
+  }
+
+  const search = params.toString()
+
+  return call<ProductPage>(`${productsPath(slug)}${search ? `?${search}` : ""}`, { method: "GET" })
 }
 
 export function fetchProduct(slug: string, productId: string): Promise<Product> {

@@ -119,6 +119,7 @@ export default async function ProductPage({ params }: PageProps<"/[slug]/[sectio
         categoryName={product.category?.name ?? null}
         backHref={product.category ? routes.category(product.category.slug) : routes.catalog()}
         orderHref={orderHref}
+        soldOut={product.soldOut}
         locale="pt-BR"
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}

@@ -50,7 +50,11 @@ The panel at `/admin/<slug>` is where the shopkeeper works: the catalogue, the o
 
 ## Catalogue
 
-- A **product** belongs to a store. It has a name, a description, a price, images, and a flag saying whether it is currently available. Marking it unavailable hides it from the shop window without losing it.
+- A **product** belongs to a store. It has a name, a description, a price and images.
+- Whether a customer sees it is **two facts, not one**, and the product keeps them apart on purpose.
+  - Its **status** is what the shopkeeper intends: *active*, or a *draft* nobody but them can see. A draft is something being written, not something that ran out.
+  - Its **stock** is what the shelf says. A shop may choose not to count a product at all — most here sell made to order — and one that is not counted is never sold out. A shop that does count and reaches zero has a product that is **sold out**, which is a different thing from a draft and is fixed a different way.
+- A product is in the shop window when it is active **and** not sold out. A draft is nowhere. A sold-out product leaves the window, the category and the search, but **keeps its own page**, marked sold out and with no way to order: that address is what a shopkeeper sends on WhatsApp, and a link that starts answering "not found" is the most visible failure this product can produce.
 - A **category** also belongs to a store; a product sits in one. Both products and categories carry an **order the shopkeeper chooses** — the shop window shows them in that order, because the shopkeeper knows what they want to sell first.
 - A name is unique inside its store, so two products called the same thing cannot both exist and confuse an order.
 - There is a separate, product-wide taxonomy of **store categories** ("bakery", "clothing"), which describes stores rather than products.

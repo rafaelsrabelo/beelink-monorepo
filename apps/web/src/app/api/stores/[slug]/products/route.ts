@@ -7,10 +7,14 @@ import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { revalidateStore } from "@/lib/revalidate"
 
 /**
- * The shopkeeper's own products — the unavailable ones included.
+ * The shopkeeper's own products — the drafts included.
  *
  * A different path from the storefront's catalogue, which hides them. This is the screen where one
- * is put back on sale, so leaving it out would make that impossible.
+ * is published, so leaving it out would make that impossible.
+ *
+ * The query string is forwarded whole rather than picked apart here. The API's ValidationPipe runs
+ * `forbidNonWhitelisted`, so an unknown parameter is a 400 there — copying the allowed list into
+ * this file would only create a second list to forget to update.
  */
 export async function GET(
   request: NextRequest,
@@ -21,7 +25,7 @@ export async function GET(
 
   const { slug } = await context.params
   const { status, payload } = await forwardSignedIn(request, {
-    path: `/stores/${slug}/products`,
+    path: `/stores/${slug}/products${request.nextUrl.search}`,
     method: "GET",
   })
 

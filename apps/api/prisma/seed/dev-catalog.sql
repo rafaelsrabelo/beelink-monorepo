@@ -124,11 +124,11 @@ WHERE child."storeId" = sh.store_id
 -- ---------------------------------------------------------------- products
 -- compareAtPriceCents is set on some and not others on purpose: the window computes the percentage
 -- from the pair, so a catalogue with both kinds is the only way to see that it does.
-INSERT INTO "products" ("id", "storeId", "categoryId", "slug", "name", "description", "priceCents", "compareAtPriceCents", "position", "isAvailable", "slugHistory", "createdAt", "updatedAt")
+INSERT INTO "products" ("id", "storeId", "categoryId", "slug", "name", "description", "priceCents", "compareAtPriceCents", "position", "status", "slugHistory", "createdAt", "updatedAt")
 SELECT
   uuidv7(), sh.store_id,
   (SELECT pc.id FROM "product_categories" pc WHERE pc."storeId" = sh.store_id AND pc.slug = p.category),
-  p.slug, p.name, p.description, p.price, p.compare_at, p.position, true, '{}', now(), now()
+  p.slug, p.name, p.description, p.price, p.compare_at, p.position, 'ACTIVE'::"ProductStatus", '{}', now(), now()
 FROM shop_segment sh
 JOIN seed_product p ON p.segment = sh.segment
 ON CONFLICT ("storeId", "slug") DO UPDATE
@@ -138,7 +138,7 @@ ON CONFLICT ("storeId", "slug") DO UPDATE
       "compareAtPriceCents" = EXCLUDED."compareAtPriceCents",
       "position" = EXCLUDED."position",
       "categoryId" = EXCLUDED."categoryId",
-      "isAvailable" = true,
+      "status" = 'ACTIVE',
       "updatedAt" = now();
 
 -- ---------------------------------------------------------------- what this file no longer sells

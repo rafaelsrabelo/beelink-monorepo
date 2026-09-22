@@ -1,5 +1,5 @@
 // Types
-import type { RouteVocabulary, ShowcaseLayout, StorefrontRouteWords } from '@harness-monorepo/contracts';
+import type { ProductOrigin, ProductStatus, ProductStockFilter, RouteVocabulary, ShowcaseLayout, StorefrontRouteWords } from '@harness-monorepo/contracts';
 
 /**
  * Which words each vocabulary builds a shop's URLs from. The table is the only place these strings
@@ -104,6 +104,34 @@ export const PRICE_CENTS_MAX = 100_000_000;
  * other enum the wire carries: a reader has to be able to see the whole list.
  */
 export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies readonly ShowcaseLayout[];
+
+/** On sale, or still being written. See the ProductStatus enum for why it is not a boolean. */
+export const PRODUCT_STATUSES = ['ACTIVE', 'DRAFT'] as const satisfies readonly ProductStatus[];
+
+/** Made here, or bought to resell. Absent means the shopkeeper has not said. */
+export const PRODUCT_ORIGINS = ['IN_HOUSE', 'RESALE'] as const satisfies readonly ProductOrigin[];
+
+/**
+ * The three answers to "how many are left". `UNTRACKED` is a shop that does not count this product,
+ * which is not a stock of zero — see ProductStockFilter.
+ */
+export const PRODUCT_STOCK_FILTERS = [
+  'IN_STOCK',
+  'OUT_OF_STOCK',
+  'UNTRACKED',
+] as const satisfies readonly ProductStockFilter[];
+
+/**
+ * The panel's page, smaller than the shop window's 24. A table row is read, not glanced at, and a
+ * page longer than a screen is a page whose pager nobody finds.
+ */
+export const PRODUCTS_ADMIN_PAGE_SIZE = 20;
+
+/**
+ * A bound on the search box, so a pasted essay cannot become a `LIKE '%…%'` the database scans the
+ * whole table for. Nobody types a product name this long.
+ */
+export const PRODUCT_SEARCH_MAX_LENGTH = 120;
 
 /** Grams. Thirty kilos is past what a carrier takes as a parcel; beyond it is a typo. */
 export const PARCEL_GRAMS_MAX = 30_000;

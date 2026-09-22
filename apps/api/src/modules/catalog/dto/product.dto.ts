@@ -7,6 +7,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -22,6 +23,8 @@ import {
 import type {
   CreateProductPayload,
   ProductImagePayload,
+  ProductOrigin,
+  ProductStatus,
   UpdateProductPayload,
 } from '@harness-monorepo/contracts';
 
@@ -34,7 +37,9 @@ import {
   PRICE_CENTS_MAX,
   PRODUCT_IMAGES_MAX,
   PRODUCT_NAME_MAX_LENGTH,
+  PRODUCT_ORIGINS,
   PRODUCT_SLUG_MAX_LENGTH,
+  PRODUCT_STATUSES,
   STOCK_MAX,
 } from '../catalog.constants.js';
 import { blankToNull, imageUrl, trim } from '../../stores/dto/store-fields.dto.js';
@@ -108,10 +113,16 @@ export class CreateProductDto implements CreateProductPayload {
   @blankToNull
   categoryId?: string | null;
 
-  @ApiPropertyOptional({ default: true })
+  @ApiPropertyOptional({ enum: PRODUCT_STATUSES, default: 'ACTIVE' })
   @IsOptional()
-  @IsBoolean()
-  isAvailable?: boolean;
+  @IsIn(PRODUCT_STATUSES)
+  status?: ProductStatus;
+
+  @ApiPropertyOptional({ enum: PRODUCT_ORIGINS, nullable: true })
+  @IsOptional()
+  @IsIn(PRODUCT_ORIGINS)
+  @blankToNull
+  origin?: ProductOrigin | null;
 
   @ApiPropertyOptional({ nullable: true, description: 'Whole cents. Owner-only; never on the storefront.' })
   @IsOptional()

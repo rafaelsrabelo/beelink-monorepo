@@ -33,6 +33,14 @@ export interface StorefrontProductDetailProps {
   backHref: string
   /** `wa.me/<digits>?text=…`, built by the screen — the message names this product. */
   orderHref?: string
+  /**
+   * The shop counts this product and has none left.
+   *
+   * The page still answers — this address goes out on WhatsApp, and a 404 the day the stock runs
+   * out breaks every link already shared. What goes away is the way to order, because sending a
+   * shopkeeper a request they cannot fill wastes two people's time instead of one's.
+   */
+  soldOut?: boolean
   locale: string
   showPrice?: boolean
   showBadge?: boolean
@@ -56,6 +64,7 @@ export function StorefrontProductDetail({
   categoryName,
   backHref,
   orderHref,
+  soldOut = false,
   locale,
   showPrice = true,
   showBadge = true,
@@ -114,6 +123,15 @@ export function StorefrontProductDetail({
 
       <div className="flex flex-col gap-2">
         <h1 className="text-xl font-semibold">{name}</h1>
+        {/*
+          Its own line above the price rather than a badge beside the name: this is the one fact
+          that changes what the visitor can do here, and it has to be read before the price is.
+          No token: the shop window is painted from the shopkeeper's own colours, so everything
+          here is an opacity on their foreground.
+        */}
+        {soldOut ? (
+          <p className="text-sm font-semibold tracking-wide uppercase opacity-70">{text.soldOut}</p>
+        ) : null}
         {showPrice ? (
           <StorefrontPrice
             priceCents={priceCents}
@@ -126,7 +144,15 @@ export function StorefrontProductDetail({
         {description ? <p className="text-sm whitespace-pre-line opacity-80">{description}</p> : null}
       </div>
 
-      {orderHref ? (
+      {soldOut ? (
+        // A bordered box and not a tinted one. A background of `--shop-primary` needs an alpha, and
+        // an `opacity` on the element is the wrong tool for that: opacity composites the whole
+        // subtree, so the sentence inside fades with the tint and no `opacity-100` on a child can
+        // bring it back. The border reads as a panel and leaves the text at full strength.
+        <p className="rounded-xl border border-current/20 px-5 py-3 text-center text-sm opacity-70">
+          {text.soldOutHint}
+        </p>
+      ) : orderHref ? (
         <a
           href={orderHref}
           rel="noreferrer"

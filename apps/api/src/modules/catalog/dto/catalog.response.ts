@@ -5,6 +5,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type {
   Product,
   ProductCategory,
+  ProductPage,
+  ProductOrigin,
+  ProductStatus,
   PublicProduct,
   PublicProductCard,
   PublicProductCategory,
@@ -14,7 +17,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { PRODUCTS_PAGE_SIZE, SHOWCASE_LAYOUTS } from '../catalog.constants.js';
+import { PRODUCT_ORIGINS, PRODUCT_STATUSES, PRODUCTS_PAGE_SIZE, SHOWCASE_LAYOUTS } from '../catalog.constants.js';
 
 /**
  * The shapes out, for Swagger. Each `implements` its contract type, so a field added to the wire
@@ -77,6 +80,8 @@ export class PublicProductCardResponse implements PublicProductCard {
 }
 
 export class PublicProductResponse extends PublicProductCardResponse implements PublicProduct {
+  @ApiProperty({ description: 'The shop counts this product and has none left. Derived, never the count.' })
+  soldOut!: boolean;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty({ type: [PublicProductImageResponse] }) images!: PublicProductImageResponse[];
   @ApiPropertyOptional({ type: PublicProductCategoryResponse, nullable: true })
@@ -85,7 +90,8 @@ export class PublicProductResponse extends PublicProductCardResponse implements 
 
 export class ProductResponse extends PublicProductResponse implements Product {
   @ApiProperty() position!: number;
-  @ApiProperty() isAvailable!: boolean;
+  @ApiProperty({ enum: PRODUCT_STATUSES }) status!: ProductStatus;
+  @ApiProperty({ enum: PRODUCT_ORIGINS, nullable: true }) origin!: ProductOrigin | null;
   // Owner-only, all of them: they extend PublicProductResponse rather than being added to it.
   @ApiProperty({ nullable: true, type: Number, description: 'Whole cents.' }) costCents!: number | null;
   @ApiProperty({ nullable: true, type: String }) sku!: string | null;
@@ -100,6 +106,20 @@ export class ProductResponse extends PublicProductResponse implements Product {
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }
 
+
+/**
+ * One page of the panel's list, and what it is a page of.
+ *
+ * `total` counts the filter and not the page — it is what the pager divides. `page` and `pageSize`
+ * are the bounds that were actually used, never the ones that were asked for, so a pager drawn from
+ * this answer cannot offer a page that is not there.
+ */
+export class ProductPageResponse implements ProductPage {
+  @ApiProperty({ type: [ProductResponse] }) products!: ProductResponse[];
+  @ApiProperty({ description: 'How many match the filter, across every page.' }) total!: number;
+  @ApiProperty({ description: '1-based.' }) page!: number;
+  @ApiProperty() pageSize!: number;
+}
 
 /**
  * Everything a shop window needs to draw itself, in one answer. Two round trips for a page that

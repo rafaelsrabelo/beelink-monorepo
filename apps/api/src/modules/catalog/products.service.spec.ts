@@ -5,7 +5,8 @@ import type { CatalogSlugService } from './catalog-slug.service.js';
 import type { ProductRow } from './catalog.mapper.js';
 
 // App
-import { PRODUCTS_PAGE_SIZE } from './catalog.constants.js';
+import { PRODUCTS_PAGE_SIZE, PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
+import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 import { ProductsService } from './products.service.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -60,10 +61,9 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
 
     await service.listPublic(STORE, { category: 'blusas', search: 'croche' });
 
-    expect(count.mock.calls[0]?.[0].where).toEqual(findMany.mock.calls[0]?.[0].where);
-    expect(count.mock.calls[0]?.[0].where).toMatchObject({
+    expect(count.mock.calls[0][0].where).toEqual(findMany.mock.calls[0][0].where);
+    expect(count.mock.calls[0][0].where).toMatchObject({
       storeId: STORE,
-      isAvailable: true,
       category: {
         isActive: true,
         // The shelf of a parent holds what is under it. Without the second arm, filtering
@@ -72,6 +72,64 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
         OR: [{ slug: 'blusas' }, { parent: { slug: 'blusas', isActive: true } }],
       },
     });
+  });
+
+  /**
+   * The shelf rule and the search each carry an `OR`. Spread into one object the second overwrites
+   * the first, and the shop window answers the search over sold-out products too — with a total
+   * that agrees with it, so nothing looks wrong until someone counts by hand.
+   */
+  it('keeps the shelf rule and the search as separate conditions', async () => {
+    const { service, findMany } = build(rows(1), 1);
+
+    await service.listPublic(STORE, { search: 'croche' });
+
+    const and = findMany.mock.calls[0][0].where.AND as { status?: string; OR: unknown[] }[];
+    expect(and).toHaveLength(2);
+    expect(and[0]).toEqual(ON_THE_SHELF_WHERE);
+    expect(and[1]?.OR).toHaveLength(2);
+  });
+
+  it('leaves a sold-out product off the shelf, counting a null quantity as none', async () => {
+    const { service, findMany } = build(rows(1), 1);
+
+    await service.listPublic(STORE);
+
+    const [shelf] = findMany.mock.calls[0][0].where.AND as { status: string; OR: unknown[] }[];
+    expect(shelf?.status).toBe('ACTIVE');
+    expect(shelf?.OR).toEqual([{ trackStock: false }, { stockQuantity: { gt: 0 } }]);
+  });
+
+  /**
+   * The product page is the one public read that does NOT apply the shelf rule, and it is a
+   * decision: this address goes out on WhatsApp, and a 404 the day the stock runs out breaks every
+   * link already shared. The page answers, marked sold out, with no way to order.
+   */
+  it('still serves the page of a product whose shelf is empty', async () => {
+    const [row] = rows(1);
+    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: true, stockQuantity: 0 });
+    const service = new ProductsService(
+      { product: { findFirst } } as never,
+      {} as StoresService,
+      {} as CatalogSlugService,
+    );
+
+    const product = await service.publicBySlug(STORE, 'bolsa-amora');
+
+    expect(findFirst.mock.calls[0][0].where).toEqual({ storeId: STORE, slug: 'bolsa-amora', status: 'ACTIVE' });
+    expect(product.soldOut).toBe(true);
+  });
+
+  it('does not call a made-to-order product sold out, however empty its count column is', async () => {
+    const [row] = rows(1);
+    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: false, stockQuantity: 0 });
+    const service = new ProductsService(
+      { product: { findFirst } } as never,
+      {} as StoresService,
+      {} as CatalogSlugService,
+    );
+
+    expect((await service.publicBySlug(STORE, 'bolsa-amora')).soldOut).toBe(false);
   });
 
   it('reads both in one transaction, so they cannot fall either side of a write', async () => {
@@ -99,3 +157,114 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
     expect(findMany.mock.calls[0]?.[0]).toMatchObject({ skip: 0, take: PRODUCTS_PAGE_SIZE });
   });
 });
+
+describe('ProductsService.list — the panel, filtered', () => {
+  /**
+   * The owner's shape carries the dates and the private columns, which `rows()` leaves out because
+   * the storefront never sees them. `toProduct` reads them, so they have to be here.
+   */
+  function ownerRows(count: number): ProductRow[] {
+    const stamp = new Date('2026-09-22T12:00:00.000Z');
+
+    return rows(count).map((row) => ({
+      ...row,
+      position: 0,
+      status: 'ACTIVE',
+      origin: null,
+      costCents: null,
+      sku: null,
+      barcode: null,
+      trackStock: false,
+      stockQuantity: null,
+      weightGrams: null,
+      lengthMm: null,
+      widthMm: null,
+      heightMm: null,
+      description: null,
+      createdAt: stamp,
+      updatedAt: stamp,
+    })) as unknown as ProductRow[];
+  }
+
+  /** The owned-store check is the only collaborator this method needs beyond Prisma. */
+  function buildOwned(page: ProductRow[], total: number) {
+    const built = build(page, total);
+    const stores = { ownedStoreId: vi.fn().mockResolvedValue(STORE) } as unknown as StoresService;
+
+    return {
+      ...built,
+      service: new ProductsService(
+        { product: { findMany: built.findMany, count: built.count }, $transaction: built.transaction } as never,
+        stores,
+        {} as CatalogSlugService,
+      ),
+    };
+  }
+
+  /**
+   * The bug this method is one careless spread away from. "Out of stock" carries an `OR`, and so
+   * does the search; in one object literal the second silently overwrites the first, and the
+   * filtered search answers the search alone — with a total that agrees with it, so nothing looks
+   * wrong until a shopkeeper counts by hand.
+   */
+  it('keeps the stock filter and the search as separate conditions', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { stock: 'OUT_OF_STOCK', search: 'whey' });
+
+    const and = findMany.mock.calls[0][0].where.AND as { OR?: unknown[]; trackStock?: boolean }[];
+    expect(and).toHaveLength(2);
+    expect(and[0]).toMatchObject({ trackStock: true });
+    expect(and[1]?.OR).toHaveLength(3);
+  });
+
+  it('matches the name, the code and the barcode — whichever the shopkeeper has in hand', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { search: 'WH-900' });
+
+    const conditions = findMany.mock.calls[0][0].where.AND as { OR: Record<string, unknown>[] }[];
+    expect(conditions[0]?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode']);
+  });
+
+  /**
+   * A shop that does not count a product is not a shop that has none of it. Asking for "untracked"
+   * must not also demand a quantity, or every made-to-order product disappears from its own filter.
+   */
+  it('asks only that counting is off when the filter is "untracked"', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { stock: 'UNTRACKED' });
+
+    expect(findMany.mock.calls[0][0].where.AND).toEqual([{ trackStock: false }]);
+  });
+
+  /** A counted product with no quantity yet is, from the shelf, none left. */
+  it('counts a null quantity as out of stock, not as unknown', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { stock: 'OUT_OF_STOCK' });
+
+    const conditions = findMany.mock.calls[0][0].where.AND as { OR: unknown[] }[];
+    expect(conditions[0]?.OR).toEqual([{ stockQuantity: { lte: 0 } }, { stockQuantity: null }]);
+  });
+
+  it('answers the bounds it used, never the ones it was asked for', async () => {
+    const { service } = buildOwned(ownerRows(1), 400);
+
+    const answer = await service.list('lessari', 'user-1', { page: 0, pageSize: 5_000 });
+
+    expect(answer.page).toBe(1);
+    expect(answer.pageSize).toBe(PRODUCTS_PAGE_SIZE_MAX);
+    expect(answer.total).toBe(400);
+  });
+
+  /** Drafts are the reason this screen exists; a panel that hid them could not publish one. */
+  it('does not filter by status unless asked, so drafts are in the list', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', {});
+
+    expect(findMany.mock.calls[0][0].where).not.toHaveProperty('status');
+  });
+})

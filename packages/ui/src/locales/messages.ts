@@ -141,6 +141,15 @@ export interface UiMessages {
     discount: string
     backToShop: string
     orderThis: string
+    /**
+     * The shelf is empty, said on the product's own page.
+     *
+     * The page keeps answering when the stock runs out — its address is what a shopkeeper sends on
+     * WhatsApp, and a 404 there is the most visible failure this product can produce. So the visitor
+     * is told, and the way to order is what goes away.
+     */
+    soldOut: string
+    soldOutHint: string
     /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
     photoOf: string
     /** The header's basket, which now has an address of its own. */
@@ -340,8 +349,28 @@ export interface UiMessages {
       compareHelp: string
       categoryLabel: string
       categoryNone: string
-      availableLabel: string
-      availableHelp: string
+      /** On sale or still being written — never "available", which reads as a stock question. */
+      statusLabel: string
+      statusHelp: string
+      statusActive: string
+      statusDraft: string
+      /**
+       * Active, but the shelf is empty. A third state and not a second badge, because what a
+       * shopkeeper asks of this column is "is it on sale?", and "Ativo" beside a zero answered yes
+       * when the truth was no.
+       */
+      statusSoldOut: string
+      /** Opens the product's own page on the shop window. */
+      view: string
+      /** Said instead, on a draft: it has no public page to open. */
+      viewDraft: string
+      /** Made here or bought to resell. Not a manufacturer's name; see the ProductOrigin enum. */
+      originLabel: string
+      originHelp: string
+      originInHouse: string
+      originResale: string
+      /** Shown where the shopkeeper has not answered, in the form and in the table alike. */
+      originUnset: string
       imagesLabel: string
       imagesHelp: string
       imageAdd: string
@@ -351,9 +380,52 @@ export interface UiMessages {
       cancel: string
       delete: string
       deleteConfirm: string
-      /** Marks a row the shopkeeper took off sale; the window shows none of it. */
-      unavailable: string
       uncategorised: string
+      /**
+       * The table's column headers, and what a cell says when it has nothing to say. They are
+       * their own object because a header is not a field label: "Estoque" heads a column of
+       * numbers, while the field that sets it is a checkbox called "Controlar estoque".
+       */
+      /**
+       * The toolbar over the table. `any*` are the "no filter" options, named after what they let
+       * through rather than "Todos", which reads as a filter that selects everything.
+       */
+      filters: {
+        searchLabel: string
+        searchPlaceholder: string
+        anyStatus: string
+        anyCategory: string
+        anyOrigin: string
+        anyStock: string
+        inStock: string
+        outOfStock: string
+        /** A product the shop does not count at all — not one with none left. */
+        untracked: string
+        clear: string
+        /** Said in place of the table when a filter matches nothing. */
+        noResults: string
+        noResultsHint: string
+      }
+      pager: {
+        previous: string
+        next: string
+        /** "{from}–{to} de {total}" — the range, because the page number is not the question. */
+        range: string
+      }
+      table: {
+        code: string
+        name: string
+        status: string
+        stock: string
+        category: string
+        origin: string
+        price: string
+        /** Names the column of buttons for a screen reader; the header itself is not drawn. */
+        actions: string
+        noCode: string
+        /** Said where `trackStock` is off — which is not the same as none left. */
+        stockUntracked: string
+      }
       /** Said when the price typed is not a number, or is zero. */
       priceInvalid: string
       /** Said when the "was" price is not above the price — a discount that is not one. */
@@ -371,7 +443,7 @@ export interface UiMessages {
       nameLabel: string
       namePlaceholder: string
       slugLabel: string
-      /** Says what the segment becomes, so a shopkeeper sees the address before saving it. */
+      /** Shows the whole public URL, so a shopkeeper sees the address before saving it. */
       slugHelp: string
       descriptionLabel: string
       descriptionHelp: string

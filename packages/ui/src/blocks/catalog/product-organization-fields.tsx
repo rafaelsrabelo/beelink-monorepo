@@ -8,10 +8,8 @@ import { PlusIcon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
 import {
   Field,
-  FieldContent,
   FieldDescription,
   FieldLabel,
 } from "@harness-monorepo/ui/components/field"
@@ -58,6 +56,12 @@ export function ProductOrganizationFields({
   const text = messages.catalog.products
   const fields = messages.catalog.fields
   const [adding, setAdding] = useState(false)
+
+  const originLabel = (origin: ProductFormValues["origin"]) => {
+    if (origin === "IN_HOUSE") return text.originInHouse
+    if (origin === "RESALE") return text.originResale
+    return text.originUnset
+  }
   const [name, setName] = useState("")
 
   async function create() {
@@ -143,17 +147,62 @@ export function ProductOrganizationFields({
         ) : null}
       </Field>
 
-      <Field orientation="horizontal">
-        <Checkbox
-          id="product-available"
+      {/*
+        A select and not a switch. The two states are named things a shopkeeper says out loud —
+        "está ativo", "ainda é rascunho" — and a switch would have to be labelled with one of them
+        and mean the other when off, which is the reading people get wrong.
+      */}
+      <Field>
+        <FieldLabel htmlFor="product-status">{text.statusLabel}</FieldLabel>
+        <Select
+          value={value.status}
+          onValueChange={(next) => onChange({ ...value, status: next as ProductFormValues["status"] })}
           disabled={disabled}
-          checked={value.isAvailable}
-          onCheckedChange={(checked) => onChange({ ...value, isAvailable: checked })}
-        />
-        <FieldContent>
-          <FieldLabel htmlFor="product-available">{text.availableLabel}</FieldLabel>
-          <FieldDescription>{text.availableHelp}</FieldDescription>
-        </FieldContent>
+        >
+          <SelectTrigger id="product-status">
+            <SelectValue>
+              {(selected: string) => (selected === "DRAFT" ? text.statusDraft : text.statusActive)}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ACTIVE">{text.statusActive}</SelectItem>
+            <SelectItem value="DRAFT">{text.statusDraft}</SelectItem>
+          </SelectContent>
+        </Select>
+        <FieldDescription>{text.statusHelp}</FieldDescription>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="product-origin">{text.originLabel}</FieldLabel>
+        <Select
+          disabled={disabled}
+          // The same `"none"` sentinel the category select above uses, for the same reason: an
+          // empty string is how Base UI spells "nothing chosen", so an item carrying one cannot be
+          // chosen back once something else has been.
+          value={value.origin === "" ? "none" : value.origin}
+          onValueChange={(next: string | null) =>
+            onChange({
+              ...value,
+              origin: !next || next === "none" ? "" : (next as ProductFormValues["origin"]),
+            })
+          }
+        >
+          <SelectTrigger id="product-origin">
+            {/* A render function, not a bare <SelectValue />: Base UI shows the raw value unless it
+                is told how to read it, and the trigger would say "none" on screen. */}
+            <SelectValue>
+              {(selected: string) =>
+                originLabel(selected === "none" || !selected ? "" : (selected as ProductFormValues["origin"]))
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">{text.originUnset}</SelectItem>
+            <SelectItem value="IN_HOUSE">{text.originInHouse}</SelectItem>
+            <SelectItem value="RESALE">{text.originResale}</SelectItem>
+          </SelectContent>
+        </Select>
+        <FieldDescription>{text.originHelp}</FieldDescription>
       </Field>
     </div>
   )

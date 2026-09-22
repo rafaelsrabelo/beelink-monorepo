@@ -11,6 +11,38 @@ enum ShowcaseLayout {
   THIRDS
 }
 
+/// Whether a product is on sale or still being written.
+///
+/// It replaced a boolean called `available`, which conflated two facts a shopkeeper keeps apart: a
+/// draft was never published, and something out of stock was. The boolean made them one row state,
+/// so the screen could not say which of the two a hidden product was — and the shopkeeper went
+/// looking for a missing product in the wrong place.
+///
+/// ACTIVE is what the shopkeeper intends; DRAFT is visible to nobody but its owner.
+///
+/// It is not the whole of what a visitor sees. Being on the shelf is ACTIVE **and** not sold out,
+/// and the two are kept apart because they answer different questions: status is an intention, and
+/// stock is a fact. A product can be a draft and sold out at once. The one place that combines them
+/// is `src/modules/catalog/catalog.visibility.ts`, and every public query goes through it.
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+}
+
+/// Whether the shop makes the thing or buys it to resell.
+///
+/// Not the manufacturer's *name*: a name is free text, and free text means `Nike`, `NIKE` and
+/// `nike` are three brands in the filter a month later. The question a shopkeeper actually asks of
+/// this field is which of their products they produce, and that question has two answers.
+///
+/// Nullable, and null is not a third kind of product — it is a shopkeeper who has not said yet.
+/// Defaulting it would print an answer they never gave onto every row written before the column
+/// existed.
+enum ProductOrigin {
+  IN_HOUSE
+  RESALE
+}
+
 model ProductCategory {
   id      String @id @default(uuid(7)) @db.Uuid
   storeId String @db.Uuid
@@ -106,10 +138,11 @@ model Product {
   /// it was derived from. The API refuses a value at or below `priceCents`.
   compareAtPriceCents Int?
 
-  position     Int     @default(0)
-  /// Marking a product unavailable hides it from the shop window without losing it, which is what
-  /// a shopkeeper does when something is out of stock rather than discontinued.
-  isAvailable  Boolean @default(true)
+  position Int @default(0)
+  /// See ProductStatus. Only ACTIVE rows leave this table for the shop window.
+  status   ProductStatus @default(ACTIVE)
+  /// See ProductOrigin. Null means the shopkeeper has not said.
+  origin   ProductOrigin?
 
   /// What the shopkeeper paid for it. Only they ever see it: it is here so a margin can be shown
   /// beside the price, and it must never reach `PublicProduct`.
@@ -123,11 +156,14 @@ model Product {
   barcode String? @db.VarChar(64)
 
   /// Whether this shop counts this product. Off by default, because most shops here sell made to
-  /// order and a stock of zero on a product nobody counts would hide it from the window.
+  /// order, and a shop that does not count is never sold out however empty the column below is.
   trackStock    Boolean @default(false)
-  /// How many are left, and read only when `trackStock`. Nullable rather than zero so "not
-  /// counted" and "none left" stay different facts — the second hides the product, the first
-  /// means nothing at all.
+  /// How many are left, and read only when `trackStock`. Nullable rather than zero so "not counted"
+  /// and "none left" stay different facts. On a counted product, null and zero mean the same thing
+  /// — a shopkeeper who turned counting on and has not said how many, which from the shelf is none.
+  ///
+  /// Reaching zero takes the product out of the grid, the category and the search, and leaves its
+  /// own page answering, marked sold out, with no way to order. See catalog.visibility.ts.
   stockQuantity Int?
 
   /// Grams, and integers. Melhor Envio quotes on weight and size, and this is the field the quote
@@ -153,8 +189,8 @@ model Product {
 
   @@unique([storeId, slug])
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
-  @@index([storeId, isAvailable, position])
-  @@index([categoryId, isAvailable, position])
+  @@index([storeId, status, position])
+  @@index([categoryId, status, position])
   @@map("products")
 }
 

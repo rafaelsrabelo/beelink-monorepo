@@ -100,4 +100,24 @@ describe("StorefrontProductDetail", () => {
 
     await expectNoA11yViolations(container)
   })
+
+  /**
+   * The page keeps answering when the shelf empties, because this address is what a shopkeeper
+   * sends on WhatsApp and a 404 there is the most visible failure this product can produce. What
+   * goes away is the way to order — sending someone a request the shop cannot fill wastes two
+   * people's time instead of one's.
+   */
+  it("says the shelf is empty and takes away the way to order", () => {
+    renderProduct({ soldOut: true, orderHref: "https://wa.me/5585999998888?text=Ol%C3%A1" })
+
+    expect(screen.getByText("Esgotado")).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /WhatsApp/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/Acabou por enquanto/)).toBeInTheDocument()
+  })
+
+  it("keeps the product itself readable when it is sold out", () => {
+    renderProduct({ soldOut: true })
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Bolsa Amora")
+  })
 })
