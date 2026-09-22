@@ -47,6 +47,7 @@
 
     --spacing-header: var(--header-height);
     --spacing-sidebar: var(--sidebar-width);
+    --spacing-sidebar-icon: var(--sidebar-width-icon);
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
@@ -159,6 +160,7 @@
 
     --header-height: 3.5rem;                       /* 56px */
     --sidebar-width: 15rem;                        /* 240px */
+    --sidebar-width-icon: 3.5rem;                  /* 56px — the rail recolhido, icons only */
 
 }
 

@@ -568,6 +568,9 @@ export interface UiMessages {
     brand: string
     menuOpen: string
     navLabel: string
+    /** The desktop control that narrows the rail to icons, and the one that widens it back. */
+    railCollapse: string
+    railExpand: string
     searchPlaceholder: string
     searchLabel: string
     searchShortcut: string

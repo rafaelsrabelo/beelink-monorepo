@@ -33,10 +33,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Types
 import type { Locale, WebMessages } from "@/locales"
+import type { Prefs } from "@/lib/prefs"
 
 // App
 import { AppLink } from "@/components/app-link"
 import { LocaleSwitcher } from "@/components/locale-switcher"
+import { PREFS_COOKIE, PREFS_MAX_AGE } from "@/lib/prefs"
 import { useSignOut } from "@/services/auth/auth-hooks"
 import { useMyStores } from "@/services/stores/store-hooks"
 
@@ -45,14 +47,34 @@ export interface AppShellProps {
   ui: UiMessages
   web: WebMessages
   locale: Locale
+  /** Read from the cookie on the server, so the rail renders in its chosen width, never jumping. */
+  prefs: Prefs
   children: ReactNode
 }
 
-export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
+export function AppShell({ user, ui, web, locale, prefs, children }: AppShellProps) {
   const router = useRouter()
   const pathname = usePathname()
   const signOut = useSignOut()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [railCollapsed, setRailCollapsed] = useState(prefs.railCollapsed)
+
+  /**
+   * The rail narrows now and is remembered for next time.
+   *
+   * No `router.refresh()`, unlike the locale switcher: the language changes what the server
+   * rendered, and this changes only a width the browser already has. Refreshing the whole tree to
+   * move a rail would make an instant control wait on the network.
+   */
+  function toggleRail() {
+    setRailCollapsed((collapsed) => {
+      const next = !collapsed
+      const value = encodeURIComponent(JSON.stringify({ ...prefs, railCollapsed: next }))
+      document.cookie = `${PREFS_COOKIE}=${value};path=/;max-age=${PREFS_MAX_AGE};samesite=lax`
+
+      return next
+    })
+  }
 
   // `/admin/<slug>/...`, and nothing else. `/admin` itself is the doorway that picks a shop — it
   // lives in the `(pick)` group, which has no sidebar, so no menu is ever built for it.
@@ -103,6 +125,8 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
         <AdminHeader
           brandHref={menuSlug ? `/admin/${menuSlug}` : "/admin"}
           onToggleSidebar={() => setDrawerOpen((open) => !open)}
+          onToggleRail={toggleRail}
+          railCollapsed={railCollapsed}
           linkComponent={AppLink}
           messages={ui}
           search={<AdminSearch messages={ui} />}
@@ -141,6 +165,7 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
           footerItems={[item(nav.settings, "/store", <SettingsIcon />)]}
           activeHref={pathname}
           open={drawerOpen}
+          collapsed={railCollapsed}
           onClose={() => setDrawerOpen(false)}
           linkComponent={AppLink}
           messages={ui}

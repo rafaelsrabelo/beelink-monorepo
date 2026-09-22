@@ -48,3 +48,13 @@ export const SemLoja: Story = {
 }
 
 export const EmIngles: Story = { args: { messages: en } }
+
+/**
+ * Recolhido: só os ícones, e só a partir de `lg`. O nome de cada item continua na árvore de
+ * acessibilidade (`lg:sr-only`, não `lg:hidden`) e volta como tooltip no hover — um leitor de tela
+ * ouve exatamente o mesmo menu das duas formas.
+ *
+ * Abaixo de `lg` isto não muda nada: ali o rail é uma gaveta que alguém abriu de propósito, e uma
+ * gaveta que abre numa tira de ícones responde uma pergunta que ninguém fez.
+ */
+export const Recolhido: Story = { args: { collapsed: true } }

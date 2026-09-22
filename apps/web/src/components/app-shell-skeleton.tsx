@@ -5,7 +5,7 @@ import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 export function AppShellSkeleton() {
   return (
     <div className="flex min-h-svh">
-      <div className="hidden w-64 flex-col gap-3 border-r p-4 md:flex">
+      <div className="w-sidebar hidden flex-col gap-3 border-r p-4 lg:flex">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-6 w-full" />
         <Skeleton className="h-6 w-full" />

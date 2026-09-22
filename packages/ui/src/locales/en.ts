@@ -421,6 +421,8 @@ export const en: UiMessages = {
     brand: "beelink",
     menuOpen: "Open menu",
     navLabel: "Shop navigation",
+    railCollapse: "Collapse menu",
+    railExpand: "Expand menu",
     searchPlaceholder: "Search",
     searchLabel: "Search this shop",
     searchShortcut: "Ctrl K",

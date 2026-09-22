@@ -27,6 +27,36 @@ describe("AdminSidebar", () => {
     )
   })
 
+  // The whole point of `lg:sr-only` over `lg:hidden`. A rail that reads as a row of unnamed
+  // buttons to a screen reader is not collapsed, it is broken — and jsdom lays nothing out, so a
+  // visual assertion here would prove nothing either way.
+  it("keeps every item's accessible name when collapsed", () => {
+    renderSidebar({ collapsed: true })
+
+    expect(screen.getByRole("link", { name: "Pedidos" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Configurações da loja" })).toBeInTheDocument()
+  })
+
+  it("gives a pointer user the name back, on hover", () => {
+    renderSidebar({ collapsed: true })
+
+    expect(screen.getByRole("link", { name: "Pedidos" })).toHaveAttribute("title", "Pedidos")
+  })
+
+  it("carries no title while the names are on screen", () => {
+    renderSidebar()
+
+    // A tooltip repeating a label a foot away is noise, and on touch it is a tooltip nobody can
+    // dismiss.
+    expect(screen.getByRole("link", { name: "Pedidos" })).not.toHaveAttribute("title")
+  })
+
+  it("has no accessibility violations collapsed", async () => {
+    const { container } = renderSidebar({ collapsed: true })
+
+    await expectNoA11yViolations(container)
+  })
+
   it("keeps the footer items in the same rail, at its foot", () => {
     renderSidebar()
 

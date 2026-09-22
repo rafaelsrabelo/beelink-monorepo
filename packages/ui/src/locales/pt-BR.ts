@@ -421,6 +421,8 @@ export const ptBR: UiMessages = {
     brand: "beelink",
     menuOpen: "Abrir menu",
     navLabel: "Navegação da loja",
+    railCollapse: "Recolher menu",
+    railExpand: "Expandir menu",
     searchPlaceholder: "Pesquisar",
     searchLabel: "Pesquisar na loja",
     searchShortcut: "Ctrl K",
