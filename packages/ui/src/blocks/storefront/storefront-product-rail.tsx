@@ -77,7 +77,7 @@ export function StorefrontProductRail({
             <p
               aria-hidden="true"
               className="text-xs font-semibold tracking-widest uppercase"
-              style={{ color: "var(--shop-primary)" }}
+              style={{ color: "var(--shop-primary-ink)" }}
             >
               {label}
             </p>
@@ -92,7 +92,7 @@ export function StorefrontProductRail({
             // links, and no way to tell which goes where (WCAG 2.4.4). The eye keeps the short one.
             aria-label={text.seeAllOf.replace("{section}", heading)}
             className="shrink-0 text-sm font-medium underline-offset-4 hover:underline"
-            style={{ color: "var(--shop-primary)" }}
+            style={{ color: "var(--shop-primary-ink)" }}
           >
             {text.seeAll}
           </Link>

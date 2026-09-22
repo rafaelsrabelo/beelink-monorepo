@@ -222,6 +222,11 @@ export const ptBR: UiMessages = {
     discard: "Descartar",
     leaveWarning: "Você tem alterações não publicadas. Se sair agora, elas se perdem.",
     previewNotice: "Isto é a sua loja. Os links não funcionam aqui.",
+    colorsHint: "A cor do texto é escolhida sozinha, para contrastar com o fundo de cada faixa.",
+    saveColors: "Salvar cores",
+    tabBlocks: "Componentes",
+    tabColors: "Cores",
+    addBlock: "Adicionar bloco",
   },
   banners: {
     title: "Banners",

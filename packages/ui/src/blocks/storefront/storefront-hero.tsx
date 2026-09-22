@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import type { ReactNode } from "react"
+
 // UI
 import {
   Carousel,
@@ -27,6 +30,13 @@ export interface StorefrontHeroItem {
   /** Already resolved by the API from the slug the target has now. Null goes nowhere. */
   href?: string | null
   external?: boolean
+  /**
+   * Wraps this one slide. Design mode puts a grip on it; the shop passes nothing.
+   *
+   * Per slide and not per carousel, because a grip bound to the group would carry the first
+   * slide's id — dragging it would pull that one hero out and split the carousel.
+   */
+  wrap?: (card: ReactNode) => ReactNode
 }
 
 export interface StorefrontHeroProps {
@@ -57,7 +67,11 @@ export function StorefrontHero({
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontHeroProps) {
-  if (!items.length) return null
+  // A hero with no picture is a fixed-height band of nothing, and `src=""` makes the browser
+  // re-request the page. Dropped here rather than guarded at every call site.
+  const drawn = items.filter((item) => item.imageUrl)
+
+  if (!drawn.length) return null
 
   const text = messages.storefront
   // A contained hero gets the corner the rest of the page has; a full-bleed one must not, or the
@@ -65,6 +79,7 @@ export function StorefrontHero({
   const frame = cn("w-full object-cover", "h-44 sm:h-72 lg:h-96", width === "CONTAINED" && "rounded-2xl")
 
   function one(item: StorefrontHeroItem) {
+    const wrap = item.wrap ?? ((card: ReactNode) => card)
     const picture = (
       <>
         <img
@@ -103,10 +118,15 @@ export function StorefrontHero({
 
     const shape = cn("group relative block w-full overflow-hidden", width === "CONTAINED" && "rounded-2xl")
 
-    return item.href ? (
+    return wrap(
+      item.href ? (
       <Link
         href={item.href}
         className={shape}
+        // A hero whose words are painted into the photograph leaves this link holding nothing but
+        // an `aria-hidden` image — an empty link, which a screen reader announces as a URL. The
+        // shop's own fallback is the only name there is to give it.
+        {...(item.title || item.subtitle ? {} : { "aria-label": text.backToShop })}
         // The pair every outbound anchor in this repository carries. Without the `target`, a hero
         // pointing at WhatsApp takes the shop window away with it.
         {...(item.external ? { target: "_blank", rel: "noreferrer" } : {})}
@@ -115,17 +135,18 @@ export function StorefrontHero({
       </Link>
     ) : (
       <div className={shape}>{picture}</div>
+      ),
     )
   }
 
-  const only = items[0]
+  const only = drawn[0]
   const body =
-    items.length === 1 && only ? (
+    drawn.length === 1 && only ? (
       one(only)
     ) : (
       <Carousel className="w-full" opts={{ loop: true }}>
         <CarouselContent>
-          {items.map((item) => (
+          {drawn.map((item) => (
             <CarouselItem key={item.id}>{one(item)}</CarouselItem>
           ))}
         </CarouselContent>
@@ -136,5 +157,7 @@ export function StorefrontHero({
       </Carousel>
     )
 
-  return width === "CONTAINED" ? <div className={BAND}>{body}</div> : body
+  // The page's main band has no top padding — a full-bleed hero is meant to meet the header. A
+  // contained one is not, so it supplies the gap itself rather than making every other block pay.
+  return width === "CONTAINED" ? <div className={cn(BAND, "pt-6")}>{body}</div> : body
 }

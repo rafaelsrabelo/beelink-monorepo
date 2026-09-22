@@ -123,7 +123,7 @@ export function StorefrontPagination({
                 )}
                 style={
                   slot === current
-                    ? { backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }
+                    ? { backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }
                     : undefined
                 }
               >

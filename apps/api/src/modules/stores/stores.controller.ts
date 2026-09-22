@@ -20,6 +20,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 // App
 import { env } from '../../shared/config/env.js';
 import { CurrentUser, Public } from '../auth/auth.decorators.js';
+import { StoreColorsDto } from './dto/store-fields.dto.js';
 import { CreateStoreDto, UpdateStoreDto } from './dto/store.dto.js';
 import { PublicStoreResponse, StoreResponse } from './dto/store.response.js';
 import { STOREFRONT_RATE_LIMIT } from './stores.constants.js';
@@ -86,6 +87,23 @@ export class StoresController {
   @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
   bySlug(@Param('slug') slug: string, @CurrentUser() current: AuthenticatedUser): Promise<StoreResponse> {
     return this.stores.bySlug(slug, current.id);
+  }
+
+  @Put(':slug/colors')
+  @ApiBearerAuth()
+  @RouteConfig({ rateLimit: writeRateLimit })
+  @ApiOperation({ summary: "The shop's four colours, and nothing else it owns" })
+  @ApiOkResponse({ type: StoreResponse })
+  @ApiUnauthorizedResponse({ description: 'AUTH_UNAUTHENTICATED' })
+  @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
+  @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED — too many writes from this address' })
+  updateColors(
+    @Param('slug') slug: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: StoreColorsDto,
+  ): Promise<StoreResponse> {
+    return this.stores.updateColors(slug, current.id, dto);
   }
 
   @Put(':slug')

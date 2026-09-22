@@ -53,7 +53,7 @@ export function StorefrontBenefits({ items }: StorefrontBenefitsProps) {
                 className="flex size-10 shrink-0 items-center justify-center rounded-full"
                 style={{
                   backgroundColor: "color-mix(in oklab, var(--shop-primary) 14%, transparent)",
-                  color: "var(--shop-primary)",
+                  color: "var(--shop-primary-ink)",
                 }}
               >
                 {item.icon}

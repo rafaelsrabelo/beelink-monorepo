@@ -222,6 +222,11 @@ export const en: UiMessages = {
     discard: "Discard",
     leaveWarning: "You have unpublished changes. Leaving now loses them.",
     previewNotice: "This is your shop. The links do not work here.",
+    colorsHint: "The text colour is chosen for you, to contrast with each band's background.",
+    saveColors: "Save colours",
+    tabBlocks: "Components",
+    tabColors: "Colours",
+    addBlock: "Add block",
   },
   banners: {
     title: "Banners",

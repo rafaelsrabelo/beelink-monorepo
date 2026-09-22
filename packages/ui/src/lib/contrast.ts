@@ -80,3 +80,52 @@ export function readableOn(surface: string): string {
 
   return onPaper >= onInk ? PAPER : INK
 }
+
+/** The three channels of a hex, or mid-grey for anything unparseable. Shared by the two below. */
+function channelsOf(hex: string): [number, number, number] {
+  const raw = hex.trim().replace("#", "")
+  const full = raw.length === 3 ? raw.split("").map((d) => d + d).join("") : raw.slice(0, 6)
+
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return [128, 128, 128]
+
+  const [r, g, b] = [0, 2, 4].map((at) => Number.parseInt(full.slice(at, at + 2), 16))
+
+  return [r ?? 128, g ?? 128, b ?? 128]
+}
+
+/** WCAG AA for body text. The line, not an opinion. */
+const AA = 4.5
+
+/**
+ * The brand colour, still recognisably itself, but readable on the surface it is written on.
+ *
+ * `readableOn` cannot serve this case and it is worth saying why: a heading, a "see all" link and
+ * an icon chip are painted in the shop's own colour, and answering "black or white" would throw
+ * the brand away. So the brand is mixed toward whatever that surface's ink is — just far enough to
+ * clear 4.5:1, and not one step further.
+ *
+ * Measured rather than eyeballed, and mixed in sRGB rather than through CSS `color-mix`, because
+ * the ratio is computed from the mixed value: mixing in one space and measuring in another would
+ * return a number the browser does not render.
+ *
+ * A brand that already clears is returned untouched, which is most of them — this only moves a
+ * pale yellow on white or a navy on black, and those are the two a shopkeeper cannot see at all.
+ */
+export function toneOn(brand: string, surface: string): string {
+  if (contrastRatio(brand, surface) >= AA) return brand
+
+  const ink = readableOn(surface) === "oklch(1 0 0)" ? 255 : 0
+  const base = channelsOf(brand)
+
+  // Twenty steps of 5%, and the first that clears wins. Bisection would land between two steps
+  // that render identically at eight bits per channel, so counting is both simpler and honest.
+  for (let step = 1; step <= 20; step++) {
+    const mixed = base.map((c) => Math.round(c + (ink - c) * (step / 20))) as [number, number, number]
+    const asHex = `#${mixed.map((c) => c.toString(16).padStart(2, "0")).join("")}`
+
+    if (contrastRatio(asHex, surface) >= AA) return `rgb(${mixed[0]} ${mixed[1]} ${mixed[2]})`
+  }
+
+  // Nothing between the brand and the ink cleared, so the ink is the only thing left that reads.
+  return readableOn(surface)
+}

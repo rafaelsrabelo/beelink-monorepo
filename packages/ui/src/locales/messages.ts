@@ -310,6 +310,12 @@ export interface UiMessages {
     /** The browser's own leave-confirmation cannot be worded; this is said on screen instead. */
     leaveWarning: string
     previewNotice: string
+    /** Said under the colour pickers: there is no ink field, and this is why. */
+    colorsHint: string
+    saveColors: string
+    tabBlocks: string
+    tabColors: string
+    addBlock: string
   }
   banners: {
     title: string

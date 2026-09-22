@@ -9,6 +9,7 @@ import type { StoreRow } from './store.mapper.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
+import type { StoreColorsDto } from './dto/store-fields.dto.js';
 import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
 import { RESERVED_SLUGS } from './stores.constants.js';
 
@@ -105,6 +106,35 @@ export class StoresService {
    * panel posts every field it edits. That includes `address` and `layoutSettings` — omitting them
    * empties them.
    */
+  /**
+   * The four colours, and only those.
+   *
+   * Its own write rather than a corner of `update`, and the reason is that `update` is a full
+   * replacement — it says so in its own doc, and omitting `layoutSettings` empties the column. A
+   * design-mode colour save would have had to re-post the whole shop from whatever the panel last
+   * read, which makes two screens last-write-wins over each other: the settings form would repost
+   * its stale copy over a colour just changed, or the other way round.
+   *
+   * Four columns, named one by one. There is no ink among them: every word on the shop window is
+   * derived from the surface it sits on.
+   */
+  async updateColors(slug: string, userId: string, dto: StoreColorsDto): Promise<Store> {
+    await this.assertOwnership(slug, userId);
+
+    const row = await this.prisma.store.update({
+      where: { slug },
+      data: {
+        colorBackground: dto.background,
+        colorPrimary: dto.primary,
+        colorHeader: dto.header,
+        colorFooter: dto.footer,
+      },
+      include: storeInclude,
+    });
+
+    return toStore(row);
+  }
+
   async update(slug: string, userId: string, dto: UpdateStoreDto): Promise<Store> {
     const current = await this.assertOwnership(slug, userId);
     if (dto.categoryId) await this.assertCategoryExists(dto.categoryId);

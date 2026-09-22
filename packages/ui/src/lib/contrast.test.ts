@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // Lib
-import { contrastRatio, readableOn, relativeLuminance } from "./contrast"
+import { contrastRatio, readableOn, relativeLuminance, toneOn } from "./contrast"
 import colours from "./contrast.fixtures.json"
 
 /**
@@ -74,5 +74,46 @@ describe("readableOn", () => {
     const other = chosen === white ? black : white
 
     expect(contrastRatio(midGrey, chosen)).toBeGreaterThan(contrastRatio(midGrey, other))
+  })
+})
+
+describe("toneOn", () => {
+  it("leaves a brand that already reads exactly as the shopkeeper chose it", () => {
+    // Most of them. This only ever moves the two a shopkeeper cannot see at all.
+    for (const brand of brands) {
+      if (contrastRatio(brand, white) >= 4.5) expect(toneOn(brand, white)).toBe(brand)
+    }
+  })
+
+  it("darkens a pale brand until it reads on a pale page", () => {
+    const toned = toneOn(colours.paleBrand, white)
+
+    expect(toned).not.toBe(colours.paleBrand)
+    expect(contrastRatio(colours.paleBrand, white)).toBeLessThan(4.5)
+  })
+
+  it("lightens a dark brand until it reads on a dark page", () => {
+    const toned = toneOn(colours.darkBrand, black)
+
+    expect(toned).not.toBe(colours.darkBrand)
+    expect(toned).toMatch(/^rgb\(/)
+  })
+
+  // The whole point: the result is measured, not hoped for. A mix computed in one colour space and
+  // checked in another would return a number the browser never renders.
+  it("stops at the first step that actually clears AA", () => {
+    for (const brand of [colours.paleBrand, colours.darkBrand]) {
+      for (const surface of [white, black]) {
+        const toned = toneOn(brand, surface)
+        const [r, g, b] = toned.startsWith("rgb")
+          ? toned.slice(4, -1).split(" ").map(Number)
+          : [null, null, null]
+
+        if (r !== null) {
+          const asHex = `#${[r, g, b].map((c) => (c as number).toString(16).padStart(2, "0")).join("")}`
+          expect(contrastRatio(asHex, surface)).toBeGreaterThanOrEqual(4.5)
+        }
+      }
+    }
   })
 })

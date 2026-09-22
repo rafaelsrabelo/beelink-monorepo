@@ -80,7 +80,7 @@ export function StorefrontSection({
             <p
               aria-hidden="true"
               className="text-xs font-semibold tracking-widest uppercase"
-              style={{ color: "var(--shop-primary)" }}
+              style={{ color: "var(--shop-primary-ink)" }}
             >
               {label}
             </p>
@@ -94,7 +94,7 @@ export function StorefrontSection({
             href={moreHref}
             aria-label={format(text.seeAllOf, { section: title })}
             className="shrink-0 text-sm font-medium underline-offset-4 hover:underline"
-            style={{ color: "var(--shop-primary)" }}
+            style={{ color: "var(--shop-primary-ink)" }}
           >
             {moreLabel ?? text.seeAll}
           </Link>

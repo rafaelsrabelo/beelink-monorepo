@@ -284,7 +284,7 @@ export default async function StorefrontSectionPage({
           <a
             href={routes.catalog()}
             className="mt-2 rounded-xl px-4 py-2 text-sm font-medium"
-            style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
+            style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
           >
             {ui.storefront.catalogTitle}
           </a>

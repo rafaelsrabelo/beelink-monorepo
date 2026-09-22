@@ -5,5 +5,14 @@
   "shortWhite": "#fff",
   "translucentWhite": "#FFFFFFAA",
   "midGrey": "#777777",
-  "brands": ["#3B82F6", "#10B981", "#8B5CF6", "#EC4899", "#F97316", "#EF4444"]
+  "brands": [
+    "#3B82F6",
+    "#10B981",
+    "#8B5CF6",
+    "#EC4899",
+    "#F97316",
+    "#EF4444"
+  ],
+  "paleBrand": "#FFD500",
+  "darkBrand": "#1A1A2E"
 }

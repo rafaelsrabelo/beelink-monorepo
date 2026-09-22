@@ -4,18 +4,21 @@
 import { useEffect, useState } from "react"
 
 // Types
-import type { PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
+import type { PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
+import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
 import { SectionArrangement } from "@harness-monorepo/ui/blocks/design/section-arrangement"
 import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { HomeBand } from "@/lib/storefront-data"
 import { useSections, useReorderSections, useUpdateSection } from "@/services/sections/section-hooks"
+import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
 import { DesignPreviewPane } from "./design-preview-pane"
 import { applyOrder, changesOf, orderedIdsOf, previewOf, toDraft, type Draft } from "./design-draft"
 
@@ -43,17 +46,34 @@ export interface DesignScreenProps {
  *
  * The cost is real and is warned about rather than hidden — a reload before publishing loses it.
  */
+/** Spelled out so a fifth colour is a compile error here rather than a field nobody compares. */
+const COLOUR_KEYS = ["background", "primary", "header", "footer"] as const satisfies readonly (keyof StoreColors)[]
+
 export function DesignScreen({ store, categories, bands, year, messages }: DesignScreenProps) {
   const text = messages.design
   const slug = store.slug
 
   const banners = useSections(slug)
+  const presets = useStoreColorPresets()
+  const saveColors = useUpdateStoreColors(slug)
   const reorder = useReorderSections(slug)
   const update = useUpdateSection(slug)
 
   const [draft, setDraft] = useState<Draft[] | null>(null)
   const [seeded, setSeeded] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
+  const [tab, setTab] = useState("blocks")
+
+  /*
+    The palette is its own draft, and it saves on its own.
+
+    Not part of the arrangement's Publish, because the two are different promises: an arrangement
+    is held back until the owner says so, and a colour is the kind of thing you want to see land.
+    They also go to different endpoints — `PUT /stores/:slug/colors` exists precisely so a colour
+    save never re-posts the whole shop over whatever another screen just wrote.
+  */
+  const [palette, setPalette] = useState<StoreColors>(store.colors)
+  const paletteChanged = COLOUR_KEYS.some((key) => palette[key] !== store.colors[key])
 
   // Seeded once per server answer, and never re-seeded while the arrangement is dirty: a refetch
   // landing mid-edit would otherwise throw away what the owner is in the middle of doing.
@@ -149,25 +169,50 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
         />
 
         <aside className="flex w-full shrink-0 flex-col gap-3 @4xl/main:w-96">
-          <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
-          {banners.isPending ? (
-            <>
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-            </>
-          ) : (
-            <SectionArrangement
-              items={rows}
-              onReorder={(ids) => edit(applyOrder(rows, ids))}
-              onToggle={(id, isActive) =>
-                edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
-              }
-              onLayoutChange={(id, layout) =>
-                edit(rows.map((row) => (row.id === id ? { ...row, layout } : row)))
-              }
-              messages={messages}
-            />
-          )}
+          <Tabs value={tab} onValueChange={(next: string) => setTab(next)}>
+            <TabsList className="w-full">
+              <TabsTrigger value="blocks" className="flex-1">
+                {text.tabBlocks}
+              </TabsTrigger>
+              <TabsTrigger value="colors" className="flex-1">
+                {text.tabColors}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="blocks" className="flex flex-col gap-3 pt-3">
+              <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
+              {banners.isPending ? (
+                <>
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                </>
+              ) : (
+                <SectionArrangement
+                  items={rows}
+                  onReorder={(ids) => edit(applyOrder(rows, ids))}
+                  onToggle={(id, isActive) =>
+                    edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
+                  }
+                  onLayoutChange={(id, layout) =>
+                    edit(rows.map((row) => (row.id === id ? { ...row, layout } : row)))
+                  }
+                  messages={messages}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="colors" className="pt-3">
+              <DesignColors
+                value={palette}
+                onChange={setPalette}
+                presets={presets.data ?? []}
+                dirty={paletteChanged}
+                pending={saveColors.isPending}
+                onSave={() => saveColors.mutate(palette)}
+                messages={messages}
+              />
+            </TabsContent>
+          </Tabs>
         </aside>
       </div>
     </div>

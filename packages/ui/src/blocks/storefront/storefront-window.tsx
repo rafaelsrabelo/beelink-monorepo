@@ -7,7 +7,7 @@ import { ShoppingBagIcon, UserRoundIcon } from "lucide-react"
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
-import { readableOn } from "@harness-monorepo/ui/lib/contrast"
+import { readableOn, toneOn } from "@harness-monorepo/ui/lib/contrast"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
@@ -251,6 +251,16 @@ export function StorefrontWindow({
     "--shop-on-background": ink,
     "--shop-primary": colors.primary,
     "--shop-on-primary": readableOn(colors.primary),
+    /*
+      The brand as a *word* on the page, rather than as a surface behind one.
+
+      A section's heading, a "see all" link and a promise's icon are painted in the shop's own
+      colour, and `readableOn` cannot serve them: answering "black or white" would throw the brand
+      away. This is the brand itself, mixed toward the page's ink only as far as 4.5:1 requires —
+      a pale yellow on white and a navy on black are the two a shopkeeper cannot read at all, and
+      every other brand comes back untouched.
+    */
+    "--shop-primary-ink": toneOn(colors.primary, colors.background),
     "--shop-header": colors.header,
     "--shop-on-header": readableOn(colors.header),
     "--shop-footer": colors.footer,
@@ -372,7 +382,7 @@ export function StorefrontWindow({
                     className="flex size-10 shrink-0 items-center justify-center rounded-full"
                     style={{
                       backgroundColor: "color-mix(in oklab, var(--shop-primary) 14%, transparent)",
-                      color: "var(--shop-primary)",
+                      color: "var(--shop-primary-ink)",
                     }}
                   >
                     {highlight.icon}
@@ -390,7 +400,13 @@ export function StorefrontWindow({
 
       {/* ---------------------------------------------------------------- 5 · the shop itself */}
       {blocks ? (
-        <main className="flex flex-1 flex-col gap-8 pb-8">{blocks}</main>
+        <main className="flex flex-1 flex-col gap-8 pb-8">
+          {/*
+            No top padding, on purpose: a full-bleed hero is meant to meet the header. A block that
+            is contained supplies its own, because only it knows it is not touching the edges.
+          */}
+          {blocks}
+        </main>
       ) : (
       <main className={cn(BAND, "flex flex-1 flex-col gap-8 py-8")}>
         {description ? (

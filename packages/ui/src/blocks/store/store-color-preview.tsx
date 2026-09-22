@@ -36,6 +36,7 @@ export function StoreColorPreview({ colors, messages = defaultMessages }: StoreC
           "--store-background": colors.background,
           "--store-primary": colors.primary,
           "--store-text": readableOn(colors.background),
+          "--store-on-primary": readableOn(colors.primary),
           "--store-header": colors.header,
           "--store-footer": colors.footer,
         } as CSSProperties
@@ -45,7 +46,7 @@ export function StoreColorPreview({ colors, messages = defaultMessages }: StoreC
         <div className="h-8 bg-(--store-header)" />
         <div className="flex items-center justify-between gap-3 p-3">
           <span className="text-sm text-(--store-text)">{text.previewSample}</span>
-          <span className="rounded-md bg-(--store-primary) px-2 py-1 text-xs text-(--store-background)">
+          <span className="rounded-md bg-(--store-primary) px-2 py-1 text-xs text-(--store-on-primary)">
             {text.previewAction}
           </span>
         </div>

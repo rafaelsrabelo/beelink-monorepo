@@ -158,7 +158,7 @@ export function StorefrontProductDetail({
           rel="noreferrer"
           target="_blank"
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-medium"
-          style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
+          style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
         >
           <WhatsAppIcon className="size-5" />
           {text.orderThis}
