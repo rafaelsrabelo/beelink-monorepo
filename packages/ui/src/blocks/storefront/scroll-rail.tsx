@@ -33,10 +33,17 @@ export interface ScrollRailProps {
  * their own client file: the cards, their prices and their links stay server-rendered, and what
  * ships to the browser is a ref and two handlers.
  *
- * They are hidden where they would be noise: a touch screen is scrolled with a finger, and a row
- * that already fits has nothing to step through. That second one is the common case here — a shop
- * with four products fills less than a screen — and two arrows that do nothing on a shop's front
- * door are worse than no arrows at all.
+ * They are hidden where they would be noise: a finger scrolls a row by pushing it, and a row that
+ * already fits has nothing to step through. That second one is the common case here — a shop with
+ * four products fills less than a screen — and two arrows that do nothing on a shop's front door
+ * are worse than no arrows at all.
+ *
+ * **The first one keys off the pointer, not the width, and that is a correction.** They used to
+ * hide below the `sm` breakpoint, on the assumption that a narrow viewport meant a touch screen.
+ * It does not: a desktop window dragged down to phone width still has a mouse, and with the
+ * scrollbar hidden and no arrows there was no way left to move the row — `shift` and the wheel
+ * works and nobody finds it. `pointer-fine` asks the real question, so a narrow window keeps its
+ * arrows and a phone still does not have to look at them.
  *
  * The measurement goes through `useSyncExternalStore` rather than a `setState` in an effect. It is
  * what React 19 offers for reading layout, it keeps the lint rule about state in effects honest
@@ -147,7 +154,7 @@ export function ScrollRail({ label, previousLabel, nextLabel, children }: Scroll
             aria-label={previousLabel}
             onMouseDown={keepFocus}
             onClick={() => step(-1)}
-            className="absolute top-1/2 -left-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm sm:flex"
+            className="absolute top-1/2 -left-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm pointer-fine:flex"
           >
             <ChevronLeftIcon aria-hidden="true" className="size-4" />
           </Button>
@@ -158,7 +165,7 @@ export function ScrollRail({ label, previousLabel, nextLabel, children }: Scroll
             aria-label={nextLabel}
             onMouseDown={keepFocus}
             onClick={() => step(1)}
-            className="absolute top-1/2 -right-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm sm:flex"
+            className="absolute top-1/2 -right-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm pointer-fine:flex"
           >
             <ChevronRightIcon aria-hidden="true" className="size-4" />
           </Button>
