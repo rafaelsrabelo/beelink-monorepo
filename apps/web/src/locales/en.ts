@@ -53,6 +53,7 @@ export const en: WebMessages = {
       customers: "Customers",
       categories: "Categories",
       banners: "Banners",
+      design: "Design mode",
     },
     home: {
       greeting: "{name}",

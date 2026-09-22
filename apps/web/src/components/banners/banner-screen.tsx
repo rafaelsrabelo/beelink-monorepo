@@ -90,10 +90,17 @@ export function BannerScreen({ slug, messages }: BannerScreenProps) {
           <h1 className="text-2xl font-semibold">{text.title}</h1>
           <p className="text-muted-foreground text-sm">{text.description}</p>
         </div>
-        {/* A link and not a button: making a banner is a place, and a place has an address. */}
-        <AppLink href={`/admin/${slug}/banners/new`} className={buttonVariants()}>
-          {text.create}
-        </AppLink>
+        <div className="flex items-center gap-2">
+          {/* Where a banner is arranged, said on the screen where one is made: the order and the
+              size are not decided here, and a shopkeeper who does not know that looks for them. */}
+          <AppLink href={`/admin/${slug}/design`} className={buttonVariants({ variant: "outline" })}>
+            {messages.design.title}
+          </AppLink>
+          {/* A link and not a button: making a banner is a place, and a place has an address. */}
+          <AppLink href={`/admin/${slug}/banners/new`} className={buttonVariants()}>
+            {text.create}
+          </AppLink>
+        </div>
       </header>
 
       {banners.isPending ? (

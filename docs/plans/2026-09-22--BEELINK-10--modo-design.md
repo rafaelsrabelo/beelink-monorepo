@@ -120,3 +120,43 @@ A entrada fica no menu lateral e na tela de Banners.
   do arranjo para manter em dia.
 - **Criar e editar banner aqui.** Isso é a tela de Banners, com rota própria. Aqui se arruma.
 - **Botão "Modo design" dentro da vitrine.** Ver decisão 7.
+
+---
+
+## Adendo, 2026-09-22 — o preview de celular saiu, e a medição que o tirou
+
+O plano previa um interruptor computador/celular: a mesma superfície de largura fixa, trocando
+1440px por 390px. Implementado, foi medido no Chrome e **não funciona** — e a razão não tem
+conserto dentro desta abordagem.
+
+Uma media query resolve contra a **janela**, e a largura da superfície não muda a janela.
+`transform: scale()` roda em tempo de pintura justamente para não mexer no layout; é o que torna o
+preview de desktop fiel, e é o que torna o de celular uma mentira. Medido, numa janela de 1574px
+com a superfície em 390px:
+
+```
+classes:  grid-cols-2 ... sm:grid-cols-4
+largura:  390.00px
+janela:   1574px          sm: casa       lg: casa
+colunas:  59.49px 59.51px 59.49px 59.51px     ← quatro
+```
+
+A faixa de pagamento desenhou **quatro colunas dentro de 390 pixels**. Um celular de verdade
+desenha duas. O dono estaria arrumando a loja olhando para um layout que nenhum cliente recebe —
+no aparelho em que quase todos eles chegam.
+
+**O preview de computador, esse, é fiel.** A vitrine usa `sm:` (640) e `lg:` (1024) e nenhum outro
+breakpoint — contados nos blocos: 25 e 8, zero `xl:`, zero `2xl:`. Então em qualquer janela de
+editor a partir de 1024px a superfície de 1440px desenha exatamente o que o visitante de desktop
+recebe. É por isso que a superfície continua de largura fixa em vez de preencher o painel.
+
+Então: **um preview só, de computador.** O bloco perdeu a prop `device` e o `PREVIEW_WIDTHS` virou
+`PREVIEW_WIDTH`. As chaves `desktop` e `mobile` saíram dos três dicionários.
+
+Um preview de celular honesto precisa de um **viewport próprio**, o que quer dizer `iframe` — com
+o custo de levar as folhas de estilo para dentro do documento e de portar o rascunho para lá. É
+tarefa própria, não um ajuste desta.
+
+Entrou no lugar um botão **Descartar**, que já tinha chave no dicionário e não tinha botão: sem
+ele, a única saída de um rascunho não publicado era recarregar a página — exatamente o gesto que o
+aviso de saída existe para desencorajar.

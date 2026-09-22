@@ -7,6 +7,7 @@ import type { PublicProductCategory, PublicStore } from "@harness-monorepo/contr
 // UI
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
 import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
+import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -42,6 +43,19 @@ export interface StorefrontFrameProps {
    * browser on the thirty-first of December and hydration says so out loud.
    */
   year: number
+  /**
+   * Replaces the live search. The design preview passes a plain form, because the live one asks
+   * the API on every keystroke and a preview that talks to the network is a preview that costs
+   * something to look at.
+   */
+  searchSlot?: ReactNode
+  /**
+   * How every injected link is drawn. The preview passes one that renders no `href`, so nothing
+   * in it navigates and nothing in it takes a tab stop. `StorefrontWindow` does not forward this
+   * to its children, so it is handed to the category band here and to the bands below by whoever
+   * builds them.
+   */
+  linkComponent?: LinkComponent
   messages: UiMessages
   children: ReactNode
 }
@@ -67,6 +81,8 @@ export function StorefrontFrame({
   showBanner = false,
   showHighlights = false,
   year,
+  searchSlot,
+  linkComponent,
   messages,
   children,
 }: StorefrontFrameProps) {
@@ -111,14 +127,18 @@ export function StorefrontFrame({
       // The live one, which answers while someone types. It replaces the plain form rather than
       // sitting beside it, and falls back to exactly that form when scripting is off.
       searchSlot={
-        <StorefrontSearchLive
-          slug={store.slug}
-          routeWords={store.routeWords}
-          initialTerm={searchValue}
-          locale="pt-BR"
-          messages={messages}
-        />
+        searchSlot ?? (
+          <StorefrontSearchLive
+            slug={store.slug}
+            routeWords={store.routeWords}
+            initialTerm={searchValue}
+            locale="pt-BR"
+            messages={messages}
+          />
+        )
       }
+      searchAction={routes.search()}
+      {...(linkComponent ? { linkComponent } : {})}
       // Both icons, on every page. They were held back while they had nowhere to go; the basket
       // has an address now, and the account is the sign-in the platform already has.
       cartHref={routes.cart()}
@@ -132,6 +152,7 @@ export function StorefrontFrame({
             // The menu, unless the shopkeeper asked for the row of photographs. The switch in the
             // panel is called "ícones de categoria", and that is exactly what it now chooses.
             variant={store.layoutSettings.showCategoryIcons ? "tiles" : "bar"}
+            {...(linkComponent ? { linkComponent } : {})}
           />
         ) : undefined
       }
