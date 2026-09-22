@@ -227,6 +227,9 @@ export interface UiMessages {
     paginationPage: string
     /** The home's band of products: a selection with a way into the catalogue, not the catalogue. */
     featuredHeading: string
+    /** The rail's arrows. They are an addition on top of native scrolling, never the only way in. */
+    railPrevious: string
+    railNext: string
     /**
      * The line above a band's heading. Platform copy and not the shopkeeper's, so it says what is
      * true of every shop — a shop's own words for its bands belong to a panel field that does not
