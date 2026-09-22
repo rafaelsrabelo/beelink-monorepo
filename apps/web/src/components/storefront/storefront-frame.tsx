@@ -55,6 +55,16 @@ export interface StorefrontFrameProps {
    * columns: on that page they are blocks. Every other page passes `children` and keeps them.
    */
   blocks?: ReactNode
+  /**
+   * The palette to paint with, when it is not the one the shop has saved.
+   *
+   * Design mode passes the colours being edited, so the preview answers the picker rather than
+   * the database. Nothing else passes it: a shop window painting anything other than what the
+   * shop stores would be a shop window showing a page no visitor gets.
+   */
+  colors?: PublicStore["colors"]
+  /** The strip above the masthead. Built by the page from the same list the blocks come from. */
+  announcement?: { left: string; right?: string }
   searchSlot?: ReactNode
   /**
    * How every injected link is drawn. The preview passes one that renders no `href`, so nothing
@@ -89,6 +99,8 @@ export function StorefrontFrame({
   showBanner = false,
   showHighlights = false,
   blocks,
+  colors,
+  announcement,
   year,
   searchSlot,
   linkComponent,
@@ -132,7 +144,7 @@ export function StorefrontFrame({
       description={description}
       logoUrl={store.logoUrl}
       homeHref={routes.home}
-      colors={store.colors}
+      colors={colors ?? store.colors}
       // The live one, which answers while someone types. It replaces the plain form rather than
       // sitting beside it, and falls back to exactly that form when scripting is off.
       searchSlot={
@@ -166,6 +178,7 @@ export function StorefrontFrame({
         ) : undefined
       }
       {...(blocks ? { blocks } : {})}
+      {...(announcement ? { announcement } : {})}
       banner={
         showBanner && store.layoutType === "BANNER" && store.bannerImageUrl
           ? { imageUrl: store.bannerImageUrl }

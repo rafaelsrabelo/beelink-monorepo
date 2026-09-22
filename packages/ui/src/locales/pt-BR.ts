@@ -198,6 +198,7 @@ export const ptBR: UiMessages = {
     dragHandle: "Arrastar",
     productList: "Lista de produtos",
     kinds: {
+      ANNOUNCEMENT: "Barra de aviso",
       HERO: "Banner de topo",
       BANNER: "Banner",
       TEXT: "Título",

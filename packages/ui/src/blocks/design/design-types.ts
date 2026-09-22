@@ -8,7 +8,15 @@
  */
 
 /** Every kind of block a landing page is made of. The contract's `SectionKind`, restated. */
-export const SECTION_KINDS = ["HERO", "BANNER", "TEXT", "BENEFITS", "CATEGORIES", "PRODUCTS"] as const
+export const SECTION_KINDS = [
+  "ANNOUNCEMENT",
+  "HERO",
+  "BANNER",
+  "TEXT",
+  "BENEFITS",
+  "CATEGORIES",
+  "PRODUCTS",
+] as const
 export type SectionKind = (typeof SECTION_KINDS)[number]
 
 /** Edge to edge, or inside the shop's measure. Read only on a cover. */

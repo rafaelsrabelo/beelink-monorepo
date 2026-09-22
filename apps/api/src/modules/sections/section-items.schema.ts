@@ -45,6 +45,7 @@ const ITEMS_OF = {
   // A hero is on this side of the line, and that is the change a slide could not survive: it keeps
   // its picture in `imageUrl` and its destination in a foreign key, like the banner it is. Two
   // heroes in a row are a carousel because there are two of them, not because a column said so.
+  ANNOUNCEMENT: z.array(z.never()).length(0),
   HERO: z.array(z.never()).length(0),
   BANNER: z.array(z.never()).length(0),
   TEXT: z.array(z.never()).length(0),

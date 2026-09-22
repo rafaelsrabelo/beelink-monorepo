@@ -8,6 +8,7 @@ import type { PublicProductCategory, PublicStore, StoreColors } from "@harness-m
 
 // UI
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
+import { AddBlockMenu } from "@harness-monorepo/ui/blocks/design/add-block-menu"
 import { SectionArrangement } from "@harness-monorepo/ui/blocks/design/section-arrangement"
 import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Button } from "@harness-monorepo/ui/components/button"
@@ -17,7 +18,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { HomeBand } from "@/lib/storefront-data"
-import { useSections, useReorderSections, useUpdateSection } from "@/services/sections/section-hooks"
+import {
+  useCreateSection,
+  useReorderSections,
+  useSections,
+  useUpdateSection,
+} from "@/services/sections/section-hooks"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
 import { DesignPreviewPane } from "./design-preview-pane"
 import { applyOrder, changesOf, orderedIdsOf, previewOf, toDraft, type Draft } from "./design-draft"
@@ -56,6 +62,7 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
   const banners = useSections(slug)
   const presets = useStoreColorPresets()
   const saveColors = useUpdateStoreColors(slug)
+  const addSection = useCreateSection(slug)
   const reorder = useReorderSections(slug)
   const update = useUpdateSection(slug)
 
@@ -163,6 +170,7 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
           bands={bands}
           year={year}
           sections={previewOf(rows, banners.data ?? [])}
+          colors={palette}
           orderedIds={orderedIdsOf(rows)}
           onReorder={(ids) => edit(applyOrder(rows, ids))}
           messages={messages}
@@ -180,6 +188,17 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
             </TabsList>
 
             <TabsContent value="blocks" className="flex flex-col gap-3 pt-3">
+              {/*
+                A block is created saved, not as part of the draft. Adding one is not an
+                arrangement — it is a new row, and holding it in the browser until Publish would
+                mean a reload could lose a block the owner watched appear.
+              */}
+              <AddBlockMenu
+                taken={rows.map((row) => row.kind)}
+                pending={addSection.isPending}
+                onAdd={(kind) => addSection.mutate({ kind })}
+                messages={messages}
+              />
               <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
               {banners.isPending ? (
                 <>

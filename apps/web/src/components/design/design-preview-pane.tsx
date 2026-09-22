@@ -15,7 +15,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import type { HomeBand } from "@/lib/storefront-data"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
-import { StorefrontSections } from "@/components/storefront/storefront-sections"
+import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { labelOf } from "./design-draft"
 
@@ -26,6 +26,8 @@ export interface DesignPreviewPaneProps {
   year: number
   /** The draft, already resolved into what the shop window would be served. */
   sections: readonly PublicSection[]
+  /** The palette being edited, so the preview answers the picker and not the database. */
+  colors: PublicStore["colors"]
   orderedIds: readonly string[]
   onReorder: (ids: string[]) => void
   messages: UiMessages
@@ -49,6 +51,7 @@ export function DesignPreviewPane({
   bands,
   year,
   sections,
+  colors,
   orderedIds,
   onReorder,
   messages,
@@ -76,6 +79,8 @@ export function DesignPreviewPane({
         <DesignPreview>
           <StorefrontFrame
             store={store}
+            colors={colors}
+            {...(announcementOf(sections) ? { announcement: announcementOf(sections)! } : {})}
             categories={categories}
             year={year}
             searchSlot={null}

@@ -12,6 +12,7 @@ export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies 
  * reader has to be able to see the whole list without opening the contract.
  */
 export const SECTION_KINDS = [
+  'ANNOUNCEMENT',
   'HERO',
   'BANNER',
   'TEXT',
@@ -31,7 +32,7 @@ export const SECTION_WIDTHS = ['FULL', 'CONTAINED'] as const satisfies readonly 
  * inside — a second cover would have been a page with two tops. A hero is a banner now, and two
  * of them in a row is a carousel, which is the thing the shopkeeper asked for.
  */
-export const SINGLETON_SECTION_KINDS = ['PRODUCTS'] as const satisfies readonly SectionKind[];
+export const SINGLETON_SECTION_KINDS = ['ANNOUNCEMENT', 'PRODUCTS'] as const satisfies readonly SectionKind[];
 
 /**
  * The two kinds that are the same block in two places.

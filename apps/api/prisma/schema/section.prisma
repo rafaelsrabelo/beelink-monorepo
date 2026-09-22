@@ -10,6 +10,9 @@
 /// `StoreBanner.position`, `Store.layoutType`, and a `layoutSettings` blob with no order at all —
 /// and putting a poster under the products needed a boolean of its own.
 enum SectionKind {
+  /// The strip above the header. Chrome rather than a block in the order — it sits above the
+  /// masthead on every page, so where it goes is not a question the arrangement can answer.
+  ANNOUNCEMENT
   /// A banner at the top, before anything else. One is a cover; two or more in a row are a
   /// carousel, and no column says which — the shape is read off the count. It is a row and not a
   /// slide inside one because a hero can have an action, and an action needs a foreign key.

@@ -319,18 +319,32 @@ export function StorefrontWindow({
             )}
           </Link>
 
-          {/* Never autofocused: the header is on every page, and a caret that jumps into it puts
-              a phone keyboard over the shop on every arrival. */}
-          {searchSlot ??
-            (searchAction ? (
-              <StorefrontSearch
-                action={searchAction}
-                value={searchValue}
-                hidden={searchHidden}
-                tone="panel"
-                messages={messages}
-              />
-            ) : null)}
+          {/*
+            Centred and capped, not stretched.
+
+            The field used to take every pixel between the logo and the icons, so on a wide monitor
+            the shop's masthead was one enormous search box with a name at one end — and a field
+            that wide reads as the page's subject rather than as a tool. Capped, it is centred on
+            the slab whatever the logo's width, which is what the shops this was measured against
+            all do.
+
+            Never autofocused: the header is on every page, and a caret that jumps into it puts a
+            phone keyboard over the shop on every arrival.
+          */}
+          <div className="flex min-w-0 flex-1 justify-center">
+            <div className="w-full max-w-md">
+              {searchSlot ??
+                (searchAction ? (
+                  <StorefrontSearch
+                    action={searchAction}
+                    value={searchValue}
+                    hidden={searchHidden}
+                    tone="panel"
+                    messages={messages}
+                  />
+                ) : null)}
+            </div>
+          </div>
 
           <div className="flex shrink-0 items-center gap-1">
             {accountHref ? (

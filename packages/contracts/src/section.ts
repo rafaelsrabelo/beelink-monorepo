@@ -15,6 +15,14 @@
  */
 export type SectionKind =
   /**
+   * The strip above the header — free delivery, opening hours, a season.
+   *
+   * Chrome rather than a block in the order: it is above the masthead on every page, so where it
+   * sits is not a question the arrangement can answer. It is a row like the others anyway, because
+   * hiding it, writing it and filling it in are exactly what a row is for.
+   */
+  | "ANNOUNCEMENT"
+  /**
    * A banner at the top of the page, before anything else.
    *
    * One is a cover; two or more in a row are a carousel, and there is no switch that says which.

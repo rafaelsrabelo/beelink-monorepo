@@ -198,6 +198,7 @@ export const en: UiMessages = {
     dragHandle: "Drag",
     productList: "Product list",
     kinds: {
+      ANNOUNCEMENT: "Announcement bar",
       HERO: "Top banner",
       BANNER: "Banner",
       TEXT: "Heading",

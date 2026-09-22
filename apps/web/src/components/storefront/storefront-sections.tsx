@@ -92,7 +92,9 @@ export function StorefrontSections({
    * the page — which is not what "um terço" means.
    */
   const groups: PublicSection[][] = []
-  for (const section of sections) {
+  // The strip is drawn above the header by the window, so it is not one of the blocks in the
+  // order — see `announcementOf`. Leaving it here would draw it twice.
+  for (const section of sections.filter((section) => section.kind !== "ANNOUNCEMENT")) {
     const last = groups.at(-1)
     const run = runOf(section)
 
@@ -233,4 +235,21 @@ export function StorefrontSections({
       })}
     </>
   )
+}
+
+/**
+ * The strip above the header, if the shop has one.
+ *
+ * Read out of the same list as every other block, because that is where a shopkeeper writes and
+ * hides it — but drawn by the window rather than among the blocks, because it sits above the
+ * masthead and "before the header" is not a position the arrangement can hold.
+ */
+export function announcementOf(
+  sections: readonly PublicSection[] = [],
+): { left: string; right?: string } | null {
+  const strip = sections.find((section) => section.kind === "ANNOUNCEMENT")
+
+  if (!strip?.title) return null
+
+  return strip.subtitle ? { left: strip.title, right: strip.subtitle } : { left: strip.title }
 }

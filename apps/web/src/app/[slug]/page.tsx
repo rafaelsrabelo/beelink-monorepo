@@ -5,7 +5,7 @@ import type { Metadata } from "next"
 // UI
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
-import { StorefrontSections } from "@/components/storefront/storefront-sections"
+import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
 import { getMessages } from "@/lib/locale"
 import { homeAt, shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -79,6 +79,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       // sale. The name is in the header and the WhatsApp is in the footer and on every product.
       // No cover and no promises band from the frame: on this page they are blocks, and which one
       // comes first is the shopkeeper's answer rather than this file's.
+      {...(announcementOf(store.sections) ? { announcement: announcementOf(store.sections)! } : {})}
       year={new Date().getFullYear()}
       messages={ui}
       blocks={

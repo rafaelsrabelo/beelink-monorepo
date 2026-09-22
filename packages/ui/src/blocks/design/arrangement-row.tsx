@@ -9,6 +9,7 @@ import {
   GripVerticalIcon,
   ImageIcon,
   LayoutGridIcon,
+  MegaphoneIcon,
   TagsIcon,
   TypeIcon,
 } from "lucide-react"
@@ -54,6 +55,7 @@ function hasLayout(kind: SectionKind): boolean {
  * list of blocks read as a list of broken images.
  */
 const KIND_ICON: Record<SectionKind, typeof LayoutGridIcon> = {
+  ANNOUNCEMENT: MegaphoneIcon,
   HERO: GalleryHorizontalEndIcon,
   BANNER: ImageIcon,
   TEXT: TypeIcon,
