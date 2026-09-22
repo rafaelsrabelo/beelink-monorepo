@@ -48,6 +48,21 @@ export interface StorefrontRouteWords {
  */
 export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
 
+/**
+ * Whether a product is on sale or still being written. ACTIVE is visible in the shop's sales
+ * channels; DRAFT is visible to nobody but its owner.
+ *
+ * It is not stock. A shop selling made to order counts nothing and is still on sale, and a shop
+ * that has run out is on sale with none left — three states a single boolean could not tell apart.
+ */
+export type ProductStatus = "ACTIVE" | "DRAFT";
+
+/**
+ * Whether the shop makes the thing or buys it to resell — not who manufactured it. A name would be
+ * free text, and free text is how `Nike`, `NIKE` and `nike` become three brands in one filter.
+ */
+export type ProductOrigin = "IN_HOUSE" | "RESALE";
+
 export interface PublicProductCategory {
   id: string;
   /** Unique inside the shop. Two shops both selling `blusas` is the normal case. */
@@ -189,7 +204,9 @@ export interface ProductCategory extends PublicProductCategory {
 export interface Product extends PublicProduct, ProductStock, ProductParcel {
   position: number;
   /** Marking a product unavailable hides it from the shop window without losing it. */
-  isAvailable: boolean;
+  status: ProductStatus;
+  /** Null is a shopkeeper who has not said, never a third kind of product. */
+  origin: ProductOrigin | null;
   /**
    * Whole cents, and owner-only — it is deliberately absent from `PublicProduct`. What a shop paid
    * is nobody's business but theirs, and a field on the public shape is a field in Google's index.
@@ -238,7 +255,8 @@ export interface CreateProductPayload {
   compareAtPriceCents?: number | null;
   costCents?: number | null;
   categoryId?: string | null;
-  isAvailable?: boolean;
+  status?: ProductStatus;
+  origin?: ProductOrigin | null;
   sku?: string | null;
   barcode?: string | null;
   trackStock?: boolean;

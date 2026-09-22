@@ -340,8 +340,18 @@ export interface UiMessages {
       compareHelp: string
       categoryLabel: string
       categoryNone: string
-      availableLabel: string
-      availableHelp: string
+      /** On sale or still being written — never "available", which reads as a stock question. */
+      statusLabel: string
+      statusHelp: string
+      statusActive: string
+      statusDraft: string
+      /** Made here or bought to resell. Not a manufacturer's name; see the ProductOrigin enum. */
+      originLabel: string
+      originHelp: string
+      originInHouse: string
+      originResale: string
+      /** Shown where the shopkeeper has not answered, in the form and in the table alike. */
+      originUnset: string
       imagesLabel: string
       imagesHelp: string
       imageAdd: string
@@ -351,9 +361,26 @@ export interface UiMessages {
       cancel: string
       delete: string
       deleteConfirm: string
-      /** Marks a row the shopkeeper took off sale; the window shows none of it. */
-      unavailable: string
       uncategorised: string
+      /**
+       * The table's column headers, and what a cell says when it has nothing to say. They are
+       * their own object because a header is not a field label: "Estoque" heads a column of
+       * numbers, while the field that sets it is a checkbox called "Controlar estoque".
+       */
+      table: {
+        code: string
+        name: string
+        status: string
+        stock: string
+        category: string
+        origin: string
+        price: string
+        /** Names the column of buttons for a screen reader; the header itself is not drawn. */
+        actions: string
+        noCode: string
+        /** Said where `trackStock` is off — which is not the same as none left. */
+        stockUntracked: string
+      }
       /** Said when the price typed is not a number, or is zero. */
       priceInvalid: string
       /** Said when the "was" price is not above the price — a discount that is not one. */

@@ -5,6 +5,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type {
   Product,
   ProductCategory,
+  ProductOrigin,
+  ProductStatus,
   PublicProduct,
   PublicProductCard,
   PublicProductCategory,
@@ -14,7 +16,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { PRODUCTS_PAGE_SIZE, SHOWCASE_LAYOUTS } from '../catalog.constants.js';
+import { PRODUCT_ORIGINS, PRODUCT_STATUSES, PRODUCTS_PAGE_SIZE, SHOWCASE_LAYOUTS } from '../catalog.constants.js';
 
 /**
  * The shapes out, for Swagger. Each `implements` its contract type, so a field added to the wire
@@ -85,7 +87,8 @@ export class PublicProductResponse extends PublicProductCardResponse implements 
 
 export class ProductResponse extends PublicProductResponse implements Product {
   @ApiProperty() position!: number;
-  @ApiProperty() isAvailable!: boolean;
+  @ApiProperty({ enum: PRODUCT_STATUSES }) status!: ProductStatus;
+  @ApiProperty({ enum: PRODUCT_ORIGINS, nullable: true }) origin!: ProductOrigin | null;
   // Owner-only, all of them: they extend PublicProductResponse rather than being added to it.
   @ApiProperty({ nullable: true, type: Number, description: 'Whole cents.' }) costCents!: number | null;
   @ApiProperty({ nullable: true, type: String }) sku!: string | null;

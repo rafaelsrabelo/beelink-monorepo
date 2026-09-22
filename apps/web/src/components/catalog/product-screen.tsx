@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 
 // UI
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
-import { ProductList } from "@harness-monorepo/ui/blocks/catalog/product-list"
+import { ProductTable } from "@harness-monorepo/ui/blocks/catalog/product-table"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -73,17 +73,21 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
           <Skeleton className="h-16 w-full" />
         </div>
       ) : (
-        <ProductList
+        <ProductTable
           products={rows.map((product) => ({
             id: product.id,
             name: product.name,
+            sku: product.sku,
             priceCents: product.priceCents,
             compareAtPriceCents: product.compareAtPriceCents,
             imageUrl: product.images[0]?.url ?? null,
             categoryName: product.category
               ? (nameById.get(product.category.id) ?? product.category.name)
               : null,
-            isAvailable: product.isAvailable,
+            status: product.status,
+            origin: product.origin,
+            trackStock: product.trackStock,
+            stockQuantity: product.stockQuantity,
           }))}
           onEdit={(productId) => router.push(`/admin/${slug}/products/${productId}`)}
           onDelete={confirmDelete}

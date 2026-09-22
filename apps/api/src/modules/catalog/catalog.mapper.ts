@@ -25,13 +25,13 @@ export type ProductCategoryRow = ProductCategoryModel & {
 
 /** The one query shape the category mappers accept. */
 /**
- * The count is of AVAILABLE products, which is what `PublicProductCategory.productCount` promises
+ * The count is of ACTIVE products, which is what `PublicProductCategory.productCount` promises
  * and what the storefront hides an empty category by. Without the `where` it counted hidden ones
- * too, so a category holding ten unavailable products reported ten and was shown with nothing
+ * too, so a category holding ten drafts reported ten and was shown with nothing
  * behind it — the exact thing `listPublic` filters that category out to avoid.
  */
 export const productCategoryInclude = {
-  _count: { select: { products: { where: { isAvailable: true } } } },
+  _count: { select: { products: { where: { status: 'ACTIVE' } } } },
   // The slug and not the id: the wire speaks in slugs, because that is what a URL carries, and a
   // web app holding a parent's uuid could do nothing with it.
   parent: { select: { slug: true } },
@@ -109,7 +109,8 @@ export function toProduct(row: ProductRow): WireProduct {
   return {
     ...toPublicProduct(row),
     position: row.position,
-    isAvailable: row.isAvailable,
+    status: row.status,
+    origin: row.origin,
     // Owner-only, every one of them. They are absent from `toPublicProduct` on purpose: what a
     // shop paid, what it calls the thing internally and how heavy the box is are not the shop
     // window's business, and anything on the public shape lands in Google's index.

@@ -70,7 +70,7 @@ export class ProductsService {
 
     const where = {
       storeId,
-      isAvailable: true,
+      status: 'ACTIVE' as const,
       // A parent's shelf holds what is under it. Filtering `Proteínas` and getting nothing because
       // every whey is filed under `Proteínas → Whey` is the failure this avoids — and it is the one
       // a shopkeeper reports as "my category is empty" without ever mentioning subcategories.
@@ -114,7 +114,7 @@ export class ProductsService {
    */
   async publicBySlug(storeId: string, slug: string): Promise<PublicProduct> {
     const row = await this.prisma.product.findFirst({
-      where: { storeId, slug, isAvailable: true },
+      where: { storeId, slug, status: 'ACTIVE' },
       include: productInclude,
     });
 
@@ -149,7 +149,8 @@ export class ProductsService {
           priceCents: dto.priceCents,
           compareAtPriceCents: dto.compareAtPriceCents ?? null,
           categoryId: dto.categoryId ?? null,
-          isAvailable: dto.isAvailable ?? true,
+          status: dto.status ?? 'ACTIVE',
+          origin: dto.origin ?? null,
           costCents: dto.costCents ?? null,
           sku: dto.sku ?? null,
           barcode: dto.barcode ?? null,
@@ -210,7 +211,8 @@ export class ProductsService {
           ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
           ...(dto.compareAtPriceCents !== undefined ? { compareAtPriceCents: dto.compareAtPriceCents } : {}),
           ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
-          ...(dto.isAvailable !== undefined ? { isAvailable: dto.isAvailable } : {}),
+          ...(dto.status !== undefined ? { status: dto.status } : {}),
+          ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
           ...(dto.costCents !== undefined ? { costCents: dto.costCents } : {}),
           ...(dto.sku !== undefined ? { sku: dto.sku ?? null } : {}),
           ...(dto.barcode !== undefined ? { barcode: dto.barcode ?? null } : {}),

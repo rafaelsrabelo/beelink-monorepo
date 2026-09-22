@@ -1,5 +1,5 @@
 // Types
-import type { RouteVocabulary, ShowcaseLayout, StorefrontRouteWords } from '@harness-monorepo/contracts';
+import type { ProductOrigin, ProductStatus, RouteVocabulary, ShowcaseLayout, StorefrontRouteWords } from '@harness-monorepo/contracts';
 
 /**
  * Which words each vocabulary builds a shop's URLs from. The table is the only place these strings
@@ -104,6 +104,12 @@ export const PRICE_CENTS_MAX = 100_000_000;
  * other enum the wire carries: a reader has to be able to see the whole list.
  */
 export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies readonly ShowcaseLayout[];
+
+/** On sale, or still being written. See the ProductStatus enum for why it is not a boolean. */
+export const PRODUCT_STATUSES = ['ACTIVE', 'DRAFT'] as const satisfies readonly ProductStatus[];
+
+/** Made here, or bought to resell. Absent means the shopkeeper has not said. */
+export const PRODUCT_ORIGINS = ['IN_HOUSE', 'RESALE'] as const satisfies readonly ProductOrigin[];
 
 /** Grams. Thirty kilos is past what a carrier takes as a parcel; beyond it is a typo. */
 export const PARCEL_GRAMS_MAX = 30_000;

@@ -11,6 +11,35 @@ enum ShowcaseLayout {
   THIRDS
 }
 
+/// Whether a product is on sale or still being written.
+///
+/// It replaced a boolean called `available`, which conflated two facts a shopkeeper keeps apart: a
+/// draft was never published, and something out of stock was. The boolean made them one row state,
+/// so the screen could not say which of the two a hidden product was — and the shopkeeper went
+/// looking for a missing product in the wrong place.
+///
+/// ACTIVE is visible in the shop's sales channels; DRAFT is visible to nobody but its owner. Stock
+/// is a separate column and does not change this one: a shop that sells made to order counts no
+/// stock and is still on sale.
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+}
+
+/// Whether the shop makes the thing or buys it to resell.
+///
+/// Not the manufacturer's *name*: a name is free text, and free text means `Nike`, `NIKE` and
+/// `nike` are three brands in the filter a month later. The question a shopkeeper actually asks of
+/// this field is which of their products they produce, and that question has two answers.
+///
+/// Nullable, and null is not a third kind of product — it is a shopkeeper who has not said yet.
+/// Defaulting it would print an answer they never gave onto every row written before the column
+/// existed.
+enum ProductOrigin {
+  IN_HOUSE
+  RESALE
+}
+
 model ProductCategory {
   id      String @id @default(uuid(7)) @db.Uuid
   storeId String @db.Uuid
@@ -106,10 +135,11 @@ model Product {
   /// it was derived from. The API refuses a value at or below `priceCents`.
   compareAtPriceCents Int?
 
-  position     Int     @default(0)
-  /// Marking a product unavailable hides it from the shop window without losing it, which is what
-  /// a shopkeeper does when something is out of stock rather than discontinued.
-  isAvailable  Boolean @default(true)
+  position Int @default(0)
+  /// See ProductStatus. Only ACTIVE rows leave this table for the shop window.
+  status   ProductStatus @default(ACTIVE)
+  /// See ProductOrigin. Null means the shopkeeper has not said.
+  origin   ProductOrigin?
 
   /// What the shopkeeper paid for it. Only they ever see it: it is here so a margin can be shown
   /// beside the price, and it must never reach `PublicProduct`.
@@ -153,8 +183,8 @@ model Product {
 
   @@unique([storeId, slug])
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
-  @@index([storeId, isAvailable, position])
-  @@index([categoryId, isAvailable, position])
+  @@index([storeId, status, position])
+  @@index([categoryId, status, position])
   @@map("products")
 }
 

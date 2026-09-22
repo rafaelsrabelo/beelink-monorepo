@@ -63,7 +63,7 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
     expect(count.mock.calls[0]?.[0].where).toEqual(findMany.mock.calls[0]?.[0].where);
     expect(count.mock.calls[0]?.[0].where).toMatchObject({
       storeId: STORE,
-      isAvailable: true,
+      status: 'ACTIVE',
       category: {
         isActive: true,
         // The shelf of a parent holds what is under it. Without the second arm, filtering

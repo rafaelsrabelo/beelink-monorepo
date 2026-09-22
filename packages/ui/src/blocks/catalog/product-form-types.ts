@@ -17,7 +17,13 @@ export interface ProductFormValues {
   cost: string
   /** `""` is "no category": a select cannot hold null, and the screen turns it back. */
   categoryId: string
-  isAvailable: boolean
+  /** On sale, or still being written. See the API's ProductStatus for why it is not a boolean. */
+  status: "ACTIVE" | "DRAFT"
+  /**
+   * Made here or bought to resell. `""` is "not said" — the same trick `categoryId` plays, because
+   * a select cannot hold null, and the screen turns it back.
+   */
+  origin: "IN_HOUSE" | "RESALE" | ""
   imageUrls: string[]
   sku: string
   barcode: string
@@ -54,7 +60,8 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   compareAtPrice: "",
   cost: "",
   categoryId: "",
-  isAvailable: true,
+  status: "ACTIVE",
+  origin: "",
   imageUrls: [],
   sku: "",
   barcode: "",
