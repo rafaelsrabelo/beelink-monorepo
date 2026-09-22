@@ -10,7 +10,12 @@ import { useRouter } from "next/navigation"
 import type { CreateSectionPayload, HeroSlide, Section } from "@harness-monorepo/contracts"
 
 // UI
-import { SectionForm, EMPTY_BANNER, type SectionFormValues } from "@harness-monorepo/ui/blocks/sections/section-form"
+import {
+  SectionForm,
+  EMPTY_BANNER,
+  type SectionFormValues,
+  type SectionFormWidth,
+} from "@harness-monorepo/ui/blocks/sections/section-form"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -24,6 +29,40 @@ export interface SectionEditorScreenProps {
   /** Absent means a banner that does not exist yet. */
   sectionId?: string
   messages: UiMessages
+}
+
+/**
+ * A slide of the hero, as this form holds it.
+ *
+ * Its own mapping and not `toForm`'s, because a slide keeps its picture, its words and its
+ * destination in itself — the block above it keeps none of them. Reading a slide through the
+ * block's own columns gave a form with no picture and no title beside a page that had both, which
+ * is how this was reported.
+ *
+ * The destination arrives as an id and the form speaks in slugs, so the two lists it was loaded
+ * with are what translate. A slide pointing at something that has since been deleted comes back
+ * with no destination rather than with a stale one.
+ */
+function slideToForm(
+  slide: HeroSlide,
+  width: SectionFormWidth,
+  categories: readonly { id: string; slug: string }[],
+  products: readonly { id: string; slug: string }[],
+): SectionFormValues {
+  return {
+    placement: "HERO",
+    width,
+    title: slide.title ?? "",
+    subtitle: slide.subtitle ?? "",
+    imageUrl: slide.imageUrl,
+    layout: "FULL",
+    target: slide.target,
+    categorySlug: categories.find((row) => row.id === slide.categoryId)?.slug ?? "",
+    productSlug: products.find((row) => row.id === slide.productId)?.slug ?? "",
+    externalUrl: slide.externalUrl ?? "",
+    // A slide has no visibility of its own: the hero is shown or hidden as one block.
+    isActive: true,
+  }
 }
 
 /** Wire nulls become `""`, because a select and an input cannot hold null. */
@@ -94,11 +133,33 @@ export function SectionEditorScreen({ slug, sectionId, messages }: SectionEditor
   const [value, setValue] = useState<SectionFormValues>(EMPTY_BANNER)
   const [seeded, setSeeded] = useState<string | null>(null)
 
+  /*
+    What is being edited: a poster of its own, or one picture of the hero.
+
+    The address carries an id and says nothing about which, so both lists are searched. A slide's
+    id is not a section's — treating it as one found the hero block and read its columns, which
+    are empty now that a hero's picture lives in its slides.
+  */
   const existing = sectionId ? banners.data?.find((row) => row.id === sectionId) : undefined
+  const hero = banners.data?.find((row) => row.kind === "HERO")
+  const editingSlide =
+    sectionId && existing?.kind !== "BANNER"
+      ? ((hero?.items ?? []) as HeroSlide[]).find((slide) => slide.id === sectionId)
+      : undefined
 
   // Adjusted during render rather than in an effect: an effect would paint the empty form first,
   // and a form that fills in a beat later is a form somebody has already started typing into.
-  if (existing && seeded !== existing.id) {
+  if (editingSlide && seeded !== editingSlide.id) {
+    setSeeded(editingSlide.id)
+    setValue(
+      slideToForm(
+        editingSlide,
+        hero?.width ?? "FULL",
+        categories.data ?? [],
+        products.data?.products ?? [],
+      ),
+    )
+  } else if (existing && existing.kind === "BANNER" && seeded !== existing.id) {
     setSeeded(existing.id)
     setValue(toForm(existing))
   }
@@ -119,7 +180,8 @@ export function SectionEditorScreen({ slug, sectionId, messages }: SectionEditor
     const product = products.data?.products.find((row) => row.slug === value.productSlug)
 
     return {
-      id: existing?.id ?? crypto.randomUUID(),
+      // The slide being edited keeps its id, so saving replaces it rather than adding a second.
+      id: editingSlide?.id ?? crypto.randomUUID(),
       imageUrl: value.imageUrl,
       title: value.title.trim() || null,
       subtitle: value.subtitle.trim() || null,
@@ -142,7 +204,6 @@ export function SectionEditorScreen({ slug, sectionId, messages }: SectionEditor
     const done = { onSuccess: back }
 
     if (value.placement === "HERO") {
-      const hero = banners.data?.find((row) => row.kind === "HERO")
       const slide = toSlide()
 
       if (!hero) {
@@ -150,8 +211,15 @@ export function SectionEditorScreen({ slug, sectionId, messages }: SectionEditor
         return
       }
 
-      const slides = (hero.items as HeroSlide[]).filter((one) => one.id !== slide.id)
-      update.mutate({ sectionId: hero.id, payload: { width: value.width, items: [...slides, slide] } }, done)
+      // Replaced where it stands, never removed and re-appended: editing a picture is not
+      // reordering the carousel, and a shopkeeper who fixed a typo should not find the slide at
+      // the end of it.
+      const current = (hero.items as HeroSlide[]) ?? []
+      const items = current.some((one) => one.id === slide.id)
+        ? current.map((one) => (one.id === slide.id ? slide : one))
+        : [...current, slide]
+
+      update.mutate({ sectionId: hero.id, payload: { width: value.width, items } }, done)
       return
     }
 

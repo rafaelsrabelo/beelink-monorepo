@@ -260,3 +260,32 @@ describe('SectionsService — what a block may hold', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('SectionsService — a patch that says nothing changes nothing', () => {
+  // Reported as "says it saved and did not": the update computed the checked items and then never
+  // put them in the data it wrote, so the API answered 200 with the row untouched.
+  it('writes the items a patch carries', async () => {
+    const { service, prisma } = build({ kind: 'HERO' });
+
+    await service.update('lessari', 'user-1', 'section-1', {
+      items: [{ id: 'x', imageUrl: 'https://img/x.jpg', title: 'Novo', target: 'NONE' }] as never,
+    });
+
+    expect(prisma.storeSection.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          items: [expect.objectContaining({ id: 'x', title: 'Novo' })],
+        }),
+      }),
+    );
+  });
+
+  it('leaves the items alone when a patch does not mention them', async () => {
+    const { service, prisma } = build({ kind: 'HERO' });
+
+    await service.update('lessari', 'user-1', 'section-1', { width: 'CONTAINED' });
+
+    const [{ data }] = (prisma.storeSection.update as unknown as { mock: { calls: [{ data: object }][] } }).mock.calls.at(-1)!;
+    expect(data).not.toHaveProperty('items');
+  });
+});

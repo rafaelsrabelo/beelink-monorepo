@@ -65,7 +65,6 @@ export class SectionsService {
         imageUrl: dto.imageUrl ?? null,
         ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
         ...(dto.width !== undefined ? { width: dto.width } : {}),
-        ...(items === undefined ? {} : { items }),
         items,
         ...target,
         position: (last._max.position ?? -1) + 1,
@@ -131,6 +130,10 @@ export class SectionsService {
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         ...(dto.kind !== undefined ? { kind: dto.kind } : {}),
         ...(dto.width !== undefined ? { width: dto.width } : {}),
+        // The whole list or nothing. A hero's slides have an order, so a patch of one would leave
+        // the API guessing where it goes — and leaving this out is what made a save answer 200 and
+        // change nothing at all.
+        ...(items === undefined ? {} : { items }),
         // Spreading null adds nothing, so the four destination columns are simply left alone.
         ...target,
       },

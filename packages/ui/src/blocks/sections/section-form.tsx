@@ -206,6 +206,11 @@ export function SectionForm({
         messages={messages}
       />
 
+      {/*
+        A slide has no visibility of its own: a hero is shown or hidden as one block, in design
+        mode. Drawing the switch here would be offering a choice that changes nothing.
+      */}
+      {value.placement === "HERO" ? null : (
       <Field orientation="horizontal">
         <Checkbox
           id="banner-active"
@@ -218,6 +223,7 @@ export function SectionForm({
           <FieldDescription>{text.activeHelp}</FieldDescription>
         </FieldContent>
       </Field>
+      )}
 
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={pending}>
