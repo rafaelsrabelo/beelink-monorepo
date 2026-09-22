@@ -1,6 +1,16 @@
 /* ── banners ──────────────────────────────────────────────────────────────── */
 
-import type { ShowcaseLayout } from "./catalog.js";
+/**
+ * How wide a poster sits on the landing page.
+ *
+ * A shape rather than a column count: full width is the poster at the top, two-across is a banner
+ * with room for artwork, three-across is a card with room for a name and a line. A free integer
+ * would let someone pick seven and get a row of stamps.
+ *
+ * It lived on `catalog.ts` while a category was the only thing that could be a poster. It is a
+ * banner's vocabulary now, and a category no longer has an opinion about the home.
+ */
+export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
 
 /**
  * Where a banner sends the visitor.

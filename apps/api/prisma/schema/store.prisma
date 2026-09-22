@@ -141,6 +141,7 @@ model Store {
 
   productCategories ProductCategory[]
   products          Product[]
+  banners           StoreBanner[]
 
   @@index([ownerId])
   @@index([categoryId])

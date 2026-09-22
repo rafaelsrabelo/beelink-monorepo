@@ -87,7 +87,6 @@ export function toPublicProductCategory(row: ProductCategoryRow): PublicProductC
     description: row.description,
     imageUrl: row.imageUrl,
     parentSlug: row.parent?.slug ?? null,
-    showcaseLayout: row.showcaseLayout,
     // Direct children only. A parent's real total is rolled up in the service, which is the one
     // place that has the whole tree in hand — a mapper sees one row and cannot count a subtree.
     productCount: row._count.products,

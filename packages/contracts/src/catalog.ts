@@ -40,13 +40,6 @@ export interface StorefrontRouteWords {
  * It is not `StoreCategory`, which is the platform's taxonomy of shops and describes the shop
  * rather than the things in it.
  */
-/**
- * How wide a category sits on the landing page, when the shopkeeper puts it there.
- *
- * A shape rather than a column count: full width is the poster at the top, two-across is a banner
- * with room for artwork, three-across is a card with room for a name and a line.
- */
-export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
 
 /**
  * Whether a product is on sale or still being written. ACTIVE is visible in the shop's sales
@@ -76,13 +69,6 @@ export interface PublicProductCategory {
    * does not already occupy.
    */
   parentSlug: string | null;
-  /**
-   * The shape this category takes on the landing page, or null to keep it out of it.
-   *
-   * A category and not a separate "banner" row: the two were the same thing wearing different
-   * names — a title, a picture, a line and somewhere to go, which a category already is.
-   */
-  showcaseLayout: ShowcaseLayout | null;
   /**
    * How many available products sit in it, **its subcategories included** — the storefront hides a
    * category with none, and a parent whose products are all one level down would otherwise be a
@@ -291,8 +277,6 @@ export interface CreateProductCategoryPayload {
    * already occupy. It also refuses a category becoming its own parent.
    */
   parentId?: string | null;
-  /** Null keeps it off the landing page. Set, it becomes a banner of that shape there. */
-  showcaseLayout?: ShowcaseLayout | null;
   isActive?: boolean;
 }
 

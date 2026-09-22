@@ -155,7 +155,6 @@ export class ProductCategoriesService {
           name: dto.name,
           description: dto.description ?? null,
           imageUrl: dto.imageUrl ?? null,
-          showcaseLayout: dto.showcaseLayout ?? null,
           parentId,
           isActive: dto.isActive ?? true,
           position: (last._max.position ?? -1) + 1,
@@ -201,7 +200,6 @@ export class ProductCategoriesService {
           // a field, and `undefined` is Prisma's own "leave this column alone".
           ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
           ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl ?? null } : {}),
-          ...(dto.showcaseLayout !== undefined ? { showcaseLayout: dto.showcaseLayout ?? null } : {}),
           ...(dto.parentId !== undefined ? { parentId } : {}),
           ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         },

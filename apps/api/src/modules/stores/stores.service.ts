@@ -152,7 +152,7 @@ export class StoresService {
 
   /** The anonymous read. It answers the narrow shape, so nothing private can leak by forgetting a select. */
   async publicBySlug(slug: string): Promise<PublicStore> {
-    const row = await this.prisma.store.findUnique({ where: { slug } });
+    const row = await this.prisma.store.findUnique({ where: { slug }, include: storeInclude });
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
 
     return toPublicStore(row);

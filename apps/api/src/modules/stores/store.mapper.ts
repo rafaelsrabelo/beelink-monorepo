@@ -7,14 +7,35 @@ import type {
 import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
 
 // App
+import { bannerInclude, toPublicBanner, type BannerRow } from '../banners/banners.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 
-/** Every read that becomes a `Store` asks for the taxonomy row, so the mapper can demand it. */
-export type StoreRow = StoreModel & { category: StoreCategoryModel | null };
+/**
+ * Every read that becomes a `Store` or a `PublicStore` asks for the taxonomy row and the banners.
+ *
+ * The banners are here rather than on the catalogue because the shop window fetches the shop first
+ * and unconditionally — so they cost no round trip — and because the catalogue is paged: banners on
+ * it would be re-serialised into every `?pagina=` and `?categoria=` answer Google indexes. The cost
+ * is that they travel to the product and category pages too, which do not draw them.
+ */
+export type StoreRow = StoreModel & {
+  category: StoreCategoryModel | null;
+  banners: BannerRow[];
+};
 
-/** The one query shape `toStore` accepts, so a call site cannot forget the include. */
-export const storeInclude = { category: true } as const;
+/** The one query shape the store mappers accept, so a call site cannot forget the include. */
+export const storeInclude = {
+  category: true,
+  // Only what a visitor may see, in the shopkeeper's order. A hidden banner is still in the panel;
+  // it simply never reaches this shape. Ordered by position alone — `create` hands out the next
+  // one per shop, so two banners never share a number and there is no tie to break.
+  banners: {
+    where: { isActive: true },
+    orderBy: { position: 'asc' },
+    include: bannerInclude,
+  },
+} as const;
 
 export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
   return {
@@ -32,7 +53,7 @@ export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
  * are absent by construction rather than by a `select` somebody has to remember: this shape is what
  * ends up in Google's index, so a field is added here only on purpose.
  */
-export function toPublicStore(row: StoreModel): PublicStore {
+export function toPublicStore(row: StoreRow): PublicStore {
   return {
     id: row.id,
     slug: row.slug,
@@ -62,6 +83,9 @@ export function toPublicStore(row: StoreModel): PublicStore {
     },
     layoutSettings: parseLayoutSettings(row.layoutSettings),
     paymentMethods: row.paymentMethods,
+    // Resolved here, where the shop's slug and its route words are already in hand: a banner
+    // stores what it points at, never where it lives.
+    banners: row.banners.map((banner) => toPublicBanner(banner, row.slug, ROUTE_WORDS[row.routeVocabulary])),
   } satisfies PublicStore;
 }
 

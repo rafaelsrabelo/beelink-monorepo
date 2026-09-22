@@ -18,6 +18,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { PublicBannerResponse } from '../../banners/dto/banner.response.js';
 import { PAYMENT_METHODS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.constants.js';
 
 /** Documents the shapes for Swagger; the wire types themselves live in packages/contracts. */
@@ -110,6 +111,9 @@ export class PublicStoreResponse implements PublicStore {
 
   @ApiProperty({ enum: PAYMENT_METHODS, isArray: true, minItems: 1 })
   paymentMethods!: PaymentMethod[];
+
+  @ApiProperty({ type: [PublicBannerResponse], description: "The landing page's posters, in order." })
+  banners!: PublicBannerResponse[];
 }
 
 /** The shop as its owner edits it in the panel. */

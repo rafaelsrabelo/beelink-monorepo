@@ -71,18 +71,18 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
-  // A poster is a category with a shape. The picture is required — a card of solid colour with
-  // words on it is not a banner — so one without a photograph is quietly not a poster yet.
-  const showcases = home.categories
-    .filter((category) => category.showcaseLayout && category.imageUrl)
-    .map((category) => ({
-      id: category.id,
-      title: category.name,
-      subtitle: category.description,
-      imageUrl: category.imageUrl as string,
-      href: routes.category(category.slug),
-      layout: category.showcaseLayout as "FULL" | "HALVES" | "THIRDS",
-    }))
+  // The shop's own banners, already resolved: the API built each address from the slug its target
+  // has now, so renaming a category or a product moves the poster with it rather than breaking it.
+  // Nothing is filtered here — a hidden banner never reaches this shape.
+  const showcases = store.banners.map((banner) => ({
+    id: banner.id,
+    title: banner.title,
+    subtitle: banner.subtitle,
+    imageUrl: banner.imageUrl,
+    href: banner.href,
+    external: banner.external,
+    layout: banner.layout,
+  }))
 
   return (
     <StorefrontFrame
