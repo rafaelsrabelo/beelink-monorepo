@@ -231,7 +231,6 @@ export interface UiMessages {
      * hands a screen reader the same two words three times (WCAG 2.4.4).
      */
     seeAllOf: string
-    logoAlt: string
     order: string
     socialLabel: string
     /** Names a footer column. The links inside are addresses, so the screen builds them. */

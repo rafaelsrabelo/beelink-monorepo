@@ -162,7 +162,6 @@ export const en: UiMessages = {
     categoriesEyebrow: "Find what you are after",
     seeAll: "See all",
     seeAllOf: "See everything in {section}",
-    logoAlt: "Shop logo",
     order: "Order on WhatsApp",
     socialLabel: "The shop's networks",
     footerShop: "The shop",

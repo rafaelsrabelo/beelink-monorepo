@@ -113,9 +113,9 @@ export interface WebMessages {
         categoriesTitle: string
         categoriesText: string
         categoriesAction: string
-        showcaseTitle: string
-        showcaseText: string
-        showcaseAction: string
+        paymentsTitle: string
+        paymentsText: string
+        paymentsAction: string
         viewTitle: string
         viewText: string
         viewAction: string

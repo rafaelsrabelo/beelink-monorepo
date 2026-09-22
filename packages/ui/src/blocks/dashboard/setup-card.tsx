@@ -22,6 +22,8 @@ export interface SetupCardProps {
   done?: boolean
   /** Opens outside the panel — the shop's own window, say. */
   external?: boolean
+  /** How wide the card sits in its grid. The screen owns the layout; the card owns its inside. */
+  className?: string
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -42,6 +44,7 @@ export function SetupCard({
   href,
   done = false,
   external = false,
+  className,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: SetupCardProps) {
@@ -71,7 +74,13 @@ export function SetupCard({
   )
 
   return (
-    <li className={cn("flex flex-col gap-3 rounded-xl border p-5", done && "bg-muted/40")}>
+    <li
+      className={cn(
+        "bg-shell-surface border-shell-border flex flex-col gap-3 rounded-xl border p-5 shadow-xs",
+        done && "bg-muted/40",
+        className,
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-semibold">{title}</h3>
         {done ? (

@@ -260,11 +260,17 @@ export function StorefrontWindow({
         style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-background)" }}
       >
         <div className={cn(BAND, "flex h-16 items-center gap-3 sm:gap-6")}>
+          {/*
+            The logo stands in for the name rather than sitting beside it — so it carries the name
+            as its `alt`, and the link keeps an accessible name without the word being drawn twice.
+            A shop with no logo yet falls back to the name as text: the masthead is never empty.
+          */}
           <Link href={homeHref} className="flex shrink-0 items-center gap-2">
             {logoUrl ? (
-              <img src={logoUrl} alt={text.logoAlt} className="size-9 rounded-lg object-cover" />
-            ) : null}
-            <span className="hidden text-base font-semibold sm:inline">{name}</span>
+              <img src={logoUrl} alt={name} className="h-9 w-auto max-w-40 object-contain" />
+            ) : (
+              <span className="text-base font-semibold">{name}</span>
+            )}
           </Link>
 
           {/* Never autofocused: the header is on every page, and a caret that jumps into it puts
@@ -386,11 +392,13 @@ export function StorefrontWindow({
       <footer className="w-full" style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-background)" }}>
         <div className={cn(BAND, "flex flex-col gap-10 py-12 sm:flex-row sm:justify-between")}>
           <div className="flex max-w-xs flex-col gap-4">
+            {/* Same rule as the masthead: the logo replaces the name, and says it. */}
             <div className="flex items-center gap-2">
               {logoUrl ? (
-                <img src={logoUrl} alt="" aria-hidden="true" className="size-9 rounded-lg object-cover" />
-              ) : null}
-              <p className="text-base font-semibold">{name}</p>
+                <img src={logoUrl} alt={name} className="h-9 w-auto max-w-40 object-contain" />
+              ) : (
+                <p className="text-base font-semibold">{name}</p>
+              )}
             </div>
             {addressLine ? <p className="text-sm opacity-70">{addressLine}</p> : null}
 

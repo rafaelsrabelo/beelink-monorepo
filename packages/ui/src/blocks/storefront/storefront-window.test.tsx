@@ -42,6 +42,28 @@ describe("StorefrontWindow", () => {
       expect(screen.getByRole("banner").querySelector("a")).toHaveAttribute("href", "/padaria-da-ana")
     })
 
+    /*
+      The logo replaces the name rather than sitting beside it, which is what a masthead does — and
+      it is why the image carries the shop's name as its `alt`. Without that the link would be a
+      picture with no accessible name, or would announce "Logo da loja" on every shop in the
+      product, which names nothing.
+    */
+    it("lets the logo stand in for the name, and say it", () => {
+      renderWindow({ logoUrl: "https://cdn/logo.png" })
+      const banner = screen.getByRole("banner")
+
+      expect(within(banner).getByRole("img", { name: "Padaria da Ana" })).toBeInTheDocument()
+      expect(within(banner).queryByText("Padaria da Ana")).not.toBeInTheDocument()
+    })
+
+    it("falls back to the name as words when there is no logo yet", () => {
+      renderWindow({ logoUrl: null })
+      const banner = screen.getByRole("banner")
+
+      expect(within(banner).getByText("Padaria da Ana")).toBeInTheDocument()
+      expect(within(banner).queryByRole("img")).not.toBeInTheDocument()
+    })
+
     /**
      * The window places the search and hands it one address; what the field itself does is
      * `storefront-search.test.tsx`. The address is this file's business because searching now
@@ -143,6 +165,15 @@ describe("StorefrontWindow", () => {
   })
 
   describe("the footer", () => {
+    /* Same rule as the masthead, and asserted separately because they are two call sites. */
+    it("lets the logo stand in for the name there too", () => {
+      renderWindow({ logoUrl: "https://cdn/logo.png" })
+      const footer = screen.getByRole("contentinfo")
+
+      expect(within(footer).getByRole("img", { name: "Padaria da Ana" })).toBeInTheDocument()
+      expect(within(footer).queryByText("Padaria da Ana")).not.toBeInTheDocument()
+    })
+
     it("names the shop and where it is", () => {
       renderWindow({ addressLine: "Rua das Flores, 120 — Fortaleza" })
 

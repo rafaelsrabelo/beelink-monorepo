@@ -38,7 +38,30 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
   const loading = store.isPending || products.isPending || categories.isPending
   const categoryRows = categories.data ?? []
 
+  /**
+   * Two wide, then three. The first row is what the shop is FOR — the window a customer opens and
+   * what they may pay with — and the second is what has to be filled in before either means
+   * anything. A uniform grid made "see your shop" look like one chore among five.
+   */
   const cards = [
+    {
+      title: text.cards.viewTitle,
+      description: text.cards.viewText,
+      actionLabel: text.cards.viewAction,
+      href: `/${slug}`,
+      // The shop's own window is not the panel, so it opens where a customer would see it.
+      external: true,
+      wide: true,
+    },
+    {
+      title: text.cards.paymentsTitle,
+      description: text.cards.paymentsText,
+      actionLabel: text.cards.paymentsAction,
+      href: `/admin/${slug}/store`,
+      // No `done`. Every shop opens with all four methods on, so a tick here would be true from
+      // the first second and would mean nothing — and the card is a review, not a task.
+      wide: true,
+    },
     {
       title: text.cards.identityTitle,
       description: text.cards.identityText,
@@ -62,41 +85,38 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
       href: `/admin/${slug}/categories`,
       done: categoryRows.length > 0,
     },
-    {
-      title: text.cards.showcaseTitle,
-      description: text.cards.showcaseText,
-      actionLabel: text.cards.showcaseAction,
-      href: `/admin/${slug}/categories`,
-      done: categoryRows.some((category) => category.showcaseLayout),
-    },
-    {
-      title: text.cards.viewTitle,
-      description: text.cards.viewText,
-      actionLabel: text.cards.viewAction,
-      href: `/${slug}`,
-      // The shop's own window is not the panel, so it opens where a customer would see it.
-      external: true,
-      done: false,
-    },
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 lg:px-6">
+    <div className="flex w-full flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">{store.data?.name ?? slug}</h1>
         <p className="text-muted-foreground text-sm">{text.subtitle}</p>
       </header>
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-44 w-full" />
-          <Skeleton className="h-44 w-full" />
-          <Skeleton className="h-44 w-full" />
+        <div className="grid gap-4 lg:grid-cols-6">
+          <Skeleton className="h-52 w-full lg:col-span-3" />
+          <Skeleton className="h-52 w-full lg:col-span-3" />
+          <Skeleton className="h-44 w-full lg:col-span-2" />
+          <Skeleton className="h-44 w-full lg:col-span-2" />
+          <Skeleton className="h-44 w-full lg:col-span-2" />
         </div>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((card) => (
-            <SetupCard key={card.title} {...card} linkComponent={AppLink} messages={ui} />
+        /*
+          Six columns, so two of three and three of two land on the same grid. Below `lg` it is one
+          column: two wide cards side by side on a phone are two narrow cards, which is the shape
+          this layout exists to avoid.
+        */
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+          {cards.map(({ wide, ...card }) => (
+            <SetupCard
+              key={card.title}
+              {...card}
+              className={wide ? "sm:col-span-2 lg:col-span-3" : "lg:col-span-2"}
+              linkComponent={AppLink}
+              messages={ui}
+            />
           ))}
         </ul>
       )}
