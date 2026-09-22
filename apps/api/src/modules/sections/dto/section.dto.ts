@@ -207,11 +207,4 @@ export class UpdateSectionDto implements UpdateSectionPayload {
   @IsBoolean()
   isActive?: boolean;
 
-  @ApiPropertyOptional({
-    default: false,
-    description: 'Under the product bands instead of above them.',
-  })
-  @IsOptional()
-  @IsBoolean()
-  belowProducts?: boolean;
 }

@@ -228,6 +228,8 @@ export const en: UiMessages = {
     tabBlocks: "Components",
     tabColors: "Colours",
     addBlock: "Add block",
+    deleteBlock: "Delete block",
+    deleteBlockConfirm: "Delete \"{name}\"? This cannot be undone.",
   },
   banners: {
     title: "Banners",
@@ -259,6 +261,7 @@ export const en: UiMessages = {
     targetProduct: "A product",
     targetExternal: "An address outside the shop",
     targetNone: "Nowhere — just a notice",
+    heroHeading: "At the top of the page",
     targetNoneHelp: "The banner shows and leads nowhere. Good for a notice or a picture.",
     categoryLabel: "Category",
     categoryNone: "Pick a category",
@@ -438,6 +441,12 @@ export const en: UiMessages = {
       saved: "Category saved",
       removed: "Category deleted",
     },
+  },
+  shared: {
+    confirmDeleteTitle: "Are you sure?",
+    delete: "Delete",
+    deleting: "Deleting…",
+    cancel: "Cancel",
   },
   shell: {
     brand: "beelink",

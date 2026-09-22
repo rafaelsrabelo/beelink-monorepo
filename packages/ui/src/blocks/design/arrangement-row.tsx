@@ -11,6 +11,7 @@ import {
   LayoutGridIcon,
   MegaphoneIcon,
   TagsIcon,
+  Trash2Icon,
   TypeIcon,
 } from "lucide-react"
 
@@ -36,6 +37,20 @@ export interface ArrangementItem {
   imageUrl: string | null
   layout: ArrangementLayout
   isActive: boolean
+}
+
+/**
+ * The kinds a shopkeeper may delete from the arrangement.
+ *
+ * The product rails are not among them: a landing page without what the shop sells is not an
+ * arrangement anyone wants, and there would be no row left to put them back. Hiding it is the
+ * answer there, which is why the eye stays on every row.
+ *
+ * A banner is not among them either, and for a different reason — it is deleted where it is made,
+ * on the Banners screen, beside the picture it was uploaded with.
+ */
+function canDelete(kind: SectionKind): boolean {
+  return kind !== "PRODUCTS" && kind !== "BANNER" && kind !== "HERO"
 }
 
 /**
@@ -68,11 +83,17 @@ export function ArrangementRow({
   item,
   onToggle,
   onLayoutChange,
+  onDelete,
+  onEdit,
   messages,
 }: {
   item: ArrangementItem
   onToggle: (id: string, isActive: boolean) => void
   onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  /** Absent where a kind cannot be deleted; the row then draws no bin at all. */
+  onDelete?: (id: string) => void
+  /** Absent where a kind has nothing to write; the row is then not a button. */
+  onEdit?: (id: string) => void
   messages: UiMessages
 }) {
   const text = messages.design
@@ -119,13 +140,26 @@ export function ArrangementRow({
         )}
       </span>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <p className="truncate text-sm font-medium">{name}</p>
-        {/* The kind, said out loud, because a titled block otherwise gives no clue what it is. */}
-        {item.title?.trim() ? (
+      {/*
+        The name is the way in to editing, where there is anything to edit. A row that is a button
+        and a row that is not look the same until the pointer is over them, which is what stops the
+        list reading as five buttons and two labels.
+      */}
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={() => onEdit(item.id)}
+          className="focus-visible:ring-ring flex min-w-0 flex-1 flex-col rounded-md px-1 text-left outline-none hover:underline focus-visible:ring-2"
+        >
+          <span className="truncate text-sm font-medium">{name}</span>
+          <span className="text-muted-foreground truncate text-xs">{text.kinds[item.kind]}</span>
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 flex-col px-1">
+          <p className="truncate text-sm font-medium">{name}</p>
           <p className="text-muted-foreground truncate text-xs">{text.kinds[item.kind]}</p>
-        ) : null}
-      </div>
+        </div>
+      )}
 
       {hasLayout(item.kind) ? (
         <Select
@@ -157,6 +191,18 @@ export function ArrangementRow({
           <EyeOffIcon aria-hidden="true" className="size-4" />
         )}
       </Button>
+
+      {onDelete && canDelete(item.kind) ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`${text.deleteBlock}: ${name}`}
+          onClick={() => onDelete(item.id)}
+        >
+          <Trash2Icon aria-hidden="true" className="size-4" />
+        </Button>
+      ) : null}
     </li>
   )
 }

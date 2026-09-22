@@ -26,6 +26,10 @@ export interface SectionArrangementProps {
   onReorder: (ids: string[]) => void
   onToggle: (id: string, isActive: boolean) => void
   onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  /** Deletes for good. The row draws no bin on a kind that cannot be deleted. */
+  onDelete?: (id: string) => void
+  /** Opens a block's own fields. The row is not a button on a kind with nothing to write. */
+  onEdit?: (id: string) => void
   messages?: UiMessages
 }
 
@@ -46,6 +50,8 @@ export function SectionArrangement({
   onReorder,
   onToggle,
   onLayoutChange,
+  onDelete,
+  onEdit,
   messages = defaultMessages,
 }: SectionArrangementProps) {
   const text = messages.design
@@ -96,6 +102,8 @@ export function SectionArrangement({
             item={item}
             onToggle={onToggle}
             onLayoutChange={onLayoutChange}
+            {...(onDelete ? { onDelete } : {})}
+            {...(onEdit ? { onEdit } : {})}
             messages={messages}
           />
         ))}

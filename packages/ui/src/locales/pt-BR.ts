@@ -228,6 +228,8 @@ export const ptBR: UiMessages = {
     tabBlocks: "Componentes",
     tabColors: "Cores",
     addBlock: "Adicionar bloco",
+    deleteBlock: "Excluir bloco",
+    deleteBlockConfirm: "Excluir \"{name}\"? Isso não tem volta.",
   },
   banners: {
     title: "Banners",
@@ -259,6 +261,7 @@ export const ptBR: UiMessages = {
     targetProduct: "Um produto",
     targetExternal: "Um endereço fora da loja",
     targetNone: "Nenhum — só informativo",
+    heroHeading: "No topo da página",
     targetNoneHelp: "O banner aparece e não leva a lugar nenhum. Bom para um aviso ou uma foto.",
     categoryLabel: "Categoria",
     categoryNone: "Escolha uma categoria",
@@ -438,6 +441,12 @@ export const ptBR: UiMessages = {
       saved: "Categoria salva",
       removed: "Categoria excluída",
     },
+  },
+  shared: {
+    confirmDeleteTitle: "Tem certeza?",
+    delete: "Excluir",
+    deleting: "Excluindo…",
+    cancel: "Cancelar",
   },
   shell: {
     brand: "beelink",

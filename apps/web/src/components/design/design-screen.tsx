@@ -7,26 +7,33 @@ import { useEffect, useState } from "react"
 import type { PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
-import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
-import { AddBlockMenu } from "@harness-monorepo/ui/blocks/design/add-block-menu"
-import { SectionArrangement } from "@harness-monorepo/ui/blocks/design/section-arrangement"
+import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete"
 import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Button } from "@harness-monorepo/ui/components/button"
-import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
+import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { HomeBand } from "@/lib/storefront-data"
 import {
   useCreateSection,
+  useDeleteSection,
   useReorderSections,
   useSections,
   useUpdateSection,
 } from "@/services/sections/section-hooks"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
+import { DesignPanel } from "./design-panel"
 import { DesignPreviewPane } from "./design-preview-pane"
-import { applyOrder, changesOf, orderedIdsOf, previewOf, toDraft, type Draft } from "./design-draft"
+import {
+  applyOrder,
+  changesOf,
+  labelOf,
+  orderedIdsOf,
+  previewOf,
+  toDraft,
+  type Draft,
+} from "./design-draft"
 
 export interface DesignScreenProps {
   /**
@@ -63,13 +70,22 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
   const presets = useStoreColorPresets()
   const saveColors = useUpdateStoreColors(slug)
   const addSection = useCreateSection(slug)
+  const removeSection = useDeleteSection(slug)
   const reorder = useReorderSections(slug)
   const update = useUpdateSection(slug)
 
   const [draft, setDraft] = useState<Draft[] | null>(null)
   const [seeded, setSeeded] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
-  const [tab, setTab] = useState("blocks")
+
+  /**
+   * The block waiting to be deleted.
+   *
+   * Deleted for good, and immediately — not held in the draft until Publish. Publish sends an
+   * arrangement, and a row that is gone has no position to send; holding the delete would also
+   * mean a reload could bring back a block the owner watched disappear.
+   */
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
   /*
     The palette is its own draft, and it saves on its own.
@@ -163,6 +179,21 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
 
       {dirty ? <p className="text-muted-foreground text-sm">{text.leaveWarning}</p> : null}
 
+      <ConfirmDelete
+        question={pendingDelete ? format(text.deleteBlockConfirm, { name: pendingDelete.name }) : null}
+        pending={removeSection.isPending}
+        onConfirm={() => {
+          if (!pendingDelete) return
+          const id = pendingDelete.id
+          setPendingDelete(null)
+          // The draft drops it too, or the preview keeps drawing a block the shop no longer has.
+          setDraft((current) => (current ? current.filter((row) => row.id !== id) : current))
+          removeSection.mutate(id)
+        }}
+        onCancel={() => setPendingDelete(null)}
+        messages={messages}
+      />
+
       <div className="flex flex-col gap-4 @4xl/main:flex-row">
         <DesignPreviewPane
           store={store}
@@ -176,63 +207,30 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
           messages={messages}
         />
 
-        <aside className="flex w-full shrink-0 flex-col gap-3 @4xl/main:w-96">
-          <Tabs value={tab} onValueChange={(next: string) => setTab(next)}>
-            <TabsList className="w-full">
-              <TabsTrigger value="blocks" className="flex-1">
-                {text.tabBlocks}
-              </TabsTrigger>
-              <TabsTrigger value="colors" className="flex-1">
-                {text.tabColors}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="blocks" className="flex flex-col gap-3 pt-3">
-              {/*
-                A block is created saved, not as part of the draft. Adding one is not an
-                arrangement — it is a new row, and holding it in the browser until Publish would
-                mean a reload could lose a block the owner watched appear.
-              */}
-              <AddBlockMenu
-                taken={rows.map((row) => row.kind)}
-                pending={addSection.isPending}
-                onAdd={(kind) => addSection.mutate({ kind })}
-                messages={messages}
-              />
-              <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
-              {banners.isPending ? (
-                <>
-                  <Skeleton className="h-14 w-full" />
-                  <Skeleton className="h-14 w-full" />
-                </>
-              ) : (
-                <SectionArrangement
-                  items={rows}
-                  onReorder={(ids) => edit(applyOrder(rows, ids))}
-                  onToggle={(id, isActive) =>
-                    edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
-                  }
-                  onLayoutChange={(id, layout) =>
-                    edit(rows.map((row) => (row.id === id ? { ...row, layout } : row)))
-                  }
-                  messages={messages}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="colors" className="pt-3">
-              <DesignColors
-                value={palette}
-                onChange={setPalette}
-                presets={presets.data ?? []}
-                dirty={paletteChanged}
-                pending={saveColors.isPending}
-                onSave={() => saveColors.mutate(palette)}
-                messages={messages}
-              />
-            </TabsContent>
-          </Tabs>
-        </aside>
+        <DesignPanel
+          rows={rows}
+          loading={banners.isPending}
+          onReorder={(ids) => edit(applyOrder(rows, ids))}
+          onToggle={(id, isActive) =>
+            edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
+          }
+          onLayoutChange={(id, layout) =>
+            edit(rows.map((row) => (row.id === id ? { ...row, layout } : row)))
+          }
+          onDelete={(id) => {
+            const row = rows.find((candidate) => candidate.id === id)
+            if (row) setPendingDelete({ id, name: labelOf(row.kind, row.title, messages) })
+          }}
+          onAdd={(kind) => addSection.mutate({ kind })}
+          adding={addSection.isPending}
+          palette={palette}
+          onPalette={setPalette}
+          presets={presets.data ?? []}
+          paletteChanged={paletteChanged}
+          savingColours={saveColors.isPending}
+          onSaveColours={() => saveColors.mutate(palette)}
+          messages={messages}
+        />
       </div>
     </div>
   )

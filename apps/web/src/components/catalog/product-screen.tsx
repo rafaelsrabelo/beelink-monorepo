@@ -16,6 +16,7 @@ import {
 } from "@harness-monorepo/ui/blocks/catalog/product-toolbar"
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
+import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -130,10 +131,17 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
     router.replace(`/admin/${slug}/products${query ? `?${query}` : ""}` as Parameters<typeof router.replace>[0])
   }
 
-  function confirmDelete(productId: string) {
-    const product = rows.find((row) => row.id === productId)
-    if (!product) return
-    if (!window.confirm(format(text.deleteConfirm, { name: product.name }))) return
+  /**
+   * What is waiting to be deleted. State rather than `window.confirm`: that dialog cannot be
+   * styled or translated, and a browser that has offered "prevent this page from creating more
+   * dialogs" stops showing it — after which the delete happens with nothing asked.
+   */
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+
+  function runDelete() {
+    if (!pendingDelete) return
+    const productId = pendingDelete.id
+    setPendingDelete(null)
 
     remove.mutate(productId, {
       // The last row of a page that is not the first leaves a page with nothing on it, and a pager
@@ -146,6 +154,13 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
 
   return (
     <div className="flex w-full flex-col gap-6">
+      <ConfirmDelete
+        question={pendingDelete ? format(text.deleteConfirm, { name: pendingDelete.name }) : null}
+        pending={remove.isPending}
+        onConfirm={runDelete}
+        onCancel={() => setPendingDelete(null)}
+        messages={messages}
+      />
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold">{text.title}</h1>
@@ -203,7 +218,12 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
                 product.status === "DRAFT" || !routes ? null : routes.product(product.slug),
             }))}
             onEdit={(productId) => router.push(`/admin/${slug}/products/${productId}`)}
-            onDelete={confirmDelete}
+            onDelete={(productId) =>
+            setPendingDelete({
+              id: productId,
+              name: rows.find((row) => row.id === productId)?.name ?? "",
+            })
+          }
             busyId={remove.isPending ? remove.variables : null}
             {...(filtered
               ? { emptyTitle: text.filters.noResults, emptyHint: text.filters.noResultsHint }

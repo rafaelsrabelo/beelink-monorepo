@@ -316,6 +316,9 @@ export interface UiMessages {
     tabBlocks: string
     tabColors: string
     addBlock: string
+    /** The bin on a block's row, and the question the dialog asks before it runs. */
+    deleteBlock: string
+    deleteBlockConfirm: string
   }
   banners: {
     title: string
@@ -351,6 +354,8 @@ export interface UiMessages {
     targetExternal: string
     /** A poster that says something and goes nowhere. */
     targetNone: string
+    /** Heads the hero's own pictures on the banners screen. */
+    heroHeading: string
     targetNoneHelp: string
     categoryLabel: string
     categoryNone: string
@@ -583,6 +588,13 @@ export interface UiMessages {
    * because ⌘ on Windows is simply wrong and a dictionary cannot hold a function to choose. The
    * machine-readable form is `aria-keyshortcuts`, which is ARIA token syntax and never translated.
    */
+  /** Sentences more than one family of blocks needs. */
+  shared: {
+    confirmDeleteTitle: string
+    delete: string
+    deleting: string
+    cancel: string
+  }
   shell: {
     brand: string
     menuOpen: string
