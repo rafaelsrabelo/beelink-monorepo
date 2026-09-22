@@ -8,7 +8,15 @@ import type { ComponentProps, ReactNode } from "react"
 import { usePathname, useRouter } from "next/navigation"
 
 // Libs
-import { HomeIcon, PackageIcon, SettingsIcon, ShoppingBagIcon, UsersIcon } from "lucide-react"
+import {
+  HomeIcon,
+  ImageIcon,
+  PackageIcon,
+  SettingsIcon,
+  ShoppingBagIcon,
+  TagsIcon,
+  UsersIcon,
+} from "lucide-react"
 
 // Types
 import type { User } from "@harness-monorepo/contracts"
@@ -121,6 +129,11 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
             item(nav.home, "", <HomeIcon />),
             item(nav.orders, "/orders", <ShoppingBagIcon />, "prefix"),
             item(nav.products, "/products", <PackageIcon />, "prefix"),
+            // Categories arrives here in the same change that took the home card away from it.
+            // That card was its only door in the whole panel, and a screen nobody can reach is a
+            // screen that will be reported as deleted.
+            item(nav.categories, "/categories", <TagsIcon />, "prefix"),
+            item(nav.banners, "/banners", <ImageIcon />, "prefix"),
             item(nav.customers, "/customers", <UsersIcon />, "prefix"),
           ]}
           footerItems={[item(nav.settings, "/store", <SettingsIcon />)]}
