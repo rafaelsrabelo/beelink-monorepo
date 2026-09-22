@@ -1,27 +1,7 @@
 "use client"
 
-// React
-import { useId } from "react"
-
 // Libs
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type Announcements,
-  type DragEndEvent,
-} from "@dnd-kit/core"
-import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers"
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
+import type { Announcements } from "@dnd-kit/core"
 import { EyeIcon, EyeOffIcon, GripVerticalIcon, LayoutGridIcon } from "lucide-react"
 
 // UI
@@ -32,6 +12,9 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// Block
+import { ArrangeBoard, useArrangeItem } from "./design-arrange"
 
 export type ArrangementLayout = "FULL" | "HALVES" | "THIRDS"
 
@@ -94,7 +77,6 @@ export function BannerArrangement({
   messages = defaultMessages,
 }: BannerArrangementProps) {
   const text = messages.design
-  const context = useId()
 
   // One list, with the products in it. Every id the sortable context knows lives here, in the
   // order the landing page draws them.
@@ -103,12 +85,6 @@ export function BannerArrangement({
     PRODUCTS_ROW,
     ...itemsBelow,
   ]
-
-  const sensors = useSensors(
-    // A small distance before a drag starts, so a click on the eye or the size select is a click.
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
 
   /**
    * What a screen reader is told, in the shop's own words.
@@ -136,21 +112,6 @@ export function BannerArrangement({
     return "title" in row ? row.title : text.productList
   }
 
-  function handleEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const from = indexOf(active.id)
-    const to = indexOf(over.id)
-    if (from < 0 || to < 0) return
-
-    const ids = rows.map((row) => row.id)
-    const [moved] = ids.splice(from, 1)
-    if (moved) ids.splice(to, 0, moved)
-
-    onReorder(ids)
-  }
-
   if (!items.length && !itemsBelow.length) {
     return (
       <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed py-10 text-center">
@@ -161,18 +122,12 @@ export function BannerArrangement({
   }
 
   return (
-    <DndContext
-      id={context}
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      // Vertical only, and inside the list: a poster cannot be dragged sideways into nothing, and
-      // it cannot be dragged out of the panel it belongs to.
-      modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-      accessibility={{ announcements }}
-      onDragEnd={handleEnd}
+    <ArrangeBoard
+      ids={rows.map((row) => row.id)}
+      onReorder={onReorder}
+      announcements={announcements}
     >
-      <SortableContext items={rows.map((row) => row.id)} strategy={verticalListSortingStrategy}>
-        <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-2">
           {rows.map((row) =>
             "title" in row ? (
               <ArrangementRow
@@ -185,10 +140,9 @@ export function BannerArrangement({
             ) : (
               <ProductsRow key={row.id} messages={messages} />
             ),
-          )}
-        </ul>
-      </SortableContext>
-    </DndContext>
+        )}
+      </ul>
+    </ArrangeBoard>
   )
 }
 
@@ -200,25 +154,22 @@ export function BannerArrangement({
  */
 function ProductsRow({ messages }: { messages: UiMessages }) {
   const text = messages.design
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: PRODUCTS_ROW_ID,
-  })
+  const drag = useArrangeItem(PRODUCTS_ROW_ID)
 
   return (
     <li
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      ref={drag.setNodeRef}
+      style={drag.style}
       className={cn(
         "border-primary/40 bg-primary/5 flex items-center gap-2 rounded-xl border border-dashed p-2",
-        isDragging && "z-10 opacity-80 shadow-md",
+        drag.isDragging && "z-10 opacity-80 shadow-md",
       )}
     >
       <button
         type="button"
         aria-label={`${text.dragHandle}: ${text.productList}`}
         className="text-muted-foreground hover:text-foreground cursor-grab touch-none rounded-md p-1"
-        {...attributes}
-        {...listeners}
+        {...drag.handleProps}
       >
         <GripVerticalIcon aria-hidden="true" className="size-4" />
       </button>
@@ -247,20 +198,18 @@ function ArrangementRow({
   messages: UiMessages
 }) {
   const text = messages.design
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+  const drag = useArrangeItem(item.id)
 
   const layoutLabel = (layout: string) =>
     layout === "HALVES" ? text.sizeHalves : layout === "THIRDS" ? text.sizeThirds : text.sizeFull
 
   return (
     <li
-      ref={setNodeRef}
-      // `CSS.Transform.toString` turns dnd-kit's {x, y, scaleX, scaleY} into the string the browser
-      // wants. The transition comes from the hook too, so a dropped row settles instead of jumping.
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      ref={drag.setNodeRef}
+      style={drag.style}
       className={cn(
         "bg-shell-surface border-shell-border flex items-center gap-2 rounded-xl border p-2",
-        isDragging && "z-10 opacity-80 shadow-md",
+        drag.isDragging && "z-10 opacity-80 shadow-md",
         !item.isActive && "opacity-60",
       )}
     >
@@ -273,8 +222,7 @@ function ArrangementRow({
         type="button"
         aria-label={`${text.dragHandle}: ${item.title}`}
         className="text-muted-foreground hover:text-foreground cursor-grab touch-none rounded-md p-1"
-        {...attributes}
-        {...listeners}
+        {...drag.handleProps}
       >
         <GripVerticalIcon aria-hidden="true" className="size-4" />
       </button>

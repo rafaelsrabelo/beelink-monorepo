@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useState, type ComponentProps } from "react"
+import { useEffect, useState, type ComponentProps, type ReactNode } from "react"
 
 // Types
 import type { Banner, PublicProductCard, PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
@@ -12,6 +12,8 @@ import {
   PRODUCTS_ROW_ID,
   type ArrangementLayout,
 } from "@harness-monorepo/ui/blocks/design/banner-arrangement"
+import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
+import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
 import { StorefrontShowcase } from "@harness-monorepo/ui/blocks/storefront/storefront-showcase"
@@ -150,6 +152,30 @@ export function DesignScreen({ store, categories, products, year, messages }: De
     setDirty(true)
   }
 
+  /** The ids the landing page draws, in order, with the products' own row among them. */
+  const orderedIds = [...above.map((row) => row.id), PRODUCTS_ROW_ID, ...below.map((row) => row.id)]
+
+  /**
+   * Where each poster landed, read off one list.
+   *
+   * The products' id is in it, and its place is the answer: everything before it is above the
+   * bands, everything after is under them. Removing it shifts each later poster down by one, which
+   * is exactly the count of the ones that stayed above — so `position >= at` is the side.
+   */
+  function reorderTo(ids: string[]) {
+    const at = ids.indexOf(PRODUCTS_ROW_ID)
+
+    edit(
+      ids
+        .filter((id) => id !== PRODUCTS_ROW_ID)
+        .map((id, position) => {
+          const row = rows.find((candidate) => candidate.id === id)
+          return row ? { ...row, belowProducts: position >= at } : null
+        })
+        .filter((row) => !!row),
+    )
+  }
+
   /** Back to what the server holds. The seed key is cleared so the next render re-reads it. */
   function discard() {
     setDirty(false)
@@ -200,6 +226,15 @@ export function DesignScreen({ store, categories, products, year, messages }: De
       })
   }
 
+  /** A poster in the preview, with a grip over its corner. */
+  function draggable(item: { id: string; title: string }, card: ReactNode) {
+    return (
+      <DesignHandle id={item.id} label={item.title} messages={messages}>
+        {card}
+      </DesignHandle>
+    )
+  }
+
   const publishing = reorder.isPending || update.isPending
 
   return (
@@ -237,30 +272,48 @@ export function DesignScreen({ store, categories, products, year, messages }: De
           onClickCapture={(event) => event.preventDefault()}
           onSubmitCapture={(event) => event.preventDefault()}
         >
-          <DesignPreview>
-            <StorefrontFrame
-              store={store}
-              categories={categories}
-              year={year}
-              showBanner
-              showHighlights
-              searchSlot={null}
-              linkComponent={InertLink}
-              messages={messages}
-            >
-              <StorefrontShowcase items={showcasesOf(above)} linkComponent={InertLink} />
-              <StorefrontProductRail
-                products={products}
-                productHref={routes.product}
-                title={messages.storefront.catalogTitle}
-                seeAllHref={routes.catalog()}
-                locale="pt-BR"
+          {/*
+            The second board, over the same ids as the sidebar's. Two and not one spanning both:
+            a single context would make the shop and the list each other's drop targets, so a
+            poster could be dragged out of the window and into the panel.
+          */}
+          <ArrangeBoard ids={orderedIds} onReorder={reorderTo} layout="grid">
+            <DesignPreview>
+              <StorefrontFrame
+                store={store}
+                categories={categories}
+                year={year}
+                showBanner
+                showHighlights
+                searchSlot={null}
                 linkComponent={InertLink}
                 messages={messages}
-              />
-              <StorefrontShowcase items={showcasesOf(below)} linkComponent={InertLink} />
-            </StorefrontFrame>
-          </DesignPreview>
+              >
+                <StorefrontShowcase
+                  items={showcasesOf(above)}
+                  linkComponent={InertLink}
+                  renderItem={draggable}
+                />
+                {/* The bands are dragged here too, which is how a poster crosses to the other side. */}
+                <DesignHandle id={PRODUCTS_ROW_ID} label={text.productList} messages={messages}>
+                  <StorefrontProductRail
+                    products={products}
+                    productHref={routes.product}
+                    title={messages.storefront.catalogTitle}
+                    seeAllHref={routes.catalog()}
+                    locale="pt-BR"
+                    linkComponent={InertLink}
+                    messages={messages}
+                  />
+                </DesignHandle>
+                <StorefrontShowcase
+                  items={showcasesOf(below)}
+                  linkComponent={InertLink}
+                  renderItem={draggable}
+                />
+              </StorefrontFrame>
+            </DesignPreview>
+          </ArrangeBoard>
         </div>
 
         <aside className="flex w-full shrink-0 flex-col gap-3 @4xl/main:w-96">
@@ -274,22 +327,7 @@ export function DesignScreen({ store, categories, products, year, messages }: De
             <BannerArrangement
               items={above}
               itemsBelow={below}
-              // The products' own id is in this list, and where it landed is the answer: everything
-              // before it is above the bands, everything after is under them. The same drop that
-              // reorders is the drop that changes a side, so there is no second gesture to learn.
-              onReorder={(ids) => {
-                const at = ids.indexOf(PRODUCTS_ROW_ID)
-
-                edit(
-                  ids
-                    .filter((id) => id !== PRODUCTS_ROW_ID)
-                    .map((id, position) => {
-                      const row = rows.find((candidate) => candidate.id === id)
-                      return row ? { ...row, belowProducts: position >= at } : null
-                    })
-                    .filter((row) => !!row),
-                )
-              }}
+              onReorder={reorderTo}
               onToggle={(id, isActive) =>
                 edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
               }

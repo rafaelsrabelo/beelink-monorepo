@@ -3,6 +3,9 @@
 // React
 import { useCallback, useRef, useSyncExternalStore, type ReactNode } from "react"
 
+// Block
+import { ArrangeScale } from "./design-arrange"
+
 /** What the surface is built at. It is what the storefront's own `max-w-[1440px]` targets. */
 export const PREVIEW_WIDTH = 1440
 
@@ -77,7 +80,8 @@ export function DesignPreview({ children }: DesignPreviewProps) {
         ref={surface}
         style={{ width, transform: `scale(${scale})`, transformOrigin: "top left" }}
       >
-        {children}
+        {/* Anything dragged in here is painted at this scale; the pointer is not. */}
+        <ArrangeScale scale={scale}>{children}</ArrangeScale>
       </div>
     </div>
   )

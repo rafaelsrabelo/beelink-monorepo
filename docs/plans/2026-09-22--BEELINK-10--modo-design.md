@@ -206,3 +206,58 @@ tela lê o lado de cada banner a partir dele.
 - **Arrastar dentro do preview.** Pedido junto com os dois acima. A superfície está sob
   `transform: scale()`, e o dnd-kit translada o elemento no espaço escalado dele — o bloco anda
   mais devagar que o dedo. Tem conserto, e é o próximo passo.
+
+---
+
+## Adendo, 2026-09-22 — arrastar dentro do preview
+
+O terceiro pedido do dono, e o que o adendo anterior deixou em aberto.
+
+### Dois tabuleiros sobre os mesmos ids, não um
+
+Um único `DndContext` cobrindo as duas metades faria o preview e a lista serem alvo de soltura um
+do outro: daria para arrastar um cartaz **para fora da loja e dentro da barra lateral**, um gesto
+sem significado que o dnd-kit ainda assim animaria. Dois tabuleiros sobre a mesma lista de ids,
+ambos chamando o mesmo `onReorder`, são cada um coerente consigo e não conseguem fazer isso.
+
+`ArrangeBoard` e `useArrangeItem` moram em `packages/ui` porque `@dnd-kit` é dependência deste
+pacote e de nenhum outro — alcançado de `apps/web` resolveria pelo `node_modules` achatado e seria
+uma dependência fantasma, a armadilha 1 do contrato raiz. A lista da direita foi migrada para eles
+na mesma mudança: duas implementações do mesmo arrasto é como as duas divergem.
+
+O tabuleiro tem dois modos. `"list"` é a coluna da direita — eixo vertical travado e dentro do
+painel. `"grid"` é a loja, onde dois cartazes ficam lado a lado e travar um eixo tornaria o da
+direita inalcançável.
+
+### A correção de escala, e a medição
+
+O dnd-kit move o elemento arrastado com um `translate` **dentro da caixa dele**, e uma caixa sob
+`transform: scale(0.9)` pinta cada um desses pixels a 90%. O ponteiro não é escalado. Sem
+correção, o cartaz anda mais devagar que o dedo e nunca chega onde está sendo posto.
+
+`ArrangeScale` publica a escala que o `DesignPreview` calculou, e `useArrangeItem` divide o
+translate por ela. Medido no Chrome, superfície em `scale(0.898)`:
+
+```
+ponteiro andou:  200px
+cartaz  andou:   200px      ← sem a divisão seriam 180px
+```
+
+A detecção de colisão não precisa de correção nenhuma: o dnd-kit mede com
+`getBoundingClientRect`, que já devolve o retângulo pintado.
+
+### O que mudou na vitrine
+
+`StorefrontShowcase` ganhou `renderItem` — um render prop que embrulha cada cartaz já montado.
+Render prop e não uma flag `draggable`, porque este bloco não pode aprender o que é dnd-kit: ele é
+a vitrine, e o enfeite do editor chega nele como prop ou não chega.
+
+A alça (`DesignHandle`) flutua no canto e aparece no hover e no foco. É a alça, e não o cartaz, que
+carrega o arrasto: arrastar o cartaz inteiro significaria que um cartaz não pode ser clicado, e um
+preview onde selecionar um cartaz faz alguma coisa é a próxima coisa óbvia de se querer.
+
+### Uma consequência aceita
+
+O mesmo cartaz agora tem duas alças com o mesmo nome acessível — uma no preview, outra na lista.
+São dois controles para o mesmo objeto, então o nome igual é honesto, e eles ficam em marcos
+diferentes: a lista está dentro de um `<aside>`, que é `complementary`.
