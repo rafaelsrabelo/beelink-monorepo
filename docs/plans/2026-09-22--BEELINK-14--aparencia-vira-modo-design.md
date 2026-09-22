@@ -100,3 +100,72 @@ corpo. O resto do formulário — imagem, título, alvo — é o que já existe.
 7. `layoutType`, `bannerImageUrl` e `cardLayout` não existem mais em lugar nenhum.
 8. Nenhum formulário envia `layoutSettings`.
 9. Nenhuma loja existente muda de aparência sem que o dono peça.
+
+---
+
+## Adendo — o catálogo de componentes que o dono pediu
+
+> "ao lado da preview da pagina tinha COMPONENTES, CORES, pra selecionar e ajustar" — com dezesseis
+> tipos listados.
+
+**É possível, e o modelo já é essa forma.** Uma página é uma lista ordenada de blocos com tipo; um
+tipo novo é um valor no enum, uma forma no zod, um componente com história e teste, e um painel de
+ajustes. O build quebra em cada ponto que faltar, que é o objetivo.
+
+O que não é parecido entre os dezesseis é o **custo**, e juntá-los numa lista só esconde isso.
+
+### Três deles não são blocos
+
+**Header, Navigation e Footer não entram na ordem da página.** Eles estão em toda página da loja,
+não só na inicial — o dono já disse isso: *"o que nao muda e o footer e o header"*. Eles ganham
+**ajustes**, não posição. Arrastá-los seria oferecer um gesto que não tem resposta na página do
+produto nem na do carrinho.
+
+**A Announcement Bar é a exceção que confirma:** ela é conteúdo novo, mas é chrome — mora acima do
+header, em toda página, e o que ela pede é um texto, um link e um botão de fechar.
+
+### O resto, por custo
+
+**Já está escrito, falta ligar.**
+- **Category Grid** — `blocks/storefront/storefront-category-grid.tsx` existe e **ninguém o usa**.
+- **Image** — um cartaz sem palavras. É o `BANNER` que já existe com o texto vazio.
+- **Rich Text** — o `TEXT` de hoje são duas linhas; "rich" quer o editor que a descrição do produto
+  já tem em `blocks/catalog/rich-text.ts`.
+
+**Conteúdo novo, mecânica conhecida.**
+- **Announcement Bar**, **Testimonials**, **Collection** (um conjunto curado de produtos — uma
+  tabela de junção ou uma lista de ids guardada, e a decisão entre as duas é real).
+
+**Conteúdo novo com uma pergunta difícil atrás.** Estes três não são "mais um tipo":
+
+- **Countdown.** A vitrine é pré-renderizada e cacheada. Um contador tem que calcular **no
+  navegador** a partir de uma data guardada, nunca no servidor, ou toda loja serve o mesmo número
+  congelado pela janela de revalidação. E precisa de uma resposta para "acabou" que não seja um
+  bloco mostrando zero.
+- **Video.** Um iframe do YouTube numa página anônima e indexada custa peso e leva um cookie de
+  terceiro junto. Precisa de uma política antes de um componente.
+- **Newsletter.** **Não é um bloco, é uma funcionalidade.** Desenhar a caixa é dez por cento; o
+  resto é onde os e-mails vão parar, como o dono os exporta, e consentimento — LGPD, num formulário
+  que coleta dado pessoal de estranho.
+
+### A regra que este catálogo precisa ter
+
+Este repositório já carrega **dezesseis chaves declaradas que nada desenha**. Declarar dezesseis
+tipos e construir seis é esse mesmo erro numa escala maior, e desta vez com uma gaveta de
+componentes na tela prometendo cada um deles.
+
+Então: **o catálogo abre um tipo por vez, e cada um sobe inteiro** — contrato, zod, componente com
+história e teste, painel de ajustes. Um tipo que não desenha não entra na gaveta.
+
+### As cores
+
+Hoje são quatro: `background`, `primary`, `text`, `header`. **Não existe cor de rodapé** — o rodapé
+pega emprestado o `--shop-header` (`storefront-window.tsx:408`).
+
+O pedido é escolher **header, rodapé e fundo**. Então entra uma cor nova, `footer`, com default
+igual ao `header`, para que nenhuma loja existente mude de aparência.
+
+Fica uma pergunta em aberto, e ela é de produto: **`primary` e `text` continuam escolhíveis?**
+`primary` pinta todo botão, todo selo de preço e toda seta; `text` pinta as palavras. Se o painel
+oferecer só três, esses dois passam a ser derivados — e derivar uma cor de marca é uma decisão
+sobre a identidade da loja, não sobre a tela.
