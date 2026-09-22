@@ -3,11 +3,9 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 // UI
-import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
-import { StorefrontShowcase } from "@harness-monorepo/ui/blocks/storefront/storefront-showcase"
-
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { getMessages } from "@/lib/locale"
 import { homeAt, shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -71,25 +69,6 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
-  // The shop's own banners, already resolved: the API built each address from the slug its target
-  // has now, so renaming a category or a product moves the poster with it rather than breaking it.
-  // Nothing is filtered here — a hidden banner never reaches this shape.
-  const showcases = store.banners.map((banner) => ({
-    id: banner.id,
-    title: banner.title,
-    subtitle: banner.subtitle,
-    imageUrl: banner.imageUrl,
-    href: banner.href,
-    external: banner.external,
-    layout: banner.layout,
-    belowProducts: banner.belowProducts,
-  }))
-
-  // Two bands, one on each side of the products. A poster that is neither is not possible: the
-  // page has exactly one run of products, so a banner is above it or under it and nothing else.
-  const above = showcases.filter((banner) => !banner.belowProducts)
-  const below = showcases.filter((banner) => banner.belowProducts)
-
   return (
     <StorefrontFrame
       store={store}
@@ -98,62 +77,28 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       // shop and a WhatsApp button — and the shop owner was right that it reads as a profile page
       // rather than a landing page: three lines of prose between the cover and the first thing for
       // sale. The name is in the header and the WhatsApp is in the footer and on every product.
-      showBanner
-      showHighlights
+      // No cover and no promises band from the frame: on this page they are blocks, and which one
+      // comes first is the shopkeeper's answer rather than this file's.
       year={new Date().getFullYear()}
       messages={ui}
+      blocks={
+        <>
+          {/*
+            The page's heading, for the accessibility tree only. A landing page whose heading is a
+            logo is a page a screen reader opens with no idea whose shop it is.
+          */}
+          <h1 className="sr-only">{store.name}</h1>
+          <StorefrontSections
+            sections={store.sections}
+            bands={home.bands}
+            routes={routes}
+            showPrice={layout.showProductPrice ?? true}
+            showBadge={layout.showProductBadges ?? true}
+            messages={ui}
+          />
+        </>
+      }
     >
-      {/*
-        The page's heading, for the accessibility tree only. Dropping the pitch band dropped the
-        one `h1` this page had, and a landing page whose heading is a logo is a page a screen
-        reader opens with no idea whose shop it is.
-      */}
-      <h1 className="sr-only">{store.name}</h1>
-
-      {/*
-        The categories the shopkeeper gave a shape to, as posters — in their own order, so what runs
-        here is their arrangement and not ours. A category with no shape stays off this band and is
-        still in the menu, in the rails below and at its own address.
-      */}
-      <StorefrontShowcase items={above} />
-      {/*
-        The bands, in the shopkeeper's own order — they know what they want to sell first. A band
-        with nothing available in it draws nothing: the rail returns null on an empty list, so a
-        shop mid-restock is a shorter page rather than a row of empty headings.
-
-        The copy is chosen here and not in `homeAt`: a data module that carried a heading would be
-        a data module that has to be told a language.
-      */}
-      {home.bands.map((band) =>
-        band.kind === "all" ? (
-          <StorefrontProductRail
-            key="all"
-            products={band.products}
-            productHref={routes.product}
-            title={ui.storefront.catalogTitle}
-            seeAllHref={routes.catalog()}
-            locale="pt-BR"
-            showPrice={layout.showProductPrice ?? true}
-            showBadge={layout.showProductBadges ?? true}
-            messages={ui}
-          />
-        ) : (
-          <StorefrontProductRail
-            key={band.category.id}
-            products={band.products}
-            productHref={routes.product}
-            title={band.category.name}
-            label={band.category.description ?? undefined}
-            seeAllHref={routes.category(band.category.slug)}
-            locale="pt-BR"
-            showPrice={layout.showProductPrice ?? true}
-            showBadge={layout.showProductBadges ?? true}
-            messages={ui}
-          />
-        ),
-      )}
-      {/* And the posters the shopkeeper dragged under the products. */}
-      <StorefrontShowcase items={below} />
     </StorefrontFrame>
   )
 }

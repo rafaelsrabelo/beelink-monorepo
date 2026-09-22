@@ -7,7 +7,7 @@ import type {
 import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
 
 // App
-import { bannerInclude, toPublicBanner, type BannerRow } from '../banners/banners.mapper.js';
+import { sectionInclude, toPublicSection, type SectionRow } from '../sections/sections.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 
@@ -21,7 +21,7 @@ import { parseLayoutSettings } from './store-layout-settings.schema.js';
  */
 export type StoreRow = StoreModel & {
   category: StoreCategoryModel | null;
-  banners: BannerRow[];
+  sections: SectionRow[];
 };
 
 /** The one query shape the store mappers accept, so a call site cannot forget the include. */
@@ -30,10 +30,10 @@ export const storeInclude = {
   // Only what a visitor may see, in the shopkeeper's order. A hidden banner is still in the panel;
   // it simply never reaches this shape. Ordered by position alone — `create` hands out the next
   // one per shop, so two banners never share a number and there is no tie to break.
-  banners: {
+  sections: {
     where: { isActive: true },
     orderBy: { position: 'asc' },
-    include: bannerInclude,
+    include: sectionInclude,
   },
 } as const;
 
@@ -85,7 +85,7 @@ export function toPublicStore(row: StoreRow): PublicStore {
     paymentMethods: row.paymentMethods,
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
-    banners: row.banners.map((banner) => toPublicBanner(banner, row.slug, ROUTE_WORDS[row.routeVocabulary])),
+    sections: row.sections.map((section) => toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary])),
   } satisfies PublicStore;
 }
 

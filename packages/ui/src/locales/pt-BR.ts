@@ -197,6 +197,13 @@ export const ptBR: UiMessages = {
     emptyHint: "Crie um banner primeiro e ele aparece aqui.",
     dragHandle: "Arrastar",
     productList: "Lista de produtos",
+    kinds: {
+      COVER: "Capa",
+      BANNER: "Banner",
+      TEXT: "Título",
+      BENEFITS: "Vantagens",
+      PRODUCTS: "Lista de produtos",
+    },
     productListHint: "Arraste para mudar o que vem antes dela.",
     sizeLabel: "Tamanho",
     sizeFull: "Cheio",

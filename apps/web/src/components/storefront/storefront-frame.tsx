@@ -48,6 +48,13 @@ export interface StorefrontFrameProps {
    * the API on every keystroke and a preview that talks to the network is a preview that costs
    * something to look at.
    */
+  /**
+   * The landing page's own blocks, drawn edge to edge in the shopkeeper's order.
+   *
+   * When it is given the frame stops drawing the cover and the promises band from the shop's
+   * columns: on that page they are blocks. Every other page passes `children` and keeps them.
+   */
+  blocks?: ReactNode
   searchSlot?: ReactNode
   /**
    * How every injected link is drawn. The preview passes one that renders no `href`, so nothing
@@ -57,7 +64,8 @@ export interface StorefrontFrameProps {
    */
   linkComponent?: LinkComponent
   messages: UiMessages
-  children: ReactNode
+  /** Optional: a page that arranges its own blocks passes those instead. */
+  children?: ReactNode
 }
 
 /**
@@ -80,6 +88,7 @@ export function StorefrontFrame({
   description = null,
   showBanner = false,
   showHighlights = false,
+  blocks,
   year,
   searchSlot,
   linkComponent,
@@ -156,6 +165,7 @@ export function StorefrontFrame({
           />
         ) : undefined
       }
+      {...(blocks ? { blocks } : {})}
       banner={
         showBanner && store.layoutType === "BANNER" && store.bannerImageUrl
           ? { imageUrl: store.bannerImageUrl }

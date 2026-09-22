@@ -1,0 +1,131 @@
+/// What a block on a landing page is.
+///
+/// A closed list, and it closed before the first row was written. The sixth kind is a value here,
+/// a shape in the zod union, a component with a story and a test, and a panel of settings — the
+/// build breaks at every point that is missing, which is the reason this is an enum and not a
+/// string.
+///
+/// It exists because everything the shopkeeper asked to arrange turned out to be one sentence: a
+/// block, in an order, with settings. Before it there were three ways to order this page —
+/// `StoreBanner.position`, `Store.layoutType`, and a `layoutSettings` blob with no order at all —
+/// and putting a poster under the products needed a boolean of its own.
+enum SectionKind {
+  /// The cover at the top. One image, or several, which is what makes it a carousel.
+  COVER
+  /// A poster in the body of the page.
+  BANNER
+  /// A heading and a line under it. A sign, not a card.
+  TEXT
+  /// The band of promises: an icon, a title and a line, per row.
+  BENEFITS
+  /// The product rails. One per shop, undeletable, and a row like any other so it has a position —
+  /// which is the whole reason `belowProducts` no longer exists.
+  PRODUCTS
+}
+
+/// Edge to edge, or inside the page's measure. Only the cover ever bled to the edges; every other
+/// band on the shop window already sits inside the page's own measure.
+enum SectionWidth {
+  FULL
+  CONTAINED
+}
+
+/// Where a block sends the visitor.
+///
+/// This is the piece the first attempt lacked, and the reason it was removed. The old
+/// `store_showcases` kept its destination as a free-text `href`, so a banner pointing at
+/// `/lessari/blusas` became a dead link the day that category was renamed, and nothing said so.
+/// Commit `5639c47` deleted the table and wrote down what went with it — "banner apontando para um
+/// produto específico ou para fora da loja" — and this enum is that sentence being paid back.
+///
+/// CATEGORY and PRODUCT carry a foreign key, never an address: the address is built where it is
+/// rendered, from the slug the row has now, so renaming the thing a block points at moves the block
+/// with it. EXTERNAL is the only one that stores a string, because there is nothing here to point
+/// at — another website, or a wa.me link.
+enum SectionTarget {
+  CATEGORY
+  PRODUCT
+  EXTERNAL
+  /// A block that says something and goes nowhere — a season, a promise about delivery, a picture.
+  /// The window draws it without an arrow and without making it clickable: a card that looks
+  /// interactive and is not is worse than one that never offered.
+  NONE
+}
+
+/// One block of a shop's landing page.
+///
+/// It is the `store_banners` table generalised, one day after that table shipped, and the rename
+/// is the point rather than a tidy-up: a table called banners that holds a heading, a band of
+/// promises and the product rails is a name that lies, and the next person adds a second table
+/// beside it. This repository already learned that — `5639c47` deleted `store_showcases` with the
+/// note that "dois nomes para uma coisa são duas telas para manter em dia".
+///
+/// Every block carries its own `position` rather than leaving the order to a layout document. That
+/// is what lets a block appear the moment it is created, instead of waiting for an editor, and it
+/// is why design mode is a writer of `position` rather than a prerequisite for seeing anything.
+model StoreSection {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  kind SectionKind
+
+  /// Optional on every kind now, unlike a banner's. A cover is often a photograph with the shop's
+  /// own words already in it, and a PRODUCTS row with no title uses the platform's word for the
+  /// catalogue — which is what lets the shopkeeper rename "Todos os produtos" by typing, and undo
+  /// it by clearing the field rather than by remembering what it used to say.
+  title    String? @db.VarChar(120)
+  /// The line under the title.
+  subtitle String? @db.VarChar(200)
+
+  /// Nullable, unlike a banner's. TEXT, BENEFITS and PRODUCTS draw no picture of their own — the
+  /// rule that a BANNER must have one moved to the zod union, where it can be stated per kind
+  /// instead of for every row in the table.
+  imageUrl String?
+
+  /// Full width, two across, three across. The same three shapes a category poster had, and the
+  /// same enum: a second one would be two vocabularies for one row of the page.
+  layout ShowcaseLayout @default(FULL)
+
+  /// Read only on COVER. Every other band is already contained.
+  width SectionWidth @default(FULL)
+
+  target SectionTarget @default(NONE)
+
+  /// Cascade, not SetNull, and the reason is the CHECK in the migration. A block whose target is a
+  /// category must have that category: `SetNull` would leave a row whose `target` says CATEGORY
+  /// with nowhere to go, which is the exact state the constraint exists to make impossible. The
+  /// cost is real and worth naming — deleting a category takes its poster with it — and it is the
+  /// same answer this schema already gives for a subcategory outliving its parent.
+  categoryId String?          @db.Uuid
+  category   ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  productId String?  @db.Uuid
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// `http` or `https` only, bounded by SECTION_URL_MAX_LENGTH. It is echoed verbatim into an
+  /// anchor on the anonymous, indexed shop window, which is why the scheme is an allow-list rather
+  /// than a deny-list — the same rule `store-fields.dto.ts` states for every other stored URL.
+  externalUrl String?
+
+  /// A COVER's slides, or a BENEFITS band's rows. Empty on every other kind.
+  ///
+  /// Json, and the difference from `layoutSettings` is the one that matters: this is **content**.
+  /// Sixteen of that blob's twenty-one keys survived years unread because a key nobody draws is
+  /// invisible; an `items` nobody draws is a blank band on the shop's front page, reported the
+  /// same day. Its shape is decided by `kind` and enforced by a discriminated union in zod.
+  items Json @default("[]")
+
+  /// The order the shopkeeper chose. Ties break on title so the page is never arbitrary.
+  position Int @default(0)
+
+  /// Hiding a block keeps it. It is not a delete, and the picture is not re-uploaded to undo it.
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The storefront's read, in one index scan.
+  @@index([storeId, isActive, position])
+  @@map("store_sections")
+}

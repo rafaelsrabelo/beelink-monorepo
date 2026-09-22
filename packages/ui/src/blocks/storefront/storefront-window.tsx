@@ -114,6 +114,17 @@ export interface StorefrontWindowProps {
   /** Band 6 — a second one, under the products. */
   bannerBelow?: StorefrontBanner | null
 
+  /**
+   * The landing page's own blocks, in the shopkeeper's order, drawn edge to edge.
+   *
+   * When it is given, bands 3 to 5 step aside: the cover, the promises and the shelves are all
+   * blocks now, and which comes first is the shopkeeper's answer rather than this file's. Each one
+   * states its own width — `StorefrontBand` for the contained ones, nothing for a cover that
+   * bleeds — which is exactly what `children` inside a measured `<main>` cannot do.
+   *
+   * Every other page keeps passing `children`, because a product page is not an arrangement.
+   */
+  blocks?: ReactNode
   /** Band 4 — what the shop promises. Empty means the band is absent, never an empty strip. */
   highlights?: readonly StorefrontHighlight[]
 
@@ -151,7 +162,7 @@ const ICONS: Record<StorefrontNetwork, typeof WhatsAppIcon> = {
  */
 const BAND = "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10"
 
-function Banner({ banner, Link, tall }: { banner: StorefrontBanner; Link: LinkComponent; tall?: boolean }) {
+function Section({ banner, Link, tall }: { banner: StorefrontBanner; Link: LinkComponent; tall?: boolean }) {
   const picture = (
     <img
       src={banner.imageUrl}
@@ -203,6 +214,7 @@ export function StorefrontWindow({
   accountHref,
   categories,
   banner,
+  blocks,
   bannerBelow,
   highlights = [],
   children,
@@ -319,10 +331,10 @@ export function StorefrontWindow({
       </header>
 
       {/* ---------------------------------------------------------------- 3 · the cover */}
-      {banner ? <Banner banner={banner} Link={Link} tall /> : null}
+      {blocks ? null : banner ? <Section banner={banner} Link={Link} tall /> : null}
 
       {/* ---------------------------------------------------------------- 4 · what the shop promises */}
-      {highlights.length ? (
+      {blocks || !highlights.length ? null : (
         <div className="w-full" style={{ backgroundColor: "color-mix(in oklab, var(--shop-header) 10%, transparent)" }}>
           <ul className={cn(BAND, "grid grid-cols-2 gap-x-6 gap-y-5 py-6 sm:grid-cols-4")}>
             {highlights.map((highlight) => (
@@ -350,9 +362,12 @@ export function StorefrontWindow({
             ))}
           </ul>
         </div>
-      ) : null}
+      )}
 
       {/* ---------------------------------------------------------------- 5 · the shop itself */}
+      {blocks ? (
+        <main className="flex flex-1 flex-col gap-8 pb-8">{blocks}</main>
+      ) : (
       <main className={cn(BAND, "flex flex-1 flex-col gap-8 py-8")}>
         {description ? (
           <div className="flex flex-col items-center gap-2 text-center">
@@ -375,9 +390,10 @@ export function StorefrontWindow({
 
         {children}
       </main>
+      )}
 
       {/* ---------------------------------------------------------------- 6 · the second cover */}
-      {bannerBelow ? <Banner banner={bannerBelow} Link={Link} /> : null}
+      {bannerBelow ? <Section banner={bannerBelow} Link={Link} /> : null}
 
       {/* ---------------------------------------------------------------- 7 · footer */}
       {/*

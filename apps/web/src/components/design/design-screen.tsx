@@ -4,19 +4,20 @@
 import { useEffect, useState } from "react"
 
 // Types
-import type { PublicProductCard, PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
+import type { PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
-import { BannerArrangement } from "@harness-monorepo/ui/blocks/design/banner-arrangement"
+import { SectionArrangement } from "@harness-monorepo/ui/blocks/design/section-arrangement"
 import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import { useBanners, useReorderBanners, useUpdateBanner } from "@/services/banners/banner-hooks"
+import type { HomeBand } from "@/lib/storefront-data"
+import { useSections, useReorderSections, useUpdateSection } from "@/services/sections/section-hooks"
 import { DesignPreviewPane } from "./design-preview-pane"
-import { applyOrder, changesOf, orderedIdsOf, toDraft, type Draft } from "./design-draft"
+import { applyOrder, changesOf, orderedIdsOf, previewOf, toDraft, type Draft } from "./design-draft"
 
 export interface DesignScreenProps {
   /**
@@ -26,7 +27,8 @@ export interface DesignScreenProps {
    */
   store: PublicStore
   categories: readonly PublicProductCategory[]
-  products: readonly PublicProductCard[]
+  /** The rails, already loaded — the same shape the shop window's home is built from. */
+  bands: readonly HomeBand[]
   year: number
   messages: UiMessages
 }
@@ -41,13 +43,13 @@ export interface DesignScreenProps {
  *
  * The cost is real and is warned about rather than hidden — a reload before publishing loses it.
  */
-export function DesignScreen({ store, categories, products, year, messages }: DesignScreenProps) {
+export function DesignScreen({ store, categories, bands, year, messages }: DesignScreenProps) {
   const text = messages.design
   const slug = store.slug
 
-  const banners = useBanners(slug)
-  const reorder = useReorderBanners(slug)
-  const update = useUpdateBanner(slug)
+  const banners = useSections(slug)
+  const reorder = useReorderSections(slug)
+  const update = useUpdateSection(slug)
 
   const [draft, setDraft] = useState<Draft[] | null>(null)
   const [seeded, setSeeded] = useState<string | null>(null)
@@ -72,8 +74,6 @@ export function DesignScreen({ store, categories, products, year, messages }: De
   }, [dirty])
 
   const rows = draft ?? []
-  const above = rows.filter((row) => !row.belowProducts)
-  const below = rows.filter((row) => row.belowProducts)
 
   function edit(next: Draft[]) {
     setDraft(next)
@@ -96,12 +96,8 @@ export function DesignScreen({ store, categories, products, year, messages }: De
       ...(orderChanged ? [reorder.mutateAsync(ids)] : []),
       ...changed.map((row) =>
         update.mutateAsync({
-          bannerId: row.id,
-          payload: {
-            layout: row.layout,
-            isActive: row.isActive,
-            belowProducts: row.belowProducts,
-          },
+          sectionId: row.id,
+          payload: { layout: row.layout, isActive: row.isActive },
         }),
       ),
     ])
@@ -144,11 +140,9 @@ export function DesignScreen({ store, categories, products, year, messages }: De
         <DesignPreviewPane
           store={store}
           categories={categories}
-          products={products}
+          bands={bands}
           year={year}
-          above={above}
-          below={below}
-          saved={banners.data ?? []}
+          sections={previewOf(rows, banners.data ?? [])}
           orderedIds={orderedIdsOf(rows)}
           onReorder={(ids) => edit(applyOrder(rows, ids))}
           messages={messages}
@@ -162,9 +156,8 @@ export function DesignScreen({ store, categories, products, year, messages }: De
               <Skeleton className="h-14 w-full" />
             </>
           ) : (
-            <BannerArrangement
-              items={above}
-              itemsBelow={below}
+            <SectionArrangement
+              items={rows}
               onReorder={(ids) => edit(applyOrder(rows, ids))}
               onToggle={(id, isActive) =>
                 edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))

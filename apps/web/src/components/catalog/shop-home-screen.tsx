@@ -10,7 +10,7 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { AppLink } from "@/components/app-link"
-import { useBanners } from "@/services/banners/banner-hooks"
+import { useSections } from "@/services/sections/section-hooks"
 import { useProducts } from "@/services/catalog/catalog-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
@@ -35,7 +35,7 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
   const store = useStore(slug)
   // One row is enough: the card asks whether the shop has any product, not how many.
   const products = useProducts(slug, { pageSize: 1 })
-  const banners = useBanners(slug)
+  const banners = useSections(slug)
 
   const loading = store.isPending || products.isPending || banners.isPending
   const bannerRows = banners.data ?? []
@@ -84,7 +84,7 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
       title: text.cards.bannersTitle,
       description: text.cards.bannersText,
       actionLabel: text.cards.bannersAction,
-      href: `/admin/${slug}/banners`,
+      href: `/admin/${slug}/sections`,
       // Banners, not categories. The old predicate asked the panel whether the shop had any
       // category, which the landing page never drew — a shop whose categories all held nothing
       // published read "Feito" over a home with no poster and no menu item at all.

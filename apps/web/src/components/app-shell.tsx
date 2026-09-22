@@ -158,7 +158,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
             // That card was its only door in the whole panel, and a screen nobody can reach is a
             // screen that will be reported as deleted.
             item(nav.categories, "/categories", <TagsIcon />, "prefix"),
-            item(nav.banners, "/banners", <ImageIcon />, "prefix"),
+            item(nav.banners, "/sections", <ImageIcon />, "prefix"),
             item(nav.design, "/design", <LayoutTemplateIcon />),
             item(nav.customers, "/customers", <UsersIcon />, "prefix"),
           ]}

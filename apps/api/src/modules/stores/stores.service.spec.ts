@@ -23,7 +23,7 @@ const row = {
   logoUrl: null,
   bannerImageUrl: null,
   categoryId: null,
-  banners: [],
+  sections: [],
   category: null,
   layoutType: 'DEFAULT',
   showProductsByCategory: false,

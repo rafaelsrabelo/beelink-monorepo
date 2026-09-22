@@ -1,3 +1,4 @@
+import type { SectionKind } from "../blocks/design/design-types"
 import type { StoreType } from "../blocks/store/store-types"
 
 /**
@@ -287,6 +288,8 @@ export interface UiMessages {
     dragHandle: string
     /** The product bands, as a row in the arrangement. It is dragged like a poster. */
     productList: string
+    /** What a block is called in the editor when the shopkeeper has not titled it. */
+    kinds: Record<SectionKind, string>
     productListHint: string
     sizeLabel: string
     sizeFull: string

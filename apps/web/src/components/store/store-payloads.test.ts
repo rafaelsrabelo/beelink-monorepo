@@ -17,7 +17,7 @@ const STORE: Store = {
   type: "ECOMMERCE",
   logoUrl: null,
   bannerImageUrl: null,
-  banners: [],
+  sections: [],
   layoutType: "DEFAULT",
   showProductsByCategory: false,
   colors: { background: "", primary: "", text: "", header: "" },

@@ -1,7 +1,15 @@
 "use client"
 
 // Libs
-import { EyeIcon, EyeOffIcon, GripVerticalIcon, LayoutGridIcon } from "lucide-react"
+import {
+  BadgeCheckIcon,
+  EyeIcon,
+  EyeOffIcon,
+  GripVerticalIcon,
+  ImageIcon,
+  LayoutGridIcon,
+  TypeIcon,
+} from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
@@ -13,68 +21,42 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { useArrangeItem } from "./design-arrange"
+import type { SectionKind } from "./design-types"
 
 export type ArrangementLayout = "FULL" | "HALVES" | "THIRDS"
 
-/**
- * The product bands, as a row in the same list.
- *
- * They are one row and not a boundary drawn between two lists, because a boundary is a thing you
- * push banners past one at a time. As a row it is dragged itself: moving it up once puts every
- * poster under it. It is the only id in this list that is not a banner's, and the screen reads it
- * back to decide which side each banner landed on.
- */
-export const PRODUCTS_ROW_ID = "__products__"
-
-/** The products as a list entry. Only its id is ever read; it carries no banner's fields. */
-export const PRODUCTS_ROW = { id: PRODUCTS_ROW_ID } as const
-
 export interface ArrangementItem {
   id: string
-  title: string
-  imageUrl: string
+  kind: SectionKind
+  /** Null on a block the shopkeeper has not titled. The row falls back to the kind's name. */
+  title: string | null
+  imageUrl: string | null
   layout: ArrangementLayout
   isActive: boolean
 }
 
 /**
- * The product bands, as a row that is dragged like any other.
+ * How wide is a question about a poster, and only about a poster.
  *
- * It has no eye and no size select: a shop's landing page without its products is not an
- * arrangement anyone wants, and "how wide" is a question about a poster, not about a rail.
+ * A cover is as wide as the shopkeeper's `width` says and a heading is as wide as the page; asking
+ * "full, half or a third" of either would be offering a choice that changes nothing.
  */
-export function ProductsRow({ messages }: { messages: UiMessages }) {
-  const text = messages.design
-  const drag = useArrangeItem(PRODUCTS_ROW_ID)
+function hasLayout(kind: SectionKind): boolean {
+  return kind === "BANNER"
+}
 
-  return (
-    <li
-      ref={drag.setNodeRef}
-      style={drag.style}
-      className={cn(
-        "border-primary/40 bg-primary/5 flex items-center gap-2 rounded-xl border border-dashed p-2",
-        drag.isDragging && "z-10 opacity-80 shadow-md",
-      )}
-    >
-      <button
-        type="button"
-        aria-label={`${text.dragHandle}: ${text.productList}`}
-        className="text-muted-foreground hover:text-foreground cursor-grab touch-none rounded-md p-1"
-        {...drag.handleProps}
-      >
-        <GripVerticalIcon aria-hidden="true" className="size-4" />
-      </button>
-
-      <span className="bg-primary/10 text-primary flex h-9 w-14 shrink-0 items-center justify-center rounded-md">
-        <LayoutGridIcon aria-hidden="true" className="size-4" />
-      </span>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <p className="truncate text-sm font-medium">{text.productList}</p>
-        <p className="text-muted-foreground truncate text-xs">{text.productListHint}</p>
-      </div>
-    </li>
-  )
+/**
+ * The picture a row shows beside the title, or the glyph that stands in for one.
+ *
+ * Three of the five kinds have no picture, and a blank grey rectangle beside each of them makes a
+ * list of blocks read as a list of broken images.
+ */
+const KIND_ICON: Record<SectionKind, typeof LayoutGridIcon> = {
+  COVER: ImageIcon,
+  BANNER: ImageIcon,
+  TEXT: TypeIcon,
+  BENEFITS: BadgeCheckIcon,
+  PRODUCTS: LayoutGridIcon,
 }
 
 export function ArrangementRow({
@@ -90,6 +72,12 @@ export function ArrangementRow({
 }) {
   const text = messages.design
   const drag = useArrangeItem(item.id)
+
+  // A block the shopkeeper titled is called by that title; one they have not is called by its
+  // kind. "Sem título" on four rows tells them which blocks are unfinished and nothing about
+  // which is which.
+  const name = item.title?.trim() || text.kinds[item.kind]
+  const KindIcon = KIND_ICON[item.kind]
 
   const layoutLabel = (layout: string) =>
     layout === "HALVES" ? text.sizeHalves : layout === "THIRDS" ? text.sizeThirds : text.sizeFull
@@ -111,38 +99,50 @@ export function ArrangementRow({
       */}
       <button
         type="button"
-        aria-label={`${text.dragHandle}: ${item.title}`}
+        aria-label={`${text.dragHandle}: ${name}`}
         className="text-muted-foreground hover:text-foreground cursor-grab touch-none rounded-md p-1"
         {...drag.handleProps}
       >
         <GripVerticalIcon aria-hidden="true" className="size-4" />
       </button>
 
-      <span className="bg-muted h-9 w-14 shrink-0 overflow-hidden rounded-md">
-        <img src={item.imageUrl} alt="" aria-hidden="true" className="size-full object-cover" />
+      <span className="bg-muted text-muted-foreground flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md">
+        {item.imageUrl ? (
+          <img src={item.imageUrl} alt="" aria-hidden="true" className="size-full object-cover" />
+        ) : (
+          <KindIcon aria-hidden="true" className="size-4" />
+        )}
       </span>
 
-      <p className="min-w-0 flex-1 truncate text-sm font-medium">{item.title}</p>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <p className="truncate text-sm font-medium">{name}</p>
+        {/* The kind, said out loud, because a titled block otherwise gives no clue what it is. */}
+        {item.title?.trim() ? (
+          <p className="text-muted-foreground truncate text-xs">{text.kinds[item.kind]}</p>
+        ) : null}
+      </div>
 
-      <Select
-        value={item.layout}
-        onValueChange={(next: string | null) => onLayoutChange(item.id, (next ?? "FULL") as ArrangementLayout)}
-      >
-        <SelectTrigger aria-label={`${text.sizeLabel}: ${item.title}`} className="w-28 shrink-0">
-          <SelectValue>{(selected: string) => layoutLabel(selected)}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="FULL">{text.sizeFull}</SelectItem>
-          <SelectItem value="HALVES">{text.sizeHalves}</SelectItem>
-          <SelectItem value="THIRDS">{text.sizeThirds}</SelectItem>
-        </SelectContent>
-      </Select>
+      {hasLayout(item.kind) ? (
+        <Select
+          value={item.layout}
+          onValueChange={(next: string | null) => onLayoutChange(item.id, (next ?? "FULL") as ArrangementLayout)}
+        >
+          <SelectTrigger aria-label={`${text.sizeLabel}: ${name}`} className="w-28 shrink-0">
+            <SelectValue>{(selected: string) => layoutLabel(selected)}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="FULL">{text.sizeFull}</SelectItem>
+            <SelectItem value="HALVES">{text.sizeHalves}</SelectItem>
+            <SelectItem value="THIRDS">{text.sizeThirds}</SelectItem>
+          </SelectContent>
+        </Select>
+      ) : null}
 
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        aria-label={`${item.isActive ? text.hide : text.show}: ${item.title}`}
+        aria-label={`${item.isActive ? text.hide : text.show}: ${name}`}
         aria-pressed={item.isActive}
         onClick={() => onToggle(item.id, !item.isActive)}
       >

@@ -122,3 +122,48 @@ quebrar a página.
 6. Nenhuma loja existente muda de aparência sem que o dono peça.
 7. `belowProducts` não existe mais, e a faixa de produtos tem posição própria.
 8. Nenhuma chave nova em `layoutSettings`.
+
+---
+
+## Adendo — o que a verificação mudou
+
+### O painel de arquitetos falhou; a decisão veio do mapa
+
+Quatro arquitetos independentes deviam propor o modelo e um júri pontuar. Os quatro **travaram**
+(sem progresso por 180s, seis tentativas cada) e voltaram vazios — dois milhões de tokens sem um
+resultado. Não repeti o mesmo desenho: o levantamento, que deu certo, já continha o que decide, e
+as três medições da seção anterior sustentam a escolha sozinhas.
+
+### Duas regressões que só a comparação antes/depois pegou
+
+Fotografei a home de três lojas **antes** de migrar e comparei depois. Sem isso nenhuma das duas
+teria aparecido, porque as duas compilam e nenhuma quebra um teste.
+
+**A capa sumiu.** A migração pôs `stores.bannerImageUrl` na coluna `imageUrl` do bloco — que é onde
+um BANNER guarda a foto dele. Mas uma capa desenha a partir de `items`, porque uma capa é um ou
+vários slides, e um slide só continua sendo um slide. Consertado numa **segunda** migração e não
+editando a primeira: a primeira já estava aplicada, e o Prisma guarda um checksum por migração —
+editar um arquivo aplicado faz o `migrate status` recusar a pasta inteira, que é uma falha pior que
+a consertada.
+
+**Uma loja passou a responder 500.** `TypeError: sections is not iterable`, numa loja e não na
+vizinha. A causa é o **cache**: a vitrine serve `shopAt` de um cache com tag, então no dia em que a
+forma do fio muda a loja continua servindo a forma antiga até a janela fechar. `StorefrontSections`
+agora trata a ausência como nenhum bloco — numa página anônima que um crawler lê, uma faixa que
+falta por alguns minutos é um erro muito menor que um 500.
+
+> **Para o deploy:** esta mudança renomeia um campo de `PublicStore`. As lojas servem a forma antiga
+> até `revalidateTag('store:<slug>')` correr ou a janela vencer. É um ponto do plano de subida, não
+> um detalhe de desenvolvimento.
+
+### O que ainda não está aqui
+
+O renomeio, a migração, a vitrine e o modo design estão inteiros. Falta o que cada tipo novo
+precisa para ser **criado e escrito** pelo dono:
+
+- **A tela de Blocos** lista só os banners por enquanto. Capa, vantagens e título são blocos que o
+  dono arruma no modo design e ainda não cria ali — cada um quer um formulário próprio, e um que
+  crescesse um ramo por tipo é o formulário que ninguém lê.
+- **A aba Aparência ainda escreve a capa.** `stores.layoutType` e `stores.bannerImageUrl` não foram
+  derrubadas de propósito: uma coluna derrubada antes do último escritor dela é um 500 no salvar.
+  Elas saem quando a tela que as substitui existir.
