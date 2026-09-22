@@ -137,3 +137,43 @@ export function previewOf(rows: readonly Draft[], saved: readonly Section[]): Pu
       } satisfies PublicSection
     })
 }
+
+/**
+ * Whether the shop window would draw anything at all for this block.
+ *
+ * The one rule that has to agree with the renderers, so it is written once here and named after
+ * what it answers. Each clause mirrors a `return null` on the other side: a hero with no pictures,
+ * a heading with no words, a promises band with no promises. A banner and the product rails are
+ * never empty — one has a picture the form demands, and the other has whatever the shop sells.
+ *
+ * It exists because a silent disagreement was reported: the panel listed blocks the preview did
+ * not draw, and nothing on the screen said why.
+ */
+export function isEmptyBlock(kind: SectionKind, title: string | null, items: readonly unknown[]): boolean {
+  if (kind === "HERO" || kind === "BENEFITS") return items.length === 0
+  if (kind === "TEXT" || kind === "ANNOUNCEMENT") return !title?.trim()
+
+  return false
+}
+
+/**
+ * The draft brought back in step with the server, without throwing away the arrangement.
+ *
+ * The draft used to be seeded only while it was clean, so a block created or deleted after the
+ * owner had moved anything never reached it. Publish then sent the list it had — and the reorder
+ * endpoint answers 409 to a partial one, because the rows it omits keep positions that now
+ * collide. That is exactly how it was reported: nine ids for a shop with fourteen blocks, and
+ * deleted blocks still listed in the panel.
+ *
+ * Reconciled rather than replaced, because replacing would discard an unpublished arrangement the
+ * owner is in the middle of. What they arranged is an order, and an order survives a row arriving
+ * or leaving: the rows they still have keep their places, the ones the server no longer has go,
+ * and new ones land at the end — which is where the API puts a new block anyway.
+ */
+export function reconcile(draft: readonly Draft[], saved: readonly Section[]): Draft[] {
+  const byId = new Map(saved.map((section) => [section.id, section]))
+  const kept = draft.filter((row) => byId.has(row.id))
+  const known = new Set(kept.map((row) => row.id))
+
+  return [...kept, ...saved.filter((section) => !known.has(section.id)).map(toDraft)]
+}

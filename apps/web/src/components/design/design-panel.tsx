@@ -16,7 +16,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import type { Draft } from "./design-draft"
 
 export interface DesignPanelProps {
-  rows: readonly Draft[]
+  rows: readonly (Draft & { empty?: boolean })[]
   loading: boolean
   onReorder: (ids: string[]) => void
   onToggle: (id: string, isActive: boolean) => void

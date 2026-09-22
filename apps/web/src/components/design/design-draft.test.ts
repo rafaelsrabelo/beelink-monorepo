@@ -5,7 +5,17 @@ import { describe, expect, it } from "vitest"
 import type { Section } from "@harness-monorepo/contracts"
 
 // App
-import { applyOrder, changesOf, labelOf, orderedIdsOf, previewOf, toDraft, type Draft } from "./design-draft"
+import {
+  applyOrder,
+  changesOf,
+  isEmptyBlock,
+  labelOf,
+  reconcile,
+  orderedIdsOf,
+  previewOf,
+  toDraft,
+  type Draft,
+} from "./design-draft"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 function draft(id: string, over: Partial<Draft> = {}): Draft {
@@ -124,5 +134,81 @@ describe("labelOf", () => {
   it("calls an untitled block by its kind", () => {
     expect(labelOf("PRODUCTS", null, ptBR)).toBe("Lista de produtos")
     expect(labelOf("BENEFITS", "   ", ptBR)).toBe("Vantagens")
+  })
+})
+
+describe("isEmptyBlock", () => {
+  // Each of these mirrors a `return null` in a renderer. When the two disagree, the panel lists a
+  // block the page does not draw and nothing on screen says why — which is how it was reported.
+  it("calls a hero with no pictures empty", () => {
+    expect(isEmptyBlock("HERO", null, [])).toBe(true)
+    expect(isEmptyBlock("HERO", null, [{}])).toBe(false)
+  })
+
+  it("calls a promises band with no promises empty", () => {
+    expect(isEmptyBlock("BENEFITS", null, [])).toBe(true)
+    expect(isEmptyBlock("BENEFITS", null, [{}, {}])).toBe(false)
+  })
+
+  it("calls a heading with no words empty", () => {
+    expect(isEmptyBlock("TEXT", null, [])).toBe(true)
+    expect(isEmptyBlock("TEXT", "   ", [])).toBe(true)
+    expect(isEmptyBlock("TEXT", "Novidades", [])).toBe(false)
+  })
+
+  it("calls the announcement bar empty until it says something", () => {
+    expect(isEmptyBlock("ANNOUNCEMENT", null, [])).toBe(true)
+    expect(isEmptyBlock("ANNOUNCEMENT", "Frete grátis hoje", [])).toBe(false)
+  })
+
+  // A banner has a picture the form demands, and the rails have whatever the shop sells — neither
+  // can be empty in a way the shopkeeper has to be told about.
+  it("never calls a banner or the product rails empty", () => {
+    expect(isEmptyBlock("BANNER", null, [])).toBe(false)
+    expect(isEmptyBlock("PRODUCTS", null, [])).toBe(false)
+    expect(isEmptyBlock("CATEGORIES", null, [])).toBe(false)
+  })
+})
+
+describe("reconcile", () => {
+  /**
+   * The bug this exists for, reported as a 409: the draft was only seeded while it was clean, so a
+   * block created or deleted after the owner had moved anything never reached it. Publish then
+   * sent nine ids for a shop with fourteen blocks, and the reorder endpoint refused the lot.
+   */
+  it("keeps the order the owner made", () => {
+    const current = [draft("c"), draft("a"), draft("b")]
+    const saved = [section("a"), section("b"), section("c")]
+
+    expect(reconcile(current, saved).map((row) => row.id)).toEqual(["c", "a", "b"])
+  })
+
+  it("takes in a block the server has and the draft does not", () => {
+    const current = [draft("b"), draft("a")]
+    const saved = [section("a"), section("b"), section("new")]
+
+    // Last, which is where the API puts a new block anyway.
+    expect(reconcile(current, saved).map((row) => row.id)).toEqual(["b", "a", "new"])
+  })
+
+  it("drops a block the server no longer has", () => {
+    const current = [draft("a"), draft("gone"), draft("b")]
+    const saved = [section("a"), section("b")]
+
+    expect(reconcile(current, saved).map((row) => row.id)).toEqual(["a", "b"])
+  })
+
+  it("never returns fewer rows than the server has, which is what the 409 was about", () => {
+    const current = [draft("a")]
+    const saved = [section("a"), section("b"), section("c")]
+
+    expect(reconcile(current, saved)).toHaveLength(saved.length)
+  })
+
+  it("keeps an unpublished edit on a row that survived", () => {
+    const current = [{ ...draft("a"), isActive: false }]
+    const saved = [section("a")]
+
+    expect(reconcile(current, saved)[0]?.isActive).toBe(false)
   })
 })

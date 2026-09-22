@@ -318,6 +318,8 @@ export interface UiMessages {
     addBlock: string
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
+    /** Said in place of the kind when a block has nothing for the shop window to draw. */
+    emptyBlock: string
     deleteBlockConfirm: string
   }
   banners: {

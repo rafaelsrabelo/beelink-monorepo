@@ -229,6 +229,7 @@ export const en: UiMessages = {
     tabColors: "Colours",
     addBlock: "Add block",
     deleteBlock: "Delete block",
+    emptyBlock: "Empty — it does not show in the shop",
     deleteBlockConfirm: "Delete \"{name}\"? This cannot be undone.",
   },
   banners: {

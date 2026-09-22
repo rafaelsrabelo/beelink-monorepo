@@ -37,6 +37,15 @@ export interface ArrangementItem {
   imageUrl: string | null
   layout: ArrangementLayout
   isActive: boolean
+  /**
+   * The block has nothing to draw, so the shop window draws nothing at all for it.
+   *
+   * Said out loud because a silent one is what made a landing page and its editor disagree: the
+   * panel listed a heading with no words and a hero with no pictures, the preview showed neither,
+   * and nothing on the screen explained the difference. An empty block is not broken — it is one
+   * the shopkeeper has not finished — and the row is where that gets said.
+   */
+  empty?: boolean
 }
 
 /**
@@ -152,12 +161,16 @@ export function ArrangementRow({
           className="focus-visible:ring-ring flex min-w-0 flex-1 flex-col rounded-md px-1 text-left outline-none hover:underline focus-visible:ring-2"
         >
           <span className="truncate text-sm font-medium">{name}</span>
-          <span className="text-muted-foreground truncate text-xs">{text.kinds[item.kind]}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {item.empty ? text.emptyBlock : text.kinds[item.kind]}
+          </span>
         </button>
       ) : (
         <div className="flex min-w-0 flex-1 flex-col px-1">
           <p className="truncate text-sm font-medium">{name}</p>
-          <p className="text-muted-foreground truncate text-xs">{text.kinds[item.kind]}</p>
+          <p className="text-muted-foreground truncate text-xs">
+            {item.empty ? text.emptyBlock : text.kinds[item.kind]}
+          </p>
         </div>
       )}
 

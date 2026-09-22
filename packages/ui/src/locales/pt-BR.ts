@@ -229,6 +229,7 @@ export const ptBR: UiMessages = {
     tabColors: "Cores",
     addBlock: "Adicionar bloco",
     deleteBlock: "Excluir bloco",
+    emptyBlock: "Vazio — não aparece na loja",
     deleteBlockConfirm: "Excluir \"{name}\"? Isso não tem volta.",
   },
   banners: {

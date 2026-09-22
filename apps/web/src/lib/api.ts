@@ -44,7 +44,19 @@ export async function callApi({ path, method = "POST", body, accessToken, client
     } as RequestInit & { duplex: "half" })
   }
 
-  headers["content-type"] = "application/json"
+  /*
+    Declared only when there is something to declare it about.
+
+    Fastify refuses a request that says `application/json` and carries nothing — "Body cannot be
+    empty when content-type is set to 'application/json'" — so sending it unconditionally broke
+    every DELETE in the panel, which has no body by definition. It was reported on a banner and it
+    was true of products and categories too.
+
+    This is the server-to-API hop. The browser-to-BFF one still has to announce JSON, and does:
+    `refuseCrossOrigin` answers 415 to a request that does not, which is what stops a form posted
+    from another site reaching these handlers at all.
+  */
+  if (body !== undefined) headers["content-type"] = "application/json"
 
   return fetch(`${serverEnv.API_URL}${path}`, {
     method,

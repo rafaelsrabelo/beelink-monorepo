@@ -28,9 +28,11 @@ import { DesignPreviewPane } from "./design-preview-pane"
 import {
   applyOrder,
   changesOf,
+  isEmptyBlock,
   labelOf,
   orderedIdsOf,
   previewOf,
+  reconcile,
   toDraft,
   type Draft,
 } from "./design-draft"
@@ -98,12 +100,19 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
   const [palette, setPalette] = useState<StoreColors>(store.colors)
   const paletteChanged = COLOUR_KEYS.some((key) => palette[key] !== store.colors[key])
 
-  // Seeded once per server answer, and never re-seeded while the arrangement is dirty: a refetch
-  // landing mid-edit would otherwise throw away what the owner is in the middle of doing.
+  /*
+    Seeded once per server answer, and reconciled rather than replaced while the arrangement is
+    dirty.
+
+    Replacing would throw away an unpublished arrangement mid-edit. Ignoring the answer, which is
+    what this used to do, let the draft drift: a block created or deleted after the owner had moved
+    anything never reached it, Publish sent the list it had, and the reorder endpoint answered 409
+    to a partial one. `reconcile` keeps the order they made and only adds and removes rows.
+  */
   const serverKey = banners.data?.map((banner) => banner.id).join(",") ?? null
-  if (banners.data && !dirty && seeded !== serverKey) {
+  if (banners.data && seeded !== serverKey) {
     setSeeded(serverKey)
-    setDraft(banners.data.map(toDraft))
+    setDraft((current) => (current && dirty ? reconcile(current, banners.data) : banners.data.map(toDraft)))
   }
 
   useEffect(() => {
@@ -117,6 +126,14 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
   }, [dirty])
 
   const rows = draft ?? []
+  const savedById = new Map((banners.data ?? []).map((section) => [section.id, section]))
+
+  // Said on the row rather than left to be noticed: a block that draws nothing is missing from the
+  // preview, and without this the panel and the page disagree with no explanation on screen.
+  const rowsWithEmptiness = rows.map((row) => ({
+    ...row,
+    empty: isEmptyBlock(row.kind, row.title, savedById.get(row.id)?.items ?? []),
+  }))
 
   function edit(next: Draft[]) {
     setDraft(next)
@@ -208,7 +225,7 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
         />
 
         <DesignPanel
-          rows={rows}
+          rows={rowsWithEmptiness}
           loading={banners.isPending}
           onReorder={(ids) => edit(applyOrder(rows, ids))}
           onToggle={(id, isActive) =>
