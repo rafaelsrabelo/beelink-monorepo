@@ -141,6 +141,15 @@ export interface UiMessages {
     discount: string
     backToShop: string
     orderThis: string
+    /**
+     * The shelf is empty, said on the product's own page.
+     *
+     * The page keeps answering when the stock runs out — its address is what a shopkeeper sends on
+     * WhatsApp, and a 404 there is the most visible failure this product can produce. So the visitor
+     * is told, and the way to order is what goes away.
+     */
+    soldOut: string
+    soldOutHint: string
     /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
     photoOf: string
     /** The header's basket, which now has an address of its own. */
@@ -345,6 +354,16 @@ export interface UiMessages {
       statusHelp: string
       statusActive: string
       statusDraft: string
+      /**
+       * Active, but the shelf is empty. A third state and not a second badge, because what a
+       * shopkeeper asks of this column is "is it on sale?", and "Ativo" beside a zero answered yes
+       * when the truth was no.
+       */
+      statusSoldOut: string
+      /** Opens the product's own page on the shop window. */
+      view: string
+      /** Said instead, on a draft: it has no public page to open. */
+      viewDraft: string
       /** Made here or bought to resell. Not a manufacturer's name; see the ProductOrigin enum. */
       originLabel: string
       originHelp: string

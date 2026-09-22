@@ -17,9 +17,11 @@ const products: ProductTableItem[] = [
     imageUrl: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=96&h=96&fit=crop",
     categoryName: "Proteínas",
     status: "ACTIVE",
+    soldOut: false,
     origin: "RESALE",
     trackStock: true,
     stockQuantity: 12,
+    viewHref: "https://bee.link/mutante/produtos/whey",
   },
   {
     id: "2",
@@ -30,9 +32,11 @@ const products: ProductTableItem[] = [
     imageUrl: null,
     categoryName: "Blusas",
     status: "ACTIVE",
+    soldOut: false,
     origin: "IN_HOUSE",
     trackStock: false,
     stockQuantity: null,
+    viewHref: "https://bee.link/lessari/produtos/blusa",
   },
   {
     id: "3",
@@ -43,9 +47,11 @@ const products: ProductTableItem[] = [
     imageUrl: null,
     categoryName: null,
     status: "DRAFT",
+    soldOut: false,
     origin: null,
     trackStock: true,
     stockQuantity: 0,
+    viewHref: null,
   },
 ]
 
@@ -60,11 +66,32 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * The three rows are the three states the columns exist to tell apart: one counted and in stock,
- * one made to order and never counted, one draft with none left. A table where every row looks the
- * same proves nothing about the table.
+ * The four rows are the four states the columns exist to tell apart: one counted and in stock, one
+ * made to order and never counted, one draft, and one active whose shelf is empty. A table where
+ * every row looks the same proves nothing about the table.
  */
-export const Padrao: Story = {}
+export const Padrao: Story = {
+  args: {
+    products: [
+      ...products,
+      {
+        id: "4",
+        name: "Creatina Monohidratada 300g",
+        sku: "CRE-300",
+        priceCents: 8990,
+        compareAtPriceCents: null,
+        imageUrl: null,
+        categoryName: "Proteínas",
+        status: "ACTIVE",
+        soldOut: true,
+        origin: "RESALE",
+        trackStock: true,
+        stockQuantity: 0,
+        viewHref: "https://bee.link/mutante/produtos/creatina",
+      },
+    ],
+  },
+}
 
 export const Vazia: Story = { args: { products: [] } }
 

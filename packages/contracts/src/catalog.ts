@@ -127,6 +127,18 @@ export interface PublicProductCard {
 
 /** One product's own page: the card plus everything only that page renders. */
 export interface PublicProduct extends PublicProductCard {
+  /**
+   * The shelf is empty — the shop counts this product and has none left.
+   *
+   * It is on the page's shape and not on the card's because a card never carries one that is true:
+   * the grid, the category and the search exclude a sold-out product entirely. The page is the
+   * exception, and deliberately so — its address is what goes out on WhatsApp, so it keeps
+   * answering and drops the way to order instead of the page.
+   *
+   * Derived, never the count. How many a shop has left is its own business, and a number on the
+   * public wire is one anybody can read off the page every morning.
+   */
+  soldOut: boolean;
   description: string | null;
   images: PublicProductImage[];
   category: PublicProductCategory | null;
@@ -180,8 +192,10 @@ export interface ProductStock {
    */
   trackStock: boolean;
   /**
-   * Read only while `trackStock`. Null and zero are different facts: null is "nobody counts
-   * this", zero is "there are none left" — and only the second hides the product.
+   * Read only while `trackStock` — and that flag, not this column, is what says "nobody counts
+   * this". On a counted product null and zero mean the same thing: a shopkeeper who turned
+   * counting on and has not said how many, which from the shelf is none. Both take the product off
+   * the shelf; see `soldOut`.
    */
   stockQuantity: number | null;
 }
@@ -203,7 +217,11 @@ export interface ProductCategory extends PublicProductCategory {
 /** A product as its owner edits it. */
 export interface Product extends PublicProduct, ProductStock, ProductParcel {
   position: number;
-  /** Marking a product unavailable hides it from the shop window without losing it. */
+  /**
+   * What the shopkeeper intends, and only half of what a visitor sees — the other half is stock.
+   * A draft is visible to nobody but its owner; an active product is in the window unless its
+   * shelf is empty. See `soldOut`.
+   */
   status: ProductStatus;
   /** Null is a shopkeeper who has not said, never a third kind of product. */
   origin: ProductOrigin | null;

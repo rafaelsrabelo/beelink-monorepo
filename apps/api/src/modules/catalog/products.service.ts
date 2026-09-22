@@ -18,6 +18,7 @@ import type { ProductWhereInput } from '../../generated/prisma/models/Product.js
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
+import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 import {
   PRODUCTS_ADMIN_PAGE_SIZE,
   PRODUCTS_PAGE_SIZE,
@@ -144,9 +145,11 @@ export class ProductsService {
     const pageSize = filters.pageSize ?? PRODUCTS_PAGE_SIZE;
     const page = filters.page ?? 1;
 
+    // Both the shelf rule and the search carry an `OR`, so they are held in `AND` rather than
+    // spread into one object — spread, the second would overwrite the first and the filtered
+    // search would quietly answer the search alone. See catalog.visibility.ts.
     const where = {
       storeId,
-      status: 'ACTIVE' as const,
       // A parent's shelf holds what is under it. Filtering `Proteínas` and getting nothing because
       // every whey is filed under `Proteínas → Whey` is the failure this avoids — and it is the one
       // a shopkeeper reports as "my category is empty" without ever mentioning subcategories.
@@ -158,16 +161,21 @@ export class ProductsService {
             },
           }
         : {}),
-      // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
-      // and someone searching "crochê" means to find it.
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' as const } },
-              { description: { contains: search, mode: 'insensitive' as const } },
-            ],
-          }
-        : {}),
+      AND: [
+        ON_THE_SHELF_WHERE,
+        // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
+        // and someone searching "crochê" means to find it.
+        ...(search
+          ? [
+              {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' as const } },
+                  { description: { contains: search, mode: 'insensitive' as const } },
+                ],
+              },
+            ]
+          : []),
+      ],
     };
 
     const [rows, total] = await this.prisma.$transaction([
@@ -189,6 +197,11 @@ export class ProductsService {
    * product's old address is a redirect the web app owns, not a second name the API answers to.
    */
   async publicBySlug(storeId: string, slug: string): Promise<PublicProduct> {
+    // Status only, on purpose — a sold-out product still has a page. This is the address that goes
+    // out on WhatsApp, and the schema's note on `slugHistory` calls a 404 here the most visible
+    // failure this product can produce. The answer carries `soldOut`, and the page drops the way to
+    // order rather than the page itself. The grid and the category counts do exclude it; see
+    // catalog.visibility.ts.
     const row = await this.prisma.product.findFirst({
       where: { storeId, slug, status: 'ACTIVE' },
       include: productInclude,

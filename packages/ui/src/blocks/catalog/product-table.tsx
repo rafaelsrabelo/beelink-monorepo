@@ -1,11 +1,11 @@
 "use client"
 
 // Libs
-import { PencilIcon, Trash2Icon } from "lucide-react"
+import { EyeIcon, PencilIcon, Trash2Icon } from "lucide-react"
 
 // UI
 import { Badge } from "@harness-monorepo/ui/components/badge"
-import { Button } from "@harness-monorepo/ui/components/button"
+import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
 import {
   Table,
   TableBody,
@@ -29,11 +29,21 @@ export interface ProductTableItem {
   imageUrl: string | null
   categoryName: string | null
   status: "ACTIVE" | "DRAFT"
+  /**
+   * The shelf is empty. Derived by the API, not recomputed here: the same fact decides whether the
+   * shop window shows the product, and two implementations of one rule is one rule too many.
+   */
+  soldOut: boolean
   /** Null is a shopkeeper who has not said whether they make it or resell it. */
   origin: "IN_HOUSE" | "RESALE" | null
   /** Off means the shop does not count this product — which is not a stock of zero. */
   trackStock: boolean
   stockQuantity: number | null
+  /**
+   * The product's own page on the shop window, or null when it has none — a draft is not published,
+   * so an eye pointing at it would open a 404.
+   */
+  viewHref?: string | null
 }
 
 export interface ProductTableProps {
@@ -95,10 +105,27 @@ export function ProductTable({
     return text.originUnset
   }
 
+  const statusOf = (product: ProductTableItem): { label: string; variant: "outline" | "default"; tone?: string } => {
+    // A draft wins over an empty shelf: the shopkeeper's intention is the headline, and a product
+    // that was never published is not "sold out" — nobody could have bought it.
+    if (product.status === "DRAFT") return { label: text.statusDraft, variant: "outline" as const }
+    // Outline with a red border and red text, not the tinted `destructive` pill: that pill puts
+    // the destructive token on a 10% wash of itself and measures 3.99:1, under the 4.5:1 this
+    // package's own axe run enforces — so the one state a shopkeeper is scanning for would have
+    // been the only one they could not read. On the table's white surface the same red is 4.77:1.
+    // (No literal colour here, even in a comment: `web/no-hex-colors` is a raw grep at zero.)
+    if (product.soldOut) {
+      return { label: text.statusSoldOut, variant: "outline" as const, tone: "border-destructive/40 text-destructive" }
+    }
+    return { label: text.statusActive, variant: "default" as const }
+  }
+
   return (
-    <div className="rounded-xl border">
+    // A card, like every other slab in this panel. Without a surface of its own the table was the
+    // page colour with a border drawn round it, and the screen read as one flat sheet.
+    <div className="bg-shell-surface border-shell-border rounded-xl border shadow-xs">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-muted/40">
           <TableRow>
             <TableHead className="w-28">{columns.code}</TableHead>
             <TableHead>{columns.name}</TableHead>
@@ -109,7 +136,7 @@ export function ProductTable({
             <TableHead className="w-32 text-right">{columns.price}</TableHead>
             {/* Read aloud, never drawn: a visible "Actions" over two icon buttons is a column
                 heading that describes the furniture rather than the data. */}
-            <TableHead className="w-24">
+            <TableHead className="w-32">
               <span className="sr-only">{columns.actions}</span>
             </TableHead>
           </TableRow>
@@ -134,11 +161,16 @@ export function ProductTable({
               </TableCell>
 
               <TableCell>
-                {/* `outline` and not `secondary` for a draft: secondary is near-white on this
-                    surface, and the draft is the row a shopkeeper is scanning for. The one state
-                    worth spotting must not be the one that reads as plain text. */}
-                <Badge variant={product.status === "ACTIVE" ? "default" : "outline"}>
-                  {product.status === "ACTIVE" ? text.statusActive : text.statusDraft}
+                {/*
+                  Three states, because two were a lie on screen: a row marked "Ativo" with a stock
+                  of zero is not on sale, and reading it was what sent a shopkeeper looking for a
+                  bug that was in the words rather than in the shop.
+
+                  `outline` and not `secondary` for a draft: secondary is near-white on this
+                  surface, and a draft is the row a shopkeeper is scanning for.
+                */}
+                <Badge variant={statusOf(product).variant} className={statusOf(product).tone}>
+                  {statusOf(product).label}
                 </Badge>
               </TableCell>
 
@@ -178,6 +210,39 @@ export function ProductTable({
 
               <TableCell>
                 <div className="flex items-center justify-end gap-1">
+                  {/*
+                    An anchor, not a button calling `window.open`. This navigates, so it belongs in
+                    the tab order as a link, opens on a middle click and offers "copy address" on a
+                    right click — none of which a button does. It opens elsewhere because the shop
+                    window is elsewhere: a shopkeeper checking a page wants their list still behind
+                    it.
+                  */}
+                  {product.viewHref ? (
+                    <a
+                      href={product.viewHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${text.view}: ${product.name}`}
+                      className={buttonVariants({ variant: "ghost", size: "icon" })}
+                    >
+                      <EyeIcon aria-hidden="true" className="size-4" />
+                    </a>
+                  ) : (
+                    // Kept in place rather than left out: a column that loses a control on some
+                    // rows moves the two beside it, and the name says why this one does nothing.
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled
+                      // The reason comes from the row, not from the missing address. A published
+                      // product whose shop has not loaded yet also has no href, and announcing it
+                      // as a draft tells a screen reader the one thing about it that is false.
+                      aria-label={`${product.status === "DRAFT" ? text.viewDraft : text.view}: ${product.name}`}
+                    >
+                      <EyeIcon aria-hidden="true" className="size-4" />
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"

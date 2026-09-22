@@ -21,12 +21,14 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { storefrontRoutes } from "@/lib/storefront-routes"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import {
   useDeleteProduct,
   useProductCategories,
   useProducts,
 } from "@/services/catalog/catalog-hooks"
+import { useStore } from "@/services/stores/store-hooks"
 
 export interface ProductScreenProps {
   slug: string
@@ -103,6 +105,10 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
     page,
   })
   const categories = useProductCategories(slug)
+  // Already cached under `storeKeys.detail(slug)` by the panel's home and by the product editor,
+  // so the eye costs nothing extra. It is the shop that knows its own route word — `produtos` or
+  // `products` — and `storefrontRoutes` is the only place in this app allowed to spell a segment.
+  const store = useStore(slug)
   const remove = useDeleteProduct(slug)
 
   const rows = products.data?.products ?? []
@@ -110,6 +116,7 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
   const pageSize = products.data?.pageSize ?? rows.length
   const nameById = new Map((categories.data ?? []).map((row) => [row.id, row.name]))
   const filtered = filters !== EMPTY_PRODUCT_FILTERS && Object.values(filters).some((value) => value !== "")
+  const routes = store.data ? storefrontRoutes(store.data) : null
 
   /** Writes the filters into the address. Any change but the page itself returns to page one. */
   function apply(next: ProductFilters, nextPage = 1) {
@@ -186,9 +193,14 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
                 ? (nameById.get(product.category.id) ?? product.category.name)
                 : null,
               status: product.status,
+              soldOut: product.soldOut,
               origin: product.origin,
               trackStock: product.trackStock,
               stockQuantity: product.stockQuantity,
+              // A draft has no page on the shop window — the public read filters on ACTIVE — so
+              // the eye must not point at a 404. A sold-out product does still have one.
+              viewHref:
+                product.status === "DRAFT" || !routes ? null : routes.product(product.slug),
             }))}
             onEdit={(productId) => router.push(`/admin/${slug}/products/${productId}`)}
             onDelete={confirmDelete}

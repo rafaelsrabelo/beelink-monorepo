@@ -7,6 +7,8 @@ import type { StoresService } from '../stores/stores.service.js';
 
 // App
 import { CatalogSlugService } from './catalog-slug.service.js';
+import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
+import { productCategoryAdminInclude, productCategoryInclude } from './catalog.mapper.js';
 import { ProductCategoriesService } from './product-categories.service.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -18,6 +20,8 @@ interface CategoryRow {
   parentId: string | null;
   products: number;
   storeId?: string;
+  /** Whether anything here is published, independent of how many are on the shelf. */
+  published?: boolean;
 }
 
 /**
@@ -47,6 +51,10 @@ function build(rows: CategoryRow[]) {
       createdAt: new Date(),
       updatedAt: new Date(),
       _count: { products: row.products },
+      // What the storefront include now also reads: whether anything here is published at all,
+      // which is not the same question as how many are on the shelf. Defaults to the count so
+      // every test written before the two were told apart keeps meaning what it meant.
+      products: (row.published ?? row.products > 0) ? [{ id: row.id }] : [],
     })),
   );
 
@@ -106,6 +114,22 @@ describe('ProductCategoriesService — two levels and no third', () => {
   });
 });
 
+describe('ProductCategoriesService — the panel counts what is filed, not what is buyable', () => {
+  /**
+   * The two reads share a model and must not share a count. The shopkeeper's screen exists to show
+   * what they own — a category reading "0 produtos" over two products they still sell is an
+   * invitation to delete it, and the relation is `SetNull`, so the products survive and quietly
+   * lose their category. Sold out is exactly the row they came here to find.
+   */
+  it('counts every product filed in a category, sold-out and draft alike', () => {
+    expect(productCategoryAdminInclude._count).toEqual({ select: { products: true } });
+  });
+
+  it('counts only what is on the shelf for the shop window', () => {
+    expect(productCategoryInclude._count.select.products.where).toBe(ON_THE_SHELF_WHERE);
+  });
+});
+
 describe('ProductCategoriesService.listPublic — what a parent is worth', () => {
   /**
    * A shop that files every whey under `Proteínas → Whey` has a `Proteínas` holding nothing of its
@@ -124,7 +148,34 @@ describe('ProductCategoriesService.listPublic — what a parent is worth', () =>
     expect(categories.find((category) => category.slug === CHILD)?.productCount).toBe(7 - 0);
   });
 
-  it('still drops a branch with nothing available anywhere in it', async () => {
+  /**
+   * The regression this guard exists for. A category whose last item sold out has a shelf count of
+   * zero and still exists: its address is in somebody's Instagram bio, and the sold-out product's
+   * own page — kept answering on purpose — links to it from the breadcrumb and from its back
+   * button. Dropping it on a count of zero turned all three into a 404 on the day a shop made its
+   * last sale.
+   */
+  it('keeps a category whose shelf is empty but which still holds a published product', async () => {
+    const { service } = build([{ id: PARENT, parentId: null, products: 0, published: true }]);
+
+    const categories = await service.listPublic(STORE);
+
+    expect(categories.map((category) => category.slug)).toEqual([PARENT]);
+    expect(categories[0]?.productCount).toBe(0);
+  });
+
+  it('keeps a parent whose only published product is sold out inside a child', async () => {
+    const { service } = build([
+      { id: PARENT, parentId: null, products: 0 },
+      { id: CHILD, parentId: PARENT, products: 0, published: true },
+    ]);
+
+    const categories = await service.listPublic(STORE);
+
+    expect(categories.map((category) => category.slug).sort()).toEqual([CHILD, PARENT].sort());
+  });
+
+  it('still drops a branch with nothing published anywhere in it', async () => {
     const { service } = build([
       { id: PARENT, parentId: null, products: 0 },
       { id: CHILD, parentId: PARENT, products: 0 },

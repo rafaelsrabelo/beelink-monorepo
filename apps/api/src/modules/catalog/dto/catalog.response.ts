@@ -80,6 +80,8 @@ export class PublicProductCardResponse implements PublicProductCard {
 }
 
 export class PublicProductResponse extends PublicProductCardResponse implements PublicProduct {
+  @ApiProperty({ description: 'The shop counts this product and has none left. Derived, never the count.' })
+  soldOut!: boolean;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty({ type: [PublicProductImageResponse] }) images!: PublicProductImageResponse[];
   @ApiPropertyOptional({ type: PublicProductCategoryResponse, nullable: true })

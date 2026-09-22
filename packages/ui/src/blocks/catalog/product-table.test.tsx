@@ -8,8 +8,9 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { ProductTable, type ProductTableItem } from "./product-table"
 
 const products: ProductTableItem[] = [
-  { id: "1", name: "Whey Concentrado", sku: "WHEY-900", priceCents: 13990, compareAtPriceCents: 16900, imageUrl: "https://cdn/1.png", categoryName: "Proteínas", status: "ACTIVE", origin: "RESALE", trackStock: true, stockQuantity: 12 },
-  { id: "2", name: "Creatina", sku: null, priceCents: 8990, compareAtPriceCents: null, imageUrl: null, categoryName: null, status: "DRAFT", origin: null, trackStock: false, stockQuantity: null },
+  { id: "1", name: "Whey Concentrado", sku: "WHEY-900", priceCents: 13990, compareAtPriceCents: 16900, imageUrl: "https://cdn/1.png", categoryName: "Proteínas", status: "ACTIVE", soldOut: false, origin: "RESALE", trackStock: true, stockQuantity: 12, viewHref: "https://loja.exemplo/mutante/produtos/whey" },
+  { id: "2", name: "Creatina", sku: null, priceCents: 8990, compareAtPriceCents: null, imageUrl: null, categoryName: null, status: "DRAFT", soldOut: false, origin: null, trackStock: false, stockQuantity: null, viewHref: null },
+  { id: "3", name: "BCAA", sku: "BCAA-01", priceCents: 6990, compareAtPriceCents: null, imageUrl: null, categoryName: "Proteínas", status: "ACTIVE", soldOut: true, origin: "RESALE", trackStock: true, stockQuantity: 0, viewHref: "https://loja.exemplo/mutante/produtos/bcaa" },
 ]
 
 function renderTable(overrides: Partial<Parameters<typeof ProductTable>[0]> = {}) {
@@ -34,6 +35,50 @@ describe("ProductTable", () => {
 
     expect(within(row("Creatina")).getByText("Rascunho")).toBeInTheDocument()
     expect(within(row("Whey Concentrado")).getByText("Ativo")).toBeInTheDocument()
+  })
+
+  /**
+   * The row that started all this. "Ativo" beside a stock of zero answered "is it on sale?" with
+   * yes when the truth was no, and a shopkeeper went looking for a bug that was in the words.
+   */
+  it("does not call a product with an empty shelf active", () => {
+    renderTable()
+
+    expect(within(row("BCAA")).getByText("Esgotado")).toBeInTheDocument()
+    expect(within(row("BCAA")).queryByText("Ativo")).not.toBeInTheDocument()
+  })
+
+  /** The shopkeeper's intention is the headline: nobody could have bought an unpublished product. */
+  it("calls an unpublished product a draft even when it is also out of stock", () => {
+    renderTable({
+      products: [{ ...products[1]!, soldOut: true, trackStock: true, stockQuantity: 0 }],
+    })
+
+    expect(screen.getByText("Rascunho")).toBeInTheDocument()
+    expect(screen.queryByText("Esgotado")).not.toBeInTheDocument()
+  })
+
+  /**
+   * A link, not a button calling `window.open`: it has to sit in the tab order as a link, open on
+   * a middle click and offer "copy address" on a right click.
+   */
+  it("opens the shop's own page in another tab, as a real link", () => {
+    renderTable()
+
+    const eye = within(row("Whey Concentrado")).getByRole("link", { name: /Ver na loja/ })
+    expect(eye).toHaveAttribute("href", "https://loja.exemplo/mutante/produtos/whey")
+    expect(eye).toHaveAttribute("target", "_blank")
+    expect(eye).toHaveAttribute("rel", "noreferrer")
+  })
+
+  /** A draft has no public page, so the eye must not point at a 404 — and must say why. */
+  it("keeps the eye in place on a draft, disabled and explained", () => {
+    renderTable()
+
+    expect(within(row("Creatina")).queryByRole("link", { name: /Ver na loja/ })).not.toBeInTheDocument()
+    expect(
+      within(row("Creatina")).getByRole("button", { name: /Rascunho não tem página na loja/ }),
+    ).toBeDisabled()
   })
 
   /**
@@ -76,6 +121,18 @@ describe("ProductTable", () => {
     await user.click(screen.getByRole("button", { name: "Excluir: Creatina" }))
 
     expect(onDelete).toHaveBeenCalledWith("2")
+  })
+
+  /**
+   * The eye's reason has to come from the row, not from the missing address. A published product
+   * whose shop has not loaded yet also has no href, and calling it a draft tells a screen reader
+   * the one thing about it that is false.
+   */
+  it("does not call a published product a draft when its address is simply not known yet", () => {
+    renderTable({ products: [{ ...products[0]!, viewHref: null }] })
+
+    expect(screen.getByRole("button", { name: "Ver na loja: Whey Concentrado" })).toBeDisabled()
+    expect(screen.queryByRole("button", { name: /Rascunho/ })).not.toBeInTheDocument()
   })
 
   it("says what to do when the shop sells nothing yet", () => {

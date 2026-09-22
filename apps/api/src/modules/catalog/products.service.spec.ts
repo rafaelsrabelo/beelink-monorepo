@@ -6,6 +6,7 @@ import type { ProductRow } from './catalog.mapper.js';
 
 // App
 import { PRODUCTS_PAGE_SIZE, PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
+import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 import { ProductsService } from './products.service.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -60,10 +61,9 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
 
     await service.listPublic(STORE, { category: 'blusas', search: 'croche' });
 
-    expect(count.mock.calls[0]?.[0].where).toEqual(findMany.mock.calls[0]?.[0].where);
-    expect(count.mock.calls[0]?.[0].where).toMatchObject({
+    expect(count.mock.calls[0][0].where).toEqual(findMany.mock.calls[0][0].where);
+    expect(count.mock.calls[0][0].where).toMatchObject({
       storeId: STORE,
-      status: 'ACTIVE',
       category: {
         isActive: true,
         // The shelf of a parent holds what is under it. Without the second arm, filtering
@@ -72,6 +72,64 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
         OR: [{ slug: 'blusas' }, { parent: { slug: 'blusas', isActive: true } }],
       },
     });
+  });
+
+  /**
+   * The shelf rule and the search each carry an `OR`. Spread into one object the second overwrites
+   * the first, and the shop window answers the search over sold-out products too — with a total
+   * that agrees with it, so nothing looks wrong until someone counts by hand.
+   */
+  it('keeps the shelf rule and the search as separate conditions', async () => {
+    const { service, findMany } = build(rows(1), 1);
+
+    await service.listPublic(STORE, { search: 'croche' });
+
+    const and = findMany.mock.calls[0][0].where.AND as { status?: string; OR: unknown[] }[];
+    expect(and).toHaveLength(2);
+    expect(and[0]).toEqual(ON_THE_SHELF_WHERE);
+    expect(and[1]?.OR).toHaveLength(2);
+  });
+
+  it('leaves a sold-out product off the shelf, counting a null quantity as none', async () => {
+    const { service, findMany } = build(rows(1), 1);
+
+    await service.listPublic(STORE);
+
+    const [shelf] = findMany.mock.calls[0][0].where.AND as { status: string; OR: unknown[] }[];
+    expect(shelf?.status).toBe('ACTIVE');
+    expect(shelf?.OR).toEqual([{ trackStock: false }, { stockQuantity: { gt: 0 } }]);
+  });
+
+  /**
+   * The product page is the one public read that does NOT apply the shelf rule, and it is a
+   * decision: this address goes out on WhatsApp, and a 404 the day the stock runs out breaks every
+   * link already shared. The page answers, marked sold out, with no way to order.
+   */
+  it('still serves the page of a product whose shelf is empty', async () => {
+    const [row] = rows(1);
+    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: true, stockQuantity: 0 });
+    const service = new ProductsService(
+      { product: { findFirst } } as never,
+      {} as StoresService,
+      {} as CatalogSlugService,
+    );
+
+    const product = await service.publicBySlug(STORE, 'bolsa-amora');
+
+    expect(findFirst.mock.calls[0][0].where).toEqual({ storeId: STORE, slug: 'bolsa-amora', status: 'ACTIVE' });
+    expect(product.soldOut).toBe(true);
+  });
+
+  it('does not call a made-to-order product sold out, however empty its count column is', async () => {
+    const [row] = rows(1);
+    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: false, stockQuantity: 0 });
+    const service = new ProductsService(
+      { product: { findFirst } } as never,
+      {} as StoresService,
+      {} as CatalogSlugService,
+    );
+
+    expect((await service.publicBySlug(STORE, 'bolsa-amora')).soldOut).toBe(false);
   });
 
   it('reads both in one transaction, so they cannot fall either side of a write', async () => {

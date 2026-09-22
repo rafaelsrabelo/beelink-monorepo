@@ -10,7 +10,12 @@ import type { ReorderDto } from './dto/reorder.dto.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
-import { productCategoryInclude, toProductCategory, toPublicProductCategory } from './catalog.mapper.js';
+import {
+  productCategoryAdminInclude,
+  productCategoryInclude,
+  toProductCategory,
+  toPublicProductCategory,
+} from './catalog.mapper.js';
 
 /** Postgres' unique violation, as Prisma reports it — the backstop for the race a pre-check loses. */
 function isUniqueViolation(error: unknown): boolean {
@@ -25,13 +30,17 @@ export class ProductCategoriesService {
     private readonly slugs: CatalogSlugService,
   ) {}
 
-  /** The panel's list: every category, hidden ones included, in the order the shopkeeper chose. */
+  /**
+   * The panel's list: every category, hidden ones included, in the order the shopkeeper chose, and
+   * counting everything filed in them — drafts and sold-out rows alike. See
+   * `productCategoryAdminInclude` for why this count is not the storefront's.
+   */
   async list(storeSlug: string, userId: string): Promise<ProductCategory[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
     const rows = await this.prisma.productCategory.findMany({
       where: { storeId },
-      include: productCategoryInclude,
+      include: productCategoryAdminInclude,
       orderBy: [{ position: 'asc' }, { name: 'asc' }],
     });
 
@@ -39,15 +48,16 @@ export class ProductCategoriesService {
   }
 
   /**
-   * The storefront's list. Hidden categories are absent, and so are empty ones: a shop window that
-   * offers a category and then shows nothing behind it reads as broken rather than as new.
+   * The storefront's list. Hidden categories are absent, and so are the ones holding nothing
+   * published. A category whose shelf is merely empty stays: its count is zero, and its address
+   * keeps answering.
    */
   /**
    * Every category a visitor may see, parents and children alike, with each parent's count rolled
    * up from the level below it.
    *
-   * The empty ones are dropped here rather than in the query, and that is the whole reason this is
-   * not one `where`. A shop that files every whey under `Proteínas → Whey` has a `Proteínas` with
+   * The ones with nothing published are dropped here rather than in the query, and that is the whole
+   * reason this is not one `where`. A shop that files every whey under `Proteínas → Whey` has a `Proteínas` with
    * no products of its own: `products: { some: … }` would drop it, and the menu would lose the
    * heading while everything under it was still for sale. Only code holding the whole tree can
    * tell "empty" from "empty at this level".
@@ -72,9 +82,22 @@ export class ProductCategoriesService {
       directById.set(row.parentId, (directById.get(row.parentId) ?? 0) + row._count.products);
     }
 
+    // Published anywhere in this branch, rolled up the same way the count is. It is a second
+    // signal and not the count itself, because the two answer different questions: the count says
+    // what is on the shelf right now, and this says whether the category is a place at all. A
+    // category whose last item sold out keeps its address — it is in somebody's Instagram bio, and
+    // the sold-out product's page links to it twice — and shows an empty shelf rather than a 404.
+    const publishedById = new Map(rows.map((row) => [row.id, row.products.length > 0]));
+
+    for (const row of rows) {
+      if (!row.parentId || row.products.length === 0) continue;
+
+      publishedById.set(row.parentId, true);
+    }
+
     return categories
       .map((category, index) => ({ ...category, productCount: directById.get(rows[index].id) ?? 0 }))
-      .filter((category) => category.productCount > 0);
+      .filter((_category, index) => publishedById.get(rows[index].id) === true);
   }
 
   /**

@@ -18,9 +18,12 @@ enum ShowcaseLayout {
 /// so the screen could not say which of the two a hidden product was — and the shopkeeper went
 /// looking for a missing product in the wrong place.
 ///
-/// ACTIVE is visible in the shop's sales channels; DRAFT is visible to nobody but its owner. Stock
-/// is a separate column and does not change this one: a shop that sells made to order counts no
-/// stock and is still on sale.
+/// ACTIVE is what the shopkeeper intends; DRAFT is visible to nobody but its owner.
+///
+/// It is not the whole of what a visitor sees. Being on the shelf is ACTIVE **and** not sold out,
+/// and the two are kept apart because they answer different questions: status is an intention, and
+/// stock is a fact. A product can be a draft and sold out at once. The one place that combines them
+/// is `src/modules/catalog/catalog.visibility.ts`, and every public query goes through it.
 enum ProductStatus {
   ACTIVE
   DRAFT
@@ -153,11 +156,14 @@ model Product {
   barcode String? @db.VarChar(64)
 
   /// Whether this shop counts this product. Off by default, because most shops here sell made to
-  /// order and a stock of zero on a product nobody counts would hide it from the window.
+  /// order, and a shop that does not count is never sold out however empty the column below is.
   trackStock    Boolean @default(false)
-  /// How many are left, and read only when `trackStock`. Nullable rather than zero so "not
-  /// counted" and "none left" stay different facts — the second hides the product, the first
-  /// means nothing at all.
+  /// How many are left, and read only when `trackStock`. Nullable rather than zero so "not counted"
+  /// and "none left" stay different facts. On a counted product, null and zero mean the same thing
+  /// — a shopkeeper who turned counting on and has not said how many, which from the shelf is none.
+  ///
+  /// Reaching zero takes the product out of the grid, the category and the search, and leaves its
+  /// own page answering, marked sold out, with no way to order. See catalog.visibility.ts.
   stockQuantity Int?
 
   /// Grams, and integers. Melhor Envio quotes on weight and size, and this is the field the quote

@@ -41,3 +41,9 @@ export const SemDesconto: Story = {
 export const SemWhatsapp: Story = {
   args: { orderHref: undefined },
 }
+
+/**
+ * The shelf is empty. The page still answers — this is the address that went out on WhatsApp — and
+ * what it loses is the button, not itself.
+ */
+export const Esgotado: Story = { args: { soldOut: true } }
