@@ -2,13 +2,14 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { Section, SectionErrorCode, SectionTarget } from '@harness-monorepo/contracts';
+import type { Section, SectionErrorCode, SectionKind, SectionTarget } from '@harness-monorepo/contracts';
 import type { CreateSectionDto, UpdateSectionDto } from './dto/section.dto.js';
 import type { ReorderDto } from '../catalog/dto/reorder.dto.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
+import { PLACEMENT_SECTION_KINDS } from './sections.constants.js';
 import { sectionInclude, toSection } from './sections.mapper.js';
 
 /** Keeps every code this module answers inside the contract's union. */
@@ -82,7 +83,7 @@ export class SectionsService {
    */
   async update(storeSlug: string, userId: string, sectionId: string, dto: UpdateSectionDto): Promise<Section> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.owned(storeId, sectionId);
+    const currentKind = await this.owned(storeId, sectionId);
 
     const movesTarget =
       dto.categorySlug !== undefined || dto.productSlug !== undefined || dto.externalUrl !== undefined;
@@ -95,6 +96,25 @@ export class SectionsService {
 
     const target = dto.target === undefined ? null : await this.targetColumns(storeId, dto.target, dto);
 
+    /*
+      A banner moves between the top of the page and its body, and nothing else changes kind.
+
+      Those two hold identical fields — a picture, a title, a destination — so the move is a patch,
+      and the panel asks it in the shopkeeper's words: "onde aparece". Every other kind is a
+      different shape. A PRODUCTS row patched into a BANNER would take the shop's shelves off its
+      own landing page, leaving no row to put them back, and the owner would find out by looking.
+    */
+    if (dto.kind !== undefined && dto.kind !== currentKind) {
+      const movable = (kind: SectionKind) =>
+        (PLACEMENT_SECTION_KINDS as readonly SectionKind[]).includes(kind);
+
+      if (!movable(currentKind) || !movable(dto.kind)) {
+        throw new BadRequestException(
+          sectionError('SECTION_KIND_IMMUTABLE', 'Este bloco não pode mudar de tipo.'),
+        );
+      }
+    }
+
     const row = await this.prisma.storeSection.update({
       where: { id: sectionId },
       data: {
@@ -103,7 +123,8 @@ export class SectionsService {
         ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
         ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-        ...(dto.belowProducts !== undefined ? { belowProducts: dto.belowProducts } : {}),
+        ...(dto.kind !== undefined ? { kind: dto.kind } : {}),
+        ...(dto.width !== undefined ? { width: dto.width } : {}),
         // Spreading null adds nothing, so the four destination columns are simply left alone.
         ...target,
       },
@@ -207,11 +228,17 @@ export class SectionsService {
   }
 
   /** A banner that exists but belongs to another shop answers 404: this shop does not have one. */
-  private async owned(storeId: string, sectionId: string): Promise<void> {
-    const row = await this.prisma.storeSection.findUnique({ where: { id: sectionId }, select: { storeId: true } });
+  /** Returns the kind it found, so a caller that has to reason about it needs no second read. */
+  private async owned(storeId: string, sectionId: string): Promise<SectionKind> {
+    const row = await this.prisma.storeSection.findUnique({
+      where: { id: sectionId },
+      select: { storeId: true, kind: true },
+    });
 
     if (!row || row.storeId !== storeId) {
-      throw new NotFoundException(sectionError('SECTION_NOT_FOUND', `No banner ${sectionId} in this shop`));
+      throw new NotFoundException(sectionError('SECTION_NOT_FOUND', `No block ${sectionId} in this shop`));
     }
+
+    return row.kind;
   }
 }

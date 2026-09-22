@@ -126,6 +126,23 @@ export class CreateSectionDto implements CreateSectionPayload {
 
 /** A patch: a key left out is a column left alone. `target` is the exception — see the service. */
 export class UpdateSectionDto implements UpdateSectionPayload {
+  /**
+   * Where the banner lives: the top of the page, or its body.
+   *
+   * Patchable, unlike every other kind, because those two are the same block in two places and
+   * the panel asks the question in exactly those words. The service refuses any other move — see
+   * `PLACEMENT_SECTION_KINDS`.
+   */
+  @ApiPropertyOptional({ enum: SECTION_KINDS })
+  @IsOptional()
+  @IsIn(SECTION_KINDS)
+  kind?: SectionKind;
+
+  @ApiPropertyOptional({ enum: SECTION_WIDTHS, description: 'Read only on HERO.' })
+  @IsOptional()
+  @IsIn(SECTION_WIDTHS)
+  width?: SectionWidth;
+
   @ApiPropertyOptional({ nullable: true, maxLength: SECTION_TITLE_MAX_LENGTH })
   @IsOptional()
   @IsString()

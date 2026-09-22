@@ -34,6 +34,16 @@ export const SECTION_WIDTHS = ['FULL', 'CONTAINED'] as const satisfies readonly 
 export const SINGLETON_SECTION_KINDS = ['PRODUCTS'] as const satisfies readonly SectionKind[];
 
 /**
+ * The two kinds that are the same block in two places.
+ *
+ * A banner at the top and a banner in the body hold identical fields — a picture, a title, a
+ * destination — so moving one between them is a patch, and the panel asks it in exactly those
+ * words: "onde aparece". Every other kind is a different shape, and a PRODUCTS row patched into a
+ * BANNER would take the shop's shelves off its landing page without saying so.
+ */
+export const PLACEMENT_SECTION_KINDS = ['HERO', 'BANNER'] as const satisfies readonly SectionKind[];
+
+/**
  * Where a banner may point. See the SectionTarget enum for why two of the four are foreign keys.
  *
  * `satisfies readonly SectionTarget[]` does not catch a missing value — a subset satisfies it just

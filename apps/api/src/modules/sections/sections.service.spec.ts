@@ -19,7 +19,14 @@ const base = {
  * columns the service decided to write — the target is the whole of this module's judgement, and it
  * is the one thing the database's CHECK can only answer with a constraint name.
  */
-function build(found: { category?: { id: string } | null; product?: { id: string } | null } = {}) {
+function build(
+  found: {
+    category?: { id: string } | null
+    product?: { id: string } | null
+    /** What the row being patched already is. The service reads it to police a kind change. */
+    kind?: string
+  } = {},
+) {
   const create = vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
     ...data,
     id: 'section-1',
@@ -35,7 +42,7 @@ function build(found: { category?: { id: string } | null; product?: { id: string
       create,
       aggregate: vi.fn().mockResolvedValue({ _max: { position: 2 } }),
       findMany: vi.fn().mockResolvedValue([]),
-      findUnique: vi.fn().mockResolvedValue({ storeId: STORE }),
+      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER' }),
       update: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
         id: 'section-1',
         title: 'Promoção',
@@ -61,6 +68,39 @@ function build(found: { category?: { id: string } | null; product?: { id: string
 
   return { service: new SectionsService(prisma, stores), create, prisma };
 }
+
+describe('SectionsService — where a block lives', () => {
+  it('moves a banner between the top of the page and its body', async () => {
+    const { service, prisma } = build({ kind: 'BANNER' });
+
+    await service.update('lessari', 'user-1', 'section-1', { kind: 'HERO' });
+
+    expect(prisma.storeSection.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ kind: 'HERO' }) }),
+    );
+  });
+
+  // A products row patched into a banner would take the shop's shelves off its own landing page,
+  // leave no row to put them back, and the owner would find out by looking.
+  it('refuses to turn the product rails into a banner', async () => {
+    const { service } = build({ kind: 'PRODUCTS' });
+
+    await expect(service.update('lessari', 'user-1', 'section-1', { kind: 'BANNER' })).rejects.toThrow();
+  });
+
+  it('refuses to turn a banner into the promises band', async () => {
+    const { service } = build({ kind: 'BANNER' });
+
+    await expect(service.update('lessari', 'user-1', 'section-1', { kind: 'BENEFITS' })).rejects.toThrow();
+  });
+
+  it('lets a patch repeat the kind a block already has', async () => {
+    // The panel sends the whole form on every save, so the unchanged kind rides along every time.
+    const { service } = build({ kind: 'PRODUCTS' });
+
+    await expect(service.update('lessari', 'user-1', 'section-1', { kind: 'PRODUCTS' })).resolves.toBeDefined();
+  });
+});
 
 describe('SectionsService — where a block points', () => {
   it('keeps the category and clears the other two', async () => {

@@ -207,4 +207,12 @@ export type SectionErrorCode =
    * row per shop and exactly one `COVER`: two runs of products is not an arrangement, it is a bug
    * the shopkeeper would have to notice on the live page.
    */
-  | "SECTION_KIND_SINGLETON";
+  | "SECTION_KIND_SINGLETON"
+  /**
+   * A block's kind cannot become that one.
+   *
+   * A banner moves between the top of the page and its body, because those two hold the same
+   * fields. Nothing else changes kind: a products row patched into a banner would take the shop's
+   * shelves off its own landing page, and the shopkeeper would find out by looking.
+   */
+  | "SECTION_KIND_IMMUTABLE";
