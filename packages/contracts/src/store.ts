@@ -1,3 +1,4 @@
+import type { PublicBanner } from "./banner.js";
 import type { StorefrontRouteWords } from "./catalog.js";
 
 /**
@@ -170,6 +171,19 @@ export interface PublicStore {
   layoutSettings: StoreLayoutSettings;
   /** Never empty: the checkout has nothing to offer a customer otherwise. */
   paymentMethods: PaymentMethod[];
+  /**
+   * The posters on the shop's landing page, in the shopkeeper's order, already resolved.
+   *
+   * They ride here and not on `StorefrontCatalog` because the home fetches the shop first and
+   * unconditionally, so this costs no round trip — and because the catalogue is paged and
+   * filtered: banners on it would be re-serialised into every `?pagina=` and `?categoria=` answer
+   * Google indexes, including the one-product call the home makes purely for the category list.
+   *
+   * The cost, stated rather than hidden: they travel to the product, category and cart pages too,
+   * which do not draw them. That is one field against a second serial fetch on the page most
+   * visitors ever see.
+   */
+  banners: PublicBanner[];
 }
 
 /** The shop as its owner edits it in the panel: the public shape plus what only the owner may see. */
