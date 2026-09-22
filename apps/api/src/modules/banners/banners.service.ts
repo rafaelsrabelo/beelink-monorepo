@@ -100,7 +100,8 @@ export class BannersService {
         ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
         ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-        ...(target ?? {}),
+        // Spreading null adds nothing, so the four destination columns are simply left alone.
+        ...target,
       },
       include: bannerInclude,
     });

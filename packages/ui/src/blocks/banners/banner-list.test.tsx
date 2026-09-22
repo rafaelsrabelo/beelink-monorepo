@@ -1,5 +1,5 @@
 // Libs
-import { render, screen, within } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -15,8 +15,6 @@ const banners: BannerListItem[] = [
 function renderList(overrides: Partial<Parameters<typeof BannerList>[0]> = {}) {
   return render(<BannerList banners={banners} onEdit={() => {}} onDelete={() => {}} {...overrides} />)
 }
-
-const row = (name: string) => screen.getByRole("listitem", { name: new RegExp(name) })
 
 describe("BannerList", () => {
   it("says where each banner goes, since a picture cannot", () => {
