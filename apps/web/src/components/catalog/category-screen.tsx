@@ -29,7 +29,6 @@ const EMPTY: CategoryFormValues = {
   description: "",
   imageUrl: "",
   parentId: "",
-  showcaseLayout: "",
   isActive: true,
 }
 
@@ -41,7 +40,6 @@ function toForm(category: ProductCategory, parentId: string): CategoryFormValues
     description: category.description ?? "",
     imageUrl: category.imageUrl ?? "",
     parentId,
-    showcaseLayout: category.showcaseLayout ?? "",
     isActive: category.isActive,
   }
 }
@@ -54,7 +52,6 @@ function toPayload(value: CategoryFormValues) {
     description: value.description.trim() || null,
     imageUrl: value.imageUrl.trim() || null,
     parentId: value.parentId || null,
-    showcaseLayout: value.showcaseLayout || null,
     isActive: value.isActive,
   }
 }

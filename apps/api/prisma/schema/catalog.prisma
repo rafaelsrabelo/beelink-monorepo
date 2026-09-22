@@ -73,15 +73,7 @@ model ProductCategory {
   parentId String?          @db.Uuid
   parent   ProductCategory? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
   children ProductCategory[] @relation("CategoryTree")
-
-  /// The shape this category takes on the landing page, or null to keep it out of it.
-  ///
-  /// A category and not a separate "banner" row, which is what this replaced. The shopkeeper makes
-  /// a category called Destaques, gives it a picture and a shape, and that is the poster — the two
-  /// were the same thing wearing different names, and the separate one carried a title, a picture
-  /// and a description a category already had. What the merge gives up is a banner pointing at one
-  /// product or at somewhere outside the shop: a category's poster goes to the category.
-  showcaseLayout ShowcaseLayout?
+  banners  StoreBanner[]
 
   /// The order the shopkeeper chose. The storefront shows them in it, because the shopkeeper knows
   /// what they want to sell first. Ties break on name so the list is never arbitrary.
@@ -185,7 +177,8 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  images ProductImage[]
+  images  ProductImage[]
+  banners StoreBanner[]
 
   @@unique([storeId, slug])
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.

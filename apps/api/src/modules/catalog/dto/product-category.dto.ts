@@ -2,12 +2,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
-import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 // Types
 import type {
   CreateProductCategoryPayload,
-  ShowcaseLayout,
   UpdateProductCategoryPayload,
 } from '@harness-monorepo/contracts';
 
@@ -16,7 +15,6 @@ import {
   CATEGORY_NAME_MAX_LENGTH,
   CATEGORY_SLUG_MAX_LENGTH,
   DESCRIPTION_MAX_LENGTH,
-  SHOWCASE_LAYOUTS,
 } from '../catalog.constants.js';
 import { blankToNull, imageUrl, trim } from '../../stores/dto/store-fields.dto.js';
 
@@ -67,16 +65,6 @@ export class CreateProductCategoryDto implements CreateProductCategoryPayload {
   @IsUUID()
   @blankToNull
   parentId?: string | null;
-
-  @ApiPropertyOptional({
-    nullable: true,
-    enum: SHOWCASE_LAYOUTS,
-    description: 'The shape it takes on the landing page. Null keeps it off that page.',
-  })
-  @IsOptional()
-  @IsIn(SHOWCASE_LAYOUTS)
-  @blankToNull
-  showcaseLayout?: ShowcaseLayout | null;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()

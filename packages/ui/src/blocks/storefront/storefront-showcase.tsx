@@ -16,6 +16,12 @@ export interface StorefrontShowcaseItem {
   imageUrl: string
   /** Null makes the card a picture rather than a promise, and no arrow is drawn. */
   href?: string | null
+  /**
+   * Leaves the shop. It arrives as data rather than being guessed from the address: a block that
+   * decided by looking for `http` would start opening the shop's own pages in a new tab the day
+   * those addresses became absolute.
+   */
+  external?: boolean
   layout: StorefrontShowcaseLayout
 }
 
@@ -48,13 +54,12 @@ const HEIGHT: Record<StorefrontShowcaseLayout, string> = {
 /**
  * The shop's own posters on its landing page: a picture, a name, a line and a way in.
  *
- * What feeds it is the shopkeeper's categories — the ones they gave a shape to. There is no second
- * "banner" entity, and there was one for a while: it carried a title, a picture and a description a
- * category already had, and a destination that for a category is the category. Two names for one
- * thing is two screens to keep in step, and the shopkeeper keeping them in step is the shopkeeper.
+ * What feeds it is the shop's banners. It was the shopkeeper's categories for a while — the ones
+ * they had given a shape to — and that arrangement could not point a poster at one product or out
+ * of the shop, which is what brought the banner back as a row of its own.
  *
  * It stays generic on purpose — id, title, line, picture, shape, somewhere to go — so it never has
- * to know it is being handed categories.
+ * to know what kind of thing it is being handed.
  *
  * The text sits over the photograph, so the photograph gets a gradient under it rather than a flat
  * tint: an image whose bottom third is already dark would go black under a tint, and one that is
@@ -149,7 +154,13 @@ export function StorefrontShowcase({ items, linkComponent: Link = AnchorLink }: 
             return (
               <li key={item.id}>
                 {item.href ? (
-                  <Link href={item.href} className={shape}>
+                  <Link
+                    href={item.href}
+                    className={shape}
+                    // The pair every outbound anchor in this repository carries. Without the
+                    // `target`, a banner pointing at WhatsApp takes the shop window away with it.
+                    {...(item.external ? { target: "_blank", rel: "noreferrer" } : {})}
+                  >
                     {body}
                   </Link>
                 ) : (

@@ -97,6 +97,7 @@ export interface WebMessages {
       products: string
       customers: string
       categories: string
+      banners: string
     }
     /** The panel's home for one shop: what is left to set up, and how the shop is doing. */
     home: {
@@ -110,9 +111,9 @@ export interface WebMessages {
         productsTitle: string
         productsText: string
         productsAction: string
-        categoriesTitle: string
-        categoriesText: string
-        categoriesAction: string
+        bannersTitle: string
+        bannersText: string
+        bannersAction: string
         paymentsTitle: string
         paymentsText: string
         paymentsAction: string

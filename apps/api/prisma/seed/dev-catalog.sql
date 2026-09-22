@@ -88,14 +88,13 @@ VALUES
   ('moda',        'acessorios', 'cinto-couro',            'Cinto de Couro',                'Couro legítimo, fivela escovada, três centímetros de largura.',      8900,  NULL, 11);
 
 -- ---------------------------------------------------------------- categories
-INSERT INTO "product_categories" ("id", "storeId", "slug", "name", "description", "imageUrl", "showcaseLayout", "position", "isActive", "slugHistory", "createdAt", "updatedAt")
+INSERT INTO "product_categories" ("id", "storeId", "slug", "name", "description", "imageUrl", "position", "isActive", "slugHistory", "createdAt", "updatedAt")
 SELECT
   uuidv7(), sh.store_id, c.slug, c.name, c.description,
-  -- Landscape for a poster, square for a menu tile. The shape decides, because a 400×400 stretched
-  -- across a full-width band is a blurred band.
+  -- Landscape for the ones that also become a poster, square for a menu tile. The shape decides,
+  -- because a 400×400 stretched across a full-width band is a blurred band.
   'https://picsum.photos/seed/' || sh.store_slug || '-' || c.slug ||
     CASE WHEN c.showcase IS NULL THEN '/400/400' ELSE '/1200/675' END,
-  c.showcase::"ShowcaseLayout",
   c.position, true, '{}', now(), now()
 FROM shop_segment sh
 JOIN seed_category c ON c.segment = sh.segment
@@ -103,10 +102,36 @@ ON CONFLICT ("storeId", "slug") DO UPDATE
   SET "name" = EXCLUDED."name",
       "description" = EXCLUDED."description",
       "imageUrl" = EXCLUDED."imageUrl",
-      "showcaseLayout" = EXCLUDED."showcaseLayout",
       "position" = EXCLUDED."position",
       "isActive" = true,
       "updatedAt" = now();
+
+-- ------------------------------------------------------------------- banners
+-- The posters, now their own rows. `seed_category.showcase` still decides which categories are
+-- worth one, because a seeded shop should open with a landing page rather than with a grid — but
+-- the shape lives on the banner from here, not on the category.
+--
+-- Only category banners are seeded. A product banner and an external one are the two things a
+-- shopkeeper reaches for once they have something specific to push, and inventing either here
+-- would put a made-up destination on a demo shop.
+DELETE FROM "store_banners" b
+USING shop_segment sh
+WHERE b."storeId" = sh.store_id;
+
+INSERT INTO "store_banners" (
+  "id", "storeId", "title", "subtitle", "imageUrl", "layout",
+  "target", "categoryId", "productId", "externalUrl",
+  "position", "isActive", "createdAt", "updatedAt"
+)
+SELECT
+  uuidv7(), pc."storeId", pc."name", left(pc."description", 200), pc."imageUrl",
+  c.showcase::"ShowcaseLayout",
+  'CATEGORY', pc."id", NULL, NULL,
+  c.position, true, now(), now()
+FROM shop_segment sh
+JOIN seed_category c ON c.segment = sh.segment
+JOIN "product_categories" pc ON pc."storeId" = sh.store_id AND pc.slug = c.slug
+WHERE c.showcase IS NOT NULL;
 
 -- The tree, in a second pass: a child needs its parent's id, which only exists once the parent row
 -- has been written. Matching on the slug is what lets the list above name a parent in words.

@@ -276,6 +276,52 @@ export interface UiMessages {
     }
   }
   /** The panel's catalogue screens: what a shopkeeper fills in, never what a visitor reads. */
+  /** The shop's posters: what the landing page shows above everything it sells. */
+  banners: {
+    title: string
+    description: string
+    create: string
+    edit: string
+    empty: string
+    emptyHint: string
+    titleLabel: string
+    titlePlaceholder: string
+    subtitleLabel: string
+    subtitleHelp: string
+    imageLabel: string
+    imageHelp: string
+    layoutLabel: string
+    layoutFull: string
+    layoutHalves: string
+    layoutThirds: string
+    /** Category, product or an address outside the shop — the three a banner may point at. */
+    targetLabel: string
+    targetCategory: string
+    targetProduct: string
+    targetExternal: string
+    /** A poster that says something and goes nowhere. */
+    targetNone: string
+    targetNoneHelp: string
+    categoryLabel: string
+    categoryNone: string
+    productLabel: string
+    productNone: string
+    externalLabel: string
+    externalHelp: string
+    activeLabel: string
+    activeHelp: string
+    /** Marks a banner the shopkeeper hid; the landing page shows none of it. */
+    hidden: string
+    /** Marks one that leaves the shop, since that is not visible from the picture. */
+    opensOutside: string
+    moveUp: string
+    moveDown: string
+    save: string
+    saving: string
+    cancel: string
+    delete: string
+    deleteConfirm: string
+  }
   catalog: {
     /** The description's toolbar. What it writes is Markdown; see blocks/catalog/rich-text.ts. */
     editor: {

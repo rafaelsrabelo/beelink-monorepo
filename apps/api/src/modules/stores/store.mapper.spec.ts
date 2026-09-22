@@ -14,6 +14,7 @@ const row = {
   logoUrl: null,
   bannerImageUrl: null,
   categoryId: '0199a0f1-0000-7000-8000-0000000000c1',
+  banners: [],
   category: {
     id: '0199a0f1-0000-7000-8000-0000000000c1',
     slug: 'alimentacao',

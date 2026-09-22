@@ -12,12 +12,11 @@ import type {
   PublicProductCard,
   PublicProductCategory,
   PublicProductImage,
-  ShowcaseLayout,
   StorefrontCatalog,
 } from '@harness-monorepo/contracts';
 
 // App
-import { PRODUCT_ORIGINS, PRODUCT_STATUSES, PRODUCTS_PAGE_SIZE, SHOWCASE_LAYOUTS } from '../catalog.constants.js';
+import { PRODUCT_ORIGINS, PRODUCT_STATUSES, PRODUCTS_PAGE_SIZE } from '../catalog.constants.js';
 
 /**
  * The shapes out, for Swagger. Each `implements` its contract type, so a field added to the wire
@@ -38,13 +37,6 @@ export class PublicProductCategoryResponse implements PublicProductCategory {
     description: 'The category this sits under. Null is a top level; there is no third.',
   })
   parentSlug!: string | null;
-
-  @ApiProperty({
-    nullable: true,
-    enum: SHOWCASE_LAYOUTS,
-    description: 'The shape it takes on the landing page. Null keeps it off that page.',
-  })
-  showcaseLayout!: ShowcaseLayout | null;
 
   @ApiProperty({
     description: 'Available products in it AND in its subcategories. Zero hides it from the window.',

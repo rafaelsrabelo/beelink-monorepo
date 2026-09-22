@@ -28,7 +28,6 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { StoreImageField } from "../store/store-image-field"
 import type { FieldIssues } from "../store/store-types"
 
-export type CategoryShowcaseShape = "" | "FULL" | "HALVES" | "THIRDS"
 
 export interface CategoryFormValues {
   name: string
@@ -37,8 +36,6 @@ export interface CategoryFormValues {
   imageUrl: string
   /** `""` is "no parent". A select cannot hold null, and the screen turns it back. */
   parentId: string
-  /** `""` keeps it off the landing page. Same sentinel, same reason. */
-  showcaseLayout: CategoryShowcaseShape
   isActive: boolean
 }
 
@@ -180,29 +177,6 @@ export function CategoryForm({
           messages={messages}
         />
 
-        <Field>
-          <FieldLabel htmlFor="category-showcase">{text.showcaseLabel}</FieldLabel>
-          <Select
-            value={value.showcaseLayout === "" ? "none" : value.showcaseLayout}
-            onValueChange={(next: string | null) =>
-              set("showcaseLayout", (!next || next === "none" ? "" : next) as CategoryShowcaseShape)
-            }
-            disabled={pending}
-          >
-            <SelectTrigger id="category-showcase">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{text.showcaseNone}</SelectItem>
-              <SelectItem value="FULL">{text.showcaseFull}</SelectItem>
-              <SelectItem value="HALVES">{text.showcaseHalves}</SelectItem>
-              <SelectItem value="THIRDS">{text.showcaseThirds}</SelectItem>
-            </SelectContent>
-          </Select>
-          {/* The picture is not optional for a poster: a band of solid colour with words on it is
-              not a banner, and the storefront quietly leaves one out rather than drawing that. */}
-          <FieldDescription>{text.showcaseHelp}</FieldDescription>
-        </Field>
 
         <Field orientation="horizontal">
           <Checkbox
