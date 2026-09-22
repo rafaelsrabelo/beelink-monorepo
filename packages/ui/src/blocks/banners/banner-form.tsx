@@ -3,13 +3,7 @@
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from "@harness-monorepo/ui/components/field"
+import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@harness-monorepo/ui/components/select"
 
@@ -20,27 +14,22 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { StoreImageField } from "../store/store-image-field"
 import type { FieldIssues } from "../store/store-types"
+import { BannerTargetFields } from "./banner-target-fields"
+import { EMPTY_BANNER } from "./banner-form-types"
+import type {
+  BannerFormLayout,
+  BannerFormTarget,
+  BannerFormValues,
+  BannerTargetOption,
+} from "./banner-form-types"
 
-export type BannerFormLayout = "FULL" | "HALVES" | "THIRDS"
-export type BannerFormTarget = "CATEGORY" | "PRODUCT" | "EXTERNAL"
-
-export interface BannerFormValues {
-  title: string
-  subtitle: string
-  imageUrl: string
-  layout: BannerFormLayout
-  target: BannerFormTarget
-  /** `""` is "not chosen". A select cannot hold null, and the screen turns it back. */
-  categorySlug: string
-  productSlug: string
-  externalUrl: string
-  isActive: boolean
-}
-
-export interface BannerTargetOption {
-  slug: string
-  name: string
-}
+/**
+ * Re-exported here, and that is not tidiness. The package's export map points `./blocks/*` at
+ * `.tsx`, so a types-only `.ts` beside a block cannot be imported from an app — the screen reaches
+ * them through the block it is already importing.
+ */
+export { EMPTY_BANNER }
+export type { BannerFormLayout, BannerFormTarget, BannerFormValues, BannerTargetOption }
 
 export interface BannerFormProps {
   value: BannerFormValues
@@ -56,28 +45,10 @@ export interface BannerFormProps {
   messages?: UiMessages
 }
 
-export const EMPTY_BANNER: BannerFormValues = {
-  title: "",
-  subtitle: "",
-  imageUrl: "",
-  layout: "FULL",
-  target: "CATEGORY",
-  categorySlug: "",
-  productSlug: "",
-  externalUrl: "",
-  isActive: true,
-}
-
 /**
- * Where a banner goes and what it looks like.
+ * What a poster is: a title, a line, a picture, a shape — and somewhere to go.
  *
- * The three destinations are held side by side rather than in one field the target switches. A
- * shopkeeper who picks a category, changes their mind, picks a product and changes back should
- * find their first choice still there — a single field would have thrown it away, and the cost of
- * keeping all three is two strings nobody reads.
- *
- * Only the one the target names is sent. The API clears the other two, so the row can never
- * disagree with itself and the database refuses the attempt besides.
+ * Where it goes is its own block, because it is the only part with a rule worth stating on its own.
  */
 export function BannerForm({
   value,
@@ -98,46 +69,6 @@ export function BannerForm({
 
   const layoutLabel = (layout: string) =>
     layout === "HALVES" ? text.layoutHalves : layout === "THIRDS" ? text.layoutThirds : text.layoutFull
-
-  const targetLabel = (target: string) =>
-    target === "PRODUCT" ? text.targetProduct : target === "EXTERNAL" ? text.targetExternal : text.targetCategory
-
-  const picker = (
-    key: "categorySlug" | "productSlug",
-    options: readonly BannerTargetOption[],
-    label: string,
-    placeholder: string,
-  ) => (
-    <Field>
-      <FieldLabel htmlFor={`banner-${key}`}>{label}</FieldLabel>
-      <Select
-        disabled={pending}
-        value={value[key] === "" ? "none" : value[key]}
-        onValueChange={(next: string | null) => set(key, !next || next === "none" ? "" : next)}
-      >
-        <SelectTrigger id={`banner-${key}`}>
-          {/* A render function, not a bare value: Base UI shows the raw one, so the trigger would
-              read "none" — the sentinel, on screen. */}
-          <SelectValue>
-            {(selected: string) =>
-              selected === "none" || !selected
-                ? placeholder
-                : (options.find((option) => option.slug === selected)?.name ?? placeholder)
-            }
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">{placeholder}</SelectItem>
-          {options.map((option) => (
-            <SelectItem key={option.slug} value={option.slug}>
-              {option.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {errors[key]?.message ? <FieldError>{errors[key]?.message}</FieldError> : null}
-    </Field>
-  )
 
   return (
     <form
@@ -205,43 +136,15 @@ export function BannerForm({
         </Select>
       </Field>
 
-      <Field>
-        <FieldLabel htmlFor="banner-target">{text.targetLabel}</FieldLabel>
-        <Select
-          disabled={pending}
-          value={value.target}
-          onValueChange={(next: string | null) => set("target", (next ?? "CATEGORY") as BannerFormTarget)}
-        >
-          <SelectTrigger id="banner-target">
-            <SelectValue>{(selected: string) => targetLabel(selected)}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="CATEGORY">{text.targetCategory}</SelectItem>
-            <SelectItem value="PRODUCT">{text.targetProduct}</SelectItem>
-            <SelectItem value="EXTERNAL">{text.targetExternal}</SelectItem>
-          </SelectContent>
-        </Select>
-      </Field>
-
-      {value.target === "CATEGORY" ? picker("categorySlug", categories, text.categoryLabel, text.categoryNone) : null}
-      {value.target === "PRODUCT" ? picker("productSlug", products, text.productLabel, text.productNone) : null}
-
-      {value.target === "EXTERNAL" ? (
-        <Field>
-          <FieldLabel htmlFor="banner-external">{text.externalLabel}</FieldLabel>
-          <Input
-            id="banner-external"
-            type="url"
-            inputMode="url"
-            disabled={pending}
-            placeholder="https://"
-            value={value.externalUrl}
-            onChange={(event) => set("externalUrl", event.target.value)}
-          />
-          <FieldDescription>{text.externalHelp}</FieldDescription>
-          {errors.externalUrl?.message ? <FieldError>{errors.externalUrl.message}</FieldError> : null}
-        </Field>
-      ) : null}
+      <BannerTargetFields
+        value={value}
+        onChange={onChange}
+        categories={categories}
+        products={products}
+        errors={errors}
+        disabled={pending}
+        messages={messages}
+      />
 
       <Field orientation="horizontal">
         <Checkbox
