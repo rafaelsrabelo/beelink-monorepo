@@ -18,8 +18,10 @@ import { SectionTargetFields } from "./section-target-fields"
 import { EMPTY_BANNER } from "./section-form-types"
 import type {
   SectionFormLayout,
+  SectionFormPlacement,
   SectionFormTarget,
   SectionFormValues,
+  SectionFormWidth,
   SectionTargetOption,
 } from "./section-form-types"
 
@@ -29,7 +31,14 @@ import type {
  * them through the block it is already importing.
  */
 export { EMPTY_BANNER }
-export type { SectionFormLayout, SectionFormTarget, SectionFormValues, SectionTargetOption }
+export type {
+  SectionFormLayout,
+  SectionFormPlacement,
+  SectionFormTarget,
+  SectionFormValues,
+  SectionFormWidth,
+  SectionTargetOption,
+}
 
 export interface SectionFormProps {
   value: SectionFormValues
@@ -119,6 +128,56 @@ export function SectionForm({
       />
 
       <Field>
+        <FieldLabel htmlFor="banner-placement">{text.placementLabel}</FieldLabel>
+        <Select
+          disabled={pending}
+          value={value.placement}
+          onValueChange={(next: string | null) =>
+            set("placement", (next ?? "BANNER") as SectionFormPlacement)
+          }
+        >
+          <SelectTrigger id="banner-placement">
+            <SelectValue>
+              {(selected: string) =>
+                selected === "HERO" ? text.placementHero : text.placementBody
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="HERO">{text.placementHero}</SelectItem>
+            <SelectItem value="BANNER">{text.placementBody}</SelectItem>
+          </SelectContent>
+        </Select>
+        <FieldDescription>{text.placementHelp}</FieldDescription>
+      </Field>
+
+      {/*
+        The two shape questions are asked one at a time, because only one of them ever applies. A
+        hero is as wide as the page or contained by it; a poster in the body is already contained,
+        and what it chooses is how many sit beside it.
+      */}
+      {value.placement === "HERO" ? (
+        <Field>
+          <FieldLabel htmlFor="banner-width">{text.widthLabel}</FieldLabel>
+          <Select
+            disabled={pending}
+            value={value.width}
+            onValueChange={(next: string | null) => set("width", (next ?? "FULL") as SectionFormWidth)}
+          >
+            <SelectTrigger id="banner-width">
+              <SelectValue>
+                {(selected: string) => (selected === "CONTAINED" ? text.widthContained : text.widthFull)}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="FULL">{text.widthFull}</SelectItem>
+              <SelectItem value="CONTAINED">{text.widthContained}</SelectItem>
+            </SelectContent>
+          </Select>
+          <FieldDescription>{text.widthHelp}</FieldDescription>
+        </Field>
+      ) : (
+      <Field>
         <FieldLabel htmlFor="banner-layout">{text.layoutLabel}</FieldLabel>
         <Select
           disabled={pending}
@@ -135,6 +194,7 @@ export function SectionForm({
           </SelectContent>
         </Select>
       </Field>
+      )}
 
       <SectionTargetFields
         value={value}

@@ -2,14 +2,15 @@
 import type { ReactNode } from "react"
 
 // Types
-import type { BenefitRow, CoverSlide, PublicProductCard, PublicSection } from "@harness-monorepo/contracts"
+import type { BenefitRow, PublicProductCategory, PublicSection } from "@harness-monorepo/contracts"
 
 // UI
 import { BenefitIcon } from "@harness-monorepo/ui/blocks/design/benefit-icons"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBand } from "@harness-monorepo/ui/blocks/storefront/storefront-band"
 import { StorefrontBenefits } from "@harness-monorepo/ui/blocks/storefront/storefront-benefits"
-import { StorefrontCover } from "@harness-monorepo/ui/blocks/storefront/storefront-cover"
+import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
+import { StorefrontHero } from "@harness-monorepo/ui/blocks/storefront/storefront-hero"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
 import { StorefrontShowcase } from "@harness-monorepo/ui/blocks/storefront/storefront-showcase"
@@ -32,6 +33,8 @@ export interface StorefrontSectionsProps {
   sections?: readonly PublicSection[]
   /** The product rails, already loaded. A PRODUCTS block draws these and nothing else. */
   bands: readonly HomeBand[]
+  /** Every category the shop has. A CATEGORIES block draws these; nothing else reads them. */
+  categories: readonly PublicProductCategory[]
   routes: StorefrontRoutes
   showPrice: boolean
   showBadge: boolean
@@ -46,9 +49,16 @@ export interface StorefrontSectionsProps {
   messages: UiMessages
 }
 
-/** Consecutive posters of the same shape become one row, which is what the showcase groups on. */
-function isPoster(section: PublicSection): boolean {
-  return section.kind === "BANNER"
+/**
+ * The kinds that come in runs, and what a run of each means.
+ *
+ * Consecutive posters become one row of the showcase, which is what decides their columns — three
+ * `THIRDS` handed over one at a time would be three full-width rows, and "um terço" would mean
+ * nothing. Consecutive heroes become one carousel, which is the whole of how a carousel is made:
+ * there is no switch, only a count.
+ */
+function runOf(section: PublicSection): "BANNER" | "HERO" | null {
+  return section.kind === "BANNER" || section.kind === "HERO" ? section.kind : null
 }
 
 /**
@@ -64,6 +74,7 @@ function isPoster(section: PublicSection): boolean {
 export function StorefrontSections({
   sections = [],
   bands,
+  categories,
   routes,
   showPrice,
   showBadge,
@@ -83,7 +94,9 @@ export function StorefrontSections({
   const groups: PublicSection[][] = []
   for (const section of sections) {
     const last = groups.at(-1)
-    if (last && isPoster(section) && isPoster(last[0]!)) last.push(section)
+    const run = runOf(section)
+
+    if (last && run && run === runOf(last[0]!)) last.push(section)
     else groups.push([section])
   }
 
@@ -92,7 +105,7 @@ export function StorefrontSections({
       {groups.map((group) => {
         const first = group[0]!
 
-        if (isPoster(first)) {
+        if (runOf(first) === "BANNER") {
           const items = group.map((section) => ({
             id: section.id,
             title: section.title ?? "",
@@ -122,13 +135,40 @@ export function StorefrontSections({
         }
 
         const body =
-          first.kind === "COVER" ? (
-            <StorefrontCover
-              slides={first.items as CoverSlide[]}
+          first.kind === "HERO" ? (
+            // One is a cover, more than one is a carousel — the group is the answer.
+            <StorefrontHero
+              items={group.map((section) => ({
+                id: section.id,
+                imageUrl: section.imageUrl ?? "",
+                title: section.title,
+                subtitle: section.subtitle,
+                href: section.href,
+                external: section.external,
+              }))}
               width={first.width}
               {...link}
               messages={messages}
             />
+          ) : first.kind === "CATEGORIES" ? (
+            <StorefrontBand className="flex flex-col gap-4">
+              {first.title ? <StorefrontHeading title={first.title} subtitle={first.subtitle} /> : null}
+              <StorefrontCategoryGrid
+                categories={categories.map((category) => ({
+                  id: category.id,
+                  slug: category.slug,
+                  name: category.name,
+                  imageUrl: category.imageUrl,
+                  description: category.description,
+                  productCount: category.productCount,
+                }))}
+                href={routes.category}
+                catalogHref={routes.catalog()}
+                locale="pt-BR"
+                {...link}
+                messages={messages}
+              />
+            </StorefrontBand>
           ) : first.kind === "BENEFITS" ? (
             <StorefrontBenefits
               items={(first.items as BenefitRow[]).map((row) => ({

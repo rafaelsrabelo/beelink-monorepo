@@ -44,10 +44,12 @@ export function SectionScreen({ slug, messages }: SectionScreenProps) {
   const remove = useDeleteSection(slug)
   const reorder = useReorderSections(slug)
 
-  // Posters only, for now. The other four kinds are blocks the shopkeeper arranges in design mode
-  // and does not create here; each wants its own form, and one that grew a branch per kind is the
-  // form nobody can read.
-  const rows = (banners.data ?? []).filter((row) => row.kind === "BANNER")
+  // Banners, wherever they live: the ones at the top of the page and the ones in its body are the
+  // same thing with the same form, and `kind` is only where it sits. The promises band, the
+  // heading and the category grid are blocks the shopkeeper arranges in design mode and does not
+  // create here — each wants its own fields, and one form that grew a branch per kind is the form
+  // nobody can read.
+  const rows = (banners.data ?? []).filter((row) => row.kind === "BANNER" || row.kind === "HERO")
 
   const layoutLabel = (layout: Section["layout"]) =>
     layout === "HALVES" ? text.layoutHalves : layout === "THIRDS" ? text.layoutThirds : text.layoutFull

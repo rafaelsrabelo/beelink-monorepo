@@ -85,6 +85,7 @@ export function DesignPreviewPane({
               <StorefrontSections
                 sections={sections}
                 bands={bands}
+                categories={categories}
                 routes={routes}
                 showPrice={layout.showProductPrice ?? true}
                 showBadge={layout.showProductBadges ?? true}

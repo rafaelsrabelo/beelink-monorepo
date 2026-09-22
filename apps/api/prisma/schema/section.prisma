@@ -10,20 +10,25 @@
 /// `StoreBanner.position`, `Store.layoutType`, and a `layoutSettings` blob with no order at all —
 /// and putting a poster under the products needed a boolean of its own.
 enum SectionKind {
-  /// The cover at the top. One image, or several, which is what makes it a carousel.
-  COVER
+  /// A banner at the top, before anything else. One is a cover; two or more in a row are a
+  /// carousel, and no column says which — the shape is read off the count. It is a row and not a
+  /// slide inside one because a hero can have an action, and an action needs a foreign key.
+  HERO
   /// A poster in the body of the page.
   BANNER
   /// A heading and a line under it. A sign, not a card.
   TEXT
   /// The band of promises: an icon, a title and a line, per row.
   BENEFITS
+  /// The shop's categories as a grid of cards. Its own kind and not a switch on PRODUCTS, because
+  /// showing both is not a setting — it is two blocks.
+  CATEGORIES
   /// The product rails. One per shop, undeletable, and a row like any other so it has a position —
   /// which is the whole reason `belowProducts` no longer exists.
   PRODUCTS
 }
 
-/// Edge to edge, or inside the page's measure. Only the cover ever bled to the edges; every other
+/// Edge to edge, or inside the page's measure. Only a hero ever bled to the edges; every other
 /// band on the shop window already sits inside the page's own measure.
 enum SectionWidth {
   FULL
@@ -78,16 +83,16 @@ model StoreSection {
   /// The line under the title.
   subtitle String? @db.VarChar(200)
 
-  /// Nullable, unlike a banner's. TEXT, BENEFITS and PRODUCTS draw no picture of their own — the
-  /// rule that a BANNER must have one moved to the zod union, where it can be stated per kind
-  /// instead of for every row in the table.
+  /// Nullable, unlike a banner's. TEXT, BENEFITS, CATEGORIES and PRODUCTS draw no picture of their
+  /// own — the rule that a poster must have one moved to the zod union, where it is stated per
+  /// kind instead of for every row in the table.
   imageUrl String?
 
   /// Full width, two across, three across. The same three shapes a category poster had, and the
   /// same enum: a second one would be two vocabularies for one row of the page.
   layout ShowcaseLayout @default(FULL)
 
-  /// Read only on COVER. Every other band is already contained.
+  /// Read only on HERO. Every other band is already contained.
   width SectionWidth @default(FULL)
 
   target SectionTarget @default(NONE)
@@ -108,7 +113,7 @@ model StoreSection {
   /// than a deny-list — the same rule `store-fields.dto.ts` states for every other stored URL.
   externalUrl String?
 
-  /// A COVER's slides, or a BENEFITS band's rows. Empty on every other kind.
+  /// A BENEFITS band's rows. Empty on every other kind.
   ///
   /// Json, and the difference from `layoutSettings` is the one that matters: this is **content**.
   /// Sixteen of that blob's twenty-one keys survived years unread because a key nobody draws is

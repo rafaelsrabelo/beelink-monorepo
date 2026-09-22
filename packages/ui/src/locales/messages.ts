@@ -325,6 +325,16 @@ export interface UiMessages {
     imageLabel: string
     imageHelp: string
     layoutLabel: string
+    /** Where on the page the banner lives: the top, or the body. */
+    placementLabel: string
+    placementHero: string
+    placementBody: string
+    placementHelp: string
+    /** A hero's width. A poster in the body is already inside the page's measure. */
+    widthLabel: string
+    widthFull: string
+    widthContained: string
+    widthHelp: string
     layoutFull: string
     layoutHalves: string
     layoutThirds: string

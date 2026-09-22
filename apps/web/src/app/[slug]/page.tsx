@@ -91,6 +91,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
           <StorefrontSections
             sections={store.sections}
             bands={home.bands}
+            categories={home.categories}
             routes={routes}
             showPrice={layout.showProductPrice ?? true}
             showBadge={layout.showProductBadges ?? true}

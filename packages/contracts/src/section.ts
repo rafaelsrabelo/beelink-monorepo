@@ -14,14 +14,33 @@
  * and a shopkeeper who wanted a poster under the products had to be given a boolean.
  */
 export type SectionKind =
-  /** The cover at the top. One image, or several, which makes it a carousel. */
-  | "COVER"
+  /**
+   * A banner at the top of the page, before anything else.
+   *
+   * One is a cover; two or more in a row are a carousel, and there is no switch that says which.
+   * The shape is read off the count, which is one fewer thing that can disagree with itself —
+   * `layoutSettings.bannerType` was that switch, storing `'single' | 'carousel'` beside a list of
+   * images, and nothing ever read either of them.
+   *
+   * It is a row and not a slide inside one, because a hero can have an action. A slide could only
+   * have stored an `href`, and a hero pointing at `/lessari/blusas` would be a dead link the day
+   * that category was renamed — which is the exact failure `5639c47` deleted a table over. As a
+   * row it points by foreign key and the address is built from the slug the target has now.
+   */
+  | "HERO"
   /** A poster in the body of the page — full width, two across or three across. */
   | "BANNER"
   /** A heading and a line under it. Nothing else: it is a sign, not a card. */
   | "TEXT"
   /** The band of promises: an icon, a title and a line, per row. */
   | "BENEFITS"
+  /**
+   * The shop's categories as a grid of cards.
+   *
+   * Its own kind rather than a switch on the products block, because the shopkeeper asked to be
+   * able to show both, one, or neither — and "both" is not a setting, it is two blocks.
+   */
+  | "CATEGORIES"
   /**
    * The product rails. Exactly one per shop and it cannot be deleted — a landing page without
    * what the shop sells is not an arrangement anyone wants. It is a row like the others so that
@@ -44,9 +63,9 @@ export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
 /**
  * Edge to edge, or inside the page's measure.
  *
- * Only the cover has the choice, and only because it is the one block that ever bled to the edges:
- * every other band on the shop window already sits inside `BAND`. A shopkeeper asked for "full
- * como é hoje ou mais centralizado", and this is those two words.
+ * Only a hero has the choice, and only because it is the one block that ever bled to the edges:
+ * every other band on the shop window already sits inside the page's measure. A shopkeeper asked
+ * for "full como é hoje ou mais centralizado", and this is those two words.
  */
 export type SectionWidth = "FULL" | "CONTAINED";
 
@@ -71,23 +90,6 @@ export type SectionWidth = "FULL" | "CONTAINED";
 export type SectionTarget = "CATEGORY" | "PRODUCT" | "EXTERNAL" | "NONE";
 
 /**
- * One slide of a cover.
- *
- * A cover with one of these is a picture; with several it is a carousel. There is no `carousel`
- * switch to disagree with the number of slides — the shape a block takes is read off what it
- * holds, which is one fewer thing that can be wrong. `layoutSettings.bannerType` used to be that
- * switch and nothing ever read it.
- */
-export interface CoverSlide {
-  id: string;
-  imageUrl: string;
-  /** Read instead of the picture. Empty is a decorative slide, which most covers are. */
-  alt?: string | null;
-  /** Where the slide goes. Null is a picture that is not a link. */
-  href?: string | null;
-}
-
-/**
  * One promise in the band under the cover.
  *
  * `icon` is a name from a closed table, never a URL and never a component — the same rule
@@ -109,7 +111,7 @@ export interface BenefitRow {
  * blob is invisible — sixteen of its twenty-one survived that way. An `items` nobody reads is a
  * blank band on the shop's front page, reported the same day.
  */
-export type SectionItem = CoverSlide | BenefitRow;
+export type SectionItem = BenefitRow;
 
 /**
  * A block as a visitor is served it: already resolved, so the storefront never joins anything.
@@ -125,14 +127,14 @@ export interface PublicSection {
   /** Null on a block that draws no heading, and on a `PRODUCTS` row using the shop's own words. */
   title: string | null;
   subtitle: string | null;
-  /** Null on `TEXT`, `BENEFITS` and `PRODUCTS`, which draw no picture of their own. */
+  /** Null on every kind that draws no picture of its own. */
   imageUrl: string | null;
   layout: ShowcaseLayout;
   width: SectionWidth;
   /** Null when the block goes nowhere. The window then draws a poster rather than a link. */
   href: string | null;
   external: boolean;
-  /** The cover's slides, or the band's rows. Empty on every other kind. */
+  /** The promises band's rows. Empty on every other kind. */
   items: SectionItem[];
 }
 

@@ -29,6 +29,10 @@ export interface SectionEditorScreenProps {
 /** Wire nulls become `""`, because a select and an input cannot hold null. */
 function toForm(banner: Section): SectionFormValues {
   return {
+    // The kind IS where it lives. The form asks the question in the shopkeeper's words — top of
+    // the page, or body — and the screen turns the answer back into the kind.
+    placement: banner.kind === "HERO" ? "HERO" : "BANNER",
+    width: banner.width,
     title: banner.title ?? "",
     subtitle: banner.subtitle ?? "",
     imageUrl: banner.imageUrl ?? "",
@@ -51,10 +55,11 @@ function toForm(banner: Section): SectionFormValues {
  */
 function toPayload(value: SectionFormValues): CreateSectionPayload {
   return {
-    // This screen writes posters. The cover, the promises band and the heading are blocks too, but
-    // each wants different fields, and one form that grew a branch per kind is the form nobody can
-    // read. They arrive with their own screens.
-    kind: "BANNER",
+    // This screen writes banners, and where one lives is the kind it is. The promises band, the
+    // heading and the category grid are blocks too, but each wants different fields — one form
+    // that grew a branch per kind is the form nobody can read. They arrive with their own screens.
+    kind: value.placement,
+    width: value.width,
     title: value.title.trim(),
     subtitle: value.subtitle.trim() || null,
     imageUrl: value.imageUrl,

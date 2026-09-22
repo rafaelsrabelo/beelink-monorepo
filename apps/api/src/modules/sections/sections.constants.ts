@@ -12,10 +12,11 @@ export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies 
  * reader has to be able to see the whole list without opening the contract.
  */
 export const SECTION_KINDS = [
-  'COVER',
+  'HERO',
   'BANNER',
   'TEXT',
   'BENEFITS',
+  'CATEGORIES',
   'PRODUCTS',
 ] as const satisfies readonly SectionKind[];
 
@@ -25,11 +26,12 @@ export const SECTION_WIDTHS = ['FULL', 'CONTAINED'] as const satisfies readonly 
 /**
  * The kinds a shop may have exactly one of.
  *
- * Two runs of products is not an arrangement, it is a bug the shopkeeper meets on the live page;
- * two covers is a page with two tops. They are also the two the shopkeeper never creates and never
- * deletes — the migration made them, and design mode only ever hides or moves them.
+ * Just the one, now. Two runs of products is not an arrangement, it is a bug the shopkeeper meets
+ * on the live page. A hero used to be here beside it, back when a cover was a block with slides
+ * inside — a second cover would have been a page with two tops. A hero is a banner now, and two
+ * of them in a row is a carousel, which is the thing the shopkeeper asked for.
  */
-export const SINGLETON_SECTION_KINDS = ['COVER', 'PRODUCTS'] as const satisfies readonly SectionKind[];
+export const SINGLETON_SECTION_KINDS = ['PRODUCTS'] as const satisfies readonly SectionKind[];
 
 /**
  * Where a banner may point. See the SectionTarget enum for why two of the four are foreign keys.

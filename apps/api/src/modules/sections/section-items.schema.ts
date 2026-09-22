@@ -2,7 +2,7 @@
 import { z } from 'zod';
 
 // Types
-import type { BenefitRow, CoverSlide, SectionItem, SectionKind } from '@harness-monorepo/contracts';
+import type { BenefitRow, SectionItem, SectionKind } from '@harness-monorepo/contracts';
 
 // App
 import { SECTION_URL_MAX_LENGTH } from './sections.constants.js';
@@ -20,18 +20,6 @@ import { SECTION_URL_MAX_LENGTH } from './sections.constants.js';
  * content**. A key nobody reads in `layoutSettings` is invisible, which is how sixteen of its
  * twenty-one survived unread. A slide nobody draws is a blank cover on the shop's front page.
  */
-
-const coverSlide = z.strictObject({
-  id: z.string().min(1).max(64),
-  imageUrl: z.url({ protocol: /^https?$/ }).max(SECTION_URL_MAX_LENGTH),
-  alt: z.string().max(200).nullish(),
-  /**
-   * Where the slide goes. A plain URL and not a target with a foreign key, unlike the block's own:
-   * a slide is not a row, so there is nothing for a cascade to hang off, and a carousel pointing
-   * at five different categories would need five joins on the page a stranger asks for first.
-   */
-  href: z.url({ protocol: /^https?$/ }).max(SECTION_URL_MAX_LENGTH).nullish(),
-}) satisfies z.ZodType<CoverSlide>;
 
 const benefitRow = z.strictObject({
   id: z.string().min(1).max(64),
@@ -51,11 +39,16 @@ const benefitRow = z.strictObject({
  * items are — even if the answer is "none", which is what the three below say.
  */
 const ITEMS_OF = {
-  COVER: z.array(coverSlide).max(20),
   BENEFITS: z.array(benefitRow).max(12),
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
+  //
+  // A hero is on this side of the line, and that is the change a slide could not survive: it keeps
+  // its picture in `imageUrl` and its destination in a foreign key, like the banner it is. Two
+  // heroes in a row are a carousel because there are two of them, not because a column said so.
+  HERO: z.array(z.never()).length(0),
   BANNER: z.array(z.never()).length(0),
   TEXT: z.array(z.never()).length(0),
+  CATEGORIES: z.array(z.never()).length(0),
   PRODUCTS: z.array(z.never()).length(0),
 } as const satisfies Record<SectionKind, z.ZodType>;
 

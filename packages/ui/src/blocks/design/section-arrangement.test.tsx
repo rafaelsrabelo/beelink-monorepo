@@ -8,7 +8,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { SectionArrangement, type ArrangementItem } from "./section-arrangement"
 
 const items: ArrangementItem[] = [
-  { id: "1", kind: "COVER", title: null, imageUrl: "/cover.jpg", layout: "FULL", isActive: true },
+  { id: "1", kind: "HERO", title: null, imageUrl: "/cover.jpg", layout: "FULL", isActive: true },
   { id: "2", kind: "BANNER", title: "Frete grátis", imageUrl: "/b.jpg", layout: "HALVES", isActive: false },
   { id: "3", kind: "PRODUCTS", title: null, imageUrl: null, layout: "FULL", isActive: true },
 ]
@@ -37,7 +37,7 @@ describe("SectionArrangement", () => {
 
     // Three rows reading "Sem título" would say which blocks are unfinished and nothing about
     // which is which — the one question a list of blocks exists to answer.
-    expect(screen.getByRole("button", { name: "Arrastar: Capa" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Arrastar: Banner de topo" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Arrastar: Lista de produtos" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Arrastar: Frete grátis" })).toBeInTheDocument()
   })
@@ -45,7 +45,7 @@ describe("SectionArrangement", () => {
   it("names every control after the block it acts on", () => {
     renderList()
 
-    expect(screen.getByRole("button", { name: "Esconder da loja: Capa" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Esconder da loja: Banner de topo" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Mostrar na loja: Frete grátis" })).toBeInTheDocument()
   })
 
@@ -55,7 +55,7 @@ describe("SectionArrangement", () => {
     // "How wide" is a question about a poster. A cover is as wide as its own `width` says and the
     // product rails are as wide as the page; offering the choice would change nothing.
     expect(screen.getByRole("combobox", { name: "Tamanho: Frete grátis" })).toBeInTheDocument()
-    expect(screen.queryByRole("combobox", { name: /Capa/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("combobox", { name: /Banner de topo/ })).not.toBeInTheDocument()
     expect(screen.queryByRole("combobox", { name: /Lista de produtos/ })).not.toBeInTheDocument()
   })
 
@@ -71,7 +71,7 @@ describe("SectionArrangement", () => {
     const user = userEvent.setup()
     const { onToggle } = renderList()
 
-    await user.click(screen.getByRole("button", { name: "Esconder da loja: Capa" }))
+    await user.click(screen.getByRole("button", { name: "Esconder da loja: Banner de topo" }))
 
     expect(onToggle).toHaveBeenCalledWith("1", false)
   })

@@ -7,7 +7,7 @@ import { SectionArrangement, type ArrangementItem } from "./section-arrangement"
 const items: ArrangementItem[] = [
   {
     id: "1",
-    kind: "COVER",
+    kind: "HERO",
     title: null,
     imageUrl: "https://picsum.photos/seed/arrange-cover/240/120",
     layout: "FULL",
