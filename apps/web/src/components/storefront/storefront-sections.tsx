@@ -2,7 +2,12 @@
 import type { ReactNode } from "react"
 
 // Types
-import type { BenefitRow, PublicProductCategory, PublicSection } from "@harness-monorepo/contracts"
+import type {
+  BenefitRow,
+  PublicHeroSlide,
+  PublicProductCategory,
+  PublicSection,
+} from "@harness-monorepo/contracts"
 
 // UI
 import { BenefitIcon } from "@harness-monorepo/ui/blocks/design/benefit-icons"
@@ -57,8 +62,8 @@ export interface StorefrontSectionsProps {
  * nothing. Consecutive heroes become one carousel, which is the whole of how a carousel is made:
  * there is no switch, only a count.
  */
-function runOf(section: PublicSection): "BANNER" | "HERO" | null {
-  return section.kind === "BANNER" || section.kind === "HERO" ? section.kind : null
+function runOf(section: PublicSection): "BANNER" | null {
+  return section.kind === "BANNER" ? section.kind : null
 }
 
 /**
@@ -138,23 +143,18 @@ export function StorefrontSections({
 
         const body =
           first.kind === "HERO" ? (
-            // One is a cover, more than one is a carousel — the group is the answer.
+            // One picture is a cover; several are a carousel. One block either way, which is what
+            // it looks like on the page — heroes used to be a row each, and making a carousel
+            // meant creating two banners and hoping they stayed adjacent.
             <StorefrontHero
-              items={group.map((section) => ({
-                id: section.id,
-                imageUrl: section.imageUrl ?? "",
-                title: section.title,
-                subtitle: section.subtitle,
-                href: section.href,
-                external: section.external,
-                // Each hero carries its own grip. One handle for the whole carousel would have
-                // been bound to the first slide's id, so dragging "the carousel" would move one
-                // hero out of it and split the group — a gesture that does the opposite of what
-                // it looks like.
-                ...(renderBlock ? { wrap: (card: ReactNode) => renderBlock(section, card) } : {}),
+              items={(first.items as PublicHeroSlide[]).map((slide) => ({
+                id: slide.id,
+                imageUrl: slide.imageUrl,
+                title: slide.title,
+                subtitle: slide.subtitle,
+                href: slide.href,
+                external: slide.external,
               }))}
-              // The first hero's width decides the group's, because a carousel is one band and a
-              // band has one width. Stated here because the form lets every hero answer.
               width={first.width}
               {...link}
               messages={messages}
@@ -228,8 +228,7 @@ export function StorefrontSections({
         // hero re-keys the surviving group, React remounts it, and Embla jumps back to slide one.
         const key = group.map((section) => section.id).join("+")
 
-        // A hero group wraps each of its own members, so it must not be wrapped again as a whole.
-        const wrapped = renderBlock && first.kind !== "HERO" ? renderBlock(first, body) : body
+        const wrapped = renderBlock ? renderBlock(first, body) : body
 
         return <div key={key}>{wrapped}</div>
       })}

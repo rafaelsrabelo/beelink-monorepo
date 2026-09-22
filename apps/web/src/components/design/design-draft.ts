@@ -1,5 +1,12 @@
 // Types
-import type { PublicSection, Section, SectionKind, ShowcaseLayout } from "@harness-monorepo/contracts"
+import type {
+  HeroSlide,
+  PublicSection,
+  PublicSectionItem,
+  Section,
+  SectionKind,
+  ShowcaseLayout,
+} from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 /**
@@ -109,7 +116,24 @@ export function previewOf(rows: readonly Draft[], saved: readonly Section[]): Pu
         // so the saved answer is still the right one.
         href: null,
         external: was?.target === "EXTERNAL",
-        items: was?.items ?? [],
+        /*
+          A hero's slides arrive from the panel carrying ids, and the shop window is served them
+          carrying addresses. The preview builds the second shape from the first with no address
+          at all, and loses nothing by it: every link in the preview is inert by construction —
+          the pane renders an href-less anchor and swallows the click. The picture, the words and
+          the order are what is being arranged, and all three are here.
+        */
+        items:
+          row.kind === "HERO"
+            ? ((was?.items ?? []) as HeroSlide[]).map((slide) => ({
+                id: slide.id,
+                imageUrl: slide.imageUrl,
+                title: slide.title ?? null,
+                subtitle: slide.subtitle ?? null,
+                href: null,
+                external: false,
+              }))
+            : ((was?.items ?? []) as PublicSectionItem[]),
       } satisfies PublicSection
     })
 }

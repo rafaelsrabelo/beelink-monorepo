@@ -45,6 +45,8 @@ function build(
       findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER' }),
       update: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
         id: 'section-1',
+        kind: found.kind ?? 'BANNER',
+        items: [],
         title: 'Promoção',
         subtitle: null,
         imageUrl: base.imageUrl,
@@ -212,5 +214,49 @@ describe('SectionsService — where a block points', () => {
     const data = (prisma.storeSection.update as unknown as { mock: { calls: [{ data: object }][] } }).mock
       .calls[0][0].data;
     expect(data).toEqual({ title: 'Outro título' });
+  });
+});
+
+describe('SectionsService — what a block may hold', () => {
+  it('refuses a hero slide with no picture', async () => {
+    const { service } = build({ kind: 'HERO' });
+
+    await expect(
+      service.update('lessari', 'user-1', 'section-1', { items: [{ id: 'x', target: 'NONE' }] as never }),
+    ).rejects.toThrow();
+  });
+
+  // `@IsArray()` proves only that it is a list. What is inside depends on the kind, and the union
+  // was a validator nobody ran until this call site existed.
+  it('refuses a slide that names a destination it does not carry', async () => {
+    const { service } = build({ kind: 'HERO' });
+
+    await expect(
+      service.update('lessari', 'user-1', 'section-1', {
+        items: [{ id: 'x', imageUrl: 'https://img/x.jpg', target: 'CATEGORY' }] as never,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('takes a slide that carries what it names', async () => {
+    const { service } = build({ kind: 'HERO' });
+
+    await expect(
+      service.update('lessari', 'user-1', 'section-1', {
+        items: [
+          { id: 'x', imageUrl: 'https://img/x.jpg', target: 'EXTERNAL', externalUrl: 'https://wa.me/55' },
+        ] as never,
+      }),
+    ).resolves.toBeDefined();
+  });
+
+  it('refuses items on a kind that holds none', async () => {
+    const { service } = build({ kind: 'TEXT' });
+
+    await expect(
+      service.update('lessari', 'user-1', 'section-1', {
+        items: [{ id: 'x', imageUrl: 'https://img/x.jpg', target: 'NONE' }] as never,
+      }),
+    ).rejects.toThrow();
   });
 });

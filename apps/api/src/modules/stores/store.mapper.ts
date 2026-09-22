@@ -7,7 +7,13 @@ import type {
 import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
 
 // App
-import { sectionInclude, toPublicSection, type SectionRow } from '../sections/sections.mapper.js';
+import {
+  NO_SLUGS,
+  sectionInclude,
+  toPublicSection,
+  type SectionRow,
+  type SlugsByEntity,
+} from '../sections/sections.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 
@@ -53,7 +59,14 @@ export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
  * are absent by construction rather than by a `select` somebody has to remember: this shape is what
  * ends up in Google's index, so a field is added here only on purpose.
  */
-export function toPublicStore(row: StoreRow): PublicStore {
+/**
+ * `slugs` carries what the hero's slides point at, looked up once for the whole shop.
+ *
+ * Defaulted to nothing rather than required, and that is the safe default: a call site that has
+ * not looked them up gets slides that are pictures instead of links. The alternative — guessing —
+ * would put a wrong address on the page a stranger asked for.
+ */
+export function toPublicStore(row: StoreRow, slugs: SlugsByEntity = NO_SLUGS): PublicStore {
   return {
     id: row.id,
     slug: row.slug,
@@ -85,14 +98,16 @@ export function toPublicStore(row: StoreRow): PublicStore {
     paymentMethods: row.paymentMethods,
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
-    sections: row.sections.map((section) => toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary])),
+    sections: row.sections.map((section) =>
+      toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary], slugs),
+    ),
   } satisfies PublicStore;
 }
 
 /** The shop as its owner sees it: the public shape plus what only the owner may read. */
-export function toStore(row: StoreRow): WireStore {
+export function toStore(row: StoreRow, slugs: SlugsByEntity = NO_SLUGS): WireStore {
   return {
-    ...toPublicStore(row),
+    ...toPublicStore(row, slugs),
     ownerId: row.ownerId,
     address: {
       street: row.addressStreet,

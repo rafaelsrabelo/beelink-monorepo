@@ -7,7 +7,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 // Types
-import type { CreateSectionPayload, Section } from "@harness-monorepo/contracts"
+import type { CreateSectionPayload, HeroSlide, Section } from "@harness-monorepo/contracts"
 
 // UI
 import { SectionForm, EMPTY_BANNER, type SectionFormValues } from "@harness-monorepo/ui/blocks/sections/section-form"
@@ -106,9 +106,56 @@ export function SectionEditorScreen({ slug, sectionId, messages }: SectionEditor
   const list = `/admin/${slug}/sections`
   const back = () => router.push(list as Parameters<typeof router.push>[0])
 
+  /**
+   * A slide, built from the same fields a poster uses.
+   *
+   * The target travels as an **id** here and as a slug everywhere else, and that is the one place
+   * this form has to translate. A slide lives in JSON, so there is no foreign key to hang the slug
+   * resolution off — the API looks the id up on the way out, which is what keeps a slide pointing
+   * at a category that gets renamed.
+   */
+  function toSlide(): HeroSlide {
+    const category = categories.data?.find((row) => row.slug === value.categorySlug)
+    const product = products.data?.products.find((row) => row.slug === value.productSlug)
+
+    return {
+      id: existing?.id ?? crypto.randomUUID(),
+      imageUrl: value.imageUrl,
+      title: value.title.trim() || null,
+      subtitle: value.subtitle.trim() || null,
+      target: value.target,
+      categoryId: value.target === "CATEGORY" ? (category?.id ?? null) : null,
+      productId: value.target === "PRODUCT" ? (product?.id ?? null) : null,
+      externalUrl: value.target === "EXTERNAL" ? value.externalUrl.trim() : null,
+    }
+  }
+
+  /**
+   * Saving a top banner adds a picture to the shop's hero, rather than making a second one.
+   *
+   * This is the shopkeeper's own model, and they were right about it: a carousel is one block
+   * holding several pictures. It used to be several blocks standing next to each other, and making
+   * one meant creating two banners and hoping they stayed adjacent — confusing to do, and
+   * confusing to read in a list that showed two entries for one thing on the page.
+   */
   function save() {
-    const payload = toPayload(value)
     const done = { onSuccess: back }
+
+    if (value.placement === "HERO") {
+      const hero = banners.data?.find((row) => row.kind === "HERO")
+      const slide = toSlide()
+
+      if (!hero) {
+        create.mutate({ kind: "HERO", width: value.width, items: [slide] }, done)
+        return
+      }
+
+      const slides = (hero.items as HeroSlide[]).filter((one) => one.id !== slide.id)
+      update.mutate({ sectionId: hero.id, payload: { width: value.width, items: [...slides, slide] } }, done)
+      return
+    }
+
+    const payload = toPayload(value)
 
     if (sectionId) update.mutate({ sectionId, payload }, done)
     else create.mutate(payload, done)

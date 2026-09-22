@@ -1,8 +1,5 @@
 "use client"
 
-// React
-import type { ReactNode } from "react"
-
 // UI
 import {
   Carousel,
@@ -30,13 +27,6 @@ export interface StorefrontHeroItem {
   /** Already resolved by the API from the slug the target has now. Null goes nowhere. */
   href?: string | null
   external?: boolean
-  /**
-   * Wraps this one slide. Design mode puts a grip on it; the shop passes nothing.
-   *
-   * Per slide and not per carousel, because a grip bound to the group would carry the first
-   * slide's id — dragging it would pull that one hero out and split the carousel.
-   */
-  wrap?: (card: ReactNode) => ReactNode
 }
 
 export interface StorefrontHeroProps {
@@ -79,7 +69,6 @@ export function StorefrontHero({
   const frame = cn("w-full object-cover", "h-44 sm:h-72 lg:h-96", width === "CONTAINED" && "rounded-2xl")
 
   function one(item: StorefrontHeroItem) {
-    const wrap = item.wrap ?? ((card: ReactNode) => card)
     const picture = (
       <>
         <img
@@ -118,8 +107,7 @@ export function StorefrontHero({
 
     const shape = cn("group relative block w-full overflow-hidden", width === "CONTAINED" && "rounded-2xl")
 
-    return wrap(
-      item.href ? (
+    return item.href ? (
       <Link
         href={item.href}
         className={shape}
@@ -135,7 +123,6 @@ export function StorefrontHero({
       </Link>
     ) : (
       <div className={shape}>{picture}</div>
-      ),
     )
   }
 

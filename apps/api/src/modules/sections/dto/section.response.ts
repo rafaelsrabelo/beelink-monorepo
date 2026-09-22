@@ -4,6 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 // Types
 import type {
   Section,
+  PublicSectionItem,
   SectionItem,
   SectionKind,
   SectionTarget,
@@ -26,13 +27,13 @@ export class PublicSectionResponse implements PublicSection {
   @ApiProperty({ nullable: true, type: String }) subtitle!: string | null;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({ enum: SHOWCASE_LAYOUTS }) layout!: ShowcaseLayout;
-  @ApiProperty({ enum: SECTION_WIDTHS, description: 'Read only on COVER.' }) width!: SectionWidth;
+  @ApiProperty({ enum: SECTION_WIDTHS, description: 'Read only on HERO.' }) width!: SectionWidth;
   @ApiProperty({
     type: 'array',
     items: { type: 'object', additionalProperties: true },
-    description: "A COVER's slides, or a BENEFITS band's rows. Empty on every other kind.",
+    description: "A HERO's slides or a BENEFITS band's rows. Empty on every other kind.",
   })
-  items!: SectionItem[];
+  items!: PublicSectionItem[];
   @ApiProperty({
     nullable: true,
     type: String,
@@ -50,11 +51,11 @@ export class SectionResponse implements Section {
   @ApiProperty({ nullable: true, type: String }) subtitle!: string | null;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({ enum: SHOWCASE_LAYOUTS }) layout!: ShowcaseLayout;
-  @ApiProperty({ enum: SECTION_WIDTHS, description: 'Read only on COVER.' }) width!: SectionWidth;
+  @ApiProperty({ enum: SECTION_WIDTHS, description: 'Read only on HERO.' }) width!: SectionWidth;
   @ApiProperty({
     type: 'array',
     items: { type: 'object', additionalProperties: true },
-    description: "A COVER's slides, or a BENEFITS band's rows. Empty on every other kind.",
+    description: "A HERO's slides, with their ids, or a BENEFITS band's rows.",
   })
   items!: SectionItem[];
   @ApiProperty({ enum: SECTION_TARGETS }) target!: SectionTarget;

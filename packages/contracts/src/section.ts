@@ -98,6 +98,56 @@ export type SectionWidth = "FULL" | "CONTAINED";
 export type SectionTarget = "CATEGORY" | "PRODUCT" | "EXTERNAL" | "NONE";
 
 /**
+ * One picture in the hero at the top of the page.
+ *
+ * A slide and not a row of its own, and that is a decision reversed on purpose. Each hero used to
+ * be its own row, and two of them side by side made a carousel — no switch, the shape read off the
+ * count. The shopkeeper tried it and was right about it: making a carousel meant creating two
+ * banners and hoping they stayed adjacent, and the editor showed two entries for one thing on the
+ * page. A carousel is one block holding several pictures, which is what it looks like.
+ *
+ * **The target is stored as an id, never as an address**, which is what makes that reversal safe.
+ * The objection to slides was that one could only hold an `href`, so a slide pointing at
+ * `/lessari/blusas` would die the day that category was renamed — the failure `5639c47` deleted a
+ * table over. An id resolved at read time has none of that: the address is built from the slug the
+ * target has now, exactly as a foreign key would.
+ *
+ * What it gives up is the foreign key's cascade, and the trade is in this shape's favour. A
+ * deleted category used to take the whole banner with it; a dangling id here resolves to null and
+ * the slide simply stops being a link. The picture stays on the page.
+ */
+export interface HeroSlide {
+  id: string;
+  imageUrl: string;
+  /** Written over the picture. Often absent: a hero is usually a photograph with words in it. */
+  title?: string | null;
+  subtitle?: string | null;
+  target: SectionTarget;
+  /** Set when `target` is `CATEGORY`. The row's id, resolved to an address on the way out. */
+  categoryId?: string | null;
+  /** Set when `target` is `PRODUCT`. */
+  productId?: string | null;
+  /** Set when `target` is `EXTERNAL`. `http`/`https` only. */
+  externalUrl?: string | null;
+}
+
+/**
+ * A slide as a visitor is served it: the address already built, the ids left behind.
+ *
+ * The public shape carries no `categoryId`, and that is not tidiness — `PublicStore` is served to
+ * anyone who asks, and a uuid on it is a row's identity handed to a stranger for nothing.
+ */
+export interface PublicHeroSlide {
+  id: string;
+  imageUrl: string;
+  title: string | null;
+  subtitle: string | null;
+  /** Null when the slide goes nowhere, or when what it pointed at is gone. */
+  href: string | null;
+  external: boolean;
+}
+
+/**
  * One promise in the band under the cover.
  *
  * `icon` is a name from a closed table, never a URL and never a component — the same rule
@@ -119,7 +169,10 @@ export interface BenefitRow {
  * blob is invisible — sixteen of its twenty-one survived that way. An `items` nobody reads is a
  * blank band on the shop's front page, reported the same day.
  */
-export type SectionItem = BenefitRow;
+export type SectionItem = BenefitRow | HeroSlide;
+
+/** What a visitor is served: the hero's slides already resolved, the band's rows as written. */
+export type PublicSectionItem = BenefitRow | PublicHeroSlide;
 
 /**
  * A block as a visitor is served it: already resolved, so the storefront never joins anything.
@@ -142,8 +195,8 @@ export interface PublicSection {
   /** Null when the block goes nowhere. The window then draws a poster rather than a link. */
   href: string | null;
   external: boolean;
-  /** The promises band's rows. Empty on every other kind. */
-  items: SectionItem[];
+  /** The hero's slides or the promises band's rows. Empty on every other kind. */
+  items: PublicSectionItem[];
 }
 
 /**
@@ -223,4 +276,6 @@ export type SectionErrorCode =
    * fields. Nothing else changes kind: a products row patched into a banner would take the shop's
    * shelves off its own landing page, and the shopkeeper would find out by looking.
    */
-  | "SECTION_KIND_IMMUTABLE";
+  | "SECTION_KIND_IMMUTABLE"
+  /** The block's content does not fit what its kind holds — a slide with no picture, say. */
+  | "SECTION_ITEMS_INVALID";

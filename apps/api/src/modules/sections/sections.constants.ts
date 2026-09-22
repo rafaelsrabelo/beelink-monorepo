@@ -27,12 +27,13 @@ export const SECTION_WIDTHS = ['FULL', 'CONTAINED'] as const satisfies readonly 
 /**
  * The kinds a shop may have exactly one of.
  *
- * Just the one, now. Two runs of products is not an arrangement, it is a bug the shopkeeper meets
- * on the live page. A hero used to be here beside it, back when a cover was a block with slides
- * inside — a second cover would have been a page with two tops. A hero is a banner now, and two
- * of them in a row is a carousel, which is the thing the shopkeeper asked for.
+ * Two runs of products is not an arrangement, it is a bug the shopkeeper meets on the live page,
+ * and two heroes is a page with two tops. A hero was briefly not on this list, back when each one
+ * was its own row and two adjacent rows drew a carousel — the shopkeeper tried that and it was
+ * confusing both to make and to read. A carousel is one hero holding several pictures now, so
+ * adding a top banner adds a picture to the one that exists.
  */
-export const SINGLETON_SECTION_KINDS = ['ANNOUNCEMENT', 'PRODUCTS'] as const satisfies readonly SectionKind[];
+export const SINGLETON_SECTION_KINDS = ['ANNOUNCEMENT', 'HERO', 'PRODUCTS'] as const satisfies readonly SectionKind[];
 
 /**
  * The two kinds that are the same block in two places.

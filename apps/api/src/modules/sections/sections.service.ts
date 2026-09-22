@@ -9,6 +9,7 @@ import type { ReorderDto } from '../catalog/dto/reorder.dto.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
+import { sectionItemsFor } from './section-items.schema.js';
 import { PLACEMENT_SECTION_KINDS } from './sections.constants.js';
 import { sectionInclude, toSection } from './sections.mapper.js';
 
@@ -53,6 +54,8 @@ export class SectionsService {
     // rearrange a page the shopkeeper had already arranged.
     const last = await this.prisma.storeSection.aggregate({ where: { storeId }, _max: { position: true } });
 
+    const items = this.checkedItems(dto.kind, dto.items);
+
     const row = await this.prisma.storeSection.create({
       data: {
         storeId,
@@ -62,7 +65,8 @@ export class SectionsService {
         imageUrl: dto.imageUrl ?? null,
         ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
         ...(dto.width !== undefined ? { width: dto.width } : {}),
-        items: (dto.items ?? []) as object[],
+        ...(items === undefined ? {} : { items }),
+        items,
         ...target,
         position: (last._max.position ?? -1) + 1,
         isActive: dto.isActive ?? true,
@@ -114,6 +118,8 @@ export class SectionsService {
         );
       }
     }
+
+    const items = dto.items === undefined ? undefined : this.checkedItems(dto.kind ?? currentKind, dto.items);
 
     const row = await this.prisma.storeSection.update({
       where: { id: sectionId },
@@ -228,6 +234,26 @@ export class SectionsService {
   }
 
   /** A banner that exists but belongs to another shop answers 404: this shop does not have one. */
+  /**
+   * The items, checked against the shape this kind allows.
+   *
+   * `@IsArray()` on the DTO proves only that it is a list; what is inside depends on the kind, and
+   * a discriminated union is what states that once. Without this call the union was a validator
+   * nobody ran — the same "declared and never read" that sixteen `layoutSettings` keys already
+   * are, and the reason a slide with no picture would have reached the database.
+   */
+  private checkedItems(kind: SectionKind, items: unknown): object[] {
+    const parsed = sectionItemsFor(kind).safeParse(items ?? []);
+
+    if (!parsed.success) {
+      throw new BadRequestException(
+        sectionError('SECTION_ITEMS_INVALID', parsed.error.issues[0]?.message ?? 'Conteúdo do bloco inválido'),
+      );
+    }
+
+    return parsed.data as object[];
+  }
+
   /** Returns the kind it found, so a caller that has to reason about it needs no second read. */
   private async owned(storeId: string, sectionId: string): Promise<SectionKind> {
     const row = await this.prisma.storeSection.findUnique({

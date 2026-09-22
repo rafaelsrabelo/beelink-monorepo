@@ -10,6 +10,12 @@ import type { StoreRow } from './store.mapper.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
+import {
+  NO_SLUGS,
+  slideTargetsOf,
+  type SectionRow,
+  type SlugsByEntity,
+} from '../sections/sections.mapper.js';
 import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
 import { RESERVED_SLUGS } from './stores.constants.js';
 
@@ -94,7 +100,7 @@ export class StoresService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return rows.map(toStore);
+    return rows.map((row) => toStore(row));
   }
 
   async bySlug(slug: string, userId: string): Promise<Store> {
@@ -185,7 +191,44 @@ export class StoresService {
     const row = await this.prisma.store.findUnique({ where: { slug }, include: storeInclude });
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
 
-    return toPublicStore(row);
+    return toPublicStore(row, await this.slideSlugs(row.sections));
+  }
+
+  /**
+   * What the hero's slides point at, in one round trip for the whole shop.
+   *
+   * A slide keeps an id rather than an address, so renaming a category moves the slide with it —
+   * the promise a foreign key makes, without the foreign key, because `items` is JSON. Two `IN`
+   * queries and no join: a carousel is capped at twenty slides, and this is the page a stranger
+   * asks for first.
+   *
+   * Nothing is thrown when an id resolves to nothing. It simply is not in the map, the mapper
+   * builds no address, and the slide is a picture rather than a broken link.
+   */
+  private async slideSlugs(sections: SectionRow[]): Promise<SlugsByEntity> {
+    const { categoryIds, productIds } = slideTargetsOf(sections);
+
+    if (!categoryIds.length && !productIds.length) return NO_SLUGS;
+
+    const [categories, products] = await Promise.all([
+      categoryIds.length
+        ? this.prisma.productCategory.findMany({
+            where: { id: { in: categoryIds } },
+            select: { id: true, slug: true },
+          })
+        : [],
+      productIds.length
+        ? this.prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, slug: true },
+          })
+        : [],
+    ]);
+
+    return {
+      categories: new Map(categories.map((row) => [row.id, row.slug])),
+      products: new Map(products.map((row) => [row.id, row.slug])),
+    };
   }
 
   /**

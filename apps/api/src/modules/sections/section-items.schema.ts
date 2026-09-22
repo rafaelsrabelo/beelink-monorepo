@@ -2,7 +2,7 @@
 import { z } from 'zod';
 
 // Types
-import type { BenefitRow, SectionItem, SectionKind } from '@harness-monorepo/contracts';
+import type { BenefitRow, HeroSlide, SectionItem, SectionKind } from '@harness-monorepo/contracts';
 
 // App
 import { SECTION_URL_MAX_LENGTH } from './sections.constants.js';
@@ -21,6 +21,33 @@ import { SECTION_URL_MAX_LENGTH } from './sections.constants.js';
  * twenty-one survived unread. A slide nobody draws is a blank cover on the shop's front page.
  */
 
+/**
+ * One slide of the hero, with its destination as an id.
+ *
+ * Exactly one of the three destinations, refined rather than left to a CHECK — `items` is JSON, so
+ * the database cannot hold the rule the way it holds it for a banner's columns. The refinement is
+ * where it lives instead, and it says the same thing: a slide that claims CATEGORY has a category.
+ */
+const heroSlide = z
+  .strictObject({
+    id: z.string().min(1).max(64),
+    imageUrl: z.url({ protocol: /^https?$/ }).max(SECTION_URL_MAX_LENGTH),
+    title: z.string().max(120).nullish(),
+    subtitle: z.string().max(200).nullish(),
+    target: z.enum(['CATEGORY', 'PRODUCT', 'EXTERNAL', 'NONE']),
+    categoryId: z.uuid().nullish(),
+    productId: z.uuid().nullish(),
+    externalUrl: z.url({ protocol: /^https?$/ }).max(SECTION_URL_MAX_LENGTH).nullish(),
+  })
+  .refine(
+    (slide) =>
+      (slide.target === 'CATEGORY' && !!slide.categoryId) ||
+      (slide.target === 'PRODUCT' && !!slide.productId) ||
+      (slide.target === 'EXTERNAL' && !!slide.externalUrl) ||
+      slide.target === 'NONE',
+    { message: 'A slide must carry the destination its target names' },
+  ) satisfies z.ZodType<HeroSlide>;
+
 const benefitRow = z.strictObject({
   id: z.string().min(1).max(64),
   /**
@@ -38,6 +65,9 @@ const benefitRow = z.strictObject({
  * The table, closed with `satisfies`. A sixth kind fails to compile here until it says what its
  * items are — even if the answer is "none", which is what the three below say.
  */
+/** What a block with no items of its own holds, and what an unknown kind falls back to. */
+const NOTHING = z.array(z.never()).length(0);
+
 const ITEMS_OF = {
   BENEFITS: z.array(benefitRow).max(12),
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
@@ -45,17 +75,25 @@ const ITEMS_OF = {
   // A hero is on this side of the line, and that is the change a slide could not survive: it keeps
   // its picture in `imageUrl` and its destination in a foreign key, like the banner it is. Two
   // heroes in a row are a carousel because there are two of them, not because a column said so.
-  ANNOUNCEMENT: z.array(z.never()).length(0),
-  HERO: z.array(z.never()).length(0),
-  BANNER: z.array(z.never()).length(0),
-  TEXT: z.array(z.never()).length(0),
-  CATEGORIES: z.array(z.never()).length(0),
-  PRODUCTS: z.array(z.never()).length(0),
+  ANNOUNCEMENT: NOTHING,
+  // One picture is a cover; several are a carousel. The count is the whole of that decision.
+  HERO: z.array(heroSlide).max(20),
+  BANNER: NOTHING,
+  TEXT: NOTHING,
+  CATEGORIES: NOTHING,
+  PRODUCTS: NOTHING,
 } as const satisfies Record<SectionKind, z.ZodType>;
 
-/** The schema a write is checked against. The kind decides it. */
+/**
+ * The schema a write is checked against. The kind decides it.
+ *
+ * A kind this build does not know — a row written by a newer deploy, read by an older one during
+ * a rollout — falls back to holding nothing rather than to `undefined`. Without the fallback the
+ * read path threw on a landing page a stranger had asked for, which is the one thing
+ * `parseSectionItems` promises never to do. Caught by a service test whose fixture had no kind.
+ */
 export function sectionItemsFor(kind: SectionKind): z.ZodType {
-  return ITEMS_OF[kind];
+  return ITEMS_OF[kind] ?? NOTHING;
 }
 
 /**

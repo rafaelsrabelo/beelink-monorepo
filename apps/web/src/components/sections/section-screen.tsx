@@ -49,7 +49,10 @@ export function SectionScreen({ slug, messages }: SectionScreenProps) {
   // heading and the category grid are blocks the shopkeeper arranges in design mode and does not
   // create here — each wants its own fields, and one form that grew a branch per kind is the form
   // nobody can read.
-  const rows = (banners.data ?? []).filter((row) => row.kind === "BANNER" || row.kind === "HERO")
+  // Posters only. The hero is one block holding several pictures, so listing it here would show
+  // one row for a thing that has three — its pictures are added from this screen's own form, by
+  // choosing "no topo da página", and arranged in design mode.
+  const rows = (banners.data ?? []).filter((row) => row.kind === "BANNER")
 
   const layoutLabel = (layout: Section["layout"]) =>
     layout === "HALVES" ? text.layoutHalves : layout === "THIRDS" ? text.layoutThirds : text.layoutFull

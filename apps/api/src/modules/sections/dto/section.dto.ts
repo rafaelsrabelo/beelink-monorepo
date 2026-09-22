@@ -143,6 +143,15 @@ export class UpdateSectionDto implements UpdateSectionPayload {
   @IsIn(SECTION_WIDTHS)
   width?: SectionWidth;
 
+  /**
+   * The whole list, never a patch of it: a hero's slides have an order, and sending one would
+   * leave the API guessing where it goes.
+   */
+  @ApiPropertyOptional({ type: 'array', items: { type: 'object', additionalProperties: true } })
+  @IsOptional()
+  @IsArray()
+  items?: SectionItem[];
+
   @ApiPropertyOptional({ nullable: true, maxLength: SECTION_TITLE_MAX_LENGTH })
   @IsOptional()
   @IsString()
