@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Libs
 import { ArrowRightIcon } from "lucide-react"
 
@@ -28,6 +31,14 @@ export interface StorefrontShowcaseItem {
 export interface StorefrontShowcaseProps {
   items: readonly StorefrontShowcaseItem[]
   linkComponent?: LinkComponent
+  /**
+   * Wraps each card, given the card already built. The design preview uses it to make a poster
+   * draggable where it stands; the shop passes nothing and the cards render as they always have.
+   *
+   * A render prop and not a `draggable` flag, because this block must not learn what dnd-kit is:
+   * it is the shop window, and the editor's chrome reaches it as a prop or not at all.
+   */
+  renderItem?: (item: StorefrontShowcaseItem, card: ReactNode) => ReactNode
 }
 
 /**
@@ -69,7 +80,11 @@ const HEIGHT: Record<StorefrontShowcaseLayout, string> = {
  * Rows are grouped by layout and kept in the shopkeeper's order. Mixing a three-across and a
  * two-across card in one row would make the grid decide their sizes, and the size is the choice.
  */
-export function StorefrontShowcase({ items, linkComponent: Link = AnchorLink }: StorefrontShowcaseProps) {
+export function StorefrontShowcase({
+  items,
+  linkComponent: Link = AnchorLink,
+  renderItem,
+}: StorefrontShowcaseProps) {
   if (!items.length) return null
 
   // Consecutive cards of the same shape become one row. A shopkeeper who alternates gets a row
@@ -151,25 +166,23 @@ export function StorefrontShowcase({ items, linkComponent: Link = AnchorLink }: 
               HEIGHT[row.layout],
             )
 
-            return (
-              <li key={item.id}>
-                {item.href ? (
-                  <Link
-                    href={item.href}
-                    className={shape}
-                    // The pair every outbound anchor in this repository carries. Without the
-                    // `target`, a banner pointing at WhatsApp takes the shop window away with it.
-                    {...(item.external ? { target: "_blank", rel: "noreferrer" } : {})}
-                  >
-                    {body}
-                  </Link>
-                ) : (
-                  // No link, no arrow, and no element pretending to be interactive: a card the
-                  // shopkeeper gave nowhere to go is a poster.
-                  <div className={shape}>{body}</div>
-                )}
-              </li>
+            const card = item.href ? (
+              <Link
+                href={item.href}
+                className={shape}
+                // The pair every outbound anchor in this repository carries. Without the
+                // `target`, a banner pointing at WhatsApp takes the shop window away with it.
+                {...(item.external ? { target: "_blank", rel: "noreferrer" } : {})}
+              >
+                {body}
+              </Link>
+            ) : (
+              // No link, no arrow, and no element pretending to be interactive: a card the
+              // shopkeeper gave nowhere to go is a poster.
+              <div className={shape}>{body}</div>
             )
+
+            return <li key={item.id}>{renderItem ? renderItem(item, card) : card}</li>
           })}
         </ul>
       ))}

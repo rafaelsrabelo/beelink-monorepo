@@ -277,6 +277,37 @@ export interface UiMessages {
   }
   /** The panel's catalogue screens: what a shopkeeper fills in, never what a visitor reads. */
   /** The shop's posters: what the landing page shows above everything it sells. */
+  /** The design mode: the shop drawn on the left, its posters arranged on the right. */
+  design: {
+    title: string
+    description: string
+    empty: string
+    emptyHint: string
+    /** The grip. It names the banner, because a list of "drag" tells a screen reader nothing. */
+    dragHandle: string
+    /** The product bands, as a row in the arrangement. It is dragged like a poster. */
+    productList: string
+    productListHint: string
+    sizeLabel: string
+    sizeFull: string
+    sizeHalves: string
+    sizeThirds: string
+    show: string
+    hide: string
+    /** Said to a screen reader while a banner is being moved. `{name}` and `{position}`. */
+    dragStart: string
+    dragOver: string
+    dragEnd: string
+    dragCancel: string
+    publish: string
+    publishing: string
+    /** Shown while there is something arranged and not yet published. */
+    unpublished: string
+    discard: string
+    /** The browser's own leave-confirmation cannot be worded; this is said on screen instead. */
+    leaveWarning: string
+    previewNotice: string
+  }
   banners: {
     title: string
     description: string

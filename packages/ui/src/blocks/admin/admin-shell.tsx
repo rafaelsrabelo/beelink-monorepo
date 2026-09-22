@@ -43,7 +43,13 @@ export function AdminShell({ header, sidebar, children }: AdminShellProps) {
           here lays out a table for space this element does not have.
         */}
         <main className="bg-shell-content @container/main min-w-0 flex-1 rounded-t-xl px-4 py-5 lg:rounded-tl-none lg:px-6">
-          <div className="mx-auto w-full max-w-[62.375rem]">{children}</div>
+          {/*
+            No measure and no centring here. The shell owns the chrome; how wide a screen wants to
+            be is that screen's business — a table wants the whole column, a form wants a line
+            length someone can read. One cap for both centred every screen inside 998px and left
+            the rest of a wide monitor empty, which is most of it.
+          */}
+          {children}
         </main>
       </div>
     </div>

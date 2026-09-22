@@ -53,6 +53,7 @@ export const ptBR: WebMessages = {
       customers: "Clientes",
       categories: "Categorias",
       banners: "Banners",
+      design: "Modo design",
     },
     home: {
       greeting: "{name}",

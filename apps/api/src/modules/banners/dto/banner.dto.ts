@@ -82,6 +82,14 @@ export class CreateBannerDto implements CreateBannerPayload {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    default: false,
+    description: 'Under the product bands instead of above them.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  belowProducts?: boolean;
 }
 
 /** A patch: a key left out is a column left alone. `target` is the exception — see the service. */
@@ -140,4 +148,12 @@ export class UpdateBannerDto implements UpdateBannerPayload {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    default: false,
+    description: 'Under the product bands instead of above them.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  belowProducts?: boolean;
 }

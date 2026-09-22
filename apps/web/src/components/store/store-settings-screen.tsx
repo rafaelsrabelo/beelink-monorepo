@@ -60,7 +60,7 @@ export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps)
   const current = store.data
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex w-full max-w-5xl flex-col gap-4">
       {update.isSuccess ? (
         <p role="status" className="text-sm text-muted-foreground">
           {web.stores.settings.saved}

@@ -51,6 +51,15 @@ export interface PublicBanner {
   /** Null when the banner goes nowhere. The window then draws a poster rather than a link. */
   href: string | null;
   external: boolean;
+  /**
+   * The poster sits under the product bands rather than above them.
+   *
+   * A side and not an index: a shop's landing page has exactly one run of products, so where a
+   * poster goes relative to it is a yes-or-no, and `position` already orders the posters on each
+   * side. An index would have had to be stored somewhere that is not a banner — on the shop — and
+   * then two rows could disagree about where the products are.
+   */
+  belowProducts: boolean;
 }
 
 /**
@@ -75,6 +84,15 @@ export interface Banner {
   externalUrl: string | null;
   /** Manual ordering, shared with the storefront. Ties break on the title. */
   position: number;
+  /**
+   * The poster sits under the product bands rather than above them.
+   *
+   * A side and not an index: a shop's landing page has exactly one run of products, so where a
+   * poster goes relative to it is a yes-or-no, and `position` already orders the posters on each
+   * side. An index would have had to be stored somewhere that is not a banner — on the shop — and
+   * then two rows could disagree about where the products are.
+   */
+  belowProducts: boolean;
   /** A hidden banner keeps everything; it is not a delete. */
   isActive: boolean;
   /** ISO-8601. */
@@ -101,6 +119,7 @@ export interface CreateBannerPayload {
   productSlug?: string | null;
   externalUrl?: string | null;
   isActive?: boolean;
+  belowProducts?: boolean;
 }
 
 export type UpdateBannerPayload = Partial<CreateBannerPayload>;

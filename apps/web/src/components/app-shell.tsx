@@ -11,6 +11,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   HomeIcon,
   ImageIcon,
+  LayoutTemplateIcon,
   PackageIcon,
   SettingsIcon,
   ShoppingBagIcon,
@@ -134,6 +135,7 @@ export function AppShell({ user, ui, web, locale, children }: AppShellProps) {
             // screen that will be reported as deleted.
             item(nav.categories, "/categories", <TagsIcon />, "prefix"),
             item(nav.banners, "/banners", <ImageIcon />, "prefix"),
+            item(nav.design, "/design", <LayoutTemplateIcon />),
             item(nav.customers, "/customers", <UsersIcon />, "prefix"),
           ]}
           footerItems={[item(nav.settings, "/store", <SettingsIcon />)]}

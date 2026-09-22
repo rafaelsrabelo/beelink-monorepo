@@ -57,6 +57,7 @@ export function toPublicBanner(
     // for "http" would start opening the shop's own pages in a new tab the day these become
     // absolute.
     external: row.target === 'EXTERNAL',
+    belowProducts: row.belowProducts,
   } satisfies PublicBanner;
 }
 
@@ -74,6 +75,7 @@ export function toBanner(row: BannerRow): WireBanner {
     productSlug: row.product?.slug ?? null,
     externalUrl: row.externalUrl,
     position: row.position,
+    belowProducts: row.belowProducts,
     isActive: row.isActive,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

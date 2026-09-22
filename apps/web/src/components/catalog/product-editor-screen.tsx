@@ -189,7 +189,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full max-w-5xl flex-col gap-6">
       <h1 className="text-2xl font-semibold">{productId ? text.edit : text.create}</h1>
 
       <ProductEditor
