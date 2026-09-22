@@ -144,6 +144,33 @@ export interface StorefrontCatalog {
   pageSize: number;
 }
 
+
+/**
+ * What a carrier measures, in whole millimetres and grams. All four together or none: a quote
+ * cannot be asked for with a weight and no box, and a partial set is the shape most likely to
+ * reach a shipping API and be refused there instead of here.
+ */
+export interface ProductParcel {
+  weightGrams: number | null;
+  lengthMm: number | null;
+  widthMm: number | null;
+  heightMm: number | null;
+}
+
+/** What the shop counts, and whether it counts at all. */
+export interface ProductStock {
+  /**
+   * Off by default. Most shops here sell made to order, and a count of zero on a product nobody
+   * counts would take it out of the shop window for no reason.
+   */
+  trackStock: boolean;
+  /**
+   * Read only while `trackStock`. Null and zero are different facts: null is "nobody counts
+   * this", zero is "there are none left" — and only the second hides the product.
+   */
+  stockQuantity: number | null;
+}
+
 /* ── what the panel reads and writes ─────────────────────────────────────── */
 
 /** A category as its owner edits it: the public shape plus what only the owner may see. */
@@ -159,10 +186,19 @@ export interface ProductCategory extends PublicProductCategory {
 }
 
 /** A product as its owner edits it. */
-export interface Product extends PublicProduct {
+export interface Product extends PublicProduct, ProductStock, ProductParcel {
   position: number;
   /** Marking a product unavailable hides it from the shop window without losing it. */
   isAvailable: boolean;
+  /**
+   * Whole cents, and owner-only — it is deliberately absent from `PublicProduct`. What a shop paid
+   * is nobody's business but theirs, and a field on the public shape is a field in Google's index.
+   */
+  costCents: number | null;
+  /** The shopkeeper's own code. Not unique: only they can say what it means. */
+  sku: string | null;
+  /** A string, not a number — a leading zero on an EAN is part of it. */
+  barcode: string | null;
   /** ISO-8601. */
   createdAt: string;
   /** ISO-8601. */
@@ -200,8 +236,17 @@ export interface CreateProductPayload {
   description?: string | null;
   priceCents: number;
   compareAtPriceCents?: number | null;
+  costCents?: number | null;
   categoryId?: string | null;
   isAvailable?: boolean;
+  sku?: string | null;
+  barcode?: string | null;
+  trackStock?: boolean;
+  stockQuantity?: number | null;
+  weightGrams?: number | null;
+  lengthMm?: number | null;
+  widthMm?: number | null;
+  heightMm?: number | null;
   /** Ordered as sent; the first becomes the card's image. */
   images?: ProductImagePayload[];
 }
@@ -232,6 +277,7 @@ export type CatalogErrorCode =
   | "CATALOG_SLUG_RESERVED"
   | "CATALOG_SLUG_EMPTY"
   | "CATALOG_PRICE_INVALID"
+  | "CATALOG_PARCEL_INCOMPLETE"
   | "CATALOG_REORDER_MISMATCH"
   /** The parent asked for already has one, or is the category itself. Two levels, no third. */
   | "PRODUCT_CATEGORY_DEPTH";

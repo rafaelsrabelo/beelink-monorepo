@@ -29,10 +29,13 @@ import type {
 import {
   DESCRIPTION_MAX_LENGTH,
   IMAGE_ALT_MAX_LENGTH,
+  PARCEL_GRAMS_MAX,
+  PARCEL_MM_MAX,
   PRICE_CENTS_MAX,
   PRODUCT_IMAGES_MAX,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_SLUG_MAX_LENGTH,
+  STOCK_MAX,
 } from '../catalog.constants.js';
 import { blankToNull, imageUrl, trim } from '../../stores/dto/store-fields.dto.js';
 
@@ -109,6 +112,73 @@ export class CreateProductDto implements CreateProductPayload {
   @IsOptional()
   @IsBoolean()
   isAvailable?: boolean;
+
+  @ApiPropertyOptional({ nullable: true, description: 'Whole cents. Owner-only; never on the storefront.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(PRICE_CENTS_MAX)
+  @Type(() => Number)
+  costCents?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, maxLength: 64 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  @blankToNull
+  sku?: string | null;
+
+  @ApiPropertyOptional({ nullable: true, maxLength: 64 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  @blankToNull
+  barcode?: string | null;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  trackStock?: boolean;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, description: 'Read only while trackStock.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(STOCK_MAX)
+  @Type(() => Number)
+  stockQuantity?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: PARCEL_GRAMS_MAX, description: 'Grams.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(PARCEL_GRAMS_MAX)
+  @Type(() => Number)
+  weightGrams?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: PARCEL_MM_MAX, description: 'Millimetres.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(PARCEL_MM_MAX)
+  @Type(() => Number)
+  lengthMm?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: PARCEL_MM_MAX, description: 'Millimetres.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(PARCEL_MM_MAX)
+  @Type(() => Number)
+  widthMm?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, minimum: 0, maximum: PARCEL_MM_MAX, description: 'Millimetres.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(PARCEL_MM_MAX)
+  @Type(() => Number)
+  heightMm?: number | null;
 
   @ApiPropertyOptional({ type: [ProductImageDto], maxItems: PRODUCT_IMAGES_MAX })
   @IsOptional()

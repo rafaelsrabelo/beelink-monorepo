@@ -111,6 +111,36 @@ model Product {
   /// a shopkeeper does when something is out of stock rather than discontinued.
   isAvailable  Boolean @default(true)
 
+  /// What the shopkeeper paid for it. Only they ever see it: it is here so a margin can be shown
+  /// beside the price, and it must never reach `PublicProduct`.
+  costCents Int?
+
+  /// The shopkeeper's own code for the thing. Not unique — two shops, and even one shop's two
+  /// listings of the same item, may legitimately share one; the API does not police it because
+  /// the only rule anyone could state about it belongs to the shopkeeper.
+  sku     String? @db.VarChar(64)
+  /// EAN, UPC or whatever is printed on the box. A string and not a number: leading zeros matter.
+  barcode String? @db.VarChar(64)
+
+  /// Whether this shop counts this product. Off by default, because most shops here sell made to
+  /// order and a stock of zero on a product nobody counts would hide it from the window.
+  trackStock    Boolean @default(false)
+  /// How many are left, and read only when `trackStock`. Nullable rather than zero so "not
+  /// counted" and "none left" stay different facts — the second hides the product, the first
+  /// means nothing at all.
+  stockQuantity Int?
+
+  /// Grams, and integers. Melhor Envio quotes on weight and size, and this is the field the quote
+  /// reads — a shipping integration that has to ask the shopkeeper for a weight at checkout is a
+  /// shipping integration nobody finishes. Null until they fill it in; the quote refuses then,
+  /// which is a better failure than guessing a box.
+  weightGrams Int?
+  /// Millimetres, integers, of the parcel rather than the product — which is what a carrier
+  /// measures. All three or none; the API refuses a partial set.
+  lengthMm    Int?
+  widthMm     Int?
+  heightMm    Int?
+
   /// See ProductCategory.slugHistory. A product slug is derived from a name the shopkeeper will
   /// fix within the hour, and these links are shared on WhatsApp, where a 404 is the most visible
   /// failure this product can produce.

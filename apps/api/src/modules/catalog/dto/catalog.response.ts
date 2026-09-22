@@ -86,6 +86,16 @@ export class PublicProductResponse extends PublicProductCardResponse implements 
 export class ProductResponse extends PublicProductResponse implements Product {
   @ApiProperty() position!: number;
   @ApiProperty() isAvailable!: boolean;
+  // Owner-only, all of them: they extend PublicProductResponse rather than being added to it.
+  @ApiProperty({ nullable: true, type: Number, description: 'Whole cents.' }) costCents!: number | null;
+  @ApiProperty({ nullable: true, type: String }) sku!: string | null;
+  @ApiProperty({ nullable: true, type: String }) barcode!: string | null;
+  @ApiProperty() trackStock!: boolean;
+  @ApiProperty({ nullable: true, type: Number }) stockQuantity!: number | null;
+  @ApiProperty({ nullable: true, type: Number, description: 'Grams.' }) weightGrams!: number | null;
+  @ApiProperty({ nullable: true, type: Number, description: 'Millimetres.' }) lengthMm!: number | null;
+  @ApiProperty({ nullable: true, type: Number, description: 'Millimetres.' }) widthMm!: number | null;
+  @ApiProperty({ nullable: true, type: Number, description: 'Millimetres.' }) heightMm!: number | null;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }

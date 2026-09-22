@@ -110,6 +110,18 @@ export function toProduct(row: ProductRow): WireProduct {
     ...toPublicProduct(row),
     position: row.position,
     isAvailable: row.isAvailable,
+    // Owner-only, every one of them. They are absent from `toPublicProduct` on purpose: what a
+    // shop paid, what it calls the thing internally and how heavy the box is are not the shop
+    // window's business, and anything on the public shape lands in Google's index.
+    costCents: row.costCents,
+    sku: row.sku,
+    barcode: row.barcode,
+    trackStock: row.trackStock,
+    stockQuantity: row.stockQuantity,
+    weightGrams: row.weightGrams,
+    lengthMm: row.lengthMm,
+    widthMm: row.widthMm,
+    heightMm: row.heightMm,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   } satisfies WireProduct;

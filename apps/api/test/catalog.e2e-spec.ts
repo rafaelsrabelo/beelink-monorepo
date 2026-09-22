@@ -278,6 +278,72 @@ describe('catalog', () => {
     });
   });
 
+  describe('what a shipping quote and a payment will need', () => {
+    it('keeps stock and the parcel as whole numbers on the owner\u2019s shape', async () => {
+      const product = await addProduct({
+        name: 'Blusa',
+        priceCents: 4990,
+        costCents: 2200,
+        sku: 'BLU-001',
+        barcode: '7891234567890',
+        trackStock: true,
+        stockQuantity: 12,
+        weightGrams: 350,
+        lengthMm: 300,
+        widthMm: 220,
+        heightMm: 40,
+      });
+
+      expect(product.trackStock).toBe(true);
+      expect(product.stockQuantity).toBe(12);
+      expect(product.weightGrams).toBe(350);
+      expect(product.sku).toBe('BLU-001');
+      expect(product.costCents).toBe(2200);
+    });
+
+    // What a shop paid is not the shop window's business, and anything on the public shape lands
+    // in Google's index.
+    it('keeps the cost off the shape a visitor is served', async () => {
+      await addProduct({ name: 'Blusa', priceCents: 4990, costCents: 2200 });
+
+      const shopWindow = await call('GET', '/api/stores/lessari/catalog');
+
+      expect(shopWindow.statusCode).toBe(200);
+      expect(shopWindow.payload).not.toContain('costCents');
+      expect(shopWindow.payload).not.toContain('2200');
+    });
+
+    it('refuses two sides of a box, which no carrier can quote', async () => {
+      const refused = await call('POST', '/api/stores/lessari/products', owner, {
+        name: 'Blusa',
+        priceCents: 4990,
+        lengthMm: 300,
+        widthMm: 220,
+      });
+
+      expect(refused.statusCode).toBe(400);
+      expect(refused.json<ApiErrorBody>().errorCode).toBe('CATALOG_PARCEL_INCOMPLETE');
+    });
+
+    it('accepts the third side on a product that already has two', async () => {
+      const product = await addProduct({
+        name: 'Blusa',
+        priceCents: 4990,
+        lengthMm: 300,
+        widthMm: 220,
+        heightMm: 40,
+      });
+
+      // A patch is judged against what the row will hold, not against what the request carried.
+      const changed = await call('PUT', `/api/stores/lessari/products/${product.id}`, owner, {
+        heightMm: 50,
+      });
+
+      expect(changed.statusCode).toBe(200);
+      expect(changed.json<Product>().heightMm).toBe(50);
+    });
+  });
+
   describe('a product’s photos', () => {
     it('keeps the order sent, and the first is the card’s image', async () => {
       const product = await addProduct({

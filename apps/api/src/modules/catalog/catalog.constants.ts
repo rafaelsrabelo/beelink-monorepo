@@ -104,3 +104,12 @@ export const PRICE_CENTS_MAX = 100_000_000;
  * other enum the wire carries: a reader has to be able to see the whole list.
  */
 export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies readonly ShowcaseLayout[];
+
+/** Grams. Thirty kilos is past what a carrier takes as a parcel; beyond it is a typo. */
+export const PARCEL_GRAMS_MAX = 30_000;
+
+/** Millimetres. Two metres on a side is past any parcel service. */
+export const PARCEL_MM_MAX = 2_000;
+
+/** A count this high is a typo, not a warehouse. */
+export const STOCK_MAX = 1_000_000;

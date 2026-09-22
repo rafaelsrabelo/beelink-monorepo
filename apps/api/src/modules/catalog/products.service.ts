@@ -134,6 +134,7 @@ export class ProductsService {
     const slug = this.slugs.resolve(dto.slug, dto.name);
 
     this.assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
+    this.assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
 
     const last = await this.prisma.product.aggregate({ where: { storeId }, _max: { position: true } });
@@ -149,6 +150,15 @@ export class ProductsService {
           compareAtPriceCents: dto.compareAtPriceCents ?? null,
           categoryId: dto.categoryId ?? null,
           isAvailable: dto.isAvailable ?? true,
+          costCents: dto.costCents ?? null,
+          sku: dto.sku ?? null,
+          barcode: dto.barcode ?? null,
+          trackStock: dto.trackStock ?? false,
+          stockQuantity: dto.stockQuantity ?? null,
+          weightGrams: dto.weightGrams ?? null,
+          lengthMm: dto.lengthMm ?? null,
+          widthMm: dto.widthMm ?? null,
+          heightMm: dto.heightMm ?? null,
           position: (last._max.position ?? -1) + 1,
           images: { create: imageRows(dto.images) },
         },
@@ -175,6 +185,14 @@ export class ProductsService {
     const compareAt =
       dto.compareAtPriceCents !== undefined ? dto.compareAtPriceCents : current.compareAtPriceCents;
     this.assertPrices(priceCents, compareAt ?? null);
+    // Against what the row will hold after the patch, not against what was sent: sending one side
+    // on a product that already has the other two is a complete box, and refusing it would be a
+    // rule about the request rather than about the parcel.
+    this.assertParcel(
+      dto.lengthMm !== undefined ? dto.lengthMm : current.lengthMm,
+      dto.widthMm !== undefined ? dto.widthMm : current.widthMm,
+      dto.heightMm !== undefined ? dto.heightMm : current.heightMm,
+    );
 
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
 
@@ -193,6 +211,15 @@ export class ProductsService {
           ...(dto.compareAtPriceCents !== undefined ? { compareAtPriceCents: dto.compareAtPriceCents } : {}),
           ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
           ...(dto.isAvailable !== undefined ? { isAvailable: dto.isAvailable } : {}),
+          ...(dto.costCents !== undefined ? { costCents: dto.costCents } : {}),
+          ...(dto.sku !== undefined ? { sku: dto.sku ?? null } : {}),
+          ...(dto.barcode !== undefined ? { barcode: dto.barcode ?? null } : {}),
+          ...(dto.trackStock !== undefined ? { trackStock: dto.trackStock } : {}),
+          ...(dto.stockQuantity !== undefined ? { stockQuantity: dto.stockQuantity } : {}),
+          ...(dto.weightGrams !== undefined ? { weightGrams: dto.weightGrams } : {}),
+          ...(dto.lengthMm !== undefined ? { lengthMm: dto.lengthMm } : {}),
+          ...(dto.widthMm !== undefined ? { widthMm: dto.widthMm } : {}),
+          ...(dto.heightMm !== undefined ? { heightMm: dto.heightMm } : {}),
           // Images are replaced whole when the key is sent: the panel's gallery reports the list it
           // now holds, including the order, and reconciling that row by row would be a diff the
           // client already computed. Omitting the key leaves the photos alone.
@@ -248,6 +275,25 @@ export class ProductsService {
           'compareAtPriceCents must be above priceCents, or absent when there is no discount',
         ),
       );
+    }
+  }
+
+  /**
+   * All three sides or none.
+   *
+   * A carrier quotes on a box, and a box with two of its three sides is not a box. Refusing it
+   * here is what stops the shape reaching Melhor Envio in phase 4 and being refused there — where
+   * the message is about their API and arrives while a customer is waiting at a checkout.
+   */
+  private assertParcel(length: number | null, width: number | null, height: number | null): void {
+    const given = [length, width, height].filter((side) => side !== null).length
+    if (given !== 0 && given !== 3) {
+      throw new BadRequestException(
+        catalogError(
+          'CATALOG_PARCEL_INCOMPLETE',
+          'Send all three of lengthMm, widthMm and heightMm, or none of them',
+        ),
+      )
     }
   }
 
