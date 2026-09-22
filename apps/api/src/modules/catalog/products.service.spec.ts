@@ -154,7 +154,7 @@ describe('ProductsService.list — the panel, filtered', () => {
 
     await service.list('lessari', 'user-1', { stock: 'OUT_OF_STOCK', search: 'whey' });
 
-    const and = findMany.mock.calls[0]?.[0].where.AND as { OR?: unknown[]; trackStock?: boolean }[];
+    const and = findMany.mock.calls[0][0].where.AND as { OR?: unknown[]; trackStock?: boolean }[];
     expect(and).toHaveLength(2);
     expect(and[0]).toMatchObject({ trackStock: true });
     expect(and[1]?.OR).toHaveLength(3);
@@ -165,8 +165,8 @@ describe('ProductsService.list — the panel, filtered', () => {
 
     await service.list('lessari', 'user-1', { search: 'WH-900' });
 
-    const [condition] = findMany.mock.calls[0]?.[0].where.AND as { OR: Record<string, unknown>[] }[];
-    expect(condition?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode']);
+    const conditions = findMany.mock.calls[0][0].where.AND as { OR: Record<string, unknown>[] }[];
+    expect(conditions[0]?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode']);
   });
 
   /**
@@ -178,7 +178,7 @@ describe('ProductsService.list — the panel, filtered', () => {
 
     await service.list('lessari', 'user-1', { stock: 'UNTRACKED' });
 
-    expect(findMany.mock.calls[0]?.[0].where.AND).toEqual([{ trackStock: false }]);
+    expect(findMany.mock.calls[0][0].where.AND).toEqual([{ trackStock: false }]);
   });
 
   /** A counted product with no quantity yet is, from the shelf, none left. */
@@ -187,8 +187,8 @@ describe('ProductsService.list — the panel, filtered', () => {
 
     await service.list('lessari', 'user-1', { stock: 'OUT_OF_STOCK' });
 
-    const [condition] = findMany.mock.calls[0]?.[0].where.AND as { OR: unknown[] }[];
-    expect(condition?.OR).toEqual([{ stockQuantity: { lte: 0 } }, { stockQuantity: null }]);
+    const conditions = findMany.mock.calls[0][0].where.AND as { OR: unknown[] }[];
+    expect(conditions[0]?.OR).toEqual([{ stockQuantity: { lte: 0 } }, { stockQuantity: null }]);
   });
 
   it('answers the bounds it used, never the ones it was asked for', async () => {
@@ -207,6 +207,6 @@ describe('ProductsService.list — the panel, filtered', () => {
 
     await service.list('lessari', 'user-1', {});
 
-    expect(findMany.mock.calls[0]?.[0].where).not.toHaveProperty('status');
+    expect(findMany.mock.calls[0][0].where).not.toHaveProperty('status');
   });
 })
