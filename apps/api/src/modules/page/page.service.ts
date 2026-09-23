@@ -13,6 +13,29 @@ import { sectionInclude, toComponent, toSection } from './page.mapper.js';
 import { PageRules, pageError } from './page.rules.js';
 
 /**
+ * A component's row as both creates write it — around a new band, or into one that exists.
+ *
+ * One function, so the two paths cannot disagree about what "no subtitle" or "no columns" is
+ * written as: they did, once, in the other direction — a spread that landed in create and not in
+ * update is what made a save answer 200 and change nothing.
+ */
+function componentRow(storeId: string, dto: ComponentDto, items: object[], position: number) {
+  return {
+    storeId,
+    kind: dto.kind,
+    title: dto.title ?? null,
+    subtitle: dto.subtitle ?? null,
+    body: dto.body ?? null,
+    ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
+    columns: dto.columns ?? null,
+    align: dto.align ?? null,
+    items,
+    position,
+    isActive: dto.isActive ?? true,
+  };
+}
+
+/**
  * The landing page, at both of its levels.
  *
  * One service and not two, because every write at either level starts with the same question —
@@ -65,21 +88,7 @@ export class PageService {
         background: dto.background ?? null,
         position: (last._max.position ?? -1) + 1,
         isActive: dto.isActive ?? true,
-        components: {
-          create: {
-            storeId,
-            kind: dto.component.kind,
-            title: dto.component.title ?? null,
-            subtitle: dto.component.subtitle ?? null,
-            body: dto.component.body ?? null,
-            ...(dto.component.layout !== undefined ? { layout: dto.component.layout } : {}),
-            columns: dto.component.columns ?? null,
-            align: dto.component.align ?? null,
-            items,
-            position: 0,
-            isActive: dto.component.isActive ?? true,
-          },
-        },
+        components: { create: componentRow(storeId, dto.component, items, 0) },
       },
       include: sectionInclude,
     });
@@ -164,20 +173,7 @@ export class PageService {
     });
 
     const row = await this.prisma.storeComponent.create({
-      data: {
-        sectionId,
-        storeId,
-        kind: dto.kind,
-        title: dto.title ?? null,
-        subtitle: dto.subtitle ?? null,
-        body: dto.body ?? null,
-        ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
-        columns: dto.columns ?? null,
-        align: dto.align ?? null,
-        items,
-        position: (last._max.position ?? -1) + 1,
-        isActive: dto.isActive ?? true,
-      },
+      data: { sectionId, ...componentRow(storeId, dto, items, (last._max.position ?? -1) + 1) },
     });
 
     return toComponent(row);

@@ -2,14 +2,13 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { PublicStore, Store, StoreAddress, StoreErrorCode, StoreType } from '@harness-monorepo/contracts';
+import type { PublicStore, Store, StoreAddress, StoreErrorCode } from '@harness-monorepo/contracts';
 import type { CreateStoreDto, UpdateStoreDto } from './dto/store.dto.js';
 import type { StoreRow } from './store.mapper.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { defaultPage } from '../page/page-seed.js';
-import { templatePage } from '../page/page-templates.js';
+import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
 import {
@@ -24,17 +23,6 @@ import { RESERVED_SLUGS } from './stores.constants.js';
 /** Keeps every code this module answers inside the contract's union. */
 function storeError(errorCode: StoreErrorCode, message: string): { errorCode: StoreErrorCode; message: string } {
   return { errorCode, message };
-}
-
-/**
- * A shop cannot be without a WhatsApp: an order has nowhere to go. A site can — it takes contact
- * through a form, and a phone is a nicety. Said here and not in the DTO, because the DTO for the
- * social networks does not know which kind of store it is nested in.
- */
-function refuseShopWithoutWhatsapp(type: StoreType, whatsapp: string | null | undefined): void {
-  if (type === 'ECOMMERCE' && !whatsapp) {
-    throw new BadRequestException(storeError('STORE_WHATSAPP_REQUIRED', 'A shop needs a WhatsApp to take orders'));
-  }
 }
 
 /** Postgres' unique violation, as Prisma reports it — the backstop for the race a pre-check loses. */
@@ -108,11 +96,7 @@ export class StoresService {
           },
         });
 
-        // A shop opens with its own page; a site with the template it was created from.
-        const opening =
-          dto.type === 'INSTITUTIONAL' ? templatePage(dto.template ?? 'servicos-b2b') : defaultPage(created.paymentMethods);
-
-        for (const band of opening) {
+        for (const band of openingPageOf(dto, created.paymentMethods)) {
           await tx.storeSection.create({
             data: {
               storeId: created.id,
