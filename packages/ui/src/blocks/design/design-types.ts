@@ -21,8 +21,13 @@ export const COMPONENT_KINDS = [
   "BENEFITS",
   "CATEGORIES",
   "PRODUCTS",
+  "CONTACT",
 ] as const
 export type ComponentKind = (typeof COMPONENT_KINDS)[number]
+
+/** What one field of a contact form may ask for. The contract's `ContactFieldType`, restated. */
+export const CONTACT_FIELD_TYPES = ["TEXT", "EMAIL", "PHONE", "TEXTAREA", "SELECT", "DATE"] as const
+export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]
 
 /** Edge to edge, or inside the shop's measure. An attribute of the band, never of what is in it. */
 export const SECTION_WIDTHS = ["FULL", "CONTAINED"] as const

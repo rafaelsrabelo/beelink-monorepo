@@ -26,6 +26,7 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     externalUrl: "",
     slides: [],
     benefits: [],
+    fields: [],
     ...over,
   }
 }

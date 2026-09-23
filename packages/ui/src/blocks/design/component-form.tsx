@@ -18,19 +18,16 @@ import { BannerFields } from "./banner-fields"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import { BenefitRowsField } from "./benefit-rows-field"
 import type { BenefitValue } from "./benefit-rows-field"
+import { ContactFieldsField, reachesBack } from "./contact-fields-field"
+import type { ContactFieldValue } from "./contact-fields-field"
 import type { ComponentKind, TextAlign } from "./design-types"
 import type { Target } from "./target-fields"
 
 export type ComponentFormLayout = "FULL" | "HALVES" | "THIRDS"
 
 /**
- * What a component's form holds while it is being filled in.
- *
- * One shape for all seven kinds, and the form draws only the fields the kind has. A shape per kind
- * would be seven states for one panel, and the screen would have to know which it is holding
- * before it could hand it back.
- *
- * `""` where the wire carries null, because an input cannot hold null; the screen turns it back.
+ * What a component's form holds while it is being filled in: one shape for every kind, of which
+ * the form draws only the fields the kind has. `""` where the wire carries null.
  */
 export interface ComponentFormValues {
   kind: ComponentKind
@@ -55,11 +52,13 @@ export interface ComponentFormValues {
   externalUrl: string
   slides: SlideValue[]
   benefits: BenefitValue[]
+  /** A contact form's questions. */
+  fields: ContactFieldValue[]
 }
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx`: a types-only `.ts`
 // beside a block cannot be reached from an app.
-export type { BenefitValue, SlideTargetOption, SlideValue }
+export type { BenefitValue, ContactFieldValue, SlideTargetOption, SlideValue }
 
 export interface ComponentFormProps {
   value: ComponentFormValues
@@ -78,7 +77,7 @@ export interface ComponentFormProps {
 }
 
 /** The kinds that carry a heading of their own, and what each one calls it. */
-const HAS_HEADING: readonly ComponentKind[] = ["ANNOUNCEMENT", "HEADING", "CATEGORIES", "PRODUCTS"]
+const HAS_HEADING: readonly ComponentKind[] = ["ANNOUNCEMENT", "HEADING", "CATEGORIES", "PRODUCTS", "CONTACT"]
 
 /**
  * Every component's fields, dispatched on its kind.
@@ -223,6 +222,15 @@ export function ComponentForm({
         />
       ) : null}
 
+      {value.kind === "CONTACT" ? (
+        <ContactFieldsField
+          value={value.fields}
+          onChange={(next) => set("fields", next)}
+          newFieldId={newItemId}
+          messages={messages}
+        />
+      ) : null}
+
       {value.kind === "PRODUCTS" ? (
         <p className="text-muted-foreground text-sm">{text.productListHint}</p>
       ) : null}
@@ -231,7 +239,7 @@ export function ComponentForm({
         <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
           {banner.cancel}
         </Button>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || (value.kind === "CONTACT" && !reachesBack(value.fields))}>
           {pending ? banner.saving : banner.save}
         </Button>
       </div>

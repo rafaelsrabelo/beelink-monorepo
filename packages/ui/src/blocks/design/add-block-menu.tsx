@@ -6,6 +6,7 @@ import {
   HeadingIcon,
   ImageIcon,
   LayoutGridIcon,
+  MailIcon,
   MegaphoneIcon,
   PlusIcon,
   TagsIcon,
@@ -55,19 +56,25 @@ const ADDABLE = [
   { kind: "CATEGORIES", icon: TagsIcon },
   { kind: "ANNOUNCEMENT", icon: MegaphoneIcon },
   { kind: "PRODUCTS", icon: LayoutGridIcon },
+  { kind: "CONTACT", icon: MailIcon },
 ] as const satisfies readonly { kind: ComponentKind; icon: typeof TypeIcon }[]
 
 export interface AddBlockMenuProps {
   /** The kinds the shop already has one of, so a singleton is offered once. */
   taken?: readonly ComponentKind[]
+  /**
+   * The kinds this kind of page cannot hold at all: a site has no products to list, and a shop's
+   * form would gather leads it has no screen to show. Apart from `taken`, which is about how many.
+   */
+  unavailable?: readonly ComponentKind[]
   onAdd: (kind: ComponentKind) => void
   pending?: boolean
   messages?: UiMessages
 }
 
-export function AddBlockMenu({ taken = [], onAdd, pending = false, messages = defaultMessages }: AddBlockMenuProps) {
+export function AddBlockMenu({ taken = [], unavailable = [], onAdd, pending = false, messages = defaultMessages }: AddBlockMenuProps) {
   const text = messages.design
-  const offered = ADDABLE.filter((entry) => !taken.includes(entry.kind))
+  const offered = ADDABLE.filter((entry) => !taken.includes(entry.kind) && !unavailable.includes(entry.kind))
 
   if (!offered.length) return null
 

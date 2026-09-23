@@ -1,4 +1,5 @@
-import type { ComponentKind } from "../blocks/design/design-types"
+import type { ComponentKind, ContactFieldType } from "../blocks/design/design-types"
+import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
 /**
@@ -270,6 +271,26 @@ export interface UiMessages {
       debitCard: string
       debitCardDetail: string
     }
+    /** A site's contact form, as the visitor fills it in. */
+    contact: {
+      /** The one field every form asks, first: who is writing. */
+      nameLabel: string
+      /** Said after a label a visitor may skip, so the required ones need no asterisk legend. */
+      optional: string
+      selectPlaceholder: string
+      submit: string
+      sending: string
+      sentTitle: string
+      sentText: string
+      /** Beside the form, when the site has a WhatsApp: the other way in. */
+      whatsappLead: string
+      whatsappAction: string
+      /**
+       * The trap's label. Read only by what reads the markup — a screen reader never reaches it,
+       * the field is `aria-hidden` — so it says plainly what a person should do if they ever do.
+       */
+      trapLabel: string
+    }
     /** An icon with no words announces itself as "link" and nothing else. */
     networks: {
       whatsapp: string
@@ -366,6 +387,55 @@ export interface UiMessages {
     /** The strip's colour, and what it is called when it has none of its own. */
     announcementColour: string
     announcementColourNone: string
+    /** The fields of a contact form, as its owner declares them. */
+    contact: {
+      fieldsLabel: string
+      /** Said once above the list: the name is not a field, it is always asked. */
+      fieldsHelp: string
+      /** `{position}`. What a field with no label yet is called. */
+      fieldPosition: string
+      fieldLabel: string
+      fieldType: string
+      fieldRequired: string
+      fieldOptions: string
+      fieldOptionsHelp: string
+      addField: string
+      removeField: string
+      /** Shown while no required e-mail or phone is left: the rule the API enforces. */
+      reachBack: string
+      types: Record<ContactFieldType, string>
+    }
+  }
+  /** What arrived through a site's contact form, as its owner works through it. */
+  leads: {
+    title: string
+    description: string
+    empty: string
+    emptyHint: string
+    /** Said instead when a status filter is on, which is a different fact from "nothing yet". */
+    emptyFiltered: string
+    all: string
+    filterLabel: string
+    name: string
+    contact: string
+    received: string
+    status: string
+    statuses: Record<LeadStatus, string>
+    /** `{name}`. The accessible name of the control that opens one lead. */
+    open: string
+    /** `{name}`. Names a row's status select, which otherwise reads as "combobox". */
+    statusOf: string
+    answers: string
+    noAnswers: string
+    email: string
+    phone: string
+    whatsapp: string
+    delete: string
+    deleteConfirm: string
+    /** "1–20 de 137", for the pager under the table. */
+    range: string
+    previous: string
+    next: string
   }
   banners: {
     title: string

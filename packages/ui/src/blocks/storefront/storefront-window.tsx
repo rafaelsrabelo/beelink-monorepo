@@ -1,9 +1,6 @@
 // React
 import type { CSSProperties, ReactNode } from "react"
 
-// Libs
-import { ShoppingBagIcon, UserRoundIcon } from "lucide-react"
-
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -20,7 +17,7 @@ import {
   YouTubeIcon,
 } from "../store/store-brand-icons"
 import { StorefrontAnnouncement } from "./storefront-announcement"
-import { StorefrontSearch } from "./storefront-search"
+import { StorefrontMasthead, type StorefrontMenuItem } from "./storefront-masthead"
 
 /** The four colours a shop dresses its window in. They are data, chosen by the shopkeeper. */
 export interface StorefrontColors {
@@ -51,12 +48,8 @@ export interface StorefrontAnnouncement {
   external?: boolean
 }
 
-/** One entry of a site's menu: a named band, as an anchor. The screen builds them. */
-export interface StorefrontMenuItem {
-  id: string
-  label: string
-  href: string
-}
+// Where it is declared now; re-exported because screens import it from here.
+export type { StorefrontMenuItem } from "./storefront-masthead"
 
 /** One column of the footer. The screen builds them, because a block knows no address. */
 export interface StorefrontFooterColumn {
@@ -125,6 +118,8 @@ export interface StorefrontWindowProps {
    * only by a site: a shop's header has a search and a basket there, and a site has neither.
    */
   menu?: readonly StorefrontMenuItem[]
+  /** A site's one button in the header — its contact band. See `StorefrontMasthead`. */
+  cta?: { label: string; href: string } | null
 
   /** Band 2 — the categories, rendered edge to edge above everything else. */
   categories?: ReactNode
@@ -233,6 +228,7 @@ export function StorefrontWindow({
   cartCount,
   accountHref,
   menu = [],
+  cta = null,
   categories,
   banner,
   blocks,
@@ -304,111 +300,23 @@ export function StorefrontWindow({
         />
       ) : null}
 
-      {/*
-        ------------------------------------------------------------- 1 · header + 2 · the menu
-
-        One painted block and not two bands, because they are one thing to look at: the shops this
-        was measured against put the logo, the search and the menu on a single dark slab, and a
-        menu painted in the page's own background reads as content that happens to be at the top.
-
-        It is painted in `--shop-header`, which is the point of the column. The shopkeeper's panel
-        has always had a "Cor do topo" field, and the top was drawn in `--shop-background` — so the
-        one colour named after this band was the one band that ignored it.
-
-        One `<header>` wraps both, so the banner landmark is the whole slab: the menu is part of
-        the shop's masthead, and a reader jumping to the banner should land on the thing that has
-        the search and the categories in it, not on a strip with a logo.
-      */}
-      <header
-        className="sticky top-0 z-30 w-full"
-        style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-on-header)" }}
-      >
-        <div className={cn(BAND, "flex h-16 items-center gap-3 sm:gap-6")}>
-          {/*
-            The logo stands in for the name rather than sitting beside it — so it carries the name
-            as its `alt`, and the link keeps an accessible name without the word being drawn twice.
-            A shop with no logo yet falls back to the name as text: the masthead is never empty.
-          */}
-          <Link href={homeHref} className="flex shrink-0 items-center gap-2">
-            {logoUrl ? (
-              <img src={logoUrl} alt={name} className="h-9 w-auto max-w-40 object-contain" />
-            ) : (
-              <span className="text-base font-semibold">{name}</span>
-            )}
-          </Link>
-
-          {/*
-            Centred and capped, not stretched.
-
-            The field used to take every pixel between the logo and the icons, so on a wide monitor
-            the shop's masthead was one enormous search box with a name at one end — and a field
-            that wide reads as the page's subject rather than as a tool. Capped, it is centred on
-            the slab whatever the logo's width, which is what the shops this was measured against
-            all do.
-
-            Never autofocused: the header is on every page, and a caret that jumps into it puts a
-            phone keyboard over the shop on every arrival.
-          */}
-          <div className="flex min-w-0 flex-1 justify-center">
-            <div className="w-full max-w-md">
-              {searchSlot ??
-                (searchAction ? (
-                  <StorefrontSearch
-                    action={searchAction}
-                    value={searchValue}
-                    hidden={searchHidden}
-                    tone="panel"
-                    messages={messages}
-                  />
-                ) : null)}
-            </div>
-          </div>
-
-          {/*
-            Hidden on a phone rather than folded into a drawer: the same names are in the footer,
-            one swipe away, and a drawer is a script on a page that must read without one.
-          */}
-          {menu.length ? (
-            <nav aria-label={text.siteMenu} className="hidden items-center gap-5 sm:flex">
-              {menu.map((entry) => (
-                <Link key={entry.id} href={entry.href} className="text-sm font-medium opacity-90 hover:opacity-100">
-                  {entry.label}
-                </Link>
-              ))}
-            </nav>
-          ) : null}
-
-          <div className="flex shrink-0 items-center gap-1">
-            {accountHref ? (
-              <Link href={accountHref} aria-label={text.account} className="rounded-full p-2 opacity-80">
-                <UserRoundIcon aria-hidden="true" className="size-5" />
-              </Link>
-            ) : null}
-            {cartHref ? (
-              <Link href={cartHref} aria-label={text.cart} className="relative rounded-full p-2 opacity-80">
-                <ShoppingBagIcon aria-hidden="true" className="size-5" />
-                {cartCount ? (
-                  <span
-                    className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px] font-semibold"
-                    style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
-                  >
-                    {cartCount}
-                  </span>
-                ) : null}
-              </Link>
-            ) : null}
-          </div>
-        </div>
-
-        {categories ? (
-          <div
-            className="w-full border-t"
-            style={{ borderColor: "color-mix(in oklab, var(--shop-on-header) 18%, transparent)" }}
-          >
-            <div className={BAND}>{categories}</div>
-          </div>
-        ) : null}
-      </header>
+      <StorefrontMasthead
+        name={name}
+        logoUrl={logoUrl}
+        homeHref={homeHref}
+        searchSlot={searchSlot}
+        {...(searchAction ? { searchAction } : {})}
+        searchValue={searchValue}
+        {...(searchHidden ? { searchHidden } : {})}
+        {...(cartHref ? { cartHref } : {})}
+        {...(cartCount !== undefined ? { cartCount } : {})}
+        {...(accountHref ? { accountHref } : {})}
+        menu={menu}
+        cta={cta}
+        categories={categories}
+        linkComponent={Link}
+        messages={messages}
+      />
 
       {/* ---------------------------------------------------------------- 3 · the cover */}
       {blocks ? null : banner ? <Section banner={banner} Link={Link} tall /> : null}

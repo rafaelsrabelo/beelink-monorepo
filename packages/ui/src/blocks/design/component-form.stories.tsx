@@ -20,6 +20,7 @@ const empty: ComponentFormValues = {
   externalUrl: "",
   slides: [],
   benefits: [],
+  fields: [],
 }
 
 const meta = {

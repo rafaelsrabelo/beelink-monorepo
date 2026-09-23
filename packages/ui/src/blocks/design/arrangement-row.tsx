@@ -9,6 +9,7 @@ import {
   HeadingIcon,
   ImageIcon,
   LayoutGridIcon,
+  MailIcon,
   MegaphoneIcon,
   TagsIcon,
   Trash2Icon,
@@ -70,7 +71,7 @@ function hasLayout(kind: ComponentKind): boolean {
 /**
  * The picture a row shows beside the title, or the glyph that stands in for one.
  *
- * Five of the seven kinds have no picture, and a blank grey rectangle beside each of them makes a
+ * Six of the eight kinds have no picture, and a blank grey rectangle beside each of them makes a
  * list of components read as a list of broken images.
  */
 const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
@@ -81,6 +82,7 @@ const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
   BENEFITS: BadgeCheckIcon,
   CATEGORIES: TagsIcon,
   PRODUCTS: LayoutGridIcon,
+  CONTACT: MailIcon,
 }
 
 export function ArrangementRow({

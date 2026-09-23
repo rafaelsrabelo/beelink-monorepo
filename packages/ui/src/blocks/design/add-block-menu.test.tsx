@@ -77,6 +77,17 @@ describe("AddBlockMenu", () => {
     expect(screen.getByRole("menuitem", { name: "Título" })).toBeInTheDocument()
   })
 
+  /** A site has no products to list; a shop has no screen for the leads a form would gather. */
+  it("leaves out what this kind of page cannot hold", async () => {
+    const user = userEvent.setup()
+    render(<AddBlockMenu onAdd={vi.fn()} unavailable={["PRODUCTS", "CATEGORIES"]} />)
+
+    await open(user)
+
+    expect(screen.queryByRole("menuitem", { name: "Lista de produtos" })).not.toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Formulário de contato" })).toBeInTheDocument()
+  })
+
   it("says which kind was chosen", async () => {
     const user = userEvent.setup()
     const onAdd = vi.fn()
@@ -90,7 +101,7 @@ describe("AddBlockMenu", () => {
 
   it("draws no control at all when there is nothing left to add", () => {
     const { container } = render(
-      <AddBlockMenu onAdd={vi.fn()} taken={["BANNER", "HEADING", "TEXT", "BENEFITS", "CATEGORIES", "ANNOUNCEMENT", "PRODUCTS"]} />,
+      <AddBlockMenu onAdd={vi.fn()} taken={["BANNER", "HEADING", "TEXT", "BENEFITS", "CATEGORIES", "ANNOUNCEMENT", "PRODUCTS", "CONTACT"]} />,
     )
 
     expect(container).toBeEmptyDOMElement()
