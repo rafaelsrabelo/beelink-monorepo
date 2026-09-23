@@ -7,6 +7,7 @@ import type {
   AuthSession,
   Product,
   ProductCategory,
+  ProductPage,
   Store,
 } from '@harness-monorepo/contracts';
 
@@ -96,9 +97,10 @@ describe('catalog', () => {
       expect([list, create, update, remove].map((r) => r.statusCode)).toEqual([403, 403, 403, 403]);
       expect(list.json<ApiErrorBody>().errorCode).toBe('STORE_FORBIDDEN');
 
+      // A page and not a bare list since the panel's list learned to filter and page.
       const mine = await call('GET', '/api/stores/lessari/products', owner);
-      expect(mine.json<Product[]>()).toHaveLength(1);
-      expect(mine.json<Product[]>()[0]?.priceCents).toBe(4990);
+      expect(mine.json<ProductPage>().products).toHaveLength(1);
+      expect(mine.json<ProductPage>().products[0]?.priceCents).toBe(4990);
     });
 
     it('answers 401 with no bearer token at all', async () => {
