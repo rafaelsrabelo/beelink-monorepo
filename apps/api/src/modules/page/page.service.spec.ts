@@ -39,7 +39,8 @@ function componentRow(over: Record<string, unknown> = {}) {
     title: null,
     subtitle: null,
     body: null,
-    layout: 'FULL',
+    span: 'FULL',
+    display: null,
     items: [],
     columns: null,
     position: 0,
@@ -347,6 +348,69 @@ describe('PageService — a patch that says nothing changes nothing', () => {
     await service.updateComponent('lessari', 'user-1', COMPONENT, { isActive: false });
 
     expect(updateComponent.mock.calls[0]![0].data).not.toHaveProperty('items');
+  });
+});
+
+/**
+ * The panel still sends `layout` and the row keeps `span`. A write that stored the old word, or
+ * answered with a different one than it was sent, would move a banner the shopkeeper only saved.
+ */
+describe('PageService — the panel sends layout, the row keeps span', () => {
+  it('stores the layout a new component carries as the span it means', async () => {
+    const { service, createComponent } = build();
+
+    const created = await service.createComponent('lessari', 'user-1', SECTION, {
+      kind: 'BANNER',
+      layout: 'THIRDS',
+      items: [SLIDE],
+    });
+
+    const { data } = createComponent.mock.calls[0]![0];
+    expect(data).toMatchObject({ span: 'THIRD' });
+    expect(data).not.toHaveProperty('layout');
+    expect(created.layout).toBe('THIRDS');
+  });
+
+  it('stores the layout a patch carries as the span it means', async () => {
+    const { service, updateComponent } = build({ kind: 'BANNER' });
+
+    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'HALVES' });
+
+    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'HALF' });
+    expect(updated.layout).toBe('HALVES');
+  });
+
+  it('leaves the span alone when a patch does not mention the layout', async () => {
+    const { service, updateComponent } = build({ kind: 'BANNER' });
+
+    await service.updateComponent('lessari', 'user-1', COMPONENT, { isActive: false });
+
+    expect(updateComponent.mock.calls[0]![0].data).not.toHaveProperty('span');
+  });
+});
+
+/**
+ * Every banner the migration found became a carousel, because that is what a second slide has
+ * always made of one. A banner created afterwards has to open the same way, or the same page holds
+ * two kinds of banner that behave differently the day `display` is drawn.
+ */
+describe('PageService — a new banner opens as a carousel', () => {
+  it('writes CAROUSEL on a banner, whichever create makes it', async () => {
+    const { service, createSection, createComponent } = build();
+
+    await service.createSection('lessari', 'user-1', { component: { kind: 'BANNER', items: [SLIDE] } });
+    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'BANNER', items: [SLIDE] });
+
+    expect(createSection.mock.calls[0]![0].data.components.create.display).toBe('CAROUSEL');
+    expect(createComponent.mock.calls[0]![0].data.display).toBe('CAROUSEL');
+  });
+
+  it('writes no display on a kind that does not read it', async () => {
+    const { service, createComponent } = build();
+
+    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Novidades' });
+
+    expect(createComponent.mock.calls[0]![0].data.display).toBeNull();
   });
 });
 
