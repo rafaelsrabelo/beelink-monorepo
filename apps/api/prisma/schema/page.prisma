@@ -46,6 +46,26 @@ enum TextAlign {
   RIGHT
 }
 
+/// How much of its band a component takes. The band's own width is `SectionWidth`; this is the
+/// block's slice of it, and the choice the size picker always meant.
+///
+/// It was `layout`, which also chose the grid a banner's slides sat in, so "um terço" drew a
+/// third-wide cell and a band of three slides drew full width whatever was picked. The width is the
+/// only one of those meanings the shopkeeper reads in the words, so it is the one that got a column.
+enum ComponentSpan {
+  FULL
+  HALF
+  THIRD
+  TWO_THIRDS
+}
+
+/// How a component with several pictures lays them out: one at a time, or side by side. Read on
+/// BANNER. A choice, where it used to be the slide count deciding without being asked.
+enum ComponentDisplay {
+  CAROUSEL
+  GRID
+}
+
 /// One band of a shop's landing page.
 ///
 /// The level the shopkeeper asked for in their own words — "seção tem atributos (cores, ordenação)
@@ -111,8 +131,13 @@ model StoreComponent {
   /// The paragraph, on a TEXT. Null on every other kind.
   body     String?
 
-  /// Full width, two across, three across, for a banner inside its band.
-  layout ShowcaseLayout @default(FULL)
+  /// Its slice of the band, on every kind.
+  span ComponentSpan @default(FULL)
+
+  /// Read on BANNER. Null on every other kind: PRODUCTS and CATEGORIES draw their own way until
+  /// someone decides what this means for them, and a value there would be that decision taken
+  /// silently.
+  display ComponentDisplay?
 
   /// How many across a grid draws. Read on CATEGORIES and PRODUCTS.
   columns Int?

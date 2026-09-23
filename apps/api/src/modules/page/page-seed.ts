@@ -8,6 +8,7 @@ import type {
   SectionWidth,
   TextAlign,
 } from '@harness-monorepo/contracts';
+import type { ComponentDisplay } from '../../generated/prisma/enums.js';
 
 /**
  * A promise as it is written to the JSON column.
@@ -101,4 +102,12 @@ export function defaultContactFields(): ContactFieldRow[] {
 /** What a component created without items holds. Every kind but the form holds nothing. */
 export function openingItemsOf(kind: ComponentKind): SeededItem[] {
   return kind === 'CONTACT' ? defaultContactFields() : [];
+}
+
+/**
+ * How a new component lays out its pictures. A banner opens as a carousel, which is what its
+ * second slide has always turned it into; no other kind reads the column.
+ */
+export function openingDisplayOf(kind: ComponentKind): ComponentDisplay | null {
+  return kind === 'BANNER' ? 'CAROUSEL' : null;
 }

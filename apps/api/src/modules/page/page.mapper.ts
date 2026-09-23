@@ -17,6 +17,7 @@ import type { StoreComponentModel, StoreSectionModel } from '../../generated/pri
 
 // App
 import { parseComponentItems } from './component-items.schema.js';
+import { LAYOUT_OF_SPAN } from './page.constants.js';
 
 /**
  * A band is always read with what is in it, never on its own.
@@ -146,7 +147,7 @@ function toPublicComponent(
     title: row.title,
     subtitle: row.subtitle,
     body: row.body,
-    layout: row.layout,
+    layout: LAYOUT_OF_SPAN[row.span],
     // A banner's slides are resolved; every other kind's items are what the shopkeeper wrote. The
     // ids never reach the wire: `PublicStore` is served to anyone who asks, and a uuid on it is a
     // row's identity handed to a stranger for nothing.
@@ -198,7 +199,7 @@ export function toComponent(row: StoreComponentModel): StoreComponent {
     title: row.title,
     subtitle: row.subtitle,
     body: row.body,
-    layout: row.layout,
+    layout: LAYOUT_OF_SPAN[row.span],
     items: itemsOf(row.kind, row.items),
     columns: row.columns,
     align: row.align,

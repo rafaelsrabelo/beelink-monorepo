@@ -11,7 +11,8 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { sectionInclude, toComponent, toSection } from './page.mapper.js';
 import { PageRules, pageError } from './page.rules.js';
-import { openingItemsOf } from './page-seed.js';
+import { SPAN_OF_LAYOUT } from './page.constants.js';
+import { openingDisplayOf, openingItemsOf } from './page-seed.js';
 
 /**
  * A component's row as both creates write it — around a new band, or into one that exists.
@@ -27,7 +28,8 @@ function componentRow(storeId: string, dto: ComponentDto, items: object[], posit
     title: dto.title ?? null,
     subtitle: dto.subtitle ?? null,
     body: dto.body ?? null,
-    ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
+    ...(dto.layout !== undefined ? { span: SPAN_OF_LAYOUT[dto.layout] } : {}),
+    display: openingDisplayOf(dto.kind),
     columns: dto.columns ?? null,
     align: dto.align ?? null,
     items,
@@ -213,7 +215,7 @@ export class PageService {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.subtitle !== undefined ? { subtitle: dto.subtitle } : {}),
         ...(dto.body !== undefined ? { body: dto.body } : {}),
-        ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
+        ...(dto.layout !== undefined ? { span: SPAN_OF_LAYOUT[dto.layout] } : {}),
         ...(dto.columns !== undefined ? { columns: dto.columns } : {}),
         ...(dto.align !== undefined ? { align: dto.align } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),

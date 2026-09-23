@@ -1,16 +1,3 @@
-/// The shopkeeper's own taxonomy of what they sell, and the second segment of a public URL:
-/// `/lessari/blusas`. Not `StoreCategory`, which is the platform's taxonomy of shops.
-/// How wide a category sits on the landing page, when the shopkeeper puts it there.
-///
-/// A shape rather than a column count: full width is the poster at the top, two-across is a banner
-/// with room for artwork, three-across is a card with room for a name and a line. A free integer
-/// would let someone pick seven and get a row of stamps.
-enum ShowcaseLayout {
-  FULL
-  HALVES
-  THIRDS
-}
-
 /// Whether a product is on sale or still being written.
 ///
 /// It replaced a boolean called `available`, which conflated two facts a shopkeeper keeps apart: a
@@ -43,6 +30,8 @@ enum ProductOrigin {
   RESALE
 }
 
+/// The shopkeeper's own taxonomy of what they sell, and the second segment of a public URL:
+/// `/lessari/blusas`. Not `StoreCategory`, which is the platform's taxonomy of shops.
 model ProductCategory {
   id      String @id @default(uuid(7)) @db.Uuid
   storeId String @db.Uuid
