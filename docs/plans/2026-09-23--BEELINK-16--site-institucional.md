@@ -229,3 +229,20 @@ já dizia.
 "Configurações da loja", a descrição do modo design — o painel passa a escolher a frase pelo tipo.
 O fluxo de criação continua dizendo "loja" no título do passo: é a tela onde o tipo ainda está
 sendo escolhido.
+
+---
+
+## Adendo 3 — o fluxo de criação muda de forma (decidido em 23/09/2026)
+
+O dono viu a proposta desenhada (canvas "bee-link — fluxos de criação, modo design e variações") e decidiu:
+
+- **"Criar sua página"** substitui "Criar loja" como porta de entrada. A primeira tela é uma escolha só —
+  um select rico, com ícone e descrição, entre **Loja online** e **Site da empresa** — e não um
+  controle dentro do formulário de loja. Cada tipo segue por um formulário próprio, de três passos:
+  loja (nome e link · WhatsApp e pagamento · cores), site (nome e link · modelo · contato). Endereço,
+  redes e logo saem da criação e ficam em Configurações.
+- **A ordem:** a entrega B (leads) termina primeiro, porque a API dela já está feita; o novo fluxo de
+  criação é a entrega seguinte, com PR próprio. O controle "O que você está criando?" da entrega A
+  fica até lá.
+- **Variações de produto** (tamanho, cor, peso — opções que geram combinações com preço e estoque)
+  **não entram agora.** São um domínio novo, com tabelas e migração, e terão ticket próprio.
