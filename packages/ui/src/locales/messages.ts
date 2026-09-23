@@ -333,6 +333,8 @@ export interface UiMessages {
     bandWidthFull: string
     bandWidthContained: string
     bandWidthHelp: string
+    /** Under the strip's band's name: it is drawn above the header, edge to edge, whatever the band says. */
+    stripBandHelp: string
     /** The panel that opens on a component's row. */
     editComponent: string
     bodyLabel: string

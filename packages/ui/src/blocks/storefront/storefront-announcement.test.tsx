@@ -45,6 +45,27 @@ describe("StorefrontAnnouncement", () => {
     expect((container.firstElementChild as HTMLElement).style.backgroundColor).toBe("var(--shop-text)")
   })
 
+  it("is one link, the whole strip, when it leads somewhere — and none when it does not", () => {
+    const { rerender } = render(<StorefrontAnnouncement left="Frete grátis" href="/lessari/frete" />)
+
+    const link = screen.getByRole("link", { name: "Frete grátis" })
+    expect(link).toHaveAttribute("href", "/lessari/frete")
+    expect(link).not.toHaveAttribute("target")
+
+    rerender(<StorefrontAnnouncement left="Frete grátis" href="https://wa.me/55" external />)
+    expect(screen.getByRole("link", { name: "Frete grátis" })).toHaveAttribute("target", "_blank")
+
+    rerender(<StorefrontAnnouncement left="Frete grátis" />)
+    expect(screen.queryByRole("link")).not.toBeInTheDocument()
+  })
+
+  it("runs the width of the window, not the shop's measure", () => {
+    const { container } = render(<StorefrontAnnouncement left="Oi" />)
+
+    expect(container.querySelector("[class*='max-w-']")).toBeNull()
+    expect(container.querySelector(".animate-marquee")!.className).not.toContain("paused")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<StorefrontAnnouncement left="Frete grátis" right="acima de R$ 199" />)
 

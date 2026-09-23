@@ -2,7 +2,13 @@
 import { z } from 'zod';
 
 // Types
-import type { BannerSlide, BenefitRow, ComponentItem, ComponentKind } from '@harness-monorepo/contracts';
+import type {
+  AnnouncementLink,
+  BannerSlide,
+  BenefitRow,
+  ComponentItem,
+  ComponentKind,
+} from '@harness-monorepo/contracts';
 
 // App
 import { COMPONENT_URL_MAX_LENGTH } from './page.constants.js';
@@ -22,32 +28,46 @@ import { COMPONENT_URL_MAX_LENGTH } from './page.constants.js';
  */
 
 /**
- * One picture of a banner, with its destination as an id.
+ * A destination, as an id. Shared by a slide and by the strip's link.
  *
- * Exactly one of the three destinations, refined rather than left to a CHECK — `items` is JSON, so
- * the database cannot hold the rule the way it held it for the four columns this model dropped.
- * The refinement is where it lives instead, and it says the same thing: a slide that claims
- * CATEGORY has a category.
+ * Exactly one of the three, refined rather than left to a CHECK — `items` is JSON, so the
+ * database cannot hold the rule the way it held it for the four columns this model dropped. The
+ * refinement is where it lives instead, and it says the same thing: a thing that claims CATEGORY
+ * has a category.
  */
+const destination = {
+  target: z.enum(['CATEGORY', 'PRODUCT', 'EXTERNAL', 'NONE']),
+  categoryId: z.uuid().nullish(),
+  productId: z.uuid().nullish(),
+  externalUrl: z.url({ protocol: /^https?$/ }).max(COMPONENT_URL_MAX_LENGTH).nullish(),
+};
+
+const carriesWhatItNames = (row: {
+  target: string;
+  categoryId?: string | null;
+  productId?: string | null;
+  externalUrl?: string | null;
+}) =>
+  (row.target === 'CATEGORY' && !!row.categoryId) ||
+  (row.target === 'PRODUCT' && !!row.productId) ||
+  (row.target === 'EXTERNAL' && !!row.externalUrl) ||
+  row.target === 'NONE';
+
+/** One picture of a banner, with its destination as an id. */
 const bannerSlide = z
   .strictObject({
     id: z.string().min(1).max(64),
     imageUrl: z.url({ protocol: /^https?$/ }).max(COMPONENT_URL_MAX_LENGTH),
     title: z.string().max(120).nullish(),
     subtitle: z.string().max(200).nullish(),
-    target: z.enum(['CATEGORY', 'PRODUCT', 'EXTERNAL', 'NONE']),
-    categoryId: z.uuid().nullish(),
-    productId: z.uuid().nullish(),
-    externalUrl: z.url({ protocol: /^https?$/ }).max(COMPONENT_URL_MAX_LENGTH).nullish(),
+    ...destination,
   })
-  .refine(
-    (slide) =>
-      (slide.target === 'CATEGORY' && !!slide.categoryId) ||
-      (slide.target === 'PRODUCT' && !!slide.productId) ||
-      (slide.target === 'EXTERNAL' && !!slide.externalUrl) ||
-      slide.target === 'NONE',
-    { message: 'A slide must carry the destination its target names' },
-  ) satisfies z.ZodType<BannerSlide>;
+  .refine(carriesWhatItNames, { message: 'A slide must carry the destination its target names' }) satisfies z.ZodType<BannerSlide>;
+
+/** Where the strip leads. Its words are the component's own; this is only the destination. */
+const announcementLink = z
+  .strictObject({ id: z.string().min(1).max(64), ...destination })
+  .refine(carriesWhatItNames, { message: 'A link must carry the destination its target names' }) satisfies z.ZodType<AnnouncementLink>;
 
 const benefitRow = z.strictObject({
   id: z.string().min(1).max(64),
@@ -67,14 +87,15 @@ const NOTHING = z.array(z.never()).length(0);
 
 /**
  * The table, closed with `satisfies`. An eighth kind fails to compile here until it says what its
- * items are — even if the answer is "none", which is what five of the seven say.
+ * items are — even if the answer is "none", which is what four of the seven say.
  */
 const ITEMS_OF = {
   /** One picture is a poster; several are a carousel. The count is the whole of that decision. */
   BANNER: z.array(bannerSlide).max(20),
   BENEFITS: z.array(benefitRow).max(12),
+  /** At most one: the strip is one sentence, and one sentence leads one place. */
+  ANNOUNCEMENT: z.array(announcementLink).max(1),
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
-  ANNOUNCEMENT: NOTHING,
   HEADING: NOTHING,
   TEXT: NOTHING,
   CATEGORIES: NOTHING,

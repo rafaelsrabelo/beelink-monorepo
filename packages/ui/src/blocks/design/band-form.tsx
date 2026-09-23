@@ -22,6 +22,12 @@ export interface BandFormValues {
 export interface BandFormProps {
   value: BandFormValues
   onChange: (value: BandFormValues) => void
+  /**
+   * False for the band that holds the announcement strip: it is drawn above the header, edge to
+   * edge, whatever this says — and offering "ponta a ponta" there was read as a promise the strip
+   * then broke.
+   */
+  widthEditable?: boolean
   /** What the page is painted, so turning a band's own colour on starts somewhere visible. */
   pageBackground: string
   onSubmit: () => void
@@ -44,6 +50,7 @@ export interface BandFormProps {
 export function BandForm({
   value,
   onChange,
+  widthEditable = true,
   pageBackground,
   onSubmit,
   onCancel,
@@ -64,6 +71,7 @@ export function BandForm({
         onSubmit()
       }}
     >
+      {widthEditable ? (
       <Field orientation="responsive">
         <FieldLabel htmlFor="band-width">{text.bandWidth}</FieldLabel>
         <FieldContent>
@@ -84,6 +92,7 @@ export function BandForm({
           <FieldDescription>{text.bandWidthHelp}</FieldDescription>
         </FieldContent>
       </Field>
+      ) : null}
 
       <BandColourField
         id="band-background"

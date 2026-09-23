@@ -49,6 +49,23 @@ describe("BandForm", () => {
     expect(onChange).toHaveBeenCalledWith({ width: "CONTAINED", background: page })
   })
 
+  /** The strip's band is drawn above the header, edge to edge; "ponta a ponta" there is a lie. */
+  it("skips the width when told the band is not drawn where it sits", () => {
+    render(
+      <BandForm
+        value={{ width: "CONTAINED", background: "" }}
+        onChange={vi.fn()}
+        widthEditable={false}
+        pageBackground={page}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByRole("combobox", { name: "Largura" })).not.toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Cor de fundo da faixa" })).toBeInTheDocument()
+  })
+
   it("offers no text colour at all", () => {
     render(
       <BandForm

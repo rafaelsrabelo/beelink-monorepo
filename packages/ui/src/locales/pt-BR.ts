@@ -241,6 +241,7 @@ export const ptBR: UiMessages = {
     bandWidthFull: "Ponta a ponta",
     bandWidthContained: "Dentro da margem",
     bandWidthHelp: "Ponta a ponta é para capa e faixas coloridas.",
+    stripBandHelp: "Esta faixa é a barra de aviso: desenhada acima do topo, de ponta a ponta. Só a cor se escolhe aqui.",
     editComponent: "Editar componente",
     bodyLabel: "Texto",
     bodyPlaceholder: "Escreva o parágrafo…",

@@ -4,7 +4,13 @@
 import { useState } from "react"
 
 // Types
-import type { BannerSlide, BenefitRow, StoreComponent, UpdateComponentPayload } from "@harness-monorepo/contracts"
+import type {
+  AnnouncementLink,
+  BannerSlide,
+  BenefitRow,
+  StoreComponent,
+  UpdateComponentPayload,
+} from "@harness-monorepo/contracts"
 
 // UI
 import { ComponentForm } from "@harness-monorepo/ui/blocks/design/component-form"
@@ -27,6 +33,8 @@ import { labelOf } from "./design-draft"
 
 /** The wire's nulls become the form's empty strings, which is the only shape an input can hold. */
 function toForm(component: StoreComponent, bandBackground: string | null): ComponentFormValues {
+  const link = component.kind === "ANNOUNCEMENT" ? (component.items[0] as AnnouncementLink | undefined) : undefined
+
   return {
     kind: component.kind,
     title: component.title ?? "",
@@ -37,6 +45,10 @@ function toForm(component: StoreComponent, bandBackground: string | null): Compo
     // Resolved for the form, so the toggle marks one; a null on the wire is the kind's own habit.
     align: component.align ?? defaultAlignOf(component.kind),
     background: bandBackground ?? "",
+    target: link?.target ?? "NONE",
+    categoryId: link?.categoryId ?? "",
+    productId: link?.productId ?? "",
+    externalUrl: link?.externalUrl ?? "",
     slides:
       component.kind === "BANNER"
         ? (component.items as BannerSlide[]).map((slide) => ({
@@ -70,7 +82,7 @@ function toForm(component: StoreComponent, bandBackground: string | null): Compo
  * A slide with no picture is dropped rather than sent — the API would refuse the whole save over
  * it, and a card the owner never filled in is not a mistake they meant to make.
  */
-function toPayload(value: ComponentFormValues): UpdateComponentPayload {
+function toPayload(value: ComponentFormValues, linkId: string): UpdateComponentPayload {
   const slides: BannerSlide[] = value.slides
     .filter((slide) => slide.imageUrl.trim())
     .map((slide) => ({
@@ -83,6 +95,21 @@ function toPayload(value: ComponentFormValues): UpdateComponentPayload {
       productId: slide.target === "PRODUCT" ? slide.productId || null : null,
       externalUrl: slide.target === "EXTERNAL" ? slide.externalUrl.trim() || null : null,
     }))
+
+  // The strip's one link, kept only when it names somewhere: "nowhere" is an empty list, not a
+  // row that says NONE, so a strip that never pointed anywhere holds nothing to resolve.
+  const link: AnnouncementLink[] =
+    value.target === "NONE"
+      ? []
+      : [
+          {
+            id: linkId,
+            target: value.target,
+            categoryId: value.target === "CATEGORY" ? value.categoryId || null : null,
+            productId: value.target === "PRODUCT" ? value.productId || null : null,
+            externalUrl: value.target === "EXTERNAL" ? value.externalUrl.trim() || null : null,
+          },
+        ]
 
   const benefits: BenefitRow[] = value.benefits
     .filter((row) => row.title.trim())
@@ -97,6 +124,7 @@ function toPayload(value: ComponentFormValues): UpdateComponentPayload {
     align: value.align,
     ...(value.kind === "BANNER" ? { items: slides } : {}),
     ...(value.kind === "BENEFITS" ? { items: benefits } : {}),
+    ...(value.kind === "ANNOUNCEMENT" ? { items: link } : {}),
   }
 }
 
@@ -157,9 +185,12 @@ function ComponentEditorBody({
   const update = useUpdateComponent(slug)
   const updateBand = useUpdateSection(slug)
   const image = useImageUpload()
-  // Only a banner needs something to point at; the other kinds never ask.
-  const categories = useProductCategories(component.kind === "BANNER" ? slug : "")
-  const products = useProducts(component.kind === "BANNER" ? slug : "", { pageSize: 100 })
+  // Only a banner and the strip need something to point at; the other kinds never ask.
+  const points = component.kind === "BANNER" || component.kind === "ANNOUNCEMENT"
+  const categories = useProductCategories(points ? slug : "")
+  const products = useProducts(points ? slug : "", { pageSize: 100 })
+  // The strip's link keeps its id across saves, so a re-pointed strip is the same link moved.
+  const linkId = (component.items[0] as { id?: string } | undefined)?.id ?? crypto.randomUUID()
 
   const categoryOptions: SlideTargetOption[] = (categories.data ?? []).map((row) => ({ id: row.id, name: row.name }))
   const productOptions: SlideTargetOption[] = (products.data?.products ?? []).map((row) => ({
@@ -187,7 +218,7 @@ function ComponentEditorBody({
           pageBackground={pageBackground}
           onSubmit={() =>
             update.mutate(
-              { componentId: component.id, payload: toPayload(value) },
+              { componentId: component.id, payload: toPayload(value, linkId) },
               {
                 onSuccess: () => {
                   // The strip's colour lives on its band. Written second and only when it moved:

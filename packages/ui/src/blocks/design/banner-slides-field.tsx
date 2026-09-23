@@ -12,8 +12,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { BannerSlideCard } from "./banner-slide-card"
+import type { Target, TargetOption } from "./target-fields"
 
-export type SlideTarget = "CATEGORY" | "PRODUCT" | "EXTERNAL" | "NONE"
+/** The destination vocabulary is the shared one; these names are what the slide's callers use. */
+export type SlideTarget = Target
+export type SlideTargetOption = TargetOption
 
 /**
  * One picture of a banner, as the form holds it.
@@ -31,12 +34,6 @@ export interface SlideValue {
   categoryId: string
   productId: string
   externalUrl: string
-}
-
-/** One thing a slide may point at. Named by what a person reads, keyed by what survives a rename. */
-export interface SlideTargetOption {
-  id: string
-  name: string
 }
 
 export interface BannerSlidesFieldProps {

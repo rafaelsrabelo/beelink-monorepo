@@ -230,3 +230,31 @@ centrada.
 - O menu oferecia os singletons antes de a lista carregar. Fica desabilitado enquanto carrega.
 - O Swagger não documentava o `400` nos dois `DELETE`. Documenta.
 
+---
+
+## Adendo 4 — a barra de aviso: ponta a ponta, sem pausa, com destino
+
+Pedido: "ela tem que se estender até o final, está se limitando ao alinhamento do header; quando
+boto o mouse por cima a letra para e não é pra parar; e essa faixa pode ter uma ação de ir para
+algum produto, categoria, assim como o componente de banner".
+
+**Ponta a ponta.** A trilha rolava dentro da medida da loja (1440 px); passa a correr a largura da
+janela. A estimativa de cópias mira agora numa tela de 27" (2560 px), não na medida das faixas.
+
+**Sem pausa.** A pausa sob o mouse era decisão minha, não pedido. Sai. "Reduzir movimento" no
+sistema continua parando a barra — é o mecanismo de quem precisa dela parada.
+
+**Com destino.** A barra ganha o mesmo destino de um slide — categoria, produto, endereço fora
+da loja, ou nada — guardado em `items` como **no máximo um** `AnnouncementLink` (é conteúdo,
+como os slides; id em vez de endereço, pela mesma razão). A API resolve o `href` na saída como
+faz com o slide; na vitrine, a barra inteira vira um link, como um cartaz. O bloco de destino foi
+extraído do slide (`target-fields.tsx`) e é o mesmo nos dois formulários: um destino respondido
+de dois jeitos é um destino que diverge.
+
+**A faixa da barra não oferece largura.** "Ponta a ponta é para capa e faixas coloridas" apareceu
+no editor da faixa da barra e foi lido como promessa — que a barra então quebrava. A barra é
+desenhada acima do header, ponta a ponta, diga a faixa o que disser; o campo some ali.
+
+**Nota:** a revisão adversarial do commit anterior não rodou — os três agentes bateram no limite
+da sessão. Não é "nenhum achado".
+

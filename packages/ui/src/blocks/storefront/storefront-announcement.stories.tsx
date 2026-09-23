@@ -16,9 +16,9 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * As pedido: o texto fica rolando na horizontal, em velocidade constante — uma frase curta não
- * corre e uma longa não se arrasta. Pausa quando o mouse passa por cima. Com "reduzir movimento"
- * ligado no sistema, nada se move: a frase fica parada, centrada.
+ * As pedido: o texto fica rolando na horizontal, de ponta a ponta da janela, em velocidade
+ * constante — uma frase curta não corre e uma longa não se arrasta — e não para sob o mouse. Com
+ * "reduzir movimento" ligado no sistema, nada se move: a frase fica parada, centrada.
  */
 export const Padrao: Story = {}
 
@@ -30,3 +30,6 @@ export const Curta: Story = { args: { left: "Oi", right: undefined } }
  * pela mesma regra do resto da vitrine.
  */
 export const Colorida: Story = { args: { background: sampleColorPresets[2]!.colors.primary } }
+
+/** Com destino: a barra inteira é um link, como um cartaz. */
+export const ComLink: Story = { args: { href: "/lessari/frete-gratis", background: sampleColorPresets[3]!.colors.primary } }

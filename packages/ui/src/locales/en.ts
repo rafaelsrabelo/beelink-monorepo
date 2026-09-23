@@ -241,6 +241,7 @@ export const en: UiMessages = {
     bandWidthFull: "Edge to edge",
     bandWidthContained: "Inside the measure",
     bandWidthHelp: "Edge to edge is for covers and coloured bands.",
+    stripBandHelp: "This band is the announcement bar: drawn above the header, edge to edge. Only its colour is chosen here.",
     editComponent: "Edit component",
     bodyLabel: "Text",
     bodyPlaceholder: "Write the paragraph…",

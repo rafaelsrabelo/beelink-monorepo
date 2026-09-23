@@ -46,6 +46,9 @@ export interface StorefrontAnnouncement {
   right?: string
   /** The strip's own colour, which is its band's. Null is the page's ink, as it always was. */
   background?: string | null
+  /** Already resolved by the API. Null goes nowhere; the strip is then a poster, not a link. */
+  href?: string | null
+  external?: boolean
 }
 
 /** One column of the footer. The screen builds them, because a block knows no address. */
@@ -282,6 +285,9 @@ export function StorefrontWindow({
           left={announcement.left}
           {...(announcement.right ? { right: announcement.right } : {})}
           background={announcement.background ?? null}
+          href={announcement.href ?? null}
+          external={announcement.external ?? false}
+          linkComponent={Link}
         />
       ) : null}
 

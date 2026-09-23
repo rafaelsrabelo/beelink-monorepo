@@ -136,14 +136,37 @@ export interface BenefitRow {
 }
 
 /**
+ * Where the announcement strip leads, if anywhere. At most one per strip.
+ *
+ * The same destination a slide carries, minus the picture and the words — those are the strip's
+ * own `title` and `subtitle`. Stored as an id for the same reason a slide's is: the address is
+ * built on the way out from the slug the target has now, so a renamed category moves the strip
+ * with it.
+ */
+export interface AnnouncementLink {
+  id: string;
+  target: ComponentTarget;
+  categoryId?: string | null;
+  productId?: string | null;
+  externalUrl?: string | null;
+}
+
+/** The strip's destination as a visitor is served it: the address already built. */
+export interface PublicAnnouncementLink {
+  id: string;
+  href: string | null;
+  external: boolean;
+}
+
+/**
  * What a component holds beyond its own fields.
  *
  * It is content, and that is what separates it from `layoutSettings`. A key nobody reads in that
  * blob is invisible — sixteen of its twenty-one survived that way. An `items` nobody reads is a
  * blank band on the shop's front page, reported the same day.
  */
-export type ComponentItem = BannerSlide | BenefitRow;
-export type PublicComponentItem = PublicBannerSlide | BenefitRow;
+export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink;
+export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {
@@ -154,7 +177,7 @@ export interface PublicComponent {
   /** The paragraph, on a `TEXT`. Null on every other kind. */
   body: string | null;
   layout: ShowcaseLayout;
-  /** A banner's slides, or the benefits band's rows. Empty on every other kind. */
+  /** A banner's slides, the benefits band's rows, or the strip's one link. Empty otherwise. */
   items: PublicComponentItem[];
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */
   columns: number | null;

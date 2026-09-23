@@ -74,17 +74,21 @@ function BandEditorBody({
     background: section.background ?? "",
   })
   const update = useUpdateSection(slug)
+  // The strip's band is drawn above the header, edge to edge, whatever its width says — so the
+  // width is not offered there, and the sheet says why instead of promising "ponta a ponta".
+  const isStrip = section.components.every((component) => component.kind === "ANNOUNCEMENT")
 
   return (
     <>
       <SheetHeader>
         <SheetTitle>{format(text.bandNumber, { position: String(position) })}</SheetTitle>
-        <SheetDescription>{text.bandWidthHelp}</SheetDescription>
+        <SheetDescription>{isStrip ? text.stripBandHelp : text.bandWidthHelp}</SheetDescription>
       </SheetHeader>
       <div className="px-4 pb-4">
         <BandForm
           value={value}
           onChange={setValue}
+          widthEditable={!isStrip}
           pageBackground={pageBackground}
           onSubmit={() =>
             update.mutate(

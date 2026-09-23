@@ -1,5 +1,6 @@
 // Types
 import type {
+  AnnouncementLink,
   BannerSlide,
   PublicComponent,
   PublicComponentItem,
@@ -67,7 +68,9 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
                     href: null,
                     external: false,
                   }))
-                : ((was?.items ?? []) as PublicComponentItem[]),
+                : component.kind === "ANNOUNCEMENT"
+                  ? ((was?.items ?? []) as AnnouncementLink[]).map((link) => ({ id: link.id, href: null, external: false }))
+                  : ((was?.items ?? []) as PublicComponentItem[]),
           } satisfies PublicComponent
         }),
     }))

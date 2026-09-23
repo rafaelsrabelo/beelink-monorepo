@@ -14,6 +14,10 @@ const empty: ComponentFormValues = {
   columns: 0,
   align: "CENTER",
   background: "",
+  target: "NONE",
+  categoryId: "",
+  productId: "",
+  externalUrl: "",
   slides: [],
   benefits: [],
 }

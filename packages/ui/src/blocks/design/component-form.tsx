@@ -13,12 +13,13 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AlignField } from "./align-field"
-import { BandColourField } from "./band-colour-field"
-import { BannerSlidesField } from "./banner-slides-field"
+import { AnnouncementFields } from "./announcement-fields"
+import { BannerFields } from "./banner-fields"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import { BenefitRowsField } from "./benefit-rows-field"
 import type { BenefitValue } from "./benefit-rows-field"
 import type { ComponentKind, TextAlign } from "./design-types"
+import type { Target } from "./target-fields"
 
 export type ComponentFormLayout = "FULL" | "HALVES" | "THIRDS"
 
@@ -47,6 +48,11 @@ export interface ComponentFormValues {
    * `""` is "as it always was".
    */
   background: string
+  /** Where the strip leads — the same destination a slide holds, held once for the whole strip. */
+  target: Target
+  categoryId: string
+  productId: string
+  externalUrl: string
   slides: SlideValue[]
   benefits: BenefitValue[]
 }
@@ -101,9 +107,6 @@ export function ComponentForm({
   const set = <K extends keyof ComponentFormValues>(key: K, next: ComponentFormValues[K]) =>
     onChange({ ...value, [key]: next })
 
-  const layoutLabel = (layout: string) =>
-    layout === "HALVES" ? text.sizeHalves : layout === "THIRDS" ? text.sizeThirds : text.sizeFull
-
   return (
     <form
       className="flex flex-col gap-4"
@@ -141,13 +144,13 @@ export function ComponentForm({
       ) : null}
 
       {value.kind === "ANNOUNCEMENT" ? (
-        <BandColourField
-          id="component-background"
-          value={value.background}
-          onChange={(next) => set("background", next)}
+        <AnnouncementFields
+          value={value}
+          onChange={(next) => onChange({ ...value, ...next })}
           pageBackground={pageBackground}
-          label={text.announcementColour}
-          noneLabel={text.announcementColourNone}
+          categories={categories}
+          products={products}
+          messages={messages}
         />
       ) : null}
 
@@ -199,39 +202,16 @@ export function ComponentForm({
       ) : null}
 
       {value.kind === "BANNER" ? (
-        <>
-          <Field orientation="responsive">
-            <FieldLabel htmlFor="component-layout">{text.sizeLabel}</FieldLabel>
-            <FieldContent>
-              <Select
-                value={value.layout}
-                onValueChange={(next: string | null) =>
-                  set("layout", (next ?? "FULL") as ComponentFormLayout)
-                }
-              >
-                <SelectTrigger id="component-layout">
-                  <SelectValue>{(selected: string) => layoutLabel(selected)}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FULL">{text.sizeFull}</SelectItem>
-                  <SelectItem value="HALVES">{text.sizeHalves}</SelectItem>
-                  <SelectItem value="THIRDS">{text.sizeThirds}</SelectItem>
-                </SelectContent>
-              </Select>
-            </FieldContent>
-          </Field>
-
-          <BannerSlidesField
-            value={value.slides}
-            onChange={(next) => set("slides", next)}
-            categories={categories}
-            products={products}
-            {...(onUploadImage ? { onUploadImage } : {})}
-            imagePending={imagePending}
-            newSlideId={newItemId}
-            messages={messages}
-          />
-        </>
+        <BannerFields
+          value={value}
+          onChange={(next) => onChange({ ...value, ...next })}
+          categories={categories}
+          products={products}
+          {...(onUploadImage ? { onUploadImage } : {})}
+          imagePending={imagePending}
+          newItemId={newItemId}
+          messages={messages}
+        />
       ) : null}
 
       {value.kind === "BENEFITS" ? (

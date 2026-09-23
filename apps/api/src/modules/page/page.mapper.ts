@@ -1,8 +1,10 @@
 // Types
 import type {
+  AnnouncementLink,
   BannerSlide,
   ComponentItem,
   ComponentKind,
+  PublicAnnouncementLink,
   PublicBannerSlide,
   PublicComponent,
   PublicComponentItem,
@@ -60,18 +62,21 @@ export interface SlugsByEntity {
 
 export const NO_SLUGS: SlugsByEntity = { categories: new Map(), products: new Map() };
 
-/** Every id every slide on this page names, so one query answers all of them. */
+/** The kinds whose items point somewhere by id. */
+const POINTING: readonly ComponentKind[] = ['BANNER', 'ANNOUNCEMENT'];
+
+/** Every id every slide and the strip's link on this page name, so one query answers all of them. */
 export function slideTargetsOf(rows: readonly SectionRow[]): { categoryIds: string[]; productIds: string[] } {
   const categoryIds = new Set<string>();
   const productIds = new Set<string>();
 
   for (const section of rows) {
     for (const component of section.components) {
-      if (component.kind !== 'BANNER') continue;
+      if (!POINTING.includes(component.kind)) continue;
 
-      for (const slide of itemsOf(component.kind, component.items) as BannerSlide[]) {
-        if (slide.categoryId) categoryIds.add(slide.categoryId);
-        if (slide.productId) productIds.add(slide.productId);
+      for (const item of itemsOf(component.kind, component.items) as (BannerSlide | AnnouncementLink)[]) {
+        if (item.categoryId) categoryIds.add(item.categoryId);
+        if (item.productId) productIds.add(item.productId);
       }
     }
   }
@@ -80,30 +85,39 @@ export function slideTargetsOf(rows: readonly SectionRow[]): { categoryIds: stri
 }
 
 /**
- * One slide, with its address built from the slug its target has now.
+ * The finished address, built here and not in the browser.
  *
  * This is the whole reason a slide stores an id instead of the `href` the first attempt stored:
  * the address is derived from the slug the target has **now**, so renaming a category moves every
  * slide pointing at it. The word for the product segment comes from the shop's own vocabulary,
  * never from a literal — the API's side of the rule the web keeps in one module.
  */
+function hrefOf(
+  row: Pick<AnnouncementLink, 'target' | 'categoryId' | 'productId' | 'externalUrl'>,
+  shopSlug: string,
+  words: StorefrontRouteWords,
+  slugs: SlugsByEntity,
+): string | null {
+  const categorySlug = row.categoryId ? slugs.categories.get(row.categoryId) : undefined;
+  const productSlug = row.productId ? slugs.products.get(row.productId) : undefined;
+
+  return row.target === 'CATEGORY' && categorySlug
+    ? `/${shopSlug}/${categorySlug}`
+    : row.target === 'PRODUCT' && productSlug
+      ? `/${shopSlug}/${words.products}/${productSlug}`
+      : row.target === 'EXTERNAL'
+        ? (row.externalUrl ?? null)
+        : null;
+}
+
+/** One slide, with its address built from the slug its target has now. */
 function toPublicSlide(
   slide: BannerSlide,
   shopSlug: string,
   words: StorefrontRouteWords,
   slugs: SlugsByEntity,
 ): PublicBannerSlide {
-  const categorySlug = slide.categoryId ? slugs.categories.get(slide.categoryId) : undefined;
-  const productSlug = slide.productId ? slugs.products.get(slide.productId) : undefined;
-
-  const href =
-    slide.target === 'CATEGORY' && categorySlug
-      ? `/${shopSlug}/${categorySlug}`
-      : slide.target === 'PRODUCT' && productSlug
-        ? `/${shopSlug}/${words.products}/${productSlug}`
-        : slide.target === 'EXTERNAL'
-          ? (slide.externalUrl ?? null)
-          : null;
+  const href = hrefOf(slide, shopSlug, words, slugs);
 
   return {
     id: slide.id,
@@ -141,7 +155,12 @@ function toPublicComponent(
         ? (itemsOf(row.kind, row.items) as BannerSlide[]).map((slide) =>
             toPublicSlide(slide, shopSlug, words, slugs),
           )
-        : (itemsOf(row.kind, row.items) as PublicComponentItem[]),
+        : row.kind === 'ANNOUNCEMENT'
+          ? (itemsOf(row.kind, row.items) as AnnouncementLink[]).map((link) => {
+              const href = hrefOf(link, shopSlug, words, slugs);
+              return { id: link.id, href, external: link.target === 'EXTERNAL' && !!href } satisfies PublicAnnouncementLink;
+            })
+          : (itemsOf(row.kind, row.items) as PublicComponentItem[]),
     columns: row.columns,
     align: row.align,
   } satisfies PublicComponent;

@@ -7,7 +7,6 @@ import { ChevronDownIcon, ChevronUpIcon, Trash2Icon } from "lucide-react"
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@harness-monorepo/ui/components/select"
 
 // Locales
 import { format } from "@harness-monorepo/ui/locales/index"
@@ -15,7 +14,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { StoreImageField } from "../store/store-image-field"
-import type { SlideTarget, SlideTargetOption, SlideValue } from "./banner-slides-field"
+import { TargetFields } from "./target-fields"
+import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 
 export interface BannerSlideCardProps {
   slide: SlideValue
@@ -55,14 +55,6 @@ export function BannerSlideCard({
   const banner = messages.banners
   const name = format(text.slidePosition, { position: String(at + 1), total: String(total) })
 
-  const targetLabel = (target: string) =>
-    target === "CATEGORY"
-      ? banner.targetCategory
-      : target === "PRODUCT"
-        ? banner.targetProduct
-        : target === "EXTERNAL"
-          ? banner.targetExternal
-          : banner.targetNone
 
   return (
     <div className="border-shell-border flex flex-col gap-3 rounded-xl border p-3">
@@ -138,102 +130,14 @@ export function BannerSlideCard({
         </FieldContent>
       </Field>
 
-      <Field orientation="responsive">
-        <FieldLabel htmlFor={`slide-target-${slide.id}`}>{banner.targetLabel}</FieldLabel>
-        <FieldContent>
-          <Select
-            value={slide.target}
-            onValueChange={(next: string | null) => onSet({ target: (next ?? "NONE") as SlideTarget })}
-          >
-            <SelectTrigger id={`slide-target-${slide.id}`}>
-              <SelectValue>{(selected: string) => targetLabel(selected)}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="NONE">{banner.targetNone}</SelectItem>
-              <SelectItem value="CATEGORY">{banner.targetCategory}</SelectItem>
-              <SelectItem value="PRODUCT">{banner.targetProduct}</SelectItem>
-              <SelectItem value="EXTERNAL">{banner.targetExternal}</SelectItem>
-            </SelectContent>
-          </Select>
-        </FieldContent>
-      </Field>
-
-      {slide.target === "CATEGORY" ? (
-        <SlidePicker
-          id={`slide-category-${slide.id}`}
-          label={banner.categoryLabel}
-          empty={banner.categoryNone}
-          options={categories}
-          value={slide.categoryId}
-          onChange={(next) => onSet({ categoryId: next })}
-        />
-      ) : null}
-
-      {slide.target === "PRODUCT" ? (
-        <SlidePicker
-          id={`slide-product-${slide.id}`}
-          label={banner.productLabel}
-          empty={banner.productNone}
-          options={products}
-          value={slide.productId}
-          onChange={(next) => onSet({ productId: next })}
-        />
-      ) : null}
-
-      {slide.target === "EXTERNAL" ? (
-        <Field>
-          <FieldLabel htmlFor={`slide-url-${slide.id}`}>{banner.externalLabel}</FieldLabel>
-          <FieldContent>
-            <Input
-              id={`slide-url-${slide.id}`}
-              type="url"
-              value={slide.externalUrl}
-              onChange={(event) => onSet({ externalUrl: event.target.value })}
-              placeholder="https://"
-            />
-            <FieldDescription>{banner.externalHelp}</FieldDescription>
-          </FieldContent>
-        </Field>
-      ) : null}
+      <TargetFields
+        idPrefix={`slide-${slide.id}`}
+        value={slide}
+        onChange={onSet}
+        categories={categories}
+        products={products}
+        messages={messages}
+      />
     </div>
-  )
-}
-
-/** A picker over things that survive a rename: the label is the name, the value is the id. */
-function SlidePicker({
-  id,
-  label,
-  empty,
-  options,
-  value,
-  onChange,
-}: {
-  id: string
-  label: string
-  empty: string
-  options: readonly SlideTargetOption[]
-  value: string
-  onChange: (value: string) => void
-}) {
-  const nameOf = (candidate: string) => options.find((option) => option.id === candidate)?.name ?? empty
-
-  return (
-    <Field orientation="responsive">
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <FieldContent>
-        <Select value={value} onValueChange={(next: string | null) => onChange(next ?? "")}>
-          <SelectTrigger id={id}>
-            <SelectValue>{(selected: string) => nameOf(selected)}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                {option.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FieldContent>
-    </Field>
   )
 }
