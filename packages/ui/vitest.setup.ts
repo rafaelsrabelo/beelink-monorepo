@@ -35,6 +35,18 @@ if (typeof window !== "undefined") {
     disconnect = vi.fn();
   } as unknown as typeof ResizeObserver;
 
+  // Embla reaches for this the moment a carousel mounts, and jsdom has none — so the hero's own
+  // test would fail on the second slide rather than on anything the block does.
+  globalThis.IntersectionObserver ??= class {
+    root = null;
+    rootMargin = "";
+    thresholds = [];
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+    takeRecords = vi.fn(() => []);
+  } as unknown as typeof IntersectionObserver;
+
   Element.prototype.scrollIntoView ??= vi.fn();
   Element.prototype.hasPointerCapture ??= vi.fn(() => false);
   Element.prototype.setPointerCapture ??= vi.fn();

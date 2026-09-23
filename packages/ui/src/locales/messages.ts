@@ -1,3 +1,5 @@
+import type { ComponentKind, ContactFieldType } from "../blocks/design/design-types"
+import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
 /**
@@ -243,6 +245,9 @@ export interface UiMessages {
      * hands a screen reader the same two words three times (WCAG 2.4.4).
      */
     seeAllOf: string
+    /** A site's header menu and its footer column: the page's named bands. */
+    siteMenu: string
+    footerNavigation: string
     order: string
     socialLabel: string
     /** Names a footer column. The links inside are addresses, so the screen builds them. */
@@ -266,6 +271,26 @@ export interface UiMessages {
       debitCard: string
       debitCardDetail: string
     }
+    /** A site's contact form, as the visitor fills it in. */
+    contact: {
+      /** The one field every form asks, first: who is writing. */
+      nameLabel: string
+      /** Said after a label a visitor may skip, so the required ones need no asterisk legend. */
+      optional: string
+      selectPlaceholder: string
+      submit: string
+      sending: string
+      sentTitle: string
+      sentText: string
+      /** Beside the form, when the site has a WhatsApp: the other way in. */
+      whatsappLead: string
+      whatsappAction: string
+      /**
+       * The trap's label. Read only by what reads the markup — a screen reader never reaches it,
+       * the field is `aria-hidden` — so it says plainly what a person should do if they ever do.
+       */
+      trapLabel: string
+    }
     /** An icon with no words announces itself as "link" and nothing else. */
     networks: {
       whatsapp: string
@@ -287,6 +312,8 @@ export interface UiMessages {
     dragHandle: string
     /** The product bands, as a row in the arrangement. It is dragged like a poster. */
     productList: string
+    /** What a component is called in the editor when the shopkeeper has not titled it. */
+    kinds: Record<ComponentKind, string>
     productListHint: string
     sizeLabel: string
     sizeFull: string
@@ -307,6 +334,108 @@ export interface UiMessages {
     /** The browser's own leave-confirmation cannot be worded; this is said on screen instead. */
     leaveWarning: string
     previewNotice: string
+    /** Said under the colour pickers: there is no ink field, and this is why. */
+    colorsHint: string
+    saveColors: string
+    tabBlocks: string
+    tabColors: string
+    addBlock: string
+    /** The bin on a block's row, and the question the dialog asks before it runs. */
+    deleteBlock: string
+    /** Said in place of the kind when a block has nothing for the shop window to draw. */
+    emptyBlock: string
+    deleteBlockConfirm: string
+    /** A band has no name of its own, so it is called by where it sits. `{position}`. */
+    bandNumber: string
+    addBand: string
+    deleteBand: string
+    deleteBandConfirm: string
+    /** A band's own colour, and the one value that means "the page's own". */
+    bandColour: string
+    bandColourNone: string
+    bandWidth: string
+    bandWidthFull: string
+    bandWidthContained: string
+    bandWidthHelp: string
+    /** Under the strip's band's name: it is drawn above the header, edge to edge, whatever the band says. */
+    stripBandHelp: string
+    /** What a band is called on the page. Named bands are a site's menu. */
+    bandName: string
+    bandNamePlaceholder: string
+    bandNameHelp: string
+    /** The panel that opens on a component's row. */
+    editComponent: string
+    bodyLabel: string
+    bodyPlaceholder: string
+    columnsLabel: string
+    columnsAuto: string
+    done: string
+    /** One picture of a banner: `{position}` of `{total}`. */
+    slidePosition: string
+    addSlide: string
+    /** One promise with no title yet. `{position}`. */
+    benefitPosition: string
+    addBenefit: string
+    benefitIcon: string
+    benefitTitle: string
+    benefitDetail: string
+    /** Where a heading or a paragraph sits. */
+    alignLabel: string
+    alignLeft: string
+    alignCenter: string
+    alignRight: string
+    /** The strip's colour, and what it is called when it has none of its own. */
+    announcementColour: string
+    announcementColourNone: string
+    /** The fields of a contact form, as its owner declares them. */
+    contact: {
+      fieldsLabel: string
+      /** Said once above the list: the name is not a field, it is always asked. */
+      fieldsHelp: string
+      /** `{position}`. What a field with no label yet is called. */
+      fieldPosition: string
+      fieldLabel: string
+      fieldType: string
+      fieldRequired: string
+      fieldOptions: string
+      fieldOptionsHelp: string
+      addField: string
+      removeField: string
+      /** Shown while no required e-mail or phone is left: the rule the API enforces. */
+      reachBack: string
+      types: Record<ContactFieldType, string>
+    }
+  }
+  /** What arrived through a site's contact form, as its owner works through it. */
+  leads: {
+    title: string
+    description: string
+    empty: string
+    emptyHint: string
+    /** Said instead when a status filter is on, which is a different fact from "nothing yet". */
+    emptyFiltered: string
+    all: string
+    filterLabel: string
+    name: string
+    contact: string
+    received: string
+    status: string
+    statuses: Record<LeadStatus, string>
+    /** `{name}`. The accessible name of the control that opens one lead. */
+    open: string
+    /** `{name}`. Names a row's status select, which otherwise reads as "combobox". */
+    statusOf: string
+    answers: string
+    noAnswers: string
+    email: string
+    phone: string
+    whatsapp: string
+    delete: string
+    deleteConfirm: string
+    /** "1–20 de 137", for the pager under the table. */
+    range: string
+    previous: string
+    next: string
   }
   banners: {
     title: string
@@ -322,6 +451,16 @@ export interface UiMessages {
     imageLabel: string
     imageHelp: string
     layoutLabel: string
+    /** Where on the page the banner lives: the top, or the body. */
+    placementLabel: string
+    placementHero: string
+    placementBody: string
+    placementHelp: string
+    /** A hero's width. A poster in the body is already inside the page's measure. */
+    widthLabel: string
+    widthFull: string
+    widthContained: string
+    widthHelp: string
     layoutFull: string
     layoutHalves: string
     layoutThirds: string
@@ -332,6 +471,8 @@ export interface UiMessages {
     targetExternal: string
     /** A poster that says something and goes nowhere. */
     targetNone: string
+    /** Heads the hero's own pictures on the banners screen. */
+    heroHeading: string
     targetNoneHelp: string
     categoryLabel: string
     categoryNone: string
@@ -564,10 +705,20 @@ export interface UiMessages {
    * because ⌘ on Windows is simply wrong and a dictionary cannot hold a function to choose. The
    * machine-readable form is `aria-keyshortcuts`, which is ARIA token syntax and never translated.
    */
+  /** Sentences more than one family of blocks needs. */
+  shared: {
+    confirmDeleteTitle: string
+    delete: string
+    deleting: string
+    cancel: string
+  }
   shell: {
     brand: string
     menuOpen: string
     navLabel: string
+    /** The desktop control that narrows the rail to icons, and the one that widens it back. */
+    railCollapse: string
+    railExpand: string
     searchPlaceholder: string
     searchLabel: string
     searchShortcut: string
@@ -668,6 +819,10 @@ export interface UiMessages {
     }
     identity: {
       legend: string
+      /** What is being made — a shop or a site — chosen once, at creation. */
+      typeLabel: string
+      typeShopHint: string
+      typeSiteHint: string
       nameLabel: string
       namePlaceholder: string
       slugLabel: string
@@ -747,7 +902,8 @@ export interface UiMessages {
       colorPickerSuffix: string
       backgroundLabel: string
       primaryLabel: string
-      textLabel: string
+      /** The foot. There is no ink label: the ink is derived from what it sits on. */
+      footerLabel: string
       headerLabel: string
       previewLabel: string
       previewSample: string

@@ -17,6 +17,18 @@
 
 @theme inline {
     /*
+     * The announcement strip's motion. The duration is set per strip, from its text, so a short
+     * notice and a long one cross the page at the same speed — see storefront-announcement.tsx.
+     * Half the track, because the track holds an even number of copies: that is the seam.
+     */
+    --animate-marquee: marquee var(--marquee-duration, 20s) linear infinite;
+    @keyframes marquee {
+        to {
+            transform: translateX(-50%);
+        }
+    }
+
+    /*
      * The admin chrome, as its own namespace.
      *
      * A namespace and not a remap: `--border`, `--accent` and `--radius` are read by 11, 5 and 32
@@ -47,6 +59,7 @@
 
     --spacing-header: var(--header-height);
     --spacing-sidebar: var(--sidebar-width);
+    --spacing-sidebar-icon: var(--sidebar-width-icon);
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
     --color-sidebar-ring: var(--sidebar-ring);
@@ -90,7 +103,7 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
+    --background: oklch(100% 0.00011 271.152);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
@@ -159,6 +172,7 @@
 
     --header-height: 3.5rem;                       /* 56px */
     --sidebar-width: 15rem;                        /* 240px */
+    --sidebar-width-icon: 3.5rem;                  /* 56px — the rail recolhido, icons only */
 
 }
 

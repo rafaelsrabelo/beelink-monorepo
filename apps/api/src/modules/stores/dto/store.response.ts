@@ -18,7 +18,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { PublicBannerResponse } from '../../banners/dto/banner.response.js';
+import { PublicSectionResponse } from '../../page/dto/page.response.js';
 import { PAYMENT_METHODS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.constants.js';
 
 /** Documents the shapes for Swagger; the wire types themselves live in packages/contracts. */
@@ -26,7 +26,7 @@ import { PAYMENT_METHODS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.cons
 export class StoreColorsResponse implements StoreColors {
   @ApiProperty({ example: '#F0F9FF' }) background!: string;
   @ApiProperty({ example: '#3B7AF7' }) primary!: string;
-  @ApiProperty({ example: '#1A202C' }) text!: string;
+  @ApiProperty({ example: '#1A202C' }) footer!: string;
   @ApiProperty({ example: '#3B7AF7' }) header!: string;
 }
 
@@ -112,8 +112,8 @@ export class PublicStoreResponse implements PublicStore {
   @ApiProperty({ enum: PAYMENT_METHODS, isArray: true, minItems: 1 })
   paymentMethods!: PaymentMethod[];
 
-  @ApiProperty({ type: [PublicBannerResponse], description: "The landing page's posters, in order." })
-  banners!: PublicBannerResponse[];
+  @ApiProperty({ type: [PublicSectionResponse], description: "The blocks the landing page is made of, in order." })
+  sections!: PublicSectionResponse[];
 }
 
 /** The shop as its owner edits it in the panel. */

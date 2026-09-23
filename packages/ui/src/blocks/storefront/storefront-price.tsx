@@ -61,7 +61,7 @@ export function StorefrontPrice({
         {hasDiscount && showBadge && percent > 0 ? (
           <span
             className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
-            style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
+            style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
           >
             {format(text.discount, { percent: String(percent) })}
           </span>

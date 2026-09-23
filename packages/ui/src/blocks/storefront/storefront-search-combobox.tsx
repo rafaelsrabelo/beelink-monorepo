@@ -204,7 +204,7 @@ export function StorefrontSearchCombobox({
             <a
               href={seeAllHref}
               className="block border-t border-current/10 px-4 py-3 text-center text-xs font-semibold"
-              style={{ color: "var(--shop-primary)" }}
+              style={{ color: "var(--shop-primary-ink)" }}
             >
               {format(text.searchSeeAll, { count: String(total) })}
             </a>

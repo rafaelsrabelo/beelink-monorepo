@@ -82,7 +82,7 @@ export function StorefrontProductCard({
         <span
           aria-hidden="true"
           className="pointer-events-none absolute bottom-full left-0 z-10 mb-1 w-max max-w-64 rounded-md px-2 py-1 text-xs opacity-0 shadow-sm transition-opacity group-focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
-          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-background)" }}
+          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-on-text)" }}
         >
           {product.name}
         </span>

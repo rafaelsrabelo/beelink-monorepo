@@ -4,6 +4,7 @@ import type {
   Store,
   StoreCategory,
   StoreColorPreset,
+  StoreColors,
   UpdateStorePayload,
 } from "@harness-monorepo/contracts"
 
@@ -71,6 +72,20 @@ export function fetchStoreColorPresets(): Promise<StoreColorPreset[]> {
 
 export function createStore(payload: CreateStorePayload): Promise<Store> {
   return call<Store>("/api/stores", { method: "POST", body: JSON.stringify(payload) })
+}
+
+/**
+ * The four colours, and nothing else the shop owns.
+ *
+ * Its own call rather than a field of `updateStore`, because that one is a full replacement:
+ * omitting `layoutSettings` empties the column. Two screens that both re-post the whole shop
+ * overwrite each other with whatever they last read, and design mode is now the second of them.
+ */
+export function updateStoreColors(slug: string, colors: StoreColors): Promise<Store> {
+  return call<Store>(`/api/stores/${encodeURIComponent(slug)}/colors`, {
+    method: "PUT",
+    body: JSON.stringify(colors),
+  })
 }
 
 /** A full replacement, not a patch: the form posts every field it owns, as the legacy PUT did. */

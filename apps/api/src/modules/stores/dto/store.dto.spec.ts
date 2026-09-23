@@ -29,7 +29,7 @@ const updateBody = {
   type: 'ECOMMERCE',
   layoutType: 'DEFAULT',
   showProductsByCategory: false,
-  colors: { background: '#F0F9FF', primary: '#3B7AF7', text: '#1A202C', header: '#3B7AF7' },
+  colors: { background: '#FFFFFF', primary: '#3B7AF7', header: '#3B7AF7', footer: '#3B7AF7' },
   socialNetworks: { whatsapp: '5511999998888' },
   paymentMethods: ['PIX'],
 };
@@ -70,8 +70,13 @@ describe('CreateStoreDto', () => {
     expect((await create(createBody)).socialNetworks.instagram).toBe('minhaloja');
   });
 
-  it('refuses a shop with no WhatsApp at all', async () => {
-    await expect(create({ ...createBody, socialNetworks: {} })).rejects.toThrow(BadRequestException);
+  /**
+   * Whether a WhatsApp is required depends on what is being created — a shop cannot take an order
+   * without one, a site can — and the nested DTO does not know which it is nested in. So the DTO
+   * takes both, and `StoresService` refuses a shop without one (`STORE_WHATSAPP_REQUIRED`).
+   */
+  it('takes a body with no WhatsApp, and leaves the rule to the service', async () => {
+    expect((await create({ ...createBody, socialNetworks: {} })).socialNetworks.whatsapp).toBeUndefined();
   });
 
   it('refuses a logo that is not an http(s) URL — the storefront renders it in `src`', async () => {

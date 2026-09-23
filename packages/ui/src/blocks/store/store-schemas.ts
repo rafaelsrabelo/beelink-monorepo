@@ -64,16 +64,15 @@ export function createStoreAddressSchema(messages: ValidationMessages) {
 
 export function createStoreSocialSchema(messages: ValidationMessages) {
   return z.object({
-    // Required on both verbs, as the legacy panel already required it: WhatsApp is how an order
-    // reaches the shopkeeper. The screen strips the mask before it sends; the form only counts.
-    whatsapp: z
-      .string()
-      .trim()
-      .min(1, messages.whatsappRequired)
-      .refine((value) => {
-        const digits = digitsOf(value).length
-        return digits >= 10 && digits <= 15
-      }, messages.whatsappInvalid),
+    // Well-formed when given. Whether it may be empty depends on what is being made — a shop
+    // cannot take an order without it, a site can — and that is decided where the form knows the
+    // type: `requireWhatsappOnShop`, on the composed schemas. The screen strips the mask before it
+    // sends; the form only counts.
+    whatsapp: z.string().trim().refine((value) => {
+      if (value === "") return true
+      const digits = digitsOf(value).length
+      return digits >= 10 && digits <= 15
+    }, messages.whatsappInvalid),
     instagram: z.string().max(120, messages.textTooLong),
     tiktok: z.string().max(120, messages.textTooLong),
     /** A full profile URL: Spotify has no handle the web can expand. */
@@ -86,7 +85,7 @@ export function createStoreColorsSchema(messages: ValidationMessages) {
   return z.object({
     background: colorField(messages),
     primary: colorField(messages),
-    text: colorField(messages),
+    footer: colorField(messages),
     header: colorField(messages),
   })
 }
@@ -111,8 +110,24 @@ export function createStoreAppearanceSchema(messages: ValidationMessages) {
  * platform's defaults for them. The slug is here and nowhere else — it is the one field that can
  * be set exactly once.
  */
+/**
+ * A shop needs a WhatsApp — an order has nowhere to go without it — and a site does not. Stated on
+ * the composed schema, the one place that sees both the type and the number, and mirrored by the
+ * API as `STORE_WHATSAPP_REQUIRED`.
+ */
+function requireWhatsappOnShop<T extends { identity: { type: string }; social: { whatsapp: string } }>(
+  values: T,
+  ctx: z.RefinementCtx,
+  messages: ValidationMessages,
+) {
+  if (values.identity.type === "ECOMMERCE" && values.social.whatsapp.trim() === "") {
+    ctx.addIssue({ code: "custom", path: ["social", "whatsapp"], message: messages.whatsappRequired })
+  }
+}
+
 export function createStoreCreateSchema(messages: ValidationMessages) {
-  return z.object({
+  return z
+    .object({
     slug: z
       .string()
       .trim()
@@ -124,6 +139,7 @@ export function createStoreCreateSchema(messages: ValidationMessages) {
     social: createStoreSocialSchema(messages),
     colors: createStoreColorsSchema(messages),
   })
+    .superRefine((values, ctx) => requireWhatsappOnShop(values, ctx, messages))
 }
 
 /**
@@ -132,14 +148,16 @@ export function createStoreCreateSchema(messages: ValidationMessages) {
  * string to the payload's `null`.
  */
 export function createStoreSettingsSchema(messages: ValidationMessages) {
-  return z.object({
-    identity: createStoreIdentitySchema(messages),
-    address: createStoreAddressSchema(messages),
-    social: createStoreSocialSchema(messages),
-    appearance: createStoreAppearanceSchema(messages),
-    // A checkout with no payment method cannot complete an order. The legacy panel only warned.
-    paymentMethods: z.array(z.enum(PAYMENT_METHODS)).min(1, messages.paymentMethodsMin),
-  })
+  return z
+    .object({
+      identity: createStoreIdentitySchema(messages),
+      address: createStoreAddressSchema(messages),
+      social: createStoreSocialSchema(messages),
+      appearance: createStoreAppearanceSchema(messages),
+      // A checkout with no payment method cannot complete an order. The legacy panel only warned.
+      paymentMethods: z.array(z.enum(PAYMENT_METHODS)).min(1, messages.paymentMethodsMin),
+    })
+    .superRefine((values, ctx) => requireWhatsappOnShop(values, ctx, messages))
 }
 
 export type StoreIdentityValues = z.infer<ReturnType<typeof createStoreIdentitySchema>>

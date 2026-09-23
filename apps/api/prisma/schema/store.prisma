@@ -4,6 +4,8 @@
 /// shop window behaves. One value today — the product sells online, end to end.
 enum StoreType {
   ECOMMERCE
+  /// A site that presents and takes contact instead of selling: no catalogue, no orders, leads.
+  INSTITUTIONAL
 }
 
 /// The storefront template. It replaces the legacy `store_layouts` lookup table: three rows nothing
@@ -94,10 +96,13 @@ model Store {
   /// Four columns and not a blob: every one is required for the storefront to render, and the legacy
   /// JSON could be missing a key, which is why three separate call sites repeated the same fallback.
   /// The defaults are the legacy platform theme.
-  colorBackground String @default("#F0F9FF") @db.VarChar(9)
+  colorBackground String @default("#FFFFFF") @db.VarChar(9)
   colorPrimary    String @default("#3B7AF7") @db.VarChar(9)
-  colorText       String @default("#1A202C") @db.VarChar(9)
   colorHeader     String @default("#3B7AF7") @db.VarChar(9)
+  /// The foot, which used to borrow the top's colour. There is no `colorText`: every word written
+  /// on a surface is derived from that surface, so a black page gets white words without anyone
+  /// choosing them — and a black page under a black top is no longer black on black.
+  colorFooter     String @default("#3B7AF7") @db.VarChar(9)
 
   /// Digits only, country code included, no `+` — `wa.me/<this>` is built from it. Nullable for shops
   /// carried over without one; the API requires it on create and on update, as the legacy panel did.
@@ -141,7 +146,10 @@ model Store {
 
   productCategories ProductCategory[]
   products          Product[]
-  banners           StoreBanner[]
+  sections          StoreSection[]
+  /// What a site's contact form received. Empty on a shop.
+  leads             Lead[]
+  components        StoreComponent[]
 
   @@index([ownerId])
   @@index([categoryId])

@@ -10,8 +10,9 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { AppLink } from "@/components/app-link"
-import { useBanners } from "@/services/banners/banner-hooks"
+import { useSections } from "@/services/page/page-hooks"
 import { useProducts } from "@/services/catalog/catalog-hooks"
+import { useLeads } from "@/services/leads/lead-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
 export interface ShopHomeScreenProps {
@@ -33,11 +34,15 @@ export interface ShopHomeScreenProps {
 export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
   const text = web.stores.home
   const store = useStore(slug)
-  // One row is enough: the card asks whether the shop has any product, not how many.
-  const products = useProducts(slug, { pageSize: 1 })
-  const banners = useBanners(slug)
+  const site = store.data?.type === "INSTITUTIONAL"
+  // One row is enough: the card asks whether the shop has any product, not how many. A site has
+  // none to ask about, and asks nothing.
+  const products = useProducts(site ? "" : slug, { pageSize: 1 })
+  const banners = useSections(slug)
+  // One row, for the same reason as the products: the card asks whether anything arrived.
+  const leads = useLeads(site ? slug : "", { pageSize: 1 })
 
-  const loading = store.isPending || products.isPending || banners.isPending
+  const loading = store.isPending || (!site && products.isPending) || banners.isPending
   const bannerRows = banners.data ?? []
 
   /**
@@ -84,19 +89,39 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
       title: text.cards.bannersTitle,
       description: text.cards.bannersText,
       actionLabel: text.cards.bannersAction,
-      href: `/admin/${slug}/banners`,
-      // Banners, not categories. The old predicate asked the panel whether the shop had any
-      // category, which the landing page never drew — a shop whose categories all held nothing
-      // published read "Feito" over a home with no poster and no menu item at all.
-      done: bannerRows.length > 0,
+      // Design mode, because that is where a banner is made now: the Banners screen is gone, and
+      // a card pointing at a screen that does not exist is a card that reports the panel as broken.
+      href: `/admin/${slug}/design`,
+      // A banner anywhere on the page. The old predicate asked whether the shop had any category,
+      // which the landing page never drew — a shop whose categories all held nothing published
+      // read "Feito" over a home with no poster and no menu item at all.
+      done: bannerRows.some((section) => section.components.some((component) => component.kind === "BANNER")),
     },
   ]
+
+  // A site's home is its own four cards: the page, what came through its form, and who it is.
+  // Payments and products are a shop's business, and "loja" in a title is a shop's word.
+  const said = text.site
+  const siteCards = [
+    { title: said.viewTitle, description: said.viewText, actionLabel: said.viewAction, href: `/${slug}`, external: true, wide: true },
+    {
+      title: said.leadsTitle,
+      description: said.leadsText,
+      actionLabel: said.leadsAction,
+      href: `/admin/${slug}/leads`,
+      done: (leads.data?.total ?? 0) > 0,
+      wide: true,
+    },
+    { title: said.identityTitle, description: said.identityText, actionLabel: text.cards.identityAction, href: `/admin/${slug}/store`, done: Boolean(store.data?.logoUrl) },
+    { title: said.pageTitle, description: said.pageText, actionLabel: text.cards.bannersAction, href: `/admin/${slug}/design` },
+  ]
+  const shown = site ? siteCards : cards
 
   return (
     <div className="flex w-full flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">{store.data?.name ?? slug}</h1>
-        <p className="text-muted-foreground text-sm">{text.subtitle}</p>
+        <p className="text-muted-foreground text-sm">{site ? text.site.subtitle : text.subtitle}</p>
       </header>
 
       {loading ? (
@@ -114,7 +139,7 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
           this layout exists to avoid.
         */
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-          {cards.map(({ wide, ...card }) => (
+          {shown.map(({ wide, ...card }) => (
             <SetupCard
               key={card.title}
               {...card}

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 // App
 import { DesignScreen } from "@/components/design/design-screen"
 import { getMessages } from "@/lib/locale"
-import { catalogueAt, shopAt } from "@/lib/storefront-data"
+import { homeAt, shopAt } from "@/lib/storefront-data"
 
 /**
  * Design mode, and the reason this page reads the PUBLIC shop rather than the owner's.
@@ -19,21 +19,25 @@ import { catalogueAt, shopAt } from "@/lib/storefront-data"
  */
 export default async function DesignPage({ params }: PageProps<"/admin/[slug]/design">) {
   const { slug } = await params
-  const [store, { ui }] = await Promise.all([shopAt(slug), getMessages()])
+  const [store, { ui, web }] = await Promise.all([shopAt(slug), getMessages()])
 
   if (!store) notFound()
 
-  const catalogue = await catalogueAt(slug, { pageSize: 24 })
+  // The same call the shop window's home makes, with the same argument — so the rails in the
+  // preview are the rails the visitor gets, grouped the way the shopkeeper chose.
+  const home =
+    store.type === "INSTITUTIONAL" ? { categories: [], bands: [] } : await homeAt(slug, store.showProductsByCategory)
 
   return (
     <DesignScreen
       store={store}
-      categories={catalogue.categories}
-      products={catalogue.products}
+      categories={home.categories}
+      bands={home.bands}
       // From the server, never `new Date()` inside a component: the clock differs between the two
       // renders on the thirty-first of December and hydration says so out loud.
       year={new Date().getFullYear()}
       messages={ui}
+      web={web}
     />
   )
 }

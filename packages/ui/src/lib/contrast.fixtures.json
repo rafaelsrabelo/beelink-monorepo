@@ -1,0 +1,18 @@
+{
+  "$comment": "Colour inputs for contrast.test.ts. They live in a .json for the same reason store-palettes.json does, and its comment states it: a .json file can hold no className, no style attribute and no component, which is exactly what `web/no-hex-colors` exists to stop. A test of a hex parser needs hex, and these are data rather than a colour the product chose — putting them here follows the precedent instead of opening an exception in a gate that is at absolute zero.",
+  "black": "#000000",
+  "white": "#FFFFFF",
+  "shortWhite": "#fff",
+  "translucentWhite": "#FFFFFFAA",
+  "midGrey": "#777777",
+  "brands": [
+    "#3B82F6",
+    "#10B981",
+    "#8B5CF6",
+    "#EC4899",
+    "#F97316",
+    "#EF4444"
+  ],
+  "paleBrand": "#FFD500",
+  "darkBrand": "#1A1A2E"
+}

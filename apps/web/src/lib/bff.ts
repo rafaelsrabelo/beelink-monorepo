@@ -83,7 +83,7 @@ export async function forwardToApi(request: NextRequest, path: string): Promise<
 
 export interface SignedInCall {
   path: string
-  method: "GET" | "POST" | "PUT" | "DELETE"
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
   body?: unknown
   /** Passed straight through, for the one call that carries a file. See `ApiCall.rawBody`. */
   rawBody?: { stream: ReadableStream<Uint8Array>; contentType: string }

@@ -1,12 +1,10 @@
 // React
 import type { CSSProperties, ReactNode } from "react"
 
-// Libs
-import { ShoppingBagIcon, UserRoundIcon } from "lucide-react"
-
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { readableOn, toneOn } from "@harness-monorepo/ui/lib/contrast"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
@@ -18,14 +16,16 @@ import {
   WhatsAppIcon,
   YouTubeIcon,
 } from "../store/store-brand-icons"
-import { StorefrontSearch } from "./storefront-search"
+import { StorefrontAnnouncement } from "./storefront-announcement"
+import { StorefrontMasthead, type StorefrontMenuItem } from "./storefront-masthead"
 
 /** The four colours a shop dresses its window in. They are data, chosen by the shopkeeper. */
 export interface StorefrontColors {
   background: string
   primary: string
-  text: string
   header: string
+  /** The foot, which used to borrow the header's. There is no `text`: it is derived per surface. */
+  footer: string
 }
 
 export type StorefrontNetwork = "whatsapp" | "instagram" | "tiktok" | "youtube" | "spotify"
@@ -39,9 +39,17 @@ export interface StorefrontLink {
 /** The strip above the header: what the shop is shouting this week, on each side of the page. */
 export interface StorefrontAnnouncement {
   left: string
-  /** Dropped on a phone rather than wrapped: two lines of small caps is a banner, not a strip. */
+  /** Joined to the left with a dot: the strip scrolls one sentence, and this is its second half. */
   right?: string
+  /** The strip's own colour, which is its band's. Null is the page's ink, as it always was. */
+  background?: string | null
+  /** Already resolved by the API. Null goes nowhere; the strip is then a poster, not a link. */
+  href?: string | null
+  external?: boolean
 }
+
+// Where it is declared now; re-exported because screens import it from here.
+export type { StorefrontMenuItem } from "./storefront-masthead"
 
 /** One column of the footer. The screen builds them, because a block knows no address. */
 export interface StorefrontFooterColumn {
@@ -105,6 +113,13 @@ export interface StorefrontWindowProps {
   cartHref?: string
   cartCount?: number
   accountHref?: string
+  /**
+   * A site's menu — the page's named bands, as anchors — drawn where a shop draws its icons. Given
+   * only by a site: a shop's header has a search and a basket there, and a site has neither.
+   */
+  menu?: readonly StorefrontMenuItem[]
+  /** A site's one button in the header — its contact band. See `StorefrontMasthead`. */
+  cta?: { label: string; href: string } | null
 
   /** Band 2 — the categories, rendered edge to edge above everything else. */
   categories?: ReactNode
@@ -114,6 +129,17 @@ export interface StorefrontWindowProps {
   /** Band 6 — a second one, under the products. */
   bannerBelow?: StorefrontBanner | null
 
+  /**
+   * The landing page's own blocks, in the shopkeeper's order, drawn edge to edge.
+   *
+   * When it is given, bands 3 to 5 step aside: the cover, the promises and the shelves are all
+   * blocks now, and which comes first is the shopkeeper's answer rather than this file's. Each one
+   * states its own width — `StorefrontBand` for the contained ones, nothing for a cover that
+   * bleeds — which is exactly what `children` inside a measured `<main>` cannot do.
+   *
+   * Every other page keeps passing `children`, because a product page is not an arrangement.
+   */
+  blocks?: ReactNode
   /** Band 4 — what the shop promises. Empty means the band is absent, never an empty strip. */
   highlights?: readonly StorefrontHighlight[]
 
@@ -151,7 +177,7 @@ const ICONS: Record<StorefrontNetwork, typeof WhatsAppIcon> = {
  */
 const BAND = "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10"
 
-function Banner({ banner, Link, tall }: { banner: StorefrontBanner; Link: LinkComponent; tall?: boolean }) {
+function Section({ banner, Link, tall }: { banner: StorefrontBanner; Link: LinkComponent; tall?: boolean }) {
   const picture = (
     <img
       src={banner.imageUrl}
@@ -201,8 +227,11 @@ export function StorefrontWindow({
   cartHref,
   cartCount,
   accountHref,
+  menu = [],
+  cta = null,
   categories,
   banner,
+  blocks,
   bannerBelow,
   highlights = [],
   children,
@@ -216,113 +245,84 @@ export function StorefrontWindow({
 }: StorefrontWindowProps) {
   const text = messages.storefront
 
+  /*
+    Four surfaces the shopkeeper chose, and one readable foreground derived from each.
+
+    Per surface and not one global ink, which is the defect this replaces: `--shop-background` used
+    to paint the page AND colour every word printed on a coloured surface. That holds only while
+    the page is pale and the top is not — choose black for both and the shop is black on black.
+
+    Computed here, where the variables are already written, so it is in the HTML on the first
+    paint. The shop window is prerendered; a colour decided after hydration is a flash of
+    unreadable text on every visit.
+
+    `--shop-text` survives as a name because it is also a *surface* — the announcement strip, the
+    logo chip and the poster's gradient are all drawn in it — and it is exactly the page's ink, so
+    the two are one value rather than two that can disagree.
+  */
+  const ink = readableOn(colors.background)
   const dressed = {
     "--shop-background": colors.background,
+    "--shop-on-background": ink,
     "--shop-primary": colors.primary,
-    "--shop-text": colors.text,
+    "--shop-on-primary": readableOn(colors.primary),
+    /*
+      The brand as a *word* on the page, rather than as a surface behind one.
+
+      A section's heading, a "see all" link and a promise's icon are painted in the shop's own
+      colour, and `readableOn` cannot serve them: answering "black or white" would throw the brand
+      away. This is the brand itself, mixed toward the page's ink only as far as 4.5:1 requires —
+      a pale yellow on white and a navy on black are the two a shopkeeper cannot read at all, and
+      every other brand comes back untouched.
+    */
+    "--shop-primary-ink": toneOn(colors.primary, colors.background),
     "--shop-header": colors.header,
+    "--shop-on-header": readableOn(colors.header),
+    "--shop-footer": colors.footer,
+    "--shop-on-footer": readableOn(colors.footer),
+    "--shop-text": ink,
+    "--shop-on-text": colors.background,
     backgroundColor: "var(--shop-background)",
-    color: "var(--shop-text)",
+    color: "var(--shop-on-background)",
   } as CSSProperties
 
   return (
     <div style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
-        <div
-          className="w-full text-[11px] font-medium tracking-wide uppercase"
-          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-background)" }}
-        >
-          <div className={cn(BAND, "flex h-8 items-center justify-center gap-6 sm:justify-between")}>
-            <p>{announcement.left}</p>
-            {announcement.right ? <p className="hidden sm:block">{announcement.right}</p> : null}
-          </div>
-        </div>
+        <StorefrontAnnouncement
+          left={announcement.left}
+          {...(announcement.right ? { right: announcement.right } : {})}
+          background={announcement.background ?? null}
+          href={announcement.href ?? null}
+          external={announcement.external ?? false}
+          linkComponent={Link}
+        />
       ) : null}
 
-      {/*
-        ------------------------------------------------------------- 1 · header + 2 · the menu
-
-        One painted block and not two bands, because they are one thing to look at: the shops this
-        was measured against put the logo, the search and the menu on a single dark slab, and a
-        menu painted in the page's own background reads as content that happens to be at the top.
-
-        It is painted in `--shop-header`, which is the point of the column. The shopkeeper's panel
-        has always had a "Cor do topo" field, and the top was drawn in `--shop-background` — so the
-        one colour named after this band was the one band that ignored it.
-
-        One `<header>` wraps both, so the banner landmark is the whole slab: the menu is part of
-        the shop's masthead, and a reader jumping to the banner should land on the thing that has
-        the search and the categories in it, not on a strip with a logo.
-      */}
-      <header
-        className="sticky top-0 z-30 w-full"
-        style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-background)" }}
-      >
-        <div className={cn(BAND, "flex h-16 items-center gap-3 sm:gap-6")}>
-          {/*
-            The logo stands in for the name rather than sitting beside it — so it carries the name
-            as its `alt`, and the link keeps an accessible name without the word being drawn twice.
-            A shop with no logo yet falls back to the name as text: the masthead is never empty.
-          */}
-          <Link href={homeHref} className="flex shrink-0 items-center gap-2">
-            {logoUrl ? (
-              <img src={logoUrl} alt={name} className="h-9 w-auto max-w-40 object-contain" />
-            ) : (
-              <span className="text-base font-semibold">{name}</span>
-            )}
-          </Link>
-
-          {/* Never autofocused: the header is on every page, and a caret that jumps into it puts
-              a phone keyboard over the shop on every arrival. */}
-          {searchSlot ??
-            (searchAction ? (
-              <StorefrontSearch
-                action={searchAction}
-                value={searchValue}
-                hidden={searchHidden}
-                tone="panel"
-                messages={messages}
-              />
-            ) : null)}
-
-          <div className="flex shrink-0 items-center gap-1">
-            {accountHref ? (
-              <Link href={accountHref} aria-label={text.account} className="rounded-full p-2 opacity-80">
-                <UserRoundIcon aria-hidden="true" className="size-5" />
-              </Link>
-            ) : null}
-            {cartHref ? (
-              <Link href={cartHref} aria-label={text.cart} className="relative rounded-full p-2 opacity-80">
-                <ShoppingBagIcon aria-hidden="true" className="size-5" />
-                {cartCount ? (
-                  <span
-                    className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px] font-semibold"
-                    style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
-                  >
-                    {cartCount}
-                  </span>
-                ) : null}
-              </Link>
-            ) : null}
-          </div>
-        </div>
-
-        {categories ? (
-          <div
-            className="w-full border-t"
-            style={{ borderColor: "color-mix(in oklab, var(--shop-background) 18%, transparent)" }}
-          >
-            <div className={BAND}>{categories}</div>
-          </div>
-        ) : null}
-      </header>
+      <StorefrontMasthead
+        name={name}
+        logoUrl={logoUrl}
+        homeHref={homeHref}
+        searchSlot={searchSlot}
+        {...(searchAction ? { searchAction } : {})}
+        searchValue={searchValue}
+        {...(searchHidden ? { searchHidden } : {})}
+        {...(cartHref ? { cartHref } : {})}
+        {...(cartCount !== undefined ? { cartCount } : {})}
+        {...(accountHref ? { accountHref } : {})}
+        menu={menu}
+        cta={cta}
+        categories={categories}
+        linkComponent={Link}
+        messages={messages}
+      />
 
       {/* ---------------------------------------------------------------- 3 · the cover */}
-      {banner ? <Banner banner={banner} Link={Link} tall /> : null}
+      {blocks ? null : banner ? <Section banner={banner} Link={Link} tall /> : null}
 
       {/* ---------------------------------------------------------------- 4 · what the shop promises */}
-      {highlights.length ? (
+      {blocks || !highlights.length ? null : (
         <div className="w-full" style={{ backgroundColor: "color-mix(in oklab, var(--shop-header) 10%, transparent)" }}>
           <ul className={cn(BAND, "grid grid-cols-2 gap-x-6 gap-y-5 py-6 sm:grid-cols-4")}>
             {highlights.map((highlight) => (
@@ -336,7 +336,7 @@ export function StorefrontWindow({
                     className="flex size-10 shrink-0 items-center justify-center rounded-full"
                     style={{
                       backgroundColor: "color-mix(in oklab, var(--shop-primary) 14%, transparent)",
-                      color: "var(--shop-primary)",
+                      color: "var(--shop-primary-ink)",
                     }}
                   >
                     {highlight.icon}
@@ -350,9 +350,18 @@ export function StorefrontWindow({
             ))}
           </ul>
         </div>
-      ) : null}
+      )}
 
       {/* ---------------------------------------------------------------- 5 · the shop itself */}
+      {blocks ? (
+        <main className="flex flex-1 flex-col gap-8 pb-8">
+          {/*
+            No top padding, on purpose: a full-bleed hero is meant to meet the header. A block that
+            is contained supplies its own, because only it knows it is not touching the edges.
+          */}
+          {blocks}
+        </main>
+      ) : (
       <main className={cn(BAND, "flex flex-1 flex-col gap-8 py-8")}>
         {description ? (
           <div className="flex flex-col items-center gap-2 text-center">
@@ -364,7 +373,7 @@ export function StorefrontWindow({
                 rel="noreferrer"
                 target="_blank"
                 className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-medium"
-                style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-background)" }}
+                style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
               >
                 <WhatsAppIcon className="size-5" />
                 {text.order}
@@ -375,9 +384,10 @@ export function StorefrontWindow({
 
         {children}
       </main>
+      )}
 
       {/* ---------------------------------------------------------------- 6 · the second cover */}
-      {bannerBelow ? <Banner banner={bannerBelow} Link={Link} /> : null}
+      {bannerBelow ? <Section banner={bannerBelow} Link={Link} /> : null}
 
       {/* ---------------------------------------------------------------- 7 · footer */}
       {/*
@@ -389,7 +399,7 @@ export function StorefrontWindow({
         what "Produtos" links to would be a block holding the route word this whole scheme exists
         to keep out of components.
       */}
-      <footer className="w-full" style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-background)" }}>
+      <footer className="w-full" style={{ backgroundColor: "var(--shop-footer)", color: "var(--shop-on-footer)" }}>
         <div className={cn(BAND, "flex flex-col gap-10 py-12 sm:flex-row sm:justify-between")}>
           <div className="flex max-w-xs flex-col gap-4">
             {/* Same rule as the masthead: the logo replaces the name, and says it. */}
@@ -447,7 +457,7 @@ export function StorefrontWindow({
         {copyright ? (
           <div
             className="w-full border-t"
-            style={{ borderColor: "color-mix(in oklab, var(--shop-background) 15%, transparent)" }}
+            style={{ borderColor: "color-mix(in oklab, var(--shop-on-footer) 15%, transparent)" }}
           >
             <div className={cn(BAND, "py-5 text-xs opacity-60")}>{copyright}</div>
           </div>

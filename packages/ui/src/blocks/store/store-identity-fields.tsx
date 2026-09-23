@@ -7,6 +7,7 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldSet,
 } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
 import {
@@ -17,6 +18,7 @@ import {
   SelectValue,
 } from "@harness-monorepo/ui/components/select"
 import { Textarea } from "@harness-monorepo/ui/components/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@harness-monorepo/ui/components/toggle-group"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -62,9 +64,36 @@ export function StoreIdentityFields({
   messages = defaultMessages,
 }: StoreIdentityFieldsProps) {
   const text = messages.store.identity
+  const typeLabels = messages.store.typeLabels
 
   return (
     <FieldGroup>
+      {/*
+        Chosen once, at creation, like the slug: the control appears only where the slug can still
+        change. A shop turned into a site would orphan its products, so the settings form does not
+        offer the switch — and a site that wants to sell is a new shop.
+      */}
+      {onSlugChange ? (
+        <FieldSet>
+          <FieldLabel>{text.typeLabel}</FieldLabel>
+          <ToggleGroup
+            multiple={false}
+            aria-label={text.typeLabel}
+            variant="outline"
+            disabled={disabled}
+            value={[value.type]}
+            onValueChange={(next: string[]) => {
+              const chosen = next[0]
+              if (chosen === "ECOMMERCE" || chosen === "INSTITUTIONAL") onChange({ ...value, type: chosen })
+            }}
+          >
+            <ToggleGroupItem value="ECOMMERCE">{typeLabels.ECOMMERCE}</ToggleGroupItem>
+            <ToggleGroupItem value="INSTITUTIONAL">{typeLabels.INSTITUTIONAL}</ToggleGroupItem>
+          </ToggleGroup>
+          <FieldDescription>{value.type === "INSTITUTIONAL" ? text.typeSiteHint : text.typeShopHint}</FieldDescription>
+        </FieldSet>
+      ) : null}
+
       <Field>
         <FieldLabel htmlFor="store-name">{text.nameLabel}</FieldLabel>
         <Input

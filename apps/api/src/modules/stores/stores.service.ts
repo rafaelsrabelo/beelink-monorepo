@@ -8,7 +8,15 @@ import type { StoreRow } from './store.mapper.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
+import type { StoreColorsDto } from './dto/store-fields.dto.js';
+import {
+  NO_SLUGS,
+  slideTargetsOf,
+  type SectionRow,
+  type SlugsByEntity,
+} from '../page/page.mapper.js';
 import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
 import { RESERVED_SLUGS } from './stores.constants.js';
 
@@ -40,40 +48,67 @@ export class StoresService {
     if (taken) throw new ConflictException(storeError('STORE_SLUG_TAKEN', `"${dto.slug}" is already a shop`));
 
     if (dto.categoryId) await this.assertCategoryExists(dto.categoryId);
+    refuseShopWithoutWhatsapp(dto.type, dto.socialNetworks.whatsapp);
 
     const address = addressColumns(dto.address);
     const point = await this.geocoder.locate(toWireAddress(address));
 
     try {
-      const row = await this.prisma.store.create({
-        data: {
-          ownerId,
-          slug: dto.slug,
-          name: dto.name,
-          type: dto.type,
-          description: dto.description ?? null,
-          logoUrl: dto.logoUrl ?? null,
-          categoryId: dto.categoryId ?? null,
-          // Omitted colours mean the platform theme, which is the column default — so the four
-          // fields are left out of the insert entirely rather than repeated here as literals.
-          ...(dto.colors
-            ? {
-                colorBackground: dto.colors.background,
-                colorPrimary: dto.colors.primary,
-                colorText: dto.colors.text,
-                colorHeader: dto.colors.header,
-              }
-            : {}),
-          whatsappPhone: dto.socialNetworks.whatsapp,
-          instagram: dto.socialNetworks.instagram ?? null,
-          tiktok: dto.socialNetworks.tiktok ?? null,
-          spotify: dto.socialNetworks.spotify ?? null,
-          youtube: dto.socialNetworks.youtube ?? null,
-          ...address,
-          latitude: point?.latitude ?? null,
-          longitude: point?.longitude ?? null,
-        },
-        include: storeInclude,
+      /*
+        The shop and its landing page, in one transaction.
+
+        The page is seeded here and not on the first visit to design mode: a shop with no products
+        band draws nothing at `/<slug>`, and the only report of that state read "tenho produtos
+        criados, mas não aparece". A component carries its shop's id beside its band's, so the bands
+        are written after the row exists rather than nested inside its create.
+      */
+      const row = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.store.create({
+          // The payment methods are read back rather than taken from the body: the create form
+          // does not ask for them, so a new shop opens with the column's default.
+          select: { id: true, paymentMethods: true },
+          data: {
+            ownerId,
+            slug: dto.slug,
+            name: dto.name,
+            type: dto.type,
+            description: dto.description ?? null,
+            logoUrl: dto.logoUrl ?? null,
+            categoryId: dto.categoryId ?? null,
+            // Omitted colours mean the platform theme, which is the column default — so the four
+            // fields are left out of the insert entirely rather than repeated here as literals.
+            ...(dto.colors
+              ? {
+                  colorBackground: dto.colors.background,
+                  colorPrimary: dto.colors.primary,
+                  colorFooter: dto.colors.footer,
+                  colorHeader: dto.colors.header,
+                }
+              : {}),
+            whatsappPhone: dto.socialNetworks.whatsapp ?? null,
+            instagram: dto.socialNetworks.instagram ?? null,
+            tiktok: dto.socialNetworks.tiktok ?? null,
+            spotify: dto.socialNetworks.spotify ?? null,
+            youtube: dto.socialNetworks.youtube ?? null,
+            ...address,
+            latitude: point?.latitude ?? null,
+            longitude: point?.longitude ?? null,
+          },
+        });
+
+        for (const band of openingPageOf(dto, created.paymentMethods)) {
+          await tx.storeSection.create({
+            data: {
+              storeId: created.id,
+              ...band.section,
+              components: {
+                create: band.components.map((component) => ({ storeId: created.id, ...component })),
+              },
+            },
+          });
+        }
+
+        return tx.store.findUniqueOrThrow({ where: { id: created.id }, include: storeInclude });
       });
 
       return toStore(row);
@@ -93,7 +128,7 @@ export class StoresService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return rows.map(toStore);
+    return rows.map((row) => toStore(row));
   }
 
   async bySlug(slug: string, userId: string): Promise<Store> {
@@ -105,9 +140,39 @@ export class StoresService {
    * panel posts every field it edits. That includes `address` and `layoutSettings` — omitting them
    * empties them.
    */
+  /**
+   * The four colours, and only those.
+   *
+   * Its own write rather than a corner of `update`, and the reason is that `update` is a full
+   * replacement — it says so in its own doc, and omitting `layoutSettings` empties the column. A
+   * design-mode colour save would have had to re-post the whole shop from whatever the panel last
+   * read, which makes two screens last-write-wins over each other: the settings form would repost
+   * its stale copy over a colour just changed, or the other way round.
+   *
+   * Four columns, named one by one. There is no ink among them: every word on the shop window is
+   * derived from the surface it sits on.
+   */
+  async updateColors(slug: string, userId: string, dto: StoreColorsDto): Promise<Store> {
+    await this.assertOwnership(slug, userId);
+
+    const row = await this.prisma.store.update({
+      where: { slug },
+      data: {
+        colorBackground: dto.background,
+        colorPrimary: dto.primary,
+        colorHeader: dto.header,
+        colorFooter: dto.footer,
+      },
+      include: storeInclude,
+    });
+
+    return toStore(row);
+  }
+
   async update(slug: string, userId: string, dto: UpdateStoreDto): Promise<Store> {
     const current = await this.assertOwnership(slug, userId);
     if (dto.categoryId) await this.assertCategoryExists(dto.categoryId);
+    refuseShopWithoutWhatsapp(dto.type, dto.socialNetworks.whatsapp);
 
     const address = addressColumns(dto.address);
     const moved =
@@ -131,9 +196,9 @@ export class StoresService {
         showProductsByCategory: dto.showProductsByCategory,
         colorBackground: dto.colors.background,
         colorPrimary: dto.colors.primary,
-        colorText: dto.colors.text,
+        colorFooter: dto.colors.footer,
         colorHeader: dto.colors.header,
-        whatsappPhone: dto.socialNetworks.whatsapp,
+        whatsappPhone: dto.socialNetworks.whatsapp ?? null,
         instagram: dto.socialNetworks.instagram ?? null,
         tiktok: dto.socialNetworks.tiktok ?? null,
         spotify: dto.socialNetworks.spotify ?? null,
@@ -155,7 +220,44 @@ export class StoresService {
     const row = await this.prisma.store.findUnique({ where: { slug }, include: storeInclude });
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
 
-    return toPublicStore(row);
+    return toPublicStore(row, await this.slideSlugs(row.sections));
+  }
+
+  /**
+   * What the hero's slides point at, in one round trip for the whole shop.
+   *
+   * A slide keeps an id rather than an address, so renaming a category moves the slide with it —
+   * the promise a foreign key makes, without the foreign key, because `items` is JSON. Two `IN`
+   * queries and no join: a carousel is capped at twenty slides, and this is the page a stranger
+   * asks for first.
+   *
+   * Nothing is thrown when an id resolves to nothing. It simply is not in the map, the mapper
+   * builds no address, and the slide is a picture rather than a broken link.
+   */
+  private async slideSlugs(sections: SectionRow[]): Promise<SlugsByEntity> {
+    const { categoryIds, productIds } = slideTargetsOf(sections);
+
+    if (!categoryIds.length && !productIds.length) return NO_SLUGS;
+
+    const [categories, products] = await Promise.all([
+      categoryIds.length
+        ? this.prisma.productCategory.findMany({
+            where: { id: { in: categoryIds } },
+            select: { id: true, slug: true },
+          })
+        : [],
+      productIds.length
+        ? this.prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, slug: true },
+          })
+        : [],
+    ]);
+
+    return {
+      categories: new Map(categories.map((row) => [row.id, row.slug])),
+      products: new Map(products.map((row) => [row.id, row.slug])),
+    };
   }
 
   /**

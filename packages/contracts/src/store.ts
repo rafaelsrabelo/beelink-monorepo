@@ -1,5 +1,6 @@
-import type { PublicBanner } from "./banner.js";
+import type { PublicSection } from "./page.js";
 import type { StorefrontRouteWords } from "./catalog.js";
+import type { PageTemplateId } from "./page.js";
 
 /**
  * How a shop sells — not what it sells. The storefront's wording follows it, and from phase 2 so
@@ -10,7 +11,16 @@ import type { StorefrontRouteWords } from "./catalog.js";
  * One value today. The product sells online, end to end; the second mode that earns a value here
  * will be one that does not — a window that prices and hands the order to WhatsApp, say.
  */
-export type StoreType = "ECOMMERCE";
+/**
+ * What a `Store` is for.
+ *
+ * `INSTITUTIONAL` is a site that presents, convinces and takes contact instead of selling: no
+ * products, no orders, no categories — and leads where a shop has customers. It is a type of the
+ * same row and not an entity of its own, because everything a site needs underneath (an owner, a
+ * slug, colours with derived ink, sections of components, uploads, design mode) is what a shop
+ * already has; a second entity would have to repeat every piece.
+ */
+export type StoreType = "ECOMMERCE" | "INSTITUTIONAL";
 
 /**
  * The storefront template. It replaces the legacy `store_layouts` lookup table, whose three rows
@@ -29,10 +39,16 @@ export type PaymentMethod = "MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD";
  * as CSS custom properties on its root, so no component holds a literal colour.
  */
 export interface StoreColors {
+  /** The page. Every word written on it is derived from it — see `lib/contrast.ts`. */
   background: string;
+  /** The brand: the buttons, the price badges, the arrows. Chosen, never derived. */
   primary: string;
-  text: string;
   header: string;
+  /**
+   * The foot. It used to borrow the header's colour, and a shop that wanted a dark foot under a
+   * coloured top had no way to say so.
+   */
+  footer: string;
 }
 
 /** Every handle the storefront links to. Absent means the link is not rendered. */
@@ -172,18 +188,18 @@ export interface PublicStore {
   /** Never empty: the checkout has nothing to offer a customer otherwise. */
   paymentMethods: PaymentMethod[];
   /**
-   * The posters on the shop's landing page, in the shopkeeper's order, already resolved.
+   * The bands the landing page is made of, in the shopkeeper's order, already resolved.
    *
    * They ride here and not on `StorefrontCatalog` because the home fetches the shop first and
    * unconditionally, so this costs no round trip — and because the catalogue is paged and
-   * filtered: banners on it would be re-serialised into every `?pagina=` and `?categoria=` answer
+   * filtered: bands on it would be re-serialised into every `?pagina=` and `?categoria=` answer
    * Google indexes, including the one-product call the home makes purely for the category list.
    *
    * The cost, stated rather than hidden: they travel to the product, category and cart pages too,
    * which do not draw them. That is one field against a second serial fetch on the page most
    * visitors ever see.
    */
-  banners: PublicBanner[];
+  sections: PublicSection[];
 }
 
 /** The shop as its owner edits it in the panel: the public shape plus what only the owner may see. */
@@ -202,7 +218,8 @@ export interface Store extends PublicStore {
 
 /** WhatsApp is required on the way in; the read shape allows null for shops carried over without one. */
 export interface StoreSocialNetworksPayload {
-  whatsapp: string;
+  /** Required on a shop — an order has nowhere to go without it — and the API says so. A site may have none. */
+  whatsapp?: string | null;
   instagram?: string | null;
   tiktok?: string | null;
   spotify?: string | null;
@@ -229,6 +246,11 @@ export interface CreateStorePayload {
    */
   slug: string;
   type: StoreType;
+  /**
+   * The arrangement a site opens with. Read only when `type` is `INSTITUTIONAL`; a shop opens with
+   * its own page. Absent picks the first template.
+   */
+  template?: PageTemplateId;
   /** At most 2000 characters — the bound is stated once, on `PublicStore.description`. */
   description?: string | null;
   logoUrl?: string | null;
@@ -269,7 +291,9 @@ export type StoreErrorCode =
   | "STORE_SLUG_TAKEN"
   | "STORE_SLUG_RESERVED"
   | "STORE_FORBIDDEN"
-  | "STORE_CATEGORY_NOT_FOUND";
+  | "STORE_CATEGORY_NOT_FOUND"
+  /** A shop was sent without a WhatsApp. A site may go without; a shop cannot take an order. */
+  | "STORE_WHATSAPP_REQUIRED";
 
 /**
  * One option in the address box, as both apps have to agree it is.

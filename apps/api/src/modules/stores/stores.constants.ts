@@ -34,7 +34,7 @@ export const RESERVED_SLUGS: readonly string[] = [
 ];
 
 /** The closed unions, as values the validators can range over. Checked against the contract. */
-export const STORE_TYPES = ['ECOMMERCE'] as const satisfies readonly StoreType[];
+export const STORE_TYPES = ['ECOMMERCE', 'INSTITUTIONAL'] as const satisfies readonly StoreType[];
 export const STORE_LAYOUT_TYPES = ['DEFAULT', 'BANNER'] as const satisfies readonly StoreLayoutType[];
 export const PAYMENT_METHODS = [
   'MONEY',

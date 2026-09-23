@@ -33,7 +33,7 @@ export const ComImagem: Story = {
 }
 
 /** A banner is landscape, so its preview is too — the same block, a different shape. */
-export const Banner: Story = {
+export const Section: Story = {
   args: {
     id: "store-banner",
     label: ptBR.store.appearance.bannerImageLabel,

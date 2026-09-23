@@ -17,6 +17,14 @@ export interface AdminSidebarProps {
   /** Below `lg` the rail is a drawer, and this is whether it is showing. */
   open?: boolean
   onClose?: () => void
+  /**
+   * Icons only, above `lg`.
+   *
+   * Desktop alone, and deliberately: below `lg` this element is a drawer a person opened on
+   * purpose, and a drawer that opens to a strip of icons answers a question nobody asked. So every
+   * class this flag adds is `lg:`-scoped, and the drawer is untouched by it.
+   */
+  collapsed?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -35,11 +43,13 @@ function NavList({
   items,
   activeHref,
   onClose,
+  collapsed,
   Link,
 }: {
   items: DashboardNavItem[]
   activeHref?: string
   onClose?: () => void
+  collapsed: boolean
   Link: LinkComponent
 }) {
   return (
@@ -49,6 +59,7 @@ function NavList({
         const shared = cn(
           "flex items-center gap-2.5 rounded-lg px-2 py-[7px] text-[13px] transition-colors",
           "focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2",
+          collapsed && "lg:justify-center lg:px-0",
           current
             ? "bg-nav-active text-nav-active-foreground font-semibold shadow-xs"
             : "text-shell-text hover:bg-nav-hover",
@@ -60,7 +71,13 @@ function NavList({
                 {item.icon}
               </span>
             ) : null}
-            <span className="truncate">{item.title}</span>
+            {/*
+              Hidden from sight, never from the accessibility tree. `lg:sr-only` keeps the item's
+              accessible name exactly what it always was, so the menu reads the same to a screen
+              reader collapsed or not — and `title` gives a pointer user the name back on hover.
+              An `aria-label` on the link instead would be a second copy of the same string.
+            */}
+            <span className={cn("truncate", collapsed && "lg:sr-only")}>{item.title}</span>
           </>
         )
 
@@ -70,7 +87,12 @@ function NavList({
               // A button and never a link: an anchor with no destination still takes a tab stop and
               // is still announced as a way forward. aria-disabled and not the native attribute, so
               // the item stays reachable and a screen reader can still find the shape of the menu.
-              <button type="button" aria-disabled="true" className={cn(shared, "w-full opacity-50")}>
+              <button
+                type="button"
+                aria-disabled="true"
+                title={collapsed ? item.title : undefined}
+                className={cn(shared, "w-full opacity-50")}
+              >
                 {inner}
               </button>
             ) : (
@@ -78,6 +100,7 @@ function NavList({
                 href={item.href}
                 onClick={onClose}
                 aria-current={current ? "page" : undefined}
+                title={collapsed ? item.title : undefined}
                 className={shared}
               >
                 {inner}
@@ -105,6 +128,7 @@ export function AdminSidebar({
   activeHref,
   open = false,
   onClose,
+  collapsed = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: AdminSidebarProps) {
@@ -124,7 +148,14 @@ export function AdminSidebar({
           // Painting its own background here made it square again — the radius was there the whole
           // time, with an opaque square drawn over it.
           "bg-shell lg:bg-transparent",
-          "top-header h-[calc(100dvh-var(--header-height))] w-sidebar fixed left-0 z-40 shrink-0 overflow-y-auto px-2 py-3 transition-transform",
+          "top-header h-[calc(100dvh-var(--header-height))] w-sidebar fixed left-0 z-40 shrink-0 overflow-y-auto px-2 py-3",
+          // Both, because the rail does two different things: it slides in as a drawer below `lg`
+          // and it narrows in place above it. `transition-[width,transform]` and not `transition-all`
+          // — animating every property means animating `background-color` through the theme switch.
+          "transition-[width,transform] motion-reduce:transition-none",
+          // The width is only ever narrowed above `lg`. The drawer stays a full rail: someone who
+          // opened it wants the menu, not a strip of icons.
+          collapsed && "lg:w-sidebar-icon lg:px-1.5",
           // The left half of the panel's cut top. The page takes the right half, and between them
           // they leave one rounded block with the header's colour showing at either end.
           // The corner is on the column that holds this, in admin-shell — it has to be, because
@@ -134,9 +165,21 @@ export function AdminSidebar({
         )}
       >
         <nav className="flex h-full flex-col justify-between gap-4">
-          <NavList items={items} activeHref={activeHref} onClose={onClose} Link={Link} />
+          <NavList
+            items={items}
+            activeHref={activeHref}
+            onClose={onClose}
+            collapsed={collapsed}
+            Link={Link}
+          />
           {footerItems.length > 0 ? (
-            <NavList items={footerItems} activeHref={activeHref} onClose={onClose} Link={Link} />
+            <NavList
+              items={footerItems}
+              activeHref={activeHref}
+              onClose={onClose}
+              collapsed={collapsed}
+              Link={Link}
+            />
           ) : null}
         </nav>
       </aside>

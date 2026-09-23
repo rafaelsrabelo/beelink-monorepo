@@ -11,6 +11,7 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import { CategoryForm, type CategoryFormValues } from "@harness-monorepo/ui/blocks/catalog/category-form"
 import { CategoryList } from "@harness-monorepo/ui/blocks/catalog/category-list"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
+import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -123,14 +124,18 @@ export function CategoryScreen({ slug, messages }: CategoryScreenProps) {
     else create.mutate(payload, { onSuccess: done })
   }
 
-  function confirmDelete(categoryId: string) {
-    const category = rows.find((row) => row.id === categoryId)
-    if (!category) return
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
-    // The browser's own confirm, deliberately: what is at stake is a sentence, and a dialog of our
-    // own would be a component to build, name for a screen reader and test before it said the same
-    // words. It gets replaced the day there is a second thing in the panel that needs one.
-    if (!window.confirm(format(text.deleteConfirm, { name: category.name }))) return
+  /**
+   * State rather than `window.confirm`: that dialog cannot be styled or translated, and a browser
+   * that has offered "prevent this page from creating more dialogs" stops showing it — after which
+   * the delete happens with nothing asked.
+   */
+  function runDelete() {
+    if (!pendingDelete) return
+
+    const categoryId = pendingDelete.id
+    setPendingDelete(null)
 
     remove.mutate(categoryId, {
       onSuccess: () => {
@@ -142,8 +147,22 @@ export function CategoryScreen({ slug, messages }: CategoryScreenProps) {
     })
   }
 
+  function confirmDelete(categoryId: string) {
+    const category = rows.find((row) => row.id === categoryId)
+    if (!category) return
+
+    setPendingDelete({ id: categoryId, name: category.name })
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">
+      <ConfirmDelete
+        question={pendingDelete ? format(text.deleteConfirm, { name: pendingDelete.name }) : null}
+        pending={remove.isPending}
+        onConfirm={runDelete}
+        onCancel={() => setPendingDelete(null)}
+        messages={messages}
+      />
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold">{text.title}</h1>

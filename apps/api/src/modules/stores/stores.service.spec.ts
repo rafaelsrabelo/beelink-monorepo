@@ -23,13 +23,13 @@ const row = {
   logoUrl: null,
   bannerImageUrl: null,
   categoryId: null,
-  banners: [],
+  sections: [],
   category: null,
   layoutType: 'DEFAULT',
   showProductsByCategory: false,
   colorBackground: '#F0F9FF',
   colorPrimary: '#3B7AF7',
-  colorText: '#1A202C',
+  colorFooter: '#3B7AF7',
   colorHeader: '#3B7AF7',
   whatsappPhone: '5511999998888',
   instagram: null,
@@ -66,7 +66,7 @@ const updateDto = {
   type: 'ECOMMERCE',
   layoutType: 'DEFAULT',
   showProductsByCategory: false,
-  colors: { background: '#F0F9FF', primary: '#3B7AF7', text: '#1A202C', header: '#3B7AF7' },
+  colors: { background: '#F0F9FF', primary: '#3B7AF7', header: '#3B7AF7', footer: '#3B7AF7' },
   socialNetworks: { whatsapp: '5511999998888' },
   address,
   paymentMethods: ['PIX'],
@@ -79,6 +79,8 @@ interface Fakes {
   update: ReturnType<typeof vi.fn>;
   category: ReturnType<typeof vi.fn>;
   locate: ReturnType<typeof vi.fn>;
+  /** The bands a new shop opens with, one call per band. */
+  seed: ReturnType<typeof vi.fn>;
 }
 
 /** Collaborators by hand, the way jwt-auth.guard.spec.ts builds them — no Nest testing module. */
@@ -90,11 +92,21 @@ function build(stored: StoreRow | null = row): { service: StoresService; fakes: 
     update: vi.fn().mockResolvedValue(row),
     category: vi.fn().mockResolvedValue({ id: 'category-1' }),
     locate: vi.fn().mockResolvedValue({ latitude: -23.5613, longitude: -46.6565 }),
+    seed: vi.fn().mockResolvedValue({}),
   };
 
   const prisma = {
-    store: { findUnique: fakes.findUnique, findMany: fakes.findMany, create: fakes.create, update: fakes.update },
+    store: {
+      findUnique: fakes.findUnique,
+      findUniqueOrThrow: vi.fn().mockResolvedValue(row),
+      findMany: fakes.findMany,
+      create: fakes.create,
+      update: fakes.update,
+    },
     storeCategory: { findUnique: fakes.category },
+    storeSection: { create: fakes.seed },
+    // The callback form, handed the same client: what is asserted is the writes, not the boundary.
+    $transaction: vi.fn().mockImplementation((run: (tx: unknown) => unknown) => run(prisma)),
   } as unknown as PrismaService;
 
   const geocoder = { locate: fakes.locate } as unknown as StoreGeocoder;
@@ -177,6 +189,59 @@ describe('StoresService.create', () => {
     await service.create(OWNER, createDto);
 
     expect(fakes.create.mock.calls[0]?.[0].data).not.toHaveProperty('colorPrimary');
+  });
+
+  /**
+   * The page a shop opens with, and the reason it is seeded here: a shop with no products band
+   * draws nothing at `/<slug>`, and that state was reported as "tenho produtos, mas não aparece".
+   */
+  it('opens a new shop with its landing page: the promises band, then its products', async () => {
+    const { service, fakes } = build(null);
+
+    await service.create(OWNER, createDto);
+
+    const bands = fakes.seed.mock.calls.map((call) => call[0].data);
+    expect(bands.map((band) => band.components.create[0].kind)).toEqual(['BENEFITS', 'PRODUCTS']);
+    expect(bands[0].isActive).toBe(true);
+    // In the order the shop opened with — the row's, since the create form never asks.
+    expect(bands[0].components.create[0].items).toEqual([
+      expect.objectContaining({ id: 'money', title: 'Dinheiro' }),
+      expect.objectContaining({ id: 'pix', title: 'PIX' }),
+    ]);
+    // Every component carries the shop's id beside its band's — the read path is scoped by it.
+    expect(bands[1].components.create[0].storeId).toBe(row.id);
+  });
+
+  /** The second product: a site opens from its template, and asks for no WhatsApp. */
+  it('opens a site from its template, with no WhatsApp asked', async () => {
+    const { service, fakes } = build(null);
+
+    await service.create(OWNER, { ...createDto, type: 'INSTITUTIONAL', socialNetworks: {} } as CreateStoreDto);
+
+    const bands = fakes.seed.mock.calls.map((call) => call[0].data);
+    expect(bands.map((band) => band.name)).toEqual(['Início', 'Serviços', 'Sobre', 'Como funciona', 'Contato']);
+    expect(bands.flatMap((band) => band.components.create.map((c: { kind: string }) => c.kind))).not.toContain('PRODUCTS');
+    expect(fakes.create.mock.calls[0]?.[0].data.whatsappPhone).toBeNull();
+  });
+
+  it('refuses a shop with no WhatsApp, before writing anything', async () => {
+    const { service, fakes } = build(null);
+
+    await expect(
+      service.create(OWNER, { ...createDto, socialNetworks: {} } as CreateStoreDto),
+    ).rejects.toMatchObject({ response: { errorCode: 'STORE_WHATSAPP_REQUIRED' } });
+    expect(fakes.create).not.toHaveBeenCalled();
+  });
+
+  it('hides the promises band when a shop opens with nothing to promise', async () => {
+    const { service, fakes } = build(null);
+    fakes.create.mockResolvedValueOnce({ ...row, paymentMethods: [] });
+
+    await service.create(OWNER, createDto);
+
+    const bands = fakes.seed.mock.calls.map((call) => call[0].data);
+    expect(bands[0]).toMatchObject({ isActive: false });
+    expect(bands[1]).toMatchObject({ isActive: true });
   });
 
   it('refuses a category that does not exist', async () => {

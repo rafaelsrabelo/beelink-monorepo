@@ -7,7 +7,13 @@ import type {
 import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
 
 // App
-import { bannerInclude, toPublicBanner, type BannerRow } from '../banners/banners.mapper.js';
+import {
+  NO_SLUGS,
+  sectionInclude,
+  toPublicSection,
+  type SectionRow,
+  type SlugsByEntity,
+} from '../page/page.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 
@@ -21,19 +27,22 @@ import { parseLayoutSettings } from './store-layout-settings.schema.js';
  */
 export type StoreRow = StoreModel & {
   category: StoreCategoryModel | null;
-  banners: BannerRow[];
+  sections: SectionRow[];
 };
 
 /** The one query shape the store mappers accept, so a call site cannot forget the include. */
 export const storeInclude = {
   category: true,
-  // Only what a visitor may see, in the shopkeeper's order. A hidden banner is still in the panel;
-  // it simply never reaches this shape. Ordered by position alone — `create` hands out the next
-  // one per shop, so two banners never share a number and there is no tie to break.
-  banners: {
+  // Only the bands a visitor may see, in the shopkeeper's order. A hidden one is still in the
+  // panel; it simply never reaches this shape. Ordered by position alone — `create` hands out the
+  // next one per shop, so two bands never share a number and there is no tie to break.
+  //
+  // Hidden COMPONENTS are dropped a level down, in `toPublicSection`, and not here: this include
+  // is the panel's too, and the panel has to see what it is hiding.
+  sections: {
     where: { isActive: true },
     orderBy: { position: 'asc' },
-    include: bannerInclude,
+    include: sectionInclude,
   },
 } as const;
 
@@ -53,7 +62,14 @@ export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
  * are absent by construction rather than by a `select` somebody has to remember: this shape is what
  * ends up in Google's index, so a field is added here only on purpose.
  */
-export function toPublicStore(row: StoreRow): PublicStore {
+/**
+ * `slugs` carries what the hero's slides point at, looked up once for the whole shop.
+ *
+ * Defaulted to nothing rather than required, and that is the safe default: a call site that has
+ * not looked them up gets slides that are pictures instead of links. The alternative — guessing —
+ * would put a wrong address on the page a stranger asked for.
+ */
+export function toPublicStore(row: StoreRow, slugs: SlugsByEntity = NO_SLUGS): PublicStore {
   return {
     id: row.id,
     slug: row.slug,
@@ -71,7 +87,7 @@ export function toPublicStore(row: StoreRow): PublicStore {
     colors: {
       background: row.colorBackground,
       primary: row.colorPrimary,
-      text: row.colorText,
+      footer: row.colorFooter,
       header: row.colorHeader,
     },
     socialNetworks: {
@@ -85,14 +101,16 @@ export function toPublicStore(row: StoreRow): PublicStore {
     paymentMethods: row.paymentMethods,
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
-    banners: row.banners.map((banner) => toPublicBanner(banner, row.slug, ROUTE_WORDS[row.routeVocabulary])),
+    sections: row.sections.map((section) =>
+      toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary], slugs),
+    ),
   } satisfies PublicStore;
 }
 
 /** The shop as its owner sees it: the public shape plus what only the owner may read. */
-export function toStore(row: StoreRow): WireStore {
+export function toStore(row: StoreRow, slugs: SlugsByEntity = NO_SLUGS): WireStore {
   return {
-    ...toPublicStore(row),
+    ...toPublicStore(row, slugs),
     ownerId: row.ownerId,
     address: {
       street: row.addressStreet,

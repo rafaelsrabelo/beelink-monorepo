@@ -67,9 +67,11 @@ describe("ChartAreaInteractive", () => {
     // leave the chart empty — which is what the registry block did with a date hardcoded in 2024.
     render(<ChartAreaInteractive data={sampleChartData} />)
 
-    // An axis tick is a <text> wrapping a <tspan>, so the label matches twice.
-    expect(screen.getAllByText("4 de abr.").length).toBeGreaterThan(0)
-    expect(screen.getAllByText("28 de jun.").length).toBeGreaterThan(0)
+    // An axis tick is a <text> wrapping a <tspan>, so the label matches twice. The days are the
+    // fixture's own, in every timezone: these read "4 de abr." and "28 de jun." while the axis
+    // formatted in local time, which passed in São Paulo and failed in CI's UTC.
+    expect(screen.getAllByText("5 de abr.").length).toBeGreaterThan(0)
+    expect(screen.getAllByText("29 de jun.").length).toBeGreaterThan(0)
   })
 
   it("narrows the window to the last days when a shorter range is picked", async () => {
@@ -78,8 +80,8 @@ describe("ChartAreaInteractive", () => {
     await userEvent.click(screen.getByRole("button", { name: "7 dias" }))
 
     expect(screen.getByRole("button", { name: "7 dias" })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getAllByText("21 de jun.").length).toBeGreaterThan(0)
-    expect(screen.queryAllByText("4 de abr.")).toHaveLength(0)
+    expect(screen.getAllByText("22 de jun.").length).toBeGreaterThan(0)
+    expect(screen.queryAllByText("5 de abr.")).toHaveLength(0)
   })
 
   it("draws nothing when there is nothing to draw, and still says why", () => {

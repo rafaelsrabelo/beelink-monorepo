@@ -139,8 +139,9 @@ export function toUpdatePayload(store: Store, values: StoreSettingsValues): Upda
 function toSocialPayload(values: StoreSocialValues): CreateStorePayload["socialNetworks"] {
   return {
     // Digits only, and the country code is the API's to add: normalising it in two places is how
-    // the legacy ended up with "+5511999998888" in one row and "11999998888" in the next.
-    whatsapp: digitsOf(values.whatsapp),
+    // the legacy ended up with "+5511999998888" in one row and "11999998888" in the next. Empty is
+    // null, which a site may send and a shop may not — the API says which.
+    whatsapp: digitsOf(values.whatsapp) || null,
     instagram: handleOrNull(values.instagram),
     tiktok: handleOrNull(values.tiktok),
     spotify: orNull(values.spotify),
@@ -188,6 +189,8 @@ export function toCreatePayload(input: StoreCreateInput): CreateStorePayload {
     name: input.identity.name.trim(),
     slug: input.slug,
     type: input.identity.type,
+    // A site opens from a template; the first is the only one yet. A shop opens with its own page.
+    ...(input.identity.type === "INSTITUTIONAL" ? { template: "servicos-b2b" as const } : {}),
     description: orNull(input.identity.description),
     logoUrl: orNull(input.identity.logoUrl),
     categoryId: orNull(input.identity.categoryId),

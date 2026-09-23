@@ -4,7 +4,7 @@
 import type { ReactNode } from "react"
 
 // Libs
-import { MenuIcon } from "lucide-react"
+import { MenuIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -21,6 +21,13 @@ export interface AdminHeaderProps {
   bell: ReactNode
   storeMenu: ReactNode
   onToggleSidebar: () => void
+  /**
+   * The desktop twin of the hamburger. Optional, because the header is also mounted where there is
+   * no rail to narrow — omitting it draws no control rather than drawing a dead one.
+   */
+  onToggleRail?: () => void
+  /** Which way the control points, and which of the two sentences it says. */
+  railCollapsed?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -43,6 +50,8 @@ export function AdminHeader({
   bell,
   storeMenu,
   onToggleSidebar,
+  onToggleRail,
+  railCollapsed = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: AdminHeaderProps) {
@@ -59,6 +68,28 @@ export function AdminHeader({
         >
           <MenuIcon aria-hidden="true" className="size-4" />
         </button>
+
+        {/*
+          Two controls and not one, because below `lg` the rail is a drawer that is open or shut and
+          above it the rail is always there and only narrows. One button doing both would have to
+          say two different things at two different widths, and a control whose name changes with
+          the window is a control nobody trusts.
+        */}
+        {onToggleRail ? (
+          <button
+            type="button"
+            onClick={onToggleRail}
+            aria-label={railCollapsed ? text.railExpand : text.railCollapse}
+            aria-pressed={railCollapsed}
+            className="text-header-foreground hover:bg-header-field-hover focus-visible:ring-header-foreground/70 hidden size-8 place-items-center rounded-lg outline-none focus-visible:ring-2 lg:grid"
+          >
+            {railCollapsed ? (
+              <PanelLeftOpenIcon aria-hidden="true" className="size-4" />
+            ) : (
+              <PanelLeftCloseIcon aria-hidden="true" className="size-4" />
+            )}
+          </button>
+        ) : null}
 
         <Link
           href={brandHref}

@@ -10,6 +10,7 @@ import type {
   Store,
   StoreCategory,
   StoreColorPreset,
+  StoreColors,
   UpdateStorePayload,
 } from "@harness-monorepo/contracts"
 
@@ -21,6 +22,7 @@ import {
   fetchStoreCategories,
   fetchStoreColorPresets,
   updateStore,
+  updateStoreColors,
 } from "./store-requests"
 
 /**
@@ -94,6 +96,18 @@ export function useCreateStore(): UseMutationResult<Store, Error, CreateStorePay
  * The slug is bound here and not sent as a variable: it cannot change, so a form that could carry
  * a different one would be offering an edit the API refuses.
  */
+export function useUpdateStoreColors(slug: string): UseMutationResult<Store, Error, StoreColors> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (colors: StoreColors) => updateStoreColors(slug, colors),
+    onSuccess: async (store) => {
+      queryClient.setQueryData(storeKeys.detail(slug), store)
+      await queryClient.invalidateQueries({ queryKey: storeKeys.mine() })
+    },
+  })
+}
+
 export function useUpdateStore(slug: string): UseMutationResult<Store, Error, UpdateStorePayload> {
   const queryClient = useQueryClient()
 

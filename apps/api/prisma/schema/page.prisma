@@ -1,0 +1,144 @@
+/// What a component is.
+///
+/// A closed list, and it closed before the first row was written. The seventh kind is a value here,
+/// a shape in the zod union, a component with a story and a test, and a panel of fields — the build
+/// breaks at every point that is missing, which is the reason this is an enum and not a string.
+///
+/// There is no HERO, and its absence is the point of this shape. A cover used to be a kind, meaning
+/// "this banner is the one at the top" — a position turned into a type. A cover is a full-width
+/// section that happens to come first, holding a banner. A design that REMOVES a special case
+/// rather than adding one is the one to take; the same sign retired `belowProducts`.
+enum ComponentKind {
+  /// The strip above the header. The one component not drawn where its section sits: it is above
+  /// the masthead on every page, so "before the header" is not a position an arrangement can hold.
+  ANNOUNCEMENT
+  /// A picture, or several, which makes it a carousel. It may point somewhere.
+  BANNER
+  /// A heading and the line under it. A sign, not a card.
+  HEADING
+  /// A paragraph. Its own kind and not a mode of the heading: a form with a mode is two forms.
+  TEXT
+  /// The band of promises: an icon, a title and a line, per row.
+  BENEFITS
+  /// The shop's categories, as a grid of cards.
+  CATEGORIES
+  /// What the shop sells. One per shop, and it cannot be deleted.
+  PRODUCTS
+  /// A form a visitor fills in, beside the ways to reach the owner. Its `items` are the fields;
+  /// what arrives through it is a `Lead`. A site's kind — a shop takes orders, not contact.
+  CONTACT
+}
+
+/// How wide a section sits on the page. It belongs to the band and not to what is inside it, which
+/// is why a cover no longer needs a kind: a full-bleed band is a section that bleeds, whatever it
+/// holds.
+enum SectionWidth {
+  FULL
+  CONTAINED
+}
+
+/// Where a component's words sit. Read on HEADING and TEXT. The column is nullable, and null is
+/// not a fourth value: it is "as this kind always drew it" — a heading centred, a paragraph at the
+/// left — which no single column default could say for both.
+enum TextAlign {
+  LEFT
+  CENTER
+  RIGHT
+}
+
+/// One band of a shop's landing page.
+///
+/// The level the shopkeeper asked for in their own words — "seção tem atributos (cores, ordenação)
+/// e tem componentes". A flat list of blocks could not say two things they needed: that a heading
+/// belongs to the shelf under it, and that a band has a background of its own. Neither is
+/// expressible when the only relation between two blocks is that they happen to be adjacent.
+model StoreSection {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// What the band is called on the page, if named. On a site the named bands are the menu.
+  name String? @db.VarChar(60)
+
+  /// Edge to edge, or inside the page's measure.
+  width SectionWidth @default(CONTAINED)
+
+  /// This band's own colour. Null is the page's. Whatever is written on it is derived from it by
+  /// the same rule the rest of the shop window uses, so a dark band in a pale shop is readable
+  /// without anyone choosing a text colour.
+  background String? @db.VarChar(9)
+
+  /// The band's place on the page. A component's place inside it is the component's.
+  position Int @default(0)
+
+  /// Hiding a band hides everything in it, and keeps all of it.
+  isActive Boolean @default(true)
+
+  components StoreComponent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The storefront's read, in one index scan.
+  @@index([storeId, isActive, position])
+  @@map("store_sections")
+}
+
+/// One thing inside a band.
+///
+/// A table and not JSON on the section, because a component has to be addressable: the editor
+/// hides one, reorders one and deletes one, and a row is what makes each of those a single write
+/// instead of a read-modify-write of the whole band.
+///
+/// It points nowhere itself, and that is a column count this model DROPPED. Four columns and a
+/// CHECK used to say where a poster sent a visitor — and after a banner became one component
+/// holding slides, the destination moved into the slide and nothing read them again. A column with
+/// no reader is the `layoutSettings` disease, sixteen keys of which survived years unread here.
+model StoreComponent {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  sectionId String       @db.Uuid
+  section   StoreSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  /// Kept beside the section's, denormalised on purpose: every query this module runs is scoped to
+  /// one shop, and the alternative is a join on the page a stranger asks for first.
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  kind ComponentKind
+
+  title    String? @db.VarChar(120)
+  subtitle String? @db.VarChar(200)
+  /// The paragraph, on a TEXT. Null on every other kind.
+  body     String?
+
+  /// Full width, two across, three across, for a banner inside its band.
+  layout ShowcaseLayout @default(FULL)
+
+  /// How many across a grid draws. Read on CATEGORIES and PRODUCTS.
+  columns Int?
+
+  /// Read on HEADING and TEXT. Null keeps the kind's own habit.
+  align TextAlign?
+
+  /// A banner's slides, or a benefits band's rows. Empty on every other kind.
+  ///
+  /// Json, and the difference from `layoutSettings` is the one that matters: this is content.
+  /// Sixteen of that blob's twenty-one keys survived years unread because a key nobody draws is
+  /// invisible; an `items` nobody draws is a blank band on the front page, reported the same day.
+  items Json @default("[]")
+
+  /// Its place inside its section.
+  position Int @default(0)
+
+  isActive Boolean @default(true)
+
+  /// What arrived through this component, when it is a CONTACT form.
+  leads Lead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sectionId, position])
+  @@index([storeId, kind])
+  @@map("store_components")
+}

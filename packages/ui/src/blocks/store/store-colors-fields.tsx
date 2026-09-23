@@ -107,15 +107,6 @@ export function StoreColorsFields({
           onChange={(color) => setColor("primary", color)}
         />
         <StoreColorField
-          id="store-color-text"
-          label={text.textLabel}
-          pickerSuffix={text.colorPickerSuffix}
-          value={value.text}
-          error={errors?.text}
-          disabled={disabled}
-          onChange={(color) => setColor("text", color)}
-        />
-        <StoreColorField
           id="store-color-header"
           label={text.headerLabel}
           pickerSuffix={text.colorPickerSuffix}
@@ -123,6 +114,20 @@ export function StoreColorsFields({
           error={errors?.header}
           disabled={disabled}
           onChange={(color) => setColor("header", color)}
+        />
+        {/*
+          There is no ink field. Every word on the shop window is derived from what it sits on, so
+          a colour picker for it would be a control able to write black on black — which is exactly
+          the state this replaced.
+        */}
+        <StoreColorField
+          id="store-color-footer"
+          label={text.footerLabel}
+          pickerSuffix={text.colorPickerSuffix}
+          value={value.footer}
+          error={errors?.footer}
+          disabled={disabled}
+          onChange={(color) => setColor("footer", color)}
         />
       </div>
 

@@ -1,0 +1,218 @@
+"use client"
+
+// Libs
+import {
+  BadgeCheckIcon,
+  EyeIcon,
+  EyeOffIcon,
+  GripVerticalIcon,
+  HeadingIcon,
+  ImageIcon,
+  LayoutGridIcon,
+  MailIcon,
+  MegaphoneIcon,
+  TagsIcon,
+  Trash2Icon,
+  TypeIcon,
+} from "lucide-react"
+
+// UI
+import { Button } from "@harness-monorepo/ui/components/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@harness-monorepo/ui/components/select"
+import { cn } from "@harness-monorepo/ui/lib/utils"
+
+// Locales
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// Block
+import { useArrangeItem } from "./design-arrange"
+import type { ComponentKind } from "./design-types"
+
+export type ArrangementLayout = "FULL" | "HALVES" | "THIRDS"
+
+export interface ArrangementItem {
+  id: string
+  kind: ComponentKind
+  /** Null on a component the shopkeeper has not titled. The row falls back to the kind's name. */
+  title: string | null
+  /** A banner's first picture, where it has one. Every other kind draws its glyph instead. */
+  imageUrl?: string | null
+  layout: ArrangementLayout
+  isActive: boolean
+  /**
+   * Whether the row draws a bin. Absent means yes.
+   *
+   * Decided by the screen and not by the kind, because the answer is a count the screen has and
+   * this block does not: the shop's last product list cannot go, but a duplicate can. A rule keyed
+   * on the kind alone was what left a shop with two shelves and no bin on either.
+   */
+  deletable?: boolean
+  /**
+   * The block has nothing to draw, so the shop window draws nothing at all for it.
+   *
+   * Said out loud because a silent one is what made a landing page and its editor disagree: the
+   * panel listed a heading with no words and a hero with no pictures, the preview showed neither,
+   * and nothing on the screen explained the difference. An empty block is not broken — it is one
+   * the shopkeeper has not finished — and the row is where that gets said.
+   */
+  empty?: boolean
+}
+
+/**
+ * How wide is a question about a poster, and only about a poster.
+ *
+ * A cover is as wide as the shopkeeper's `width` says and a heading is as wide as the page; asking
+ * "full, half or a third" of either would be offering a choice that changes nothing.
+ */
+function hasLayout(kind: ComponentKind): boolean {
+  return kind === "BANNER"
+}
+
+/**
+ * The picture a row shows beside the title, or the glyph that stands in for one.
+ *
+ * Six of the eight kinds have no picture, and a blank grey rectangle beside each of them makes a
+ * list of components read as a list of broken images.
+ */
+const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
+  ANNOUNCEMENT: MegaphoneIcon,
+  BANNER: ImageIcon,
+  HEADING: HeadingIcon,
+  TEXT: TypeIcon,
+  BENEFITS: BadgeCheckIcon,
+  CATEGORIES: TagsIcon,
+  PRODUCTS: LayoutGridIcon,
+  CONTACT: MailIcon,
+}
+
+export function ArrangementRow({
+  item,
+  onToggle,
+  onLayoutChange,
+  onDelete,
+  onEdit,
+  messages,
+}: {
+  item: ArrangementItem
+  onToggle: (id: string, isActive: boolean) => void
+  onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  /** Absent where a kind cannot be deleted; the row then draws no bin at all. */
+  onDelete?: (id: string) => void
+  /** Absent where a kind has nothing to write; the row is then not a button. */
+  onEdit?: (id: string) => void
+  messages: UiMessages
+}) {
+  const text = messages.design
+  const drag = useArrangeItem(item.id)
+
+  // A block the shopkeeper titled is called by that title; one they have not is called by its
+  // kind. "Sem título" on four rows tells them which blocks are unfinished and nothing about
+  // which is which.
+  const name = item.title?.trim() || text.kinds[item.kind]
+  const KindIcon = KIND_ICON[item.kind]
+
+  const layoutLabel = (layout: string) =>
+    layout === "HALVES" ? text.sizeHalves : layout === "THIRDS" ? text.sizeThirds : text.sizeFull
+
+  return (
+    <li
+      ref={drag.setNodeRef}
+      style={drag.style}
+      className={cn(
+        "bg-shell-surface border-shell-border flex items-center gap-2 rounded-xl border p-2",
+        drag.isDragging && "z-10 opacity-80 shadow-md",
+        !item.isActive && "opacity-60",
+      )}
+    >
+      {/*
+        The handle carries the drag, and it carries `attributes` with it: dnd-kit puts the role,
+        the tab stop and the described-by on whatever it is spread onto, so splitting them from the
+        listeners would leave a control that announces as draggable and cannot be driven.
+      */}
+      <button
+        type="button"
+        aria-label={`${text.dragHandle}: ${name}`}
+        className="text-muted-foreground hover:text-foreground cursor-grab touch-none rounded-md p-1"
+        {...drag.handleProps}
+      >
+        <GripVerticalIcon aria-hidden="true" className="size-4" />
+      </button>
+
+      <span className="bg-muted text-muted-foreground flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md">
+        {item.imageUrl ? (
+          <img src={item.imageUrl} alt="" aria-hidden="true" className="size-full object-cover" />
+        ) : (
+          <KindIcon aria-hidden="true" className="size-4" />
+        )}
+      </span>
+
+      {/*
+        The name is the way in to editing, where there is anything to edit. A row that is a button
+        and a row that is not look the same until the pointer is over them, which is what stops the
+        list reading as five buttons and two labels.
+      */}
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={() => onEdit(item.id)}
+          className="focus-visible:ring-ring flex min-w-0 flex-1 flex-col rounded-md px-1 text-left outline-none hover:underline focus-visible:ring-2"
+        >
+          <span className="truncate text-sm font-medium">{name}</span>
+          <span className="text-muted-foreground truncate text-xs">
+            {item.empty ? text.emptyBlock : text.kinds[item.kind]}
+          </span>
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 flex-col px-1">
+          <p className="truncate text-sm font-medium">{name}</p>
+          <p className="text-muted-foreground truncate text-xs">
+            {item.empty ? text.emptyBlock : text.kinds[item.kind]}
+          </p>
+        </div>
+      )}
+
+      {hasLayout(item.kind) ? (
+        <Select
+          value={item.layout}
+          onValueChange={(next: string | null) => onLayoutChange(item.id, (next ?? "FULL") as ArrangementLayout)}
+        >
+          <SelectTrigger aria-label={`${text.sizeLabel}: ${name}`} className="w-28 shrink-0">
+            <SelectValue>{(selected: string) => layoutLabel(selected)}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="FULL">{text.sizeFull}</SelectItem>
+            <SelectItem value="HALVES">{text.sizeHalves}</SelectItem>
+            <SelectItem value="THIRDS">{text.sizeThirds}</SelectItem>
+          </SelectContent>
+        </Select>
+      ) : null}
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label={`${item.isActive ? text.hide : text.show}: ${name}`}
+        aria-pressed={item.isActive}
+        onClick={() => onToggle(item.id, !item.isActive)}
+      >
+        {item.isActive ? (
+          <EyeIcon aria-hidden="true" className="size-4" />
+        ) : (
+          <EyeOffIcon aria-hidden="true" className="size-4" />
+        )}
+      </Button>
+
+      {onDelete && item.deletable !== false ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`${text.deleteBlock}: ${name}`}
+          onClick={() => onDelete(item.id)}
+        >
+          <Trash2Icon aria-hidden="true" className="size-4" />
+        </Button>
+      ) : null}
+    </li>
+  )
+}
