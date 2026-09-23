@@ -166,3 +166,66 @@ faixas com o mesmo nome — a segunda recebe o id no fim.
 **Copy que ainda diz "loja" nas telas de um site** (cabeçalho do painel, cards da home, título do
 fluxo de criação) fica como polimento para B, junto com a tela de Leads — é onde o painel do site
 ganha vocabulário próprio.
+
+---
+
+## Adendo 2 — o que a entrega B decide antes de ser feita
+
+**Dois caminhos, dois guardas.** O visitante envia em `POST /stores/:slug/contact`, público, com limite
+por IP e armadilha. O dono lê em `/stores/:slug/leads` (lista paginada, status, exclusão), fechado.
+Caminhos separados pelo mesmo motivo que o catálogo público não divide rota com o do dono: um
+`@Public()` no controller errado abriria o outro sem ninguém notar.
+
+**O formulário é o componente `CONTACT`; os campos são os `items` dele.** Cada campo é `{ id, label,
+type, required, options? }`, com `type` num conjunto fechado de seis (texto, e-mail, telefone, área de
+texto, seleção, data). O nome do visitante é sempre pedido e não é um campo — é a coluna que toda
+tela mostra. **Um formulário precisa de ao menos um campo obrigatório de e-mail ou telefone**: um
+lead sem como responder não é um lead, e a regra vive no schema zod dos items, não na tela. Um
+`CONTACT` criado sem items nasce com três (e-mail obrigatório, telefone obrigatório, mensagem), e o
+template `servicos-b2b` ganha um na faixa "Contato" no lugar do aviso "chega em breve".
+
+**O que vira coluna e o que vira JSON.** `name`, `email` e `phone` são colunas, preenchidas pela
+primeira resposta de tipo e-mail e de tipo telefone — são o que a lista mostra e o que o dono usa
+para responder. Todo o resto, empresa incluída, vai em `answers`: uma lista de `{ fieldId, label,
+type, value }` com o **rótulo capturado na hora**, porque o campo pode ser renomeado ou apagado
+depois e o lead tem de continuar legível sozinho. Não há coluna `company`: nenhuma tela filtra por
+ela, e uma coluna sem leitor é a doença do `layoutSettings`. `componentId` é `SET NULL` ao apagar o
+formulário — o lead sobrevive ao bloco.
+
+**A validação é contra o que o formulário declarou.** O serviço carrega o componente (do site certo,
+tipo `CONTACT`, ativo, em faixa ativa), confere cada resposta pelo tipo (obrigatório, formato de
+e-mail, dígitos do telefone, data ISO, opção da lista, tamanho máximo) e recusa um `fieldId` que o
+formulário não tem. Código: `LEAD_ANSWER_INVALID`, com a mensagem dizendo qual campo.
+
+**Armadilha e limite.** O corpo tem um campo `website` que a tela desenha fora da vista e nenhuma
+pessoa preenche; preenchido, a API responde 201 e não grava nada — um robô que vê sucesso não
+insiste. O limite é `LEAD_RATE_LIMIT_MAX` por `LEAD_RATE_LIMIT_WINDOW` (5 a cada 10 minutos, por IP,
+via o `x-forwarded-for` que o BFF já encaminha). O endpoint exige JavaScript no site (é um `POST`, não
+um link que o Google siga), ao contrário da busca, que é um `GET` por ser uma página.
+
+**O e-mail ao dono sai depois de gravar, nunca antes.** Grava-se o lead, responde-se 201, e o e-mail
+é a segunda coisa: uma falha de SMTP é um log, não um 500 para quem acabou de preencher. Os valores
+são escapados no HTML — são texto de um estranho, e o template de hoje interpola sem escapar porque
+até aqui só interpolou o nome do próprio dono.
+
+**O botão do cabeçalho é a faixa de contato.** A primeira faixa nomeada que tem um `CONTACT` ativo é
+desenhada como botão na cor primária, com o **nome da faixa** como rótulo e a âncora dela como
+destino, e sai da lista do menu; o rodapé continua listando-a. Nenhuma coluna nova: quem quer que o
+botão diga "Pedir orçamento" renomeia a faixa. Aparece também no celular, onde o menu some — é um
+botão só e cabe.
+
+**`CONTACT` só é oferecido a um site.** Uma loja que adicionasse um teria leads sem tela para vê-los.
+O menu "Adicionar" recebe a lista do que este tipo de loja não pode ter; a API não recusa (o dono de
+uma loja que criasse um pela API receberia o e-mail mesmo assim, então nada se perde) — fica
+anotado como o que a UI decide e a API ainda não.
+
+**A tela Leads.** Entrada "Leads" no menu de um site (Início · Modo design · Leads · Configurações),
+tabela mais recente primeiro com nome, contato, quando, e o status num select na própria linha;
+clicar na linha abre a folha com todas as respostas e a exclusão. Paginada como os produtos. A home
+de um site ganha um cartão "Leads". CRM, exportação e filtro por texto ficam de fora, como o plano
+já dizia.
+
+**Copy de site no painel.** Onde uma tela de site ainda dizia "loja" — subtítulo da home, cartões,
+"Configurações da loja", a descrição do modo design — o painel passa a escolher a frase pelo tipo.
+O fluxo de criação continua dizendo "loja" no título do passo: é a tela onde o tipo ainda está
+sendo escolhido.
