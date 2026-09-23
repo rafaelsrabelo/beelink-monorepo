@@ -188,6 +188,8 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
           onAdd={(kind) => addSection.mutate({ component: { kind } })}
           adding={addSection.isPending}
           // The two the shop may only have one of. Every other kind is offered every time.
+          // A site has no catalogue to list; a shop has no screen for a form's leads.
+          unavailable={store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]}
           taken={componentsOf(rows)
             .map((component) => component.kind)
             .filter((kind) => kind === "ANNOUNCEMENT" || kind === "PRODUCTS")}

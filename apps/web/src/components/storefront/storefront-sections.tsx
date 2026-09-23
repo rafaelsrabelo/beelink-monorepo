@@ -20,7 +20,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import type { HomeBand } from "@/lib/storefront-data"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { anchorsOf } from "./site-chrome"
-import { StorefrontComponent } from "./storefront-component"
+import { StorefrontComponent, type LiveContact } from "./storefront-component"
 
 export interface StorefrontSectionsProps {
   /**
@@ -55,6 +55,8 @@ export interface StorefrontSectionsProps {
    * is a different gesture from editing what is inside it — so it is a different hook.
    */
   renderSection?: (section: PublicSection, band: ReactNode) => ReactNode
+  /** What a contact form sends with. The shop window passes it; the preview does not, and sends nothing. */
+  contact?: LiveContact | null
   messages: UiMessages
 }
 
@@ -108,6 +110,7 @@ export function StorefrontSections({
   linkComponent,
   renderBlock,
   renderSection,
+  contact = null,
   messages,
 }: StorefrontSectionsProps) {
   const link = linkComponent ? { linkComponent } : {}
@@ -175,6 +178,7 @@ export function StorefrontSections({
                     showPrice={showPrice}
                     showBadge={showBadge}
                     {...link}
+                    contact={contact}
                     messages={messages}
                   />
                 )

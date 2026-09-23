@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation"
 // Libs
 import {
   HomeIcon,
+  InboxIcon,
   LayoutTemplateIcon,
   PackageIcon,
   SettingsIcon,
@@ -155,7 +156,11 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
         <AdminSidebar
           items={
             site
-              ? [item(nav.home, "", <HomeIcon />), item(nav.design, "/design", <LayoutTemplateIcon />)]
+              ? [
+                  item(nav.home, "", <HomeIcon />),
+                  item(nav.design, "/design", <LayoutTemplateIcon />),
+                  item(nav.leads, "/leads", <InboxIcon />, "prefix"),
+                ]
               : [
                   item(nav.home, "", <HomeIcon />),
                   item(nav.orders, "/orders", <ShoppingBagIcon />, "prefix"),
@@ -172,7 +177,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                   item(nav.customers, "/customers", <UsersIcon />, "prefix"),
                 ]
           }
-          footerItems={[item(nav.settings, "/store", <SettingsIcon />)]}
+          footerItems={[item(site ? nav.siteSettings : nav.settings, "/store", <SettingsIcon />)]}
           activeHref={pathname}
           open={drawerOpen}
           collapsed={railCollapsed}

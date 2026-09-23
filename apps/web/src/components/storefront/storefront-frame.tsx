@@ -11,7 +11,7 @@ import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import { menuOf, siteFooterColumnsOf } from "./site-chrome"
+import { ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
 import { paymentHighlightsOf } from "./storefront-highlights"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
@@ -165,7 +165,7 @@ export function StorefrontFrame({
       // The live one, which answers while someone types. It replaces the plain form rather than
       // sitting beside it, and falls back to exactly that form when scripting is off.
       {...(site
-        ? { menu: menuOf(drawn) }
+        ? { menu: menuOf(drawn), cta: ctaOf(drawn) }
         : {
             searchSlot: searchSlot ?? (
               <StorefrontSearchLive

@@ -43,13 +43,8 @@ export function anchorsOf(sections: readonly PublicSection[]): ReadonlyMap<strin
   return anchors
 }
 
-/**
- * A site's menu: its named bands, in order, as anchors on the same page.
- *
- * The announcement strip's band is never in it — it is drawn above the header, not where it sits
- * — and an unnamed band is a band its owner did not want reachable from the top.
- */
-export function menuOf(sections: readonly PublicSection[]): StorefrontMenuItem[] {
+/** The named bands a visitor can jump to, in order, as anchors. The strip's band is never one. */
+function namedBandsOf(sections: readonly PublicSection[]): StorefrontMenuItem[] {
   const anchors = anchorsOf(sections)
 
   return sections
@@ -58,6 +53,31 @@ export function menuOf(sections: readonly PublicSection[]): StorefrontMenuItem[]
       const anchor = anchors.get(section.id)
       return anchor && section.name ? [{ id: section.id, label: section.name.trim(), href: `#${anchor}` }] : []
     })
+}
+
+/**
+ * A site's button: the first named band holding a contact form, by its own name.
+ *
+ * No column says "this is the button" — the band's name is its label, so an owner who wants it to
+ * read "Pedir orçamento" renames the band, and the menu, the anchor and the button follow.
+ */
+export function ctaOf(sections: readonly PublicSection[]): { label: string; href: string } | null {
+  const holdsForm = new Set(
+    sections.filter((section) => section.components.some((component) => component.kind === "CONTACT")).map((s) => s.id),
+  )
+  const band = namedBandsOf(sections).find((entry) => holdsForm.has(entry.id))
+
+  return band ? { label: band.label, href: band.href } : null
+}
+
+/**
+ * A site's menu: its named bands, as anchors — less the one the button already leads to, which
+ * would otherwise sit in the header twice. An unnamed band is one its owner did not want reachable.
+ */
+export function menuOf(sections: readonly PublicSection[]): StorefrontMenuItem[] {
+  const cta = ctaOf(sections)
+
+  return namedBandsOf(sections).filter((entry) => entry.href !== cta?.href)
 }
 
 /**
@@ -72,7 +92,9 @@ export function siteFooterColumnsOf(
   messages: UiMessages,
 ): StorefrontFooterColumn[] {
   const text = messages.storefront
-  const menu = menuOf(sections)
+  // Every named band, the button's included: the header hides its menu on a phone, and this is
+  // where those names are found.
+  const menu = namedBandsOf(sections)
   const whatsapp = orderHrefOf(store)
 
   return [

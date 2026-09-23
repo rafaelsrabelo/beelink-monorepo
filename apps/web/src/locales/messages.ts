@@ -1,5 +1,5 @@
 // Types
-import type { AuthErrorCode, StoreErrorCode, PageErrorCode } from "@harness-monorepo/contracts"
+import type { AuthErrorCode, LeadErrorCode, StoreErrorCode, PageErrorCode } from "@harness-monorepo/contracts"
 
 /**
  * The codes that belong to no domain. The API's exception filter falls back to the HTTP status name
@@ -104,6 +104,10 @@ export interface WebMessages {
       customers: string
       categories: string
       design: string
+      /** A site's own entry: what came through its form. */
+      leads: string
+      /** "Configurações do site" — the footer entry, said for what the page is. */
+      siteSettings: string
     }
     /** The panel's home for one shop: what is left to set up, and how the shop is doing. */
     home: {
@@ -126,6 +130,23 @@ export interface WebMessages {
         viewTitle: string
         viewText: string
         viewAction: string
+      }
+      /**
+       * The same home, said for a site. Only what reads wrong for one is here: "loja" in a title, a
+       * card about banners on a page whose sections are the point, and the leads card a shop lacks.
+       */
+      site: {
+        subtitle: string
+        identityTitle: string
+        identityText: string
+        viewTitle: string
+        viewText: string
+        viewAction: string
+        pageTitle: string
+        pageText: string
+        leadsTitle: string
+        leadsText: string
+        leadsAction: string
       }
     }
     /** Screens that exist so the menu does not lie, and say plainly that nothing is here yet. */
@@ -157,7 +178,7 @@ export interface WebMessages {
    * ask it through a per-domain copy function, and an unknown code falls back to `UNKNOWN`.
    */
   errors: Record<
-    AuthErrorCode | StoreErrorCode | HttpFallbackErrorCode | WebErrorCode | PanelPageErrorCode | "UNKNOWN",
+    AuthErrorCode | StoreErrorCode | LeadErrorCode | HttpFallbackErrorCode | WebErrorCode | PanelPageErrorCode | "UNKNOWN",
     string
   >
 }

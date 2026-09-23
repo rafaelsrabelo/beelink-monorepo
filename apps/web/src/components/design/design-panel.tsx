@@ -29,6 +29,8 @@ export interface DesignPanelProps {
   adding: boolean
   /** The kinds the shop already has one of, so a singleton is offered once. */
   taken: readonly ComponentKind[]
+  /** The kinds this kind of page cannot hold at all. */
+  unavailable: readonly ComponentKind[]
 
   palette: StoreColors
   onPalette: (colors: StoreColors) => void
@@ -63,6 +65,7 @@ export function DesignPanel({
   onAdd,
   adding,
   taken,
+  unavailable,
   palette,
   onPalette,
   presets,
@@ -95,7 +98,7 @@ export function DesignPanel({
             Held while the list loads, or the menu would offer the shop's singletons — the product
             list among them — before it knows the shop already has them.
           */}
-          <AddBlockMenu taken={taken} pending={adding || loading} onAdd={onAdd} messages={messages} />
+          <AddBlockMenu taken={taken} unavailable={unavailable} pending={adding || loading} onAdd={onAdd} messages={messages} />
           <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
           {loading ? (
             <>

@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 // Types
 import type {
   BenefitRow,
+  ContactField,
   PublicBannerSlide,
   PublicComponent,
   PublicProductCategory,
@@ -15,6 +16,7 @@ import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBenefits } from "@harness-monorepo/ui/blocks/storefront/storefront-benefits"
 import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
+import { StorefrontContact } from "@harness-monorepo/ui/blocks/storefront/storefront-contact"
 import { StorefrontHero } from "@harness-monorepo/ui/blocks/storefront/storefront-hero"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
@@ -24,6 +26,18 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // App
 import type { HomeBand } from "@/lib/storefront-data"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
+import { ContactFormLive } from "./contact-form-live"
+import type { ContactCopy } from "./storefront-contact-copy"
+
+/**
+ * What a contact form needs to send: the site, its WhatsApp and the sentences for a refusal. Null
+ * in design mode's preview, where the form draws and sends nothing.
+ */
+export interface LiveContact {
+  slug: string
+  whatsappHref: string | null
+  copy: ContactCopy
+}
 
 export interface StorefrontComponentProps {
   component: PublicComponent
@@ -35,6 +49,8 @@ export interface StorefrontComponentProps {
   showPrice: boolean
   showBadge: boolean
   linkComponent?: LinkComponent
+  /** Null in the preview: see `LiveContact`. */
+  contact?: LiveContact | null
   messages: UiMessages
 }
 
@@ -54,6 +70,7 @@ export function StorefrontComponent({
   showPrice,
   showBadge,
   linkComponent,
+  contact = null,
   messages,
 }: StorefrontComponentProps): ReactNode {
   const link = linkComponent ? { linkComponent } : {}
@@ -118,6 +135,25 @@ export function StorefrontComponent({
           icon: <BenefitIcon name={row.icon} />,
         }))}
       />
+    )
+  }
+
+  if (component.kind === "CONTACT") {
+    const fields = component.items as ContactField[]
+
+    return contact ? (
+      <ContactFormLive
+        slug={contact.slug}
+        componentId={component.id}
+        title={component.title}
+        subtitle={component.subtitle}
+        fields={fields}
+        whatsappHref={contact.whatsappHref}
+        copy={contact.copy}
+        messages={messages}
+      />
+    ) : (
+      <StorefrontContact title={component.title} subtitle={component.subtitle} fields={fields} messages={messages} />
     )
   }
 

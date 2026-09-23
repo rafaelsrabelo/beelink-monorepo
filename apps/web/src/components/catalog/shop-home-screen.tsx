@@ -12,6 +12,7 @@ import type { WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
 import { useSections } from "@/services/page/page-hooks"
 import { useProducts } from "@/services/catalog/catalog-hooks"
+import { useLeads } from "@/services/leads/lead-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
 export interface ShopHomeScreenProps {
@@ -38,6 +39,8 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
   // none to ask about, and asks nothing.
   const products = useProducts(site ? "" : slug, { pageSize: 1 })
   const banners = useSections(slug)
+  // One row, for the same reason as the products: the card asks whether anything arrived.
+  const leads = useLeads(site ? slug : "", { pageSize: 1 })
 
   const loading = store.isPending || (!site && products.isPending) || banners.isPending
   const bannerRows = banners.data ?? []
@@ -96,15 +99,29 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
     },
   ]
 
-  // A site's home keeps the cards about the page and the identity; payments and products are a
-  // shop's business.
-  const shown = site ? cards.filter((card) => card.href.endsWith("/design") || card.href === `/${slug}` || card.title === text.cards.identityTitle) : cards
+  // A site's home is its own four cards: the page, what came through its form, and who it is.
+  // Payments and products are a shop's business, and "loja" in a title is a shop's word.
+  const said = text.site
+  const siteCards = [
+    { title: said.viewTitle, description: said.viewText, actionLabel: said.viewAction, href: `/${slug}`, external: true, wide: true },
+    {
+      title: said.leadsTitle,
+      description: said.leadsText,
+      actionLabel: said.leadsAction,
+      href: `/admin/${slug}/leads`,
+      done: (leads.data?.total ?? 0) > 0,
+      wide: true,
+    },
+    { title: said.identityTitle, description: said.identityText, actionLabel: text.cards.identityAction, href: `/admin/${slug}/store`, done: Boolean(store.data?.logoUrl) },
+    { title: said.pageTitle, description: said.pageText, actionLabel: text.cards.bannersAction, href: `/admin/${slug}/design` },
+  ]
+  const shown = site ? siteCards : cards
 
   return (
     <div className="flex w-full flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">{store.data?.name ?? slug}</h1>
-        <p className="text-muted-foreground text-sm">{text.subtitle}</p>
+        <p className="text-muted-foreground text-sm">{site ? text.site.subtitle : text.subtitle}</p>
       </header>
 
       {loading ? (

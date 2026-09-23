@@ -5,7 +5,9 @@ import type { Metadata } from "next"
 // UI
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
+import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
 import { homeAt, shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -61,7 +63,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
 
-  const [{ ui }, home] = await Promise.all([
+  const [{ ui, web }, home] = await Promise.all([
     getMessages(),
     // A site has no catalogue to ask for. The empty answer is what its page draws with anyway.
     store.type === "INSTITUTIONAL" ? { categories: [], bands: [] } : homeAt(slug, store.showProductsByCategory),
@@ -98,6 +100,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
             routes={routes}
             showPrice={layout.showProductPrice ?? true}
             showBadge={layout.showProductBadges ?? true}
+            contact={{ slug, whatsappHref: orderHrefOf(store) ?? null, copy: contactCopyOf(web) }}
             messages={ui}
           />
         </>
