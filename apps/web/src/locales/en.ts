@@ -52,7 +52,6 @@ export const en: WebMessages = {
       products: "Products",
       customers: "Customers",
       categories: "Categories",
-      banners: "Banners",
       design: "Design mode",
     },
     home: {
@@ -67,7 +66,7 @@ export const en: WebMessages = {
         productsAction: "Add a product",
         bannersTitle: "Feature what you sell",
         bannersText: "Banners open your landing page. Each one leads to a category, to a product, or out of the shop.",
-        bannersAction: "Create a banner",
+        bannersAction: "Open design mode",
         paymentsTitle: "Payment methods",
         paymentsText: "Choose what you take. It is what goes in the message the customer sends on WhatsApp.",
         paymentsAction: "Choose methods",

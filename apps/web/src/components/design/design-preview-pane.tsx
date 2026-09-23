@@ -1,15 +1,17 @@
 "use client"
 
 // React
-import type { ComponentProps, ReactNode } from "react"
+import type { ComponentProps } from "react"
 
 // Types
 import type { PublicProductCategory, PublicSection, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
 import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
+import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
+import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -28,8 +30,11 @@ export interface DesignPreviewPaneProps {
   sections: readonly PublicSection[]
   /** The palette being edited, so the preview answers the picker and not the database. */
   colors: PublicStore["colors"]
+  /** The bands, in order — what the board over the preview drags. */
   orderedIds: readonly string[]
   onReorder: (ids: string[]) => void
+  /** Opens a component's fields. The preview is the second way in; the panel's row is the first. */
+  onEdit: (componentId: string) => void
   messages: UiMessages
 }
 
@@ -39,11 +44,15 @@ function InertLink({ href: _href, ...props }: ComponentProps<"a"> & { href: stri
 }
 
 /**
- * The shop, drawn from the draft, with every block draggable where it stands.
+ * The shop, drawn from the draft.
  *
  * It draws through `StorefrontSections` — the same function the shop window calls — which is what
  * makes the preview worth looking at. Two renderers would drift the day someone fixed a spacing
  * bug in one of them, and the owner would be arranging a page that does not exist.
+ *
+ * **Dragging here moves a band; the pencil on a component opens its fields.** The two levels are
+ * not both draggable in the preview: a drag inside a band inside a drag of bands is two gestures
+ * on one pointer, and the panel beside it already does the inner one with room to see.
  */
 export function DesignPreviewPane({
   store,
@@ -54,10 +63,12 @@ export function DesignPreviewPane({
   colors,
   orderedIds,
   onReorder,
+  onEdit,
   messages,
 }: DesignPreviewPaneProps) {
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
+  const text = messages.design
 
   return (
     /*
@@ -71,9 +82,9 @@ export function DesignPreviewPane({
       onSubmitCapture={(event) => event.preventDefault()}
     >
       {/*
-        The second board, over the same ids as the sidebar's. Two and not one spanning both: a
-        single context would make the shop and the list each other's drop targets, so a block could
-        be dragged out of the window and into the panel.
+        The second board, over the same ids as the panel's. Two and not one spanning both: a single
+        context would make the shop and the list each other's drop targets, so a band could be
+        dragged out of the window and into the panel.
       */}
       <ArrangeBoard ids={orderedIds} onReorder={onReorder} layout="grid">
         <DesignPreview>
@@ -89,20 +100,32 @@ export function DesignPreviewPane({
             blocks={
               <StorefrontSections
                 sections={sections}
+                primary={colors.primary}
                 bands={bands}
                 categories={categories}
                 routes={routes}
                 showPrice={layout.showProductPrice ?? true}
                 showBadge={layout.showProductBadges ?? true}
                 linkComponent={InertLink}
-                renderBlock={(section, block) => (
+                renderSection={(section, band) => (
                   <DesignHandle
                     id={section.id}
-                    label={labelOf(section.kind, section.title, messages)}
+                    label={format(text.bandNumber, {
+                      position: String(orderedIds.indexOf(section.id) + 1),
+                    })}
+                    messages={messages}
+                  >
+                    {band}
+                  </DesignHandle>
+                )}
+                renderBlock={(component, block) => (
+                  <DesignEditTag
+                    label={labelOf(component.kind, component.title, messages)}
+                    onEdit={() => onEdit(component.id)}
                     messages={messages}
                   >
                     {block}
-                  </DesignHandle>
+                  </DesignEditTag>
                 )}
                 messages={messages}
               />

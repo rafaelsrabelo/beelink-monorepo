@@ -1,4 +1,4 @@
-import type { SectionKind } from "../blocks/design/design-types"
+import type { ComponentKind } from "../blocks/design/design-types"
 import type { StoreType } from "../blocks/store/store-types"
 
 /**
@@ -288,8 +288,8 @@ export interface UiMessages {
     dragHandle: string
     /** The product bands, as a row in the arrangement. It is dragged like a poster. */
     productList: string
-    /** What a block is called in the editor when the shopkeeper has not titled it. */
-    kinds: Record<SectionKind, string>
+    /** What a component is called in the editor when the shopkeeper has not titled it. */
+    kinds: Record<ComponentKind, string>
     productListHint: string
     sizeLabel: string
     sizeFull: string
@@ -321,6 +321,34 @@ export interface UiMessages {
     /** Said in place of the kind when a block has nothing for the shop window to draw. */
     emptyBlock: string
     deleteBlockConfirm: string
+    /** A band has no name of its own, so it is called by where it sits. `{position}`. */
+    bandNumber: string
+    addBand: string
+    deleteBand: string
+    deleteBandConfirm: string
+    /** A band's own colour, and the one value that means "the page's own". */
+    bandColour: string
+    bandColourNone: string
+    bandWidth: string
+    bandWidthFull: string
+    bandWidthContained: string
+    bandWidthHelp: string
+    /** The panel that opens on a component's row. */
+    editComponent: string
+    bodyLabel: string
+    bodyPlaceholder: string
+    columnsLabel: string
+    columnsAuto: string
+    done: string
+    /** One picture of a banner: `{position}` of `{total}`. */
+    slidePosition: string
+    addSlide: string
+    /** One promise with no title yet. `{position}`. */
+    benefitPosition: string
+    addBenefit: string
+    benefitIcon: string
+    benefitTitle: string
+    benefitDetail: string
   }
   banners: {
     title: string

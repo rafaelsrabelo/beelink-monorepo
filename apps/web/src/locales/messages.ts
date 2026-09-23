@@ -97,7 +97,6 @@ export interface WebMessages {
       products: string
       customers: string
       categories: string
-      banners: string
       design: string
     }
     /** The panel's home for one shop: what is left to set up, and how the shop is doing. */

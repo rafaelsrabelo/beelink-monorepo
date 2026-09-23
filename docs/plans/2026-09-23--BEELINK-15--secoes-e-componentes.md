@@ -122,3 +122,38 @@ painel move seções e move componentes dentro da seção, sem atravessar de uma
 5. Todo componente se edita: título, texto, banner, vantagens, categorias, produtos.
 6. Banners não estão mais no menu lateral.
 7. Um bloco vazio continua dizendo que está vazio.
+
+---
+
+## Adendo 1 — o que a implementação decidiu que o plano não tinha dito
+
+**Cartazes consecutivos viram uma faixa só, não uma cada.** A decisão 3 dizia "cada bloco vira uma
+seção com um componente dentro". Para banners lado a lado isso mudaria a aparência de toda loja que
+tem cartazes em "um terço": a vitrine agrupa a sequência deles numa linha do showcase, e é a linha
+que decide as colunas — três `THIRDS` entregues separados são três linhas de largura cheia. A
+migração agrupa a sequência (gaps-and-islands em SQL) numa faixa contida, com cada cartaz um
+componente dentro dela, na ordem. É a primeira vez que a sequência implícita vira uma faixa que diz
+que é — o modelo pagando a si mesmo no primeiro dia. Todo outro tipo continua ganhando faixa própria;
+dois títulos seguidos ficam em duas faixas, porque juntá-los mudaria o espaçamento.
+
+**O cartaz vira um banner com um slide.** O `prisma migrate diff` acusou: o cartaz guardava a
+imagem em `imageUrl` e o destino em quatro colunas; a capa já guardava tudo em `items`. Sendo agora o
+mesmo tipo, guardam do mesmo jeito — a migração dobra cada cartaz num slide, exatamente como
+`20260922270000` fez com as capas. As quatro colunas de destino (`target`, `categoryId`,
+`productId`, `externalUrl`) e o `CHECK` **são apagados**: nada mais as lê, e coluna sem leitor é a
+doença do `layoutSettings`. O que se perde é o cascade da chave estrangeira, e essa troca já tinha
+sido feita e medida para os slides: apagar uma categoria deixa o slide sem link em vez de apagar o
+banner.
+
+**`kind` não muda mais num patch.** Ele era mutável por um caso só — mover um banner entre o topo e o
+corpo — que era posição expressa como tipo. Sem `HERO`, esse motivo não existe; toda outra troca de
+tipo é uma forma diferente com campos diferentes. Enviado igual, passa; enviado diferente, `400
+COMPONENT_KIND_IMMUTABLE`.
+
+**No preview, arrastar move a faixa; o lápis abre o componente.** Os dois níveis não são
+arrastáveis no preview: um arrasto dentro de uma faixa dentro de um arrasto de faixas são dois
+gestos num ponteiro só. O painel ao lado faz o nível de dentro com espaço para ver.
+
+**A largura da faixa de vantagens nasce "ponta a ponta".** O componente pinta uma tira tingida de
+borda a borda e contém a lista por dentro, então é isso que a faixa dele é hoje. A capa honra o
+`width` da própria linha; todo o resto nasce contido.

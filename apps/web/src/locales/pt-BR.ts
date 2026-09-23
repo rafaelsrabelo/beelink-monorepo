@@ -52,7 +52,6 @@ export const ptBR: WebMessages = {
       products: "Produtos",
       customers: "Clientes",
       categories: "Categorias",
-      banners: "Banners",
       design: "Modo design",
     },
     home: {
@@ -67,7 +66,7 @@ export const ptBR: WebMessages = {
         productsAction: "Cadastrar produto",
         bannersTitle: "Destaque o que você vende",
         bannersText: "Banners abrem a sua página inicial. Cada um leva a uma categoria, a um produto ou para fora da loja.",
-        bannersAction: "Criar banner",
+        bannersAction: "Abrir modo design",
         paymentsTitle: "Formas de pagamento",
         paymentsText: "Escolha o que você aceita. É o que vai na mensagem que o cliente manda no WhatsApp.",
         paymentsAction: "Escolher formas",

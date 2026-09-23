@@ -10,7 +10,6 @@ import { usePathname, useRouter } from "next/navigation"
 // Libs
 import {
   HomeIcon,
-  ImageIcon,
   LayoutTemplateIcon,
   PackageIcon,
   SettingsIcon,
@@ -158,7 +157,9 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
             // That card was its only door in the whole panel, and a screen nobody can reach is a
             // screen that will be reported as deleted.
             item(nav.categories, "/categories", <TagsIcon />, "prefix"),
-            item(nav.banners, "/sections", <ImageIcon />, "prefix"),
+            // No "Banners" entry, and its absence is the fix rather than a tidy-up. A banner is a
+            // component, and a component is made where the page is arranged — two screens for one
+            // thing is what had a top banner showing in design mode and missing from its own list.
             item(nav.design, "/design", <LayoutTemplateIcon />),
             item(nav.customers, "/customers", <UsersIcon />, "prefix"),
           ]}

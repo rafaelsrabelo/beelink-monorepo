@@ -6,8 +6,12 @@ import { serverEnv } from "./server-env"
 
 export interface ApiCall {
   path: string
-  /** PUT is here because the panel replaces a shop whole, as the legacy PUT already did. */
-  method?: "GET" | "POST" | "PUT" | "DELETE"
+  /**
+   * PUT is here because the panel replaces a shop whole, as the legacy PUT already did. PATCH is
+   * here because a component is the first thing the panel edits a field of at a time — sending a
+   * whole one would make every form overwrite the fields it does not draw.
+   */
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
   body?: unknown
   accessToken?: string
   /** The browser's address, so the API's per-IP rate limit sees people and not this server. */

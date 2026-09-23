@@ -13,7 +13,7 @@ import {
   toPublicSection,
   type SectionRow,
   type SlugsByEntity,
-} from '../sections/sections.mapper.js';
+} from '../page/page.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 
@@ -33,9 +33,12 @@ export type StoreRow = StoreModel & {
 /** The one query shape the store mappers accept, so a call site cannot forget the include. */
 export const storeInclude = {
   category: true,
-  // Only what a visitor may see, in the shopkeeper's order. A hidden banner is still in the panel;
-  // it simply never reaches this shape. Ordered by position alone — `create` hands out the next
-  // one per shop, so two banners never share a number and there is no tie to break.
+  // Only the bands a visitor may see, in the shopkeeper's order. A hidden one is still in the
+  // panel; it simply never reaches this shape. Ordered by position alone — `create` hands out the
+  // next one per shop, so two bands never share a number and there is no tie to break.
+  //
+  // Hidden COMPONENTS are dropped a level down, in `toPublicSection`, and not here: this include
+  // is the panel's too, and the panel has to see what it is hiding.
   sections: {
     where: { isActive: true },
     orderBy: { position: 'asc' },

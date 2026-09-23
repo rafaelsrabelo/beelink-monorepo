@@ -18,7 +18,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { PublicSectionResponse } from '../../sections/dto/section.response.js';
+import { PublicSectionResponse } from '../../page/dto/page.response.js';
 import { PAYMENT_METHODS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.constants.js';
 
 /** Documents the shapes for Swagger; the wire types themselves live in packages/contracts. */

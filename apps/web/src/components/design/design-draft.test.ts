@@ -2,213 +2,198 @@
 import { describe, expect, it } from "vitest"
 
 // Types
-import type { Section } from "@harness-monorepo/contracts"
+import type { Section, StoreComponent } from "@harness-monorepo/contracts"
 
 // App
 import {
+  applyComponentOrder,
   applyOrder,
   changesOf,
-  isEmptyBlock,
+  isEmptyComponent,
   labelOf,
   reconcile,
   orderedIdsOf,
-  previewOf,
   toDraft,
-  type Draft,
+  type SectionDraft,
 } from "./design-draft"
+import { arrangementOf, previewOf } from "./design-draft-preview"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
-function draft(id: string, over: Partial<Draft> = {}): Draft {
+function component(id: string, over: Partial<StoreComponent> = {}): StoreComponent {
   return {
     id,
-    kind: "BANNER",
-    title: id,
-    imageUrl: `/${id}.jpg`,
-    layout: "FULL",
-    isActive: true,
-    ...over,
-  }
-}
-
-function section(id: string, over: Partial<Section> = {}): Section {
-  return {
-    id,
-    kind: "BANNER",
+    sectionId: "band",
+    kind: "HEADING",
     title: id,
     subtitle: null,
-    imageUrl: `/${id}.jpg`,
+    body: null,
     layout: "FULL",
-    width: "FULL",
-    target: "NONE",
-    categorySlug: null,
-    productSlug: null,
-    externalUrl: null,
     items: [],
+    columns: null,
     position: 0,
     isActive: true,
-    createdAt: "2026-09-22T00:00:00.000Z",
-    updatedAt: "2026-09-22T00:00:00.000Z",
+    createdAt: "2026-09-23T00:00:00.000Z",
+    updatedAt: "2026-09-23T00:00:00.000Z",
     ...over,
   }
 }
 
-describe("orderedIdsOf", () => {
-  it("is the list, in the order the page draws it", () => {
-    expect(orderedIdsOf([draft("a"), draft("b"), draft("c")])).toEqual(["a", "b", "c"])
+function section(id: string, components: StoreComponent[], over: Partial<Section> = {}): Section {
+  return {
+    id,
+    width: "CONTAINED",
+    background: null,
+    position: 0,
+    isActive: true,
+    components: components.map((row) => ({ ...row, sectionId: id })),
+    createdAt: "2026-09-23T00:00:00.000Z",
+    updatedAt: "2026-09-23T00:00:00.000Z",
+    ...over,
+  }
+}
+
+const saved: Section[] = [
+  section("a", [component("a1", { kind: "BANNER", items: [{ id: "s", imageUrl: "/s.jpg", target: "NONE" }] })], {
+    width: "FULL",
+  }),
+  section("b", [component("b1"), component("b2", { kind: "PRODUCTS", title: null })]),
+  section("c", [component("c1", { kind: "BENEFITS" })]),
+]
+
+const draft: SectionDraft[] = saved.map(toDraft)
+
+describe("the draft holds two levels", () => {
+  it("orders bands, and orders inside one band without touching the others", () => {
+    expect(orderedIdsOf(applyOrder(draft, ["c", "a", "b"]))).toEqual(["c", "a", "b"])
+
+    const inner = applyComponentOrder(draft, "b", ["b2", "b1"])
+    expect(inner[1]!.components.map((row) => row.id)).toEqual(["b2", "b1"])
+    expect(inner[0]!.components.map((row) => row.id)).toEqual(["a1"])
   })
 
-  // The products used to be a sentinel entry whose place the screen read a boolean off. They are
-  // an ordinary block with a position now, which is what the move to a sections table bought.
-  it("invents no row of its own", () => {
-    expect(orderedIdsOf([])).toEqual([])
-  })
-})
-
-describe("applyOrder", () => {
-  const rows = [draft("a"), draft("b"), draft("c")]
-
-  it("takes the dropped order, not the old one", () => {
-    expect(applyOrder(rows, ["c", "a", "b"]).map((row) => row.id)).toEqual(["c", "a", "b"])
-  })
-
-  it("keeps every other field of the row it moved", () => {
-    const hidden = [draft("a", { isActive: false })]
-
-    expect(applyOrder(hidden, ["a"])[0]?.isActive).toBe(false)
-  })
-
-  it("drops an id it does not know rather than inventing a row for it", () => {
-    expect(applyOrder(rows, ["a", "ghost", "b"]).map((row) => row.id)).toEqual(["a", "b"])
-  })
-})
-
-describe("changesOf", () => {
-  it("writes nothing when nothing moved", () => {
-    const { orderChanged, changed } = changesOf([draft("a"), draft("b")], [section("a"), section("b")])
-
-    expect(orderChanged).toBe(false)
-    expect(changed).toEqual([])
-  })
-
-  it("names only the rows that actually changed", () => {
-    const saved = [section("a"), section("b"), section("c")]
-    const rows = [draft("a"), draft("b", { isActive: false }), draft("c")]
-
-    // One patch, not three: a write per row would touch `updatedAt` on blocks nobody edited.
-    expect(changesOf(rows, saved).changed.map((row) => row.id)).toEqual(["b"])
-  })
-
-  it("sends the whole list when the order moved, because the API refuses less", () => {
-    const { ids, orderChanged } = changesOf([draft("b"), draft("a")], [section("a"), section("b")])
-
-    expect(orderChanged).toBe(true)
-    expect(ids).toEqual(["b", "a"])
+  it("drops an id the draft does not have rather than inventing a row", () => {
+    expect(orderedIdsOf(applyOrder(draft, ["a", "ghost", "b", "c"]))).toEqual(["a", "b", "c"])
   })
 })
 
-describe("previewOf", () => {
-  it("drops the hidden blocks, exactly as the API drops them from the shop", () => {
-    const rows = [draft("a"), draft("b", { isActive: false })]
+describe("changesOf — only what moved is written", () => {
+  it("reports nothing on an untouched draft", () => {
+    const changes = changesOf(draft, saved)
 
-    expect(previewOf(rows, [section("a"), section("b")]).map((s) => s.id)).toEqual(["a"])
+    expect(changes.orderChanged).toBe(false)
+    expect(changes.sections).toEqual([])
+    expect(changes.componentOrders).toEqual([])
+    expect(changes.components).toEqual([])
   })
 
-  it("takes the fields dragging cannot change from the saved block", () => {
-    const rows = [draft("a")]
-    const saved = [section("a", { subtitle: "Confira", width: "CONTAINED", target: "EXTERNAL" })]
-    const [only] = previewOf(rows, saved)
+  it("reports a band's own attributes apart from its components", () => {
+    const next = draft.map((row) => (row.id === "c" ? { ...row, background: "navy", isActive: false } : row))
 
-    expect(only?.subtitle).toBe("Confira")
-    expect(only?.width).toBe("CONTAINED")
-    expect(only?.external).toBe(true)
+    const changes = changesOf(next, saved)
+
+    expect(changes.sections.map((row) => row.id)).toEqual(["c"])
+    expect(changes.components).toEqual([])
+  })
+
+  it("reports a component's visibility without reporting its band", () => {
+    const next = draft.map((row) =>
+      row.id === "b"
+        ? { ...row, components: row.components.map((c) => (c.id === "b1" ? { ...c, isActive: false } : c)) }
+        : row,
+    )
+
+    const changes = changesOf(next, saved)
+
+    expect(changes.components.map((row) => row.id)).toEqual(["b1"])
+    expect(changes.sections).toEqual([])
+  })
+
+  it("reports the inner order only for the band whose order changed", () => {
+    const changes = changesOf(applyComponentOrder(draft, "b", ["b2", "b1"]), saved)
+
+    expect(changes.componentOrders).toEqual([{ sectionId: "b", ids: ["b2", "b1"] }])
+    expect(changes.orderChanged).toBe(false)
+  })
+})
+
+describe("previewOf — what the shop window would be served", () => {
+  it("drops hidden bands and hidden components, keeping the rest in order", () => {
+    const next = draft.map((row) =>
+      row.id === "b"
+        ? { ...row, components: row.components.map((c) => (c.id === "b1" ? { ...c, isActive: false } : c)) }
+        : row.id === "c"
+          ? { ...row, isActive: false }
+          : row,
+    )
+
+    const preview = previewOf(next, saved)
+
+    expect(preview.map((row) => row.id)).toEqual(["a", "b"])
+    expect(preview[1]!.components.map((row) => row.id)).toEqual(["b2"])
+  })
+
+  it("serves a banner's slides with no address, because nothing in the preview navigates", () => {
+    const preview = previewOf(draft, saved)
+
+    expect(preview[0]!.components[0]!.items).toEqual([
+      { id: "s", imageUrl: "/s.jpg", title: null, subtitle: null, href: null, external: false },
+    ])
+  })
+
+  it("carries the band's width and colour, which are what the band is", () => {
+    const preview = previewOf(draft, saved)
+
+    expect(preview[0]).toMatchObject({ width: "FULL", background: null })
+  })
+})
+
+describe("arrangementOf — what the panel lists", () => {
+  it("shows a banner's first picture and says which components are empty", () => {
+    const bands = arrangementOf(draft, saved)
+
+    expect(bands[0]!.components[0]).toMatchObject({ imageUrl: "/s.jpg", empty: false })
+    expect(bands[2]!.components[0]).toMatchObject({ kind: "BENEFITS", empty: true })
+  })
+})
+
+describe("isEmptyComponent — what draws nothing", () => {
+  it("mirrors each renderer's own `return null`", () => {
+    expect(isEmptyComponent("BANNER", null, null, [])).toBe(true)
+    expect(isEmptyComponent("BENEFITS", null, null, [])).toBe(true)
+    expect(isEmptyComponent("HEADING", "  ", null, [])).toBe(true)
+    expect(isEmptyComponent("TEXT", null, "", [])).toBe(true)
+    expect(isEmptyComponent("TEXT", null, "Olá", [])).toBe(false)
+    expect(isEmptyComponent("PRODUCTS", null, null, [])).toBe(false)
   })
 })
 
 describe("labelOf", () => {
-  it("calls a titled block by its title", () => {
-    expect(labelOf("BANNER", "Frete grátis", ptBR)).toBe("Frete grátis")
-  })
-
-  // Four rows all reading "Sem título" say which blocks are unfinished and nothing about which is
-  // which — which is the one question a list of blocks exists to answer.
-  it("calls an untitled block by its kind", () => {
-    expect(labelOf("PRODUCTS", null, ptBR)).toBe("Lista de produtos")
-    expect(labelOf("BENEFITS", "   ", ptBR)).toBe("Vantagens")
+  it("calls an untitled component by its kind", () => {
+    expect(labelOf("HEADING", null, ptBR)).toBe("Título")
+    expect(labelOf("HEADING", "Novidades", ptBR)).toBe("Novidades")
   })
 })
 
-describe("isEmptyBlock", () => {
-  // Each of these mirrors a `return null` in a renderer. When the two disagree, the panel lists a
-  // block the page does not draw and nothing on screen says why — which is how it was reported.
-  it("calls a hero with no pictures empty", () => {
-    expect(isEmptyBlock("HERO", null, [])).toBe(true)
-    expect(isEmptyBlock("HERO", null, [{}])).toBe(false)
+describe("reconcile — the server changes, the arrangement survives", () => {
+  it("keeps the arranged order and appends what the server grew", () => {
+    const arranged = applyOrder(draft, ["c", "b", "a"])
+    const grown = [...saved, section("d", [component("d1")])]
+
+    expect(orderedIdsOf(reconcile(arranged, grown))).toEqual(["c", "b", "a", "d"])
   })
 
-  it("calls a promises band with no promises empty", () => {
-    expect(isEmptyBlock("BENEFITS", null, [])).toBe(true)
-    expect(isEmptyBlock("BENEFITS", null, [{}, {}])).toBe(false)
+  it("drops a band the server no longer has", () => {
+    expect(orderedIdsOf(reconcile(draft, saved.slice(1)))).toEqual(["b", "c"])
   })
 
-  it("calls a heading with no words empty", () => {
-    expect(isEmptyBlock("TEXT", null, [])).toBe(true)
-    expect(isEmptyBlock("TEXT", "   ", [])).toBe(true)
-    expect(isEmptyBlock("TEXT", "Novidades", [])).toBe(false)
-  })
+  it("does the same one level down: a new component lands last in its band, a deleted one goes", () => {
+    const arranged = applyComponentOrder(draft, "b", ["b2", "b1"])
+    const changed = saved.map((row) =>
+      row.id === "b" ? section("b", [component("b2", { kind: "PRODUCTS" }), component("b3")]) : row,
+    )
 
-  it("calls the announcement bar empty until it says something", () => {
-    expect(isEmptyBlock("ANNOUNCEMENT", null, [])).toBe(true)
-    expect(isEmptyBlock("ANNOUNCEMENT", "Frete grátis hoje", [])).toBe(false)
-  })
+    const next = reconcile(arranged, changed)
 
-  // A banner has a picture the form demands, and the rails have whatever the shop sells — neither
-  // can be empty in a way the shopkeeper has to be told about.
-  it("never calls a banner or the product rails empty", () => {
-    expect(isEmptyBlock("BANNER", null, [])).toBe(false)
-    expect(isEmptyBlock("PRODUCTS", null, [])).toBe(false)
-    expect(isEmptyBlock("CATEGORIES", null, [])).toBe(false)
-  })
-})
-
-describe("reconcile", () => {
-  /**
-   * The bug this exists for, reported as a 409: the draft was only seeded while it was clean, so a
-   * block created or deleted after the owner had moved anything never reached it. Publish then
-   * sent nine ids for a shop with fourteen blocks, and the reorder endpoint refused the lot.
-   */
-  it("keeps the order the owner made", () => {
-    const current = [draft("c"), draft("a"), draft("b")]
-    const saved = [section("a"), section("b"), section("c")]
-
-    expect(reconcile(current, saved).map((row) => row.id)).toEqual(["c", "a", "b"])
-  })
-
-  it("takes in a block the server has and the draft does not", () => {
-    const current = [draft("b"), draft("a")]
-    const saved = [section("a"), section("b"), section("new")]
-
-    // Last, which is where the API puts a new block anyway.
-    expect(reconcile(current, saved).map((row) => row.id)).toEqual(["b", "a", "new"])
-  })
-
-  it("drops a block the server no longer has", () => {
-    const current = [draft("a"), draft("gone"), draft("b")]
-    const saved = [section("a"), section("b")]
-
-    expect(reconcile(current, saved).map((row) => row.id)).toEqual(["a", "b"])
-  })
-
-  it("never returns fewer rows than the server has, which is what the 409 was about", () => {
-    const current = [draft("a")]
-    const saved = [section("a"), section("b"), section("c")]
-
-    expect(reconcile(current, saved)).toHaveLength(saved.length)
-  })
-
-  it("keeps an unpublished edit on a row that survived", () => {
-    const current = [{ ...draft("a"), isActive: false }]
-    const saved = [section("a")]
-
-    expect(reconcile(current, saved)[0]?.isActive).toBe(false)
+    expect(next[1]!.components.map((row) => row.id)).toEqual(["b2", "b3"])
   })
 })

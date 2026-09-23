@@ -1,29 +1,34 @@
 "use client"
 
 // Types
-import type { SectionKind, StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
+import type { ComponentKind, StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
 import { AddBlockMenu } from "@harness-monorepo/ui/blocks/design/add-block-menu"
+import { BandArrangement } from "@harness-monorepo/ui/blocks/design/band-arrangement"
+import type { ArrangementBand, ArrangementLayout } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
-import { SectionArrangement } from "@harness-monorepo/ui/blocks/design/section-arrangement"
-import type { ArrangementLayout } from "@harness-monorepo/ui/blocks/design/section-arrangement"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
-// App
-import type { Draft } from "./design-draft"
-
 export interface DesignPanelProps {
-  rows: readonly (Draft & { empty?: boolean })[]
+  bands: readonly ArrangementBand[]
   loading: boolean
   onReorder: (ids: string[]) => void
+  onReorderComponents: (sectionId: string, ids: string[]) => void
+  onToggleBand: (id: string, isActive: boolean) => void
+  onEditBand: (id: string) => void
+  onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
   onLayoutChange: (id: string, layout: ArrangementLayout) => void
   onDelete: (id: string) => void
-  onAdd: (kind: SectionKind) => void
+  onEdit: (id: string) => void
+  /** Adds a band built around one component — the only way a band is created. */
+  onAdd: (kind: ComponentKind) => void
   adding: boolean
+  /** The kinds the shop already has one of, so a singleton is offered once. */
+  taken: readonly ComponentKind[]
 
   palette: StoreColors
   onPalette: (colors: StoreColors) => void
@@ -44,14 +49,20 @@ export interface DesignPanelProps {
  * for a mutation.
  */
 export function DesignPanel({
-  rows,
+  bands,
   loading,
   onReorder,
+  onReorderComponents,
+  onToggleBand,
+  onEditBand,
+  onDeleteBand,
   onToggle,
   onLayoutChange,
   onDelete,
+  onEdit,
   onAdd,
   adding,
+  taken,
   palette,
   onPalette,
   presets,
@@ -76,16 +87,11 @@ export function DesignPanel({
 
         <TabsContent value="blocks" className="flex flex-col gap-3 pt-3">
           {/*
-            A block is created saved, not as part of the draft. Adding one is not an arrangement —
+            A band is created saved, not as part of the draft. Adding one is not an arrangement —
             it is a new row, and holding it in the browser until Publish would mean a reload could
-            lose a block the owner watched appear.
+            lose something the owner watched appear.
           */}
-          <AddBlockMenu
-            taken={rows.map((row) => row.kind)}
-            pending={adding}
-            onAdd={onAdd}
-            messages={messages}
-          />
+          <AddBlockMenu taken={taken} pending={adding} onAdd={onAdd} messages={messages} />
           <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
           {loading ? (
             <>
@@ -93,12 +99,17 @@ export function DesignPanel({
               <Skeleton className="h-14 w-full" />
             </>
           ) : (
-            <SectionArrangement
-              items={rows}
+            <BandArrangement
+              bands={bands}
               onReorder={onReorder}
+              onReorderComponents={onReorderComponents}
+              onToggleBand={onToggleBand}
+              onEditBand={onEditBand}
+              onDeleteBand={onDeleteBand}
               onToggle={onToggle}
               onLayoutChange={onLayoutChange}
               onDelete={onDelete}
+              onEdit={onEdit}
               messages={messages}
             />
           )}

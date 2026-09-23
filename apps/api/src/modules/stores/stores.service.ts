@@ -15,7 +15,7 @@ import {
   slideTargetsOf,
   type SectionRow,
   type SlugsByEntity,
-} from '../sections/sections.mapper.js';
+} from '../page/page.mapper.js';
 import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
 import { RESERVED_SLUGS } from './stores.constants.js';
 

@@ -5,8 +5,8 @@ import {
   BadgeCheckIcon,
   EyeIcon,
   EyeOffIcon,
-  GalleryHorizontalEndIcon,
   GripVerticalIcon,
+  HeadingIcon,
   ImageIcon,
   LayoutGridIcon,
   MegaphoneIcon,
@@ -25,16 +25,17 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { useArrangeItem } from "./design-arrange"
-import type { SectionKind } from "./design-types"
+import type { ComponentKind } from "./design-types"
 
 export type ArrangementLayout = "FULL" | "HALVES" | "THIRDS"
 
 export interface ArrangementItem {
   id: string
-  kind: SectionKind
-  /** Null on a block the shopkeeper has not titled. The row falls back to the kind's name. */
+  kind: ComponentKind
+  /** Null on a component the shopkeeper has not titled. The row falls back to the kind's name. */
   title: string | null
-  imageUrl: string | null
+  /** A banner's first picture, where it has one. Every other kind draws its glyph instead. */
+  imageUrl?: string | null
   layout: ArrangementLayout
   isActive: boolean
   /**
@@ -55,11 +56,12 @@ export interface ArrangementItem {
  * arrangement anyone wants, and there would be no row left to put them back. Hiding it is the
  * answer there, which is why the eye stays on every row.
  *
- * A banner is not among them either, and for a different reason — it is deleted where it is made,
- * on the Banners screen, beside the picture it was uploaded with.
+ * A banner IS among them now, and its absence was reported as a bug: it used to be deleted on a
+ * screen of its own, so the panel offered an eye and no bin and the owner asked for a bin. One
+ * place to make a thing is one place to delete it.
  */
-function canDelete(kind: SectionKind): boolean {
-  return kind !== "PRODUCTS" && kind !== "BANNER" && kind !== "HERO"
+function canDelete(kind: ComponentKind): boolean {
+  return kind !== "PRODUCTS"
 }
 
 /**
@@ -68,20 +70,20 @@ function canDelete(kind: SectionKind): boolean {
  * A cover is as wide as the shopkeeper's `width` says and a heading is as wide as the page; asking
  * "full, half or a third" of either would be offering a choice that changes nothing.
  */
-function hasLayout(kind: SectionKind): boolean {
+function hasLayout(kind: ComponentKind): boolean {
   return kind === "BANNER"
 }
 
 /**
  * The picture a row shows beside the title, or the glyph that stands in for one.
  *
- * Three of the five kinds have no picture, and a blank grey rectangle beside each of them makes a
- * list of blocks read as a list of broken images.
+ * Five of the seven kinds have no picture, and a blank grey rectangle beside each of them makes a
+ * list of components read as a list of broken images.
  */
-const KIND_ICON: Record<SectionKind, typeof LayoutGridIcon> = {
+const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
   ANNOUNCEMENT: MegaphoneIcon,
-  HERO: GalleryHorizontalEndIcon,
   BANNER: ImageIcon,
+  HEADING: HeadingIcon,
   TEXT: TypeIcon,
   BENEFITS: BadgeCheckIcon,
   CATEGORIES: TagsIcon,

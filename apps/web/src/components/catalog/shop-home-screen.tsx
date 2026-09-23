@@ -10,7 +10,7 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { AppLink } from "@/components/app-link"
-import { useSections } from "@/services/sections/section-hooks"
+import { useSections } from "@/services/page/page-hooks"
 import { useProducts } from "@/services/catalog/catalog-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
@@ -84,11 +84,13 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
       title: text.cards.bannersTitle,
       description: text.cards.bannersText,
       actionLabel: text.cards.bannersAction,
-      href: `/admin/${slug}/sections`,
-      // Banners, not categories. The old predicate asked the panel whether the shop had any
-      // category, which the landing page never drew — a shop whose categories all held nothing
-      // published read "Feito" over a home with no poster and no menu item at all.
-      done: bannerRows.length > 0,
+      // Design mode, because that is where a banner is made now: the Banners screen is gone, and
+      // a card pointing at a screen that does not exist is a card that reports the panel as broken.
+      href: `/admin/${slug}/design`,
+      // A banner anywhere on the page. The old predicate asked whether the shop had any category,
+      // which the landing page never drew — a shop whose categories all held nothing published
+      // read "Feito" over a home with no poster and no menu item at all.
+      done: bannerRows.some((section) => section.components.some((component) => component.kind === "BANNER")),
     },
   ]
 

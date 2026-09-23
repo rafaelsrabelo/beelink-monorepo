@@ -4,21 +4,26 @@
  * They mirror `@harness-monorepo/contracts` field for field and are restated here on purpose: this
  * package declares no dependency on the wire types, so a block renders in Storybook with nothing
  * behind it — the same reason `store/store-types.ts` restates the shop. Because the shapes are
- * structural, a screen hands a `Section` from the contract straight in.
+ * structural, a screen hands a `StoreComponent` from the contract straight in.
  */
 
-/** Every kind of block a landing page is made of. The contract's `SectionKind`, restated. */
-export const SECTION_KINDS = [
+/**
+ * Every kind of thing a band may hold. The contract's `ComponentKind`, restated.
+ *
+ * There is no `HERO`: a cover is the first band, full width, with a banner in it. A position
+ * turned into a type is what that value was, and removing it is what this level bought.
+ */
+export const COMPONENT_KINDS = [
   "ANNOUNCEMENT",
-  "HERO",
   "BANNER",
+  "HEADING",
   "TEXT",
   "BENEFITS",
   "CATEGORIES",
   "PRODUCTS",
 ] as const
-export type SectionKind = (typeof SECTION_KINDS)[number]
+export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 
-/** Edge to edge, or inside the shop's measure. Read only on a cover. */
+/** Edge to edge, or inside the shop's measure. An attribute of the band, never of what is in it. */
 export const SECTION_WIDTHS = ["FULL", "CONTAINED"] as const
 export type SectionWidth = (typeof SECTION_WIDTHS)[number]

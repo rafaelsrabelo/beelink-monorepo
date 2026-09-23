@@ -73,7 +73,6 @@ model ProductCategory {
   parentId String?          @db.Uuid
   parent   ProductCategory? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
   children ProductCategory[] @relation("CategoryTree")
-  sections StoreSection[]
 
   /// The order the shopkeeper chose. The storefront shows them in it, because the shopkeeper knows
   /// what they want to sell first. Ties break on name so the list is never arbitrary.
@@ -178,7 +177,6 @@ model Product {
   updatedAt DateTime @updatedAt
 
   images  ProductImage[]
-  sections StoreSection[]
 
   @@unique([storeId, slug])
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.

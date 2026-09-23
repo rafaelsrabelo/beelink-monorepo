@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 // Types
 import type { PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
@@ -15,27 +15,15 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { HomeBand } from "@/lib/storefront-data"
-import {
-  useCreateSection,
-  useDeleteSection,
-  useReorderSections,
-  useSections,
-  useUpdateSection,
-} from "@/services/sections/section-hooks"
+import { useCreateSection } from "@/services/page/page-hooks"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
+import { BandEditor } from "./band-editor"
+import { ComponentEditor } from "./component-editor"
 import { DesignPanel } from "./design-panel"
 import { DesignPreviewPane } from "./design-preview-pane"
-import {
-  applyOrder,
-  changesOf,
-  isEmptyBlock,
-  labelOf,
-  orderedIdsOf,
-  previewOf,
-  reconcile,
-  toDraft,
-  type Draft,
-} from "./design-draft"
+import { applyComponentOrder, applyOrder, componentsOf, labelOf, orderedIdsOf } from "./design-draft"
+import { arrangementOf, previewOf } from "./design-draft-preview"
+import { useDesignDraft } from "./use-design-draft"
 
 export interface DesignScreenProps {
   /**
@@ -51,127 +39,46 @@ export interface DesignScreenProps {
   messages: UiMessages
 }
 
-/**
- * The shop on the left, its posters arranged on the right.
- *
- * **The arrangement is a draft in this browser until Publish.** That is the owner's decision, and
- * it is not a breach of "server data never enters a store": what is held here is not what the
- * server has, it is what has not been sent yet. TanStack Query stays the owner of the saved
- * arrangement; this state owns the unsent edit, and no refetch may overwrite it.
- *
- * The cost is real and is warned about rather than hidden — a reload before publishing loses it.
- */
 /** Spelled out so a fifth colour is a compile error here rather than a field nobody compares. */
 const COLOUR_KEYS = ["background", "primary", "header", "footer"] as const satisfies readonly (keyof StoreColors)[]
 
+/** What the dialog is about to delete. A band takes everything in it; a component leaves its band. */
+type PendingDelete = { level: "band" | "component"; id: string; name: string }
+
+/**
+ * The shop on the left, its bands arranged on the right.
+ *
+ * The arrangement is a draft until Publish — `useDesignDraft` says why. What a component says, and
+ * what colour a band is, save on their own the moment the owner hits save in the sheet: those are
+ * things they want to see land, not an order to hold back.
+ */
 export function DesignScreen({ store, categories, bands, year, messages }: DesignScreenProps) {
   const text = messages.design
   const slug = store.slug
 
-  const banners = useSections(slug)
+  const draft = useDesignDraft(slug)
   const presets = useStoreColorPresets()
   const saveColors = useUpdateStoreColors(slug)
   const addSection = useCreateSection(slug)
-  const removeSection = useDeleteSection(slug)
-  const reorder = useReorderSections(slug)
-  const update = useUpdateSection(slug)
 
-  const [draft, setDraft] = useState<Draft[] | null>(null)
-  const [seeded, setSeeded] = useState<string | null>(null)
-  const [dirty, setDirty] = useState(false)
-
-  /**
-   * The block waiting to be deleted.
-   *
-   * Deleted for good, and immediately — not held in the draft until Publish. Publish sends an
-   * arrangement, and a row that is gone has no position to send; holding the delete would also
-   * mean a reload could bring back a block the owner watched disappear.
-   */
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const [editingComponent, setEditingComponent] = useState<string | null>(null)
+  const [editingBand, setEditingBand] = useState<string | null>(null)
 
   /*
-    The palette is its own draft, and it saves on its own.
-
-    Not part of the arrangement's Publish, because the two are different promises: an arrangement
-    is held back until the owner says so, and a colour is the kind of thing you want to see land.
-    They also go to different endpoints — `PUT /stores/:slug/colors` exists precisely so a colour
-    save never re-posts the whole shop over whatever another screen just wrote.
+    The palette is its own draft, and it saves on its own — a colour is the kind of thing you want
+    to see land, and `PUT /stores/:slug/colors` exists precisely so a colour save never re-posts
+    the whole shop over whatever another screen just wrote.
   */
   const [palette, setPalette] = useState<StoreColors>(store.colors)
   const paletteChanged = COLOUR_KEYS.some((key) => palette[key] !== store.colors[key])
 
-  /*
-    Seeded once per server answer, and reconciled rather than replaced while the arrangement is
-    dirty.
+  const { rows, saved } = draft
+  const bandName = (id: string) =>
+    format(text.bandNumber, { position: String(rows.findIndex((row) => row.id === id) + 1) })
 
-    Replacing would throw away an unpublished arrangement mid-edit. Ignoring the answer, which is
-    what this used to do, let the draft drift: a block created or deleted after the owner had moved
-    anything never reached it, Publish sent the list it had, and the reorder endpoint answered 409
-    to a partial one. `reconcile` keeps the order they made and only adds and removes rows.
-  */
-  const serverKey = banners.data?.map((banner) => banner.id).join(",") ?? null
-  if (banners.data && seeded !== serverKey) {
-    setSeeded(serverKey)
-    setDraft((current) => (current && dirty ? reconcile(current, banners.data) : banners.data.map(toDraft)))
-  }
-
-  useEffect(() => {
-    if (!dirty) return
-
-    // The browser writes its own wording here; `text.leaveWarning` is what the screen says.
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
-    window.addEventListener("beforeunload", warn)
-
-    return () => window.removeEventListener("beforeunload", warn)
-  }, [dirty])
-
-  const rows = draft ?? []
-  const savedById = new Map((banners.data ?? []).map((section) => [section.id, section]))
-
-  // Said on the row rather than left to be noticed: a block that draws nothing is missing from the
-  // preview, and without this the panel and the page disagree with no explanation on screen.
-  const rowsWithEmptiness = rows.map((row) => ({
-    ...row,
-    empty: isEmptyBlock(row.kind, row.title, savedById.get(row.id)?.items ?? []),
-  }))
-
-  function edit(next: Draft[]) {
-    setDraft(next)
-    setDirty(true)
-  }
-
-  /** Back to what the server holds. The seed key is cleared so the next render re-reads it. */
-  function discard() {
-    setDirty(false)
-    setSeeded(null)
-    setDraft(banners.data ? banners.data.map(toDraft) : null)
-  }
-
-  function publish() {
-    if (!banners.data) return
-
-    const { ids, orderChanged, changed } = changesOf(rows, banners.data)
-
-    Promise.all([
-      ...(orderChanged ? [reorder.mutateAsync(ids)] : []),
-      ...changed.map((row) =>
-        update.mutateAsync({
-          sectionId: row.id,
-          payload: { layout: row.layout, isActive: row.isActive },
-        }),
-      ),
-    ])
-      .then(() => {
-        setDirty(false)
-        setSeeded(null)
-      })
-      .catch(() => {
-        // The mutation's own error state is what the screen would show; the draft is kept so
-        // nothing the owner arranged is lost to a failed write.
-      })
-  }
-
-  const publishing = reorder.isPending || update.isPending
+  const editing = saved.flatMap((section) => section.components).find((c) => c.id === editingComponent) ?? null
+  const editingSection = saved.find((section) => section.id === editingBand) ?? null
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -182,32 +89,47 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
         </div>
 
         <div className="flex items-center gap-2">
-          {dirty ? <Badge variant="outline">{text.unpublished}</Badge> : null}
-          {dirty ? (
-            <Button type="button" variant="ghost" disabled={publishing} onClick={discard}>
+          {draft.dirty ? <Badge variant="outline">{text.unpublished}</Badge> : null}
+          {draft.dirty ? (
+            <Button type="button" variant="ghost" disabled={draft.publishing} onClick={draft.discard}>
               {text.discard}
             </Button>
           ) : null}
-          <Button type="button" disabled={!dirty || publishing} onClick={publish}>
-            {publishing ? text.publishing : text.publish}
+          <Button type="button" disabled={!draft.dirty || draft.publishing} onClick={draft.publish}>
+            {draft.publishing ? text.publishing : text.publish}
           </Button>
         </div>
       </header>
 
-      {dirty ? <p className="text-muted-foreground text-sm">{text.leaveWarning}</p> : null}
+      {draft.dirty ? <p className="text-muted-foreground text-sm">{text.leaveWarning}</p> : null}
 
       <ConfirmDelete
-        question={pendingDelete ? format(text.deleteBlockConfirm, { name: pendingDelete.name }) : null}
-        pending={removeSection.isPending}
+        question={
+          pendingDelete
+            ? format(pendingDelete.level === "band" ? text.deleteBandConfirm : text.deleteBlockConfirm, {
+                name: pendingDelete.name,
+              })
+            : null
+        }
+        pending={draft.deleting}
         onConfirm={() => {
           if (!pendingDelete) return
-          const id = pendingDelete.id
+          const { level, id } = pendingDelete
           setPendingDelete(null)
-          // The draft drops it too, or the preview keeps drawing a block the shop no longer has.
-          setDraft((current) => (current ? current.filter((row) => row.id !== id) : current))
-          removeSection.mutate(id)
+          if (level === "band") draft.removeBand(id)
+          else draft.removeRow(id)
         }}
         onCancel={() => setPendingDelete(null)}
+        messages={messages}
+      />
+
+      <ComponentEditor slug={slug} component={editing} onClose={() => setEditingComponent(null)} messages={messages} />
+      <BandEditor
+        slug={slug}
+        section={editingSection}
+        position={rows.findIndex((row) => row.id === editingBand) + 1}
+        pageBackground={palette.background}
+        onClose={() => setEditingBand(null)}
         messages={messages}
       />
 
@@ -217,29 +139,41 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
           categories={categories}
           bands={bands}
           year={year}
-          sections={previewOf(rows, banners.data ?? [])}
+          sections={previewOf(rows, saved)}
           colors={palette}
           orderedIds={orderedIdsOf(rows)}
-          onReorder={(ids) => edit(applyOrder(rows, ids))}
+          onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
+          onEdit={setEditingComponent}
           messages={messages}
         />
 
         <DesignPanel
-          rows={rowsWithEmptiness}
-          loading={banners.isPending}
-          onReorder={(ids) => edit(applyOrder(rows, ids))}
-          onToggle={(id, isActive) =>
-            edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
+          bands={arrangementOf(rows, saved)}
+          loading={draft.loading}
+          onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
+          onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}
+          onToggleBand={(id, isActive) =>
+            draft.edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
           }
-          onLayoutChange={(id, layout) =>
-            edit(rows.map((row) => (row.id === id ? { ...row, layout } : row)))
-          }
+          onEditBand={setEditingBand}
+          onDeleteBand={(id) => setPendingDelete({ level: "band", id, name: bandName(id) })}
+          onToggle={(id, isActive) => draft.patchComponent(id, { isActive })}
+          onLayoutChange={(id, layout) => draft.patchComponent(id, { layout })}
           onDelete={(id) => {
-            const row = rows.find((candidate) => candidate.id === id)
-            if (row) setPendingDelete({ id, name: labelOf(row.kind, row.title, messages) })
+            const component = componentsOf(rows).find((candidate) => candidate.id === id)
+            if (component) {
+              setPendingDelete({ level: "component", id, name: labelOf(component.kind, component.title, messages) })
+            }
           }}
-          onAdd={(kind) => addSection.mutate({ kind })}
+          onEdit={setEditingComponent}
+          // A new band around the one component. Adding is a saved write, not a draft edit —
+          // holding it in the browser would mean a reload could lose what the owner watched appear.
+          onAdd={(kind) => addSection.mutate({ component: { kind } })}
           adding={addSection.isPending}
+          // The two the shop may only have one of. Every other kind is offered every time.
+          taken={componentsOf(rows)
+            .map((component) => component.kind)
+            .filter((kind) => kind === "ANNOUNCEMENT" || kind === "PRODUCTS")}
           palette={palette}
           onPalette={setPalette}
           presets={presets.data ?? []}

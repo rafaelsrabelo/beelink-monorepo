@@ -20,27 +20,33 @@ async function open(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("AddBlockMenu", () => {
-  it("offers the blocks whose whole content is typed", async () => {
+  it("offers every kind that can be created empty and filled in place", async () => {
     const user = userEvent.setup()
     render(<AddBlockMenu onAdd={vi.fn()} />)
 
     await open(user)
 
     expect(screen.getByRole("menuitem", { name: "Título" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Parágrafo" })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: "Vantagens" })).toBeInTheDocument()
     expect(screen.getByRole("menuitem", { name: "Barra de aviso" })).toBeInTheDocument()
   })
 
-  // A banner has a picture, a destination and a shape to choose — a form, not a menu item. It is
-  // also where a carousel is made, by putting two "at the top of the page" next to each other.
-  it("does not offer a banner, which is a form and not a menu item", async () => {
+  /**
+   * The one this menu used to refuse, and refusing it was the bug: a banner was made on a screen
+   * of its own, so the thing the shopkeeper most wanted to add was the thing this would not add.
+   * A heading and a paragraph are two entries rather than one with a mode, which is what was
+   * asked for in those words.
+   */
+  it("offers a banner, and a heading apart from a paragraph", async () => {
     const user = userEvent.setup()
     render(<AddBlockMenu onAdd={vi.fn()} />)
 
     await open(user)
 
-    expect(screen.queryByRole("menuitem", { name: "Banner" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("menuitem", { name: "Banner de topo" })).not.toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Banner" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Título" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Parágrafo" })).toBeInTheDocument()
   })
 
   it("stops offering a block the shop already has one of", async () => {
@@ -61,12 +67,12 @@ describe("AddBlockMenu", () => {
     await open(user)
     await user.click(screen.getByRole("menuitem", { name: "Título" }))
 
-    expect(onAdd).toHaveBeenCalledWith("TEXT")
+    expect(onAdd).toHaveBeenCalledWith("HEADING")
   })
 
   it("draws no control at all when there is nothing left to add", () => {
     const { container } = render(
-      <AddBlockMenu onAdd={vi.fn()} taken={["TEXT", "BENEFITS", "CATEGORIES", "ANNOUNCEMENT"]} />,
+      <AddBlockMenu onAdd={vi.fn()} taken={["BANNER", "HEADING", "TEXT", "BENEFITS", "CATEGORIES", "ANNOUNCEMENT"]} />,
     )
 
     expect(container).toBeEmptyDOMElement()

@@ -145,6 +145,7 @@ model Store {
   productCategories ProductCategory[]
   products          Product[]
   sections          StoreSection[]
+  components        StoreComponent[]
 
   @@index([ownerId])
   @@index([categoryId])

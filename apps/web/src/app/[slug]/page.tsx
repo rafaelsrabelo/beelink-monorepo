@@ -91,6 +91,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
           <h1 className="sr-only">{store.name}</h1>
           <StorefrontSections
             sections={store.sections}
+            primary={store.colors.primary}
             bands={home.bands}
             categories={home.categories}
             routes={routes}
