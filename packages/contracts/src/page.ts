@@ -212,6 +212,11 @@ export interface StoreComponent {
  */
 export interface PublicSection {
   id: string;
+  /**
+   * What the band is called on the page, if its owner named it. On a site, the named bands are the
+   * header's menu — each an anchor — so a name is a decision to be reachable from the top.
+   */
+  name: string | null;
   width: SectionWidth;
   background: string | null;
   components: PublicComponent[];
@@ -220,6 +225,7 @@ export interface PublicSection {
 /** A band of the page, as its owner arranges it. */
 export interface Section {
   id: string;
+  name: string | null;
   width: SectionWidth;
   background: string | null;
   position: number;
@@ -230,6 +236,7 @@ export interface Section {
 }
 
 export interface CreateSectionPayload {
+  name?: string | null;
   width?: SectionWidth;
   background?: string | null;
   isActive?: boolean;
@@ -291,3 +298,12 @@ export type PageErrorCode =
    * and the section's bin took the component with it. The UI is not the lock; this is.
    */
   | "COMPONENT_REQUIRED";
+
+/**
+ * The arrangements a site may open with.
+ *
+ * A closed list, like every vocabulary on this wire: a template is data the API holds, and the
+ * form offers exactly the ones the API can seed. The first is the structure of the briefing a
+ * transport company's landing page was planned from — services sold to businesses.
+ */
+export type PageTemplateId = "servicos-b2b";

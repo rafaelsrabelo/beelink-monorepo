@@ -80,11 +80,17 @@ export class StoreColorsDto implements StoreColors {
 }
 
 export class StoreSocialNetworksDto implements StoreSocialNetworksPayload {
-  @ApiProperty({ example: '5511999998888', description: 'Digits, country code included. Required.' })
+  @ApiPropertyOptional({
+    example: '5511999998888',
+    nullable: true,
+    description: 'Digits, country code included. A shop cannot be without it; the service says so. A site may.',
+  })
+  @IsOptional()
   @IsString()
   @Matches(/^\d{12,15}$/, { message: 'whatsapp must be digits, country code included' })
   @normaliseWhatsapp
-  whatsapp!: string;
+  @blankToNull
+  whatsapp?: string | null;
 
   @ApiPropertyOptional({ example: 'minhaloja', nullable: true })
   @IsOptional()

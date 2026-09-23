@@ -51,6 +51,13 @@ export interface StorefrontAnnouncement {
   external?: boolean
 }
 
+/** One entry of a site's menu: a named band, as an anchor. The screen builds them. */
+export interface StorefrontMenuItem {
+  id: string
+  label: string
+  href: string
+}
+
 /** One column of the footer. The screen builds them, because a block knows no address. */
 export interface StorefrontFooterColumn {
   id: string
@@ -113,6 +120,11 @@ export interface StorefrontWindowProps {
   cartHref?: string
   cartCount?: number
   accountHref?: string
+  /**
+   * A site's menu — the page's named bands, as anchors — drawn where a shop draws its icons. Given
+   * only by a site: a shop's header has a search and a basket there, and a site has neither.
+   */
+  menu?: readonly StorefrontMenuItem[]
 
   /** Band 2 — the categories, rendered edge to edge above everything else. */
   categories?: ReactNode
@@ -220,6 +232,7 @@ export function StorefrontWindow({
   cartHref,
   cartCount,
   accountHref,
+  menu = [],
   categories,
   banner,
   blocks,
@@ -350,6 +363,20 @@ export function StorefrontWindow({
                 ) : null)}
             </div>
           </div>
+
+          {/*
+            Hidden on a phone rather than folded into a drawer: the same names are in the footer,
+            one swipe away, and a drawer is a script on a page that must read without one.
+          */}
+          {menu.length ? (
+            <nav aria-label={text.siteMenu} className="hidden items-center gap-5 sm:flex">
+              {menu.map((entry) => (
+                <Link key={entry.id} href={entry.href} className="text-sm font-medium opacity-90 hover:opacity-100">
+                  {entry.label}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
 
           <div className="flex shrink-0 items-center gap-1">
             {accountHref ? (

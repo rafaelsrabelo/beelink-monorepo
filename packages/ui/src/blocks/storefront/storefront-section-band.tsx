@@ -9,6 +9,8 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 import { BAND } from "./storefront-band"
 
 export interface StorefrontSectionBandProps {
+  /** The anchor a menu link lands on. Given only to a named band; the offset clears the sticky header. */
+  id?: string
   /** The shopkeeper's colour for this band. Null is the page's own, and paints nothing. */
   background?: string | null
   /**
@@ -38,6 +40,7 @@ export interface StorefrontSectionBandProps {
  * their own words vanish.
  */
 export function StorefrontSectionBand({
+  id,
   background,
   primary,
   width = "CONTAINED",
@@ -57,7 +60,7 @@ export function StorefrontSectionBand({
     : undefined
 
   return (
-    <div style={dressed} className={background ? "w-full" : undefined}>
+    <div {...(id ? { id } : {})} style={dressed} className={cn("scroll-mt-16", background && "w-full")}>
       {width === "CONTAINED" ? (
         <div className={cn(BAND, "flex flex-col gap-8 py-2", className)}>{children}</div>
       ) : (

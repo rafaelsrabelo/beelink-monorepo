@@ -35,6 +35,7 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
       id: row.id,
       // The band's own attributes come from the server and never from the draft: the band's sheet
       // saves them straight there, and a copy held here would hide the save until a reload.
+      name: savedSections.get(row.id)?.name ?? null,
       width: savedSections.get(row.id)?.width ?? "CONTAINED",
       background: savedSections.get(row.id)?.background ?? null,
       components: row.components
@@ -95,6 +96,7 @@ export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Sec
 
   return rows.map((row) => ({
     id: row.id,
+    name: savedSections.get(row.id)?.name ?? null,
     background: savedSections.get(row.id)?.background ?? null,
     isActive: row.isActive,
     components: row.components.map((component) => {

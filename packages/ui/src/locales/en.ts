@@ -166,6 +166,8 @@ export const en: UiMessages = {
     categoriesEyebrow: "Find what you are after",
     seeAll: "See all",
     seeAllOf: "See everything in {section}",
+    siteMenu: "Site sections",
+    footerNavigation: "Navigation",
     order: "Order on WhatsApp",
     socialLabel: "The shop's networks",
     footerShop: "The shop",
@@ -242,6 +244,9 @@ export const en: UiMessages = {
     bandWidthContained: "Inside the measure",
     bandWidthHelp: "Edge to edge is for covers and coloured bands.",
     stripBandHelp: "This band is the announcement bar: drawn above the header, edge to edge. Only its colour is chosen here.",
+    bandName: "Band name",
+    bandNamePlaceholder: "Services",
+    bandNameHelp: "On a site, the named bands become the header menu.",
     editComponent: "Edit component",
     bodyLabel: "Text",
     bodyPlaceholder: "Write the paragraph…",
@@ -500,7 +505,7 @@ export const en: UiMessages = {
     signOut: "Sign out",
   },
   store: {
-    typeLabels: { ECOMMERCE: "Shop" },
+    typeLabels: { ECOMMERCE: "Shop", INSTITUTIONAL: "Institutional site" },
     card: {
       manage: "Open",
       loading: "Loading your shops",
@@ -552,6 +557,9 @@ export const en: UiMessages = {
     },
     identity: {
       legend: "Basics",
+      typeLabel: "What are you creating?",
+      typeShopHint: "A shop: products, orders over WhatsApp, categories.",
+      typeSiteHint: "An institutional site: presents the company and takes contact. No products, no orders.",
       nameLabel: "Shop name",
       namePlaceholder: "The name of your shop",
       slugLabel: "Shop address",

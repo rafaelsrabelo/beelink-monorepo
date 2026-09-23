@@ -18,6 +18,8 @@ export type { ArrangementItem, ArrangementLayout }
 
 export interface ArrangementBand {
   id: string
+  /** What the band is called on the page, if named. The row is called by it; else by its place. */
+  name?: string | null
   /** The band's own colour, drawn as a chip. Null is the page's own. */
   background?: string | null
   isActive: boolean
@@ -70,7 +72,7 @@ export function BandArrangement({
 
   function nameOf(id: string | number) {
     const at = bands.findIndex((band) => band.id === id)
-    return at < 0 ? "" : format(text.bandNumber, { position: String(at + 1) })
+    return at < 0 ? "" : bands[at]!.name?.trim() || format(text.bandNumber, { position: String(at + 1) })
   }
 
   /**

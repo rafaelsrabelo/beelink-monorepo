@@ -3,6 +3,7 @@
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@harness-monorepo/ui/components/field"
+import { Input } from "@harness-monorepo/ui/components/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@harness-monorepo/ui/components/select"
 
 // Locales
@@ -15,6 +16,8 @@ import type { SectionWidth } from "./design-types"
 
 /** A band's own attributes. `""` for the colour is "the page's own", which is null on the wire. */
 export interface BandFormValues {
+  /** What the band is called on the page. `""` is unnamed, and an unnamed band is not in a site's menu. */
+  name: string
   width: SectionWidth
   background: string
 }
@@ -71,6 +74,20 @@ export function BandForm({
         onSubmit()
       }}
     >
+      <Field>
+        <FieldLabel htmlFor="band-name">{text.bandName}</FieldLabel>
+        <FieldContent>
+          <Input
+            id="band-name"
+            value={value.name}
+            maxLength={60}
+            onChange={(event) => onChange({ ...value, name: event.target.value })}
+            placeholder={text.bandNamePlaceholder}
+          />
+          <FieldDescription>{text.bandNameHelp}</FieldDescription>
+        </FieldContent>
+      </Field>
+
       {widthEditable ? (
       <Field orientation="responsive">
         <FieldLabel htmlFor="band-width">{text.bandWidth}</FieldLabel>

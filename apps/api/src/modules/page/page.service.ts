@@ -60,6 +60,7 @@ export class PageService {
     const row = await this.prisma.storeSection.create({
       data: {
         storeId,
+        name: dto.name ?? null,
         ...(dto.width !== undefined ? { width: dto.width } : {}),
         background: dto.background ?? null,
         position: (last._max.position ?? -1) + 1,
@@ -99,6 +100,7 @@ export class PageService {
     const row = await this.prisma.storeSection.update({
       where: { id: sectionId },
       data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.width !== undefined ? { width: dto.width } : {}),
         // Null is a value here and not an omission: it is how a shopkeeper takes a colour back off
         // a band, and `?? null` would make "leave it alone" and "clear it" the same request.

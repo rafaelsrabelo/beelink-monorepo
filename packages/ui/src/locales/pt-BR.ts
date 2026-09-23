@@ -166,6 +166,8 @@ export const ptBR: UiMessages = {
     categoriesEyebrow: "Encontre o que você procura",
     seeAll: "Ver todos",
     seeAllOf: "Ver tudo em {section}",
+    siteMenu: "Seções do site",
+    footerNavigation: "Navegação",
     order: "Fazer pedido no WhatsApp",
     socialLabel: "Redes da loja",
     footerShop: "A loja",
@@ -242,6 +244,9 @@ export const ptBR: UiMessages = {
     bandWidthContained: "Dentro da margem",
     bandWidthHelp: "Ponta a ponta é para capa e faixas coloridas.",
     stripBandHelp: "Esta faixa é a barra de aviso: desenhada acima do topo, de ponta a ponta. Só a cor se escolhe aqui.",
+    bandName: "Nome da faixa",
+    bandNamePlaceholder: "Serviços",
+    bandNameHelp: "Num site, as faixas com nome viram o menu do topo.",
     editComponent: "Editar componente",
     bodyLabel: "Texto",
     bodyPlaceholder: "Escreva o parágrafo…",
@@ -500,7 +505,7 @@ export const ptBR: UiMessages = {
     signOut: "Sair",
   },
   store: {
-    typeLabels: { ECOMMERCE: "Loja" },
+    typeLabels: { ECOMMERCE: "Loja", INSTITUTIONAL: "Site institucional" },
     card: {
       manage: "Entrar",
       loading: "Carregando suas lojas",
@@ -552,6 +557,9 @@ export const ptBR: UiMessages = {
     },
     identity: {
       legend: "Informações básicas",
+      typeLabel: "O que você está criando?",
+      typeShopHint: "Uma loja: produtos, pedidos pelo WhatsApp e categorias.",
+      typeSiteHint: "Um site institucional: apresenta a empresa e recebe contatos. Sem produtos nem pedidos.",
       nameLabel: "Nome da loja",
       namePlaceholder: "Nome da sua loja",
       slugLabel: "Endereço da loja",

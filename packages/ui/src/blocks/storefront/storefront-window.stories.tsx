@@ -57,3 +57,34 @@ export const ComCarrinho: Story = {
 export const SemWhatsapp: Story = {
   args: { orderHref: undefined },
 }
+
+/**
+ * Um site institucional: sem busca, carrinho nem conta. O cabeçalho é o menu das faixas com
+ * nome, cada uma uma âncora na mesma página; num celular o menu some e os mesmos nomes estão no
+ * rodapé. Todo o resto — cores, tinta derivada, barra de aviso — é a mesma janela.
+ */
+export const Site: Story = {
+  args: {
+    searchAction: undefined,
+    cartHref: undefined,
+    accountHref: undefined,
+    categories: undefined,
+    menu: [
+      { id: "servicos", label: "Serviços", href: "#servicos" },
+      { id: "sobre", label: "Sobre", href: "#sobre" },
+      { id: "contato", label: "Contato", href: "#contato" },
+    ],
+    footerColumns: [
+      {
+        id: "navigation",
+        title: "Navegação",
+        items: [
+          { label: "Serviços", href: "#servicos" },
+          { label: "Sobre", href: "#sobre" },
+          { label: "Contato", href: "#contato" },
+        ],
+      },
+    ],
+    orderHref: undefined,
+  },
+}

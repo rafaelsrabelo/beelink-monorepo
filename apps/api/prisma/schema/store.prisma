@@ -4,6 +4,8 @@
 /// shop window behaves. One value today — the product sells online, end to end.
 enum StoreType {
   ECOMMERCE
+  /// A site that presents and takes contact instead of selling: no catalogue, no orders, leads.
+  INSTITUTIONAL
 }
 
 /// The storefront template. It replaces the legacy `store_layouts` lookup table: three rows nothing

@@ -181,6 +181,7 @@ export function toPublicSection(
 ): PublicSection {
   return {
     id: row.id,
+    name: row.name,
     width: row.width,
     background: row.background,
     components: row.components
@@ -211,6 +212,7 @@ export function toComponent(row: StoreComponentModel): StoreComponent {
 export function toSection(row: SectionRow): Section {
   return {
     id: row.id,
+    name: row.name,
     width: row.width,
     background: row.background,
     position: row.position,

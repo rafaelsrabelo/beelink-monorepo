@@ -86,7 +86,8 @@ const FILLED_OF_STEP: Record<StepName, (values: StoreCreateValues) => boolean> =
     identity: (values) =>
       values.identity.name.trim().length > 0 && values.slug.trim().length > 0,
     address: () => true,
-    social: (values) => values.social.whatsapp.trim().length > 0,
+    // A site takes contact through a form; only a shop is incomplete without a WhatsApp.
+    social: (values) => values.identity.type !== "ECOMMERCE" || values.social.whatsapp.trim().length > 0,
     appearance: (values) =>
       Object.values(values.colors).every((colour) => colour.trim().length > 0),
   };

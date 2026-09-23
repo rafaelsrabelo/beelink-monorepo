@@ -19,6 +19,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import type { HomeBand } from "@/lib/storefront-data"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
+import { anchorsOf } from "./site-chrome"
 import { StorefrontComponent } from "./storefront-component"
 
 export interface StorefrontSectionsProps {
@@ -110,6 +111,8 @@ export function StorefrontSections({
   messages,
 }: StorefrontSectionsProps) {
   const link = linkComponent ? { linkComponent } : {}
+  // A named band is an anchor, so a site's menu and the page agree on where "Serviços" is.
+  const anchors = anchorsOf(sections)
 
   return (
     <>
@@ -121,6 +124,7 @@ export function StorefrontSections({
           const band = (
           <StorefrontSectionBand
             key={section.id}
+            {...(anchors.has(section.id) ? { id: anchors.get(section.id)! } : {})}
             background={section.background}
             primary={primary}
             width={section.width}

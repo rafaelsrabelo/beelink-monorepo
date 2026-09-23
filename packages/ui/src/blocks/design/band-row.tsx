@@ -51,7 +51,9 @@ export function BandRow({
 }) {
   const text = messages.design
   const drag = useArrangeItem(band.id)
-  const name = format(text.bandNumber, { position: String(position) })
+  // Called by its name where it has one — a named band is one the owner will look for by that
+  // name in the menu — and by its place otherwise.
+  const name = band.name?.trim() || format(text.bandNumber, { position: String(position) })
 
   return (
     <li

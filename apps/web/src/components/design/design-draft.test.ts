@@ -42,6 +42,7 @@ function component(id: string, over: Partial<StoreComponent> = {}): StoreCompone
 function section(id: string, components: StoreComponent[], over: Partial<Section> = {}): Section {
   return {
     id,
+    name: null,
     width: "CONTAINED",
     background: null,
     position: 0,

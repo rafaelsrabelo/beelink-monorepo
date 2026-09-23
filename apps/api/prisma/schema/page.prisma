@@ -54,6 +54,9 @@ model StoreSection {
   storeId String @db.Uuid
   store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
+  /// What the band is called on the page, if named. On a site the named bands are the menu.
+  name String? @db.VarChar(60)
+
   /// Edge to edge, or inside the page's measure.
   width SectionWidth @default(CONTAINED)
 

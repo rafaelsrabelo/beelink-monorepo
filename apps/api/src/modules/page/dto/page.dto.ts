@@ -37,6 +37,7 @@ import {
   COMPONENT_SUBTITLE_MAX_LENGTH,
   COMPONENT_TITLE_MAX_LENGTH,
   HEX_COLOUR,
+  SECTION_NAME_MAX_LENGTH,
   SECTION_WIDTHS,
   SHOWCASE_LAYOUTS,
   TEXT_ALIGNS,
@@ -111,6 +112,12 @@ export class UpdateComponentDto extends PartialType(ComponentDto) implements Upd
  * nothing, so it would be a row the shopkeeper can only meet as a gap in their own editor.
  */
 export class CreateSectionDto implements CreateSectionPayload {
+  @ApiPropertyOptional({ maxLength: SECTION_NAME_MAX_LENGTH, nullable: true, description: 'Named bands are a site’s menu.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(SECTION_NAME_MAX_LENGTH)
+  name?: string | null;
+
   @ApiPropertyOptional({ enum: SECTION_WIDTHS })
   @IsOptional()
   @IsIn(SECTION_WIDTHS)
@@ -140,6 +147,12 @@ export class CreateSectionDto implements CreateSectionPayload {
  * different things.
  */
 export class UpdateSectionDto implements UpdateSectionPayload {
+  @ApiPropertyOptional({ maxLength: SECTION_NAME_MAX_LENGTH, nullable: true, description: 'Named bands are a site’s menu.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(SECTION_NAME_MAX_LENGTH)
+  name?: string | null;
+
   @ApiPropertyOptional({ enum: SECTION_WIDTHS })
   @IsOptional()
   @IsIn(SECTION_WIDTHS)

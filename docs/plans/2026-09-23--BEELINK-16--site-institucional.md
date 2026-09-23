@@ -136,3 +136,33 @@ mais cara porque desenho é trabalho.
    teste de acessibilidade, e é o mesmo bloco na vitrine e no preview.
 5. O cabeçalho é o menu das faixas nomeadas; o rodapé é do dono.
 6. Nenhuma loja existente muda — o tipo `ECOMMERCE` continua desenhando o que desenha hoje.
+
+---
+
+## Adendo 1 — o que a entrega A decidiu ao ser feita
+
+**O botão de CTA do cabeçalho vai com a entrega B.** Ele aponta para o formulário de contato, que
+é B; um botão sem destino em A seria um botão para lugar nenhum.
+
+**O rodapé de um site, em A, é navegação + contato.** As faixas nomeadas (as mesmas do menu do
+topo, porque o cabeçalho esconde o menu no celular e o rodapé é onde esses nomes se encontram) e
+o WhatsApp, quando há. Uma lista livre de links fica para depois — ninguém pediu ainda.
+
+**O tipo se escolhe uma vez, na criação.** O controle "O que você está criando?" aparece só onde o
+slug ainda pode mudar. Uma loja virada site deixaria produtos órfãos; um site que quer vender é uma
+loja nova.
+
+**O WhatsApp deixa de ser obrigatório no DTO e passa a ser regra do serviço:** o DTO das redes não
+sabe em que tipo está aninhado. Uma loja sem WhatsApp responde `STORE_WHATSAPP_REQUIRED`; o
+formulário espelha a regra no schema composto, que vê o tipo e o número juntos.
+
+**O template de A usa só os tipos de hoje** (título, parágrafo, vantagens), nomeando cinco faixas:
+Início, Serviços, Sobre, Como funciona, Contato. As peças ricas (C e D) substituem essas faixas no
+template conforme chegam.
+
+**A âncora vem do nome**, não do id: `#como-funciona` se lê e se compartilha; um uuid não. Duas
+faixas com o mesmo nome — a segunda recebe o id no fim.
+
+**Copy que ainda diz "loja" nas telas de um site** (cabeçalho do painel, cards da home, título do
+fluxo de criação) fica como polimento para B, junto com a tela de Leads — é onde o painel do site
+ganha vocabulário próprio.

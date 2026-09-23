@@ -44,6 +44,7 @@ export class PublicComponentResponse implements PublicComponent {
 
 export class PublicSectionResponse implements PublicSection {
   @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty({ nullable: true, type: String }) name!: string | null;
   @ApiProperty({ enum: SECTION_WIDTHS }) width!: SectionWidth;
   @ApiProperty({ nullable: true, type: String, description: 'Null is the page’s own colour.' })
   background!: string | null;
@@ -74,6 +75,7 @@ export class ComponentResponse implements StoreComponent {
 
 export class SectionResponse implements Section {
   @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty({ nullable: true, type: String }) name!: string | null;
   @ApiProperty({ enum: SECTION_WIDTHS }) width!: SectionWidth;
   @ApiProperty({ nullable: true, type: String }) background!: string | null;
   @ApiProperty({ description: 'Its place on the page.' }) position!: number;

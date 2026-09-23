@@ -94,6 +94,10 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
    */
   const menuSlug = shopSlug ?? workspaces[0]?.slug ?? null
 
+  // A site has no products, orders, categories or customers to offer a menu for. What it has —
+  // its page and its settings — is what the menu shows; leads arrive with their own entry.
+  const site = (stores.data ?? []).find((store) => store.slug === menuSlug)?.type === "INSTITUTIONAL"
+
   /**
    * `href` is unread while `disabled`; there is no address, which is why the item is disabled.
    *
@@ -149,20 +153,25 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
       }
       sidebar={
         <AdminSidebar
-          items={[
-            item(nav.home, "", <HomeIcon />),
-            item(nav.orders, "/orders", <ShoppingBagIcon />, "prefix"),
-            item(nav.products, "/products", <PackageIcon />, "prefix"),
-            // Categories arrives here in the same change that took the home card away from it.
-            // That card was its only door in the whole panel, and a screen nobody can reach is a
-            // screen that will be reported as deleted.
-            item(nav.categories, "/categories", <TagsIcon />, "prefix"),
-            // No "Banners" entry, and its absence is the fix rather than a tidy-up. A banner is a
-            // component, and a component is made where the page is arranged — two screens for one
-            // thing is what had a top banner showing in design mode and missing from its own list.
-            item(nav.design, "/design", <LayoutTemplateIcon />),
-            item(nav.customers, "/customers", <UsersIcon />, "prefix"),
-          ]}
+          items={
+            site
+              ? [item(nav.home, "", <HomeIcon />), item(nav.design, "/design", <LayoutTemplateIcon />)]
+              : [
+                  item(nav.home, "", <HomeIcon />),
+                  item(nav.orders, "/orders", <ShoppingBagIcon />, "prefix"),
+                  item(nav.products, "/products", <PackageIcon />, "prefix"),
+                  // Categories arrives here in the same change that took the home card away from
+                  // it. That card was its only door in the whole panel, and a screen nobody can
+                  // reach is a screen that will be reported as deleted.
+                  item(nav.categories, "/categories", <TagsIcon />, "prefix"),
+                  // No "Banners" entry, and its absence is the fix rather than a tidy-up. A banner
+                  // is a component, and a component is made where the page is arranged — two
+                  // screens for one thing is what had a top banner showing in design mode and
+                  // missing from its own list.
+                  item(nav.design, "/design", <LayoutTemplateIcon />),
+                  item(nav.customers, "/customers", <UsersIcon />, "prefix"),
+                ]
+          }
           footerItems={[item(nav.settings, "/store", <SettingsIcon />)]}
           activeHref={pathname}
           open={drawerOpen}

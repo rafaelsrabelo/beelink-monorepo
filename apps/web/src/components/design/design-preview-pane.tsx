@@ -97,6 +97,8 @@ export function DesignPreviewPane({
             store={store}
             colors={colors}
             {...(announcementOf(sections) ? { announcement: announcementOf(sections)! } : {})}
+            // The draft's bands, so a site's menu in the preview is the menu being arranged.
+            sections={sections}
             categories={categories}
             year={year}
             searchSlot={null}

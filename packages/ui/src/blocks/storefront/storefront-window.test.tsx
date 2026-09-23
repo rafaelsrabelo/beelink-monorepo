@@ -36,6 +36,26 @@ describe("StorefrontWindow", () => {
   })
 
   describe("the header", () => {
+    /** A site's header: the page's named bands as anchors, where a shop has its icons. */
+    it("draws a site's menu of anchors, named for a screen reader", () => {
+      renderWindow({
+        menu: [
+          { id: "a", label: "Serviços", href: "#servicos" },
+          { id: "b", label: "Contato", href: "#contato" },
+        ],
+      })
+
+      const menu = screen.getByRole("navigation", { name: "Seções do site" })
+      expect(within(menu).getByRole("link", { name: "Serviços" })).toHaveAttribute("href", "#servicos")
+      expect(within(menu).getAllByRole("link")).toHaveLength(2)
+    })
+
+    it("draws no menu at all when there is none, rather than an empty landmark", () => {
+      renderWindow()
+
+      expect(screen.queryByRole("navigation", { name: "Seções do site" })).not.toBeInTheDocument()
+    })
+
     it("takes the logo home, so a product page has a way back", () => {
       renderWindow({ logoUrl: "https://cdn/logo.png" })
 

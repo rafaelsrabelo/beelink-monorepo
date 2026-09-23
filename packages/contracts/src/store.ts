@@ -1,5 +1,6 @@
 import type { PublicSection } from "./page.js";
 import type { StorefrontRouteWords } from "./catalog.js";
+import type { PageTemplateId } from "./page.js";
 
 /**
  * How a shop sells — not what it sells. The storefront's wording follows it, and from phase 2 so
@@ -10,7 +11,16 @@ import type { StorefrontRouteWords } from "./catalog.js";
  * One value today. The product sells online, end to end; the second mode that earns a value here
  * will be one that does not — a window that prices and hands the order to WhatsApp, say.
  */
-export type StoreType = "ECOMMERCE";
+/**
+ * What a `Store` is for.
+ *
+ * `INSTITUTIONAL` is a site that presents, convinces and takes contact instead of selling: no
+ * products, no orders, no categories — and leads where a shop has customers. It is a type of the
+ * same row and not an entity of its own, because everything a site needs underneath (an owner, a
+ * slug, colours with derived ink, sections of components, uploads, design mode) is what a shop
+ * already has; a second entity would have to repeat every piece.
+ */
+export type StoreType = "ECOMMERCE" | "INSTITUTIONAL";
 
 /**
  * The storefront template. It replaces the legacy `store_layouts` lookup table, whose three rows
@@ -208,7 +218,8 @@ export interface Store extends PublicStore {
 
 /** WhatsApp is required on the way in; the read shape allows null for shops carried over without one. */
 export interface StoreSocialNetworksPayload {
-  whatsapp: string;
+  /** Required on a shop — an order has nowhere to go without it — and the API says so. A site may have none. */
+  whatsapp?: string | null;
   instagram?: string | null;
   tiktok?: string | null;
   spotify?: string | null;
@@ -235,6 +246,11 @@ export interface CreateStorePayload {
    */
   slug: string;
   type: StoreType;
+  /**
+   * The arrangement a site opens with. Read only when `type` is `INSTITUTIONAL`; a shop opens with
+   * its own page. Absent picks the first template.
+   */
+  template?: PageTemplateId;
   /** At most 2000 characters — the bound is stated once, on `PublicStore.description`. */
   description?: string | null;
   logoUrl?: string | null;
@@ -275,7 +291,9 @@ export type StoreErrorCode =
   | "STORE_SLUG_TAKEN"
   | "STORE_SLUG_RESERVED"
   | "STORE_FORBIDDEN"
-  | "STORE_CATEGORY_NOT_FOUND";
+  | "STORE_CATEGORY_NOT_FOUND"
+  /** A shop was sent without a WhatsApp. A site may go without; a shop cannot take an order. */
+  | "STORE_WHATSAPP_REQUIRED";
 
 /**
  * One option in the address box, as both apps have to agree it is.

@@ -63,7 +63,8 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
 
   const [{ ui }, home] = await Promise.all([
     getMessages(),
-    homeAt(slug, store.showProductsByCategory),
+    // A site has no catalogue to ask for. The empty answer is what its page draws with anyway.
+    store.type === "INSTITUTIONAL" ? { categories: [], bands: [] } : homeAt(slug, store.showProductsByCategory),
   ])
 
   const routes = storefrontRoutes(store)

@@ -33,11 +33,13 @@ export interface ShopHomeScreenProps {
 export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
   const text = web.stores.home
   const store = useStore(slug)
-  // One row is enough: the card asks whether the shop has any product, not how many.
-  const products = useProducts(slug, { pageSize: 1 })
+  const site = store.data?.type === "INSTITUTIONAL"
+  // One row is enough: the card asks whether the shop has any product, not how many. A site has
+  // none to ask about, and asks nothing.
+  const products = useProducts(site ? "" : slug, { pageSize: 1 })
   const banners = useSections(slug)
 
-  const loading = store.isPending || products.isPending || banners.isPending
+  const loading = store.isPending || (!site && products.isPending) || banners.isPending
   const bannerRows = banners.data ?? []
 
   /**
@@ -94,6 +96,10 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
     },
   ]
 
+  // A site's home keeps the cards about the page and the identity; payments and products are a
+  // shop's business.
+  const shown = site ? cards.filter((card) => card.href.endsWith("/design") || card.href === `/${slug}` || card.title === text.cards.identityTitle) : cards
+
   return (
     <div className="flex w-full flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -116,7 +122,7 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
           this layout exists to avoid.
         */
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-          {cards.map(({ wide, ...card }) => (
+          {shown.map(({ wide, ...card }) => (
             <SetupCard
               key={card.title}
               {...card}

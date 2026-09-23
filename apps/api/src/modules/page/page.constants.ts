@@ -60,6 +60,7 @@ export const COMPONENT_TARGETS = [
   'NONE',
 ] as const satisfies readonly ComponentTarget[];
 
+export const SECTION_NAME_MAX_LENGTH = 60;
 export const COMPONENT_TITLE_MAX_LENGTH = 120;
 export const COMPONENT_SUBTITLE_MAX_LENGTH = 200;
 

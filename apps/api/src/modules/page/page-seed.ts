@@ -1,5 +1,5 @@
 // Types
-import type { BenefitRow, ComponentKind, PaymentMethod, SectionWidth } from '@harness-monorepo/contracts';
+import type { BenefitRow, ComponentKind, PaymentMethod, SectionWidth, TextAlign } from '@harness-monorepo/contracts';
 
 /**
  * A promise as it is written to the JSON column.
@@ -10,10 +10,19 @@ import type { BenefitRow, ComponentKind, PaymentMethod, SectionWidth } from '@ha
  */
 type PromiseRow = { id: string; icon: string; title: string; detail: string };
 
-/** One band of the page a new shop opens with, ready for `storeSection.create`. */
+/** One band of the page a new shop or site opens with, ready for `storeSection.create`. */
 export interface SeededBand {
-  section: { width: SectionWidth; position: number; isActive: boolean };
-  components: { kind: ComponentKind; items: PromiseRow[]; position: number; isActive: boolean }[];
+  section: { name?: string | null; width: SectionWidth; position: number; isActive: boolean };
+  components: {
+    kind: ComponentKind;
+    title?: string | null;
+    subtitle?: string | null;
+    body?: string | null;
+    align?: TextAlign | null;
+    items: PromiseRow[];
+    position: number;
+    isActive: boolean;
+  }[];
 }
 
 /**

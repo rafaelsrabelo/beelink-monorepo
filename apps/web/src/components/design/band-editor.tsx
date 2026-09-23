@@ -70,6 +70,7 @@ function BandEditorBody({
 }: Omit<BandEditorProps, "section"> & { section: Section }) {
   const text = messages.design
   const [value, setValue] = useState<BandFormValues>({
+    name: section.name ?? "",
     width: section.width,
     background: section.background ?? "",
   })
@@ -95,7 +96,7 @@ function BandEditorBody({
               {
                 sectionId: section.id,
                 // Empty is "the page's own", which on the wire is null and not `""`.
-                payload: { width: value.width, background: value.background || null },
+                payload: { name: value.name.trim() || null, width: value.width, background: value.background || null },
               },
               { onSuccess: onClose },
             )

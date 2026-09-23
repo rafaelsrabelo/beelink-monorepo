@@ -212,6 +212,27 @@ describe('StoresService.create', () => {
     expect(bands[1].components.create[0].storeId).toBe(row.id);
   });
 
+  /** The second product: a site opens from its template, and asks for no WhatsApp. */
+  it('opens a site from its template, with no WhatsApp asked', async () => {
+    const { service, fakes } = build(null);
+
+    await service.create(OWNER, { ...createDto, type: 'INSTITUTIONAL', socialNetworks: {} } as CreateStoreDto);
+
+    const bands = fakes.seed.mock.calls.map((call) => call[0].data);
+    expect(bands.map((band) => band.name)).toEqual(['Início', 'Serviços', 'Sobre', 'Como funciona', 'Contato']);
+    expect(bands.flatMap((band) => band.components.create.map((c: { kind: string }) => c.kind))).not.toContain('PRODUCTS');
+    expect(fakes.create.mock.calls[0]?.[0].data.whatsappPhone).toBeNull();
+  });
+
+  it('refuses a shop with no WhatsApp, before writing anything', async () => {
+    const { service, fakes } = build(null);
+
+    await expect(
+      service.create(OWNER, { ...createDto, socialNetworks: {} } as CreateStoreDto),
+    ).rejects.toMatchObject({ response: { errorCode: 'STORE_WHATSAPP_REQUIRED' } });
+    expect(fakes.create).not.toHaveBeenCalled();
+  });
+
   it('hides the promises band when a shop opens with nothing to promise', async () => {
     const { service, fakes } = build(null);
     fakes.create.mockResolvedValueOnce({ ...row, paymentMethods: [] });

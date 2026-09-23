@@ -2,7 +2,7 @@
 import type { ReactNode } from "react"
 
 // Types
-import type { PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
+import type { PublicProductCategory, PublicSection, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
@@ -11,6 +11,7 @@ import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { menuOf, siteFooterColumnsOf } from "./site-chrome"
 import { paymentHighlightsOf } from "./storefront-highlights"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
@@ -65,6 +66,14 @@ export interface StorefrontFrameProps {
   colors?: PublicStore["colors"]
   /** The strip above the masthead. Built by the page from the same list the blocks come from. */
   announcement?: { left: string; right?: string; background?: string | null; href?: string | null; external?: boolean }
+  /**
+   * The arrangement being drawn, when it is not the one the store has saved.
+   *
+   * Design mode passes its draft, so a site's menu and footer answer the band the owner just
+   * renamed rather than the page the server cached — the same reason `colors` is a prop. Nothing
+   * else passes it.
+   */
+  sections?: readonly PublicSection[]
   searchSlot?: ReactNode
   /**
    * How every injected link is drawn. The preview passes one that renders no `href`, so nothing
@@ -101,6 +110,7 @@ export function StorefrontFrame({
   blocks,
   colors,
   announcement,
+  sections,
   year,
   searchSlot,
   linkComponent,
@@ -109,6 +119,11 @@ export function StorefrontFrame({
 }: StorefrontFrameProps) {
   const routes = storefrontRoutes(store)
   const text = messages.storefront
+
+  // A site presents and takes contact; it has no search, no basket, no account and no category
+  // band. Its header is the page's own named bands, as anchors. One frame and a branch, not two
+  // frames: everything else about the window — colours, footer, strip — is the same thing.
+  const site = store.type === "INSTITUTIONAL"
 
   // The menu is the first level. A shop with five headings and nineteen subheadings in one row is
   // not a menu, and the subcategories are one click away on the page of the category they are in.
@@ -123,7 +138,7 @@ export function StorefrontFrame({
   // reason every href is: a block that knew "Produtos" links to `routeWords.products` would be
   // holding the very word this whole scheme exists to keep out of components.
   const whatsapp = orderHrefOf(store)
-  const footerColumns = [
+  const shopColumns = [
     {
       id: "shop",
       title: text.footerShop,
@@ -137,6 +152,8 @@ export function StorefrontFrame({
       ? [{ id: "contact", title: text.footerContact, items: [{ label: text.order, href: whatsapp }] }]
       : []),
   ]
+  const drawn = sections ?? store.sections
+  const footerColumns = site ? siteFooterColumnsOf(store, drawn, messages) : shopColumns
 
   return (
     <StorefrontWindow
@@ -147,25 +164,27 @@ export function StorefrontFrame({
       colors={colors ?? store.colors}
       // The live one, which answers while someone types. It replaces the plain form rather than
       // sitting beside it, and falls back to exactly that form when scripting is off.
-      searchSlot={
-        searchSlot ?? (
-          <StorefrontSearchLive
-            slug={store.slug}
-            routeWords={store.routeWords}
-            initialTerm={searchValue}
-            locale="pt-BR"
-            messages={messages}
-          />
-        )
-      }
-      searchAction={routes.search()}
+      {...(site
+        ? { menu: menuOf(drawn) }
+        : {
+            searchSlot: searchSlot ?? (
+              <StorefrontSearchLive
+                slug={store.slug}
+                routeWords={store.routeWords}
+                initialTerm={searchValue}
+                locale="pt-BR"
+                messages={messages}
+              />
+            ),
+            searchAction: routes.search(),
+            // Both icons, on every page. They were held back while they had nowhere to go; the
+            // basket has an address now, and the account is the sign-in the platform already has.
+            cartHref: routes.cart(),
+            accountHref: "/login",
+          })}
       {...(linkComponent ? { linkComponent } : {})}
-      // Both icons, on every page. They were held back while they had nowhere to go; the basket
-      // has an address now, and the account is the sign-in the platform already has.
-      cartHref={routes.cart()}
-      accountHref="/login"
       categories={
-        topLevel.length ? (
+        !site && topLevel.length ? (
           <StorefrontCategories
             categories={topLevel}
             active={markedCategory}
@@ -188,7 +207,7 @@ export function StorefrontFrame({
       footerColumns={footerColumns}
       copyright={text.copyright.replace("{year}", String(year)).replace("{name}", store.name)}
       links={storefrontLinksOf(store)}
-      orderHref={description ? orderHrefOf(store) : undefined}
+      orderHref={description && !site ? orderHrefOf(store) : undefined}
       addressLine={addressLineOf(store)}
       messages={messages}
     >

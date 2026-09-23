@@ -14,7 +14,7 @@ describe("BandForm", () => {
   it("says the band has the page's colour, in words, when it has none of its own", () => {
     render(
       <BandForm
-        value={{ width: "CONTAINED", background: "" }}
+        value={{ name: "", width: "CONTAINED", background: "" }}
         onChange={vi.fn()}
         pageBackground={page}
         onSubmit={vi.fn()}
@@ -36,7 +36,7 @@ describe("BandForm", () => {
 
     render(
       <BandForm
-        value={{ width: "CONTAINED", background: "" }}
+        value={{ name: "", width: "CONTAINED", background: "" }}
         onChange={onChange}
         pageBackground={page}
         onSubmit={vi.fn()}
@@ -46,14 +46,14 @@ describe("BandForm", () => {
 
     await user.click(screen.getByRole("checkbox", { name: "Cor de fundo da faixa" }))
 
-    expect(onChange).toHaveBeenCalledWith({ width: "CONTAINED", background: page })
+    expect(onChange).toHaveBeenCalledWith({ name: "", width: "CONTAINED", background: page })
   })
 
   /** The strip's band is drawn above the header, edge to edge; "ponta a ponta" there is a lie. */
   it("skips the width when told the band is not drawn where it sits", () => {
     render(
       <BandForm
-        value={{ width: "CONTAINED", background: "" }}
+        value={{ name: "", width: "CONTAINED", background: "" }}
         onChange={vi.fn()}
         widthEditable={false}
         pageBackground={page}
@@ -69,7 +69,7 @@ describe("BandForm", () => {
   it("offers no text colour at all", () => {
     render(
       <BandForm
-        value={{ width: "FULL", background: presets[1]!.colors.header }}
+        value={{ name: "Sobre", width: "FULL", background: presets[1]!.colors.header }}
         onChange={vi.fn()}
         pageBackground={page}
         onSubmit={vi.fn()}
@@ -85,7 +85,7 @@ describe("BandForm", () => {
   it("has no accessibility violations", async () => {
     const { container } = render(
       <BandForm
-        value={{ width: "FULL", background: presets[1]!.colors.header }}
+        value={{ name: "Sobre", width: "FULL", background: presets[1]!.colors.header }}
         onChange={vi.fn()}
         pageBackground={page}
         onSubmit={vi.fn()}

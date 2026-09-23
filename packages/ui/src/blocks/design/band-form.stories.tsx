@@ -10,7 +10,7 @@ const meta = {
   component: BandForm,
   parameters: { layout: "padded" },
   args: {
-    value: { width: "CONTAINED", background: "" },
+    value: { name: "", width: "CONTAINED", background: "" },
     onChange: () => {},
     pageBackground: presets[0]!.colors.background,
     onSubmit: () => {},
@@ -36,4 +36,4 @@ type Story = StoryObj<typeof meta>
 export const Padrao: Story = {}
 
 /** Com cor própria e ponta a ponta: uma faixa escura, como uma capa ou um destaque. */
-export const Colorida: Story = { args: { value: { width: "FULL", background: presets[2]!.colors.header } } }
+export const Colorida: Story = { args: { value: { name: "Destaques", width: "FULL", background: presets[2]!.colors.header } } }

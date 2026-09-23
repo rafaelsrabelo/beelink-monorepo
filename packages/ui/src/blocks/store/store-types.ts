@@ -12,7 +12,7 @@
  * its category, a row the platform seeds, which is why one value here is not a placeholder: a
  * second one arrives only when a shop window has to behave differently.
  */
-export const STORE_TYPES = ["ECOMMERCE"] as const
+export const STORE_TYPES = ["ECOMMERCE", "INSTITUTIONAL"] as const
 export type StoreType = (typeof STORE_TYPES)[number]
 
 /** The storefront template: the plain grid, or the grid under a banner. */

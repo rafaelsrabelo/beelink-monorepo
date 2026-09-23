@@ -25,7 +25,8 @@ export default async function DesignPage({ params }: PageProps<"/admin/[slug]/de
 
   // The same call the shop window's home makes, with the same argument — so the rails in the
   // preview are the rails the visitor gets, grouped the way the shopkeeper chose.
-  const home = await homeAt(slug, store.showProductsByCategory)
+  const home =
+    store.type === "INSTITUTIONAL" ? { categories: [], bands: [] } : await homeAt(slug, store.showProductsByCategory)
 
   return (
     <DesignScreen

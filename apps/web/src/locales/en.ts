@@ -106,6 +106,7 @@ export const en: WebMessages = {
     AUTH_UNAUTHENTICATED: "Sign in to continue.",
     COMPONENT_REQUIRED: "The product list cannot be deleted. Hide the band instead.",
     COMPONENT_KIND_SINGLETON: "The shop already has a block of that kind.",
+    STORE_WHATSAPP_REQUIRED: "A shop needs a WhatsApp to take orders.",
     STORE_NOT_FOUND: "This shop no longer exists.",
     STORE_SLUG_TAKEN: "This address is already taken. Pick another one.",
     STORE_SLUG_RESERVED: "This address is reserved by the system. Pick another one.",

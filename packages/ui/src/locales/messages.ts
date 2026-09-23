@@ -244,6 +244,9 @@ export interface UiMessages {
      * hands a screen reader the same two words three times (WCAG 2.4.4).
      */
     seeAllOf: string
+    /** A site's header menu and its footer column: the page's named bands. */
+    siteMenu: string
+    footerNavigation: string
     order: string
     socialLabel: string
     /** Names a footer column. The links inside are addresses, so the screen builds them. */
@@ -335,6 +338,10 @@ export interface UiMessages {
     bandWidthHelp: string
     /** Under the strip's band's name: it is drawn above the header, edge to edge, whatever the band says. */
     stripBandHelp: string
+    /** What a band is called on the page. Named bands are a site's menu. */
+    bandName: string
+    bandNamePlaceholder: string
+    bandNameHelp: string
     /** The panel that opens on a component's row. */
     editComponent: string
     bodyLabel: string
@@ -742,6 +749,10 @@ export interface UiMessages {
     }
     identity: {
       legend: string
+      /** What is being made — a shop or a site — chosen once, at creation. */
+      typeLabel: string
+      typeShopHint: string
+      typeSiteHint: string
       nameLabel: string
       namePlaceholder: string
       slugLabel: string
