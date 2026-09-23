@@ -1,22 +1,16 @@
 // Nest
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 // Types
-import type { ComponentKind, PageErrorCode, Section, StoreComponent } from '@harness-monorepo/contracts';
+import type { Section, StoreComponent } from '@harness-monorepo/contracts';
 import type { ComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
 import type { ReorderDto } from '../catalog/dto/reorder.dto.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
-import { componentItemsFor } from './component-items.schema.js';
-import { SINGLETON_COMPONENT_KINDS } from './page.constants.js';
 import { sectionInclude, toComponent, toSection } from './page.mapper.js';
-
-/** Keeps every code this module answers inside the contract's union. */
-function pageError(errorCode: PageErrorCode, message: string): { errorCode: PageErrorCode; message: string } {
-  return { errorCode, message };
-}
+import { PageRules, pageError } from './page.rules.js';
 
 /**
  * The landing page, at both of its levels.
@@ -31,6 +25,7 @@ export class PageService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
+    private readonly rules: PageRules,
   ) {}
 
   /** The panel's read: hidden bands and hidden components included, in the arranged order. */
@@ -55,8 +50,8 @@ export class PageService {
   async createSection(storeSlug: string, userId: string, dto: CreateSectionDto): Promise<Section> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
-    await this.refuseSecond(storeId, dto.component.kind);
-    const items = this.checkedItems(dto.component.kind, dto.component.items);
+    await this.rules.refuseSecond(storeId, dto.component.kind);
+    const items = this.rules.checkedItems(dto.component.kind, dto.component.items);
 
     // Last, the way a new category lands last. A band that inserted itself at the top would
     // rearrange a page the shopkeeper had already arranged.
@@ -98,7 +93,7 @@ export class PageService {
     dto: UpdateSectionDto,
   ): Promise<Section> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.ownedSection(storeId, sectionId);
+    await this.rules.ownedSection(storeId, sectionId);
 
     const row = await this.prisma.storeSection.update({
       where: { id: sectionId },
@@ -118,7 +113,7 @@ export class PageService {
   /** The band and everything in it. The pictures it used are not deleted. */
   async removeSection(storeSlug: string, userId: string, sectionId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.ownedSection(storeId, sectionId);
+    await this.rules.ownedSection(storeId, sectionId);
 
     await this.prisma.storeSection.delete({ where: { id: sectionId } });
   }
@@ -134,7 +129,7 @@ export class PageService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const owned = await this.prisma.storeSection.findMany({ where: { storeId }, select: { id: true } });
 
-    this.refuseOrderMismatch(dto.ids, owned, 'Send every band of this shop exactly once, in the new order');
+    this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every band of this shop exactly once, in the new order');
 
     await this.prisma.$transaction(
       dto.ids.map((id, position) => this.prisma.storeSection.update({ where: { id }, data: { position } })),
@@ -150,10 +145,10 @@ export class PageService {
     dto: ComponentDto,
   ): Promise<StoreComponent> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.ownedSection(storeId, sectionId);
-    await this.refuseSecond(storeId, dto.kind);
+    await this.rules.ownedSection(storeId, sectionId);
+    await this.rules.refuseSecond(storeId, dto.kind);
 
-    const items = this.checkedItems(dto.kind, dto.items);
+    const items = this.rules.checkedItems(dto.kind, dto.items);
     const last = await this.prisma.storeComponent.aggregate({
       where: { sectionId },
       _max: { position: true },
@@ -194,7 +189,7 @@ export class PageService {
     dto: UpdateComponentDto,
   ): Promise<StoreComponent> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const current = await this.ownedComponent(storeId, componentId);
+    const current = await this.rules.ownedComponent(storeId, componentId);
 
     if (dto.kind !== undefined && dto.kind !== current.kind) {
       throw new BadRequestException(
@@ -202,7 +197,7 @@ export class PageService {
       );
     }
 
-    const items = dto.items === undefined ? undefined : this.checkedItems(current.kind, dto.items);
+    const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
 
     const row = await this.prisma.storeComponent.update({
       where: { id: componentId },
@@ -225,7 +220,7 @@ export class PageService {
 
   async removeComponent(storeSlug: string, userId: string, componentId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.ownedComponent(storeId, componentId);
+    await this.rules.ownedComponent(storeId, componentId);
 
     await this.prisma.storeComponent.delete({ where: { id: componentId } });
   }
@@ -238,96 +233,16 @@ export class PageService {
     dto: ReorderDto,
   ): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.ownedSection(storeId, sectionId);
+    await this.rules.ownedSection(storeId, sectionId);
 
     const owned = await this.prisma.storeComponent.findMany({ where: { sectionId }, select: { id: true } });
 
-    this.refuseOrderMismatch(dto.ids, owned, 'Send every component of this band exactly once, in the new order');
+    this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every component of this band exactly once, in the new order');
 
     await this.prisma.$transaction(
       dto.ids.map((id, position) => this.prisma.storeComponent.update({ where: { id }, data: { position } })),
     );
 
     return this.list(storeSlug, userId);
-  }
-
-  /**
-   * The order sent has to be every row of this list, exactly once.
-   *
-   * Shared by both levels because the failure is the same at both: a list missing a row leaves that
-   * row holding a position the others have just taken, and the page that draws is neither order.
-   */
-  private refuseOrderMismatch(ids: readonly string[], owned: readonly { id: string }[], message: string): void {
-    const sent = new Set(ids);
-
-    if (sent.size !== ids.length || sent.size !== owned.length || !owned.every((row) => sent.has(row.id))) {
-      throw new ConflictException(pageError('REORDER_MISMATCH', message));
-    }
-  }
-
-  /**
-   * The kinds a shop may only have one of, refused before a second is written.
-   *
-   * The database cannot say this: the constraint is one per SHOP and the rows live under bands, so
-   * a unique index would have to span the join. It is a read and then a write, which races with
-   * itself under a double-click — and the cost of losing that race is a duplicate row the
-   * shopkeeper can delete, which is why it is not worth a lock.
-   */
-  private async refuseSecond(storeId: string, kind: ComponentKind): Promise<void> {
-    if (!(SINGLETON_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) return;
-
-    const existing = await this.prisma.storeComponent.findFirst({ where: { storeId, kind }, select: { id: true } });
-
-    if (existing) {
-      throw new ConflictException(
-        pageError('COMPONENT_KIND_SINGLETON', 'Esta loja já tem um componente deste tipo.'),
-      );
-    }
-  }
-
-  /**
-   * The items, checked against the shape this kind allows.
-   *
-   * `@IsArray()` on the DTO proves only that it is a list; what is inside depends on the kind, and
-   * a discriminated union is what states that once. Without this call the union was a validator
-   * nobody ran — the same "declared and never read" that sixteen `layoutSettings` keys already
-   * are, and the reason a slide with no picture would have reached the database.
-   */
-  private checkedItems(kind: ComponentKind, items: unknown): object[] {
-    const parsed = componentItemsFor(kind).safeParse(items ?? []);
-
-    if (!parsed.success) {
-      throw new BadRequestException(
-        pageError('COMPONENT_ITEMS_INVALID', parsed.error.issues[0]?.message ?? 'Conteúdo do bloco inválido'),
-      );
-    }
-
-    return parsed.data as object[];
-  }
-
-  /** A band that exists but belongs to another shop answers 404: this shop does not have one. */
-  private async ownedSection(storeId: string, sectionId: string): Promise<void> {
-    const row = await this.prisma.storeSection.findUnique({
-      where: { id: sectionId },
-      select: { storeId: true },
-    });
-
-    if (!row || row.storeId !== storeId) {
-      throw new NotFoundException(pageError('SECTION_NOT_FOUND', `No band ${sectionId} in this shop`));
-    }
-  }
-
-  /** Returns the kind it found, so a caller that has to reason about it needs no second read. */
-  private async ownedComponent(storeId: string, componentId: string): Promise<{ kind: ComponentKind }> {
-    const row = await this.prisma.storeComponent.findUnique({
-      where: { id: componentId },
-      select: { storeId: true, kind: true },
-    });
-
-    if (!row || row.storeId !== storeId) {
-      throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
-    }
-
-    return { kind: row.kind };
   }
 }

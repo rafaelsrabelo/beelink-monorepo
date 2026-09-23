@@ -3,6 +3,7 @@ import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { StoresService } from '../stores/stores.service.js';
 
 // App
+import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -129,7 +130,13 @@ function build(
 
   const stores = { ownedStoreId: vi.fn().mockResolvedValue(STORE) } as unknown as StoresService;
 
-  return { service: new PageService(prisma, stores), prisma, createSection, createComponent, updateComponent };
+  return {
+    service: new PageService(prisma, stores, new PageRules(prisma)),
+    prisma,
+    createSection,
+    createComponent,
+    updateComponent,
+  };
 }
 
 describe('PageService — a band is created around something', () => {
