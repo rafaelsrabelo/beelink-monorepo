@@ -183,24 +183,20 @@ export function ChartAreaInteractive({
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("pt-BR", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
+              // In UTC: a point is a day, written `2024-04-05`, which `Date` reads as midnight UTC.
+              // Formatted in the reader's zone that midnight is the evening before anywhere west
+              // of Greenwich, so every label in Brazil named the day before the data's.
+              tickFormatter={(value) =>
+                new Date(value).toLocaleDateString("pt-BR", { month: "short", day: "numeric", timeZone: "UTC" })
+              }
             />
             <ChartTooltip
               cursor={false}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("pt-BR", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  }}
+                  labelFormatter={(value) =>
+                    new Date(value).toLocaleDateString("pt-BR", { month: "short", day: "numeric", timeZone: "UTC" })
+                  }
                   indicator="dot"
                 />
               }
