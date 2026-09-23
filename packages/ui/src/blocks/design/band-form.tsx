@@ -2,7 +2,6 @@
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@harness-monorepo/ui/components/select"
 
@@ -11,7 +10,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { StoreColorField } from "../store/store-color-field"
+import { BandColourField } from "./band-colour-field"
 import type { SectionWidth } from "./design-types"
 
 /** A band's own attributes. `""` for the colour is "the page's own", which is null on the wire. */
@@ -86,33 +85,14 @@ export function BandForm({
         </FieldContent>
       </Field>
 
-      {/*
-        A switch and then a picker, rather than a picker that can be emptied. "The page's colour"
-        and "white" are the same swatch and different things, and a shopkeeper cannot tell them
-        apart by looking at one — so the difference is said in words before the swatch appears.
-      */}
-      <Field orientation="horizontal">
-        <Checkbox
-          id="band-has-background"
-          checked={value.background !== ""}
-          onCheckedChange={(checked: boolean) =>
-            onChange({ ...value, background: checked ? pageBackground : "" })
-          }
-        />
-        <FieldLabel htmlFor="band-has-background">{text.bandColour}</FieldLabel>
-      </Field>
-
-      {value.background === "" ? (
-        <p className="text-muted-foreground text-sm">{text.bandColourNone}</p>
-      ) : (
-        <StoreColorField
-          id="band-background"
-          label={text.bandColour}
-          value={value.background}
-          onChange={(next) => onChange({ ...value, background: next })}
-          pickerSuffix={text.bandColour}
-        />
-      )}
+      <BandColourField
+        id="band-background"
+        value={value.background}
+        onChange={(next) => onChange({ ...value, background: next })}
+        pageBackground={pageBackground}
+        label={text.bandColour}
+        noneLabel={text.bandColourNone}
+      />
 
       <div className="flex items-center justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>

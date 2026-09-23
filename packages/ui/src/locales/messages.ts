@@ -349,6 +349,14 @@ export interface UiMessages {
     benefitIcon: string
     benefitTitle: string
     benefitDetail: string
+    /** Where a heading or a paragraph sits. */
+    alignLabel: string
+    alignLeft: string
+    alignCenter: string
+    alignRight: string
+    /** The strip's colour, and what it is called when it has none of its own. */
+    announcementColour: string
+    announcementColourNone: string
   }
   banners: {
     title: string

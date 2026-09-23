@@ -194,3 +194,39 @@ todo singleton. É o caminho de volta que não exige abrir o banco.
 tela antes da resposta; com a API podendo recusar, isso deixaria o dono arrumando uma página com
 uma faixa a menos do que a loja tem.
 
+---
+
+## Adendo 3 — alinhamento, a cor da barra de aviso, e o texto que rola
+
+Pedido: "os textos (título, parágrafo) podem ser alinhados à esquerda, centro ou direita; o
+componente barra de aviso eu posso escolher a cor dele; e o texto nele é aquele que fica rolando
+horizontalmente".
+
+**Alinhamento é uma coluna nula em `store_components`.** Nulo não é um quarto valor: é "como este
+tipo sempre desenhou" — título centrado, parágrafo à esquerda. Um default de coluna teria de
+escolher um dos dois e errar para o outro; nulo deixa cada bloco com o próprio hábito até o dono
+dizer o contrário, e o helper `defaultAlignOf` diz isso uma vez só, para o formulário e para a
+vitrine. Lido em `HEADING` e `TEXT`. Nenhuma loja muda.
+
+**A cor da barra é a cor da faixa dela.** A barra de aviso é o único componente cuja faixa não é
+desenhada onde está; a faixa continua tendo cor, e essa cor é a da barra. Nenhuma coluna nova:
+o formulário do componente pede a cor "da barra" e grava no `background` da faixa; o formulário
+da faixa mostra o mesmo valor. A tinta do texto deriva da cor — o dono nunca escolhe cor de texto,
+pela mesma regra do resto da vitrine.
+
+**O texto rola em CSS puro.** Trilha com número par de cópias, movendo exatamente metade de si —
+é isso que faz a emenda invisível. Velocidade constante (60 px/s): a duração deriva do tamanho do
+texto, então aviso curto não corre e aviso longo não se arrasta. Pausa no hover. Só a primeira
+cópia é lida por leitor de tela. Com `prefers-reduced-motion`, nada se move: a frase fica parada,
+centrada.
+
+**Da revisão adversarial (13 agentes, 4 achados, todos reproduzidos):**
+- Uma exclusão recusada fechava o dialog em silêncio. O dialog agora só fecha quando o servidor
+  concorda; a recusa é dita embaixo da pergunta (`page-error-copy.ts`, dicionário do app).
+- `refuseRequired` recusava *toda* lista de produtos, inclusive uma duplicada que a corrida do
+  `refuseSecond` pode deixar passar — e aí a loja ficava com duas prateleiras sem caminho de volta.
+  A regra passa a proteger só a **última**; a linha desenha a lixeira pelo que a tela sabe (a
+  contagem), não pelo tipo.
+- O menu oferecia os singletons antes de a lista carregar. Fica desabilitado enquanto carrega.
+- O Swagger não documentava o `400` nos dois `DELETE`. Documenta.
+

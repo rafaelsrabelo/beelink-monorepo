@@ -198,12 +198,16 @@ export function StorefrontSections({
  */
 export function announcementOf(
   sections: readonly PublicSection[] = [],
-): { left: string; right?: string } | null {
-  const strip = sections
-    .flatMap((section) => section.components)
-    .find((component) => component.kind === "ANNOUNCEMENT")
+): { left: string; right?: string; background: string | null } | null {
+  const band = sections.find((section) => section.components.some((component) => component.kind === "ANNOUNCEMENT"))
+  const strip = band?.components.find((component) => component.kind === "ANNOUNCEMENT")
 
-  if (!strip?.title) return null
+  if (!band || !strip?.title) return null
 
-  return strip.subtitle ? { left: strip.title, right: strip.subtitle } : { left: strip.title }
+  return {
+    left: strip.title,
+    ...(strip.subtitle ? { right: strip.subtitle } : {}),
+    // The strip's colour is its band's: the one band not drawn where it sits still owns a colour.
+    background: band.background,
+  }
 }

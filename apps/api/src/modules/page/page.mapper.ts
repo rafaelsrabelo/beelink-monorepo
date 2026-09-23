@@ -143,6 +143,7 @@ function toPublicComponent(
           )
         : (itemsOf(row.kind, row.items) as PublicComponentItem[]),
     columns: row.columns,
+    align: row.align,
   } satisfies PublicComponent;
 }
 
@@ -180,6 +181,7 @@ export function toComponent(row: StoreComponentModel): StoreComponent {
     layout: row.layout,
     items: itemsOf(row.kind, row.items),
     columns: row.columns,
+    align: row.align,
     position: row.position,
     isActive: row.isActive,
     createdAt: row.createdAt.toISOString(),

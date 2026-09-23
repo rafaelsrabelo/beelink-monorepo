@@ -49,6 +49,7 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             body: was?.body ?? null,
             layout: component.layout,
             columns: was?.columns ?? null,
+            align: was?.align ?? null,
             /*
               A banner's slides arrive from the panel carrying ids, and the shop window is served
               them carrying addresses. The preview builds the second shape from the first with no
@@ -85,6 +86,9 @@ export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Sec
   const savedComponents = new Map(
     saved.flatMap((section) => section.components.map((component) => [component.id, component])),
   )
+  // The shop's last product list cannot go; a duplicate can. The count is this app's to know, and
+  // the row draws its bin from the answer rather than from the kind.
+  const productLists = saved.flatMap((section) => section.components).filter((c) => c.kind === "PRODUCTS").length
 
   return rows.map((row) => ({
     id: row.id,
@@ -102,6 +106,7 @@ export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Sec
         imageUrl: first?.imageUrl ?? null,
         layout: component.layout,
         isActive: component.isActive,
+        deletable: component.kind !== "PRODUCTS" || productLists > 1,
         empty: isEmptyComponent(component.kind, title, was?.body ?? null, was?.items ?? []),
       }
     }),

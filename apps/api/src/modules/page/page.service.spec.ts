@@ -65,8 +65,10 @@ function build(
     sectionOfAnotherShop?: boolean
     /** The bands the shop has, when it is not the default pair. */
     owned?: { id: string }[]
-    /** Whether the band being deleted holds the product list. */
-    holdsRequired?: boolean
+    /** How many product lists the band being deleted holds, the shop has elsewhere, and in all. */
+    requiredInSection?: number
+    requiredElsewhere?: number
+    requiredInShop?: number
   } = {},
 ) {
   const createSection = vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
@@ -125,7 +127,16 @@ function build(
       aggregate: vi.fn().mockResolvedValue({ _max: { position: 0 } }),
       findMany: vi.fn().mockResolvedValue(found.owned ?? [{ id: COMPONENT }]),
       findFirst: vi.fn().mockResolvedValue(found.existing ?? null),
-      count: vi.fn().mockResolvedValue(found.holdsRequired ? 1 : 0),
+      // One fake, three questions: inside this band, in the shop's other bands, in the whole shop.
+      count: vi.fn().mockImplementation(({ where }: { where: { sectionId?: unknown } }) =>
+        Promise.resolve(
+          typeof where.sectionId === 'string'
+            ? (found.requiredInSection ?? 0)
+            : where.sectionId && typeof where.sectionId === 'object'
+              ? (found.requiredElsewhere ?? 0)
+              : (found.requiredInShop ?? 1),
+        ),
+      ),
       findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER' }),
     },
     $transaction: vi.fn().mockResolvedValue([]),
@@ -360,8 +371,8 @@ describe('PageService — the product list cannot be deleted, at either level', 
    * The door a shop lost its shelves through: the component's row drew no bin, and the band's bin
    * did not ask what was inside. The refusal names the reason and what to do instead.
    */
-  it('refuses to delete the band that holds it, and deletes nothing', async () => {
-    const { service, prisma } = build({ holdsRequired: true });
+  it('refuses to delete the band that holds the only one, and deletes nothing', async () => {
+    const { service, prisma } = build({ requiredInSection: 1, requiredElsewhere: 0 });
 
     await expect(service.removeSection('lessari', 'user-1', SECTION)).rejects.toMatchObject({
       response: { errorCode: 'COMPONENT_REQUIRED' },
@@ -369,13 +380,27 @@ describe('PageService — the product list cannot be deleted, at either level', 
     expect(prisma.storeSection.delete).not.toHaveBeenCalled();
   });
 
-  it('refuses to delete the component itself', async () => {
-    const { service, prisma } = build({ kind: 'PRODUCTS' });
+  it('refuses to delete the component itself when it is the only one', async () => {
+    const { service, prisma } = build({ kind: 'PRODUCTS', requiredInShop: 1 });
 
     await expect(service.removeComponent('lessari', 'user-1', COMPONENT)).rejects.toMatchObject({
       response: { errorCode: 'COMPONENT_REQUIRED' },
     });
     expect(prisma.storeComponent.delete).not.toHaveBeenCalled();
+  });
+
+  /**
+   * A duplicate — the one a double-click can slip past `refuseSecond` — stays deletable, at both
+   * levels. Refusing every product list would leave that shop with two shelves and no way back.
+   */
+  it('lets a duplicate go, at both levels, as long as one remains', async () => {
+    const asComponent = build({ kind: 'PRODUCTS', requiredInShop: 2 });
+    await expect(asComponent.service.removeComponent('lessari', 'user-1', COMPONENT)).resolves.toBeUndefined();
+    expect(asComponent.prisma.storeComponent.delete).toHaveBeenCalled();
+
+    const asBand = build({ requiredInSection: 1, requiredElsewhere: 1 });
+    await expect(asBand.service.removeSection('lessari', 'user-1', SECTION)).resolves.toBeUndefined();
+    expect(asBand.prisma.storeSection.delete).toHaveBeenCalled();
   });
 
   it('deletes a band that holds only what may go', async () => {

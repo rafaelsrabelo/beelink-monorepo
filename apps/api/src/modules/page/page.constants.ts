@@ -1,5 +1,5 @@
 // Types
-import type { ComponentKind, ComponentTarget, SectionWidth, ShowcaseLayout } from '@harness-monorepo/contracts';
+import type { ComponentKind, ComponentTarget, SectionWidth, ShowcaseLayout, TextAlign } from '@harness-monorepo/contracts';
 
 /**
  * The shapes a banner may take inside its band. Spelled out rather than derived, like every other
@@ -17,6 +17,9 @@ export const COMPONENT_KINDS = [
   'CATEGORIES',
   'PRODUCTS',
 ] as const satisfies readonly ComponentKind[];
+
+/** Where a heading or a paragraph sits. Null on the wire is "as the kind always drew it". */
+export const TEXT_ALIGNS = ['LEFT', 'CENTER', 'RIGHT'] as const satisfies readonly TextAlign[];
 
 /** Edge to edge, or inside the page's measure. An attribute of the band, never of what is in it. */
 export const SECTION_WIDTHS = ['FULL', 'CONTAINED'] as const satisfies readonly SectionWidth[];

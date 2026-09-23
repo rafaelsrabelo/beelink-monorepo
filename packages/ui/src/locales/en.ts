@@ -254,6 +254,12 @@ export const en: UiMessages = {
     benefitIcon: "Icon",
     benefitTitle: "Title",
     benefitDetail: "Detail",
+    alignLabel: "Alignment",
+    alignLeft: "Left",
+    alignCenter: "Centre",
+    alignRight: "Right",
+    announcementColour: "Bar colour",
+    announcementColourNone: "The default, derived from the page.",
   },
   banners: {
     title: "Banners",

@@ -23,7 +23,10 @@ import { DesignPanel } from "./design-panel"
 import { DesignPreviewPane } from "./design-preview-pane"
 import { applyComponentOrder, applyOrder, componentsOf, labelOf, orderedIdsOf } from "./design-draft"
 import { arrangementOf, previewOf } from "./design-draft-preview"
+import { pageErrorCopy } from "./page-error-copy"
 import { useDesignDraft } from "./use-design-draft"
+
+import type { WebMessages } from "@/locales"
 
 export interface DesignScreenProps {
   /**
@@ -37,6 +40,8 @@ export interface DesignScreenProps {
   bands: readonly HomeBand[]
   year: number
   messages: UiMessages
+  /** The app's own sentences — where an API `errorCode` becomes copy. */
+  web: WebMessages
 }
 
 /** Spelled out so a fifth colour is a compile error here rather than a field nobody compares. */
@@ -52,7 +57,7 @@ type PendingDelete = { level: "band" | "component"; id: string; name: string }
  * what colour a band is, save on their own the moment the owner hits save in the sheet: those are
  * things they want to see land, not an order to hold back.
  */
-export function DesignScreen({ store, categories, bands, year, messages }: DesignScreenProps) {
+export function DesignScreen({ store, categories, bands, year, messages, web }: DesignScreenProps) {
   const text = messages.design
   const slug = store.slug
 
@@ -112,18 +117,30 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
             : null
         }
         pending={draft.deleting}
+        // The dialog stays open until the server agrees; a refusal is said under the question.
+        {...(draft.deleteError ? { detail: pageErrorCopy(draft.deleteError, web) } : {})}
         onConfirm={() => {
           if (!pendingDelete) return
           const { level, id } = pendingDelete
-          setPendingDelete(null)
-          if (level === "band") draft.removeBand(id)
-          else draft.removeRow(id)
+          const done = () => setPendingDelete(null)
+          if (level === "band") draft.removeBand(id, done)
+          else draft.removeRow(id, done)
         }}
-        onCancel={() => setPendingDelete(null)}
+        onCancel={() => {
+          setPendingDelete(null)
+          draft.clearDeleteError()
+        }}
         messages={messages}
       />
 
-      <ComponentEditor slug={slug} component={editing} onClose={() => setEditingComponent(null)} messages={messages} />
+      <ComponentEditor
+        slug={slug}
+        component={editing}
+        bandBackground={saved.find((section) => section.id === editing?.sectionId)?.background ?? null}
+        pageBackground={palette.background}
+        onClose={() => setEditingComponent(null)}
+        messages={messages}
+      />
       <BandEditor
         slug={slug}
         section={editingSection}

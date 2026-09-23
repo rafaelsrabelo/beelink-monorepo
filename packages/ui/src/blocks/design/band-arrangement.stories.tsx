@@ -32,7 +32,7 @@ const bands: ArrangementBand[] = [
     isActive: true,
     components: [
       { id: "3", kind: "HEADING", title: "Novidades da semana", layout: "FULL", isActive: true },
-      { id: "4", kind: "PRODUCTS", title: null, layout: "FULL", isActive: true },
+      { id: "4", kind: "PRODUCTS", title: null, layout: "FULL", isActive: true, deletable: false },
     ],
   },
   {

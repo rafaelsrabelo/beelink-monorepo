@@ -39,6 +39,14 @@ export interface ArrangementItem {
   layout: ArrangementLayout
   isActive: boolean
   /**
+   * Whether the row draws a bin. Absent means yes.
+   *
+   * Decided by the screen and not by the kind, because the answer is a count the screen has and
+   * this block does not: the shop's last product list cannot go, but a duplicate can. A rule keyed
+   * on the kind alone was what left a shop with two shelves and no bin on either.
+   */
+  deletable?: boolean
+  /**
    * The block has nothing to draw, so the shop window draws nothing at all for it.
    *
    * Said out loud because a silent one is what made a landing page and its editor disagree: the
@@ -47,21 +55,6 @@ export interface ArrangementItem {
    * the shopkeeper has not finished — and the row is where that gets said.
    */
   empty?: boolean
-}
-
-/**
- * The kinds a shopkeeper may delete from the arrangement.
- *
- * The product rails are not among them: a landing page without what the shop sells is not an
- * arrangement anyone wants, and there would be no row left to put them back. Hiding it is the
- * answer there, which is why the eye stays on every row.
- *
- * A banner IS among them now, and its absence was reported as a bug: it used to be deleted on a
- * screen of its own, so the panel offered an eye and no bin and the owner asked for a bin. One
- * place to make a thing is one place to delete it.
- */
-export function canDelete(kind: ComponentKind): boolean {
-  return kind !== "PRODUCTS"
 }
 
 /**
@@ -207,7 +200,7 @@ export function ArrangementRow({
         )}
       </Button>
 
-      {onDelete && canDelete(item.kind) ? (
+      {onDelete && item.deletable !== false ? (
         <Button
           type="button"
           variant="ghost"

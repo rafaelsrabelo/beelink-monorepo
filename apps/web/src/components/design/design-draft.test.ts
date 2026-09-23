@@ -30,6 +30,7 @@ function component(id: string, over: Partial<StoreComponent> = {}): StoreCompone
     layout: "FULL",
     items: [],
     columns: null,
+    align: null,
     position: 0,
     isActive: true,
     createdAt: "2026-09-23T00:00:00.000Z",
@@ -174,6 +175,18 @@ describe("arrangementOf — what the panel lists", () => {
 
     expect(bands[0]!.components[0]).toMatchObject({ imageUrl: "/s.jpg", empty: false })
     expect(bands[2]!.components[0]).toMatchObject({ kind: "BENEFITS", empty: true })
+  })
+
+  /**
+   * The shop's last product list cannot go; a duplicate can. Decided here, from the count, and
+   * not in the row from the kind — that rule left a shop with two shelves and no bin on either.
+   */
+  it("lets every row go but the shop's last product list", () => {
+    const bands = arrangementOf(draft, saved)
+    expect(bands[1]!.components.map((row) => row.deletable)).toEqual([true, false])
+
+    const twice = [...saved, section("d", [component("d1", { kind: "PRODUCTS" })])]
+    expect(arrangementOf(twice.map(toDraft), twice)[1]!.components[1]).toMatchObject({ deletable: true })
   })
 })
 

@@ -138,23 +138,40 @@ export function useDesignDraft(slug: string) {
    *
    * The draft drops it once the server has, and not before: the API refuses to delete what the
    * shop cannot be without, and a draft that had already dropped the row would then be arranging a
-   * page with a band the shop still has. The round trip is the cost, and it is one.
+   * page with a band the shop still has. The round trip is the cost, and it is one. `onDone` is
+   * how the dialog learns it may close — a refusal keeps it open, with the reason.
    */
-  function removeBand(id: string) {
+  function removeBand(id: string, onDone: () => void) {
     removeSection.mutate(id, {
-      onSuccess: () => setDraft((current) => (current ? current.filter((row) => row.id !== id) : current)),
+      onSuccess: () => {
+        setDraft((current) => (current ? current.filter((row) => row.id !== id) : current))
+        onDone()
+      },
     })
   }
 
-  function removeRow(id: string) {
+  function removeRow(id: string, onDone: () => void) {
     removeComponent.mutate(id, {
-      onSuccess: () =>
+      onSuccess: () => {
         setDraft((current) =>
           current
             ? current.map((row) => ({ ...row, components: row.components.filter((c) => c.id !== id) }))
             : current,
-        ),
+        )
+        onDone()
+      },
     })
+  }
+
+  /**
+   * Why the last delete was refused, for the dialog to say. Cleared when the dialog closes, so the
+   * next question does not open under the previous answer.
+   */
+  const deleteError = removeSection.error ?? removeComponent.error ?? null
+
+  function clearDeleteError() {
+    removeSection.reset()
+    removeComponent.reset()
   }
 
   return {
@@ -165,6 +182,8 @@ export function useDesignDraft(slug: string) {
     publishing:
       reorder.isPending || reorderComponents.isPending || updateSection.isPending || updateComponent.isPending,
     deleting: removeSection.isPending || removeComponent.isPending,
+    deleteError,
+    clearDeleteError,
     edit,
     patchComponent,
     discard,

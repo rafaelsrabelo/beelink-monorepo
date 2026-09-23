@@ -13,7 +13,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ArrangeBoard, useArrangeItem } from "./design-arrange"
-import { ArrangementRow, canDelete } from "./arrangement-row"
+import { ArrangementRow } from "./arrangement-row"
 import type { ArrangementLayout } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
 
@@ -110,11 +110,11 @@ export function BandRow({
         </Button>
 
         {/*
-          No bin on a band holding what cannot be deleted. The product list's own row already draws
+          No bin on a band holding a row that cannot go. The product list's own row already draws
           none, and a bin on its band was the same delete through a bigger door — which is exactly
           how a shop lost its shelves. The eye stays: hiding is the answer for "not now".
         */}
-        {band.components.every((component) => canDelete(component.kind)) ? (
+        {band.components.every((component) => component.deletable !== false) ? (
           <Button
             type="button"
             variant="ghost"

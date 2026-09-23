@@ -22,7 +22,7 @@ const bands: ArrangementBand[] = [
     isActive: true,
     components: [
       { id: "2", kind: "BANNER", title: "Frete grátis", imageUrl: "/b.jpg", layout: "HALVES", isActive: false },
-      { id: "3", kind: "PRODUCTS", title: null, layout: "FULL", isActive: true },
+      { id: "3", kind: "PRODUCTS", title: null, layout: "FULL", isActive: true, deletable: false },
     ],
   },
 ]
@@ -91,9 +91,9 @@ describe("BandArrangement", () => {
 
   /**
    * The complaint that produced this: the panel offered an eye and no bin, so a banner could be
-   * hidden and never removed. Every kind but the product rails has one now.
+   * hidden and never removed. Every row has one unless the screen says it cannot go.
    */
-  it("offers a bin on a banner, and none on the product rails", () => {
+  it("offers a bin on a banner, and none on a row the screen marked as staying", () => {
     renderBands()
 
     expect(screen.getByRole("button", { name: "Excluir bloco: Frete grátis" })).toBeInTheDocument()

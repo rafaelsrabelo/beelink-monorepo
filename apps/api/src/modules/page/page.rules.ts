@@ -45,7 +45,8 @@ export class PageRules {
    * The database cannot say this: the constraint is one per SHOP and the rows live under bands, so
    * a unique index would have to span the join. It is a read and then a write, which races with
    * itself under a double-click — and the cost of losing that race is a duplicate row the
-   * shopkeeper can delete, which is why it is not worth a lock.
+   * shopkeeper can delete, which is why it is not worth a lock. That sentence stays true for the
+   * product list because `refuseRequired` guards the LAST one and never a duplicate.
    */
   async refuseSecond(storeId: string, kind: ComponentKind): Promise<void> {
     if (!(SINGLETON_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) return;
@@ -60,26 +61,39 @@ export class PageRules {
   }
 
   /**
-   * A component the shop cannot be without is not deleted; it is hidden.
+   * The shop's last product list is not deleted; it is hidden.
    *
    * Stated here and not only in the panel, because the panel is not the lock: it already drew no
    * bin on the product list's own row, and the shelves were deleted anyway — through the bin on
    * the section holding them. The two checks below are the same rule at the two levels.
+   *
+   * The LAST one, and not every one. `refuseSecond` is a read-then-write that a double-click can
+   * beat, and a duplicate it lets through must stay deletable, or the shop is stuck with two
+   * shelves and no way back but the database.
    */
-  refuseRequired(kind: ComponentKind): void {
+  async refuseRequired(storeId: string, kind: ComponentKind): Promise<void> {
     if (!(REQUIRED_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) return;
 
-    throw new BadRequestException(
-      pageError('COMPONENT_REQUIRED', 'A lista de produtos não pode ser apagada. Esconda a faixa.'),
-    );
+    const inShop = await this.prisma.storeComponent.count({ where: { storeId, kind } });
+
+    if (inShop <= 1) {
+      throw new BadRequestException(
+        pageError('COMPONENT_REQUIRED', 'A lista de produtos não pode ser apagada. Esconda a faixa.'),
+      );
+    }
   }
 
-  async refuseHoldingRequired(sectionId: string): Promise<void> {
-    const held = await this.prisma.storeComponent.count({
-      where: { sectionId, kind: { in: [...REQUIRED_COMPONENT_KINDS] } },
+  async refuseHoldingRequired(storeId: string, sectionId: string): Promise<void> {
+    const required = { in: [...REQUIRED_COMPONENT_KINDS] };
+    const held = await this.prisma.storeComponent.count({ where: { sectionId, kind: required } });
+
+    if (held === 0) return;
+
+    const elsewhere = await this.prisma.storeComponent.count({
+      where: { storeId, kind: required, sectionId: { not: sectionId } },
     });
 
-    if (held > 0) {
+    if (elsewhere === 0) {
       throw new BadRequestException(
         pageError('COMPONENT_REQUIRED', 'Esta faixa tem a lista de produtos, que não pode ser apagada. Esconda a faixa.'),
       );

@@ -11,6 +11,7 @@ import type {
 
 // UI
 import { BenefitIcon } from "@harness-monorepo/ui/blocks/design/benefit-icons"
+import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBenefits } from "@harness-monorepo/ui/blocks/storefront/storefront-benefits"
 import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
@@ -18,6 +19,7 @@ import { StorefrontHero } from "@harness-monorepo/ui/blocks/storefront/storefron
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // App
 import type { HomeBand } from "@/lib/storefront-data"
@@ -120,13 +122,33 @@ export function StorefrontComponent({
   }
 
   if (component.kind === "HEADING") {
-    return <StorefrontHeading title={component.title} subtitle={component.subtitle} />
+    return (
+      <StorefrontHeading
+        title={component.title}
+        subtitle={component.subtitle}
+        align={component.align ?? defaultAlignOf(component.kind)}
+      />
+    )
   }
 
   if (component.kind === "TEXT") {
+    const align = component.align ?? defaultAlignOf(component.kind)
+
     // `whitespace-pre-line`, because a shopkeeper's paragraph breaks are the only formatting this
-    // field has. Rendering it as one run would silently join what they typed as two.
-    return <p className="max-w-[70ch] text-base whitespace-pre-line opacity-90">{component.body}</p>
+    // field has. Rendering it as one run would silently join what they typed as two. The measure
+    // stays at 70ch whichever side it sits on: a centred paragraph is centred as a block, not as
+    // lines the full width of the page.
+    return (
+      <p
+        className={cn(
+          "max-w-[70ch] text-base whitespace-pre-line opacity-90",
+          align === "CENTER" && "mx-auto text-center",
+          align === "RIGHT" && "ml-auto text-right",
+        )}
+      >
+        {component.body}
+      </p>
+    )
   }
 
   return (

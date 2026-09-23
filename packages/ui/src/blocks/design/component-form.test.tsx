@@ -5,7 +5,10 @@ import { describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
+import { sampleColorPresets as presets } from "../store/store.fixtures"
 import { ComponentForm, type ComponentFormValues } from "./component-form"
+
+const page = presets[0]!.colors.background
 
 function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
   return {
@@ -15,6 +18,8 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     body: "",
     layout: "FULL",
     columns: 0,
+    align: "LEFT",
+    background: "",
     slides: [],
     benefits: [],
     ...over,
@@ -25,10 +30,11 @@ function renderForm(value: ComponentFormValues) {
   const onChange = vi.fn()
   const onSubmit = vi.fn()
 
-  render(
+  const view = render(
     <ComponentForm
       value={value}
       onChange={onChange}
+      pageBackground={page}
       categories={[{ id: "cat-1", name: "Blusas" }]}
       products={[]}
       newItemId={() => "new"}
@@ -37,7 +43,7 @@ function renderForm(value: ComponentFormValues) {
     />,
   )
 
-  return { onChange, onSubmit }
+  return { ...view, onChange, onSubmit }
 }
 
 describe("ComponentForm", () => {
@@ -73,6 +79,23 @@ describe("ComponentForm", () => {
     expect(screen.getByRole("button", { name: "Adicionar vantagem" })).toBeInTheDocument()
   })
 
+  /** The three asks in one: a heading and a paragraph align; the strip has a colour of its own. */
+  it("offers alignment to a heading and a paragraph, and nothing else", () => {
+    const { unmount } = renderForm(values({ kind: "TEXT", align: "RIGHT" }))
+    expect(screen.getByRole("button", { name: "Direita", pressed: true })).toBeInTheDocument()
+    unmount()
+
+    renderForm(values({ kind: "BANNER" }))
+    expect(screen.queryByRole("button", { name: "Direita" })).not.toBeInTheDocument()
+  })
+
+  it("offers the announcement bar its colour, in words when it has none", () => {
+    renderForm(values({ kind: "ANNOUNCEMENT" }))
+
+    expect(screen.getByRole("checkbox", { name: "Cor da barra" })).not.toBeChecked()
+    expect(screen.getByText("A cor padrão, derivada da página.")).toBeInTheDocument()
+  })
+
   it("offers the categories grid its columns", () => {
     renderForm(values({ kind: "CATEGORIES" }))
 
@@ -102,6 +125,7 @@ describe("ComponentForm", () => {
       <ComponentForm
         value={values({ kind: "BANNER", slides: [{ id: "s", imageUrl: "", title: "", subtitle: "", target: "NONE", categoryId: "", productId: "", externalUrl: "" }] })}
         onChange={vi.fn()}
+        pageBackground={page}
         categories={[]}
         products={[]}
         newItemId={() => "new"}

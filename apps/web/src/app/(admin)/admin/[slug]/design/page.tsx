@@ -19,7 +19,7 @@ import { homeAt, shopAt } from "@/lib/storefront-data"
  */
 export default async function DesignPage({ params }: PageProps<"/admin/[slug]/design">) {
   const { slug } = await params
-  const [store, { ui }] = await Promise.all([shopAt(slug), getMessages()])
+  const [store, { ui, web }] = await Promise.all([shopAt(slug), getMessages()])
 
   if (!store) notFound()
 
@@ -36,6 +36,7 @@ export default async function DesignPage({ params }: PageProps<"/admin/[slug]/de
       // renders on the thirty-first of December and hydration says so out loud.
       year={new Date().getFullYear()}
       messages={ui}
+      web={web}
     />
   )
 }

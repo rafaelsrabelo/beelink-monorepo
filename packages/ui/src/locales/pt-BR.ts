@@ -254,6 +254,12 @@ export const ptBR: UiMessages = {
     benefitIcon: "Ícone",
     benefitTitle: "Título",
     benefitDetail: "Detalhe",
+    alignLabel: "Alinhamento",
+    alignLeft: "Esquerda",
+    alignCenter: "Centro",
+    alignRight: "Direita",
+    announcementColour: "Cor da barra",
+    announcementColourNone: "A cor padrão, derivada da página.",
   },
   banners: {
     title: "Banners",

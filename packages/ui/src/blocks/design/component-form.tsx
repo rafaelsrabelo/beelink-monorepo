@@ -12,11 +12,13 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { AlignField } from "./align-field"
+import { BandColourField } from "./band-colour-field"
 import { BannerSlidesField } from "./banner-slides-field"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import { BenefitRowsField } from "./benefit-rows-field"
 import type { BenefitValue } from "./benefit-rows-field"
-import type { ComponentKind } from "./design-types"
+import type { ComponentKind, TextAlign } from "./design-types"
 
 export type ComponentFormLayout = "FULL" | "HALVES" | "THIRDS"
 
@@ -37,6 +39,14 @@ export interface ComponentFormValues {
   layout: ComponentFormLayout
   /** `0` is "let the grid decide", which is what null means on the wire. */
   columns: number
+  /** Always resolved here — the kind's own habit stands in for a null — so the toggle marks one. */
+  align: TextAlign
+  /**
+   * The strip's colour, which is its band's. The announcement is the one component whose band is
+   * not drawn where it sits, so the band's colour is asked for here, beside the words it paints.
+   * `""` is "as it always was".
+   */
+  background: string
   slides: SlideValue[]
   benefits: BenefitValue[]
 }
@@ -48,6 +58,8 @@ export type { BenefitValue, SlideTargetOption, SlideValue }
 export interface ComponentFormProps {
   value: ComponentFormValues
   onChange: (value: ComponentFormValues) => void
+  /** What the page is painted, so turning the strip's colour on starts somewhere visible. */
+  pageBackground: string
   categories: readonly SlideTargetOption[]
   products: readonly SlideTargetOption[]
   onUploadImage?: (file: File) => Promise<string>
@@ -73,6 +85,7 @@ const HAS_HEADING: readonly ComponentKind[] = ["ANNOUNCEMENT", "HEADING", "CATEG
 export function ComponentForm({
   value,
   onChange,
+  pageBackground,
   categories,
   products,
   onUploadImage,
@@ -125,6 +138,21 @@ export function ComponentForm({
             </FieldContent>
           </Field>
         </>
+      ) : null}
+
+      {value.kind === "ANNOUNCEMENT" ? (
+        <BandColourField
+          id="component-background"
+          value={value.background}
+          onChange={(next) => set("background", next)}
+          pageBackground={pageBackground}
+          label={text.announcementColour}
+          noneLabel={text.announcementColourNone}
+        />
+      ) : null}
+
+      {value.kind === "HEADING" || value.kind === "TEXT" ? (
+        <AlignField value={value.align} onChange={(next) => set("align", next)} messages={messages} />
       ) : null}
 
       {value.kind === "TEXT" ? (

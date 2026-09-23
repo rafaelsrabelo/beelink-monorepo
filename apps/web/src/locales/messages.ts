@@ -1,5 +1,5 @@
 // Types
-import type { AuthErrorCode, StoreErrorCode } from "@harness-monorepo/contracts"
+import type { AuthErrorCode, StoreErrorCode, PageErrorCode } from "@harness-monorepo/contracts"
 
 /**
  * The codes that belong to no domain. The API's exception filter falls back to the HTTP status name
@@ -32,6 +32,12 @@ export type WebErrorCode = "CEP_INVALID" | "CEP_NOT_FOUND" | "CEP_UNAVAILABLE" |
  * What the screens say, on top of what the blocks already carry. `errors` turns an API `errorCode`
  * into a sentence — the one place that mapping exists, per apps/web/AGENTS.md.
  */
+/**
+ * The page codes a shopkeeper can meet from the panel: a delete the shop cannot afford, and a
+ * second of something it may have one of. The others answer a call the panel never makes.
+ */
+type PanelPageErrorCode = Extract<PageErrorCode, "COMPONENT_REQUIRED" | "COMPONENT_KIND_SINGLETON">
+
 export interface WebMessages {
   metadata: {
     title: string
@@ -151,7 +157,7 @@ export interface WebMessages {
    * ask it through a per-domain copy function, and an unknown code falls back to `UNKNOWN`.
    */
   errors: Record<
-    AuthErrorCode | StoreErrorCode | HttpFallbackErrorCode | WebErrorCode | "UNKNOWN",
+    AuthErrorCode | StoreErrorCode | HttpFallbackErrorCode | WebErrorCode | PanelPageErrorCode | "UNKNOWN",
     string
   >
 }

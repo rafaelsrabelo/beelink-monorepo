@@ -8,6 +8,7 @@ import type { BannerSlide, BenefitRow, StoreComponent, UpdateComponentPayload } 
 
 // UI
 import { ComponentForm } from "@harness-monorepo/ui/blocks/design/component-form"
+import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 import type { ComponentFormValues, SlideTargetOption } from "@harness-monorepo/ui/blocks/design/component-form"
 import {
   Sheet,
@@ -20,12 +21,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { useProductCategories, useProducts } from "@/services/catalog/catalog-hooks"
-import { useUpdateComponent } from "@/services/page/page-hooks"
+import { useUpdateComponent, useUpdateSection } from "@/services/page/page-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
 import { labelOf } from "./design-draft"
 
 /** The wire's nulls become the form's empty strings, which is the only shape an input can hold. */
-function toForm(component: StoreComponent): ComponentFormValues {
+function toForm(component: StoreComponent, bandBackground: string | null): ComponentFormValues {
   return {
     kind: component.kind,
     title: component.title ?? "",
@@ -33,6 +34,9 @@ function toForm(component: StoreComponent): ComponentFormValues {
     body: component.body ?? "",
     layout: component.layout,
     columns: component.columns ?? 0,
+    // Resolved for the form, so the toggle marks one; a null on the wire is the kind's own habit.
+    align: component.align ?? defaultAlignOf(component.kind),
+    background: bandBackground ?? "",
     slides:
       component.kind === "BANNER"
         ? (component.items as BannerSlide[]).map((slide) => ({
@@ -90,6 +94,7 @@ function toPayload(value: ComponentFormValues): UpdateComponentPayload {
     body: value.body.trim() || null,
     layout: value.layout,
     columns: value.columns || null,
+    align: value.align,
     ...(value.kind === "BANNER" ? { items: slides } : {}),
     ...(value.kind === "BENEFITS" ? { items: benefits } : {}),
   }
@@ -99,6 +104,10 @@ export interface ComponentEditorProps {
   slug: string
   /** The component being edited, or null while the sheet is closed. */
   component: StoreComponent | null
+  /** The colour of the band holding it — the announcement strip's, since that band is the strip. */
+  bandBackground: string | null
+  /** What the page is painted, so turning the strip's colour on starts somewhere visible. */
+  pageBackground: string
   onClose: () => void
   messages: UiMessages
 }
@@ -114,12 +123,20 @@ export interface ComponentEditorProps {
  * the last one's fields over the new one's name. That exact confusion was reported once: a slide
  * id where a component id belonged, and the form showing one thing while the page showed another.
  */
-export function ComponentEditor({ slug, component, onClose, messages }: ComponentEditorProps) {
+export function ComponentEditor({ slug, component, bandBackground, pageBackground, onClose, messages }: ComponentEditorProps) {
   return (
     <Sheet open={component !== null} onOpenChange={(open) => (open ? undefined : onClose())}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-lg">
         {component ? (
-          <ComponentEditorBody key={component.id} slug={slug} component={component} onClose={onClose} messages={messages} />
+          <ComponentEditorBody
+            key={component.id}
+            slug={slug}
+            component={component}
+            bandBackground={bandBackground}
+            pageBackground={pageBackground}
+            onClose={onClose}
+            messages={messages}
+          />
         ) : null}
       </SheetContent>
     </Sheet>
@@ -129,18 +146,16 @@ export function ComponentEditor({ slug, component, onClose, messages }: Componen
 function ComponentEditorBody({
   slug,
   component,
+  bandBackground,
+  pageBackground,
   onClose,
   messages,
-}: {
-  slug: string
-  component: StoreComponent
-  onClose: () => void
-  messages: UiMessages
-}) {
+}: Omit<ComponentEditorProps, "component"> & { component: StoreComponent }) {
   const text = messages.design
-  const [value, setValue] = useState<ComponentFormValues>(() => toForm(component))
+  const [value, setValue] = useState<ComponentFormValues>(() => toForm(component, bandBackground))
 
   const update = useUpdateComponent(slug)
+  const updateBand = useUpdateSection(slug)
   const image = useImageUpload()
   // Only a banner needs something to point at; the other kinds never ask.
   const categories = useProductCategories(component.kind === "BANNER" ? slug : "")
@@ -169,11 +184,24 @@ function ComponentEditorBody({
           // Minted here and not in the block: the design system has no clock and no randomness,
           // and an id it invented would be one two open tabs could invent twice.
           newItemId={() => crypto.randomUUID()}
+          pageBackground={pageBackground}
           onSubmit={() =>
-            update.mutate({ componentId: component.id, payload: toPayload(value) }, { onSuccess: onClose })
+            update.mutate(
+              { componentId: component.id, payload: toPayload(value) },
+              {
+                onSuccess: () => {
+                  // The strip's colour lives on its band. Written second and only when it moved:
+                  // a save that only changed the words touches one row, not two.
+                  const background = value.background || null
+                  if (component.kind !== "ANNOUNCEMENT" || background === bandBackground) return onClose()
+
+                  updateBand.mutate({ sectionId: component.sectionId, payload: { background } }, { onSuccess: onClose })
+                },
+              },
+            )
           }
           onCancel={onClose}
-          pending={update.isPending}
+          pending={update.isPending || updateBand.isPending}
           messages={messages}
         />
       </div>

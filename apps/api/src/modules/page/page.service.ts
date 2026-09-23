@@ -73,6 +73,7 @@ export class PageService {
             body: dto.component.body ?? null,
             ...(dto.component.layout !== undefined ? { layout: dto.component.layout } : {}),
             columns: dto.component.columns ?? null,
+            align: dto.component.align ?? null,
             items,
             position: 0,
             isActive: dto.component.isActive ?? true,
@@ -119,7 +120,7 @@ export class PageService {
   async removeSection(storeSlug: string, userId: string, sectionId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.rules.ownedSection(storeId, sectionId);
-    await this.rules.refuseHoldingRequired(sectionId);
+    await this.rules.refuseHoldingRequired(storeId, sectionId);
 
     await this.prisma.storeSection.delete({ where: { id: sectionId } });
   }
@@ -170,6 +171,7 @@ export class PageService {
         body: dto.body ?? null,
         ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
         columns: dto.columns ?? null,
+        align: dto.align ?? null,
         items,
         position: (last._max.position ?? -1) + 1,
         isActive: dto.isActive ?? true,
@@ -213,6 +215,7 @@ export class PageService {
         ...(dto.body !== undefined ? { body: dto.body } : {}),
         ...(dto.layout !== undefined ? { layout: dto.layout } : {}),
         ...(dto.columns !== undefined ? { columns: dto.columns } : {}),
+        ...(dto.align !== undefined ? { align: dto.align } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         // The whole list or nothing. Slides have an order, so a patch of one would leave the API
         // guessing where it goes — and leaving this line out of the update is what once made a
@@ -227,7 +230,7 @@ export class PageService {
   async removeComponent(storeSlug: string, userId: string, componentId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const current = await this.rules.ownedComponent(storeId, componentId);
-    this.rules.refuseRequired(current.kind);
+    await this.rules.refuseRequired(storeId, current.kind);
 
     await this.prisma.storeComponent.delete({ where: { id: componentId } });
   }

@@ -17,6 +17,18 @@
 
 @theme inline {
     /*
+     * The announcement strip's motion. The duration is set per strip, from its text, so a short
+     * notice and a long one cross the page at the same speed — see storefront-announcement.tsx.
+     * Half the track, because the track holds an even number of copies: that is the seam.
+     */
+    --animate-marquee: marquee var(--marquee-duration, 20s) linear infinite;
+    @keyframes marquee {
+        to {
+            transform: translateX(-50%);
+        }
+    }
+
+    /*
      * The admin chrome, as its own namespace.
      *
      * A namespace and not a remap: `--border`, `--accent` and `--radius` are read by 11, 5 and 32

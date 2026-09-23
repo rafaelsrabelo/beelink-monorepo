@@ -12,10 +12,11 @@ import type {
   SectionWidth,
   ShowcaseLayout,
   StoreComponent,
+  TextAlign,
 } from '@harness-monorepo/contracts';
 
 // App
-import { COMPONENT_KINDS, SECTION_WIDTHS, SHOWCASE_LAYOUTS } from '../page.constants.js';
+import { COMPONENT_KINDS, SECTION_WIDTHS, SHOWCASE_LAYOUTS, TEXT_ALIGNS } from '../page.constants.js';
 
 /**
  * The shapes out, for Swagger. Each `implements` its contract type, so a field added to the wire
@@ -37,6 +38,8 @@ export class PublicComponentResponse implements PublicComponent {
   items!: PublicComponentItem[];
   @ApiProperty({ nullable: true, type: Number, description: 'How many across a grid draws.' })
   columns!: number | null;
+  @ApiProperty({ enum: TEXT_ALIGNS, nullable: true, description: 'Null is the kind’s own habit.' })
+  align!: TextAlign | null;
 }
 
 export class PublicSectionResponse implements PublicSection {
@@ -62,6 +65,7 @@ export class ComponentResponse implements StoreComponent {
   })
   items!: ComponentItem[];
   @ApiProperty({ nullable: true, type: Number }) columns!: number | null;
+  @ApiProperty({ enum: TEXT_ALIGNS, nullable: true }) align!: TextAlign | null;
   @ApiProperty({ description: 'Its place inside its band.' }) position!: number;
   @ApiProperty() isActive!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;

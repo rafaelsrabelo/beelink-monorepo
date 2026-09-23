@@ -104,6 +104,8 @@ export const en: WebMessages = {
     AUTH_TOKEN_INVALID: "This link expired or was already used. Ask for a new one.",
     AUTH_REFRESH_REUSED: "Your session was ended for safety. Sign in again.",
     AUTH_UNAUTHENTICATED: "Sign in to continue.",
+    COMPONENT_REQUIRED: "The product list cannot be deleted. Hide the band instead.",
+    COMPONENT_KIND_SINGLETON: "The shop already has a block of that kind.",
     STORE_NOT_FOUND: "This shop no longer exists.",
     STORE_SLUG_TAKEN: "This address is already taken. Pick another one.",
     STORE_SLUG_RESERVED: "This address is reserved by the system. Pick another one.",

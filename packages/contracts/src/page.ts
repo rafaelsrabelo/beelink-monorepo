@@ -52,6 +52,16 @@ export type SectionWidth = "FULL" | "CONTAINED";
 export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
 
 /**
+ * Where a component's words sit. Read on `HEADING` and `TEXT`.
+ *
+ * Null is "as this kind always drew it" — a heading centred, a paragraph at the left — and not a
+ * fourth alignment. A column default would have had to pick one of the two and be wrong for the
+ * other kind; null lets the renderer keep each block's own habit until the shopkeeper says
+ * otherwise, and the day they do, the value is theirs.
+ */
+export type TextAlign = "LEFT" | "CENTER" | "RIGHT";
+
+/**
  * Where a component sends the visitor.
  *
  * This is the piece the first attempt lacked, and the reason it was removed. The old
@@ -148,6 +158,7 @@ export interface PublicComponent {
   items: PublicComponentItem[];
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */
   columns: number | null;
+  align: TextAlign | null;
 }
 
 /** A component as its owner edits it. Slugs on the wire; the uuids stay in the database. */
@@ -161,6 +172,7 @@ export interface StoreComponent {
   layout: ShowcaseLayout;
   items: ComponentItem[];
   columns: number | null;
+  align: TextAlign | null;
   /** Its place inside its section. The section's own place is the section's. */
   position: number;
   isActive: boolean;
@@ -219,6 +231,7 @@ export interface CreateComponentPayload {
   layout?: ShowcaseLayout;
   items?: ComponentItem[];
   columns?: number | null;
+  align?: TextAlign | null;
   isActive?: boolean;
 }
 

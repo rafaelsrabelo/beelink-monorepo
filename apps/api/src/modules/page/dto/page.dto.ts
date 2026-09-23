@@ -23,6 +23,7 @@ import type {
   CreateSectionPayload,
   SectionWidth,
   ShowcaseLayout,
+  TextAlign,
   UpdateComponentPayload,
   UpdateSectionPayload,
 } from '@harness-monorepo/contracts';
@@ -38,6 +39,7 @@ import {
   HEX_COLOUR,
   SECTION_WIDTHS,
   SHOWCASE_LAYOUTS,
+  TEXT_ALIGNS,
 } from '../page.constants.js';
 
 /**
@@ -87,6 +89,11 @@ export class ComponentDto implements CreateComponentPayload {
   @Max(COMPONENT_MAX_COLUMNS)
   @Type(() => Number)
   columns?: number | null;
+
+  @ApiPropertyOptional({ enum: TEXT_ALIGNS, nullable: true, description: 'Null is the kind’s own habit.' })
+  @IsOptional()
+  @IsIn(TEXT_ALIGNS)
+  align?: TextAlign | null;
 
   @ApiPropertyOptional()
   @IsOptional()

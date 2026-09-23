@@ -19,6 +19,7 @@ import {
   WhatsAppIcon,
   YouTubeIcon,
 } from "../store/store-brand-icons"
+import { StorefrontAnnouncement } from "./storefront-announcement"
 import { StorefrontSearch } from "./storefront-search"
 
 /** The four colours a shop dresses its window in. They are data, chosen by the shopkeeper. */
@@ -41,8 +42,10 @@ export interface StorefrontLink {
 /** The strip above the header: what the shop is shouting this week, on each side of the page. */
 export interface StorefrontAnnouncement {
   left: string
-  /** Dropped on a phone rather than wrapped: two lines of small caps is a banner, not a strip. */
+  /** Joined to the left with a dot: the strip scrolls one sentence, and this is its second half. */
   right?: string
+  /** The strip's own colour, which is its band's. Null is the page's ink, as it always was. */
+  background?: string | null
 }
 
 /** One column of the footer. The screen builds them, because a block knows no address. */
@@ -275,15 +278,11 @@ export function StorefrontWindow({
     <div style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
-        <div
-          className="w-full text-[11px] font-medium tracking-wide uppercase"
-          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-on-text)" }}
-        >
-          <div className={cn(BAND, "flex h-8 items-center justify-center gap-6 sm:justify-between")}>
-            <p>{announcement.left}</p>
-            {announcement.right ? <p className="hidden sm:block">{announcement.right}</p> : null}
-          </div>
-        </div>
+        <StorefrontAnnouncement
+          left={announcement.left}
+          {...(announcement.right ? { right: announcement.right } : {})}
+          background={announcement.background ?? null}
+        />
       ) : null}
 
       {/*

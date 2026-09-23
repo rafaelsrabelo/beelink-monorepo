@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 // Block
+import { sampleColorPresets as presets } from "../store/store.fixtures"
 import { ComponentForm, type ComponentFormValues } from "./component-form"
 
 const empty: ComponentFormValues = {
@@ -11,6 +12,8 @@ const empty: ComponentFormValues = {
   body: "",
   layout: "FULL",
   columns: 0,
+  align: "CENTER",
+  background: "",
   slides: [],
   benefits: [],
 }
@@ -22,6 +25,7 @@ const meta = {
   args: {
     value: empty,
     onChange: () => {},
+    pageBackground: presets[0]!.colors.background,
     categories: [
       { id: "cat-1", name: "Blusas" },
       { id: "cat-2", name: "Calças" },
@@ -108,4 +112,14 @@ export const Vantagens: Story = {
 /** A grade de categorias ganha o seu ajuste: quantas colunas. */
 export const Categorias: Story = {
   args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", columns: 3 } },
+}
+
+/**
+ * A barra de aviso: as palavras, e a cor da faixa dela — que é a cor da barra, porque a barra é o
+ * único componente cuja faixa não é desenhada onde está. Na loja, esse texto rola na horizontal.
+ */
+export const BarraDeAviso: Story = {
+  args: {
+    value: { ...empty, kind: "ANNOUNCEMENT", title: "Frete grátis acima de R$ 199", subtitle: "Só até domingo", background: presets[2]!.colors.primary },
+  },
 }

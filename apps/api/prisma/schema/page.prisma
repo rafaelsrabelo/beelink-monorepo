@@ -34,6 +34,15 @@ enum SectionWidth {
   CONTAINED
 }
 
+/// Where a component's words sit. Read on HEADING and TEXT. The column is nullable, and null is
+/// not a fourth value: it is "as this kind always drew it" — a heading centred, a paragraph at the
+/// left — which no single column default could say for both.
+enum TextAlign {
+  LEFT
+  CENTER
+  RIGHT
+}
+
 /// One band of a shop's landing page.
 ///
 /// The level the shopkeeper asked for in their own words — "seção tem atributos (cores, ordenação)
@@ -101,6 +110,9 @@ model StoreComponent {
 
   /// How many across a grid draws. Read on CATEGORIES and PRODUCTS.
   columns Int?
+
+  /// Read on HEADING and TEXT. Null keeps the kind's own habit.
+  align TextAlign?
 
   /// A banner's slides, or a benefits band's rows. Empty on every other kind.
   ///

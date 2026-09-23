@@ -104,6 +104,8 @@ export const ptBR: WebMessages = {
     AUTH_TOKEN_INVALID: "Este link expirou ou já foi usado. Peça um novo.",
     AUTH_REFRESH_REUSED: "Sua sessão foi encerrada por segurança. Entre de novo.",
     AUTH_UNAUTHENTICATED: "Faça login para continuar.",
+    COMPONENT_REQUIRED: "A lista de produtos não pode ser apagada. Esconda a faixa em vez disso.",
+    COMPONENT_KIND_SINGLETON: "A loja já tem um bloco desse tipo.",
     STORE_NOT_FOUND: "Esta loja não existe mais.",
     STORE_SLUG_TAKEN: "Este endereço já está em uso. Escolha outro.",
     STORE_SLUG_RESERVED: "Este endereço é reservado pelo sistema. Escolha outro.",

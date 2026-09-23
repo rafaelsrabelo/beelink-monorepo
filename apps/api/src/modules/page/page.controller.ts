@@ -94,6 +94,7 @@ export class SectionsController {
   @HttpCode(204)
   @ApiOperation({ summary: 'The band and everything in it. The pictures it used are not deleted' })
   @ApiNoContentResponse()
+  @ApiBadRequestResponse({ description: 'COMPONENT_REQUIRED — the band holds the shop’s only product list' })
   remove(
     @Param('storeSlug') storeSlug: string,
     @Param('sectionId') sectionId: string,
@@ -164,6 +165,7 @@ export class ComponentsController {
   @HttpCode(204)
   @ApiOperation({ summary: 'Remove a component. The band it was in stays' })
   @ApiNoContentResponse()
+  @ApiBadRequestResponse({ description: 'COMPONENT_REQUIRED — the shop’s only product list' })
   remove(
     @Param('storeSlug') storeSlug: string,
     @Param('componentId') componentId: string,

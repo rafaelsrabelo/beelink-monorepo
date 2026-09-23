@@ -64,7 +64,7 @@ export interface StorefrontFrameProps {
    */
   colors?: PublicStore["colors"]
   /** The strip above the masthead. Built by the page from the same list the blocks come from. */
-  announcement?: { left: string; right?: string }
+  announcement?: { left: string; right?: string; background?: string | null }
   searchSlot?: ReactNode
   /**
    * How every injected link is drawn. The preview passes one that renders no `href`, so nothing

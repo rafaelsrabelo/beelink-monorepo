@@ -27,3 +27,8 @@ export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 /** Edge to edge, or inside the shop's measure. An attribute of the band, never of what is in it. */
 export const SECTION_WIDTHS = ["FULL", "CONTAINED"] as const
 export type SectionWidth = (typeof SECTION_WIDTHS)[number]
+
+// Kept next to the other restated shapes, defined in `text-align.tsx` — see there for why that
+// file is what it is.
+export { TEXT_ALIGNS, defaultAlignOf } from "./text-align"
+export type { TextAlign } from "./text-align"
