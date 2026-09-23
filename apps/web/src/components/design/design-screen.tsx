@@ -160,7 +160,7 @@ export function DesignScreen({ store, categories, bands, year, messages }: Desig
           onToggle={(id, isActive) => draft.patchComponent(id, { isActive })}
           onLayoutChange={(id, layout) => draft.patchComponent(id, { layout })}
           onDelete={(id) => {
-            const component = componentsOf(rows).find((candidate) => candidate.id === id)
+            const component = saved.flatMap((section) => section.components).find((c) => c.id === id)
             if (component) {
               setPendingDelete({ level: "component", id, name: labelOf(component.kind, component.title, messages) })
             }

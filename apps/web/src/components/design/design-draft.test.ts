@@ -86,8 +86,8 @@ describe("changesOf — only what moved is written", () => {
     expect(changes.components).toEqual([])
   })
 
-  it("reports a band's own attributes apart from its components", () => {
-    const next = draft.map((row) => (row.id === "c" ? { ...row, background: "navy", isActive: false } : row))
+  it("reports a band's visibility apart from its components", () => {
+    const next = draft.map((row) => (row.id === "c" ? { ...row, isActive: false } : row))
 
     const changes = changesOf(next, saved)
 
@@ -144,6 +144,27 @@ describe("previewOf — what the shop window would be served", () => {
     const preview = previewOf(draft, saved)
 
     expect(preview[0]).toMatchObject({ width: "FULL", background: null })
+  })
+
+  /**
+   * Pinned from a live session: a band saved navy in its sheet kept drawing white in the preview,
+   * because the draft held a copy of the colour and is re-seeded only when a row arrives or
+   * leaves. What a sheet saves is read from the server on every render, never from the draft.
+   */
+  it("reads a band's colour and a component's words from the server, never from the draft", () => {
+    const later = saved.map((row) =>
+      row.id === "c"
+        ? section("c", [component("c1", { kind: "BENEFITS", title: "Por que comprar aqui" })], {
+            background: "navy",
+          })
+        : row,
+    )
+
+    const preview = previewOf(draft, later)
+
+    expect(preview[2]).toMatchObject({ background: "navy" })
+    expect(preview[2]!.components[0]).toMatchObject({ title: "Por que comprar aqui" })
+    expect(arrangementOf(draft, later)[2]).toMatchObject({ background: "navy" })
   })
 })
 

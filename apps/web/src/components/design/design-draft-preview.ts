@@ -23,6 +23,7 @@ import type { SectionDraft } from "./design-draft"
  * subtitle, a paragraph, the items — because those are not what dragging changes.
  */
 export function previewOf(rows: readonly SectionDraft[], saved: readonly Section[]): PublicSection[] {
+  const savedSections = new Map(saved.map((section) => [section.id, section]))
   const savedComponents = new Map(
     saved.flatMap((section) => section.components.map((component) => [component.id, component])),
   )
@@ -31,8 +32,10 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
     .filter((row) => row.isActive)
     .map((row) => ({
       id: row.id,
-      width: row.width,
-      background: row.background,
+      // The band's own attributes come from the server and never from the draft: the band's sheet
+      // saves them straight there, and a copy held here would hide the save until a reload.
+      width: savedSections.get(row.id)?.width ?? "CONTAINED",
+      background: savedSections.get(row.id)?.background ?? null,
       components: row.components
         .filter((component) => component.isActive)
         .map((component) => {
@@ -41,7 +44,7 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
           return {
             id: component.id,
             kind: component.kind,
-            title: component.title,
+            title: was?.title ?? null,
             subtitle: was?.subtitle ?? null,
             body: was?.body ?? null,
             layout: component.layout,
@@ -78,26 +81,28 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
  * one rule that has to agree with the renderer is written once, in the app that owns both.
  */
 export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Section[]): ArrangementBand[] {
+  const savedSections = new Map(saved.map((section) => [section.id, section]))
   const savedComponents = new Map(
     saved.flatMap((section) => section.components.map((component) => [component.id, component])),
   )
 
   return rows.map((row) => ({
     id: row.id,
-    background: row.background,
+    background: savedSections.get(row.id)?.background ?? null,
     isActive: row.isActive,
     components: row.components.map((component) => {
       const was = savedComponents.get(component.id)
       const first = was?.kind === "BANNER" ? (was.items[0] as BannerSlide | undefined) : undefined
+      const title = was?.title ?? null
 
       return {
         id: component.id,
         kind: component.kind,
-        title: component.title,
+        title,
         imageUrl: first?.imageUrl ?? null,
         layout: component.layout,
         isActive: component.isActive,
-        empty: isEmptyComponent(component.kind, component.title, was?.body ?? null, was?.items ?? []),
+        empty: isEmptyComponent(component.kind, title, was?.body ?? null, was?.items ?? []),
       }
     }),
   }))

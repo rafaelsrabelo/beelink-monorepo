@@ -112,10 +112,7 @@ export function useDesignDraft(slug: string) {
       ...(changes.orderChanged ? [reorder.mutateAsync(changes.ids)] : []),
       ...changes.componentOrders.map((order) => reorderComponents.mutateAsync(order)),
       ...changes.sections.map((row) =>
-        updateSection.mutateAsync({
-          sectionId: row.id,
-          payload: { width: row.width, background: row.background, isActive: row.isActive },
-        }),
+        updateSection.mutateAsync({ sectionId: row.id, payload: { isActive: row.isActive } }),
       ),
       ...changes.components.map((component) =>
         updateComponent.mutateAsync({

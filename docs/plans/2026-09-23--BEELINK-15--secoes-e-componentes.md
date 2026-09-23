@@ -157,3 +157,10 @@ gestos num ponteiro só. O painel ao lado faz o nível de dentro com espaço par
 **A largura da faixa de vantagens nasce "ponta a ponta".** O componente pinta uma tira tingida de
 borda a borda e contém a lista por dentro, então é isso que a faixa dele é hoje. A capa honra o
 `width` da própria linha; todo o resto nasce contido.
+
+**O rascunho guarda só o que o arranjo muda.** Encontrado ao vivo: uma faixa salva em azul-marinho
+pelo sheet continuou branca no preview. O rascunho tinha uma cópia da cor, e só é re-semeado quando
+uma linha entra ou sai — então o que um sheet salva direto no servidor ficava escondido por uma
+cópia velha até recarregar. O rascunho passa a guardar ordem, visibilidade e tamanho, e nada mais;
+título, cor, largura e conteúdo são lidos do que o servidor tem, em toda renderização. O que o
+rascunho não guarda não envelhece.

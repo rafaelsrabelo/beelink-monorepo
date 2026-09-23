@@ -1,35 +1,31 @@
 // Types
-import type {
-  ComponentKind,
-  Section,
-  SectionWidth,
-  ShowcaseLayout,
-  StoreComponent,
-} from "@harness-monorepo/contracts"
+import type { ComponentKind, Section, ShowcaseLayout, StoreComponent } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 /**
  * One component as the editor holds it while the page is being arranged.
  *
  * A shape of its own and not the wire `StoreComponent`, because these are the only fields the
- * arrangement can change. A draft carrying the whole component would invite a screen to edit a
- * title here, which the component's own form does, and would make "what actually moved"
- * impossible to answer without comparing a dozen fields.
+ * arrangement can change. Everything a sheet saves straight to the server — a title, a paragraph,
+ * the slides — stays out of it on purpose, and the reason was measured: the draft is re-seeded
+ * only when a row arrives or leaves, so a colour saved while it held a copy of the colour sat
+ * under that stale copy until the page was reloaded. What the draft does not hold cannot go stale.
  */
 export interface ComponentDraft {
   id: string
   kind: ComponentKind
-  /** Null on a component that draws no heading of its own. */
-  title: string | null
   layout: ShowcaseLayout
   isActive: boolean
 }
 
-/** One band, and what is in it. The two levels the shopkeeper asked for, as the editor holds them. */
+/**
+ * One band, and what is in it. The two levels the shopkeeper asked for, as the editor holds them.
+ *
+ * No width and no colour here, for the reason `ComponentDraft` states: both are saved by the band's
+ * own sheet, and the projections read them from what the server holds.
+ */
 export interface SectionDraft {
   id: string
-  width: SectionWidth
-  background: string | null
   isActive: boolean
   components: ComponentDraft[]
 }
@@ -38,7 +34,6 @@ function toComponentDraft(component: StoreComponent): ComponentDraft {
   return {
     id: component.id,
     kind: component.kind,
-    title: component.title,
     layout: component.layout,
     isActive: component.isActive,
   }
@@ -47,8 +42,6 @@ function toComponentDraft(component: StoreComponent): ComponentDraft {
 export function toDraft(section: Section): SectionDraft {
   return {
     id: section.id,
-    width: section.width,
-    background: section.background,
     isActive: section.isActive,
     components: section.components.map(toComponentDraft),
   }
@@ -108,10 +101,7 @@ export function changesOf(rows: readonly SectionDraft[], saved: readonly Section
     sections: rows.filter((row) => {
       const was = savedSections.get(row.id)
 
-      return (
-        !!was &&
-        (was.width !== row.width || was.background !== row.background || was.isActive !== row.isActive)
-      )
+      return !!was && was.isActive !== row.isActive
     }),
     /** Per band, the new order of what is inside it — only where it changed. */
     componentOrders: rows
