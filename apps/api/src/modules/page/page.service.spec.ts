@@ -65,6 +65,8 @@ function build(
     sectionOfAnotherShop?: boolean
     /** The bands the shop has, when it is not the default pair. */
     owned?: { id: string }[]
+    /** Whether the band being deleted holds the product list. */
+    holdsRequired?: boolean
   } = {},
 ) {
   const createSection = vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
@@ -123,6 +125,7 @@ function build(
       aggregate: vi.fn().mockResolvedValue({ _max: { position: 0 } }),
       findMany: vi.fn().mockResolvedValue(found.owned ?? [{ id: COMPONENT }]),
       findFirst: vi.fn().mockResolvedValue(found.existing ?? null),
+      count: vi.fn().mockResolvedValue(found.holdsRequired ? 1 : 0),
       findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER' }),
     },
     $transaction: vi.fn().mockResolvedValue([]),
@@ -349,5 +352,37 @@ describe('PageService — an order is the whole list or nothing', () => {
       where: { id: 'component-2' },
       data: { position: 0 },
     });
+  });
+});
+
+describe('PageService — the product list cannot be deleted, at either level', () => {
+  /**
+   * The door a shop lost its shelves through: the component's row drew no bin, and the band's bin
+   * did not ask what was inside. The refusal names the reason and what to do instead.
+   */
+  it('refuses to delete the band that holds it, and deletes nothing', async () => {
+    const { service, prisma } = build({ holdsRequired: true });
+
+    await expect(service.removeSection('lessari', 'user-1', SECTION)).rejects.toMatchObject({
+      response: { errorCode: 'COMPONENT_REQUIRED' },
+    });
+    expect(prisma.storeSection.delete).not.toHaveBeenCalled();
+  });
+
+  it('refuses to delete the component itself', async () => {
+    const { service, prisma } = build({ kind: 'PRODUCTS' });
+
+    await expect(service.removeComponent('lessari', 'user-1', COMPONENT)).rejects.toMatchObject({
+      response: { errorCode: 'COMPONENT_REQUIRED' },
+    });
+    expect(prisma.storeComponent.delete).not.toHaveBeenCalled();
+  });
+
+  it('deletes a band that holds only what may go', async () => {
+    const { service, prisma } = build();
+
+    await service.removeSection('lessari', 'user-1', SECTION);
+
+    expect(prisma.storeSection.delete).toHaveBeenCalledWith({ where: { id: SECTION } });
   });
 });

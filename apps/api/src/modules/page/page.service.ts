@@ -110,10 +110,16 @@ export class PageService {
     return toSection(row);
   }
 
-  /** The band and everything in it. The pictures it used are not deleted. */
+  /**
+   * The band and everything in it. The pictures it used are not deleted.
+   *
+   * Unless "everything in it" includes the product list: then the band stays, and the answer says
+   * to hide it. A shop lost its shelves through this door before the check existed.
+   */
   async removeSection(storeSlug: string, userId: string, sectionId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.rules.ownedSection(storeId, sectionId);
+    await this.rules.refuseHoldingRequired(sectionId);
 
     await this.prisma.storeSection.delete({ where: { id: sectionId } });
   }
@@ -220,7 +226,8 @@ export class PageService {
 
   async removeComponent(storeSlug: string, userId: string, componentId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.rules.ownedComponent(storeId, componentId);
+    const current = await this.rules.ownedComponent(storeId, componentId);
+    this.rules.refuseRequired(current.kind);
 
     await this.prisma.storeComponent.delete({ where: { id: componentId } });
   }

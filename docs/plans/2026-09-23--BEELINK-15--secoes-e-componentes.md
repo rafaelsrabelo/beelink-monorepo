@@ -164,3 +164,33 @@ uma linha entra ou sai — então o que um sheet salva direto no servidor ficava
 cópia velha até recarregar. O rascunho passa a guardar ordem, visibilidade e tamanho, e nada mais;
 título, cor, largura e conteúdo são lidos do que o servidor tem, em toda renderização. O que o
 rascunho não guarda não envelhece.
+
+---
+
+## Adendo 2 — a lista de produtos não pode sumir, em nenhum dos dois níveis
+
+Relatado: "tenho produtos criados, mas não aparece na listagem do design". A loja tinha três
+produtos ativos e **nenhum componente `PRODUCTS`**. A linha do componente não desenhava lixeira,
+mas a lixeira da **faixa** não perguntava o que havia dentro — e o menu "Adicionar bloco" não
+oferecia a lista de volta. Três portas, uma regra faltando.
+
+**A regra vai para a API, nos dois níveis.** `REQUIRED_COMPONENT_KINDS = ['PRODUCTS']`: apagar o
+componente responde `400 COMPONENT_REQUIRED`; apagar a faixa que o contém, também. A UI espelha —
+sem lixeira na faixa que segura a lista — mas a UI não é a tranca.
+
+**Uma loja nova nasce com a página.** `StoresService.create` passou a semear, na mesma transação,
+a faixa de vantagens (derivada das formas de pagamento, escondida se não houver nenhuma) e a faixa
+de produtos — na ordem que a página sempre desenhou. Antes desta mudança uma loja criada depois
+da migração de seções nascia **sem faixa nenhuma** e desenhava nada em `/<slug>`.
+
+**Quem perdeu, recebe de volta.** `20260923010000_every_shop_lists_its_products` insere a faixa
+de produtos, por último, em toda loja que não tem o componente. Idempotente. Subir a faixa é um
+arrasto.
+
+**O menu oferece a lista enquanto a loja não tem uma.** Some no instante em que ela existe, como
+todo singleton. É o caminho de volta que não exige abrir o banco.
+
+**O rascunho só solta a linha depois que o servidor soltou.** Antes, o painel apagava a faixa da
+tela antes da resposta; com a API podendo recusar, isso deixaria o dono arrumando uma página com
+uma faixa a menos do que a loja tem.
+

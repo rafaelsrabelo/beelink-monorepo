@@ -246,4 +246,12 @@ export type PageErrorCode =
    * so the one reason to change a kind no longer exists, and every other change of kind is a
    * different shape with different fields.
    */
-  | "COMPONENT_KIND_IMMUTABLE";
+  | "COMPONENT_KIND_IMMUTABLE"
+  /**
+   * A delete would take a component the shop cannot be without — the product list — whether it
+   * names the component or the section holding it. Hiding is the answer there.
+   *
+   * Added after a shop lost its shelves exactly this way: the component's own row drew no bin,
+   * and the section's bin took the component with it. The UI is not the lock; this is.
+   */
+  | "COMPONENT_REQUIRED";

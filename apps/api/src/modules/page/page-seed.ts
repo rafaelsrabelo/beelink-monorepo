@@ -1,0 +1,61 @@
+// Types
+import type { BenefitRow, ComponentKind, PaymentMethod, SectionWidth } from '@harness-monorepo/contracts';
+
+/**
+ * A promise as it is written to the JSON column.
+ *
+ * A type literal restating `BenefitRow`, and not the interface itself: Prisma's `InputJsonValue`
+ * wants an index signature, which an interface never has and a type literal implicitly does. The
+ * `satisfies` on the table below is what keeps the two shapes from drifting apart.
+ */
+type PromiseRow = { id: string; icon: string; title: string; detail: string };
+
+/** One band of the page a new shop opens with, ready for `storeSection.create`. */
+export interface SeededBand {
+  section: { width: SectionWidth; position: number; isActive: boolean };
+  components: { kind: ComponentKind; items: PromiseRow[]; position: number; isActive: boolean }[];
+}
+
+/**
+ * What each payment method promises, in the shop's own words.
+ *
+ * Written in pt-BR, and that is a decision rather than an oversight — the same one the migration
+ * that first derived this band took: the product's locale is pt-BR, this band had no stored copy,
+ * and the alternative is a blank band on a shop's first day. A shopkeeper who wants other words
+ * types them, which they could not do before the band was theirs.
+ */
+const PROMISE_OF: Record<PaymentMethod, PromiseRow> = {
+  MONEY: { id: 'money', icon: 'banknote', title: 'Dinheiro', detail: 'Na entrega' },
+  PIX: { id: 'pix', icon: 'qr-code', title: 'PIX', detail: 'Transferência na hora' },
+  CREDIT_CARD: { id: 'credit', icon: 'credit-card', title: 'Cartão de crédito', detail: 'Principais bandeiras' },
+  DEBIT_CARD: { id: 'debit', icon: 'wallet', title: 'Cartão de débito', detail: 'Débito na conta' },
+} satisfies Record<PaymentMethod, BenefitRow>;
+
+/**
+ * The landing page a shop opens with.
+ *
+ * Seeded at creation and not left to the first visit to design mode, because a shop with no
+ * `PRODUCTS` band draws nothing at `/<slug>` — and the reported symptom of exactly that state was
+ * "tenho produtos criados, mas não aparece". Two bands, in the order the page always drew them:
+ * the promises band, from the payment methods the shop opened with — the column's default, since
+ * the create form does not ask — then the shelves.
+ *
+ * The promises band is hidden rather than skipped when there is nothing to promise: a band with
+ * `[]` is a blank strip on the front page, and a hidden one is a band the shopkeeper fills in and
+ * shows where it always was.
+ */
+export function defaultPage(paymentMethods: readonly PaymentMethod[]): SeededBand[] {
+  const promises = paymentMethods.map((method) => PROMISE_OF[method]);
+
+  return [
+    {
+      // Full width: the band paints a tinted strip edge to edge and contains its list inside.
+      section: { width: 'FULL', position: 0, isActive: promises.length > 0 },
+      components: [{ kind: 'BENEFITS', items: promises, position: 0, isActive: true }],
+    },
+    {
+      section: { width: 'CONTAINED', position: 1, isActive: true },
+      components: [{ kind: 'PRODUCTS', items: [], position: 0, isActive: true }],
+    },
+  ];
+}

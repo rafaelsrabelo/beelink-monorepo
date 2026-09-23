@@ -100,6 +100,18 @@ describe("BandArrangement", () => {
     expect(screen.queryByRole("button", { name: "Excluir bloco: Lista de produtos" })).not.toBeInTheDocument()
   })
 
+  /**
+   * The bigger door. The product list's row draws no bin, and the band holding it must not either:
+   * a shop lost its shelves through exactly this bin before the check existed.
+   */
+  it("draws no bin on the band that holds the product list", () => {
+    renderBands()
+
+    expect(screen.getByRole("button", { name: "Excluir faixa: Faixa 1" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Excluir faixa: Faixa 2" })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Esconder da loja: Faixa 2" })).toBeInTheDocument()
+  })
+
   it("opens a component's own fields from its row", async () => {
     const user = userEvent.setup()
     const { onEdit } = renderBands()

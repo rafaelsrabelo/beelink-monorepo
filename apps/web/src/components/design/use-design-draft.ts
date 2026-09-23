@@ -132,24 +132,29 @@ export function useDesignDraft(slug: string) {
   }
 
   /**
-   * Deleted for good, and immediately — not held in the draft until Publish. Publish sends an
+   * Deleted for good, and at once — not held in the draft until Publish. Publish sends an
    * arrangement, and a row that is gone has no position to send; holding the delete would also
    * mean a reload could bring back something the owner watched disappear.
    *
-   * The draft drops it too, or the preview keeps drawing what the shop no longer has.
+   * The draft drops it once the server has, and not before: the API refuses to delete what the
+   * shop cannot be without, and a draft that had already dropped the row would then be arranging a
+   * page with a band the shop still has. The round trip is the cost, and it is one.
    */
   function removeBand(id: string) {
-    setDraft((current) => (current ? current.filter((row) => row.id !== id) : current))
-    removeSection.mutate(id)
+    removeSection.mutate(id, {
+      onSuccess: () => setDraft((current) => (current ? current.filter((row) => row.id !== id) : current)),
+    })
   }
 
   function removeRow(id: string) {
-    setDraft((current) =>
-      current
-        ? current.map((row) => ({ ...row, components: row.components.filter((c) => c.id !== id) }))
-        : current,
-    )
-    removeComponent.mutate(id)
+    removeComponent.mutate(id, {
+      onSuccess: () =>
+        setDraft((current) =>
+          current
+            ? current.map((row) => ({ ...row, components: row.components.filter((c) => c.id !== id) }))
+            : current,
+        ),
+    })
   }
 
   return {

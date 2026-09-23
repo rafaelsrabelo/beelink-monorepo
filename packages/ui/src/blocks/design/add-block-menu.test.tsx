@@ -49,6 +49,24 @@ describe("AddBlockMenu", () => {
     expect(screen.getByRole("menuitem", { name: "Parágrafo" })).toBeInTheDocument()
   })
 
+  /**
+   * A shop should never lack its product list, and one did. This is the way back for a shop that
+   * somehow lost it — and it disappears the moment the list exists, like every other singleton.
+   */
+  it("offers the product list only while the shop has none", async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(<AddBlockMenu onAdd={vi.fn()} />)
+
+    await open(user)
+    expect(screen.getByRole("menuitem", { name: "Lista de produtos" })).toBeInTheDocument()
+    unmount()
+
+    render(<AddBlockMenu onAdd={vi.fn()} taken={["PRODUCTS"]} />)
+
+    await open(user)
+    expect(screen.queryByRole("menuitem", { name: "Lista de produtos" })).not.toBeInTheDocument()
+  })
+
   it("stops offering a block the shop already has one of", async () => {
     const user = userEvent.setup()
     render(<AddBlockMenu onAdd={vi.fn()} taken={["ANNOUNCEMENT"]} />)
@@ -72,7 +90,7 @@ describe("AddBlockMenu", () => {
 
   it("draws no control at all when there is nothing left to add", () => {
     const { container } = render(
-      <AddBlockMenu onAdd={vi.fn()} taken={["BANNER", "HEADING", "TEXT", "BENEFITS", "CATEGORIES", "ANNOUNCEMENT"]} />,
+      <AddBlockMenu onAdd={vi.fn()} taken={["BANNER", "HEADING", "TEXT", "BENEFITS", "CATEGORIES", "ANNOUNCEMENT", "PRODUCTS"]} />,
     )
 
     expect(container).toBeEmptyDOMElement()

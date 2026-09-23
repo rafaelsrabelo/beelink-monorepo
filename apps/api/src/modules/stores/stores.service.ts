@@ -8,6 +8,7 @@ import type { StoreRow } from './store.mapper.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { defaultPage } from '../page/page-seed.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
 import {
@@ -52,35 +53,61 @@ export class StoresService {
     const point = await this.geocoder.locate(toWireAddress(address));
 
     try {
-      const row = await this.prisma.store.create({
-        data: {
-          ownerId,
-          slug: dto.slug,
-          name: dto.name,
-          type: dto.type,
-          description: dto.description ?? null,
-          logoUrl: dto.logoUrl ?? null,
-          categoryId: dto.categoryId ?? null,
-          // Omitted colours mean the platform theme, which is the column default — so the four
-          // fields are left out of the insert entirely rather than repeated here as literals.
-          ...(dto.colors
-            ? {
-                colorBackground: dto.colors.background,
-                colorPrimary: dto.colors.primary,
-                colorFooter: dto.colors.footer,
-                colorHeader: dto.colors.header,
-              }
-            : {}),
-          whatsappPhone: dto.socialNetworks.whatsapp,
-          instagram: dto.socialNetworks.instagram ?? null,
-          tiktok: dto.socialNetworks.tiktok ?? null,
-          spotify: dto.socialNetworks.spotify ?? null,
-          youtube: dto.socialNetworks.youtube ?? null,
-          ...address,
-          latitude: point?.latitude ?? null,
-          longitude: point?.longitude ?? null,
-        },
-        include: storeInclude,
+      /*
+        The shop and its landing page, in one transaction.
+
+        The page is seeded here and not on the first visit to design mode: a shop with no products
+        band draws nothing at `/<slug>`, and the only report of that state read "tenho produtos
+        criados, mas não aparece". A component carries its shop's id beside its band's, so the bands
+        are written after the row exists rather than nested inside its create.
+      */
+      const row = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.store.create({
+          // The payment methods are read back rather than taken from the body: the create form
+          // does not ask for them, so a new shop opens with the column's default.
+          select: { id: true, paymentMethods: true },
+          data: {
+            ownerId,
+            slug: dto.slug,
+            name: dto.name,
+            type: dto.type,
+            description: dto.description ?? null,
+            logoUrl: dto.logoUrl ?? null,
+            categoryId: dto.categoryId ?? null,
+            // Omitted colours mean the platform theme, which is the column default — so the four
+            // fields are left out of the insert entirely rather than repeated here as literals.
+            ...(dto.colors
+              ? {
+                  colorBackground: dto.colors.background,
+                  colorPrimary: dto.colors.primary,
+                  colorFooter: dto.colors.footer,
+                  colorHeader: dto.colors.header,
+                }
+              : {}),
+            whatsappPhone: dto.socialNetworks.whatsapp,
+            instagram: dto.socialNetworks.instagram ?? null,
+            tiktok: dto.socialNetworks.tiktok ?? null,
+            spotify: dto.socialNetworks.spotify ?? null,
+            youtube: dto.socialNetworks.youtube ?? null,
+            ...address,
+            latitude: point?.latitude ?? null,
+            longitude: point?.longitude ?? null,
+          },
+        });
+
+        for (const band of defaultPage(created.paymentMethods)) {
+          await tx.storeSection.create({
+            data: {
+              storeId: created.id,
+              ...band.section,
+              components: {
+                create: band.components.map((component) => ({ storeId: created.id, ...component })),
+              },
+            },
+          });
+        }
+
+        return tx.store.findUniqueOrThrow({ where: { id: created.id }, include: storeInclude });
       });
 
       return toStore(row);

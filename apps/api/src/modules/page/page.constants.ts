@@ -35,6 +35,16 @@ export const SECTION_WIDTHS = ['FULL', 'CONTAINED'] as const satisfies readonly 
 export const SINGLETON_COMPONENT_KINDS = ['ANNOUNCEMENT', 'PRODUCTS'] as const satisfies readonly ComponentKind[];
 
 /**
+ * The kinds a shop cannot be without, at either level: the component may not be deleted, and
+ * neither may the section holding it. Hiding is what exists for "not now".
+ *
+ * A landing page without what the shop sells is not an arrangement anyone wants, and a shop
+ * reached it: the component's row drew no bin, the section's bin did not ask what was inside, and
+ * the menu had no way to put the shelves back. Three products existed and none appeared.
+ */
+export const REQUIRED_COMPONENT_KINDS = ['PRODUCTS'] as const satisfies readonly ComponentKind[];
+
+/**
  * Where a slide may point. See `ComponentTarget` for why two of the four carry an id.
  *
  * `satisfies readonly ComponentTarget[]` does not catch a missing value — a subset satisfies it

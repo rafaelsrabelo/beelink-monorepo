@@ -60,7 +60,7 @@ export interface ArrangementItem {
  * screen of its own, so the panel offered an eye and no bin and the owner asked for a bin. One
  * place to make a thing is one place to delete it.
  */
-function canDelete(kind: ComponentKind): boolean {
+export function canDelete(kind: ComponentKind): boolean {
   return kind !== "PRODUCTS"
 }
 

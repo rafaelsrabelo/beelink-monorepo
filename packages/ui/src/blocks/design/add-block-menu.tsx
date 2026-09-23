@@ -5,6 +5,7 @@ import {
   BadgeCheckIcon,
   HeadingIcon,
   ImageIcon,
+  LayoutGridIcon,
   MegaphoneIcon,
   PlusIcon,
   TagsIcon,
@@ -36,7 +37,11 @@ import type { ComponentKind } from "./design-types"
  * and a top banner could exist in design mode and be missing from its own list, because there were
  * two screens for one thing. Every kind is created empty and filled in place.
  *
- * The product rails are missing because there is exactly one of them and it already exists.
+ * The product list is offered only while the shop has none — `taken` removes it the moment one
+ * exists. A shop should never lack it, and one did: the band holding it was deleted through a bin
+ * that did not ask what was inside, and this menu was the only place to put it back and could not.
+ * The API refuses that delete now; this entry is what makes a shop that somehow lost it whole
+ * again without anyone opening a database.
  *
  * A heading and a paragraph are two entries and not one with a mode, which is what was asked for:
  * "ao adicionar bloco de texto, tem que escolher se é título, subtítulo ou parágrafo". A form with
@@ -49,6 +54,7 @@ const ADDABLE = [
   { kind: "BENEFITS", icon: BadgeCheckIcon },
   { kind: "CATEGORIES", icon: TagsIcon },
   { kind: "ANNOUNCEMENT", icon: MegaphoneIcon },
+  { kind: "PRODUCTS", icon: LayoutGridIcon },
 ] as const satisfies readonly { kind: ComponentKind; icon: typeof TypeIcon }[]
 
 export interface AddBlockMenuProps {

@@ -7,7 +7,7 @@ import type { ComponentKind, PageErrorCode } from '@harness-monorepo/contracts';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { componentItemsFor } from './component-items.schema.js';
-import { SINGLETON_COMPONENT_KINDS } from './page.constants.js';
+import { REQUIRED_COMPONENT_KINDS, SINGLETON_COMPONENT_KINDS } from './page.constants.js';
 
 /** Keeps every code this module answers inside the contract's union. */
 export function pageError(errorCode: PageErrorCode, message: string): { errorCode: PageErrorCode; message: string } {
@@ -55,6 +55,33 @@ export class PageRules {
     if (existing) {
       throw new ConflictException(
         pageError('COMPONENT_KIND_SINGLETON', 'Esta loja já tem um componente deste tipo.'),
+      );
+    }
+  }
+
+  /**
+   * A component the shop cannot be without is not deleted; it is hidden.
+   *
+   * Stated here and not only in the panel, because the panel is not the lock: it already drew no
+   * bin on the product list's own row, and the shelves were deleted anyway — through the bin on
+   * the section holding them. The two checks below are the same rule at the two levels.
+   */
+  refuseRequired(kind: ComponentKind): void {
+    if (!(REQUIRED_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) return;
+
+    throw new BadRequestException(
+      pageError('COMPONENT_REQUIRED', 'A lista de produtos não pode ser apagada. Esconda a faixa.'),
+    );
+  }
+
+  async refuseHoldingRequired(sectionId: string): Promise<void> {
+    const held = await this.prisma.storeComponent.count({
+      where: { sectionId, kind: { in: [...REQUIRED_COMPONENT_KINDS] } },
+    });
+
+    if (held > 0) {
+      throw new BadRequestException(
+        pageError('COMPONENT_REQUIRED', 'Esta faixa tem a lista de produtos, que não pode ser apagada. Esconda a faixa.'),
       );
     }
   }
