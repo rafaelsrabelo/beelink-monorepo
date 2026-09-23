@@ -27,6 +27,24 @@ describe("DesignPreview", () => {
     expect(screen.getByText("Vitrine")).toBeInTheDocument()
   })
 
+  /**
+   * The chrome the editor draws over the shop is painted by the same transform, so it needs the
+   * number to undo it. Published as data rather than measured a second time — two measurements of
+   * one thing is how they drift.
+   */
+  it("publishes its scale as a custom property on the scaled element", () => {
+    const { container } = render(
+      <DesignPreview>
+        <p>loja</p>
+      </DesignPreview>,
+    )
+
+    const surface = container.querySelector<HTMLElement>("[style*='scale']")
+
+    expect(surface).not.toBeNull()
+    expect(surface!.style.getPropertyValue("--design-scale")).not.toBe("")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <DesignPreview>

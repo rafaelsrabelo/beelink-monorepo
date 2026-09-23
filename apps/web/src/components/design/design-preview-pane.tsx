@@ -8,6 +8,7 @@ import type { PublicProductCategory, PublicSection, PublicStore } from "@harness
 
 // UI
 import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
+import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/design-block-placeholder"
 import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
@@ -19,7 +20,7 @@ import type { HomeBand } from "@/lib/storefront-data"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
-import { labelOf } from "./design-draft"
+import { isEmptyComponent, labelOf } from "./design-draft"
 
 export interface DesignPreviewPaneProps {
   store: PublicStore
@@ -35,6 +36,8 @@ export interface DesignPreviewPaneProps {
   onReorder: (ids: string[]) => void
   /** Opens a component's fields. The preview is the second way in; the panel's row is the first. */
   onEdit: (componentId: string) => void
+  /** The component whose form is open, drawn as selected here too. */
+  selectedId?: string | null
   messages: UiMessages
 }
 
@@ -69,6 +72,7 @@ export function DesignPreviewPane({
   orderedIds,
   onReorder,
   onEdit,
+  selectedId = null,
   messages,
 }: DesignPreviewPaneProps) {
   const routes = storefrontRoutes(store)
@@ -125,15 +129,32 @@ export function DesignPreviewPane({
                     {band}
                   </DesignHandle>
                 )}
-                renderBlock={(component, block) => (
-                  <DesignEditTag
-                    label={labelOf(component.kind, component.title, messages)}
-                    onEdit={() => onEdit(component.id)}
-                    messages={messages}
-                  >
-                    {block}
-                  </DesignEditTag>
-                )}
+                renderBlock={(component, block) => {
+                  const label = labelOf(component.kind, component.title, messages)
+                  // The one rule the renderer already answers, asked here so the page can hold a
+                  // place for a block the shop window would draw nothing for.
+                  const empty = isEmptyComponent(
+                    component.kind,
+                    component.title,
+                    component.body,
+                    component.items,
+                  )
+
+                  return (
+                    <DesignEditTag
+                      label={label}
+                      selected={component.id === selectedId}
+                      onEdit={() => onEdit(component.id)}
+                      messages={messages}
+                    >
+                      {empty ? (
+                        <DesignBlockPlaceholder kind={component.kind} label={label} messages={messages} />
+                      ) : (
+                        block
+                      )}
+                    </DesignEditTag>
+                  )
+                }}
                 messages={messages}
               />
             }

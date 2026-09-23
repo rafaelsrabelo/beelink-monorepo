@@ -19,7 +19,7 @@ function Rail() {
 }
 
 const meta = {
-  title: "Blocos/Vitrine/Faixa",
+  title: "Blocos/Vitrine/Faixa/Título",
   component: StorefrontSection,
   parameters: { layout: "padded" },
   args: {

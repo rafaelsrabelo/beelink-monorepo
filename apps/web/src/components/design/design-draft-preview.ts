@@ -109,6 +109,8 @@ export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Sec
         kind: component.kind,
         title,
         imageUrl: first?.imageUrl ?? null,
+        // Pictures, not items: the row asks so it can drop a control that a carousel ignores.
+        slides: was?.kind === "BANNER" ? (was.items as BannerSlide[]).filter((s) => s.imageUrl).length : undefined,
         layout: component.layout,
         isActive: component.isActive,
         deletable: component.kind !== "PRODUCTS" || productLists > 1,

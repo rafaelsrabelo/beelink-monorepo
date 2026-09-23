@@ -4,7 +4,7 @@
 import { useState } from "react"
 
 // Types
-import type { PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
+import type { ComponentKind, PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
 import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete"
@@ -15,11 +15,14 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { HomeBand } from "@/lib/storefront-data"
-import { useCreateSection } from "@/services/page/page-hooks"
+import { useCreateComponent, useCreateSection } from "@/services/page/page-hooks"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
 import { BandEditor } from "./band-editor"
 import { ComponentEditor } from "./component-editor"
 import { DesignPanel } from "./design-panel"
+import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
+
+// App
 import { DesignPreviewPane } from "./design-preview-pane"
 import { applyComponentOrder, applyOrder, componentsOf, labelOf, orderedIdsOf } from "./design-draft"
 import { arrangementOf, previewOf } from "./design-draft-preview"
@@ -65,6 +68,8 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
   const presets = useStoreColorPresets()
   const saveColors = useUpdateStoreColors(slug)
   const addSection = useCreateSection(slug)
+  const addToBand = useCreateComponent(slug)
+
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
@@ -79,6 +84,16 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
   const paletteChanged = COLOUR_KEYS.some((key) => palette[key] !== store.colors[key])
 
   const { rows, saved } = draft
+
+  // The two the shop may only have one of, and the two a page of this kind cannot hold. Computed
+  // once because the gallery is now offered from two places — the top of the panel, and each
+  // band's foot — and a kind refused in one and offered in the other would be a bug with no
+  // symptom until the API answered 409.
+  const unavailableKinds: ComponentKind[] =
+    store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]
+  const takenKinds = componentsOf(rows)
+    .map((component) => component.kind)
+    .filter((kind) => kind === "ANNOUNCEMENT" || kind === "PRODUCTS")
   const bandName = (id: string) =>
     format(text.bandNumber, { position: String(rows.findIndex((row) => row.id === id) + 1) })
 
@@ -94,19 +109,24 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
         </div>
 
         <div className="flex items-center gap-2">
-          {draft.dirty ? <Badge variant="outline">{text.unpublished}</Badge> : null}
-          {draft.dirty ? (
+          {/*
+            `changed` and not `dirty`: the badge answers the diff against the server, so moving a
+            band and moving it back stops claiming there is something to publish — and Publish
+            stops being enabled for a write that would send nothing.
+          */}
+          {draft.changed ? <Badge variant="outline">{text.unpublished}</Badge> : null}
+          {draft.changed ? (
             <Button type="button" variant="ghost" disabled={draft.publishing} onClick={draft.discard}>
               {text.discard}
             </Button>
           ) : null}
-          <Button type="button" disabled={!draft.dirty || draft.publishing} onClick={draft.publish}>
+          <Button type="button" disabled={!draft.changed || draft.publishing} onClick={draft.publish}>
             {draft.publishing ? text.publishing : text.publish}
           </Button>
         </div>
       </header>
 
-      {draft.dirty ? <p className="text-muted-foreground text-sm">{text.leaveWarning}</p> : null}
+      {draft.changed ? <p className="text-muted-foreground text-sm">{text.leaveWarning}</p> : null}
 
       <ConfirmDelete
         question={
@@ -161,6 +181,7 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
           orderedIds={orderedIdsOf(rows)}
           onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
           onEdit={setEditingComponent}
+          selectedId={editingComponent}
           messages={messages}
         />
 
@@ -185,14 +206,47 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
           onEdit={setEditingComponent}
           // A new band around the one component. Adding is a saved write, not a draft edit —
           // holding it in the browser would mean a reload could lose what the owner watched appear.
-          onAdd={(kind) => addSection.mutate({ component: { kind } })}
+          //
+          // The form opens on the block that was just created, which is the whole of what "adicionar"
+          // used to be missing: the write fired and nothing else happened, so a banner landed empty
+          // at the foot of the page and the owner had to find it. The id comes back on the created
+          // Section, so there is nothing to look up.
+          onAdd={(kind) =>
+            addSection.mutate(
+              { component: { kind } },
+              { onSuccess: (section) => setEditingComponent(section.components[0]?.id ?? null) },
+            )
+          }
+          /*
+            Adding INTO a band, which is the only way two blocks end up side by side.
+
+            A run of posters is found inside one band (`runsOf`, storefront-sections.tsx), and every
+            other way of adding wrapped the block in a band of its own — so "metade" and "um terço"
+            were unreachable by construction, and a third-width poster alone in its row drew a third
+            of width with two thirds of nothing. `useCreateComponent` had been built for exactly
+            this and had no caller.
+          */
+          renderAddToBand={(sectionId) => (
+            <BlockGallery
+              taken={takenKinds}
+              unavailable={unavailableKinds}
+              pending={addToBand.isPending}
+              triggerLabel={messages.design.addToBand}
+              triggerClassName="h-8 justify-start text-xs"
+              onAdd={(kind) =>
+                addToBand.mutate(
+                  { sectionId, payload: { kind } },
+                  { onSuccess: (component) => setEditingComponent(component.id) },
+                )
+              }
+              messages={messages}
+            />
+          )}
           adding={addSection.isPending}
           // The two the shop may only have one of. Every other kind is offered every time.
           // A site has no catalogue to list; a shop has no screen for a form's leads.
-          unavailable={store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]}
-          taken={componentsOf(rows)
-            .map((component) => component.kind)
-            .filter((kind) => kind === "ANNOUNCEMENT" || kind === "PRODUCTS")}
+          unavailable={unavailableKinds}
+          taken={takenKinds}
           palette={palette}
           onPalette={setPalette}
           presets={presets.data ?? []}

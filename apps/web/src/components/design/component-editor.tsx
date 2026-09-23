@@ -50,8 +50,23 @@ export interface ComponentEditorProps {
  */
 export function ComponentEditor({ slug, component, bandBackground, pageBackground, onClose, messages }: ComponentEditorProps) {
   return (
-    <Sheet open={component !== null} onOpenChange={(open) => (open ? undefined : onClose())}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-lg">
+    <Sheet
+      open={component !== null}
+      // Not modal: the preview beside it is the subject of this form, and the owner has to be able
+      // to scroll it, click another block and watch the page answer while the form is open. As a
+      // modal it was reported as the screen locking up — which is what a page that looks live and
+      // takes no pointer is.
+      modal={false}
+      onOpenChange={(open) => (open ? undefined : onClose())}
+    >
+      <SheetContent
+        side="right"
+        // The preview stays visible behind the form: the owner is editing a block and watching
+        // that block, and a dimmed, blurred page hides the only feedback the form has. It is the
+        // whole of "já abre o que tem nele, e já aparece na página nele".
+        seeThrough
+        className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-lg"
+      >
         {component ? (
           <ComponentEditorBody
             key={component.id}

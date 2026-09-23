@@ -10,6 +10,9 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+/** What `component-items.schema.ts` allows for a BANNER. Stated here so the form stops before the API does. */
+const MAX_SLIDES = 20
+
 // Block
 import { BannerSlideCard } from "./banner-slide-card"
 import type { Target, TargetOption } from "./target-fields"
@@ -100,9 +103,23 @@ export function BannerSlidesField({
         />
       ))}
 
+      {/*
+        The one sentence that names the carousel. Every piece of one already worked — the renderer
+        reads the shape off the count, and this field adds, removes and reorders — but no screen
+        ever said that a second picture is what makes one, so the owner reported not being able to
+        build what was already there. It is said beside the button that does it, and only while
+        there is one picture: after that the page shows the answer.
+      */}
+      {value.length === 1 ? (
+        <p className="text-muted-foreground text-xs">{text.carouselHint}</p>
+      ) : null}
+
       <Button
         type="button"
         variant="outline"
+        // The API caps a banner at 20 slides; without this the owner could add a 21st, fill it in
+        // and watch the save fail with nothing on screen to say why.
+        disabled={value.length >= MAX_SLIDES}
         onClick={() =>
           onChange([
             ...value,

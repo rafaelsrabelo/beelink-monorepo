@@ -9,7 +9,7 @@ import { StorefrontSectionBand } from "./storefront-section-band"
 const palette = presets[0]!.colors
 
 const meta = {
-  title: "Blocos/Vitrine/Faixa",
+  title: "Blocos/Vitrine/Faixa/Cor",
   component: StorefrontSectionBand,
   parameters: { layout: "fullscreen" },
   args: {

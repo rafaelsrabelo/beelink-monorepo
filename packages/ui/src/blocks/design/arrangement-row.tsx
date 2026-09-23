@@ -3,6 +3,8 @@
 // Libs
 import {
   BadgeCheckIcon,
+  Columns3Icon,
+  Columns2Icon,
   EyeIcon,
   EyeOffIcon,
   GripVerticalIcon,
@@ -11,6 +13,7 @@ import {
   LayoutGridIcon,
   MailIcon,
   MegaphoneIcon,
+  RectangleHorizontalIcon,
   TagsIcon,
   Trash2Icon,
   TypeIcon,
@@ -18,7 +21,7 @@ import {
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@harness-monorepo/ui/components/select"
+import { ToggleGroup, ToggleGroupItem } from "@harness-monorepo/ui/components/toggle-group"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -37,6 +40,15 @@ export interface ArrangementItem {
   title: string | null
   /** A banner's first picture, where it has one. Every other kind draws its glyph instead. */
   imageUrl?: string | null
+  /**
+   * How many pictures a banner holds. Absent on every other kind, where it means nothing.
+   *
+   * The row asks because "full, half or a third" is a question about a poster, and a poster is a
+   * banner with exactly one picture — `isPoster` in the renderer says so. From the second picture
+   * the banner is a carousel and runs the width of the band whatever this says, so the control was
+   * still offered, still marked the page unpublished, and still changed nothing on it.
+   */
+  slides?: number
   layout: ArrangementLayout
   isActive: boolean
   /**
@@ -62,10 +74,17 @@ export interface ArrangementItem {
  * How wide is a question about a poster, and only about a poster.
  *
  * A cover is as wide as the shopkeeper's `width` says and a heading is as wide as the page; asking
- * "full, half or a third" of either would be offering a choice that changes nothing.
+ * "full, half or a third" of either would be offering a choice that changes nothing. A carousel is the same case arrived at
+ * differently: the renderer stops honouring the width at the second picture, so from there the
+ * control changes nothing and goes, giving its 7rem back to the name — which is what had been
+ * truncating a banner to "B..." in a 380px panel.
  */
-function hasLayout(kind: ComponentKind): boolean {
-  return kind === "BANNER"
+function hasLayout(item: Pick<ArrangementItem, "kind" | "slides">): boolean {
+  // Hidden only where it is PROVABLY dead — two pictures or more, which the renderer draws as a
+  // carousel across the whole band. A banner with no picture yet is the commonest case there is:
+  // the owner has just added it and is about to say how wide it goes, and taking the control away
+  // while they build was worse than the dead control it replaced.
+  return item.kind === "BANNER" && (item.slides ?? 0) <= 1
 }
 
 /**
@@ -111,19 +130,26 @@ export function ArrangementRow({
   const name = item.title?.trim() || text.kinds[item.kind]
   const KindIcon = KIND_ICON[item.kind]
 
-  const layoutLabel = (layout: string) =>
-    layout === "HALVES" ? text.sizeHalves : layout === "THIRDS" ? text.sizeThirds : text.sizeFull
-
   return (
     <li
       ref={drag.setNodeRef}
       style={drag.style}
       className={cn(
-        "bg-shell-surface border-shell-border flex items-center gap-2 rounded-xl border p-2",
+        "bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-2",
         drag.isDragging && "z-10 opacity-80 shadow-md",
         !item.isActive && "opacity-60",
       )}
     >
+      {/*
+        Identity on the first line, and only identity.
+
+        Measured in the harness at the panel's real 380px: the row has ~305px, and handle (24) +
+        thumbnail (56) + size control (130) + hide (32) + delete (32) left the name EIGHT pixels —
+        the word in the DOM for a screen reader and invisible to everyone else. A first attempt
+        swapped the 112px select for three glyphs and made it WORSE, at 130. The control does not
+        fit beside the name at any spelling, so it stops trying: the name gets the line.
+      */}
+      <div className="flex items-center gap-2">
       {/*
         The handle carries the drag, and it carries `attributes` with it: dnd-kit puts the role,
         the tab stop and the described-by on whatever it is spread onto, so splitting them from the
@@ -171,21 +197,6 @@ export function ArrangementRow({
         </div>
       )}
 
-      {hasLayout(item.kind) ? (
-        <Select
-          value={item.layout}
-          onValueChange={(next: string | null) => onLayoutChange(item.id, (next ?? "FULL") as ArrangementLayout)}
-        >
-          <SelectTrigger aria-label={`${text.sizeLabel}: ${name}`} className="w-28 shrink-0">
-            <SelectValue>{(selected: string) => layoutLabel(selected)}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="FULL">{text.sizeFull}</SelectItem>
-            <SelectItem value="HALVES">{text.sizeHalves}</SelectItem>
-            <SelectItem value="THIRDS">{text.sizeThirds}</SelectItem>
-          </SelectContent>
-        </Select>
-      ) : null}
 
       <Button
         type="button"
@@ -212,6 +223,41 @@ export function ArrangementRow({
         >
           <Trash2Icon aria-hidden="true" className="size-4" />
         </Button>
+      ) : null}
+      </div>
+
+      {hasLayout(item) ? (
+        /*
+          The second line, because it does not fit on the first at any spelling.
+
+          Glyphs rather than a select because each one says its own name, the way
+          `align-field.tsx` already does — but that was NOT what bought the name its width:
+          measured, the group is 130px against the select's 112, so the swap alone made it worse.
+          What bought it was leaving the line.
+        */
+        <ToggleGroup
+          multiple={false}
+          aria-label={`${text.sizeLabel}: ${name}`}
+          variant="outline"
+          className="shrink-0"
+          value={[item.layout]}
+          onValueChange={(next: string[]) => {
+            const chosen = next[0]
+            if (chosen === "FULL" || chosen === "HALVES" || chosen === "THIRDS") {
+              onLayoutChange(item.id, chosen)
+            }
+          }}
+        >
+          <ToggleGroupItem value="FULL" aria-label={text.sizeFull}>
+            <RectangleHorizontalIcon aria-hidden="true" className="size-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="HALVES" aria-label={text.sizeHalves}>
+            <Columns2Icon aria-hidden="true" className="size-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="THIRDS" aria-label={text.sizeThirds}>
+            <Columns3Icon aria-hidden="true" className="size-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
       ) : null}
     </li>
   )

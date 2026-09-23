@@ -16,7 +16,7 @@ import {
   useUpdateComponent,
   useUpdateSection,
 } from "@/services/page/page-hooks"
-import { changesOf, reconcile, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
+import { changesOf, hasChanges, reconcile, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
 
 /**
  * The arrangement as a draft in this browser, until Publish.
@@ -178,7 +178,16 @@ export function useDesignDraft(slug: string) {
     rows,
     saved,
     loading: page.isPending,
+    /**
+     * Touched since the last publish. It still governs seeding and the leave warning, where
+     * erring towards "something changed" is the safe side of the bet.
+     */
     dirty,
+    /**
+     * Actually different from the server — what the badge and Publish answer to. Separate from
+     * `dirty` on purpose: seeding has its own history and is left exactly as it was.
+     */
+    changed: draft !== null && hasChanges(changesOf(rows, saved)),
     publishing:
       reorder.isPending || reorderComponents.isPending || updateSection.isPending || updateComponent.isPending,
     deleting: removeSection.isPending || removeComponent.isPending,

@@ -1,10 +1,14 @@
 "use client"
 
 // Types
+// React
+import type { ReactNode } from "react"
+
+// Types
 import type { ComponentKind, StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
-import { AddBlockMenu } from "@harness-monorepo/ui/blocks/design/add-block-menu"
+import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
 import { BandArrangement } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import type { ArrangementBand, ArrangementLayout } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
@@ -22,6 +26,8 @@ export interface DesignPanelProps {
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
   onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  /** Drawn at the foot of each band — the only way to put two blocks in one band. */
+  renderAddToBand?: (sectionId: string) => ReactNode
   onDelete: (id: string) => void
   onEdit: (id: string) => void
   /** Adds a band built around one component — the only way a band is created. */
@@ -60,6 +66,7 @@ export function DesignPanel({
   onDeleteBand,
   onToggle,
   onLayoutChange,
+  renderAddToBand,
   onDelete,
   onEdit,
   onAdd,
@@ -98,7 +105,7 @@ export function DesignPanel({
             Held while the list loads, or the menu would offer the shop's singletons — the product
             list among them — before it knows the shop already has them.
           */}
-          <AddBlockMenu taken={taken} unavailable={unavailable} pending={adding || loading} onAdd={onAdd} messages={messages} />
+          <BlockGallery taken={taken} unavailable={unavailable} pending={adding || loading} onAdd={onAdd} messages={messages} />
           <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
           {loading ? (
             <>
@@ -115,6 +122,7 @@ export function DesignPanel({
               onDeleteBand={onDeleteBand}
               onToggle={onToggle}
               onLayoutChange={onLayoutChange}
+              {...(renderAddToBand ? { renderAddToBand } : {})}
               onDelete={onDelete}
               onEdit={onEdit}
               messages={messages}

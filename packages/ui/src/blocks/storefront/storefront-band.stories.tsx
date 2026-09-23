@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { StorefrontBand } from "./storefront-band"
 
 const meta = {
-  title: "Blocos/Vitrine/Faixa",
+  title: "Blocos/Vitrine/Faixa/Medida",
   component: StorefrontBand,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof StorefrontBand>

@@ -1,0 +1,112 @@
+// UI
+import { cn } from "@harness-monorepo/ui/lib/utils"
+
+// Block
+import type { ComponentKind } from "./design-types"
+
+/**
+ * A wireframe of what a kind looks like on the page, drawn for the gallery.
+ *
+ * One shape per kind, and that is the whole point: the gallery it replaced listed names in a
+ * dropdown, so "Produtos" did not say whether it came out as a row or a grid, and the only way to
+ * find out was to add it and look. The mock this follows drew the same three bars on every card,
+ * which is the same problem wearing a picture.
+ *
+ * Bars and boxes, never a screenshot: a screenshot of a shop that is not this one is a promise the
+ * page will not keep, and it would go stale the first time a block's own drawing changed.
+ */
+const BAR = "rounded-sm bg-muted-foreground/40"
+const ACCENT = "rounded-sm bg-primary/70"
+
+function Shape({ kind }: { kind: ComponentKind }) {
+  switch (kind) {
+    // Edge to edge and above everything, which is the one thing that makes it not a heading.
+    case "ANNOUNCEMENT":
+      return (
+        <>
+          <span className={cn(ACCENT, "h-1.5 w-full")} />
+          <span className={cn(BAR, "h-1.5 w-2/3")} />
+          <span className={cn(BAR, "h-1.5 w-1/2")} />
+        </>
+      )
+    case "BANNER":
+      return <span className={cn(ACCENT, "h-full w-full")} />
+    case "HEADING":
+      return (
+        <>
+          <span className={cn(BAR, "h-2.5 w-3/5 bg-muted-foreground/70")} />
+          <span className={cn(BAR, "h-1.5 w-2/5")} />
+        </>
+      )
+    case "TEXT":
+      return (
+        <>
+          <span className={cn(BAR, "h-1.5 w-full")} />
+          <span className={cn(BAR, "h-1.5 w-full")} />
+          <span className={cn(BAR, "h-1.5 w-3/5")} />
+        </>
+      )
+    // Three of them side by side is the shape, so the count is the drawing.
+    case "BENEFITS":
+      return (
+        <span className="flex w-full items-center gap-1.5">
+          {[0, 1, 2].map((at) => (
+            <span key={at} className="flex flex-1 flex-col items-center gap-1">
+              <span className="bg-primary/70 size-3 rounded-full" />
+              <span className={cn(BAR, "h-1 w-full")} />
+            </span>
+          ))}
+        </span>
+      )
+    case "CATEGORIES":
+      return (
+        <span className="grid w-full grid-cols-2 gap-1.5">
+          {[0, 1].map((at) => (
+            <span key={at} className={cn(BAR, "h-6")} />
+          ))}
+        </span>
+      )
+    case "PRODUCTS":
+      return (
+        <span className="grid w-full grid-cols-3 gap-1">
+          {[0, 1, 2].map((at) => (
+            <span key={at} className="flex flex-col gap-1">
+              <span className={cn(BAR, "h-4")} />
+              <span className={cn(BAR, "h-1 w-2/3")} />
+            </span>
+          ))}
+        </span>
+      )
+    case "CONTACT":
+      return (
+        <>
+          <span className="border-muted-foreground/50 h-2 w-full rounded-sm border" />
+          <span className="border-muted-foreground/50 h-2 w-full rounded-sm border" />
+          <span className={cn(ACCENT, "h-2 w-2/5")} />
+        </>
+      )
+  }
+}
+
+export interface BlockThumbnailProps {
+  kind: ComponentKind
+  className?: string
+}
+
+/**
+ * Decoration, so it is hidden from a screen reader: the card around it already carries the kind's
+ * name and what it does as text. Announcing the bars again would read the same card twice.
+ */
+export function BlockThumbnail({ kind, className }: BlockThumbnailProps) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "bg-muted flex h-16 w-full flex-col items-start justify-center gap-1 overflow-hidden rounded-md p-2",
+        className,
+      )}
+    >
+      <Shape kind={kind} />
+    </span>
+  )
+}

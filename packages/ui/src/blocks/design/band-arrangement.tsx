@@ -1,6 +1,9 @@
 "use client"
 
 // Libs
+import type { ReactNode } from "react"
+
+// Libs
 import type { Announcements } from "@dnd-kit/core"
 
 // Locales
@@ -40,6 +43,8 @@ export interface BandArrangementProps {
   onLayoutChange: (id: string, layout: ArrangementLayout) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
+  /** Drawn at the foot of each band: the only way to put two blocks in one band. */
+  renderAddToBand?: (sectionId: string) => ReactNode
   messages?: UiMessages
 }
 
@@ -66,6 +71,7 @@ export function BandArrangement({
   onLayoutChange,
   onDelete,
   onEdit,
+  renderAddToBand,
   messages = defaultMessages,
 }: BandArrangementProps) {
   const text = messages.design
@@ -119,6 +125,7 @@ export function BandArrangement({
             onLayoutChange={onLayoutChange}
             onDelete={onDelete}
             onEdit={onEdit}
+            {...(renderAddToBand ? { addSlot: renderAddToBand(band.id) } : {})}
             messages={messages}
           />
         ))}

@@ -1,4 +1,4 @@
-import type { ComponentKind, ContactFieldType } from "../blocks/design/design-types"
+import type { BlockGroup, ComponentKind, ContactFieldType } from "../blocks/design/design-types"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
@@ -314,6 +314,23 @@ export interface UiMessages {
     productList: string
     /** What a component is called in the editor when the shopkeeper has not titled it. */
     kinds: Record<ComponentKind, string>
+    /**
+     * What a block of this kind is still missing, said on the placeholder the page draws for it.
+     * Keyed by the whole union so a kind added later cannot ship without its sentence.
+     */
+    emptyAction: Record<ComponentKind, string>
+    /** The gallery a block is added from. */
+    gallery: {
+      title: string
+      description: string
+      searchLabel: string
+      searchPlaceholder: string
+      /** Said when the search matches nothing. */
+      empty: string
+      groups: Record<BlockGroup, string>
+      /** One line of what a kind is, read beside its wireframe and searched with its name. */
+      hints: Record<ComponentKind, string>
+    }
     productListHint: string
     sizeLabel: string
     sizeFull: string
@@ -340,6 +357,8 @@ export interface UiMessages {
     tabBlocks: string
     tabColors: string
     addBlock: string
+    /** Opens the gallery at a band's foot: what puts two blocks side by side. */
+    addToBand: string
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
     /** Said in place of the kind when a block has nothing for the shop window to draw. */
@@ -373,6 +392,8 @@ export interface UiMessages {
     /** One picture of a banner: `{position}` of `{total}`. */
     slidePosition: string
     addSlide: string
+    /** Said beside the add button while a banner has one picture: the second makes a carousel. */
+    carouselHint: string
     /** One promise with no title yet. `{position}`. */
     benefitPosition: string
     addBenefit: string

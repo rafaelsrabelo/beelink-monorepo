@@ -25,6 +25,29 @@ export const COMPONENT_KINDS = [
 ] as const
 export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 
+/**
+ * How the gallery files the kinds, so a shopkeeper scans four short lists instead of one long one.
+ *
+ * Grouped by what a block DOES, not by which kind of page holds it. That is what lets one gallery
+ * serve both: a site has no catalogue, so `CATALOG` comes back empty and the group is not drawn,
+ * and a shop has no lead form, so `CONTACT` is not drawn. Naming the groups "Venda" and "Site"
+ * instead would put a heading over an empty list, or the same block under two names.
+ */
+export const BLOCK_GROUPS = ["HIGHLIGHT", "CATALOG", "CONTENT", "CONTACT"] as const
+export type BlockGroup = (typeof BLOCK_GROUPS)[number]
+
+/** Every kind belongs to exactly one group; `satisfies` is what fails the build when one is added. */
+export const GROUP_OF_KIND = {
+  ANNOUNCEMENT: "HIGHLIGHT",
+  BANNER: "HIGHLIGHT",
+  CATEGORIES: "CATALOG",
+  PRODUCTS: "CATALOG",
+  HEADING: "CONTENT",
+  TEXT: "CONTENT",
+  BENEFITS: "CONTENT",
+  CONTACT: "CONTACT",
+} as const satisfies Record<ComponentKind, BlockGroup>
+
 /** What one field of a contact form may ask for. The contract's `ContactFieldType`, restated. */
 export const CONTACT_FIELD_TYPES = ["TEXT", "EMAIL", "PHONE", "TEXTAREA", "SELECT", "DATE"] as const
 export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]

@@ -120,6 +120,22 @@ export function changesOf(rows: readonly SectionDraft[], saved: readonly Section
 }
 
 /**
+ * Whether anything in the draft actually differs from what the server holds.
+ *
+ * Asked of `changesOf` rather than tracked, because a flag set on every touch says "unpublished"
+ * about a band moved and moved back — and publishing then fires `Promise.all([])`, which resolves
+ * with no request, flashes "Publicando…" and clears a badge that was never true.
+ */
+export function hasChanges(changes: ReturnType<typeof changesOf>): boolean {
+  return (
+    changes.orderChanged ||
+    changes.sections.length > 0 ||
+    changes.componentOrders.length > 0 ||
+    changes.components.length > 0
+  )
+}
+
+/**
  * What a component is called in the editor.
  *
  * One the shopkeeper titled is called by that title; one they have not is called by its kind. The
