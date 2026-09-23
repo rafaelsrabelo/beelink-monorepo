@@ -12,6 +12,7 @@ import { JwtAuthGuard } from './modules/auth/jwt-auth.guard.js';
 import { AddressesModule } from './modules/addresses/addresses.module.js';
 import { PageModule } from './modules/page/page.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
+import { LeadsModule } from './modules/leads/leads.module.js';
 import { StoresModule } from './modules/stores/stores.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -40,6 +41,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     StoresModule,
     PageModule,
     CatalogModule,
+    LeadsModule,
     UploadsModule,
   ],
   controllers: [HealthController],

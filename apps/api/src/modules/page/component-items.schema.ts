@@ -8,10 +8,18 @@ import type {
   BenefitRow,
   ComponentItem,
   ComponentKind,
+  ContactField,
 } from '@harness-monorepo/contracts';
 
 // App
-import { COMPONENT_URL_MAX_LENGTH } from './page.constants.js';
+import {
+  COMPONENT_URL_MAX_LENGTH,
+  CONTACT_FIELDS_MAX,
+  CONTACT_FIELD_LABEL_MAX_LENGTH,
+  CONTACT_FIELD_TYPES,
+  CONTACT_OPTIONS_MAX,
+  CONTACT_OPTION_MAX_LENGTH,
+} from './page.constants.js';
 
 /**
  * What a component's `items` may hold, decided by its `kind`.
@@ -82,12 +90,45 @@ const benefitRow = z.strictObject({
   detail: z.string().max(120).nullish(),
 }) satisfies z.ZodType<BenefitRow>;
 
+/** One field of a contact form. A select carries its choices; nothing else may. */
+const contactField = z
+  .strictObject({
+    id: z.string().min(1).max(64),
+    label: z.string().min(1).max(CONTACT_FIELD_LABEL_MAX_LENGTH),
+    type: z.enum(CONTACT_FIELD_TYPES),
+    required: z.boolean(),
+    options: z.array(z.string().min(1).max(CONTACT_OPTION_MAX_LENGTH)).min(1).max(CONTACT_OPTIONS_MAX).nullish(),
+  })
+  .refine((row) => (row.type === 'SELECT') === !!row.options?.length, {
+    message: 'Uma lista de opções precisa das opções; os outros tipos não as têm',
+  }) satisfies z.ZodType<ContactField>;
+
+/** A field a visitor can be answered through: an e-mail or a phone they had to give. */
+export function reachesBack(field: Pick<ContactField, 'type' | 'required'>): boolean {
+  return field.required && (field.type === 'EMAIL' || field.type === 'PHONE');
+}
+
+/**
+ * The whole form. Two rules the fields cannot state one at a time: ids are unique, because an
+ * answer is keyed by them; and at least one field reaches back, because a lead nobody can answer
+ * is not a lead. Stated here and not in the panel — the panel mirrors it, this is the lock.
+ */
+const contactForm = z
+  .array(contactField)
+  .max(CONTACT_FIELDS_MAX)
+  .refine((fields) => new Set(fields.map((field) => field.id)).size === fields.length, {
+    message: 'Dois campos com o mesmo id',
+  })
+  .refine((fields) => fields.some(reachesBack), {
+    message: 'O formulário precisa de um campo obrigatório de e-mail ou telefone',
+  });
+
 /** What a component with no items of its own holds, and what an unknown kind falls back to. */
 const NOTHING = z.array(z.never()).length(0);
 
 /**
- * The table, closed with `satisfies`. An eighth kind fails to compile here until it says what its
- * items are — even if the answer is "none", which is what four of the seven say.
+ * The table, closed with `satisfies`. A ninth kind fails to compile here until it says what its
+ * items are — even if the answer is "none", which is what four of the eight say.
  */
 const ITEMS_OF = {
   /** One picture is a poster; several are a carousel. The count is the whole of that decision. */
@@ -95,6 +136,7 @@ const ITEMS_OF = {
   BENEFITS: z.array(benefitRow).max(12),
   /** At most one: the strip is one sentence, and one sentence leads one place. */
   ANNOUNCEMENT: z.array(announcementLink).max(1),
+  CONTACT: contactForm,
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
   HEADING: NOTHING,
   TEXT: NOTHING,

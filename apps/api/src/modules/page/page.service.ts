@@ -11,6 +11,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { sectionInclude, toComponent, toSection } from './page.mapper.js';
 import { PageRules, pageError } from './page.rules.js';
+import { openingItemsOf } from './page-seed.js';
 
 /**
  * A component's row as both creates write it — around a new band, or into one that exists.
@@ -74,7 +75,8 @@ export class PageService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
     await this.rules.refuseSecond(storeId, dto.component.kind);
-    const items = this.rules.checkedItems(dto.component.kind, dto.component.items);
+    // A kind created bare opens with what it cannot be without — a form's first fields.
+    const items = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
 
     // Last, the way a new category lands last. A band that inserted itself at the top would
     // rearrange a page the shopkeeper had already arranged.
@@ -166,7 +168,7 @@ export class PageService {
     await this.rules.ownedSection(storeId, sectionId);
     await this.rules.refuseSecond(storeId, dto.kind);
 
-    const items = this.rules.checkedItems(dto.kind, dto.items);
+    const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
     const last = await this.prisma.storeComponent.aggregate({
       where: { sectionId },
       _max: { position: true },

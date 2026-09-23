@@ -33,7 +33,12 @@ export type ComponentKind =
   /** The shop's categories, as a grid of cards. */
   | "CATEGORIES"
   /** What the shop sells. One per shop, and it cannot be deleted. */
-  | "PRODUCTS";
+  | "PRODUCTS"
+  /**
+   * A form a visitor fills in, and the ways to reach the owner beside it. What it asks is its
+   * `items`; what arrives through it is a lead. A site's kind: a shop takes orders, not contact.
+   */
+  | "CONTACT";
 
 /**
  * How wide a section sits on the page.
@@ -159,14 +164,39 @@ export interface PublicAnnouncementLink {
 }
 
 /**
+ * What one field of a contact form asks for.
+ *
+ * A closed set, and closed on purpose: six types cover "empresa, produto, volume, origem, destino,
+ * data desejada" without this becoming a form builder. The visitor's name is not a field — it is
+ * always asked, first, and it is the column every screen shows.
+ */
+export type ContactFieldType = "TEXT" | "EMAIL" | "PHONE" | "TEXTAREA" | "SELECT" | "DATE";
+
+/**
+ * One field of a contact form, as its owner declared it.
+ *
+ * The form must hold at least one required `EMAIL` or `PHONE` field — the API refuses one that
+ * does not — because a lead with no way to answer it is not a lead. A visitor's answers are
+ * checked against these fields, by `id`, and an answer to a field the form does not have is refused.
+ */
+export interface ContactField {
+  id: string;
+  label: string;
+  type: ContactFieldType;
+  required: boolean;
+  /** The choices, on a `SELECT`. Absent on every other type. */
+  options?: string[] | null;
+}
+
+/**
  * What a component holds beyond its own fields.
  *
  * It is content, and that is what separates it from `layoutSettings`. A key nobody reads in that
  * blob is invisible — sixteen of its twenty-one survived that way. An `items` nobody reads is a
  * blank band on the shop's front page, reported the same day.
  */
-export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink;
-export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink;
+export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink | ContactField;
+export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink | ContactField;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {
@@ -177,7 +207,7 @@ export interface PublicComponent {
   /** The paragraph, on a `TEXT`. Null on every other kind. */
   body: string | null;
   layout: ShowcaseLayout;
-  /** A banner's slides, the benefits band's rows, or the strip's one link. Empty otherwise. */
+  /** A banner's slides, the benefits band's rows, the strip's one link or a form's fields. Empty otherwise. */
   items: PublicComponentItem[];
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */
   columns: number | null;

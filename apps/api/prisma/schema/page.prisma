@@ -24,6 +24,9 @@ enum ComponentKind {
   CATEGORIES
   /// What the shop sells. One per shop, and it cannot be deleted.
   PRODUCTS
+  /// A form a visitor fills in, beside the ways to reach the owner. Its `items` are the fields;
+  /// what arrives through it is a `Lead`. A site's kind — a shop takes orders, not contact.
+  CONTACT
 }
 
 /// How wide a section sits on the page. It belongs to the band and not to what is inside it, which
@@ -128,6 +131,9 @@ model StoreComponent {
   position Int @default(0)
 
   isActive Boolean @default(true)
+
+  /// What arrived through this component, when it is a CONTACT form.
+  leads Lead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

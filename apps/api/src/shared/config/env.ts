@@ -83,6 +83,13 @@ const envSchema = z.object({
   UPLOAD_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   UPLOAD_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
 
+  /**
+   * Per IP, on the one anonymous write in the product: a visitor sending a site's contact form.
+   * Sized for a person who mistypes and tries again, not for a robot — the trap handles the robot.
+   */
+  LEAD_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  LEAD_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
+
   TRUST_PROXY: z.string().default('loopback'),
 });
 

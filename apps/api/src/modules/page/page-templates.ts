@@ -13,9 +13,9 @@ export const PAGE_TEMPLATE_IDS = ['servicos-b2b'] as const satisfies readonly Pa
  * what seeds it, the way `defaultPage` seeds a shop.
  *
  * This first one is the structure the briefing of a transport company's landing page was planned
- * from: a cover, the services, how it works, and a way to get in touch — drawn with the kinds the
- * page has today. The richer pieces (numbers, steps, testimonials, a form) replace these bands as
- * they arrive, one delivery at a time, and the template grows with them.
+ * from: a cover, the services, how it works, and a form to get in touch — drawn with the kinds the
+ * page has today. The richer pieces (numbers, steps, testimonials) replace these bands as they
+ * arrive, one delivery at a time, and the template grows with them.
  */
 const TEMPLATES: Record<PageTemplateId, SeededBand[]> = {
   'servicos-b2b': [
@@ -80,10 +80,15 @@ const TEMPLATES: Record<PageTemplateId, SeededBand[]> = {
       section: { name: 'Contato', width: 'CONTAINED', position: 4, isActive: true },
       components: [
         {
-          kind: 'HEADING',
+          kind: 'CONTACT',
           title: 'Fale com a gente',
-          subtitle: 'WhatsApp, telefone e endereço ficam no rodapé. O formulário de contato chega em breve.',
-          items: [],
+          subtitle: 'Conte o que precisa e respondemos em até um dia útil.',
+          items: [
+            { id: 'email', label: 'E-mail', type: 'EMAIL', required: true },
+            { id: 'telefone', label: 'Telefone', type: 'PHONE', required: true },
+            { id: 'empresa', label: 'Empresa', type: 'TEXT', required: false },
+            { id: 'mensagem', label: 'O que você precisa?', type: 'TEXTAREA', required: true },
+          ],
           position: 0,
           isActive: true,
         },

@@ -1,0 +1,48 @@
+/// Where a lead stands with the owner. Four values and no fifth: a pipeline a shopkeeper reads off
+/// a select in the panel, not a CRM. Adding a stage is a migration, on purpose.
+enum LeadStatus {
+  NEW
+  CONTACTED
+  WON
+  LOST
+}
+
+/// What arrived through a site's contact form.
+///
+/// A row of its own and not an order: nothing is bought, nothing is priced, and the owner's
+/// question about it is "did I answer this person" — which is `status`.
+///
+/// Three columns are lifted out of the answers because they are what every screen shows and what
+/// the owner uses to reply: the name, and the first e-mail and the first phone the form asked for.
+/// Everything else the form asked — company, volume, a wanted date — is `answers`, each with the
+/// label it was asked under at the time, so a field renamed or deleted later leaves the lead
+/// readable. There is no `company` column: nothing filters by it.
+model Lead {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// The form it came through. Set null when that form is deleted: the lead outlives the block,
+  /// because a person who wrote in did not stop existing when the owner rearranged the page.
+  componentId String?         @db.Uuid
+  component   StoreComponent? @relation(fields: [componentId], references: [id], onDelete: SetNull)
+
+  name  String  @db.VarChar(120)
+  /// Stored as typed, trimmed and lower-cased. 254 is the address's own ceiling (RFC 5321).
+  email String? @db.VarChar(254)
+  /// Digits only, the way a shop's WhatsApp is stored, so `wa.me/<this>` can be built from it.
+  phone String? @db.VarChar(20)
+
+  /// `LeadAnswer[]`: `{ fieldId, label, type, value }`, in the order the form asked.
+  answers Json @default("[]")
+
+  status LeadStatus @default(NEW)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The panel's read: newest first, one site at a time.
+  @@index([storeId, createdAt(sort: Desc)])
+  @@index([storeId, status])
+  @@map("leads")
+}

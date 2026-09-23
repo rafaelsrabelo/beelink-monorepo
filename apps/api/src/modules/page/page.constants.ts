@@ -1,5 +1,12 @@
 // Types
-import type { ComponentKind, ComponentTarget, SectionWidth, ShowcaseLayout, TextAlign } from '@harness-monorepo/contracts';
+import type {
+  ComponentKind,
+  ComponentTarget,
+  ContactFieldType,
+  SectionWidth,
+  ShowcaseLayout,
+  TextAlign,
+} from '@harness-monorepo/contracts';
 
 /**
  * The shapes a banner may take inside its band. Spelled out rather than derived, like every other
@@ -16,7 +23,27 @@ export const COMPONENT_KINDS = [
   'BENEFITS',
   'CATEGORIES',
   'PRODUCTS',
+  'CONTACT',
 ] as const satisfies readonly ComponentKind[];
+
+/**
+ * What one field of a contact form may ask for. Six, and the list is the product decision: enough
+ * for "empresa, produto, volume, origem, destino, data desejada" without becoming a form builder.
+ */
+export const CONTACT_FIELD_TYPES = [
+  'TEXT',
+  'EMAIL',
+  'PHONE',
+  'TEXTAREA',
+  'SELECT',
+  'DATE',
+] as const satisfies readonly ContactFieldType[];
+
+/** A form with more than this is a survey, and a survey is not what a landing page's contact is. */
+export const CONTACT_FIELDS_MAX = 12;
+export const CONTACT_FIELD_LABEL_MAX_LENGTH = 60;
+export const CONTACT_OPTIONS_MAX = 20;
+export const CONTACT_OPTION_MAX_LENGTH = 60;
 
 /** Where a heading or a paragraph sits. Null on the wire is "as the kind always drew it". */
 export const TEXT_ALIGNS = ['LEFT', 'CENTER', 'RIGHT'] as const satisfies readonly TextAlign[];

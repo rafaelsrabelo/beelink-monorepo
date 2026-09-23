@@ -187,6 +187,29 @@ describe('PageService — a band is created around something', () => {
     ).resolves.toBeDefined();
   });
 
+  /**
+   * A form cannot be empty — it needs a field that reaches back — and the menu sends a kind and
+   * nothing else. The seed's fields are what the create fills in; an explicit list still wins.
+   */
+  it('opens a bare contact form with the fields it cannot be without', async () => {
+    const { service, createSection } = build();
+
+    await service.createSection('asfalto-norte', 'user-1', { component: { kind: 'CONTACT' } });
+
+    const items = createSection.mock.calls[0]![0].data.components.create.items as { id: string; type: string }[];
+    expect(items.map((field) => field.type)).toEqual(['EMAIL', 'PHONE', 'TEXTAREA']);
+  });
+
+  it('refuses a contact form with no field that reaches back', async () => {
+    const { service } = build();
+
+    await expect(
+      service.createSection('asfalto-norte', 'user-1', {
+        component: { kind: 'CONTACT', items: [{ id: 'msg', label: 'Mensagem', type: 'TEXTAREA', required: true }] },
+      }),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_ITEMS_INVALID' } });
+  });
+
   it('refuses a second run of products, wherever the first one sits', async () => {
     const { service } = build({ existing: { id: 'somewhere-else' } });
 

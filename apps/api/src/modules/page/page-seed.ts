@@ -1,5 +1,13 @@
 // Types
-import type { BenefitRow, ComponentKind, PaymentMethod, SectionWidth, TextAlign } from '@harness-monorepo/contracts';
+import type {
+  BenefitRow,
+  ComponentKind,
+  ContactField,
+  ContactFieldType,
+  PaymentMethod,
+  SectionWidth,
+  TextAlign,
+} from '@harness-monorepo/contracts';
 
 /**
  * A promise as it is written to the JSON column.
@@ -10,6 +18,12 @@ import type { BenefitRow, ComponentKind, PaymentMethod, SectionWidth, TextAlign 
  */
 type PromiseRow = { id: string; icon: string; title: string; detail: string };
 
+/** One field of a contact form, as the JSON column takes it. Same reason as `PromiseRow`. */
+type ContactFieldRow = { id: string; label: string; type: ContactFieldType; required: boolean; options?: string[] };
+
+/** What a seeded component may hold: a promises band's rows, or a form's fields. */
+export type SeededItem = PromiseRow | ContactFieldRow;
+
 /** One band of the page a new shop or site opens with, ready for `storeSection.create`. */
 export interface SeededBand {
   section: { name?: string | null; width: SectionWidth; position: number; isActive: boolean };
@@ -19,7 +33,7 @@ export interface SeededBand {
     subtitle?: string | null;
     body?: string | null;
     align?: TextAlign | null;
-    items: PromiseRow[];
+    items: SeededItem[];
     position: number;
     isActive: boolean;
   }[];
@@ -67,4 +81,24 @@ export function defaultPage(paymentMethods: readonly PaymentMethod[]): SeededBan
       components: [{ kind: 'PRODUCTS', items: [], position: 0, isActive: true }],
     },
   ];
+}
+
+/**
+ * The fields a contact form opens with, when nobody said otherwise.
+ *
+ * Seeded here rather than left empty because an empty form is refused — it has no field that
+ * reaches back — and "Adicionar → Formulário de contato" sends a kind and nothing else. Three
+ * fields, in pt-BR like the promises: how to answer, twice, and room to say what the visit is about.
+ */
+export function defaultContactFields(): ContactFieldRow[] {
+  return [
+    { id: 'email', label: 'E-mail', type: 'EMAIL', required: true },
+    { id: 'telefone', label: 'Telefone', type: 'PHONE', required: true },
+    { id: 'mensagem', label: 'Mensagem', type: 'TEXTAREA', required: false },
+  ] satisfies ContactField[];
+}
+
+/** What a component created without items holds. Every kind but the form holds nothing. */
+export function openingItemsOf(kind: ComponentKind): SeededItem[] {
+  return kind === 'CONTACT' ? defaultContactFields() : [];
 }

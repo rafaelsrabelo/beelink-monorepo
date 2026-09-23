@@ -5,10 +5,21 @@ import { Injectable, Logger } from '@nestjs/common';
 import { createTransport } from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 
+// Types
+import type { Lead } from '@harness-monorepo/contracts';
+
 // App
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
-import { emailVerification, passwordReset } from './mail.templates.js';
+import { emailVerification, leadReceived, passwordReset } from './mail.templates.js';
+
+/** What a lead's e-mail needs beyond the lead: who to greet, and which site's panel to point at. */
+export interface LeadReceivedMail {
+  ownerName: string;
+  siteName: string;
+  siteSlug: string;
+  lead: Lead;
+}
 
 @Injectable()
 export class MailService {
@@ -23,6 +34,19 @@ export class MailService {
   async sendPasswordReset(to: string, name: string, token: string): Promise<void> {
     const url = `${env.WEB_URL}/reset-password?token=${encodeURIComponent(token)}`;
     await this.send(to, passwordReset(name, url, PASSWORD_RESET_TTL_MINUTES));
+  }
+
+  /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */
+  async sendLeadReceived(to: string, { ownerName, siteName, siteSlug, lead }: LeadReceivedMail): Promise<void> {
+    const url = `${env.WEB_URL}/admin/${siteSlug}/leads`;
+
+    await this.send(
+      to,
+      leadReceived(
+        { ownerName, siteName, leadName: lead.name, email: lead.email, phone: lead.phone, answers: lead.answers },
+        url,
+      ),
+    );
   }
 
   /**

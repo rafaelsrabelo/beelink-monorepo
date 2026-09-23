@@ -5,6 +5,19 @@ export interface MailContent {
   html: string;
 }
 
+/**
+ * Text from a stranger, made safe to sit inside HTML.
+ *
+ * The two templates before this one interpolate raw, and could: they only ever carried the
+ * account holder's own name. A lead is what a visitor typed, and `<script>` in a message field
+ * is a message field the owner's mail client must not run.
+ */
+export function escapeHtml(value: string): string {
+  const escaped: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+  return value.replace(/[&<>"']/g, (char) => escaped[char] ?? char);
+}
+
 function layout(title: string, body: string, actionLabel: string, actionUrl: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
@@ -49,6 +62,48 @@ export function passwordReset(name: string, url: string, minutes: number): MailC
        <p style="margin:12px 0 0;font-size:13px;color:#71717a">Se não foi você quem pediu, ignore esta mensagem: sua senha continua a mesma.</p>`,
       'Criar nova senha',
       url,
+    ),
+  };
+}
+
+/** What the owner is told about a lead. Values are the visitor's; every one is escaped for HTML. */
+export interface LeadReceivedContent {
+  ownerName: string;
+  siteName: string;
+  leadName: string;
+  email: string | null;
+  phone: string | null;
+  answers: readonly { label: string; value: string }[];
+}
+
+export function leadReceived(content: LeadReceivedContent, panelUrl: string): MailContent {
+  const greeting = `Olá, ${content.ownerName}!`;
+  const lines: [string, string][] = [
+    ['Nome', content.leadName],
+    ...(content.email ? [['E-mail', content.email] as [string, string]] : []),
+    ...(content.phone ? [['Telefone', content.phone] as [string, string]] : []),
+    ...content.answers.map(({ label, value }) => [label, value] as [string, string]),
+  ];
+
+  const rows = lines
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#71717a;vertical-align:top;white-space:nowrap">${escapeHtml(label)}</td>` +
+        `<td style="padding:4px 0;font-size:14px;white-space:pre-line">${escapeHtml(value)}</td></tr>`,
+    )
+    .join('');
+
+  return {
+    subject: `Novo contato pelo site ${content.siteName}`,
+    text: `${greeting}\n\nAlguém preencheu o formulário do site ${content.siteName}:\n\n${lines
+      .map(([label, value]) => `${label}: ${value}`)
+      .join('\n')}\n\nVeja no painel:\n${panelUrl}`,
+    html: layout(
+      escapeHtml(greeting),
+      `<p style="margin:0 0 12px">Alguém preencheu o formulário do site ${escapeHtml(content.siteName)}:</p>
+       <table role="presentation" style="border-collapse:collapse">${rows}</table>`,
+      'Ver no painel',
+      panelUrl,
     ),
   };
 }
