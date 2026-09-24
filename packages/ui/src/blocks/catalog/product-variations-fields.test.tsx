@@ -12,7 +12,7 @@ import { EMPTY_VARIATIONS, type VariationsValue } from "../../lib/variations"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { ProductVariationsFields } from "./product-variations-fields"
-import { BASE_ROW, BLOUSE } from "./variation-fixtures"
+import { BASE_ROW, BLOUSE, WHEY, WHEY_PHOTOS } from "./variation-fixtures"
 
 let latest: VariationsValue = EMPTY_VARIATIONS
 
@@ -131,5 +131,15 @@ describe("ProductVariationsFields", () => {
     const { container } = render(<Controlled initial={BLOUSE} />)
 
     await expectNoA11yViolations(container)
+  })
+
+  it("shows beside each combination the photo the shop window opens it on", () => {
+    render(<ProductVariationsFields value={WHEY} onChange={() => {}} base={BASE_ROW} trackStock={false} photos={WHEY_PHOTOS} />)
+
+    const photoOf = (label: string) => within(screen.getByRole("row", { name: new RegExp(label) })).getByRole("img").getAttribute("alt")
+    // The 900 g Morango has a photo of its own; the 750 g one, the Morango tub's; Chocolate, the general one.
+    expect(photoOf("900g · Morango")).toBe("Foto 3")
+    expect(photoOf("750g · Morango")).toBe("Foto 2")
+    expect(photoOf("900g · Chocolate")).toBe("Foto 1")
   })
 })

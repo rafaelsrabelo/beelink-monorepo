@@ -10,7 +10,7 @@ import { EMPTY_VARIATIONS } from "../../lib/variations"
 import { expectNoA11yViolations } from "../../test/a11y"
 import { ProductEditor, type ProductEditorProps } from "./product-editor"
 import { EMPTY_PRODUCT } from "./product-form-types"
-import { BLOUSE } from "./variation-fixtures"
+import { BLOUSE, WHEY, WHEY_PHOTOS } from "./variation-fixtures"
 
 function renderEditor(overrides: Partial<ProductEditorProps> = {}) {
   const props: ProductEditorProps = {
@@ -82,5 +82,28 @@ describe("ProductEditor", () => {
     const { container } = renderEditor({ variations: { value: BLOUSE, onChange: () => {} }, dirty: true })
 
     await expectNoA11yViolations(container)
+  })
+
+  it("asks what each photo is of once the product has combinations, and marks it in the variations", async () => {
+    const user = userEvent.setup()
+    const onVariations = vi.fn()
+    renderEditor({
+      value: { ...EMPTY_PRODUCT, name: "Whey", imageUrls: WHEY_PHOTOS },
+      variations: { value: WHEY, onChange: onVariations },
+    })
+
+    expect(screen.getByRole("button", { name: "Foto 1 aparece em: Todas as variações. Alterar" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Foto 1 aparece em/ }))
+    await user.click(within(screen.getByRole("group", { name: "Sabor" })).getByRole("button", { name: "Chocolate" }))
+
+    expect(onVariations).toHaveBeenLastCalledWith(
+      expect.objectContaining({ photos: expect.objectContaining({ [WHEY_PHOTOS[0]!]: ["Chocolate"] }) }),
+    )
+  })
+
+  it("asks nothing of the photos while the product sells one thing", () => {
+    renderEditor({ value: { ...EMPTY_PRODUCT, name: "Whey", imageUrls: WHEY_PHOTOS }, variations: { value: EMPTY_VARIATIONS, onChange: () => {} } })
+
+    expect(screen.queryByRole("button", { name: /aparece em/ })).toBeNull()
   })
 })

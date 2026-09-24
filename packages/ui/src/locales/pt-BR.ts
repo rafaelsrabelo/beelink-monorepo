@@ -538,6 +538,11 @@ export const ptBR: UiMessages = {
       photo: "Foto {number}",
       remove: "Remover foto",
       moveEarlier: "Mover para antes da foto",
+      ofEvery: "Todas as variações",
+      ofButton: "Foto {number} aparece em: {summary}. Alterar",
+      ofTitle: "Em quais variações a foto {number} aparece",
+      ofHint: "Marque os valores desta foto. Numa opção sem marca, ela vale para todos.",
+      ofAnyValue: "Qualquer {option}",
     },
     sections: {
       basics: "Identificação",

@@ -43,3 +43,22 @@ export const BLOUSE: VariationsValue = {
     [combinationKey(["GG", "terracota"])]: { isActive: false, price: "", stock: "", sku: "", weight: "" },
   },
 }
+
+/**
+ * The whey of BEELINK-71 — Peso 900g, 750g and Sabor Chocolate, Morango — with its gallery marked:
+ * a photo of every combination, one of the Morango tub in any weight, and one of the 900 g Morango.
+ */
+export const WHEY_PHOTOS = [
+  "https://picsum.photos/seed/whey-geral/400/400",
+  "https://picsum.photos/seed/whey-morango/400/400",
+  "https://picsum.photos/seed/whey-morango-900/400/400",
+]
+
+export const WHEY: VariationsValue = {
+  options: [
+    { key: "peso", name: "Peso", isColor: false, values: ["900g", "750g"].map((name) => ({ key: name, name, colorHex: null })) },
+    { key: "sabor", name: "Sabor", isColor: false, values: ["Chocolate", "Morango"].map((name) => ({ key: name, name, colorHex: null })) },
+  ],
+  rows: {},
+  photos: { [WHEY_PHOTOS[1]!]: ["Morango"], [WHEY_PHOTOS[2]!]: ["Morango", "900g"] },
+}

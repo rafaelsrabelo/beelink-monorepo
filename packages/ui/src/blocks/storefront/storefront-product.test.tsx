@@ -176,6 +176,25 @@ describe("StorefrontProductDetail", () => {
       expect(onSubmit).toHaveBeenCalledWith("m-areia", expect.objectContaining({ phone: "11977776666" }))
     })
 
+    it("shows the photos of the colour chosen and the ones of every combination, the colour's first", async () => {
+      const user = userEvent.setup()
+      const marked = [
+        { id: "geral", url: "https://cdn/geral.png", alt: "Etiqueta", optionValueIds: [] },
+        { id: "areia", url: "https://cdn/areia.png", alt: "Areia de frente", optionValueIds: ["areia"] },
+        { id: "preto", url: "https://cdn/preto.png", alt: "Preto de frente", optionValueIds: ["preto"] },
+      ]
+      renderProduct({ ...withVariants, images: marked })
+
+      expect(screen.getAllByRole("img")[0]).toHaveAttribute("src", "https://cdn/areia.png")
+      expect(screen.queryByRole("button", { name: "Preto de frente" })).toBeNull()
+
+      await user.click(screen.getByRole("button", { name: /^G, / }))
+
+      expect(screen.getAllByRole("img")[0]).toHaveAttribute("src", "https://cdn/preto.png")
+      expect(screen.queryByRole("button", { name: "Areia de frente" })).toBeNull()
+      expect(screen.getByRole("button", { name: "Etiqueta" })).toBeInTheDocument()
+    })
+
     it("moves to the combination a value has when the one chosen does not exist", async () => {
       const user = userEvent.setup()
       const onVariantChange = vi.fn()

@@ -7,6 +7,7 @@ import { useState } from "react"
 import { ChevronLeftIcon } from "lucide-react"
 
 // UI
+import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
 import {
   initialVariantOf,
   ORDER_VARIANT_MARK,
@@ -111,7 +112,12 @@ export function StorefrontProductDetail({
   const variant = choosing ? variantOf(selection, options, variants) : undefined
   const label = variant ? variantLabelOf(variant, options) : ""
   const unavailable = choosing ? !variant?.available : soldOut
-  const shownImages = variant?.imageUrl ? [{ id: `variant-${variant.id}`, url: variant.imageUrl, alt: null }, ...images] : images
+  // The chosen combination's photos, the most specific first; a variant's own photo, when the API
+  // has one, still leads them.
+  const fitting = variant
+    ? photosOf(images, optionOfValue(options, (option) => option.values, (entry) => entry.id), variant.optionValueIds)
+    : images
+  const shownImages = variant?.imageUrl ? [{ id: `variant-${variant.id}`, url: variant.imageUrl, alt: null }, ...fitting] : fitting
 
   function choose(optionId: string, valueId: string) {
     const chosen = targetOf(selection, optionId, valueId, options, variants)
@@ -129,7 +135,12 @@ export function StorefrontProductDetail({
         {categoryName ?? text.backToShop}
       </Link>
 
-      <StorefrontProductGallery key={variant?.imageUrl ?? "product"} images={shownImages} name={name} messages={messages} />
+      <StorefrontProductGallery
+        key={shownImages.map((image) => image.id).join("|")}
+        images={shownImages}
+        name={name}
+        messages={messages}
+      />
 
       <div className="flex flex-col gap-2">
         <h1 className="text-xl font-semibold">{name}</h1>

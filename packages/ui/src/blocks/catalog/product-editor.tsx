@@ -16,13 +16,14 @@ import {
 } from "@harness-monorepo/ui/components/alert-dialog"
 import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
-import { combinationCountOf, type VariationsValue } from "@harness-monorepo/ui/lib/variations"
+import { combinationCountOf, photoValuesOf, setPhotoValues, type VariationsValue } from "@harness-monorepo/ui/lib/variations"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { PhotoValuesPicker } from "./photo-values-picker"
 import { ProductBasicsFields } from "./product-basics-fields"
 import type { ProductCategoryOption, ProductFormIssues, ProductFormValues } from "./product-form-types"
 import { ProductInventoryFields } from "./product-inventory-fields"
@@ -126,6 +127,20 @@ export function ProductEditor({
           onUpload={onUploadImage}
           pending={imagePending}
           disabled={pending}
+          photoFooter={
+            variations && perCombination
+              ? (url, index) => (
+                  <PhotoValuesPicker
+                    options={variations.value.options}
+                    value={photoValuesOf(variations.value, url)}
+                    onChange={(keys) => variations.onChange(setPhotoValues(variations.value, url, keys))}
+                    number={index + 1}
+                    disabled={pending}
+                    messages={messages}
+                  />
+                )
+              : undefined
+          }
           messages={messages}
         />
       </ProductSection>
@@ -163,6 +178,7 @@ export function ProductEditor({
             onChange={variations.onChange}
             base={{ isActive: true, price: value.price, stock: value.stock, sku: value.sku, weight: value.weight }}
             trackStock={value.trackStock}
+            photos={value.imageUrls}
             errors={variations.errors}
             disabled={pending}
             messages={messages}

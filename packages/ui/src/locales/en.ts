@@ -538,6 +538,11 @@ export const en: UiMessages = {
       photo: "Photo {number}",
       remove: "Remove photo",
       moveEarlier: "Move before photo",
+      ofEvery: "Every variation",
+      ofButton: "Photo {number} shows for: {summary}. Change",
+      ofTitle: "Which variations photo {number} shows for",
+      ofHint: "Mark the values this photo is of. An option with none marked means any of its values.",
+      ofAnyValue: "Any {option}",
     },
     sections: {
       basics: "Identity",

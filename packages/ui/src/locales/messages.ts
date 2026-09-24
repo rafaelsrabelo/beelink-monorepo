@@ -624,6 +624,15 @@ export interface UiMessages {
       photo: string
       remove: string
       moveEarlier: string
+      /** What a photo is of, when it names no value: every combination. */
+      ofEvery: string
+      /** `{number}` `{summary}` — the button under a photo that says what it is of, and opens the choice. */
+      ofButton: string
+      /** `{number}` — the choice's title. */
+      ofTitle: string
+      ofHint: string
+      /** `{option}` — the button that takes one option's values off the photo. */
+      ofAnyValue: string
     }
     /** The sections the product form is cut into, in the order they are read. */
     sections: {

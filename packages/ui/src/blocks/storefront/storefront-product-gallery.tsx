@@ -12,6 +12,8 @@ export interface StorefrontProductImage {
   id: string
   url: string
   alt: string | null
+  /** The option values the photo is of; absent or empty, every combination. See `lib/photo-choice`. */
+  optionValueIds?: readonly string[]
 }
 
 export interface StorefrontProductGalleryProps {
@@ -26,7 +28,8 @@ export interface StorefrontProductGalleryProps {
  *
  * Which photo is shown is state about looking rather than about the shop: not worth an address,
  * and putting it in one would make every thumbnail a new entry in someone's history. The page
- * remounts this with a new key when a combination brings a photo of its own, so it opens on it.
+ * remounts this with a new key when a choice changes which photos are shown, so it opens on the
+ * first of them.
  */
 export function StorefrontProductGallery({ images, name, messages = defaultMessages }: StorefrontProductGalleryProps) {
   const text = messages.storefront

@@ -42,6 +42,12 @@ export interface VariationsValue {
   options: VariationOption[]
   /** Keyed by `combinationKey`. A combination with no row yet borrows its nearest neighbour's price. */
   rows: Record<string, VariationRow>
+  /**
+   * Photo URL → the value keys the photo is of (see `lib/photo-choice`). A photo absent here, like
+   * one with no keys, is of every combination; an empty list is never stored, so a draft that
+   * gained and lost a mark is equal to one that never had it.
+   */
+  photos?: Readonly<Record<string, readonly string[]>>
 }
 
 export interface VariationCombination {
@@ -148,6 +154,7 @@ export function addValue(value: VariationsValue, optionKey: string, entry: Varia
   const extending = option.values.length === 0
   const sources = Object.keys(value.rows).length > 0 || !extending ? value.rows : { "": base }
   const next: VariationsValue = {
+    ...value,
     options: value.options.map((candidate) =>
       candidate.key === optionKey ? { ...candidate, values: [...candidate.values, entry] } : candidate,
     ),
@@ -175,6 +182,8 @@ export function removeValue(value: VariationsValue, optionKey: string, valueKey:
 
   const last = option.values.length === 1
   return {
+    ...value,
+    photos: photosWithout(value.photos, [valueKey]),
     options: value.options.map((candidate) =>
       candidate.key === optionKey
         ? { ...candidate, values: candidate.values.filter((entry) => entry.key !== valueKey) }
@@ -199,6 +208,8 @@ export function removeOption(value: VariationsValue, optionKey: string, base: Va
   const rows = Object.fromEntries(ordered.map((combination) => [combination.key, combination.row]))
 
   return {
+    ...value,
+    photos: photosWithout(value.photos, option.values.map((entry) => entry.key)),
     options: value.options.filter((candidate) => candidate.key !== optionKey),
     rows: collapse(rows, option.values.map((entry) => entry.key)),
   }
@@ -233,4 +244,34 @@ export function patchRows(
   const rows = { ...written(value, base).rows }
   for (const combination of combinations) rows[combination.key] = { ...combination.row, ...patch }
   return { ...value, rows }
+}
+
+/** The value keys a photo is of; empty when it is of every combination. */
+export function photoValuesOf(value: VariationsValue, url: string): readonly string[] {
+  return value.photos?.[url] ?? []
+}
+
+/** Marks a photo as of these values, or of every combination when there are none. */
+export function setPhotoValues(value: VariationsValue, url: string, valueKeys: readonly string[]): VariationsValue {
+  const photos = { ...value.photos }
+  if (valueKeys.length > 0) photos[url] = [...valueKeys]
+  else delete photos[url]
+  return { ...value, photos }
+}
+
+/**
+ * The marks without the values that are gone. A photo that was only of Morango becomes a photo of
+ * every combination when Morango is removed — it is never dropped, and its button says so.
+ */
+function photosWithout(
+  photos: VariationsValue["photos"],
+  removed: readonly string[],
+): VariationsValue["photos"] {
+  if (!photos) return photos
+  const next: Record<string, readonly string[]> = {}
+  for (const [url, keys] of Object.entries(photos)) {
+    const kept = keys.filter((key) => !removed.includes(key))
+    if (kept.length > 0) next[url] = kept
+  }
+  return next
 }

@@ -10,7 +10,7 @@ import { EMPTY_VARIATIONS, type VariationsValue } from "@harness-monorepo/ui/lib
 // Block
 import { ProductEditor } from "./product-editor"
 import { EMPTY_PRODUCT, type ProductFormValues } from "./product-form-types"
-import { BLOUSE } from "./variation-fixtures"
+import { BLOUSE, WHEY, WHEY_PHOTOS } from "./variation-fixtures"
 
 function Controlled({ initial, variations }: { initial: ProductFormValues; variations: VariationsValue }) {
   const [value, setValue] = useState(initial)
@@ -53,4 +53,12 @@ export const SemVariacoes: Story = {
 export const ComVariacoes: Story = {
   args: {} as never,
   render: () => <Controlled initial={blouse} variations={BLOUSE} />,
+}
+
+/** O whey em pesos e sabores: cada foto diz a que combinações pertence, e a tabela mostra a de cada uma. */
+export const FotosPorVariacao: Story = {
+  args: {} as never,
+  render: () => (
+    <Controlled initial={{ ...EMPTY_PRODUCT, name: "Whey", price: "149,90", imageUrls: WHEY_PHOTOS }} variations={WHEY} />
+  ),
 }

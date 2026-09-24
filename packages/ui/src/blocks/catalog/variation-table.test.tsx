@@ -1,5 +1,5 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -83,5 +83,21 @@ describe("VariationTable", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Informe o preço de P · Areia.")
     expect(screen.getByRole("textbox", { name: "Estoque de P · Areia" })).toHaveAttribute("placeholder", "Não contado")
     await expectNoA11yViolations(container)
+  })
+
+  it("shows the photo a combination opens on, named by its place in the gallery", () => {
+    render(
+      <VariationTable
+        combinations={combinations}
+        onRow={() => {}}
+        trackStock
+        selection={{}}
+        onSelection={() => {}}
+        photoOf={(combination) => (combination.key === "P|areia" ? { url: "https://cdn/p.png", number: 2 } : null)}
+      />,
+    )
+
+    expect(within(screen.getByRole("row", { name: /P · Areia/ })).getByRole("img", { name: "Foto 2" })).toBeInTheDocument()
+    expect(screen.getAllByRole("img")).toHaveLength(1)
   })
 })

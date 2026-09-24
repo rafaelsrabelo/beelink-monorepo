@@ -11,8 +11,10 @@ import {
   EMPTY_VARIATIONS,
   labelOf,
   patchRows,
+  photoValuesOf,
   removeOption,
   removeValue,
+  setPhotoValues,
   type VariationOption,
   type VariationRow,
   type VariationsValue,
@@ -144,5 +146,34 @@ describe("the variations draft", () => {
 
     expect(removeOption(draft, "size", base)).toEqual(EMPTY_VARIATIONS)
     expect(removeValue(draft, "size", "P").rows).toEqual({})
+  })
+
+  describe("the photos' marks", () => {
+    const whey: VariationsValue = {
+      options: [option("peso", "Peso", ["900", "750"]), option("sabor", "Sabor", ["choc", "mor"])],
+      rows: {},
+    }
+
+    it("marks a photo, and stores nothing for one of every combination", () => {
+      const marked = setPhotoValues(whey, "/mor.jpg", ["mor"])
+
+      expect(photoValuesOf(marked, "/mor.jpg")).toEqual(["mor"])
+      expect(photoValuesOf(marked, "/geral.jpg")).toEqual([])
+      expect(setPhotoValues(marked, "/mor.jpg", []).photos).toEqual({})
+    })
+
+    it("drops a removed value from every photo, and keeps the photo", () => {
+      const marked = setPhotoValues(setPhotoValues(whey, "/mor.jpg", ["mor"]), "/mor-900.jpg", ["mor", "900"])
+      const withoutMorango = removeValue(marked, "sabor", "mor")
+
+      expect(withoutMorango.photos).toEqual({ "/mor-900.jpg": ["900"] })
+      expect(removeOption(marked, "peso", base).photos).toEqual({ "/mor.jpg": ["mor"], "/mor-900.jpg": ["mor"] })
+    })
+
+    it("keeps the marks when a value is added", () => {
+      const marked = setPhotoValues(whey, "/mor.jpg", ["mor"])
+
+      expect(addValue(marked, "sabor", { key: "baun", name: "Baunilha", colorHex: null }, base).photos).toEqual({ "/mor.jpg": ["mor"] })
+    })
   })
 })
