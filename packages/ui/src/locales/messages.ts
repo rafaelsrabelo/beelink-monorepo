@@ -181,6 +181,8 @@ export interface UiMessages {
     cart: string
     /** `{count}` — the basket's accessible name, which says how many lines it holds. */
     cartWithCount: string
+    /** The cart link's name with a single item: "Carrinho, 1 item". */
+    cartWithOne: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */

@@ -139,6 +139,7 @@ export const en: UiMessages = {
     photoOf: "Photo {n} of {total}",
     cart: "Cart",
     cartWithCount: "Cart, {count} items",
+    cartWithOne: "Cart, 1 item",
     accountGreeting: "Hello, sign in",
     cartEmpty: "Your cart is empty.",
     cartEmptyHint: "Pick something and message the shop on WhatsApp.",

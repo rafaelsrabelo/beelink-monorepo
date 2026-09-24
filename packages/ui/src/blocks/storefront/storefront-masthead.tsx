@@ -1,17 +1,15 @@
 // React
 import type { CSSProperties, ReactNode } from "react"
 
-// Libs
-import { ShoppingBagIcon } from "lucide-react"
-
 // Locales
-import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
+import { StorefrontCartLink } from "./storefront-cart-link"
 import { StorefrontSearch, type StorefrontSearchScope } from "./storefront-search"
 
 /** One entry of a site's menu: a named band, as an anchor. The screen builds them. */
@@ -37,6 +35,8 @@ export interface StorefrontMastheadProps {
   searchScope?: string
   cartHref?: string
   cartCount?: number
+  /** Replaces the cart link: the web's live one, which follows the cart as it fills. */
+  cartSlot?: ReactNode
   accountHref?: string
   /** A site's named bands, as anchors. A shop passes none. */
   menu?: readonly StorefrontMenuItem[]
@@ -79,6 +79,7 @@ export function StorefrontMasthead({
   searchScope,
   cartHref,
   cartCount = 0,
+  cartSlot,
   accountHref,
   menu = [],
   cta = null,
@@ -185,28 +186,7 @@ export function StorefrontMasthead({
           </Link>
         ) : null}
 
-        {cartHref ? (
-          <Link
-            href={cartHref}
-            aria-label={format(text.cartWithCount, { count: String(cartCount) })}
-            className="flex shrink-0 items-center gap-1.5 text-sm font-bold"
-          >
-            <span className="relative flex">
-              <ShoppingBagIcon aria-hidden="true" className="size-7" strokeWidth={1.8} />
-              {cartCount > 0 ? (
-                // The brand toned against the header, so it shows on a header painted in the brand.
-                <span
-                  aria-hidden="true"
-                  className="absolute -top-1.5 -right-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-semibold"
-                  style={{ backgroundColor: "var(--shop-primary-on-header)", color: "var(--shop-on-primary-on-header)" }}
-                >
-                  {cartCount}
-                </span>
-              ) : null}
-            </span>
-            <span className="hidden shop-lg:inline">{text.cart}</span>
-          </Link>
-        ) : null}
+        {cartSlot ?? (cartHref ? <StorefrontCartLink href={cartHref} count={cartCount} linkComponent={Link} messages={messages} /> : null)}
       </div>
 
       {categories ? (

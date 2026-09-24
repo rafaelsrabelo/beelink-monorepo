@@ -139,6 +139,7 @@ export const ptBR: UiMessages = {
     photoOf: "Foto {n} de {total}",
     cart: "Carrinho",
     cartWithCount: "Carrinho, {count} itens",
+    cartWithOne: "Carrinho, 1 item",
     accountGreeting: "Olá, entre",
     cartEmpty: "Seu carrinho está vazio.",
     cartEmptyHint: "Escolha um produto e fale com a loja pelo WhatsApp.",
