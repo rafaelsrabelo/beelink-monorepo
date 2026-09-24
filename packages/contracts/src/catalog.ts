@@ -318,6 +318,102 @@ export interface ProductImagePayload {
   alt?: string | null;
 }
 
+/* ── options and variants ───────────────────────────────────────────────── */
+
+/** One answer to an option — P, Areia, Frutas vermelhas. */
+export interface ProductOptionValue {
+  id: string;
+  name: string;
+  /**
+   * A colour option's swatch, `#rrggbb`. It is the shopkeeper's data, applied at runtime the way a
+   * shop's brand colour is. Null on every value of an option that is not a colour.
+   */
+  colorHex: string | null;
+}
+
+/** A choice made before ordering — Tamanho, Cor. At most three per product, values in order. */
+export interface ProductOption {
+  id: string;
+  name: string;
+  values: ProductOptionValue[];
+}
+
+/**
+ * One thing that can be ordered: one value of each option. A product with no options has exactly
+ * one, with no values — its default variant.
+ */
+export interface ProductVariant extends ProductStock, ProductParcel {
+  id: string;
+  /** One value id per option, in the options' order. Empty on the default variant. */
+  optionValueIds: string[];
+  /** Off is "não vendo esta": a combination the shop does not sell, not one that sold out. */
+  isActive: boolean;
+  priceCents: number;
+  compareAtPriceCents: number | null;
+  /** Owner-only, like the product's. */
+  costCents: number | null;
+  /** Unique within the shop. */
+  sku: string | null;
+  barcode: string | null;
+  /** This combination's photo, when it has one of its own. */
+  imageUrl: string | null;
+}
+
+/**
+ * One product with everything its editor needs. A product's own per-unit fields are, from here on,
+ * a summary of its variants: the cheapest price on sale, the stock summed, the first variant's
+ * codes and box.
+ */
+export interface ProductDetail extends Product {
+  options: ProductOption[];
+  /** In the order of the combinations: the first option changes slowest. */
+  variants: ProductVariant[];
+}
+
+/** A value as the editor sends it. With an `id` it is that value, renamed; without, a new one. */
+export interface ProductOptionValuePayload {
+  id?: string;
+  name: string;
+  colorHex?: string | null;
+}
+
+/** An option as the editor sends it. With an `id` it is that option; without, a new one. */
+export interface ProductOptionPayload {
+  id?: string;
+  name: string;
+  /** At least one, in the order the shopkeeper arranged them. */
+  values: ProductOptionValuePayload[];
+}
+
+/**
+ * The product's options, whole and in order. What is left out is removed.
+ *
+ * A combination that still exists keeps its variant, with its price, stock and code. A new option
+ * extends every variant with its first value. A combination nobody had before is created with the
+ * price of the variant closest to it. A variant whose combination no longer exists is archived,
+ * never deleted, so an order that named it keeps something to point at.
+ */
+export interface ReplaceProductOptionsPayload {
+  options: ProductOptionPayload[];
+}
+
+/** One variant's changes. Only what is sent changes. */
+export interface ProductVariantPayload extends Partial<ProductStock & ProductParcel> {
+  id: string;
+  isActive?: boolean;
+  priceCents?: number;
+  compareAtPriceCents?: number | null;
+  costCents?: number | null;
+  sku?: string | null;
+  barcode?: string | null;
+  imageUrl?: string | null;
+}
+
+/** Several variants of one product at once. Variants not listed are left as they are. */
+export interface UpdateProductVariantsPayload {
+  variants: ProductVariantPayload[];
+}
+
 /**
  * Reordering is one request for the whole list, not one PATCH per row: a drag that moves the third
  * item to the top changes every position below it, and sending them one at a time leaves the list
@@ -344,4 +440,12 @@ export type CatalogErrorCode =
   /** Another product of the same shop already uses the code. */
   | "PRODUCT_SKU_TAKEN"
   /** A price or stock sent for a whole product that has options: those belong to its variants. */
-  | "PRODUCT_HAS_OPTIONS";
+  | "PRODUCT_HAS_OPTIONS"
+  /** An option or value id that is not one of this product's. */
+  | "PRODUCT_OPTION_NOT_FOUND"
+  /** Two options with one name, or two values with one name in one option. */
+  | "PRODUCT_OPTION_DUPLICATE"
+  /** The options would make more combinations than a product may have. */
+  | "PRODUCT_VARIANTS_LIMIT"
+  /** A variant id that is not one of this product's current variants. */
+  | "PRODUCT_VARIANT_NOT_FOUND";
