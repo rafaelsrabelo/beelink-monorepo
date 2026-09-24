@@ -136,3 +136,16 @@ export const PARCEL_MM_MAX = 2_000;
 
 /** A count this high is a typo, not a warehouse. */
 export const STOCK_MAX = 1_000_000;
+
+/**
+ * Options per product. Every combination of values is a variant the shopkeeper prices, and three
+ * options of five values each is already 125 of them. The database holds the same line with a
+ * trigger; see the product_variants migration.
+ */
+export const PRODUCT_OPTIONS_MAX = 3;
+
+/** Variants per product: the combinations the options make, and the rows one save may change. */
+export const PRODUCT_VARIANTS_MAX = 100;
+
+export const OPTION_NAME_MAX_LENGTH = 40;
+export const OPTION_VALUE_NAME_MAX_LENGTH = 60;

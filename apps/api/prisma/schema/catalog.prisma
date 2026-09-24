@@ -293,6 +293,11 @@ model ProductVariant {
   /// every image a new id, and a foreign key to one would be cut by the next unrelated edit.
   imageUrl String?
 
+  /// Set when the variant's combination stopped existing — a value or an option was removed. The
+  /// row stays, so an order that named it keeps something to point at; its SKU is released so the
+  /// code can be given to what replaced it. Every read and the product's cache skip archived rows.
+  archivedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
