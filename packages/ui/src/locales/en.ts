@@ -136,6 +136,8 @@ export const en: UiMessages = {
     restockCancel: "Close",
     photoOf: "Photo {n} of {total}",
     cart: "Cart",
+    cartWithCount: "Cart, {count} items",
+    accountGreeting: "Hello, sign in",
     cartEmpty: "Your cart is empty.",
     cartEmptyHint: "Pick something and message the shop on WhatsApp.",
     account: "My account",

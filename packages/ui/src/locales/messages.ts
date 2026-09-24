@@ -175,6 +175,10 @@ export interface UiMessages {
     photoOf: string
     /** The header's basket, which now has an address of its own. */
     cart: string
+    /** `{count}` — the basket's accessible name, which says how many lines it holds. */
+    cartWithCount: string
+    /** The line over "Minha conta" in the header, for a visitor not signed in. */
+    accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string

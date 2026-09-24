@@ -128,15 +128,15 @@ describe("StorefrontWindow", () => {
     it("offers no cart and no account until the screen has somewhere to send them", () => {
       renderWindow()
 
-      expect(screen.queryByRole("link", { name: "Carrinho" })).not.toBeInTheDocument()
+      expect(screen.queryByRole("link", { name: /Carrinho/ })).not.toBeInTheDocument()
       expect(screen.queryByRole("link", { name: "Minha conta" })).not.toBeInTheDocument()
     })
 
     it("shows them, counted, once it does", () => {
       renderWindow({ cartHref: "/padaria-da-ana/carrinho", cartCount: 3, accountHref: "/padaria-da-ana/conta" })
 
-      expect(screen.getByRole("link", { name: "Carrinho" })).toHaveAttribute("href", "/padaria-da-ana/carrinho")
-      expect(screen.getByRole("link", { name: "Minha conta" })).toBeInTheDocument()
+      expect(screen.getByRole("link", { name: "Carrinho, 3 itens" })).toHaveAttribute("href", "/padaria-da-ana/carrinho")
+      expect(screen.getByRole("link", { name: /Minha conta/ })).toBeInTheDocument()
       expect(screen.getByText("3")).toBeInTheDocument()
     })
   })

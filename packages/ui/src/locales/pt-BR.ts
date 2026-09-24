@@ -136,6 +136,8 @@ export const ptBR: UiMessages = {
     restockCancel: "Fechar",
     photoOf: "Foto {n} de {total}",
     cart: "Carrinho",
+    cartWithCount: "Carrinho, {count} itens",
+    accountGreeting: "Olá, entre",
     cartEmpty: "Seu carrinho está vazio.",
     cartEmptyHint: "Escolha um produto e fale com a loja pelo WhatsApp.",
     account: "Minha conta",

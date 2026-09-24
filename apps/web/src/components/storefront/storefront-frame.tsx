@@ -171,10 +171,9 @@ export function StorefrontFrame({
               />
             ),
             searchAction: routes.search(),
-            // Both icons, on every page. They were held back while they had nowhere to go; the
-            // basket has an address now, and the account is the sign-in the platform already has.
+            // The basket, on every page: it has an address. The account link waits for a customer
+            // account to exist — `/login` is the shopkeeper's door, the wrong one for a visitor.
             cartHref: routes.cart(),
-            accountHref: "/login",
           })}
       {...(linkComponent ? { linkComponent } : {})}
       categories={
