@@ -74,3 +74,24 @@ que a loja não vende, e o seletor do A5 a desabilita. Uma variante esgotada vem
 - Facetas por valor de opção (B1).
 - O SKU na tabela de especificações (design 5b). O SKU é do lojista, como o do produto sempre foi.
 - As telas (A4, A5).
+
+## Adendo — revisão independente (24/09/2026)
+
+Três leituras (resumo e faixa de preço; forma pública; evidência). Cada achado passou por um
+verificador que tentou refutá-lo. Três achados confirmados, todos corrigidos:
+
+1. **A migration preenchia só o topo da faixa.** `maxPriceCents` seguia a regra nova, mas
+   `priceCents` e `compareAtPriceCents` ficavam com a regra antiga. Um produto gravado pelos
+   endpoints do A2 antes desta migration teria uma faixa que começa numa variante esgotada. A
+   migration agora reescreve as três colunas juntas, do mesmo grupo de variantes que
+   `productCacheOf` usa: as que podem ser pedidas, depois as à venda, depois todas, com o empate
+   resolvido pela posição. Numa réplica com um produto no formato do A2 (6990 esgotado, 11990 com
+   3), o resultado é `{11990, null, 11990}`, igual ao `productCacheOf`. Um produto de uma variante
+   só fica com o próprio preço.
+2. **O seed de dev não gravava `maxPriceCents`.** Isso quebraria na coluna obrigatória. Agora
+   grava, e o `ON CONFLICT` também. O seed tem uma quebra anterior e alheia a este ticket: ele
+   ainda cita `store_banners`, tabela renomeada para `store_sections` em 22/09.
+3. **Nenhum teste conferia os `optionValueIds` das variantes públicas.** O e2e do whey agora
+   confere.
+
+Dois achados foram refutados.

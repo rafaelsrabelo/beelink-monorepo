@@ -96,6 +96,8 @@ describe('a product’s variants on the storefront', () => {
     const page = await visit<PublicProductDetail>('/api/stores/lessari/catalog/whey');
 
     expect(page.options[0]?.values.map((value) => value.name)).toEqual(['150 g', '300 g', '600 g']);
+    const [small, medium] = page.options[0]!.values;
+    expect(page.variants.map((variant) => variant.optionValueIds)).toEqual([[small!.id], [medium!.id]]);
     // 600 g is switched off, so it is not there at all; 300 g is sold out, and says so.
     expect(page.variants.map((variant) => [variant.id, variant.available])).toEqual([
       [detail.variants[0]!.id, true],

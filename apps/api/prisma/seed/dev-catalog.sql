@@ -149,17 +149,18 @@ WHERE child."storeId" = sh.store_id
 -- ---------------------------------------------------------------- products
 -- compareAtPriceCents is set on some and not others on purpose: the window computes the percentage
 -- from the pair, so a catalogue with both kinds is the only way to see that it does.
-INSERT INTO "products" ("id", "storeId", "categoryId", "slug", "name", "description", "priceCents", "compareAtPriceCents", "position", "status", "slugHistory", "createdAt", "updatedAt")
+INSERT INTO "products" ("id", "storeId", "categoryId", "slug", "name", "description", "priceCents", "maxPriceCents", "compareAtPriceCents", "position", "status", "slugHistory", "createdAt", "updatedAt")
 SELECT
   uuidv7(), sh.store_id,
   (SELECT pc.id FROM "product_categories" pc WHERE pc."storeId" = sh.store_id AND pc.slug = p.category),
-  p.slug, p.name, p.description, p.price, p.compare_at, p.position, 'ACTIVE'::"ProductStatus", '{}', now(), now()
+  p.slug, p.name, p.description, p.price, p.price, p.compare_at, p.position, 'ACTIVE'::"ProductStatus", '{}', now(), now()
 FROM shop_segment sh
 JOIN seed_product p ON p.segment = sh.segment
 ON CONFLICT ("storeId", "slug") DO UPDATE
   SET "name" = EXCLUDED."name",
       "description" = EXCLUDED."description",
       "priceCents" = EXCLUDED."priceCents",
+      "maxPriceCents" = EXCLUDED."maxPriceCents",
       "compareAtPriceCents" = EXCLUDED."compareAtPriceCents",
       "position" = EXCLUDED."position",
       "categoryId" = EXCLUDED."categoryId",
