@@ -141,6 +141,8 @@ export interface UiMessages {
   storefront: {
     /** "-40%", computed from the pair of prices and never stored beside them. */
     discount: string
+    /** `{price}` — what it cost before, under the product page's price: "De: R$ 149,90". */
+    priceWas: string
     backToShop: string
     orderThis: string
     /**

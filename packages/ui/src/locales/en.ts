@@ -116,6 +116,7 @@ export const en: UiMessages = {
   },
   storefront: {
     discount: "-{percent}%",
+    priceWas: "Was: {price}",
     backToShop: "Back to the shop",
     orderThis: "Ask for this on WhatsApp",
     soldOut: "Sold out",

@@ -1,6 +1,6 @@
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
-import { StorefrontPrice } from "./storefront-price"
+import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -48,7 +48,7 @@ export function StorefrontProductCard({
       href={href}
       className="group flex flex-col gap-2 rounded-xl p-2 transition-colors hover:bg-black/5"
     >
-      <div className="aspect-square w-full overflow-hidden rounded-lg bg-black/5">
+      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-black/5">
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
@@ -65,6 +65,10 @@ export function StorefrontProductCard({
             {text.noPhoto}
           </div>
         )}
+        {/* The saving over the photo, as 5a draws it, and never without a real one. */}
+        {showBadge ? (
+          <StorefrontDiscountBadge priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} messages={messages} />
+        ) : null}
       </div>
 
       <div className="relative">
@@ -93,7 +97,7 @@ export function StorefrontProductCard({
           priceCents={product.priceCents}
           compareAtPriceCents={product.compareAtPriceCents}
           locale={locale}
-          showBadge={showBadge}
+          size="card"
           messages={messages}
         />
       ) : null}

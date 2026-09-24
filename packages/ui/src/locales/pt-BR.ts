@@ -116,6 +116,7 @@ export const ptBR: UiMessages = {
   },
   storefront: {
     discount: "-{percent}%",
+    priceWas: "De: {price}",
     backToShop: "Voltar para a loja",
     orderThis: "Pedir este pelo WhatsApp",
     soldOut: "Esgotado",

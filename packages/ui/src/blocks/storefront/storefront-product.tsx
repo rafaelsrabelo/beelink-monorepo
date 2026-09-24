@@ -143,6 +143,7 @@ export function StorefrontProductDetail({
               priceCents={variant?.priceCents ?? priceCents}
               compareAtPriceCents={variant ? variant.compareAtPriceCents : compareAtPriceCents}
               locale={locale}
+              size="product"
               showBadge={showBadge}
               messages={messages}
             />
