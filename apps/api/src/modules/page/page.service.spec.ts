@@ -722,6 +722,18 @@ describe('PageService — each kind draws its own two displays', () => {
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
   });
 
+  it('lets the categories be a rail or a grid, and never a carousel', async () => {
+    for (const display of ['RAIL', 'GRID'] as const) {
+      const { service } = build({ kind: 'CATEGORIES' });
+      await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display })).resolves.toBeDefined();
+    }
+
+    const { service } = build({ kind: 'CATEGORIES' });
+    await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' })).rejects.toMatchObject({
+      response: { errorCode: 'COMPONENT_DISPLAY_INVALID' },
+    });
+  });
+
   it('never lets a banner be a rail', async () => {
     const { service } = build({ kind: 'BANNER' });
 

@@ -65,9 +65,10 @@ export type SectionWidth = "FULL" | "CONTAINED";
 export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
 
 /**
- * How a component with several things in it lays them out. Read on `BANNER` and `PRODUCTS`, each with
- * its own two, and null on every other kind: a banner's pictures take turns (`CAROUSEL`) or share the
- * space (`GRID`); a showcase's products scroll on one row (`RAIL`) or wrap into rows (`GRID`).
+ * How a component with several things in it lays them out. Read on `BANNER`, `PRODUCTS` and
+ * `CATEGORIES`, each with its own two, and null on every other kind: a banner's pictures take turns
+ * (`CAROUSEL`) or share the space (`GRID`); a showcase's products and the shop's categories scroll on
+ * one row (`RAIL`) or wrap into rows (`GRID`).
  */
 export type ComponentDisplay = "CAROUSEL" | "GRID" | "RAIL";
 
@@ -245,7 +246,7 @@ export interface PublicComponent {
   body: string | null;
   /** Its slice of the band, on every kind. */
   span: ComponentSpan;
-  /** Read on `BANNER`. Null on every other kind. */
+  /** Read on `BANNER`, `PRODUCTS` and `CATEGORIES`. Null on every other kind. */
   display: ComponentDisplay | null;
   /** A showcase's source, for the page to say where "ver tudo" leads. Null on every other kind. */
   source: ProductSource | null;
@@ -347,7 +348,7 @@ export interface CreateComponentPayload {
   subtitle?: string | null;
   body?: string | null;
   span?: ComponentSpan;
-  /** A banner's or a showcase's choice, from the two its kind draws. Refused on any other kind. */
+  /** A banner's, a showcase's or the categories' choice, from the two its kind draws. Refused on any other kind. */
   display?: ComponentDisplay | null;
   /** A showcase's. `CATEGORY` needs `sourceCategoryId`; `SELECTION` needs `items`. */
   source?: ProductSource;

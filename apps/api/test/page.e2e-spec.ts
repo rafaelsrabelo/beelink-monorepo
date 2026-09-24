@@ -126,4 +126,22 @@ describe('page — span and display', () => {
     expect(components.find((component) => component.kind === 'BANNER')).toMatchObject({ span: 'THIRD', display: 'CAROUSEL' });
     expect(components.find((component) => component.kind === 'PRODUCTS')).toMatchObject({ span: 'FULL', display: 'RAIL' });
   });
+
+  // Opens as the rail the shopkeeper asked for, can go back to the grid it always was, never a carousel.
+  it('opens a categories block as a rail, lets it be a grid, and never a carousel', async () => {
+    const created = await call('POST', '/api/stores/padaria-do-bairro/sections', { component: { kind: 'CATEGORIES' } });
+    const categories = created.json<Section>().components[0]!;
+    expect(categories).toMatchObject({ display: 'RAIL' });
+
+    const grid = await call('PATCH', `/api/stores/padaria-do-bairro/components/${categories.id}`, { display: 'GRID' });
+    expect(grid.json<StoreComponent>()).toMatchObject({ display: 'GRID' });
+
+    const carousel = await call('PATCH', `/api/stores/padaria-do-bairro/components/${categories.id}`, { display: 'CAROUSEL' });
+    expect(carousel.statusCode).toBe(400);
+    expect(carousel.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
+
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === categories.id);
+    expect(served).toMatchObject({ display: 'GRID' });
+  });
 });
