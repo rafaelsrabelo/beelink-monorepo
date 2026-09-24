@@ -4,6 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 // Types
 import type {
   AppliedCatalogFilter,
+  CatalogDiscountRange,
   CatalogFacets,
   CatalogFacetValue,
   CatalogOptionFacet,
@@ -25,9 +26,16 @@ export class CatalogOptionFacetResponse implements CatalogOptionFacet {
   @ApiProperty({ type: [CatalogFacetValueResponse] }) values!: CatalogFacetValueResponse[];
 }
 
+export class CatalogDiscountRangeResponse implements CatalogDiscountRange {
+  @ApiProperty({ example: 20, description: '"N% ou mais": what `desconto=N` asks for.' }) minPercent!: number;
+  @ApiProperty({ description: 'Products cut by at least this much, under every other filter.' }) count!: number;
+  @ApiProperty() selected!: boolean;
+}
+
 class DiscountFacetResponse {
   @ApiProperty() count!: number;
   @ApiProperty() selected!: boolean;
+  @ApiProperty({ type: [CatalogDiscountRangeResponse] }) ranges!: CatalogDiscountRangeResponse[];
 }
 
 class PriceFacetResponse {

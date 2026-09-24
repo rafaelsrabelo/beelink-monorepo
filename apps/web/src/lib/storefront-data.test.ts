@@ -46,7 +46,7 @@ function catalogue(over: Partial<StorefrontCatalog>): StorefrontCatalog {
     page: 1,
     pageSize: 1,
     sort: "relevancia",
-    facets: { categories: [], options: [], discount: { count: 0, selected: false }, price: null },
+    facets: { categories: [], options: [], discount: { count: 0, selected: false, ranges: [] }, price: null },
     applied: [],
     ...over,
   }

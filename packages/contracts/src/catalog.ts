@@ -209,10 +209,11 @@ export interface StorefrontCatalog {
 }
 
 /**
- * How a shelf can be ordered, as the address spells it. `relevancia` is the shopkeeper's own order.
- * "Mais vendidos" waits for orders to exist.
+ * How a shelf can be ordered, as the address spells it. `relevancia` is the shopkeeper's own order;
+ * `maior-desconto` puts the deepest cut first and what is not on sale last. "Mais vendidos" waits
+ * for orders to exist.
  */
-export type StorefrontSort = "relevancia" | "menor-preco" | "maior-preco" | "novidades";
+export type StorefrontSort = "relevancia" | "menor-preco" | "maior-preco" | "novidades" | "maior-desconto";
 
 /** One value a facet offers. */
 export interface CatalogFacetValue {
@@ -239,10 +240,20 @@ export interface CatalogFacets {
   categories: CatalogFacetValue[];
   /** One facet per option name across the shelf, "Tamanho" and "tamanho" being one. */
   options: CatalogOptionFacet[];
-  /** How many are on sale — a "was" price above the price. */
-  discount: { count: number; selected: boolean };
+  /**
+   * How many are on sale — a "was" price above the price — and how many at each cut the shelf
+   * offers as a filter ("10% ou mais"), each counted under every other filter in force.
+   */
+  discount: { count: number; selected: boolean; ranges: CatalogDiscountRange[] };
   /** The cheapest and dearest product under the other filters; null on an empty shelf. */
   price: { minCents: number; maxCents: number } | null;
+}
+
+/** One "N% ou mais" the shelf can be narrowed to; `desconto=<minPercent>` asks for it. */
+export interface CatalogDiscountRange {
+  minPercent: number;
+  count: number;
+  selected: boolean;
 }
 
 export interface CatalogOptionFacet {
@@ -255,7 +266,7 @@ export interface CatalogOptionFacet {
 export interface AppliedCatalogFilter {
   /** The address's parameter: `categoria`, `busca`, `precoMin`, `precoMax`, `desconto`, `opcao`. */
   key: "categoria" | "busca" | "precoMin" | "precoMax" | "desconto" | "opcao";
-  /** Its value in the address: a slug, a term, whole reais, `1`, `Tamanho:P`. */
+  /** Its value in the address: a slug, a term, whole reais, `1` or a minimum percent, `Tamanho:P`. */
   value: string;
   /** The shop's own name for it where there is one — a category's, a value's — else the value. */
   label: string;

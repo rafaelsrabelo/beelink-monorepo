@@ -48,6 +48,7 @@ export interface CatalogueAsk {
   priceMin?: number
   priceMax?: number
   discount?: boolean
+  discountMinPercent?: number
   /** `Nome:Valor`, one entry per value, sent as a repeated `opcao`. */
   options?: readonly string[]
 }
@@ -68,7 +69,8 @@ export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise
   // Whole reais, or the API answers 400 and this page would say "nothing found" for a typo.
   if (ask.priceMin !== undefined && Number.isFinite(ask.priceMin)) query.set("precoMin", String(Math.max(0, Math.floor(ask.priceMin))))
   if (ask.priceMax !== undefined && Number.isFinite(ask.priceMax)) query.set("precoMax", String(Math.max(0, Math.ceil(ask.priceMax))))
-  if (ask.discount) query.set("desconto", "1")
+  if (ask.discountMinPercent && ask.discountMinPercent > 1) query.set("desconto", String(Math.floor(ask.discountMinPercent)))
+  else if (ask.discount) query.set("desconto", "1")
   for (const option of ask.options ?? []) query.append("opcao", option)
 
   const suffix = query.size ? `?${query.toString()}` : ""
@@ -89,7 +91,7 @@ export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise
       page: ask.page ?? 1,
       pageSize: ask.pageSize ?? 1,
       sort: "relevancia",
-      facets: { categories: [], options: [], discount: { count: 0, selected: false }, price: null },
+      facets: { categories: [], options: [], discount: { count: 0, selected: false, ranges: [] }, price: null },
       applied: [],
     }
   }

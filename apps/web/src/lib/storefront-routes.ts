@@ -51,6 +51,8 @@ export interface ListingFilters {
   priceMin?: number
   priceMax?: number
   discount?: boolean
+  /** On sale by at least this much, in whole percent; implies `discount`. */
+  discountMinPercent?: number
   /** `Nome:Valor`, repeatable. Values of one option widen, different options narrow. */
   options?: readonly string[]
 }
@@ -61,7 +63,7 @@ export interface CatalogueQuery extends ListingFilters {
   search?: string
 }
 
-const SORTS: readonly StorefrontSort[] = ["relevancia", "menor-preco", "maior-preco", "novidades"]
+const SORTS: readonly StorefrontSort[] = ["relevancia", "menor-preco", "maior-preco", "novidades", "maior-desconto"]
 
 /** The address's version of the filters: what the API will read, or nothing for what it would refuse. */
 function filterEntries(filters: ListingFilters): Record<string, string | number | readonly string[] | undefined> {
@@ -69,7 +71,7 @@ function filterEntries(filters: ListingFilters): Record<string, string | number 
     ordenar: filters.sort === "relevancia" ? undefined : filters.sort,
     precoMin: filters.priceMin,
     precoMax: filters.priceMax,
-    desconto: filters.discount ? "1" : undefined,
+    desconto: filters.discountMinPercent ? String(filters.discountMinPercent) : filters.discount ? "1" : undefined,
     opcao: filters.options,
   }
 }
@@ -100,6 +102,13 @@ function reaisOf(raw: string | string[] | undefined, round: (value: number) => n
   return Number.isFinite(value) && value >= 0 ? round(value) : undefined
 }
 
+/** `desconto=1` is any discount; a whole number above one is the least cut, in percent. */
+function discountOf(raw: string | undefined): Pick<ListingFilters, "discount" | "discountMinPercent"> {
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value < 1) return {}
+  return value === 1 ? { discount: true } : { discount: true, discountMinPercent: value }
+}
+
 /**
  * The filters an address carries, read the way the API would read them, so nothing reaches it
  * that it refuses: a sort it does not know is the shop's own order, a price is a whole number of
@@ -118,7 +127,7 @@ export function listingFiltersOf(query: Record<string, string | string[] | undef
     ...(sort && sort !== "relevancia" && (SORTS as readonly string[]).includes(sort) ? { sort: sort as StorefrontSort } : {}),
     ...(priceMin !== undefined ? { priceMin } : {}),
     ...(priceMax !== undefined ? { priceMax } : {}),
-    ...(paramOf(query.desconto) === "1" ? { discount: true } : {}),
+    ...discountOf(paramOf(query.desconto)),
     ...(options.length ? { options } : {}),
   }
 }

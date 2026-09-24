@@ -29,6 +29,13 @@ describe("listingFiltersOf", () => {
     expect(listingFiltersOf({ precoMin: "abc", precoMax: "-5" })).toEqual({})
   })
 
+  it("reads a least cut, in percent, and keeps desconto=1 as any discount", () => {
+    expect(listingFiltersOf({ desconto: "20" })).toEqual({ discount: true, discountMinPercent: 20 })
+    expect(listingFiltersOf({ desconto: "1" })).toEqual({ discount: true })
+    expect(listingFiltersOf({ desconto: "0" })).toEqual({})
+    expect(routes.catalog({ discount: true, discountMinPercent: 30 })).toBe("/mutante/produtos?desconto=30")
+  })
+
   it("ignores a sort it does not know, and the shop's own order", () => {
     expect(listingFiltersOf({ ordenar: "inventado" })).toEqual({})
     expect(listingFiltersOf({ ordenar: "relevancia" })).toEqual({})
