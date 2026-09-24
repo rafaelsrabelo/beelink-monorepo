@@ -4,7 +4,7 @@
 import { useRouter } from "next/navigation"
 
 // React
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 
 /**
  * The shop's server read, taken again — the one place a showcase's products exist, since the API
@@ -17,7 +17,19 @@ import { useState, useTransition } from "react"
 export function useShopRefresh(): { refreshingId: string | null; refresh: (componentId: string) => void } {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [, startQuietly] = useTransition()
   const [refreshing, setRefreshing] = useState<string | null>(null)
+
+  // Back from another tab — the one an empty block's notice opened to fix it, say — the shop may have
+  // changed there, and the preview and the notices read it from the server. A transition of its own,
+  // so no showcase is drawn as loading for it.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") startQuietly(() => router.refresh())
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
+  }, [router])
 
   return {
     refreshingId: pending ? refreshing : null,

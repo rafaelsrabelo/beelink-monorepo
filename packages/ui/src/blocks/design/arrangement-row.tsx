@@ -64,9 +64,12 @@ export function ArrangementRow({
   onDelete,
   onEdit,
   bandWidth,
+  selected = false,
   messages,
 }: {
   item: ArrangementItem
+  /** Its fields are open: marked here as the preview marks it. */
+  selected?: boolean
   onToggle: (id: string, isActive: boolean) => void
   onSpanChange: (id: string, span: ArrangementSpan) => void
   /** Absent where a kind cannot be deleted; the row then draws no bin at all. */
@@ -93,7 +96,9 @@ export function ArrangementRow({
         "bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-2",
         drag.isDragging && "z-10 opacity-80 shadow-md",
         !item.isActive && "opacity-60",
+        selected && "ring-primary ring-2",
       )}
+      {...(selected ? { "aria-current": "true" as const } : {})}
     >
       {/*
         Identity on the first line, and only identity.

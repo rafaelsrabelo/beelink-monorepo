@@ -10,11 +10,11 @@ import type { PublicProductCategory, PublicSection, PublicStore } from "@harness
 import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
 import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/design-block-placeholder"
 import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
+import { bandAnnouncements, bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
 import { PreviewDeviceToggle, type PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
 import { StorefrontShelfSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-shelf-skeleton"
-import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -109,7 +109,16 @@ export function DesignPreviewPane({
           context would make the shop and the list each other's drop targets, so a band could be
           dragged out of the window and into the panel.
         */}
-        <ArrangeBoard ids={orderedIds} onReorder={onReorder} layout="grid">
+        <ArrangeBoard
+          ids={orderedIds}
+          onReorder={onReorder}
+          layout="grid"
+          // The panel's words for the same bands, rather than dnd-kit's English and a row's id.
+          announcements={bandAnnouncements(
+            orderedIds.map((id) => ({ id, name: sections.find((section) => section.id === id)?.name ?? null })),
+            messages,
+          )}
+        >
           <DesignPreview device={device}>
             <StorefrontFrame
               store={store}
@@ -134,9 +143,7 @@ export function DesignPreviewPane({
                   renderSection={(section, band) => (
                     <DesignHandle
                       id={section.id}
-                      label={format(text.bandNumber, {
-                        position: String(orderedIds.indexOf(section.id) + 1),
-                      })}
+                      label={bandLabelOf(section.name, orderedIds.indexOf(section.id) + 1, messages)}
                       messages={messages}
                     >
                       {band}
@@ -145,14 +152,13 @@ export function DesignPreviewPane({
                   renderBlock={(component, block) => {
                     const label = labelOf(component.kind, component.title ?? component.sourceCategory?.name ?? null, messages)
                     const unserved = component.kind === "PRODUCTS" && !shelves.has(component.id)
+                    // No category on the shop window: the block would say the visitor's sentence here.
+                    const noCategories = component.kind === "CATEGORIES" && categories.length === 0
                     // The one rule the renderer already answers, asked here so the page can hold a
                     // place for a block the shop window would draw nothing for.
-                    const empty = isEmptyComponent(
-                      component.kind,
-                      component.title,
-                      component.body,
-                      component.items,
-                    )
+                    const empty =
+                      noCategories ||
+                      isEmptyComponent(component.kind, component.title, component.body, component.items)
 
                     return (
                       <DesignEditTag
@@ -171,6 +177,7 @@ export function DesignPreviewPane({
                             kind={component.kind}
                             label={label}
                             {...(unserved ? { action: text.showcaseOnPublish } : {})}
+                            {...(noCategories ? { action: text.categoriesHiddenAction } : {})}
                             messages={messages}
                           />
                         ) : (

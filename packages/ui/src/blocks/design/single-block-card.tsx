@@ -21,6 +21,8 @@ export interface SingleBlockCardProps {
   block: ArrangementItem
   /** What the band is called: its name, or its place. */
   bandName: string
+  /** Its fields are open. The band's item draws the mark; this says so to the name. */
+  selected?: boolean
   /** The band's handle on the board of bands — the card is that band's item there. */
   drag: ReturnType<typeof useArrangeItem>
   onToggleBand: (id: string, isActive: boolean) => void
@@ -55,6 +57,7 @@ export function SingleBlockCard({
   band,
   block,
   bandName,
+  selected = false,
   drag,
   onToggleBand,
   onEditBand,

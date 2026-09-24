@@ -235,6 +235,45 @@ export const ptBR: UiMessages = {
       CONTACT: "Escolher os campos",
     },
     showcaseOnPublish: "Os produtos aparecem ao publicar",
+    categoriesHiddenAction: "Nenhuma categoria aparece na loja ainda",
+    emptyStates: {
+      categoriesUnlinked: {
+        title: "Nenhuma categoria aparece na loja",
+        body: "{count} categorias ainda não têm produto, e categoria sem produto não aparece na loja.",
+        bodyOne: "1 categoria ainda não tem produto, e categoria sem produto não aparece na loja.",
+        action: "Vincular produtos às categorias",
+      },
+      categoriesNone: {
+        title: "A loja ainda não tem categorias",
+        body: "Crie categorias e vincule produtos a elas para este bloco aparecer.",
+        action: "Criar categorias",
+      },
+      categoriesHidden: {
+        title: "Suas categorias estão ocultas",
+        body: "Categoria oculta não aparece na loja. Mostre as que devem aparecer.",
+        action: "Ver as categorias",
+      },
+      categoriesDrafts: {
+        title: "Nenhuma categoria aparece na loja",
+        body: "Os produtos das suas categorias ainda estão em rascunho, e categoria sem produto publicado não aparece na loja.",
+        action: "Publicar os produtos",
+      },
+      productsNone: {
+        title: "A loja ainda não tem produtos",
+        body: "Uma vitrine só aparece na loja com produtos à venda.",
+        action: "Cadastrar o primeiro produto",
+      },
+      productsOffShelf: {
+        title: "Nenhum produto está à venda",
+        body: "Os produtos da loja estão em rascunho ou esgotados, e nenhuma fonte traz o que não está à venda.",
+        action: "Ver os produtos",
+      },
+      sourceEmpty: {
+        title: "Esta fonte não traz nenhum produto agora",
+        body: "A vitrine não aparece na loja enquanto a fonte estiver vazia. Escolha outra fonte aqui embaixo.",
+      },
+      opensInNewTab: "abre em outra aba",
+    },
     gallery: {
       title: "Adicionar à página",
       description: "Escolha um bloco. Ele entra vazio, no fim da página, e você preenche ali mesmo.",
@@ -321,6 +360,8 @@ export const ptBR: UiMessages = {
     tabColors: "Cores",
     addBlock: "Adicionar bloco",
     addToBand: "Adicionar nesta faixa",
+    insertBand: "Nova faixa na posição {position}",
+    insertBlock: "Novo bloco em {band}, posição {position}",
     deleteBlock: "Excluir bloco",
     emptyBlock: "Vazio — não aparece na loja",
     deleteBlockConfirm: "Excluir \"{name}\"? Isso não tem volta.",
@@ -341,6 +382,7 @@ export const ptBR: UiMessages = {
     bandNamePlaceholder: "Serviços",
     bandNameHelp: "Num site, as faixas com nome viram o menu do topo.",
     editComponent: "Editar componente",
+    closeInspector: "Fechar os campos do bloco",
     bodyLabel: "Texto",
     bodyPlaceholder: "Escreva o parágrafo…",
     columnsLabel: "Colunas",
