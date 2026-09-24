@@ -68,7 +68,16 @@ export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise
   // description and its WhatsApp are worth serving on their own. `pageSize` is echoed as asked so
   // the pager divides by something rather than by zero.
   if (!response.ok) {
-    return { categories: [], products: [], total: 0, page: ask.page ?? 1, pageSize: ask.pageSize ?? 1 }
+    return {
+      categories: [],
+      products: [],
+      total: 0,
+      page: ask.page ?? 1,
+      pageSize: ask.pageSize ?? 1,
+      sort: "relevancia",
+      facets: { categories: [], options: [], discount: { count: 0, selected: false }, price: null },
+      applied: [],
+    }
   }
 
   return (await response.json()) as StorefrontCatalog

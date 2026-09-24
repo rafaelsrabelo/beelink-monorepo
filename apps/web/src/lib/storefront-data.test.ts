@@ -39,7 +39,17 @@ function stubApi(answer: (url: URL) => object) {
 }
 
 function catalogue(over: Partial<StorefrontCatalog>): StorefrontCatalog {
-  return { categories: [], products: [], total: 0, page: 1, pageSize: 1, ...over }
+  return {
+    categories: [],
+    products: [],
+    total: 0,
+    page: 1,
+    pageSize: 1,
+    sort: "relevancia",
+    facets: { categories: [], options: [], discount: { count: 0, selected: false }, price: null },
+    applied: [],
+    ...over,
+  }
 }
 
 afterEach(() => {

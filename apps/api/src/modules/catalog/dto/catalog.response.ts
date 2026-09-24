@@ -14,10 +14,13 @@ import type {
   PublicProductCategory,
   PublicProductImage,
   StorefrontCatalog,
+  StorefrontSort,
 } from '@harness-monorepo/contracts';
 
 // App
+import { STOREFRONT_SORTS } from '../catalog-filters.js';
 import { PRODUCT_ORIGINS, PRODUCT_STATUSES, PRODUCTS_PAGE_SIZE } from '../catalog.constants.js';
+import { AppliedCatalogFilterResponse, CatalogFacetsResponse } from './listing.response.js';
 
 /**
  * The shapes out, for Swagger. Each `implements` its contract type, so a field added to the wire
@@ -146,4 +149,13 @@ export class StorefrontCatalogResponse implements StorefrontCatalog {
 
   @ApiProperty({ example: PRODUCTS_PAGE_SIZE, description: 'The page size actually served.' })
   pageSize!: number;
+
+  @ApiProperty({ enum: STOREFRONT_SORTS, description: 'The order served.' })
+  sort!: StorefrontSort;
+
+  @ApiProperty({ type: CatalogFacetsResponse, description: 'Each facet counts under every filter but its own.' })
+  facets!: CatalogFacetsResponse;
+
+  @ApiProperty({ type: [AppliedCatalogFilterResponse] })
+  applied!: AppliedCatalogFilterResponse[];
 }

@@ -8,7 +8,6 @@ import type {
   ProductListQuery,
   ProductPage,
   ProductStockFilter,
-  PublicProductCard,
   PublicProductDetail,
 } from '@harness-monorepo/contracts';
 import type { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
@@ -19,13 +18,11 @@ import type { ProductWhereInput } from '../../generated/prisma/models/Product.js
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
-import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 import {
   PRODUCTS_ADMIN_PAGE_SIZE,
-  PRODUCTS_PAGE_SIZE,
   PRODUCTS_PAGE_SIZE_MAX,
 } from './catalog.constants.js';
-import { productInclude, toProduct, toPublicProductCard } from './catalog.mapper.js';
+import { productInclude, toProduct } from './catalog.mapper.js';
 import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
 import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
 import { productDetailInclude, toProductDetail, toPublicProductDetail } from './variant.mapper.js';
@@ -134,74 +131,6 @@ export class ProductsService {
     ]);
 
     return { products: rows.map(toProduct), total, page, pageSize };
-  }
-
-  /**
-   * The storefront's list: one page of what a shop published, in the order the shopkeeper arranged it.
-   *
-   * Unavailable products are absent rather than greyed out — a window that shows what it will not
-   * sell teaches a visitor to distrust the rest of it. The filters are here and not in the browser
-   * because a shop with three hundred products would otherwise ship all three hundred to render
-   * six, and because a search the server did is a search a crawler can follow.
-   *
-   * `total` counts the filter and not the page, because that is what the pager divides. The count
-   * runs over the same `where` inside one transaction: read separately, the two could fall either
-   * side of a write and disagree, and a pager that disagrees with its pages offers a last page that
-   * is empty or hides one that is not.
-   */
-  async listPublic(
-    storeId: string,
-    filters: { category?: string; search?: string; page?: number; pageSize?: number } = {},
-  ): Promise<{ products: PublicProductCard[]; total: number }> {
-    const search = filters.search?.trim();
-    const pageSize = filters.pageSize ?? PRODUCTS_PAGE_SIZE;
-    const page = filters.page ?? 1;
-
-    // Both the shelf rule and the search carry an `OR`, so they are held in `AND` rather than
-    // spread into one object — spread, the second would overwrite the first and the filtered
-    // search would quietly answer the search alone. See catalog.visibility.ts.
-    const where = {
-      storeId,
-      // A parent's shelf holds what is under it. Filtering `Proteínas` and getting nothing because
-      // every whey is filed under `Proteínas → Whey` is the failure this avoids — and it is the one
-      // a shopkeeper reports as "my category is empty" without ever mentioning subcategories.
-      ...(filters.category
-        ? {
-            category: {
-              isActive: true,
-              OR: [{ slug: filters.category }, { parent: { slug: filters.category, isActive: true } }],
-            },
-          }
-        : {}),
-      AND: [
-        ON_THE_SHELF_WHERE,
-        // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
-        // and someone searching "crochê" means to find it.
-        ...(search
-          ? [
-              {
-                OR: [
-                  { name: { contains: search, mode: 'insensitive' as const } },
-                  { description: { contains: search, mode: 'insensitive' as const } },
-                ],
-              },
-            ]
-          : []),
-      ],
-    };
-
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.product.findMany({
-        where,
-        include: productInclude,
-        orderBy: [{ position: 'asc' }, { name: 'asc' }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      this.prisma.product.count({ where }),
-    ]);
-
-    return { products: rows.map(toPublicProductCard), total };
   }
 
   /**

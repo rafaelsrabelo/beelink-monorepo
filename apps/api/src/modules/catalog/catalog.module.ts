@@ -8,6 +8,7 @@ import { ProductCategoriesController } from './product-categories.controller.js'
 import { ProductCategoriesService } from './product-categories.service.js';
 import { ProductsController } from './products.controller.js';
 import { StorefrontController } from './storefront.controller.js';
+import { StorefrontListingService } from './storefront-listing.service.js';
 import { ProductsService } from './products.service.js';
 import { ProductVariantsService } from './product-variants.service.js';
 import { RestockRequestsController } from './restock-requests.controller.js';
@@ -29,6 +30,7 @@ import { RestockRequestsService } from './restock-requests.service.js';
     ProductsService,
     ProductVariantsService,
     RestockRequestsService,
+    StorefrontListingService,
   ],
   exports: [ProductCategoriesService, ProductsService],
 })

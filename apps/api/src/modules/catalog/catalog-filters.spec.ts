@@ -1,0 +1,102 @@
+// Libs
+import { describe, expect, it } from 'vitest';
+
+// Types
+import type { ProductFieldRefs } from '../../generated/prisma/models/Product.js';
+
+// App
+import { appliedOf, listingWhere, normalizeSearch, orderByOf, parseOptionFilters, type ListingFilters } from './catalog-filters.js';
+import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
+
+const PRICE = { name: 'priceCents' } as unknown as ProductFieldRefs['priceCents'];
+const none: ListingFilters = { discount: false, options: [], sort: 'relevancia' };
+
+describe('the storefront listing filters', () => {
+  it('searches as the column stores text: no accents, no case', () => {
+    expect(normalizeSearch('  Crochê BLUSÃO ')).toBe('croche blusao');
+  });
+
+  it('groups option filters by name without regard to case, and drops malformed ones', () => {
+    expect(parseOptionFilters(['Tamanho:P', 'tamanho: m ', 'Cor:Areia', ':x', 'semvalor', 'Tamanho:p', 'Proporção:1:2'])).toEqual([
+      { name: 'Tamanho', values: ['P', 'm'] },
+      { name: 'Cor', values: ['Areia'] },
+      { name: 'Proporção', values: ['1:2'] },
+    ]);
+    expect(parseOptionFilters(undefined)).toEqual([]);
+  });
+
+  it('always keeps the shelf rule, as its own condition', () => {
+    const where = listingWhere('s1', none, PRICE);
+
+    expect(where).toEqual({ storeId: 's1', AND: [ON_THE_SHELF_WHERE] });
+  });
+
+  it('narrows by every filter, a parent category holding its children', () => {
+    const where = listingWhere(
+      's1',
+      { category: 'blusas', search: 'Crochê', priceMinCents: 5000, priceMaxCents: 20000, discount: true, options: [], sort: 'relevancia' },
+      PRICE,
+    );
+
+    expect(where.AND).toEqual([
+      ON_THE_SHELF_WHERE,
+      { category: { isActive: true, OR: [{ slug: 'blusas' }, { parent: { slug: 'blusas', isActive: true } }] } },
+      { searchText: { contains: 'croche' } },
+      { priceCents: { gte: 5000 } },
+      { priceCents: { lte: 20000 } },
+      { compareAtPriceCents: { gt: PRICE } },
+    ]);
+  });
+
+  it('asks one combination to hold every option, and leaves a facet’s own filter out of its count', () => {
+    const filters: ListingFilters = {
+      ...none,
+      options: [
+        { name: 'Tamanho', values: ['P', 'M'] },
+        { name: 'Cor', values: ['Areia'] },
+      ],
+    };
+
+    const all = JSON.stringify(listingWhere('s1', filters, PRICE));
+    const withoutSize = JSON.stringify(listingWhere('s1', filters, PRICE, 'option:tamanho'));
+
+    expect(all).toContain('"Tamanho"');
+    expect(all).toContain('"Areia"');
+    expect(withoutSize).not.toContain('"Tamanho"');
+    expect(withoutSize).toContain('"Areia"');
+  });
+
+  it('leaves the category out of the category facet, and the price out of the price facet', () => {
+    const filters: ListingFilters = { ...none, category: 'blusas', priceMinCents: 100 };
+
+    expect(JSON.stringify(listingWhere('s1', filters, PRICE, 'category'))).not.toContain('blusas');
+    expect(JSON.stringify(listingWhere('s1', filters, PRICE, 'price'))).not.toContain('gte');
+  });
+
+  it('orders by the shopkeeper by default, and always ends on the id', () => {
+    expect(orderByOf('relevancia').at(-1)).toEqual({ id: 'asc' });
+    expect(orderByOf('menor-preco')[0]).toEqual({ priceCents: 'asc' });
+    expect(orderByOf('novidades')[0]).toEqual({ createdAt: 'desc' });
+  });
+
+  it('lists the filters in force, named as the shop names them', () => {
+    const applied = appliedOf(
+      { ...none, category: 'blusas', search: 'croche', priceMaxCents: 20000, discount: true, options: [{ name: 'tamanho', values: ['p'] }] },
+      [{ id: 'c1', slug: 'blusas', name: 'Blusas', description: null, imageUrl: null, parentSlug: null, productCount: 1 }],
+      {
+        categories: [],
+        discount: { count: 0, selected: true },
+        price: null,
+        options: [{ name: 'Tamanho', values: [{ value: 'P', label: 'P', count: 1, available: true, selected: true, colorHex: null }] }],
+      },
+    );
+
+    expect(applied).toEqual([
+      { key: 'categoria', value: 'blusas', label: 'Blusas' },
+      { key: 'busca', value: 'croche', label: 'croche' },
+      { key: 'precoMax', value: '200', label: '200' },
+      { key: 'desconto', value: '1', label: '1' },
+      { key: 'opcao', value: 'Tamanho:P', label: 'Tamanho: P' },
+    ]);
+  });
+});

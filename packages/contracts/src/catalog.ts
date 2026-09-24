@@ -194,6 +194,65 @@ export interface StorefrontCatalog {
    * request above the ceiling is served at the ceiling instead of refused.
    */
   pageSize: number;
+  /** The order the page is in — the one asked for, or `relevancia`, the shopkeeper's own. */
+  sort: StorefrontSort;
+  /** What the shelf can still be narrowed by. Each facet counts under every filter but its own. */
+  facets: CatalogFacets;
+  /** The filters in force, one entry per value, so a page can list them and take each one off. */
+  applied: AppliedCatalogFilter[];
+}
+
+/**
+ * How a shelf can be ordered, as the address spells it. `relevancia` is the shopkeeper's own order.
+ * "Mais vendidos" waits for orders to exist.
+ */
+export type StorefrontSort = "relevancia" | "menor-preco" | "maior-preco" | "novidades";
+
+/** One value a facet offers. */
+export interface CatalogFacetValue {
+  /** What goes in the address: a category's slug, an option value's name. */
+  value: string;
+  /** What a visitor reads — the shop's own words, never a code. */
+  label: string;
+  /** Products on the shelf with this value, under every other filter in force. */
+  count: number;
+  /** False when that count is zero; the page decides whether to hide or disable it. */
+  available: boolean;
+  /** Whether it is one of the filters in force. */
+  selected: boolean;
+  /** A colour value's swatch, `#rrggbb`; null elsewhere. */
+  colorHex: string | null;
+}
+
+/**
+ * The facets of a shelf. Labels that are interface copy — "Preço", "Em oferta" — are the page's; this
+ * carries only the shop's own names.
+ */
+export interface CatalogFacets {
+  /** Every category the shop shows, a parent counting what its children hold. */
+  categories: CatalogFacetValue[];
+  /** One facet per option name across the shelf, "Tamanho" and "tamanho" being one. */
+  options: CatalogOptionFacet[];
+  /** How many are on sale — a "was" price above the price. */
+  discount: { count: number; selected: boolean };
+  /** The cheapest and dearest product under the other filters; null on an empty shelf. */
+  price: { minCents: number; maxCents: number } | null;
+}
+
+export interface CatalogOptionFacet {
+  /** The option's name as the shop wrote it, and what `opcao=<name>:<value>` names. */
+  name: string;
+  values: CatalogFacetValue[];
+}
+
+/** A filter in force, as the address holds it and as a visitor reads it. */
+export interface AppliedCatalogFilter {
+  /** The address's parameter: `categoria`, `busca`, `precoMin`, `precoMax`, `desconto`, `opcao`. */
+  key: "categoria" | "busca" | "precoMin" | "precoMax" | "desconto" | "opcao";
+  /** Its value in the address: a slug, a term, whole reais, `1`, `Tamanho:P`. */
+  value: string;
+  /** The shop's own name for it where there is one — a category's, a value's — else the value. */
+  label: string;
 }
 
 
