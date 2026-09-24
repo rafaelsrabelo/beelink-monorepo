@@ -1,5 +1,7 @@
 /* ── a landing page: sections that hold components ────────────────────────── */
 
+import type { PublicProductCard } from "./catalog.js";
+
 /**
  * What a component is.
  *
@@ -32,7 +34,10 @@ export type ComponentKind =
   | "BENEFITS"
   /** The shop's categories, as a grid of cards. */
   | "CATEGORIES"
-  /** What the shop sells. One per shop, and it cannot be deleted. */
+  /**
+   * A showcase of what the shop sells: all of it, a category, a hand-picked list, the newest or what
+   * is on sale. As many as the shopkeeper wants, and the last one cannot be deleted.
+   */
   | "PRODUCTS"
   /**
    * A form a visitor fills in, and the ways to reach the owner beside it. What it asks is its
@@ -60,10 +65,21 @@ export type SectionWidth = "FULL" | "CONTAINED";
 export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
 
 /**
- * How a component with several pictures lays them out: one at a time, or side by side. Read on
- * `BANNER`, and null on every other kind. A choice, where it used to be the slide count deciding.
+ * How a component with several things in it lays them out. Read on `BANNER`, `PRODUCTS` and
+ * `CATEGORIES`, each with its own two, and null on every other kind: a banner's pictures take turns
+ * (`CAROUSEL`) or share the space (`GRID`); a showcase's products and the shop's categories scroll on
+ * one row (`RAIL`) or wrap into rows (`GRID`).
  */
-export type ComponentDisplay = "CAROUSEL" | "GRID";
+export type ComponentDisplay = "CAROUSEL" | "GRID" | "RAIL";
+
+/**
+ * Which products a showcase draws: all of them, one category (and its subcategories), a hand-picked
+ * list, the newest, or the ones on sale.
+ *
+ * There is no best sellers. Nothing records a sale yet, and a source named for sales would draw some
+ * other order under that name. It is one value added the day orders exist.
+ */
+export type ProductSource = "ALL" | "CATEGORY" | "SELECTION" | "NEWEST" | "ON_SALE";
 
 /**
  * Where a component's words sit. Read on `HEADING` and `TEXT`.
@@ -198,14 +214,27 @@ export interface ContactField {
 }
 
 /**
+ * One product a `SELECTION` showcase draws, in the place the shopkeeper put it. An id and not a copy:
+ * the price and the picture are read when the page is, and a product deleted since simply drops out.
+ */
+export interface ShowcaseProduct {
+  id: string;
+  productId: string;
+}
+
+/**
  * What a component holds beyond its own fields.
  *
  * It is content, and that is what separates it from `layoutSettings`. A key nobody reads in that
  * blob is invisible — sixteen of its twenty-one survived that way. An `items` nobody reads is a
  * blank band on the shop's front page, reported the same day.
  */
-export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink | ContactField;
-export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink | ContactField;
+export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink | ContactField | ShowcaseProduct;
+/**
+ * What a visitor is served in a component's `items`: a banner's slides with their addresses built, a
+ * showcase's products as cards, and every other kind's items as the shopkeeper wrote them.
+ */
+export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink | ContactField | PublicProductCard;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {
@@ -217,9 +246,20 @@ export interface PublicComponent {
   body: string | null;
   /** Its slice of the band, on every kind. */
   span: ComponentSpan;
-  /** Read on `BANNER`. Null on every other kind. */
+  /** Read on `BANNER`, `PRODUCTS` and `CATEGORIES`. Null on every other kind. */
   display: ComponentDisplay | null;
-  /** A banner's slides, the benefits band's rows, the strip's one link or a form's fields. Empty otherwise. */
+  /** A showcase's source, for the page to say where "ver tudo" leads. Null on every other kind. */
+  source: ProductSource | null;
+  /**
+   * The category a `CATEGORY` showcase draws: the slug its page lives at, and the name and line the
+   * shelf is headed by. Null otherwise.
+   */
+  sourceCategory: { slug: string; name: string; description: string | null } | null;
+  /**
+   * A banner's slides, the benefits band's rows, the strip's one link or a form's fields — or a
+   * showcase's products, already chosen by its source, cut at its limit, and on the shelf. Empty
+   * otherwise.
+   */
   items: PublicComponentItem[];
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */
   columns: number | null;
@@ -236,6 +276,12 @@ export interface StoreComponent {
   body: string | null;
   span: ComponentSpan;
   display: ComponentDisplay | null;
+  /** A showcase's products. Null on every other kind. */
+  source: ProductSource | null;
+  /** The category a `CATEGORY` showcase draws. Null for every other source, and on other kinds. */
+  sourceCategoryId: string | null;
+  /** How many products a showcase draws, at most. Null is the default, 24. */
+  limit: number | null;
   items: ComponentItem[];
   columns: number | null;
   align: TextAlign | null;
@@ -283,11 +329,16 @@ export interface CreateSectionPayload {
   width?: SectionWidth;
   background?: string | null;
   isActive?: boolean;
+  /**
+   * Where the band lands: its place among the page's bands, 0 first. Absent, or past the end, it
+   * lands last. The bands after it move down one.
+   */
+  position?: number;
   /** The one component it is created around. A section with nothing in it draws nothing. */
   component: CreateComponentPayload;
 }
 
-export type UpdateSectionPayload = Partial<Omit<CreateSectionPayload, "component">>;
+export type UpdateSectionPayload = Partial<Omit<CreateSectionPayload, "component" | "position">>;
 
 /**
  * What a write sends for a component.
@@ -302,8 +353,13 @@ export interface CreateComponentPayload {
   subtitle?: string | null;
   body?: string | null;
   span?: ComponentSpan;
-  /** A banner's choice. Refused on a kind that does not read it, and refused as null on one that does. */
+  /** A banner's, a showcase's or the categories' choice, from the two its kind draws. Refused on any other kind. */
   display?: ComponentDisplay | null;
+  /** A showcase's. `CATEGORY` needs `sourceCategoryId`; `SELECTION` needs `items`. */
+  source?: ProductSource;
+  sourceCategoryId?: string | null;
+  /** 1 to 48; null is the default. */
+  limit?: number | null;
   items?: ComponentItem[];
   columns?: number | null;
   align?: TextAlign | null;
@@ -311,6 +367,12 @@ export interface CreateComponentPayload {
 }
 
 export type UpdateComponentPayload = Partial<CreateComponentPayload>;
+
+/** A component added into a band that exists, and where it lands among the band's own. */
+export interface AddComponentPayload extends CreateComponentPayload {
+  /** Its place in the band, 0 first. Absent, or past the end, it lands last. */
+  position?: number;
+}
 
 /** The `errorCode` values the page module answers. The apps own the sentences. */
 export type PageErrorCode =
@@ -321,9 +383,10 @@ export type PageErrorCode =
   /** The order sent is not every row of this shop exactly once. */
   | "REORDER_MISMATCH"
   /**
-   * A kind that cannot exist twice, or cannot be deleted at all. There is exactly one `PRODUCTS`
-   * component per shop: two runs of products is not an arrangement, it is a bug the shopkeeper
-   * meets on the live page, with no row left to put the shelves back.
+   * A kind that cannot exist twice — the strip above the header, since there is one masthead.
+   *
+   * `PRODUCTS` used to be one too, when every showcase drew the same shelves. A showcase has a
+   * source of its own now, so two of them are two different shelves.
    */
   | "COMPONENT_KIND_SINGLETON"
   /** The component's content does not fit what its kind holds — a slide with no picture, say. */
@@ -332,6 +395,16 @@ export type PageErrorCode =
   | "COMPONENT_SPAN_INVALID"
   /** A `display` that is not one of the two, or one sent to a kind that does not read it. */
   | "COMPONENT_DISPLAY_INVALID"
+  /** A `source` that is not one of the five, or a showcase's field sent to a kind that is not one. */
+  | "SHOWCASE_SOURCE_INVALID"
+  /** A `CATEGORY` showcase with no category, or with one that is not this shop's. */
+  | "SHOWCASE_CATEGORY_INVALID"
+  /** A `SELECTION` showcase with no product, or with one that is not this shop's. */
+  | "SHOWCASE_PRODUCTS_INVALID"
+  /** A `limit` outside 1 to 48. */
+  | "SHOWCASE_LIMIT_INVALID"
+  /** A `position` to add at that is not a whole number from 0. */
+  | "POSITION_INVALID"
   /**
    * A patch tried to change a component's kind.
    *
@@ -342,8 +415,8 @@ export type PageErrorCode =
    */
   | "COMPONENT_KIND_IMMUTABLE"
   /**
-   * A delete would take a component the shop cannot be without — the product list — whether it
-   * names the component or the section holding it. Hiding is the answer there.
+   * A delete would take the shop's last showcase of products, whether it names the component or the
+   * section holding it. Hiding is the answer there; a duplicate can go.
    *
    * Added after a shop lost its shelves exactly this way: the component's own row drew no bin,
    * and the section's bin took the component with it. The UI is not the lock; this is.

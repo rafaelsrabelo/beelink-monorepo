@@ -17,6 +17,9 @@ function component(over: Partial<StoreComponent> = {}): StoreComponent {
     body: null,
     span: "FULL",
     display: "GRID",
+    source: null,
+    sourceCategoryId: null,
+    limit: null,
     items: [{ id: "s", imageUrl: "/s.jpg", target: "NONE" }],
     columns: null,
     align: null,
@@ -46,5 +49,57 @@ describe("component-form-values — a banner's format", () => {
     const form = { ...toForm(component({ display: "CAROUSEL" }), null), display: "GRID" as const }
 
     expect(toPayload(form, "link")).toMatchObject({ display: "GRID" })
+  })
+})
+
+describe("component-form-values — the categories' format", () => {
+  const categories = (display: "RAIL" | "GRID" | null) =>
+    toForm(component({ kind: "CATEGORIES", title: null, display, items: [] }), null)
+
+  // A block saved before it could choose drew a grid, and opens on the grid it draws.
+  it("opens on the format the block has, and on the grid when it has none", () => {
+    expect(categories("RAIL").display).toBe("RAIL")
+    expect(categories("GRID").display).toBe("GRID")
+    expect(categories(null).display).toBe("GRID")
+  })
+
+  it("sends the format the sheet holds, with the columns", () => {
+    const form = { ...categories("GRID"), display: "RAIL" as const, columns: 4 }
+
+    expect(toPayload(form, "link")).toMatchObject({ display: "RAIL", columns: 4 })
+  })
+})
+
+describe("component-form-values — a showcase", () => {
+  const PICK = { id: "a", productId: "0199e000-0000-7000-8000-000000000001" }
+  const showcase = (over: Parameters<typeof component>[0] = {}) =>
+    toForm(component({ kind: "PRODUCTS", title: null, display: "RAIL", source: "ALL", items: [], ...over }), null)
+
+  it("opens on the source, the category, the pick, the shape and the limit it has", () => {
+    const form = showcase({ source: "SELECTION", items: [PICK], display: "GRID", limit: 12 })
+
+    expect(form).toMatchObject({ source: "SELECTION", picks: [PICK], display: "GRID", limit: "12", sourceCategoryId: "" })
+    expect(showcase({ limit: null, display: null })).toMatchObject({ limit: "", display: "RAIL", source: "ALL" })
+  })
+
+  // What the source does not read stays in the form, for switching back, and never goes on the wire.
+  it("sends the source with only what it reads", () => {
+    const form = { ...showcase(), sourceCategoryId: "c1", picks: [PICK] }
+
+    expect(toPayload({ ...form, source: "CATEGORY" }, "link")).toMatchObject({
+      source: "CATEGORY",
+      sourceCategoryId: "c1",
+      items: [],
+    })
+    expect(toPayload({ ...form, source: "SELECTION" }, "link")).toMatchObject({
+      source: "SELECTION",
+      sourceCategoryId: null,
+      items: [PICK],
+    })
+  })
+
+  it("sends a blank limit as the default, and a typed one as a number", () => {
+    expect(toPayload({ ...showcase(), limit: "" }, "link")).toMatchObject({ limit: null })
+    expect(toPayload({ ...showcase(), limit: " 8 " }, "link")).toMatchObject({ limit: 8, display: "RAIL" })
   })
 })

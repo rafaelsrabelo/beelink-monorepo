@@ -9,6 +9,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -24,9 +25,11 @@ import type {
   ComponentItem,
   ComponentKind,
   ComponentSpan,
+  AddComponentPayload,
   CreateComponentPayload,
   CreateSectionPayload,
   PageErrorCode,
+  ProductSource,
   SectionWidth,
   TextAlign,
   UpdateComponentPayload,
@@ -45,8 +48,10 @@ import {
   COMPONENT_SUBTITLE_MAX_LENGTH,
   COMPONENT_TITLE_MAX_LENGTH,
   HEX_COLOUR,
+  PRODUCT_SOURCES,
   SECTION_NAME_MAX_LENGTH,
   SECTION_WIDTHS,
+  SHOWCASE_LIMIT_MAX,
   TEXT_ALIGNS,
 } from '../page.constants.js';
 
@@ -85,10 +90,27 @@ export class ComponentDto implements CreateComponentPayload {
   @IsIn(COMPONENT_SPANS, { context: { errorCode: 'COMPONENT_SPAN_INVALID' satisfies PageErrorCode } })
   span?: ComponentSpan;
 
-  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER. Null on every other kind.' })
+  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'CAROUSEL or GRID on a BANNER, RAIL or GRID on PRODUCTS and CATEGORIES. Null on every other kind.' })
   @IsOptional()
   @IsIn(COMPONENT_DISPLAYS, { context: { errorCode: 'COMPONENT_DISPLAY_INVALID' satisfies PageErrorCode } })
   display?: ComponentDisplay | null;
+
+  @ApiPropertyOptional({ enum: PRODUCT_SOURCES, description: 'A showcase’s. CATEGORY needs sourceCategoryId; SELECTION needs items.' })
+  @IsOptional()
+  @IsIn(PRODUCT_SOURCES, { context: { errorCode: 'SHOWCASE_SOURCE_INVALID' satisfies PageErrorCode } })
+  source?: ProductSource;
+
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @IsOptional()
+  @IsUUID('all', { context: { errorCode: 'SHOWCASE_CATEGORY_INVALID' satisfies PageErrorCode } })
+  sourceCategoryId?: string | null;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: SHOWCASE_LIMIT_MAX, nullable: true, description: 'Null is 24.' })
+  @IsOptional()
+  @IsInt({ context: { errorCode: 'SHOWCASE_LIMIT_INVALID' satisfies PageErrorCode } })
+  @Min(1, { context: { errorCode: 'SHOWCASE_LIMIT_INVALID' satisfies PageErrorCode } })
+  @Max(SHOWCASE_LIMIT_MAX, { context: { errorCode: 'SHOWCASE_LIMIT_INVALID' satisfies PageErrorCode } })
+  limit?: number | null;
 
   @ApiPropertyOptional({ type: Object, isArray: true })
   @IsOptional()
@@ -161,6 +183,21 @@ export class CreateSectionDto implements CreateSectionPayload {
   @ValidateNested()
   @Type(() => ComponentDto)
   component!: ComponentDto;
+
+  @ApiPropertyOptional({ minimum: 0, description: 'Its place among the bands, 0 first. Absent or past the end: last.' })
+  @IsOptional()
+  @IsInt({ context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  @Min(0, { context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  position?: number;
+}
+
+/** A component added into a band that exists, and where among the band's own it lands. */
+export class AddComponentDto extends ComponentDto implements AddComponentPayload {
+  @ApiPropertyOptional({ minimum: 0, description: 'Its place in the band, 0 first. Absent or past the end: last.' })
+  @IsOptional()
+  @IsInt({ context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  @Min(0, { context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  position?: number;
 }
 
 /**

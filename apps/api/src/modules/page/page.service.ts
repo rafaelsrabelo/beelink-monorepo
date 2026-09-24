@@ -3,7 +3,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 
 // Types
 import type { Section, StoreComponent } from '@harness-monorepo/contracts';
-import type { ComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
+import type { AddComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
 import type { ReorderDto } from '../catalog/dto/reorder.dto.js';
 
 // App
@@ -11,7 +11,8 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { sectionInclude, toComponent, toSection } from './page.mapper.js';
 import { PageRules, pageError } from './page.rules.js';
-import { componentPatch, componentRow } from './page-rows.js';
+import { componentPatch, componentRow, placedAt } from './page-rows.js';
+import { ShowcaseRules } from './showcase.rules.js';
 import { openingItemsOf } from './page-seed.js';
 
 /**
@@ -28,6 +29,7 @@ export class PageService {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly rules: PageRules,
+    private readonly showcases: ShowcaseRules,
   ) {}
 
   /** The panel's read: hidden bands and hidden components included, in the arranged order. */
@@ -37,7 +39,8 @@ export class PageService {
     const rows = await this.prisma.storeSection.findMany({
       where: { storeId },
       include: sectionInclude,
-      orderBy: { position: 'asc' },
+      // The id breaks a tie, so a list read twice is the same list, and the one an add counts in.
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
     });
 
     return rows.map(toSection);
@@ -54,24 +57,40 @@ export class PageService {
 
     await this.rules.refuseSecond(storeId, dto.component.kind);
     this.rules.refuseDisplayFor(dto.component.kind, dto.component.display);
+    this.showcases.refuseOn(dto.component.kind, dto.component);
     // A kind created bare opens with what it cannot be without — a form's first fields.
     const items = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
+    const showcase =
+      dto.component.kind === 'PRODUCTS' ? await this.showcases.forCreate(storeId, dto.component, items) : null;
 
-    // Last, the way a new category lands last. A band that inserted itself at the top would
-    // rearrange a page the shopkeeper had already arranged.
-    const last = await this.prisma.storeSection.aggregate({ where: { storeId }, _max: { position: true } });
+    // Where the panel's "+" was pressed, or last without one — a band that put itself at the top
+    // unasked would rearrange a page the shopkeeper had already arranged. Under the shop's lock, so
+    // two adds at once cannot both read the same list and land on one number.
+    const row = await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const bands = await tx.storeSection.findMany({
+        where: { storeId },
+        orderBy: [{ position: 'asc' }, { id: 'asc' }],
+        select: { id: true, position: true },
+      });
+      const { at, moves } = placedAt(bands, dto.position);
 
-    const row = await this.prisma.storeSection.create({
-      data: {
-        storeId,
-        name: dto.name ?? null,
-        ...(dto.width !== undefined ? { width: dto.width } : {}),
-        background: dto.background ?? null,
-        position: (last._max.position ?? -1) + 1,
-        isActive: dto.isActive ?? true,
-        components: { create: componentRow(storeId, dto.component, items, 0) },
-      },
-      include: sectionInclude,
+      for (const move of moves) {
+        await tx.storeSection.update({ where: { id: move.id }, data: { position: move.position } });
+      }
+
+      return tx.storeSection.create({
+        data: {
+          storeId,
+          name: dto.name ?? null,
+          ...(dto.width !== undefined ? { width: dto.width } : {}),
+          background: dto.background ?? null,
+          position: at,
+          isActive: dto.isActive ?? true,
+          components: { create: componentRow(storeId, dto.component, items, 0, showcase) },
+        },
+        include: sectionInclude,
+      });
     });
 
     return toSection(row);
@@ -111,10 +130,14 @@ export class PageService {
    */
   async removeSection(storeSlug: string, userId: string, sectionId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.rules.ownedSection(storeId, sectionId);
-    await this.rules.refuseHoldingRequired(storeId, sectionId);
 
-    await this.prisma.storeSection.delete({ where: { id: sectionId } });
+    // The check and the delete in one transaction, behind the shop's lock: see `PageRules.lockShop`.
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      await this.rules.ownedSection(storeId, sectionId, tx);
+      await this.rules.refuseHoldingRequired(storeId, sectionId, tx);
+      await tx.storeSection.delete({ where: { id: sectionId } });
+    });
   }
 
   /**
@@ -126,13 +149,18 @@ export class PageService {
    */
   async reorderSections(storeSlug: string, userId: string, dto: ReorderDto): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const owned = await this.prisma.storeSection.findMany({ where: { storeId }, select: { id: true } });
 
-    this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every band of this shop exactly once, in the new order');
+    // Under the shop's lock, the list read inside it: an add renumbers these same rows, and a reorder
+    // racing it would leave two bands on one number, or deadlock on the rows each holds.
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const owned = await tx.storeSection.findMany({ where: { storeId }, select: { id: true } });
+      this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every band of this shop exactly once, in the new order');
 
-    await this.prisma.$transaction(
-      dto.ids.map((id, position) => this.prisma.storeSection.update({ where: { id }, data: { position } })),
-    );
+      for (const [position, id] of dto.ids.entries()) {
+        await tx.storeSection.update({ where: { id }, data: { position } });
+      }
+    });
 
     return this.list(storeSlug, userId);
   }
@@ -141,21 +169,33 @@ export class PageService {
     storeSlug: string,
     userId: string,
     sectionId: string,
-    dto: ComponentDto,
+    dto: AddComponentDto,
   ): Promise<StoreComponent> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.rules.ownedSection(storeId, sectionId);
     await this.rules.refuseSecond(storeId, dto.kind);
     this.rules.refuseDisplayFor(dto.kind, dto.display);
+    this.showcases.refuseOn(dto.kind, dto);
 
     const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
-    const last = await this.prisma.storeComponent.aggregate({
-      where: { sectionId },
-      _max: { position: true },
-    });
+    const showcase = dto.kind === 'PRODUCTS' ? await this.showcases.forCreate(storeId, dto, items) : null;
+    const { position, ...fields } = dto;
 
-    const row = await this.prisma.storeComponent.create({
-      data: { sectionId, ...componentRow(storeId, dto, items, (last._max.position ?? -1) + 1) },
+    // Where the band's "+" was pressed, or last in the band without one.
+    const row = await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const inBand = await tx.storeComponent.findMany({
+        where: { sectionId },
+        orderBy: [{ position: 'asc' }, { id: 'asc' }],
+        select: { id: true, position: true },
+      });
+      const { at, moves } = placedAt(inBand, position);
+
+      for (const move of moves) {
+        await tx.storeComponent.update({ where: { id: move.id }, data: { position: move.position } });
+      }
+
+      return tx.storeComponent.create({ data: { sectionId, ...componentRow(storeId, fields, items, at, showcase) } });
     });
 
     return toComponent(row);
@@ -186,12 +226,15 @@ export class PageService {
     }
 
     this.rules.refuseDisplayFor(current.kind, dto.display);
+    this.showcases.refuseOn(current.kind, dto);
 
     const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
+    const showcase =
+      current.kind === 'PRODUCTS' ? await this.showcases.forUpdate(storeId, componentId, dto, items) : null;
 
     const row = await this.prisma.storeComponent.update({
       where: { id: componentId },
-      data: componentPatch(dto, items),
+      data: componentPatch(dto, items, showcase),
     });
 
     return toComponent(row);
@@ -199,10 +242,13 @@ export class PageService {
 
   async removeComponent(storeSlug: string, userId: string, componentId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const current = await this.rules.ownedComponent(storeId, componentId);
-    await this.rules.refuseRequired(storeId, current.kind);
 
-    await this.prisma.storeComponent.delete({ where: { id: componentId } });
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const current = await this.rules.ownedComponent(storeId, componentId, tx);
+      await this.rules.refuseRequired(storeId, current.kind, tx);
+      await tx.storeComponent.delete({ where: { id: componentId } });
+    });
   }
 
   /** The components of one band, in the new order. The band itself does not move. */
@@ -215,13 +261,16 @@ export class PageService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.rules.ownedSection(storeId, sectionId);
 
-    const owned = await this.prisma.storeComponent.findMany({ where: { sectionId }, select: { id: true } });
+    // The same lock an add into this band takes: see reorderSections.
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const owned = await tx.storeComponent.findMany({ where: { sectionId }, select: { id: true } });
+      this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every component of this band exactly once, in the new order');
 
-    this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every component of this band exactly once, in the new order');
-
-    await this.prisma.$transaction(
-      dto.ids.map((id, position) => this.prisma.storeComponent.update({ where: { id }, data: { position } })),
-    );
+      for (const [position, id] of dto.ids.entries()) {
+        await tx.storeComponent.update({ where: { id }, data: { position } });
+      }
+    });
 
     return this.list(storeSlug, userId);
   }

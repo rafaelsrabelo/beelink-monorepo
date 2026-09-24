@@ -93,7 +93,6 @@ export function createStoreColorsSchema(messages: ValidationMessages) {
 export function createStoreAppearanceSchema(messages: ValidationMessages) {
   return z.object({
     layoutType: z.enum(STORE_LAYOUT_TYPES),
-    showProductsByCategory: z.boolean(),
     bannerImageUrl: optionalUrl(messages),
     /**
      * Lifted out of the `layoutSettings` JSON so the panel can offer it at all. The screen echoes

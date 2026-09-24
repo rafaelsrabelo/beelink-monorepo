@@ -15,19 +15,18 @@ import { BenefitIcon } from "@harness-monorepo/ui/blocks/design/benefit-icons"
 import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBenefits } from "@harness-monorepo/ui/blocks/storefront/storefront-benefits"
-import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
 import { StorefrontContact } from "@harness-monorepo/ui/blocks/storefront/storefront-contact"
 import { StorefrontHero } from "@harness-monorepo/ui/blocks/storefront/storefront-hero"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
-import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // App
-import type { HomeBand } from "@/lib/storefront-data"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { ContactFormLive } from "./contact-form-live"
+import { StorefrontCategoriesBlock } from "./storefront-categories-block"
 import type { ContactCopy } from "./storefront-contact-copy"
+import { StorefrontShelf } from "./storefront-shelf"
 
 /**
  * What a contact form needs to send: the site, its WhatsApp and the sentences for a refusal. Null
@@ -41,8 +40,6 @@ export interface LiveContact {
 
 export interface StorefrontComponentProps {
   component: PublicComponent
-  /** The product rails, already loaded. A PRODUCTS component draws these and nothing else. */
-  bands: readonly HomeBand[]
   /** Every category the shop has. A CATEGORIES component draws these; nothing else reads them. */
   categories: readonly PublicProductCategory[]
   routes: StorefrontRoutes
@@ -64,7 +61,6 @@ export interface StorefrontComponentProps {
  */
 export function StorefrontComponent({
   component,
-  bands,
   categories,
   routes,
   showPrice,
@@ -100,27 +96,13 @@ export function StorefrontComponent({
 
   if (component.kind === "CATEGORIES") {
     return (
-      <div className="flex flex-col gap-4">
-        {component.title ? (
-          <StorefrontHeading title={component.title} subtitle={component.subtitle} />
-        ) : null}
-        <StorefrontCategoryGrid
-          categories={categories.map((category) => ({
-            id: category.id,
-            slug: category.slug,
-            name: category.name,
-            imageUrl: category.imageUrl,
-            description: category.description,
-            productCount: category.productCount,
-          }))}
-          href={routes.category}
-          catalogHref={routes.catalog()}
-          locale="pt-BR"
-          {...(component.columns ? { columns: component.columns } : {})}
-          {...link}
-          messages={messages}
-        />
-      </div>
+      <StorefrontCategoriesBlock
+        component={component}
+        categories={categories}
+        routes={routes}
+        {...link}
+        messages={messages}
+      />
     )
   }
 
@@ -189,31 +171,13 @@ export function StorefrontComponent({
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      {bands.map((band) => (
-        <StorefrontProductRail
-          key={band.kind === "all" ? "all" : band.category.id}
-          products={band.products}
-          productHref={routes.product}
-          // The shopkeeper's own word for their shelf, falling back to the platform's. A category
-          // band keeps the category's name: renaming that is renaming the category, everywhere it
-          // appears.
-          title={
-            band.kind === "all"
-              ? (component.title ?? messages.storefront.catalogTitle)
-              : band.category.name
-          }
-          {...(band.kind === "category" && band.category.description
-            ? { label: band.category.description }
-            : {})}
-          seeAllHref={band.kind === "all" ? routes.catalog() : routes.category(band.category.slug)}
-          locale="pt-BR"
-          showPrice={showPrice}
-          showBadge={showBadge}
-          {...link}
-          messages={messages}
-        />
-      ))}
-    </div>
+    <StorefrontShelf
+      component={component}
+      routes={routes}
+      showPrice={showPrice}
+      showBadge={showBadge}
+      {...link}
+      messages={messages}
+    />
   )
 }
