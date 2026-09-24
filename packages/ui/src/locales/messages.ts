@@ -143,6 +143,8 @@ export interface UiMessages {
     discount: string
     /** `{price}` — what it cost before, under the product page's price: "De: R$ 149,90". */
     priceWas: string
+    /** `{rating}` `{count}` — what a reader hears for the stars: "Nota 4,7 de 5, 128 avaliações". */
+    ratingOf: string
     backToShop: string
     orderThis: string
     /**
