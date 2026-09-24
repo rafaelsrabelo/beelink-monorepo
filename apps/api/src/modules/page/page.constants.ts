@@ -6,15 +6,8 @@ import type {
   ComponentTarget,
   ContactFieldType,
   SectionWidth,
-  ShowcaseLayout,
   TextAlign,
 } from '@harness-monorepo/contracts';
-
-/**
- * The shapes a banner may take inside its band. Spelled out rather than derived, like every other
- * enum the wire carries: a reader has to be able to see the whole list.
- */
-export const SHOWCASE_LAYOUTS = ['FULL', 'HALVES', 'THIRDS'] as const satisfies readonly ShowcaseLayout[];
 
 /** A component's slice of its band. */
 export const COMPONENT_SPANS = ['FULL', 'HALF', 'THIRD', 'TWO_THIRDS'] as const satisfies readonly ComponentSpan[];
@@ -27,30 +20,6 @@ export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID'] as const satisfies readon
  * to one of them is refused rather than stored for nobody.
  */
 export const DISPLAY_KINDS = ['BANNER'] as const satisfies readonly ComponentKind[];
-
-/**
- * `layout` as the wire still sends it, and the `span` it is stored as.
- *
- * `span` is on the wire now, and `layout` stays beside it while the panel sends it and the shop
- * window reads it. Both directions live here so a write and the read after it cannot disagree, and
- * both go the day nothing on the web reads `layout`.
- */
-export const SPAN_OF_LAYOUT = {
-  FULL: 'FULL',
-  HALVES: 'HALF',
-  THIRDS: 'THIRD',
-} as const satisfies Record<ShowcaseLayout, ComponentSpan>;
-
-/**
- * `TWO_THIRDS` has no word in the old vocabulary, and no write can store it until the wire can
- * say it. Full width is what a block draws wherever its width is not honoured.
- */
-export const LAYOUT_OF_SPAN = {
-  FULL: 'FULL',
-  HALF: 'HALVES',
-  THIRD: 'THIRDS',
-  TWO_THIRDS: 'FULL',
-} as const satisfies Record<ComponentSpan, ShowcaseLayout>;
 
 /** Every kind of thing a band may hold. */
 export const COMPONENT_KINDS = [

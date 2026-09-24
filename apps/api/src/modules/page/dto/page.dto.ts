@@ -25,7 +25,6 @@ import type {
   CreateSectionPayload,
   PageErrorCode,
   SectionWidth,
-  ShowcaseLayout,
   TextAlign,
   UpdateComponentPayload,
   UpdateSectionPayload,
@@ -44,7 +43,6 @@ import {
   HEX_COLOUR,
   SECTION_NAME_MAX_LENGTH,
   SECTION_WIDTHS,
-  SHOWCASE_LAYOUTS,
   TEXT_ALIGNS,
 } from '../page.constants.js';
 
@@ -77,11 +75,6 @@ export class ComponentDto implements CreateComponentPayload {
   @IsString()
   @MaxLength(COMPONENT_BODY_MAX_LENGTH)
   body?: string | null;
-
-  @ApiPropertyOptional({ enum: SHOWCASE_LAYOUTS, deprecated: true, description: 'Send `span`. Ignored when `span` is sent.' })
-  @IsOptional()
-  @IsIn(SHOWCASE_LAYOUTS)
-  layout?: ShowcaseLayout;
 
   // A null passes here, as on every optional field, and `PageRules.checkedSpan` refuses it: the
   // column is NOT NULL, and a patch's `PartialType` would make this optional whatever it said.

@@ -54,7 +54,7 @@ export class PageService {
 
     await this.rules.refuseSecond(storeId, dto.component.kind);
     this.rules.refuseDisplayFor(dto.component.kind, dto.component.display);
-    const span = this.rules.checkedSpan(dto.component);
+    const span = this.rules.checkedSpan(dto.component.span);
     // A kind created bare opens with what it cannot be without — a form's first fields.
     const items = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
 
@@ -149,7 +149,7 @@ export class PageService {
     await this.rules.refuseSecond(storeId, dto.kind);
     this.rules.refuseDisplayFor(dto.kind, dto.display);
 
-    const span = this.rules.checkedSpan(dto);
+    const span = this.rules.checkedSpan(dto.span);
     const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
     const last = await this.prisma.storeComponent.aggregate({
       where: { sectionId },
@@ -189,7 +189,7 @@ export class PageService {
 
     this.rules.refuseDisplayFor(current.kind, dto.display);
 
-    const span = this.rules.checkedSpan(dto, current.span);
+    const span = this.rules.checkedSpan(dto.span);
     const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
 
     const row = await this.prisma.storeComponent.update({

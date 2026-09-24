@@ -49,7 +49,6 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             title: was?.title ?? null,
             subtitle: was?.subtitle ?? null,
             body: was?.body ?? null,
-            layout: was?.layout ?? "FULL",
             // As drafted: the band draws it, and the owner has to see a width before publishing it.
             span: component.span,
             display: was?.display ?? null,

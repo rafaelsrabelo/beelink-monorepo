@@ -3,7 +3,6 @@ import type { StoreComponentModel } from '../../generated/prisma/models.js';
 
 // App
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
-import { SHOWCASE_LAYOUTS, SPAN_OF_LAYOUT } from './page.constants.js';
 import { toComponent, toPublicSection, type SectionRow } from './page.mapper.js';
 
 const WRITTEN = new Date('2026-09-23T00:00:00.000Z');
@@ -44,20 +43,6 @@ function sectionOf(component: StoreComponentModel): SectionRow {
     updatedAt: WRITTEN,
   };
 }
-
-/**
- * The column is `span` and the wire still says `layout`. A shopkeeper who picked "um terço" before
- * the migration has to read "um terço" back after it, on the panel and on the shop window alike:
- * anything else is the migration rearranging a page nobody touched.
- */
-describe('page mapper — the wire still says layout', () => {
-  it.each(SHOWCASE_LAYOUTS)('answers %s for a row stored from it, to the panel and to a visitor', (layout) => {
-    const row = componentRow({ span: SPAN_OF_LAYOUT[layout] });
-
-    expect(toComponent(row).layout).toBe(layout);
-    expect(toPublicSection(sectionOf(row), 'lessari', ROUTE_WORDS.PT_BR).components[0]!.layout).toBe(layout);
-  });
-});
 
 describe('page mapper — span and display on every component', () => {
   it('hands both to the panel and to a visitor, as stored', () => {

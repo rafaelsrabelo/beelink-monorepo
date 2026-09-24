@@ -15,7 +15,6 @@ function component(over: Partial<StoreComponent> = {}): StoreComponent {
     title: null,
     subtitle: null,
     body: null,
-    layout: "FULL",
     span: "FULL",
     display: "GRID",
     items: [{ id: "s", imageUrl: "/s.jpg", target: "NONE" }],

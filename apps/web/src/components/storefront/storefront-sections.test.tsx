@@ -30,7 +30,6 @@ function poster(id: string, span: ComponentSpan): PublicComponent {
     title: null,
     subtitle: null,
     body: null,
-    layout: "FULL",
     span,
     display: "CAROUSEL",
     items: [{ id: `${id}-s`, imageUrl: `https://cdn/${id}.png`, title: `Pôster ${id}`, subtitle: null, href: null, external: false }],

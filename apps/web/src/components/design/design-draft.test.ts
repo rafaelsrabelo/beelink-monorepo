@@ -27,7 +27,6 @@ function component(id: string, over: Partial<StoreComponent> = {}): StoreCompone
     title: id,
     subtitle: null,
     body: null,
-    layout: "FULL",
     span: "FULL",
     display: null,
     items: [],

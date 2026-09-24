@@ -60,8 +60,6 @@ function build(
   found: {
     /** What the component being patched already is. */
     kind?: string
-    /** The width it is stored with. */
-    span?: string
     /** A component of the same kind already in the shop, for the singleton rule. */
     existing?: { id: string } | null
     /** Whether the band being written to belongs to this shop. */
@@ -140,7 +138,7 @@ function build(
               : (found.requiredInShop ?? 1),
         ),
       ),
-      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER', span: found.span ?? 'FULL' }),
+      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER' }),
     },
     $transaction: vi.fn().mockResolvedValue([]),
   } as unknown as PrismaService;
@@ -353,36 +351,9 @@ describe('PageService — a patch that says nothing changes nothing', () => {
   });
 });
 
-/**
- * The panel still sends `layout` and the row keeps `span`. A write that stored the old word, or
- * answered with a different one than it was sent, would move a banner the shopkeeper only saved.
- */
-describe('PageService — the panel sends layout, the row keeps span', () => {
-  it('stores the layout a new component carries as the span it means', async () => {
-    const { service, createComponent } = build();
-
-    const created = await service.createComponent('lessari', 'user-1', SECTION, {
-      kind: 'BANNER',
-      layout: 'THIRDS',
-      items: [SLIDE],
-    });
-
-    const { data } = createComponent.mock.calls[0]![0];
-    expect(data).toMatchObject({ span: 'THIRD' });
-    expect(data).not.toHaveProperty('layout');
-    expect(created.layout).toBe('THIRDS');
-  });
-
-  it('stores the layout a patch carries as the span it means', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
-
-    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'HALVES' });
-
-    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'HALF' });
-    expect(updated.layout).toBe('HALVES');
-  });
-
-  it('stores a span it is sent, including the one the old words cannot say', async () => {
+/** A block's slice of its band, as both writes store it. */
+describe('PageService — a block’s span', () => {
+  it('stores the span a new component is sent, two thirds included', async () => {
     const { service, createSection } = build();
 
     await service.createSection('lessari', 'user-1', {
@@ -392,13 +363,13 @@ describe('PageService — the panel sends layout, the row keeps span', () => {
     expect(createSection.mock.calls[0]![0].data.components.create.span).toBe('TWO_THIRDS');
   });
 
-  it('lets span win when a patch sends both words', async () => {
+  it('stores the span a patch is sent, and answers it back', async () => {
     const { service, updateComponent } = build({ kind: 'BANNER' });
 
-    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { span: 'THIRD', layout: 'HALVES' });
+    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { span: 'HALF' });
 
-    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'THIRD' });
-    expect(updated).toMatchObject({ span: 'THIRD', layout: 'THIRDS' });
+    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'HALF' });
+    expect(updated.span).toBe('HALF');
   });
 
   // `PartialType` makes a patch's span optional whatever the DTO says, so null gets past the
@@ -412,27 +383,7 @@ describe('PageService — the panel sends layout, the row keeps span', () => {
     expect(updateComponent).not.toHaveBeenCalled();
   });
 
-  /**
-   * The panel sends `layout` on every save, and `TWO_THIRDS` reads as `FULL` in those words. Taken
-   * at face value, that echo would widen a two-thirds block because its owner hid it or renamed it.
-   */
-  it('leaves a two-thirds block alone when a patch only echoes the layout it reads as', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER', span: 'TWO_THIRDS' });
-
-    await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'FULL', isActive: false });
-
-    expect(updateComponent.mock.calls[0]![0].data).toEqual({ isActive: false });
-  });
-
-  it('still moves a block when the layout sent is a different one', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER', span: 'TWO_THIRDS' });
-
-    await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'HALVES' });
-
-    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'HALF' });
-  });
-
-  it('leaves the span alone when a patch does not mention the layout', async () => {
+  it('leaves the span alone when a patch does not mention it', async () => {
     const { service, updateComponent } = build({ kind: 'BANNER' });
 
     await service.updateComponent('lessari', 'user-1', COMPONENT, { isActive: false });

@@ -17,7 +17,6 @@ import type { StoreComponentModel, StoreSectionModel } from '../../generated/pri
 
 // App
 import { parseComponentItems } from './component-items.schema.js';
-import { LAYOUT_OF_SPAN } from './page.constants.js';
 
 /**
  * A band is always read with what is in it, never on its own.
@@ -147,7 +146,6 @@ function toPublicComponent(
     title: row.title,
     subtitle: row.subtitle,
     body: row.body,
-    layout: LAYOUT_OF_SPAN[row.span],
     span: row.span,
     display: row.display,
     // A banner's slides are resolved; every other kind's items are what the shopkeeper wrote. The
@@ -201,7 +199,6 @@ export function toComponent(row: StoreComponentModel): StoreComponent {
     title: row.title,
     subtitle: row.subtitle,
     body: row.body,
-    layout: LAYOUT_OF_SPAN[row.span],
     span: row.span,
     display: row.display,
     items: itemsOf(row.kind, row.items),

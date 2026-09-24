@@ -49,18 +49,13 @@ export type ComponentKind =
 export type SectionWidth = "FULL" | "CONTAINED";
 
 /**
- * How wide a banner sits inside its section, in the words the wire used before `span`.
- *
- * Kept while the panel and the shop window still read it: the API derives it from `span` and
- * translates it back on a write. It says less than `span` does — there is no two-thirds in it.
- */
-export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
-
-/**
  * How much of its band a component takes: the whole of it, a half, a third or two thirds.
  *
  * The band's own width is `SectionWidth`; this is the block's slice of it. A shape rather than a
- * column count, for the reason `ShowcaseLayout` gave: a free integer lets someone pick seven.
+ * column count: a free integer would let someone pick seven and get a row of stamps.
+ *
+ * It replaced `layout` (`FULL | HALVES | THIRDS`), which meant a banner's width, the grid of its
+ * slides and, past its second slide, nothing at all.
  */
 export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
 
@@ -220,8 +215,6 @@ export interface PublicComponent {
   subtitle: string | null;
   /** The paragraph, on a `TEXT`. Null on every other kind. */
   body: string | null;
-  /** @deprecated Derived from `span`, and kept until nothing reads it. Read `span`. */
-  layout: ShowcaseLayout;
   /** Its slice of the band, on every kind. */
   span: ComponentSpan;
   /** Read on `BANNER`. Null on every other kind. */
@@ -241,8 +234,6 @@ export interface StoreComponent {
   title: string | null;
   subtitle: string | null;
   body: string | null;
-  /** @deprecated Derived from `span`, and kept until nothing reads it. Read `span`. */
-  layout: ShowcaseLayout;
   span: ComponentSpan;
   display: ComponentDisplay | null;
   items: ComponentItem[];
@@ -310,8 +301,6 @@ export interface CreateComponentPayload {
   title?: string | null;
   subtitle?: string | null;
   body?: string | null;
-  /** @deprecated Send `span`. Translated to it when `span` is absent; ignored when both are sent. */
-  layout?: ShowcaseLayout;
   span?: ComponentSpan;
   /** A banner's choice. Refused on a kind that does not read it, and refused as null on one that does. */
   display?: ComponentDisplay | null;

@@ -7,7 +7,6 @@ import type {
   ComponentKind,
   ComponentSpan,
   PageErrorCode,
-  ShowcaseLayout,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -15,10 +14,8 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { componentItemsFor } from './component-items.schema.js';
 import {
   DISPLAY_KINDS,
-  LAYOUT_OF_SPAN,
   REQUIRED_COMPONENT_KINDS,
   SINGLETON_COMPONENT_KINDS,
-  SPAN_OF_LAYOUT,
 } from './page.constants.js';
 
 /** Keeps every code this module answers inside the contract's union. */
@@ -133,30 +130,18 @@ export class PageRules {
   }
 
   /**
-   * The span a write asks for: `span` when it is sent, the old `layout` translated when only that
-   * is, and nothing when neither is.
+   * The span a write asks for, or nothing when it asks for none.
    *
    * Null is refused here and not on the DTO, because a patch's `PartialType` makes every field
    * optional whatever its decorators said — and the column is NOT NULL, which the database would
    * have answered as a 500.
-   *
-   * A `layout` that only repeats what the stored span already reads as changes nothing. The panel
-   * sends `layout` on every save, and `TWO_THIRDS` reads as `FULL` in the old words: translating
-   * that echo would reset a two-thirds block to full width because its owner renamed it.
    */
-  checkedSpan(
-    dto: { span?: ComponentSpan | null; layout?: ShowcaseLayout | null },
-    stored?: ComponentSpan,
-  ): ComponentSpan | undefined {
-    if (dto.span === null) {
+  checkedSpan(span: ComponentSpan | null | undefined): ComponentSpan | undefined {
+    if (span === null) {
       throw new BadRequestException(pageError('COMPONENT_SPAN_INVALID', 'Todo bloco tem uma largura.'));
     }
 
-    if (dto.span !== undefined) return dto.span;
-    if (!dto.layout) return undefined;
-    if (stored !== undefined && LAYOUT_OF_SPAN[stored] === dto.layout) return undefined;
-
-    return SPAN_OF_LAYOUT[dto.layout];
+    return span;
   }
 
   /**
@@ -194,19 +179,16 @@ export class PageRules {
   }
 
   /** Returns what it found, so a caller that has to reason about it needs no second read. */
-  async ownedComponent(
-    storeId: string,
-    componentId: string,
-  ): Promise<{ kind: ComponentKind; span: ComponentSpan }> {
+  async ownedComponent(storeId: string, componentId: string): Promise<{ kind: ComponentKind }> {
     const row = await this.prisma.storeComponent.findUnique({
       where: { id: componentId },
-      select: { storeId: true, kind: true, span: true },
+      select: { storeId: true, kind: true },
     });
 
     if (!row || row.storeId !== storeId) {
       throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
     }
 
-    return { kind: row.kind, span: row.span };
+    return { kind: row.kind };
   }
 }

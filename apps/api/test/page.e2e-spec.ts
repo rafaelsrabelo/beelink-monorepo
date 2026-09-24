@@ -21,7 +21,7 @@ const shopBody = {
 const SLIDE = { id: 'capa', imageUrl: 'https://cdn.example/capa.png', target: 'NONE' };
 
 /**
- * A component's width and a banner's layout, through the real pipe and the real database.
+ * A component's width and a banner's display, through the real pipe and the real database.
  *
  * What the unit specs cannot show: that a bad value is stopped by the global pipe with the code the
  * contract names — not by Prisma as a 500 — and that the column round-trips through Postgres.
@@ -63,7 +63,8 @@ describe('page — span and display', () => {
   }
 
   it('creates a banner with the span it was sent, and a display of its own', () => {
-    expect(banner).toMatchObject({ span: 'THIRD', layout: 'THIRDS', display: 'CAROUSEL' });
+    expect(banner).toMatchObject({ span: 'THIRD', display: 'CAROUSEL' });
+    expect(banner).not.toHaveProperty('layout');
   });
 
   it('refuses a span that is not one of the four with its own code, not a 500', async () => {
@@ -87,13 +88,11 @@ describe('page — span and display', () => {
     expect(response.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
   });
 
-  it('keeps a two-thirds block when the panel echoes the layout it reads as', async () => {
-    const url = `/api/stores/padaria-do-bairro/components/${banner.id}`;
-    await call('PATCH', url, { span: 'TWO_THIRDS' });
+  // `layout` left the wire once nothing sent or read it; a client still sending it is told so.
+  it('refuses a write that still sends layout', async () => {
+    const response = await call('PATCH', `/api/stores/padaria-do-bairro/components/${banner.id}`, { layout: 'HALVES' });
 
-    const echoed = await call('PATCH', url, { layout: 'FULL', title: 'Renomeado' });
-
-    expect(echoed.json<StoreComponent>()).toMatchObject({ span: 'TWO_THIRDS', title: 'Renomeado' });
+    expect(response.statusCode).toBe(400);
   });
 
   it('refuses a display on a kind that does not draw it', async () => {
