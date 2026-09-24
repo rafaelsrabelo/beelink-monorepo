@@ -11,8 +11,10 @@ import { StorefrontListingSkeleton } from "@harness-monorepo/ui/blocks/storefron
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
 import { StorefrontSectionBand } from "@/components/storefront/storefront-section-band"
+import { cartAt } from "@/lib/cart"
 import { catalogueAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
@@ -62,6 +64,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const productsPerRow = store.layoutSettings.productsPerRow ?? 3
   // Asked once, awaited twice: by the band's count and by the grid, each under its own boundary.
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
+  // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
+  const cart = place.section.kind === "cart" ? await cartAt(store.slug) : null
 
   return (
     <StorefrontFrame
@@ -85,27 +89,15 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
         <Suspense fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
-      ) : place.section.kind === "cart" ? (
-        /*
-          The basket has an address before it has a line in it, which is the point: the header
-          carries its icon on every page, and an icon that goes nowhere teaches a visitor that the
-          rest of the shop is a mock-up too. Until something can add to it, this is an empty state
-          and a way back to the shelf — not a placeholder pretending to be a checkout.
-        */
-        <section className="flex flex-col items-center gap-2 py-16 text-center">
-          <p className="font-medium">{ui.storefront.cartEmpty}</p>
-          <p className="text-sm opacity-70">{ui.storefront.cartEmptyHint}</p>
-          {/* A plain anchor, like every other link in the shop window: `typedRoutes` types
-              `next/link` against the routes it generated, and these addresses are built at runtime
-              from the shopkeeper's own words — there is no literal for it to have seen. */}
-          <a
-            href={routes.catalog()}
-            className="mt-2 rounded-xl px-4 py-2 text-sm font-medium"
-            style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
-          >
-            {ui.storefront.catalogTitle}
-          </a>
-        </section>
+      ) : cart ? (
+        <StorefrontCartLive
+          products={cart.products}
+          hrefs={Object.fromEntries(cart.products.map((product) => [product.id, routes.product(product.slug)]))}
+          continueHref={routes.catalog()}
+          goneOnArrival={cart.gone > 0}
+          locale={locale}
+          messages={ui}
+        />
       ) : (
         <StorefrontCategoryGrid
           categories={navigation.categories}

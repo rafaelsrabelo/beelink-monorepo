@@ -3,6 +3,7 @@ import type {
   PublicProductCategory,
   PublicProductDetail,
   PublicStore,
+  StorefrontCartProducts,
   StorefrontCatalog,
   StorefrontSort,
 } from "@harness-monorepo/contracts"
@@ -137,4 +138,21 @@ export async function navigationAt(slug: string): Promise<ShopNavigation> {
 /** Every category the shop shows: its categories block reads these. */
 export async function categoriesAt(slug: string): Promise<PublicProductCategory[]> {
   return (await navigationAt(slug)).categories
+}
+
+/**
+ * The products a cart names, as their pages show them. Cached like the rest of the catalogue and
+ * keyed by the ids, which are the same answer for anyone who asks — the cart itself never leaves
+ * the visitor's cookie. An empty cart asks nothing.
+ */
+export async function cartProductsAt(slug: string, productIds: readonly string[]): Promise<PublicProductDetail[]> {
+  const ids = [...new Set(productIds)].sort()
+  if (!ids.length) return []
+
+  const query = new URLSearchParams(ids.map((id) => ["produto", id]))
+  const response = await callPublicApi({ path: `/stores/${slug}/cart?${query.toString()}`, tags: [catalogTag(slug)] })
+
+  if (!response.ok) return []
+
+  return ((await response.json()) as StorefrontCartProducts).products
 }
