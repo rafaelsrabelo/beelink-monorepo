@@ -26,6 +26,12 @@ describe("StorefrontWindow", () => {
    * arrive as data and become custom properties, which is also why the no-hex-colors gate is
    * untroubled — it forbids a literal in source, and there is none.
    */
+  it("wears the typeface the app names, and the page's where none is named", () => {
+    const { container } = renderWindow()
+
+    expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe("var(--font-shop, inherit)")
+  })
+
   it("wears the shop's own colours, from data", () => {
     const { container } = renderWindow()
     const dressed = container.firstElementChild as HTMLElement

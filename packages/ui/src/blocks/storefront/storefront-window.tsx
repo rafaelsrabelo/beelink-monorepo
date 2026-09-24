@@ -156,8 +156,9 @@ export function StorefrontWindow({
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontWindowProps) {
-  // Every `--shop-*` variable, in the HTML on the first paint: see lib/shop-palette.ts.
-  const dressed = shopPaletteStyle(colors)
+  // Every `--shop-*` variable, in the HTML on the first paint: see lib/shop-palette.ts. The
+  // typeface is the app's to name (`next/font` cannot run here); where nobody did, the page's.
+  const dressed = { ...shopPaletteStyle(colors), fontFamily: "var(--font-shop, inherit)" }
 
   return (
     <ShopPaletteProvider colors={colors}>
