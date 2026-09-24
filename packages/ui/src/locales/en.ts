@@ -187,6 +187,8 @@ export const en: UiMessages = {
     filterPriceBetween: "{min} to {max}",
     filterPriceUpTo: "Up to {max}",
     filterPriceFrom: "From {min}",
+    filterDiscount: "Discount",
+    filterShowMore: "Show more",
     sortPriceAsc: "Lowest price",
     sortPriceDesc: "Highest price",
     categoriesTitle: "Categories",

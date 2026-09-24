@@ -272,6 +272,9 @@ export interface UiMessages {
     filterPriceBetween: string
     filterPriceUpTo: string
     filterPriceFrom: string
+    filterDiscount: string
+    /** Opens the rest of a long group — past the first five values. */
+    filterShowMore: string
     sortPriceAsc: string
     sortPriceDesc: string
     /** The categories index, and the same heading over the home's band of them. */

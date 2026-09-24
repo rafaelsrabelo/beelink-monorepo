@@ -187,6 +187,8 @@ export const ptBR: UiMessages = {
     filterPriceBetween: "{min} a {max}",
     filterPriceUpTo: "Até {max}",
     filterPriceFrom: "A partir de {min}",
+    filterDiscount: "Desconto",
+    filterShowMore: "Ver mais",
     sortPriceAsc: "Menor preço",
     sortPriceDesc: "Maior preço",
     categoriesTitle: "Categorias",
