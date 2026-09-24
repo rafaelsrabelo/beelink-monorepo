@@ -90,6 +90,28 @@ describe('a visitor’s "Avise-me"', () => {
     expect(await prisma.restockRequest.count()).toBe(1);
   });
 
+  it('stores a number typed with the long-distance prefix the way it stores any other', async () => {
+    const product = await soldOutBlouse();
+
+    await ask(product.id, { variantId: product.variants[0]!.id, phone: '(011) 98888-7777' });
+    const again = await ask(product.id, { variantId: product.variants[0]!.id, phone: '11 98888-7777' });
+
+    expect(again.statusCode).toBe(201);
+    expect((await prisma.restockRequest.findMany()).map((request) => request.phone)).toEqual(['5511988887777']);
+  });
+
+  it('refuses a name longer than the column, however it is spelled', async () => {
+    const product = await soldOutBlouse();
+
+    const response = await ask(product.id, {
+      variantId: product.variants[0]!.id,
+      phone: '11988887777',
+      name: '\u2764\ufe0f'.repeat(80),
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
   it('refuses a number without its area code', async () => {
     const product = await soldOutBlouse();
 
@@ -109,8 +131,13 @@ describe('a visitor’s "Avise-me"', () => {
     const otherProduct = await ask(product.id, { variantId: elsewhere.variants[0]!.id, phone });
     const noSuchVariant = await ask(product.id, { variantId: '0199a0f1-0000-7000-8000-000000000001', phone });
     const noSuchProduct = await ask('not-an-id', { variantId: product.variants[0]!.id, phone });
+    const second = (
+      await ownerCall('POST', '/api/stores/lessari/products', { name: 'Saia', priceCents: 9900 })
+    ).json<ProductDetail>();
+    const sameShopOtherProduct = await ask(product.id, { variantId: second.variants[0]!.id, phone });
+    const unknownProduct = await ask('0199a0f1-0000-7000-8000-0000000000aa', { variantId: product.variants[0]!.id, phone });
 
-    for (const response of [otherShop, otherProduct, noSuchVariant]) {
+    for (const response of [otherShop, otherProduct, noSuchVariant, sameShopOtherProduct, unknownProduct]) {
       expect(response.statusCode).toBe(400);
       expect(response.json<ApiErrorBody>().errorCode).toBe('RESTOCK_VARIANT_INVALID');
     }
@@ -130,8 +157,10 @@ describe('a visitor’s "Avise-me"', () => {
     const switchedOff = await ask(product.id, { variantId: product.variants[0]!.id, phone: '11988887777' });
     const inDraft = await ask(draft.id, { variantId: draft.variants[0]!.id, phone: '11988887777' });
 
-    expect(switchedOff.statusCode).toBe(400);
-    expect(inDraft.statusCode).toBe(400);
+    for (const response of [switchedOff, inDraft]) {
+      expect(response.statusCode).toBe(400);
+      expect(response.json<ApiErrorBody>().errorCode).toBe('RESTOCK_VARIANT_INVALID');
+    }
   });
 
   it('answers a filled trap like a save, and saves nothing', async () => {

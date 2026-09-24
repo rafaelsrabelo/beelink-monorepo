@@ -18,13 +18,15 @@ export class CreateRestockRequestDto implements CreateRestockRequestPayload {
   @ApiProperty({ example: '(11) 99999-8888', description: 'WhatsApp with area code. Stored as digits with 55.' })
   @IsString()
   @normaliseWhatsapp
-  @Matches(/^\d{12,15}$/, { message: 'phone must be a WhatsApp number with its area code' })
+  @Matches(/^[1-9]\d{11,14}$/, { message: 'phone must be a WhatsApp number with its area code' })
   phone!: string;
 
-  @ApiPropertyOptional({ nullable: true, maxLength: 80 })
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 80 })
   @IsOptional()
   @IsString()
-  @MaxLength(80)
+  // Counted in code points, as the column counts them: MaxLength skips emoji variation selectors,
+  // and a name it lets through would overflow VarChar(80) into a 500.
+  @Matches(/^[\s\S]{0,80}$/u, { message: 'name must be shorter than or equal to 80 characters' })
   @blankToNull
   name?: string | null;
 

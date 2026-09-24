@@ -70,3 +70,25 @@ quem fala quando houver a tela.
 - A tela do lojista para ler os pedidos e o aviso automático quando o estoque volta.
 - A LGPD do número: quando houver a tela, ela precisa de uma forma de apagar os pedidos já
   atendidos.
+
+## Adendo — revisão independente (24/09/2026)
+
+Duas leituras (segurança e comportamento; evidência). Cada achado passou por um verificador que
+tentou refutá-lo. Quatro achados confirmados, todos corrigidos:
+
+1. **Um nome dentro de `@MaxLength(80)` podia estourar a coluna.** O validador não conta os
+   seletores de variação de emoji, e o Postgres conta. O endpoint público respondia 500. O limite
+   agora é contado em code points, como a coluna conta.
+2. **Número com prefixo de longa distância.** "(011) 98888-7777" era gravado como
+   `011988887777`, sem o 55, e o mesmo número digitado sem o 0 virava outro pedido. O defeito
+   vinha do normalizador do WhatsApp da loja, anterior a este ticket e compartilhado com ele. O
+   normalizador agora tira o 0 e o código de operadora antes de pôr o 55, o que conserta também o
+   campo da loja. Aqui, o padrão recusa um número que comece com 0.
+3. **Um teste não provava a recusa pelo produto** (grave, na evidência). O caso "de outro produto"
+   usava uma variante de outra loja, e a recusa vinha pela loja. Agora há os dois casos que só o
+   filtro de produto recusa: a variante de outro produto da mesma loja e um productId inexistente
+   com uma variante real.
+4. **O Swagger descrevia `name` como objeto.** Agora é `String`.
+
+Um achado foi refutado, mas o teste pedido nele também foi escrito: o código de erro nas recusas
+de combinação desligada e de rascunho.
