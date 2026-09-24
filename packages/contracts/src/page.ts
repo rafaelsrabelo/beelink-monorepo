@@ -329,11 +329,16 @@ export interface CreateSectionPayload {
   width?: SectionWidth;
   background?: string | null;
   isActive?: boolean;
+  /**
+   * Where the band lands: its place among the page's bands, 0 first. Absent, or past the end, it
+   * lands last. The bands after it move down one.
+   */
+  position?: number;
   /** The one component it is created around. A section with nothing in it draws nothing. */
   component: CreateComponentPayload;
 }
 
-export type UpdateSectionPayload = Partial<Omit<CreateSectionPayload, "component">>;
+export type UpdateSectionPayload = Partial<Omit<CreateSectionPayload, "component" | "position">>;
 
 /**
  * What a write sends for a component.
@@ -362,6 +367,12 @@ export interface CreateComponentPayload {
 }
 
 export type UpdateComponentPayload = Partial<CreateComponentPayload>;
+
+/** A component added into a band that exists, and where it lands among the band's own. */
+export interface AddComponentPayload extends CreateComponentPayload {
+  /** Its place in the band, 0 first. Absent, or past the end, it lands last. */
+  position?: number;
+}
 
 /** The `errorCode` values the page module answers. The apps own the sentences. */
 export type PageErrorCode =
@@ -392,6 +403,8 @@ export type PageErrorCode =
   | "SHOWCASE_PRODUCTS_INVALID"
   /** A `limit` outside 1 to 48. */
   | "SHOWCASE_LIMIT_INVALID"
+  /** A `position` to add at that is not a whole number from 0. */
+  | "POSITION_INVALID"
   /**
    * A patch tried to change a component's kind.
    *

@@ -144,4 +144,23 @@ describe('page — span and display', () => {
     const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === categories.id);
     expect(served).toMatchObject({ display: 'GRID' });
   });
+
+  // The panel's "+" between two bands, and between two blocks of one band.
+  it('adds a band and a block where the "+" was pressed, and refuses a place that is not one', async () => {
+    const before = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);
+
+    const band = (await call('POST', '/api/stores/padaria-do-bairro/sections', { position: 1, component: { kind: 'HEADING', title: 'Meio' } })).json<Section>();
+    const after = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);
+    expect(after).toEqual([before[0], band.id, ...before.slice(1)]);
+
+    const first = await call('POST', `/api/stores/padaria-do-bairro/sections/${band.id}/components`, { kind: 'TEXT', body: 'Antes', position: 0 });
+    const inBand = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().find((row) => row.id === band.id)!;
+    expect(inBand.components.map((component) => component.id)).toEqual([first.json<StoreComponent>().id, band.components[0]!.id]);
+
+    for (const position of [-1, 1.5, 'dois']) {
+      const refused = await call('POST', '/api/stores/padaria-do-bairro/sections', { position, component: { kind: 'HEADING', title: 'x' } });
+      expect(refused.statusCode, String(position)).toBe(400);
+      expect(refused.json<ApiErrorBody>().errorCode).toBe('POSITION_INVALID');
+    }
+  });
 });
