@@ -6,6 +6,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { ScrollRail } from "./scroll-rail"
+import { StorefrontShelfHeader } from "./storefront-shelf-header"
 import { StorefrontProductCard, type StorefrontProduct } from "./storefront-product-card"
 
 export interface StorefrontProductRailProps {
@@ -35,7 +36,7 @@ export interface StorefrontProductRailProps {
  * peek is deliberate. With no arrows, a card cut by the edge is the whole affordance: it is what
  * says the row keeps going.
  */
-const CARD_WIDTH = "w-44 sm:w-52 lg:w-64"
+const CARD_WIDTH = "w-44 shop-sm:w-52 shop-lg:w-64"
 
 /**
  * The home's band of products, running sideways.
@@ -71,33 +72,13 @@ export function StorefrontProductRail({
 
   return (
     <section className="flex w-full flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          {label ? (
-            <p
-              aria-hidden="true"
-              className="text-xs font-semibold tracking-widest uppercase"
-              style={{ color: "var(--shop-primary-ink)" }}
-            >
-              {label}
-            </p>
-          ) : null}
-          <h2 className="text-lg font-semibold">{heading}</h2>
-        </div>
-
-        {seeAllHref ? (
-          <Link
-            href={seeAllHref}
-            // "Ver todos" three times over is three identical names in a screen reader's list of
-            // links, and no way to tell which goes where (WCAG 2.4.4). The eye keeps the short one.
-            aria-label={text.seeAllOf.replace("{section}", heading)}
-            className="shrink-0 text-sm font-medium underline-offset-4 hover:underline"
-            style={{ color: "var(--shop-primary-ink)" }}
-          >
-            {text.seeAll}
-          </Link>
-        ) : null}
-      </div>
+      <StorefrontShelfHeader
+        title={heading}
+        {...(label ? { label } : {})}
+        {...(seeAllHref ? { seeAllHref } : {})}
+        linkComponent={Link}
+        messages={messages}
+      />
 
       <ScrollRail
         label={heading}

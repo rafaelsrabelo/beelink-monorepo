@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 // App
 import { DesignScreen } from "@/components/design/design-screen"
 import { getMessages } from "@/lib/locale"
-import { homeAt, shopAt } from "@/lib/storefront-data"
+import { categoriesAt, shopAt } from "@/lib/storefront-data"
 
 /**
  * Design mode, and the reason this page reads the PUBLIC shop rather than the owner's.
@@ -23,16 +23,14 @@ export default async function DesignPage({ params }: PageProps<"/admin/[slug]/de
 
   if (!store) notFound()
 
-  // The same call the shop window's home makes, with the same argument — so the rails in the
-  // preview are the rails the visitor gets, grouped the way the shopkeeper chose.
-  const home =
-    store.type === "INSTITUTIONAL" ? { categories: [], bands: [] } : await homeAt(slug, store.showProductsByCategory)
+  // The same call the shop window's home makes. The showcases' cards need none: they came resolved
+  // inside `store`, so the preview's shelves are the ones the visitor gets.
+  const categories = store.type === "INSTITUTIONAL" ? [] : await categoriesAt(slug)
 
   return (
     <DesignScreen
       store={store}
-      categories={home.categories}
-      bands={home.bands}
+      categories={categories}
       // From the server, never `new Date()` inside a component: the clock differs between the two
       // renders on the thirty-first of December and hydration says so out loud.
       year={new Date().getFullYear()}

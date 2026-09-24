@@ -27,7 +27,6 @@ const updateBody = {
   name: 'Padaria da Esquina',
   type: 'ECOMMERCE',
   layoutType: 'BANNER',
-  showProductsByCategory: true,
   // The four the contract has since the footer got its own and the ink stopped being chosen.
   colors: { background: '#FFFFFF', primary: '#3B7AF7', header: '#3B7AF7', footer: '#1A202C' },
   socialNetworks: { whatsapp: '5511999998888', instagram: '@minhaloja' },

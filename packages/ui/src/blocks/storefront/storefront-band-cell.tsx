@@ -20,10 +20,10 @@ export type StorefrontSpan = (typeof STOREFRONT_SPANS)[number]
  * third and two thirds still share a row there, as two halves. From 1024px every slice is its own.
  */
 const COLUMNS: Record<StorefrontSpan, string> = {
-  FULL: "sm:col-span-12",
-  TWO_THIRDS: "sm:col-span-6 lg:col-span-8",
-  HALF: "sm:col-span-6",
-  THIRD: "sm:col-span-6 lg:col-span-4",
+  FULL: "shop-sm:col-span-12",
+  TWO_THIRDS: "shop-sm:col-span-6 shop-lg:col-span-8",
+  HALF: "shop-sm:col-span-6",
+  THIRD: "shop-sm:col-span-6 shop-lg:col-span-4",
 }
 
 export interface StorefrontBandCellProps {

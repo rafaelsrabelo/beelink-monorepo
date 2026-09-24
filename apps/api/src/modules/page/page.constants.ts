@@ -5,6 +5,7 @@ import type {
   ComponentSpan,
   ComponentTarget,
   ContactFieldType,
+  ProductSource,
   SectionWidth,
   TextAlign,
 } from '@harness-monorepo/contracts';
@@ -12,14 +13,30 @@ import type {
 /** A component's slice of its band. */
 export const COMPONENT_SPANS = ['FULL', 'HALF', 'THIRD', 'TWO_THIRDS'] as const satisfies readonly ComponentSpan[];
 
-/** One picture at a time, or all of them side by side. */
-export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID'] as const satisfies readonly ComponentDisplay[];
+/** One at a time, side by side, or on one row that scrolls. */
+export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID', 'RAIL'] as const satisfies readonly ComponentDisplay[];
 
 /**
- * The kinds that draw `display`. Every other kind holds null there, and a write that sends a value
- * to one of them is refused rather than stored for nobody.
+ * The displays each kind draws. A kind absent from this table holds null, and a write that sends
+ * it a value is refused rather than stored for nobody; so is a value its kind does not draw — a
+ * banner is not a rail, and a showcase is not a carousel.
  */
-export const DISPLAY_KINDS = ['BANNER'] as const satisfies readonly ComponentKind[];
+export const DISPLAYS_OF_KIND: Partial<Record<ComponentKind, readonly ComponentDisplay[]>> = {
+  BANNER: ['CAROUSEL', 'GRID'],
+  PRODUCTS: ['RAIL', 'GRID'],
+  CATEGORIES: ['RAIL', 'GRID'],
+};
+
+/** Which products a showcase draws. No best sellers: nothing records a sale yet. */
+export const PRODUCT_SOURCES = ['ALL', 'CATEGORY', 'SELECTION', 'NEWEST', 'ON_SALE'] as const satisfies readonly ProductSource[];
+
+/**
+ * How many products a showcase draws, at most, and the default when it says nothing. The default is
+ * what the one shelf of the landing page drew before a shop could have several; the ceiling is half
+ * the catalogue's page, because a showcase is a cut of the catalogue, not the catalogue.
+ */
+export const SHOWCASE_LIMIT_MAX = 48;
+export const SHOWCASE_LIMIT_DEFAULT = 24;
 
 /** Every kind of thing a band may hold. */
 export const COMPONENT_KINDS = [
@@ -59,21 +76,21 @@ export const TEXT_ALIGNS = ['LEFT', 'CENTER', 'RIGHT'] as const satisfies readon
 export const SECTION_WIDTHS = ['FULL', 'CONTAINED'] as const satisfies readonly SectionWidth[];
 
 /**
- * The kinds a shop may have exactly one of, anywhere on the page.
+ * The kinds a shop may have exactly one of, anywhere on the page: the strip above the header, because
+ * there is one masthead.
  *
- * Two runs of products is not an arrangement, it is a bug the shopkeeper meets on the live page
- * with no row left to put the shelves back. The strip above the header is one because there is one
- * masthead.
+ * The showcase was one too, while every showcase drew the same shelves — two of them were the same
+ * products twice. Each has a source of its own now, and a shop may have as many as it has shelves.
  *
  * A banner is NOT on this list, and that is the whole of what changed: it was here while `HERO`
  * existed, because "the one at the top" could only be one. A cover is the first band now, so a
  * shop may have as many banners as it has places to put them.
  */
-export const SINGLETON_COMPONENT_KINDS = ['ANNOUNCEMENT', 'PRODUCTS'] as const satisfies readonly ComponentKind[];
+export const SINGLETON_COMPONENT_KINDS = ['ANNOUNCEMENT'] as const satisfies readonly ComponentKind[];
 
 /**
- * The kinds a shop cannot be without, at either level: the component may not be deleted, and
- * neither may the section holding it. Hiding is what exists for "not now".
+ * The kinds a shop cannot be without, at either level: the last one may not be deleted, and neither
+ * may the section holding it. Hiding is what exists for "not now"; a second one can go.
  *
  * A landing page without what the shop sells is not an arrangement anyone wants, and a shop
  * reached it: the component's row drew no bin, the section's bin did not ask what was inside, and
