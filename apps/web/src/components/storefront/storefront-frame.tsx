@@ -65,6 +65,8 @@ export interface StorefrontFrameProps {
    * columns: on that page they are blocks. Every other page passes `children` and keeps them.
    */
   blocks?: ReactNode
+  /** The page's strip under the menu, edge to edge: the listing's results band (5a). */
+  pageHeader?: ReactNode
   /**
    * The palette to paint with, when it is not the one the shop has saved.
    *
@@ -118,6 +120,7 @@ export function StorefrontFrame({
   description = null,
   showBanner = false,
   blocks,
+  pageHeader,
   colors,
   sections,
   year,
@@ -219,6 +222,7 @@ export function StorefrontFrame({
         ) : undefined
       }
       {...(blocks ? { blocks } : {})}
+      {...(pageHeader ? { pageHeader } : {})}
       {...(announcement ? { announcement } : {})}
       banner={
         showBanner && store.layoutType === "BANNER" && store.bannerImageUrl

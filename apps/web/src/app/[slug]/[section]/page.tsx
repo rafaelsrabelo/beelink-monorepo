@@ -12,7 +12,7 @@ import { StorefrontListingSkeleton } from "@harness-monorepo/ui/blocks/storefron
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
-import { StorefrontSectionHeading } from "@/components/storefront/storefront-section-heading"
+import { StorefrontSectionBand } from "@/components/storefront/storefront-section-band"
 import { catalogueAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
@@ -60,6 +60,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const routes = storefrontRoutes(store)
   const locale = "pt-BR"
   const productsPerRow = store.layoutSettings.productsPerRow ?? 3
+  // Asked once, awaited twice: by the band's count and by the grid, each under its own boundary.
+  const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
 
   return (
     <StorefrontFrame
@@ -73,49 +75,44 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       searchValue={place.term}
       searchScope={scope ?? null}
       year={new Date().getFullYear()}
+      pageHeader={<StorefrontSectionBand place={place} routes={routes} {...(catalogue ? { catalogue } : {})} locale={locale} />}
       messages={ui}
     >
-      {isShelf(place) ? (
+      {catalogue ? (
         // Keyed by the address, so a new filter or page shows the wait again rather than holding the
         // last shelf on screen while the next one is asked for.
         <Suspense key={JSON.stringify(query)} fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} messages={ui} />}>
-          <StorefrontListing place={place} routes={routes} catalogue={catalogueAt(store.slug, listingAskOf(place))} locale={locale} />
+          <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
+      ) : place.section.kind === "cart" ? (
+        /*
+          The basket has an address before it has a line in it, which is the point: the header
+          carries its icon on every page, and an icon that goes nowhere teaches a visitor that the
+          rest of the shop is a mock-up too. Until something can add to it, this is an empty state
+          and a way back to the shelf — not a placeholder pretending to be a checkout.
+        */
+        <section className="flex flex-col items-center gap-2 py-16 text-center">
+          <p className="font-medium">{ui.storefront.cartEmpty}</p>
+          <p className="text-sm opacity-70">{ui.storefront.cartEmptyHint}</p>
+          {/* A plain anchor, like every other link in the shop window: `typedRoutes` types
+              `next/link` against the routes it generated, and these addresses are built at runtime
+              from the shopkeeper's own words — there is no literal for it to have seen. */}
+          <a
+            href={routes.catalog()}
+            className="mt-2 rounded-xl px-4 py-2 text-sm font-medium"
+            style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
+          >
+            {ui.storefront.catalogTitle}
+          </a>
+        </section>
       ) : (
-        <>
-          <StorefrontSectionHeading place={place} routes={routes} />
-
-          {place.section.kind === "cart" ? (
-            /*
-              The basket has an address before it has a line in it, which is the point: the header
-              carries its icon on every page, and an icon that goes nowhere teaches a visitor that the
-              rest of the shop is a mock-up too. Until something can add to it, this is an empty state
-              and a way back to the shelf — not a placeholder pretending to be a checkout.
-            */
-            <section className="flex flex-col items-center gap-2 py-16 text-center">
-              <p className="font-medium">{ui.storefront.cartEmpty}</p>
-              <p className="text-sm opacity-70">{ui.storefront.cartEmptyHint}</p>
-              {/* A plain anchor, like every other link in the shop window: `typedRoutes` types
-                  `next/link` against the routes it generated, and these addresses are built at runtime
-                  from the shopkeeper's own words — there is no literal for it to have seen. */}
-              <a
-                href={routes.catalog()}
-                className="mt-2 rounded-xl px-4 py-2 text-sm font-medium"
-                style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
-              >
-                {ui.storefront.catalogTitle}
-              </a>
-            </section>
-          ) : (
-            <StorefrontCategoryGrid
-              categories={navigation.categories}
-              href={routes.category}
-              catalogHref={routes.catalog()}
-              locale={locale}
-              messages={ui}
-            />
-          )}
-        </>
+        <StorefrontCategoryGrid
+          categories={navigation.categories}
+          href={routes.category}
+          catalogHref={routes.catalog()}
+          locale={locale}
+          messages={ui}
+        />
       )}
     </StorefrontFrame>
   )

@@ -1,6 +1,5 @@
 // Types
-import type { PublicProductCategory, PublicStore, StorefrontCatalog } from "@harness-monorepo/contracts"
-import { format } from "@harness-monorepo/ui/locales/index"
+import type { PublicProductCategory, PublicStore, StorefrontSort } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -105,9 +104,10 @@ export function listingAskOf(place: SectionPlace): CatalogueAsk {
   }
 }
 
-/** The page's own title, which is also its `h1`. */
-export function headingOf({ section, category, messages }: SectionPlace): string {
+/** The page's own title, which is also its `h1`. A search narrowed to a category is titled by it, as in 5a. */
+export function headingOf({ section, category, navigation, scope, messages }: SectionPlace): string {
   const text = messages.storefront
+  const scoped = scope ? navigation.categories.find((entry) => entry.slug === scope)?.name : undefined
 
   switch (section.kind) {
     case "catalog":
@@ -115,7 +115,7 @@ export function headingOf({ section, category, messages }: SectionPlace): string
     case "categories":
       return text.categoriesTitle
     case "search":
-      return text.searchHeading
+      return scoped ?? text.searchHeading
     case "cart":
       return text.cart
     case "category":
@@ -123,22 +123,32 @@ export function headingOf({ section, category, messages }: SectionPlace): string
   }
 }
 
-/** The line under the title: how many, or what was searched for and found nothing. */
-export function subtitleOf(place: SectionPlace, catalogue: Pick<StorefrontCatalog, "total">, locale: string): string | undefined {
-  const { section, messages, term } = place
+/** The orders the API understands, in 5a's order. "Mais vendidos" and "Melhor avaliados" wait for data. */
+export function sortOptionsOf({ messages }: SectionPlace): { value: StorefrontSort; label: string }[] {
   const text = messages.storefront
-  const count = new Intl.NumberFormat(locale).format(catalogue.total)
 
-  if (section.kind === "categories" || section.kind === "cart") return undefined
+  return [
+    { value: "relevancia", label: text.sortRelevance },
+    { value: "menor-preco", label: text.sortPriceAsc },
+    { value: "maior-preco", label: text.sortPriceDesc },
+    { value: "maior-desconto", label: text.sortDiscount },
+    { value: "novidades", label: text.sortNewest },
+  ]
+}
 
-  if (section.kind === "search") {
-    if (!term) return undefined
-    if (!catalogue.total) return format(text.searchEmpty, { term })
+/**
+ * The sort's form: the shelf's own address as the action, and every filter but the order and the
+ * page as hidden fields — a new order keeps the shelf and starts it again at page 1.
+ */
+export function sortFormOf(place: SectionPlace, routes: StorefrontRoutes) {
+  const href = pageHrefOf({ ...place, filters: { ...place.filters, sort: undefined } }, routes)(1)
+  const url = new URL(href, "http://shop.invalid")
 
-    return format(catalogue.total === 1 ? text.searchResultsOne : text.searchResults, { count, term })
+  return {
+    action: url.pathname,
+    fields: [...url.searchParams.entries()] as [string, string][],
+    value: place.filters.sort ?? "relevancia",
   }
-
-  return catalogue.total === 1 ? text.productCountOne : format(text.productCount, { count })
 }
 
 /**

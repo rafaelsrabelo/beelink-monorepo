@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // Types
-import type { PublicProductCategory, PublicStore, StorefrontCatalog } from "@harness-monorepo/contracts"
+import type { PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
@@ -11,7 +11,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 import * as data from "./storefront-data"
 import * as locale from "./locale"
 import { storefrontRoutes } from "./storefront-routes"
-import { LISTING_PAGE_SIZE, canonicalOf, headingOf, isShelf, listingAskOf, pageHrefOf, placeOf, subtitleOf } from "./storefront-section"
+import { LISTING_PAGE_SIZE, canonicalOf, headingOf, isShelf, listingAskOf, pageHrefOf, placeOf, sortFormOf, sortOptionsOf } from "./storefront-section"
 
 const store = {
   slug: "loja",
@@ -83,19 +83,34 @@ describe("the section's helpers", () => {
     expect(isShelf((await placeOf("loja", "carrinho", {}))!)).toBe(false)
   })
 
-  it("title, count and canonical each section as before", async () => {
+  it("title and canonical each section; a search narrowed to a category takes its name", async () => {
     arrange()
 
     const catalog = (await placeOf("loja", "produtos", { pagina: "3" }))!
-    const search = (await placeOf("loja", "busca", { q: "whey" }))!
     const inCategory = (await placeOf("loja", "whey", {}))!
-    const total = (count: number) => ({ total: count }) as Pick<StorefrontCatalog, "total">
 
     expect(headingOf(inCategory)).toBe("WHEY")
-    expect(subtitleOf(catalog, total(1), "pt-BR")).toBe(ptBR.storefront.productCountOne)
-    expect(subtitleOf(search, total(0), "pt-BR")).toContain("whey")
+    expect(headingOf((await placeOf("loja", "busca", { q: "whey", categoria: "proteinas" }))!)).toBe("PROTEINAS")
+    expect(headingOf((await placeOf("loja", "busca", { q: "whey" }))!)).toBe(ptBR.storefront.searchHeading)
     expect(canonicalOf(catalog, routes)).toBe("/loja/produtos")
     expect(canonicalOf(inCategory, routes)).toBe("/loja/whey")
+  })
+
+  it("sort on the shelf's own address, keeping every filter but the order and the page", async () => {
+    arrange()
+
+    const search = (await placeOf("loja", "busca", { q: "whey", categoria: "proteinas", ordenar: "menor-preco", pagina: "4", precoMin: "50" }))!
+    const form = sortFormOf(search, routes)
+
+    expect(form.action).toBe("/loja/busca")
+    expect(form.value).toBe("menor-preco")
+    expect(form.fields).toEqual([
+      ["q", "whey"],
+      ["categoria", "proteinas"],
+      ["precoMin", "50"],
+    ])
+    expect(sortFormOf((await placeOf("loja", "produtos", {}))!, routes).value).toBe("relevancia")
+    expect(sortOptionsOf(search).map((option) => option.value)).toEqual(["relevancia", "menor-preco", "maior-preco", "maior-desconto", "novidades"])
   })
 
   it("page each shelf on its own address, keeping its filters", async () => {
