@@ -18,6 +18,7 @@ function rows(count: number): ProductRow[] {
     slug: `produto-${index}`,
     name: `Produto ${index}`,
     priceCents: 4990,
+    maxPriceCents: 4990,
     compareAtPriceCents: null,
     images: [],
     category: null,
@@ -107,7 +108,7 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
    */
   it('still serves the page of a product whose shelf is empty', async () => {
     const [row] = rows(1);
-    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: true, stockQuantity: 0 });
+    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: true, stockQuantity: 0, options: [], variants: [] });
     const service = new ProductsService(
       { product: { findFirst } } as never,
       {} as StoresService,
@@ -122,7 +123,7 @@ describe('ProductsService.listPublic — the page and what it is a page of', () 
 
   it('does not call a made-to-order product sold out, however empty its count column is', async () => {
     const [row] = rows(1);
-    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: false, stockQuantity: 0 });
+    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: false, stockQuantity: 0, options: [], variants: [] });
     const service = new ProductsService(
       { product: { findFirst } } as never,
       {} as StoresService,

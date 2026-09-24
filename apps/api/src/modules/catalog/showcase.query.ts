@@ -25,6 +25,7 @@ export const SHOWCASE_CARD_SELECT = {
   name: true,
   priceCents: true,
   compareAtPriceCents: true,
+  maxPriceCents: true,
   images: { select: { url: true }, orderBy: [{ position: 'asc' }, { id: 'asc' }], take: 1 },
   category: { select: { slug: true } },
 } satisfies ProductSelect;
@@ -134,5 +135,6 @@ export function toShowcaseCard(row: ShowcaseCardRow): PublicProductCard {
     compareAtPriceCents: row.compareAtPriceCents,
     imageUrl: row.images[0]?.url ?? null,
     categorySlug: row.category?.slug ?? null,
+    priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
   } satisfies PublicProductCard;
 }

@@ -8,8 +8,8 @@ import type {
   ProductListQuery,
   ProductPage,
   ProductStockFilter,
-  PublicProduct,
   PublicProductCard,
+  PublicProductDetail,
 } from '@harness-monorepo/contracts';
 import type { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
 import type { ReorderDto } from './dto/reorder.dto.js';
@@ -25,10 +25,10 @@ import {
   PRODUCTS_PAGE_SIZE,
   PRODUCTS_PAGE_SIZE_MAX,
 } from './catalog.constants.js';
-import { productInclude, toProduct, toPublicProduct, toPublicProductCard } from './catalog.mapper.js';
+import { productInclude, toProduct, toPublicProductCard } from './catalog.mapper.js';
 import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
 import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
-import { productDetailInclude, toProductDetail } from './variant.mapper.js';
+import { productDetailInclude, toProductDetail, toPublicProductDetail } from './variant.mapper.js';
 
 /** The rows a write should store for a product's photos, in the order they were sent. */
 function imageRows(images: CreateProductDto['images']): { url: string; alt: string | null; position: number }[] {
@@ -208,7 +208,7 @@ export class ProductsService {
    * One product, by the slug in its address. `slugHistory` is not consulted here: a renamed
    * product's old address is a redirect the web app owns, not a second name the API answers to.
    */
-  async publicBySlug(storeId: string, slug: string): Promise<PublicProduct> {
+  async publicBySlug(storeId: string, slug: string): Promise<PublicProductDetail> {
     // Status only, on purpose — a sold-out product still has a page. This is the address that goes
     // out on WhatsApp, and the schema's note on `slugHistory` calls a 404 here the most visible
     // failure this product can produce. The answer carries `soldOut`, and the page drops the way to
@@ -216,12 +216,12 @@ export class ProductsService {
     // catalog.visibility.ts.
     const row = await this.prisma.product.findFirst({
       where: { storeId, slug, status: 'ACTIVE' },
-      include: productInclude,
+      include: productDetailInclude,
     });
 
     if (!row) throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product at "${slug}"`));
 
-    return toPublicProduct(row);
+    return toPublicProductDetail(row);
   }
 
   async byId(storeSlug: string, productId: string, userId: string): Promise<ProductDetail> {
@@ -274,6 +274,7 @@ export class ProductsService {
           status: dto.status ?? 'ACTIVE',
           origin: dto.origin ?? null,
           ...perUnit,
+          maxPriceCents: perUnit.priceCents,
           position: (last._max.position ?? -1) + 1,
           images: { create: imageRows(dto.images) },
           variants: { create: [{ storeId, position: 0, ...perUnit }] },

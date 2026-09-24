@@ -123,6 +123,7 @@ export function toPublicProductCard(row: ProductRow): PublicProductCard {
     compareAtPriceCents: row.compareAtPriceCents,
     imageUrl: row.images[0]?.url ?? null,
     categorySlug: row.category?.slug ?? null,
+    priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
   } satisfies PublicProductCard;
 }
 

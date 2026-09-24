@@ -123,6 +123,9 @@ model Product {
   /// rendered rather than stored, so a stored percentage can never disagree with the two numbers
   /// it was derived from. The API refuses a value at or below `priceCents`.
   compareAtPriceCents Int?
+  /// The dearest variant a customer can order, beside `priceCents` as the cheapest, so a card can
+  /// say "R$ 69,90 – R$ 209,90" without reading a product's variants. Part of the cache.
+  maxPriceCents       Int
 
   position Int            @default(0)
   /// See ProductStatus. Only ACTIVE rows leave this table for the shop window.

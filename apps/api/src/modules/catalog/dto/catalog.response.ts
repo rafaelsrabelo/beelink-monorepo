@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Types
 import type {
+  PriceRange,
   Product,
   ProductCategory,
   ProductPage,
@@ -60,6 +61,11 @@ export class PublicProductImageResponse implements PublicProductImage {
   @ApiProperty({ nullable: true, type: String }) alt!: string | null;
 }
 
+export class PriceRangeResponse implements PriceRange {
+  @ApiProperty({ example: 6990, description: 'Whole cents; the same as priceCents.' }) minCents!: number;
+  @ApiProperty({ example: 20990, description: 'Whole cents.' }) maxCents!: number;
+}
+
 export class PublicProductCardResponse implements PublicProductCard {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ example: 'blusa-feminina-tomara-que-caia' }) slug!: string;
@@ -69,6 +75,8 @@ export class PublicProductCardResponse implements PublicProductCard {
   compareAtPriceCents!: number | null;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({ nullable: true, type: String }) categorySlug!: string | null;
+  @ApiProperty({ type: PriceRangeResponse, description: 'The cheapest and dearest variant a customer can order.' })
+  priceRange!: PriceRangeResponse;
 }
 
 export class PublicProductResponse extends PublicProductCardResponse implements PublicProduct {

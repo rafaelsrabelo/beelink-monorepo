@@ -24,6 +24,7 @@ function row(id: string): ShowcaseCardRow {
     name: id,
     priceCents: 100,
     compareAtPriceCents: null,
+    maxPriceCents: 150,
     images: [{ url: `/${id}.jpg` }],
     category: { slug: 'blusas' },
   };
@@ -113,7 +114,16 @@ describe('shelfOf — the cards, in the order the showcase wants', () => {
 
   it('serves a card with its first picture and its category', () => {
     expect(shelfOf(showcase(), [row('p1')])).toEqual([
-      { id: 'p1', slug: 'p1', name: 'p1', priceCents: 100, compareAtPriceCents: null, imageUrl: '/p1.jpg', categorySlug: 'blusas' },
+      {
+        id: 'p1',
+        slug: 'p1',
+        name: 'p1',
+        priceCents: 100,
+        compareAtPriceCents: null,
+        imageUrl: '/p1.jpg',
+        categorySlug: 'blusas',
+        priceRange: { minCents: 100, maxCents: 150 },
+      },
     ]);
   });
 });

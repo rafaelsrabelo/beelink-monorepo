@@ -3,6 +3,8 @@ import type {
   ProductDetail,
   ProductOption as WireProductOption,
   ProductVariant as WireProductVariant,
+  PublicProductDetail,
+  PublicProductVariant,
 } from '@harness-monorepo/contracts';
 import type {
   ProductOptionModel,
@@ -13,7 +15,8 @@ import type {
 import type { ProductInclude } from '../../generated/prisma/models/Product.js';
 
 // App
-import { productInclude, toProduct } from './catalog.mapper.js';
+import { productInclude, toProduct, toPublicProduct } from './catalog.mapper.js';
+import { isVariantAvailable } from './catalog.visibility.js';
 import type { ProductRow } from './catalog.mapper.js';
 
 export type ProductOptionRow = ProductOptionModel & { values: ProductOptionValueModel[] };
@@ -46,16 +49,20 @@ function toProductOption(row: ProductOptionRow): WireProductOption {
   } satisfies WireProductOption;
 }
 
-/** `optionValueIds` follows the options' order, which the join rows do not carry. */
-function toProductVariant(row: ProductVariantRow, options: readonly ProductOptionRow[]): WireProductVariant {
+/** A variant's values in the options' order, which the join rows do not carry. */
+function optionValueIdsOf(row: ProductVariantRow, options: readonly ProductOptionRow[]): string[] {
   const valueByOption = new Map(row.values.map((value) => [value.optionId, value.valueId]));
 
+  return options.flatMap((option) => {
+    const valueId = valueByOption.get(option.id);
+    return valueId ? [valueId] : [];
+  });
+}
+
+function toProductVariant(row: ProductVariantRow, options: readonly ProductOptionRow[]): WireProductVariant {
   return {
     id: row.id,
-    optionValueIds: options.flatMap((option) => {
-      const valueId = valueByOption.get(option.id);
-      return valueId ? [valueId] : [];
-    }),
+    optionValueIds: optionValueIdsOf(row, options),
     isActive: row.isActive,
     priceCents: row.priceCents,
     compareAtPriceCents: row.compareAtPriceCents,
@@ -78,4 +85,29 @@ export function toProductDetail(row: ProductDetailRow): ProductDetail {
     options: row.options.map(toProductOption),
     variants: row.variants.map((variant) => toProductVariant(variant, row.options)),
   } satisfies ProductDetail;
+}
+
+/**
+ * The product page's answer. Only the combinations the shop sells are listed — one it switched off
+ * does not exist as far as a visitor is concerned — and each says whether it can be ordered now,
+ * never how many are left.
+ */
+export function toPublicProductDetail(row: ProductDetailRow): PublicProductDetail {
+  return {
+    ...toPublicProduct(row),
+    options: row.options.map(toProductOption),
+    variants: row.variants
+      .filter((variant) => variant.isActive)
+      .map(
+        (variant) =>
+          ({
+            id: variant.id,
+            optionValueIds: optionValueIdsOf(variant, row.options),
+            priceCents: variant.priceCents,
+            compareAtPriceCents: variant.compareAtPriceCents,
+            imageUrl: variant.imageUrl,
+            available: isVariantAvailable(variant),
+          }) satisfies PublicProductVariant,
+      ),
+  } satisfies PublicProductDetail;
 }

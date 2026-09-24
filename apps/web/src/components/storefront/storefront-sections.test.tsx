@@ -176,6 +176,7 @@ describe("StorefrontSections — a showcase draws its own products", () => {
     compareAtPriceCents: null,
     imageUrl: null,
     categorySlug: null,
+    priceRange: { minCents: 1000, maxCents: 1000 },
   })
 
   function showcase(over: Partial<PublicComponent> = {}): PublicComponent {

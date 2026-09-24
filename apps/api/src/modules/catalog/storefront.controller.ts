@@ -14,9 +14,10 @@ import {
 import { Public } from '../auth/auth.decorators.js';
 import { STOREFRONT_RATE_LIMIT } from '../stores/stores.constants.js';
 import { StoresService } from '../stores/stores.service.js';
-import type { PublicProduct } from '@harness-monorepo/contracts';
+import type { PublicProductDetail } from '@harness-monorepo/contracts';
 import { PRODUCTS_PAGE_SIZE, PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
-import { PublicProductResponse, StorefrontCatalogResponse } from './dto/catalog.response.js';
+import { StorefrontCatalogResponse } from './dto/catalog.response.js';
+import { PublicProductDetailResponse } from './dto/variant.response.js';
 import { ProductCategoriesService } from './product-categories.service.js';
 import { ProductsService } from './products.service.js';
 
@@ -97,13 +98,13 @@ export class StorefrontController {
   @Get(':productSlug')
   @Public()
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
-  @ApiOperation({ summary: 'One product, as its own page shows it' })
-  @ApiOkResponse({ type: PublicProductResponse })
+  @ApiOperation({ summary: 'One product, as its own page shows it, with the combinations it sells' })
+  @ApiOkResponse({ type: PublicProductDetailResponse })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND or PRODUCT_NOT_FOUND' })
   async product(
     @Param('storeSlug') storeSlug: string,
     @Param('productSlug') productSlug: string,
-  ): Promise<PublicProduct> {
+  ): Promise<PublicProductDetail> {
     const storeId = await this.stores.publicStoreId(storeSlug);
 
     return this.products.publicBySlug(storeId, productSlug);

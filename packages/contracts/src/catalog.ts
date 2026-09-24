@@ -109,6 +109,17 @@ export interface PublicProductCard {
   /** The first image, or null for a product whose photos are not in yet. */
   imageUrl: string | null;
   categorySlug: string | null;
+  /**
+   * The cheapest and the dearest variant a customer can order, so a card can say "a partir de" or
+   * show a range. Equal on a product with one variant. `minCents` is `priceCents`.
+   */
+  priceRange: PriceRange;
+}
+
+/** Whole cents, both ends included. */
+export interface PriceRange {
+  minCents: number;
+  maxCents: number;
 }
 
 /** One product's own page: the card plus everything only that page renders. */
@@ -128,6 +139,34 @@ export interface PublicProduct extends PublicProductCard {
   description: string | null;
   images: PublicProductImage[];
   category: PublicProductCategory | null;
+}
+
+/**
+ * One combination as a visitor may see it. No code, no cost, no count: those are the shop's.
+ * A combination the shop does not sell is absent rather than listed as unavailable.
+ */
+export interface PublicProductVariant {
+  id: string;
+  /** One value id per option, in the options' order. Empty on the default variant. */
+  optionValueIds: string[];
+  priceCents: number;
+  compareAtPriceCents: number | null;
+  /** This combination's photo, when it has one of its own. */
+  imageUrl: string | null;
+  /**
+   * It can be ordered now. False is sold out — the shop counts it and has none left — which is
+   * derived by the same rule that takes a sold-out product off the shelf, and never the count.
+   */
+  available: boolean;
+}
+
+/**
+ * The product page's answer: the product, its options and every combination it sells. A product
+ * without options has one variant with no values.
+ */
+export interface PublicProductDetail extends PublicProduct {
+  options: ProductOption[];
+  variants: PublicProductVariant[];
 }
 
 /**
