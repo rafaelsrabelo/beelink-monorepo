@@ -134,7 +134,9 @@ export function arrangementOf(
     components: row.components.map((component) => {
       const was = savedComponents.get(component.id)
       const first = was?.kind === "BANNER" ? (was.items[0] as BannerSlide | undefined) : undefined
-      const title = was?.title ?? null
+      // A category showcase with no title of its own is headed by its category on the page, and is
+      // listed by it here; six rows reading "Lista de produtos" would be six rows nobody can tell apart.
+      const title = was?.title ?? shelves.get(component.id)?.sourceCategory?.name ?? null
 
       return {
         id: component.id,

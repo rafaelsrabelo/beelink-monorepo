@@ -232,6 +232,7 @@ export const ptBR: UiMessages = {
       PRODUCTS: "Cadastrar produtos",
       CONTACT: "Escolher os campos",
     },
+    showcaseOnPublish: "Os produtos aparecem ao publicar",
     gallery: {
       title: "Adicionar à página",
       description: "Escolha um bloco. Ele entra vazio, no fim da página, e você preenche ali mesmo.",

@@ -50,6 +50,8 @@ export function StorefrontShelf({
     products: component.items as PublicProductCard[],
     productHref: routes.product,
     title: component.title ?? category?.name ?? messages.storefront.catalogTitle,
+    // The line a grouped shelf carried over its category's name, kept when it became a showcase.
+    ...(category?.description ? { label: category.description } : {}),
     seeAllHref: category ? routes.category(category.slug) : routes.catalog(),
     locale: "pt-BR",
     showPrice,

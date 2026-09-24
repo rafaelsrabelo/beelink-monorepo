@@ -321,6 +321,8 @@ export interface UiMessages {
      * Keyed by the whole union so a kind added later cannot ship without its sentence.
      */
     emptyAction: Record<ComponentKind, string>
+    /** A showcase shown again in the draft, whose products the page has not been served yet. */
+    showcaseOnPublish: string
     /** The gallery a block is added from. */
     gallery: {
       title: string

@@ -24,6 +24,14 @@ describe("DesignBlockPlaceholder", () => {
     expect(screen.getByText("Adicionar a primeira vantagem")).toBeInTheDocument()
   })
 
+  // A showcase hidden on the server and shown in the draft has products; it is only not served yet.
+  it("says what the owner does next when the screen knows better than the kind", () => {
+    render(<DesignBlockPlaceholder kind="PRODUCTS" label="Lista de produtos" action="Os produtos aparecem ao publicar" />)
+
+    expect(screen.getByText("Os produtos aparecem ao publicar")).toBeInTheDocument()
+    expect(screen.queryByText("Cadastrar produtos")).not.toBeInTheDocument()
+  })
+
   /**
    * The cover over the block is the one tab stop, so nothing here may take a second one — two
    * controls for one action is what the row beside it already got wrong.

@@ -232,6 +232,7 @@ export const en: UiMessages = {
       PRODUCTS: "Add products",
       CONTACT: "Choose the fields",
     },
+    showcaseOnPublish: "Its products appear once you publish",
     gallery: {
       title: "Add to the page",
       description: "Pick a block. It arrives empty, at the end of the page, and you fill it in there.",

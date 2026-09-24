@@ -1,5 +1,8 @@
 "use client"
 
+// Next
+import { useRouter } from "next/navigation"
+
 // React
 import { useEffect, useState } from "react"
 
@@ -31,6 +34,7 @@ import { changesOf, hasChanges, reconcile, toDraft, type ComponentDraft, type Se
  * what is on the page.
  */
 export function useDesignDraft(slug: string) {
+  const router = useRouter()
   const page = useSections(slug)
   const reorder = useReorderSections(slug)
   const reorderComponents = useReorderComponents(slug)
@@ -124,6 +128,9 @@ export function useDesignDraft(slug: string) {
       .then(() => {
         setDirty(false)
         setSeeded(null)
+        // The shop as served is the page's server read, the showcases' products in it: a showcase
+        // shown again has none in the preview until that read is taken again.
+        router.refresh()
       })
       .catch(() => {
         // The mutation's own error state is what the screen would show; the draft is kept so

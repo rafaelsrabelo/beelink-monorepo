@@ -198,18 +198,38 @@ describe("StorefrontSections — a showcase draws its own products", () => {
 
   it("lays a grid in rows, as many across as the shopkeeper chose where there is room", () => {
     const { container } = draw([band([showcase({ display: "GRID", columns: 3, title: "Destaques" })])])
+    const grid = container.querySelector("ul")!.className
 
     expect(screen.queryByRole("group")).not.toBeInTheDocument()
-    expect(container.querySelector("ul")!.className).toContain("@xl:grid-cols-3")
+    expect(grid).toContain("@xl:grid-cols-3")
+    expect(grid).not.toContain("@3xl:grid-cols-4")
     expect(screen.getAllByRole("listitem")).toHaveLength(2)
   })
 
+  it("lays four across where there is room when the shopkeeper left the count to the grid", () => {
+    const { container } = draw([band([showcase({ display: "GRID", columns: null })])])
+    const grid = container.querySelector("ul")!.className
+
+    expect(grid).toContain("@3xl:grid-cols-4")
+    expect(grid).not.toContain("@5xl:grid-cols-5")
+  })
+
+  const blusas = { slug: "blusas", name: "Blusas", description: "Peças leves para o calor" }
+
   // Named by its category unless the shopkeeper named it, and "ver tudo" goes where the rest is.
-  it("titles a category showcase by its category and leads to it", () => {
-    draw([band([showcase({ source: "CATEGORY", sourceCategory: { slug: "blusas", name: "Blusas" } })])])
+  it("titles a category showcase by its category, with its line, and leads to it", () => {
+    draw([band([showcase({ source: "CATEGORY", sourceCategory: blusas })])])
 
     expect(screen.getByRole("heading", { name: "Blusas" })).toBeInTheDocument()
+    expect(screen.getByText("Peças leves para o calor")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Ver tudo em Blusas" })).toHaveAttribute("href", routes.category("blusas"))
+  })
+
+  it("keeps the shopkeeper's own title over the category's name", () => {
+    draw([band([showcase({ title: "Escolhas da semana", source: "CATEGORY", sourceCategory: blusas })])])
+
+    expect(screen.getByRole("heading", { name: "Escolhas da semana" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Blusas" })).not.toBeInTheDocument()
   })
 
   it("draws nothing for a showcase whose source has nothing on the shelf", () => {

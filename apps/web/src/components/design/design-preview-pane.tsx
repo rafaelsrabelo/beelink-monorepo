@@ -20,6 +20,7 @@ import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { isEmptyComponent, labelOf } from "./design-draft"
+import type { Shelves } from "./design-draft-preview"
 
 export interface DesignPreviewPaneProps {
   store: PublicStore
@@ -27,6 +28,8 @@ export interface DesignPreviewPaneProps {
   year: number
   /** The draft, already resolved into what the shop window would be served. */
   sections: readonly PublicSection[]
+  /** The showcases the shop was served with; one missing is hidden on the server, shown in the draft. */
+  shelves: Shelves
   /** The palette being edited, so the preview answers the picker and not the database. */
   colors: PublicStore["colors"]
   /** The bands, in order — what the board over the preview drags. */
@@ -65,6 +68,7 @@ export function DesignPreviewPane({
   categories,
   year,
   sections,
+  shelves,
   colors,
   orderedIds,
   onReorder,
@@ -126,7 +130,8 @@ export function DesignPreviewPane({
                   </DesignHandle>
                 )}
                 renderBlock={(component, block) => {
-                  const label = labelOf(component.kind, component.title, messages)
+                  const label = labelOf(component.kind, component.title ?? component.sourceCategory?.name ?? null, messages)
+                  const unserved = component.kind === "PRODUCTS" && !shelves.has(component.id)
                   // The one rule the renderer already answers, asked here so the page can hold a
                   // place for a block the shop window would draw nothing for.
                   const empty = isEmptyComponent(
@@ -144,7 +149,12 @@ export function DesignPreviewPane({
                       messages={messages}
                     >
                       {empty ? (
-                        <DesignBlockPlaceholder kind={component.kind} label={label} messages={messages} />
+                        <DesignBlockPlaceholder
+                          kind={component.kind}
+                          label={label}
+                          {...(unserved ? { action: text.showcaseOnPublish } : {})}
+                          messages={messages}
+                        />
                       ) : (
                         block
                       )}

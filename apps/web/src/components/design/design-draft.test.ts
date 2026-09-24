@@ -222,7 +222,7 @@ describe("shelvesOf — each showcase's cards, from the shop as served", () => {
             span: "FULL",
             display: "RAIL",
             source: "CATEGORY",
-            sourceCategory: { slug: "blusas", name: "Blusas" },
+            sourceCategory: { slug: "blusas", name: "Blusas", description: null },
             items: [card],
             columns: null,
             align: null,
@@ -233,9 +233,10 @@ describe("shelvesOf — each showcase's cards, from the shop as served", () => {
 
     expect(previewOf(draft, saved, shelves)[1]!.components[1]).toMatchObject({
       items: [card],
-      sourceCategory: { slug: "blusas", name: "Blusas" },
+      sourceCategory: { slug: "blusas", name: "Blusas", description: null },
     })
-    expect(arrangementOf(draft, saved, shelves)[1]!.components[1]).toMatchObject({ empty: false })
+    // Listed by its category, the way the page heads it, rather than as one more "Lista de produtos".
+    expect(arrangementOf(draft, saved, shelves)[1]!.components[1]).toMatchObject({ empty: false, title: "Blusas" })
   })
 
   /** Only a resolved shelf can say a showcase is empty: its saved items are a pick, not cards. */

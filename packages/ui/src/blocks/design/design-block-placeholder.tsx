@@ -16,6 +16,8 @@ export interface DesignBlockPlaceholderProps {
   kind: ComponentKind
   /** What the block is called — its own title if it has one, else the kind's name. */
   label: string
+  /** What the owner does next, when it is not the kind's own "add the first thing". */
+  action?: string
   className?: string
   messages?: UiMessages
 }
@@ -38,6 +40,7 @@ export interface DesignBlockPlaceholderProps {
 export function DesignBlockPlaceholder({
   kind,
   label,
+  action,
   className,
   messages = defaultMessages,
 }: DesignBlockPlaceholderProps) {
@@ -65,7 +68,7 @@ export function DesignBlockPlaceholder({
         */}
         <span className="text-muted-foreground flex items-center gap-1.5 text-xs @sm:text-sm">
           <PlusIcon aria-hidden="true" className="size-4 shrink-0" />
-          {text.emptyAction[kind]}
+          {action ?? text.emptyAction[kind]}
         </span>
       </div>
     </div>

@@ -173,6 +173,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           categories={categories}
           year={year}
           sections={previewOf(rows, saved, shelves)}
+          shelves={shelves}
           colors={palette}
           orderedIds={orderedIdsOf(rows)}
           onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
