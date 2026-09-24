@@ -1,10 +1,10 @@
 // React
-import type { CSSProperties, ReactNode } from "react"
+import type { ReactNode } from "react"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
-import { readableOn, toneOn } from "@harness-monorepo/ui/lib/contrast"
+import { shopPaletteStyle, type ShopColors } from "@harness-monorepo/ui/lib/shop-palette"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
@@ -16,17 +16,12 @@ import {
   WhatsAppIcon,
   YouTubeIcon,
 } from "../store/store-brand-icons"
+import { ShopPaletteProvider } from "./shop-palette-context"
 import { StorefrontAnnouncement } from "./storefront-announcement"
 import { StorefrontMasthead, type StorefrontMenuItem } from "./storefront-masthead"
 
-/** The four colours a shop dresses its window in. They are data, chosen by the shopkeeper. */
-export interface StorefrontColors {
-  background: string
-  primary: string
-  header: string
-  /** The foot, which used to borrow the header's. There is no `text`: it is derived per surface. */
-  footer: string
-}
+/** Declared beside the palette now; re-exported because screens import it from here. */
+export type StorefrontColors = ShopColors
 
 export type StorefrontNetwork = "whatsapp" | "instagram" | "tiktok" | "youtube" | "spotify"
 
@@ -229,48 +224,11 @@ export function StorefrontWindow({
 }: StorefrontWindowProps) {
   const text = messages.storefront
 
-  /*
-    Four surfaces the shopkeeper chose, and one readable foreground derived from each.
-
-    Per surface and not one global ink, which is the defect this replaces: `--shop-background` used
-    to paint the page AND colour every word printed on a coloured surface. That holds only while
-    the page is pale and the top is not — choose black for both and the shop is black on black.
-
-    Computed here, where the variables are already written, so it is in the HTML on the first
-    paint. The shop window is prerendered; a colour decided after hydration is a flash of
-    unreadable text on every visit.
-
-    `--shop-text` survives as a name because it is also a *surface* — the announcement strip, the
-    logo chip and the poster's gradient are all drawn in it — and it is exactly the page's ink, so
-    the two are one value rather than two that can disagree.
-  */
-  const ink = readableOn(colors.background)
-  const dressed = {
-    "--shop-background": colors.background,
-    "--shop-on-background": ink,
-    "--shop-primary": colors.primary,
-    "--shop-on-primary": readableOn(colors.primary),
-    /*
-      The brand as a *word* on the page, rather than as a surface behind one.
-
-      A section's heading, a "see all" link and a promise's icon are painted in the shop's own
-      colour, and `readableOn` cannot serve them: answering "black or white" would throw the brand
-      away. This is the brand itself, mixed toward the page's ink only as far as 4.5:1 requires —
-      a pale yellow on white and a navy on black are the two a shopkeeper cannot read at all, and
-      every other brand comes back untouched.
-    */
-    "--shop-primary-ink": toneOn(colors.primary, colors.background),
-    "--shop-header": colors.header,
-    "--shop-on-header": readableOn(colors.header),
-    "--shop-footer": colors.footer,
-    "--shop-on-footer": readableOn(colors.footer),
-    "--shop-text": ink,
-    "--shop-on-text": colors.background,
-    backgroundColor: "var(--shop-background)",
-    color: "var(--shop-on-background)",
-  } as CSSProperties
+  // Every `--shop-*` variable, in the HTML on the first paint: see lib/shop-palette.ts.
+  const dressed = shopPaletteStyle(colors)
 
   return (
+    <ShopPaletteProvider colors={colors}>
     <div style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
@@ -417,5 +375,6 @@ export function StorefrontWindow({
         ) : null}
       </footer>
     </div>
+    </ShopPaletteProvider>
   )
 }

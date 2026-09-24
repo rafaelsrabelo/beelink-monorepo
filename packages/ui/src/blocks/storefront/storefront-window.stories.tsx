@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
-import { sampleColorPresets } from "../store/store.fixtures"
+import { sampleColorPresets, sampleDarkShopColors } from "../store/store.fixtures"
 import { StorefrontWindow } from "./storefront-window"
 
 const links = [
@@ -81,4 +81,63 @@ export const Site: Story = {
     ],
     orderHref: undefined,
   },
+}
+
+const TOKENS = [
+  "background",
+  "on-background",
+  "primary",
+  "on-primary",
+  "primary-ink",
+  "header",
+  "on-header",
+  "primary-on-header",
+  "on-primary-on-header",
+  "primary-on-header-soft",
+  "text",
+  "on-text",
+  "muted",
+  "line",
+  "line-strong",
+  "frame",
+  "fill",
+  "placeholder",
+  "canvas",
+  "sale",
+  "sale-ink",
+  "positive",
+  "positive-ink",
+  "rating",
+  "verified",
+  "verified-ink",
+] as const
+
+/** Every `--shop-*` token, as a swatch inside the window that sets it. */
+function Swatches() {
+  return (
+    <ul className="grid grid-cols-2 gap-3 shop-sm:grid-cols-4 shop-lg:grid-cols-6">
+      {TOKENS.map((token) => (
+        <li key={token} className="flex flex-col gap-1 text-xs">
+          <span
+            className="h-12 w-full rounded-lg border"
+            style={{ backgroundColor: `var(--shop-${token})`, borderColor: "var(--shop-line-strong)" }}
+          />
+          <code>--shop-{token}</code>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** Uma loja clara, com todos os tokens da paleta desenhados como amostras. */
+export const Tokens: Story = {
+  args: { children: <Swatches /> },
+}
+
+/**
+ * Uma loja escura: os neutros clareiam, as tintas semânticas trocam para a variante de página escura
+ * e a marca amarela continua legível no cabeçalho.
+ */
+export const LojaEscura: Story = {
+  args: { colors: sampleDarkShopColors, children: <Swatches /> },
 }
