@@ -24,11 +24,15 @@ export interface StorefrontCatalogProps {
   children?: ReactNode
 }
 
-/** The grid's columns, per the shopkeeper's choice. Exported so a skeleton takes the same shape. */
+/**
+ * The grid's columns, per the shopkeeper's choice, counted by the width the grid is given rather
+ * than the window's: beside 5a's filter column a 1024px window leaves the grid 668px, room for
+ * three cards and not four. Read inside an `@container`; exported so a skeleton takes the same shape.
+ */
 export const CATALOG_COLUMNS: Record<2 | 3 | 4, string> = {
   2: "grid-cols-2",
-  3: "grid-cols-2 shop-sm:grid-cols-3",
-  4: "grid-cols-2 shop-sm:grid-cols-3 shop-lg:grid-cols-4",
+  3: "grid-cols-2 @xl:grid-cols-3",
+  4: "grid-cols-2 @xl:grid-cols-3 @4xl:grid-cols-4",
 }
 
 /**
@@ -56,7 +60,7 @@ export function StorefrontCatalog({
   const text = messages.storefront
 
   return (
-    <section className="flex w-full flex-col gap-6">
+    <section className="@container flex w-full flex-col gap-6">
       {products.length ? (
         <ul className={cn("grid gap-4", CATALOG_COLUMNS[productsPerRow])}>
           {products.map((product) => (

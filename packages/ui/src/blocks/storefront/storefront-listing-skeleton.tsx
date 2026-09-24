@@ -1,4 +1,5 @@
 // UI
+import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -14,6 +15,9 @@ export interface StorefrontListingSkeletonProps {
   productsPerRow?: 2 | 3 | 4
   /** One page: sixteen, the 4 × 4 grid of 5a. */
   cards?: number
+  /** The filter column's place beside the grid, from `shop-lg`, as the listing draws it. */
+  withColumn?: boolean
+  className?: string
   messages?: UiMessages
 }
 
@@ -24,15 +28,32 @@ export interface StorefrontListingSkeletonProps {
  * A skeleton and never a spinner (the root contract's third rule), announced once to a screen reader
  * while the shapes stay hidden.
  */
-export function StorefrontListingSkeleton({ productsPerRow = 3, cards = 16, messages = defaultMessages }: StorefrontListingSkeletonProps) {
+export function StorefrontListingSkeleton({
+  productsPerRow = 3,
+  cards = 16,
+  withColumn = false,
+  className,
+  messages = defaultMessages,
+}: StorefrontListingSkeletonProps) {
   return (
-    <div role="status" aria-busy="true" className="flex flex-col gap-8">
+    <div role="status" aria-busy="true" className={cn("flex gap-7", className)}>
       <span className="sr-only">{messages.storefront.loadingShelf}</span>
 
-      <div aria-hidden="true" className={cn("grid gap-4", CATALOG_COLUMNS[productsPerRow])}>
-        {Array.from({ length: cards }, (_, index) => (
-          <StorefrontCardSkeleton key={index} />
-        ))}
+      {withColumn ? (
+        <div aria-hidden="true" className="hidden w-66 shrink-0 flex-col gap-3 shop-lg:flex">
+          <Skeleton className="h-6 w-24" />
+          {Array.from({ length: 6 }, (_, index) => (
+            <Skeleton key={index} className="h-4 w-40" />
+          ))}
+        </div>
+      ) : null}
+
+      <div aria-hidden="true" className="@container min-w-0 flex-1">
+        <div className={cn("grid gap-4", CATALOG_COLUMNS[productsPerRow])}>
+          {Array.from({ length: cards }, (_, index) => (
+            <StorefrontCardSkeleton key={index} />
+          ))}
+        </div>
       </div>
     </div>
   )

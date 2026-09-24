@@ -258,6 +258,20 @@ export interface UiMessages {
     resultsNone: string
     /** The word before a searched term in the count: "… resultados para "whey"". */
     resultsFor: string
+    /** The listing's filter column (5a): its heading, and the link that takes every filter off. */
+    filtersTitle: string
+    filtersClear: string
+    /** `{label}` — a chip's accessible name: "Remover filtro 300 g". */
+    filterRemove: string
+    filterCategory: string
+    /** The chip of `desconto=1`. */
+    filterOnSale: string
+    /** `{percent}` — the chip of `desconto=<n>`: "10% ou mais". */
+    filterDiscountAtLeast: string
+    /** `{min}` `{max}` — a price range's chip, whole reais already formatted. */
+    filterPriceBetween: string
+    filterPriceUpTo: string
+    filterPriceFrom: string
     sortPriceAsc: string
     sortPriceDesc: string
     /** The categories index, and the same heading over the home's band of them. */
