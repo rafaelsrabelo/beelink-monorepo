@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
+// Lib
+import { ORDER_VARIANT_MARK } from "../../lib/variant-choice"
+
 import { StorefrontProductDetail } from "./storefront-product"
+import { BLOUSE_OPTIONS, BLOUSE_VARIANTS } from "./variant-choice-fixtures"
 
 const meta = {
   title: "Blocos/Vitrine/Página do produto",
@@ -47,3 +51,13 @@ export const SemWhatsapp: Story = {
  * what it loses is the button, not itself.
  */
 export const Esgotado: Story = { args: { soldOut: true } }
+
+/** Tamanho e cor: o preço, a foto e a mensagem mudam com a escolha, e M esgotado oferece o Avise-me. */
+export const ComVariacoes: Story = {
+  args: {
+    options: BLOUSE_OPTIONS,
+    variants: BLOUSE_VARIANTS,
+    orderHref: `https://wa.me/5511999998888?text=Blusa${ORDER_VARIANT_MARK}`,
+    restock: { onSubmit: () => {}, status: "idle" },
+  },
+}

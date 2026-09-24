@@ -152,6 +152,25 @@ export interface UiMessages {
      */
     soldOut: string
     soldOutHint: string
+    /** `{option}: {value}` — the legend of one option on the product page. */
+    chosenValue: string
+    /** Read after a value no combination has: ", indisponível". */
+    valueMissing: string
+    /** Read after a value whose combination is sold out: ", esgotado". */
+    valueSoldOut: string
+    /** Said in place of the order button when the chosen combination is sold out. */
+    combinationSoldOut: string
+    notifyMe: string
+    restockTitle: string
+    /** `{product}` and `{variant}`. */
+    restockDescription: string
+    restockPhone: string
+    restockPhonePlaceholder: string
+    restockName: string
+    restockSubmit: string
+    restockSending: string
+    restockSent: string
+    restockCancel: string
     /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
     photoOf: string
     /** The header's basket, which now has an address of its own. */
