@@ -15,7 +15,6 @@ import { BenefitIcon } from "@harness-monorepo/ui/blocks/design/benefit-icons"
 import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBenefits } from "@harness-monorepo/ui/blocks/storefront/storefront-benefits"
-import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
 import { StorefrontContact } from "@harness-monorepo/ui/blocks/storefront/storefront-contact"
 import { StorefrontHero } from "@harness-monorepo/ui/blocks/storefront/storefront-hero"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
@@ -25,6 +24,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { ContactFormLive } from "./contact-form-live"
+import { StorefrontCategoriesBlock } from "./storefront-categories-block"
 import type { ContactCopy } from "./storefront-contact-copy"
 import { StorefrontShelf } from "./storefront-shelf"
 
@@ -96,27 +96,13 @@ export function StorefrontComponent({
 
   if (component.kind === "CATEGORIES") {
     return (
-      <div className="flex flex-col gap-4">
-        {component.title ? (
-          <StorefrontHeading title={component.title} subtitle={component.subtitle} />
-        ) : null}
-        <StorefrontCategoryGrid
-          categories={categories.map((category) => ({
-            id: category.id,
-            slug: category.slug,
-            name: category.name,
-            imageUrl: category.imageUrl,
-            description: category.description,
-            productCount: category.productCount,
-          }))}
-          href={routes.category}
-          catalogHref={routes.catalog()}
-          locale="pt-BR"
-          {...(component.columns ? { columns: component.columns } : {})}
-          {...link}
-          messages={messages}
-        />
-      </div>
+      <StorefrontCategoriesBlock
+        component={component}
+        categories={categories}
+        routes={routes}
+        {...link}
+        messages={messages}
+      />
     )
   }
 

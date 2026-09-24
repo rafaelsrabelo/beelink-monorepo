@@ -3,15 +3,13 @@ import type { PublicComponent, PublicProductCard } from "@harness-monorepo/contr
 
 // UI
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
-import {
-  StorefrontProductGrid,
-  type StorefrontGridColumns,
-} from "@harness-monorepo/ui/blocks/storefront/storefront-product-grid"
+import { StorefrontProductGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-product-grid"
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
+import { gridColumnsOf } from "./grid-columns"
 
 export interface StorefrontShelfProps {
   /** A PRODUCTS component, its cards already resolved from its source by the public read. */
@@ -23,11 +21,25 @@ export interface StorefrontShelfProps {
   messages: UiMessages
 }
 
-/** What a grid of products falls back to: the column count the catalogue's own grid uses. */
-const DEFAULT_COLUMNS: StorefrontGridColumns = 4
+/**
+ * What an untitled showcase is headed by: its category, or the words for what its source draws. A
+ * hand-picked showcase called "Todos os produtos" would be a heading that lies about its shelf.
+ */
+function headingOf(component: PublicComponent, messages: UiMessages): string {
+  const text = messages.storefront
 
-function columnsOf(columns: number | null): StorefrontGridColumns {
-  return columns && columns >= 2 && columns <= 6 ? (columns as StorefrontGridColumns) : DEFAULT_COLUMNS
+  switch (component.source) {
+    case "CATEGORY":
+      return component.sourceCategory?.name ?? text.catalogTitle
+    case "SELECTION":
+      return text.featuredHeading
+    case "NEWEST":
+      return text.newestHeading
+    case "ON_SALE":
+      return text.onSaleHeading
+    default:
+      return text.catalogTitle
+  }
 }
 
 /**
@@ -46,10 +58,11 @@ export function StorefrontShelf({
   messages,
 }: StorefrontShelfProps) {
   const category = component.sourceCategory
+  const columns = gridColumnsOf(component.columns)
   const shelf = {
     products: component.items as PublicProductCard[],
     productHref: routes.product,
-    title: component.title ?? category?.name ?? messages.storefront.catalogTitle,
+    title: component.title ?? headingOf(component, messages),
     // The line a grouped shelf carried over its category's name, kept when it became a showcase.
     ...(category?.description ? { label: category.description } : {}),
     seeAllHref: category ? routes.category(category.slug) : routes.catalog(),
@@ -61,7 +74,7 @@ export function StorefrontShelf({
   }
 
   return component.display === "GRID" ? (
-    <StorefrontProductGrid {...shelf} columns={columnsOf(component.columns)} />
+    <StorefrontProductGrid {...shelf} {...(columns ? { columns } : {})} />
   ) : (
     <StorefrontProductRail {...shelf} />
   )

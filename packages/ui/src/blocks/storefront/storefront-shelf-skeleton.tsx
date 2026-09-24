@@ -39,7 +39,7 @@ export function StorefrontShelfSkeleton({ display = "RAIL", messages = defaultMe
         {display === "RAIL" ? (
           <div className="flex gap-3 overflow-hidden">
             {Array.from({ length: 6 }, (_, index) => (
-              <div key={index} className={cn(CARD, "w-44 shrink-0 sm:w-52 lg:w-64")}>
+              <div key={index} className={cn(CARD, "w-44 shrink-0 shop-sm:w-52 shop-lg:w-64")}>
                 {CARD_BODY}
               </div>
             ))}

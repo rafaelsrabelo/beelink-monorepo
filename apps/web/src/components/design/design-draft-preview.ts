@@ -116,6 +116,8 @@ export function arrangementOf(
   rows: readonly SectionDraft[],
   saved: readonly Section[],
   shelves: Shelves,
+  /** Categories the shop window shows: with none, a categories block draws nothing. Unknown is some. */
+  categoriesShown = Number.POSITIVE_INFINITY,
 ): ArrangementBand[] {
   const savedSections = new Map(saved.map((section) => [section.id, section]))
   const savedComponents = new Map(
@@ -135,7 +137,7 @@ export function arrangementOf(
       const was = savedComponents.get(component.id)
       const first = was?.kind === "BANNER" ? (was.items[0] as BannerSlide | undefined) : undefined
       // A category showcase with no title of its own is headed by its category on the page, and is
-      // listed by it here; six rows reading "Lista de produtos" would be six rows nobody can tell apart.
+      // listed by it here; six rows reading "Vitrine de produtos" would be six rows nobody can tell apart.
       const title = was?.title ?? shelves.get(component.id)?.sourceCategory?.name ?? null
 
       return {
@@ -151,7 +153,9 @@ export function arrangementOf(
         empty:
           component.kind === "PRODUCTS"
             ? shelves.get(component.id)?.items.length === 0
-            : isEmptyComponent(component.kind, title, was?.body ?? null, was?.items ?? []),
+            : component.kind === "CATEGORIES"
+              ? categoriesShown === 0
+              : isEmptyComponent(component.kind, title, was?.body ?? null, was?.items ?? []),
       }
     }),
   }))

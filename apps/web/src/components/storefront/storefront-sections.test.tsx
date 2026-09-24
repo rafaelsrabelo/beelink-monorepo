@@ -225,6 +225,23 @@ describe("StorefrontSections — a showcase draws its own products", () => {
     expect(screen.getByRole("link", { name: "Ver tudo em Blusas" })).toHaveAttribute("href", routes.category("blusas"))
   })
 
+  // A hand-picked shelf headed "Todos os produtos" would be a heading that lies about it.
+  it("heads an untitled showcase by what its source draws", () => {
+    draw([
+      band([
+        showcase({ id: "a", source: "NEWEST" }),
+        showcase({ id: "b", source: "ON_SALE" }),
+        showcase({ id: "c", source: "SELECTION" }),
+      ]),
+    ])
+
+    expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Lançamentos",
+      "Promoções",
+      "Destaques",
+    ])
+  })
+
   it("keeps the shopkeeper's own title over the category's name", () => {
     draw([band([showcase({ title: "Escolhas da semana", source: "CATEGORY", sourceCategory: blusas })])])
 
@@ -236,5 +253,57 @@ describe("StorefrontSections — a showcase draws its own products", () => {
     const { container } = draw([band([showcase({ items: [] })])])
 
     expect(container.querySelector("[data-span]")).toBeEmptyDOMElement()
+  })
+})
+
+describe("StorefrontSections — the categories are a rail or a grid", () => {
+  const blusas = {
+    id: "c1",
+    slug: "blusas",
+    name: "Blusas",
+    description: null,
+    imageUrl: null,
+    parentSlug: null,
+    productCount: 3,
+  }
+
+  function categoriesBlock(over: Partial<PublicComponent> = {}): PublicComponent {
+    return { ...poster("categorias", "FULL"), kind: "CATEGORIES", title: "Categorias", display: "RAIL", items: [], ...over }
+  }
+
+  function drawWith(component: PublicComponent) {
+    return render(
+      <StorefrontSections
+        sections={[band([component])]}
+        primary=""
+        categories={[blusas]}
+        routes={routes}
+        showPrice
+        showBadge
+        messages={ptBR}
+      />,
+    )
+  }
+
+  it("runs them on a rail named after the block", () => {
+    drawWith(categoriesBlock())
+
+    expect(screen.getByRole("group", { name: "Categorias" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Blusas/ })).toHaveAttribute("href", routes.category("blusas"))
+  })
+
+  // The editor offered two to six and the grid used to drop the choice on the way.
+  it("lays a grid with the columns the shopkeeper chose", () => {
+    const { container } = drawWith(categoriesBlock({ display: "GRID", columns: 5 }))
+
+    expect(screen.queryByRole("group")).not.toBeInTheDocument()
+    expect(container.querySelector("ul")!.className).toContain("@5xl:grid-cols-5")
+  })
+
+  it("keeps a block with no format the grid it always drew", () => {
+    const { container } = drawWith(categoriesBlock({ display: null }))
+
+    expect(container.querySelector("ul")!.className).toContain("grid")
+    expect(screen.queryByRole("group")).not.toBeInTheDocument()
   })
 })

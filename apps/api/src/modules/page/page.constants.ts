@@ -24,6 +24,7 @@ export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID', 'RAIL'] as const satisfie
 export const DISPLAYS_OF_KIND: Partial<Record<ComponentKind, readonly ComponentDisplay[]>> = {
   BANNER: ['CAROUSEL', 'GRID'],
   PRODUCTS: ['RAIL', 'GRID'],
+  CATEGORIES: ['RAIL', 'GRID'],
 };
 
 /** Which products a showcase draws. No best sellers: nothing records a sale yet. */

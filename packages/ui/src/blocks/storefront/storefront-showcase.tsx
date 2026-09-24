@@ -125,7 +125,7 @@ export function StorefrontShowcase({
                     <p
                       className={cn(
                         "line-clamp-2 opacity-85",
-                        span === "FULL" ? "max-w-xl text-sm sm:text-base" : "text-sm",
+                        span === "FULL" ? "max-w-xl text-sm shop-sm:text-base" : "text-sm",
                       )}
                     >
                       {item.subtitle}

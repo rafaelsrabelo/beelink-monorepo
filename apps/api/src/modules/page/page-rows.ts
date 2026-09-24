@@ -60,3 +60,23 @@ export function componentPatch(dto: UpdateComponentDto, items: object[] | undefi
     ...(showcase ?? {}),
   };
 }
+
+/**
+ * Where a new row lands among the ones already in its list, and the rows that have to move for it.
+ *
+ * `position` is a place in the ordered list, not a value of the column: the column has gaps where
+ * rows were deleted (0, 1, 3), and "put it second" means second whatever the numbers are. The list is
+ * renumbered from 0 around the newcomer, and only the rows whose number changes are written.
+ */
+export function placedAt(
+  rows: readonly { id: string; position: number }[],
+  position: number | undefined,
+): { at: number; moves: { id: string; position: number }[] } {
+  const at = Math.min(position ?? rows.length, rows.length);
+  const moves = rows.flatMap((row, index) => {
+    const next = index < at ? index : index + 1;
+    return row.position === next ? [] : [{ id: row.id, position: next }];
+  });
+
+  return { at, moves };
+}

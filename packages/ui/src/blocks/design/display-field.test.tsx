@@ -25,6 +25,18 @@ describe("DisplayField", () => {
     expect(onChange).toHaveBeenCalledWith("CAROUSEL")
   })
 
+  // The categories and a showcase draw a rail or a grid, and are never offered a carousel.
+  it("offers only the formats the block's kind draws", async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<DisplayField value="GRID" options={["RAIL", "GRID"]} onChange={onChange} />)
+
+    expect(screen.queryByRole("button", { name: /Carrossel/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Trilho/ }))
+
+    expect(onChange).toHaveBeenCalledWith("RAIL")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<DisplayField value="CAROUSEL" onChange={vi.fn()} />)
 

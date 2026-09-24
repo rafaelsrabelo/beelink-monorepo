@@ -1,20 +1,7 @@
 "use client"
 
 // Libs
-import {
-  BadgeCheckIcon,
-  EyeIcon,
-  EyeOffIcon,
-  GripVerticalIcon,
-  HeadingIcon,
-  ImageIcon,
-  LayoutGridIcon,
-  MailIcon,
-  MegaphoneIcon,
-  TagsIcon,
-  Trash2Icon,
-  TypeIcon,
-} from "lucide-react"
+import { EyeIcon, EyeOffIcon, GripVerticalIcon, Trash2Icon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
@@ -25,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { useArrangeItem } from "./design-arrange"
+import { RowThumbnail } from "./row-thumbnail"
 import type { StorefrontSpan } from "../storefront/storefront-band-cell"
 import type { ComponentKind, SectionWidth } from "./design-types"
 import { SpanField } from "./span-field"
@@ -65,25 +53,8 @@ export interface ArrangementItem {
  * as reachable as two banners. The strip above the header is the exception: it is drawn above the
  * masthead, never in a band's grid, and a width there would change nothing.
  */
-function hasSpan(item: Pick<ArrangementItem, "kind">): boolean {
+export function hasSpan(item: Pick<ArrangementItem, "kind">): boolean {
   return item.kind !== "ANNOUNCEMENT"
-}
-
-/**
- * The picture a row shows beside the title, or the glyph that stands in for one.
- *
- * Six of the eight kinds have no picture, and a blank grey rectangle beside each of them makes a
- * list of components read as a list of broken images.
- */
-const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
-  ANNOUNCEMENT: MegaphoneIcon,
-  BANNER: ImageIcon,
-  HEADING: HeadingIcon,
-  TEXT: TypeIcon,
-  BENEFITS: BadgeCheckIcon,
-  CATEGORIES: TagsIcon,
-  PRODUCTS: LayoutGridIcon,
-  CONTACT: MailIcon,
 }
 
 export function ArrangementRow({
@@ -93,9 +64,12 @@ export function ArrangementRow({
   onDelete,
   onEdit,
   bandWidth,
+  selected = false,
   messages,
 }: {
   item: ArrangementItem
+  /** Its fields are open: marked here as the preview marks it. */
+  selected?: boolean
   onToggle: (id: string, isActive: boolean) => void
   onSpanChange: (id: string, span: ArrangementSpan) => void
   /** Absent where a kind cannot be deleted; the row then draws no bin at all. */
@@ -113,7 +87,6 @@ export function ArrangementRow({
   // kind. "Sem título" on four rows tells them which blocks are unfinished and nothing about
   // which is which.
   const name = item.title?.trim() || text.kinds[item.kind]
-  const KindIcon = KIND_ICON[item.kind]
 
   return (
     <li
@@ -123,7 +96,9 @@ export function ArrangementRow({
         "bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-2",
         drag.isDragging && "z-10 opacity-80 shadow-md",
         !item.isActive && "opacity-60",
+        selected && "ring-primary ring-2",
       )}
+      {...(selected ? { "aria-current": "true" as const } : {})}
     >
       {/*
         Identity on the first line, and only identity.
@@ -149,13 +124,7 @@ export function ArrangementRow({
         <GripVerticalIcon aria-hidden="true" className="size-4" />
       </button>
 
-      <span className="bg-muted text-muted-foreground flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md">
-        {item.imageUrl ? (
-          <img src={item.imageUrl} alt="" aria-hidden="true" className="size-full object-cover" />
-        ) : (
-          <KindIcon aria-hidden="true" className="size-4" />
-        )}
-      </span>
+      <RowThumbnail kind={item.kind} imageUrl={item.imageUrl ?? null} />
 
       {/*
         The name is the way in to editing, where there is anything to edit. A row that is a button

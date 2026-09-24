@@ -65,9 +65,10 @@ export type SectionWidth = "FULL" | "CONTAINED";
 export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
 
 /**
- * How a component with several things in it lays them out. Read on `BANNER` and `PRODUCTS`, each with
- * its own two, and null on every other kind: a banner's pictures take turns (`CAROUSEL`) or share the
- * space (`GRID`); a showcase's products scroll on one row (`RAIL`) or wrap into rows (`GRID`).
+ * How a component with several things in it lays them out. Read on `BANNER`, `PRODUCTS` and
+ * `CATEGORIES`, each with its own two, and null on every other kind: a banner's pictures take turns
+ * (`CAROUSEL`) or share the space (`GRID`); a showcase's products and the shop's categories scroll on
+ * one row (`RAIL`) or wrap into rows (`GRID`).
  */
 export type ComponentDisplay = "CAROUSEL" | "GRID" | "RAIL";
 
@@ -245,7 +246,7 @@ export interface PublicComponent {
   body: string | null;
   /** Its slice of the band, on every kind. */
   span: ComponentSpan;
-  /** Read on `BANNER`. Null on every other kind. */
+  /** Read on `BANNER`, `PRODUCTS` and `CATEGORIES`. Null on every other kind. */
   display: ComponentDisplay | null;
   /** A showcase's source, for the page to say where "ver tudo" leads. Null on every other kind. */
   source: ProductSource | null;
@@ -328,11 +329,16 @@ export interface CreateSectionPayload {
   width?: SectionWidth;
   background?: string | null;
   isActive?: boolean;
+  /**
+   * Where the band lands: its place among the page's bands, 0 first. Absent, or past the end, it
+   * lands last. The bands after it move down one.
+   */
+  position?: number;
   /** The one component it is created around. A section with nothing in it draws nothing. */
   component: CreateComponentPayload;
 }
 
-export type UpdateSectionPayload = Partial<Omit<CreateSectionPayload, "component">>;
+export type UpdateSectionPayload = Partial<Omit<CreateSectionPayload, "component" | "position">>;
 
 /**
  * What a write sends for a component.
@@ -347,7 +353,7 @@ export interface CreateComponentPayload {
   subtitle?: string | null;
   body?: string | null;
   span?: ComponentSpan;
-  /** A banner's or a showcase's choice, from the two its kind draws. Refused on any other kind. */
+  /** A banner's, a showcase's or the categories' choice, from the two its kind draws. Refused on any other kind. */
   display?: ComponentDisplay | null;
   /** A showcase's. `CATEGORY` needs `sourceCategoryId`; `SELECTION` needs `items`. */
   source?: ProductSource;
@@ -361,6 +367,12 @@ export interface CreateComponentPayload {
 }
 
 export type UpdateComponentPayload = Partial<CreateComponentPayload>;
+
+/** A component added into a band that exists, and where it lands among the band's own. */
+export interface AddComponentPayload extends CreateComponentPayload {
+  /** Its place in the band, 0 first. Absent, or past the end, it lands last. */
+  position?: number;
+}
 
 /** The `errorCode` values the page module answers. The apps own the sentences. */
 export type PageErrorCode =
@@ -391,6 +403,8 @@ export type PageErrorCode =
   | "SHOWCASE_PRODUCTS_INVALID"
   /** A `limit` outside 1 to 48. */
   | "SHOWCASE_LIMIT_INVALID"
+  /** A `position` to add at that is not a whole number from 0. */
+  | "POSITION_INVALID"
   /**
    * A patch tried to change a component's kind.
    *

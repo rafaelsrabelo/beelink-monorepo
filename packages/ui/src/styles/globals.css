@@ -15,6 +15,64 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The shop window's breakpoints: the viewport's on the shop, the painted surface's in design mode.
+ *
+ * On a page they are `sm:` to `xl:` exactly — a media query, which counts a classic scrollbar the
+ * way the widths always did. Inside design mode's preview (`data-shop-preview`) they ask the `shop`
+ * container instead, which is the surface built at the device's width, so a 390px phone is laid out
+ * as a phone inside a desktop window — which a media query can never do. `:where()` keeps both at
+ * the specificity a plain `sm:` has.
+ */
+@custom-variant shop-sm {
+    &:where(:not([data-shop-preview] *)) {
+        @media (width >= 40rem) {
+            @slot;
+        }
+    }
+    &:where([data-shop-preview] *) {
+        @container shop (width >= 40rem) {
+            @slot;
+        }
+    }
+}
+@custom-variant shop-md {
+    &:where(:not([data-shop-preview] *)) {
+        @media (width >= 48rem) {
+            @slot;
+        }
+    }
+    &:where([data-shop-preview] *) {
+        @container shop (width >= 48rem) {
+            @slot;
+        }
+    }
+}
+@custom-variant shop-lg {
+    &:where(:not([data-shop-preview] *)) {
+        @media (width >= 64rem) {
+            @slot;
+        }
+    }
+    &:where([data-shop-preview] *) {
+        @container shop (width >= 64rem) {
+            @slot;
+        }
+    }
+}
+@custom-variant shop-xl {
+    &:where(:not([data-shop-preview] *)) {
+        @media (width >= 80rem) {
+            @slot;
+        }
+    }
+    &:where([data-shop-preview] *) {
+        @container shop (width >= 80rem) {
+            @slot;
+        }
+    }
+}
+
 @theme inline {
     /*
      * The announcement strip's motion. The duration is set per strip, from its text, so a short
