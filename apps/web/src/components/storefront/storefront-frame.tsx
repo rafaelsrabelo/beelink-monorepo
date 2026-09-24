@@ -6,7 +6,7 @@ import type { PublicProductCategory, PublicSection, PublicStore } from "@harness
 
 // UI
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
-import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
+import { StorefrontWindow, type StorefrontWindowProps } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -67,6 +67,8 @@ export interface StorefrontFrameProps {
   blocks?: ReactNode
   /** The page's strip under the menu, edge to edge: the listing's results band (5a). */
   pageHeader?: ReactNode
+  /** How the page below it sits: 5a's listing draws its own columns on the canvas. */
+  body?: Pick<StorefrontWindowProps, "layout" | "surface">
   /**
    * The palette to paint with, when it is not the one the shop has saved.
    *
@@ -121,6 +123,7 @@ export function StorefrontFrame({
   showBanner = false,
   blocks,
   pageHeader,
+  body,
   colors,
   sections,
   year,
@@ -223,6 +226,7 @@ export function StorefrontFrame({
       }
       {...(blocks ? { blocks } : {})}
       {...(pageHeader ? { pageHeader } : {})}
+      {...body}
       {...(announcement ? { announcement } : {})}
       banner={
         showBanner && store.layoutType === "BANNER" && store.bannerImageUrl

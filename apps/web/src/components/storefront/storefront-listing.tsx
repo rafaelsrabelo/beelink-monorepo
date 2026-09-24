@@ -4,11 +4,14 @@ import type { StorefrontCatalog } from "@harness-monorepo/contracts"
 // UI
 import { StorefrontCatalog as StorefrontCatalogGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
+import { StorefrontCategoryFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-category-filter"
+import { StorefrontFilterColumn } from "@harness-monorepo/ui/blocks/storefront/storefront-filter-column"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
 import { StorefrontSearch } from "@harness-monorepo/ui/blocks/storefront/storefront-search"
 
 // App
 import { pageCountOf } from "@/lib/storefront-data"
+import { categoryFilterOf, clearFiltersHrefOf, filterChipsOf } from "@/lib/storefront-filters"
 import { pageHrefOf, type SectionPlace } from "@/lib/storefront-section"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 
@@ -25,8 +28,8 @@ export interface StorefrontListingProps {
 }
 
 /**
- * A shelf of products — the catalogue, a category, a search — composed from the blocks that draw
- * it: a category's children, the grid and the pager. The results band above it is the page's.
+ * A shelf of products — the catalogue, a category, a search — as 5a lays it out on the canvas: the
+ * filter column beside the grid and the pager. The results band above it is the page's.
  */
 export async function StorefrontListing({ place, routes, catalogue: pending, locale }: StorefrontListingProps) {
   const catalogue = await pending
@@ -38,44 +41,52 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
   const subcategories = category ? navigation.categories.filter((entry) => entry.parentSlug === category.slug) : []
 
   return (
-    <div className="flex flex-col gap-6">
-      {/*
-        The level below this one. The menu draws the first level only — nineteen subheadings in
-        one row is not a menu — so a category's own page is where its subcategories are reached.
-        "Tudo" here points back at this category: from inside Proteínas, everything is every protein.
-      */}
-      {category && subcategories.length ? (
-        <StorefrontCategories
-          categories={subcategories}
-          active={null}
-          href={(childSlug) => routes.category(childSlug || category.slug)}
-          messages={ui}
-        />
-      ) : null}
+    <div className="flex gap-7 pt-5 pb-10">
+      <StorefrontFilterColumn chips={filterChipsOf(place, routes, locale)} clearHref={clearFiltersHrefOf(place, routes)} messages={ui}>
+        <StorefrontCategoryFilter {...categoryFilterOf(place, catalogue, routes)} locale={locale} messages={ui} />
+      </StorefrontFilterColumn>
 
-      {/*
-        The search page carries the field again, and this is the one place it may take the caret:
-        someone who landed here came to type. The header's copy never does.
-      */}
-      {section.kind === "search" ? <StorefrontSearch action={routes.search()} value={term} autoFocus messages={ui} /> : null}
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        {/*
+          The level below this one, on a phone: the column carries it from shop-lg, and until the
+          phone's filter sheet exists (B8) this row is its only door that works without scripting.
+          "Tudo" here points back at this category: from inside Proteínas, everything is every protein.
+        */}
+        {category && subcategories.length ? (
+          <div className="shop-lg:hidden">
+            <StorefrontCategories
+              categories={subcategories}
+              active={null}
+              href={(childSlug) => routes.category(childSlug || category.slug)}
+              messages={ui}
+            />
+          </div>
+        ) : null}
 
-      <StorefrontCatalogGrid
-        products={catalogue.products}
-        productHref={routes.product}
-        clearHref={section.kind === "catalog" ? undefined : routes.catalog()}
-        locale={locale}
-        productsPerRow={layout.productsPerRow ?? 3}
-        showPrice={layout.showProductPrice ?? true}
-        showBadge={layout.showProductBadges ?? true}
-        messages={ui}
-      >
-        <StorefrontPagination
-          page={page}
-          pageCount={pageCountOf(catalogue.total, catalogue.pageSize)}
-          href={pageHrefOf(place, routes)}
+        {/*
+          The search page carries the field again, and this is the one place it may take the caret:
+          someone who landed here came to type. The header's copy never does.
+        */}
+        {section.kind === "search" ? <StorefrontSearch action={routes.search()} value={term} autoFocus messages={ui} /> : null}
+
+        <StorefrontCatalogGrid
+          products={catalogue.products}
+          productHref={routes.product}
+          clearHref={section.kind === "catalog" ? undefined : routes.catalog()}
+          locale={locale}
+          productsPerRow={layout.productsPerRow ?? 3}
+          showPrice={layout.showProductPrice ?? true}
+          showBadge={layout.showProductBadges ?? true}
           messages={ui}
-        />
-      </StorefrontCatalogGrid>
+        >
+          <StorefrontPagination
+            page={page}
+            pageCount={pageCountOf(catalogue.total, catalogue.pageSize)}
+            href={pageHrefOf(place, routes)}
+            messages={ui}
+          />
+        </StorefrontCatalogGrid>
+      </div>
     </div>
   )
 }
