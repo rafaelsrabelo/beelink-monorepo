@@ -27,7 +27,6 @@ const UPDATE = {
   name: "Doces da Ana",
   type: "ECOMMERCE",
   layoutType: "DEFAULT",
-  showProductsByCategory: false,
   colors: { background: "", primary: "", header: "", footer: "" },
   socialNetworks: { whatsapp: "5511999998888" },
   paymentMethods: ["PIX"],

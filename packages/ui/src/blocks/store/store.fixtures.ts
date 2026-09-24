@@ -76,7 +76,6 @@ export const sampleStoreSettingsValues: StoreSettingsValues = {
   },
   appearance: {
     layoutType: "DEFAULT",
-    showProductsByCategory: false,
     bannerImageUrl: "",
     cardLayout: "grid",
     colors: sampleStoreColors,

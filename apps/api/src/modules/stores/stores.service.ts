@@ -196,7 +196,6 @@ export class StoresService {
         bannerImageUrl: dto.bannerImageUrl ?? null,
         categoryId: dto.categoryId ?? null,
         layoutType: dto.layoutType,
-        showProductsByCategory: dto.showProductsByCategory,
         colorBackground: dto.colors.background,
         colorPrimary: dto.colors.primary,
         colorFooter: dto.colors.footer,

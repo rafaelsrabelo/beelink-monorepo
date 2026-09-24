@@ -1,16 +1,7 @@
 "use client"
 
 // UI
-import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@harness-monorepo/ui/components/field"
+import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from "@harness-monorepo/ui/components/field"
 import { ToggleGroup, ToggleGroupItem } from "@harness-monorepo/ui/components/toggle-group"
 
 // Locales
@@ -121,19 +112,6 @@ export function StoreAppearanceFields({
           {value.cardLayout === "horizontal" ? text.cardLayoutHorizontalHint : text.cardLayoutGridHint}
         </FieldDescription>
       </FieldSet>
-
-      <Field orientation="horizontal">
-        <Checkbox
-          id="store-categories"
-          disabled={disabled}
-          checked={value.showProductsByCategory}
-          onCheckedChange={(checked) => onChange({ ...value, showProductsByCategory: checked })}
-        />
-        <FieldContent>
-          <FieldLabel htmlFor="store-categories">{text.categoriesLabel}</FieldLabel>
-          <FieldDescription>{text.categoriesHint}</FieldDescription>
-        </FieldContent>
-      </Field>
 
       <StoreColorsFields
         value={value.colors}

@@ -735,8 +735,6 @@ export const ptBR: UiMessages = {
       cardLayoutGridHint: "A imagem em cima e as informações embaixo.",
       cardLayoutHorizontal: "Horizontal",
       cardLayoutHorizontalHint: "A imagem à esquerda e as informações ao lado.",
-      categoriesLabel: "Agrupar produtos por categoria",
-      categoriesHint: "A loja mostra uma seção para cada categoria em vez de uma lista única.",
       colorsLegend: "Cores da loja",
       colorsHint: "As cores valem para a sua loja, e não para este painel.",
       presetsLabel: "Temas prontos",

@@ -735,8 +735,6 @@ export const en: UiMessages = {
       cardLayoutGridHint: "The picture on top, the details below it.",
       cardLayoutHorizontal: "Horizontal",
       cardLayoutHorizontalHint: "The picture on the left, the details beside it.",
-      categoriesLabel: "Group products by category",
-      categoriesHint: "The shop shows one section per category instead of a single list.",
       colorsLegend: "Shop colours",
       colorsHint: "The colours apply to your shop, not to this panel.",
       presetsLabel: "Ready-made themes",

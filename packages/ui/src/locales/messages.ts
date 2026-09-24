@@ -927,8 +927,6 @@ export interface UiMessages {
       cardLayoutGridHint: string
       cardLayoutHorizontal: string
       cardLayoutHorizontalHint: string
-      categoriesLabel: string
-      categoriesHint: string
       colorsLegend: string
       colorsHint: string
       presetsLabel: string
