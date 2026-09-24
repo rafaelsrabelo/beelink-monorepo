@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
+import { announcementOf } from "./storefront-sections"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -58,8 +59,6 @@ export interface StorefrontFrameProps {
    * shop stores would be a shop window showing a page no visitor gets.
    */
   colors?: PublicStore["colors"]
-  /** The strip above the masthead. Built by the page from the same list the blocks come from. */
-  announcement?: { left: string; right?: string; background?: string | null; href?: string | null; external?: boolean }
   /**
    * The arrangement being drawn, when it is not the one the store has saved.
    *
@@ -102,7 +101,6 @@ export function StorefrontFrame({
   showBanner = false,
   blocks,
   colors,
-  announcement,
   sections,
   year,
   searchSlot,
@@ -147,6 +145,9 @@ export function StorefrontFrame({
   ]
   const drawn = sections ?? store.sections
   const footerColumns = site ? siteFooterColumnsOf(store, drawn, messages) : shopColumns
+  // The strip is above the masthead on every page, so it is read here from the same bands the
+  // landing page's blocks come from — the draft's in design mode, the shop's everywhere else.
+  const announcement = announcementOf(drawn)
 
   return (
     <StorefrontWindow

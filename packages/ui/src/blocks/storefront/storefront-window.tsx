@@ -23,10 +23,10 @@ export type StorefrontColors = ShopColors
 // Declared beside the footer now; re-exported because screens import them from here.
 export type { StorefrontFooterColumn, StorefrontLink, StorefrontNetwork } from "./storefront-footer"
 
-/** The strip above the header: what the shop is shouting this week, on each side of the page. */
+/** The strip above the header: what the shop is shouting this week — its title, and a second line. */
 export interface StorefrontAnnouncement {
   left: string
-  /** Joined to the left with a dot: the strip scrolls one sentence, and this is its second half. */
+  /** A second message beside the first, as the design draws them; never joined into one sentence. */
   right?: string
   /** The strip's own colour, which is its band's. Null is the page's ink, as it always was. */
   background?: string | null
@@ -166,8 +166,7 @@ export function StorefrontWindow({
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
         <StorefrontAnnouncement
-          left={announcement.left}
-          {...(announcement.right ? { right: announcement.right } : {})}
+          messages={[announcement.left, ...(announcement.right ? [announcement.right] : [])]}
           background={announcement.background ?? null}
           href={announcement.href ?? null}
           external={announcement.external ?? false}
