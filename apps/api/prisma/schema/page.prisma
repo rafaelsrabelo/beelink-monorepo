@@ -155,7 +155,7 @@ model StoreComponent {
   /// Its slice of the band, on every kind.
   span ComponentSpan @default(FULL)
 
-  /// Read on BANNER and PRODUCTS, each with its own two values. Null on every other kind.
+  /// Read on BANNER, PRODUCTS and CATEGORIES, each with its own two values. Null on every other kind.
   display ComponentDisplay?
 
   /// What a showcase draws. Read on PRODUCTS, null on every other kind.

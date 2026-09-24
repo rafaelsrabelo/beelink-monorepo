@@ -69,3 +69,16 @@ categorias (trilho, grade) e à vitrine do B5.
 
 - A explicação no editor para categoria sem produto: C6.
 - O formato da vitrine de produtos no editor: B5.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou dois pontos, ambos corrigidos:
+
+- **A story do trilho no celular não mostrava um celular.** Ela usava `viewport.defaultViewport`,
+  que o Storybook 10 removeu, e desenhava na largura inteira. Agora usa o global de viewport da
+  story, com o tamanho de celular de 414px.
+- **O comentário do schema Prisma sobre `display`** ainda dizia "banner e vitrine". Agora inclui as
+  categorias, como o contrato e o Swagger.
+
+Um ponto foi refutado como defeito, mas atendido por ser regra do `packages/ui`: `CategoriesFields`
+ganhou story e teste próprios.

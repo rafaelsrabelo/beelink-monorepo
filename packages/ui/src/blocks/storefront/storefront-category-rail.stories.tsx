@@ -38,9 +38,13 @@ type Story = StoryObj<typeof meta>
 
 export const Padrao: Story = {}
 
-/** A phone's width: three cards and a peek of the fourth, which is what says the row goes on. */
+/**
+ * A phone's width: three cards and a peek of the fourth, which is what says the row goes on. A story
+ * global and not a boxed decorator — the cards' widths follow the viewport's breakpoints, and a box
+ * inside a wide canvas would keep the desktop ones.
+ */
 export const NoCelular: Story = {
-  parameters: { viewport: { defaultViewport: "mobile1" } },
+  globals: { viewport: { value: "mobile2", isRotated: false } },
 }
 
 /** A shop that never separated what it sells: the same sentence and door as the grid. */
