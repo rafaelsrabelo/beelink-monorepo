@@ -686,6 +686,8 @@ export interface UiMessages {
       columnPrice: string
       columnStock: string
       columnSku: string
+      /** Grams, per combination. */
+      columnWeight: string
       columnSelling: string
       selectAll: string
       /** `{label}` is "P · Areia", in every row-level name below. */
@@ -693,7 +695,12 @@ export interface UiMessages {
       priceOf: string
       stockOf: string
       skuOf: string
+      weightOf: string
       sellingOf: string
+      /** Before the row of values that choose every combination with them. */
+      selectByValue: string
+      /** `{name}`. */
+      selectValue: string
       /** In the stock cell while the product is not counted. */
       notCounted: string
       /** `{name}`. */
@@ -720,6 +727,8 @@ export interface UiMessages {
       stockLabel: string
       weightLabel: string
       weightHint: string
+      /** In place of the weight field on a product with variations. */
+      weightPerCombination: string
       dimensionsLabel: string
       dimensionsHint: string
       lengthLabel: string

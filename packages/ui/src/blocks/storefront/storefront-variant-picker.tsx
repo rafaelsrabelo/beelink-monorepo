@@ -4,6 +4,7 @@
 import { ToggleGroup, ToggleGroupItem } from "@harness-monorepo/ui/components/toggle-group"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 import {
+  targetOf,
   valueStateOf,
   type ChoiceOption,
   type ChoiceVariant,
@@ -14,11 +15,16 @@ import {
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// Block
+import { formatCents } from "./storefront-price"
+
 export interface StorefrontVariantPickerProps {
   options: readonly ChoiceOption[]
   variants: readonly ChoiceVariant[]
   selection: Selection
   onSelect: (optionId: string, valueId: string) => void
+  /** Prices go on the values of an option whose values cost different amounts; absent, never. */
+  locale?: string
   messages?: UiMessages
 }
 
@@ -36,6 +42,7 @@ export function StorefrontVariantPicker({
   variants,
   selection,
   onSelect,
+  locale,
   messages = defaultMessages,
 }: StorefrontVariantPickerProps) {
   const text = messages.storefront
@@ -46,6 +53,10 @@ export function StorefrontVariantPicker({
         const chosen = option.values.find((value) => value.id === selection[option.id])
         const legendId = `variant-option-${option.id}`
         const states = option.values.map((value) => valueStateOf(selection, option.id, value.id, options, variants))
+        // What each value would cost with the rest of the choice kept — the flavour blocks of design
+        // 5b. Only when they differ: a price repeated on every button says nothing the page does not.
+        const prices = option.values.map((value) => targetOf(selection, option.id, value.id, options, variants)?.priceCents)
+        const pricedHere = Boolean(locale) && new Set(prices.filter((price) => price !== undefined)).size > 1
 
         return (
           <div key={option.id} className="flex flex-col gap-2">
@@ -69,16 +80,28 @@ export function StorefrontVariantPicker({
               {option.values.map((value, index) => {
                 const state = states[index]!
                 const isChosen = value.id === chosen?.id
+                const price =
+                  pricedHere && prices[index] !== undefined && state !== "missing"
+                    ? formatCents(prices[index]!, locale!, "BRL")
+                    : null
+                // Spelled out rather than read off the content: a name, its price and its state, with
+                // the pauses a listener needs between them.
+                const name = [
+                  value.name,
+                  price ? `, ${price}` : "",
+                  state === "missing" ? text.valueMissing : state === "soldOut" ? text.valueSoldOut : "",
+                ].join("")
 
                 return (
                   <ToggleGroupItem
                     key={value.id}
                     value={value.id}
+                    aria-label={name}
                     disabled={state === "missing"}
                     className={cn(
                       // The shop's own ink for every state: the primitive's hover and pressed fills
                       // are the panel's tokens, which a shop window painted dark would not match.
-                      "h-11 min-w-12 gap-2 rounded-xl border border-current/20 bg-transparent px-3 text-sm text-inherit",
+                      "h-auto min-h-11 min-w-12 gap-2 rounded-xl border border-current/20 bg-transparent px-3 py-1.5 text-sm text-inherit",
                       "hover:bg-current/5 hover:text-inherit aria-pressed:bg-current/10 aria-pressed:text-inherit data-[state=on]:bg-current/10",
                       isChosen && "border-2 border-current font-semibold",
                       // Struck for both; faded only when disabled, since a sold-out value stays
@@ -95,9 +118,10 @@ export function StorefrontVariantPicker({
                         style={{ backgroundColor: value.colorHex }}
                       />
                     ) : null}
-                    {value.name}
-                    {state === "missing" ? <span className="sr-only">{text.valueMissing}</span> : null}
-                    {state === "soldOut" ? <span className="sr-only">{text.valueSoldOut}</span> : null}
+                    <span className="flex flex-col items-start leading-tight">
+                      <span>{value.name}</span>
+                      {price ? <span className="text-xs font-normal opacity-80">{price}</span> : null}
+                    </span>
                   </ToggleGroupItem>
                 )
               })}

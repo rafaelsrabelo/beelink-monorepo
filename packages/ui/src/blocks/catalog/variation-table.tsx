@@ -4,7 +4,6 @@
 import { rowSelectionFeature, tableFeatures, useTable, type RowSelectionState } from "@tanstack/react-table"
 
 // UI
-import { Button } from "@harness-monorepo/ui/components/button"
 import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
 import { Input } from "@harness-monorepo/ui/components/input"
 import { Switch } from "@harness-monorepo/ui/components/switch"
@@ -15,6 +14,9 @@ import { labelOf, type VariationCombination, type VariationRow } from "@harness-
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// Block
+import { VariationTableHeader } from "./variation-table-header"
 
 const features = tableFeatures({ rowSelectionFeature })
 
@@ -69,34 +71,19 @@ export function VariationTable({
   const all = table.getIsAllRowsSelected()
   // Counted over the rows on screen: v9's "some selected" is true with every row selected too.
   const some = !all && table.getRowModel().rows.some((row) => row.getIsSelected())
-  const chosen = combinations.filter((combination) => selection[combination.key]).length
 
   return (
     <>
       {onBulk ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <p className="text-sm">
-            <span className="font-medium">{format(text.combinations, { count: String(combinations.length) })}</span>
-            <span className="text-muted-foreground">
-              {" · "}
-              {chosen > 0 ? format(text.selected, { count: String(chosen) }) : text.noneSelected}
-            </span>
-          </p>
-          <div className="flex gap-2">
-            {(["price", "stock"] as const).map((action) => (
-              <Button
-                key={action}
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={disabled || chosen === 0 || (action === "stock" && !trackStock)}
-                onClick={() => onBulk(action)}
-              >
-                {action === "price" ? text.samePrice : text.setStock}
-              </Button>
-            ))}
-          </div>
-        </div>
+        <VariationTableHeader
+          combinations={combinations}
+          selection={selection}
+          onSelection={onSelection}
+          onBulk={onBulk}
+          trackStock={trackStock}
+          disabled={disabled}
+          messages={messages}
+        />
       ) : null}
       <Table>
         <TableHeader>
@@ -114,6 +101,7 @@ export function VariationTable({
             <TableHead className="w-32">{text.columnPrice}</TableHead>
             <TableHead className="w-24">{text.columnStock}</TableHead>
             <TableHead className="w-36">{text.columnSku}</TableHead>
+            <TableHead className="w-24">{text.columnWeight}</TableHead>
             <TableHead className="w-16">{text.columnSelling}</TableHead>
           </TableRow>
         </TableHeader>
@@ -171,6 +159,16 @@ export function VariationTable({
                     value={row.sku}
                     disabled={rowDisabled}
                     onChange={(event) => onRow(combination, { sku: event.target.value })}
+                    className="h-8"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    aria-label={format(text.weightOf, { label })}
+                    inputMode="numeric"
+                    value={row.weight}
+                    disabled={rowDisabled}
+                    onChange={(event) => onRow(combination, { weight: event.target.value })}
                     className="h-8"
                   />
                 </TableCell>

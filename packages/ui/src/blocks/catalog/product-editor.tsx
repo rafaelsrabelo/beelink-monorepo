@@ -161,7 +161,7 @@ export function ProductEditor({
           <ProductVariationsFields
             value={variations.value}
             onChange={variations.onChange}
-            base={{ isActive: true, price: value.price, stock: value.stock, sku: value.sku }}
+            base={{ isActive: true, price: value.price, stock: value.stock, sku: value.sku, weight: value.weight }}
             trackStock={value.trackStock}
             errors={variations.errors}
             disabled={pending}
@@ -185,6 +185,7 @@ export function ProductEditor({
           value={value}
           onChange={onChange}
           errors={errors}
+          perCombination={perCombination}
           disabled={pending}
           messages={messages}
         />

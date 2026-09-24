@@ -161,6 +161,7 @@ export function StorefrontProductDetail({
           variants={variants}
           selection={selection}
           onSelect={choose}
+          locale={showPrice ? locale : undefined}
           messages={messages}
         />
       ) : null}

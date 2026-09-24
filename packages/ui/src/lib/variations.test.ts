@@ -18,7 +18,7 @@ import {
   type VariationsValue,
 } from "./variations"
 
-const base: VariationRow = { isActive: true, price: "189,00", stock: "4", sku: "BLS" }
+const base: VariationRow = { isActive: true, price: "189,00", stock: "4", sku: "BLS", weight: "900" }
 
 function option(key: string, name: string, values: string[] = []): VariationOption {
   return { key, name, isColor: false, values: values.map((value) => ({ key: value, name: value, colorHex: null })) }
@@ -52,7 +52,7 @@ describe("the variations draft", () => {
     let draft = addValue(withOption(EMPTY_VARIATIONS, option("size", "Tamanho")), "size", { key: "P", name: "P", colorHex: null }, base)
     draft = addValue(draft, "size", { key: "M", name: "M", colorHex: null }, base)
 
-    expect(combinationsOf(draft, base)[1]?.row).toEqual({ isActive: true, price: "189,00", stock: "", sku: "" })
+    expect(combinationsOf(draft, base)[1]?.row).toEqual({ isActive: true, price: "189,00", stock: "", sku: "", weight: "900" })
   })
 
   it("carries every row onto a new option's first value", () => {

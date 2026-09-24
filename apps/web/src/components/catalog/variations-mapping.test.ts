@@ -12,7 +12,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import { EMPTY_FORM } from "./product-form-mapping"
 import { optionsPayloadOf, rekeyDraft, toVariationsDraft, variantsPayloadOf, variationIssuesOf } from "./variations-mapping"
 
-const base = { isActive: true, price: "189,00", stock: "", sku: "" }
+const base = { isActive: true, price: "189,00", stock: "", sku: "", weight: "" }
 
 function detail(over: Partial<ProductDetail>): ProductDetail {
   return { id: "p1", options: [], variants: [], ...over } as unknown as ProductDetail
@@ -48,7 +48,7 @@ describe("the variations draft of a saved product", () => {
     )
 
     expect(draft.options[0]).toMatchObject({ key: "size", isColor: false, values: [{ key: "P" }] })
-    expect(draft.rows.P).toEqual({ isActive: true, price: "189,00", stock: "3", sku: "BLS-P" })
+    expect(draft.rows.P).toEqual({ isActive: true, price: "189,00", stock: "3", sku: "BLS-P", weight: "" })
   })
 
   it("has no options and no rows for a product that sells one thing", () => {
@@ -79,7 +79,10 @@ describe("what the save sends", () => {
       },
       { key: "new:empty", name: "Cor", isColor: true, values: [] },
     ],
-    rows: { P: { isActive: true, price: "189,00", stock: "4", sku: "BLS-P" }, "new:m": { isActive: false, price: "199,00", stock: "", sku: "" } },
+    rows: {
+      P: { isActive: true, price: "189,00", stock: "4", sku: "BLS-P", weight: "900" },
+      "new:m": { isActive: false, price: "199,00", stock: "", sku: "", weight: "750" },
+    },
   }
 
   it("sends only options with values, with ids only for what the API has seen", () => {
@@ -103,11 +106,12 @@ describe("what the save sends", () => {
       variants: [variant("v1", ["P"]), variant("v2", ["M-id"])],
     })
 
-    const payload = variantsPayloadOf(draft, saved, base, { ...EMPTY_FORM, trackStock: true, weight: "300" })
+    // The product's own weight field is ignored: each combination sends its own; the box is shared.
+    const payload = variantsPayloadOf(draft, saved, base, { ...EMPTY_FORM, trackStock: true, weight: "300", length: "10", width: "10", height: "20" })
 
     expect(payload).toEqual([
-      { id: "v1", isActive: true, priceCents: 18900, sku: "BLS-P", trackStock: true, stockQuantity: 4, weightGrams: 300, lengthMm: null, widthMm: null, heightMm: null },
-      { id: "v2", isActive: false, priceCents: 19900, sku: null, trackStock: true, stockQuantity: null, weightGrams: 300, lengthMm: null, widthMm: null, heightMm: null },
+      { id: "v1", isActive: true, priceCents: 18900, sku: "BLS-P", trackStock: true, stockQuantity: 4, weightGrams: 900, lengthMm: 100, widthMm: 100, heightMm: 200 },
+      { id: "v2", isActive: false, priceCents: 19900, sku: null, trackStock: true, stockQuantity: null, weightGrams: 750, lengthMm: 100, widthMm: 100, heightMm: 200 },
     ])
   })
 
@@ -116,7 +120,7 @@ describe("what the save sends", () => {
       options: [{ id: "size", name: "Tamanho", values: [{ id: "P", name: "P", colorHex: null }, { id: "M-id", name: "M", colorHex: null }] }],
       variants: [variant("v1", ["P"]), variant("v2", ["M-id"])],
     })
-    const off = { ...draft, rows: { ...draft.rows, "new:m": { isActive: false, price: "", stock: "", sku: "" } } }
+    const off = { ...draft, rows: { ...draft.rows, "new:m": { isActive: false, price: "", stock: "", sku: "", weight: "" } } }
 
     const payload = variantsPayloadOf(off, saved, base, EMPTY_FORM)
 
@@ -157,7 +161,7 @@ describe("what the save sends", () => {
           { key: "a", name: "", isColor: false, values: [{ key: "x", name: "X", colorHex: null }] },
           { key: "b", name: "Cor", isColor: true, values: [] },
         ],
-        rows: { [combinationKey(["x"])]: { isActive: true, price: "", stock: "", sku: "" } },
+        rows: { [combinationKey(["x"])]: { isActive: true, price: "", stock: "", sku: "", weight: "" } },
       },
       { ...base, price: "" },
       defaultMessages,

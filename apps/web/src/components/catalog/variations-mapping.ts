@@ -20,7 +20,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
-import { shippingOf, whole, type FormValues } from "./product-form-mapping"
+import { boxOf, whole, type FormValues } from "./product-form-mapping"
 
 /** Whether the draft sells more than its one default variant. */
 export function hasCombinations(draft: VariationsValue): boolean {
@@ -54,6 +54,7 @@ export function toVariationsDraft(product: ProductDetail, messages: UiMessages):
           price: reaisFrom(variant.priceCents),
           stock: variant.stockQuantity === null ? "" : String(variant.stockQuantity),
           sku: variant.sku ?? "",
+          weight: variant.weightGrams === null ? "" : String(variant.weightGrams),
         } satisfies VariationRow,
       ]),
     ),
@@ -147,10 +148,11 @@ export function variantsPayloadOf(
         ...(priceCents === null ? {} : { priceCents }),
         ...(staleCompareAt ? { compareAtPriceCents: null } : {}),
         sku: row.sku.trim() || null,
+        weightGrams: whole(row.weight),
         // Counting and the box are set once, in their own sections, for every combination.
         trackStock: form.trackStock,
         stockQuantity: form.trackStock ? whole(row.stock) : null,
-        ...shippingOf(form),
+        ...boxOf(form),
       },
     ]
   })

@@ -134,7 +134,15 @@ describe("StorefrontProductDetail", () => {
       renderProduct({ ...withVariants, initialVariantId: "g-preto" })
 
       expect(screen.getByRole("group", { name: "Tamanho: G" })).toBeInTheDocument()
-      expect(screen.getByText("R$ 219,00")).toBeInTheDocument()
+      expect(document.querySelector("[aria-live]")).toHaveTextContent("R$ 219,00")
+    })
+
+    it("puts on each size the price it would cost with the colour kept, since sizes cost differently", () => {
+      renderProduct(withVariants)
+
+      // From P·Areia: M·Areia is R$ 189,00 (sold out) and G leads to G·Preto at R$ 219,00.
+      expect(screen.getByRole("button", { name: /^G, R\$\s219,00/ })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /^M, R\$\s189,00, esgotado/ })).toBeInTheDocument()
     })
 
     it("changes the price, the photo and the order message with the choice, and tells the screen", async () => {
@@ -142,10 +150,10 @@ describe("StorefrontProductDetail", () => {
       const onVariantChange = vi.fn()
       renderProduct({ ...withVariants, onVariantChange })
 
-      await user.click(screen.getByRole("button", { name: "Terracota" }))
+      await user.click(screen.getByRole("button", { name: /^Terracota/ }))
 
       expect(onVariantChange).toHaveBeenCalledWith("p-terracota")
-      expect(screen.getByText("R$ 199,00")).toBeInTheDocument()
+      expect(document.querySelector("[aria-live]")).toHaveTextContent("R$ 199,00")
       expect(screen.getAllByRole("img")[0]).toHaveAttribute("src", "https://picsum.photos/seed/terracota/800/800")
       expect(screen.getByRole("link", { name: /WhatsApp/ })).toHaveAttribute(
         "href",
@@ -158,7 +166,7 @@ describe("StorefrontProductDetail", () => {
       const onSubmit = vi.fn()
       renderProduct({ ...withVariants, restock: { onSubmit, status: "idle" } })
 
-      await user.click(screen.getByRole("button", { name: "M, esgotado" }))
+      await user.click(screen.getByRole("button", { name: /^M, .*esgotado/ }))
       expect(screen.queryByRole("link", { name: /WhatsApp/ })).toBeNull()
       await user.click(screen.getByRole("button", { name: "Avise-me quando chegar" }))
       const dialog = await screen.findByRole("dialog")
@@ -173,11 +181,11 @@ describe("StorefrontProductDetail", () => {
       const onVariantChange = vi.fn()
       renderProduct({ ...withVariants, onVariantChange })
 
-      await user.click(screen.getByRole("button", { name: "G" }))
+      await user.click(screen.getByRole("button", { name: /^G,/ }))
 
       expect(onVariantChange).toHaveBeenCalledWith("g-preto")
       expect(screen.getByRole("group", { name: "Cor: Preto" })).toBeInTheDocument()
-      expect(screen.getByText("R$ 219,00")).toBeInTheDocument()
+      expect(document.querySelector("[aria-live]")).toHaveTextContent("R$ 219,00")
     })
 
     it("has no accessibility violations", async () => {

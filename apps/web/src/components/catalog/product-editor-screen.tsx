@@ -97,7 +97,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
   const list = `/admin/${slug}/products` as Parameters<typeof router.push>[0]
   const text = ui.catalog.products
   const loading = Boolean(productId) && existing.isPending
-  const base = { isActive: true, price: value.price, stock: value.stock, sku: value.sku }
+  const base = { isActive: true, price: value.price, stock: value.stock, sku: value.sku, weight: value.weight }
   const combinations = hasCombinations(variations)
   const issues = variationIssuesOf(variations, base, ui)
 

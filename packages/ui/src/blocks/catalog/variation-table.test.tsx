@@ -47,6 +47,17 @@ describe("VariationTable", () => {
     expect(screen.getByRole("checkbox", { name: "Selecionar todas" })).toHaveAttribute("aria-checked", "mixed")
   })
 
+  it("takes a weight per combination, so a 750 g and a 900 g tub are quoted apart", async () => {
+    const user = userEvent.setup()
+    const onRow = vi.fn()
+    render(<VariationTable combinations={combinations} onRow={onRow} trackStock selection={{}} onSelection={() => {}} />)
+
+    expect(screen.getByRole("textbox", { name: "Peso em gramas de P · Areia" })).toHaveValue("300")
+    await user.type(screen.getByRole("textbox", { name: "Peso em gramas de M · Preto" }), "5")
+
+    expect(onRow).toHaveBeenCalledWith(expect.objectContaining({ key: "M|preto" }), { weight: "3005" })
+  })
+
   it("reports an edit with the combination it belongs to", async () => {
     const user = userEvent.setup()
     const onRow = vi.fn()

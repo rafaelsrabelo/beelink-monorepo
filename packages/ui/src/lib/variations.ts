@@ -31,6 +31,11 @@ export interface VariationRow {
   price: string
   stock: string
   sku: string
+  /**
+   * Grams, as typed. A combination's own, because a 750 g and a 900 g tub of one whey are quoted
+   * differently by a carrier; the box stays the product's, in its Envio section.
+   */
+  weight: string
 }
 
 export interface VariationsValue {
@@ -92,8 +97,9 @@ export function isNewKey(key: string): boolean {
 }
 
 /**
- * The row a combination nobody typed yet starts from: the price of the row that shares the most
- * values with it, and neither its stock nor its code, which describe another physical thing.
+ * The row a combination nobody typed yet starts from: the price and weight of the row that shares
+ * the most values with it — a starting point to correct, not a guess to trust — and neither its stock
+ * nor its code, which describe another physical thing.
  */
 function borrowedRow(valueKeys: readonly string[], rows: Record<string, VariationRow>, base: VariationRow): VariationRow {
   let best: VariationRow | undefined
@@ -107,7 +113,7 @@ function borrowedRow(valueKeys: readonly string[], rows: Record<string, Variatio
     }
   }
 
-  return { isActive: true, price: (best ?? base).price, stock: "", sku: "" }
+  return { isActive: true, price: (best ?? base).price, stock: "", sku: "", weight: (best ?? base).weight }
 }
 
 /** Every combination, the first option slowest, each with its row. */
