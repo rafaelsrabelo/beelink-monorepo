@@ -141,3 +141,29 @@ export const Tokens: Story = {
 export const LojaEscura: Story = {
   args: { colors: sampleDarkShopColors, children: <Swatches /> },
 }
+
+/**
+ * A composição de 5a: uma faixa em largura total logo abaixo do menu, e a página sobre o chão
+ * cinza, decidindo o próprio ritmo. B3 e B4 preenchem os dois.
+ */
+export const FaixaEChao: Story = {
+  args: {
+    pageHeader: (
+      <div className="w-full border-b" style={{ borderColor: "var(--shop-line)" }}>
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-4 shop-sm:px-6 shop-lg:px-8">
+          <p className="text-2xl font-extrabold">Pré-treino</p>
+          <p className="text-sm" style={{ color: "var(--shop-muted)" }}>1–16 de 86 resultados</p>
+        </div>
+      </div>
+    ),
+    layout: "flush",
+    surface: "canvas",
+    children: (
+      <div className="grid grid-cols-2 gap-4 py-5 shop-lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, at) => (
+          <div key={at} className="h-64 rounded-xl border" style={{ backgroundColor: "var(--shop-background)", borderColor: "var(--shop-line)" }} />
+        ))}
+      </div>
+    ),
+  },
+}
