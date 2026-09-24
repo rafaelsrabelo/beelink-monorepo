@@ -1,16 +1,11 @@
 "use client"
 
 // Types
-// React
-import type { ReactNode } from "react"
-
-// Types
-import type { ComponentKind, StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
+import type { StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
-import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
 import { BandArrangement } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import type { ArrangementBand, ArrangementSpan } from "@harness-monorepo/ui/blocks/design/band-arrangement"
+import type { ArrangementBand, ArrangementSpan, InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
@@ -26,17 +21,11 @@ export interface DesignPanelProps {
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
   onSpanChange: (id: string, span: ArrangementSpan) => void
-  /** Drawn at the foot of each band — the only way to put two blocks in one band. */
-  renderAddToBand?: (sectionId: string) => ReactNode
   onDelete: (id: string) => void
   onEdit: (id: string) => void
-  /** Adds a band built around one component — the only way a band is created. */
-  onAdd: (kind: ComponentKind) => void
-  adding: boolean
-  /** The kinds the shop already has one of, so a singleton is offered once. */
-  taken: readonly ComponentKind[]
-  /** The kinds this kind of page cannot hold at all. */
-  unavailable: readonly ComponentKind[]
+  /** A "+" was pressed — between bands, or inside one. The screen opens the gallery for that place. */
+  onInsert: (at: InsertAt) => void
+  inserting: boolean
 
   palette: StoreColors
   onPalette: (colors: StoreColors) => void
@@ -66,13 +55,10 @@ export function DesignPanel({
   onDeleteBand,
   onToggle,
   onSpanChange,
-  renderAddToBand,
   onDelete,
   onEdit,
-  onAdd,
-  adding,
-  taken,
-  unavailable,
+  onInsert,
+  inserting,
   palette,
   onPalette,
   presets,
@@ -96,16 +82,6 @@ export function DesignPanel({
         </TabsList>
 
         <TabsContent value="blocks" className="flex flex-col gap-3 pt-3">
-          {/*
-            A band is created saved, not as part of the draft. Adding one is not an arrangement —
-            it is a new row, and holding it in the browser until Publish would mean a reload could
-            lose something the owner watched appear.
-          */}
-          {/*
-            Held while the list loads, or the menu would offer the shop's singletons — the product
-            list among them — before it knows the shop already has them.
-          */}
-          <BlockGallery taken={taken} unavailable={unavailable} pending={adding || loading} onAdd={onAdd} messages={messages} />
           <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
           {loading ? (
             <>
@@ -122,9 +98,12 @@ export function DesignPanel({
               onDeleteBand={onDeleteBand}
               onToggle={onToggle}
               onSpanChange={onSpanChange}
-              {...(renderAddToBand ? { renderAddToBand } : {})}
               onDelete={onDelete}
               onEdit={onEdit}
+              // A band or a block is created saved, not as part of the draft: holding a new row in the
+              // browser until Publish would mean a reload could lose something the owner watched appear.
+              onInsert={onInsert}
+              inserting={inserting}
               messages={messages}
             />
           )}

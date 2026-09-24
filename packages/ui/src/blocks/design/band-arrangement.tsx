@@ -1,17 +1,20 @@
 "use client"
 
 // Libs
-import type { ReactNode } from "react"
+import { PlusIcon } from "lucide-react"
 
-// Libs
+// UI
+import { Button } from "@harness-monorepo/ui/components/button"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ArrangeBoard } from "./design-arrange"
 import { bandAnnouncements } from "./band-label"
+import { InsertPoint } from "./insert-point"
 import { BandRow } from "./band-row"
 import type { ArrangementItem, ArrangementSpan } from "./arrangement-row"
 import type { SectionWidth } from "./design-types"
@@ -46,10 +49,18 @@ export interface BandArrangementProps {
   onSpanChange: (id: string, span: ArrangementSpan) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
-  /** Drawn at the foot of each band: the only way to put two blocks in one band. */
-  renderAddToBand?: (sectionId: string) => ReactNode
+  /**
+   * A "+" was pressed: a new band at `index` among the bands, or a new block at `index` inside one
+   * band — the only way two blocks end up side by side. Without it the panel offers no "+".
+   */
+  onInsert?: (at: InsertAt) => void
+  /** While an add is on its way, so a second "+" does not start a second one. */
+  inserting?: boolean
   messages?: UiMessages
 }
+
+/** Where a "+" inserts: among the bands, or inside one of them. Indices count from 0. */
+export type InsertAt = { level: "band"; index: number } | { level: "block"; sectionId: string; index: number }
 
 /**
  * The landing page at both of its levels: bands in order, and what is inside each one.
@@ -74,7 +85,8 @@ export function BandArrangement({
   onSpanChange,
   onDelete,
   onEdit,
-  renderAddToBand,
+  onInsert,
+  inserting = false,
   messages = defaultMessages,
 }: BandArrangementProps) {
   const text = messages.design
@@ -86,9 +98,32 @@ export function BandArrangement({
       <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed py-10 text-center">
         <p className="font-medium">{text.empty}</p>
         <p className="text-muted-foreground text-sm">{text.emptyHint}</p>
+        {/* A page with no band has nothing to put a "+" between: its first band has a button. */}
+        {onInsert ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3"
+            disabled={inserting}
+            onClick={() => onInsert({ level: "band", index: 0 })}
+          >
+            <PlusIcon aria-hidden="true" className="size-4" />
+            {text.addBlock}
+          </Button>
+        ) : null}
       </div>
     )
   }
+
+  const insertBand = (index: number) =>
+    onInsert ? (
+      <InsertPoint
+        key={`insert-${index}`}
+        label={format(text.insertBand, { position: String(index + 1) })}
+        disabled={inserting}
+        onInsert={() => onInsert({ level: "band", index })}
+      />
+    ) : null
 
   return (
     <ArrangeBoard
@@ -96,8 +131,10 @@ export function BandArrangement({
       onReorder={onReorder}
       announcements={announcements}
     >
-      <ul className="flex flex-col gap-3">
-        {bands.map((band, at) => (
+      {/* The "+" between bands are the gaps between them, so the list has none of its own. */}
+      <ul className={cn("flex flex-col", !onInsert && "gap-3")}>
+        {bands.map((band, at) => [
+          insertBand(at),
           <BandRow
             key={band.id}
             band={band}
@@ -110,10 +147,14 @@ export function BandArrangement({
             onSpanChange={onSpanChange}
             onDelete={onDelete}
             onEdit={onEdit}
-            {...(renderAddToBand ? { addSlot: renderAddToBand(band.id) } : {})}
+            {...(onInsert
+              ? { onInsertBlock: (index: number) => onInsert({ level: "block", sectionId: band.id, index }) }
+              : {})}
+            inserting={inserting}
             messages={messages}
-          />
-        ))}
+          />,
+        ])}
+        {insertBand(bands.length)}
       </ul>
     </ArrangeBoard>
   )

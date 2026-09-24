@@ -6,7 +6,7 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
 import type {
-  CreateComponentPayload,
+  AddComponentPayload,
   CreateSectionPayload,
   Section,
   StoreComponent,
@@ -98,7 +98,7 @@ export function useReorderSections(slug: string): UseMutationResult<Section[], E
 
 export interface CreateComponentVariables {
   sectionId: string
-  payload: CreateComponentPayload
+  payload: AddComponentPayload
 }
 
 export function useCreateComponent(

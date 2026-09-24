@@ -360,6 +360,8 @@ export const ptBR: UiMessages = {
     tabColors: "Cores",
     addBlock: "Adicionar bloco",
     addToBand: "Adicionar nesta faixa",
+    insertBand: "Nova faixa na posição {position}",
+    insertBlock: "Novo bloco em {band}, posição {position}",
     deleteBlock: "Excluir bloco",
     emptyBlock: "Vazio — não aparece na loja",
     deleteBlockConfirm: "Excluir \"{name}\"? Isso não tem volta.",

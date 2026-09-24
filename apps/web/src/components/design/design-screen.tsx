@@ -19,11 +19,12 @@ import { BandEditor } from "./band-editor"
 import { ComponentEditor } from "./component-editor"
 import { DesignHeader } from "./design-header"
 import { DesignPanel } from "./design-panel"
+import type { InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
 
 // App
 import { DesignPreviewPane } from "./design-preview-pane"
-import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
+import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, serverPlaceOf, takenKindsOf } from "./design-draft"
 import { arrangementOf, previewOf, shelvesOf } from "./design-draft-preview"
 import { pageErrorCopy } from "./page-error-copy"
 import { useDesignDraft } from "./use-design-draft"
@@ -68,6 +69,23 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const addSection = useCreateSection(slug)
   const addToBand = useCreateComponent(slug)
   const shelves = shelvesOf(store.sections)
+  const [insertAt, setInsertAt] = useState<InsertAt | null>(null)
+  // Sent where the "+" is, counted in the server's order: see `serverPlaceOf`.
+  const insert = (kind: ComponentKind) => {
+    if (insertAt?.level === "band") {
+      const position = serverPlaceOf(rows.map((row) => row.id), saved.map((row) => row.id), insertAt.index)
+      addSection.mutate(
+        { component: { kind }, position },
+        { onSuccess: (section) => (section.components[0] ? opened(section.components[0]) : undefined) },
+      )
+    } else if (insertAt?.level === "block") {
+      const { sectionId, index } = insertAt
+      const ids = (bands: readonly { id: string; components: readonly { id: string }[] }[]) =>
+        bands.find((band) => band.id === sectionId)?.components.map((component) => component.id) ?? []
+      const position = serverPlaceOf(ids(rows), ids(saved), index)
+      addToBand.mutate({ sectionId, payload: { kind, position } }, { onSuccess: opened })
+    }
+  }
   const shop = useShopRefresh()
   // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
   const opened = (component: { id: string; kind: ComponentKind }) => {
@@ -191,49 +209,8 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             }
           }}
           onEdit={setEditingComponent}
-          // A new band around the one component. Adding is a saved write, not a draft edit —
-          // holding it in the browser would mean a reload could lose what the owner watched appear.
-          //
-          // The form opens on the block that was just created, which is the whole of what "adicionar"
-          // used to be missing: the write fired and nothing else happened, so a banner landed empty
-          // at the foot of the page and the owner had to find it. The id comes back on the created
-          // Section, so there is nothing to look up.
-          onAdd={(kind) =>
-            addSection.mutate(
-              { component: { kind } },
-              { onSuccess: (section) => (section.components[0] ? opened(section.components[0]) : undefined) },
-            )
-          }
-          /*
-            Adding INTO a band, which is the only way two blocks end up side by side.
-
-            Blocks share a row only inside one band's twelve-column grid (`StorefrontBandGrid`, in
-            storefront-sections.tsx), and every other way of adding wraps the block in a band of its
-            own — so "metade" and "um terço" were unreachable by construction, and a third-width
-            poster alone in its row drew a third of width with two thirds of nothing.
-            `useCreateComponent` had been built for exactly this and had no caller.
-          */
-          renderAddToBand={(sectionId) => (
-            <BlockGallery
-              taken={takenKinds}
-              unavailable={unavailableKinds}
-              pending={addToBand.isPending}
-              triggerLabel={messages.design.addToBand}
-              triggerClassName="h-8 justify-start text-xs"
-              onAdd={(kind) =>
-                addToBand.mutate(
-                  { sectionId, payload: { kind } },
-                  { onSuccess: opened },
-                )
-              }
-              messages={messages}
-            />
-          )}
-          adding={addSection.isPending}
-          // The two the shop may only have one of. Every other kind is offered every time.
-          // A site has no catalogue to list; a shop has no screen for a form's leads.
-          unavailable={unavailableKinds}
-          taken={takenKinds}
+          onInsert={setInsertAt}
+          inserting={addSection.isPending || addToBand.isPending}
           palette={palette}
           onPalette={setPalette}
           presets={presets.data ?? []}
@@ -243,6 +220,21 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           messages={messages}
         />
       </div>
+
+      {/*
+        The one gallery every "+" opens, already knowing where the block goes. Adding is a saved
+        write, not a draft edit — a reload must not lose what the owner watched appear — and the form
+        then opens on the block just created, so nothing lands somewhere the owner has to find it.
+      */}
+      <BlockGallery
+        open={insertAt !== null}
+        onOpenChange={(open) => (open ? undefined : setInsertAt(null))}
+        // The strip is the one kind a page has once; a site has no catalogue, a shop no form leads.
+        taken={takenKinds}
+        unavailable={unavailableKinds}
+        onAdd={insert}
+        messages={messages}
+      />
     </div>
   )
 }

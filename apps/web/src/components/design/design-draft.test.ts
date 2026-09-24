@@ -13,6 +13,7 @@ import {
   labelOf,
   reconcile,
   orderedIdsOf,
+  serverPlaceOf,
   takenKindsOf,
   toDraft,
   type SectionDraft,
@@ -311,18 +312,27 @@ describe("labelOf", () => {
 })
 
 describe("reconcile — the server changes, the arrangement survives", () => {
-  it("keeps the arranged order and appends what the server grew", () => {
+  // A new band lands right after the one it follows on the server, in the order the owner arranged.
+  it("keeps the arranged order and places what the server grew after its neighbour there", () => {
     const arranged = applyOrder(draft, ["c", "b", "a"])
     const grown = [...saved, section("d", [component("d1")])]
 
-    expect(orderedIdsOf(reconcile(arranged, grown))).toEqual(["c", "b", "a", "d"])
+    expect(orderedIdsOf(reconcile(arranged, grown))).toEqual(["c", "d", "b", "a"])
+  })
+
+  // The "+" between a and b asked the API for the second place; the draft shows it there too.
+  it("places a band added in the middle where it was added", () => {
+    const between = [saved[0]!, section("x", [component("x1")]), ...saved.slice(1)]
+
+    expect(orderedIdsOf(reconcile(draft, between))).toEqual(["a", "x", "b", "c"])
+    expect(orderedIdsOf(reconcile(draft, [section("x", [component("x1")]), ...saved]))).toEqual(["x", "a", "b", "c"])
   })
 
   it("drops a band the server no longer has", () => {
     expect(orderedIdsOf(reconcile(draft, saved.slice(1)))).toEqual(["b", "c"])
   })
 
-  it("does the same one level down: a new component lands last in its band, a deleted one goes", () => {
+  it("does the same one level down: a new component lands after its neighbour, a deleted one goes", () => {
     const arranged = applyComponentOrder(draft, "b", ["b2", "b1"])
     const changed = saved.map((row) =>
       row.id === "b" ? section("b", [component("b2", { kind: "PRODUCTS" }), component("b3")]) : row,
@@ -342,5 +352,27 @@ describe("takenKindsOf — what the gallery stops offering", () => {
     ].map(toDraft)
 
     expect(takenKindsOf(rows)).toEqual(["ANNOUNCEMENT"])
+  })
+})
+
+describe("serverPlaceOf — where the API puts what a + adds", () => {
+  it("asks for the place right after the draft row above the +, counted on the server", () => {
+    // Draft rearranged c, a, b; the server still holds a, b, c.
+    expect(serverPlaceOf(["c", "a", "b"], ["a", "b", "c"], 1)).toBe(3)
+    expect(serverPlaceOf(["c", "a", "b"], ["a", "b", "c"], 2)).toBe(1)
+    expect(serverPlaceOf(["a", "b", "c"], ["a", "b", "c"], 3)).toBe(3)
+  })
+
+  it("asks for the first place for a + above everything", () => {
+    expect(serverPlaceOf(["c", "a"], ["a", "c"], 0)).toBe(0)
+  })
+
+  // The API's answer and reconcile agree: the newcomer lands after the same neighbour in the draft.
+  it("lands the newcomer where the + was, once the draft is reconciled", () => {
+    const arranged = applyOrder(draft, ["c", "a", "b"])
+    const at = serverPlaceOf(orderedIdsOf(arranged), saved.map((row) => row.id), 2)
+    const grown = [...saved.slice(0, at), section("x", [component("x1")]), ...saved.slice(at)]
+
+    expect(orderedIdsOf(reconcile(arranged, grown))).toEqual(["c", "a", "x", "b"])
   })
 })

@@ -1,6 +1,6 @@
 // Types
 import type {
-  CreateComponentPayload,
+  AddComponentPayload,
   CreateSectionPayload,
   ReorderPayload,
   Section,
@@ -77,7 +77,7 @@ const componentsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)
 export function createComponent(
   slug: string,
   sectionId: string,
-  payload: CreateComponentPayload,
+  payload: AddComponentPayload,
 ): Promise<StoreComponent> {
   return call<StoreComponent>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components`, {
     method: "POST",

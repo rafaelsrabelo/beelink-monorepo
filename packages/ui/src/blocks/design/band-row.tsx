@@ -1,8 +1,5 @@
 "use client"
 
-// React
-import type { ReactNode } from "react"
-
 // Libs
 import { EyeIcon, EyeOffIcon, GripVerticalIcon, PaletteIcon, Trash2Icon } from "lucide-react"
 
@@ -11,6 +8,7 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
+import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
@@ -19,6 +17,7 @@ import { ArrangementRow } from "./arrangement-row"
 import type { ArrangementSpan } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
 import { bandLabelOf } from "./band-label"
+import { InsertPoint } from "./insert-point"
 import { SingleBlockCard, singleShown } from "./single-block-card"
 
 /**
@@ -40,7 +39,8 @@ export function BandRow({
   onSpanChange,
   onDelete,
   onEdit,
-  addSlot,
+  onInsertBlock,
+  inserting = false,
   messages,
 }: {
   band: ArrangementBand
@@ -54,20 +54,22 @@ export function BandRow({
   onDelete: (id: string) => void
   onEdit: (id: string) => void
   /**
-   * A way into this band, drawn at its foot. The screen supplies it, because choosing a kind is
-   * the gallery's job and calling the API is the screen's.
+   * A "+" inside this band was pressed, at `index` among its blocks.
    *
    * It is what makes "metade" and "um terço" reachable at all: blocks share a row only inside ONE
    * band's grid (`StorefrontBandGrid`), and every other way of adding a block wraps it in a band of
    * its own — so a third-width poster was always alone in its row, drawn a third wide with two
    * thirds of nothing beside it.
    */
-  addSlot?: ReactNode
+  onInsertBlock?: (index: number) => void
+  inserting?: boolean
   messages: UiMessages
 }) {
   const text = messages.design
   const drag = useArrangeItem(band.id)
   const name = bandLabelOf(band.name, position, messages)
+  const insertLabel = (index: number) =>
+    format(text.insertBlock, { band: name, position: String(index + 1) })
   const [only] = band.components
   const single = only && band.components.length === 1 ? only : null
 
@@ -175,8 +177,17 @@ export function BandRow({
             ids={band.components.map((component) => component.id)}
             onReorder={(ids) => onReorderComponents(band.id, ids)}
           >
-            <ul className="flex flex-col gap-2 pl-6">
-              {band.components.map((component) => (
+            <ul className={cn("flex flex-col pl-6", !onInsertBlock && "gap-2")}>
+              {band.components.map((component, at) => [
+                onInsertBlock ? (
+                  <InsertPoint
+                    key={`insert-${at}`}
+                    label={insertLabel(at)}
+                    disabled={inserting}
+                    className="h-2"
+                    onInsert={() => onInsertBlock(at)}
+                  />
+                ) : null,
                 <ArrangementRow
                   key={component.id}
                   item={component}
@@ -186,14 +197,26 @@ export function BandRow({
                   onDelete={onDelete}
                   onEdit={onEdit}
                   messages={messages}
-                />
-              ))}
+                />,
+              ])}
             </ul>
           </ArrangeBoard>
         </>
       )}
 
-      {addSlot ? <div className={cn(!single && "pl-6")}>{addSlot}</div> : null}
+      {/*
+        The band's last "+", the same node whether the band is a card or a container: a card that
+        gains its second block through it keeps the focus on it instead of losing it to a remount.
+      */}
+      {onInsertBlock ? (
+        <InsertPoint
+          as="div"
+          label={insertLabel(band.components.length)}
+          disabled={inserting}
+          className={cn(!single && "pl-6")}
+          onInsert={() => onInsertBlock(band.components.length)}
+        />
+      ) : null}
     </li>
   )
 }
