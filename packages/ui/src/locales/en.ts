@@ -165,6 +165,7 @@ export const en: UiMessages = {
     featuredEyebrow: "Picked by the shop",
     categoriesEyebrow: "Find what you are after",
     seeAll: "See all",
+    loadingShelf: "Loading products",
     seeAllOf: "See everything in {section}",
     siteMenu: "Site sections",
     footerNavigation: "Navigation",

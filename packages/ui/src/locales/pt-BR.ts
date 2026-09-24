@@ -166,6 +166,7 @@ export const ptBR: UiMessages = {
     categoriesEyebrow: "Encontre o que você procura",
     seeAll: "Ver todos",
     seeAllOf: "Ver tudo em {section}",
+    loadingShelf: "Carregando produtos",
     siteMenu: "Seções do site",
     footerNavigation: "Navegação",
     order: "Fazer pedido no WhatsApp",

@@ -245,6 +245,8 @@ export interface UiMessages {
      * hands a screen reader the same two words three times (WCAG 2.4.4).
      */
     seeAllOf: string
+    /** Read out while a showcase's products are on their way; the cards themselves are hidden. */
+    loadingShelf: string
     /** A site's header menu and its footer column: the page's named bands. */
     siteMenu: string
     footerNavigation: string
