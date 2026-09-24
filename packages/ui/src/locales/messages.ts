@@ -619,6 +619,76 @@ export interface UiMessages {
       inventoryHint: string
       shipping: string
       shippingHint: string
+      variations: string
+      variationsHint: string
+      /** Said in the price and stock sections of a product with options, in place of their fields. */
+      perCombination: string
+    }
+    /** The variations editor: options, their values, and a row per combination. */
+    variations: {
+      addLabel: string
+      /** The presets offered as buttons, in the order they are drawn. */
+      presetSize: string
+      presetColor: string
+      presetWeight: string
+      presetFlavour: string
+      presetOther: string
+      /** The name field of an option; `{number}` is its place. */
+      optionName: string
+      optionNamePlaceholder: string
+      /** `{name}`. */
+      removeOption: string
+      /** `{name}`. */
+      removeValue: string
+      /** `{name}`. */
+      dragValue: string
+      /** `{name}`: the swatch picker of one value. */
+      valueColor: string
+      /** `{name}`: the field that adds a value to that option. */
+      newValue: string
+      newValuePlaceholder: string
+      addValue: string
+      empty: string
+      limit: string
+      /** `{count}`. */
+      combinations: string
+      /** `{count}`. */
+      selected: string
+      noneSelected: string
+      samePrice: string
+      setStock: string
+      /** `{count}`. */
+      samePriceTitle: string
+      /** `{count}`. */
+      setStockTitle: string
+      apply: string
+      cancel: string
+      columnCombination: string
+      columnPrice: string
+      columnStock: string
+      columnSku: string
+      columnSelling: string
+      selectAll: string
+      /** `{label}` is "P · Areia", in every row-level name below. */
+      selectRow: string
+      priceOf: string
+      stockOf: string
+      skuOf: string
+      sellingOf: string
+      /** In the stock cell while the product is not counted. */
+      notCounted: string
+      /** `{name}`. */
+      removeOptionTitle: string
+      /** `{from}` and `{to}`: the number of combinations before and after. */
+      removeOptionBody: string
+      removeOptionConfirm: string
+      /** `{count}`. */
+      tooMany: string
+      optionNameRequired: string
+      valuesRequired: string
+      valueTaken: string
+      /** `{label}`. */
+      priceRequired: string
     }
     fields: {
       costLabel: string
@@ -689,6 +759,13 @@ export interface UiMessages {
       save: string
       saving: string
       cancel: string
+      /** Beside the save button while an edit is not saved. */
+      unsaved: string
+      /** Asked when Cancel would throw an edit away. */
+      leaveTitle: string
+      leaveBody: string
+      leaveConfirm: string
+      keepEditing: string
       delete: string
       deleteConfirm: string
       uncategorised: string

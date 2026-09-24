@@ -1,7 +1,22 @@
 "use client"
 
+// React
+import { useState } from "react"
+
 // UI
-import { Button } from "@harness-monorepo/ui/components/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@harness-monorepo/ui/components/alert-dialog"
+import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
+import { cn } from "@harness-monorepo/ui/lib/utils"
+import { combinationCountOf, type VariationsValue } from "@harness-monorepo/ui/lib/variations"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -16,6 +31,7 @@ import { ProductOrganizationFields } from "./product-organization-fields"
 import { ProductPricingFields } from "./product-pricing-fields"
 import { ProductSection } from "./product-section"
 import { ProductShippingFields } from "./product-shipping-fields"
+import { ProductVariationsFields, type VariationIssues } from "./product-variations-fields"
 
 export interface ProductEditorProps {
   value: ProductFormValues
@@ -35,6 +51,14 @@ export interface ProductEditorProps {
   onCancel: () => void
   pending?: boolean
   submitLabel: string
+  /** The variations section; absent, the editor has none — as when the product is not saved yet. */
+  variations?: {
+    value: VariationsValue
+    onChange: (value: VariationsValue) => void
+    errors?: VariationIssues
+  }
+  /** Something is not saved: the footer says so, and Cancel asks before throwing it away. */
+  dirty?: boolean
   messages?: UiMessages
 }
 
@@ -66,10 +90,14 @@ export function ProductEditor({
   onCancel,
   pending = false,
   submitLabel,
+  variations,
+  dirty = false,
   messages = defaultMessages,
 }: ProductEditorProps) {
   const text = messages.catalog.products
   const sections = messages.catalog.sections
+  const perCombination = variations ? combinationCountOf(variations.value.options) > 0 : false
+  const [leaving, setLeaving] = useState(false)
 
   return (
     <form
@@ -115,17 +143,41 @@ export function ProductEditor({
       </ProductSection>
 
       <ProductSection title={sections.pricing} hint={sections.pricingHint}>
-        <ProductPricingFields
+        {perCombination ? (
+          <p className="text-muted-foreground text-sm">{sections.perCombination}</p>
+        ) : (
+          <ProductPricingFields
+            value={value}
+            onChange={onChange}
+            errors={errors}
+            disabled={pending}
+            messages={messages}
+          />
+        )}
+      </ProductSection>
+
+      {variations ? (
+        <ProductSection title={sections.variations} hint={sections.variationsHint}>
+          <ProductVariationsFields
+            value={variations.value}
+            onChange={variations.onChange}
+            base={{ isActive: true, price: value.price, stock: value.stock, sku: value.sku }}
+            trackStock={value.trackStock}
+            errors={variations.errors}
+            disabled={pending}
+            messages={messages}
+          />
+        </ProductSection>
+      ) : null}
+
+      <ProductSection title={sections.inventory} hint={sections.inventoryHint}>
+        <ProductInventoryFields
           value={value}
           onChange={onChange}
-          errors={errors}
+          perCombination={perCombination}
           disabled={pending}
           messages={messages}
         />
-      </ProductSection>
-
-      <ProductSection title={sections.inventory} hint={sections.inventoryHint}>
-        <ProductInventoryFields value={value} onChange={onChange} disabled={pending} messages={messages} />
       </ProductSection>
 
       <ProductSection title={sections.shipping} hint={sections.shippingHint}>
@@ -146,14 +198,31 @@ export function ProductEditor({
 
       {/* Sticky, because the form is six cards tall and a save button below all of them is a
           button a shopkeeper has to go looking for. */}
-      <div className="bg-shell-content sticky bottom-0 flex justify-end gap-2 border-t py-3">
-        <Button type="button" variant="ghost" disabled={pending} onClick={onCancel}>
+      <div className="bg-shell-content sticky bottom-0 flex items-center justify-end gap-2 border-t py-3">
+        {dirty ? <p className="text-muted-foreground mr-auto text-sm">{text.unsaved}</p> : null}
+        <Button type="button" variant="ghost" disabled={pending} onClick={() => (dirty ? setLeaving(true) : onCancel())}>
           {text.cancel}
         </Button>
         <Button type="submit" disabled={pending}>
           {pending ? text.saving : submitLabel}
         </Button>
       </div>
+
+      <AlertDialog open={leaving} onOpenChange={(open: boolean) => setLeaving(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{text.leaveTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{text.leaveBody}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {/* Staying keeps the default focus: Enter on this question must not lose the edit. */}
+            <AlertDialogCancel>{text.keepEditing}</AlertDialogCancel>
+            <AlertDialogAction className={cn(buttonVariants({ variant: "destructive" }))} onClick={onCancel}>
+              {text.leaveConfirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   )
 }
