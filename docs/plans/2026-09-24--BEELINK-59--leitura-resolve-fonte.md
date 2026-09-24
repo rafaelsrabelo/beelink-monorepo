@@ -68,3 +68,19 @@ antes do épico (`[categoryId, status, position]`).
 - Desenhar a vitrine a partir desses produtos: B3. Até lá o web continua desenhando as prateleiras
   que carrega sozinho, e ignora os `items` da vitrine.
 - Mais vendidos.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou um ponto, corrigido:
+
+- **Uma seleção gravada que não parseia mais derrubava a vitrine inteira.** `selectionOf` lia os ids
+  com um cast, sem o `parseComponentItems` que a leitura usa justamente para nunca lançar. Um item
+  sem `productId`, com um id que não é uuid ou nulo virava 500 no `GET /stores/{slug}/public`, e a
+  loja inteira sumia. Nenhuma escrita de hoje grava uma linha assim; o caminho é um deploy que
+  estreita o formato, uma linha escrita por outro deploy no meio de um rollout, ou um conserto à mão
+  no banco. Agora os ids passam pelo mesmo parser, e uma seleção ilegível é uma vitrine vazia. Há um
+  teste de unidade para quatro formas quebradas e um e2e que grava uma e lê a loja.
+
+Dois pontos foram refutados como defeito, mas o segundo foi aproveitado: o e2e de "mesma ordem em
+toda leitura" não tinha empate de posição e não exercitava os desempates. Agora ele empata todas as
+posições antes de ler.

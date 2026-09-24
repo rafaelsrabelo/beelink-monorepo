@@ -10,6 +10,7 @@ import type {
 } from '../../generated/prisma/models/Product.js';
 
 // App
+import { parseComponentItems } from '../page/component-items.schema.js';
 import { SHOWCASE_LIMIT_DEFAULT, SHOWCASE_LIMIT_MAX } from '../page/page.constants.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
@@ -96,9 +97,15 @@ export function showcaseQuery(
   }
 }
 
-/** The product ids a SELECTION showcase names, in the order the shopkeeper put them. */
+/**
+ * The product ids a SELECTION showcase names, in the order the shopkeeper put them.
+ *
+ * Through the read path's parser, never a cast: a stored pick that no longer parses — a shape a later
+ * deploy narrowed, a row a newer one wrote mid-rollout — is an empty showcase, not a 500 for the whole
+ * shop window.
+ */
 export function selectionOf(showcase: Pick<ShowcaseRow, 'items'>): string[] {
-  return Array.isArray(showcase.items) ? (showcase.items as unknown as ShowcaseProduct[]).map((row) => row.productId) : [];
+  return (parseComponentItems('PRODUCTS', showcase.items) as ShowcaseProduct[]).map((row) => row.productId);
 }
 
 /**

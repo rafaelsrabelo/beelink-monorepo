@@ -143,11 +143,24 @@ describe('stores — the public read resolves each showcase', () => {
     expect((await shelf(id)).names).toEqual(['Calça Jeans', 'Regata Lisa']);
   });
 
-  it('answers the same order on every read', async () => {
+  // Every product on one position, so only the tie-breakers decide.
+  it('answers the same order on every read, even when positions tie', async () => {
+    await app.get(PrismaService).product.updateMany({ data: { position: 0 } });
     const id = await firstShowcaseId();
-    const first = (await shelf(id)).names;
 
-    for (let read = 0; read < 3; read += 1) expect((await shelf(id)).names).toEqual(first);
+    for (let read = 0; read < 3; read += 1) {
+      expect((await shelf(id)).names).toEqual(['Blusa Azul', 'Calça Jeans', 'Regata Lisa']);
+    }
+  });
+
+  it('answers the shop window when a stored pick no longer parses, that showcase empty', async () => {
+    const id = await addShowcase({ source: 'SELECTION', items: [{ id: 'a', productId: byName['Blusa Azul']!.id }] });
+    await app.get(PrismaService).storeComponent.update({ where: { id }, data: { items: [{ id: 'a', productId: 'nope' }] } });
+
+    const response = await app.inject({ method: 'GET', url: '/api/stores/lessari/public' });
+
+    expect(response.statusCode).toBe(200);
+    expect((await shelf(id)).names).toEqual([]);
   });
 
   it('never serves the ids a pick stores, only the cards it resolves to', async () => {
