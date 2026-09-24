@@ -215,7 +215,7 @@ describe('ProductsService.list — the panel, filtered', () => {
     const and = findMany.mock.calls[0][0].where.AND as { OR?: unknown[]; trackStock?: boolean }[];
     expect(and).toHaveLength(2);
     expect(and[0]).toMatchObject({ trackStock: true });
-    expect(and[1]?.OR).toHaveLength(3);
+    expect(and[1]?.OR).toHaveLength(4);
   });
 
   it('matches the name, the code and the barcode — whichever the shopkeeper has in hand', async () => {
@@ -224,7 +224,26 @@ describe('ProductsService.list — the panel, filtered', () => {
     await service.list('lessari', 'user-1', { search: 'WH-900' });
 
     const conditions = findMany.mock.calls[0][0].where.AND as { OR: Record<string, unknown>[] }[];
-    expect(conditions[0]?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode']);
+    expect(conditions[0]?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode', 'variants']);
+  });
+
+  /** A product with options has a code per combination, and the one in hand may be any of them. */
+  it('also matches the code and the barcode of every variant', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { search: 'BLS-P-ARE' });
+
+    const conditions = findMany.mock.calls[0][0].where.AND as { OR: Record<string, unknown>[] }[];
+    expect(conditions[0]?.OR[3]).toEqual({
+      variants: {
+        some: {
+          OR: [
+            { sku: { contains: 'BLS-P-ARE', mode: 'insensitive' } },
+            { barcode: { contains: 'BLS-P-ARE', mode: 'insensitive' } },
+          ],
+        },
+      },
+    });
   });
 
   /**

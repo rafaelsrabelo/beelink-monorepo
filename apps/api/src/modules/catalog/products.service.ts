@@ -25,9 +25,18 @@ import {
   PRODUCTS_PAGE_SIZE_MAX,
 } from './catalog.constants.js';
 import { productInclude, toProduct, toPublicProduct, toPublicProductCard } from './catalog.mapper.js';
+import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
 
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
+/**
+ * The model whose unique index refused a write, or null when the error is something else. A product
+ * write can trip two: the slug on Product, and the SKU on ProductVariant — including through a
+ * nested create, which Prisma still reports under the variant.
+ */
+function uniqueViolationOn(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null || !('code' in error) || error.code !== 'P2002') return null;
+
+  const meta = 'meta' in error ? (error.meta as { modelName?: unknown } | undefined) : undefined;
+  return typeof meta?.modelName === 'string' ? meta.modelName : null;
 }
 
 /** The rows a write should store for a product's photos, in the order they were sent. */
@@ -103,6 +112,17 @@ export class ProductsService {
                   { name: { contains: search, mode: 'insensitive' as const } },
                   { sku: { contains: search, mode: 'insensitive' as const } },
                   { barcode: { contains: search, mode: 'insensitive' as const } },
+                  // Every variant's code, not only the one the product's cache repeats.
+                  {
+                    variants: {
+                      some: {
+                        OR: [
+                          { sku: { contains: search, mode: 'insensitive' as const } },
+                          { barcode: { contains: search, mode: 'insensitive' as const } },
+                        ],
+                      },
+                    },
+                  },
                 ],
               },
             ]
@@ -228,6 +248,23 @@ export class ProductsService {
 
     const last = await this.prisma.product.aggregate({ where: { storeId }, _max: { position: true } });
 
+    // A new product has no options, so it sells one thing: its default variant, which holds the
+    // per-unit values. The product's own columns get the same values, which is what the cache of a
+    // single variant is.
+    const perUnit = {
+      priceCents: dto.priceCents,
+      compareAtPriceCents: dto.compareAtPriceCents ?? null,
+      costCents: dto.costCents ?? null,
+      sku: dto.sku ?? null,
+      barcode: dto.barcode ?? null,
+      trackStock: dto.trackStock ?? false,
+      stockQuantity: dto.stockQuantity ?? null,
+      weightGrams: dto.weightGrams ?? null,
+      lengthMm: dto.lengthMm ?? null,
+      widthMm: dto.widthMm ?? null,
+      heightMm: dto.heightMm ?? null,
+    };
+
     try {
       const row = await this.prisma.product.create({
         data: {
@@ -235,30 +272,20 @@ export class ProductsService {
           slug,
           name: dto.name,
           description: dto.description ?? null,
-          priceCents: dto.priceCents,
-          compareAtPriceCents: dto.compareAtPriceCents ?? null,
           categoryId: dto.categoryId ?? null,
           status: dto.status ?? 'ACTIVE',
           origin: dto.origin ?? null,
-          costCents: dto.costCents ?? null,
-          sku: dto.sku ?? null,
-          barcode: dto.barcode ?? null,
-          trackStock: dto.trackStock ?? false,
-          stockQuantity: dto.stockQuantity ?? null,
-          weightGrams: dto.weightGrams ?? null,
-          lengthMm: dto.lengthMm ?? null,
-          widthMm: dto.widthMm ?? null,
-          heightMm: dto.heightMm ?? null,
+          ...perUnit,
           position: (last._max.position ?? -1) + 1,
           images: { create: imageRows(dto.images) },
+          variants: { create: [{ storeId, position: 0, ...perUnit }] },
         },
         include: productInclude,
       });
 
       return toProduct(row);
     } catch (error) {
-      if (isUniqueViolation(error)) throw this.taken(slug);
-      throw error;
+      throw this.conflictOf(error, slug);
     }
   }
 
@@ -288,43 +315,51 @@ export class ProductsService {
 
     const renaming = dto.slug !== undefined || dto.name !== undefined;
     const slug = renaming ? this.slugs.resolve(dto.slug, dto.name ?? current.name) : current.slug;
+    const perUnit = perUnitPatchOf(dto);
 
     try {
-      const row = await this.prisma.product.update({
-        where: { id: productId },
-        data: {
-          slug,
-          slugHistory: this.slugs.historyAfterRename(current.slug, slug, current.slugHistory),
-          name: dto.name ?? current.name,
-          priceCents,
-          ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
-          ...(dto.compareAtPriceCents !== undefined ? { compareAtPriceCents: dto.compareAtPriceCents } : {}),
-          ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
-          ...(dto.status !== undefined ? { status: dto.status } : {}),
-          ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
-          ...(dto.costCents !== undefined ? { costCents: dto.costCents } : {}),
-          ...(dto.sku !== undefined ? { sku: dto.sku ?? null } : {}),
-          ...(dto.barcode !== undefined ? { barcode: dto.barcode ?? null } : {}),
-          ...(dto.trackStock !== undefined ? { trackStock: dto.trackStock } : {}),
-          ...(dto.stockQuantity !== undefined ? { stockQuantity: dto.stockQuantity } : {}),
-          ...(dto.weightGrams !== undefined ? { weightGrams: dto.weightGrams } : {}),
-          ...(dto.lengthMm !== undefined ? { lengthMm: dto.lengthMm } : {}),
-          ...(dto.widthMm !== undefined ? { widthMm: dto.widthMm } : {}),
-          ...(dto.heightMm !== undefined ? { heightMm: dto.heightMm } : {}),
-          // Images are replaced whole when the key is sent: the panel's gallery reports the list it
-          // now holds, including the order, and reconciling that row by row would be a diff the
-          // client already computed. Omitting the key leaves the photos alone.
-          ...(dto.images !== undefined
-            ? { images: { deleteMany: {}, create: imageRows(dto.images) } }
-            : {}),
-        },
-        include: productInclude,
+      const row = await this.prisma.$transaction(async (tx) => {
+        await lockProduct(tx, productId);
+
+        await tx.product.update({
+          where: { id: productId },
+          data: {
+            slug,
+            slugHistory: this.slugs.historyAfterRename(current.slug, slug, current.slugHistory),
+            name: dto.name ?? current.name,
+            ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
+            ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
+            ...(dto.status !== undefined ? { status: dto.status } : {}),
+            ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
+            // Images are replaced whole when the key is sent: the panel's gallery reports the list
+            // it now holds, including the order, and reconciling that row by row would be a diff
+            // the client already computed. Omitting the key leaves the photos alone.
+            ...(dto.images !== undefined
+              ? { images: { deleteMany: {}, create: imageRows(dto.images) } }
+              : {}),
+          },
+        });
+
+        if (Object.keys(perUnit).length > 0) {
+          // A product with options prices and counts each combination on its own; one price sent
+          // for the whole product would be a claim about every variant that no variant made.
+          if ((await tx.productOption.count({ where: { productId } })) > 0) {
+            throw new ConflictException(
+              catalogError('PRODUCT_HAS_OPTIONS', 'This product has options: price and stock belong to its variants'),
+            );
+          }
+
+          // Without options, the product's one variant is its default, and it takes the values.
+          await tx.productVariant.updateMany({ where: { productId }, data: perUnit });
+          await syncProductCache(tx, productId);
+        }
+
+        return tx.product.findUniqueOrThrow({ where: { id: productId }, include: productInclude });
       });
 
       return toProduct(row);
     } catch (error) {
-      if (isUniqueViolation(error)) throw this.taken(slug);
-      throw error;
+      throw this.conflictOf(error, slug);
     }
   }
 
@@ -423,9 +458,21 @@ export class ProductsService {
     return row;
   }
 
-  private taken(slug: string): ConflictException {
-    return new ConflictException(
-      catalogError('PRODUCT_SLUG_TAKEN', `This shop already has a product at "${slug}"`),
-    );
+  /** A refused unique index as the conflict it means, or the error as it came. */
+  private conflictOf(error: unknown, slug: string): unknown {
+    const model = uniqueViolationOn(error);
+
+    if (model === 'ProductVariant') {
+      return new ConflictException(
+        catalogError('PRODUCT_SKU_TAKEN', 'Another product of this shop already uses this SKU'),
+      );
+    }
+    if (model === 'Product') {
+      return new ConflictException(
+        catalogError('PRODUCT_SLUG_TAKEN', `This shop already has a product at "${slug}"`),
+      );
+    }
+
+    return error;
   }
 }

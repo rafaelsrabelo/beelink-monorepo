@@ -216,7 +216,10 @@ export interface Product extends PublicProduct, ProductStock, ProductParcel {
    * is nobody's business but theirs, and a field on the public shape is a field in Google's index.
    */
   costCents: number | null;
-  /** The shopkeeper's own code. Not unique: only they can say what it means. */
+  /**
+   * The shopkeeper's own code, unique within the shop. On a product with options it is the first
+   * variant's; each variant carries its own.
+   */
   sku: string | null;
   /** A string, not a number — a leading zero on an EAN is part of it. */
   barcode: string | null;
@@ -337,4 +340,8 @@ export type CatalogErrorCode =
   | "CATALOG_PARCEL_INCOMPLETE"
   | "CATALOG_REORDER_MISMATCH"
   /** The parent asked for already has one, or is the category itself. Two levels, no third. */
-  | "PRODUCT_CATEGORY_DEPTH";
+  | "PRODUCT_CATEGORY_DEPTH"
+  /** Another product of the same shop already uses the code. */
+  | "PRODUCT_SKU_TAKEN"
+  /** A price or stock sent for a whole product that has options: those belong to its variants. */
+  | "PRODUCT_HAS_OPTIONS";
