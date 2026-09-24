@@ -43,7 +43,7 @@ function renderCart(goneOnArrival = false) {
         ...(goneOnArrival ? [{ productId: gone, variantId: null, qty: 1 }] : []),
       ]}
     >
-      <StorefrontCartLive products={[blusa]} hrefs={{ [blusa.id]: "/loja/produtos/blusa" }} continueHref="/loja/produtos" goneOnArrival={goneOnArrival} locale="pt-BR" messages={ptBR} />
+      <StorefrontCartLive products={[blusa]} hrefs={{ [blusa.id]: "/loja/produtos/blusa" }} continueHref="/loja/produtos" goneOnArrival={goneOnArrival} shopName="Loja" whatsapp="5511999998888" locale="pt-BR" messages={ptBR} />
     </CartProvider>,
   )
 }
@@ -73,6 +73,21 @@ describe("StorefrontCartLive", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remover Blusa do carrinho" }))
 
     expect(screen.getByText("Seu carrinho está vazio.")).toBeInTheDocument()
+    expect(cookieLines()).toEqual([])
+  })
+
+  it("closes the order on the shop's WhatsApp with every line, then empties the cart and keeps the link", () => {
+    renderCart()
+
+    const link = screen.getByRole("link", { name: "Fechar pedido pelo WhatsApp" })
+    const href = link.getAttribute("href") ?? ""
+    expect(href.startsWith("https://wa.me/5511999998888?text=")).toBe(true)
+    expect(decodeURIComponent(href.split("text=")[1] ?? "")).toContain("2× Blusa")
+
+    fireEvent.click(link)
+
+    expect(screen.getByRole("status")).toHaveTextContent("Seu pedido foi para o WhatsApp da loja.")
+    expect(screen.getByRole("link", { name: /Tente de novo/ })).toHaveAttribute("href", href)
     expect(cookieLines()).toEqual([])
   })
 

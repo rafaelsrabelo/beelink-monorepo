@@ -95,6 +95,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           hrefs={Object.fromEntries(cart.products.map((product) => [product.id, routes.product(product.slug)]))}
           continueHref={routes.catalog()}
           goneOnArrival={cart.gone > 0}
+          shopName={store.name}
+          whatsapp={store.socialNetworks.whatsapp?.replace(/\D/g, "") || null}
           locale={locale}
           messages={ui}
         />
