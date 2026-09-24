@@ -306,12 +306,21 @@ export class ProductsService {
         // Read again under the lock: the checks and the rename are judged against the row as it is
         // now, not as it was before another save of the same product finished.
         const current = await tx.product.findUniqueOrThrow({ where: { id: productId } });
-        const perUnit = perUnitPatchOf(dto, current);
+        const hasOptions = (await tx.productOption.count({ where: { productId } })) > 0;
+
+        // On a product with options the product's values are a summary, and a patch that repeats
+        // them changes nothing. Without options they are its one variant's, and a patch equal to a
+        // summary of a variant that is switched off is still a change to that variant.
+        const perUnit = perUnitPatchOf(dto, hasOptions ? current : undefined);
+        // Uncounted stock has no quantity to agree with; the summary of mixed variants still has one.
+        if (hasOptions && perUnit.stockQuantity === null && (perUnit.trackStock ?? current.trackStock) === false) {
+          delete perUnit.stockQuantity;
+        }
 
         // First, so a product with options answers why before any price rule does. A product with
         // options prices and counts each combination on its own; one price sent for the whole
         // product would be a claim about every variant that no variant made.
-        if (Object.keys(perUnit).length > 0 && (await tx.productOption.count({ where: { productId } })) > 0) {
+        if (Object.keys(perUnit).length > 0 && hasOptions) {
           throw new ConflictException(
             catalogError('PRODUCT_HAS_OPTIONS', 'This product has options: price and stock belong to its variants'),
           );

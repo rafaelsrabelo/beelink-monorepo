@@ -69,6 +69,7 @@ export class ProductVariantsService {
         shapes,
         variants.map((variant) => ({
           id: variant.id,
+          isActive: variant.isActive,
           valueByOption: new Map(variant.values.map((value) => [value.optionId, value.valueId])),
         })),
       );
@@ -107,7 +108,8 @@ export class ProductVariantsService {
 
           const data = {
             ...perUnitPatchOf(sent, current),
-            ...(sent.isActive !== undefined ? { isActive: sent.isActive } : {}),
+            // Required on a variant, so a null is "not sent", as it is for the price.
+            ...(typeof sent.isActive === 'boolean' ? { isActive: sent.isActive } : {}),
             ...(sent.imageUrl !== undefined ? { imageUrl: sent.imageUrl ?? null } : {}),
           };
           const after = { ...current, ...data };

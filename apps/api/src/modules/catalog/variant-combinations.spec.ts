@@ -8,8 +8,8 @@ import type { ExistingVariant, OptionShape } from './variant-combinations.js';
 const size: OptionShape = { id: 'size', valueIds: ['P', 'M'] };
 const colour: OptionShape = { id: 'colour', valueIds: ['areia', 'preto'] };
 
-function variant(id: string, values: Record<string, string> = {}): ExistingVariant {
-  return { id, valueByOption: new Map(Object.entries(values)) };
+function variant(id: string, values: Record<string, string> = {}, isActive = true): ExistingVariant {
+  return { id, isActive, valueByOption: new Map(Object.entries(values)) };
 }
 
 describe('combinationsOf', () => {
@@ -73,6 +73,19 @@ describe('planVariants', () => {
 
     expect(plan.keep.map((kept) => kept.variantId)).toEqual(['p-areia', 'm-areia']);
     expect(plan.archive).toEqual(['p-preto']);
+  });
+
+  it('keeps the first variant on sale when combinations collapse, not one the shop switched off', () => {
+    const plan = planVariants([], [variant('p', { size: 'P' }, false), variant('m', { size: 'M' })]);
+
+    expect(plan.keep).toEqual([{ variantId: 'm', valueIds: [], position: 0 }]);
+    expect(plan.archive).toEqual(['p']);
+  });
+
+  it('keeps the first of all when none of the collapsing variants is on sale', () => {
+    const plan = planVariants([], [variant('p', { size: 'P' }, false), variant('m', { size: 'M' }, false)]);
+
+    expect(plan.keep.map((kept) => kept.variantId)).toEqual(['p']);
   });
 
   it('collapses every variant into the default one when the last option goes', () => {

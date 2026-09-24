@@ -73,6 +73,9 @@ export async function applyPlan(
         productId,
         storeId,
         position,
+        // Switched off stays switched off: a size the shop stopped selling is not back on sale
+        // because it now also comes in a colour.
+        isActive: donor.isActive,
         priceCents: donor.priceCents,
         compareAtPriceCents: donor.compareAtPriceCents,
         costCents: donor.costCents,

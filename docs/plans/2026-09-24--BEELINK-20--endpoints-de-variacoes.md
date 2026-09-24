@@ -130,3 +130,30 @@ O brief fala em zod, mas os corpos da API validam com class-validator (regra 6 d
 - As frases do painel para os códigos novos. Elas entram no A4, com o editor que os encontra.
 - Impedir, no banco, que uma variante aponte para uma opção de outro produto. Hoje o serviço
   impede.
+
+## Adendo — revisão independente (24/09/2026)
+
+Três leituras (sobrevivência das combinações; variantes e SKU; contrato e evidência). Cada achado
+passou por um verificador que tentou refutá-lo. Cinco defeitos confirmados, todos introduzidos por
+este ticket e todos corrigidos:
+
+1. **Uma combinação nova voltava à venda.** Ao acrescentar uma opção, a combinação nova nascia à
+   venda mesmo quando a vizinha estava desligada, e o tamanho P desligado voltava como "P ·
+   Preto". Agora a combinação nova herda o `isActive` da vizinha, como já herdava a contagem.
+   Isso se soma à decisão 4.
+2. **Uma edição de estoque de verdade era descartada** (grave). A decisão 10 descartava valores
+   iguais ao resumo também num produto **sem** opções. Com a única variante desligada, o resumo diz
+   "contado, zero", e um `stockQuantity: 0` enviado era jogado fora. Agora os valores iguais só são
+   descartados num produto com opções.
+3. **`isActive: null` virava 500.** Agora conta como não enviado, como o preço e a contagem.
+4. **O colapso mantinha a variante desligada** (grave). Ao tirar a última opção, a variante que
+   ficava era a primeira na ordem, mesmo desligada e com uma irmã à venda. O produto saía da
+   vitrine, e nada na edição do produto a religava. Agora fica a primeira **à venda**, e só na
+   falta de uma fica a primeira de todas. Isso refina a decisão 3.
+5. **O editor atual ganhava 409 num produto de contagem mista.** Num produto com opções em que uma
+   variante é contada e outra não, o resumo tem uma quantidade e diz "não contado". O editor manda
+   `stockQuantity: null` nesse caso, que diferia do resumo e dava 409 `PRODUCT_HAS_OPTIONS`. Agora
+   um null com a contagem desligada é descartado num produto com opções.
+
+Cada um tem teste: o e2e em `product-options` e `product-variants`, e o unitário do colapso em
+`variant-combinations.spec.ts`.

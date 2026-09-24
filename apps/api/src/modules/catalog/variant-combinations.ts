@@ -8,7 +8,8 @@
  * - an option that is new takes the option's first value, so adding "Cor" to a product sold in P
  *   and M turns P into "P · first colour" with its price and stock intact;
  * - an option that was removed is dropped, so combinations that differed only there collapse, and
- *   the first of them in the shopkeeper's order is the one that carries on.
+ *   the first of them in the shopkeeper's order that is on sale carries on — the first of all when
+ *   none is, so a collapse never leaves a product with only the combination it had switched off.
  *
  * A variant whose value was removed has no combination left and is archived, as is every variant
  * that lost a collapse. Combinations nobody claimed are created, copying a neighbour's price.
@@ -23,6 +24,7 @@ export interface OptionShape {
 /** A variant as it is now, not archived, in position order. */
 export interface ExistingVariant {
   id: string;
+  isActive: boolean;
   /** Option id → value id. Empty for a default variant. */
   valueByOption: ReadonlyMap<string, string>;
 }
@@ -82,21 +84,26 @@ function donorFor(valueIds: readonly string[], variants: readonly ExistingVarian
 }
 
 export function planVariants(options: readonly OptionShape[], existing: readonly ExistingVariant[]): VariantPlan {
-  const claims = new Map<string, string>();
+  const claims = new Map<string, ExistingVariant>();
   const archive: string[] = [];
 
   for (const variant of existing) {
     const projection = projectionOf(variant, options);
     const key = projection?.join('|');
+    const claimant = key === undefined ? undefined : claims.get(key);
 
-    if (key === undefined || claims.has(key)) archive.push(variant.id);
-    else claims.set(key, variant.id);
+    if (key === undefined) archive.push(variant.id);
+    else if (!claimant) claims.set(key, variant);
+    else if (!claimant.isActive && variant.isActive) {
+      archive.push(claimant.id);
+      claims.set(key, variant);
+    } else archive.push(variant.id);
   }
 
   const plan: VariantPlan = { keep: [], create: [], archive };
 
   combinationsOf(options).forEach((valueIds, position) => {
-    const variantId = claims.get(valueIds.join('|'));
+    const variantId = claims.get(valueIds.join('|'))?.id;
 
     if (variantId) plan.keep.push({ variantId, valueIds, position });
     else plan.create.push({ valueIds, position, donorId: donorFor(valueIds, existing) });

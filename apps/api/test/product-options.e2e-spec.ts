@@ -188,6 +188,56 @@ describe('the variations editor’s endpoints', () => {
       expect(response.json<ApiErrorBody>().errorCode).toBe('PRODUCT_OPTION_NOT_FOUND');
     });
 
+    it('keeps a size the shop switched off switched off when a colour arrives', async () => {
+      const product = await addProduct({ name: 'Blusa', priceCents: 18900 });
+      const withSizes = await withOptions(product, [sizes('P', 'M')]);
+      await putVariants(product, [{ id: withSizes.variants[0]!.id, isActive: false }]);
+
+      const detail = await withOptions(product, [
+        { id: withSizes.options[0]!.id, name: 'Tamanho', values: withSizes.options[0]!.values },
+        { name: 'Cor', values: [{ name: 'Areia' }, { name: 'Preto' }] },
+      ]);
+
+      expect(labelsOf(detail)).toEqual(['P · Areia', 'P · Preto', 'M · Areia', 'M · Preto']);
+      expect(detail.variants.map((variant) => variant.isActive)).toEqual([false, false, true, true]);
+    });
+
+    it('keeps the combination on sale when the last option goes, not the one switched off', async () => {
+      const product = await addProduct({ name: 'Blusa', priceCents: 18900 });
+      const withSizes = await withOptions(product, [sizes('P', 'M')]);
+      await putVariants(product, [{ id: withSizes.variants[0]!.id, isActive: false }]);
+
+      const detail = await withOptions(product, []);
+
+      expect(detail.variants).toEqual([expect.objectContaining({ id: withSizes.variants[1]!.id, isActive: true })]);
+    });
+
+    it('lets the editor save its whole form on a product whose combinations are counted differently', async () => {
+      const product = await addProduct({ name: 'Blusa', priceCents: 18900 });
+      const detail = await withOptions(product, [sizes('P', 'M')]);
+      await putVariants(product, [{ id: detail.variants[0]!.id, trackStock: true, stockQuantity: 3 }]);
+      const summary = (await call('GET', `/api/stores/lessari/products/${product.id}`)).json<ProductDetail>();
+
+      // The editor sends every field, and no quantity while the product reads as uncounted.
+      const response = await call('PUT', `/api/stores/lessari/products/${product.id}`, {
+        name: 'Blusa de alça',
+        priceCents: summary.priceCents,
+        compareAtPriceCents: summary.compareAtPriceCents,
+        costCents: summary.costCents,
+        sku: summary.sku,
+        barcode: summary.barcode,
+        trackStock: summary.trackStock,
+        stockQuantity: summary.trackStock ? summary.stockQuantity : null,
+        weightGrams: summary.weightGrams,
+        lengthMm: summary.lengthMm,
+        widthMm: summary.widthMm,
+        heightMm: summary.heightMm,
+      });
+
+      expect(summary.trackStock).toBe(false);
+      expect(response.statusCode).toBe(200);
+    });
+
     it('lets the editor save a rename with the product’s own price, once it has options', async () => {
       const product = await addProduct({ name: 'Blusa', priceCents: 18900 });
       const detail = await withOptions(product, [sizes('P', 'M')]);
@@ -289,6 +339,15 @@ describe('the variations editor’s endpoints', () => {
       const response = await putVariants(product, ids.map((id) => ({ id, priceCents: 100 })));
 
       expect(response.statusCode).toBe(400);
+    });
+
+    it('reads a null switch as not sent', async () => {
+      const product = await addProduct({ name: 'Blusa', priceCents: 18900 });
+
+      const response = await putVariants(product, [{ id: product.variants[0]!.id, isActive: null as never }]);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json<ProductDetail>().variants[0]!.isActive).toBe(true);
     });
 
     it('refuses a variant of another product', async () => {
