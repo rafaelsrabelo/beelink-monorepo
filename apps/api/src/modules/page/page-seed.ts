@@ -1,6 +1,7 @@
 // Types
 import type {
   BenefitRow,
+  ComponentDisplay,
   ComponentKind,
   ContactField,
   ContactFieldType,
@@ -8,7 +9,6 @@ import type {
   SectionWidth,
   TextAlign,
 } from '@harness-monorepo/contracts';
-import type { ComponentDisplay } from '../../generated/prisma/enums.js';
 
 /**
  * A promise as it is written to the JSON column.

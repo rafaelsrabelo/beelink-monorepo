@@ -58,3 +58,16 @@ describe('page mapper — the wire still says layout', () => {
     expect(toPublicSection(sectionOf(row), 'lessari', ROUTE_WORDS.PT_BR).components[0]!.layout).toBe(layout);
   });
 });
+
+describe('page mapper — span and display on every component', () => {
+  it('hands both to the panel and to a visitor, as stored', () => {
+    const banner = componentRow({ span: 'TWO_THIRDS', display: 'GRID' });
+    const heading = componentRow({ kind: 'HEADING', span: 'HALF', display: null });
+
+    expect(toComponent(banner)).toMatchObject({ span: 'TWO_THIRDS', display: 'GRID' });
+    expect(toComponent(heading)).toMatchObject({ span: 'HALF', display: null });
+
+    const [publicBanner] = toPublicSection(sectionOf(banner), 'lessari', ROUTE_WORDS.PT_BR).components;
+    expect(publicBanner).toMatchObject({ span: 'TWO_THIRDS', display: 'GRID' });
+  });
+});

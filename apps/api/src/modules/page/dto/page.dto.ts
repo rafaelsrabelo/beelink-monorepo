@@ -17,10 +17,13 @@ import { Type } from 'class-transformer';
 
 // Types
 import type {
+  ComponentDisplay,
   ComponentItem,
   ComponentKind,
+  ComponentSpan,
   CreateComponentPayload,
   CreateSectionPayload,
+  PageErrorCode,
   SectionWidth,
   ShowcaseLayout,
   TextAlign,
@@ -31,9 +34,11 @@ import type {
 // App
 import {
   COMPONENT_BODY_MAX_LENGTH,
+  COMPONENT_DISPLAYS,
   COMPONENT_KINDS,
   COMPONENT_MAX_COLUMNS,
   COMPONENT_MIN_COLUMNS,
+  COMPONENT_SPANS,
   COMPONENT_SUBTITLE_MAX_LENGTH,
   COMPONENT_TITLE_MAX_LENGTH,
   HEX_COLOUR,
@@ -73,10 +78,22 @@ export class ComponentDto implements CreateComponentPayload {
   @MaxLength(COMPONENT_BODY_MAX_LENGTH)
   body?: string | null;
 
-  @ApiPropertyOptional({ enum: SHOWCASE_LAYOUTS })
+  @ApiPropertyOptional({ enum: SHOWCASE_LAYOUTS, deprecated: true, description: 'Send `span`. Ignored when `span` is sent.' })
   @IsOptional()
   @IsIn(SHOWCASE_LAYOUTS)
   layout?: ShowcaseLayout;
+
+  // A null passes here, as on every optional field, and `PageRules.checkedSpan` refuses it: the
+  // column is NOT NULL, and a patch's `PartialType` would make this optional whatever it said.
+  @ApiPropertyOptional({ enum: COMPONENT_SPANS })
+  @IsOptional()
+  @IsIn(COMPONENT_SPANS, { context: { errorCode: 'COMPONENT_SPAN_INVALID' satisfies PageErrorCode } })
+  span?: ComponentSpan;
+
+  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER. Null on every other kind.' })
+  @IsOptional()
+  @IsIn(COMPONENT_DISPLAYS, { context: { errorCode: 'COMPONENT_DISPLAY_INVALID' satisfies PageErrorCode } })
+  display?: ComponentDisplay | null;
 
   @ApiPropertyOptional({ type: Object, isArray: true })
   @IsOptional()

@@ -1,0 +1,114 @@
+// Nest
+import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+
+// Types
+import type { ApiErrorBody, AuthSession, PublicStore, Section, StoreComponent } from '@harness-monorepo/contracts';
+
+// App
+import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
+import { createTestApp } from './support/create-test-app.js';
+import { resetDatabase } from './support/reset-database.js';
+
+const shopBody = {
+  name: 'Padaria do Bairro',
+  slug: 'padaria-do-bairro',
+  type: 'ECOMMERCE',
+  socialNetworks: { whatsapp: '(11) 99999-8888' },
+  address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' },
+};
+
+const SLIDE = { id: 'capa', imageUrl: 'https://cdn.example/capa.png', target: 'NONE' };
+
+/**
+ * A component's width and a banner's layout, through the real pipe and the real database.
+ *
+ * What the unit specs cannot show: that a bad value is stopped by the global pipe with the code the
+ * contract names — not by Prisma as a 500 — and that the column round-trips through Postgres.
+ */
+describe('page — span and display', () => {
+  let app: NestFastifyApplication;
+  let owner: AuthSession;
+  let banner: StoreComponent;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  beforeEach(async () => {
+    await resetDatabase(app.get(PrismaService));
+    owner = await signUpAndSignIn(app, newEmail('dona'));
+
+    const created = await call('POST', '/api/stores', shopBody);
+    if (created.statusCode !== 201) throw new Error(`POST stores answered ${created.statusCode}: ${created.payload}`);
+
+    const section = await call('POST', '/api/stores/padaria-do-bairro/sections', {
+      component: { kind: 'BANNER', span: 'THIRD', items: [SLIDE] },
+    });
+    if (section.statusCode !== 201) throw new Error(`POST sections answered ${section.statusCode}: ${section.payload}`);
+    banner = section.json<Section>().components[0]!;
+  });
+
+  function call(method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) {
+    return app.inject({
+      method,
+      url,
+      headers: { authorization: `Bearer ${owner.accessToken}` },
+      ...(payload ? { payload } : {}),
+    });
+  }
+
+  it('creates a banner with the span it was sent, and a display of its own', () => {
+    expect(banner).toMatchObject({ span: 'THIRD', layout: 'THIRDS', display: 'CAROUSEL' });
+  });
+
+  it('refuses a span that is not one of the four with its own code, not a 500', async () => {
+    const response = await call('PATCH', `/api/stores/padaria-do-bairro/components/${banner.id}`, { span: 'QUARTER' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<ApiErrorBody>().errorCode).toBe('COMPONENT_SPAN_INVALID');
+  });
+
+  it('refuses a null span with the same code, before the NOT NULL column can', async () => {
+    const response = await call('PATCH', `/api/stores/padaria-do-bairro/components/${banner.id}`, { span: null });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<ApiErrorBody>().errorCode).toBe('COMPONENT_SPAN_INVALID');
+  });
+
+  it('refuses a display on a kind that does not draw it', async () => {
+    const response = await call('POST', '/api/stores/padaria-do-bairro/sections', {
+      component: { kind: 'HEADING', title: 'Novidades', display: 'GRID' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
+  });
+
+  it('stores what a patch sends and answers it back', async () => {
+    const response = await call('PATCH', `/api/stores/padaria-do-bairro/components/${banner.id}`, {
+      span: 'TWO_THIRDS',
+      display: 'GRID',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json<StoreComponent>()).toMatchObject({ span: 'TWO_THIRDS', display: 'GRID' });
+  });
+
+  it('hands span and display to a visitor on every component', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' });
+    const components = response.json<PublicStore>().sections.flatMap((section) => section.components);
+
+    expect(components.length).toBeGreaterThan(1);
+    for (const component of components) {
+      expect(component).toHaveProperty('span');
+      expect(component).toHaveProperty('display');
+    }
+    expect(components.find((component) => component.kind === 'BANNER')).toMatchObject({ span: 'THIRD', display: 'CAROUSEL' });
+    expect(components.find((component) => component.kind === 'PRODUCTS')).toMatchObject({ span: 'FULL', display: null });
+  });
+});

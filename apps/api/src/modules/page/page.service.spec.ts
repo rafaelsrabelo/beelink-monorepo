@@ -380,6 +380,36 @@ describe('PageService — the panel sends layout, the row keeps span', () => {
     expect(updated.layout).toBe('HALVES');
   });
 
+  it('stores a span it is sent, including the one the old words cannot say', async () => {
+    const { service, createSection } = build();
+
+    await service.createSection('lessari', 'user-1', {
+      component: { kind: 'BANNER', span: 'TWO_THIRDS', items: [SLIDE] },
+    });
+
+    expect(createSection.mock.calls[0]![0].data.components.create.span).toBe('TWO_THIRDS');
+  });
+
+  it('lets span win when a patch sends both words', async () => {
+    const { service, updateComponent } = build({ kind: 'BANNER' });
+
+    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { span: 'THIRD', layout: 'HALVES' });
+
+    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'THIRD' });
+    expect(updated).toMatchObject({ span: 'THIRD', layout: 'THIRDS' });
+  });
+
+  // `PartialType` makes a patch's span optional whatever the DTO says, so null gets past the
+  // decorators; the column is NOT NULL, and the database would have answered a 500.
+  it('refuses a null span, before anything is written', async () => {
+    const { service, updateComponent } = build({ kind: 'BANNER' });
+
+    await expect(
+      service.updateComponent('lessari', 'user-1', COMPONENT, { span: null as never }),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_SPAN_INVALID' } });
+    expect(updateComponent).not.toHaveBeenCalled();
+  });
+
   it('leaves the span alone when a patch does not mention the layout', async () => {
     const { service, updateComponent } = build({ kind: 'BANNER' });
 
@@ -411,6 +441,56 @@ describe('PageService — a new banner opens as a carousel', () => {
     await service.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Novidades' });
 
     expect(createComponent.mock.calls[0]![0].data.display).toBeNull();
+  });
+
+  it('writes the display a banner is created with', async () => {
+    const { service, createComponent } = build();
+
+    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'BANNER', display: 'GRID', items: [SLIDE] });
+
+    expect(createComponent.mock.calls[0]![0].data.display).toBe('GRID');
+  });
+});
+
+describe('PageService — a display only where it is drawn', () => {
+  it('writes the display a banner is patched to', async () => {
+    const { service, updateComponent } = build({ kind: 'BANNER' });
+
+    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' });
+
+    expect(updateComponent.mock.calls[0]![0].data).toEqual({ display: 'GRID' });
+    expect(updated.display).toBe('GRID');
+  });
+
+  it('refuses a display on a kind that does not draw it, at both writes', async () => {
+    const asPatch = build({ kind: 'HEADING' });
+    await expect(
+      asPatch.service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' }),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
+    expect(asPatch.updateComponent).not.toHaveBeenCalled();
+
+    const asCreate = build();
+    await expect(
+      asCreate.service.createSection('lessari', 'user-1', { component: { kind: 'TEXT', display: 'CAROUSEL' } }),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
+    expect(asCreate.createSection).not.toHaveBeenCalled();
+  });
+
+  it('refuses to take a banner’s display back to null', async () => {
+    const { service } = build({ kind: 'BANNER' });
+
+    await expect(
+      service.updateComponent('lessari', 'user-1', COMPONENT, { display: null }),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
+  });
+
+  // The panel sends the whole form, and null is what a heading holds there already.
+  it('lets a kind that does not draw it repeat the null it has', async () => {
+    const { service } = build({ kind: 'HEADING' });
+
+    await expect(
+      service.updateComponent('lessari', 'user-1', COMPONENT, { display: null }),
+    ).resolves.toBeDefined();
   });
 });
 

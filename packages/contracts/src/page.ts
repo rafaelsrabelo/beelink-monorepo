@@ -49,12 +49,26 @@ export type ComponentKind =
 export type SectionWidth = "FULL" | "CONTAINED";
 
 /**
- * How wide a banner sits inside its section.
+ * How wide a banner sits inside its section, in the words the wire used before `span`.
  *
- * Full width, two across, three across — a shape rather than a column count. A free integer would
- * let someone pick seven and get a row of stamps.
+ * Kept while the panel and the shop window still read it: the API derives it from `span` and
+ * translates it back on a write. It says less than `span` does — there is no two-thirds in it.
  */
 export type ShowcaseLayout = "FULL" | "HALVES" | "THIRDS";
+
+/**
+ * How much of its band a component takes: the whole of it, a half, a third or two thirds.
+ *
+ * The band's own width is `SectionWidth`; this is the block's slice of it. A shape rather than a
+ * column count, for the reason `ShowcaseLayout` gave: a free integer lets someone pick seven.
+ */
+export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
+
+/**
+ * How a component with several pictures lays them out: one at a time, or side by side. Read on
+ * `BANNER`, and null on every other kind. A choice, where it used to be the slide count deciding.
+ */
+export type ComponentDisplay = "CAROUSEL" | "GRID";
 
 /**
  * Where a component's words sit. Read on `HEADING` and `TEXT`.
@@ -206,7 +220,12 @@ export interface PublicComponent {
   subtitle: string | null;
   /** The paragraph, on a `TEXT`. Null on every other kind. */
   body: string | null;
+  /** @deprecated Derived from `span`, and kept until nothing reads it. Read `span`. */
   layout: ShowcaseLayout;
+  /** Its slice of the band, on every kind. */
+  span: ComponentSpan;
+  /** Read on `BANNER`. Null on every other kind. */
+  display: ComponentDisplay | null;
   /** A banner's slides, the benefits band's rows, the strip's one link or a form's fields. Empty otherwise. */
   items: PublicComponentItem[];
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */
@@ -222,7 +241,10 @@ export interface StoreComponent {
   title: string | null;
   subtitle: string | null;
   body: string | null;
+  /** @deprecated Derived from `span`, and kept until nothing reads it. Read `span`. */
   layout: ShowcaseLayout;
+  span: ComponentSpan;
+  display: ComponentDisplay | null;
   items: ComponentItem[];
   columns: number | null;
   align: TextAlign | null;
@@ -288,7 +310,11 @@ export interface CreateComponentPayload {
   title?: string | null;
   subtitle?: string | null;
   body?: string | null;
+  /** @deprecated Send `span`. Translated to it when `span` is absent; ignored when both are sent. */
   layout?: ShowcaseLayout;
+  span?: ComponentSpan;
+  /** A banner's choice. Refused on a kind that does not read it, and refused as null on one that does. */
+  display?: ComponentDisplay | null;
   items?: ComponentItem[];
   columns?: number | null;
   align?: TextAlign | null;
@@ -311,6 +337,10 @@ export type PageErrorCode =
   | "COMPONENT_KIND_SINGLETON"
   /** The component's content does not fit what its kind holds — a slide with no picture, say. */
   | "COMPONENT_ITEMS_INVALID"
+  /** A `span` that is not one of the four slices. */
+  | "COMPONENT_SPAN_INVALID"
+  /** A `display` that is not one of the two, or one sent to a kind that does not read it. */
+  | "COMPONENT_DISPLAY_INVALID"
   /**
    * A patch tried to change a component's kind.
    *

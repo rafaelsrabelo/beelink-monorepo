@@ -11,32 +11,8 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { sectionInclude, toComponent, toSection } from './page.mapper.js';
 import { PageRules, pageError } from './page.rules.js';
-import { SPAN_OF_LAYOUT } from './page.constants.js';
-import { openingDisplayOf, openingItemsOf } from './page-seed.js';
-
-/**
- * A component's row as both creates write it — around a new band, or into one that exists.
- *
- * One function, so the two paths cannot disagree about what "no subtitle" or "no columns" is
- * written as: they did, once, in the other direction — a spread that landed in create and not in
- * update is what made a save answer 200 and change nothing.
- */
-function componentRow(storeId: string, dto: ComponentDto, items: object[], position: number) {
-  return {
-    storeId,
-    kind: dto.kind,
-    title: dto.title ?? null,
-    subtitle: dto.subtitle ?? null,
-    body: dto.body ?? null,
-    ...(dto.layout !== undefined ? { span: SPAN_OF_LAYOUT[dto.layout] } : {}),
-    display: openingDisplayOf(dto.kind),
-    columns: dto.columns ?? null,
-    align: dto.align ?? null,
-    items,
-    position,
-    isActive: dto.isActive ?? true,
-  };
-}
+import { componentPatch, componentRow } from './page-rows.js';
+import { openingItemsOf } from './page-seed.js';
 
 /**
  * The landing page, at both of its levels.
@@ -77,6 +53,8 @@ export class PageService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
     await this.rules.refuseSecond(storeId, dto.component.kind);
+    this.rules.refuseDisplayFor(dto.component.kind, dto.component.display);
+    const span = this.rules.checkedSpan(dto.component);
     // A kind created bare opens with what it cannot be without — a form's first fields.
     const items = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
 
@@ -92,7 +70,7 @@ export class PageService {
         background: dto.background ?? null,
         position: (last._max.position ?? -1) + 1,
         isActive: dto.isActive ?? true,
-        components: { create: componentRow(storeId, dto.component, items, 0) },
+        components: { create: componentRow(storeId, dto.component, { span, items }, 0) },
       },
       include: sectionInclude,
     });
@@ -169,7 +147,9 @@ export class PageService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.rules.ownedSection(storeId, sectionId);
     await this.rules.refuseSecond(storeId, dto.kind);
+    this.rules.refuseDisplayFor(dto.kind, dto.display);
 
+    const span = this.rules.checkedSpan(dto);
     const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
     const last = await this.prisma.storeComponent.aggregate({
       where: { sectionId },
@@ -177,7 +157,7 @@ export class PageService {
     });
 
     const row = await this.prisma.storeComponent.create({
-      data: { sectionId, ...componentRow(storeId, dto, items, (last._max.position ?? -1) + 1) },
+      data: { sectionId, ...componentRow(storeId, dto, { span, items }, (last._max.position ?? -1) + 1) },
     });
 
     return toComponent(row);
@@ -207,23 +187,14 @@ export class PageService {
       );
     }
 
+    this.rules.refuseDisplayFor(current.kind, dto.display);
+
+    const span = this.rules.checkedSpan(dto);
     const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
 
     const row = await this.prisma.storeComponent.update({
       where: { id: componentId },
-      data: {
-        ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.subtitle !== undefined ? { subtitle: dto.subtitle } : {}),
-        ...(dto.body !== undefined ? { body: dto.body } : {}),
-        ...(dto.layout !== undefined ? { span: SPAN_OF_LAYOUT[dto.layout] } : {}),
-        ...(dto.columns !== undefined ? { columns: dto.columns } : {}),
-        ...(dto.align !== undefined ? { align: dto.align } : {}),
-        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-        // The whole list or nothing. Slides have an order, so a patch of one would leave the API
-        // guessing where it goes — and leaving this line out of the update is what once made a
-        // save answer 200 and change nothing at all.
-        ...(items === undefined ? {} : { items }),
-      },
+      data: componentPatch(dto, { span, items }),
     });
 
     return toComponent(row);

@@ -2,12 +2,23 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { ComponentKind, PageErrorCode } from '@harness-monorepo/contracts';
+import type {
+  ComponentDisplay,
+  ComponentKind,
+  ComponentSpan,
+  PageErrorCode,
+  ShowcaseLayout,
+} from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { componentItemsFor } from './component-items.schema.js';
-import { REQUIRED_COMPONENT_KINDS, SINGLETON_COMPONENT_KINDS } from './page.constants.js';
+import {
+  DISPLAY_KINDS,
+  REQUIRED_COMPONENT_KINDS,
+  SINGLETON_COMPONENT_KINDS,
+  SPAN_OF_LAYOUT,
+} from './page.constants.js';
 
 /** Keeps every code this module answers inside the contract's union. */
 export function pageError(errorCode: PageErrorCode, message: string): { errorCode: PageErrorCode; message: string } {
@@ -118,6 +129,46 @@ export class PageRules {
     }
 
     return parsed.data as object[];
+  }
+
+  /**
+   * The span a write asks for: `span` when it is sent, the old `layout` translated when only that
+   * is, and nothing when neither is.
+   *
+   * Null is refused here and not on the DTO, because a patch's `PartialType` makes every field
+   * optional whatever its decorators said — and the column is NOT NULL, which the database would
+   * have answered as a 500.
+   */
+  checkedSpan(dto: { span?: ComponentSpan | null; layout?: ShowcaseLayout | null }): ComponentSpan | undefined {
+    if (dto.span === null) {
+      throw new BadRequestException(pageError('COMPONENT_SPAN_INVALID', 'Todo bloco tem uma largura.'));
+    }
+
+    if (dto.span !== undefined) return dto.span;
+
+    return dto.layout ? SPAN_OF_LAYOUT[dto.layout] : undefined;
+  }
+
+  /**
+   * A display only on a kind that draws one, and never taken back to null there.
+   *
+   * A value on any other kind would be stored for nobody; null on a banner would undo the choice
+   * every banner has had since the column was created.
+   */
+  refuseDisplayFor(kind: ComponentKind, display: ComponentDisplay | null | undefined): void {
+    if (display === undefined) return;
+
+    const drawn = (DISPLAY_KINDS as readonly ComponentKind[]).includes(kind);
+
+    if (drawn && display === null) {
+      throw new BadRequestException(pageError('COMPONENT_DISPLAY_INVALID', 'Um banner é carrossel ou grade.'));
+    }
+
+    if (!drawn && display !== null) {
+      throw new BadRequestException(
+        pageError('COMPONENT_DISPLAY_INVALID', 'Só um banner escolhe entre carrossel e grade.'),
+      );
+    }
   }
 
   /** A band that exists but belongs to another shop answers 404: this shop does not have one. */

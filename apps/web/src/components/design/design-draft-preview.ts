@@ -50,6 +50,10 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             subtitle: was?.subtitle ?? null,
             body: was?.body ?? null,
             layout: component.layout,
+            // As saved, not as drafted: the draft still changes `layout`, and nothing draws these
+            // two yet. The day the band draws `span`, the draft has to hold it instead.
+            span: was?.span ?? "FULL",
+            display: was?.display ?? null,
             columns: was?.columns ?? null,
             align: was?.align ?? null,
             /*

@@ -28,6 +28,8 @@ function component(id: string, over: Partial<StoreComponent> = {}): StoreCompone
     subtitle: null,
     body: null,
     layout: "FULL",
+    span: "FULL",
+    display: null,
     items: [],
     columns: null,
     align: null,

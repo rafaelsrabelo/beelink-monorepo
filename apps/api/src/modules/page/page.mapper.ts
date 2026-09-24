@@ -148,6 +148,8 @@ function toPublicComponent(
     subtitle: row.subtitle,
     body: row.body,
     layout: LAYOUT_OF_SPAN[row.span],
+    span: row.span,
+    display: row.display,
     // A banner's slides are resolved; every other kind's items are what the shopkeeper wrote. The
     // ids never reach the wire: `PublicStore` is served to anyone who asks, and a uuid on it is a
     // row's identity handed to a stranger for nothing.
@@ -200,6 +202,8 @@ export function toComponent(row: StoreComponentModel): StoreComponent {
     subtitle: row.subtitle,
     body: row.body,
     layout: LAYOUT_OF_SPAN[row.span],
+    span: row.span,
+    display: row.display,
     items: itemsOf(row.kind, row.items),
     columns: row.columns,
     align: row.align,
