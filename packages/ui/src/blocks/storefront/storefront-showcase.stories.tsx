@@ -59,3 +59,11 @@ export const UmTerco: Story = { args: { items: [creatina], span: "THIRD" } }
 
 /** Sem destino: é um cartaz, e não desenha seta nenhuma. */
 export const SemLink: Story = { args: { items: [{ ...creatina, href: null }], span: "THIRD" } }
+
+/** Um banner em grade: as imagens lado a lado, tantas colunas quanto a célula comporta. */
+export const Grade: Story = {
+  args: {
+    items: [creatina, { ...delicious, id: "5" }, { ...creatina, id: "6", title: "Whey Concentrado" }],
+    span: "FULL",
+  },
+}

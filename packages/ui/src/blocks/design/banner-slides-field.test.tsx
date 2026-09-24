@@ -38,6 +38,31 @@ function renderField(value: SlideValue[]) {
 }
 
 describe("BannerSlidesField", () => {
+  /**
+   * The hint says what a second picture does, and that is the format's to decide: promising a
+   * carousel under "Grade" is the sheet contradicting the choice made just above it.
+   */
+  it("says what a second picture does in the format the banner has", () => {
+    const { unmount } = render(
+      <BannerSlidesField value={[slide("a")]} onChange={vi.fn()} categories={[]} products={[]} newSlideId={() => "new"} />,
+    )
+    expect(screen.getByText(/vira um carrossel/)).toBeInTheDocument()
+    unmount()
+
+    render(
+      <BannerSlidesField
+        value={[slide("a")]}
+        onChange={vi.fn()}
+        categories={[]}
+        products={[]}
+        newSlideId={() => "new"}
+        display="GRID"
+      />,
+    )
+    expect(screen.getByText(/aparecem lado a lado/)).toBeInTheDocument()
+    expect(screen.queryByText(/vira um carrossel/)).not.toBeInTheDocument()
+  })
+
   it("adds a picture that points nowhere, with the id the screen minted", async () => {
     const user = userEvent.setup()
     const { onChange } = renderField([])

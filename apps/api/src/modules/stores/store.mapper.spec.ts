@@ -26,7 +26,6 @@ const row = {
     updatedAt: new Date('2026-09-01T00:00:00.000Z'),
   },
   layoutType: 'BANNER',
-  showProductsByCategory: true,
   routeVocabulary: 'PT_BR',
   colorBackground: '#F0F9FF',
   colorPrimary: '#3B7AF7',

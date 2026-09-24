@@ -1,27 +1,10 @@
 "use client"
 
 // Libs
-import {
-  BadgeCheckIcon,
-  Columns3Icon,
-  Columns2Icon,
-  EyeIcon,
-  EyeOffIcon,
-  GripVerticalIcon,
-  HeadingIcon,
-  ImageIcon,
-  LayoutGridIcon,
-  MailIcon,
-  MegaphoneIcon,
-  RectangleHorizontalIcon,
-  TagsIcon,
-  Trash2Icon,
-  TypeIcon,
-} from "lucide-react"
+import { EyeIcon, EyeOffIcon, GripVerticalIcon, Trash2Icon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { ToggleGroup, ToggleGroupItem } from "@harness-monorepo/ui/components/toggle-group"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -29,8 +12,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { useArrangeItem } from "./design-arrange"
+import { RowThumbnail } from "./row-thumbnail"
 import type { StorefrontSpan } from "../storefront/storefront-band-cell"
-import type { ComponentKind } from "./design-types"
+import type { ComponentKind, SectionWidth } from "./design-types"
+import { SpanField } from "./span-field"
 
 /** A block's slice of its band. The storefront's own type: the row offers what the band draws. */
 export type ArrangementSpan = StorefrontSpan
@@ -64,32 +49,12 @@ export interface ArrangementItem {
 }
 
 /**
- * Offered on a banner, whatever it holds.
- *
- * It used to go at the second picture, because the renderer drew a carousel across the whole band
- * whatever the width said. The band is a grid now and a carousel fills its own cell, so the width
- * changes what a two-slide banner looks like as much as a poster's. Offering it on every kind, and
- * the fourth slice, is the width control that replaces this one.
+ * Every block has a slice of its band, so every block is offered one — a heading beside a banner is
+ * as reachable as two banners. The strip above the header is the exception: it is drawn above the
+ * masthead, never in a band's grid, and a width there would change nothing.
  */
-function hasSpan(item: Pick<ArrangementItem, "kind">): boolean {
-  return item.kind === "BANNER"
-}
-
-/**
- * The picture a row shows beside the title, or the glyph that stands in for one.
- *
- * Six of the eight kinds have no picture, and a blank grey rectangle beside each of them makes a
- * list of components read as a list of broken images.
- */
-const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
-  ANNOUNCEMENT: MegaphoneIcon,
-  BANNER: ImageIcon,
-  HEADING: HeadingIcon,
-  TEXT: TypeIcon,
-  BENEFITS: BadgeCheckIcon,
-  CATEGORIES: TagsIcon,
-  PRODUCTS: LayoutGridIcon,
-  CONTACT: MailIcon,
+export function hasSpan(item: Pick<ArrangementItem, "kind">): boolean {
+  return item.kind !== "ANNOUNCEMENT"
 }
 
 export function ArrangementRow({
@@ -98,15 +63,21 @@ export function ArrangementRow({
   onSpanChange,
   onDelete,
   onEdit,
+  bandWidth,
+  selected = false,
   messages,
 }: {
   item: ArrangementItem
+  /** Its fields are open: marked here as the preview marks it. */
+  selected?: boolean
   onToggle: (id: string, isActive: boolean) => void
   onSpanChange: (id: string, span: ArrangementSpan) => void
   /** Absent where a kind cannot be deleted; the row then draws no bin at all. */
   onDelete?: (id: string) => void
   /** Absent where a kind has nothing to write; the row is then not a button. */
   onEdit?: (id: string) => void
+  /** The width of the band the block sits in, said beside the block's own. */
+  bandWidth?: SectionWidth
   messages: UiMessages
 }) {
   const text = messages.design
@@ -116,7 +87,6 @@ export function ArrangementRow({
   // kind. "Sem título" on four rows tells them which blocks are unfinished and nothing about
   // which is which.
   const name = item.title?.trim() || text.kinds[item.kind]
-  const KindIcon = KIND_ICON[item.kind]
 
   return (
     <li
@@ -126,7 +96,9 @@ export function ArrangementRow({
         "bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-2",
         drag.isDragging && "z-10 opacity-80 shadow-md",
         !item.isActive && "opacity-60",
+        selected && "ring-primary ring-2",
       )}
+      {...(selected ? { "aria-current": "true" as const } : {})}
     >
       {/*
         Identity on the first line, and only identity.
@@ -152,13 +124,7 @@ export function ArrangementRow({
         <GripVerticalIcon aria-hidden="true" className="size-4" />
       </button>
 
-      <span className="bg-muted text-muted-foreground flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md">
-        {item.imageUrl ? (
-          <img src={item.imageUrl} alt="" aria-hidden="true" className="size-full object-cover" />
-        ) : (
-          <KindIcon aria-hidden="true" className="size-4" />
-        )}
-      </span>
+      <RowThumbnail kind={item.kind} imageUrl={item.imageUrl ?? null} />
 
       {/*
         The name is the way in to editing, where there is anything to edit. A row that is a button
@@ -215,37 +181,14 @@ export function ArrangementRow({
       </div>
 
       {hasSpan(item) ? (
-        /*
-          The second line, because it does not fit on the first at any spelling.
-
-          Glyphs rather than a select because each one says its own name, the way
-          `align-field.tsx` already does — but that was NOT what bought the name its width:
-          measured, the group is 130px against the select's 112, so the swap alone made it worse.
-          What bought it was leaving the line.
-        */
-        <ToggleGroup
-          multiple={false}
-          aria-label={`${text.sizeLabel}: ${name}`}
-          variant="outline"
-          className="shrink-0"
-          value={[item.span]}
-          onValueChange={(next: string[]) => {
-            const chosen = next[0]
-            if (chosen === "FULL" || chosen === "HALF" || chosen === "THIRD") {
-              onSpanChange(item.id, chosen)
-            }
-          }}
-        >
-          <ToggleGroupItem value="FULL" aria-label={text.sizeFull}>
-            <RectangleHorizontalIcon aria-hidden="true" className="size-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="HALF" aria-label={text.sizeHalves}>
-            <Columns2Icon aria-hidden="true" className="size-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="THIRD" aria-label={text.sizeThirds}>
-            <Columns3Icon aria-hidden="true" className="size-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        // The second line, because the control and the band's width do not fit beside the name.
+        <SpanField
+          value={item.span}
+          onChange={(span) => onSpanChange(item.id, span)}
+          name={name}
+          {...(bandWidth ? { bandWidth } : {})}
+          messages={messages}
+        />
       ) : null}
     </li>
   )

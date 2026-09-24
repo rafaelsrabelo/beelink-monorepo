@@ -9,20 +9,17 @@ import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
-import { homeAt, shopAt } from "@/lib/storefront-data"
+import { categoriesAt, shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
  * A shop's front door, at its own address.
  *
- * A landing and not the catalogue: products running sideways, with a way through to the rest. The
- * grid of everything lives one click away, where it can be filtered and paged without the home
- * carrying that weight on the page most visitors ever see.
- *
- * One band or one per category is the shopkeeper's choice, and `Store.showProductsByCategory` is
- * where they made it — the checkbox has been in the panel's appearance tab all along, saving and
- * loading, while no page on the shop window read it. It defaults to off, so a shop that never
- * touched it gets the single band.
+ * A landing and not the catalogue: the showcases the shopkeeper arranged, each with a way through to
+ * the rest. The grid of everything lives one click away, where it can be filtered and paged without
+ * the home carrying that weight on the page most visitors ever see. Each showcase's products come
+ * resolved inside the shop's own read, so the landing costs that read and the categories — never a
+ * read per shelf.
  *
  * It shows no index of categories. It used to, and the shop owner was right that it was repeating
  * itself — every category is already named in the band under the header, so a grid of the same
@@ -63,10 +60,10 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
 
-  const [{ ui, web }, home] = await Promise.all([
+  const [{ ui, web }, categories] = await Promise.all([
     getMessages(),
     // A site has no catalogue to ask for. The empty answer is what its page draws with anyway.
-    store.type === "INSTITUTIONAL" ? { categories: [], bands: [] } : homeAt(slug, store.showProductsByCategory),
+    store.type === "INSTITUTIONAL" ? [] : categoriesAt(slug),
   ])
 
   const routes = storefrontRoutes(store)
@@ -75,7 +72,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   return (
     <StorefrontFrame
       store={store}
-      categories={home.categories}
+      categories={categories}
       // No pitch band. It used to sit right under the cover — the shop's name, a line about the
       // shop and a WhatsApp button — and the shop owner was right that it reads as a profile page
       // rather than a landing page: three lines of prose between the cover and the first thing for
@@ -95,8 +92,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
           <StorefrontSections
             sections={store.sections}
             primary={store.colors.primary}
-            bands={home.bands}
-            categories={home.categories}
+            categories={categories}
             routes={routes}
             showPrice={layout.showProductPrice ?? true}
             showBadge={layout.showProductBadges ?? true}

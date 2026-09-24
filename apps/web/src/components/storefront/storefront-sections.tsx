@@ -22,7 +22,6 @@ import {
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import type { HomeBand } from "@/lib/storefront-data"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { anchorsOf } from "./site-chrome"
 import { StorefrontComponent, type LiveContact } from "./storefront-component"
@@ -40,8 +39,6 @@ export interface StorefrontSectionsProps {
   sections?: readonly PublicSection[]
   /** The shop's own colour, so a band with a dark background can keep it readable. */
   primary: string
-  /** The product rails, already loaded. A PRODUCTS component draws these and nothing else. */
-  bands: readonly HomeBand[]
   /** Every category the shop has. A CATEGORIES component draws these; nothing else reads them. */
   categories: readonly PublicProductCategory[]
   routes: StorefrontRoutes
@@ -66,23 +63,30 @@ export interface StorefrontSectionsProps {
   messages: UiMessages
 }
 
-/** A poster: one picture, drawn as a card. Two or more make it a carousel. */
-function isPoster(component: PublicComponent): boolean {
-  return component.kind === "BANNER" && component.items.length === 1
-}
+/**
+ * A banner's pictures as cards, when it is drawn as cards: one picture, whatever its display, or any
+ * number with `display: GRID`. Null for everything else, which `StorefrontComponent` draws — the
+ * carousel among them.
+ *
+ * The shopkeeper's display decides carousel or grid, and the count never overrides it: the count
+ * used to be the whole decision, so a second picture turned three posters meant for one row into a
+ * carousel nobody asked for. A grid of one and a carousel of one are the same card.
+ */
+function cardsOf(component: PublicComponent): StorefrontShowcaseItem[] | null {
+  if (component.kind !== "BANNER") return null
 
-/** The one slide of a poster, as the card draws it. */
-function posterOf(component: PublicComponent): StorefrontShowcaseItem {
-  const slide = component.items[0] as PublicBannerSlide
+  const slides = component.items as PublicBannerSlide[]
+  if (slides.length !== 1 && !(component.display === "GRID" && slides.length > 1)) return null
 
-  return {
-    id: component.id,
+  return slides.map((slide, at) => ({
+    // The first card keeps the component's id, as the one poster always did.
+    id: at === 0 ? component.id : `${component.id}-${slide.id}`,
     title: slide.title ?? "",
     subtitle: slide.subtitle,
     imageUrl: slide.imageUrl,
     href: slide.href,
     external: slide.external,
-  }
+  }))
 }
 
 /**
@@ -99,7 +103,6 @@ function posterOf(component: PublicComponent): StorefrontShowcaseItem {
 export function StorefrontSections({
   sections = [],
   primary,
-  bands,
   categories,
   routes,
   showPrice,
@@ -139,12 +142,12 @@ export function StorefrontSections({
               {section.components
                 .filter((component) => component.kind !== "ANNOUNCEMENT")
                 .map((component) => {
-                  const body = isPoster(component) ? (
-                    <StorefrontShowcase items={[posterOf(component)]} span={component.span} {...link} />
+                  const cards = cardsOf(component)
+                  const body = cards ? (
+                    <StorefrontShowcase items={cards} span={component.span} {...link} messages={messages} />
                   ) : (
                     <StorefrontComponent
                       component={component}
-                      bands={bands}
                       categories={categories}
                       routes={routes}
                       showPrice={showPrice}

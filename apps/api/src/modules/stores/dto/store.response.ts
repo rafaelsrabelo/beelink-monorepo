@@ -98,7 +98,6 @@ export class PublicStoreResponse implements PublicStore {
   @ApiProperty({ nullable: true, description: 'Shown when layoutType is BANNER.' })
   bannerImageUrl!: string | null;
   @ApiProperty({ enum: STORE_LAYOUT_TYPES }) layoutType!: StoreLayoutType;
-  @ApiProperty() showProductsByCategory!: boolean;
 
   @ApiProperty({ type: StoreColorsResponse, description: 'Brand data — the storefront sets it as CSS variables.' })
   colors!: StoreColorsResponse;

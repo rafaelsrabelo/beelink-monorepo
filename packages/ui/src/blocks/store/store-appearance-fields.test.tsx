@@ -84,12 +84,11 @@ describe("StoreAppearanceFields", () => {
     expect(screen.getByText("A imagem à esquerda e as informações ao lado.")).toBeVisible()
   })
 
-  it("reports the category switch", async () => {
-    const { onChange } = renderFields()
+  // Grouping by category is a showcase per category now, arranged in design mode like any other.
+  it("offers no switch to group products by category", () => {
+    renderFields()
 
-    await userEvent.click(screen.getByRole("checkbox", { name: "Agrupar produtos por categoria" }))
-
-    expect(onChange).toHaveBeenCalledWith({ ...values, showProductsByCategory: true })
+    expect(screen.queryByRole("checkbox", { name: "Agrupar produtos por categoria" })).not.toBeInTheDocument()
   })
 
   it("applies a ready-made theme whole, since a palette is four decisions at once", async () => {

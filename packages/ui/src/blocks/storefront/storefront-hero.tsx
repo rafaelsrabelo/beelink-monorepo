@@ -49,10 +49,11 @@ export interface StorefrontHeroProps {
 /**
  * The banner at the top of the shop.
  *
- * **One is a cover; two or more are a carousel, and there is no switch.** The shape is read off
- * the count, which is one fewer thing that can disagree with itself — `layoutSettings.bannerType`
- * stored exactly that switch, `'single' | 'carousel'`, beside a list of images, and nothing ever
- * read either of them.
+ * **One is a cover; two or more are a carousel.** Inside this block the count is the whole of it.
+ * Whether a banner reaches this block at all is the banner's `display`, decided by the page: a
+ * banner shown as a grid is drawn as cards and never gets here. `layoutSettings.bannerType` once
+ * stored a switch, `'single' | 'carousel'`, beside a list of images, and nothing ever read either —
+ * the switch that exists now is read, by the page, before this is called.
  *
  * This is the first importer of the shadcn carousel, which had sat in this package unused since it
  * was installed. The rails deliberately do not use it — `scroll-rail.tsx` says why: Embla hides the
@@ -77,7 +78,7 @@ export function StorefrontHero({
   // rounding cuts the picture away from the very edges it was chosen to reach.
   const card = span !== "FULL"
   const rounded = width === "CONTAINED" || card
-  const frame = cn("w-full object-cover", card ? SPAN_HEIGHT[span] : "h-44 sm:h-72 lg:h-96", rounded && "rounded-2xl")
+  const frame = cn("w-full object-cover", card ? SPAN_HEIGHT[span] : "h-44 shop-sm:h-72 shop-lg:h-96", rounded && "rounded-2xl")
 
   function one(item: StorefrontHeroItem) {
     const picture = (
@@ -94,7 +95,7 @@ export function StorefrontHero({
           <div
             className={cn(
               "absolute inset-x-0 bottom-0 flex flex-col gap-1 p-5",
-              !card && "sm:p-8",
+              !card && "shop-sm:p-8",
               rounded && "rounded-b-2xl",
             )}
             style={{
@@ -110,7 +111,7 @@ export function StorefrontHero({
               <p className={cn("leading-tight font-semibold text-balance", SPAN_TITLE[span])}>{item.title}</p>
             ) : null}
             {item.subtitle ? (
-              <p className={cn("text-sm opacity-85", !card && "max-w-xl sm:text-base")}>{item.subtitle}</p>
+              <p className={cn("text-sm opacity-85", !card && "max-w-xl shop-sm:text-base")}>{item.subtitle}</p>
             ) : null}
           </div>
         ) : null}

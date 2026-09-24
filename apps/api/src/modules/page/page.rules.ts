@@ -5,21 +5,25 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type {
   ComponentDisplay,
   ComponentKind,
-  ComponentSpan,
   PageErrorCode,
-  ShowcaseLayout,
 } from '@harness-monorepo/contracts';
+
+import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { componentItemsFor } from './component-items.schema.js';
 import {
-  DISPLAY_KINDS,
-  LAYOUT_OF_SPAN,
+  DISPLAYS_OF_KIND,
   REQUIRED_COMPONENT_KINDS,
   SINGLETON_COMPONENT_KINDS,
-  SPAN_OF_LAYOUT,
 } from './page.constants.js';
+
+/** Any version: the ids are uuid v7, and the check is only that Postgres could read one. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The client a rule reads through: the injected one, or a transaction's. */
+type Db = Prisma.TransactionClient;
 
 /** Keeps every code this module answers inside the contract's union. */
 export function pageError(errorCode: PageErrorCode, message: string): { errorCode: PageErrorCode; message: string } {
@@ -73,6 +77,18 @@ export class PageRules {
   }
 
   /**
+   * One write of this kind at a time for a shop, until the transaction it is called in ends.
+   *
+   * The "last one" rules below are a count and then a delete, and those are only a guarantee
+   * together: two tabs deleting a shop's last two showcases each counted two, each deleted one, and
+   * the shop was left with none. Locking the shop's own row makes the second delete wait, and count
+   * one.
+   */
+  async lockShop(db: Db, storeId: string): Promise<void> {
+    await db.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
+  }
+
+  /**
    * The shop's last product list is not deleted; it is hidden.
    *
    * Stated here and not only in the panel, because the panel is not the lock: it already drew no
@@ -83,10 +99,10 @@ export class PageRules {
    * beat, and a duplicate it lets through must stay deletable, or the shop is stuck with two
    * shelves and no way back but the database.
    */
-  async refuseRequired(storeId: string, kind: ComponentKind): Promise<void> {
+  async refuseRequired(storeId: string, kind: ComponentKind, db: Db = this.prisma): Promise<void> {
     if (!(REQUIRED_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) return;
 
-    const inShop = await this.prisma.storeComponent.count({ where: { storeId, kind } });
+    const inShop = await db.storeComponent.count({ where: { storeId, kind } });
 
     if (inShop <= 1) {
       throw new BadRequestException(
@@ -95,13 +111,13 @@ export class PageRules {
     }
   }
 
-  async refuseHoldingRequired(storeId: string, sectionId: string): Promise<void> {
+  async refuseHoldingRequired(storeId: string, sectionId: string, db: Db = this.prisma): Promise<void> {
     const required = { in: [...REQUIRED_COMPONENT_KINDS] };
-    const held = await this.prisma.storeComponent.count({ where: { sectionId, kind: required } });
+    const held = await db.storeComponent.count({ where: { sectionId, kind: required } });
 
     if (held === 0) return;
 
-    const elsewhere = await this.prisma.storeComponent.count({
+    const elsewhere = await db.storeComponent.count({
       where: { storeId, kind: required, sectionId: { not: sectionId } },
     });
 
@@ -133,57 +149,39 @@ export class PageRules {
   }
 
   /**
-   * The span a write asks for: `span` when it is sent, the old `layout` translated when only that
-   * is, and nothing when neither is.
+   * A display only from the two its kind draws, and never taken back to null there.
    *
-   * Null is refused here and not on the DTO, because a patch's `PartialType` makes every field
-   * optional whatever its decorators said — and the column is NOT NULL, which the database would
-   * have answered as a 500.
-   *
-   * A `layout` that only repeats what the stored span already reads as changes nothing. The panel
-   * sends `layout` on every save, and `TWO_THIRDS` reads as `FULL` in the old words: translating
-   * that echo would reset a two-thirds block to full width because its owner renamed it.
-   */
-  checkedSpan(
-    dto: { span?: ComponentSpan | null; layout?: ShowcaseLayout | null },
-    stored?: ComponentSpan,
-  ): ComponentSpan | undefined {
-    if (dto.span === null) {
-      throw new BadRequestException(pageError('COMPONENT_SPAN_INVALID', 'Todo bloco tem uma largura.'));
-    }
-
-    if (dto.span !== undefined) return dto.span;
-    if (!dto.layout) return undefined;
-    if (stored !== undefined && LAYOUT_OF_SPAN[stored] === dto.layout) return undefined;
-
-    return SPAN_OF_LAYOUT[dto.layout];
-  }
-
-  /**
-   * A display only on a kind that draws one, and never taken back to null there.
-   *
-   * A value on any other kind would be stored for nobody; null on a banner would undo the choice
-   * every banner has had since the column was created.
+   * A value on a kind that draws none would be stored for nobody; one its kind does not draw — a
+   * banner as a rail, a showcase as a carousel — would be a choice the page cannot honour; and null
+   * on a kind that draws one would undo the choice every row of it has had since its migration.
    */
   refuseDisplayFor(kind: ComponentKind, display: ComponentDisplay | null | undefined): void {
     if (display === undefined) return;
 
-    const drawn = (DISPLAY_KINDS as readonly ComponentKind[]).includes(kind);
-
-    if (drawn && display === null) {
-      throw new BadRequestException(pageError('COMPONENT_DISPLAY_INVALID', 'Um banner é carrossel ou grade.'));
-    }
+    const drawn = DISPLAYS_OF_KIND[kind];
 
     if (!drawn && display !== null) {
       throw new BadRequestException(
-        pageError('COMPONENT_DISPLAY_INVALID', 'Só um banner escolhe entre carrossel e grade.'),
+        pageError('COMPONENT_DISPLAY_INVALID', 'Só banner, vitrine e categorias escolhem como mostrar o que têm.'),
+      );
+    }
+
+    if (drawn && (display === null || !drawn.includes(display))) {
+      throw new BadRequestException(
+        pageError('COMPONENT_DISPLAY_INVALID', `Este bloco é ${drawn.join(' ou ')}.`),
       );
     }
   }
 
   /** A band that exists but belongs to another shop answers 404: this shop does not have one. */
-  async ownedSection(storeId: string, sectionId: string): Promise<void> {
-    const row = await this.prisma.storeSection.findUnique({
+  async ownedSection(storeId: string, sectionId: string, db: Db = this.prisma): Promise<void> {
+    // An id that is not a uuid cannot name a row, and Postgres answers one in a uuid column with an
+    // error that left as a 500. It is the same answer as a band that is not here.
+    if (!UUID.test(sectionId)) {
+      throw new NotFoundException(pageError('SECTION_NOT_FOUND', `No band ${sectionId} in this shop`));
+    }
+
+    const row = await db.storeSection.findUnique({
       where: { id: sectionId },
       select: { storeId: true },
     });
@@ -194,19 +192,20 @@ export class PageRules {
   }
 
   /** Returns what it found, so a caller that has to reason about it needs no second read. */
-  async ownedComponent(
-    storeId: string,
-    componentId: string,
-  ): Promise<{ kind: ComponentKind; span: ComponentSpan }> {
-    const row = await this.prisma.storeComponent.findUnique({
+  async ownedComponent(storeId: string, componentId: string, db: Db = this.prisma): Promise<{ kind: ComponentKind }> {
+    if (!UUID.test(componentId)) {
+      throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
+    }
+
+    const row = await db.storeComponent.findUnique({
       where: { id: componentId },
-      select: { storeId: true, kind: true, span: true },
+      select: { storeId: true, kind: true },
     });
 
     if (!row || row.storeId !== storeId) {
       throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
     }
 
-    return { kind: row.kind, span: row.span };
+    return { kind: row.kind };
   }
 }

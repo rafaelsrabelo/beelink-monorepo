@@ -88,7 +88,7 @@ export function StorefrontMasthead({
       className="sticky top-0 z-30 w-full"
       style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-on-header)" }}
     >
-      <div className={cn(BAND, "flex h-16 items-center gap-3 sm:gap-6")}>
+      <div className={cn(BAND, "flex h-16 items-center gap-3 shop-sm:gap-6")}>
         {/*
           The logo stands in for the name rather than sitting beside it — so it carries the name
           as its `alt`, and the link keeps an accessible name without the word being drawn twice.
@@ -134,7 +134,7 @@ export function StorefrontMasthead({
           one swipe away, and a drawer is a script on a page that must read without one.
         */}
         {menu.length ? (
-          <nav aria-label={text.siteMenu} className="hidden items-center gap-5 sm:flex">
+          <nav aria-label={text.siteMenu} className="hidden items-center gap-5 shop-sm:flex">
             {menu.map((entry) => (
               <Link key={entry.id} href={entry.href} className="text-sm font-medium opacity-90 hover:opacity-100">
                 {entry.label}

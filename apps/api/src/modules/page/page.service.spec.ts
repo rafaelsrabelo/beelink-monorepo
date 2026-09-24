@@ -5,6 +5,7 @@ import type { StoresService } from '../stores/stores.service.js';
 // App
 import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
+import { ShowcaseRules } from './showcase.rules.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
 const SECTION = '0199b000-0000-7000-8000-000000000001';
@@ -41,6 +42,9 @@ function componentRow(over: Record<string, unknown> = {}) {
     body: null,
     span: 'FULL',
     display: null,
+    source: null,
+    sourceCategoryId: null,
+    limit: null,
     items: [],
     columns: null,
     position: 0,
@@ -60,8 +64,6 @@ function build(
   found: {
     /** What the component being patched already is. */
     kind?: string
-    /** The width it is stored with. */
-    span?: string
     /** A component of the same kind already in the shop, for the singleton rule. */
     existing?: { id: string } | null
     /** Whether the band being written to belongs to this shop. */
@@ -72,6 +74,13 @@ function build(
     requiredInSection?: number
     requiredElsewhere?: number
     requiredInShop?: number
+    /** How many of the categories a showcase names are this shop's. */
+    ownCategories?: number
+    /** Whether the products a pick names belong to another shop, and which of them no longer exist. */
+    foreignProducts?: boolean
+    goneProducts?: string[]
+    /** What a showcase being patched already holds. */
+    storedShowcase?: { source: string | null; sourceCategoryId: string | null; limit: number | null; items: object[] }
   } = {},
 ) {
   const createSection = vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
@@ -140,15 +149,34 @@ function build(
               : (found.requiredInShop ?? 1),
         ),
       ),
-      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER', span: found.span ?? 'FULL' }),
+      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER' }),
+      findUniqueOrThrow: vi
+        .fn()
+        .mockResolvedValue(found.storedShowcase ?? { source: 'ALL', sourceCategoryId: null, limit: null, items: [] }),
     },
-    $transaction: vi.fn().mockResolvedValue([]),
+    productCategory: { count: vi.fn().mockResolvedValue(found.ownCategories ?? 1) },
+    product: {
+      findMany: vi.fn().mockImplementation(({ where }: { where: { id: { in: string[] } } }) =>
+        Promise.resolve(
+          where.id.in
+            .filter((id) => !(found.goneProducts ?? []).includes(id))
+            .map((id) => ({ id, storeId: found.foreignProducts ? 'another-shop' : STORE })),
+        ),
+      ),
+    },
+    $queryRaw: vi.fn().mockResolvedValue([]),
+    $transaction: vi.fn(),
   } as unknown as PrismaService;
+
+  // Both shapes the service uses: a list of writes (the reorders), and a callback run on the client
+  // itself (the deletes, which lock the shop first).
+  vi.mocked(prisma.$transaction).mockImplementation(((work: unknown) =>
+    typeof work === 'function' ? (work as (tx: PrismaService) => unknown)(prisma) : Promise.resolve([])) as never);
 
   const stores = { ownedStoreId: vi.fn().mockResolvedValue(STORE) } as unknown as StoresService;
 
   return {
-    service: new PageService(prisma, stores, new PageRules(prisma)),
+    service: new PageService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma)),
     prisma,
     createSection,
     createComponent,
@@ -175,7 +203,22 @@ describe('PageService — a band is created around something', () => {
 
     await service.createSection('lessari', 'user-1', { component: { kind: 'HEADING', title: 'Novidades' } });
 
-    expect(createSection.mock.calls[0]![0].data.position).toBe(3);
+    // Two bands already: the new one is the third, whatever numbers theirs carry.
+    expect(createSection.mock.calls[0]![0].data.position).toBe(2);
+  });
+
+  it('lands the band where the panel\'s "+" was pressed, and moves the ones after it down', async () => {
+    const { service, prisma, createSection } = build({ owned: [{ id: 'a', position: 0 } as never, { id: 'b', position: 3 } as never] });
+
+    await service.createSection('lessari', 'user-1', { position: 1, component: { kind: 'HEADING', title: 'Novidades' } });
+
+    expect(createSection.mock.calls[0]![0].data.position).toBe(1);
+    expect(prisma.storeSection.update).toHaveBeenCalledWith({ where: { id: 'b' }, data: { position: 2 } });
+    expect(prisma.storeSection.update).toHaveBeenCalledTimes(1);
+    // Under the shop's lock, taken before the list is read.
+    expect(vi.mocked(prisma.$queryRaw).mock.invocationCallOrder[0]!).toBeLessThan(
+      vi.mocked(prisma.storeSection.findMany).mock.invocationCallOrder[0]!,
+    );
   });
 
   /**
@@ -213,11 +256,23 @@ describe('PageService — a band is created around something', () => {
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_ITEMS_INVALID' } });
   });
 
-  it('refuses a second run of products, wherever the first one sits', async () => {
+  /**
+   * The rule this ticket retired: two showcases were the same shelves twice while every showcase drew
+   * every product. Each has a source of its own now, so a second one is a second shelf.
+   */
+  it('lets a shop have a second showcase', async () => {
     const { service } = build({ existing: { id: 'somewhere-else' } });
 
     await expect(
       service.createSection('lessari', 'user-1', { component: { kind: 'PRODUCTS' } }),
+    ).resolves.toBeDefined();
+  });
+
+  it('still refuses a second strip above the header', async () => {
+    const { service } = build({ existing: { id: 'somewhere-else' } });
+
+    await expect(
+      service.createSection('lessari', 'user-1', { component: { kind: 'ANNOUNCEMENT' } }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_KIND_SINGLETON' } });
   });
 
@@ -353,36 +408,9 @@ describe('PageService — a patch that says nothing changes nothing', () => {
   });
 });
 
-/**
- * The panel still sends `layout` and the row keeps `span`. A write that stored the old word, or
- * answered with a different one than it was sent, would move a banner the shopkeeper only saved.
- */
-describe('PageService — the panel sends layout, the row keeps span', () => {
-  it('stores the layout a new component carries as the span it means', async () => {
-    const { service, createComponent } = build();
-
-    const created = await service.createComponent('lessari', 'user-1', SECTION, {
-      kind: 'BANNER',
-      layout: 'THIRDS',
-      items: [SLIDE],
-    });
-
-    const { data } = createComponent.mock.calls[0]![0];
-    expect(data).toMatchObject({ span: 'THIRD' });
-    expect(data).not.toHaveProperty('layout');
-    expect(created.layout).toBe('THIRDS');
-  });
-
-  it('stores the layout a patch carries as the span it means', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
-
-    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'HALVES' });
-
-    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'HALF' });
-    expect(updated.layout).toBe('HALVES');
-  });
-
-  it('stores a span it is sent, including the one the old words cannot say', async () => {
+/** A block's slice of its band, as both writes store it. */
+describe('PageService — a block’s span', () => {
+  it('stores the span a new component is sent, two thirds included', async () => {
     const { service, createSection } = build();
 
     await service.createSection('lessari', 'user-1', {
@@ -392,47 +420,16 @@ describe('PageService — the panel sends layout, the row keeps span', () => {
     expect(createSection.mock.calls[0]![0].data.components.create.span).toBe('TWO_THIRDS');
   });
 
-  it('lets span win when a patch sends both words', async () => {
+  it('stores the span a patch is sent, and answers it back', async () => {
     const { service, updateComponent } = build({ kind: 'BANNER' });
 
-    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { span: 'THIRD', layout: 'HALVES' });
-
-    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'THIRD' });
-    expect(updated).toMatchObject({ span: 'THIRD', layout: 'THIRDS' });
-  });
-
-  // `PartialType` makes a patch's span optional whatever the DTO says, so null gets past the
-  // decorators; the column is NOT NULL, and the database would have answered a 500.
-  it('refuses a null span, before anything is written', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
-
-    await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, { span: null as never }),
-    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_SPAN_INVALID' } });
-    expect(updateComponent).not.toHaveBeenCalled();
-  });
-
-  /**
-   * The panel sends `layout` on every save, and `TWO_THIRDS` reads as `FULL` in those words. Taken
-   * at face value, that echo would widen a two-thirds block because its owner hid it or renamed it.
-   */
-  it('leaves a two-thirds block alone when a patch only echoes the layout it reads as', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER', span: 'TWO_THIRDS' });
-
-    await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'FULL', isActive: false });
-
-    expect(updateComponent.mock.calls[0]![0].data).toEqual({ isActive: false });
-  });
-
-  it('still moves a block when the layout sent is a different one', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER', span: 'TWO_THIRDS' });
-
-    await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'HALVES' });
+    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { span: 'HALF' });
 
     expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'HALF' });
+    expect(updated.span).toBe('HALF');
   });
 
-  it('leaves the span alone when a patch does not mention the layout', async () => {
+  it('leaves the span alone when a patch does not mention it', async () => {
     const { service, updateComponent } = build({ kind: 'BANNER' });
 
     await service.updateComponent('lessari', 'user-1', COMPONENT, { isActive: false });
@@ -604,5 +601,159 @@ describe('PageService — the product list cannot be deleted, at either level', 
     await service.removeSection('lessari', 'user-1', SECTION);
 
     expect(prisma.storeSection.delete).toHaveBeenCalledWith({ where: { id: SECTION } });
+  });
+});
+
+const OWN_CATEGORY = '0199d000-0000-7000-8000-000000000001';
+const OWN_PRODUCT = '0199e000-0000-7000-8000-000000000001';
+
+describe('PageService — a showcase has a source', () => {
+  it('opens as every product, on a rail, holding nothing', async () => {
+    const { service, createComponent } = build();
+
+    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS' });
+
+    expect(createComponent.mock.calls[0]![0].data).toMatchObject({
+      source: 'ALL',
+      display: 'RAIL',
+      sourceCategoryId: null,
+      limit: null,
+      items: [],
+    });
+  });
+
+  it('draws one category, when the category is this shop’s', async () => {
+    const { service, createComponent } = build();
+
+    await service.createComponent('lessari', 'user-1', SECTION, {
+      kind: 'PRODUCTS',
+      source: 'CATEGORY',
+      sourceCategoryId: OWN_CATEGORY,
+      limit: 8,
+    });
+
+    expect(createComponent.mock.calls[0]![0].data).toMatchObject({ source: 'CATEGORY', sourceCategoryId: OWN_CATEGORY, limit: 8 });
+  });
+
+  it('refuses a category showcase with no category, or with another shop’s', async () => {
+    const bare = build();
+    await expect(
+      bare.service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'CATEGORY' }),
+    ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_CATEGORY_INVALID' } });
+
+    const foreign = build({ ownCategories: 0 });
+    await expect(
+      foreign.service.createComponent('lessari', 'user-1', SECTION, {
+        kind: 'PRODUCTS',
+        source: 'CATEGORY',
+        sourceCategoryId: OWN_CATEGORY,
+      }),
+    ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_CATEGORY_INVALID' } });
+    expect(foreign.createComponent).not.toHaveBeenCalled();
+  });
+
+  it('draws a hand-picked list, when every product is this shop’s', async () => {
+    const { service, createComponent } = build();
+    const items = [{ id: 'a', productId: OWN_PRODUCT }];
+
+    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'SELECTION', items });
+
+    expect(createComponent.mock.calls[0]![0].data).toMatchObject({ source: 'SELECTION', items });
+  });
+
+  it('refuses a hand-picked list that is empty, or that names another shop’s product', async () => {
+    const empty = build();
+    await expect(
+      empty.service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'SELECTION' }),
+    ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_PRODUCTS_INVALID' } });
+
+    const foreign = build({ foreignProducts: true });
+    await expect(
+      foreign.service.createComponent('lessari', 'user-1', SECTION, {
+        kind: 'PRODUCTS',
+        source: 'SELECTION',
+        items: [{ id: 'a', productId: OWN_PRODUCT }],
+      }),
+    ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_PRODUCTS_INVALID' } });
+  });
+
+  /**
+   * The panel serves a pick as it was stored, a product deleted since included, and sends it back.
+   * Gone is not foreign: the pick keeps what still exists, and the save goes through.
+   */
+  it('drops a picked product that no longer exists, rather than refusing the pick', async () => {
+    const gone = '0199e000-0000-7000-8000-00000000dead';
+    const { service, updateComponent } = build({ kind: 'PRODUCTS', goneProducts: [gone] });
+
+    await service.updateComponent('lessari', 'user-1', COMPONENT, {
+      source: 'SELECTION',
+      items: [{ id: 'a', productId: gone }, { id: 'b', productId: OWN_PRODUCT }] as never,
+    });
+
+    expect(updateComponent.mock.calls[0]![0].data.items).toEqual([{ id: 'b', productId: OWN_PRODUCT }]);
+  });
+
+  // Switching the source clears what the old one used, so no column holds a value nothing reads.
+  it('clears the category when the source stops being one', async () => {
+    const { service, updateComponent } = build({
+      kind: 'PRODUCTS',
+      storedShowcase: { source: 'CATEGORY', sourceCategoryId: OWN_CATEGORY, limit: 8, items: [] },
+    });
+
+    await service.updateComponent('lessari', 'user-1', COMPONENT, { source: 'NEWEST' });
+
+    expect(updateComponent.mock.calls[0]![0].data).toMatchObject({ source: 'NEWEST', sourceCategoryId: null, limit: 8, items: [] });
+  });
+
+  /**
+   * A product deleted after it was picked is not the shopkeeper's mistake: a rename that re-checked
+   * the stored list would fail on it. Only what a patch sends is checked.
+   */
+  it('writes none of a showcase’s fields on a patch that touches none of them', async () => {
+    const { service, updateComponent } = build({ kind: 'PRODUCTS' });
+
+    await service.updateComponent('lessari', 'user-1', COMPONENT, { title: 'Novidades' });
+
+    expect(updateComponent.mock.calls[0]![0].data).toEqual({ title: 'Novidades' });
+  });
+
+  it('refuses a showcase’s fields on a kind that is not one', async () => {
+    const { service } = build();
+
+    await expect(
+      service.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Oi', source: 'ALL' }),
+    ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_SOURCE_INVALID' } });
+  });
+});
+
+describe('PageService — each kind draws its own two displays', () => {
+  it('lets a showcase be a rail or a grid, and nothing else', async () => {
+    const grid = build({ kind: 'PRODUCTS' });
+    await expect(grid.service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' })).resolves.toBeDefined();
+
+    const carousel = build({ kind: 'PRODUCTS' });
+    await expect(
+      carousel.service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' }),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
+  });
+
+  it('lets the categories be a rail or a grid, and never a carousel', async () => {
+    for (const display of ['RAIL', 'GRID'] as const) {
+      const { service } = build({ kind: 'CATEGORIES' });
+      await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display })).resolves.toBeDefined();
+    }
+
+    const { service } = build({ kind: 'CATEGORIES' });
+    await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' })).rejects.toMatchObject({
+      response: { errorCode: 'COMPONENT_DISPLAY_INVALID' },
+    });
+  });
+
+  it('never lets a banner be a rail', async () => {
+    const { service } = build({ kind: 'BANNER' });
+
+    await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'RAIL' })).rejects.toMatchObject({
+      response: { errorCode: 'COMPONENT_DISPLAY_INVALID' },
+    });
   });
 });
