@@ -51,3 +51,21 @@ describe("component-form-values — a banner's format", () => {
     expect(toPayload(form, "link")).toMatchObject({ display: "GRID" })
   })
 })
+
+describe("component-form-values — the categories' format", () => {
+  const categories = (display: "RAIL" | "GRID" | null) =>
+    toForm(component({ kind: "CATEGORIES", title: null, display, items: [] }), null)
+
+  // A block saved before it could choose drew a grid, and opens on the grid it draws.
+  it("opens on the format the block has, and on the grid when it has none", () => {
+    expect(categories("RAIL").display).toBe("RAIL")
+    expect(categories("GRID").display).toBe("GRID")
+    expect(categories(null).display).toBe("GRID")
+  })
+
+  it("sends the format the sheet holds, with the columns", () => {
+    const form = { ...categories("GRID"), display: "RAIL" as const, columns: 4 }
+
+    expect(toPayload(form, "link")).toMatchObject({ display: "RAIL", columns: 4 })
+  })
+})

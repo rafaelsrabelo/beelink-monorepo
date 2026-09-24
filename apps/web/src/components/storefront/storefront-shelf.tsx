@@ -3,15 +3,13 @@ import type { PublicComponent, PublicProductCard } from "@harness-monorepo/contr
 
 // UI
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
-import {
-  StorefrontProductGrid,
-  type StorefrontGridColumns,
-} from "@harness-monorepo/ui/blocks/storefront/storefront-product-grid"
+import { StorefrontProductGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-product-grid"
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
+import { gridColumnsOf } from "./grid-columns"
 
 export interface StorefrontShelfProps {
   /** A PRODUCTS component, its cards already resolved from its source by the public read. */
@@ -21,13 +19,6 @@ export interface StorefrontShelfProps {
   showBadge: boolean
   linkComponent?: LinkComponent
   messages: UiMessages
-}
-
-/** What a grid of products falls back to: the column count the catalogue's own grid uses. */
-const DEFAULT_COLUMNS: StorefrontGridColumns = 4
-
-function columnsOf(columns: number | null): StorefrontGridColumns {
-  return columns && columns >= 2 && columns <= 6 ? (columns as StorefrontGridColumns) : DEFAULT_COLUMNS
 }
 
 /**
@@ -46,6 +37,7 @@ export function StorefrontShelf({
   messages,
 }: StorefrontShelfProps) {
   const category = component.sourceCategory
+  const columns = gridColumnsOf(component.columns)
   const shelf = {
     products: component.items as PublicProductCard[],
     productHref: routes.product,
@@ -61,7 +53,7 @@ export function StorefrontShelf({
   }
 
   return component.display === "GRID" ? (
-    <StorefrontProductGrid {...shelf} columns={columnsOf(component.columns)} />
+    <StorefrontProductGrid {...shelf} {...(columns ? { columns } : {})} />
   ) : (
     <StorefrontProductRail {...shelf} />
   )

@@ -17,6 +17,13 @@ import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
   it because each kind adds a clause to both, and the sheet had passed the line limit.
 */
 
+/** The format the form offers for this kind, marked; the kind's own when the wire holds none. */
+function displayOf(component: StoreComponent): ComponentFormValues["display"] {
+  if (component.kind === "CATEGORIES") return component.display === "RAIL" ? "RAIL" : "GRID"
+
+  return component.display === "GRID" ? "GRID" : "CAROUSEL"
+}
+
 /** The wire's nulls become the form's empty strings, which is the only shape an input can hold. */
 export function toForm(component: StoreComponent, bandBackground: string | null): ComponentFormValues {
   const link = component.kind === "ANNOUNCEMENT" ? (component.items[0] as AnnouncementLink | undefined) : undefined
@@ -26,9 +33,9 @@ export function toForm(component: StoreComponent, bandBackground: string | null)
     title: component.title ?? "",
     subtitle: component.subtitle ?? "",
     body: component.body ?? "",
-    // The banner's two. A showcase's rail is its own editor's to hold, and the form sends this for a
-    // banner only; null on every other kind, and the form holds one regardless.
-    display: component.display === "GRID" ? "GRID" : "CAROUSEL",
+    // A banner's two, and the categories'. A showcase's is its own editor's to hold; null on every
+    // other kind, and the form holds one regardless. Null on the categories is the grid they drew.
+    display: displayOf(component),
     columns: component.columns ?? 0,
     // Resolved for the form, so the toggle marks one; a null on the wire is the kind's own habit.
     align: component.align ?? defaultAlignOf(component.kind),
@@ -133,8 +140,9 @@ export function toPayload(value: ComponentFormValues, linkId: string): UpdateCom
     body: value.body.trim() || null,
     columns: value.columns || null,
     align: value.align,
-    // `display` only on a banner: the API refuses a value on a kind that does not draw one.
+    // `display` only where the form offers it: the API refuses a value on a kind that does not draw one.
     ...(value.kind === "BANNER" ? { items: slides, display: value.display } : {}),
+    ...(value.kind === "CATEGORIES" ? { display: value.display } : {}),
     ...(value.kind === "BENEFITS" ? { items: benefits } : {}),
     ...(value.kind === "ANNOUNCEMENT" ? { items: link } : {}),
     ...(value.kind === "CONTACT" ? { items: fields } : {}),
