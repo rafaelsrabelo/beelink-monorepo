@@ -5,14 +5,19 @@
 -- its place and its id, the rest follow it in the same band. None keeps a title: a grouped shelf was
 -- named by its category, whatever the showcase was called.
 --
--- A category is listed when it is active and something in it or under it is published, which is
--- the menu's own rule (ProductCategoriesService.listPublic). A grouped shop with no such category
--- drew no shelf at all; its showcase is left drawing every product rather than turned into nothing.
+-- A category is listed when it is active and something in it, or in an active category under it, is
+-- published — the menu's own rule (ProductCategoriesService.listPublic), which reads active rows
+-- only. A grouped shop with no such category drew no shelf at all; its showcase is left drawing
+-- every product rather than turned into nothing.
+--
+-- A showcase's position is read again on every turn: two in one band shift each other, and the
+-- position the loop's query saw is stale by the time the second one is reached.
 DO $$
 DECLARE
   showcase RECORD;
   category RECORD;
   added INT;
+  origin INT;
 BEGIN
   FOR showcase IN
     SELECT c.*
@@ -22,6 +27,7 @@ BEGIN
     ORDER BY c."sectionId", c."position"
   LOOP
     added := 0;
+    SELECT "position" INTO origin FROM "store_components" WHERE "id" = showcase."id";
 
     FOR category IN
       SELECT pc."id"
@@ -31,7 +37,7 @@ BEGIN
         AND EXISTS (
           SELECT 1
           FROM "products" p
-          LEFT JOIN "product_categories" child ON child."id" = p."categoryId"
+          LEFT JOIN "product_categories" child ON child."id" = p."categoryId" AND child."isActive"
           WHERE p."status" = 'ACTIVE' AND (p."categoryId" = pc."id" OR child."parentId" = pc."id")
         )
       ORDER BY pc."position", pc."name"
@@ -44,14 +50,14 @@ BEGIN
       ELSE
         UPDATE "store_components"
         SET "position" = "position" + 1
-        WHERE "sectionId" = showcase."sectionId" AND "position" >= showcase."position" + added;
+        WHERE "sectionId" = showcase."sectionId" AND "position" >= origin + added;
 
         INSERT INTO "store_components"
           ("id", "sectionId", "storeId", "kind", "span", "display", "source", "sourceCategoryId", "limit",
            "items", "position", "isActive", "createdAt", "updatedAt")
         VALUES
           (gen_random_uuid(), showcase."sectionId", showcase."storeId", 'PRODUCTS', showcase."span",
-           showcase."display", 'CATEGORY', category."id", 12, '[]', showcase."position" + added,
+           showcase."display", 'CATEGORY', category."id", 12, '[]', origin + added,
            showcase."isActive", now(), now());
       END IF;
 

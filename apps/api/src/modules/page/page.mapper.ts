@@ -69,7 +69,7 @@ export const NO_SLUGS: SlugsByEntity = { categories: new Map(), products: new Ma
  */
 export interface Shelf {
   products: PublicProductCard[];
-  category: { slug: string; name: string } | null;
+  category: { slug: string; name: string; description: string | null } | null;
 }
 
 /**

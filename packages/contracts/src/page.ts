@@ -249,8 +249,11 @@ export interface PublicComponent {
   display: ComponentDisplay | null;
   /** A showcase's source, for the page to say where "ver tudo" leads. Null on every other kind. */
   source: ProductSource | null;
-  /** The category a `CATEGORY` showcase draws, by the slug its page lives at. Null otherwise. */
-  sourceCategory: { slug: string; name: string } | null;
+  /**
+   * The category a `CATEGORY` showcase draws: the slug its page lives at, and the name and line the
+   * shelf is headed by. Null otherwise.
+   */
+  sourceCategory: { slug: string; name: string; description: string | null } | null;
   /**
    * A banner's slides, the benefits band's rows, the strip's one link or a form's fields — or a
    * showcase's products, already chosen by its source, cut at its limit, and on the shelf. Empty

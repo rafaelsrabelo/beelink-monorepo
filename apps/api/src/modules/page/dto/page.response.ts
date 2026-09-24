@@ -43,8 +43,8 @@ export class PublicComponentResponse implements PublicComponent {
   display!: ComponentDisplay | null;
   @ApiProperty({ enum: PRODUCT_SOURCES, nullable: true, description: 'A showcase’s source. Null on every other kind.' })
   source!: ProductSource | null;
-  @ApiProperty({ nullable: true, type: Object, description: 'The category a CATEGORY showcase draws: { slug, name }.' })
-  sourceCategory!: { slug: string; name: string } | null;
+  @ApiProperty({ nullable: true, type: Object, description: 'The category a CATEGORY showcase draws: { slug, name, description }.' })
+  sourceCategory!: { slug: string; name: string; description: string | null } | null;
   @ApiProperty({
     type: 'array',
     items: { type: 'object', additionalProperties: true },
