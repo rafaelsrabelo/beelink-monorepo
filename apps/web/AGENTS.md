@@ -27,7 +27,7 @@ The workspace is called `web` and not `bee-link` on purpose: the name is what th
 
 6. **A store's brand colour is data, not a literal.** It comes from the database, per store, and is applied once as CSS custom properties on the storefront's root element; every component below reads the variable. That is what keeps the `web/no-hex-colors` gate at absolute zero instead of carrying an exception for the one legitimate case in the product.
 
-7. **The cart is persisted in a cookie.** Non-`httpOnly`, scoped to `path=/<slug>`, holding `{ productId, qty }` and nothing more so it stays under the 4 KB limit — names and prices come from the catalogue, which is cached already. A Zustand store stays the in-memory source of truth and writes through on every change. The payoff beyond the storage gate: a Server Component can read the cart, so the checkout summary renders in the HTML instead of flashing in after hydration.
+7. **The cart is persisted in a cookie.** Non-`httpOnly`, scoped to `path=/<slug>`, holding `{ productId, variantId, qty }` and nothing more so it stays under the 4 KB limit — names and prices come from the catalogue, which is cached already. A Zustand store stays the in-memory source of truth and writes through on every change. The payoff beyond the storage gate: a Server Component can read the cart, so the checkout summary renders in the HTML instead of flashing in after hydration.
 
 8. **Screens compose; `packages/ui` draws.** Primitives and presentational blocks come from `@harness-monorepo/ui`. This workspace wires them to data — services, form submission, routing. A block that needs a new look changes in `packages/ui`, with its story.
 
