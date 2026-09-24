@@ -183,6 +183,21 @@ export interface UiMessages {
     cartWithCount: string
     /** The cart link's name with a single item: "Carrinho, 1 item". */
     cartWithOne: string
+    /** The cart page (F2). `{name}` names the line a control acts on, for a reader. */
+    cartSummary: string
+    cartSubtotal: string
+    /** `{count}` — units that can be ordered now. */
+    cartItems: string
+    cartItemsOne: string
+    cartQuantity: string
+    cartDecrease: string
+    cartIncrease: string
+    cartRemove: string
+    cartContinue: string
+    /** A sold-out line: kept in view, out of the order. */
+    cartUnavailable: string
+    /** Lines whose product left the shop, taken out when the page opened. */
+    cartGone: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
