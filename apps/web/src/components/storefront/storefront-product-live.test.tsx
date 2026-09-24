@@ -39,6 +39,7 @@ function renderLive() {
         slug="lessari"
         product={product}
         initialVariantId={null}
+        cartHref="/lessari/carrinho"
         showPrice
         showBadge
         restockCopy={copy}

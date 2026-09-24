@@ -11,11 +11,13 @@ import { StorefrontFilterColumn } from "@harness-monorepo/ui/blocks/storefront/s
 import { StorefrontFilterSheet } from "@harness-monorepo/ui/blocks/storefront/storefront-filter-sheet"
 import { StorefrontOptionFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-option-filter"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
+import type { StorefrontProduct } from "@harness-monorepo/ui/blocks/storefront/storefront-product-card"
 import { StorefrontPriceFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-price-filter"
 import { StorefrontSearch } from "@harness-monorepo/ui/blocks/storefront/storefront-search"
 
 // App
 import { pageCountOf } from "@/lib/storefront-data"
+import { StorefrontCardCartLive } from "./storefront-card-cart-live"
 import { StorefrontListingControls } from "./storefront-listing-controls"
 import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf, priceFilterOf } from "@/lib/storefront-filters"
 import { pageHrefOf, type SectionPlace } from "@/lib/storefront-section"
@@ -106,6 +108,7 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
           productsPerRow={layout.productsPerRow ?? 3}
           showPrice={layout.showProductPrice ?? true}
           showBadge={layout.showProductBadges ?? true}
+          {...(layout.showQuickAdd ?? true ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={ui} /> } : {})}
           messages={ui}
         >
           <StorefrontPagination

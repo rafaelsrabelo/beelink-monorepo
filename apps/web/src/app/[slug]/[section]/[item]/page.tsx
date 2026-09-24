@@ -135,6 +135,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         product={product}
         initialVariantId={typeof variant === "string" ? variant : null}
         orderHref={orderHref}
+        cartHref={routes.cart()}
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}
         restockCopy={{
