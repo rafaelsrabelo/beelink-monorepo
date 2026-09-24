@@ -4,7 +4,6 @@
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Field, FieldContent, FieldDescription, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@harness-monorepo/ui/components/select"
 import { Textarea } from "@harness-monorepo/ui/components/textarea"
 
 // Locales
@@ -17,6 +16,7 @@ import { AnnouncementFields } from "./announcement-fields"
 import { BannerFields } from "./banner-fields"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import { BenefitRowsField } from "./benefit-rows-field"
+import { CategoriesFields } from "./categories-fields"
 import type { BenefitValue } from "./benefit-rows-field"
 import { ContactFieldsField, reachesBack } from "./contact-fields-field"
 import type { ContactFieldValue } from "./contact-fields-field"
@@ -173,29 +173,7 @@ export function ComponentForm({
       ) : null}
 
       {value.kind === "CATEGORIES" ? (
-        <Field orientation="responsive">
-          <FieldLabel htmlFor="component-columns">{text.columnsLabel}</FieldLabel>
-          <FieldContent>
-            <Select
-              value={String(value.columns)}
-              onValueChange={(next: string | null) => set("columns", Number(next ?? 0))}
-            >
-              <SelectTrigger id="component-columns">
-                <SelectValue>
-                  {(selected: string) => (selected === "0" ? text.columnsAuto : selected)}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">{text.columnsAuto}</SelectItem>
-                {[2, 3, 4, 5, 6].map((count) => (
-                  <SelectItem key={count} value={String(count)}>
-                    {String(count)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FieldContent>
-        </Field>
+        <CategoriesFields value={value} onChange={(next) => onChange({ ...value, ...next })} messages={messages} />
       ) : null}
 
       {value.kind === "BANNER" ? (

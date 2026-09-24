@@ -113,9 +113,14 @@ export const Vantagens: Story = {
   },
 }
 
-/** A grade de categorias ganha o seu ajuste: quantas colunas. */
+/** As categorias em grade ganham o seu ajuste: quantas colunas. */
 export const Categorias: Story = {
-  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", columns: 3 } },
+  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", display: "GRID", columns: 3 } },
+}
+
+/** Em trilho, as categorias rolam para o lado, e as colunas não são perguntadas. */
+export const CategoriasEmTrilho: Story = {
+  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", display: "RAIL", columns: 0 } },
 }
 
 /**

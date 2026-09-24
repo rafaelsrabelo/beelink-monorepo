@@ -101,10 +101,23 @@ describe("ComponentForm", () => {
     expect(screen.getByText("A cor padrão, derivada da página.")).toBeInTheDocument()
   })
 
-  it("offers the categories grid its columns", () => {
-    renderForm(values({ kind: "CATEGORIES" }))
+  it("offers the categories a rail or a grid, and the grid its columns", () => {
+    renderForm(values({ kind: "CATEGORIES", display: "GRID" }))
 
+    expect(screen.getByRole("button", { name: /Grade/, pressed: true })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Carrossel/ })).not.toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Colunas" })).toHaveTextContent("Automático")
+  })
+
+  // A rail's cards have their own width, so a column count there would change nothing.
+  it("asks a rail of categories for no columns", async () => {
+    const user = userEvent.setup()
+    const { onChange } = renderForm(values({ kind: "CATEGORIES", display: "RAIL" }))
+
+    expect(screen.queryByRole("combobox", { name: "Colunas" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Grade/ }))
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ kind: "CATEGORIES", display: "GRID" }))
   })
 
   it("hands every keystroke back rather than holding it", async () => {

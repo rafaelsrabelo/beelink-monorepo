@@ -53,10 +53,10 @@ export const CONTACT_FIELD_TYPES = ["TEXT", "EMAIL", "PHONE", "TEXTAREA", "SELEC
 export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]
 
 /**
- * One picture at a time, or all of them side by side. The contract's `ComponentDisplay`, restated.
- * A banner's choice; every other kind holds null.
+ * How a block lays out what it holds. The contract's `ComponentDisplay`, restated. A banner is a
+ * carousel or a grid; a showcase and the categories are a rail or a grid; every other kind holds null.
  */
-export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID"] as const
+export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID", "RAIL"] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
 
 /** Edge to edge, or inside the shop's measure. An attribute of the band, never of what is in it. */

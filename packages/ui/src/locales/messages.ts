@@ -348,6 +348,9 @@ export interface UiMessages {
     displayLabel: string
     displayCarousel: string
     displayGrid: string
+    displayRail: string
+    categoriesRailHint: string
+    categoriesGridHint: string
     show: string
     hide: string
     /** Said to a screen reader while a banner is being moved. `{name}` and `{position}`. */
