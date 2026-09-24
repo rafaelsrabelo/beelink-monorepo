@@ -62,6 +62,12 @@ export class PublicProductImageResponse implements PublicProductImage {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() url!: string;
   @ApiProperty({ nullable: true, type: String }) alt!: string | null;
+  @ApiProperty({
+    type: [String],
+    format: 'uuid',
+    description: 'The option values the photo is of. Empty: every combination. One option widens, several narrow.',
+  })
+  optionValueIds!: string[];
 }
 
 export class PriceRangeResponse implements PriceRange {

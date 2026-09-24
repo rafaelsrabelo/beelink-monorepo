@@ -85,6 +85,12 @@ export interface PublicProductImage {
   url: string;
   /** What a screen reader says. Null falls back to the product's name, never to the file name. */
   alt: string | null;
+  /**
+   * The option values this photo is of — the Morango tub, or the 900 g Morango tub. Empty: every
+   * combination. A combination shows it when, for every option named here, its value is one of the
+   * ones named: values of one option widen, different options narrow, as the listing's filters do.
+   */
+  optionValueIds: string[];
 }
 
 /**
@@ -414,6 +420,11 @@ export type UpdateProductPayload = Partial<CreateProductPayload>;
 export interface ProductImagePayload {
   url: string;
   alt?: string | null;
+  /**
+   * Values of this product's options that the photo is of; see `PublicProductImage`. Absent or empty
+   * is every combination. A value of another product is refused with `PRODUCT_OPTION_NOT_FOUND`.
+   */
+  optionValueIds?: string[];
 }
 
 /* ── options and variants ───────────────────────────────────────────────── */

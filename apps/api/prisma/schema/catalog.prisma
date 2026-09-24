@@ -214,8 +214,30 @@ model ProductImage {
 
   createdAt DateTime @default(now())
 
+  /// The option values the photo is of. None: every combination.
+  values ProductImageValue[]
+
   @@index([productId, position])
   @@map("product_images")
+}
+
+/// Which option values a photo is of — the Morango tub, or the 900 g Morango tub. A combination shows
+/// a photo when, for every option the photo names, the combination's value is one the photo names:
+/// values of one option widen, different options narrow, as the storefront's filters do. A photo
+/// naming no value is of every combination.
+///
+/// The value must be of the photo's own product, which the API checks inside the write; the gallery
+/// is replaced whole on every save, and these rows go with it.
+model ProductImageValue {
+  imageId String             @db.Uuid
+  image   ProductImage       @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  /// Cascade: removing a value widens the photo, and never deletes it.
+  valueId String             @db.Uuid
+  value   ProductOptionValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+
+  @@id([imageId, valueId])
+  @@index([valueId])
+  @@map("product_image_values")
 }
 
 /// A choice the customer makes before ordering — Tamanho, Cor, Sabor. At most three per product,
@@ -255,6 +277,7 @@ model ProductOptionValue {
   updatedAt DateTime @updatedAt
 
   variantValues ProductVariantValue[]
+  imageValues   ProductImageValue[]
 
   /// Only so a variant's value can be required to belong to the option it is filed under.
   @@unique([optionId, id])

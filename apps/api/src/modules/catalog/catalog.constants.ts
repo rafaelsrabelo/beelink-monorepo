@@ -96,6 +96,12 @@ export const PRODUCTS_PAGE_SIZE_MAX = 96;
  */
 export const PRODUCT_IMAGES_MAX = 10;
 
+/**
+ * A bound on one photo's values in a request, not a rule a shopkeeper meets: a product has at most
+ * a hundred combinations, and a photo naming every value of it is a photo of every combination.
+ */
+export const PRODUCT_IMAGE_VALUES_MAX = 100;
+
 /** Cents. A product priced above this is a typo — R$ 1.000.000,00 — not a sale. */
 export const PRICE_CENTS_MAX = 100_000_000;
 

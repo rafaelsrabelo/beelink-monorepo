@@ -68,14 +68,17 @@ export const productCategoryAdminInclude = {
   parent: { select: { slug: true } },
 } as const;
 
+/** A photo with the option values it is of. */
+export type ProductImageRow = ProductImageModel & { values: { valueId: string }[] };
+
 /** Images are always read with a product: the card needs the first one and the page needs them all. */
 export type ProductRow = ProductModel & {
-  images: ProductImageModel[];
+  images: ProductImageRow[];
   category: ProductCategoryRow | null;
 };
 
 export const productInclude = {
-  images: { orderBy: { position: 'asc' } },
+  images: { orderBy: { position: 'asc' }, include: { values: { select: { valueId: true } } } },
   category: { include: productCategoryInclude },
 } as const;
 
@@ -103,8 +106,13 @@ export function toProductCategory(row: ProductCategoryRow): WireProductCategory 
   } satisfies WireProductCategory;
 }
 
-function toPublicProductImage(row: ProductImageModel): PublicProductImage {
-  return { id: row.id, url: row.url, alt: row.alt } satisfies PublicProductImage;
+function toPublicProductImage(row: ProductImageRow): PublicProductImage {
+  return {
+    id: row.id,
+    url: row.url,
+    alt: row.alt,
+    optionValueIds: row.values.map((value) => value.valueId),
+  } satisfies PublicProductImage;
 }
 
 /**

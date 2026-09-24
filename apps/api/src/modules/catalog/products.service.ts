@@ -23,18 +23,10 @@ import {
   PRODUCTS_PAGE_SIZE_MAX,
 } from './catalog.constants.js';
 import { productInclude, toProduct } from './catalog.mapper.js';
+import { imageRows, refuseForeignImageValues } from './product-images.js';
 import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
 import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
 import { productDetailInclude, toProductDetail, toPublicProductDetail } from './variant.mapper.js';
-
-/** The rows a write should store for a product's photos, in the order they were sent. */
-function imageRows(images: CreateProductDto['images']): { url: string; alt: string | null; position: number }[] {
-  return (images ?? []).map((image, position) => ({
-    url: image.url,
-    alt: image.alt ?? null,
-    position,
-  }));
-}
 
 /**
  * The three answers to "how many are left", as a `where` fragment.
@@ -172,6 +164,8 @@ export class ProductsService {
     assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
     assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
+    // A product being created has no options, so no photo of it can name a value yet.
+    await refuseForeignImageValues(this.prisma, null, dto.images);
 
     const last = await this.prisma.product.aggregate({ where: { storeId }, _max: { position: true } });
 
@@ -237,6 +231,8 @@ export class ProductsService {
         // now, not as it was before another save of the same product finished.
         const current = await tx.product.findUniqueOrThrow({ where: { id: productId } });
         const hasOptions = (await tx.productOption.count({ where: { productId } })) > 0;
+        // Under the lock, so a value removed by a concurrent save of the options is foreign here.
+        await refuseForeignImageValues(tx, productId, dto.images);
 
         // On a product with options the product's values are a summary, and a patch that repeats
         // them changes nothing. Without options they are its one variant's, and a patch equal to a
