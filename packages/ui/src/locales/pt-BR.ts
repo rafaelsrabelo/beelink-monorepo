@@ -543,6 +543,7 @@ export const ptBR: UiMessages = {
       ofTitle: "Em quais variações a foto {number} aparece",
       ofHint: "Marque os valores desta foto. Numa opção sem marca, ela vale para todos.",
       ofAnyValue: "Qualquer {option}",
+      ofUnnamedOption: "Opção {number}",
     },
     sections: {
       basics: "Identificação",

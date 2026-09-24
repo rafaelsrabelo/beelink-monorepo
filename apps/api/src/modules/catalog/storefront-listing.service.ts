@@ -16,7 +16,7 @@ import type { ProductWhereInput } from '../../generated/prisma/models/Product.js
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { appliedOf, listingWhere, optionKey, orderByOf, type FacetKey, type ListingFilters } from './catalog-filters.js';
-import { productInclude, toPublicProductCard } from './catalog.mapper.js';
+import { productCardInclude, toPublicProductCard } from './catalog.mapper.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 interface OptionCountRow {
@@ -64,7 +64,7 @@ export class StorefrontListingService {
       this.prisma.$transaction([
         this.prisma.product.findMany({
           where,
-          include: productInclude,
+          include: productCardInclude,
           orderBy: orderByOf(filters.sort),
           skip: (page - 1) * pageSize,
           take: pageSize,

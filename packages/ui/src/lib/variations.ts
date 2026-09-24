@@ -9,6 +9,9 @@
  * across the way the API does when it saves: see ReplaceProductOptionsPayload.
  */
 
+// Lib
+import { photosWithout } from "@harness-monorepo/ui/lib/variation-photos"
+
 /** A value of an option. `key` is the saved value's id, or `new:…` for one not saved yet. */
 export interface VariationValue {
   key: string
@@ -43,9 +46,8 @@ export interface VariationsValue {
   /** Keyed by `combinationKey`. A combination with no row yet borrows its nearest neighbour's price. */
   rows: Record<string, VariationRow>
   /**
-   * Photo URL → the value keys the photo is of (see `lib/photo-choice`). A photo absent here, like
-   * one with no keys, is of every combination; an empty list is never stored, so a draft that
-   * gained and lost a mark is equal to one that never had it.
+   * Photo URL → the value keys the photo is of, in the one form `lib/variation-photos` keeps. A
+   * photo absent here is of every combination.
    */
   photos?: Readonly<Record<string, readonly string[]>>
 }
@@ -244,34 +246,4 @@ export function patchRows(
   const rows = { ...written(value, base).rows }
   for (const combination of combinations) rows[combination.key] = { ...combination.row, ...patch }
   return { ...value, rows }
-}
-
-/** The value keys a photo is of; empty when it is of every combination. */
-export function photoValuesOf(value: VariationsValue, url: string): readonly string[] {
-  return value.photos?.[url] ?? []
-}
-
-/** Marks a photo as of these values, or of every combination when there are none. */
-export function setPhotoValues(value: VariationsValue, url: string, valueKeys: readonly string[]): VariationsValue {
-  const photos = { ...value.photos }
-  if (valueKeys.length > 0) photos[url] = [...valueKeys]
-  else delete photos[url]
-  return { ...value, photos }
-}
-
-/**
- * The marks without the values that are gone. A photo that was only of Morango becomes a photo of
- * every combination when Morango is removed — it is never dropped, and its button says so.
- */
-function photosWithout(
-  photos: VariationsValue["photos"],
-  removed: readonly string[],
-): VariationsValue["photos"] {
-  if (!photos) return photos
-  const next: Record<string, readonly string[]> = {}
-  for (const [url, keys] of Object.entries(photos)) {
-    const kept = keys.filter((key) => !removed.includes(key))
-    if (kept.length > 0) next[url] = kept
-  }
-  return next
 }

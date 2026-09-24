@@ -38,6 +38,12 @@ export class SaveProductError extends Error {
     readonly cause: unknown,
     /** The product as the last step that went through left it. */
     readonly saved: ProductDetail,
+    /**
+     * Whether the options were saved before the step that failed. Only then do `saved`'s options
+     * answer the draft's: before that they are the ones the draft is replacing, and matching new
+     * values to them by place would hand a new value the id of one that was removed.
+     */
+    readonly optionsSaved = false,
   ) {
     super("The product was saved, and a later step of the save was not")
   }
@@ -71,8 +77,9 @@ export async function saveProduct(
 ): Promise<ProductDetail> {
   const sellsOne = !hadOptions
   const throughOptions = variations !== undefined && (variations.hasCombinations || hadOptions)
-  // Undefined is left out of the body, so the first request leaves the gallery as it is.
-  const described: UpdateProductPayload = throughOptions ? { ...fields, images: undefined } : fields
+  // Undefined is left out of the body, so the first request leaves the gallery as it is. A product
+  // being created still gets its photos, unmarked: if a later step fails it exists, and with them.
+  const described: UpdateProductPayload = throughOptions && productId ? { ...fields, images: undefined } : fields
 
   let saved = productId
     ? await updateProduct(slug, productId, sellsOne ? { ...described, ...perUnit } : described)
@@ -80,8 +87,10 @@ export async function saveProduct(
 
   if (!variations || !throughOptions) return saved
 
+  let optionsSaved = false
   try {
     saved = await replaceProductOptions(slug, saved.id, variations.options)
+    optionsSaved = true
     if (variations.hasCombinations) {
       saved = await updateProductVariants(slug, saved.id, { variants: variations.variants(saved) })
       saved = await updateProduct(slug, saved.id, { images: variations.images(saved) })
@@ -90,7 +99,7 @@ export async function saveProduct(
     }
     return saved
   } catch (error) {
-    throw new SaveProductError(error, saved)
+    throw new SaveProductError(error, saved, optionsSaved)
   }
 }
 

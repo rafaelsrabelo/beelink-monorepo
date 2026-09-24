@@ -11,14 +11,13 @@ import {
   EMPTY_VARIATIONS,
   labelOf,
   patchRows,
-  photoValuesOf,
   removeOption,
   removeValue,
-  setPhotoValues,
   type VariationOption,
   type VariationRow,
   type VariationsValue,
 } from "./variations"
+import { photoValuesOf, setPhotoValues } from "./variation-photos"
 
 const base: VariationRow = { isActive: true, price: "189,00", stock: "4", sku: "BLS", weight: "900" }
 
@@ -159,7 +158,7 @@ describe("the variations draft", () => {
 
       expect(photoValuesOf(marked, "/mor.jpg")).toEqual(["mor"])
       expect(photoValuesOf(marked, "/geral.jpg")).toEqual([])
-      expect(setPhotoValues(marked, "/mor.jpg", []).photos).toEqual({})
+      expect(setPhotoValues(marked, "/mor.jpg", []).photos).toBeUndefined()
     })
 
     it("drops a removed value from every photo, and keeps the photo", () => {

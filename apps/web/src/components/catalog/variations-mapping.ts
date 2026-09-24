@@ -14,10 +14,10 @@ import {
   combinationsOf,
   isNewKey,
   labelOf,
-  photoValuesOf,
   type VariationRow,
   type VariationsValue,
 } from "@harness-monorepo/ui/lib/variations"
+import { canonicalPhotos, photoValuesOf } from "@harness-monorepo/ui/lib/variation-photos"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { format } from "@harness-monorepo/ui/locales/index"
 
@@ -60,10 +60,8 @@ export function toVariationsDraft(product: ProductDetail, messages: UiMessages):
         } satisfies VariationRow,
       ]),
     ),
-    // Only the marked photos, as the draft stores them: a photo of every combination has no entry.
-    photos: Object.fromEntries(
-      product.images.filter((image) => image.optionValueIds.length > 0).map((image) => [image.url, image.optionValueIds]),
-    ),
+    // In the draft's one form, so a product reopened and left alone reads as unchanged.
+    photos: canonicalPhotos(product.images.map((image) => [image.url, image.optionValueIds])),
   }
 }
 
@@ -118,9 +116,7 @@ export function rekeyDraft(draft: VariationsValue, saved: ProductDetail): Variat
     rows: Object.fromEntries(
       Object.entries(draft.rows).map(([key, row]) => [combinationKey(key === "" ? [] : key.split("|").map(keyOf)), row]),
     ),
-    ...(draft.photos
-      ? { photos: Object.fromEntries(Object.entries(draft.photos).map(([url, keys]) => [url, keys.map(keyOf)])) }
-      : {}),
+    photos: canonicalPhotos(Object.entries(draft.photos ?? {}).map(([url, keys]) => [url, keys.map(keyOf)])),
   }
 }
 

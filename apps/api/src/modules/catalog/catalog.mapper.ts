@@ -82,6 +82,21 @@ export const productInclude = {
   category: { include: productCategoryInclude },
 } as const;
 
+/** What a card is drawn from: the first photo's address and nothing else of the gallery. */
+export type ProductCardRow = ProductModel & {
+  images: { url: string }[];
+  category: ProductCategoryRow | null;
+};
+
+/**
+ * The storefront grid's read. A page of cards shows one photo each, so it asks for one — not every
+ * photo and what each is of, which is a second query over up to 96 galleries that the grid drops.
+ */
+export const productCardInclude = {
+  images: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
+  category: { include: productCategoryInclude },
+} as const;
+
 export function toPublicProductCategory(row: ProductCategoryRow): PublicProductCategory {
   return {
     id: row.id,
@@ -122,7 +137,7 @@ function toPublicProductImage(row: ProductImageRow): PublicProductImage {
  * `imageUrl` is the first image because the rows arrive ordered by position — there is no
  * `isPrimary` flag to disagree with that order.
  */
-export function toPublicProductCard(row: ProductRow): PublicProductCard {
+export function toPublicProductCard(row: ProductCardRow): PublicProductCard {
   return {
     id: row.id,
     slug: row.slug,

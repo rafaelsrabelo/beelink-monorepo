@@ -143,6 +143,32 @@ describe("saveProduct", () => {
     })
 
     await expect(saving).rejects.toBeInstanceOf(SaveProductError)
-    await expect(saving).rejects.toMatchObject({ productId: "new-id", errorCode: "PRODUCT_OPTION_DUPLICATE" })
+    await expect(saving).rejects.toMatchObject({ productId: "new-id", errorCode: "PRODUCT_OPTION_DUPLICATE", optionsSaved: false })
+  })
+
+  it("creates a product with its photos even when it goes on to options, so a failed step leaves them", async () => {
+    const calls = answerInOrder({ status: 201, body: { ...detail, id: "new-id" } })
+
+    await saveProduct("lessari", {
+      ...base,
+      productId: undefined,
+      fields: { name: "Whey", images: [{ url: "/whey.jpg" }] },
+      variations: { options: { options: [] }, variants: () => [], images: () => [{ url: "/whey.jpg" }], hasCombinations: true },
+    })
+
+    expect(calls[0]).toContain('POST /api/stores/lessari/products ')
+    expect(calls[0]).toContain('"images":[{"url":"/whey.jpg"}]')
+  })
+
+  it("says the options went through when a later step is refused, and not when they were", async () => {
+    answerInOrder({ status: 200, body: detail }, { status: 200, body: detail }, { status: 409, body: { statusCode: 409, errorCode: "PRODUCT_SKU_TAKEN", message: "x" } })
+
+    const saving = saveProduct("lessari", {
+      ...base,
+      hadOptions: true,
+      variations: { options: { options: [] }, variants: () => [], images: () => [], hasCombinations: true },
+    })
+
+    await expect(saving).rejects.toMatchObject({ optionsSaved: true, errorCode: "PRODUCT_SKU_TAKEN" })
   })
 })

@@ -91,13 +91,17 @@ export function PhotoValuesPicker({
         </PopoverHeader>
         {offered.map((option) => {
           const marked = option.values.some((entry) => value.includes(entry.key))
+          // A new "other" option has no name yet; it is called by its place, as its own card calls it.
+          const name =
+            option.name.trim() ||
+            format(text.ofUnnamedOption, { number: String(options.indexOf(option) + 1) })
           return (
-            <div key={option.key} role="group" aria-label={option.name} className="flex flex-col gap-1.5">
-              <p className="text-muted-foreground text-xs font-medium">{option.name}</p>
+            <div key={option.key} role="group" aria-label={name} className="flex flex-col gap-1.5">
+              <p className="text-muted-foreground text-xs font-medium">{name}</p>
               <div className="flex flex-wrap gap-1.5">
                 {/* Pressed while nothing of this option is marked; pressing it takes the marks off. */}
                 <Toggle variant="outline" size="sm" pressed={!marked} onPressedChange={() => clear(option)}>
-                  {format(text.ofAnyValue, { option: option.name.toLocaleLowerCase() })}
+                  {format(text.ofAnyValue, { option: name.toLocaleLowerCase() })}
                 </Toggle>
                 {option.values.map((entry) => (
                   <Toggle

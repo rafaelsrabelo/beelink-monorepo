@@ -633,6 +633,8 @@ export interface UiMessages {
       ofHint: string
       /** `{option}` — the button that takes one option's values off the photo. */
       ofAnyValue: string
+      /** `{number}` — an option not named yet, called by its place. */
+      ofUnnamedOption: string
     }
     /** The sections the product form is cut into, in the order they are read. */
     sections: {

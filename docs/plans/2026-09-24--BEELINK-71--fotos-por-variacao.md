@@ -89,3 +89,51 @@ produto que vende uma coisa só, as fotos continuam indo com o produto, na prime
 - Vídeo por variação.
 - Foto do card da listagem por variação: o card continua com a primeira foto.
 - Retirar a `imageUrl` da variante.
+
+## Adendo — evidência no navegador (24/09/2026)
+
+Na loja de teste `loja-do-design`, o "Whey teste sabores" (Peso 900g/750g × Sabor Chocolate/Morango)
+recebeu três fotos que já estavam no banco local. Nenhuma imagem nova foi enviada ao Cloudinary.
+
+1. No editor, cada foto ganhou o botão "Todas as variações". A foto 2 foi marcada Morango, e a 3,
+   Morango e 900g.
+2. A tabela de variações passou a mostrar a foto 3 em 900g · Morango, a 2 em 750g · Morango e a 1
+   nas duas de Chocolate.
+3. Salvo, o banco guardou "todas", "Morango" e "900g + Morango". Reaberto, o editor mostra as marcas
+   e não acusa alteração pendente.
+4. Na vitrine:
+   - 900g · Chocolate mostra só a foto geral;
+   - 900g · Morango abre na foto 3, seguida da 2 e da 1;
+   - 750g · Morango mostra a 2 e a 1;
+   - o link com `?variant=` abre já na foto da combinação.
+
+O p95 da listagem com 5 mil produtos (`perf:catalog`) ficou em 70,6 ms, contra 69,2 ms antes de
+ler as marcas. Depois da correção 3, abaixo, a vitrine nem lê mais as marcas.
+
+## Adendo — revisão independente (24/09/2026)
+
+Um revisor leu o diff e tentou refutar cada achado. Não houve bloqueador. Os quatro achados menores
+foram corrigidos:
+
+1. **"Alterações não salvas" sem alteração.** O editor compara rascunhos como texto. Desmarcar e
+   remarcar um valor mudava a ordem das chaves. Agora as marcas têm uma forma só, em
+   `lib/variation-photos.ts`: fotos em ordem de URL, chaves ordenadas, e nenhum mapa quando nada
+   está marcado.
+2. **Produto novo com opções criado sem fotos.** A decisão 5 tirou as fotos da primeira requisição
+   também na criação. Se um passo seguinte falhasse, o produto ficava no ar sem fotos. Agora a
+   criação leva as fotos sem marcas, e a última requisição as marca.
+3. **A listagem da vitrine lia as marcas de todas as fotos** e não usava nenhuma. A grade ganhou uma
+   leitura própria (`productCardInclude`), só com a primeira foto de cada produto.
+4. **Opção sem nome na escolha da foto.** Uma opção "outra" recém-criada não tem nome. A escolha a
+   chama por "Opção N", como o cartão da opção faz.
+
+E um bug **grave, anterior a este ticket (A4, BEELINK-22)**, que agora também atingia as marcas:
+
+- **Depois de um salvamento que falhou nas opções,** o editor renomeava as chaves novas pelos ids das
+  opções antigas, casando por posição. Um valor novo (Baunilha) herdava o id de um removido
+  (Morango), e o salvamento seguinte transformava as combinações de Morango (estoque, código, pedidos
+  de aviso) em Baunilha.
+- Agora `SaveProductError` diz se as opções chegaram a ser salvas (`optionsSaved`). Só então o
+  rascunho é renomeado.
+- A correção fica aqui, e não no branch do A4, porque o PR dele já está aberto com três outros
+  empilhados em cima.

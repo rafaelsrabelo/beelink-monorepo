@@ -133,7 +133,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
         onError: (error) => {
           if (!(error instanceof SaveProductError)) return
           setCreated({ id: error.saved.id, hasOptions: error.saved.options.length > 0 })
-          if (error.saved.options.length > 0) setVariations((draft) => rekeyDraft(draft, error.saved))
+          if (error.optionsSaved) setVariations((draft) => rekeyDraft(draft, error.saved))
         },
       },
     )

@@ -543,6 +543,7 @@ export const en: UiMessages = {
       ofTitle: "Which variations photo {number} shows for",
       ofHint: "Mark the values this photo is of. An option with none marked means any of its values.",
       ofAnyValue: "Any {option}",
+      ofUnnamedOption: "Option {number}",
     },
     sections: {
       basics: "Identity",

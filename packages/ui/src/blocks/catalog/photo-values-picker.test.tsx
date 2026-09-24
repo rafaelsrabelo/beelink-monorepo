@@ -45,4 +45,14 @@ describe("PhotoValuesPicker", () => {
     await user.click(screen.getByRole("button", { name: /Foto 2/ }))
     await expectNoA11yViolations(document.body)
   })
+
+  it("calls an option with no name yet by its place, so two of them can be told apart", async () => {
+    const user = userEvent.setup()
+    const unnamed = { key: "new:x", name: " ", isColor: false, values: [{ key: "a", name: "A", colorHex: null }] }
+    render(<PhotoValuesPicker options={[...WHEY.options, unnamed]} value={[]} onChange={() => {}} number={1} />)
+
+    await user.click(screen.getByRole("button", { name: /Foto 1/ }))
+    expect(screen.getByRole("group", { name: "Opção 3" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Qualquer opção 3" })).toBeInTheDocument()
+  })
 })

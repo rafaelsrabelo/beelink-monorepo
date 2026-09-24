@@ -16,7 +16,8 @@ import {
 } from "@harness-monorepo/ui/components/alert-dialog"
 import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
-import { combinationCountOf, photoValuesOf, setPhotoValues, type VariationsValue } from "@harness-monorepo/ui/lib/variations"
+import { photoValuesOf, setPhotoValues } from "@harness-monorepo/ui/lib/variation-photos"
+import { combinationCountOf, type VariationsValue } from "@harness-monorepo/ui/lib/variations"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"

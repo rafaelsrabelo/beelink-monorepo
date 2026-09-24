@@ -20,13 +20,13 @@ import {
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
+import { photoValuesOf } from "@harness-monorepo/ui/lib/variation-photos"
 import {
   addValue,
   combinationCountOf,
   combinationsOf,
   newKey,
   patchRows,
-  photoValuesOf,
   removeOption,
   removeValue,
   VARIATION_COMBINATIONS_MAX,
