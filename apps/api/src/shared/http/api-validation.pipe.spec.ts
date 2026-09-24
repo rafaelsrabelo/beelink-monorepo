@@ -50,4 +50,27 @@ describe('ApiValidationPipe', () => {
   it('lets a valid body through', async () => {
     await expect(check({ width: 'NARROW' }, Shape)).resolves.toMatchObject({ width: 'NARROW' });
   });
+
+  // Postgres refuses a NUL in text and in jsonb; both reached it and came back as a 500.
+  it('refuses text holding a NUL, at any depth', async () => {
+    await expect(check({ width: 'WIDE', name: 'a\u0000b' }, Shape)).rejects.toMatchObject({ status: 400 });
+    await expect(check({ shape: { width: 'WIDE', name: '\u0000' } }, Holder)).rejects.toMatchObject({ status: 400 });
+  });
+
+  it('refuses a lone surrogate, and lets a whole pair through', async () => {
+    await expect(check({ width: 'WIDE', name: 'a\ud800' }, Shape)).rejects.toMatchObject({ status: 400 });
+    await expect(check({ width: 'WIDE', name: '❤️ 😀' }, Shape)).resolves.toMatchObject({ name: '❤️ 😀' });
+  });
+
+  // class-transformer recurses before any decorator runs; forty levels overflowed it as a RangeError.
+  it('refuses a body nested deeper than any this API reads', async () => {
+    let deep: object = { width: 'WIDE' };
+    for (let level = 0; level < 40; level += 1) deep = { next: deep };
+
+    await expect(check(deep, Shape)).rejects.toMatchObject({ status: 400 });
+  });
+
+  it('walks only what a person wrote, not an upload', async () => {
+    await expect(pipe.transform(Buffer.from([0, 0, 0]), { type: 'body' })).resolves.toBeInstanceOf(Buffer);
+  });
 });

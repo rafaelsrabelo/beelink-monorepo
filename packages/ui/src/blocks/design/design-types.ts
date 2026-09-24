@@ -52,6 +52,20 @@ export const GROUP_OF_KIND = {
 export const CONTACT_FIELD_TYPES = ["TEXT", "EMAIL", "PHONE", "TEXTAREA", "SELECT", "DATE"] as const
 export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]
 
+/**
+ * How a block lays out what it holds. The contract's `ComponentDisplay`, restated. A banner is a
+ * carousel or a grid; a showcase and the categories are a rail or a grid; every other kind holds null.
+ */
+export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID", "RAIL"] as const
+export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
+
+/**
+ * Which products a showcase draws. The contract's `ProductSource`, restated, in the order the editor
+ * offers them: everything first, then a slice of it.
+ */
+export const PRODUCT_SOURCES = ["ALL", "CATEGORY", "SELECTION", "NEWEST", "ON_SALE"] as const
+export type ProductSource = (typeof PRODUCT_SOURCES)[number]
+
 /** Edge to edge, or inside the shop's measure. An attribute of the band, never of what is in it. */
 export const SECTION_WIDTHS = ["FULL", "CONTAINED"] as const
 export type SectionWidth = (typeof SECTION_WIDTHS)[number]

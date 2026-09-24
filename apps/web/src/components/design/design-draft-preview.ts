@@ -15,6 +15,24 @@ import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-ar
 import { isEmptyComponent } from "./design-draft"
 import type { SectionDraft } from "./design-draft"
 
+/** Each showcase's cards as the shop's public read resolved them, by component id. */
+export type Shelves = ReadonlyMap<string, Pick<PublicComponent, "items" | "sourceCategory">>
+
+/**
+ * The showcases of the shop as a visitor is served it, which is where their cards exist: the draft
+ * holds what a showcase draws from, and resolving that is the API's. A hidden showcase is not
+ * served, so it has no shelf here — nor a place in the preview. The default is `StorefrontSections`'
+ * reason: a cached read from before `sections` existed has none.
+ */
+export function shelvesOf(published: readonly PublicSection[] = []): Shelves {
+  return new Map(
+    published
+      .flatMap((section) => section.components)
+      .filter((component) => component.kind === "PRODUCTS")
+      .map((component) => [component.id, { items: component.items, sourceCategory: component.sourceCategory }]),
+  )
+}
+
 /**
  * The draft as the shop window would be served it.
  *
@@ -23,7 +41,7 @@ import type { SectionDraft } from "./design-draft"
  * either being told twice. The saved row supplies what the arrangement does not hold — a
  * subtitle, a paragraph, the items — because those are not what dragging changes.
  */
-export function previewOf(rows: readonly SectionDraft[], saved: readonly Section[]): PublicSection[] {
+export function previewOf(rows: readonly SectionDraft[], saved: readonly Section[], shelves: Shelves): PublicSection[] {
   const savedSections = new Map(saved.map((section) => [section.id, section]))
   const savedComponents = new Map(
     saved.flatMap((section) => section.components.map((component) => [component.id, component])),
@@ -49,11 +67,11 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             title: was?.title ?? null,
             subtitle: was?.subtitle ?? null,
             body: was?.body ?? null,
-            layout: component.layout,
-            // As saved, not as drafted: the draft still changes `layout`, and nothing draws these
-            // two yet. The day the band draws `span`, the draft has to hold it instead.
-            span: was?.span ?? "FULL",
+            // As drafted: the band draws it, and the owner has to see a width before publishing it.
+            span: component.span,
             display: was?.display ?? null,
+            source: was?.source ?? null,
+            sourceCategory: shelves.get(component.id)?.sourceCategory ?? null,
             columns: was?.columns ?? null,
             align: was?.align ?? null,
             /*
@@ -75,7 +93,12 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
                   }))
                 : component.kind === "ANNOUNCEMENT"
                   ? ((was?.items ?? []) as AnnouncementLink[]).map((link) => ({ id: link.id, href: null, external: false }))
-                  : ((was?.items ?? []) as PublicComponentItem[]),
+                  : component.kind === "PRODUCTS"
+                    ? // What a showcase stores is the ids it picked, never the cards a visitor is served;
+                      // the cards are the public read's to resolve. A showcase saved since the page
+                      // loaded keeps the cards it had then until the next load.
+                      (shelves.get(component.id)?.items ?? [])
+                    : ((was?.items ?? []) as PublicComponentItem[]),
           } satisfies PublicComponent
         }),
     }))
@@ -89,7 +112,13 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
  * emptiness is computed here and not in the block, for the reason `isEmptyComponent` states: the
  * one rule that has to agree with the renderer is written once, in the app that owns both.
  */
-export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Section[]): ArrangementBand[] {
+export function arrangementOf(
+  rows: readonly SectionDraft[],
+  saved: readonly Section[],
+  shelves: Shelves,
+  /** Categories the shop window shows: with none, a categories block draws nothing. Unknown is some. */
+  categoriesShown = Number.POSITIVE_INFINITY,
+): ArrangementBand[] {
   const savedSections = new Map(saved.map((section) => [section.id, section]))
   const savedComponents = new Map(
     saved.flatMap((section) => section.components.map((component) => [component.id, component])),
@@ -102,23 +131,31 @@ export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Sec
     id: row.id,
     name: savedSections.get(row.id)?.name ?? null,
     background: savedSections.get(row.id)?.background ?? null,
+    width: savedSections.get(row.id)?.width ?? "CONTAINED",
     isActive: row.isActive,
     components: row.components.map((component) => {
       const was = savedComponents.get(component.id)
       const first = was?.kind === "BANNER" ? (was.items[0] as BannerSlide | undefined) : undefined
-      const title = was?.title ?? null
+      // A category showcase with no title of its own is headed by its category on the page, and is
+      // listed by it here; six rows reading "Vitrine de produtos" would be six rows nobody can tell apart.
+      const title = was?.title ?? shelves.get(component.id)?.sourceCategory?.name ?? null
 
       return {
         id: component.id,
         kind: component.kind,
         title,
         imageUrl: first?.imageUrl ?? null,
-        // Pictures, not items: the row asks so it can drop a control that a carousel ignores.
-        slides: was?.kind === "BANNER" ? (was.items as BannerSlide[]).filter((s) => s.imageUrl).length : undefined,
-        layout: component.layout,
+        span: component.span,
         isActive: component.isActive,
         deletable: component.kind !== "PRODUCTS" || productLists > 1,
-        empty: isEmptyComponent(component.kind, title, was?.body ?? null, was?.items ?? []),
+        // A showcase's saved items are its pick, not its cards, so only a shelf the public read
+        // resolved can say it is empty. A hidden one has none, and is not called empty for it.
+        empty:
+          component.kind === "PRODUCTS"
+            ? shelves.get(component.id)?.items.length === 0
+            : component.kind === "CATEGORIES"
+              ? categoriesShown === 0
+              : isEmptyComponent(component.kind, title, was?.body ?? null, was?.items ?? []),
       }
     }),
   }))

@@ -18,7 +18,6 @@ import palettes from "../store/store-palettes.json"
 import { StorefrontSectionBand } from "../storefront/storefront-section-band"
 import { BandArrangement } from "./band-arrangement"
 import type { ArrangementBand } from "./band-arrangement"
-import { BlockGallery } from "./block-gallery"
 import { DesignBlockPlaceholder } from "./design-block-placeholder"
 import { DesignEditTag } from "./design-edit-tag"
 import { DesignPreview } from "./design-preview"
@@ -67,7 +66,7 @@ const handlers = {
   onEditBand: noop,
   onDeleteBand: noop,
   onToggle: noop,
-  onLayoutChange: noop,
+  onSpanChange: noop,
   onDelete: noop,
   onEdit: noop,
 }
@@ -78,7 +77,7 @@ const bands: ArrangementBand[] = [
     background: null,
     isActive: true,
     components: [
-      { id: "c1", kind: "BANNER", title: null, slides: 0, layout: "FULL", isActive: true, empty: true },
+      { id: "c1", kind: "BANNER", title: null, span: "FULL", isActive: true, empty: true },
     ],
   },
   {
@@ -86,7 +85,7 @@ const bands: ArrangementBand[] = [
     background: null,
     isActive: true,
     components: [
-      { id: "c2", kind: "PRODUCTS", title: null, layout: "FULL", isActive: true, deletable: false },
+      { id: "c2", kind: "PRODUCTS", title: null, span: "FULL", isActive: true, deletable: false },
     ],
   },
   {
@@ -94,9 +93,9 @@ const bands: ArrangementBand[] = [
     background: null,
     isActive: true,
     components: [
-      { id: "c3", kind: "BANNER", title: "Frete grátis", slides: 1, layout: "THIRDS", isActive: true },
-      { id: "c4", kind: "BANNER", title: "Pix com desconto", slides: 1, layout: "THIRDS", isActive: true },
-      { id: "c5", kind: "BANNER", title: "Troca fácil", slides: 1, layout: "THIRDS", isActive: true },
+      { id: "c3", kind: "BANNER", title: "Frete grátis", span: "THIRD", isActive: true },
+      { id: "c4", kind: "BANNER", title: "Pix com desconto", span: "THIRD", isActive: true },
+      { id: "c5", kind: "BANNER", title: "Troca fácil", span: "THIRD", isActive: true },
     ],
   },
 ]
@@ -110,14 +109,11 @@ function Conteudo({ alto = false }: { alto?: boolean }) {
 function Painel() {
   return (
     <aside className="flex w-[380px] shrink-0 flex-col gap-3 overflow-y-auto border-l p-4">
-      <BlockGallery onAdd={noop} />
       <BandArrangement
         bands={bands}
         {...handlers}
-        // The way into a band, which is the only way two posters end up side by side.
-        renderAddToBand={() => (
-          <BlockGallery onAdd={noop} triggerLabel="Adicionar nesta faixa" triggerClassName="h-8 justify-start text-xs" />
-        )}
+        // Every "+" — between bands, and inside one — is how a block is added, where it lands.
+        onInsert={noop}
       />
     </aside>
   )
@@ -146,7 +142,7 @@ export const Padrao: Story = {
           </DesignEditTag>
         </StorefrontSectionBand>
         <StorefrontSectionBand primary={PRIMARIA}>
-          <DesignEditTag label="Lista de produtos" onEdit={noop}>
+          <DesignEditTag label="Vitrine de produtos" onEdit={noop}>
             <Conteudo alto />
           </DesignEditTag>
         </StorefrontSectionBand>
@@ -195,7 +191,7 @@ export const EditandoComAGavetaAberta: Story = {
             </DesignEditTag>
           </StorefrontSectionBand>
           <StorefrontSectionBand primary={PRIMARIA}>
-            <DesignEditTag label="Lista de produtos" onEdit={noop}>
+            <DesignEditTag label="Vitrine de produtos" onEdit={noop}>
               <Conteudo alto />
             </DesignEditTag>
           </StorefrontSectionBand>

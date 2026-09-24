@@ -86,8 +86,7 @@ model Store {
   /// SetNull, not Cascade: retiring a taxonomy row must never delete a shop.
   category   StoreCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  layoutType             StoreLayoutType @default(DEFAULT)
-  showProductsByCategory Boolean         @default(false)
+  layoutType StoreLayoutType @default(DEFAULT)
 
   /// The words this shop's public URLs are built from. Sent to the web as `routeWords`, so no
   /// component holds the literal "produtos" and changing this changes every link at once.

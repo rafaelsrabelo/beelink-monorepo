@@ -21,7 +21,7 @@ const shopBody = {
 const SLIDE = { id: 'capa', imageUrl: 'https://cdn.example/capa.png', target: 'NONE' };
 
 /**
- * A component's width and a banner's layout, through the real pipe and the real database.
+ * A component's width and a banner's display, through the real pipe and the real database.
  *
  * What the unit specs cannot show: that a bad value is stopped by the global pipe with the code the
  * contract names — not by Prisma as a 500 — and that the column round-trips through Postgres.
@@ -53,7 +53,7 @@ describe('page — span and display', () => {
     banner = section.json<Section>().components[0]!;
   });
 
-  function call(method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) {
+  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, payload?: object) {
     return app.inject({
       method,
       url,
@@ -63,7 +63,8 @@ describe('page — span and display', () => {
   }
 
   it('creates a banner with the span it was sent, and a display of its own', () => {
-    expect(banner).toMatchObject({ span: 'THIRD', layout: 'THIRDS', display: 'CAROUSEL' });
+    expect(banner).toMatchObject({ span: 'THIRD', display: 'CAROUSEL' });
+    expect(banner).not.toHaveProperty('layout');
   });
 
   it('refuses a span that is not one of the four with its own code, not a 500', async () => {
@@ -87,13 +88,11 @@ describe('page — span and display', () => {
     expect(response.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
   });
 
-  it('keeps a two-thirds block when the panel echoes the layout it reads as', async () => {
-    const url = `/api/stores/padaria-do-bairro/components/${banner.id}`;
-    await call('PATCH', url, { span: 'TWO_THIRDS' });
+  // `layout` left the wire once nothing sent or read it; a client still sending it is told so.
+  it('refuses a write that still sends layout', async () => {
+    const response = await call('PATCH', `/api/stores/padaria-do-bairro/components/${banner.id}`, { layout: 'HALVES' });
 
-    const echoed = await call('PATCH', url, { layout: 'FULL', title: 'Renomeado' });
-
-    expect(echoed.json<StoreComponent>()).toMatchObject({ span: 'TWO_THIRDS', title: 'Renomeado' });
+    expect(response.statusCode).toBe(400);
   });
 
   it('refuses a display on a kind that does not draw it', async () => {
@@ -125,6 +124,62 @@ describe('page — span and display', () => {
       expect(component).toHaveProperty('display');
     }
     expect(components.find((component) => component.kind === 'BANNER')).toMatchObject({ span: 'THIRD', display: 'CAROUSEL' });
-    expect(components.find((component) => component.kind === 'PRODUCTS')).toMatchObject({ span: 'FULL', display: null });
+    expect(components.find((component) => component.kind === 'PRODUCTS')).toMatchObject({ span: 'FULL', display: 'RAIL' });
+  });
+
+  // Opens as the rail the shopkeeper asked for, can go back to the grid it always was, never a carousel.
+  it('opens a categories block as a rail, lets it be a grid, and never a carousel', async () => {
+    const created = await call('POST', '/api/stores/padaria-do-bairro/sections', { component: { kind: 'CATEGORIES' } });
+    const categories = created.json<Section>().components[0]!;
+    expect(categories).toMatchObject({ display: 'RAIL' });
+
+    const grid = await call('PATCH', `/api/stores/padaria-do-bairro/components/${categories.id}`, { display: 'GRID' });
+    expect(grid.json<StoreComponent>()).toMatchObject({ display: 'GRID' });
+
+    const carousel = await call('PATCH', `/api/stores/padaria-do-bairro/components/${categories.id}`, { display: 'CAROUSEL' });
+    expect(carousel.statusCode).toBe(400);
+    expect(carousel.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
+
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === categories.id);
+    expect(served).toMatchObject({ display: 'GRID' });
+  });
+
+  // The panel's "+" between two bands, and between two blocks of one band.
+  it('adds a band and a block where the "+" was pressed, and refuses a place that is not one', async () => {
+    const before = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);
+
+    const band = (await call('POST', '/api/stores/padaria-do-bairro/sections', { position: 1, component: { kind: 'HEADING', title: 'Meio' } })).json<Section>();
+    const after = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);
+    expect(after).toEqual([before[0], band.id, ...before.slice(1)]);
+
+    const first = await call('POST', `/api/stores/padaria-do-bairro/sections/${band.id}/components`, { kind: 'TEXT', body: 'Antes', position: 0 });
+    const inBand = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().find((row) => row.id === band.id)!;
+    expect(inBand.components.map((component) => component.id)).toEqual([first.json<StoreComponent>().id, band.components[0]!.id]);
+
+    for (const position of [-1, 1.5, 'dois']) {
+      const refused = await call('POST', '/api/stores/padaria-do-bairro/sections', { position, component: { kind: 'HEADING', title: 'x' } });
+      expect(refused.statusCode, String(position)).toBe(400);
+      expect(refused.json<ApiErrorBody>().errorCode).toBe('POSITION_INVALID');
+
+      const intoBand = await call('POST', `/api/stores/padaria-do-bairro/sections/${band.id}/components`, { kind: 'TEXT', body: 'x', position });
+      expect(intoBand.statusCode, String(position)).toBe(400);
+      expect(intoBand.json<ApiErrorBody>().errorCode).toBe('POSITION_INVALID');
+    }
+  });
+
+  // An add renumbers the bands a publish is reordering: under one lock, neither ties nor deadlocks.
+  it('keeps every band on its own number when an add races a reorder', async () => {
+    for (let round = 0; round < 8; round += 1) {
+      const ids = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);
+      const [reordered, added] = await Promise.all([
+        call('PUT', '/api/stores/padaria-do-bairro/sections/reorder', { ids: [...ids.slice(1), ids[0]] }),
+        call('POST', '/api/stores/padaria-do-bairro/sections', { position: 1, component: { kind: 'HEADING', title: `Rodada ${round}` } }),
+      ]);
+
+      expect([reordered.statusCode, added.statusCode].every((code) => code < 500), `round ${round}`).toBe(true);
+      const positions = await app.get(PrismaService).storeSection.findMany({ select: { position: true } });
+      expect(new Set(positions.map((row) => row.position)).size, `round ${round}`).toBe(positions.length);
+    }
   });
 });
