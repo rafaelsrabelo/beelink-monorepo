@@ -9,12 +9,13 @@ import { StorefrontDiscountFilter } from "@harness-monorepo/ui/blocks/storefront
 import { StorefrontFilterColumn } from "@harness-monorepo/ui/blocks/storefront/storefront-filter-column"
 import { StorefrontOptionFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-option-filter"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
+import { StorefrontPriceFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-price-filter"
 import { StorefrontSearch } from "@harness-monorepo/ui/blocks/storefront/storefront-search"
 
 // App
 import { pageCountOf } from "@/lib/storefront-data"
 import { StorefrontListingControls } from "./storefront-listing-controls"
-import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf } from "@/lib/storefront-filters"
+import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf, priceFilterOf } from "@/lib/storefront-filters"
 import { pageHrefOf, type SectionPlace } from "@/lib/storefront-section"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 
@@ -42,11 +43,14 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
   // Only on a category's own page, and only its own children: the catalogue is every category at
   // once and has the menu for that.
   const subcategories = category ? navigation.categories.filter((entry) => entry.parentSlug === category.slug) : []
+  const price = priceFilterOf(place, catalogue, routes, locale)
 
   return (
     <StorefrontListingControls className="flex gap-7 pt-5 pb-10">
       <StorefrontFilterColumn chips={filterChipsOf(place, routes, locale)} clearHref={clearFiltersHrefOf(place, routes)} messages={ui}>
         <StorefrontCategoryFilter {...categoryFilterOf(place, catalogue, routes)} locale={locale} messages={ui} />
+        {/* Keyed by the range in force, so the fields forget what was typed once the address moves on. */}
+        {price ? <StorefrontPriceFilter key={`${price.value?.min}-${price.value?.max}`} {...price} locale={locale} messages={ui} /> : null}
         <StorefrontDiscountFilter {...discountFilterOf(place, catalogue, routes)} locale={locale} messages={ui} />
         {optionFiltersOf(place, catalogue, routes).map((group) => (
           <StorefrontOptionFilter key={group.title} title={group.title} values={group.values} locale={locale} messages={ui} />
