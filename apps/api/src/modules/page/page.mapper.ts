@@ -8,6 +8,7 @@ import type {
   PublicBannerSlide,
   PublicComponent,
   PublicComponentItem,
+  PublicProductCard,
   PublicSection,
   Section,
   StoreComponent,
@@ -61,6 +62,24 @@ export interface SlugsByEntity {
 }
 
 export const NO_SLUGS: SlugsByEntity = { categories: new Map(), products: new Map() };
+
+/**
+ * What one showcase draws, already chosen by its source: the products, as cards, and the category a
+ * CATEGORY showcase names, for the page's "ver tudo".
+ */
+export interface Shelf {
+  products: PublicProductCard[];
+  category: { slug: string; name: string; description: string | null } | null;
+}
+
+/**
+ * Every showcase's shelf on a page, by component id, looked up once by the store's public read.
+ * Defaulted to none: a call site that did not look them up serves showcases with no products, never
+ * a guess — and never the ids the shopkeeper picked, which are not the visitor's business.
+ */
+export type ShelvesByComponent = ReadonlyMap<string, Shelf>;
+
+export const NO_SHELVES: ShelvesByComponent = new Map();
 
 /** The kinds whose items point somewhere by id. */
 const POINTING: readonly ComponentKind[] = ['BANNER', 'ANNOUNCEMENT'];
@@ -139,6 +158,7 @@ function toPublicComponent(
   shopSlug: string,
   words: StorefrontRouteWords,
   slugs: SlugsByEntity,
+  shelves: ShelvesByComponent,
 ): PublicComponent {
   return {
     id: row.id,
@@ -148,9 +168,11 @@ function toPublicComponent(
     body: row.body,
     span: row.span,
     display: row.display,
-    // A banner's slides are resolved; every other kind's items are what the shopkeeper wrote. The
-    // ids never reach the wire: `PublicStore` is served to anyone who asks, and a uuid on it is a
-    // row's identity handed to a stranger for nothing.
+    source: row.source,
+    sourceCategory: row.kind === 'PRODUCTS' ? (shelves.get(row.id)?.category ?? null) : null,
+    // A banner's slides and a showcase's products are resolved; every other kind's items are what the
+    // shopkeeper wrote. The ids never reach the wire: `PublicStore` is served to anyone who asks, and a
+    // uuid on it is a row's identity handed to a stranger for nothing.
     items:
       row.kind === 'BANNER'
         ? (itemsOf(row.kind, row.items) as BannerSlide[]).map((slide) =>
@@ -162,8 +184,7 @@ function toPublicComponent(
               return { id: link.id, href, external: link.target === 'EXTERNAL' && !!href } satisfies PublicAnnouncementLink;
             })
           : row.kind === 'PRODUCTS'
-            ? // What a showcase stores is the ids it picked, which are not the visitor's business.
-              []
+            ? (shelves.get(row.id)?.products ?? [])
             : (itemsOf(row.kind, row.items) as PublicComponentItem[]),
     columns: row.columns,
     align: row.align,
@@ -182,6 +203,7 @@ export function toPublicSection(
   shopSlug: string,
   words: StorefrontRouteWords,
   slugs: SlugsByEntity = NO_SLUGS,
+  shelves: ShelvesByComponent = NO_SHELVES,
 ): PublicSection {
   return {
     id: row.id,
@@ -190,7 +212,7 @@ export function toPublicSection(
     background: row.background,
     components: row.components
       .filter((component) => component.isActive)
-      .map((component) => toPublicComponent(component, shopSlug, words, slugs)),
+      .map((component) => toPublicComponent(component, shopSlug, words, slugs, shelves)),
   } satisfies PublicSection;
 }
 

@@ -136,6 +136,30 @@ export function hasChanges(changes: ReturnType<typeof changesOf>): boolean {
 }
 
 /**
+ * Where the API should put a row for a "+" at `index` of the draft: right after the draft row above
+ * the "+", counted in the server's order, or first when nothing is above it. `reconcile` places the
+ * newcomer after that same row, so it lands where the "+" was whether or not the draft has been
+ * rearranged since the last publish.
+ */
+export function serverPlaceOf(draftIds: readonly string[], savedIds: readonly string[], index: number): number {
+  if (index === 0) return 0
+
+  const above = savedIds.indexOf(draftIds[index - 1] ?? "")
+  return above < 0 ? savedIds.length : above + 1
+}
+
+/**
+ * The kinds the gallery stops offering once the page holds one: the strip, which sits above the
+ * header and has nowhere to be a second time. A showcase is not among them — a shop may draw as
+ * many shelves as it has sources.
+ */
+export function takenKindsOf(rows: readonly SectionDraft[]): ComponentKind[] {
+  return componentsOf(rows)
+    .map((component) => component.kind)
+    .filter((kind) => kind === "ANNOUNCEMENT")
+}
+
+/**
  * What a component is called in the editor.
  *
  * One the shopkeeper titled is called by that title; one they have not is called by its kind. The
@@ -162,7 +186,8 @@ export function isEmptyComponent(
   body: string | null,
   items: readonly unknown[],
 ): boolean {
-  if (kind === "BANNER" || kind === "BENEFITS") return items.length === 0
+  // A showcase's items are the cards its source resolved to, which only the public read knows.
+  if (kind === "BANNER" || kind === "BENEFITS" || kind === "PRODUCTS") return items.length === 0
   if (kind === "HEADING" || kind === "ANNOUNCEMENT") return !title?.trim()
   if (kind === "TEXT") return !body?.trim()
 
@@ -180,7 +205,8 @@ export function isEmptyComponent(
  * Reconciled rather than replaced, because replacing would discard an unpublished arrangement the
  * owner is in the middle of. What they arranged is an order, and an order survives a row arriving
  * or leaving: the rows they still have keep their places, the ones the server no longer has go,
- * and new ones land at the end — which is where the API puts a new one anyway.
+ * and a new one lands right after the row it follows on the server — which is where the "+" that
+ * created it was, since the screen asks the API for that place.
  */
 export function reconcile(draft: readonly SectionDraft[], saved: readonly Section[]): SectionDraft[] {
   const bySaved = new Map(saved.map((section) => [section.id, section]))
@@ -190,19 +216,39 @@ export function reconcile(draft: readonly SectionDraft[], saved: readonly Sectio
     .map((row) => {
       const was = bySaved.get(row.id)!
       const known = new Set(was.components.map((component) => component.id))
-      const held = row.components.filter((component) => known.has(component.id))
-      const seen = new Set(held.map((component) => component.id))
 
       return {
         ...row,
-        components: [
-          ...held,
-          ...was.components.filter((component) => !seen.has(component.id)).map(toComponentDraft),
-        ],
+        components: withNewcomers(
+          row.components.filter((component) => known.has(component.id)),
+          was.components,
+          toComponentDraft,
+        ),
       }
     })
 
-  const seen = new Set(kept.map((row) => row.id))
+  return withNewcomers(kept, saved, toDraft)
+}
 
-  return [...kept, ...saved.filter((section) => !seen.has(section.id)).map(toDraft)]
+/**
+ * The rows the server has and the draft lacks, each placed right after the row that precedes it on
+ * the server — or first, when nothing does. Walked in the server's order, so a newcomer's
+ * predecessor is always already in the list, held or placed.
+ */
+function withNewcomers<Held extends { id: string }, Saved extends { id: string }>(
+  held: readonly Held[],
+  saved: readonly Saved[],
+  toHeld: (row: Saved) => Held,
+): Held[] {
+  const result = [...held]
+  const present = new Set(held.map((row) => row.id))
+
+  saved.forEach((row, at) => {
+    if (present.has(row.id)) return
+    const before = saved[at - 1]
+    result.splice(before ? result.findIndex((placed) => placed.id === before.id) + 1 : 0, 0, toHeld(row))
+    present.add(row.id)
+  })
+
+  return result
 }

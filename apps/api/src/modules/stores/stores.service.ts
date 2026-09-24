@@ -12,12 +12,15 @@ import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
 import {
+  NO_SHELVES,
   NO_SLUGS,
   slideTargetsOf,
   type SectionRow,
+  type ShelvesByComponent,
   type SlugsByEntity,
 } from '../page/page.mapper.js';
 import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
+import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery } from '../catalog/showcase.query.js';
 import { RESERVED_SLUGS } from './stores.constants.js';
 
 /** Keeps every code this module answers inside the contract's union. */
@@ -193,7 +196,6 @@ export class StoresService {
         bannerImageUrl: dto.bannerImageUrl ?? null,
         categoryId: dto.categoryId ?? null,
         layoutType: dto.layoutType,
-        showProductsByCategory: dto.showProductsByCategory,
         colorBackground: dto.colors.background,
         colorPrimary: dto.colors.primary,
         colorFooter: dto.colors.footer,
@@ -220,7 +222,57 @@ export class StoresService {
     const row = await this.prisma.store.findUnique({ where: { slug }, include: storeInclude });
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
 
-    return toPublicStore(row, await this.slideSlugs(row.sections));
+    const [slugs, shelves] = await Promise.all([this.slideSlugs(row.sections), this.shelvesOf(row.id, row.sections)]);
+
+    return toPublicStore(row, slugs, shelves);
+  }
+
+  /**
+   * What every showcase on the page draws, resolved from its source: a query per showcase, in
+   * parallel, and one more for the categories CATEGORY showcases name.
+   *
+   * Here and not in the catalogue's service because the catalogue module imports this one; the
+   * query each source runs lives in `catalog/showcase.query.ts`, where the rule of what is on the
+   * shelf already is. Hidden showcases are skipped — the mapper drops them anyway, and a query for a
+   * shelf nobody sees is a query the anonymous page pays for.
+   */
+  private async shelvesOf(storeId: string, sections: SectionRow[]): Promise<ShelvesByComponent> {
+    const showcases = sections
+      .flatMap((section) => section.components)
+      .filter((component) => component.isActive && component.kind === 'PRODUCTS');
+
+    if (!showcases.length) return NO_SHELVES;
+
+    const categoryIds = showcases.flatMap((showcase) =>
+      showcase.source === 'CATEGORY' && showcase.sourceCategoryId ? [showcase.sourceCategoryId] : [],
+    );
+
+    const [categories, shelves] = await Promise.all([
+      categoryIds.length
+        ? this.prisma.productCategory.findMany({
+            where: { id: { in: categoryIds }, storeId, isActive: true },
+            select: { id: true, slug: true, name: true, description: true },
+          })
+        : [],
+      Promise.all(
+        showcases.map(async (showcase) => {
+          const query = showcaseQuery(storeId, showcase, this.prisma.product.fields.priceCents);
+          const rows = query ? await this.prisma.product.findMany({ ...query, select: SHOWCASE_CARD_SELECT }) : [];
+          return [showcase, shelfOf(showcase, rows)] as const;
+        }),
+      ),
+    ]);
+
+    const categoryOf = new Map(
+      categories.map((row) => [row.id, { slug: row.slug, name: row.name, description: row.description }]),
+    );
+
+    return new Map(
+      shelves.map(([showcase, products]) => [
+        showcase.id,
+        { products, category: showcase.sourceCategoryId ? (categoryOf.get(showcase.sourceCategoryId) ?? null) : null },
+      ]),
+    );
   }
 
   /**

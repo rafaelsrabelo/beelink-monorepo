@@ -6,12 +6,15 @@ import { describe, expect, it } from "vitest"
 import { expectNoA11yViolations } from "../../test/a11y"
 import { STOREFRONT_SPANS, StorefrontBandCell } from "./storefront-band-cell"
 
-/** From 1024px each slice is its own share of twelve; from 640px a third and two thirds are halves. */
+/**
+ * From a 1024px shop each slice is its own share of twelve; from 640px a third and two thirds are
+ * halves. Measured on the shop's container, so design mode's phone preview collapses them too.
+ */
 const CLASSES_OF = {
-  FULL: ["sm:col-span-12"],
-  TWO_THIRDS: ["sm:col-span-6", "lg:col-span-8"],
-  HALF: ["sm:col-span-6"],
-  THIRD: ["sm:col-span-6", "lg:col-span-4"],
+  FULL: ["shop-sm:col-span-12"],
+  TWO_THIRDS: ["shop-sm:col-span-6", "shop-lg:col-span-8"],
+  HALF: ["shop-sm:col-span-6"],
+  THIRD: ["shop-sm:col-span-6", "shop-lg:col-span-4"],
 } as const
 
 describe("StorefrontBandCell", () => {

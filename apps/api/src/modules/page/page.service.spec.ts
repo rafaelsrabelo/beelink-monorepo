@@ -203,7 +203,22 @@ describe('PageService — a band is created around something', () => {
 
     await service.createSection('lessari', 'user-1', { component: { kind: 'HEADING', title: 'Novidades' } });
 
-    expect(createSection.mock.calls[0]![0].data.position).toBe(3);
+    // Two bands already: the new one is the third, whatever numbers theirs carry.
+    expect(createSection.mock.calls[0]![0].data.position).toBe(2);
+  });
+
+  it('lands the band where the panel\'s "+" was pressed, and moves the ones after it down', async () => {
+    const { service, prisma, createSection } = build({ owned: [{ id: 'a', position: 0 } as never, { id: 'b', position: 3 } as never] });
+
+    await service.createSection('lessari', 'user-1', { position: 1, component: { kind: 'HEADING', title: 'Novidades' } });
+
+    expect(createSection.mock.calls[0]![0].data.position).toBe(1);
+    expect(prisma.storeSection.update).toHaveBeenCalledWith({ where: { id: 'b' }, data: { position: 2 } });
+    expect(prisma.storeSection.update).toHaveBeenCalledTimes(1);
+    // Under the shop's lock, taken before the list is read.
+    expect(vi.mocked(prisma.$queryRaw).mock.invocationCallOrder[0]!).toBeLessThan(
+      vi.mocked(prisma.storeSection.findMany).mock.invocationCallOrder[0]!,
+    );
   });
 
   /**
@@ -720,6 +735,18 @@ describe('PageService — each kind draws its own two displays', () => {
     await expect(
       carousel.service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
+  });
+
+  it('lets the categories be a rail or a grid, and never a carousel', async () => {
+    for (const display of ['RAIL', 'GRID'] as const) {
+      const { service } = build({ kind: 'CATEGORIES' });
+      await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display })).resolves.toBeDefined();
+    }
+
+    const { service } = build({ kind: 'CATEGORIES' });
+    await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' })).rejects.toMatchObject({
+      response: { errorCode: 'COMPONENT_DISPLAY_INVALID' },
+    });
   });
 
   it('never lets a banner be a rail', async () => {

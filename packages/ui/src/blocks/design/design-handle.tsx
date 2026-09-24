@@ -62,7 +62,9 @@ export function DesignHandle({
         type="button"
         aria-label={`${text.dragHandle}: ${label}`}
         className={cn(
-          "bg-background/90 text-foreground absolute top-3 left-3 flex size-9 cursor-grab items-center justify-center",
+          // Above the edit cover (z-10) of the block under it: at a phone's width the band's margin
+          // is 16px, and the cover would otherwise sit on the grip and take the drag.
+          "bg-background/90 text-foreground absolute top-3 left-3 z-20 flex size-9 cursor-grab items-center justify-center",
           "touch-none rounded-full opacity-0 shadow-sm backdrop-blur transition-opacity",
           "group-hover/handle:opacity-100 focus-visible:opacity-100",
         )}

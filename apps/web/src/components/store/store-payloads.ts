@@ -93,7 +93,6 @@ export function toSettingsValues(store: Store): StoreSettingsValues {
     },
     appearance: {
       layoutType: store.layoutType,
-      showProductsByCategory: store.showProductsByCategory,
       bannerImageUrl: store.bannerImageUrl ?? "",
       // The one key of `layoutSettings` the panel offers. A shop carried over from the legacy blob
       // may not carry it at all, and the storefront's own default for a missing key is the grid.
@@ -126,7 +125,6 @@ export function toUpdatePayload(store: Store, values: StoreSettingsValues): Upda
     bannerImageUrl: orNull(values.appearance.bannerImageUrl),
     categoryId: orNull(values.identity.categoryId),
     layoutType: values.appearance.layoutType,
-    showProductsByCategory: values.appearance.showProductsByCategory,
     colors: values.appearance.colors,
     socialNetworks: toSocialPayload(values.social),
     address: toAddressPayload(values.address),
