@@ -56,6 +56,8 @@ export interface BandArrangementProps {
   onInsert?: (at: InsertAt) => void
   /** While an add is on its way, so a second "+" does not start a second one. */
   inserting?: boolean
+  /** The block whose fields are open, marked here as the preview marks it. */
+  selectedId?: string | null
   messages?: UiMessages
 }
 
@@ -87,6 +89,7 @@ export function BandArrangement({
   onEdit,
   onInsert,
   inserting = false,
+  selectedId = null,
   messages = defaultMessages,
 }: BandArrangementProps) {
   const text = messages.design
@@ -153,6 +156,7 @@ export function BandArrangement({
               ? { onInsertBlock: (index: number) => onInsert({ level: "block", sectionId: band.id, index }) }
               : {})}
             inserting={inserting}
+            selectedId={selectedId}
             messages={messages}
           />,
         ])}

@@ -382,6 +382,7 @@ export const ptBR: UiMessages = {
     bandNamePlaceholder: "Serviços",
     bandNameHelp: "Num site, as faixas com nome viram o menu do topo.",
     editComponent: "Editar componente",
+    closeInspector: "Fechar os campos do bloco",
     bodyLabel: "Texto",
     bodyPlaceholder: "Escreva o parágrafo…",
     columnsLabel: "Colunas",
