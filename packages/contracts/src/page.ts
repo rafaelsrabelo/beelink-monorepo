@@ -315,6 +315,8 @@ export type UpdateComponentPayload = Partial<CreateComponentPayload>;
 /** The `errorCode` values the page module answers. The apps own the sentences. */
 export type PageErrorCode =
   | "SECTION_NOT_FOUND"
+  /** A band created with no component, or with something that is not one. A band holds one from birth. */
+  | "SECTION_COMPONENT_REQUIRED"
   | "COMPONENT_NOT_FOUND"
   /** The order sent is not every row of this shop exactly once. */
   | "REORDER_MISMATCH"

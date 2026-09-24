@@ -54,7 +54,6 @@ export class PageService {
 
     await this.rules.refuseSecond(storeId, dto.component.kind);
     this.rules.refuseDisplayFor(dto.component.kind, dto.component.display);
-    const span = this.rules.checkedSpan(dto.component.span);
     // A kind created bare opens with what it cannot be without — a form's first fields.
     const items = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
 
@@ -70,7 +69,7 @@ export class PageService {
         background: dto.background ?? null,
         position: (last._max.position ?? -1) + 1,
         isActive: dto.isActive ?? true,
-        components: { create: componentRow(storeId, dto.component, { span, items }, 0) },
+        components: { create: componentRow(storeId, dto.component, items, 0) },
       },
       include: sectionInclude,
     });
@@ -149,7 +148,6 @@ export class PageService {
     await this.rules.refuseSecond(storeId, dto.kind);
     this.rules.refuseDisplayFor(dto.kind, dto.display);
 
-    const span = this.rules.checkedSpan(dto.span);
     const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
     const last = await this.prisma.storeComponent.aggregate({
       where: { sectionId },
@@ -157,7 +155,7 @@ export class PageService {
     });
 
     const row = await this.prisma.storeComponent.create({
-      data: { sectionId, ...componentRow(storeId, dto, { span, items }, (last._max.position ?? -1) + 1) },
+      data: { sectionId, ...componentRow(storeId, dto, items, (last._max.position ?? -1) + 1) },
     });
 
     return toComponent(row);
@@ -189,12 +187,11 @@ export class PageService {
 
     this.rules.refuseDisplayFor(current.kind, dto.display);
 
-    const span = this.rules.checkedSpan(dto.span);
     const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
 
     const row = await this.prisma.storeComponent.update({
       where: { id: componentId },
-      data: componentPatch(dto, { span, items }),
+      data: componentPatch(dto, items),
     });
 
     return toComponent(row);

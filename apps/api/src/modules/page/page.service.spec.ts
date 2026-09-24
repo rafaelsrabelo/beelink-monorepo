@@ -372,17 +372,6 @@ describe('PageService — a block’s span', () => {
     expect(updated.span).toBe('HALF');
   });
 
-  // `PartialType` makes a patch's span optional whatever the DTO says, so null gets past the
-  // decorators; the column is NOT NULL, and the database would have answered a 500.
-  it('refuses a null span, before anything is written', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
-
-    await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, { span: null as never }),
-    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_SPAN_INVALID' } });
-    expect(updateComponent).not.toHaveBeenCalled();
-  });
-
   it('leaves the span alone when a patch does not mention it', async () => {
     const { service, updateComponent } = build({ kind: 'BANNER' });
 

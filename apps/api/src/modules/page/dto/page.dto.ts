@@ -3,14 +3,17 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
+  IsDefined,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -76,10 +79,8 @@ export class ComponentDto implements CreateComponentPayload {
   @MaxLength(COMPONENT_BODY_MAX_LENGTH)
   body?: string | null;
 
-  // A null passes here, as on every optional field, and `PageRules.checkedSpan` refuses it: the
-  // column is NOT NULL, and a patch's `PartialType` would make this optional whatever it said.
   @ApiPropertyOptional({ enum: COMPONENT_SPANS })
-  @IsOptional()
+  @ValidateIf((dto: ComponentDto) => dto.span !== undefined)
   @IsIn(COMPONENT_SPANS, { context: { errorCode: 'COMPONENT_SPAN_INVALID' satisfies PageErrorCode } })
   span?: ComponentSpan;
 
@@ -107,13 +108,21 @@ export class ComponentDto implements CreateComponentPayload {
   align?: TextAlign | null;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @ValidateIf((dto: ComponentDto) => dto.isActive !== undefined)
   @IsBoolean()
   isActive?: boolean;
 }
 
-/** A patch of one component. A key left out is a column left alone. */
-export class UpdateComponentDto extends PartialType(ComponentDto) implements UpdateComponentPayload {}
+/**
+ * A patch of one component. A key left out is a column left alone.
+ *
+ * `skipNullProperties: false` because the default puts `@IsOptional()` on every inherited field,
+ * and `@IsOptional()` lets a null through as well as an absence: a null on a NOT NULL column went
+ * on to the database and came back as a 500. With it, a null is checked by the field's own rules.
+ */
+export class UpdateComponentDto
+  extends PartialType(ComponentDto, { skipNullProperties: false })
+  implements UpdateComponentPayload {}
 
 /**
  * A new band, and the one component it is created around.
@@ -129,7 +138,7 @@ export class CreateSectionDto implements CreateSectionPayload {
   name?: string | null;
 
   @ApiPropertyOptional({ enum: SECTION_WIDTHS })
-  @IsOptional()
+  @ValidateIf((dto: { width?: unknown }) => dto.width !== undefined)
   @IsIn(SECTION_WIDTHS)
   width?: SectionWidth;
 
@@ -139,11 +148,15 @@ export class CreateSectionDto implements CreateSectionPayload {
   background?: string | null;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @ValidateIf((dto: { isActive?: unknown }) => dto.isActive !== undefined)
   @IsBoolean()
   isActive?: boolean;
 
+  // Declared, not left to `@ValidateNested()`: class-validator skips a nested field that is absent,
+  // and the service then read a kind off `undefined` — a 500 for a body with no component.
   @ApiProperty({ type: ComponentDto })
+  @IsDefined({ context: { errorCode: 'SECTION_COMPONENT_REQUIRED' satisfies PageErrorCode } })
+  @IsObject({ context: { errorCode: 'SECTION_COMPONENT_REQUIRED' satisfies PageErrorCode } })
   @ValidateNested()
   @Type(() => ComponentDto)
   component!: ComponentDto;
@@ -164,7 +177,7 @@ export class UpdateSectionDto implements UpdateSectionPayload {
   name?: string | null;
 
   @ApiPropertyOptional({ enum: SECTION_WIDTHS })
-  @IsOptional()
+  @ValidateIf((dto: { width?: unknown }) => dto.width !== undefined)
   @IsIn(SECTION_WIDTHS)
   width?: SectionWidth;
 
@@ -174,7 +187,7 @@ export class UpdateSectionDto implements UpdateSectionPayload {
   background?: string | null;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @ValidateIf((dto: { isActive?: unknown }) => dto.isActive !== undefined)
   @IsBoolean()
   isActive?: boolean;
 }

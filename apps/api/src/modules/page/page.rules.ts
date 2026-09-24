@@ -5,7 +5,6 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type {
   ComponentDisplay,
   ComponentKind,
-  ComponentSpan,
   PageErrorCode,
 } from '@harness-monorepo/contracts';
 
@@ -127,21 +126,6 @@ export class PageRules {
     }
 
     return parsed.data as object[];
-  }
-
-  /**
-   * The span a write asks for, or nothing when it asks for none.
-   *
-   * Null is refused here and not on the DTO, because a patch's `PartialType` makes every field
-   * optional whatever its decorators said — and the column is NOT NULL, which the database would
-   * have answered as a 500.
-   */
-  checkedSpan(span: ComponentSpan | null | undefined): ComponentSpan | undefined {
-    if (span === null) {
-      throw new BadRequestException(pageError('COMPONENT_SPAN_INVALID', 'Todo bloco tem uma largura.'));
-    }
-
-    return span;
   }
 
   /**
