@@ -140,10 +140,24 @@ describe('product variants', () => {
       const product = await addProduct({ name: 'Whey', priceCents: 4990, sku: 'WH-900' });
       const [before] = await variantsOf(product.id);
 
-      await call('PUT', `/api/stores/lessari/products/${product.id}`, owner, { name: 'Whey 900 g' });
+      const response = await call('PUT', `/api/stores/lessari/products/${product.id}`, owner, { name: 'Whey 900 g' });
 
+      expect(response.statusCode).toBe(200);
+      expect(response.json<Product>().name).toBe('Whey 900 g');
       const [after] = await variantsOf(product.id);
       expect(after?.updatedAt).toEqual(before?.updatedAt);
+    });
+
+    it('reads a null price as not sent, as it did before variants', async () => {
+      const product = await addProduct({ name: 'Whey', priceCents: 4990 });
+
+      const response = await call('PUT', `/api/stores/lessari/products/${product.id}`, owner, {
+        priceCents: null,
+        name: 'Whey 900 g',
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json<Product>().priceCents).toBe(4990);
     });
   });
 
@@ -210,6 +224,16 @@ describe('product variants', () => {
   });
 
   describe('a product with options', () => {
+    it('says the product has options before judging the price sent', async () => {
+      const product = await addProduct({ name: 'Blusa', priceCents: 4990, compareAtPriceCents: 5990 });
+      await giveOptions(product);
+
+      const response = await call('PUT', `/api/stores/lessari/products/${product.id}`, owner, { priceCents: 6000 });
+
+      expect(response.statusCode).toBe(409);
+      expect(response.json<ApiErrorBody>().errorCode).toBe('PRODUCT_HAS_OPTIONS');
+    });
+
     it('refuses a price sent for the whole product', async () => {
       const product = await addProduct({ name: 'Blusa', priceCents: 4990 });
       await giveOptions(product);
@@ -239,6 +263,40 @@ describe('product variants', () => {
 
       await expect(prisma.productOption.create({ data: option(3) })).rejects.toThrow(/at most 3 options/);
       expect(await prisma.productOption.count({ where: { productId: product.id } })).toBe(3);
+    });
+
+    it('holds the line when two writers add options at the same time', async () => {
+      const product = await addProduct({ name: 'Blusa', priceCents: 4990 });
+      const addTwo = (label: string) =>
+        prisma.$transaction(async (tx) => {
+          await tx.productOption.createMany({
+            data: [0, 1].map((position) => ({ productId: product.id, name: `${label} ${position}`, position })),
+          });
+          // Both hold uncommitted options before either commits.
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        });
+
+      const outcomes = await Promise.allSettled([addTwo('A'), addTwo('B')]);
+
+      expect(outcomes.filter((outcome) => outcome.status === 'rejected')).toHaveLength(1);
+      expect(await prisma.productOption.count({ where: { productId: product.id } })).toBe(2);
+    });
+
+    it('files a value only under its own option', async () => {
+      const product = await addProduct({ name: 'Blusa', priceCents: 4990 });
+      await giveOptions(product);
+      const colour = await prisma.productOption.create({
+        data: { productId: product.id, name: 'Cor', position: 1, values: { create: [{ name: 'Areia' }] } },
+        include: { values: true },
+      });
+      const size = await prisma.productOption.findFirstOrThrow({ where: { productId: product.id, name: 'Tamanho' } });
+      const [variant] = await variantsOf(product.id);
+
+      await expect(
+        prisma.productVariantValue.create({
+          data: { variantId: variant!.id, optionId: size.id, valueId: colour.values[0]!.id },
+        }),
+      ).rejects.toThrow();
     });
   });
 });

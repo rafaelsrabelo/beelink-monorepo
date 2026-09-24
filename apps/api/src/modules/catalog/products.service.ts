@@ -296,37 +296,48 @@ export class ProductsService {
     dto: UpdateProductDto,
   ): Promise<Product> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const current = await this.owned(storeId, productId);
-
-    const priceCents = dto.priceCents ?? current.priceCents;
-    const compareAt =
-      dto.compareAtPriceCents !== undefined ? dto.compareAtPriceCents : current.compareAtPriceCents;
-    this.assertPrices(priceCents, compareAt ?? null);
-    // Against what the row will hold after the patch, not against what was sent: sending one side
-    // on a product that already has the other two is a complete box, and refusing it would be a
-    // rule about the request rather than about the parcel.
-    this.assertParcel(
-      dto.lengthMm !== undefined ? dto.lengthMm : current.lengthMm,
-      dto.widthMm !== undefined ? dto.widthMm : current.widthMm,
-      dto.heightMm !== undefined ? dto.heightMm : current.heightMm,
-    );
-
+    await this.owned(storeId, productId);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
 
-    const renaming = dto.slug !== undefined || dto.name !== undefined;
-    const slug = renaming ? this.slugs.resolve(dto.slug, dto.name ?? current.name) : current.slug;
     const perUnit = perUnitPatchOf(dto);
+    const renaming = dto.slug !== undefined || dto.name !== undefined;
+    let slug = dto.slug ?? '';
 
     try {
       const row = await this.prisma.$transaction(async (tx) => {
         await lockProduct(tx, productId);
+        // Read again under the lock: the checks and the rename are judged against the row as it is
+        // now, not as it was before another save of the same product finished.
+        const current = await tx.product.findUniqueOrThrow({ where: { id: productId } });
+
+        // First, so a product with options answers why before any price rule does. A product with
+        // options prices and counts each combination on its own; one price sent for the whole
+        // product would be a claim about every variant that no variant made.
+        if (Object.keys(perUnit).length > 0 && (await tx.productOption.count({ where: { productId } })) > 0) {
+          throw new ConflictException(
+            catalogError('PRODUCT_HAS_OPTIONS', 'This product has options: price and stock belong to its variants'),
+          );
+        }
+
+        const after = { ...current, ...perUnit };
+        this.assertPrices(after.priceCents, after.compareAtPriceCents);
+        // Against what the row will hold after the patch, not against what was sent: sending one
+        // side on a product that already has the other two is a complete box, and refusing it
+        // would be a rule about the request rather than about the parcel.
+        this.assertParcel(after.lengthMm, after.widthMm, after.heightMm);
+
+        slug = renaming ? this.slugs.resolve(dto.slug, dto.name ?? current.name) : current.slug;
 
         await tx.product.update({
           where: { id: productId },
           data: {
-            slug,
-            slugHistory: this.slugs.historyAfterRename(current.slug, slug, current.slugHistory),
-            name: dto.name ?? current.name,
+            ...(renaming
+              ? {
+                  slug,
+                  slugHistory: this.slugs.historyAfterRename(current.slug, slug, current.slugHistory),
+                  name: dto.name ?? current.name,
+                }
+              : {}),
             ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
             ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
             ...(dto.status !== undefined ? { status: dto.status } : {}),
@@ -341,14 +352,6 @@ export class ProductsService {
         });
 
         if (Object.keys(perUnit).length > 0) {
-          // A product with options prices and counts each combination on its own; one price sent
-          // for the whole product would be a claim about every variant that no variant made.
-          if ((await tx.productOption.count({ where: { productId } })) > 0) {
-            throw new ConflictException(
-              catalogError('PRODUCT_HAS_OPTIONS', 'This product has options: price and stock belong to its variants'),
-            );
-          }
-
           // Without options, the product's one variant is its default, and it takes the values.
           await tx.productVariant.updateMany({ where: { productId }, data: perUnit });
           await syncProductCache(tx, productId);

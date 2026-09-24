@@ -122,3 +122,34 @@ levar o preço do seed para a variante de um produto sem opções.
 - Endpoints e contrato de opções e variantes (A2), leitura pública (A3), telas (A4, A5).
 - Apagar as colunas por unidade de Product.
 - O limite de 100 variantes, que é uma regra de escrita do A2.
+
+## Adendo — revisão independente (24/09/2026)
+
+Três leituras (migration e dados; serviço e cache; evidência). Cada achado passou por um
+verificador que tentou refutá-lo. Cinco defeitos confirmados, todos corrigidos neste ticket:
+
+1. **O trigger das 3 opções não segurava duas escritas simultâneas.** Cada transação contava só as
+   próprias linhas ainda não confirmadas, e o revisor chegou a 16 opções num produto com 8 sessões
+   concorrentes. Agora o trigger trava a linha do produto (`FOR NO KEY UPDATE`) antes de contar.
+   Com `FOR UPDATE`, travaria contra o lock da chave estrangeira de cada inserção. O e2e "holds
+   the line when two writers add options at the same time" recusa uma de duas transações que
+   somariam 4.
+2. **A ligação variante ↔ valor não amarrava o valor à opção.** Um valor de Cor podia ser gravado
+   como valor de Tamanho. `product_option_values` ganha `@@unique([optionId, id])`, e a ligação
+   passa a ter chave estrangeira composta `(optionId, valueId)`. A decisão 2 agora vale no banco.
+   Uma opção de outro produto continua sendo barrada só pelo serviço.
+3. **`priceCents: null` virou 500.** Antes significava "não mexer". `perUnitPatchOf` volta a ler
+   null em `priceCents` e `trackStock` como não enviado.
+4. **A resposta errada para um preço num produto com opções.** Um preço enviado para um produto
+   com opções podia receber 400 de preço, em vez do 409 `PRODUCT_HAS_OPTIONS` da decisão 5. A
+   checagem de opções agora vem antes das regras de preço.
+5. **Validação fora da trava.** A edição validava contra uma leitura feita antes da trava. O
+   defeito já existia, mas a trava da decisão 8 não o fechava. Agora a linha é relida sob a trava,
+   as regras de preço e caixa usam essa leitura, e nome e slug só são escritos quando há
+   renomeação.
+
+Três achados foram refutados, entre eles um sobre o seed com opções.
+
+A migration foi regerada com essas mudanças e testada de novo numa cópia do banco de dev: 149
+produtos, 149 variantes, nenhuma diferença. O `prisma migrate diff` contra o schema dá migration
+vazia, ou seja, sem drift.

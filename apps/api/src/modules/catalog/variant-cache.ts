@@ -66,10 +66,15 @@ export function productCacheOf(variants: readonly VariantCacheRow[]): PerUnitVal
   };
 }
 
+/** Required on a variant: a null for one of these in a patch means "not sent", as it always has. */
+const REQUIRED_FIELDS: ReadonlySet<PerUnitField> = new Set(['priceCents', 'trackStock']);
+
 /** The per-unit fields a patch carries, and only those. */
 export function perUnitPatchOf(patch: Partial<Record<PerUnitField, unknown>>): Partial<PerUnitValues> {
   return Object.fromEntries(
-    PER_UNIT_FIELDS.filter((field) => patch[field] !== undefined).map((field) => [field, patch[field]]),
+    PER_UNIT_FIELDS.filter(
+      (field) => patch[field] !== undefined && !(patch[field] === null && REQUIRED_FIELDS.has(field)),
+    ).map((field) => [field, patch[field]]),
   ) as Partial<PerUnitValues>;
 }
 

@@ -112,6 +112,13 @@ describe('productCacheOf', () => {
 });
 
 describe('perUnitPatchOf', () => {
+  /** A variant always has a price and a counting switch; null for either was "leave it" before variants. */
+  it('reads a null price or counting switch as not sent', () => {
+    expect(perUnitPatchOf({ priceCents: null, trackStock: null, compareAtPriceCents: null } as never)).toEqual({
+      compareAtPriceCents: null,
+    });
+  });
+
   it('keeps the per-unit fields that were sent, nulls included, and nothing else', () => {
     expect(perUnitPatchOf({ priceCents: 100, sku: null, name: 'x', stockQuantity: undefined } as never)).toEqual({
       priceCents: 100,

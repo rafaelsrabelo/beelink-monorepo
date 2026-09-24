@@ -73,6 +73,9 @@ CREATE INDEX "product_options_productId_position_idx" ON "product_options"("prod
 CREATE INDEX "product_option_values_optionId_position_idx" ON "product_option_values"("optionId", "position");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "product_option_values_optionId_id_key" ON "product_option_values"("optionId", "id");
+
+-- CreateIndex
 CREATE INDEX "product_variants_productId_position_idx" ON "product_variants"("productId", "position");
 
 -- CreateIndex
@@ -100,7 +103,7 @@ ALTER TABLE "product_variant_values" ADD CONSTRAINT "product_variant_values_vari
 ALTER TABLE "product_variant_values" ADD CONSTRAINT "product_variant_values_optionId_fkey" FOREIGN KEY ("optionId") REFERENCES "product_options"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "product_variant_values" ADD CONSTRAINT "product_variant_values_valueId_fkey" FOREIGN KEY ("valueId") REFERENCES "product_option_values"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "product_variant_values" ADD CONSTRAINT "product_variant_values_optionId_valueId_fkey" FOREIGN KEY ("optionId", "valueId") REFERENCES "product_option_values"("optionId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Codes a shop used twice. The column was not unique until now, and the index above would refuse
 -- the carry-over below. The oldest product keeps its code and the others get a numbered one, so no
@@ -153,6 +156,12 @@ FROM "products" p;
 -- it compares the schema, so this does not drift.
 CREATE FUNCTION "product_options_at_most_three"() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  -- Two transactions adding options to one product would each count only their own rows. Taking
+  -- the product's row first makes the second wait, then count what the first committed. NO KEY
+  -- UPDATE, not UPDATE: each insert already holds the key-share lock of its foreign key, and a full
+  -- update lock against that deadlocks.
+  PERFORM 1 FROM "products" WHERE "id" = NEW."productId" FOR NO KEY UPDATE;
+
   IF (SELECT COUNT(*) FROM "product_options" WHERE "productId" = NEW."productId") > 3 THEN
     RAISE EXCEPTION 'A product has at most 3 options'
       USING ERRCODE = 'check_violation', CONSTRAINT = 'product_options_at_most_three';

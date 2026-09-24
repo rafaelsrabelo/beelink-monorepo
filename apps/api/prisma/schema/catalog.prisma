@@ -244,6 +244,8 @@ model ProductOptionValue {
 
   variantValues ProductVariantValue[]
 
+  /// Only so a variant's value can be required to belong to the option it is filed under.
+  @@unique([optionId, id])
   @@index([optionId, position])
   @@map("product_option_values")
 }
@@ -302,14 +304,15 @@ model ProductVariant {
 }
 
 /// Which value of each option a variant is. The key is the variant and the option, so a variant
-/// holds at most one value of each; the option is repeated beside the value for that reason.
+/// holds at most one value of each; the option is repeated beside the value for that reason, and
+/// the value's key includes it, so a value can only be filed under its own option.
 model ProductVariantValue {
   variantId String             @db.Uuid
   variant   ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
   optionId  String             @db.Uuid
   option    ProductOption      @relation(fields: [optionId], references: [id], onDelete: Cascade)
   valueId   String             @db.Uuid
-  value     ProductOptionValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+  value     ProductOptionValue @relation(fields: [optionId, valueId], references: [optionId, id], onDelete: Cascade)
 
   @@id([variantId, optionId])
   @@index([valueId])
