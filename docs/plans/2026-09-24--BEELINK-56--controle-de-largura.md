@@ -63,3 +63,14 @@ ainda mande `layout` recebe 400, como qualquer campo desconhecido, pelo `forbidN
 ## Fora de escopo
 
 - Editar a largura da faixa no cartão, e o cartão único da faixa de bloco único: C1.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente não confirmou nenhum defeito. Registro duas coisas que ela apontou:
+
+- **O aviso do topo (`ANNOUNCEMENT`) não tem o controle de largura**, embora a DoD 1 diga "de
+  qualquer tipo". Ele é desenhado acima do cabeçalho, sempre de ponta a ponta, e nunca entra na grade
+  de uma faixa. Um controle ali não mudaria nada, e contrariaria a DoD 3. Todos os outros sete tipos
+  têm o controle.
+- **A largura da faixa no cartão** agora tem teste em `design-draft.test.ts` ("carries each band's
+  width…"), além da verificação no navegador.

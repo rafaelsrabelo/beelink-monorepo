@@ -198,6 +198,13 @@ describe("previewOf — what the shop window would be served", () => {
 })
 
 describe("arrangementOf — what the panel lists", () => {
+  // The card says the band's width beside the block's, and it has to be the band's as saved.
+  it("carries each band's width, for the card to say beside the block's", () => {
+    const bands = arrangementOf(draft, saved)
+
+    expect(bands.map((band) => band.width)).toEqual(["FULL", "CONTAINED", "CONTAINED"])
+  })
+
   it("shows a banner's first picture and says which components are empty", () => {
     const bands = arrangementOf(draft, saved)
 
