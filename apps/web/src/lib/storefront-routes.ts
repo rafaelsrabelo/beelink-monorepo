@@ -1,5 +1,5 @@
 // Types
-import type { StorefrontRouteWords } from "@harness-monorepo/contracts"
+import type { StorefrontRouteWords, StorefrontSort } from "@harness-monorepo/contracts"
 
 /**
  * The key a search term travels under on the shop's own URL.
@@ -41,23 +41,93 @@ export type StorefrontSection =
   | { kind: "cart" }
   | { kind: "category"; slug: string }
 
-export interface CatalogueQuery {
+/**
+ * What narrows and orders a shelf, as the address carries it and the API reads it — the same
+ * Portuguese keys on both sides (`ordenar`, `precoMin`, `precoMax`, `desconto`, `opcao`), so the
+ * mapping between them is readable at a glance. Prices are whole reais.
+ */
+export interface ListingFilters {
+  sort?: StorefrontSort
+  priceMin?: number
+  priceMax?: number
+  discount?: boolean
+  /** `Nome:Valor`, repeatable. Values of one option widen, different options narrow. */
+  options?: readonly string[]
+}
+
+export interface CatalogueQuery extends ListingFilters {
   page?: number
   category?: string
   search?: string
 }
 
-/** Drops the empty and the first page, so `/lessari/produtos` never renders as `?pagina=1`. */
-function withQuery(path: string, entries: Record<string, string | number | undefined>): string {
+const SORTS: readonly StorefrontSort[] = ["relevancia", "menor-preco", "maior-preco", "novidades"]
+
+/** The address's version of the filters: what the API will read, or nothing for what it would refuse. */
+function filterEntries(filters: ListingFilters): Record<string, string | number | readonly string[] | undefined> {
+  return {
+    ordenar: filters.sort === "relevancia" ? undefined : filters.sort,
+    precoMin: filters.priceMin,
+    precoMax: filters.priceMax,
+    desconto: filters.discount ? "1" : undefined,
+    opcao: filters.options,
+  }
+}
+
+/**
+ * Drops the empty and the first page, so `/lessari/produtos` never renders as `?pagina=1`. A list
+ * is appended entry by entry: `opcao` repeats, and `set` would keep only the last one.
+ */
+function withQuery(path: string, entries: Record<string, string | number | readonly string[] | undefined>): string {
   const query = new URLSearchParams()
 
   for (const [key, value] of Object.entries(entries)) {
     if (value === undefined || value === "") continue
+    if (Array.isArray(value)) {
+      for (const each of value as readonly string[]) if (each) query.append(key, each)
+      continue
+    }
     if (key === PAGE_KEY && Number(value) <= 1) continue
     query.set(key, String(value))
   }
 
   return query.size ? `${path}?${query.toString()}` : path
+}
+
+/** A whole number of reais from what someone typed or pasted, or nothing. Never a 400 from the API. */
+function reaisOf(raw: string | string[] | undefined, round: (value: number) => number): number | undefined {
+  const value = Number(paramOf(raw)?.replace(",", "."))
+  return Number.isFinite(value) && value >= 0 ? round(value) : undefined
+}
+
+/**
+ * The filters an address carries, read the way the API would read them, so nothing reaches it
+ * that it refuses: a sort it does not know is the shop's own order, a price is a whole number of
+ * reais (the floor of a minimum, the ceiling of a maximum, the two swapped when someone crossed
+ * them), and an option without a colon is dropped.
+ */
+export function listingFiltersOf(query: Record<string, string | string[] | undefined>): ListingFilters {
+  const sort = paramOf(query.ordenar)
+  let priceMin = reaisOf(query.precoMin, Math.floor)
+  let priceMax = reaisOf(query.precoMax, Math.ceil)
+  if (priceMin !== undefined && priceMax !== undefined && priceMin > priceMax) [priceMin, priceMax] = [priceMax, priceMin]
+  const options = [query.opcao ?? []].flat().map((entry) => entry.trim()).filter((entry) => entry.includes(":"))
+
+  return {
+    // The shop's own order is the absence of a sort, on the address as in the API.
+    ...(sort && sort !== "relevancia" && (SORTS as readonly string[]).includes(sort) ? { sort: sort as StorefrontSort } : {}),
+    ...(priceMin !== undefined ? { priceMin } : {}),
+    ...(priceMax !== undefined ? { priceMax } : {}),
+    ...(paramOf(query.desconto) === "1" ? { discount: true } : {}),
+    ...(options.length ? { options } : {}),
+  }
+}
+
+/** The same filters with one option value on or off: what a checkbox in the filter column links to. */
+export function toggledOption(filters: ListingFilters, option: string): ListingFilters {
+  const current = filters.options ?? []
+  const options = current.includes(option) ? current.filter((entry) => entry !== option) : [...current, option]
+  return { ...filters, ...(options.length ? { options } : { options: undefined }) }
 }
 
 /**
@@ -75,24 +145,37 @@ export function storefrontRoutes(shop: StorefrontShop) {
   return {
     home,
 
-    /** The whole catalogue, in a grid. The home shows a selection and links here. */
-    catalog: ({ page, category, search }: CatalogueQuery = {}) =>
+    /**
+     * The whole catalogue, in a grid. The home shows a selection and links here. Every filter is
+     * carried along; a new filter starts on the first page, which is why the page is the caller's
+     * and never remembered here.
+     */
+    catalog: ({ page, category, search, ...filters }: CatalogueQuery = {}) =>
       withQuery(`${home}/${routeWords.products}`, {
         [PAGE_KEY]: page,
         categoria: category,
         [SEARCH_KEY]: search,
+        ...filterEntries(filters),
       }),
 
     /** The index of every category. A single category has no word in front of it. */
     categories: () => `${home}/${routeWords.categories}`,
 
     /** One category, at the flat second segment: `/lessari/blusas`. */
-    category: (categorySlug: string, { page }: { page?: number } = {}) =>
-      withQuery(`${home}/${categorySlug}`, { [PAGE_KEY]: page }),
+    category: (categorySlug: string, { page, ...filters }: ListingFilters & { page?: number } = {}) =>
+      withQuery(`${home}/${categorySlug}`, { [PAGE_KEY]: page, ...filterEntries(filters) }),
 
-    /** Where the header's search box posts. The term is the caller's; an empty one is dropped. */
-    search: (term?: string, { page }: { page?: number } = {}) =>
-      withQuery(`${home}/${routeWords.search}`, { [SEARCH_KEY]: term, [PAGE_KEY]: page }),
+    /**
+     * Where the header's search box posts. The term is the caller's; an empty one is dropped. A
+     * category narrows the search — the header's "Buscar em" — and travels as `categoria`.
+     */
+    search: (term?: string, { page, category, ...filters }: ListingFilters & { page?: number; category?: string } = {}) =>
+      withQuery(`${home}/${routeWords.search}`, {
+        [SEARCH_KEY]: term,
+        categoria: category,
+        [PAGE_KEY]: page,
+        ...filterEntries(filters),
+      }),
 
     /** The basket, which the header's icon points at from the first day. */
     cart: () => `${home}/${routeWords.cart}`,

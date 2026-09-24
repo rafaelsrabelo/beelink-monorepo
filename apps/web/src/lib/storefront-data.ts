@@ -4,6 +4,7 @@ import type {
   PublicProductDetail,
   PublicStore,
   StorefrontCatalog,
+  StorefrontSort,
 } from "@harness-monorepo/contracts"
 
 // App
@@ -42,6 +43,13 @@ export interface CatalogueAsk {
   search?: string
   page?: number
   pageSize?: number
+  sort?: StorefrontSort
+  /** Whole reais, as `listingFiltersOf` reads them; the API parses an integer and refuses the rest. */
+  priceMin?: number
+  priceMax?: number
+  discount?: boolean
+  /** `Nome:Valor`, one entry per value, sent as a repeated `opcao`. */
+  options?: readonly string[]
 }
 
 /**
@@ -56,6 +64,12 @@ export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise
   if (ask.search) query.set("busca", ask.search)
   if (ask.page && ask.page > 1) query.set("pagina", String(ask.page))
   if (ask.pageSize) query.set("porPagina", String(ask.pageSize))
+  if (ask.sort && ask.sort !== "relevancia") query.set("ordenar", ask.sort)
+  // Whole reais, or the API answers 400 and this page would say "nothing found" for a typo.
+  if (ask.priceMin !== undefined && Number.isFinite(ask.priceMin)) query.set("precoMin", String(Math.max(0, Math.floor(ask.priceMin))))
+  if (ask.priceMax !== undefined && Number.isFinite(ask.priceMax)) query.set("precoMax", String(Math.max(0, Math.ceil(ask.priceMax))))
+  if (ask.discount) query.set("desconto", "1")
+  for (const option of ask.options ?? []) query.append("opcao", option)
 
   const suffix = query.size ? `?${query.toString()}` : ""
 

@@ -23,9 +23,11 @@ import {
   PAGE_KEY,
   SEARCH_KEY,
   pageOf,
+  listingFiltersOf,
   paramOf,
   sectionOf,
   storefrontRoutes,
+  type ListingFilters,
   type StorefrontSection as Section,
 } from "@/lib/storefront-routes"
 
@@ -49,7 +51,11 @@ interface Loaded {
   messages: UiMessages
   page: number
   term: string | undefined
+  filters: ListingFilters
 }
+
+/** Sixteen: the 4 × 4 grid the 5a design draws. The API's default of 24 is for a shelf with no column. */
+const LISTING_PAGE_SIZE = 16
 
 type Query = Record<string, string | string[] | undefined>
 
@@ -65,17 +71,23 @@ async function load(slug: string, segment: string, query: Query): Promise<Loaded
   const section = sectionOf(segment, store.routeWords)
   const page = pageOf(query[PAGE_KEY])
   const term = paramOf(query[SEARCH_KEY])
+  const filters = listingFiltersOf(query)
+  const shelf = section.kind === "catalog" || section.kind === "category" || section.kind === "search"
 
   const [{ ui }, catalogue] = await Promise.all([
     getMessages(),
     catalogueAt(slug, {
       page,
+      ...filters,
+      // A category page is its category; the catalogue and the search take one from the address,
+      // which is what the header's "Buscar em" and a category's "ver tudo" write.
       ...(section.kind === "category" ? { category: section.slug } : {}),
+      ...(section.kind === "catalog" || section.kind === "search" ? { category: paramOf(query.categoria) } : {}),
       ...(section.kind === "search" ? { search: term } : {}),
-      // Neither the index of categories nor the basket renders a product, and the catalogue
-      // endpoint answers both halves together. Asking for the smallest page is what keeps that one
-      // round trip from also carrying two dozen products nothing on the page will show.
-      ...(section.kind === "categories" || section.kind === "cart" ? { pageSize: 1 } : {}),
+      // The 4 × 4 grid of the design. Neither the index of categories nor the basket renders a
+      // product, and the catalogue endpoint answers both halves together: asking for the smallest
+      // page is what keeps that one round trip from also carrying products nothing will show.
+      pageSize: shelf ? LISTING_PAGE_SIZE : 1,
     }),
   ])
 
@@ -89,7 +101,7 @@ async function load(slug: string, segment: string, query: Query): Promise<Loaded
 
   if (section.kind === "category" && !category) return null
 
-  return { store, section, catalogue, category, messages: ui, page, term }
+  return { store, section, catalogue, category, messages: ui, page, term, filters }
 }
 
 /** The page's own title, which is also its `h1`. */
@@ -172,11 +184,12 @@ export default async function StorefrontSectionPage({
   searchParams,
 }: PageProps<"/[slug]/[section]">) {
   const { slug, section } = await params
-  const loaded = await load(slug, section, await searchParams)
+  const query = await searchParams
+  const loaded = await load(slug, section, query)
 
   if (!loaded) notFound()
 
-  const { store, catalogue, category, messages: ui, page, term } = loaded
+  const { store, catalogue, category, messages: ui, page, term, filters } = loaded
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
   const locale = "pt-BR"
@@ -200,10 +213,10 @@ export default async function StorefrontSectionPage({
   // Where this shelf's pager sends you. Each section pages on its own address, so the number in the
   // URL always belongs to the list that is on the screen.
   const pageHref = (next: number) => {
-    if (loaded.section.kind === "category" && category) return routes.category(category.slug, { page: next })
-    if (loaded.section.kind === "search") return routes.search(term, { page: next })
+    if (loaded.section.kind === "category" && category) return routes.category(category.slug, { ...filters, page: next })
+    if (loaded.section.kind === "search") return routes.search(term, { ...filters, category: paramOf(query.categoria), page: next })
 
-    return routes.catalog({ page: next })
+    return routes.catalog({ ...filters, category: paramOf(query.categoria), page: next })
   }
 
   return (
