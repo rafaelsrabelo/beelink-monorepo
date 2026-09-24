@@ -122,7 +122,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         items={[
           product.category
             ? { label: product.category.name, href: routes.category(product.category.slug) }
-            : { label: ui.storefront.catalogTitle, href: routes.catalog() },
+            : { label: ui.storefront.productsHeading, href: routes.catalog() },
           { label: product.name },
         ]}
         messages={ui}

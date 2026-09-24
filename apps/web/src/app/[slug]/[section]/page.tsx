@@ -233,7 +233,8 @@ export default async function StorefrontSectionPage({
           items={
             category
               ? [
-                  { label: ui.storefront.catalogTitle, href: routes.catalog() },
+                  // "Produtos", as 5a spells the catalogue's crumb, not the shelf's own title.
+                  { label: ui.storefront.productsHeading, href: routes.catalog() },
                   ...(parentCategory
                     ? [{ label: parentCategory.name, href: routes.category(parentCategory.slug) }]
                     : []),
