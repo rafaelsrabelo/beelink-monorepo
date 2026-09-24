@@ -196,7 +196,7 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
           onEditBand={setEditingBand}
           onDeleteBand={(id) => setPendingDelete({ level: "band", id, name: bandName(id) })}
           onToggle={(id, isActive) => draft.patchComponent(id, { isActive })}
-          onLayoutChange={(id, layout) => draft.patchComponent(id, { layout })}
+          onSpanChange={(id, span) => draft.patchComponent(id, { span })}
           onDelete={(id) => {
             const component = saved.flatMap((section) => section.components).find((c) => c.id === id)
             if (component) {

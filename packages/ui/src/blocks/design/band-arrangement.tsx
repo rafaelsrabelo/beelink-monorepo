@@ -13,11 +13,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { ArrangeBoard } from "./design-arrange"
 import { BandRow } from "./band-row"
-import type { ArrangementItem, ArrangementLayout } from "./arrangement-row"
+import type { ArrangementItem, ArrangementSpan } from "./arrangement-row"
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx` and apps/web reaches
 // both through this block's name.
-export type { ArrangementItem, ArrangementLayout }
+export type { ArrangementItem, ArrangementSpan }
 
 export interface ArrangementBand {
   id: string
@@ -40,7 +40,7 @@ export interface BandArrangementProps {
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  onSpanChange: (id: string, span: ArrangementSpan) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
   /** Drawn at the foot of each band: the only way to put two blocks in one band. */
@@ -68,7 +68,7 @@ export function BandArrangement({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onLayoutChange,
+  onSpanChange,
   onDelete,
   onEdit,
   renderAddToBand,
@@ -122,7 +122,7 @@ export function BandArrangement({
             onEditBand={onEditBand}
             onDeleteBand={onDeleteBand}
             onToggle={onToggle}
-            onLayoutChange={onLayoutChange}
+            onSpanChange={onSpanChange}
             onDelete={onDelete}
             onEdit={onEdit}
             {...(renderAddToBand ? { addSlot: renderAddToBand(band.id) } : {})}

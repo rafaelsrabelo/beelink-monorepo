@@ -67,7 +67,7 @@ const handlers = {
   onEditBand: noop,
   onDeleteBand: noop,
   onToggle: noop,
-  onLayoutChange: noop,
+  onSpanChange: noop,
   onDelete: noop,
   onEdit: noop,
 }
@@ -78,7 +78,7 @@ const bands: ArrangementBand[] = [
     background: null,
     isActive: true,
     components: [
-      { id: "c1", kind: "BANNER", title: null, slides: 0, layout: "FULL", isActive: true, empty: true },
+      { id: "c1", kind: "BANNER", title: null, span: "FULL", isActive: true, empty: true },
     ],
   },
   {
@@ -86,7 +86,7 @@ const bands: ArrangementBand[] = [
     background: null,
     isActive: true,
     components: [
-      { id: "c2", kind: "PRODUCTS", title: null, layout: "FULL", isActive: true, deletable: false },
+      { id: "c2", kind: "PRODUCTS", title: null, span: "FULL", isActive: true, deletable: false },
     ],
   },
   {
@@ -94,9 +94,9 @@ const bands: ArrangementBand[] = [
     background: null,
     isActive: true,
     components: [
-      { id: "c3", kind: "BANNER", title: "Frete grátis", slides: 1, layout: "THIRDS", isActive: true },
-      { id: "c4", kind: "BANNER", title: "Pix com desconto", slides: 1, layout: "THIRDS", isActive: true },
-      { id: "c5", kind: "BANNER", title: "Troca fácil", slides: 1, layout: "THIRDS", isActive: true },
+      { id: "c3", kind: "BANNER", title: "Frete grátis", span: "THIRD", isActive: true },
+      { id: "c4", kind: "BANNER", title: "Pix com desconto", span: "THIRD", isActive: true },
+      { id: "c5", kind: "BANNER", title: "Troca fácil", span: "THIRD", isActive: true },
     ],
   },
 ]

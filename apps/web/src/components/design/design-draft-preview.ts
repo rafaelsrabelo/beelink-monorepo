@@ -49,10 +49,9 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             title: was?.title ?? null,
             subtitle: was?.subtitle ?? null,
             body: was?.body ?? null,
-            layout: component.layout,
-            // As saved, not as drafted: the draft still changes `layout`, and nothing draws these
-            // two yet. The day the band draws `span`, the draft has to hold it instead.
-            span: was?.span ?? "FULL",
+            layout: was?.layout ?? "FULL",
+            // As drafted: the band draws it, and the owner has to see a width before publishing it.
+            span: component.span,
             display: was?.display ?? null,
             columns: was?.columns ?? null,
             align: was?.align ?? null,
@@ -113,9 +112,7 @@ export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Sec
         kind: component.kind,
         title,
         imageUrl: first?.imageUrl ?? null,
-        // Pictures, not items: the row asks so it can drop a control that a carousel ignores.
-        slides: was?.kind === "BANNER" ? (was.items as BannerSlide[]).filter((s) => s.imageUrl).length : undefined,
-        layout: component.layout,
+        span: component.span,
         isActive: component.isActive,
         deletable: component.kind !== "PRODUCTS" || productLists > 1,
         empty: isEmptyComponent(component.kind, title, was?.body ?? null, was?.items ?? []),

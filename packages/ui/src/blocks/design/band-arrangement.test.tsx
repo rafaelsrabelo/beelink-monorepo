@@ -13,8 +13,8 @@ const bands: ArrangementBand[] = [
     background: null,
     isActive: true,
     components: [
-      // Two pictures: a carousel, which runs the width of its band whatever a size says.
-      { id: "1", kind: "BANNER", title: null, imageUrl: "/cover.jpg", slides: 2, layout: "FULL", isActive: true },
+      // Two pictures: a carousel, which fills its own cell like any other block.
+      { id: "1", kind: "BANNER", title: null, imageUrl: "/cover.jpg", span: "FULL", isActive: true },
     ],
   },
   {
@@ -22,9 +22,8 @@ const bands: ArrangementBand[] = [
     background: null,
     isActive: true,
     components: [
-      // One picture: a poster, the only shape the size actually changes.
-      { id: "2", kind: "BANNER", title: "Frete grátis", imageUrl: "/b.jpg", slides: 1, layout: "HALVES", isActive: false },
-      { id: "3", kind: "PRODUCTS", title: null, layout: "FULL", isActive: true, deletable: false },
+      { id: "2", kind: "BANNER", title: "Frete grátis", imageUrl: "/b.jpg", span: "HALF", isActive: false },
+      { id: "3", kind: "PRODUCTS", title: null, span: "FULL", isActive: true, deletable: false },
     ],
   },
 ]
@@ -37,7 +36,7 @@ function renderBands(overrides: Partial<React.ComponentProps<typeof BandArrangem
     onEditBand: vi.fn(),
     onDeleteBand: vi.fn(),
     onToggle: vi.fn(),
-    onLayoutChange: vi.fn(),
+    onSpanChange: vi.fn(),
     onDelete: vi.fn(),
     onEdit: vi.fn(),
   }
@@ -65,11 +64,11 @@ describe("BandArrangement", () => {
     expect(screen.getByRole("button", { name: "Arrastar: Frete grátis" })).toBeInTheDocument()
   })
 
-  it("offers a size on a poster and on nothing else", () => {
+  it("offers a size on a banner and on nothing else", () => {
     renderBands()
 
-    // "How wide" is a question about a poster. The product rails are as wide as their band, and
-    // offering the choice there would change nothing.
+    // Every kind has a span, and offering it on every kind is the width control that replaces this
+    // one. Until then it is the banner's, as it always was.
     expect(screen.getByRole("group", { name: "Tamanho: Frete grátis" })).toBeInTheDocument()
     expect(screen.queryByRole("group", { name: /Lista de produtos/ })).not.toBeInTheDocument()
   })
@@ -87,7 +86,7 @@ describe("BandArrangement", () => {
           background: null,
           isActive: true,
           components: [
-            { id: "novo", kind: "BANNER", title: null, slides: 0, layout: "FULL", isActive: true, empty: true },
+            { id: "novo", kind: "BANNER", title: null, span: "FULL", isActive: true, empty: true },
           ],
         },
       ],
@@ -97,15 +96,14 @@ describe("BandArrangement", () => {
   })
 
   /**
-   * A banner stops being a poster at its second picture — `isPoster` in the renderer says one — so
-   * the control stopped being offered there. It used to be, and it kept marking the page as having
-   * unpublished changes while changing nothing on it. Dropping it also gives its 7rem back to the
-   * name, which is what had been truncating "Banner" to "B…" in a 380px panel.
+   * The control went at a banner's second picture while the renderer drew every carousel across
+   * the whole band. The band is a grid now and a carousel fills its own cell, so the width changes
+   * it — and a control taken away there would be a width the owner cannot give it.
    */
-  it("offers no size on a carousel", () => {
+  it("offers a size on a carousel too, now that it fills its own cell", () => {
     renderBands()
 
-    expect(screen.queryByRole("group", { name: "Tamanho: Banner" })).not.toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Tamanho: Banner" })).toBeInTheDocument()
   })
 
   /**
@@ -130,12 +128,12 @@ describe("BandArrangement", () => {
    */
   it("reports the size the owner chose", async () => {
     const user = userEvent.setup()
-    const { onLayoutChange } = renderBands()
+    const { onSpanChange } = renderBands()
 
     const tamanho = screen.getByRole("group", { name: "Tamanho: Frete grátis" })
     await user.click(within(tamanho).getByRole("button", { name: "Um terço" }))
 
-    expect(onLayoutChange).toHaveBeenCalledWith("2", "THIRDS")
+    expect(onSpanChange).toHaveBeenCalledWith("2", "THIRD")
   })
 
   it("asks for the opposite of what a band is now", async () => {

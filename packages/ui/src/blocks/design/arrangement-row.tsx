@@ -29,9 +29,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { useArrangeItem } from "./design-arrange"
+import type { StorefrontSpan } from "../storefront/storefront-band-cell"
 import type { ComponentKind } from "./design-types"
 
-export type ArrangementLayout = "FULL" | "HALVES" | "THIRDS"
+/** A block's slice of its band. The storefront's own type: the row offers what the band draws. */
+export type ArrangementSpan = StorefrontSpan
 
 export interface ArrangementItem {
   id: string
@@ -40,16 +42,7 @@ export interface ArrangementItem {
   title: string | null
   /** A banner's first picture, where it has one. Every other kind draws its glyph instead. */
   imageUrl?: string | null
-  /**
-   * How many pictures a banner holds. Absent on every other kind, where it means nothing.
-   *
-   * The row asks because "full, half or a third" is a question about a poster, and a poster is a
-   * banner with exactly one picture — `isPoster` in the renderer says so. From the second picture
-   * the banner is a carousel and runs the width of the band whatever this says, so the control was
-   * still offered, still marked the page unpublished, and still changed nothing on it.
-   */
-  slides?: number
-  layout: ArrangementLayout
+  span: ArrangementSpan
   isActive: boolean
   /**
    * Whether the row draws a bin. Absent means yes.
@@ -71,20 +64,15 @@ export interface ArrangementItem {
 }
 
 /**
- * How wide is a question about a poster, and only about a poster.
+ * Offered on a banner, whatever it holds.
  *
- * A cover is as wide as the shopkeeper's `width` says and a heading is as wide as the page; asking
- * "full, half or a third" of either would be offering a choice that changes nothing. A carousel is the same case arrived at
- * differently: the renderer stops honouring the width at the second picture, so from there the
- * control changes nothing and goes, giving its 7rem back to the name — which is what had been
- * truncating a banner to "B..." in a 380px panel.
+ * It used to go at the second picture, because the renderer drew a carousel across the whole band
+ * whatever the width said. The band is a grid now and a carousel fills its own cell, so the width
+ * changes what a two-slide banner looks like as much as a poster's. Offering it on every kind, and
+ * the fourth slice, is the width control that replaces this one.
  */
-function hasLayout(item: Pick<ArrangementItem, "kind" | "slides">): boolean {
-  // Hidden only where it is PROVABLY dead — two pictures or more, which the renderer draws as a
-  // carousel across the whole band. A banner with no picture yet is the commonest case there is:
-  // the owner has just added it and is about to say how wide it goes, and taking the control away
-  // while they build was worse than the dead control it replaced.
-  return item.kind === "BANNER" && (item.slides ?? 0) <= 1
+function hasSpan(item: Pick<ArrangementItem, "kind">): boolean {
+  return item.kind === "BANNER"
 }
 
 /**
@@ -107,14 +95,14 @@ const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
 export function ArrangementRow({
   item,
   onToggle,
-  onLayoutChange,
+  onSpanChange,
   onDelete,
   onEdit,
   messages,
 }: {
   item: ArrangementItem
   onToggle: (id: string, isActive: boolean) => void
-  onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  onSpanChange: (id: string, span: ArrangementSpan) => void
   /** Absent where a kind cannot be deleted; the row then draws no bin at all. */
   onDelete?: (id: string) => void
   /** Absent where a kind has nothing to write; the row is then not a button. */
@@ -226,7 +214,7 @@ export function ArrangementRow({
       ) : null}
       </div>
 
-      {hasLayout(item) ? (
+      {hasSpan(item) ? (
         /*
           The second line, because it does not fit on the first at any spelling.
 
@@ -240,21 +228,21 @@ export function ArrangementRow({
           aria-label={`${text.sizeLabel}: ${name}`}
           variant="outline"
           className="shrink-0"
-          value={[item.layout]}
+          value={[item.span]}
           onValueChange={(next: string[]) => {
             const chosen = next[0]
-            if (chosen === "FULL" || chosen === "HALVES" || chosen === "THIRDS") {
-              onLayoutChange(item.id, chosen)
+            if (chosen === "FULL" || chosen === "HALF" || chosen === "THIRD") {
+              onSpanChange(item.id, chosen)
             }
           }}
         >
           <ToggleGroupItem value="FULL" aria-label={text.sizeFull}>
             <RectangleHorizontalIcon aria-hidden="true" className="size-4" />
           </ToggleGroupItem>
-          <ToggleGroupItem value="HALVES" aria-label={text.sizeHalves}>
+          <ToggleGroupItem value="HALF" aria-label={text.sizeHalves}>
             <Columns2Icon aria-hidden="true" className="size-4" />
           </ToggleGroupItem>
-          <ToggleGroupItem value="THIRDS" aria-label={text.sizeThirds}>
+          <ToggleGroupItem value="THIRD" aria-label={text.sizeThirds}>
             <Columns3Icon aria-hidden="true" className="size-4" />
           </ToggleGroupItem>
         </ToggleGroup>

@@ -1,5 +1,5 @@
 // Types
-import type { ComponentKind, Section, ShowcaseLayout, StoreComponent } from "@harness-monorepo/contracts"
+import type { ComponentKind, ComponentSpan, Section, StoreComponent } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 /**
@@ -14,7 +14,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 export interface ComponentDraft {
   id: string
   kind: ComponentKind
-  layout: ShowcaseLayout
+  span: ComponentSpan
   isActive: boolean
 }
 
@@ -34,7 +34,7 @@ function toComponentDraft(component: StoreComponent): ComponentDraft {
   return {
     id: component.id,
     kind: component.kind,
-    layout: component.layout,
+    span: component.span,
     isActive: component.isActive,
   }
 }
@@ -114,7 +114,7 @@ export function changesOf(rows: readonly SectionDraft[], saved: readonly Section
     components: componentsOf(rows).filter((component) => {
       const was = savedComponents.get(component.id)
 
-      return !!was && (was.layout !== component.layout || was.isActive !== component.isActive)
+      return !!was && (was.span !== component.span || was.isActive !== component.isActive)
     }),
   }
 }

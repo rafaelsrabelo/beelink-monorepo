@@ -17,7 +17,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { ArrangeBoard, useArrangeItem } from "./design-arrange"
 import { ArrangementRow } from "./arrangement-row"
-import type { ArrangementLayout } from "./arrangement-row"
+import type { ArrangementSpan } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
 
 /**
@@ -35,7 +35,7 @@ export function BandRow({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onLayoutChange,
+  onSpanChange,
   onDelete,
   onEdit,
   addSlot,
@@ -48,7 +48,7 @@ export function BandRow({
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  onSpanChange: (id: string, span: ArrangementSpan) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
   /**
@@ -158,7 +158,7 @@ export function BandRow({
               key={component.id}
               item={component}
               onToggle={onToggle}
-              onLayoutChange={onLayoutChange}
+              onSpanChange={onSpanChange}
               onDelete={onDelete}
               onEdit={onEdit}
               messages={messages}

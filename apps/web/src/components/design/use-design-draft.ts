@@ -80,7 +80,7 @@ export function useDesignDraft(slug: string) {
     setDirty(true)
   }
 
-  function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "layout">>) {
+  function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "span">>) {
     edit(
       rows.map((row) => ({
         ...row,
@@ -117,7 +117,7 @@ export function useDesignDraft(slug: string) {
       ...changes.components.map((component) =>
         updateComponent.mutateAsync({
           componentId: component.id,
-          payload: { layout: component.layout, isActive: component.isActive },
+          payload: { span: component.span, isActive: component.isActive },
         }),
       ),
     ])

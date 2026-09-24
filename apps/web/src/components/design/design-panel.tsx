@@ -10,7 +10,7 @@ import type { ComponentKind, StoreColorPreset, StoreColors } from "@harness-mono
 // UI
 import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
 import { BandArrangement } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import type { ArrangementBand, ArrangementLayout } from "@harness-monorepo/ui/blocks/design/band-arrangement"
+import type { ArrangementBand, ArrangementSpan } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
@@ -25,7 +25,7 @@ export interface DesignPanelProps {
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  onSpanChange: (id: string, span: ArrangementSpan) => void
   /** Drawn at the foot of each band — the only way to put two blocks in one band. */
   renderAddToBand?: (sectionId: string) => ReactNode
   onDelete: (id: string) => void
@@ -65,7 +65,7 @@ export function DesignPanel({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onLayoutChange,
+  onSpanChange,
   renderAddToBand,
   onDelete,
   onEdit,
@@ -121,7 +121,7 @@ export function DesignPanel({
               onEditBand={onEditBand}
               onDeleteBand={onDeleteBand}
               onToggle={onToggle}
-              onLayoutChange={onLayoutChange}
+              onSpanChange={onSpanChange}
               {...(renderAddToBand ? { renderAddToBand } : {})}
               onDelete={onDelete}
               onEdit={onEdit}
