@@ -1,8 +1,12 @@
 // Libs
 import { ArrowRightIcon } from "lucide-react"
 
-// Locales
+// UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
+
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
@@ -32,6 +36,7 @@ export interface StorefrontShowcaseProps {
    */
   span: StorefrontSpan
   linkComponent?: LinkComponent
+  messages?: UiMessages
 }
 
 /**
@@ -68,7 +73,12 @@ const COLUMNS_OF_COUNT: Record<2 | 3 | 4, string> = {
  * The columns follow the cell and not the screen — three pictures in a third of a wide band are
  * three stamps, and a container query is what knows the cell is narrow.
  */
-export function StorefrontShowcase({ items, span, linkComponent: Link = AnchorLink }: StorefrontShowcaseProps) {
+export function StorefrontShowcase({
+  items,
+  span,
+  linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
+}: StorefrontShowcaseProps) {
   if (!items.length) return null
 
   const grid = items.length > 1
@@ -145,6 +155,10 @@ export function StorefrontShowcase({ items, span, linkComponent: Link = AnchorLi
             <Link
               href={item.href}
               className={shape}
+              // A card whose words are painted into the picture leaves the link holding only an
+              // `aria-hidden` image — an empty link, announced as a URL. The carousel names it the
+              // same way; the same banner shown as a grid must not lose the name.
+              {...(item.title || item.subtitle ? {} : { "aria-label": messages.storefront.backToShop })}
               // The pair every outbound anchor in this repository carries. Without the
               // `target`, a banner pointing at WhatsApp takes the shop window away with it.
               {...(item.external ? { target: "_blank", rel: "noreferrer" } : {})}

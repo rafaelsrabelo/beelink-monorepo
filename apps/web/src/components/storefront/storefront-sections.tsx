@@ -148,7 +148,7 @@ export function StorefrontSections({
                 .map((component) => {
                   const cards = cardsOf(component)
                   const body = cards ? (
-                    <StorefrontShowcase items={cards} span={component.span} {...link} />
+                    <StorefrontShowcase items={cards} span={component.span} {...link} messages={messages} />
                   ) : (
                     <StorefrontComponent
                       component={component}

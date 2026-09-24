@@ -398,6 +398,8 @@ export interface UiMessages {
     addSlide: string
     /** Said beside the add button while a banner has one picture: the second makes a carousel. */
     carouselHint: string
+    /** The same hint, for a banner whose pictures share the space. */
+    gridHint: string
     /** One promise with no title yet. `{position}`. */
     benefitPosition: string
     addBenefit: string

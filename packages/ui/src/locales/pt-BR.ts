@@ -306,6 +306,7 @@ export const ptBR: UiMessages = {
     slidePosition: "Imagem {position} de {total}",
     addSlide: "Adicionar imagem",
     carouselHint: "Adicione uma segunda imagem e o banner vira um carrossel.",
+    gridHint: "Adicione mais imagens e elas aparecem lado a lado.",
     benefitPosition: "Vantagem {position}",
     addBenefit: "Adicionar vantagem",
     benefitIcon: "Ícone",

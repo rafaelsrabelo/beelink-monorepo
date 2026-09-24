@@ -306,6 +306,7 @@ export const en: UiMessages = {
     slidePosition: "Picture {position} of {total}",
     addSlide: "Add picture",
     carouselHint: "Add a second picture and the banner becomes a carousel.",
+    gridHint: "Add more pictures and they sit side by side.",
     benefitPosition: "Benefit {position}",
     addBenefit: "Add benefit",
     benefitIcon: "Icon",

@@ -49,10 +49,11 @@ export interface StorefrontHeroProps {
 /**
  * The banner at the top of the shop.
  *
- * **One is a cover; two or more are a carousel, and there is no switch.** The shape is read off
- * the count, which is one fewer thing that can disagree with itself — `layoutSettings.bannerType`
- * stored exactly that switch, `'single' | 'carousel'`, beside a list of images, and nothing ever
- * read either of them.
+ * **One is a cover; two or more are a carousel.** Inside this block the count is the whole of it.
+ * Whether a banner reaches this block at all is the banner's `display`, decided by the page: a
+ * banner shown as a grid is drawn as cards and never gets here. `layoutSettings.bannerType` once
+ * stored a switch, `'single' | 'carousel'`, beside a list of images, and nothing ever read either —
+ * the switch that exists now is read, by the page, before this is called.
  *
  * This is the first importer of the shadcn carousel, which had sat in this package unused since it
  * was installed. The rails deliberately do not use it — `scroll-rail.tsx` says why: Embla hides the

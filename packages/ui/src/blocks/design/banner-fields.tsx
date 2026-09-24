@@ -87,6 +87,7 @@ export function BannerFields({
         {...(onUploadImage ? { onUploadImage } : {})}
         imagePending={imagePending}
         newSlideId={newItemId}
+        display={value.display}
         messages={messages}
       />
     </>

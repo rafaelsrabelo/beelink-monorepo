@@ -43,9 +43,9 @@ describe("component-form-values — a banner's format", () => {
   })
 
   /** The API refuses a display on a kind that does not draw one, so only a banner's save carries it. */
-  it("sends the format a banner's sheet holds", () => {
-    const form = { ...toForm(component(), null), display: "CAROUSEL" as const }
+  it("sends the format a banner's sheet holds, not the one it opened with", () => {
+    const form = { ...toForm(component({ display: "CAROUSEL" }), null), display: "GRID" as const }
 
-    expect(toPayload(form, "link")).toMatchObject({ display: "CAROUSEL" })
+    expect(toPayload(form, "link")).toMatchObject({ display: "GRID" })
   })
 })

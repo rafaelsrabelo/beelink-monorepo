@@ -75,3 +75,17 @@ banner é grade ou carrossel.
 O setup de testes do web ganhou as mesmas simulações de navegador que o do `packages/ui` já tinha
 (`matchMedia`, `ResizeObserver`, `IntersectionObserver`), para que um teste da página consiga
 desenhar o carrossel.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou quatro defeitos deste diff, todos corrigidos:
+
+- **A folha ainda prometia carrossel.** A dica debaixo das imagens ("Adicione uma segunda imagem e
+  o banner vira um carrossel") aparecia com "Grade" escolhido logo acima. Agora ela acompanha o
+  formato: com "Grade", diz que as imagens aparecem lado a lado.
+- **Um cartão de grade sem título ficava sem nome acessível.** Um slide com as palavras pintadas na
+  imagem e com link virava um link vazio na grade, enquanto no carrossel ele se chamava "Voltar para
+  a loja". O cartão agora usa o mesmo nome de reserva.
+- **Dois testes não provavam o que diziam.** "Um slide é sempre o cartão" passava também se o banner
+  virasse a capa. "A folha manda o formato" só testava o valor padrão. Os dois agora falham se o
+  código estiver errado.

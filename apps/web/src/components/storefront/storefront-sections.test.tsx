@@ -3,7 +3,13 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 // Types
-import type { ComponentDisplay, ComponentSpan, PublicComponent, PublicSection } from "@harness-monorepo/contracts"
+import type {
+  ComponentDisplay,
+  ComponentSpan,
+  PublicBannerSlide,
+  PublicComponent,
+  PublicSection,
+} from "@harness-monorepo/contracts"
 
 // UI
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
@@ -138,11 +144,25 @@ describe("StorefrontSections — a banner is a carousel or a grid by choice", ()
     expect(screen.getByRole("button", { name: "Próximos" })).toBeInTheDocument()
   })
 
+  /**
+   * The card, not the cover: a banner of one picture sits in its slice at the slice's proportion,
+   * where the hero would stand at a full band's fixed height whatever the cell.
+   */
   it("draws the one card for a banner of one picture, whichever it is", () => {
-    draw([band([banner("so-carrossel", "CAROUSEL", 1), banner("so-grade", "GRID", 1)])])
+    const { container } = draw([band([banner("so-carrossel", "CAROUSEL", 1), banner("so-grade", "GRID", 1)])])
 
-    expect(screen.getByText("so-carrossel 1")).toBeInTheDocument()
-    expect(screen.getByText("so-grade 1")).toBeInTheDocument()
+    for (const cell of container.querySelectorAll("[data-span]")) {
+      expect(cell.querySelectorAll("ul > li")).toHaveLength(1)
+      expect(cell.querySelector("img")!.className).not.toContain("h-44")
+    }
     expect(screen.queryByRole("button", { name: "Anterior" })).not.toBeInTheDocument()
+  })
+
+  it("names a grid card whose words are painted into the picture, as the carousel does", () => {
+    const grid = banner("mudo", "GRID", 2)
+    const slides = (grid.items as PublicBannerSlide[]).map((slide) => ({ ...slide, title: null, href: "/loja/produtos/p" }))
+    draw([band([{ ...grid, items: slides }])])
+
+    for (const link of screen.getAllByRole("link")) expect(link).toHaveAccessibleName("Voltar para a loja")
   })
 })
