@@ -176,6 +176,16 @@ export interface PublicProductDetail extends PublicProduct {
 }
 
 /**
+ * The products a cart names, as their own pages show them — names, prices, combinations, photos.
+ * The cart cookie holds only ids and quantities; this is where they become something to read.
+ * A product the shop drafted, deleted or never had is absent, and the cart drops that line rather
+ * than the page failing. A sold-out one is present, marked, so the cart can say so.
+ */
+export interface StorefrontCartProducts {
+  products: PublicProductDetail[];
+}
+
+/**
  * One answer for one shop-window page: the navigation and a page of what the filter matched. Two
  * round trips for a page that renders neither without the other would be two chances for one of
  * them to be stale against the other.
