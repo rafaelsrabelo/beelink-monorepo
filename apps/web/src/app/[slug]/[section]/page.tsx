@@ -80,9 +80,9 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       messages={ui}
     >
       {catalogue ? (
-        // Keyed by the address, so a new filter or page shows the wait again rather than holding the
-        // last shelf on screen while the next one is asked for.
-        <Suspense key={JSON.stringify(query)} fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
+        // Not keyed by the address: a filter followed inside the page keeps the last shelf on screen,
+        // dimmed and busy, rather than dropping the column into grey. A full load still streams this.
+        <Suspense fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
       ) : place.section.kind === "cart" ? (

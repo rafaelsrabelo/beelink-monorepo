@@ -1,7 +1,9 @@
 // Types
 import type { StorefrontCatalog } from "@harness-monorepo/contracts"
 import type { StorefrontCategoryFilterProps } from "@harness-monorepo/ui/blocks/storefront/storefront-category-filter"
+import type { StorefrontDiscountFilterProps } from "@harness-monorepo/ui/blocks/storefront/storefront-discount-filter"
 import type { StorefrontFilterChip } from "@harness-monorepo/ui/blocks/storefront/storefront-filter-column"
+import type { StorefrontFilterValue } from "@harness-monorepo/ui/blocks/storefront/storefront-option-filter"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
@@ -104,6 +106,73 @@ export function categoryFilterOf(
               : routes.category(entry.slug, filters)
 
         return { slug: entry.slug, label: entry.name, href, count: countOf(entry.slug), selected }
+      }),
+  }
+}
+
+/**
+ * One group per option on the shelf, each value a link to the shelf with it toggled. A value with
+ * nothing under the other filters is left out, unless it is the one chosen — a filter in force
+ * has to stay visible to be taken off.
+ */
+export function optionFiltersOf(
+  place: SectionPlace,
+  catalogue: Pick<StorefrontCatalog, "facets">,
+  routes: StorefrontRoutes,
+): { title: string; values: StorefrontFilterValue[] }[] {
+  const { filters } = place
+  // The address may spell a value differently from the facet ("sabor:uva"); toggle what it holds.
+  const held = (key: string) => (filters.options ?? []).find((entry) => entry.toLocaleLowerCase() === key.toLocaleLowerCase())
+
+  return catalogue.facets.options
+    .map((option) => ({
+      title: option.name,
+      values: option.values
+        .filter((entry) => entry.available || entry.selected)
+        .map((entry) => {
+          const key = `${option.name}:${entry.value}`
+          const inForce = held(key)
+
+          return {
+            value: entry.value,
+            label: entry.label,
+            href: shelfWith(place, routes, toggledOption(filters, inForce ?? key)),
+            count: entry.count,
+            selected: entry.selected || inForce !== undefined,
+            colorHex: entry.colorHex,
+          }
+        }),
+    }))
+    .filter((group) => group.values.length)
+}
+
+/** The "Desconto" group: on sale at all, then each minimum cut the shelf offers, one at a time. */
+export function discountFilterOf(
+  place: SectionPlace,
+  catalogue: Pick<StorefrontCatalog, "facets">,
+  routes: StorefrontRoutes,
+): Pick<StorefrontDiscountFilterProps, "onSale" | "ranges"> {
+  const { filters } = place
+  const { discount } = catalogue.facets
+  const off = { ...filters, discount: undefined, discountMinPercent: undefined }
+  const onSaleOnly = Boolean(filters.discount && !filters.discountMinPercent)
+
+  return {
+    onSale:
+      discount.count > 0 || onSaleOnly
+        ? { href: shelfWith(place, routes, onSaleOnly ? off : { ...off, discount: true }), count: discount.count, selected: onSaleOnly }
+        : null,
+    ranges: discount.ranges
+      .filter((range) => range.count > 0 || filters.discountMinPercent === range.minPercent)
+      .map((range) => {
+        const selected = filters.discountMinPercent === range.minPercent
+
+        return {
+          percent: range.minPercent,
+          href: shelfWith(place, routes, selected ? off : { ...off, discount: true, discountMinPercent: range.minPercent }),
+          count: range.count,
+          selected,
+        }
       }),
   }
 }

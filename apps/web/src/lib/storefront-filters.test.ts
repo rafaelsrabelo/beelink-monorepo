@@ -10,7 +10,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import * as data from "./storefront-data"
 import * as locale from "./locale"
-import { categoryFilterOf, clearFiltersHrefOf, filterChipsOf } from "./storefront-filters"
+import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf } from "./storefront-filters"
 import { storefrontRoutes } from "./storefront-routes"
 import { placeOf } from "./storefront-section"
 
@@ -120,5 +120,67 @@ describe("categoryFilterOf", () => {
     const filter = categoryFilterOf((await placeOf("loja", "pote", {}))!, catalogue, routes)
 
     expect(filter).toEqual({ back: { label: "PRE-TREINO", href: "/loja/pre-treino" }, current: "POTE", entries: [] })
+  })
+})
+
+describe("optionFiltersOf", () => {
+  const withOptions = {
+    facets: {
+      options: [
+        { name: "Sabor", values: [{ ...facet("Uva", 3), selected: false }, { ...facet("Limão", 0), selected: false }, { ...facet("Coco", 0), available: false, selected: true }] },
+        { name: "Cor", values: [] },
+      ],
+    },
+  } as unknown as Pick<StorefrontCatalog, "facets">
+
+  it("offers each value toggled on the address, leaves out empty ones unless chosen, and drops empty groups", async () => {
+    arrange()
+    const place = (await placeOf("loja", "produtos", { opcao: "sabor:coco", ordenar: "menor-preco" }))!
+
+    const groups = optionFiltersOf(place, withOptions, routes)
+
+    expect(groups.map((group) => group.title)).toEqual(["Sabor"])
+    expect(groups[0]?.values.map((entry) => [entry.value, entry.selected])).toEqual([
+      ["Uva", false],
+      ["Coco", true],
+    ])
+    expect(groups[0]?.values[0]?.href).toBe("/loja/produtos?ordenar=menor-preco&opcao=sabor%3Acoco&opcao=Sabor%3AUva")
+    // The address spelled it in lower case; taking it off removes what the address holds.
+    expect(groups[0]?.values[1]?.href).toBe("/loja/produtos?ordenar=menor-preco")
+  })
+})
+
+describe("discountFilterOf", () => {
+  const onSale = {
+    facets: {
+      discount: {
+        count: 14,
+        selected: false,
+        ranges: [
+          { minPercent: 10, count: 12, selected: false },
+          { minPercent: 20, count: 5, selected: false },
+          { minPercent: 30, count: 0, selected: false },
+        ],
+      },
+    },
+  } as unknown as Pick<StorefrontCatalog, "facets">
+
+  it("offers 'Em promoção' and the cuts that still hold something, one cut at a time", async () => {
+    arrange()
+
+    const { onSale: box, ranges } = discountFilterOf((await placeOf("loja", "produtos", { desconto: "20" }))!, onSale, routes)
+
+    expect(box).toEqual({ href: "/loja/produtos?desconto=1", count: 14, selected: false })
+    expect(ranges.map((range) => [range.percent, range.selected, range.href])).toEqual([
+      [10, false, "/loja/produtos?desconto=10"],
+      [20, true, "/loja/produtos"],
+    ])
+  })
+
+  it("draws nothing to offer on a shelf with nothing on sale", async () => {
+    arrange()
+    const none = { facets: { discount: { count: 0, selected: false, ranges: [] } } } as unknown as Pick<StorefrontCatalog, "facets">
+
+    expect(discountFilterOf((await placeOf("loja", "produtos", {}))!, none, routes)).toEqual({ onSale: null, ranges: [] })
   })
 })

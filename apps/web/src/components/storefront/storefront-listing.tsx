@@ -5,13 +5,16 @@ import type { StorefrontCatalog } from "@harness-monorepo/contracts"
 import { StorefrontCatalog as StorefrontCatalogGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
 import { StorefrontCategoryFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-category-filter"
+import { StorefrontDiscountFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-discount-filter"
 import { StorefrontFilterColumn } from "@harness-monorepo/ui/blocks/storefront/storefront-filter-column"
+import { StorefrontOptionFilter } from "@harness-monorepo/ui/blocks/storefront/storefront-option-filter"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
 import { StorefrontSearch } from "@harness-monorepo/ui/blocks/storefront/storefront-search"
 
 // App
 import { pageCountOf } from "@/lib/storefront-data"
-import { categoryFilterOf, clearFiltersHrefOf, filterChipsOf } from "@/lib/storefront-filters"
+import { StorefrontListingControls } from "./storefront-listing-controls"
+import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf } from "@/lib/storefront-filters"
 import { pageHrefOf, type SectionPlace } from "@/lib/storefront-section"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 
@@ -41,9 +44,13 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
   const subcategories = category ? navigation.categories.filter((entry) => entry.parentSlug === category.slug) : []
 
   return (
-    <div className="flex gap-7 pt-5 pb-10">
+    <StorefrontListingControls className="flex gap-7 pt-5 pb-10">
       <StorefrontFilterColumn chips={filterChipsOf(place, routes, locale)} clearHref={clearFiltersHrefOf(place, routes)} messages={ui}>
         <StorefrontCategoryFilter {...categoryFilterOf(place, catalogue, routes)} locale={locale} messages={ui} />
+        <StorefrontDiscountFilter {...discountFilterOf(place, catalogue, routes)} locale={locale} messages={ui} />
+        {optionFiltersOf(place, catalogue, routes).map((group) => (
+          <StorefrontOptionFilter key={group.title} title={group.title} values={group.values} locale={locale} messages={ui} />
+        ))}
       </StorefrontFilterColumn>
 
       <div className="flex min-w-0 flex-1 flex-col gap-6">
@@ -87,6 +94,6 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
           />
         </StorefrontCatalogGrid>
       </div>
-    </div>
+    </StorefrontListingControls>
   )
 }
