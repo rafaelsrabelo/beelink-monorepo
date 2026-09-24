@@ -450,6 +450,7 @@ export interface UiMessages {
     bandNameHelp: string
     /** The panel that opens on a component's row. */
     editComponent: string
+    closeInspector: string
     bodyLabel: string
     bodyPlaceholder: string
     columnsLabel: string

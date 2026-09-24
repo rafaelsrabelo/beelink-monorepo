@@ -41,6 +41,7 @@ export function BandRow({
   onEdit,
   onInsertBlock,
   inserting = false,
+  selectedId = null,
   messages,
 }: {
   band: ArrangementBand
@@ -63,6 +64,8 @@ export function BandRow({
    */
   onInsertBlock?: (index: number) => void
   inserting?: boolean
+  /** The block whose fields are open. */
+  selectedId?: string | null
   messages: UiMessages
 }) {
   const text = messages.design
@@ -77,10 +80,13 @@ export function BandRow({
     <li
       ref={drag.setNodeRef}
       style={drag.style}
+      // The single card is the selected block itself, so the band's item carries the mark.
+      {...(single?.id === selectedId ? { "aria-current": "true" as const } : {})}
       className={cn(
         "bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-2",
         drag.isDragging && "z-10 opacity-80 shadow-md",
         !(single ? singleShown(band, single) : band.isActive) && "opacity-60",
+        single?.id === selectedId && "ring-primary ring-2",
       )}
     >
       {/*
@@ -93,6 +99,7 @@ export function BandRow({
           band={band}
           block={single}
           bandName={name}
+          selected={single.id === selectedId}
           drag={drag}
           onToggleBand={onToggleBand}
           onEditBand={onEditBand}
@@ -191,6 +198,7 @@ export function BandRow({
                 <ArrangementRow
                   key={component.id}
                   item={component}
+                  selected={component.id === selectedId}
                   onToggle={onToggle}
                   onSpanChange={onSpanChange}
                   {...(band.width ? { bandWidth: band.width } : {})}

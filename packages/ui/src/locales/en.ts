@@ -382,6 +382,7 @@ export const en: UiMessages = {
     bandNamePlaceholder: "Services",
     bandNameHelp: "On a site, the named bands become the header menu.",
     editComponent: "Edit component",
+    closeInspector: "Close the block's fields",
     bodyLabel: "Text",
     bodyPlaceholder: "Write the paragraph…",
     columnsLabel: "Columns",

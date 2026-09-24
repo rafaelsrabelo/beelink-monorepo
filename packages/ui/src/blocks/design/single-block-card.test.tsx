@@ -139,6 +139,31 @@ describe("SingleBlockCard — a band of one block is one card", () => {
     expect(last).toHaveFocus()
   })
 
+  // The block whose fields are open is marked in the list as the preview marks it.
+  it("marks the selected block, on a card and on a row", () => {
+    render(
+      <BandArrangement
+        bands={[band("b1", [cover]), band("b2", [{ ...cover, id: "c2", title: "Dois" }, { ...cover, id: "c3", title: "Três" }])]}
+        selectedId="c3"
+        {...{
+          onReorder: vi.fn(),
+          onReorderComponents: vi.fn(),
+          onToggleBand: vi.fn(),
+          onEditBand: vi.fn(),
+          onDeleteBand: vi.fn(),
+          onToggle: vi.fn(),
+          onSpanChange: vi.fn(),
+          onDelete: vi.fn(),
+          onEdit: vi.fn(),
+        }}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: /^Três/ })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: /^Capa/ })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByRole("button", { name: /^Três/ }).closest("li")).toHaveAttribute("aria-current", "true")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = renderBands([band("b1", [cover]), band("b2", [{ ...cover, id: "c2", isActive: false }])])
 

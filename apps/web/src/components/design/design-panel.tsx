@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import { useState, type ReactNode } from "react"
+
 // Types
 import type { StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
 
@@ -26,6 +29,9 @@ export interface DesignPanelProps {
   /** A "+" was pressed — between bands, or inside one. The screen opens the gallery for that place. */
   onInsert: (at: InsertAt) => void
   inserting: boolean
+  /** The selected block's fields, drawn above the list; null while none is selected. */
+  inspector: ReactNode
+  selectedId: string | null
 
   palette: StoreColors
   onPalette: (colors: StoreColors) => void
@@ -59,6 +65,8 @@ export function DesignPanel({
   onEdit,
   onInsert,
   inserting,
+  inspector,
+  selectedId,
   palette,
   onPalette,
   presets,
@@ -68,10 +76,18 @@ export function DesignPanel({
   messages,
 }: DesignPanelProps) {
   const text = messages.design
+  const [tab, setTab] = useState<"blocks" | "colors">("blocks")
+  // A block chosen in the preview while the colours are showing brings its fields into view: adjusted
+  // during render, when the selection changes, rather than in an effect a frame later.
+  const [shownFor, setShownFor] = useState(selectedId)
+  if (selectedId !== shownFor) {
+    setShownFor(selectedId)
+    if (selectedId) setTab("blocks")
+  }
 
   return (
     <aside className="flex w-full shrink-0 flex-col gap-3 @4xl/main:w-96">
-      <Tabs defaultValue="blocks">
+      <Tabs value={tab} onValueChange={(next: string) => setTab(next === "colors" ? "colors" : "blocks")}>
         <TabsList className="w-full">
           <TabsTrigger value="blocks" className="flex-1">
             {text.tabBlocks}
@@ -82,6 +98,7 @@ export function DesignPanel({
         </TabsList>
 
         <TabsContent value="blocks" className="flex flex-col gap-3 pt-3">
+          {inspector}
           <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
           {loading ? (
             <>
@@ -104,6 +121,7 @@ export function DesignPanel({
               // browser until Publish would mean a reload could lose something the owner watched appear.
               onInsert={onInsert}
               inserting={inserting}
+              selectedId={selectedId}
               messages={messages}
             />
           )}

@@ -155,18 +155,6 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         messages={messages}
       />
 
-      <ComponentEditor
-        slug={slug}
-        component={editing}
-        bandBackground={saved.find((section) => section.id === editing?.sectionId)?.background ?? null}
-        pageBackground={palette.background}
-        categoriesShown={categories.length}
-        shelfEmpty={editing ? shelves.get(editing.id)?.items.length === 0 : false}
-        onClose={() => setEditingComponent(null)}
-        onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
-        messages={messages}
-        web={web}
-      />
       <BandEditor
         slug={slug}
         section={editingSection}
@@ -211,6 +199,21 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           onEdit={setEditingComponent}
           onInsert={setInsertAt}
           inserting={addSection.isPending || addToBand.isPending}
+          inspector={
+            <ComponentEditor
+              slug={slug}
+              component={editing}
+              bandBackground={saved.find((section) => section.id === editing?.sectionId)?.background ?? null}
+              pageBackground={palette.background}
+              categoriesShown={categories.length}
+              shelfEmpty={editing ? shelves.get(editing.id)?.items.length === 0 : false}
+              onClose={() => setEditingComponent(null)}
+              onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
+              messages={messages}
+              web={web}
+            />
+          }
+          selectedId={editingComponent}
           palette={palette}
           onPalette={setPalette}
           presets={presets.data ?? []}

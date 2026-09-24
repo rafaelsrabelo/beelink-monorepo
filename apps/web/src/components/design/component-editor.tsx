@@ -1,21 +1,18 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Types
 import type { StoreComponent } from "@harness-monorepo/contracts"
 
+// Libs
+import { XIcon } from "lucide-react"
+
 // UI
 import { ComponentForm } from "@harness-monorepo/ui/blocks/design/component-form"
 import type { ComponentFormValues, SlideTargetOption } from "@harness-monorepo/ui/blocks/design/component-form"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@harness-monorepo/ui/components/sheet"
+import { Button } from "@harness-monorepo/ui/components/button"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -32,7 +29,7 @@ import type { WebMessages } from "@/locales"
 
 export interface ComponentEditorProps {
   slug: string
-  /** The component being edited, or null while the sheet is closed. */
+  /** The component selected, or null while none is. */
   component: StoreComponent | null
   /** The colour of the band holding it — the announcement strip's, since that band is the strip. */
   bandBackground: string | null
@@ -50,64 +47,24 @@ export interface ComponentEditorProps {
 }
 
 /**
- * The fields of one component, in a sheet beside the page.
+ * The fields of one component, as the panel's inspector: at the top of the blocks tab, with the list
+ * still below it.
+ *
+ * It used to be a sheet over the panel, and a sheet covered the one list that shows which block is
+ * which — the selection was marked in the preview and nowhere else. Inside the panel the preview
+ * and the list both show it, and the list stays reachable for dragging and for the hidden blocks
+ * the preview does not draw.
  *
  * Saved straight to the API, not held in the arrangement's draft. Publish sends an order and a
  * set of visibilities; what a component SAYS is a different promise, and one the owner wants to
  * see land — the same reason a colour saves on its own.
  *
- * Keyed on the component's id, so opening a different one starts a fresh form instead of showing
+ * Keyed on the component's id, so choosing a different one starts a fresh form instead of showing
  * the last one's fields over the new one's name. That exact confusion was reported once: a slide
  * id where a component id belonged, and the form showing one thing while the page showed another.
  */
-export function ComponentEditor({
-  slug,
-  component,
-  bandBackground,
-  pageBackground,
-  categoriesShown,
-  shelfEmpty,
-  onClose,
-  onSaved,
-  messages,
-  web,
-}: ComponentEditorProps) {
-  return (
-    <Sheet
-      open={component !== null}
-      // Not modal: the preview beside it is the subject of this form, and the owner has to be able
-      // to scroll it, click another block and watch the page answer while the form is open. As a
-      // modal it was reported as the screen locking up — which is what a page that looks live and
-      // takes no pointer is.
-      modal={false}
-      onOpenChange={(open) => (open ? undefined : onClose())}
-    >
-      <SheetContent
-        side="right"
-        // The preview stays visible behind the form: the owner is editing a block and watching
-        // that block, and a dimmed, blurred page hides the only feedback the form has. It is the
-        // whole of "já abre o que tem nele, e já aparece na página nele".
-        seeThrough
-        className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-lg"
-      >
-        {component ? (
-          <ComponentEditorBody
-            key={component.id}
-            slug={slug}
-            component={component}
-            bandBackground={bandBackground}
-            pageBackground={pageBackground}
-            categoriesShown={categoriesShown}
-            shelfEmpty={shelfEmpty}
-            onClose={onClose}
-            {...(onSaved ? { onSaved } : {})}
-            messages={messages}
-            web={web}
-          />
-        ) : null}
-      </SheetContent>
-    </Sheet>
-  )
+export function ComponentEditor({ component, ...props }: ComponentEditorProps) {
+  return component ? <ComponentEditorBody key={component.id} component={component} {...props} /> : null
 }
 
 function ComponentEditorBody({
@@ -124,6 +81,19 @@ function ComponentEditorBody({
 }: Omit<ComponentEditorProps, "component"> & { component: StoreComponent }) {
   const text = messages.design
   const [value, setValue] = useState<ComponentFormValues>(() => toForm(component, bandBackground))
+  const title = useRef<HTMLHeadingElement>(null)
+
+  // Focus in on the way in, and back to where it came from on the way out — the preview's block or
+  // the list's row — when that is still on the page. Choosing another block remounts this, and its
+  // own focus wins, since the new one's effect runs after this one's cleanup.
+  useEffect(() => {
+    const from = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const heading = title.current
+    heading?.focus({ preventScroll: false })
+    return () => {
+      if (from?.isConnected && !heading?.isConnected) from.focus()
+    }
+  }, [])
 
   const update = useUpdateComponent(slug)
   const updateBand = useUpdateSection(slug)
@@ -158,12 +128,23 @@ function ComponentEditorBody({
   }))
 
   return (
-    <>
-      <SheetHeader>
-        <SheetTitle>{text.editComponent}</SheetTitle>
-        <SheetDescription>{labelOf(component.kind, component.title, messages)}</SheetDescription>
-      </SheetHeader>
-      <div className="flex flex-col gap-4 px-4 pb-4">
+    <section
+      aria-labelledby="component-inspector-title"
+      className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-3"
+    >
+      <header className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-col">
+          {/* The focus lands here on choosing a block — from the preview it would otherwise stay there. */}
+          <h2 id="component-inspector-title" ref={title} tabIndex={-1} className="text-sm font-semibold outline-none">
+            {text.editComponent}
+          </h2>
+          <p className="text-muted-foreground truncate text-xs">{labelOf(component.kind, component.title, messages)}</p>
+        </div>
+        <Button type="button" variant="ghost" size="icon" aria-label={text.closeInspector} onClick={onClose}>
+          <XIcon aria-hidden="true" className="size-4" />
+        </Button>
+      </header>
+      <div className="flex flex-col gap-4">
         {empty ? <EmptyStateNote state={empty} slug={slug} messages={messages} /> : null}
         <ComponentForm
           value={value}
@@ -198,11 +179,11 @@ function ComponentEditorBody({
           messages={messages}
         />
         {update.error ? (
-          <p role="alert" className="text-destructive mt-3 text-sm">
+          <p role="alert" className="text-destructive text-sm">
             {pageErrorCopy(update.error, web)}
           </p>
         ) : null}
       </div>
-    </>
+    </section>
   )
 }
