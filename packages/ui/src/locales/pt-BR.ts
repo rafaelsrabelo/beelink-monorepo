@@ -144,6 +144,8 @@ export const ptBR: UiMessages = {
     noPhoto: "Sem foto",
     search: "Buscar nesta loja",
     searchAction: "Buscar",
+    searchScope: "Buscar em",
+    searchScopeAll: "Todos",
     searchPlaceholder: "O que você procura?",
     searchClear: "Limpar busca",
     searchHeading: "Busca",

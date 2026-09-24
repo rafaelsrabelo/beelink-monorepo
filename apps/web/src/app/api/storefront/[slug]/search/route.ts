@@ -36,12 +36,17 @@ export async function GET(
 
   const { slug } = await context.params
   const term = request.nextUrl.searchParams.get("q")?.trim() ?? ""
+  const scope = request.nextUrl.searchParams.get("categoria")?.trim() ?? ""
 
   // An empty box is an empty list, not a page of the whole shop: the catalogue endpoint ignores a
   // blank filter, so asking it would answer with everything the shop sells under the search field.
   if (!term) return NextResponse.json({ products: [] }, { status: 200 })
 
-  const catalogue: StorefrontCatalog = await catalogueAt(slug, { search: term, pageSize: SUGGESTIONS })
+  const catalogue: StorefrontCatalog = await catalogueAt(slug, {
+    search: term,
+    ...(scope ? { category: scope } : {}),
+    pageSize: SUGGESTIONS,
+  })
 
   return NextResponse.json({ products: catalogue.products, total: catalogue.total }, { status: 200 })
 }

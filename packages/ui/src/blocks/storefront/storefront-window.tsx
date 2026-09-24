@@ -42,7 +42,18 @@ export type { StorefrontBanner } from "./storefront-cover"
 export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
-    "searchAction" | "searchValue" | "searchHidden" | "searchSlot" | "cartHref" | "cartCount" | "accountHref" | "menu" | "cta" | "categories"
+    | "searchAction"
+    | "searchValue"
+    | "searchHidden"
+    | "searchScopes"
+    | "searchScope"
+    | "searchSlot"
+    | "cartHref"
+    | "cartCount"
+    | "accountHref"
+    | "menu"
+    | "cta"
+    | "categories"
   > {
   name: string
   description?: string | null
@@ -135,6 +146,8 @@ export function StorefrontWindow({
   searchAction,
   searchValue = "",
   searchHidden,
+  searchScopes,
+  searchScope,
   cartHref,
   cartCount,
   accountHref,
@@ -182,6 +195,8 @@ export function StorefrontWindow({
         {...(searchAction ? { searchAction } : {})}
         searchValue={searchValue}
         {...(searchHidden ? { searchHidden } : {})}
+        {...(searchScopes ? { searchScopes } : {})}
+        {...(searchScope ? { searchScope } : {})}
         {...(cartHref ? { cartHref } : {})}
         {...(cartCount !== undefined ? { cartCount } : {})}
         {...(accountHref ? { accountHref } : {})}

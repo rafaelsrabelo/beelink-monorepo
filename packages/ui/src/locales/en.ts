@@ -144,6 +144,8 @@ export const en: UiMessages = {
     noPhoto: "No photo",
     search: "Search this shop",
     searchAction: "Search",
+    searchScope: "Search in",
+    searchScopeAll: "Everything",
     searchPlaceholder: "What are you looking for?",
     searchClear: "Clear search",
     searchHeading: "Search",

@@ -229,6 +229,7 @@ export default async function StorefrontSectionPage({
       markedCategory={loaded.section.kind === "category" ? null : (paramOf(query.categoria) ?? null)}
       onSale={catalogue.facets.discount.count > 0}
       searchValue={term}
+      searchScope={loaded.section.kind === "category" ? null : (paramOf(query.categoria) ?? null)}
       year={new Date().getFullYear()}
       messages={ui}
     >

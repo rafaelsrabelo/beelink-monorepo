@@ -12,7 +12,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
-import { StorefrontSearch } from "./storefront-search"
+import { StorefrontSearch, type StorefrontSearchScope } from "./storefront-search"
 
 /** One entry of a site's menu: a named band, as an anchor. The screen builds them. */
 export interface StorefrontMenuItem {
@@ -32,6 +32,9 @@ export interface StorefrontMastheadProps {
   searchAction?: string
   searchValue?: string
   searchHidden?: Record<string, string>
+  /** The "Buscar em" select's entries and its current one; see `StorefrontSearch`. */
+  searchScopes?: readonly StorefrontSearchScope[]
+  searchScope?: string
   cartHref?: string
   cartCount?: number
   accountHref?: string
@@ -72,6 +75,8 @@ export function StorefrontMasthead({
   searchAction,
   searchValue = "",
   searchHidden,
+  searchScopes,
+  searchScope,
   cartHref,
   cartCount = 0,
   accountHref,
@@ -137,6 +142,8 @@ export function StorefrontMasthead({
                 action={searchAction}
                 value={searchValue}
                 hidden={searchHidden}
+                scopes={searchScopes}
+                {...(searchScope ? { scope: searchScope } : {})}
                 tone="panel"
                 messages={messages}
               />

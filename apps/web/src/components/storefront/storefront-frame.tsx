@@ -38,6 +38,11 @@ export interface StorefrontFrameProps {
   onSale?: boolean
   /** What was searched for, said back in the field someone typed it into. */
   searchValue?: string
+  /**
+   * The category the search opens narrowed to, on a page that was reached narrowed: the search
+   * and the catalogue with `?categoria=`. A category's own page needs none — it is its own scope.
+   */
+  searchScope?: string | null
   /** The shop's pitch, which only the home shows: an inner page is about the goods. */
   description?: string | null
   /** The cover, which only the home shows, and only when the shopkeeper chose that layout. */
@@ -109,6 +114,7 @@ export function StorefrontFrame({
   markedCategory = null,
   onSale = false,
   searchValue,
+  searchScope = null,
   description = null,
   showBanner = false,
   blocks,
@@ -137,6 +143,9 @@ export function StorefrontFrame({
   const parentOf = (slug: string | null) => categories.find((category) => category.slug === slug)?.parentSlug ?? null
   const current = activeCategory && !parentOf(activeCategory) ? activeCategory : null
   const marked = parentOf(activeCategory) ?? parentOf(markedCategory) ?? markedCategory
+  // "Buscar em": every top-level category, opening on the one whose page this is.
+  const scopes = topLevel.map((category) => ({ value: category.slug, label: category.name }))
+  const scope = (activeCategory ? (parentOf(activeCategory) ?? activeCategory) : searchScope) ?? ""
 
   // The shop's own pages, and how to reach a person. Built here and not in the block for the
   // reason every href is: a block that knew "Produtos" links to `routeWords.products` would be
@@ -179,11 +188,15 @@ export function StorefrontFrame({
                 slug={store.slug}
                 routeWords={store.routeWords}
                 initialTerm={searchValue}
+                scopes={scopes}
+                initialScope={scope}
                 locale="pt-BR"
                 messages={messages}
               />
             ),
             searchAction: routes.search(),
+            searchScopes: scopes,
+            searchScope: scope,
             // The basket, on every page: it has an address. The account link waits for a customer
             // account to exist — `/login` is the shopkeeper's door, the wrong one for a visitor.
             cartHref: routes.cart(),

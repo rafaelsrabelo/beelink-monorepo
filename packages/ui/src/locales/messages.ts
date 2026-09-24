@@ -186,6 +186,10 @@ export interface UiMessages {
     noPhoto: string
     search: string
     searchAction: string
+    /** Names the select before the field: which category the search is narrowed to. */
+    searchScope: string
+    /** The select's first option: the whole shop. */
+    searchScopeAll: string
     /**
      * Distinct from `search`, which is the field's accessible name: a placeholder is gone the
      * moment someone types, so it can never be the only label a field has (WCAG 3.3.2).
