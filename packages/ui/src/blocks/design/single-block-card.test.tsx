@@ -41,9 +41,11 @@ describe("SingleBlockCard — a band of one block is one card", () => {
   })
 
   it("names the block, says its band, and moves as the band", () => {
-    renderBands([band("b1", [cover], { name: "Destaque" })])
+    const { container } = renderBands([band("b1", [cover], { name: "Destaque", width: "FULL" })])
 
     expect(screen.getByRole("button", { name: "Arrastar: Destaque" })).toBeInTheDocument()
+    expect(container.querySelector('img[src="/capa.jpg"]')).toBeInTheDocument()
+    expect(screen.getByText(/Ponta a ponta/)).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /^Capa/ })).toHaveTextContent("Destaque · Banner")
     expect(screen.getByRole("group", { name: /Largura do bloco: Capa/ })).toBeInTheDocument()
   })
@@ -70,6 +72,19 @@ describe("SingleBlockCard — a band of one block is one card", () => {
     await user.click(screen.getByRole("button", { name: "Mostrar na loja: Capa", pressed: false }))
     expect(hidden.onToggle).toHaveBeenCalledWith("c1", true)
     expect(hidden.onToggleBand).not.toHaveBeenCalled()
+    hidden.unmount()
+
+    const bandHidden = renderBands([band("b1", [cover], { isActive: false })])
+    await user.click(screen.getByRole("button", { name: "Mostrar na loja: Capa" }))
+    expect(bandHidden.onToggleBand).toHaveBeenCalledWith("b1", true)
+    expect(bandHidden.onToggle).not.toHaveBeenCalled()
+    bandHidden.unmount()
+
+    // Both hidden: one click shows both — the screen's draft composes the two edits.
+    const both = renderBands([band("b1", [{ ...cover, isActive: false }], { isActive: false })])
+    await user.click(screen.getByRole("button", { name: "Mostrar na loja: Capa" }))
+    expect(both.onToggleBand).toHaveBeenCalledWith("b1", true)
+    expect(both.onToggle).toHaveBeenCalledWith("c1", true)
   })
 
   // The API would leave an empty band behind a deleted only block; the card is one thing to its owner.
@@ -95,6 +110,30 @@ describe("SingleBlockCard — a band of one block is one card", () => {
     const container = screen.getByRole("button", { name: "Arrastar: Faixa 1" }).closest("li")!
     expect(within(container).getByRole("button", { name: "Arrastar: Capa" })).toBeInTheDocument()
     expect(within(container).getByRole("button", { name: "Arrastar: Segundo" })).toBeInTheDocument()
+  })
+
+  // The add slot is the same node before and after, so the button just pressed keeps the focus.
+  it("keeps the add button focused while the card becomes a container", () => {
+    const handlers = {
+      onReorder: vi.fn(),
+      onReorderComponents: vi.fn(),
+      onToggleBand: vi.fn(),
+      onEditBand: vi.fn(),
+      onDeleteBand: vi.fn(),
+      onToggle: vi.fn(),
+      onSpanChange: vi.fn(),
+      onDelete: vi.fn(),
+      onEdit: vi.fn(),
+    }
+    const add = () => <button type="button">Adicionar nesta faixa</button>
+    const { rerender } = render(<BandArrangement bands={[band("b1", [cover])]} renderAddToBand={add} {...handlers} />)
+    screen.getByRole("button", { name: "Adicionar nesta faixa" }).focus()
+
+    rerender(
+      <BandArrangement bands={[band("b1", [cover, { ...cover, id: "c2", title: "Segundo" }])]} renderAddToBand={add} {...handlers} />,
+    )
+
+    expect(screen.getByRole("button", { name: "Adicionar nesta faixa" })).toHaveFocus()
   })
 
   it("has no accessibility violations", async () => {

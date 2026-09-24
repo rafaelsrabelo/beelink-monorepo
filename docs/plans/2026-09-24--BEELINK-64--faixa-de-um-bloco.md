@@ -59,3 +59,22 @@ controle de largura do A6.
 
 - O `+` entre as faixas: C3.
 - A seleção pelo preview: C4.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou dois pontos, ambos corrigidos:
+
+- **Com a faixa e o bloco escondidos, o olho do cartão mostrava só o bloco.** O clique faz duas
+  edições do rascunho (mostrar a faixa, mostrar o bloco), e a tela montava cada uma a partir do
+  mesmo retrato do rascunho: a segunda desfazia a primeira. O `edit` do rascunho passa a aceitar uma
+  função que parte do estado mais recente, e mostrar ou esconder uma faixa (`patchSection`) e um
+  bloco (`patchComponent`) usam essa forma. Um teste do `useDesignDraft` faz as duas edições no
+  mesmo evento, e falha com a forma antiga.
+- **Adicionar o segundo bloco pelo teclado perdia o foco.** O cartão e o contêiner eram raízes
+  diferentes, e o React remontava a faixa inteira, com o botão de adicionar que estava com o foco.
+  Agora a faixa é sempre o mesmo `<li>` com o mesmo lugar para adicionar; só o miolo muda.
+
+Um ponto foi refutado como defeito, e atendido mesmo assim: a confirmação de excluir chama a faixa
+pelo nome dela quando ela tem nome, como o painel já chamava. Os testes que a revisão pediu foram
+escritos: faixa escondida com bloco visível, os dois escondidos, a miniatura e a largura da faixa no
+cartão.

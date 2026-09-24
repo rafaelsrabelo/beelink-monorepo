@@ -1,14 +1,10 @@
 "use client"
 
-// React
-import type { ReactNode } from "react"
-
 // Libs
 import { EyeIcon, EyeOffIcon, GripVerticalIcon, PaletteIcon, Trash2Icon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -33,8 +29,12 @@ export interface SingleBlockCardProps {
   onToggle: (id: string, isActive: boolean) => void
   onSpanChange: (id: string, span: ArrangementSpan) => void
   onEdit: (id: string) => void
-  addSlot?: ReactNode
   messages: UiMessages
+}
+
+/** Whether a one-block band shows on the page: both it and its block have to. */
+export function singleShown(band: Pick<ArrangementBand, "isActive">, block: Pick<ArrangementItem, "isActive">): boolean {
+  return band.isActive && block.isActive
 }
 
 /**
@@ -45,7 +45,8 @@ export interface SingleBlockCardProps {
  * card keeps the block's face — its picture, its name, its width — and the band's reach: the handle
  * moves the band, the swatch opens the band's sheet, and the bin deletes the band, because the API
  * would otherwise leave an empty band behind. It becomes a container the moment a second block
- * arrives, which is the `BandRow` it came out of.
+ * arrives. It is the inside of the band's `<li>`, which `BandRow` keeps, so the add slot below it is
+ * the same element before and after — a keyboard user adding the second block keeps their place.
  *
  * One eye, open only while both are shown, since a hidden band and a hidden block are the same shop.
  * Closing hides the band; opening shows the band, and the block too if it had been hidden on its own.
@@ -61,12 +62,11 @@ export function SingleBlockCard({
   onToggle,
   onSpanChange,
   onEdit,
-  addSlot,
   messages,
 }: SingleBlockCardProps) {
   const text = messages.design
   const name = block.title?.trim() || text.kinds[block.kind]
-  const shown = band.isActive && block.isActive
+  const shown = singleShown(band, block)
 
   const toggle = () => {
     if (shown) return onToggleBand(band.id, false)
@@ -75,15 +75,7 @@ export function SingleBlockCard({
   }
 
   return (
-    <li
-      ref={drag.setNodeRef}
-      style={drag.style}
-      className={cn(
-        "bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-2",
-        drag.isDragging && "z-10 opacity-80 shadow-md",
-        !shown && "opacity-60",
-      )}
-    >
+    <>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -157,8 +149,6 @@ export function SingleBlockCard({
           messages={messages}
         />
       ) : null}
-
-      {addSlot}
-    </li>
+    </>
   )
 }

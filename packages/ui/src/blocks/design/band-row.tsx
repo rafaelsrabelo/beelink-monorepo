@@ -19,7 +19,7 @@ import { ArrangeBoard, useArrangeItem } from "./design-arrange"
 import { ArrangementRow } from "./arrangement-row"
 import type { ArrangementSpan } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
-import { SingleBlockCard } from "./single-block-card"
+import { SingleBlockCard, singleShown } from "./single-block-card"
 
 /**
  * One band of the page: its own controls, and the components inside it — or, while it holds one
@@ -71,25 +71,7 @@ export function BandRow({
   // name in the menu — and by its place otherwise.
   const name = band.name?.trim() || format(text.bandNumber, { position: String(position) })
   const [only] = band.components
-
-  if (only && band.components.length === 1) {
-    return (
-      <SingleBlockCard
-        band={band}
-        block={only}
-        bandName={name}
-        drag={drag}
-        onToggleBand={onToggleBand}
-        onEditBand={onEditBand}
-        onDeleteBand={onDeleteBand}
-        onToggle={onToggle}
-        onSpanChange={onSpanChange}
-        onEdit={onEdit}
-        addSlot={addSlot}
-        messages={messages}
-      />
-    )
-  }
+  const single = only && band.components.length === 1 ? only : null
 
   return (
     <li
@@ -98,99 +80,122 @@ export function BandRow({
       className={cn(
         "bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-2",
         drag.isDragging && "z-10 opacity-80 shadow-md",
-        !band.isActive && "opacity-60",
+        !(single ? singleShown(band, single) : band.isActive) && "opacity-60",
       )}
     >
-      <div className="flex items-center gap-1">
-        {/*
-          The handle carries the drag, and it carries `attributes` with it: dnd-kit puts the role,
-          the tab stop and the described-by on whatever it is spread onto, so splitting them from
-          the listeners would leave a control that announces as draggable and cannot be driven.
-        */}
-        <button
-          type="button"
-          aria-label={`${text.dragHandle}: ${name}`}
-          className="text-muted-foreground hover:text-foreground cursor-grab touch-none rounded-md p-1"
-          {...drag.handleProps}
-        >
-          <GripVerticalIcon aria-hidden="true" className="size-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onEditBand(band.id)}
-          className="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 text-left outline-none hover:underline focus-visible:ring-2"
-        >
-          {/* The colour itself, not its name: a hex is data the shopkeeper chose and cannot read back. */}
-          <span
-            aria-hidden="true"
-            className="border-shell-border size-4 shrink-0 rounded-full border"
-            {...(band.background ? { style: { backgroundColor: band.background } } : {})}
-          >
-            {band.background ? null : <PaletteIcon className="text-muted-foreground size-4" />}
-          </span>
-          <span className="text-muted-foreground truncate text-xs font-medium uppercase">{name}</span>
-        </button>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={`${band.isActive ? text.hide : text.show}: ${name}`}
-          aria-pressed={band.isActive}
-          onClick={() => onToggleBand(band.id, !band.isActive)}
-        >
-          {band.isActive ? (
-            <EyeIcon aria-hidden="true" className="size-4" />
-          ) : (
-            <EyeOffIcon aria-hidden="true" className="size-4" />
-          )}
-        </Button>
-
-        {/*
-          No bin on a band holding a row that cannot go. The product list's own row already draws
-          none, and a bin on its band was the same delete through a bigger door — which is exactly
-          how a shop lost its shelves. The eye stays: hiding is the answer for "not now".
-        */}
-        {band.components.every((component) => component.deletable !== false) ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={`${text.deleteBand}: ${name}`}
-            onClick={() => onDeleteBand(band.id)}
-          >
-            <Trash2Icon aria-hidden="true" className="size-4" />
-          </Button>
-        ) : null}
-      </div>
-
       {/*
-        A board per band, nested inside the one that orders the bands. Nested and not shared: a
-        single context would make every component of every band a drop target for every other,
-        which is the move this cut defers.
+        One <li> and one add slot whichever the band is, so a card that gains its second block
+        becomes a container around the same nodes: the add button that was just pressed stays the
+        focused element instead of being unmounted under the keyboard.
       */}
-      <ArrangeBoard
-        ids={band.components.map((component) => component.id)}
-        onReorder={(ids) => onReorderComponents(band.id, ids)}
-      >
-        <ul className="flex flex-col gap-2 pl-6">
-          {band.components.map((component) => (
-            <ArrangementRow
-              key={component.id}
-              item={component}
-              onToggle={onToggle}
-              onSpanChange={onSpanChange}
-              {...(band.width ? { bandWidth: band.width } : {})}
-              onDelete={onDelete}
-              onEdit={onEdit}
-              messages={messages}
-            />
-          ))}
-        </ul>
-      </ArrangeBoard>
+      {single ? (
+        <SingleBlockCard
+          band={band}
+          block={single}
+          bandName={name}
+          drag={drag}
+          onToggleBand={onToggleBand}
+          onEditBand={onEditBand}
+          onDeleteBand={onDeleteBand}
+          onToggle={onToggle}
+          onSpanChange={onSpanChange}
+          onEdit={onEdit}
+          messages={messages}
+        />
+      ) : (
+        <>
+          <div className="flex items-center gap-1">
+            {/*
+              The handle carries the drag, and it carries `attributes` with it: dnd-kit puts the role,
+              the tab stop and the described-by on whatever it is spread onto, so splitting them from
+              the listeners would leave a control that announces as draggable and cannot be driven.
+            */}
+            <button
+              type="button"
+              aria-label={`${text.dragHandle}: ${name}`}
+              className="text-muted-foreground hover:text-foreground cursor-grab touch-none rounded-md p-1"
+              {...drag.handleProps}
+            >
+              <GripVerticalIcon aria-hidden="true" className="size-4" />
+            </button>
 
-      {addSlot ? <div className="pl-6">{addSlot}</div> : null}
+            <button
+              type="button"
+              onClick={() => onEditBand(band.id)}
+              className="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 text-left outline-none hover:underline focus-visible:ring-2"
+            >
+              {/* The colour itself, not its name: a hex is data the shopkeeper chose and cannot read back. */}
+              <span
+                aria-hidden="true"
+                className="border-shell-border size-4 shrink-0 rounded-full border"
+                {...(band.background ? { style: { backgroundColor: band.background } } : {})}
+              >
+                {band.background ? null : <PaletteIcon className="text-muted-foreground size-4" />}
+              </span>
+              <span className="text-muted-foreground truncate text-xs font-medium uppercase">{name}</span>
+            </button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={`${band.isActive ? text.hide : text.show}: ${name}`}
+              aria-pressed={band.isActive}
+              onClick={() => onToggleBand(band.id, !band.isActive)}
+            >
+              {band.isActive ? (
+                <EyeIcon aria-hidden="true" className="size-4" />
+              ) : (
+                <EyeOffIcon aria-hidden="true" className="size-4" />
+              )}
+            </Button>
+
+            {/*
+              No bin on a band holding a row that cannot go. The product list's own row already draws
+              none, and a bin on its band was the same delete through a bigger door — which is exactly
+              how a shop lost its shelves. The eye stays: hiding is the answer for "not now".
+            */}
+            {band.components.every((component) => component.deletable !== false) ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`${text.deleteBand}: ${name}`}
+                onClick={() => onDeleteBand(band.id)}
+              >
+                <Trash2Icon aria-hidden="true" className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+
+          {/*
+            A board per band, nested inside the one that orders the bands. Nested and not shared: a
+            single context would make every component of every band a drop target for every other,
+            which is the move this cut defers.
+          */}
+          <ArrangeBoard
+            ids={band.components.map((component) => component.id)}
+            onReorder={(ids) => onReorderComponents(band.id, ids)}
+          >
+            <ul className="flex flex-col gap-2 pl-6">
+              {band.components.map((component) => (
+                <ArrangementRow
+                  key={component.id}
+                  item={component}
+                  onToggle={onToggle}
+                  onSpanChange={onSpanChange}
+                  {...(band.width ? { bandWidth: band.width } : {})}
+                  onDelete={onDelete}
+                  onEdit={onEdit}
+                  messages={messages}
+                />
+              ))}
+            </ul>
+          </ArrangeBoard>
+        </>
+      )}
+
+      {addSlot ? <div className={cn(!single && "pl-6")}>{addSlot}</div> : null}
     </li>
   )
 }

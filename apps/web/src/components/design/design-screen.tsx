@@ -95,7 +95,9 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const unavailableKinds: ComponentKind[] =
     store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]
   const takenKinds = takenKindsOf(rows)
+  // As the panel calls it: its name where it has one, its place otherwise.
   const bandName = (id: string) =>
+    saved.find((section) => section.id === id)?.name?.trim() ||
     format(text.bandNumber, { position: String(rows.findIndex((row) => row.id === id) + 1) })
 
   const editing = saved.flatMap((section) => section.components).find((c) => c.id === editingComponent) ?? null
@@ -176,9 +178,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           loading={draft.loading}
           onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
           onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}
-          onToggleBand={(id, isActive) =>
-            draft.edit(rows.map((row) => (row.id === id ? { ...row, isActive } : row)))
-          }
+          onToggleBand={(id, isActive) => draft.patchSection(id, { isActive })}
           onEditBand={setEditingBand}
           onDeleteBand={(id) => setPendingDelete({ level: "band", id, name: bandName(id) })}
           onToggle={(id, isActive) => draft.patchComponent(id, { isActive })}
