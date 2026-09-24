@@ -11,7 +11,6 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
@@ -19,6 +18,7 @@ import { ArrangeBoard, useArrangeItem } from "./design-arrange"
 import { ArrangementRow } from "./arrangement-row"
 import type { ArrangementSpan } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
+import { bandLabelOf } from "./band-label"
 import { SingleBlockCard, singleShown } from "./single-block-card"
 
 /**
@@ -67,9 +67,7 @@ export function BandRow({
 }) {
   const text = messages.design
   const drag = useArrangeItem(band.id)
-  // Called by its name where it has one — a named band is one the owner will look for by that
-  // name in the menu — and by its place otherwise.
-  const name = band.name?.trim() || format(text.bandNumber, { position: String(position) })
+  const name = bandLabelOf(band.name, position, messages)
   const [only] = band.components
   const single = only && band.components.length === 1 ? only : null
 

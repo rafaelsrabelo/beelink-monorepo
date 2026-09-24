@@ -7,6 +7,7 @@ import { useState } from "react"
 import type { ComponentKind, PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
+import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -95,10 +96,8 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const unavailableKinds: ComponentKind[] =
     store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]
   const takenKinds = takenKindsOf(rows)
-  // As the panel calls it: its name where it has one, its place otherwise.
   const bandName = (id: string) =>
-    saved.find((section) => section.id === id)?.name?.trim() ||
-    format(text.bandNumber, { position: String(rows.findIndex((row) => row.id === id) + 1) })
+    bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
 
   const editing = saved.flatMap((section) => section.components).find((c) => c.id === editingComponent) ?? null
   const editingSection = saved.find((section) => section.id === editingBand) ?? null

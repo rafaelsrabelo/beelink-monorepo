@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ArrangeBoard } from "./design-arrange"
+import { bandLabelOf } from "./band-label"
 import { BandRow } from "./band-row"
 import type { ArrangementItem, ArrangementSpan } from "./arrangement-row"
 import type { SectionWidth } from "./design-types"
@@ -81,7 +82,7 @@ export function BandArrangement({
 
   function nameOf(id: string | number) {
     const at = bands.findIndex((band) => band.id === id)
-    return at < 0 ? "" : bands[at]!.name?.trim() || format(text.bandNumber, { position: String(at + 1) })
+    return at < 0 ? "" : bandLabelOf(bands[at]!.name, at + 1, messages)
   }
 
   /**

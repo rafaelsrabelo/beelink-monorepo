@@ -10,11 +10,11 @@ import type { PublicProductCategory, PublicSection, PublicStore } from "@harness
 import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
 import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/design-block-placeholder"
 import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
+import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
 import { PreviewDeviceToggle, type PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
 import { StorefrontShelfSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-shelf-skeleton"
-import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -134,9 +134,7 @@ export function DesignPreviewPane({
                   renderSection={(section, band) => (
                     <DesignHandle
                       id={section.id}
-                      label={format(text.bandNumber, {
-                        position: String(orderedIds.indexOf(section.id) + 1),
-                      })}
+                      label={bandLabelOf(section.name, orderedIds.indexOf(section.id) + 1, messages)}
                       messages={messages}
                     >
                       {band}
