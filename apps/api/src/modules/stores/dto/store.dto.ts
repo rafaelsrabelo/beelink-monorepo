@@ -7,7 +7,6 @@ import {
   ArrayMinSize,
   ArrayUnique,
   IsArray,
-  IsBoolean,
   IsIn,
   IsOptional,
   IsString,
@@ -169,10 +168,6 @@ export class UpdateStoreDto implements UpdateStorePayload {
   @ApiProperty({ enum: STORE_LAYOUT_TYPES })
   @IsIn(STORE_LAYOUT_TYPES)
   layoutType!: StoreLayoutType;
-
-  @ApiProperty()
-  @IsBoolean()
-  showProductsByCategory!: boolean;
 
   @ApiProperty({ type: StoreColorsDto })
   @ValidateNested()

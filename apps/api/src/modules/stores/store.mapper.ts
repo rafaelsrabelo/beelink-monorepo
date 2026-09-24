@@ -88,7 +88,6 @@ export function toPublicStore(
     logoUrl: row.logoUrl,
     bannerImageUrl: row.bannerImageUrl,
     layoutType: row.layoutType,
-    showProductsByCategory: row.showProductsByCategory,
     // Four columns on the way out, one object on the wire — the seam the schema note promised.
     colors: {
       background: row.colorBackground,

@@ -114,7 +114,7 @@ describe('stores — the public read resolves each showcase', () => {
     const { component, names } = await shelf(id);
 
     expect(names.sort()).toEqual(['Blusa Azul', 'Regata Lisa']);
-    expect(component).toMatchObject({ source: 'CATEGORY', sourceCategory: { slug: 'blusas', name: 'Blusas' } });
+    expect(component).toMatchObject({ source: 'CATEGORY', sourceCategory: { slug: 'blusas', name: 'Blusas', description: null } });
   });
 
   it('draws a pick in the shopkeeper’s order, dropping one that left the shelf', async () => {

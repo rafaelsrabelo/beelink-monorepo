@@ -162,7 +162,7 @@ export class PageRules {
 
     if (!drawn && display !== null) {
       throw new BadRequestException(
-        pageError('COMPONENT_DISPLAY_INVALID', 'Só um banner e uma vitrine escolhem como mostrar o que têm.'),
+        pageError('COMPONENT_DISPLAY_INVALID', 'Só banner, vitrine e categorias escolhem como mostrar o que têm.'),
       );
     }
 

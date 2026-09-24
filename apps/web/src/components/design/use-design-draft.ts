@@ -1,5 +1,8 @@
 "use client"
 
+// Next
+import { useRouter } from "next/navigation"
+
 // React
 import { useEffect, useState } from "react"
 
@@ -31,6 +34,7 @@ import { changesOf, hasChanges, reconcile, toDraft, type ComponentDraft, type Se
  * what is on the page.
  */
 export function useDesignDraft(slug: string) {
+  const router = useRouter()
   const page = useSections(slug)
   const reorder = useReorderSections(slug)
   const reorderComponents = useReorderComponents(slug)
@@ -75,14 +79,23 @@ export function useDesignDraft(slug: string) {
   const rows: SectionDraft[] = draft ?? []
   const saved: Section[] = page.data ?? []
 
-  function edit(next: SectionDraft[]) {
-    setDraft(next)
+  /**
+   * A new arrangement, or a change to the latest one. The change form is what lets two edits in one
+   * event compose: a single-block card shows its band and its block in one click, and two values
+   * built from this render's `rows` would have the second undo the first.
+   */
+  function edit(next: SectionDraft[] | ((current: SectionDraft[]) => SectionDraft[])) {
+    setDraft((current) => (typeof next === "function" ? next(current ?? []) : next))
     setDirty(true)
   }
 
+  function patchSection(id: string, patch: Partial<Pick<SectionDraft, "isActive">>) {
+    edit((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
+  }
+
   function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "span">>) {
-    edit(
-      rows.map((row) => ({
+    edit((current) =>
+      current.map((row) => ({
         ...row,
         components: row.components.map((component) =>
           component.id === id ? { ...component, ...patch } : component,
@@ -124,6 +137,9 @@ export function useDesignDraft(slug: string) {
       .then(() => {
         setDirty(false)
         setSeeded(null)
+        // The shop as served is the page's server read, the showcases' products in it: a showcase
+        // shown again has none in the preview until that read is taken again.
+        router.refresh()
       })
       .catch(() => {
         // The mutation's own error state is what the screen would show; the draft is kept so
@@ -194,6 +210,7 @@ export function useDesignDraft(slug: string) {
     deleteError,
     clearDeleteError,
     edit,
+    patchSection,
     patchComponent,
     discard,
     publish,

@@ -196,7 +196,6 @@ export class StoresService {
         bannerImageUrl: dto.bannerImageUrl ?? null,
         categoryId: dto.categoryId ?? null,
         layoutType: dto.layoutType,
-        showProductsByCategory: dto.showProductsByCategory,
         colorBackground: dto.colors.background,
         colorPrimary: dto.colors.primary,
         colorFooter: dto.colors.footer,
@@ -252,7 +251,7 @@ export class StoresService {
       categoryIds.length
         ? this.prisma.productCategory.findMany({
             where: { id: { in: categoryIds }, storeId, isActive: true },
-            select: { id: true, slug: true, name: true },
+            select: { id: true, slug: true, name: true, description: true },
           })
         : [],
       Promise.all(
@@ -264,7 +263,9 @@ export class StoresService {
       ),
     ]);
 
-    const categoryOf = new Map(categories.map((row) => [row.id, { slug: row.slug, name: row.name }]));
+    const categoryOf = new Map(
+      categories.map((row) => [row.id, { slug: row.slug, name: row.name, description: row.description }]),
+    );
 
     return new Map(
       shelves.map(([showcase, products]) => [
