@@ -89,12 +89,18 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const shop = useShopRefresh()
   // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
   const opened = (component: { id: string; kind: ComponentKind }) => {
-    setEditingComponent(component.id)
+    choose(component.id)
     if (component.kind === "PRODUCTS") shop.refresh(component.id)
   }
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
+  const [panelTab, setPanelTab] = useState<"blocks" | "colors">("blocks")
+  // Every choice of a block shows its fields — the same block chosen again from the colours included.
+  const choose = (id: string) => {
+    setEditingComponent(id)
+    setPanelTab("blocks")
+  }
   const [editingBand, setEditingBand] = useState<string | null>(null)
 
   /*
@@ -107,10 +113,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
 
   const { rows, saved } = draft
 
-  // The two the shop may only have one of, and the two a page of this kind cannot hold. Computed
-  // once because the gallery is now offered from two places — the top of the panel, and each
-  // band's foot — and a kind refused in one and offered in the other would be a bug with no
-  // symptom until the API answered 409.
+  // What the gallery never offers: the strip a page has once, and what this kind of page cannot hold.
   const unavailableKinds: ComponentKind[] =
     store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]
   const takenKinds = takenKindsOf(rows)
@@ -175,7 +178,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           colors={palette}
           orderedIds={orderedIdsOf(rows)}
           onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
-          onEdit={setEditingComponent}
+          onEdit={choose}
           selectedId={editingComponent}
           messages={messages}
         />
@@ -196,7 +199,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
               setPendingDelete({ level: "component", id, name: labelOf(component.kind, component.title, messages) })
             }
           }}
-          onEdit={setEditingComponent}
+          onEdit={choose}
           onInsert={setInsertAt}
           inserting={addSection.isPending || addToBand.isPending}
           inspector={
@@ -214,6 +217,8 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             />
           }
           selectedId={editingComponent}
+          tab={panelTab}
+          onTabChange={setPanelTab}
           palette={palette}
           onPalette={setPalette}
           presets={presets.data ?? []}

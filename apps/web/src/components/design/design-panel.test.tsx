@@ -29,6 +29,8 @@ function props(over: Partial<ComponentProps<typeof DesignPanel>> = {}): Componen
     inserting: false,
     inspector: null,
     selectedId: null,
+    tab: "blocks",
+    onTabChange: vi.fn(),
     palette: colours,
     onPalette: vi.fn(),
     presets: [],
@@ -45,19 +47,26 @@ describe("DesignPanel — the inspector above the list", () => {
   it("draws the selected block's fields over a list that still shows it marked", () => {
     render(<DesignPanel {...props({ inspector: <section aria-label="Campos">campos</section>, selectedId: "c1" })} />)
 
-    expect(screen.getByRole("region", { name: "Campos" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /^Oi/ })).toHaveAttribute("aria-pressed", "true")
+    const fields = screen.getByRole("region", { name: "Campos" })
+    const row = screen.getByRole("button", { name: /^Oi/ })
+    expect(row.closest("li")).toHaveAttribute("aria-current", "true")
+    // The fields first, the list below them.
+    expect(fields.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it("comes back to the blocks tab when a block is chosen while the colours show", async () => {
+  // The fields being typed in live in the blocks tab: looking at the colours must not throw them away.
+  it("keeps the fields mounted while the colours show, and hands the tab choice back", async () => {
     const user = userEvent.setup()
-    const { rerender } = render(<DesignPanel {...props()} />)
+    const onTabChange = vi.fn()
+    const { rerender } = render(
+      <DesignPanel {...props({ inspector: <input aria-label="Título do bloco" defaultValue="Digitado" />, selectedId: "c1", onTabChange })} />,
+    )
+
     await user.click(screen.getByRole("tab", { name: "Cores" }))
+    expect(onTabChange).toHaveBeenCalledWith("colors")
+
+    rerender(<DesignPanel {...props({ inspector: <input aria-label="Título do bloco" defaultValue="Digitado" />, selectedId: "c1", tab: "colors" })} />)
     expect(screen.getByRole("tab", { name: "Cores" })).toHaveAttribute("aria-selected", "true")
-
-    rerender(<DesignPanel {...props({ inspector: <section aria-label="Campos">campos</section>, selectedId: "c1" })} />)
-
-    expect(screen.getByRole("tab", { name: "Componentes" })).toHaveAttribute("aria-selected", "true")
-    expect(screen.getByRole("region", { name: "Campos" })).toBeInTheDocument()
+    expect(screen.getByLabelText("Título do bloco", { selector: "input" })).toHaveValue("Digitado")
   })
 })

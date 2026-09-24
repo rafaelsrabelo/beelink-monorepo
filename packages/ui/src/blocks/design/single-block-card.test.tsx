@@ -159,9 +159,32 @@ describe("SingleBlockCard — a band of one block is one card", () => {
       />,
     )
 
-    expect(screen.getByRole("button", { name: /^Três/ })).toHaveAttribute("aria-pressed", "true")
-    expect(screen.getByRole("button", { name: /^Capa/ })).toHaveAttribute("aria-pressed", "false")
     expect(screen.getByRole("button", { name: /^Três/ }).closest("li")).toHaveAttribute("aria-current", "true")
+    expect(screen.getByRole("button", { name: /^Capa/ }).closest("li")).not.toHaveAttribute("aria-current")
+  })
+
+  it("marks a selected single-block card as the band's item", () => {
+    render(
+      <BandArrangement
+        bands={[band("b1", [cover])]}
+        selectedId="c1"
+        {...{
+          onReorder: vi.fn(),
+          onReorderComponents: vi.fn(),
+          onToggleBand: vi.fn(),
+          onEditBand: vi.fn(),
+          onDeleteBand: vi.fn(),
+          onToggle: vi.fn(),
+          onSpanChange: vi.fn(),
+          onDelete: vi.fn(),
+          onEdit: vi.fn(),
+        }}
+      />,
+    )
+
+    const card = screen.getByRole("button", { name: /^Capa/ }).closest("li")!
+    expect(card).toHaveAttribute("aria-current", "true")
+    expect(card.className).toContain("ring-primary")
   })
 
   it("has no accessibility violations", async () => {

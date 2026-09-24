@@ -40,6 +40,7 @@ function Screen({ component, onClose }: { component: StoreComponent | null; onCl
   return (
     <>
       <button type="button">Bloco no preview</button>
+      <button type="button">Linha na lista</button>
       <ComponentEditor
         slug="loja"
         component={component}
@@ -75,5 +76,20 @@ describe("ComponentEditor — the panel's inspector", () => {
 
     rerender(<Screen component={null} onClose={onClose} />)
     expect(screen.getByRole("button", { name: "Bloco no preview" })).toHaveFocus()
+  })
+
+  // Chosen from the preview, then another from the list: closing goes back to the list's row.
+  it("gives the focus back to the last opener after switching blocks", () => {
+    const onClose = vi.fn()
+    const { rerender } = render(<Screen component={null} onClose={onClose} />, { wrapper })
+    screen.getByRole("button", { name: "Bloco no preview" }).focus()
+    rerender(<Screen component={heading} onClose={onClose} />)
+
+    screen.getByRole("button", { name: "Linha na lista" }).focus()
+    rerender(<Screen component={{ ...heading, id: "c2", title: "Outro" }} onClose={onClose} />)
+    expect(screen.getByRole("heading", { name: "Editar componente" })).toHaveFocus()
+
+    rerender(<Screen component={null} onClose={onClose} />)
+    expect(screen.getByRole("button", { name: "Linha na lista" })).toHaveFocus()
   })
 })

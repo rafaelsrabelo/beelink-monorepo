@@ -46,6 +46,9 @@ export interface ComponentEditorProps {
   web: WebMessages
 }
 
+/** The inspector's title, and how a closing inspector tells that another has already replaced it. */
+const INSPECTOR_TITLE = "component-inspector-title"
+
 /**
  * The fields of one component, as the panel's inspector: at the top of the blocks tab, with the list
  * still below it.
@@ -82,18 +85,21 @@ function ComponentEditorBody({
   const text = messages.design
   const [value, setValue] = useState<ComponentFormValues>(() => toForm(component, bandBackground))
   const title = useRef<HTMLHeadingElement>(null)
+  // What opened this: the preview's block or the list's row. Read while rendering, before the effect
+  // of the inspector this replaces has run its cleanup and moved the focus somewhere else.
+  const [from] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null))
+  // The strip's colour as it was when these fields opened: the band's sheet can change it meanwhile,
+  // and a save here writes it back only when it was changed here.
+  const [openedWith] = useState(bandBackground)
 
-  // Focus in on the way in, and back to where it came from on the way out — the preview's block or
-  // the list's row — when that is still on the page. Choosing another block remounts this, and its
-  // own focus wins, since the new one's effect runs after this one's cleanup.
+  // Focus in on the way in, and back to the opener on the way out, if it is still on the page. Not
+  // when another block's fields replaced these — its heading is already there, and the focus is its.
   useEffect(() => {
-    const from = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    const heading = title.current
-    heading?.focus({ preventScroll: false })
+    title.current?.focus()
     return () => {
-      if (from?.isConnected && !heading?.isConnected) from.focus()
+      if (from?.isConnected && !document.getElementById(INSPECTOR_TITLE)) from.focus()
     }
-  }, [])
+  }, [from])
 
   const update = useUpdateComponent(slug)
   const updateBand = useUpdateSection(slug)
@@ -129,16 +135,19 @@ function ComponentEditorBody({
 
   return (
     <section
-      aria-labelledby="component-inspector-title"
+      aria-labelledby={INSPECTOR_TITLE}
+      aria-describedby={`${INSPECTOR_TITLE}-block`}
       className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-3"
     >
       <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col">
           {/* The focus lands here on choosing a block — from the preview it would otherwise stay there. */}
-          <h2 id="component-inspector-title" ref={title} tabIndex={-1} className="text-sm font-semibold outline-none">
+          <h2 id={INSPECTOR_TITLE} ref={title} tabIndex={-1} className="text-sm font-semibold outline-none">
             {text.editComponent}
           </h2>
-          <p className="text-muted-foreground truncate text-xs">{labelOf(component.kind, component.title, messages)}</p>
+          <p id={`${INSPECTOR_TITLE}-block`} className="text-muted-foreground truncate text-xs">
+            {labelOf(component.kind, component.title, messages)}
+          </p>
         </div>
         <Button type="button" variant="ghost" size="icon" aria-label={text.closeInspector} onClick={onClose}>
           <XIcon aria-hidden="true" className="size-4" />
@@ -167,7 +176,7 @@ function ComponentEditorBody({
                   // The strip's colour lives on its band. Written second and only when it moved:
                   // a save that only changed the words touches one row, not two.
                   const background = value.background || null
-                  if (component.kind !== "ANNOUNCEMENT" || background === bandBackground) return onClose()
+                  if (component.kind !== "ANNOUNCEMENT" || background === (openedWith || null)) return onClose()
 
                   updateBand.mutate({ sectionId: component.sectionId, payload: { background } }, { onSuccess: onClose })
                 },

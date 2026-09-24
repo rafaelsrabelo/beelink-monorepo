@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState, type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 // Types
 import type { StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
@@ -12,6 +12,7 @@ import type { ArrangementBand, ArrangementSpan, InsertAt } from "@harness-monore
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 export interface DesignPanelProps {
@@ -32,6 +33,9 @@ export interface DesignPanelProps {
   /** The selected block's fields, drawn above the list; null while none is selected. */
   inspector: ReactNode
   selectedId: string | null
+  /** Held by the screen, which turns it back to the blocks every time a block is chosen. */
+  tab: "blocks" | "colors"
+  onTabChange: (tab: "blocks" | "colors") => void
 
   palette: StoreColors
   onPalette: (colors: StoreColors) => void
@@ -67,6 +71,8 @@ export function DesignPanel({
   inserting,
   inspector,
   selectedId,
+  tab,
+  onTabChange,
   palette,
   onPalette,
   presets,
@@ -76,18 +82,19 @@ export function DesignPanel({
   messages,
 }: DesignPanelProps) {
   const text = messages.design
-  const [tab, setTab] = useState<"blocks" | "colors">("blocks")
-  // A block chosen in the preview while the colours are showing brings its fields into view: adjusted
-  // during render, when the selection changes, rather than in an effect a frame later.
-  const [shownFor, setShownFor] = useState(selectedId)
-  if (selectedId !== shownFor) {
-    setShownFor(selectedId)
-    if (selectedId) setTab("blocks")
-  }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-3 @4xl/main:w-96">
-      <Tabs value={tab} onValueChange={(next: string) => setTab(next === "colors" ? "colors" : "blocks")}>
+    /*
+      Beside the preview it stays in view and scrolls on its own, so bringing a block's fields into
+      focus scrolls the panel and not the whole page away from the preview it was chosen in.
+    */
+    <aside
+      className={cn(
+        "flex w-full shrink-0 flex-col gap-3 @4xl/main:w-96",
+        "@4xl/main:sticky @4xl/main:top-header @4xl/main:max-h-[calc(100dvh-var(--header-height))] @4xl/main:self-start @4xl/main:overflow-y-auto",
+      )}
+    >
+      <Tabs value={tab} onValueChange={(next: string) => onTabChange(next === "colors" ? "colors" : "blocks")}>
         <TabsList className="w-full">
           <TabsTrigger value="blocks" className="flex-1">
             {text.tabBlocks}
@@ -97,7 +104,8 @@ export function DesignPanel({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="blocks" className="flex flex-col gap-3 pt-3">
+        {/* Kept mounted while the colours show: the fields being typed in live here. */}
+        <TabsContent value="blocks" keepMounted className="flex flex-col gap-3 pt-3">
           {inspector}
           <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
           {loading ? (

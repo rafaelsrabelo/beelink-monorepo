@@ -52,3 +52,26 @@ o cartão desenham com um contorno e `aria-current`, do mesmo jeito que o previe
 
 - Selecionar uma faixa pelo preview.
 - Editar o texto direto no preview.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou seis pontos, todos corrigidos:
+
+- **Ir para a aba de cores desmontava o inspetor.** A aba de componentes saía da página, o que foi
+  digitado se perdia e o foco era puxado para o bloco do preview. A aba de componentes passa a
+  ficar montada (escondida e inerte) enquanto as cores aparecem.
+- **Depois de trocar de bloco, fechar devolvia o foco ao primeiro bloco aberto.** Quem abriu o
+  inspetor passa a ser lido durante a renderização, antes de o inspetor anterior mexer no foco, e
+  um inspetor substituído por outro não devolve o foco a ninguém.
+- **Escolher de novo o mesmo bloco, estando nas cores, não voltava para os componentes.** A aba
+  passa a ser da tela, que volta para os componentes a cada escolha, e não só quando o id muda.
+- **`aria-pressed` nos nomes da lista** anunciava um botão de alternar que não alterna. Sai; a
+  marca é o `aria-current` do item, como planejado.
+- **A cor da barra de aviso:** com a folha da faixa mudando a cor enquanto o inspetor da barra
+  estava aberto, salvar o inspetor desfazia a mudança. O inspetor só escreve a cor quando ela foi
+  mudada nele.
+- **Focar o título do inspetor rolava a página até o topo do painel.** Ao lado do preview, o painel
+  fica fixo na tela e rola sozinho; medido: escolher um bloco não move a página.
+
+Também atendido: o inspetor passa a ser descrito pelo nome do bloco (`aria-describedby`), e os testes
+pedidos foram escritos (cartão escolhido, ordem inspetor-lista, foco depois de trocar de bloco).
