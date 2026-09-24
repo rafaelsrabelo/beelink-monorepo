@@ -1,5 +1,11 @@
 // Types
-import type { AuthErrorCode, LeadErrorCode, StoreErrorCode, PageErrorCode } from "@harness-monorepo/contracts"
+import type {
+  AuthErrorCode,
+  CatalogErrorCode,
+  LeadErrorCode,
+  StoreErrorCode,
+  PageErrorCode,
+} from "@harness-monorepo/contracts"
 
 /**
  * The codes that belong to no domain. The API's exception filter falls back to the HTTP status name
@@ -45,6 +51,12 @@ type PanelPageErrorCode = Extract<
   | "SHOWCASE_CATEGORY_INVALID"
   | "SHOWCASE_PRODUCTS_INVALID"
   | "SHOWCASE_LIMIT_INVALID"
+>
+
+/** The catalogue codes a save from the product editor can meet and a shopkeeper can act on. */
+type PanelCatalogErrorCode = Extract<
+  CatalogErrorCode,
+  "PRODUCT_SLUG_TAKEN" | "PRODUCT_SKU_TAKEN" | "PRODUCT_HAS_OPTIONS"
 >
 
 export interface WebMessages {
@@ -187,7 +199,14 @@ export interface WebMessages {
    * ask it through a per-domain copy function, and an unknown code falls back to `UNKNOWN`.
    */
   errors: Record<
-    AuthErrorCode | StoreErrorCode | LeadErrorCode | HttpFallbackErrorCode | WebErrorCode | PanelPageErrorCode | "UNKNOWN",
+    | AuthErrorCode
+    | StoreErrorCode
+    | LeadErrorCode
+    | HttpFallbackErrorCode
+    | WebErrorCode
+    | PanelPageErrorCode
+    | PanelCatalogErrorCode
+    | "UNKNOWN",
     string
   >
 }
