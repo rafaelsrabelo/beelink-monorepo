@@ -245,7 +245,19 @@ export interface UiMessages {
     clearFilters: string
     /** The order the list is asked for. The screen renders the picker only if it can ask for one. */
     sortLabel: string
+    /** The shop's own order, first in the sort list: "Mais relevantes". */
+    sortRelevance: string
     sortNewest: string
+    /** "Maior desconto": the biggest saving first. */
+    sortDiscount: string
+    /** The sort's submit button, drawn only when scripting is off: a change submits by itself otherwise. */
+    sortApply: string
+    /** `{from}` `{to}` `{total}` — the listing's count in 5a: "1–16 de 86 resultados". */
+    resultsRange: string
+    resultsOne: string
+    resultsNone: string
+    /** The word before a searched term in the count: "… resultados para "whey"". */
+    resultsFor: string
     sortPriceAsc: string
     sortPriceDesc: string
     /** The categories index, and the same heading over the home's band of them. */
