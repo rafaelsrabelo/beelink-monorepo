@@ -332,10 +332,14 @@ export interface UiMessages {
       hints: Record<ComponentKind, string>
     }
     productListHint: string
-    sizeLabel: string
-    sizeFull: string
-    sizeHalves: string
-    sizeThirds: string
+    /** A block's slice of its band, named so it cannot be read as the band's own width. */
+    spanLabel: string
+    spanFull: string
+    spanTwoThirds: string
+    spanHalf: string
+    spanThird: string
+    /** The band's width, said beside the block's so the two are never mistaken for each other. */
+    spanBandLabel: string
     /** A banner's choice between showing its pictures one at a time or all together. */
     displayLabel: string
     displayCarousel: string

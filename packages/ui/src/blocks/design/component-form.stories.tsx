@@ -10,7 +10,6 @@ const empty: ComponentFormValues = {
   title: "Novidades da semana",
   subtitle: "Chegou agora",
   body: "",
-  layout: "FULL",
   display: "CAROUSEL",
   columns: 0,
   align: "CENTER",
@@ -72,7 +71,6 @@ export const Banner: Story = {
       kind: "BANNER",
       title: "",
       subtitle: "",
-      layout: "HALVES",
       slides: [
         {
           id: "s1",

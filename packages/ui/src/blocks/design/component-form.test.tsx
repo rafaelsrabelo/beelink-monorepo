@@ -16,7 +16,6 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     title: "",
     subtitle: "",
     body: "",
-    layout: "FULL",
   display: "CAROUSEL",
     columns: 0,
     align: "LEFT",
@@ -72,10 +71,10 @@ describe("ComponentForm", () => {
     expect(screen.queryByLabelText("Título")).not.toBeInTheDocument()
   })
 
-  it("offers a banner its size and a way to add a picture", () => {
+  it("offers a banner its format and a way to add a picture", () => {
     renderForm(values({ kind: "BANNER" }))
 
-    expect(screen.getByRole("combobox", { name: "Tamanho" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Formato" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Adicionar imagem" })).toBeInTheDocument()
   })
 

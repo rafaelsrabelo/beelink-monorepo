@@ -10,7 +10,6 @@ const meta = {
   parameters: { layout: "padded" },
   args: {
     value: {
-      layout: "HALVES",
       display: "CAROUSEL",
       slides: [
         {

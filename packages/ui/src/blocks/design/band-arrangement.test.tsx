@@ -64,13 +64,15 @@ describe("BandArrangement", () => {
     expect(screen.getByRole("button", { name: "Arrastar: Frete grátis" })).toBeInTheDocument()
   })
 
-  it("offers a size on a banner and on nothing else", () => {
+  /**
+   * Every block has a slice of its band — a heading beside a banner is as reachable as two banners —
+   * so every block's card offers one. The product list included.
+   */
+  it("offers a width on every kind of block", () => {
     renderBands()
 
-    // Every kind has a span, and offering it on every kind is the width control that replaces this
-    // one. Until then it is the banner's, as it always was.
-    expect(screen.getByRole("group", { name: "Tamanho: Frete grátis" })).toBeInTheDocument()
-    expect(screen.queryByRole("group", { name: /Lista de produtos/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Largura do bloco: Lista de produtos" })).toBeInTheDocument()
   })
 
   /**
@@ -78,62 +80,72 @@ describe("BandArrangement", () => {
    * moment ago has no picture, so a rule of "exactly one" took the control away during the whole
    * time the owner is building the thing and deciding how wide it goes.
    */
-  it("offers a size on a banner that has no picture yet", () => {
+  it("offers a width on a banner that has no picture yet", () => {
     renderBands({
       bands: [
         {
           id: "band-1",
           background: null,
           isActive: true,
-          components: [
-            { id: "novo", kind: "BANNER", title: null, span: "FULL", isActive: true, empty: true },
-          ],
+          components: [{ id: "novo", kind: "BANNER", title: null, span: "FULL", isActive: true, empty: true }],
         },
       ],
     })
 
-    expect(screen.getByRole("group", { name: "Tamanho: Banner" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Largura do bloco: Banner" })).toBeInTheDocument()
+  })
+
+  /** The strip above the header is never in a band's grid, so a width there would change nothing. */
+  it("offers no width on the strip above the header", () => {
+    renderBands({
+      bands: [
+        {
+          id: "band-1",
+          background: null,
+          isActive: true,
+          components: [{ id: "faixa", kind: "ANNOUNCEMENT", title: "Frete grátis", span: "FULL", isActive: true }],
+        },
+      ],
+    })
+
+    expect(screen.queryByRole("group", { name: /Largura do bloco/ })).not.toBeInTheDocument()
   })
 
   /**
-   * The control went at a banner's second picture while the renderer drew every carousel across
-   * the whole band. The band is a grid now and a carousel fills its own cell, so the width changes
-   * it — and a control taken away there would be a width the owner cannot give it.
+   * Four glyphs, each named by its slice, the current one pressed — and the slice written out, so
+   * the owner does not hover to learn what the block is.
    */
-  it("offers a size on a carousel too, now that it fills its own cell", () => {
+  it("names each slice, marks the current one and writes it out", () => {
     renderBands()
 
-    expect(screen.getByRole("group", { name: "Tamanho: Banner" })).toBeInTheDocument()
+    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
+
+    expect(within(largura).getByRole("button", { name: "Metade", pressed: true })).toBeInTheDocument()
+    for (const other of ["Cheio", "Dois terços", "Um terço"]) {
+      expect(within(largura).getByRole("button", { name: other, pressed: false })).toBeInTheDocument()
+    }
+    expect(largura.parentElement).toHaveTextContent("Metade")
   })
 
   /**
-   * Three glyphs, each saying its own name, and the current one pressed. The 112px select they
-   * replaced is why the block's name had eight pixels — measured in the harness at the panel's
-   * real 380px.
+   * The band's width beside the block's, in words of its own: "Tamanho" beside the band's
+   * "Largura" read as one setting in two places.
    */
-  it("names each size and marks the current one", () => {
-    renderBands()
+  it("says the band's width beside the block's, without mistaking one for the other", () => {
+    renderBands({ bands: bands.map((band) => ({ ...band, width: "FULL" as const })) })
 
-    // Scoped to one row: the fixture has four banners, so each size name appears four times.
-    const tamanho = screen.getByRole("group", { name: "Tamanho: Frete grátis" })
-
-    expect(within(tamanho).getByRole("button", { name: "Metade", pressed: true })).toBeInTheDocument()
-    expect(within(tamanho).getByRole("button", { name: "Cheio", pressed: false })).toBeInTheDocument()
-    expect(within(tamanho).getByRole("button", { name: "Um terço", pressed: false })).toBeInTheDocument()
+    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
+    expect(largura.parentElement).toHaveTextContent("Largura da faixa: Ponta a ponta")
   })
 
-  /**
-   * The control changed shape — a select became three glyphs — and nothing asserted that it still
-   * reports a change. Two posters side by side is exactly this callback firing twice.
-   */
-  it("reports the size the owner chose", async () => {
+  it("reports the slice the owner chose, two thirds included", async () => {
     const user = userEvent.setup()
     const { onSpanChange } = renderBands()
 
-    const tamanho = screen.getByRole("group", { name: "Tamanho: Frete grátis" })
-    await user.click(within(tamanho).getByRole("button", { name: "Um terço" }))
+    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
+    await user.click(within(largura).getByRole("button", { name: "Dois terços" }))
 
-    expect(onSpanChange).toHaveBeenCalledWith("2", "THIRD")
+    expect(onSpanChange).toHaveBeenCalledWith("2", "TWO_THIRDS")
   })
 
   it("asks for the opposite of what a band is now", async () => {

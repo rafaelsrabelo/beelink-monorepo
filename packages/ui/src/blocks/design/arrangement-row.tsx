@@ -3,8 +3,6 @@
 // Libs
 import {
   BadgeCheckIcon,
-  Columns3Icon,
-  Columns2Icon,
   EyeIcon,
   EyeOffIcon,
   GripVerticalIcon,
@@ -13,7 +11,6 @@ import {
   LayoutGridIcon,
   MailIcon,
   MegaphoneIcon,
-  RectangleHorizontalIcon,
   TagsIcon,
   Trash2Icon,
   TypeIcon,
@@ -21,7 +18,6 @@ import {
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { ToggleGroup, ToggleGroupItem } from "@harness-monorepo/ui/components/toggle-group"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -30,7 +26,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { useArrangeItem } from "./design-arrange"
 import type { StorefrontSpan } from "../storefront/storefront-band-cell"
-import type { ComponentKind } from "./design-types"
+import type { ComponentKind, SectionWidth } from "./design-types"
+import { SpanField } from "./span-field"
 
 /** A block's slice of its band. The storefront's own type: the row offers what the band draws. */
 export type ArrangementSpan = StorefrontSpan
@@ -64,15 +61,12 @@ export interface ArrangementItem {
 }
 
 /**
- * Offered on a banner, whatever it holds.
- *
- * It used to go at the second picture, because the renderer drew a carousel across the whole band
- * whatever the width said. The band is a grid now and a carousel fills its own cell, so the width
- * changes what a two-slide banner looks like as much as a poster's. Offering it on every kind, and
- * the fourth slice, is the width control that replaces this one.
+ * Every block has a slice of its band, so every block is offered one — a heading beside a banner is
+ * as reachable as two banners. The strip above the header is the exception: it is drawn above the
+ * masthead, never in a band's grid, and a width there would change nothing.
  */
 function hasSpan(item: Pick<ArrangementItem, "kind">): boolean {
-  return item.kind === "BANNER"
+  return item.kind !== "ANNOUNCEMENT"
 }
 
 /**
@@ -98,6 +92,7 @@ export function ArrangementRow({
   onSpanChange,
   onDelete,
   onEdit,
+  bandWidth,
   messages,
 }: {
   item: ArrangementItem
@@ -107,6 +102,8 @@ export function ArrangementRow({
   onDelete?: (id: string) => void
   /** Absent where a kind has nothing to write; the row is then not a button. */
   onEdit?: (id: string) => void
+  /** The width of the band the block sits in, said beside the block's own. */
+  bandWidth?: SectionWidth
   messages: UiMessages
 }) {
   const text = messages.design
@@ -215,37 +212,14 @@ export function ArrangementRow({
       </div>
 
       {hasSpan(item) ? (
-        /*
-          The second line, because it does not fit on the first at any spelling.
-
-          Glyphs rather than a select because each one says its own name, the way
-          `align-field.tsx` already does — but that was NOT what bought the name its width:
-          measured, the group is 130px against the select's 112, so the swap alone made it worse.
-          What bought it was leaving the line.
-        */
-        <ToggleGroup
-          multiple={false}
-          aria-label={`${text.sizeLabel}: ${name}`}
-          variant="outline"
-          className="shrink-0"
-          value={[item.span]}
-          onValueChange={(next: string[]) => {
-            const chosen = next[0]
-            if (chosen === "FULL" || chosen === "HALF" || chosen === "THIRD") {
-              onSpanChange(item.id, chosen)
-            }
-          }}
-        >
-          <ToggleGroupItem value="FULL" aria-label={text.sizeFull}>
-            <RectangleHorizontalIcon aria-hidden="true" className="size-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="HALF" aria-label={text.sizeHalves}>
-            <Columns2Icon aria-hidden="true" className="size-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="THIRD" aria-label={text.sizeThirds}>
-            <Columns3Icon aria-hidden="true" className="size-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        // The second line, because the control and the band's width do not fit beside the name.
+        <SpanField
+          value={item.span}
+          onChange={(span) => onSpanChange(item.id, span)}
+          name={name}
+          {...(bandWidth ? { bandWidth } : {})}
+          messages={messages}
+        />
       ) : null}
     </li>
   )

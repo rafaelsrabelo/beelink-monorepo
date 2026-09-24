@@ -101,6 +101,7 @@ export function arrangementOf(rows: readonly SectionDraft[], saved: readonly Sec
     id: row.id,
     name: savedSections.get(row.id)?.name ?? null,
     background: savedSections.get(row.id)?.background ?? null,
+    width: savedSections.get(row.id)?.width ?? "CONTAINED",
     isActive: row.isActive,
     components: row.components.map((component) => {
       const was = savedComponents.get(component.id)

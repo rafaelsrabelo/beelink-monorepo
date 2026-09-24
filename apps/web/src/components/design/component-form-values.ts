@@ -26,7 +26,6 @@ export function toForm(component: StoreComponent, bandBackground: string | null)
     title: component.title ?? "",
     subtitle: component.subtitle ?? "",
     body: component.body ?? "",
-    layout: component.layout,
     // Null on every kind but a banner, and a banner always has one; the form holds one regardless.
     display: component.display ?? "CAROUSEL",
     columns: component.columns ?? 0,
@@ -131,7 +130,6 @@ export function toPayload(value: ComponentFormValues, linkId: string): UpdateCom
     title: value.title.trim() || null,
     subtitle: value.subtitle.trim() || null,
     body: value.body.trim() || null,
-    layout: value.layout,
     columns: value.columns || null,
     align: value.align,
     // `display` only on a banner: the API refuses a value on a kind that does not draw one.

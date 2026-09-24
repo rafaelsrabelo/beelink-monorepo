@@ -23,8 +23,6 @@ import type { ContactFieldValue } from "./contact-fields-field"
 import type { ComponentDisplay, ComponentKind, TextAlign } from "./design-types"
 import type { Target } from "./target-fields"
 
-export type ComponentFormLayout = "FULL" | "HALVES" | "THIRDS"
-
 /**
  * What a component's form holds while it is being filled in: one shape for every kind, of which
  * the form draws only the fields the kind has. `""` where the wire carries null.
@@ -34,7 +32,6 @@ export interface ComponentFormValues {
   title: string
   subtitle: string
   body: string
-  layout: ComponentFormLayout
   display: ComponentDisplay
   /** `0` is "let the grid decide", which is what null means on the wire. */
   columns: number

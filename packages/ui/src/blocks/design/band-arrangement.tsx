@@ -14,6 +14,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { ArrangeBoard } from "./design-arrange"
 import { BandRow } from "./band-row"
 import type { ArrangementItem, ArrangementSpan } from "./arrangement-row"
+import type { SectionWidth } from "./design-types"
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx` and apps/web reaches
 // both through this block's name.
@@ -25,6 +26,8 @@ export interface ArrangementBand {
   name?: string | null
   /** The band's own colour, drawn as a chip. Null is the page's own. */
   background?: string | null
+  /** Edge to edge, or inside the page's measure — said beside each block's own width. */
+  width?: SectionWidth
   isActive: boolean
   components: readonly ArrangementItem[]
 }

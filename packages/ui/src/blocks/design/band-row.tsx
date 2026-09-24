@@ -159,6 +159,7 @@ export function BandRow({
               item={component}
               onToggle={onToggle}
               onSpanChange={onSpanChange}
+              {...(band.width ? { bandWidth: band.width } : {})}
               onDelete={onDelete}
               onEdit={onEdit}
               messages={messages}
