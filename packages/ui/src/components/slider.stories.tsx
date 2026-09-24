@@ -17,7 +17,13 @@ type Story = StoryObj<typeof meta>
 export const FaixaDePreco: Story = {
   render: () => (
     <div className="w-64">
-      <Slider defaultValue={[50, 200]} min={0} max={300} aria-label="Faixa de preço" />
+      <Slider
+        defaultValue={[50, 200]}
+        min={0}
+        max={300}
+        aria-label="Faixa de preço"
+        getAriaLabel={(index) => (index === 0 ? "Preço mínimo" : "Preço máximo")}
+      />
     </div>
   ),
 }

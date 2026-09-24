@@ -1,19 +1,25 @@
 import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 import { cn } from "cn"
 
+/** Base UI's default reads "<n> start range" in English; the number alone is what a screen can localise. */
+const plainValueText: NonNullable<SliderPrimitive.Thumb.Props["getAriaValueText"]> = (formatted) => formatted
+
+/**
+ * The thumbs are rendered here, so what names them is taken here and handed to each one: a label on
+ * the root only names the group, and every thumb is a range input of its own.
+ */
 function Slider({
   className,
   defaultValue,
   value,
   min = 0,
   max = 100,
+  getAriaLabel,
+  getAriaValueText = plainValueText,
   ...props
-}: SliderPrimitive.Root.Props) {
-  const _values = Array.isArray(value)
-    ? value
-    : Array.isArray(defaultValue)
-      ? defaultValue
-      : [min, max]
+}: SliderPrimitive.Root.Props &
+  Pick<SliderPrimitive.Thumb.Props, "getAriaLabel" | "getAriaValueText">) {
+  const thumbs = Array.isArray(value) ? value.length : Array.isArray(defaultValue) ? defaultValue.length : 1
 
   return (
     <SliderPrimitive.Root
@@ -36,11 +42,14 @@ function Slider({
             className="bg-primary select-none data-horizontal:h-full data-vertical:w-full"
           />
         </SliderPrimitive.Track>
-        {Array.from({ length: _values.length }, (_, index) => (
+        {Array.from({ length: thumbs }, (_, index) => (
           <SliderPrimitive.Thumb
             data-slot="slider-thumb"
             key={index}
-            className="relative block size-3 shrink-0 rounded-full border border-ring bg-white ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+            index={index}
+            getAriaLabel={getAriaLabel}
+            getAriaValueText={getAriaValueText}
+            className="relative block size-3 shrink-0 rounded-full border border-ring bg-background ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
           />
         ))}
       </SliderPrimitive.Control>

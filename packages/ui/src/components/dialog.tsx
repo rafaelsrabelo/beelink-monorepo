@@ -95,10 +95,13 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
 function DialogFooter({
   className,
   showCloseButton = false,
+  closeLabel = "Close",
   children,
   ...props
 }: React.ComponentProps<"div"> & {
   showCloseButton?: boolean
+  /** The close button's text — the screen passes it in the shop's language. */
+  closeLabel?: string
 }) {
   return (
     <div
@@ -112,7 +115,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close render={<Button variant="outline" />}>
-          Close
+          {closeLabel}
         </DialogPrimitive.Close>
       )}
     </div>

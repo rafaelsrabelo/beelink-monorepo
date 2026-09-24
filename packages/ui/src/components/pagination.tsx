@@ -1,7 +1,10 @@
 import * as React from "react"
+import { mergeProps } from "@base-ui/react/merge-props"
+import { useRender } from "@base-ui/react/use-render"
 import { cn } from "cn"
+import type { VariantProps } from "class-variance-authority"
 
-import { Button } from "@harness-monorepo/ui/components/button"
+import { buttonVariants } from "@harness-monorepo/ui/components/button"
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
@@ -35,31 +38,36 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
 
 type PaginationLinkProps = {
   isActive?: boolean
-} & Pick<React.ComponentProps<typeof Button>, "size"> &
-  React.ComponentProps<"a">
+  size?: VariantProps<typeof buttonVariants>["size"]
+} & useRender.ComponentProps<"a">
 
+/**
+ * A link that looks like a button, and stays a link: a page number is somewhere to go, and a
+ * screen reader that calls it a button tells its user the wrong thing. `render` takes the app's
+ * own link component, as `BreadcrumbLink` does.
+ */
 function PaginationLink({
   className,
   isActive,
   size = "icon",
+  render,
   ...props
 }: PaginationLinkProps) {
-  return (
-    <Button
-      variant={isActive ? "outline" : "ghost"}
-      size={size}
-      className={cn(className)}
-      nativeButton={false}
-      render={
-        <a
-          aria-current={isActive ? "page" : undefined}
-          data-slot="pagination-link"
-          data-active={isActive}
-          {...props}
-        />
-      }
-    />
-  )
+  return useRender({
+    defaultTagName: "a",
+    props: mergeProps<"a">(
+      {
+        "aria-current": isActive ? "page" : undefined,
+        className: cn(buttonVariants({ variant: isActive ? "outline" : "ghost", size }), className),
+      },
+      props
+    ),
+    render,
+    state: {
+      slot: "pagination-link",
+      active: isActive,
+    },
+  })
 }
 
 function PaginationPrevious({
