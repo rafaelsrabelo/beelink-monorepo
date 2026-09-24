@@ -454,6 +454,19 @@ export interface UpdateProductVariantsPayload {
 }
 
 /**
+ * A visitor's "Avise-me" for one sold-out combination. Answered 201 with no body, and a second
+ * request from the same number for the same combination is the same request.
+ */
+export interface CreateRestockRequestPayload {
+  variantId: string;
+  /** WhatsApp with area code; the country code is added when missing. */
+  phone: string;
+  name?: string | null;
+  /** The trap: drawn out of sight, and a body that fills it is answered and not saved. */
+  website?: string;
+}
+
+/**
  * Reordering is one request for the whole list, not one PATCH per row: a drag that moves the third
  * item to the top changes every position below it, and sending them one at a time leaves the list
  * in an order nobody chose if the tab closes halfway.
@@ -487,4 +500,6 @@ export type CatalogErrorCode =
   /** The options would make more combinations than a product may have. */
   | "PRODUCT_VARIANTS_LIMIT"
   /** A variant id that is not one of this product's current variants. */
-  | "PRODUCT_VARIANT_NOT_FOUND";
+  | "PRODUCT_VARIANT_NOT_FOUND"
+  /** A restock request for a product or combination this shop does not sell. */
+  | "RESTOCK_VARIANT_INVALID";

@@ -146,6 +146,7 @@ model Store {
   productCategories ProductCategory[]
   products          Product[]
   productVariants   ProductVariant[]
+  restockRequests   RestockRequest[]
   sections          StoreSection[]
   /// What a site's contact form received. Empty on a shop.
   leads             Lead[]

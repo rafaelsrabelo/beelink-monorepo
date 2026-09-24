@@ -34,7 +34,7 @@ export const imageUrl = IsUrl({ protocols: ['http', 'https'], require_protocol: 
  * other reading — and prepending 55 is what stops the link reaching nobody. The legacy stripped
  * punctuation at six call sites and prepended nothing.
  */
-const normaliseWhatsapp = Transform(({ value }: { value: unknown }) => {
+export const normaliseWhatsapp = Transform(({ value }: { value: unknown }) => {
   if (typeof value !== 'string') return value;
   const digits = value.replace(/\D/g, '');
   return digits.length === 10 || digits.length === 11 ? `55${digits}` : digits;

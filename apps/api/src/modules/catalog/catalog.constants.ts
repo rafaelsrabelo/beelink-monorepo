@@ -149,3 +149,9 @@ export const PRODUCT_VARIANTS_MAX = 100;
 
 export const OPTION_NAME_MAX_LENGTH = 40;
 export const OPTION_VALUE_NAME_MAX_LENGTH = 60;
+
+/**
+ * A public write, so a write's limit and not the shop window's 300 a minute: one address may ask to
+ * be told about a handful of sold-out combinations, and never fill the table.
+ */
+export const RESTOCK_RATE_LIMIT = { max: 10, timeWindow: '10 minutes' } as const;
