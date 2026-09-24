@@ -48,9 +48,9 @@ export class ShowcaseRules {
   /** A new showcase: all of the shop's products unless it says otherwise. */
   async forCreate(storeId: string, dto: ShowcaseInput, items: object[]): Promise<ShowcaseFields> {
     const source = dto.source ?? 'ALL';
-    await this.refuseForeign(storeId, dto.sourceCategoryId ?? null, items);
+    const kept = await this.refuseForeign(storeId, dto.sourceCategoryId ?? null, items);
 
-    return this.normalized({ source, sourceCategoryId: dto.sourceCategoryId ?? null, limit: dto.limit ?? null, items });
+    return this.normalized({ source, sourceCategoryId: dto.sourceCategoryId ?? null, limit: dto.limit ?? null, items: kept });
   }
 
   /**
@@ -75,18 +75,26 @@ export class ShowcaseRules {
       select: { source: true, sourceCategoryId: true, limit: true, items: true },
     });
 
-    await this.refuseForeign(storeId, dto.sourceCategoryId ?? null, items ?? []);
+    const kept = await this.refuseForeign(storeId, dto.sourceCategoryId ?? null, items ?? []);
 
     return this.normalized({
       source: dto.source ?? stored.source ?? 'ALL',
       sourceCategoryId: dto.sourceCategoryId !== undefined ? dto.sourceCategoryId : stored.sourceCategoryId,
       limit: dto.limit !== undefined ? dto.limit : stored.limit,
-      items: items ?? (Array.isArray(stored.items) ? (stored.items as object[]) : []),
+      items: items !== undefined ? kept : Array.isArray(stored.items) ? (stored.items as object[]) : [],
     });
   }
 
-  /** A category or a product sent for this showcase has to be this shop's own. */
-  private async refuseForeign(storeId: string, categoryId: string | null, items: object[]): Promise<void> {
+  /**
+   * A category or a product sent for this showcase has to be this shop's own, and what it answers is
+   * the pick without the products that no longer exist.
+   *
+   * Gone and foreign are told apart on purpose. The panel serves a pick as it was stored, deleted
+   * products included, and sends it back on the next save: refusing those would make a list the
+   * owner was just served impossible to reorder, with a message blaming another shop. A product
+   * that exists and is another shop's is the only refusal.
+   */
+  private async refuseForeign(storeId: string, categoryId: string | null, items: object[]): Promise<object[]> {
     if (categoryId) {
       const owned = await this.prisma.productCategory.count({ where: { id: categoryId, storeId } });
 
@@ -96,14 +104,19 @@ export class ShowcaseRules {
     }
 
     const productIds = (items as ShowcaseProduct[]).map((row) => row.productId);
+    if (!productIds.length) return items;
 
-    if (productIds.length) {
-      const owned = await this.prisma.product.count({ where: { id: { in: productIds }, storeId } });
+    const found = await this.prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, storeId: true },
+    });
 
-      if (owned !== productIds.length) {
-        throw new BadRequestException(pageError('SHOWCASE_PRODUCTS_INVALID', 'Um dos produtos não é desta loja.'));
-      }
+    if (found.some((product) => product.storeId !== storeId)) {
+      throw new BadRequestException(pageError('SHOWCASE_PRODUCTS_INVALID', 'Um dos produtos não é desta loja.'));
     }
+
+    const existing = new Set(found.map((product) => product.id));
+    return (items as ShowcaseProduct[]).filter((row) => existing.has(row.productId));
   }
 
   /** The source's own requirement, and nothing kept that the source does not read. */

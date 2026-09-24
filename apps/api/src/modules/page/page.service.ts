@@ -116,10 +116,14 @@ export class PageService {
    */
   async removeSection(storeSlug: string, userId: string, sectionId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.rules.ownedSection(storeId, sectionId);
-    await this.rules.refuseHoldingRequired(storeId, sectionId);
 
-    await this.prisma.storeSection.delete({ where: { id: sectionId } });
+    // The check and the delete in one transaction, behind the shop's lock: see `PageRules.lockShop`.
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      await this.rules.ownedSection(storeId, sectionId, tx);
+      await this.rules.refuseHoldingRequired(storeId, sectionId, tx);
+      await tx.storeSection.delete({ where: { id: sectionId } });
+    });
   }
 
   /**
@@ -209,10 +213,13 @@ export class PageService {
 
   async removeComponent(storeSlug: string, userId: string, componentId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const current = await this.rules.ownedComponent(storeId, componentId);
-    await this.rules.refuseRequired(storeId, current.kind);
 
-    await this.prisma.storeComponent.delete({ where: { id: componentId } });
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const current = await this.rules.ownedComponent(storeId, componentId, tx);
+      await this.rules.refuseRequired(storeId, current.kind, tx);
+      await tx.storeComponent.delete({ where: { id: componentId } });
+    });
   }
 
   /** The components of one band, in the new order. The band itself does not move. */

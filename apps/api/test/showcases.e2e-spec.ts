@@ -149,4 +149,62 @@ describe('page — a showcase has a source', () => {
       expect(response.json<ApiErrorBody>().errorCode, String(limit)).toBe('SHOWCASE_LIMIT_INVALID');
     }
   });
+
+  /**
+   * Two tabs deleting a shop's last two showcases each counted two before the shop's lock, each
+   * deleted one, and the shop had none. One of them now waits, counts one, and is refused.
+   */
+  it('keeps one showcase when two deletes race for the last two', async () => {
+    await expectCreated(call('POST', '/api/stores/lessari/sections', owner, { component: { kind: 'PRODUCTS' } }));
+    const [a, b] = await showcases();
+
+    const answers = await Promise.all([
+      call('DELETE', `/api/stores/lessari/components/${a!.id}`, owner),
+      call('DELETE', `/api/stores/lessari/components/${b!.id}`, owner),
+    ]);
+
+    expect(answers.map((answer) => answer.statusCode).sort()).toEqual([204, 400]);
+    expect(await showcases()).toHaveLength(1);
+  });
+
+  it('refuses to delete the band that holds the last showcases, and lets it go once another exists', async () => {
+    const band = await expectCreated<Section>(
+      call('POST', '/api/stores/lessari/sections', owner, { component: { kind: 'PRODUCTS', source: 'NEWEST' } }),
+    );
+    const [original] = await showcases();
+    expect((await call('DELETE', `/api/stores/lessari/components/${original!.id}`, owner)).statusCode).toBe(204);
+
+    const refused = await call('DELETE', `/api/stores/lessari/sections/${band.id}`, owner);
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json<ApiErrorBody>().errorCode).toBe('COMPONENT_REQUIRED');
+
+    await expectCreated(call('POST', '/api/stores/lessari/sections', owner, { component: { kind: 'PRODUCTS' } }));
+    expect((await call('DELETE', `/api/stores/lessari/sections/${band.id}`, owner)).statusCode).toBe(204);
+  });
+
+  it('refuses a hand-picked showcase with nothing picked', async () => {
+    const response = await call('POST', '/api/stores/lessari/sections', owner, {
+      component: { kind: 'PRODUCTS', source: 'SELECTION', items: [] },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<ApiErrorBody>().errorCode).toBe('SHOWCASE_PRODUCTS_INVALID');
+  });
+
+  // The panel sends back the pick it was served, deleted product included: gone is not foreign.
+  it('saves a pick that still names a product deleted since, keeping the rest', async () => {
+    const other = await expectCreated<Product>(call('POST', '/api/stores/lessari/products', owner, { name: 'Saia', priceCents: 100 }));
+    const [first] = await showcases();
+    const pick = [
+      { id: 'a', productId: product.id },
+      { id: 'b', productId: other.id },
+    ];
+    await call('PATCH', `/api/stores/lessari/components/${first!.id}`, owner, { source: 'SELECTION', items: pick });
+    await call('DELETE', `/api/stores/lessari/products/${other.id}`, owner);
+
+    const resent = await call('PATCH', `/api/stores/lessari/components/${first!.id}`, owner, { items: [...pick].reverse() });
+
+    expect(resent.statusCode).toBe(200);
+    expect(resent.json<StoreComponent>().items).toEqual([{ id: 'a', productId: product.id }]);
+  });
 });

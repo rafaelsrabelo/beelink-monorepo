@@ -74,9 +74,11 @@ function build(
     requiredInSection?: number
     requiredElsewhere?: number
     requiredInShop?: number
-    /** How many of the categories and products a showcase names are this shop's. */
+    /** How many of the categories a showcase names are this shop's. */
     ownCategories?: number
-    ownProducts?: number
+    /** Whether the products a pick names belong to another shop, and which of them no longer exist. */
+    foreignProducts?: boolean
+    goneProducts?: string[]
     /** What a showcase being patched already holds. */
     storedShowcase?: { source: string | null; sourceCategoryId: string | null; limit: number | null; items: object[] }
   } = {},
@@ -154,14 +156,22 @@ function build(
     },
     productCategory: { count: vi.fn().mockResolvedValue(found.ownCategories ?? 1) },
     product: {
-      count: vi
-        .fn()
-        .mockImplementation(({ where }: { where: { id: { in: string[] } } }) =>
-          Promise.resolve(found.ownProducts ?? where.id.in.length),
+      findMany: vi.fn().mockImplementation(({ where }: { where: { id: { in: string[] } } }) =>
+        Promise.resolve(
+          where.id.in
+            .filter((id) => !(found.goneProducts ?? []).includes(id))
+            .map((id) => ({ id, storeId: found.foreignProducts ? 'another-shop' : STORE })),
         ),
+      ),
     },
-    $transaction: vi.fn().mockResolvedValue([]),
+    $queryRaw: vi.fn().mockResolvedValue([]),
+    $transaction: vi.fn(),
   } as unknown as PrismaService;
+
+  // Both shapes the service uses: a list of writes (the reorders), and a callback run on the client
+  // itself (the deletes, which lock the shop first).
+  vi.mocked(prisma.$transaction).mockImplementation(((work: unknown) =>
+    typeof work === 'function' ? (work as (tx: PrismaService) => unknown)(prisma) : Promise.resolve([])) as never);
 
   const stores = { ownedStoreId: vi.fn().mockResolvedValue(STORE) } as unknown as StoresService;
 
@@ -642,7 +652,7 @@ describe('PageService — a showcase has a source', () => {
       empty.service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'SELECTION' }),
     ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_PRODUCTS_INVALID' } });
 
-    const foreign = build({ ownProducts: 0 });
+    const foreign = build({ foreignProducts: true });
     await expect(
       foreign.service.createComponent('lessari', 'user-1', SECTION, {
         kind: 'PRODUCTS',
@@ -650,6 +660,22 @@ describe('PageService — a showcase has a source', () => {
         items: [{ id: 'a', productId: OWN_PRODUCT }],
       }),
     ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_PRODUCTS_INVALID' } });
+  });
+
+  /**
+   * The panel serves a pick as it was stored, a product deleted since included, and sends it back.
+   * Gone is not foreign: the pick keeps what still exists, and the save goes through.
+   */
+  it('drops a picked product that no longer exists, rather than refusing the pick', async () => {
+    const gone = '0199e000-0000-7000-8000-00000000dead';
+    const { service, updateComponent } = build({ kind: 'PRODUCTS', goneProducts: [gone] });
+
+    await service.updateComponent('lessari', 'user-1', COMPONENT, {
+      source: 'SELECTION',
+      items: [{ id: 'a', productId: gone }, { id: 'b', productId: OWN_PRODUCT }] as never,
+    });
+
+    expect(updateComponent.mock.calls[0]![0].data.items).toEqual([{ id: 'b', productId: OWN_PRODUCT }]);
   });
 
   // Switching the source clears what the old one used, so no column holds a value nothing reads.
@@ -669,7 +695,7 @@ describe('PageService — a showcase has a source', () => {
    * the stored list would fail on it. Only what a patch sends is checked.
    */
   it('writes none of a showcase’s fields on a patch that touches none of them', async () => {
-    const { service, updateComponent } = build({ kind: 'PRODUCTS', ownProducts: 0 });
+    const { service, updateComponent } = build({ kind: 'PRODUCTS' });
 
     await service.updateComponent('lessari', 'user-1', COMPONENT, { title: 'Novidades' });
 

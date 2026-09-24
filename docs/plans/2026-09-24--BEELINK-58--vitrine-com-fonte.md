@@ -98,3 +98,20 @@ apagar a última continua valendo, com o mesmo `COMPONENT_REQUIRED`.
 - O editor da vitrine e a galeria oferecendo uma segunda: B5. Até lá, o web continua escondendo a
   segunda vitrine da galeria.
 - "Mais vendidos": quando existirem pedidos.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou quatro pontos, todos corrigidos:
+
+- **Duas exclusões simultâneas podiam apagar as duas últimas vitrines.** A regra "a última não se
+  apaga" é uma contagem seguida de uma exclusão. Duas abas contavam duas vitrines, cada uma apagava
+  uma, e a loja ficava sem nenhuma. A lógica já existia, mas agora que duas vitrines são normais
+  isso fica fácil de acontecer. Os dois caminhos de exclusão (componente e faixa) passam a rodar numa
+  transação que trava a linha da loja; a segunda exclusão espera, conta uma e é recusada. Um e2e
+  dispara as duas ao mesmo tempo.
+- **Um produto apagado travava a seleção.** O painel devolve a seleção como ela foi gravada, com o
+  produto apagado junto. A API contava um produto a menos e culpava "outra loja". Agora só é
+  recusado um produto que existe e é de outra loja; um que sumiu é descartado da lista.
+- **Neste ticket sozinho, a leitura pública servia os ids da seleção.** O B2 resolve isso de vez;
+  aqui a vitrine pública passa a vir sem itens até lá.
+- **Faltavam dois e2e:** apagar a faixa que guarda as últimas vitrines, e seleção vazia.

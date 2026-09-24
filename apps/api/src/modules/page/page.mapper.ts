@@ -161,7 +161,10 @@ function toPublicComponent(
               const href = hrefOf(link, shopSlug, words, slugs);
               return { id: link.id, href, external: link.target === 'EXTERNAL' && !!href } satisfies PublicAnnouncementLink;
             })
-          : (itemsOf(row.kind, row.items) as PublicComponentItem[]),
+          : row.kind === 'PRODUCTS'
+            ? // What a showcase stores is the ids it picked, which are not the visitor's business.
+              []
+            : (itemsOf(row.kind, row.items) as PublicComponentItem[]),
     columns: row.columns,
     align: row.align,
   } satisfies PublicComponent;
