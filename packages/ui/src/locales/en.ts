@@ -248,10 +248,25 @@ export const en: UiMessages = {
         body: "Create categories and link products to them for this block to show.",
         action: "Create categories",
       },
+      categoriesHidden: {
+        title: "Your categories are hidden",
+        body: "A hidden category does not show in the shop. Show the ones that should.",
+        action: "See the categories",
+      },
+      categoriesDrafts: {
+        title: "No category shows in the shop",
+        body: "The products in your categories are still drafts, and a category with no published product does not show in the shop.",
+        action: "Publish the products",
+      },
       productsNone: {
         title: "The shop has no products yet",
         body: "A showcase only shows in the shop with products for sale.",
         action: "Add the first product",
+      },
+      productsOffShelf: {
+        title: "No product is for sale",
+        body: "The shop's products are drafts or sold out, and no source brings what is not for sale.",
+        action: "See the products",
       },
       sourceEmpty: {
         title: "This source has no product right now",

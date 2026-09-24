@@ -27,6 +27,20 @@ describe("EmptyStateNote — the cause, and where it is fixed", () => {
     expect(screen.getByRole("link", { name: /Cadastrar o primeiro produto/ })).toHaveAttribute("href", "/admin/loja/products/new")
   })
 
+  it("leads hidden categories to the categories, and drafts to the products", () => {
+    const { unmount } = render(<EmptyStateNote state={{ kind: "categoriesHidden" }} slug="loja" messages={ptBR} />)
+    expect(screen.getByRole("link", { name: /Ver as categorias/ })).toHaveAttribute("href", "/admin/loja/categories")
+    unmount()
+
+    const drafts = render(<EmptyStateNote state={{ kind: "categoriesDrafts" }} slug="loja" messages={ptBR} />)
+    expect(screen.getByRole("link", { name: /Publicar os produtos/ })).toHaveAttribute("href", "/admin/loja/products")
+    drafts.unmount()
+
+    render(<EmptyStateNote state={{ kind: "productsOffShelf" }} slug="loja" messages={ptBR} />)
+    expect(screen.getByText("Nenhum produto está à venda")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Ver os produtos/ })).toHaveAttribute("href", "/admin/loja/products")
+  })
+
   it("offers no link when the fix is the sheet's own source field", () => {
     render(<EmptyStateNote state={{ kind: "sourceEmpty" }} slug="loja" messages={ptBR} />)
 

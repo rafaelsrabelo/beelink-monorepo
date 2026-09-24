@@ -64,3 +64,26 @@ produtos da loja, prateleira da vitrine), qual estado vale. O aviso é um bloco 
 ## Fora de escopo
 
 - Os marcadores de bloco sem conteúdo, que já falam com o dono e abrem a folha.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou três pontos, todos corrigidos:
+
+- **A folha misturava contagens ao vivo com o retrato do servidor.** As listas do painel (categorias,
+  produtos) se atualizam quando a aba volta a ter foco; o que a loja mostra (categorias à mostra,
+  prateleira da vitrine) vinha da página e só se relia ao recarregar. Voltando da aba do conserto, o
+  aviso trocava de causa e mentia: "escolha outra fonte" para uma fonte que agora tinha produto. A
+  tela passa a reler a loja quando a aba volta a ficar visível, sem recarregar e sem perder o
+  rascunho, numa transição que não desenha nenhuma vitrine como carregando.
+- **"A loja não tem produtos" contava rascunhos e esgotados.** Uma loja com tudo em rascunho ouvia
+  "escolha outra fonte", e toda fonte é igualmente vazia. Os produtos passam a ser contados na
+  prateleira (publicados e com estoque), e esse caso tem aviso próprio: "Nenhum produto está à
+  venda", com o link para os produtos. Numa loja com mais produtos do que a página que o painel
+  carrega, quando essa página não tem nenhum à venda, o aviso não arrisca uma causa.
+- **A causa das categorias contava só as ativas.** Categorias todas ocultas e categorias cujos
+  produtos estão todos em rascunho recebiam "vincule produtos", que não resolve. As duas têm aviso
+  próprio: "Suas categorias estão ocultas" (link para as categorias) e "Os produtos das suas
+  categorias ainda estão em rascunho" (link para os produtos).
+
+Um ponto de teste (a vitrine enquanto os produtos carregam) foi refutado como defeito e coberto
+mesmo assim.

@@ -139,10 +139,15 @@ function ComponentEditorBody({
   // The strip's link keeps its id across saves, so a re-pointed strip is the same link moved.
   const linkId = (component.items[0] as { id?: string } | undefined)?.id ?? crypto.randomUUID()
 
+  const page = products.data
+  const onShelf = page?.products.filter((row) => row.status === "ACTIVE" && !row.soldOut).length ?? 0
   const empty = emptyStateOf(component.kind, {
     categoriesShown,
-    categories: categories.data ? categories.data.filter((row) => row.isActive).length : null,
-    products: products.data?.total ?? null,
+    categories: categories.data ?? null,
+    products: page
+      ? // Beyond the page loaded, a page with none on the shelf says nothing about the rest.
+        { total: page.total, onShelf: onShelf > 0 || page.total <= page.products.length ? onShelf : null }
+      : null,
     shelfEmpty,
   })
 

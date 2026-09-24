@@ -335,7 +335,10 @@ export interface UiMessages {
     emptyStates: {
       categoriesUnlinked: { title: string; body: string; bodyOne: string; action: string }
       categoriesNone: { title: string; body: string; action: string }
+      categoriesHidden: { title: string; body: string; action: string }
+      categoriesDrafts: { title: string; body: string; action: string }
       productsNone: { title: string; body: string; action: string }
+      productsOffShelf: { title: string; body: string; action: string }
       sourceEmpty: { title: string; body: string }
       /** Said after a link that leaves the arrangement's draft where it is. */
       opensInNewTab: string

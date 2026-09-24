@@ -41,6 +41,33 @@ export function EmptyStateNote({ state, slug, messages }: EmptyStateNoteProps) {
           messages={messages}
         />
       )
+    case "categoriesHidden":
+      return (
+        <EmptyStateNotice
+          title={text.categoriesHidden.title}
+          body={text.categoriesHidden.body}
+          action={{ label: text.categoriesHidden.action, href: `${admin}/categories` }}
+          messages={messages}
+        />
+      )
+    case "categoriesDrafts":
+      return (
+        <EmptyStateNotice
+          title={text.categoriesDrafts.title}
+          body={text.categoriesDrafts.body}
+          action={{ label: text.categoriesDrafts.action, href: `${admin}/products` }}
+          messages={messages}
+        />
+      )
+    case "productsOffShelf":
+      return (
+        <EmptyStateNotice
+          title={text.productsOffShelf.title}
+          body={text.productsOffShelf.body}
+          action={{ label: text.productsOffShelf.action, href: `${admin}/products` }}
+          messages={messages}
+        />
+      )
     case "productsNone":
       return (
         <EmptyStateNotice
