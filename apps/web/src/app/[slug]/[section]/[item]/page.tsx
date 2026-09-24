@@ -4,10 +4,11 @@ import type { Metadata } from "next"
 
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
-import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
+import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
 import { getMessages } from "@/lib/locale"
 import { productAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
@@ -66,22 +67,25 @@ export async function generateMetadata({
   }
 }
 
-export default async function ProductPage({ params }: PageProps<"/[slug]/[section]/[item]">) {
+export default async function ProductPage({ params, searchParams }: PageProps<"/[slug]/[section]/[item]">) {
   const { slug, section, item } = await params
+  // Read here and not in the browser, so a shared link opens on its combination with no flash.
+  const { variant } = await searchParams
   const loaded = await load(slug, section, item)
 
   if (!loaded) notFound()
 
   const { store, product } = loaded
-  const { ui } = await getMessages()
+  const { ui, web } = await getMessages()
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
-  // The message names the product, so a shopkeeper reading it on their phone knows what is being
-  // asked for before they answer. Built here: a block never knows what wa.me wants.
+  // The message names the product and the combination chosen, so a shopkeeper reading it on their
+  // phone knows what is being asked for before they answer. Built here: a block never knows what
+  // wa.me wants, and puts the combination where the mark is.
   const order = store.socialNetworks.whatsapp?.replace(/\D/g, "")
   const orderHref = order
-    ? `https://wa.me/${order}?text=${encodeURIComponent(`Olá! Tenho interesse em "${product.name}" — ${store.name}`)}`
+    ? `https://wa.me/${order}?text=${encodeURIComponent(`Olá! Tenho interesse em "${product.name}"`)}${ORDER_VARIANT_MARK}${encodeURIComponent(` — ${store.name}`)}`
     : undefined
 
   return (
@@ -110,19 +114,21 @@ export default async function ProductPage({ params }: PageProps<"/[slug]/[sectio
         messages={ui}
       />
 
-      <StorefrontProductDetail
-        name={product.name}
-        description={product.description}
-        priceCents={product.priceCents}
-        compareAtPriceCents={product.compareAtPriceCents}
-        images={product.images}
+      <StorefrontProductLive
+        slug={slug}
+        product={product}
+        initialVariantId={typeof variant === "string" ? variant : null}
         categoryName={product.category?.name ?? null}
         backHref={product.category ? routes.category(product.category.slug) : routes.catalog()}
         orderHref={orderHref}
-        soldOut={product.soldOut}
-        locale="pt-BR"
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}
+        restockCopy={{
+          RESTOCK_VARIANT_INVALID: web.errors.RESTOCK_VARIANT_INVALID,
+          BAD_REQUEST: ui.validation.whatsappInvalid,
+          RATE_LIMITED: web.errors.RATE_LIMITED,
+          UNKNOWN: web.errors.UNKNOWN,
+        }}
         messages={ui}
       />
     </StorefrontFrame>

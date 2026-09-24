@@ -134,6 +134,7 @@ export const ptBR: WebMessages = {
     PRODUCT_VARIANT_NOT_FOUND: "As variações mudaram em outra aba. Recarregue a página e edite de novo.",
     CATALOG_PRICE_INVALID: "O preço \"de\" precisa ser maior que o preço.",
     CATALOG_PARCEL_INCOMPLETE: "Informe as três medidas da caixa, ou nenhuma.",
+    RESTOCK_VARIANT_INVALID: "Esta combinação não está mais à venda. Recarregue a página.",
     STORE_WHATSAPP_REQUIRED: "Uma loja precisa de um WhatsApp para receber pedidos.",
     LEAD_NOT_FOUND: "Este contato não existe mais.",
     LEAD_FORM_NOT_FOUND: "Este formulário não está mais no site. Recarregue a página.",

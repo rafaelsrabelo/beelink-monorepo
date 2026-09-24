@@ -1,13 +1,13 @@
 "use client"
 
 // Libs
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, type UseMutationResult } from "@tanstack/react-query"
 
 // Types
-import type { PublicProductCard } from "@harness-monorepo/contracts"
+import type { CreateRestockRequestPayload, PublicProductCard } from "@harness-monorepo/contracts"
 
 // App
-import { searchStorefront } from "./storefront-requests"
+import { searchStorefront, sendRestockRequest } from "./storefront-requests"
 
 /** Below this a shop answers with most of itself, and every keystroke would be a request. */
 const MIN_QUERY_LENGTH = 2
@@ -53,3 +53,15 @@ export function useStorefrontSearch(slug: string, term: string): StorefrontSearc
 }
 
 export { DEBOUNCE_MS, MIN_QUERY_LENGTH }
+
+export interface RestockVariables {
+  productId: string
+  payload: CreateRestockRequestPayload
+}
+
+/** "Avise-me". Nothing is cached from it: a request is not on the shop window. */
+export function useRestockRequest(slug: string): UseMutationResult<void, Error, RestockVariables> {
+  return useMutation({
+    mutationFn: ({ productId, payload }: RestockVariables) => sendRestockRequest(slug, productId, payload),
+  })
+}

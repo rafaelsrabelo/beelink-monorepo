@@ -134,6 +134,7 @@ export const en: WebMessages = {
     PRODUCT_VARIANT_NOT_FOUND: "The variations changed in another tab. Reload the page and edit again.",
     CATALOG_PRICE_INVALID: "The \"was\" price must be above the price.",
     CATALOG_PARCEL_INCOMPLETE: "Enter all three sides of the box, or none.",
+    RESTOCK_VARIANT_INVALID: "This combination is no longer for sale. Reload the page.",
     STORE_WHATSAPP_REQUIRED: "A shop needs a WhatsApp to take orders.",
     LEAD_NOT_FOUND: "This contact no longer exists.",
     LEAD_FORM_NOT_FOUND: "This form is no longer on the site. Reload the page.",

@@ -1,7 +1,7 @@
 // Types
 import type {
-  PublicProduct,
   PublicProductCategory,
+  PublicProductDetail,
   PublicStore,
   StorefrontCatalog,
 } from "@harness-monorepo/contracts"
@@ -74,7 +74,7 @@ export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise
   return (await response.json()) as StorefrontCatalog
 }
 
-export async function productAt(slug: string, productSlug: string): Promise<PublicProduct | null> {
+export async function productAt(slug: string, productSlug: string): Promise<PublicProductDetail | null> {
   const response = await callPublicApi({
     path: `/stores/${slug}/catalog/${productSlug}`,
     tags: [catalogTag(slug)],
@@ -82,7 +82,7 @@ export async function productAt(slug: string, productSlug: string): Promise<Publ
 
   if (!response.ok) return null
 
-  return (await response.json()) as PublicProduct
+  return (await response.json()) as PublicProductDetail
 }
 
 /** How many pages a total divides into. Never zero: an empty shop still has one page to be on. */

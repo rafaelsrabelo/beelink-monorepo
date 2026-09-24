@@ -67,6 +67,9 @@ type PanelCatalogErrorCode = Extract<
   | "CATALOG_PARCEL_INCOMPLETE"
 >
 
+/** The catalogue codes a visitor can meet on a product page. */
+type StorefrontCatalogErrorCode = Extract<CatalogErrorCode, "RESTOCK_VARIANT_INVALID">
+
 export interface WebMessages {
   metadata: {
     title: string
@@ -214,6 +217,7 @@ export interface WebMessages {
     | WebErrorCode
     | PanelPageErrorCode
     | PanelCatalogErrorCode
+    | StorefrontCatalogErrorCode
     | "UNKNOWN",
     string
   >
