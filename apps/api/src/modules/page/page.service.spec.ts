@@ -60,6 +60,8 @@ function build(
   found: {
     /** What the component being patched already is. */
     kind?: string
+    /** The width it is stored with. */
+    span?: string
     /** A component of the same kind already in the shop, for the singleton rule. */
     existing?: { id: string } | null
     /** Whether the band being written to belongs to this shop. */
@@ -138,7 +140,7 @@ function build(
               : (found.requiredInShop ?? 1),
         ),
       ),
-      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER' }),
+      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER', span: found.span ?? 'FULL' }),
     },
     $transaction: vi.fn().mockResolvedValue([]),
   } as unknown as PrismaService;
@@ -410,6 +412,26 @@ describe('PageService — the panel sends layout, the row keeps span', () => {
     expect(updateComponent).not.toHaveBeenCalled();
   });
 
+  /**
+   * The panel sends `layout` on every save, and `TWO_THIRDS` reads as `FULL` in those words. Taken
+   * at face value, that echo would widen a two-thirds block because its owner hid it or renamed it.
+   */
+  it('leaves a two-thirds block alone when a patch only echoes the layout it reads as', async () => {
+    const { service, updateComponent } = build({ kind: 'BANNER', span: 'TWO_THIRDS' });
+
+    await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'FULL', isActive: false });
+
+    expect(updateComponent.mock.calls[0]![0].data).toEqual({ isActive: false });
+  });
+
+  it('still moves a block when the layout sent is a different one', async () => {
+    const { service, updateComponent } = build({ kind: 'BANNER', span: 'TWO_THIRDS' });
+
+    await service.updateComponent('lessari', 'user-1', COMPONENT, { layout: 'HALVES' });
+
+    expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'HALF' });
+  });
+
   it('leaves the span alone when a patch does not mention the layout', async () => {
     const { service, updateComponent } = build({ kind: 'BANNER' });
 
@@ -462,18 +484,24 @@ describe('PageService — a display only where it is drawn', () => {
     expect(updated.display).toBe('GRID');
   });
 
-  it('refuses a display on a kind that does not draw it, at both writes', async () => {
+  it('refuses a display on a kind that does not draw it, at all three writes', async () => {
     const asPatch = build({ kind: 'HEADING' });
     await expect(
       asPatch.service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
     expect(asPatch.updateComponent).not.toHaveBeenCalled();
 
-    const asCreate = build();
+    const asSection = build();
     await expect(
-      asCreate.service.createSection('lessari', 'user-1', { component: { kind: 'TEXT', display: 'CAROUSEL' } }),
+      asSection.service.createSection('lessari', 'user-1', { component: { kind: 'TEXT', display: 'CAROUSEL' } }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
-    expect(asCreate.createSection).not.toHaveBeenCalled();
+    expect(asSection.createSection).not.toHaveBeenCalled();
+
+    const asComponent = build();
+    await expect(
+      asComponent.service.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Oi', display: 'GRID' }),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
+    expect(asComponent.createComponent).not.toHaveBeenCalled();
   });
 
   it('refuses to take a banner’s display back to null', async () => {

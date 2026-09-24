@@ -80,6 +80,22 @@ describe('page — span and display', () => {
     expect(response.json<ApiErrorBody>().errorCode).toBe('COMPONENT_SPAN_INVALID');
   });
 
+  it('refuses a display that is not one of the two with its own code', async () => {
+    const response = await call('PATCH', `/api/stores/padaria-do-bairro/components/${banner.id}`, { display: 'SIDEWAYS' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
+  });
+
+  it('keeps a two-thirds block when the panel echoes the layout it reads as', async () => {
+    const url = `/api/stores/padaria-do-bairro/components/${banner.id}`;
+    await call('PATCH', url, { span: 'TWO_THIRDS' });
+
+    const echoed = await call('PATCH', url, { layout: 'FULL', title: 'Renomeado' });
+
+    expect(echoed.json<StoreComponent>()).toMatchObject({ span: 'TWO_THIRDS', title: 'Renomeado' });
+  });
+
   it('refuses a display on a kind that does not draw it', async () => {
     const response = await call('POST', '/api/stores/padaria-do-bairro/sections', {
       component: { kind: 'HEADING', title: 'Novidades', display: 'GRID' },

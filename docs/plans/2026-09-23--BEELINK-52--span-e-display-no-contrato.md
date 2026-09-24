@@ -66,3 +66,20 @@ continua escrevendo `layout` até o A6.
 
 - A faixa desenhar `span`: A4. O banner desenhar `display`: A5. O seletor de largura: A6.
 - Remover `layout` do contrato: fica para o último ticket que parar de lê-lo.
+
+## Adendo — 23/09/2026, depois da revisão
+
+Uma revisão independente do diff (três leituras, cada achado verificado por quem tentou refutá-lo)
+confirmou um defeito deste ticket e um anterior a ele.
+
+**O eco de `layout` apagava `TWO_THIRDS`.** Este ticket torna `TWO_THIRDS` gravável, e esse valor é
+lido como `layout: "FULL"`. O painel manda `layout` em toda escrita: ao renomear um bloco, ou ao
+escondê-lo, o `FULL` voltava, era traduzido para `span: FULL`, e a largura de dois terços sumia com
+resposta 200. A partir de agora, um `layout` que só repete o que o `span` gravado já lê não muda
+nada. Um `layout` diferente continua mudando o `span`.
+
+**`POST /sections` sem `component` responde 500.** Isso já acontecia antes deste ticket. É exatamente
+o A3 (BEELINK-53), e é corrigido lá.
+
+A recusa de `display` em `POST .../components` não tinha teste. Agora tem, e o e2e cobre também um
+`display` fora da lista.

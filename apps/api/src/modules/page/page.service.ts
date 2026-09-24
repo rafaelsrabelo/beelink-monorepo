@@ -189,7 +189,7 @@ export class PageService {
 
     this.rules.refuseDisplayFor(current.kind, dto.display);
 
-    const span = this.rules.checkedSpan(dto);
+    const span = this.rules.checkedSpan(dto, current.span);
     const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
 
     const row = await this.prisma.storeComponent.update({
