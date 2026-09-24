@@ -124,6 +124,25 @@ describe("ComponentForm", () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ kind: "CATEGORIES", display: "GRID" }))
   })
 
+  // What the source needs is missing, so the save would only be a 400: the button says so first.
+  it("holds a showcase's save until its source has what it needs", () => {
+    const { unmount } = renderForm(values({ kind: "PRODUCTS", source: "CATEGORY" }))
+    expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled()
+    unmount()
+
+    renderForm(values({ kind: "PRODUCTS", source: "SELECTION", picks: [{ id: "a", productId: "p1" }] }))
+    expect(screen.getByRole("button", { name: "Salvar" })).toBeEnabled()
+  })
+
+  it("never saves a showcase from its search box", async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderForm(values({ kind: "PRODUCTS", source: "SELECTION", picks: [{ id: "a", productId: "p1" }] }))
+
+    await user.type(screen.getByLabelText("Buscar produto para adicionar"), "vest{Enter}")
+
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
   it("hands every keystroke back rather than holding it", async () => {
     const user = userEvent.setup()
     const { onChange } = renderForm(values({ kind: "HEADING" }))

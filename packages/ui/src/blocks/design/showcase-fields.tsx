@@ -36,6 +36,8 @@ export interface ShowcaseFieldsProps {
   categories: readonly TargetOption[]
   products: readonly TargetOption[]
   newItemId: () => string
+  /** Whether the categories and products to choose from have arrived. */
+  optionsState?: "ready" | "loading" | "failed"
   messages?: UiMessages
 }
 
@@ -75,6 +77,7 @@ export function ShowcaseFields({
   categories,
   products,
   newItemId,
+  optionsState = "ready",
   messages = defaultMessages,
 }: ShowcaseFieldsProps) {
   const text = messages.design.showcase
@@ -93,6 +96,8 @@ export function ShowcaseFields({
             options={categories}
             selectedId={value.sourceCategoryId}
             emptyText={text.searchEmpty}
+            state={optionsState}
+            messages={messages}
             onPick={(sourceCategoryId) => onChange({ sourceCategoryId })}
           />
           <FieldDescription>{chosen ? chosen.name : text.categoryNone}</FieldDescription>
@@ -105,6 +110,7 @@ export function ShowcaseFields({
           onChange={(picks) => onChange({ picks })}
           products={products}
           newItemId={newItemId}
+          optionsState={optionsState}
           messages={messages}
         />
       ) : null}

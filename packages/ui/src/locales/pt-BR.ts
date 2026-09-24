@@ -286,6 +286,8 @@ export const ptBR: UiMessages = {
       pickRemove: "Tirar {name}",
       pickUnknown: "Produto fora da lista",
       searchEmpty: "Nada com esse nome.",
+      optionsLoading: "Carregando a lista",
+      optionsFailed: "Não deu para carregar a lista. Feche e abra de novo.",
       limitLabel: "Quantos produtos, no máximo",
       limitHint: "De 1 a 48. Em branco, até 24.",
     },

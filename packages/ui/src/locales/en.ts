@@ -286,6 +286,8 @@ export const en: UiMessages = {
       pickRemove: "Remove {name}",
       pickUnknown: "A product not on the list",
       searchEmpty: "Nothing by that name.",
+      optionsLoading: "Loading the list",
+      optionsFailed: "The list could not be loaded. Close this and open it again.",
       limitLabel: "How many products, at most",
       limitHint: "From 1 to 48. Left blank, up to 24.",
     },

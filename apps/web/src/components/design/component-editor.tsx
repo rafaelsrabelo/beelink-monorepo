@@ -120,7 +120,10 @@ function ComponentEditorBody({
   // A banner and the strip point at a category or a product; a showcase draws from one or picks them.
   const points = component.kind === "BANNER" || component.kind === "ANNOUNCEMENT" || component.kind === "PRODUCTS"
   const categories = useProductCategories(points ? slug : "")
-  const products = useProducts(points ? slug : "", { pageSize: 100 })
+  // The admin list's own ceiling (PRODUCTS_PAGE_SIZE_MAX): asking for more answers this many anyway.
+  const products = useProducts(points ? slug : "", { pageSize: 96 })
+  const optionsState =
+    categories.isError || products.isError ? "failed" : categories.isPending || products.isPending ? "loading" : "ready"
   // The strip's link keeps its id across saves, so a re-pointed strip is the same link moved.
   const linkId = (component.items[0] as { id?: string } | undefined)?.id ?? crypto.randomUUID()
 
@@ -142,6 +145,7 @@ function ComponentEditorBody({
           onChange={setValue}
           categories={categoryOptions}
           products={productOptions}
+          optionsState={points ? optionsState : "ready"}
           onUploadImage={image.upload}
           imagePending={image.pending}
           // Minted here and not in the block: the design system has no clock and no randomness,

@@ -73,6 +73,7 @@ export interface ComponentFormProps {
   pageBackground: string
   categories: readonly SlideTargetOption[]
   products: readonly SlideTargetOption[]
+  optionsState?: "ready" | "loading" | "failed"
   onUploadImage?: (file: File) => Promise<string>
   imagePending?: boolean
   newItemId: () => string
@@ -99,6 +100,7 @@ export function ComponentForm({
   pageBackground,
   categories,
   products,
+  optionsState = "ready",
   onUploadImage,
   imagePending = false,
   newItemId,
@@ -222,6 +224,7 @@ export function ComponentForm({
           categories={categories}
           products={products}
           newItemId={newItemId}
+          optionsState={optionsState}
           messages={messages}
         />
       ) : null}

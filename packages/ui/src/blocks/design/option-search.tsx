@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useRef, useState, type RefObject } from "react"
 
 // Libs
 import { CheckIcon, PlusIcon } from "lucide-react"
@@ -10,9 +10,11 @@ import { CheckIcon, PlusIcon } from "lucide-react"
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Field, FieldContent, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
+import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 
 // Locales
-import { format } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { TargetOption } from "./target-fields"
@@ -36,6 +38,14 @@ export interface OptionSearchProps {
   emptyText: string
   /** How many matches are drawn at once. A search that needs a ninth is a search that needs a letter more. */
   limit?: number
+  /**
+   * Whether the options have arrived. While they are on their way the list is grey rows, and when
+   * they could not be read it says so: either one drawn as "nothing by that name" is a lie.
+   */
+  state?: "ready" | "loading" | "failed"
+  /** The search box, for a screen that has to put the focus back in it. */
+  inputRef?: RefObject<HTMLInputElement | null>
+  messages?: UiMessages
 }
 
 /** Lower case with the accents gone, so "calca" finds "Calça" — a shopkeeper types on a phone. */
@@ -62,27 +72,61 @@ export function OptionSearch({
   actionLabel,
   emptyText,
   limit = 8,
+  state = "ready",
+  inputRef,
+  messages = defaultMessages,
 }: OptionSearchProps) {
   const [query, setQuery] = useState("")
+  const ownRef = useRef<HTMLInputElement>(null)
+  const input = inputRef ?? ownRef
+  const text = messages.design.showcase
   const needle = folded(query.trim())
   const matches = options
     .filter((option) => !exclude.includes(option.id))
     .filter((option) => needle === "" || folded(option.name).includes(needle))
     .slice(0, limit)
 
+  // An add takes the pressed button out of the list; the focus goes back to the search, one Tab from
+  // the next match, instead of falling to the top of the sheet.
+  const pick = (id: string) => {
+    onPick(id)
+    if (actionLabel) input.current?.focus()
+  }
+
   return (
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <FieldContent className="gap-2">
         <Input
+          ref={input}
           id={id}
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          // The search sits inside the component's form, and Enter there — or a phone keyboard's
+          // search key — would submit it: a showcase saved to the live shop mid-search. It narrows
+          // instead, and picks the one match when only one is left.
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return
+            event.preventDefault()
+            if (matches.length === 1) pick(matches[0]!.id)
+          }}
+          enterKeyHint="search"
           placeholder={placeholder}
           autoComplete="off"
         />
-        {matches.length ? (
+        {state === "loading" ? (
+          <div role="status" aria-busy="true" className="flex flex-col gap-1">
+            <span className="sr-only">{text.optionsLoading}</span>
+            {[0, 1, 2].map((row) => (
+              <Skeleton key={row} aria-hidden="true" className="h-8 w-full" />
+            ))}
+          </div>
+        ) : state === "failed" ? (
+          <p role="alert" className="text-destructive text-sm">
+            {text.optionsFailed}
+          </p>
+        ) : matches.length ? (
           <ul className="flex flex-col gap-1">
             {matches.map((option) => {
               const chosen = option.id === selectedId
@@ -95,7 +139,7 @@ export function OptionSearch({
                     className="w-full justify-start"
                     {...(selectedId !== undefined ? { "aria-pressed": chosen } : {})}
                     {...(actionLabel ? { "aria-label": format(actionLabel, { name: option.name }) } : {})}
-                    onClick={() => onPick(option.id)}
+                    onClick={() => pick(option.id)}
                   >
                     {actionLabel ? <PlusIcon aria-hidden="true" /> : chosen ? <CheckIcon aria-hidden="true" /> : null}
                     <span className="truncate">{option.name}</span>

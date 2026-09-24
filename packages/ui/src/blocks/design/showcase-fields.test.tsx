@@ -56,6 +56,12 @@ describe("ShowcaseFields", () => {
     expect(screen.getByRole("combobox", { name: "Colunas" })).toBeInTheDocument()
   })
 
+  it("asks a rail for no columns", () => {
+    renderFields({ display: "RAIL" })
+
+    expect(screen.queryByRole("combobox", { name: "Colunas" })).not.toBeInTheDocument()
+  })
+
   it("marks a limit the API would refuse", () => {
     renderFields({ limit: "60" })
 

@@ -358,6 +358,8 @@ export interface UiMessages {
       /** A pick whose product is not among the ones the panel loaded — deleted, or past the first hundred. */
       pickUnknown: string
       searchEmpty: string
+      optionsLoading: string
+      optionsFailed: string
       limitLabel: string
       limitHint: string
     }

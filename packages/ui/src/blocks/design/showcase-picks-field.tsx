@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import { useEffect, useRef } from "react"
+
 // Libs
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from "lucide-react"
 
@@ -26,6 +29,8 @@ export interface ShowcasePicksFieldProps {
   onChange: (next: ShowcasePick[]) => void
   products: readonly TargetOption[]
   newItemId: () => string
+  /** Whether the products to pick from have arrived. */
+  optionsState?: "ready" | "loading" | "failed"
   messages?: UiMessages
 }
 
@@ -44,10 +49,29 @@ export function ShowcasePicksField({
   onChange,
   products,
   newItemId,
+  optionsState = "ready",
   messages = defaultMessages,
 }: ShowcasePicksFieldProps) {
   const text = messages.design.showcase
   const nameOf = new Map(products.map((product) => [product.id, product.name]))
+
+  // A row taken out takes its focused button with it. The focus lands on the row that took its
+  // place — or the one above, or the search when the list is empty — once the list has redrawn.
+  const removeButtons = useRef(new Map<string, HTMLButtonElement>())
+  const search = useRef<HTMLInputElement>(null)
+  const focusNext = useRef<string | null>(null)
+
+  useEffect(() => {
+    const next = focusNext.current
+    if (next === null) return
+    focusNext.current = null
+    ;(removeButtons.current.get(next) ?? search.current)?.focus()
+  }, [value])
+
+  const remove = (at: number) => {
+    focusNext.current = (value[at + 1] ?? value[at - 1])?.id ?? ""
+    onChange(value.filter((_, index) => index !== at))
+  }
 
   const move = (from: number, to: number) => {
     const next = [...value]
@@ -73,6 +97,9 @@ export function ShowcasePicksField({
                   variant="ghost"
                   size="icon-sm"
                   aria-label={format(text.pickUp, { name })}
+                  // Still reachable when it reaches the top: a button that turns disabled under the
+                  // focus drops it, and the owner starts over from the top of the sheet.
+                  focusableWhenDisabled
                   disabled={at === 0}
                   onClick={() => move(at, at - 1)}
                 >
@@ -83,6 +110,7 @@ export function ShowcasePicksField({
                   variant="ghost"
                   size="icon-sm"
                   aria-label={format(text.pickDown, { name })}
+                  focusableWhenDisabled
                   disabled={at === value.length - 1}
                   onClick={() => move(at, at + 1)}
                 >
@@ -93,7 +121,11 @@ export function ShowcasePicksField({
                   variant="ghost"
                   size="icon-sm"
                   aria-label={format(text.pickRemove, { name })}
-                  onClick={() => onChange(value.filter((row) => row.id !== pick.id))}
+                  ref={(button) => {
+                    if (button) removeButtons.current.set(pick.id, button)
+                    else removeButtons.current.delete(pick.id)
+                  }}
+                  onClick={() => remove(at)}
                 >
                   <XIcon aria-hidden="true" />
                 </Button>
@@ -114,6 +146,9 @@ export function ShowcasePicksField({
           exclude={value.map((pick) => pick.productId)}
           actionLabel={text.pickAdd}
           emptyText={text.searchEmpty}
+          state={optionsState}
+          inputRef={search}
+          messages={messages}
           onPick={(productId) => onChange([...value, { id: newItemId(), productId }])}
         />
       ) : null}

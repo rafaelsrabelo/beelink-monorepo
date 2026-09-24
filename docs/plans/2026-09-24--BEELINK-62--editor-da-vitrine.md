@@ -69,3 +69,24 @@ Ele já passava do limite antes do épico. O cabeçalho (título, publicar, desc
 - Preview da fonte antes de salvar (decisão 1).
 - Escolher a dedo numa loja com mais de 100 produtos além dos 100 primeiros.
 - "Mais vendidos": depende de pedidos.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou quatro pontos, todos corrigidos:
+
+- **Enter na busca salvava a vitrine.** A busca fica dentro do formulário do bloco, e o Enter (ou a
+  tecla de busca do teclado do celular) enviava o formulário: a vitrine ia para a loja no meio da
+  busca, e a folha fechava. Agora o Enter só filtra e, quando sobra uma opção, escolhe essa.
+- **O foco se perdia na lista de escolhidos.** Adicionar tirava da lista o botão apertado, tirar um
+  produto levava o botão junto, e uma seta que chegava na ponta ficava desabilitada com o foco em
+  cima. Agora o foco volta para a busca depois de adicionar, vai para a linha vizinha depois de
+  tirar, e as setas continuam focáveis quando desabilitam.
+- **A lista pedia 100 produtos, e a API devolve no máximo 96.** O editor pede 96, e a decisão 2
+  passa a dizer "os primeiros 96".
+- **Carregando ou com falha, a busca dizia "Nada com esse nome".** Agora mostra linhas cinza
+  enquanto a lista chega, e diz que não deu para carregar quando a leitura falha.
+
+Três pontos sobre testes ausentes foram refutados como defeito, mas os testes foram escritos: o
+Salvar bloqueado no formulário, o trilho sem colunas e o Enter que não envia. Um ponto sobre o "ver
+tudo" de lançamentos e promoção levar ao catálogo inteiro foi refutado: o catálogo não filtra por
+essas fontes, e isso é anterior a este ticket.
