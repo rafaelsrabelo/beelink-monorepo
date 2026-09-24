@@ -8,10 +8,12 @@ import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/mode
 
 // App
 import {
+  NO_SHELVES,
   NO_SLUGS,
   sectionInclude,
   toPublicSection,
   type SectionRow,
+  type ShelvesByComponent,
   type SlugsByEntity,
 } from '../page/page.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
@@ -69,7 +71,11 @@ export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
  * not looked them up gets slides that are pictures instead of links. The alternative — guessing —
  * would put a wrong address on the page a stranger asked for.
  */
-export function toPublicStore(row: StoreRow, slugs: SlugsByEntity = NO_SLUGS): PublicStore {
+export function toPublicStore(
+  row: StoreRow,
+  slugs: SlugsByEntity = NO_SLUGS,
+  shelves: ShelvesByComponent = NO_SHELVES,
+): PublicStore {
   return {
     id: row.id,
     slug: row.slug,
@@ -102,7 +108,7 @@ export function toPublicStore(row: StoreRow, slugs: SlugsByEntity = NO_SLUGS): P
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
     sections: row.sections.map((section) =>
-      toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary], slugs),
+      toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary], slugs, shelves),
     ),
   } satisfies PublicStore;
 }

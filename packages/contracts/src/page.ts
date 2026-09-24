@@ -1,5 +1,7 @@
 /* ── a landing page: sections that hold components ────────────────────────── */
 
+import type { PublicProductCard } from "./catalog.js";
+
 /**
  * What a component is.
  *
@@ -227,7 +229,11 @@ export interface ShowcaseProduct {
  * blank band on the shop's front page, reported the same day.
  */
 export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink | ContactField | ShowcaseProduct;
-export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink | ContactField;
+/**
+ * What a visitor is served in a component's `items`: a banner's slides with their addresses built, a
+ * showcase's products as cards, and every other kind's items as the shopkeeper wrote them.
+ */
+export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink | ContactField | PublicProductCard;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {
@@ -241,7 +247,15 @@ export interface PublicComponent {
   span: ComponentSpan;
   /** Read on `BANNER`. Null on every other kind. */
   display: ComponentDisplay | null;
-  /** A banner's slides, the benefits band's rows, the strip's one link or a form's fields. Empty otherwise. */
+  /** A showcase's source, for the page to say where "ver tudo" leads. Null on every other kind. */
+  source: ProductSource | null;
+  /** The category a `CATEGORY` showcase draws, by the slug its page lives at. Null otherwise. */
+  sourceCategory: { slug: string; name: string } | null;
+  /**
+   * A banner's slides, the benefits band's rows, the strip's one link or a form's fields — or a
+   * showcase's products, already chosen by its source, cut at its limit, and on the shelf. Empty
+   * otherwise.
+   */
   items: PublicComponentItem[];
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */
   columns: number | null;

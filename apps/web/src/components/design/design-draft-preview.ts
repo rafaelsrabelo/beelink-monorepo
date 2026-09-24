@@ -52,6 +52,9 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             // As drafted: the band draws it, and the owner has to see a width before publishing it.
             span: component.span,
             display: was?.display ?? null,
+            source: was?.source ?? null,
+            // The slug and name come resolved from the shop's public read, which the draft is not.
+            sourceCategory: null,
             columns: was?.columns ?? null,
             align: was?.align ?? null,
             /*
@@ -73,7 +76,11 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
                   }))
                 : component.kind === "ANNOUNCEMENT"
                   ? ((was?.items ?? []) as AnnouncementLink[]).map((link) => ({ id: link.id, href: null, external: false }))
-                  : ((was?.items ?? []) as PublicComponentItem[]),
+                  : component.kind === "PRODUCTS"
+                    ? // What a showcase stores is the ids it picked, never the cards a visitor is served;
+                      // the cards are the public read's to resolve.
+                      []
+                    : ((was?.items ?? []) as PublicComponentItem[]),
           } satisfies PublicComponent
         }),
     }))

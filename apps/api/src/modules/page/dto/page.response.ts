@@ -41,6 +41,10 @@ export class PublicComponentResponse implements PublicComponent {
   @ApiProperty({ enum: COMPONENT_SPANS, description: 'Its slice of the band.' }) span!: ComponentSpan;
   @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER and PRODUCTS. Null on every other kind.' })
   display!: ComponentDisplay | null;
+  @ApiProperty({ enum: PRODUCT_SOURCES, nullable: true, description: 'A showcase’s source. Null on every other kind.' })
+  source!: ProductSource | null;
+  @ApiProperty({ nullable: true, type: Object, description: 'The category a CATEGORY showcase draws: { slug, name }.' })
+  sourceCategory!: { slug: string; name: string } | null;
   @ApiProperty({
     type: 'array',
     items: { type: 'object', additionalProperties: true },
