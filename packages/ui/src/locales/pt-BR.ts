@@ -160,6 +160,8 @@ export const ptBR: UiMessages = {
     paginationStatus: "Página {current} de {total}",
     paginationPage: "Página {page}",
     featuredHeading: "Destaques",
+    newestHeading: "Lançamentos",
+    onSaleHeading: "Promoções",
     railPrevious: "Anterior",
     railNext: "Próximos",
     featuredEyebrow: "Selecionados pela loja",

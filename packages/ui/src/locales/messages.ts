@@ -229,6 +229,9 @@ export interface UiMessages {
     paginationPage: string
     /** The home's band of products: a selection with a way into the catalogue, not the catalogue. */
     featuredHeading: string
+    /** What an untitled showcase of the newest products, or of those on sale, is headed by. */
+    newestHeading: string
+    onSaleHeading: string
     /** The rail's arrows. They are an addition on top of native scrolling, never the only way in. */
     railPrevious: string
     railNext: string
