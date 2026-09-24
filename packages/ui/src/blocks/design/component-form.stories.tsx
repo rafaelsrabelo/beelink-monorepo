@@ -11,6 +11,7 @@ const empty: ComponentFormValues = {
   subtitle: "Chegou agora",
   body: "",
   layout: "FULL",
+  display: "CAROUSEL",
   columns: 0,
   align: "CENTER",
   background: "",

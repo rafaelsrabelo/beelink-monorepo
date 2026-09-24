@@ -11,6 +11,7 @@ const meta = {
   args: {
     value: {
       layout: "HALVES",
+      display: "CAROUSEL",
       slides: [
         {
           id: "s1",

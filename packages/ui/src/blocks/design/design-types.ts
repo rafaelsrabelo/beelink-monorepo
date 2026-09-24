@@ -52,6 +52,13 @@ export const GROUP_OF_KIND = {
 export const CONTACT_FIELD_TYPES = ["TEXT", "EMAIL", "PHONE", "TEXTAREA", "SELECT", "DATE"] as const
 export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]
 
+/**
+ * One picture at a time, or all of them side by side. The contract's `ComponentDisplay`, restated.
+ * A banner's choice; every other kind holds null.
+ */
+export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID"] as const
+export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
+
 /** Edge to edge, or inside the shop's measure. An attribute of the band, never of what is in it. */
 export const SECTION_WIDTHS = ["FULL", "CONTAINED"] as const
 export type SectionWidth = (typeof SECTION_WIDTHS)[number]

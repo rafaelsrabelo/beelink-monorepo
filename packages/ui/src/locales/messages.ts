@@ -336,6 +336,10 @@ export interface UiMessages {
     sizeFull: string
     sizeHalves: string
     sizeThirds: string
+    /** A banner's choice between showing its pictures one at a time or all together. */
+    displayLabel: string
+    displayCarousel: string
+    displayGrid: string
     show: string
     hide: string
     /** Said to a screen reader while a banner is being moved. `{name}` and `{position}`. */

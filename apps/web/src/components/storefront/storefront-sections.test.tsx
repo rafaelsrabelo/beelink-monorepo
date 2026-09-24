@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 // Types
-import type { ComponentSpan, PublicComponent, PublicSection } from "@harness-monorepo/contracts"
+import type { ComponentDisplay, ComponentSpan, PublicComponent, PublicSection } from "@harness-monorepo/contracts"
 
 // UI
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
@@ -30,6 +30,21 @@ function poster(id: string, span: ComponentSpan): PublicComponent {
     items: [{ id: `${id}-s`, imageUrl: `https://cdn/${id}.png`, title: `Pôster ${id}`, subtitle: null, href: null, external: false }],
     columns: null,
     align: null,
+  }
+}
+
+function banner(id: string, display: ComponentDisplay, pictures: number): PublicComponent {
+  return {
+    ...poster(id, "FULL"),
+    display,
+    items: Array.from({ length: pictures }, (_, at) => ({
+      id: `${id}-${at}`,
+      imageUrl: `https://cdn/${id}-${at}.png`,
+      title: `${id} ${at + 1}`,
+      subtitle: null,
+      href: null,
+      external: false,
+    })),
   }
 }
 
@@ -95,5 +110,39 @@ describe("StorefrontSections — a band is a grid", () => {
     const { container } = draw([band([strip, poster("a", "FULL")])])
 
     expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
+  })
+})
+
+/**
+ * The count used to be the whole decision: a second picture made a carousel, whatever anyone
+ * wanted. The shopkeeper's display decides now, and the count only says how many cards there are.
+ */
+describe("StorefrontSections — a banner is a carousel or a grid by choice", () => {
+  it("lays three pictures side by side when the banner is a grid, and draws no carousel", () => {
+    const { container } = draw([band([banner("grade", "GRID", 3)])])
+
+    const cell = container.querySelector("[data-span]")!
+    expect(["grade 1", "grade 2", "grade 3"].map((title) => screen.getByText(title).closest("[data-span]"))).toEqual([
+      cell,
+      cell,
+      cell,
+    ])
+    expect(cell.querySelector("ul")!.className).toContain("@3xl:grid-cols-3")
+    expect(screen.queryByRole("button", { name: "Anterior" })).not.toBeInTheDocument()
+  })
+
+  it("keeps a carousel a carousel, however many pictures it holds", () => {
+    draw([band([banner("roda", "CAROUSEL", 3)])])
+
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Próximos" })).toBeInTheDocument()
+  })
+
+  it("draws the one card for a banner of one picture, whichever it is", () => {
+    draw([band([banner("so-carrossel", "CAROUSEL", 1), banner("so-grade", "GRID", 1)])])
+
+    expect(screen.getByText("so-carrossel 1")).toBeInTheDocument()
+    expect(screen.getByText("so-grade 1")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Anterior" })).not.toBeInTheDocument()
   })
 })

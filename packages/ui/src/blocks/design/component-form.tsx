@@ -20,7 +20,7 @@ import { BenefitRowsField } from "./benefit-rows-field"
 import type { BenefitValue } from "./benefit-rows-field"
 import { ContactFieldsField, reachesBack } from "./contact-fields-field"
 import type { ContactFieldValue } from "./contact-fields-field"
-import type { ComponentKind, TextAlign } from "./design-types"
+import type { ComponentDisplay, ComponentKind, TextAlign } from "./design-types"
 import type { Target } from "./target-fields"
 
 export type ComponentFormLayout = "FULL" | "HALVES" | "THIRDS"
@@ -35,6 +35,7 @@ export interface ComponentFormValues {
   subtitle: string
   body: string
   layout: ComponentFormLayout
+  display: ComponentDisplay
   /** `0` is "let the grid decide", which is what null means on the wire. */
   columns: number
   /** Always resolved here — the kind's own habit stands in for a null — so the toggle marks one. */

@@ -27,6 +27,8 @@ export function toForm(component: StoreComponent, bandBackground: string | null)
     subtitle: component.subtitle ?? "",
     body: component.body ?? "",
     layout: component.layout,
+    // Null on every kind but a banner, and a banner always has one; the form holds one regardless.
+    display: component.display ?? "CAROUSEL",
     columns: component.columns ?? 0,
     // Resolved for the form, so the toggle marks one; a null on the wire is the kind's own habit.
     align: component.align ?? defaultAlignOf(component.kind),
@@ -132,7 +134,8 @@ export function toPayload(value: ComponentFormValues, linkId: string): UpdateCom
     layout: value.layout,
     columns: value.columns || null,
     align: value.align,
-    ...(value.kind === "BANNER" ? { items: slides } : {}),
+    // `display` only on a banner: the API refuses a value on a kind that does not draw one.
+    ...(value.kind === "BANNER" ? { items: slides, display: value.display } : {}),
     ...(value.kind === "BENEFITS" ? { items: benefits } : {}),
     ...(value.kind === "ANNOUNCEMENT" ? { items: link } : {}),
     ...(value.kind === "CONTACT" ? { items: fields } : {}),

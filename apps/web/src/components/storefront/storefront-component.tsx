@@ -57,8 +57,8 @@ export interface StorefrontComponentProps {
 /**
  * One component of a band, drawn.
  *
- * Every kind but the poster: a one-picture banner is drawn as a showcase card sized by its span,
- * so `StorefrontSections` keeps that case. Its own file because the renderer that held this had
+ * Every kind but a banner drawn as cards — one picture, or any number shown as a grid — which
+ * `StorefrontSections` keeps, because the cards are sized by the span of the cell they sit in. Its own file because the renderer that held this had
  * passed the line limit, and the seam falls here — how a band is laid out on one side, how one
  * thing draws on the other.
  */
@@ -76,8 +76,8 @@ export function StorefrontComponent({
   const link = linkComponent ? { linkComponent } : {}
 
   if (component.kind === "BANNER") {
-    // Several pictures: the carousel, sized to the slice its span gives it. One picture never gets
-    // here — `StorefrontSections` draws it as a poster.
+    // Several pictures shown as a carousel, sized to the slice its span gives it. One picture, or a
+    // grid, never gets here: `StorefrontSections` draws those as cards.
     return (
       <StorefrontHero
         items={(component.items as PublicBannerSlide[]).map((slide) => ({

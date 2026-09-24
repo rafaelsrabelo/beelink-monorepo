@@ -11,12 +11,15 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { BannerSlidesField } from "./banner-slides-field"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
+import type { ComponentDisplay } from "./design-types"
+import { DisplayField } from "./display-field"
 
 export type BannerLayout = "FULL" | "HALVES" | "THIRDS"
 
-/** What a banner has beyond a heading: a shape, and its pictures. */
+/** What a banner has beyond a heading: a shape, how its pictures sit, and the pictures. */
 export interface BannerValue {
   layout: BannerLayout
+  display: ComponentDisplay
   slides: SlideValue[]
 }
 
@@ -32,7 +35,8 @@ export interface BannerFieldsProps {
 }
 
 /**
- * A banner's own fields: how wide it sits in a row, and the pictures in it.
+ * A banner's own fields: how wide it sits in a row, whether its pictures take turns or share the
+ * space, and the pictures in it.
  *
  * Its own block because the component form had passed the line limit, and the seam falls here —
  * the form knows which kind it is holding, and this knows what a banner is.
@@ -72,6 +76,8 @@ export function BannerFields({
           </Select>
         </FieldContent>
       </Field>
+
+      <DisplayField value={value.display} onChange={(display) => onChange({ display })} messages={messages} />
 
       <BannerSlidesField
         value={value.slides}

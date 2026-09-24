@@ -48,6 +48,21 @@ describe("StorefrontShowcase", () => {
     expect(screen.getByRole("link").className).not.toContain("21/9")
   })
 
+  /**
+   * Several pictures are one banner shown as a grid. The columns follow the cell, not the screen,
+   * and every card takes the small card's shape — each is a fraction of the cell, whatever its span.
+   */
+  it("lays several pictures side by side, as many columns as the cell has room for", () => {
+    const three = ["1", "2", "3"].map((id) => ({ ...creatina, id, title: `Cartão ${id}` }))
+    const { container } = render(<StorefrontShowcase items={three} span="FULL" />)
+
+    expect(container.querySelector("ul")!.className).toContain("@3xl:grid-cols-3")
+    for (const link of screen.getAllByRole("link")) {
+      expect(link.className).toContain("aspect-[4/3]")
+      expect(link.className).not.toContain("21/9")
+    }
+  })
+
   /** A card with nowhere to go is a poster: no link, and no arrow promising one. */
   it("draws no arrow and no link for a card with no destination", () => {
     render(<StorefrontShowcase items={[{ ...creatina, href: null }]} span="HALF" />)

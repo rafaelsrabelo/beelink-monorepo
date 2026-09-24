@@ -17,6 +17,7 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     subtitle: "",
     body: "",
     layout: "FULL",
+  display: "CAROUSEL",
     columns: 0,
     align: "LEFT",
     background: "",

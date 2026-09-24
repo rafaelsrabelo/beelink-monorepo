@@ -62,3 +62,16 @@ cada um é uma fração dela, e todos usam 4:3, que é a proporção do terço.
 - Um seletor de colunas para a grade do banner.
 - `CATEGORIES` e `PRODUCTS` lerem `display`: B3 e B4.
 - O controle de largura novo: A6.
+
+## Adendo — 24/09/2026, antes do código
+
+**A decisão 2 muda num ponto: as colunas seguem a célula, e não a tela.** Com pontos de quebra da
+tela, três slides num terço de uma faixa de 1360px seriam três cartões de 137px. A grade de um
+banner usa container queries (`@container`, nativo do Tailwind 4): duas colunas a partir de uma
+célula de 448px, três a partir de 768px e quatro a partir de 1024px. Num celular, e num terço, os
+slides ficam um embaixo do outro. A contagem continua decidindo só quantas colunas, e nunca se o
+banner é grade ou carrossel.
+
+O setup de testes do web ganhou as mesmas simulações de navegador que o do `packages/ui` já tinha
+(`matchMedia`, `ResizeObserver`, `IntersectionObserver`), para que um teste da página consiga
+desenhar o carrossel.
