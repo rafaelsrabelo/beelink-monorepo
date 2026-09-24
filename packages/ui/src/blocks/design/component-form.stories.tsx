@@ -21,6 +21,10 @@ const empty: ComponentFormValues = {
   slides: [],
   benefits: [],
   fields: [],
+  source: "ALL",
+  sourceCategoryId: "",
+  picks: [],
+  limit: "",
 }
 
 const meta = {

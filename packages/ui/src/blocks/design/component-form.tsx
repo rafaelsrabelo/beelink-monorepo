@@ -20,7 +20,9 @@ import { CategoriesFields } from "./categories-fields"
 import type { BenefitValue } from "./benefit-rows-field"
 import { ContactFieldsField, reachesBack } from "./contact-fields-field"
 import type { ContactFieldValue } from "./contact-fields-field"
-import type { ComponentDisplay, ComponentKind, TextAlign } from "./design-types"
+import type { ComponentDisplay, ComponentKind, ProductSource, TextAlign } from "./design-types"
+import { ShowcaseFields, showcaseReady } from "./showcase-fields"
+import type { ShowcasePick } from "./showcase-picks-field"
 import type { Target } from "./target-fields"
 
 /**
@@ -52,11 +54,17 @@ export interface ComponentFormValues {
   benefits: BenefitValue[]
   /** A contact form's questions. */
   fields: ContactFieldValue[]
+  /** A showcase's source, and what that source reads: its category, or its products in order. */
+  source: ProductSource
+  sourceCategoryId: string
+  picks: ShowcasePick[]
+  /** A showcase's limit as typed; `""` is the default, 24. */
+  limit: string
 }
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx`: a types-only `.ts`
 // beside a block cannot be reached from an app.
-export type { BenefitValue, ContactFieldValue, SlideTargetOption, SlideValue }
+export type { BenefitValue, ContactFieldValue, ShowcasePick, SlideTargetOption, SlideValue }
 
 export interface ComponentFormProps {
   value: ComponentFormValues
@@ -208,14 +216,28 @@ export function ComponentForm({
       ) : null}
 
       {value.kind === "PRODUCTS" ? (
-        <p className="text-muted-foreground text-sm">{text.productListHint}</p>
+        <ShowcaseFields
+          value={value}
+          onChange={(next) => onChange({ ...value, ...next })}
+          categories={categories}
+          products={products}
+          newItemId={newItemId}
+          messages={messages}
+        />
       ) : null}
 
       <div className="flex items-center justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
           {banner.cancel}
         </Button>
-        <Button type="submit" disabled={pending || (value.kind === "CONTACT" && !reachesBack(value.fields))}>
+        <Button
+          type="submit"
+          disabled={
+            pending ||
+            (value.kind === "CONTACT" && !reachesBack(value.fields)) ||
+            (value.kind === "PRODUCTS" && !showcaseReady(value))
+          }
+        >
           {pending ? banner.saving : banner.save}
         </Button>
       </div>

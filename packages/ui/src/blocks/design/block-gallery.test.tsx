@@ -41,7 +41,7 @@ describe("BlockGallery", () => {
     expect(screen.getByRole("button", { name: /Barra de aviso/ })).toBeInTheDocument()
     // The hint is the whole point of the gallery, so it is asserted and not assumed.
     expect(screen.getByText("Imagem ou carrossel")).toBeInTheDocument()
-    expect(screen.getByText("Grade de produtos")).toBeInTheDocument()
+    expect(screen.getByText("Trilho ou grade, da fonte que você escolher")).toBeInTheDocument()
   })
 
   it("offers a banner, and a heading apart from a paragraph", async () => {
@@ -104,22 +104,14 @@ describe("BlockGallery", () => {
     expect(screen.queryByRole("heading", { name: "Destaque" })).not.toBeInTheDocument()
   })
 
-  /**
-   * A shop should never lack its product list, and one did. This is the way back for a shop that
-   * somehow lost it — and it disappears the moment the list exists, like every other singleton.
-   */
-  it("offers the product list only while the shop has none", async () => {
+  // A shop may hold as many showcases as it has shelves to show; only the strip is one of a kind.
+  it("offers a showcase of products, with what it can be", async () => {
     const user = userEvent.setup()
-    const { unmount } = render(<BlockGallery onAdd={vi.fn()} />)
+    render(<BlockGallery onAdd={vi.fn()} taken={["ANNOUNCEMENT"]} />)
 
     await open(user)
-    expect(screen.getByRole("button", { name: /Lista de produtos/ })).toBeInTheDocument()
-    unmount()
 
-    render(<BlockGallery onAdd={vi.fn()} taken={["PRODUCTS"]} />)
-
-    await open(user)
-    expect(screen.queryByRole("button", { name: /Lista de produtos/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Vitrine de produtos/ })).toBeInTheDocument()
   })
 
   it("stops offering a block the shop already has one of", async () => {
@@ -139,7 +131,7 @@ describe("BlockGallery", () => {
 
     await open(user)
 
-    expect(screen.queryByRole("button", { name: /Lista de produtos/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Vitrine de produtos/ })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Formulário de contato/ })).toBeInTheDocument()
   })
 

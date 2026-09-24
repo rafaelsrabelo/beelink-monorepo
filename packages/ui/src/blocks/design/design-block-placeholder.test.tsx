@@ -26,7 +26,7 @@ describe("DesignBlockPlaceholder", () => {
 
   // A showcase hidden on the server and shown in the draft has products; it is only not served yet.
   it("says what the owner does next when the screen knows better than the kind", () => {
-    render(<DesignBlockPlaceholder kind="PRODUCTS" label="Lista de produtos" action="Os produtos aparecem ao publicar" />)
+    render(<DesignBlockPlaceholder kind="PRODUCTS" label="Vitrine de produtos" action="Os produtos aparecem ao publicar" />)
 
     expect(screen.getByText("Os produtos aparecem ao publicar")).toBeInTheDocument()
     expect(screen.queryByText("Cadastrar produtos")).not.toBeInTheDocument()

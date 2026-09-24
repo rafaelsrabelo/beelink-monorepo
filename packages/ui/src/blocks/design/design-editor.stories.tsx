@@ -146,7 +146,7 @@ export const Padrao: Story = {
           </DesignEditTag>
         </StorefrontSectionBand>
         <StorefrontSectionBand primary={PRIMARIA}>
-          <DesignEditTag label="Lista de produtos" onEdit={noop}>
+          <DesignEditTag label="Vitrine de produtos" onEdit={noop}>
             <Conteudo alto />
           </DesignEditTag>
         </StorefrontSectionBand>
@@ -195,7 +195,7 @@ export const EditandoComAGavetaAberta: Story = {
             </DesignEditTag>
           </StorefrontSectionBand>
           <StorefrontSectionBand primary={PRIMARIA}>
-            <DesignEditTag label="Lista de produtos" onEdit={noop}>
+            <DesignEditTag label="Vitrine de produtos" onEdit={noop}>
               <Conteudo alto />
             </DesignEditTag>
           </StorefrontSectionBand>

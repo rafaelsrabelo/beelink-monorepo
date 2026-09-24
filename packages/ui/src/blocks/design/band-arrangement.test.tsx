@@ -60,7 +60,7 @@ describe("BandArrangement", () => {
     // Rows reading "Sem título" would say which are unfinished and nothing about which is which —
     // the one question a list of components exists to answer.
     expect(screen.getByRole("button", { name: "Arrastar: Banner" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Arrastar: Lista de produtos" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Arrastar: Vitrine de produtos" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Arrastar: Frete grátis" })).toBeInTheDocument()
   })
 
@@ -72,7 +72,7 @@ describe("BandArrangement", () => {
     renderBands()
 
     expect(screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })).toBeInTheDocument()
-    expect(screen.getByRole("group", { name: "Largura do bloco: Lista de produtos" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Largura do bloco: Vitrine de produtos" })).toBeInTheDocument()
   })
 
   /**
@@ -165,7 +165,7 @@ describe("BandArrangement", () => {
     renderBands()
 
     expect(screen.getByRole("button", { name: "Excluir bloco: Frete grátis" })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Excluir bloco: Lista de produtos" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Excluir bloco: Vitrine de produtos" })).not.toBeInTheDocument()
   })
 
   /**

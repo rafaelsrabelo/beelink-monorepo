@@ -4,6 +4,7 @@ import type {
   BannerSlide,
   BenefitRow,
   ContactField,
+  ShowcaseProduct,
   StoreComponent,
   UpdateComponentPayload,
 } from "@harness-monorepo/contracts"
@@ -20,6 +21,7 @@ import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 /** The format the form offers for this kind, marked; the kind's own when the wire holds none. */
 function displayOf(component: StoreComponent): ComponentFormValues["display"] {
   if (component.kind === "CATEGORIES") return component.display === "RAIL" ? "RAIL" : "GRID"
+  if (component.kind === "PRODUCTS") return component.display === "GRID" ? "GRID" : "RAIL"
 
   return component.display === "GRID" ? "GRID" : "CAROUSEL"
 }
@@ -76,6 +78,13 @@ export function toForm(component: StoreComponent, bandBackground: string | null)
             options: (field.options ?? []).join("\n"),
           }))
         : [],
+    source: component.source ?? "ALL",
+    sourceCategoryId: component.sourceCategoryId ?? "",
+    picks:
+      component.kind === "PRODUCTS"
+        ? (component.items as ShowcaseProduct[]).map((row) => ({ id: row.id, productId: row.productId }))
+        : [],
+    limit: component.limit === null ? "" : String(component.limit),
   }
 }
 
@@ -143,8 +152,26 @@ export function toPayload(value: ComponentFormValues, linkId: string): UpdateCom
     // `display` only where the form offers it: the API refuses a value on a kind that does not draw one.
     ...(value.kind === "BANNER" ? { items: slides, display: value.display } : {}),
     ...(value.kind === "CATEGORIES" ? { display: value.display } : {}),
+    ...(value.kind === "PRODUCTS" ? showcaseOf(value) : {}),
     ...(value.kind === "BENEFITS" ? { items: benefits } : {}),
     ...(value.kind === "ANNOUNCEMENT" ? { items: link } : {}),
     ...(value.kind === "CONTACT" ? { items: fields } : {}),
+  }
+}
+
+/**
+ * A showcase's own fields, sent whole: the source, and only what that source reads. The form keeps
+ * the others so switching back finds them; the API would clear them anyway, and sending a pick with
+ * a category source would only be a pick it has to check against the shop for nothing.
+ */
+function showcaseOf(value: ComponentFormValues): UpdateComponentPayload {
+  const limit = value.limit.trim()
+
+  return {
+    display: value.display,
+    source: value.source,
+    sourceCategoryId: value.source === "CATEGORY" ? value.sourceCategoryId || null : null,
+    limit: limit === "" ? null : Number(limit),
+    items: value.source === "SELECTION" ? value.picks : [],
   }
 }

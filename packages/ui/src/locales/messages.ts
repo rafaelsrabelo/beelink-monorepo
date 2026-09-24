@@ -1,4 +1,4 @@
-import type { BlockGroup, ComponentKind, ContactFieldType } from "../blocks/design/design-types"
+import type { BlockGroup, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
@@ -335,7 +335,29 @@ export interface UiMessages {
       /** One line of what a kind is, read beside its wireframe and searched with its name. */
       hints: Record<ComponentKind, string>
     }
-    productListHint: string
+    /** A showcase's own questions: where its products come from, how many, and in what shape. */
+    showcase: {
+      sourceLabel: string
+      sources: Record<ProductSource, string>
+      /** One sentence under the source, saying what it draws. */
+      sourceHints: Record<ProductSource, string>
+      categoryLabel: string
+      categorySearch: string
+      categoryNone: string
+      picksLabel: string
+      picksSearch: string
+      picksNone: string
+      /** `{name}` is the product's. Each button is named for the product it acts on. */
+      pickAdd: string
+      pickUp: string
+      pickDown: string
+      pickRemove: string
+      /** A pick whose product is not among the ones the panel loaded — deleted, or past the first hundred. */
+      pickUnknown: string
+      searchEmpty: string
+      limitLabel: string
+      limitHint: string
+    }
     /** A block's slice of its band, named so it cannot be read as the band's own width. */
     spanLabel: string
     spanFull: string

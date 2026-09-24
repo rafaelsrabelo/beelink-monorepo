@@ -27,6 +27,10 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     slides: [],
     benefits: [],
     fields: [],
+    source: "ALL",
+    sourceCategoryId: "",
+    picks: [],
+    limit: "",
     ...over,
   }
 }
