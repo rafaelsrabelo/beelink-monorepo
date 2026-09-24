@@ -342,6 +342,19 @@ describe("reconcile — the server changes, the arrangement survives", () => {
 
     expect(next[1]!.components.map((row) => row.id)).toEqual(["b2", "b3"])
   })
+
+  // The block half of the "+": the draft moved b2 above b1, and a block added first on the server
+  // lands first in the draft too — not appended after the owner's order.
+  it("places a block added inside a rearranged band where its + was", () => {
+    const arranged = applyComponentOrder(draft, "b", ["b2", "b1"])
+    const at = serverPlaceOf(["b2", "b1"], ["b1", "b2"], 0)
+    const grown = saved.map((row) =>
+      row.id === "b" ? section("b", [component("x"), component("b1"), component("b2", { kind: "PRODUCTS" })]) : row,
+    )
+
+    expect(at).toBe(0)
+    expect(reconcile(arranged, grown)[1]!.components.map((row) => row.id)).toEqual(["x", "b2", "b1"])
+  })
 })
 
 describe("takenKindsOf — what the gallery stops offering", () => {

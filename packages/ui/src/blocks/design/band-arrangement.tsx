@@ -118,7 +118,9 @@ export function BandArrangement({
   const insertBand = (index: number) =>
     onInsert ? (
       <InsertPoint
-        key={`insert-${index}`}
+        // The last one keeps its key as bands arrive, so a + pressed after the last band is still the
+        // focused node once the new band is drawn above it.
+        key={index === bands.length ? "insert-end" : `insert-${index}`}
         label={format(text.insertBand, { position: String(index + 1) })}
         disabled={inserting}
         onInsert={() => onInsert({ level: "band", index })}
@@ -133,7 +135,7 @@ export function BandArrangement({
     >
       {/* The "+" between bands are the gaps between them, so the list has none of its own. */}
       <ul className={cn("flex flex-col", !onInsert && "gap-3")}>
-        {bands.map((band, at) => [
+        {bands.flatMap((band, at) => [
           insertBand(at),
           <BandRow
             key={band.id}

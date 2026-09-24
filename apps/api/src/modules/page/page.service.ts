@@ -39,7 +39,8 @@ export class PageService {
     const rows = await this.prisma.storeSection.findMany({
       where: { storeId },
       include: sectionInclude,
-      orderBy: { position: 'asc' },
+      // The id breaks a tie, so a list read twice is the same list, and the one an add counts in.
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
     });
 
     return rows.map(toSection);
@@ -148,13 +149,18 @@ export class PageService {
    */
   async reorderSections(storeSlug: string, userId: string, dto: ReorderDto): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const owned = await this.prisma.storeSection.findMany({ where: { storeId }, select: { id: true } });
 
-    this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every band of this shop exactly once, in the new order');
+    // Under the shop's lock, the list read inside it: an add renumbers these same rows, and a reorder
+    // racing it would leave two bands on one number, or deadlock on the rows each holds.
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const owned = await tx.storeSection.findMany({ where: { storeId }, select: { id: true } });
+      this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every band of this shop exactly once, in the new order');
 
-    await this.prisma.$transaction(
-      dto.ids.map((id, position) => this.prisma.storeSection.update({ where: { id }, data: { position } })),
-    );
+      for (const [position, id] of dto.ids.entries()) {
+        await tx.storeSection.update({ where: { id }, data: { position } });
+      }
+    });
 
     return this.list(storeSlug, userId);
   }
@@ -255,13 +261,16 @@ export class PageService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.rules.ownedSection(storeId, sectionId);
 
-    const owned = await this.prisma.storeComponent.findMany({ where: { sectionId }, select: { id: true } });
+    // The same lock an add into this band takes: see reorderSections.
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const owned = await tx.storeComponent.findMany({ where: { sectionId }, select: { id: true } });
+      this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every component of this band exactly once, in the new order');
 
-    this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every component of this band exactly once, in the new order');
-
-    await this.prisma.$transaction(
-      dto.ids.map((id, position) => this.prisma.storeComponent.update({ where: { id }, data: { position } })),
-    );
+      for (const [position, id] of dto.ids.entries()) {
+        await tx.storeComponent.update({ where: { id }, data: { position } });
+      }
+    });
 
     return this.list(storeSlug, userId);
   }

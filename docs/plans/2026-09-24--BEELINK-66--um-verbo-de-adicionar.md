@@ -55,3 +55,24 @@ O `+` é um bloco do `ui` (`InsertPoint`), com story e teste.
 ## Fora de escopo
 
 - `+` dentro do preview: o preview é inerte, e selecionar por ele é o C4.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou três pontos, todos corrigidos:
+
+- **Uma adição concorrente com uma reordenação podia deixar duas faixas no mesmo número, ou
+  travar.** A adição renumera as faixas sob a trava da loja, mas as reordenações escreviam as
+  mesmas linhas sem essa trava, com a lista lida fora da transação. O revisor reproduziu empates e
+  deadlocks (500). As duas reordenações (faixas e blocos de uma faixa) passam a rodar sob a mesma
+  trava, lendo a lista dentro dela, e a lista do painel desempata pelo id. Um e2e dispara oito
+  rodadas de reordenação e adição ao mesmo tempo, e falha com a reordenação antiga.
+- **O `+` depois da última faixa trocava de chave quando uma faixa entrava**, e o foco do teclado
+  se perdia. Ele passa a ter uma chave fixa. A faixa vazia continua trocando o botão pela lista na
+  primeira faixa; o foco então vai para os campos do bloco criado.
+- **As listas intercaladas (faixas com `+`, blocos com `+`) viravam arrays aninhados**, e a chave
+  de cada faixa deixava de valer no nível da lista. As duas passam a ser planas (`flatMap`).
+
+Pontos refutados como defeito, e atendidos mesmo assim: um teste do bloco novo no meio de uma faixa
+reorganizada, o `POSITION_INVALID` também no endpoint de bloco, e a ordem da trava no spec. Dois
+arquivos passaram de 250 linhas (`page.service.ts` e `design-draft.ts`); a regra é de componente, e
+os dois são um serviço e um módulo de funções, então ficaram assim.

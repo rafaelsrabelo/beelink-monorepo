@@ -87,6 +87,19 @@ describe("BandArrangement — one verb for adding, where it lands", () => {
     expect(onInsert).toHaveBeenNthCalledWith(2, { level: "block", sectionId: "a", index: 1 })
   })
 
+  // The + after the last band keeps its node as the new band arrives, so the keyboard keeps its place.
+  it("keeps the last + focused when a band is added through it", () => {
+    const { rerender } = render(<BandArrangement bands={[band("a", ["Um"])]} onInsert={vi.fn()} {...handlers} />)
+    const last = screen.getByRole("button", { name: "Nova faixa na posição 2" })
+    last.focus()
+
+    rerender(<BandArrangement bands={[band("a", ["Um"]), band("n", ["Novo"])]} onInsert={vi.fn()} {...handlers} />)
+
+    expect(last.isConnected).toBe(true)
+    expect(last).toHaveFocus()
+    expect(last).toHaveAccessibleName("Nova faixa na posição 3")
+  })
+
   it("gives an empty page a button for its first band, and offers nothing without a way to add", async () => {
     const user = userEvent.setup()
     const onInsert = vi.fn()

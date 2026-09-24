@@ -53,7 +53,7 @@ describe('page — span and display', () => {
     banner = section.json<Section>().components[0]!;
   });
 
-  function call(method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) {
+  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, payload?: object) {
     return app.inject({
       method,
       url,
@@ -161,6 +161,25 @@ describe('page — span and display', () => {
       const refused = await call('POST', '/api/stores/padaria-do-bairro/sections', { position, component: { kind: 'HEADING', title: 'x' } });
       expect(refused.statusCode, String(position)).toBe(400);
       expect(refused.json<ApiErrorBody>().errorCode).toBe('POSITION_INVALID');
+
+      const intoBand = await call('POST', `/api/stores/padaria-do-bairro/sections/${band.id}/components`, { kind: 'TEXT', body: 'x', position });
+      expect(intoBand.statusCode, String(position)).toBe(400);
+      expect(intoBand.json<ApiErrorBody>().errorCode).toBe('POSITION_INVALID');
+    }
+  });
+
+  // An add renumbers the bands a publish is reordering: under one lock, neither ties nor deadlocks.
+  it('keeps every band on its own number when an add races a reorder', async () => {
+    for (let round = 0; round < 8; round += 1) {
+      const ids = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);
+      const [reordered, added] = await Promise.all([
+        call('PUT', '/api/stores/padaria-do-bairro/sections/reorder', { ids: [...ids.slice(1), ids[0]] }),
+        call('POST', '/api/stores/padaria-do-bairro/sections', { position: 1, component: { kind: 'HEADING', title: `Rodada ${round}` } }),
+      ]);
+
+      expect([reordered.statusCode, added.statusCode].every((code) => code < 500), `round ${round}`).toBe(true);
+      const positions = await app.get(PrismaService).storeSection.findMany({ select: { position: true } });
+      expect(new Set(positions.map((row) => row.position)).size, `round ${round}`).toBe(positions.length);
     }
   });
 });

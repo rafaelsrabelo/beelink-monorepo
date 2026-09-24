@@ -178,7 +178,7 @@ export function BandRow({
             onReorder={(ids) => onReorderComponents(band.id, ids)}
           >
             <ul className={cn("flex flex-col pl-6", !onInsertBlock && "gap-2")}>
-              {band.components.map((component, at) => [
+              {band.components.flatMap((component, at) => [
                 onInsertBlock ? (
                   <InsertPoint
                     key={`insert-${at}`}

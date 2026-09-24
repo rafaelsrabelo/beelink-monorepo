@@ -215,6 +215,10 @@ describe('PageService — a band is created around something', () => {
     expect(createSection.mock.calls[0]![0].data.position).toBe(1);
     expect(prisma.storeSection.update).toHaveBeenCalledWith({ where: { id: 'b' }, data: { position: 2 } });
     expect(prisma.storeSection.update).toHaveBeenCalledTimes(1);
+    // Under the shop's lock, taken before the list is read.
+    expect(vi.mocked(prisma.$queryRaw).mock.invocationCallOrder[0]!).toBeLessThan(
+      vi.mocked(prisma.storeSection.findMany).mock.invocationCallOrder[0]!,
+    );
   });
 
   /**
