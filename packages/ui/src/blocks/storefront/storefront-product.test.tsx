@@ -168,6 +168,18 @@ describe("StorefrontProductDetail", () => {
       expect(onSubmit).toHaveBeenCalledWith("m-areia", expect.objectContaining({ phone: "11977776666" }))
     })
 
+    it("moves to the combination a value has when the one chosen does not exist", async () => {
+      const user = userEvent.setup()
+      const onVariantChange = vi.fn()
+      renderProduct({ ...withVariants, onVariantChange })
+
+      await user.click(screen.getByRole("button", { name: "G" }))
+
+      expect(onVariantChange).toHaveBeenCalledWith("g-preto")
+      expect(screen.getByRole("group", { name: "Cor: Preto" })).toBeInTheDocument()
+      expect(screen.getByText("R$ 219,00")).toBeInTheDocument()
+    })
+
     it("has no accessibility violations", async () => {
       const { container } = renderProduct({ ...withVariants, restock: { onSubmit: () => {}, status: "idle" } })
 

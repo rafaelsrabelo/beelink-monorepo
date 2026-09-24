@@ -11,6 +11,7 @@ import {
   initialVariantOf,
   ORDER_VARIANT_MARK,
   selectionOf,
+  targetOf,
   variantLabelOf,
   variantOf,
   type ChoiceOption,
@@ -60,6 +61,7 @@ export interface StorefrontProductDetailProps {
     onSubmit: (variantId: string, submission: RestockSubmission) => void
     status: "idle" | "sending" | "sent"
     error?: string | null
+    phoneInvalid?: boolean
     /** Called as the dialog closes, so the next one starts clean. */
     onReset?: () => void
   }
@@ -112,10 +114,10 @@ export function StorefrontProductDetail({
   const shownImages = variant?.imageUrl ? [{ id: `variant-${variant.id}`, url: variant.imageUrl, alt: null }, ...images] : images
 
   function choose(optionId: string, valueId: string) {
-    const next = { ...selection, [optionId]: valueId }
-    setSelection(next)
-    const chosen = variantOf(next, options, variants)
-    if (chosen) onVariantChange?.(chosen.id)
+    const chosen = targetOf(selection, optionId, valueId, options, variants)
+    if (!chosen) return
+    setSelection(selectionOf(chosen, options))
+    onVariantChange?.(chosen.id)
   }
 
   const order = orderHref?.replace(ORDER_VARIANT_MARK, label ? encodeURIComponent(` (${label})`) : "")
@@ -203,6 +205,7 @@ export function StorefrontProductDetail({
           variantLabel={label}
           status={restock.status}
           error={restock.error}
+          phoneInvalid={restock.phoneInvalid}
           onSubmit={(submission) => {
             const target = variant ?? variants[0]
             if (target) restock.onSubmit(target.id, submission)

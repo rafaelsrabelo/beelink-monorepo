@@ -91,3 +91,34 @@ como a string.
 - A barra fixa de compra no celular, que não está desenhada.
 - "Restam N" e a economia por peso ("econ. 12%").
 - A tela do lojista com os pedidos de aviso.
+
+## Adendo — revisão independente (24/09/2026)
+
+Três leituras (comportamento; acessibilidade e regras da vitrine; evidência). Cada achado passou
+por um verificador que tentou refutá-lo. Nove confirmados, cinco distintos, todos introduzidos por
+este ticket e todos corrigidos:
+
+1. **Combinações inalcançáveis** (bloqueador na evidência, grave nas outras leituras). "Indisponível"
+   era decidido pela combinação com as outras escolhas como estavam. Com combinações esparsas,
+   comuns com o "não vendo esta" do A4, uma combinação vendida e em estoque só era alcançável por
+   um link com `?variant=`. No próprio fixture, G·Preto não era alcançável a partir de P·Areia.
+   Agora:
+   - um valor só é desabilitado quando nenhuma combinação o tem;
+   - escolher um valor cuja combinação exata não existe leva à combinação com esse valor que mais
+     preserva as outras escolhas, dando preferência a uma que possa ser pedida (`targetOf`).
+
+   Isso refina a decisão 1: "inexistente" passa a significar "nenhuma combinação tem este valor".
+2. **"Avise-me" sem rede não dizia nada.** Uma falha sem código de erro volta como `UNKNOWN`. Um
+   teste do componente web cobre a rede caída, a recusa do número e o sucesso.
+3. **As cores do painel na vitrine** (grave). O valor escolhido herdava o fundo `--muted` do
+   primitivo. Agora usa a tinta da própria loja (`bg-current/10`).
+4. **Uma linha de opção podia sair da ordem de tabulação** (grave): o item que tinha o foco podia
+   ficar desabilitado sem o Base UI mover a parada de tabulação. O grupo agora remonta quando muda
+   o conjunto de valores desabilitados.
+5. **Contraste e erros do diálogo:**
+   - um valor esgotado continua escolhível, então deixou de ficar esmaecido e só fica riscado;
+   - só a recusa do número marca o campo de WhatsApp;
+   - o nome ganhou `maxLength` de 80.
+
+Quatro achados foram refutados, todos sobre lacunas de teste. O do componente web foi coberto
+mesmo assim.

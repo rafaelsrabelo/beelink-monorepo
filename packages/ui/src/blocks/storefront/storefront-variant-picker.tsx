@@ -45,6 +45,7 @@ export function StorefrontVariantPicker({
       {options.map((option) => {
         const chosen = option.values.find((value) => value.id === selection[option.id])
         const legendId = `variant-option-${option.id}`
+        const states = option.values.map((value) => valueStateOf(selection, option.id, value.id, options, variants))
 
         return (
           <div key={option.id} className="flex flex-col gap-2">
@@ -52,6 +53,10 @@ export function StorefrontVariantPicker({
               {format(text.chosenValue, { option: option.name, value: chosen?.name ?? "" })}
             </p>
             <ToggleGroup
+              // Remounted when which values are disabled changes: the group keeps one tab stop, and
+              // Base UI does not move it off an item that becomes disabled, which would take the
+              // whole row out of the tab order.
+              key={states.map((state) => (state === "missing" ? "x" : "o")).join("")}
               multiple={false}
               aria-labelledby={legendId}
               value={chosen ? [chosen.id] : []}
@@ -61,8 +66,8 @@ export function StorefrontVariantPicker({
               }}
               className="flex flex-wrap gap-2"
             >
-              {option.values.map((value) => {
-                const state = valueStateOf(selection, option.id, value.id, options, variants)
+              {option.values.map((value, index) => {
+                const state = states[index]!
                 const isChosen = value.id === chosen?.id
 
                 return (
@@ -71,9 +76,15 @@ export function StorefrontVariantPicker({
                     value={value.id}
                     disabled={state === "missing"}
                     className={cn(
-                      "h-11 min-w-12 gap-2 rounded-xl border border-current/20 px-3 text-sm",
+                      // The shop's own ink for every state: the primitive's hover and pressed fills
+                      // are the panel's tokens, which a shop window painted dark would not match.
+                      "h-11 min-w-12 gap-2 rounded-xl border border-current/20 bg-transparent px-3 text-sm text-inherit",
+                      "hover:bg-current/5 hover:text-inherit aria-pressed:bg-current/10 aria-pressed:text-inherit data-[state=on]:bg-current/10",
                       isChosen && "border-2 border-current font-semibold",
-                      state !== "available" && "line-through opacity-50",
+                      // Struck for both; faded only when disabled, since a sold-out value stays
+                      // choosable and has to be read at full contrast.
+                      state !== "available" && "line-through",
+                      state === "missing" && "opacity-50",
                     )}
                   >
                     {value.colorHex ? (

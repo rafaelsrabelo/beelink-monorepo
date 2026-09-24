@@ -41,10 +41,10 @@ export interface ChoiceVariant {
 export type Selection = Readonly<Record<string, string>>
 
 /**
- * What a value would lead to, with the other options as they are:
+ * What choosing a value would lead to:
  * - `available`: a combination that can be ordered;
  * - `soldOut`: a combination the shop sells and has none of — choosable, to ask to be told;
- * - `missing`: no such combination; the shop does not sell it.
+ * - `missing`: no combination has the value at all; the shop does not sell it.
  */
 export type ValueState = "available" | "soldOut" | "missing"
 
@@ -65,6 +65,36 @@ export function initialVariantOf(variants: readonly ChoiceVariant[], wanted?: st
   return variants.find((variant) => variant.id === wanted) ?? variants.find((variant) => variant.available) ?? variants[0]
 }
 
+/**
+ * The combination choosing a value lands on: the one with the other options as they are, when the
+ * shop sells it; else the one with that value that keeps most of the other choices, preferring one
+ * that can be ordered. So every combination the shop sells is reachable by clicking — with only the
+ * exact combination on offer, a colour sold in one size alone could never be reached from another.
+ */
+export function targetOf(
+  selection: Selection,
+  optionId: string,
+  valueId: string,
+  options: readonly ChoiceOption[],
+  variants: readonly ChoiceVariant[],
+): ChoiceVariant | undefined {
+  const exact = variantOf({ ...selection, [optionId]: valueId }, options, variants)
+  if (exact) return exact
+
+  const at = options.findIndex((option) => option.id === optionId)
+  const shared = (variant: ChoiceVariant) =>
+    options.filter((option, index) => variant.optionValueIds[index] === selection[option.id]).length
+
+  return variants
+    .filter((variant) => variant.optionValueIds[at] === valueId)
+    .reduce<ChoiceVariant | undefined>((best, variant) => {
+      if (!best) return variant
+      const score = shared(variant) * 2 + (variant.available ? 1 : 0)
+      const bestScore = shared(best) * 2 + (best.available ? 1 : 0)
+      return score > bestScore ? variant : best
+    }, undefined)
+}
+
 export function valueStateOf(
   selection: Selection,
   optionId: string,
@@ -72,7 +102,7 @@ export function valueStateOf(
   options: readonly ChoiceOption[],
   variants: readonly ChoiceVariant[],
 ): ValueState {
-  const variant = variantOf({ ...selection, [optionId]: valueId }, options, variants)
+  const variant = targetOf(selection, optionId, valueId, options, variants)
   if (!variant) return "missing"
   return variant.available ? "available" : "soldOut"
 }

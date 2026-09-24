@@ -8,8 +8,8 @@ function swatch(digits: string): string {
 
 /**
  * The blouse of design 4b, for the stories and tests of the storefront picker: P in Areia and
- * Terracota, M in Areia only (sold out), G in Preto. A `.tsx` only because this package exports
- * nothing else.
+ * Terracota, M in Areia only (sold out), G in Preto only, and a GG no combination has. A `.tsx` only
+ * because this package exports nothing else.
  */
 export const BLOUSE_OPTIONS: ChoiceOption[] = [
   {
@@ -19,6 +19,7 @@ export const BLOUSE_OPTIONS: ChoiceOption[] = [
       { id: "P", name: "P", colorHex: null },
       { id: "M", name: "M", colorHex: null },
       { id: "G", name: "G", colorHex: null },
+      { id: "GG", name: "GG", colorHex: null },
     ],
   },
   {

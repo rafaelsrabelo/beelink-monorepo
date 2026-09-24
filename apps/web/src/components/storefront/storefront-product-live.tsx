@@ -51,7 +51,9 @@ export function StorefrontProductLive({
   messages,
 }: StorefrontProductLiveProps) {
   const restock = useRestockRequest(slug)
-  const code = restock.error && "errorCode" in restock.error ? String(restock.error.errorCode) : null
+  // A request that never reached the API — offline, a dropped connection — has no code, and is still a
+  // failure the visitor must be told about.
+  const code = restock.error ? ("errorCode" in restock.error ? String(restock.error.errorCode) : "UNKNOWN") : null
 
   return (
     <StorefrontProductDetail
@@ -76,6 +78,7 @@ export function StorefrontProductLive({
       restock={{
         status: restock.isSuccess ? "sent" : restock.isPending ? "sending" : "idle",
         error: code ? (restockCopy[code as keyof RestockCopy] ?? restockCopy.UNKNOWN) : null,
+        phoneInvalid: code === "BAD_REQUEST",
         onSubmit: (variantId, submission) =>
           restock.mutate({
             productId: product.id,

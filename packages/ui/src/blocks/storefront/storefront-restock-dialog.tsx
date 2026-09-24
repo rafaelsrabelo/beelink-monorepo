@@ -36,6 +36,8 @@ export interface StorefrontRestockDialogProps {
   status: "idle" | "sending" | "sent"
   /** A sentence, already in the visitor's language, when the request was refused. */
   error?: string | null
+  /** The refusal is about the number, so the field is marked; other refusals are not its fault. */
+  phoneInvalid?: boolean
   messages?: UiMessages
 }
 
@@ -53,6 +55,7 @@ export function StorefrontRestockDialog({
   onSubmit,
   status,
   error,
+  phoneInvalid = false,
   messages = defaultMessages,
 }: StorefrontRestockDialogProps) {
   const text = messages.storefront
@@ -94,14 +97,21 @@ export function StorefrontRestockDialog({
                 required
                 placeholder={text.restockPhonePlaceholder}
                 value={phone}
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? "restock-error" : undefined}
+                aria-invalid={error && phoneInvalid ? true : undefined}
+                aria-describedby={error && phoneInvalid ? "restock-error" : undefined}
                 onChange={(event) => setPhone(event.target.value)}
               />
             </Field>
             <Field>
               <FieldLabel htmlFor="restock-name">{text.restockName}</FieldLabel>
-              <Input id="restock-name" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} />
+              <Input
+                id="restock-name"
+                autoComplete="name"
+                // Counted in UTF-16 units, so whatever it lets through is within the API's 80 characters.
+                maxLength={80}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
             </Field>
             {/* The trap. Out of sight and out of the tab order; a person never fills it. */}
             <input

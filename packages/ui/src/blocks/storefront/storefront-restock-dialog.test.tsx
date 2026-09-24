@@ -33,10 +33,18 @@ describe("StorefrontRestockDialog", () => {
   })
 
   it("shows the refusal it is given, and no success until the screen says so", async () => {
-    renderDialog({ error: "Informe o WhatsApp com DDD, entre 10 e 15 dígitos" })
+    renderDialog({ error: "Informe o WhatsApp com DDD, entre 10 e 15 dígitos", phoneInvalid: true })
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Informe o WhatsApp com DDD")
+    expect(screen.getByRole("textbox", { name: "WhatsApp" })).toHaveAttribute("aria-invalid", "true")
     expect(screen.queryByText("Pronto! Avisaremos no WhatsApp.")).toBeNull()
+  })
+
+  it("does not blame the number for a refusal that is not about it", async () => {
+    renderDialog({ error: "Muitas tentativas. Espere um minuto e tente de novo." })
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument()
+    expect(screen.getByRole("textbox", { name: "WhatsApp" })).not.toHaveAttribute("aria-invalid")
   })
 
   it("confirms once the request was saved", async () => {

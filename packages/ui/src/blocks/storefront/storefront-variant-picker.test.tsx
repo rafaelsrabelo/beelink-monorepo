@@ -28,10 +28,21 @@ describe("StorefrontVariantPicker", () => {
     expect(screen.getByRole("group", { name: "Cor: Areia" })).toBeInTheDocument()
   })
 
-  it("disables a value no combination has, and says so", () => {
+  it("disables a value no combination has, struck through, and says so", () => {
     renderPicker()
 
-    expect(screen.getByRole("button", { name: "G, indisponível" })).toBeDisabled()
+    const missing = screen.getByRole("button", { name: "GG, indisponível" })
+    expect(missing).toBeDisabled()
+    expect(missing).toHaveClass("line-through")
+  })
+
+  it("keeps a value choosable when a combination with it exists, even with other choices", async () => {
+    const user = userEvent.setup()
+    const onSelect = renderPicker()
+
+    await user.click(screen.getByRole("button", { name: "G" }))
+
+    expect(onSelect).toHaveBeenCalledWith("size", "G")
   })
 
   it("keeps a sold-out combination choosable, struck through and said out loud", async () => {
