@@ -13,6 +13,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
 import { announcementOf } from "./storefront-sections"
+import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -206,6 +207,7 @@ export function StorefrontFrame({
             // The basket, on every page: it has an address. The account link waits for a customer
             // account to exist — `/login` is the shopkeeper's door, the wrong one for a visitor.
             cartHref: routes.cart(),
+            cartSlot: <StorefrontCartLinkLive href={routes.cart()} messages={messages} />,
           })}
       {...(linkComponent ? { linkComponent } : {})}
       categories={
