@@ -86,6 +86,11 @@ export class PublicProductCardResponse implements PublicProductCard {
   @ApiProperty({ nullable: true, type: String }) categorySlug!: string | null;
   @ApiProperty({ type: PriceRangeResponse, description: 'The cheapest and dearest variant a customer can order.' })
   priceRange!: PriceRangeResponse;
+  @ApiProperty({
+    required: false,
+    description: 'Whether it sells combinations. On the shop window\'s shelves only; absent reads as "choose on the page".',
+  })
+  hasOptions?: boolean;
 }
 
 export class PublicProductResponse extends PublicProductCardResponse implements PublicProduct {

@@ -86,6 +86,8 @@ export const productInclude = {
 export type ProductCardRow = ProductModel & {
   images: { url: string }[];
   category: ProductCategoryRow | null;
+  /** On a shelf's read only: whether a card can add the product without a choice. */
+  _count?: { options: number };
 };
 
 /**
@@ -95,6 +97,7 @@ export type ProductCardRow = ProductModel & {
 export const productCardInclude = {
   images: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
   category: { include: productCategoryInclude },
+  _count: { select: { options: true } },
 } as const;
 
 export function toPublicProductCategory(row: ProductCategoryRow): PublicProductCategory {
@@ -147,6 +150,7 @@ export function toPublicProductCard(row: ProductCardRow): PublicProductCard {
     imageUrl: row.images[0]?.url ?? null,
     categorySlug: row.category?.slug ?? null,
     priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
+    ...(row._count ? { hasOptions: row._count.options > 0 } : {}),
   } satisfies PublicProductCard;
 }
 

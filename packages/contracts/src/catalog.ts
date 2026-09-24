@@ -120,6 +120,12 @@ export interface PublicProductCard {
    * show a range. Equal on a product with one variant. `minCents` is `priceCents`.
    */
   priceRange: PriceRange;
+  /**
+   * Whether it sells combinations. A card adds a product without them straight to the cart, and
+   * sends one with them to its page to choose. Served on the shop window's shelves — the listing and
+   * the showcases — and absent elsewhere; absent reads as "choose on the page".
+   */
+  hasOptions?: boolean;
 }
 
 /** Whole cents, both ends included. */

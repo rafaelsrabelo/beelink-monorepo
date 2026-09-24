@@ -125,6 +125,19 @@ describe('a product’s variants on the storefront', () => {
     });
   });
 
+  it('tells a card whether the product sells combinations, so it can add one without a choice', async () => {
+    await wheyInThreeSizes();
+    await addProduct({ name: 'Blusa', slug: 'blusa', priceCents: 5990 });
+
+    const shopWindow = await visit<StorefrontCatalog>('/api/stores/lessari/catalog');
+    const page = await visit<PublicProductDetail>('/api/stores/lessari/catalog/blusa');
+
+    expect(shopWindow.products.find((card) => card.slug === 'whey')?.hasOptions).toBe(true);
+    expect(shopWindow.products.find((card) => card.slug === 'blusa')?.hasOptions).toBe(false);
+    // The product's own page carries its options; the flag is a shelf's.
+    expect(page).not.toHaveProperty('hasOptions');
+  });
+
   it('widens the range as combinations come back', async () => {
     const detail = await wheyInThreeSizes();
     await ownerCall('PUT', `/api/stores/lessari/products/${detail.id}/variants`, {
