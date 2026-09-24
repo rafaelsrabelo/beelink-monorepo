@@ -56,8 +56,8 @@ export interface BlockGalleryProps {
   /**
    * The words on the trigger. The gallery is opened from two places that mean different things:
    * the top of the panel, which adds a band, and a band's own foot, which adds INTO that band —
-   * and only the second puts two posters side by side, because a run of posters cannot cross a
-   * band (`runsOf` in storefront-sections.tsx).
+   * and only the second puts two blocks side by side, because blocks share a row only inside one
+   * band's grid (`StorefrontBandGrid`).
    */
   triggerLabel?: string
   triggerClassName?: string
@@ -66,6 +66,12 @@ export interface BlockGalleryProps {
    * story the a11y panel, and a story that draws only a closed button is a panel nobody checked.
    */
   defaultOpen?: boolean
+  /**
+   * Opened from outside, with no trigger of its own: the screen's "+" knows where the block goes,
+   * and the gallery is the one panel every "+" opens.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   messages?: UiMessages
 }
 
@@ -77,11 +83,16 @@ export function BlockGallery({
   defaultOpen = false,
   triggerLabel,
   triggerClassName,
+  open: openFromOutside,
+  onOpenChange,
   messages = defaultMessages,
 }: BlockGalleryProps) {
   const text = messages.design
   const gallery = text.gallery
-  const [open, setOpen] = useState(defaultOpen)
+  const [openHere, setOpenHere] = useState(defaultOpen)
+  const controlled = openFromOutside !== undefined
+  const open = controlled ? openFromOutside : openHere
+  const setOpen = (next: boolean) => (controlled ? onOpenChange?.(next) : setOpenHere(next))
   const [query, setQuery] = useState("")
 
   const offered = COMPONENT_KINDS.filter(
@@ -110,13 +121,15 @@ export function BlockGallery({
     <Sheet open={open} onOpenChange={setOpen}>
       {/* The trigger is the button itself: this primitive takes no `asChild`, which is how
           `admin-store-menu.tsx` drives its own trigger too. */}
-      <SheetTrigger
-        disabled={pending}
-        className={cn(buttonVariants({ variant: "outline" }), "w-full", triggerClassName)}
-      >
-        <PlusIcon aria-hidden="true" className="size-4" />
-        {triggerLabel ?? text.addBlock}
-      </SheetTrigger>
+      {controlled ? null : (
+        <SheetTrigger
+          disabled={pending}
+          className={cn(buttonVariants({ variant: "outline" }), "w-full", triggerClassName)}
+        >
+          <PlusIcon aria-hidden="true" className="size-4" />
+          {triggerLabel ?? text.addBlock}
+        </SheetTrigger>
+      )}
       <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-md">
         <SheetHeader>
           <SheetTitle>{gallery.title}</SheetTitle>

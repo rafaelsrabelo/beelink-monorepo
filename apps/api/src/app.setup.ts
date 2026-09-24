@@ -1,5 +1,5 @@
 // Nest
-import { HttpException, ValidationPipe } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
@@ -12,6 +12,7 @@ import rateLimit from '@fastify/rate-limit';
 // App
 import { env } from './shared/config/env.js';
 import { ApiExceptionFilter } from './shared/http/api-exception.filter.js';
+import { ApiValidationPipe } from './shared/http/api-validation.pipe.js';
 import { MAX_UPLOAD_BYTES } from './modules/uploads/uploads.constants.js';
 
 /**
@@ -67,7 +68,7 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
 
   app.setGlobalPrefix(env.API_PREFIX);
   app.useGlobalPipes(
-    new ValidationPipe({
+    new ApiValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,

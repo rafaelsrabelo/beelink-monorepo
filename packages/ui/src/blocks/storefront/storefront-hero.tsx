@@ -17,6 +17,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
+import type { StorefrontSpan } from "./storefront-band-cell"
+import { SPAN_HEIGHT, SPAN_TITLE } from "./storefront-span-shape"
 
 export interface StorefrontHeroItem {
   id: string
@@ -34,6 +36,12 @@ export interface StorefrontHeroProps {
   items: readonly StorefrontHeroItem[]
   /** Edge to edge, or inside the shop's measure. The shopkeeper's choice, per hero. */
   width?: "FULL" | "CONTAINED"
+  /**
+   * The slice of the band it sits in. The whole band is the cover it always was, at fixed heights
+   * and a large headline. Any smaller slice is a card among cards: it takes the poster's proportion
+   * and headline for that slice, so it stands as tall as the posters beside it and its words fit.
+   */
+  span?: StorefrontSpan
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -41,10 +49,11 @@ export interface StorefrontHeroProps {
 /**
  * The banner at the top of the shop.
  *
- * **One is a cover; two or more are a carousel, and there is no switch.** The shape is read off
- * the count, which is one fewer thing that can disagree with itself — `layoutSettings.bannerType`
- * stored exactly that switch, `'single' | 'carousel'`, beside a list of images, and nothing ever
- * read either of them.
+ * **One is a cover; two or more are a carousel.** Inside this block the count is the whole of it.
+ * Whether a banner reaches this block at all is the banner's `display`, decided by the page: a
+ * banner shown as a grid is drawn as cards and never gets here. `layoutSettings.bannerType` once
+ * stored a switch, `'single' | 'carousel'`, beside a list of images, and nothing ever read either —
+ * the switch that exists now is read, by the page, before this is called.
  *
  * This is the first importer of the shadcn carousel, which had sat in this package unused since it
  * was installed. The rails deliberately do not use it — `scroll-rail.tsx` says why: Embla hides the
@@ -54,6 +63,7 @@ export interface StorefrontHeroProps {
 export function StorefrontHero({
   items,
   width = "FULL",
+  span = "FULL",
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontHeroProps) {
@@ -66,7 +76,9 @@ export function StorefrontHero({
   const text = messages.storefront
   // A contained hero gets the corner the rest of the page has; a full-bleed one must not, or the
   // rounding cuts the picture away from the very edges it was chosen to reach.
-  const frame = cn("w-full object-cover", "h-44 sm:h-72 lg:h-96", width === "CONTAINED" && "rounded-2xl")
+  const card = span !== "FULL"
+  const rounded = width === "CONTAINED" || card
+  const frame = cn("w-full object-cover", card ? SPAN_HEIGHT[span] : "h-44 shop-sm:h-72 shop-lg:h-96", rounded && "rounded-2xl")
 
   function one(item: StorefrontHeroItem) {
     const picture = (
@@ -82,8 +94,9 @@ export function StorefrontHero({
         {item.title || item.subtitle ? (
           <div
             className={cn(
-              "absolute inset-x-0 bottom-0 flex flex-col gap-1 p-5 sm:p-8",
-              width === "CONTAINED" && "rounded-b-2xl",
+              "absolute inset-x-0 bottom-0 flex flex-col gap-1 p-5",
+              !card && "shop-sm:p-8",
+              rounded && "rounded-b-2xl",
             )}
             style={{
               // Drawn in the shop's own ink so a dark shop gets a light scrim and a pale one a
@@ -95,17 +108,17 @@ export function StorefrontHero({
             }}
           >
             {item.title ? (
-              <p className="text-2xl leading-tight font-semibold text-balance sm:text-4xl">{item.title}</p>
+              <p className={cn("leading-tight font-semibold text-balance", SPAN_TITLE[span])}>{item.title}</p>
             ) : null}
             {item.subtitle ? (
-              <p className="max-w-xl text-sm opacity-85 sm:text-base">{item.subtitle}</p>
+              <p className={cn("text-sm opacity-85", !card && "max-w-xl shop-sm:text-base")}>{item.subtitle}</p>
             ) : null}
           </div>
         ) : null}
       </>
     )
 
-    const shape = cn("group relative block w-full overflow-hidden", width === "CONTAINED" && "rounded-2xl")
+    const shape = cn("group relative block w-full overflow-hidden", rounded && "rounded-2xl")
 
     return item.href ? (
       <Link

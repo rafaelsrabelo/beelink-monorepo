@@ -82,6 +82,9 @@ model ProductCategory {
 
   products Product[]
 
+  /// The showcases that draw this category. Deleting the category leaves them asking for another.
+  showcases StoreComponent[]
+
   @@unique([storeId, slug])
   /// The storefront's category list, in one index scan.
   @@index([storeId, isActive, position])
@@ -171,6 +174,8 @@ model Product {
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
   @@index([storeId, status, position])
   @@index([categoryId, status, position])
+  /// A NEWEST showcase: the shop's products on the shelf, most recently created first.
+  @@index([storeId, status, createdAt])
   @@map("products")
 }
 

@@ -11,9 +11,10 @@
     "build-storybook": { "outputs": ["storybook-static/**"] },
     "dev": { "cache": false, "persistent": true, "passThroughEnv": ["API_URL"] },
     "storybook": { "cache": false, "persistent": true },
-    "lint": {},
-    "type-check": {},
-    "test": { "outputs": ["coverage/**"] },
+    "transit": { "dependsOn": ["^transit"] },
+    "lint": { "dependsOn": ["transit"] },
+    "type-check": { "dependsOn": ["transit"] },
+    "test": { "dependsOn": ["transit"], "outputs": ["coverage/**"] },
     "test:e2e": {
       "cache": false,
       "passThroughEnv": ["CI", "API_URL", "DATABASE_URL", "TEST_DATABASE_URL", "MAILPIT_URL"]

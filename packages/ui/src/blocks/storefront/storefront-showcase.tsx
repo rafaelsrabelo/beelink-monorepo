@@ -1,16 +1,17 @@
-// React
-import type { ReactNode } from "react"
-
 // Libs
 import { ArrowRightIcon } from "lucide-react"
 
-// Locales
+// UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
+
+// Locales
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
-
-export type StorefrontShowcaseLayout = "FULL" | "HALVES" | "THIRDS"
+import type { StorefrontSpan } from "./storefront-band-cell"
+import { SPAN_HEIGHT, SPAN_TITLE } from "./storefront-span-shape"
 
 export interface StorefrontShowcaseItem {
   id: string
@@ -25,41 +26,28 @@ export interface StorefrontShowcaseItem {
    * those addresses became absolute.
    */
   external?: boolean
-  layout: StorefrontShowcaseLayout
 }
 
 export interface StorefrontShowcaseProps {
   items: readonly StorefrontShowcaseItem[]
-  linkComponent?: LinkComponent
   /**
-   * Wraps each card, given the card already built. The design preview uses it to make a poster
-   * draggable where it stands; the shop passes nothing and the cards render as they always have.
-   *
-   * A render prop and not a `draggable` flag, because this block must not learn what dnd-kit is:
-   * it is the shop window, and the editor's chrome reaches it as a prop or not at all.
+   * The slice of the band the block sits in. It sets the picture's proportion and the size of the
+   * words; the width itself is the cell's, which is why this block only ever fills what it is given.
    */
-  renderItem?: (item: StorefrontShowcaseItem, card: ReactNode) => ReactNode
+  span: StorefrontSpan
+  linkComponent?: LinkComponent
+  messages?: UiMessages
 }
 
 /**
- * Full width for the poster at the top; two across for artwork with room to breathe; three across
- * for a card carrying a name and a line. They all collapse to one on a phone — half of a card this
- * dark is unreadable rather than half as useful.
+ * A banner shown as a grid: one column per picture, from a cell of 448px for two, 768px for three
+ * and 1024px for four. Narrower than that the pictures stack, which is what a phone gets — and a
+ * third of a band, where three pictures side by side would each be too small to read.
  */
-const COLUMNS: Record<StorefrontShowcaseLayout, string> = {
-  FULL: "grid-cols-1",
-  HALVES: "grid-cols-1 lg:grid-cols-2",
-  THIRDS: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-}
-
-/**
- * A poster that keeps its cinema ratio on a phone is a letterbox two fingers tall with a headline
- * that will not fit, so the full-width one gets taller as the screen gets narrower.
- */
-const HEIGHT: Record<StorefrontShowcaseLayout, string> = {
-  FULL: "aspect-[4/3] sm:aspect-[2/1] lg:aspect-[21/9]",
-  HALVES: "aspect-[16/9]",
-  THIRDS: "aspect-[4/3]",
+const COLUMNS_OF_COUNT: Record<2 | 3 | 4, string> = {
+  2: "@md:grid-cols-2",
+  3: "@md:grid-cols-2 @3xl:grid-cols-3",
+  4: "@md:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4",
 }
 
 /**
@@ -77,115 +65,115 @@ const HEIGHT: Record<StorefrontShowcaseLayout, string> = {
  * white there would swallow the name without one. The gradient is drawn in the shop's own text
  * colour, so a shop that dresses in cream is not handed a black card it never chose.
  *
- * Rows are grouped by layout and kept in the shopkeeper's order. Mixing a three-across and a
- * two-across card in one row would make the grid decide their sizes, and the size is the choice.
+ * It no longer arranges posters into rows. It used to, grouping neighbours of one shape, because the
+ * band was a column and this was the only place two posters could share a row. The band is a grid
+ * now, and each banner is its own cell there.
+ *
+ * Several items are one banner shown as a grid: its pictures side by side inside its own cell.
+ * The columns follow the cell and not the screen — three pictures in a third of a wide band are
+ * three stamps, and a container query is what knows the cell is narrow.
  */
 export function StorefrontShowcase({
   items,
+  span,
   linkComponent: Link = AnchorLink,
-  renderItem,
+  messages = defaultMessages,
 }: StorefrontShowcaseProps) {
   if (!items.length) return null
 
-  // Consecutive cards of the same shape become one row. A shopkeeper who alternates gets a row
-  // each, which is what alternating asks for.
-  const rows: { layout: StorefrontShowcaseLayout; items: StorefrontShowcaseItem[] }[] = []
-
-  for (const item of items) {
-    const last = rows.at(-1)
-
-    if (last && last.layout === item.layout) last.items.push(item)
-    else rows.push({ layout: item.layout, items: [item] })
-  }
+  const grid = items.length > 1
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      {rows.map((row, index) => (
-        <ul key={`${row.layout}-${index}`} className={cn("grid gap-4", COLUMNS[row.layout])}>
-          {row.items.map((item) => {
-            const body = (
-              <>
-                <img
-                  src={item.imageUrl}
-                  // Decorative: the title is written over it and is the card's whole accessible
-                  // name. Naming the artwork after the card says the same words twice.
-                  alt=""
-                  aria-hidden="true"
-                  loading="lazy"
-                  className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+    <div className="@container w-full">
+      <ul className={cn("grid w-full gap-4", grid && COLUMNS_OF_COUNT[Math.min(items.length, 4) as 2 | 3 | 4])}>
+        {items.map((item) => {
+          const body = (
+            <>
+              <img
+                src={item.imageUrl}
+                // Decorative: the title is written over it and is the card's whole accessible
+                // name. Naming the artwork after the card says the same words twice.
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
 
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(to top, color-mix(in oklab, var(--shop-text) 88%, transparent) 0%, color-mix(in oklab, var(--shop-text) 45%, transparent) 38%, transparent 70%)",
-                  }}
-                />
+              <div
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(to top, color-mix(in oklab, var(--shop-text) 88%, transparent) 0%, color-mix(in oklab, var(--shop-text) 45%, transparent) 38%, transparent 70%)",
+                }}
+              />
 
-                <div
-                  className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5"
-                  style={{ color: "var(--shop-on-text)" }}
-                >
-                  <div className="flex min-w-0 flex-col gap-1">
+              <div
+                className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5"
+                style={{ color: "var(--shop-on-text)" }}
+              >
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p
+                    className={cn(
+                      "leading-tight font-semibold text-balance",
+                      grid ? SPAN_TITLE.THIRD : SPAN_TITLE[span],
+                    )}
+                  >
+                    {item.title}
+                  </p>
+                  {item.subtitle ? (
                     <p
                       className={cn(
-                        "leading-tight font-semibold text-balance",
-                        row.layout === "FULL" ? "text-2xl sm:text-4xl" : "text-lg",
+                        "line-clamp-2 opacity-85",
+                        span === "FULL" ? "max-w-xl text-sm shop-sm:text-base" : "text-sm",
                       )}
                     >
-                      {item.title}
+                      {item.subtitle}
                     </p>
-                    {item.subtitle ? (
-                      <p
-                        className={cn(
-                          "line-clamp-2 opacity-85",
-                          row.layout === "FULL" ? "max-w-xl text-sm sm:text-base" : "text-sm",
-                        )}
-                      >
-                        {item.subtitle}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  {item.href ? (
-                    <span
-                      aria-hidden="true"
-                      className="flex size-11 shrink-0 items-center justify-center rounded-full border border-current/40 transition-transform group-hover:translate-x-1"
-                    >
-                      <ArrowRightIcon className="size-5" />
-                    </span>
                   ) : null}
                 </div>
-              </>
-            )
 
-            const shape = cn(
-              "group relative block w-full overflow-hidden rounded-2xl",
-              HEIGHT[row.layout],
-            )
+                {item.href ? (
+                  <span
+                    aria-hidden="true"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full border border-current/40 transition-transform group-hover:translate-x-1"
+                  >
+                    <ArrowRightIcon className="size-5" />
+                  </span>
+                ) : null}
+              </div>
+            </>
+          )
 
-            const card = item.href ? (
-              <Link
-                href={item.href}
-                className={shape}
-                // The pair every outbound anchor in this repository carries. Without the
-                // `target`, a banner pointing at WhatsApp takes the shop window away with it.
-                {...(item.external ? { target: "_blank", rel: "noreferrer" } : {})}
-              >
-                {body}
-              </Link>
-            ) : (
-              // No link, no arrow, and no element pretending to be interactive: a card the
-              // shopkeeper gave nowhere to go is a poster.
-              <div className={shape}>{body}</div>
-            )
+          // A card sharing the cell is a fraction of it, whatever the cell's own width: a small card's 4:3.
+          const shape = cn(
+            "group relative block w-full overflow-hidden rounded-2xl",
+            grid ? "aspect-[4/3]" : SPAN_HEIGHT[span],
+          )
 
-            return <li key={item.id}>{renderItem ? renderItem(item, card) : card}</li>
-          })}
-        </ul>
-      ))}
+          const card = item.href ? (
+            <Link
+              href={item.href}
+              className={shape}
+              // A card whose words are painted into the picture leaves the link holding only an
+              // `aria-hidden` image — an empty link, announced as a URL. The carousel names it the
+              // same way; the same banner shown as a grid must not lose the name.
+              {...(item.title || item.subtitle ? {} : { "aria-label": messages.storefront.backToShop })}
+              // The pair every outbound anchor in this repository carries. Without the
+              // `target`, a banner pointing at WhatsApp takes the shop window away with it.
+              {...(item.external ? { target: "_blank", rel: "noreferrer" } : {})}
+            >
+              {body}
+            </Link>
+          ) : (
+            // No link, no arrow, and no element pretending to be interactive: a card the
+            // shopkeeper gave nowhere to go is a poster.
+            <div className={shape}>{body}</div>
+          )
+
+          return <li key={item.id}>{card}</li>
+        })}
+      </ul>
     </div>
   )
 }
