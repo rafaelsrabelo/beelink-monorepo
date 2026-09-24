@@ -27,15 +27,23 @@ export function hasCombinations(draft: VariationsValue): boolean {
   return combinationCountOf(draft.options) > 0
 }
 
-/** The editor's draft of a saved product: its options by id, a row per current variant. */
-export function toVariationsDraft(product: ProductDetail): VariationsValue {
+/**
+ * The editor's draft of a saved product: its options by id, a row per current variant.
+ *
+ * The wire has no "colour" flag, so an option is a colour one when a value carries a swatch, or
+ * when it is named like the colour preset — a colour option saved before any swatch was picked
+ * must not come back as a plain one with no way to get its swatches again.
+ */
+export function toVariationsDraft(product: ProductDetail, messages: UiMessages): VariationsValue {
   if (product.options.length === 0) return { options: [], rows: {} }
+  const colour = messages.catalog.variations.presetColor.toLocaleLowerCase()
 
   return {
     options: product.options.map((option) => ({
       key: option.id,
       name: option.name,
-      isColor: option.values.some((value) => value.colorHex !== null),
+      isColor:
+        option.values.some((value) => value.colorHex !== null) || option.name.trim().toLocaleLowerCase() === colour,
       values: option.values.map((value) => ({ key: value.id, name: value.name, colorHex: value.colorHex })),
     })),
     rows: Object.fromEntries(
@@ -69,6 +77,43 @@ export function optionsPayloadOf(draft: VariationsValue): ReplaceProductOptionsP
   }
 }
 
+/** Draft key → the id the API gave it, matched by place: options in order, each with its values in order. */
+function savedIds(draft: VariationsValue, saved: ProductDetail): Map<string, string> {
+  const ids = new Map<string, string>()
+  draft.options
+    .filter((option) => option.values.length > 0)
+    .forEach((option, index) => {
+      const savedOption = saved.options[index]
+      if (savedOption) ids.set(option.key, savedOption.id)
+      option.values.forEach((value, place) => {
+        const id = savedOption?.values[place]?.id
+        if (id) ids.set(value.key, id)
+      })
+    })
+  return ids
+}
+
+/**
+ * The draft with the ids the API gave its new options and values, after a save that stopped past
+ * the options. The next save then names them, instead of creating them again and archiving the
+ * combinations they had just made.
+ */
+export function rekeyDraft(draft: VariationsValue, saved: ProductDetail): VariationsValue {
+  const ids = savedIds(draft, saved)
+  const keyOf = (key: string) => ids.get(key) ?? key
+
+  return {
+    options: draft.options.map((option) => ({
+      ...option,
+      key: keyOf(option.key),
+      values: option.values.map((value) => ({ ...value, key: keyOf(value.key) })),
+    })),
+    rows: Object.fromEntries(
+      Object.entries(draft.rows).map(([key, row]) => [combinationKey(key === "" ? [] : key.split("|").map(keyOf)), row]),
+    ),
+  }
+}
+
 /**
  * Every current variant's row, once the options are saved.
  *
@@ -81,28 +126,26 @@ export function variantsPayloadOf(
   base: VariationRow,
   form: FormValues,
 ): ProductVariantPayload[] {
-  const keyOfId = new Map<string, string>()
-  draft.options
-    .filter((option) => option.values.length > 0)
-    .forEach((option, index) =>
-      option.values.forEach((value, place) => {
-        const id = saved.options[index]?.values[place]?.id
-        if (id) keyOfId.set(id, value.key)
-      }),
-    )
+  const keyOfId = new Map([...savedIds(draft, saved)].map(([key, id]) => [id, key]))
 
   const rows = new Map(combinationsOf(draft, base).map((combination) => [combination.key, combination.row]))
 
   return saved.variants.flatMap((variant) => {
     const row = rows.get(combinationKey(variant.optionValueIds.map((id) => keyOfId.get(id) ?? id)))
-    const priceCents = row ? centsFrom(row.price) : null
-    if (!row || priceCents === null) return []
+    if (!row) return []
+    // A row switched off may have no price; it is still sent, so its switch is saved.
+    const priceCents = centsFrom(row.price)
+    // The editor has no "was" price per combination; one inherited from the product that this row's
+    // price has reached is no discount, and the API would refuse the pair.
+    const staleCompareAt =
+      priceCents !== null && variant.compareAtPriceCents !== null && variant.compareAtPriceCents <= priceCents
 
     return [
       {
         id: variant.id,
         isActive: row.isActive,
-        priceCents,
+        ...(priceCents === null ? {} : { priceCents }),
+        ...(staleCompareAt ? { compareAtPriceCents: null } : {}),
         sku: row.sku.trim() || null,
         // Counting and the box are set once, in their own sections, for every combination.
         trackStock: form.trackStock,

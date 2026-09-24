@@ -4,6 +4,7 @@
 import { rowSelectionFeature, tableFeatures, useTable, type RowSelectionState } from "@tanstack/react-table"
 
 // UI
+import { Button } from "@harness-monorepo/ui/components/button"
 import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
 import { Input } from "@harness-monorepo/ui/components/input"
 import { Switch } from "@harness-monorepo/ui/components/switch"
@@ -24,6 +25,8 @@ export interface VariationTableProps {
   trackStock: boolean
   selection: RowSelectionState
   onSelection: (selection: RowSelectionState) => void
+  /** Opens one of the bulk actions over the selected rows. */
+  onBulk?: (action: "price" | "stock") => void
   /** Combination key → the sentence for its row, written by the screen. */
   errors?: Readonly<Record<string, string>>
   disabled?: boolean
@@ -38,8 +41,7 @@ export interface VariationTableProps {
  * both and the header then counted three selected over four checked rows. The checkbox chooses
  * the rows a bulk action touches; the switch says whether the combination exists at all. TanStack
  * Table holds the selection — the one piece of this table that is state about rows rather than the
- * rows themselves — so select-all, and a selection that survives a new option, need no bookkeeping
- * of our own.
+ * rows themselves.
  */
 export function VariationTable({
   combinations,
@@ -47,6 +49,7 @@ export function VariationTable({
   trackStock,
   selection,
   onSelection,
+  onBulk,
   errors = {},
   disabled = false,
   messages = defaultMessages,
@@ -63,95 +66,127 @@ export function VariationTable({
     enableRowSelection: !disabled,
   })
 
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-10">
-            <Checkbox
-              aria-label={text.selectAll}
-              disabled={disabled || combinations.length === 0}
-              checked={table.getIsAllRowsSelected()}
-              indeterminate={table.getIsSomeRowsSelected()}
-              onCheckedChange={(checked) => table.toggleAllRowsSelected(checked)}
-            />
-          </TableHead>
-          <TableHead>{text.columnCombination}</TableHead>
-          <TableHead className="w-32">{text.columnPrice}</TableHead>
-          <TableHead className="w-24">{text.columnStock}</TableHead>
-          <TableHead className="w-36">{text.columnSku}</TableHead>
-          <TableHead className="w-16">{text.columnSelling}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.map((tableRow) => {
-          const combination = tableRow.original
-          const { row } = combination
-          const label = labelOf(combination.values)
-          const error = errors[combination.key]
-          const rowDisabled = disabled || !row.isActive
+  const all = table.getIsAllRowsSelected()
+  // Counted over the rows on screen: v9's "some selected" is true with every row selected too.
+  const some = !all && table.getRowModel().rows.some((row) => row.getIsSelected())
+  const chosen = combinations.filter((combination) => selection[combination.key]).length
 
-          return (
-            <TableRow key={combination.key} data-state={tableRow.getIsSelected() ? "selected" : undefined}>
-              <TableCell>
-                <Checkbox
-                  aria-label={format(text.selectRow, { label })}
-                  disabled={disabled}
-                  checked={tableRow.getIsSelected()}
-                  onCheckedChange={(checked) => tableRow.toggleSelected(checked)}
-                />
-              </TableCell>
-              <TableCell className={cn("font-medium", !row.isActive && "text-muted-foreground line-through")}>
-                {label}
-                {error ? (
-                  <p role="alert" className="text-destructive text-xs font-normal no-underline">
-                    {error}
-                  </p>
-                ) : null}
-              </TableCell>
-              <TableCell>
-                <Input
-                  aria-label={format(text.priceOf, { label })}
-                  inputMode="decimal"
-                  value={row.price}
-                  disabled={rowDisabled}
-                  aria-invalid={error ? true : undefined}
-                  onChange={(event) => onRow(combination, { price: event.target.value })}
-                  className="h-8"
-                />
-              </TableCell>
-              <TableCell>
-                <Input
-                  aria-label={format(text.stockOf, { label })}
-                  inputMode="numeric"
-                  value={trackStock ? row.stock : ""}
-                  placeholder={trackStock ? undefined : text.notCounted}
-                  disabled={rowDisabled || !trackStock}
-                  onChange={(event) => onRow(combination, { stock: event.target.value })}
-                  className="h-8"
-                />
-              </TableCell>
-              <TableCell>
-                <Input
-                  aria-label={format(text.skuOf, { label })}
-                  value={row.sku}
-                  disabled={rowDisabled}
-                  onChange={(event) => onRow(combination, { sku: event.target.value })}
-                  className="h-8"
-                />
-              </TableCell>
-              <TableCell>
-                <Switch
-                  aria-label={format(text.sellingOf, { label })}
-                  disabled={disabled}
-                  checked={row.isActive}
-                  onCheckedChange={(checked) => onRow(combination, { isActive: checked })}
-                />
-              </TableCell>
-            </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
+  return (
+    <>
+      {onBulk ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+          <p className="text-sm">
+            <span className="font-medium">{format(text.combinations, { count: String(combinations.length) })}</span>
+            <span className="text-muted-foreground">
+              {" · "}
+              {chosen > 0 ? format(text.selected, { count: String(chosen) }) : text.noneSelected}
+            </span>
+          </p>
+          <div className="flex gap-2">
+            {(["price", "stock"] as const).map((action) => (
+              <Button
+                key={action}
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={disabled || chosen === 0 || (action === "stock" && !trackStock)}
+                onClick={() => onBulk(action)}
+              >
+                {action === "price" ? text.samePrice : text.setStock}
+              </Button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-10">
+              <Checkbox
+                aria-label={text.selectAll}
+                disabled={disabled || combinations.length === 0}
+                checked={all}
+                indeterminate={some}
+                onCheckedChange={(checked) => table.toggleAllRowsSelected(checked)}
+              />
+            </TableHead>
+            <TableHead>{text.columnCombination}</TableHead>
+            <TableHead className="w-32">{text.columnPrice}</TableHead>
+            <TableHead className="w-24">{text.columnStock}</TableHead>
+            <TableHead className="w-36">{text.columnSku}</TableHead>
+            <TableHead className="w-16">{text.columnSelling}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((tableRow) => {
+            const combination = tableRow.original
+            const { row } = combination
+            const label = labelOf(combination.values)
+            const error = errors[combination.key]
+            const rowDisabled = disabled || !row.isActive
+
+            return (
+              <TableRow key={combination.key} data-state={tableRow.getIsSelected() ? "selected" : undefined}>
+                <TableCell>
+                  <Checkbox
+                    aria-label={format(text.selectRow, { label })}
+                    disabled={disabled}
+                    checked={tableRow.getIsSelected()}
+                    onCheckedChange={(checked) => tableRow.toggleSelected(checked)}
+                  />
+                </TableCell>
+                <TableCell className={cn("font-medium", !row.isActive && "text-muted-foreground line-through")}>
+                  {label}
+                  {error ? (
+                    <p role="alert" className="text-destructive text-xs font-normal no-underline">
+                      {error}
+                    </p>
+                  ) : null}
+                </TableCell>
+                <TableCell>
+                  <Input
+                    aria-label={format(text.priceOf, { label })}
+                    inputMode="decimal"
+                    value={row.price}
+                    disabled={rowDisabled}
+                    aria-invalid={error ? true : undefined}
+                    onChange={(event) => onRow(combination, { price: event.target.value })}
+                    className="h-8"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    aria-label={format(text.stockOf, { label })}
+                    inputMode="numeric"
+                    value={trackStock ? row.stock : ""}
+                    placeholder={trackStock ? undefined : text.notCounted}
+                    disabled={rowDisabled || !trackStock}
+                    onChange={(event) => onRow(combination, { stock: event.target.value })}
+                    className="h-8"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    aria-label={format(text.skuOf, { label })}
+                    value={row.sku}
+                    disabled={rowDisabled}
+                    onChange={(event) => onRow(combination, { sku: event.target.value })}
+                    className="h-8"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    aria-label={format(text.sellingOf, { label })}
+                    disabled={disabled}
+                    checked={row.isActive}
+                    onCheckedChange={(checked) => onRow(combination, { isActive: checked })}
+                  />
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </>
   )
 }

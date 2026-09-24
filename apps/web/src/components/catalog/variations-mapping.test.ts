@@ -10,7 +10,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { EMPTY_FORM } from "./product-form-mapping"
-import { optionsPayloadOf, toVariationsDraft, variantsPayloadOf, variationIssuesOf } from "./variations-mapping"
+import { optionsPayloadOf, rekeyDraft, toVariationsDraft, variantsPayloadOf, variationIssuesOf } from "./variations-mapping"
 
 const base = { isActive: true, price: "189,00", stock: "", sku: "" }
 
@@ -44,6 +44,7 @@ describe("the variations draft of a saved product", () => {
         options: [{ id: "size", name: "Tamanho", values: [{ id: "P", name: "P", colorHex: null }] }],
         variants: [variant("v1", ["P"], { sku: "BLS-P", stockQuantity: 3 })],
       }),
+      defaultMessages,
     )
 
     expect(draft.options[0]).toMatchObject({ key: "size", isColor: false, values: [{ key: "P" }] })
@@ -51,7 +52,16 @@ describe("the variations draft of a saved product", () => {
   })
 
   it("has no options and no rows for a product that sells one thing", () => {
-    expect(toVariationsDraft(detail({ variants: [variant("v1", [])] }))).toEqual({ options: [], rows: {} })
+    expect(toVariationsDraft(detail({ variants: [variant("v1", [])] }), defaultMessages)).toEqual({ options: [], rows: {} })
+  })
+
+  it("keeps a colour option a colour one when it was saved before any swatch was picked", () => {
+    const draft = toVariationsDraft(
+      detail({ options: [{ id: "c", name: " cor ", values: [{ id: "a", name: "Areia", colorHex: null }] }], variants: [variant("v1", ["a"])] }),
+      defaultMessages,
+    )
+
+    expect(draft.options[0]?.isColor).toBe(true)
   })
 })
 
@@ -99,6 +109,45 @@ describe("what the save sends", () => {
       { id: "v1", isActive: true, priceCents: 18900, sku: "BLS-P", trackStock: true, stockQuantity: 4, weightGrams: 300, lengthMm: null, widthMm: null, heightMm: null },
       { id: "v2", isActive: false, priceCents: 19900, sku: null, trackStock: true, stockQuantity: null, weightGrams: 300, lengthMm: null, widthMm: null, heightMm: null },
     ])
+  })
+
+  it("sends a row switched off without a price, so its switch is saved", () => {
+    const saved = detail({
+      options: [{ id: "size", name: "Tamanho", values: [{ id: "P", name: "P", colorHex: null }, { id: "M-id", name: "M", colorHex: null }] }],
+      variants: [variant("v1", ["P"]), variant("v2", ["M-id"])],
+    })
+    const off = { ...draft, rows: { ...draft.rows, "new:m": { isActive: false, price: "", stock: "", sku: "" } } }
+
+    const payload = variantsPayloadOf(off, saved, base, EMPTY_FORM)
+
+    expect(payload[1]).toMatchObject({ id: "v2", isActive: false })
+    expect(payload[1]).not.toHaveProperty("priceCents")
+  })
+
+  it("drops a \"was\" price inherited from the product that the row's price has reached", () => {
+    const saved = detail({
+      options: [{ id: "size", name: "Tamanho", values: [{ id: "P", name: "P", colorHex: null }, { id: "M-id", name: "M", colorHex: null }] }],
+      variants: [variant("v1", ["P"], { compareAtPriceCents: 18000 }), variant("v2", ["M-id"], { compareAtPriceCents: 25000 })],
+    })
+
+    const payload = variantsPayloadOf(draft, saved, base, EMPTY_FORM)
+
+    expect(payload[0]).toMatchObject({ priceCents: 18900, compareAtPriceCents: null })
+    // A "was" price still above the row's price is a real discount, and is left alone.
+    expect(payload[1]).toMatchObject({ priceCents: 19900 })
+    expect(payload[1]).not.toHaveProperty("compareAtPriceCents")
+  })
+
+  it("renames new keys to the ids a partial save gave them, rows included", () => {
+    const saved = detail({
+      options: [{ id: "size", name: "Tamanho", values: [{ id: "P", name: "P", colorHex: null }, { id: "M-id", name: "M", colorHex: null }] }],
+    })
+
+    const rekeyed = rekeyDraft(draft, saved)
+
+    expect(rekeyed.options[0]?.values.map((value) => value.key)).toEqual(["P", "M-id"])
+    expect(rekeyed.rows["M-id"]).toEqual(draft.rows["new:m"])
+    expect(rekeyed.options[1]?.key).toBe("new:empty")
   })
 
   it("stops a save with a nameless option, an option without values, or a row on sale without a price", () => {

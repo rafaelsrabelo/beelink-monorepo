@@ -26,6 +26,7 @@ import { EMPTY_FORM, fieldsOf, perUnitOf, toForm, type FormIssues, type FormValu
 import {
   hasCombinations,
   optionsPayloadOf,
+  rekeyDraft,
   toVariationsDraft,
   variantsPayloadOf,
   variationIssuesOf,
@@ -61,6 +62,11 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
   const [errors, setErrors] = useState<FormIssues>({})
   const [showIssues, setShowIssues] = useState(false)
   const [seeded, setSeeded] = useState<string | null>(null)
+  /**
+   * A product this screen created whose save then stopped at a later step. The screen stays where
+   * it is, with the refusal and everything typed, and the next save updates this product.
+   */
+  const [created, setCreated] = useState<{ id: string; hasOptions: boolean } | null>(null)
 
   /*
     Seeded during render, once per product, and not in an effect: an effect runs after the empty
@@ -69,7 +75,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
   */
   if (existing.data && seeded !== existing.data.id) {
     const form = toForm(existing.data)
-    const draft = toVariationsDraft(existing.data)
+    const draft = toVariationsDraft(existing.data, ui)
     setSeeded(existing.data.id)
     setValue(form)
     setVariations(draft)
@@ -108,10 +114,10 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
 
     save.mutate(
       {
-        productId,
+        productId: productId ?? created?.id,
         fields: fieldsOf(value),
         perUnit: perUnitOf(value, priceCents ?? 0),
-        hadOptions: (existing.data?.options.length ?? 0) > 0,
+        hadOptions: created ? created.hasOptions : (existing.data?.options.length ?? 0) > 0,
         variations: {
           options: optionsPayloadOf(variations),
           variants: (saved) => variantsPayloadOf(variations, saved, base, value),
@@ -120,11 +126,12 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
       },
       {
         onSuccess: () => router.push(list),
-        // Created, then refused a later step: edit the product that exists, never create it twice.
+        // Saved in part, then refused: stay here with the refusal and the draft, and save next time
+        // onto what went through — the product it created, the options it named.
         onError: (error) => {
-          if (error instanceof SaveProductError && !productId) {
-            router.replace(`/admin/${slug}/products/${error.productId}` as Parameters<typeof router.push>[0])
-          }
+          if (!(error instanceof SaveProductError)) return
+          setCreated({ id: error.saved.id, hasOptions: error.saved.options.length > 0 })
+          if (error.saved.options.length > 0) setVariations((draft) => rekeyDraft(draft, error.saved))
         },
       },
     )

@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Libs
 import type { RowSelectionState } from "@tanstack/react-table"
@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@harness-monorepo/ui/components/alert-dialog"
-import { Button, buttonVariants } from "@harness-monorepo/ui/components/button"
+import { buttonVariants } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 import {
   addValue,
@@ -82,10 +82,22 @@ export function ProductVariationsFields({
   const [selection, setSelection] = useState<RowSelectionState>({})
   const [bulk, setBulk] = useState<"price" | "stock" | null>(null)
   const [removing, setRemoving] = useState<VariationOption | null>(null)
+  const [refocus, setRefocus] = useState(false)
+  const section = useRef<HTMLDivElement>(null)
 
   const combinations = combinationsOf(value, base)
   const count = combinationCountOf(value.options)
   const selected = combinations.filter((combination) => selection[combination.key])
+  const removingNumber = removing ? value.options.findIndex((option) => option.key === removing.key) + 1 : 0
+  const removingName = removing?.name.trim() || format(text.optionName, { number: String(removingNumber) })
+
+  // The trash button that had focus is gone with its option; the section's first control takes it,
+  // so a keyboard user is not left on the page's body.
+  useEffect(() => {
+    if (!refocus) return
+    setRefocus(false)
+    section.current?.querySelector<HTMLElement>("input, button:not([disabled])")?.focus()
+  }, [refocus])
 
   function updateOption(optionKey: string, change: (option: VariationOption) => VariationOption) {
     onChange({
@@ -95,14 +107,19 @@ export function ProductVariationsFields({
   }
 
   function applyBulk(entered: string) {
-    onChange(patchRows(value, selected, bulk === "price" ? { price: entered } : { stock: entered }))
+    onChange(patchRows(value, selected, bulk === "price" ? { price: entered } : { stock: entered }, base))
     setBulk(null)
+  }
+
+  /** Only combinations that exist can stay chosen; a removed value's rows leave the selection. */
+  function select(next: RowSelectionState) {
+    setSelection(Object.fromEntries(Object.entries(next).filter(([key]) => combinations.some((combination) => combination.key === key))))
   }
 
   const afterRemoval = removing ? combinationCountOf(value.options.filter((option) => option.key !== removing.key)) : 0
 
   return (
-    <div className="flex flex-col gap-4">
+    <div ref={section} className="flex flex-col gap-4">
       <VariationPresets
         taken={value.options.map((option) => option.name)}
         full={value.options.length >= VARIATION_OPTIONS_MAX}
@@ -154,43 +171,23 @@ export function ProductVariationsFields({
         </p>
       ) : combinations.length > 0 ? (
         <div className="border-shell-border overflow-x-auto rounded-xl border">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-            <p className="text-sm">
-              <span className="font-medium">{format(text.combinations, { count: String(combinations.length) })}</span>
-              <span className="text-muted-foreground">
-                {" · "}
-                {selected.length > 0 ? format(text.selected, { count: String(selected.length) }) : text.noneSelected}
-              </span>
-            </p>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" disabled={disabled || selected.length === 0} onClick={() => setBulk("price")}>
-                {text.samePrice}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={disabled || selected.length === 0 || !trackStock}
-                onClick={() => setBulk("stock")}
-              >
-                {text.setStock}
-              </Button>
-            </div>
-          </div>
           <VariationTable
+            onBulk={setBulk}
             combinations={combinations}
             trackStock={trackStock}
             selection={selection}
-            onSelection={setSelection}
+            onSelection={select}
             errors={errors.rows}
             disabled={disabled}
             messages={messages}
-            onRow={(combination, patch) => onChange(patchRows(value, [combination], patch))}
+            onRow={(combination, patch) => onChange(patchRows(value, [combination], patch, base))}
           />
         </div>
       ) : null}
 
       <VariationBulkDialog
+        // A fresh dialog each time it opens, so a value typed and cancelled never carries over.
+        key={bulk ?? "closed"}
         title={
           bulk === null
             ? null
@@ -206,7 +203,7 @@ export function ProductVariationsFields({
       <AlertDialog open={removing !== null} onOpenChange={(open: boolean) => (open ? undefined : setRemoving(null))}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{format(text.removeOptionTitle, { name: removing?.name.trim() ?? "" })}</AlertDialogTitle>
+            <AlertDialogTitle>{format(text.removeOptionTitle, { name: removingName })}</AlertDialogTitle>
             <AlertDialogDescription>
               {format(text.removeOptionBody, { from: String(count), to: String(Math.max(afterRemoval, 1)) })}
             </AlertDialogDescription>
@@ -219,6 +216,7 @@ export function ProductVariationsFields({
               onClick={() => {
                 if (removing) onChange(removeOption(value, removing.key, base))
                 setRemoving(null)
+                setRefocus(true)
               }}
             >
               {text.removeOptionConfirm}

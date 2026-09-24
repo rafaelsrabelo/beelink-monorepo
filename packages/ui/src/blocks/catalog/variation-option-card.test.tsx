@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { VariationOptionCard, type VariationOptionCardProps } from "./variation-option-card"
+import { FIRST_SWATCH } from "../../lib/variations"
 import { BLOUSE, swatch } from "./variation-fixtures"
 
 function renderCard(overrides: Partial<VariationOptionCardProps> = {}) {
@@ -20,15 +21,23 @@ function renderCard(overrides: Partial<VariationOptionCardProps> = {}) {
     onRemove: vi.fn(),
     ...overrides,
   }
-  return { props, ...render(<VariationOptionCard {...props} />) }
+  const submit = vi.fn((event: React.FormEvent) => event.preventDefault())
+  return {
+    props,
+    submit,
+    ...render(
+      <form onSubmit={submit}>
+        <VariationOptionCard {...props} />
+        <button type="submit">Salvar</button>
+      </form>,
+    ),
+  }
 }
 
 describe("VariationOptionCard", () => {
   it("adds a value on Enter without submitting the form around it, and clears the field", async () => {
     const user = userEvent.setup()
-    const submit = vi.fn((event: SubmitEvent) => event.preventDefault())
-    document.addEventListener("submit", submit)
-    const { props } = renderCard()
+    const { props, submit } = renderCard()
 
     const field = screen.getByRole("textbox", { name: "Novo valor de Tamanho" })
     await user.type(field, "XG{Enter}")
@@ -36,16 +45,29 @@ describe("VariationOptionCard", () => {
     expect(props.onAddValue).toHaveBeenCalledWith("XG", null)
     expect(field).toHaveValue("")
     expect(submit).not.toHaveBeenCalled()
-    document.removeEventListener("submit", submit)
   })
 
-  it("shows each value's swatch on a colour option, and a new value starts without one", async () => {
+  it("moves focus to the next value's remove button when a value goes", async () => {
+    const user = userEvent.setup()
+    const { props, rerender } = renderCard()
+
+    await user.click(screen.getByRole("button", { name: "Remover M" }))
+    rerender(
+      <form>
+        <VariationOptionCard {...props} option={{ ...BLOUSE.options[0]!, values: BLOUSE.options[0]!.values.filter((value) => value.key !== "M") }} />
+      </form>,
+    )
+
+    expect(screen.getByRole("button", { name: "Remover G" })).toHaveFocus()
+  })
+
+  it("shows each value's swatch on a colour option, and a new value starts on the neutral one", async () => {
     const user = userEvent.setup()
     const { props } = renderCard({ option: BLOUSE.options[1]! })
 
     await user.type(screen.getByRole("textbox", { name: "Novo valor de Cor" }), "Verde{Enter}")
 
-    expect(props.onAddValue).toHaveBeenCalledWith("Verde", null)
+    expect(props.onAddValue).toHaveBeenCalledWith("Verde", FIRST_SWATCH)
     expect(screen.getByLabelText("Cor de Areia")).toHaveValue(swatch("d9c7a7"))
   })
 

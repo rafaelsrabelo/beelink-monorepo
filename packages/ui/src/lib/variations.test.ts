@@ -110,13 +110,39 @@ describe("the variations draft", () => {
     expect(collapsed.rows).toEqual({ P: { ...base, sku: "P-A" } })
   })
 
-  it("sets part of the chosen rows at once", () => {
+  it("sets part of the chosen rows and no other, even rows nobody has typed into", () => {
     const draft: VariationsValue = { options: [option("size", "Tamanho", ["P", "M"])], rows: {} }
     const [first] = combinationsOf(draft, base)
 
-    const patched = patchRows(draft, [first!], { price: "99,90" })
+    const patched = patchRows(draft, [first!], { price: "99,90" }, base)
 
-    expect(combinationsOf(patched, base).map((combination) => combination.row.price)).toEqual(["99,90", "99,90"])
-    expect(patched.rows.P?.price).toBe("99,90")
+    expect(combinationsOf(patched, base).map((combination) => combination.row.price)).toEqual(["99,90", "189,00"])
+  })
+
+  it("writes a new combination's row when its value is added, so it stops following its neighbour", () => {
+    let draft = addValue(withOption(EMPTY_VARIATIONS, option("size", "Tamanho")), "size", { key: "P", name: "P", colorHex: null }, base)
+    draft = addValue(draft, "size", { key: "M", name: "M", colorHex: null }, base)
+    draft = patchRows(draft, [combinationsOf(draft, base)[0]!], { price: "10,00" }, base)
+
+    expect(draft.rows.M?.price).toBe("189,00")
+  })
+
+  it("keeps the combination on sale when rows merge, as the API does", () => {
+    const draft: VariationsValue = {
+      options: [option("size", "Tamanho", ["P"]), option("colour", "Cor", ["areia", "preto"])],
+      rows: {
+        [combinationKey(["P", "areia"])]: { ...base, isActive: false, sku: "P-A" },
+        [combinationKey(["P", "preto"])]: { ...base, sku: "P-P" },
+      },
+    }
+
+    expect(removeOption(draft, "colour", base).rows).toEqual({ P: { ...base, sku: "P-P" } })
+  })
+
+  it("leaves no row when the last option goes, so the draft reads as never having had any", () => {
+    const draft: VariationsValue = { options: [option("size", "Tamanho", ["P"])], rows: { P: base } }
+
+    expect(removeOption(draft, "size", base)).toEqual(EMPTY_VARIATIONS)
+    expect(removeValue(draft, "size", "P").rows).toEqual({})
   })
 })

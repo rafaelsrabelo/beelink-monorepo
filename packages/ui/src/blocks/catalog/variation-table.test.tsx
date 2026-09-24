@@ -34,6 +34,19 @@ describe("VariationTable", () => {
     expect(onSelection.mock.calls[0]![0]["P|areia"]).toBe(true)
   })
 
+  it("calls select-all checked, not mixed, when every row is chosen, and mixed when some are", () => {
+    const every = Object.fromEntries(combinations.map((combination) => [combination.key, true as const]))
+    const { rerender } = render(
+      <VariationTable combinations={combinations} onRow={() => {}} trackStock selection={every} onSelection={() => {}} />,
+    )
+    expect(screen.getByRole("checkbox", { name: "Selecionar todas" })).toHaveAttribute("aria-checked", "true")
+
+    rerender(
+      <VariationTable combinations={combinations} onRow={() => {}} trackStock selection={{ "P|areia": true, "gone|key": true }} onSelection={() => {}} />,
+    )
+    expect(screen.getByRole("checkbox", { name: "Selecionar todas" })).toHaveAttribute("aria-checked", "mixed")
+  })
+
   it("reports an edit with the combination it belongs to", async () => {
     const user = userEvent.setup()
     const onRow = vi.fn()

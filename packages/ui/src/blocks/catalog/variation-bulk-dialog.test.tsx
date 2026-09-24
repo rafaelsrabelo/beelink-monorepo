@@ -35,8 +35,11 @@ describe("VariationBulkDialog", () => {
     rerender(<VariationBulkDialog title="Mesmo preço" label="Preço" inputMode="decimal" onApply={() => {}} onClose={onClose} />)
     const dialog = await screen.findByRole("dialog", { name: "Mesmo preço" })
     await expectNoA11yViolations(dialog)
-    await user.click(screen.getAllByRole("button", { name: "Cancelar" })[0]!)
+    await user.type(screen.getByRole("textbox", { name: "Preço" }), "99")
+    await user.click(screen.getAllByRole("button", { name: "Cancelar" }).at(-1)!)
 
     expect(onClose).toHaveBeenCalled()
+    // Cancelled means forgotten: the field is empty the next time it shows.
+    expect(screen.getByRole("textbox", { name: "Preço" })).toHaveValue("")
   })
 })

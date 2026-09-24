@@ -96,6 +96,8 @@ describe("ProductVariationsFields", () => {
     expect(latest.rows["P|areia"]?.price).toBe("99,90")
     expect(latest.rows["M|areia"]?.price).toBe("99,90")
     expect(latest.rows["P|terracota"]?.price).toBe("189,00")
+    // A row nobody typed into keeps its own price, not the one just given to its neighbour.
+    expect(latest.rows["M|preto"]?.price).toBe("189,00")
   })
 
   it("asks before removing an option, and says how many combinations remain", async () => {
@@ -112,6 +114,8 @@ describe("ProductVariationsFields", () => {
     await user.click(screen.getByRole("button", { name: "Remover opção Cor" }))
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Remover opção" }))
     expect(latest.options.map((option) => option.name)).toEqual(["Tamanho"])
+    // The trash button is gone; focus lands in the section rather than on the page's body.
+    expect(document.activeElement).not.toBe(document.body)
     // P keeps the row of its first colour.
     expect(latest.rows.P?.sku).toBe("BLS-P-ARE")
   })

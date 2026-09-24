@@ -31,9 +31,14 @@ export interface SaveProductVariables {
 export class SaveProductError extends Error {
   constructor(
     readonly cause: unknown,
-    readonly productId: string,
+    /** The product as the last step that went through left it. */
+    readonly saved: ProductDetail,
   ) {
     super("The product was saved, and a later step of the save was not")
+  }
+
+  get productId(): string {
+    return this.saved.id
   }
 
   get errorCode(): string | undefined {
@@ -69,7 +74,7 @@ export async function saveProduct(
       : await updateProduct(slug, saved.id, perUnit)
     return saved
   } catch (error) {
-    throw new SaveProductError(error, saved.id)
+    throw new SaveProductError(error, saved)
   }
 }
 

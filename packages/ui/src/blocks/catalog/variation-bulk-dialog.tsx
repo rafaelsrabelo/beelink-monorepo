@@ -83,7 +83,14 @@ export function VariationBulkDialog({
             />
           </Field>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setValue("")
+                onClose()
+              }}
+            >
               {text.cancel}
             </Button>
             <Button type="submit" disabled={!value.trim()}>

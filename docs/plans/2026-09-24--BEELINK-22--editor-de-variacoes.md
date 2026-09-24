@@ -124,3 +124,45 @@ Ele não tinha nenhum dos dois, e mudou neste ticket.
 - Preço "de", custo, código de barras, peso e foto **por combinação**.
 - Um seletor de cor próprio.
 - Arrastar os cartões de opção. O design desenha a alça, mas o ticket pede arrastar os valores.
+
+## Adendo — revisão independente (24/09/2026)
+
+Três leituras (rascunho e salvamento; interface e acessibilidade; evidência). Cada achado passou
+por um verificador que tentou refutá-lo. Dezenove confirmados, cerca de catorze distintos, todos
+introduzidos por este ticket e todos corrigidos:
+
+1. **Uma linha desligada sem preço não era enviada** (bloqueador). O "desligada" se perdia, e a
+   combinação podia ficar à venda por R$ 0. Agora toda linha vai, e a sem preço vai sem
+   `priceCents`. Conferido no navegador: M desligada sem preço foi gravada `isActive: false`.
+2. **Uma falha depois de criar o produto trocava de página** (grave). A tela perdia o erro e tudo o
+   que foi digitado. Agora a tela fica onde está e guarda o produto criado. O próximo salvamento o
+   atualiza, e o rascunho recebe os ids que a API já deu às opções e aos valores (`rekeyDraft`), em
+   vez de criá-los de novo e arquivar as combinações recém-feitas.
+3. **Preço "de" herdado do produto** (grave). Quando o preço da linha o alcança, ele vai como
+   `null`. Antes, o salvamento travava sem campo para corrigir.
+4. **O colapso mantinha a linha desligada** (grave). Agora fica a primeira à venda, como a API
+   decide. Tirar a última opção não deixa mais uma linha vazia, que prendia o aviso de "não
+   salvo".
+5. **Linhas sem digitação seguiam a vizinha** (grave). O "mesmo preço" alcançava linhas não
+   escolhidas. Agora a linha nasce escrita quando o valor é acrescentado, e todo patch escreve as
+   linhas visíveis antes de aplicar.
+6. **"Selecionar todas" aparecia como misto** (grave), com tudo marcado, porque o v9 conta "algum"
+   diferente do v8. Ids de combinações que sumiram saem da seleção.
+7. **O "Cancelar" da ação em massa guardava o valor** (grave). O diálogo agora remonta a cada
+   abertura e limpa o valor ao cancelar.
+8. **O campo de cor** (grave):
+   - começava em preto sem disparar mudança, então o preto era a única cor impossível de escolher;
+   - agora é sempre controlado;
+   - um valor novo começa num cinza neutro (`FIRST_SWATCH`, escrito a partir dos canais RGB).
+9. **Uma opção "Cor" salva sem bolinha voltava como opção comum.** Agora ela também é reconhecida
+   pelo nome.
+10. **O arraste pelo teclado anunciava em inglês e pela chave.** Agora anuncia em pt-BR, pelo nome
+    do valor.
+11. **O título da confirmação de remover ficava vazio numa opção sem nome.** Agora usa "Nome da
+    opção N".
+12. **O foco se perdia ao remover um valor ou uma opção.** Agora vai para o vizinho, ou para o
+    primeiro controle da seção.
+13. **O teste do Enter não tinha formulário ao redor**, então nunca podia falhar. Agora tem.
+
+A tabela passou a desenhar o próprio cabeçalho (contagem e ações em massa), para a seção ficar
+abaixo de 250 linhas. Três achados foram refutados.

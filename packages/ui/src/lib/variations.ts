@@ -70,6 +70,18 @@ export function combinationCountOf(options: readonly VariationOption[]): number 
   return withValues.length === 0 ? 0 : withValues.reduce((count, option) => count * option.values.length, 1)
 }
 
+/** `#rrggbb` from its three channels. A swatch is data, and this is how the editor writes one. */
+export function swatchOf(red: number, green: number, blue: number): string {
+  return `#${[red, green, blue].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`
+}
+
+/**
+ * Where a new value of a colour option starts: a neutral grey, which reads as "not picked yet" in
+ * the editor. The colour field cannot hold "no colour", and starting one on black would make black
+ * the one colour a shopkeeper could not pick — the field fires no change for the value it shows.
+ */
+export const FIRST_SWATCH = swatchOf(128, 128, 128)
+
 /** A new key for a value or an option the server has not seen. */
 export function newKey(): string {
   return `new:${crypto.randomUUID()}`
@@ -129,8 +141,7 @@ export function addValue(value: VariationsValue, optionKey: string, entry: Varia
 
   const extending = option.values.length === 0
   const sources = Object.keys(value.rows).length > 0 || !extending ? value.rows : { "": base }
-
-  return {
+  const next: VariationsValue = {
     options: value.options.map((candidate) =>
       candidate.key === optionKey ? { ...candidate, values: [...candidate.values, entry] } : candidate,
     ),
@@ -140,6 +151,15 @@ export function addValue(value: VariationsValue, optionKey: string, entry: Varia
         )
       : value.rows,
   }
+
+  // The combinations the value opens get their own rows now, from their neighbours as they are:
+  // a row that kept borrowing would change price every time its neighbour did.
+  return written(next, base)
+}
+
+/** The same draft with a row of its own for every combination it shows. */
+function written(value: VariationsValue, base: VariationRow): VariationsValue {
+  return { ...value, rows: Object.fromEntries(combinationsOf(value, base).map((combination) => [combination.key, combination.row])) }
 }
 
 /** Removes a value, and with it every row that named it. */
@@ -178,22 +198,33 @@ export function removeOption(value: VariationsValue, optionKey: string, base: Va
   }
 }
 
+/**
+ * Rows whose combinations merge keep the first one on sale, and the first of all when none is — the
+ * choice the API makes, so the row shown is the variant that survives. A merge down to no option at
+ * all leaves no row: the product sells one thing again, priced in its own sections.
+ */
 function collapse(rows: Record<string, VariationRow>, dropped: readonly string[]): Record<string, VariationRow> {
   const next: Record<string, VariationRow> = {}
   for (const [key, row] of Object.entries(rows)) {
     const kept = combinationKey(keysOf(key).filter((valueKey) => !dropped.includes(valueKey)))
-    if (!(kept in next)) next[kept] = row
+    if (kept === "") continue
+    const claimant = next[kept]
+    if (!claimant || (!claimant.isActive && row.isActive)) next[kept] = row
   }
   return next
 }
 
-/** Sets part of several rows at once — the bulk "same price" and "set stock". */
+/**
+ * Sets part of several rows at once — one edited in place, or the bulk "same price" and "set
+ * stock". Every row shown is written first, so a patch reaches the rows chosen and no other.
+ */
 export function patchRows(
   value: VariationsValue,
   combinations: readonly VariationCombination[],
   patch: Partial<VariationRow>,
+  base: VariationRow,
 ): VariationsValue {
-  const rows = { ...value.rows }
+  const rows = { ...written(value, base).rows }
   for (const combination of combinations) rows[combination.key] = { ...combination.row, ...patch }
   return { ...value, rows }
 }

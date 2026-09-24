@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Libs
 import { GripVerticalIcon, Trash2Icon, XIcon } from "lucide-react"
@@ -11,13 +11,14 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import { Field, FieldError, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
 import { cn } from "@harness-monorepo/ui/lib/utils"
-import type { VariationOption, VariationValue } from "@harness-monorepo/ui/lib/variations"
+import { FIRST_SWATCH, type VariationOption, type VariationValue } from "@harness-monorepo/ui/lib/variations"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { bandAnnouncements } from "../design/band-label"
 import { ArrangeBoard, useArrangeItem } from "../design/design-arrange"
 
 export interface VariationOptionCardProps {
@@ -41,6 +42,7 @@ function ValueChip({
   isColor,
   onRemove,
   onColor,
+  removeRef,
   disabled,
   messages,
 }: {
@@ -48,6 +50,7 @@ function ValueChip({
   isColor: boolean
   onRemove: () => void
   onColor: (colorHex: string) => void
+  removeRef: (node: HTMLButtonElement | null) => void
   disabled: boolean
   messages: UiMessages
 }) {
@@ -74,12 +77,10 @@ function ValueChip({
       </button>
       {isColor ? (
         <input
-          // A colour field refuses an empty value, so one with no swatch yet is left to its own
-          // default, and remounted as a controlled field once a colour is picked.
-          key={value.colorHex === null ? "unset" : "set"}
           type="color"
           aria-label={format(text.valueColor, { name: value.name })}
-          {...(value.colorHex === null ? {} : { value: value.colorHex })}
+          // A colour field cannot hold "no colour"; a value saved without one shows the neutral start.
+          value={value.colorHex ?? FIRST_SWATCH}
           disabled={disabled}
           onChange={(event) => onColor(event.target.value)}
           className="size-5 cursor-pointer rounded-full border-0 bg-transparent p-0"
@@ -87,6 +88,7 @@ function ValueChip({
       ) : null}
       <span>{value.name}</span>
       <button
+        ref={removeRef}
         type="button"
         aria-label={format(text.removeValue, { name: value.name })}
         disabled={disabled}
@@ -122,6 +124,23 @@ export function VariationOptionCard({
   const text = messages.catalog.variations
   const [draft, setDraft] = useState("")
   const [taken, setTaken] = useState(false)
+  const removeButtons = useRef(new Map<string, HTMLButtonElement>())
+  const newValue = useRef<HTMLInputElement>(null)
+  // After a chip goes, focus moves to its neighbour's remove button, or to the new-value field.
+  const focusNext = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (focusNext.current === null) return
+    const target = removeButtons.current.get(focusNext.current) ?? newValue.current
+    focusNext.current = null
+    target?.focus()
+  }, [option.values])
+
+  function remove(valueKey: string) {
+    const at = option.values.findIndex((value) => value.key === valueKey)
+    focusNext.current = (option.values[at + 1] ?? option.values[at - 1])?.key ?? ""
+    onRemoveValue(valueKey)
+  }
   const nameId = `variation-option-${option.key}`
   const label = option.name.trim() || format(text.optionName, { number: String(number) })
 
@@ -133,7 +152,7 @@ export function VariationOptionCard({
       setTaken(true)
       return
     }
-    onAddValue(name, null)
+    onAddValue(name, option.isColor ? FIRST_SWATCH : null)
     setDraft("")
   }
 
@@ -169,6 +188,10 @@ export function VariationOptionCard({
       <ArrangeBoard
         ids={option.values.map((value) => value.key)}
         onReorder={onReorderValues}
+        announcements={bandAnnouncements(
+          option.values.map((value) => ({ id: value.key, name: value.name })),
+          messages,
+        )}
         layout="grid"
       >
         <ul className="flex flex-wrap items-center gap-2">
@@ -177,7 +200,11 @@ export function VariationOptionCard({
               key={value.key}
               value={value}
               isColor={option.isColor}
-              onRemove={() => onRemoveValue(value.key)}
+              onRemove={() => remove(value.key)}
+              removeRef={(node) => {
+                if (node) removeButtons.current.set(value.key, node)
+                else removeButtons.current.delete(value.key)
+              }}
               onColor={(colorHex) => onColor(value.key, colorHex)}
               disabled={disabled}
               messages={messages}
@@ -188,6 +215,7 @@ export function VariationOptionCard({
 
       <div className="flex items-center gap-2">
         <Input
+          ref={newValue}
           aria-label={format(text.newValue, { name: label })}
           placeholder={text.newValuePlaceholder}
           value={draft}
