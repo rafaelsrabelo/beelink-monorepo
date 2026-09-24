@@ -215,6 +215,8 @@ export interface UiMessages {
     searchLoading: string
     categoriesLabel: string
     allCategories: string
+    /** The menu's last item: the catalogue narrowed to what is on sale. */
+    dailyOffers: string
     /** Names the trail for a screen reader, which otherwise reads a row of links with no purpose. */
     breadcrumbLabel: string
     /** The first crumb. The shop's own name would repeat the logo standing right above it. */

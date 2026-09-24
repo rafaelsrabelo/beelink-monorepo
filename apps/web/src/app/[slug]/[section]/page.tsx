@@ -224,6 +224,10 @@ export default async function StorefrontSectionPage({
       store={store}
       categories={catalogue.categories}
       activeCategory={category?.slug ?? null}
+      catalogActive={loaded.section.kind === "catalog" && !paramOf(query.categoria)}
+      // A search or the catalogue narrowed to a category underlines it, as 5a does.
+      markedCategory={loaded.section.kind === "category" ? null : (paramOf(query.categoria) ?? null)}
+      onSale={catalogue.facets.discount.count > 0}
       searchValue={term}
       year={new Date().getFullYear()}
       messages={ui}

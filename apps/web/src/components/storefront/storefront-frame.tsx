@@ -25,8 +25,17 @@ export interface StorefrontFrameProps {
    * page of the category it hangs off.
    */
   categories: readonly PublicProductCategory[]
-  /** The category being shown, so the band marks it. Null on every page that is not one. */
+  /** The category whose own page this is. Null on every page that is not one. */
   activeCategory?: string | null
+  /** Whether this is the whole catalogue's page, the one the menu's "Tudo" names. */
+  catalogActive?: boolean
+  /**
+   * A category to underline without calling it the page: a product's (5b), or the one a search was
+   * narrowed to. A subcategory marks its parent, which is the heading the menu can show.
+   */
+  markedCategory?: string | null
+  /** Whether the shop has anything on sale, so the menu ends with "Ofertas do dia". */
+  onSale?: boolean
   /** What was searched for, said back in the field someone typed it into. */
   searchValue?: string
   /** The shop's pitch, which only the home shows: an inner page is about the goods. */
@@ -96,6 +105,9 @@ export function StorefrontFrame({
   store,
   categories,
   activeCategory = null,
+  catalogActive = false,
+  markedCategory = null,
+  onSale = false,
   searchValue,
   description = null,
   showBanner = false,
@@ -121,9 +133,10 @@ export function StorefrontFrame({
   const topLevel = categories.filter((category) => !category.parentSlug)
 
   // A subcategory being open marks its parent up here: the heading the visitor is standing under
-  // is the one the menu can show, and marking nothing would say they are nowhere.
-  const openCategory = categories.find((category) => category.slug === activeCategory)
-  const markedCategory = openCategory?.parentSlug ?? activeCategory
+  // is the one the menu can show. Only a top-level category's own page is the page the menu names.
+  const parentOf = (slug: string | null) => categories.find((category) => category.slug === slug)?.parentSlug ?? null
+  const current = activeCategory && !parentOf(activeCategory) ? activeCategory : null
+  const marked = parentOf(activeCategory) ?? parentOf(markedCategory) ?? markedCategory
 
   // The shop's own pages, and how to reach a person. Built here and not in the block for the
   // reason every href is: a block that knew "Produtos" links to `routeWords.products` would be
@@ -180,8 +193,11 @@ export function StorefrontFrame({
         !site && topLevel.length ? (
           <StorefrontCategories
             categories={topLevel}
-            active={markedCategory}
+            active={current}
+            allActive={catalogActive}
+            marked={marked}
             href={(categorySlug) => (categorySlug ? routes.category(categorySlug) : routes.catalog())}
+            offersHref={onSale ? routes.catalog({ discount: true }) : null}
             // The menu, unless the shopkeeper asked for the row of photographs. The switch in the
             // panel is called "ícones de categoria", and that is exactly what it now chooses.
             variant={store.layoutSettings.showCategoryIcons ? "tiles" : "bar"}

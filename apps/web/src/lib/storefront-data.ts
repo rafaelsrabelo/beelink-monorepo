@@ -115,12 +115,26 @@ export function pageCountOf(total: number, pageSize: number): number {
   return Math.max(1, Math.ceil(total / Math.max(pageSize, 1)))
 }
 
+/** What the shop's menu is drawn from, and nothing a page will not draw. */
+export interface ShopNavigation {
+  categories: PublicProductCategory[]
+  /** Whether the shop has anything on sale: the menu's "Ofertas do dia" is drawn only then. */
+  onSale: boolean
+}
+
 /**
- * Every category the shop shows: its menu and its categories block read these.
+ * The shop's menu: every category it shows, and whether it has anything on sale.
  *
- * One product, because nothing here reads it. The catalogue endpoint answers with the categories and
- * a page of products together, and a page the landing will not draw is a page paid for twice.
+ * One product, because nothing here reads it. The catalogue endpoint answers with the categories, the
+ * facets and a page of products together, and a page the landing will not draw is a page paid for
+ * twice — so the discount's count rides on the same read rather than costing a second one.
  */
+export async function navigationAt(slug: string): Promise<ShopNavigation> {
+  const catalogue = await catalogueAt(slug, { pageSize: 1 })
+  return { categories: catalogue.categories, onSale: catalogue.facets.discount.count > 0 }
+}
+
+/** Every category the shop shows: its categories block reads these. */
 export async function categoriesAt(slug: string): Promise<PublicProductCategory[]> {
-  return (await catalogueAt(slug, { pageSize: 1 })).categories
+  return (await navigationAt(slug)).categories
 }

@@ -155,6 +155,7 @@ export const ptBR: UiMessages = {
     searchLoading: "Buscando…",
     categoriesLabel: "Categorias da loja",
     allCategories: "Tudo",
+    dailyOffers: "Ofertas do dia",
     breadcrumbLabel: "Você está em",
     breadcrumbHome: "Início",
     empty: "Nada encontrado por aqui.",

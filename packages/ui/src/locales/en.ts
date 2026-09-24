@@ -155,6 +155,7 @@ export const en: UiMessages = {
     searchLoading: "Searching…",
     categoriesLabel: "The shop's categories",
     allCategories: "Everything",
+    dailyOffers: "Today's deals",
     breadcrumbLabel: "You are in",
     breadcrumbHome: "Home",
     empty: "Nothing found here.",

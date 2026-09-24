@@ -11,7 +11,7 @@ import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
 import { getMessages } from "@/lib/locale"
-import { productAt, shopAt } from "@/lib/storefront-data"
+import { navigationAt, productAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -89,7 +89,8 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   if (!loaded) notFound()
 
   const { store, product } = loaded
-  const { ui, web } = await getMessages()
+  // The menu on this page as on every other: cached under the catalogue's tag, like the product.
+  const [{ ui, web }, { categories, onSale }] = await Promise.all([getMessages(), navigationAt(slug)])
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
@@ -104,9 +105,10 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   return (
     <StorefrontFrame
       store={store}
-      // No category band on a product page: this page is about one thing, and a row of every
-      // category above it is a row of doors out of the page someone just chose to open.
-      categories={[]}
+      categories={categories}
+      // The product's category underlined, not called the page: 5b draws it so.
+      markedCategory={product.category?.slug ?? null}
+      onSale={onSale}
       year={new Date().getFullYear()}
       messages={ui}
     >
