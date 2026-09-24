@@ -24,7 +24,8 @@ export interface StorefrontCatalogProps {
   children?: ReactNode
 }
 
-const COLUMNS: Record<2 | 3 | 4, string> = {
+/** The grid's columns, per the shopkeeper's choice. Exported so a skeleton takes the same shape. */
+export const CATALOG_COLUMNS: Record<2 | 3 | 4, string> = {
   2: "grid-cols-2",
   3: "grid-cols-2 shop-sm:grid-cols-3",
   4: "grid-cols-2 shop-sm:grid-cols-3 shop-lg:grid-cols-4",
@@ -57,7 +58,7 @@ export function StorefrontCatalog({
   return (
     <section className="flex w-full flex-col gap-6">
       {products.length ? (
-        <ul className={cn("grid gap-4", COLUMNS[productsPerRow])}>
+        <ul className={cn("grid gap-4", CATALOG_COLUMNS[productsPerRow])}>
           {products.map((product) => (
             <li key={product.id}>
               <StorefrontProductCard
