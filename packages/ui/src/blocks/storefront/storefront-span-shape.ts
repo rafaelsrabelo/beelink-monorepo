@@ -14,16 +14,16 @@ import type { StorefrontSpan } from "./storefront-band-cell"
  * thirds plus one 16px gap — which is the closest a plain ratio gets.
  */
 export const SPAN_HEIGHT: Record<StorefrontSpan, string> = {
-  FULL: "aspect-[4/3] sm:aspect-[2/1] lg:aspect-[21/9]",
-  TWO_THIRDS: "aspect-[16/9] lg:aspect-[8/3]",
+  FULL: "aspect-[4/3] shop-sm:aspect-[2/1] shop-lg:aspect-[21/9]",
+  TWO_THIRDS: "aspect-[16/9] shop-lg:aspect-[8/3]",
   HALF: "aspect-[16/9]",
-  THIRD: "aspect-[4/3] sm:aspect-[16/9] lg:aspect-[4/3]",
+  THIRD: "aspect-[4/3] shop-sm:aspect-[16/9] shop-lg:aspect-[4/3]",
 }
 
 /** The headline written over the picture, sized to the slice so a third does not clip its words. */
 export const SPAN_TITLE: Record<StorefrontSpan, string> = {
-  FULL: "text-2xl sm:text-4xl",
-  TWO_THIRDS: "text-xl lg:text-2xl",
+  FULL: "text-2xl shop-sm:text-4xl",
+  TWO_THIRDS: "text-xl shop-lg:text-2xl",
   HALF: "text-lg",
   THIRD: "text-lg",
 }

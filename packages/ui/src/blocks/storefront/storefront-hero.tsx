@@ -78,7 +78,7 @@ export function StorefrontHero({
   // rounding cuts the picture away from the very edges it was chosen to reach.
   const card = span !== "FULL"
   const rounded = width === "CONTAINED" || card
-  const frame = cn("w-full object-cover", card ? SPAN_HEIGHT[span] : "h-44 sm:h-72 lg:h-96", rounded && "rounded-2xl")
+  const frame = cn("w-full object-cover", card ? SPAN_HEIGHT[span] : "h-44 shop-sm:h-72 shop-lg:h-96", rounded && "rounded-2xl")
 
   function one(item: StorefrontHeroItem) {
     const picture = (
@@ -95,7 +95,7 @@ export function StorefrontHero({
           <div
             className={cn(
               "absolute inset-x-0 bottom-0 flex flex-col gap-1 p-5",
-              !card && "sm:p-8",
+              !card && "shop-sm:p-8",
               rounded && "rounded-b-2xl",
             )}
             style={{
@@ -111,7 +111,7 @@ export function StorefrontHero({
               <p className={cn("leading-tight font-semibold text-balance", SPAN_TITLE[span])}>{item.title}</p>
             ) : null}
             {item.subtitle ? (
-              <p className={cn("text-sm opacity-85", !card && "max-w-xl sm:text-base")}>{item.subtitle}</p>
+              <p className={cn("text-sm opacity-85", !card && "max-w-xl shop-sm:text-base")}>{item.subtitle}</p>
             ) : null}
           </div>
         ) : null}

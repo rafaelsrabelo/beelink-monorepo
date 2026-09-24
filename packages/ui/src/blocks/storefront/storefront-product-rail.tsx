@@ -36,7 +36,7 @@ export interface StorefrontProductRailProps {
  * peek is deliberate. With no arrows, a card cut by the edge is the whole affordance: it is what
  * says the row keeps going.
  */
-const CARD_WIDTH = "w-44 sm:w-52 lg:w-64"
+const CARD_WIDTH = "w-44 shop-sm:w-52 shop-lg:w-64"
 
 /**
  * The home's band of products, running sideways.
