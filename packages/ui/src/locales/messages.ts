@@ -410,6 +410,8 @@ export interface UiMessages {
     bandNumber: string
     addBand: string
     deleteBand: string
+    /** The swatch on a single-block band's card, which opens the band's own sheet. */
+    editBand: string
     deleteBandConfirm: string
     /** A band's own colour, and the one value that means "the page's own". */
     bandColour: string

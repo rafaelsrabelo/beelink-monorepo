@@ -327,6 +327,7 @@ export const en: UiMessages = {
     bandNumber: "Band {position}",
     addBand: "New band",
     deleteBand: "Delete band",
+    editBand: "Band colour and name",
     deleteBandConfirm: "Delete {name} and everything in it? This cannot be undone.",
     bandColour: "Band background",
     bandColourNone: "The page’s colour",

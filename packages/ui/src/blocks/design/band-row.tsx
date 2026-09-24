@@ -19,9 +19,11 @@ import { ArrangeBoard, useArrangeItem } from "./design-arrange"
 import { ArrangementRow } from "./arrangement-row"
 import type { ArrangementSpan } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
+import { SingleBlockCard } from "./single-block-card"
 
 /**
- * One band of the page: its own controls, and the components inside it.
+ * One band of the page: its own controls, and the components inside it — or, while it holds one
+ * block, the single card that is both (`SingleBlockCard`).
  *
  * Its own file because the board it came out of had reached the line limit, and the split falls
  * where the responsibility does — the board owns the order of the bands, and this owns what one
@@ -68,6 +70,26 @@ export function BandRow({
   // Called by its name where it has one — a named band is one the owner will look for by that
   // name in the menu — and by its place otherwise.
   const name = band.name?.trim() || format(text.bandNumber, { position: String(position) })
+  const [only] = band.components
+
+  if (only && band.components.length === 1) {
+    return (
+      <SingleBlockCard
+        band={band}
+        block={only}
+        bandName={name}
+        drag={drag}
+        onToggleBand={onToggleBand}
+        onEditBand={onEditBand}
+        onDeleteBand={onDeleteBand}
+        onToggle={onToggle}
+        onSpanChange={onSpanChange}
+        onEdit={onEdit}
+        addSlot={addSlot}
+        messages={messages}
+      />
+    )
+  }
 
   return (
     <li
