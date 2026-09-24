@@ -164,4 +164,18 @@ describe("BlockGallery", () => {
 
     await expectNoA11yViolations(document.body)
   })
+
+  // Every "+" of the panel opens this one gallery, which then has no trigger of its own.
+  it("opens from outside with no trigger, and says when it closes", async () => {
+    const user = userEvent.setup()
+    const onOpenChange = vi.fn()
+    const onAdd = vi.fn()
+    render(<BlockGallery open onOpenChange={onOpenChange} onAdd={onAdd} />)
+
+    expect(screen.queryByRole("button", { name: "Adicionar bloco" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Título/ }))
+
+    expect(onAdd).toHaveBeenCalledWith("HEADING")
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
 })

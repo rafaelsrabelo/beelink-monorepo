@@ -418,6 +418,9 @@ export interface UiMessages {
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */
     addToBand: string
+    /** The "+" between bands and between blocks. `{position}` counts from 1; `{band}` is the band's name. */
+    insertBand: string
+    insertBlock: string
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
     /** Said in place of the kind when a block has nothing for the shop window to draw. */
@@ -447,6 +450,7 @@ export interface UiMessages {
     bandNameHelp: string
     /** The panel that opens on a component's row. */
     editComponent: string
+    closeInspector: string
     bodyLabel: string
     bodyPlaceholder: string
     columnsLabel: string
