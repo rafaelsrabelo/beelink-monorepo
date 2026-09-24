@@ -112,8 +112,8 @@ describe("SingleBlockCard — a band of one block is one card", () => {
     expect(within(container).getByRole("button", { name: "Arrastar: Segundo" })).toBeInTheDocument()
   })
 
-  // The add slot is the same node before and after, so the button just pressed keeps the focus.
-  it("keeps the add button focused while the card becomes a container", () => {
+  // The band's last "+" is the same node before and after, so the button just pressed keeps the focus.
+  it("keeps the band's last + focused while the card becomes a container", () => {
     const handlers = {
       onReorder: vi.fn(),
       onReorderComponents: vi.fn(),
@@ -125,15 +125,66 @@ describe("SingleBlockCard — a band of one block is one card", () => {
       onDelete: vi.fn(),
       onEdit: vi.fn(),
     }
-    const add = () => <button type="button">Adicionar nesta faixa</button>
-    const { rerender } = render(<BandArrangement bands={[band("b1", [cover])]} renderAddToBand={add} {...handlers} />)
-    screen.getByRole("button", { name: "Adicionar nesta faixa" }).focus()
+    const onInsert = vi.fn()
+    const { rerender } = render(<BandArrangement bands={[band("b1", [cover])]} onInsert={onInsert} {...handlers} />)
+    const last = screen.getByRole("button", { name: "Novo bloco em Faixa 1, posição 2" })
+    last.focus()
 
     rerender(
-      <BandArrangement bands={[band("b1", [cover, { ...cover, id: "c2", title: "Segundo" }])]} renderAddToBand={add} {...handlers} />,
+      <BandArrangement bands={[band("b1", [cover, { ...cover, id: "c2", title: "Segundo" }])]} onInsert={onInsert} {...handlers} />,
     )
 
-    expect(screen.getByRole("button", { name: "Adicionar nesta faixa" })).toHaveFocus()
+    // The same button, now the band's third place.
+    expect(screen.getByRole("button", { name: "Novo bloco em Faixa 1, posição 3" })).toBe(last)
+    expect(last).toHaveFocus()
+  })
+
+  // The block whose fields are open is marked in the list as the preview marks it.
+  it("marks the selected block, on a card and on a row", () => {
+    render(
+      <BandArrangement
+        bands={[band("b1", [cover]), band("b2", [{ ...cover, id: "c2", title: "Dois" }, { ...cover, id: "c3", title: "Três" }])]}
+        selectedId="c3"
+        {...{
+          onReorder: vi.fn(),
+          onReorderComponents: vi.fn(),
+          onToggleBand: vi.fn(),
+          onEditBand: vi.fn(),
+          onDeleteBand: vi.fn(),
+          onToggle: vi.fn(),
+          onSpanChange: vi.fn(),
+          onDelete: vi.fn(),
+          onEdit: vi.fn(),
+        }}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: /^Três/ }).closest("li")).toHaveAttribute("aria-current", "true")
+    expect(screen.getByRole("button", { name: /^Capa/ }).closest("li")).not.toHaveAttribute("aria-current")
+  })
+
+  it("marks a selected single-block card as the band's item", () => {
+    render(
+      <BandArrangement
+        bands={[band("b1", [cover])]}
+        selectedId="c1"
+        {...{
+          onReorder: vi.fn(),
+          onReorderComponents: vi.fn(),
+          onToggleBand: vi.fn(),
+          onEditBand: vi.fn(),
+          onDeleteBand: vi.fn(),
+          onToggle: vi.fn(),
+          onSpanChange: vi.fn(),
+          onDelete: vi.fn(),
+          onEdit: vi.fn(),
+        }}
+      />,
+    )
+
+    const card = screen.getByRole("button", { name: /^Capa/ }).closest("li")!
+    expect(card).toHaveAttribute("aria-current", "true")
+    expect(card.className).toContain("ring-primary")
   })
 
   it("has no accessibility violations", async () => {

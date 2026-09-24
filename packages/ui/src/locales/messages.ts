@@ -326,6 +326,23 @@ export interface UiMessages {
     emptyAction: Record<ComponentKind, string>
     /** A showcase shown again in the draft, whose products the page has not been served yet. */
     showcaseOnPublish: string
+    /** A categories block with no category the shop window would show — said to the owner, not a visitor. */
+    categoriesHiddenAction: string
+    /**
+     * Why a block draws nothing, said in its sheet, with the way out. `{count}` is how many
+     * categories have no product yet.
+     */
+    emptyStates: {
+      categoriesUnlinked: { title: string; body: string; bodyOne: string; action: string }
+      categoriesNone: { title: string; body: string; action: string }
+      categoriesHidden: { title: string; body: string; action: string }
+      categoriesDrafts: { title: string; body: string; action: string }
+      productsNone: { title: string; body: string; action: string }
+      productsOffShelf: { title: string; body: string; action: string }
+      sourceEmpty: { title: string; body: string }
+      /** Said after a link that leaves the arrangement's draft where it is. */
+      opensInNewTab: string
+    }
     /** The gallery a block is added from. */
     gallery: {
       title: string
@@ -401,6 +418,9 @@ export interface UiMessages {
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */
     addToBand: string
+    /** The "+" between bands and between blocks. `{position}` counts from 1; `{band}` is the band's name. */
+    insertBand: string
+    insertBlock: string
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
     /** Said in place of the kind when a block has nothing for the shop window to draw. */
@@ -430,6 +450,7 @@ export interface UiMessages {
     bandNameHelp: string
     /** The panel that opens on a component's row. */
     editComponent: string
+    closeInspector: string
     bodyLabel: string
     bodyPlaceholder: string
     columnsLabel: string

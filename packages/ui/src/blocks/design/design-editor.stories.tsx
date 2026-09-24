@@ -18,7 +18,6 @@ import palettes from "../store/store-palettes.json"
 import { StorefrontSectionBand } from "../storefront/storefront-section-band"
 import { BandArrangement } from "./band-arrangement"
 import type { ArrangementBand } from "./band-arrangement"
-import { BlockGallery } from "./block-gallery"
 import { DesignBlockPlaceholder } from "./design-block-placeholder"
 import { DesignEditTag } from "./design-edit-tag"
 import { DesignPreview } from "./design-preview"
@@ -110,14 +109,11 @@ function Conteudo({ alto = false }: { alto?: boolean }) {
 function Painel() {
   return (
     <aside className="flex w-[380px] shrink-0 flex-col gap-3 overflow-y-auto border-l p-4">
-      <BlockGallery onAdd={noop} />
       <BandArrangement
         bands={bands}
         {...handlers}
-        // The way into a band, which is the only way two posters end up side by side.
-        renderAddToBand={() => (
-          <BlockGallery onAdd={noop} triggerLabel="Adicionar nesta faixa" triggerClassName="h-8 justify-start text-xs" />
-        )}
+        // Every "+" — between bands, and inside one — is how a block is added, where it lands.
+        onInsert={noop}
       />
     </aside>
   )
