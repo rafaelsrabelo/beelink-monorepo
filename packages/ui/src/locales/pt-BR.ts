@@ -328,6 +328,7 @@ export const ptBR: UiMessages = {
     addBand: "Nova faixa",
     deleteBand: "Excluir faixa",
     editBand: "Cor e nome da faixa",
+    previewDevice: { label: "Ver a loja como", phone: "Celular", desktop: "Computador" },
     deleteBandConfirm: "Excluir a {name} e tudo que está nela? Isso não tem volta.",
     bandColour: "Cor de fundo da faixa",
     bandColourNone: "A cor da página",

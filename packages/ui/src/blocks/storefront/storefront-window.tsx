@@ -175,7 +175,7 @@ const ICONS: Record<StorefrontNetwork, typeof WhatsAppIcon> = {
  * was measured against runs to about this width and then stops — stopping matters too, because a
  * line of body text the full width of a 27-inch screen is a line nobody finishes.
  */
-const BAND = "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10"
+const BAND = "mx-auto w-full max-w-[1440px] px-4 shop-sm:px-6 shop-lg:px-10"
 
 function Section({ banner, Link, tall }: { banner: StorefrontBanner; Link: LinkComponent; tall?: boolean }) {
   const picture = (
@@ -185,7 +185,7 @@ function Section({ banner, Link, tall }: { banner: StorefrontBanner; Link: LinkC
       // Decorative unless the shopkeeper wrote a description: a banner whose words are painted
       // into the JPEG has nothing a screen reader can read out of the file.
       aria-hidden={banner.alt ? undefined : "true"}
-      className={cn("w-full object-cover", tall ? "h-44 sm:h-72 lg:h-96" : "h-32 sm:h-48")}
+      className={cn("w-full object-cover", tall ? "h-44 shop-sm:h-72 shop-lg:h-96" : "h-32 shop-sm:h-48")}
     />
   )
 
@@ -287,7 +287,7 @@ export function StorefrontWindow({
   } as CSSProperties
 
   return (
-    <div style={dressed} className="flex min-h-svh flex-col">
+    <div style={dressed} className="@container/shop flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
         <StorefrontAnnouncement
@@ -324,7 +324,7 @@ export function StorefrontWindow({
       {/* ---------------------------------------------------------------- 4 · what the shop promises */}
       {blocks || !highlights.length ? null : (
         <div className="w-full" style={{ backgroundColor: "color-mix(in oklab, var(--shop-header) 10%, transparent)" }}>
-          <ul className={cn(BAND, "grid grid-cols-2 gap-x-6 gap-y-5 py-6 sm:grid-cols-4")}>
+          <ul className={cn(BAND, "grid grid-cols-2 gap-x-6 gap-y-5 py-6 shop-sm:grid-cols-4")}>
             {highlights.map((highlight) => (
               // Icon beside the words and not above them: four stacked icons read as a row of
               // buttons, and none of these is one. Left-aligned for the same reason — a centred
@@ -400,7 +400,7 @@ export function StorefrontWindow({
         to keep out of components.
       */}
       <footer className="w-full" style={{ backgroundColor: "var(--shop-footer)", color: "var(--shop-on-footer)" }}>
-        <div className={cn(BAND, "flex flex-col gap-10 py-12 sm:flex-row sm:justify-between")}>
+        <div className={cn(BAND, "flex flex-col gap-10 py-12 shop-sm:flex-row shop-sm:justify-between")}>
           <div className="flex max-w-xs flex-col gap-4">
             {/* Same rule as the masthead: the logo replaces the name, and says it. */}
             <div className="flex items-center gap-2">
@@ -435,7 +435,7 @@ export function StorefrontWindow({
           </div>
 
           {footerColumns.length ? (
-            <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-8 shop-sm:grid-cols-3">
               {footerColumns.map((column) => (
                 <nav key={column.id} aria-label={column.title} className="flex flex-col gap-3">
                   <p className="text-xs font-semibold tracking-widest uppercase opacity-60">{column.title}</p>

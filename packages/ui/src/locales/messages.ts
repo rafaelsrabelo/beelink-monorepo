@@ -412,6 +412,8 @@ export interface UiMessages {
     deleteBand: string
     /** The swatch on a single-block band's card, which opens the band's own sheet. */
     editBand: string
+    /** The preview's two widths, and what the pair is called. */
+    previewDevice: { label: string; phone: string; desktop: string }
     deleteBandConfirm: string
     /** A band's own colour, and the one value that means "the page's own". */
     bandColour: string

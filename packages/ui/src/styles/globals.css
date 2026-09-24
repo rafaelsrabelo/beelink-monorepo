@@ -15,6 +15,35 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * The shop window's breakpoints, measured on the window and not on the browser's.
+ *
+ * The same four widths as `sm:` to `xl:`, asked of the nearest `@container/shop` — the root of
+ * StorefrontWindow. On the shop it spans the page, so they fall where the viewport's would; in
+ * design mode's preview it is the painted surface, so a 390px phone is laid out as a phone inside a
+ * desktop window, which a media query can never do.
+ */
+@custom-variant shop-sm {
+    @container shop (width >= 40rem) {
+        @slot;
+    }
+}
+@custom-variant shop-md {
+    @container shop (width >= 48rem) {
+        @slot;
+    }
+}
+@custom-variant shop-lg {
+    @container shop (width >= 64rem) {
+        @slot;
+    }
+}
+@custom-variant shop-xl {
+    @container shop (width >= 80rem) {
+        @slot;
+    }
+}
+
 @theme inline {
     /*
      * The announcement strip's motion. The duration is set per strip, from its text, so a short
