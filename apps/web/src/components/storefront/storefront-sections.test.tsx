@@ -69,7 +69,6 @@ function draw(sections: PublicSection[]) {
       sections={sections}
       // Read only when a band has a colour of its own, and none of these does.
       primary=""
-      bands={[]}
       categories={[]}
       routes={routes}
       showPrice
@@ -165,5 +164,57 @@ describe("StorefrontSections — a banner is a carousel or a grid by choice", ()
     draw([band([{ ...grid, items: slides }])])
 
     for (const link of screen.getAllByRole("link")) expect(link).toHaveAccessibleName("Voltar para a loja")
+  })
+})
+
+describe("StorefrontSections — a showcase draws its own products", () => {
+  const card = (slug: string) => ({
+    id: slug,
+    slug,
+    name: `Produto ${slug}`,
+    priceCents: 1000,
+    compareAtPriceCents: null,
+    imageUrl: null,
+    categorySlug: null,
+  })
+
+  function showcase(over: Partial<PublicComponent> = {}): PublicComponent {
+    return {
+      ...poster("vitrine", "FULL"),
+      kind: "PRODUCTS",
+      display: "RAIL",
+      source: "ALL",
+      items: [card("a"), card("b")],
+      ...over,
+    }
+  }
+
+  it("runs a rail sideways, named after the catalogue, with a way through to it", () => {
+    draw([band([showcase()])])
+
+    expect(screen.getByRole("group", { name: "Todos os produtos" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Ver tudo em Todos os produtos" })).toHaveAttribute("href", routes.catalog())
+  })
+
+  it("lays a grid in rows, as many across as the shopkeeper chose where there is room", () => {
+    const { container } = draw([band([showcase({ display: "GRID", columns: 3, title: "Destaques" })])])
+
+    expect(screen.queryByRole("group")).not.toBeInTheDocument()
+    expect(container.querySelector("ul")!.className).toContain("@xl:grid-cols-3")
+    expect(screen.getAllByRole("listitem")).toHaveLength(2)
+  })
+
+  // Named by its category unless the shopkeeper named it, and "ver tudo" goes where the rest is.
+  it("titles a category showcase by its category and leads to it", () => {
+    draw([band([showcase({ source: "CATEGORY", sourceCategory: { slug: "blusas", name: "Blusas" } })])])
+
+    expect(screen.getByRole("heading", { name: "Blusas" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Ver tudo em Blusas" })).toHaveAttribute("href", routes.category("blusas"))
+  })
+
+  it("draws nothing for a showcase whose source has nothing on the shelf", () => {
+    const { container } = draw([band([showcase({ items: [] })])])
+
+    expect(container.querySelector("[data-span]")).toBeEmptyDOMElement()
   })
 })

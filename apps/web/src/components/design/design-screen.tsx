@@ -14,7 +14,6 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import type { HomeBand } from "@/lib/storefront-data"
 import { useCreateComponent, useCreateSection } from "@/services/page/page-hooks"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
 import { BandEditor } from "./band-editor"
@@ -25,7 +24,7 @@ import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
 // App
 import { DesignPreviewPane } from "./design-preview-pane"
 import { applyComponentOrder, applyOrder, componentsOf, labelOf, orderedIdsOf } from "./design-draft"
-import { arrangementOf, previewOf } from "./design-draft-preview"
+import { arrangementOf, previewOf, shelvesOf } from "./design-draft-preview"
 import { pageErrorCopy } from "./page-error-copy"
 import { useDesignDraft } from "./use-design-draft"
 
@@ -39,8 +38,6 @@ export interface DesignScreenProps {
    */
   store: PublicStore
   categories: readonly PublicProductCategory[]
-  /** The rails, already loaded — the same shape the shop window's home is built from. */
-  bands: readonly HomeBand[]
   year: number
   messages: UiMessages
   /** The app's own sentences — where an API `errorCode` becomes copy. */
@@ -60,7 +57,7 @@ type PendingDelete = { level: "band" | "component"; id: string; name: string }
  * what colour a band is, save on their own the moment the owner hits save in the sheet: those are
  * things they want to see land, not an order to hold back.
  */
-export function DesignScreen({ store, categories, bands, year, messages, web }: DesignScreenProps) {
+export function DesignScreen({ store, categories, year, messages, web }: DesignScreenProps) {
   const text = messages.design
   const slug = store.slug
 
@@ -69,7 +66,7 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
   const saveColors = useUpdateStoreColors(slug)
   const addSection = useCreateSection(slug)
   const addToBand = useCreateComponent(slug)
-
+  const shelves = shelvesOf(store.sections)
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
@@ -174,9 +171,8 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
         <DesignPreviewPane
           store={store}
           categories={categories}
-          bands={bands}
           year={year}
-          sections={previewOf(rows, saved)}
+          sections={previewOf(rows, saved, shelves)}
           colors={palette}
           orderedIds={orderedIdsOf(rows)}
           onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
@@ -186,7 +182,7 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
         />
 
         <DesignPanel
-          bands={arrangementOf(rows, saved)}
+          bands={arrangementOf(rows, saved, shelves)}
           loading={draft.loading}
           onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
           onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}

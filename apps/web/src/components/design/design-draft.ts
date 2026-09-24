@@ -162,7 +162,8 @@ export function isEmptyComponent(
   body: string | null,
   items: readonly unknown[],
 ): boolean {
-  if (kind === "BANNER" || kind === "BENEFITS") return items.length === 0
+  // A showcase's items are the cards its source resolved to, which only the public read knows.
+  if (kind === "BANNER" || kind === "BENEFITS" || kind === "PRODUCTS") return items.length === 0
   if (kind === "HEADING" || kind === "ANNOUNCEMENT") return !title?.trim()
   if (kind === "TEXT") return !body?.trim()
 

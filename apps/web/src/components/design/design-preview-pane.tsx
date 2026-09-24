@@ -16,7 +16,6 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import type { HomeBand } from "@/lib/storefront-data"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -25,7 +24,6 @@ import { isEmptyComponent, labelOf } from "./design-draft"
 export interface DesignPreviewPaneProps {
   store: PublicStore
   categories: readonly PublicProductCategory[]
-  bands: readonly HomeBand[]
   year: number
   /** The draft, already resolved into what the shop window would be served. */
   sections: readonly PublicSection[]
@@ -65,7 +63,6 @@ function InertLink(props: ComponentProps<"a"> & { href: string }) {
 export function DesignPreviewPane({
   store,
   categories,
-  bands,
   year,
   sections,
   colors,
@@ -112,7 +109,6 @@ export function DesignPreviewPane({
               <StorefrontSections
                 sections={sections}
                 primary={colors.primary}
-                bands={bands}
                 categories={categories}
                 routes={routes}
                 showPrice={layout.showProductPrice ?? true}

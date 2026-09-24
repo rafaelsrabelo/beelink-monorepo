@@ -22,7 +22,6 @@ import {
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import type { HomeBand } from "@/lib/storefront-data"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { anchorsOf } from "./site-chrome"
 import { StorefrontComponent, type LiveContact } from "./storefront-component"
@@ -40,8 +39,6 @@ export interface StorefrontSectionsProps {
   sections?: readonly PublicSection[]
   /** The shop's own colour, so a band with a dark background can keep it readable. */
   primary: string
-  /** The product rails, already loaded. A PRODUCTS component draws these and nothing else. */
-  bands: readonly HomeBand[]
   /** Every category the shop has. A CATEGORIES component draws these; nothing else reads them. */
   categories: readonly PublicProductCategory[]
   routes: StorefrontRoutes
@@ -106,7 +103,6 @@ function cardsOf(component: PublicComponent): StorefrontShowcaseItem[] | null {
 export function StorefrontSections({
   sections = [],
   primary,
-  bands,
   categories,
   routes,
   showPrice,
@@ -152,7 +148,6 @@ export function StorefrontSections({
                   ) : (
                     <StorefrontComponent
                       component={component}
-                      bands={bands}
                       categories={categories}
                       routes={routes}
                       showPrice={showPrice}
