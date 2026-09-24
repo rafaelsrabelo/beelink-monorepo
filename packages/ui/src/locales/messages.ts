@@ -1,4 +1,4 @@
-import type { BlockGroup, ComponentKind, ContactFieldType } from "../blocks/design/design-types"
+import type { BlockGroup, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
@@ -229,6 +229,9 @@ export interface UiMessages {
     paginationPage: string
     /** The home's band of products: a selection with a way into the catalogue, not the catalogue. */
     featuredHeading: string
+    /** What an untitled showcase of the newest products, or of those on sale, is headed by. */
+    newestHeading: string
+    onSaleHeading: string
     /** The rail's arrows. They are an addition on top of native scrolling, never the only way in. */
     railPrevious: string
     railNext: string
@@ -323,6 +326,23 @@ export interface UiMessages {
     emptyAction: Record<ComponentKind, string>
     /** A showcase shown again in the draft, whose products the page has not been served yet. */
     showcaseOnPublish: string
+    /** A categories block with no category the shop window would show — said to the owner, not a visitor. */
+    categoriesHiddenAction: string
+    /**
+     * Why a block draws nothing, said in its sheet, with the way out. `{count}` is how many
+     * categories have no product yet.
+     */
+    emptyStates: {
+      categoriesUnlinked: { title: string; body: string; bodyOne: string; action: string }
+      categoriesNone: { title: string; body: string; action: string }
+      categoriesHidden: { title: string; body: string; action: string }
+      categoriesDrafts: { title: string; body: string; action: string }
+      productsNone: { title: string; body: string; action: string }
+      productsOffShelf: { title: string; body: string; action: string }
+      sourceEmpty: { title: string; body: string }
+      /** Said after a link that leaves the arrangement's draft where it is. */
+      opensInNewTab: string
+    }
     /** The gallery a block is added from. */
     gallery: {
       title: string
@@ -335,7 +355,31 @@ export interface UiMessages {
       /** One line of what a kind is, read beside its wireframe and searched with its name. */
       hints: Record<ComponentKind, string>
     }
-    productListHint: string
+    /** A showcase's own questions: where its products come from, how many, and in what shape. */
+    showcase: {
+      sourceLabel: string
+      sources: Record<ProductSource, string>
+      /** One sentence under the source, saying what it draws. */
+      sourceHints: Record<ProductSource, string>
+      categoryLabel: string
+      categorySearch: string
+      categoryNone: string
+      picksLabel: string
+      picksSearch: string
+      picksNone: string
+      /** `{name}` is the product's. Each button is named for the product it acts on. */
+      pickAdd: string
+      pickUp: string
+      pickDown: string
+      pickRemove: string
+      /** A pick whose product is not among the ones the panel loaded — deleted, or past the first hundred. */
+      pickUnknown: string
+      searchEmpty: string
+      optionsLoading: string
+      optionsFailed: string
+      limitLabel: string
+      limitHint: string
+    }
     /** A block's slice of its band, named so it cannot be read as the band's own width. */
     spanLabel: string
     spanFull: string
@@ -374,6 +418,9 @@ export interface UiMessages {
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */
     addToBand: string
+    /** The "+" between bands and between blocks. `{position}` counts from 1; `{band}` is the band's name. */
+    insertBand: string
+    insertBlock: string
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
     /** Said in place of the kind when a block has nothing for the shop window to draw. */
@@ -383,6 +430,10 @@ export interface UiMessages {
     bandNumber: string
     addBand: string
     deleteBand: string
+    /** The swatch on a single-block band's card, which opens the band's own sheet. */
+    editBand: string
+    /** The preview's two widths, and what the pair is called. */
+    previewDevice: { label: string; phone: string; desktop: string }
     deleteBandConfirm: string
     /** A band's own colour, and the one value that means "the page's own". */
     bandColour: string
@@ -399,6 +450,7 @@ export interface UiMessages {
     bandNameHelp: string
     /** The panel that opens on a component's row. */
     editComponent: string
+    closeInspector: string
     bodyLabel: string
     bodyPlaceholder: string
     columnsLabel: string

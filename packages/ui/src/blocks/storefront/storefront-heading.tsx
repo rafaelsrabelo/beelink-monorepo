@@ -40,8 +40,8 @@ export function StorefrontHeading({
 
   return (
     <div className={cn("flex flex-col gap-2", ALIGNED[align], className)}>
-      {title ? <Tag className="text-2xl font-semibold text-balance sm:text-3xl">{title}</Tag> : null}
-      {subtitle ? <p className="max-w-2xl text-sm opacity-75 sm:text-base">{subtitle}</p> : null}
+      {title ? <Tag className="text-2xl font-semibold text-balance shop-sm:text-3xl">{title}</Tag> : null}
+      {subtitle ? <p className="max-w-2xl text-sm opacity-75 shop-sm:text-base">{subtitle}</p> : null}
     </div>
   )
 }

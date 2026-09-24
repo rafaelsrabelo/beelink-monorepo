@@ -225,6 +225,23 @@ describe("StorefrontSections — a showcase draws its own products", () => {
     expect(screen.getByRole("link", { name: "Ver tudo em Blusas" })).toHaveAttribute("href", routes.category("blusas"))
   })
 
+  // A hand-picked shelf headed "Todos os produtos" would be a heading that lies about it.
+  it("heads an untitled showcase by what its source draws", () => {
+    draw([
+      band([
+        showcase({ id: "a", source: "NEWEST" }),
+        showcase({ id: "b", source: "ON_SALE" }),
+        showcase({ id: "c", source: "SELECTION" }),
+      ]),
+    ])
+
+    expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      "Lançamentos",
+      "Promoções",
+      "Destaques",
+    ])
+  })
+
   it("keeps the shopkeeper's own title over the category's name", () => {
     draw([band([showcase({ title: "Escolhas da semana", source: "CATEGORY", sourceCategory: blusas })])])
 

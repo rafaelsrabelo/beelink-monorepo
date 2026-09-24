@@ -79,14 +79,23 @@ export function useDesignDraft(slug: string) {
   const rows: SectionDraft[] = draft ?? []
   const saved: Section[] = page.data ?? []
 
-  function edit(next: SectionDraft[]) {
-    setDraft(next)
+  /**
+   * A new arrangement, or a change to the latest one. The change form is what lets two edits in one
+   * event compose: a single-block card shows its band and its block in one click, and two values
+   * built from this render's `rows` would have the second undo the first.
+   */
+  function edit(next: SectionDraft[] | ((current: SectionDraft[]) => SectionDraft[])) {
+    setDraft((current) => (typeof next === "function" ? next(current ?? []) : next))
     setDirty(true)
   }
 
+  function patchSection(id: string, patch: Partial<Pick<SectionDraft, "isActive">>) {
+    edit((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
+  }
+
   function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "span">>) {
-    edit(
-      rows.map((row) => ({
+    edit((current) =>
+      current.map((row) => ({
         ...row,
         components: row.components.map((component) =>
           component.id === id ? { ...component, ...patch } : component,
@@ -201,6 +210,7 @@ export function useDesignDraft(slug: string) {
     deleteError,
     clearDeleteError,
     edit,
+    patchSection,
     patchComponent,
     discard,
     publish,

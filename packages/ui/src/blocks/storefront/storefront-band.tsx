@@ -13,7 +13,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
  * was measured against runs to about this width and then stops — stopping matters too, because a
  * line of body text the full width of a 27-inch screen is a line nobody finishes.
  */
-export const BAND = "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-10"
+export const BAND = "mx-auto w-full max-w-[1440px] px-4 shop-sm:px-6 shop-lg:px-10"
 
 export interface StorefrontBandProps {
   children: ReactNode

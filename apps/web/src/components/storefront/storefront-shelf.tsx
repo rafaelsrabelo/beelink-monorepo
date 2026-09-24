@@ -22,6 +22,27 @@ export interface StorefrontShelfProps {
 }
 
 /**
+ * What an untitled showcase is headed by: its category, or the words for what its source draws. A
+ * hand-picked showcase called "Todos os produtos" would be a heading that lies about its shelf.
+ */
+function headingOf(component: PublicComponent, messages: UiMessages): string {
+  const text = messages.storefront
+
+  switch (component.source) {
+    case "CATEGORY":
+      return component.sourceCategory?.name ?? text.catalogTitle
+    case "SELECTION":
+      return text.featuredHeading
+    case "NEWEST":
+      return text.newestHeading
+    case "ON_SALE":
+      return text.onSaleHeading
+    default:
+      return text.catalogTitle
+  }
+}
+
+/**
  * One showcase of products, as a rail or as a grid — the shopkeeper's `display`, and a rail when
  * none was chosen, because a rail is what every showcase drew before there was a choice.
  *
@@ -41,7 +62,7 @@ export function StorefrontShelf({
   const shelf = {
     products: component.items as PublicProductCard[],
     productHref: routes.product,
-    title: component.title ?? category?.name ?? messages.storefront.catalogTitle,
+    title: component.title ?? headingOf(component, messages),
     // The line a grouped shelf carried over its category's name, kept when it became a showcase.
     ...(category?.description ? { label: category.description } : {}),
     seeAllHref: category ? routes.category(category.slug) : routes.catalog(),
