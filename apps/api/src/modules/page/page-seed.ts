@@ -1,14 +1,15 @@
 // Types
 import type {
   BenefitRow,
+  ComponentDisplay,
   ComponentKind,
   ContactField,
   ContactFieldType,
   PaymentMethod,
+  ProductSource,
   SectionWidth,
   TextAlign,
 } from '@harness-monorepo/contracts';
-import type { ComponentDisplay } from '../../generated/prisma/enums.js';
 
 /**
  * A promise as it is written to the JSON column.
@@ -34,6 +35,8 @@ export interface SeededBand {
     subtitle?: string | null;
     body?: string | null;
     align?: TextAlign | null;
+    display?: ComponentDisplay | null;
+    source?: ProductSource | null;
     items: SeededItem[];
     position: number;
     isActive: boolean;
@@ -79,7 +82,7 @@ export function defaultPage(paymentMethods: readonly PaymentMethod[]): SeededBan
     },
     {
       section: { width: 'CONTAINED', position: 1, isActive: true },
-      components: [{ kind: 'PRODUCTS', items: [], position: 0, isActive: true }],
+      components: [{ kind: 'PRODUCTS', display: 'RAIL', source: 'ALL', items: [], position: 0, isActive: true }],
     },
   ];
 }
@@ -105,9 +108,13 @@ export function openingItemsOf(kind: ComponentKind): SeededItem[] {
 }
 
 /**
- * How a new component lays out its pictures. A banner opens as a carousel, which is what its
- * second slide has always turned it into; no other kind reads the column.
+ * How a new component lays out what it holds. A banner opens as a carousel, which is what its second
+ * slide has always turned it into; a showcase opens as a rail, which is what the landing page's
+ * shelf has always been; the categories open as a rail too, which is what the shopkeeper asked of
+ * them. No other kind reads the column.
  */
 export function openingDisplayOf(kind: ComponentKind): ComponentDisplay | null {
-  return kind === 'BANNER' ? 'CAROUSEL' : null;
+  if (kind === 'BANNER') return 'CAROUSEL';
+  if (kind === 'PRODUCTS' || kind === 'CATEGORIES') return 'RAIL';
+  return null;
 }

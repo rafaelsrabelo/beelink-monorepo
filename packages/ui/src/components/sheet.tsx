@@ -41,14 +41,34 @@ function SheetContent({
   children,
   side = "right",
   showCloseButton = true,
+  seeThrough = false,
   ...props
 }: SheetPrimitive.Popup.Props & {
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
+  /**
+   * Leaves the page behind the sheet unshaded and unblurred.
+   *
+   * The backdrop exists to say "the sheet is the thing now", which is right for a form about a row
+   * in a table. It is wrong when the page behind the sheet IS the subject: design mode edits a
+   * block and the owner is watching the block, so dimming and blurring the preview hides the only
+   * feedback the form has.
+   *
+   * It stops painting AND stops taking the pointer. Painting alone was worse than the dim it
+   * replaced: the page looked live and answered nothing, which reads exactly as a frozen screen.
+   * Pair it with `modal={false}` on the `Sheet`, or focus and scroll stay trapped too.
+   */
+  seeThrough?: boolean
 }) {
   return (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay
+        className={
+          seeThrough
+            ? "pointer-events-none bg-transparent supports-backdrop-filter:backdrop-blur-none"
+            : undefined
+        }
+      />
       <SheetPrimitive.Popup
         data-slot="sheet-content"
         data-side={side}

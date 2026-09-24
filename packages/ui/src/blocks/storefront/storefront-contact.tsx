@@ -119,7 +119,7 @@ export function StorefrontContact({
   }
 
   return (
-    <div className="grid gap-8 py-6 md:grid-cols-2 md:gap-12">
+    <div className="grid gap-8 py-6 shop-md:grid-cols-2 shop-md:gap-12">
       <div className="flex flex-col gap-4">
         <StorefrontHeading title={title} subtitle={subtitle} align="LEFT" />
         {whatsappHref ? (

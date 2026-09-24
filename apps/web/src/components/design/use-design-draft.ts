@@ -1,5 +1,8 @@
 "use client"
 
+// Next
+import { useRouter } from "next/navigation"
+
 // React
 import { useEffect, useState } from "react"
 
@@ -16,7 +19,7 @@ import {
   useUpdateComponent,
   useUpdateSection,
 } from "@/services/page/page-hooks"
-import { changesOf, reconcile, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
+import { changesOf, hasChanges, reconcile, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
 
 /**
  * The arrangement as a draft in this browser, until Publish.
@@ -31,6 +34,7 @@ import { changesOf, reconcile, toDraft, type ComponentDraft, type SectionDraft }
  * what is on the page.
  */
 export function useDesignDraft(slug: string) {
+  const router = useRouter()
   const page = useSections(slug)
   const reorder = useReorderSections(slug)
   const reorderComponents = useReorderComponents(slug)
@@ -75,14 +79,23 @@ export function useDesignDraft(slug: string) {
   const rows: SectionDraft[] = draft ?? []
   const saved: Section[] = page.data ?? []
 
-  function edit(next: SectionDraft[]) {
-    setDraft(next)
+  /**
+   * A new arrangement, or a change to the latest one. The change form is what lets two edits in one
+   * event compose: a single-block card shows its band and its block in one click, and two values
+   * built from this render's `rows` would have the second undo the first.
+   */
+  function edit(next: SectionDraft[] | ((current: SectionDraft[]) => SectionDraft[])) {
+    setDraft((current) => (typeof next === "function" ? next(current ?? []) : next))
     setDirty(true)
   }
 
-  function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "layout">>) {
-    edit(
-      rows.map((row) => ({
+  function patchSection(id: string, patch: Partial<Pick<SectionDraft, "isActive">>) {
+    edit((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
+  }
+
+  function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "span">>) {
+    edit((current) =>
+      current.map((row) => ({
         ...row,
         components: row.components.map((component) =>
           component.id === id ? { ...component, ...patch } : component,
@@ -117,13 +130,16 @@ export function useDesignDraft(slug: string) {
       ...changes.components.map((component) =>
         updateComponent.mutateAsync({
           componentId: component.id,
-          payload: { layout: component.layout, isActive: component.isActive },
+          payload: { span: component.span, isActive: component.isActive },
         }),
       ),
     ])
       .then(() => {
         setDirty(false)
         setSeeded(null)
+        // The shop as served is the page's server read, the showcases' products in it: a showcase
+        // shown again has none in the preview until that read is taken again.
+        router.refresh()
       })
       .catch(() => {
         // The mutation's own error state is what the screen would show; the draft is kept so
@@ -178,13 +194,23 @@ export function useDesignDraft(slug: string) {
     rows,
     saved,
     loading: page.isPending,
+    /**
+     * Touched since the last publish. It still governs seeding and the leave warning, where
+     * erring towards "something changed" is the safe side of the bet.
+     */
     dirty,
+    /**
+     * Actually different from the server — what the badge and Publish answer to. Separate from
+     * `dirty` on purpose: seeding has its own history and is left exactly as it was.
+     */
+    changed: draft !== null && hasChanges(changesOf(rows, saved)),
     publishing:
       reorder.isPending || reorderComponents.isPending || updateSection.isPending || updateComponent.isPending,
     deleting: removeSection.isPending || removeComponent.isPending,
     deleteError,
     clearDeleteError,
     edit,
+    patchSection,
     patchComponent,
     discard,
     publish,

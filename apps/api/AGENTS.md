@@ -24,11 +24,12 @@
 | `pnpm --filter api dev` | watch mode on `:3001` |
 | `pnpm --filter api test` | Vitest unit tests |
 | `pnpm --filter api test:e2e` | e2e against real Postgres and Mailpit (`pnpm stack:up` first) |
-| `pnpm --filter api exec prisma migrate dev` | create and apply migrations — and run the seed |
-| `pnpm --filter api db:seed` | platform data only, upserted on its slug; safe to repeat |
+| `pnpm --filter api exec prisma migrate dev` | create and apply migrations. It does **not** seed — see below |
+| `pnpm --filter api db:seed` | the seed, and the only thing that runs it. Platform data only, upserted on its slug; safe to repeat |
 | `pnpm --filter api exec prisma studio` | browse the database |
 
 ## Traps
 
 - **Prisma is pinned to 7.10.0** — its npm `latest` tag is a release candidate. See the root `AGENTS.md`, trap 4.
 - **The API connects at boot.** With Postgres down it exits with Prisma's `P1001`, not on the first request — start Docker, then `pnpm db:up`.
+- **No migrate command seeds. Reset, then seed — two commands.** On Prisma 5/6 `migrate dev` and `migrate reset` ran the seed; on 7 neither does, and neither says so: `migrate reset` succeeds, prints nothing about seeding, and leaves `store_categories` empty. The symptom lands in the panel, far from the cause — every shop's category select reads "Sem categoria", because the label is looked up in a list that has no rows. Always follow a reset with `pnpm --filter api db:seed`.

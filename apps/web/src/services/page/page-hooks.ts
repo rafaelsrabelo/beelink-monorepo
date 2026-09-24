@@ -6,7 +6,7 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
 import type {
-  CreateComponentPayload,
+  AddComponentPayload,
   CreateSectionPayload,
   Section,
   StoreComponent,
@@ -50,6 +50,11 @@ export function useCreateSection(slug: string): UseMutationResult<Section, Error
 
   return useMutation({
     mutationFn: (payload: CreateSectionPayload) => createSection(slug, payload),
+    // The promise is RETURNED, not fired and forgotten, and the screen depends on it: a mutation's
+    // own onSuccess is awaited before the one passed to `mutate`, so returning this is what makes
+    // the list already hold the new block when the screen opens its form. Drop the `return` — by
+    // writing a block body — and adding a block silently opens nothing, because the id would name
+    // a component the cache has not fetched yet.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
   })
 }
@@ -93,7 +98,7 @@ export function useReorderSections(slug: string): UseMutationResult<Section[], E
 
 export interface CreateComponentVariables {
   sectionId: string
-  payload: CreateComponentPayload
+  payload: AddComponentPayload
 }
 
 export function useCreateComponent(

@@ -11,9 +11,14 @@ export default defineConfig({
   // instead of contending for one.
   schema: 'prisma/schema',
   // `migrations.seed` is Prisma 7's home for the seed command; the `prisma.seed` key in package.json
-  // is the Prisma 5/6 spelling and this version ignores it. `prisma migrate dev` and
-  // `prisma migrate reset` run it, and `pnpm --filter api db:seed` runs it on its own. The script
-  // upserts on slug, so repeating it is safe.
+  // is the Prisma 5/6 spelling and this version ignores it.
+  //
+  // `prisma db seed` is the ONLY thing that runs it — `pnpm --filter api db:seed`. Neither
+  // `migrate dev` nor `migrate reset` seeds on Prisma 7, whatever the 5/6 habit says: their `--help`
+  // no longer mentions seeding and `migrate reset` no longer offers `--skip-seed`, the flag that
+  // only made sense while it did. Observed, not inferred: a reset here left `store_categories`
+  // empty, which shows up as every shop reading "Sem categoria" in the panel's select. Reset, then
+  // seed, as two commands. The script upserts on slug, so repeating it is safe.
   migrations: {
     path: 'prisma/migrations',
     seed: 'prisma db execute --file prisma/seed/store-categories.sql',

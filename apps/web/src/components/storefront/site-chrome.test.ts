@@ -11,7 +11,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 import { anchorOf, ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
 
 function component(kind: PublicComponent["kind"]): PublicComponent {
-  return { id: `${kind}-c`, kind, title: null, subtitle: null, body: null, layout: "FULL", items: [], columns: null, align: null }
+  return { id: `${kind}-c`, kind, title: null, subtitle: null, body: null, span: "FULL", display: null, source: null, sourceCategory: null, items: [], columns: null, align: null }
 }
 
 function band(id: string, name: string | null, kind: PublicComponent["kind"] = "HEADING"): PublicSection {

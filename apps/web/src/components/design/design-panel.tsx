@@ -1,15 +1,18 @@
 "use client"
 
+// React
+import type { ReactNode } from "react"
+
 // Types
-import type { ComponentKind, StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
+import type { StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
-import { AddBlockMenu } from "@harness-monorepo/ui/blocks/design/add-block-menu"
 import { BandArrangement } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import type { ArrangementBand, ArrangementLayout } from "@harness-monorepo/ui/blocks/design/band-arrangement"
+import type { ArrangementBand, ArrangementSpan, InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 export interface DesignPanelProps {
@@ -21,16 +24,18 @@ export interface DesignPanelProps {
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onLayoutChange: (id: string, layout: ArrangementLayout) => void
+  onSpanChange: (id: string, span: ArrangementSpan) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
-  /** Adds a band built around one component — the only way a band is created. */
-  onAdd: (kind: ComponentKind) => void
-  adding: boolean
-  /** The kinds the shop already has one of, so a singleton is offered once. */
-  taken: readonly ComponentKind[]
-  /** The kinds this kind of page cannot hold at all. */
-  unavailable: readonly ComponentKind[]
+  /** A "+" was pressed — between bands, or inside one. The screen opens the gallery for that place. */
+  onInsert: (at: InsertAt) => void
+  inserting: boolean
+  /** The selected block's fields, drawn above the list; null while none is selected. */
+  inspector: ReactNode
+  selectedId: string | null
+  /** Held by the screen, which turns it back to the blocks every time a block is chosen. */
+  tab: "blocks" | "colors"
+  onTabChange: (tab: "blocks" | "colors") => void
 
   palette: StoreColors
   onPalette: (colors: StoreColors) => void
@@ -59,13 +64,15 @@ export function DesignPanel({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onLayoutChange,
+  onSpanChange,
   onDelete,
   onEdit,
-  onAdd,
-  adding,
-  taken,
-  unavailable,
+  onInsert,
+  inserting,
+  inspector,
+  selectedId,
+  tab,
+  onTabChange,
   palette,
   onPalette,
   presets,
@@ -77,8 +84,17 @@ export function DesignPanel({
   const text = messages.design
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-3 @4xl/main:w-96">
-      <Tabs defaultValue="blocks">
+    /*
+      Beside the preview it stays in view and scrolls on its own, so bringing a block's fields into
+      focus scrolls the panel and not the whole page away from the preview it was chosen in.
+    */
+    <aside
+      className={cn(
+        "flex w-full shrink-0 flex-col gap-3 @4xl/main:w-96",
+        "@4xl/main:sticky @4xl/main:top-header @4xl/main:max-h-[calc(100dvh-var(--header-height))] @4xl/main:self-start @4xl/main:overflow-y-auto",
+      )}
+    >
+      <Tabs value={tab} onValueChange={(next: string) => onTabChange(next === "colors" ? "colors" : "blocks")}>
         <TabsList className="w-full">
           <TabsTrigger value="blocks" className="flex-1">
             {text.tabBlocks}
@@ -88,17 +104,9 @@ export function DesignPanel({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="blocks" className="flex flex-col gap-3 pt-3">
-          {/*
-            A band is created saved, not as part of the draft. Adding one is not an arrangement —
-            it is a new row, and holding it in the browser until Publish would mean a reload could
-            lose something the owner watched appear.
-          */}
-          {/*
-            Held while the list loads, or the menu would offer the shop's singletons — the product
-            list among them — before it knows the shop already has them.
-          */}
-          <AddBlockMenu taken={taken} unavailable={unavailable} pending={adding || loading} onAdd={onAdd} messages={messages} />
+        {/* Kept mounted while the colours show: the fields being typed in live here. */}
+        <TabsContent value="blocks" keepMounted className="flex flex-col gap-3 pt-3">
+          {inspector}
           <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
           {loading ? (
             <>
@@ -114,9 +122,14 @@ export function DesignPanel({
               onEditBand={onEditBand}
               onDeleteBand={onDeleteBand}
               onToggle={onToggle}
-              onLayoutChange={onLayoutChange}
+              onSpanChange={onSpanChange}
               onDelete={onDelete}
               onEdit={onEdit}
+              // A band or a block is created saved, not as part of the draft: holding a new row in the
+              // browser until Publish would mean a reload could lose something the owner watched appear.
+              onInsert={onInsert}
+              inserting={inserting}
+              selectedId={selectedId}
               messages={messages}
             />
           )}

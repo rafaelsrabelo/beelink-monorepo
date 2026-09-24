@@ -19,7 +19,6 @@ const STORE: Store = {
   bannerImageUrl: null,
   sections: [],
   layoutType: "DEFAULT",
-  showProductsByCategory: false,
   colors: { background: "", primary: "", header: "", footer: "" },
   socialNetworks: { whatsapp: null, instagram: null, tiktok: null, spotify: null, youtube: null },
   layoutSettings: { showBanner: true, productsPerRow: 3 },

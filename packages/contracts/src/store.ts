@@ -181,7 +181,6 @@ export interface PublicStore {
   /** The single banner, shown when `layoutType` is `"BANNER"`. */
   bannerImageUrl: string | null;
   layoutType: StoreLayoutType;
-  showProductsByCategory: boolean;
   colors: StoreColors;
   socialNetworks: StoreSocialNetworks;
   layoutSettings: StoreLayoutSettings;
@@ -276,7 +275,6 @@ export interface UpdateStorePayload {
   bannerImageUrl?: string | null;
   categoryId?: string | null;
   layoutType: StoreLayoutType;
-  showProductsByCategory: boolean;
   colors: StoreColors;
   socialNetworks: StoreSocialNetworksPayload;
   address?: StoreAddressPayload;

@@ -75,9 +75,9 @@ export function StorefrontCategories({
         aria-label={text.categoriesLabel}
         // Bleeds past the band's padding so the first word starts at the page's margin and the
         // last one is not trapped behind it once the row scrolls.
-        className="no-scrollbar -mx-4 overflow-x-auto sm:-mx-6"
+        className="no-scrollbar -mx-4 overflow-x-auto shop-sm:-mx-6"
       >
-        <ul className="flex items-stretch gap-1 px-4 sm:px-6">
+        <ul className="flex items-stretch gap-1 px-4 shop-sm:px-6">
           {slugs.map((slug) => {
             const category = categories.find((entry) => entry.slug === slug)
             const current = active === slug
@@ -106,7 +106,7 @@ export function StorefrontCategories({
   }
 
   return (
-    <nav aria-label={text.categoriesLabel} className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+    <nav aria-label={text.categoriesLabel} className="-mx-4 overflow-x-auto px-4 shop-sm:mx-0 shop-sm:px-0">
       <ul className="flex items-start gap-4">
         {slugs.map((slug) => {
           const category = categories.find((entry) => entry.slug === slug)
@@ -118,12 +118,12 @@ export function StorefrontCategories({
                 href={href(slug)}
                 aria-current={current ? "page" : undefined}
                 className={cn(
-                  "flex w-20 shrink-0 flex-col items-center gap-2 text-center text-xs sm:w-24",
+                  "flex w-20 shrink-0 flex-col items-center gap-2 text-center text-xs shop-sm:w-24",
                   current ? "font-semibold" : "opacity-75",
                 )}
               >
                 <span
-                  className="flex size-16 items-center justify-center overflow-hidden rounded-full text-lg font-semibold sm:size-20"
+                  className="flex size-16 items-center justify-center overflow-hidden rounded-full text-lg font-semibold shop-sm:size-20"
                   style={{
                     backgroundColor: category?.imageUrl
                       ? undefined

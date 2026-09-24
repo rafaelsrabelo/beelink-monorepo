@@ -10,7 +10,11 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+/** What `component-items.schema.ts` allows for a BANNER. Stated here so the form stops before the API does. */
+const MAX_SLIDES = 20
+
 // Block
+import type { ComponentDisplay } from "./design-types"
 import { BannerSlideCard } from "./banner-slide-card"
 import type { Target, TargetOption } from "./target-fields"
 
@@ -45,17 +49,19 @@ export interface BannerSlidesFieldProps {
   imagePending?: boolean
   /** Ids are the screen's to mint — this package has no clock and no randomness of its own. */
   newSlideId: () => string
+  /** How the banner lays its pictures out, so the hint under them says what a second one does. */
+  display?: ComponentDisplay
   messages?: UiMessages
 }
 
 /**
  * The pictures of one banner, in order.
  *
- * **One is a poster; several are a carousel, and there is no switch.** That is the whole of how a
- * carousel is made, and it is the shape the shopkeeper asked for in as many words: "é melhor em um
- * componente de banner eu poder arrastar mais de um item e ele virar um carousel". The version
- * before this made a carousel out of two adjacent banners, and they said it was confusing both to
- * build and to read.
+ * Several pictures in one banner, which is the shape the shopkeeper asked for in as many words:
+ * "é melhor em um componente de banner eu poder arrastar mais de um item e ele virar um carousel".
+ * The version before this made a carousel out of two adjacent banners, and they said it was
+ * confusing both to build and to read. Whether several pictures take turns or share the space is
+ * the banner's format, chosen above this field — the count used to decide it without asking.
  */
 export function BannerSlidesField({
   value,
@@ -65,6 +71,7 @@ export function BannerSlidesField({
   onUploadImage,
   imagePending = false,
   newSlideId,
+  display = "CAROUSEL",
   messages = defaultMessages,
 }: BannerSlidesFieldProps) {
   const text = messages.design
@@ -100,9 +107,22 @@ export function BannerSlidesField({
         />
       ))}
 
+      {/*
+        The one sentence that says what a second picture does. No screen used to say it, so the
+        owner reported not being able to build a carousel that was already there. It follows the
+        format chosen above — a hint promising a carousel under "Grade" would be the page arguing
+        with the sheet — and shows only while there is one picture: after that the page answers.
+      */}
+      {value.length === 1 ? (
+        <p className="text-muted-foreground text-xs">{display === "GRID" ? text.gridHint : text.carouselHint}</p>
+      ) : null}
+
       <Button
         type="button"
         variant="outline"
+        // The API caps a banner at 20 slides; without this the owner could add a 21st, fill it in
+        // and watch the save fail with nothing on screen to say why.
+        disabled={value.length >= MAX_SLIDES}
         onClick={() =>
           onChange([
             ...value,
