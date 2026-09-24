@@ -57,7 +57,7 @@ export function StorefrontCatalog({
   return (
     <section className="flex w-full flex-col gap-6">
       {products.length ? (
-        <ul className={cn("grid gap-3", COLUMNS[productsPerRow])}>
+        <ul className={cn("grid gap-4", COLUMNS[productsPerRow])}>
           {products.map((product) => (
             <li key={product.id}>
               <StorefrontProductCard

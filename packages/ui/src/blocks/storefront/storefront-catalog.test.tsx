@@ -23,12 +23,13 @@ function renderCatalog(overrides: Partial<Parameters<typeof StorefrontCatalog>[0
 }
 
 describe("StorefrontCatalog", () => {
-  /** A card where only part of it is clickable teaches a visitor that clicking does nothing. */
-  it("makes the whole card the link, not a button inside it", () => {
+  /** One link per product, the name, stretched over its card — never a button inside it. */
+  it("draws each product as a card with one link, its name, and its price and saving beside it", () => {
     renderCatalog()
 
-    const card = screen.getByRole("link", { name: /Bolsa Amora/ })
-    expect(card).toHaveAttribute("href", "/lessari/produtos/bolsa-amora")
+    const link = screen.getByRole("link", { name: /Bolsa Amora/ })
+    expect(link).toHaveAttribute("href", "/lessari/produtos/bolsa-amora")
+    const card = link.closest("article")!
     expect(within(card).getByText(/189,00/)).toBeInTheDocument()
     expect(within(card).getByText("-24%")).toBeInTheDocument()
   })
@@ -61,25 +62,14 @@ describe("StorefrontCatalog", () => {
     expect(screen.getByRole("link", { name: /Bolsa Amora/ })).toBeInTheDocument()
   })
 
-  /**
-   * line-clamp truncates the picture and not the DOM, so a screen reader already reads the whole
-   * name. The tooltip repeats it for the eye only — announcing it twice would be noise, and would
-   * leave the card with an accessible name that says everything twice.
-   */
-  it("completes a clamped title on hover without announcing it twice", () => {
+  /** line-clamp truncates the picture and not the DOM, so a reader hears the whole name once. */
+  it("keeps a long title whole for a reader, clamped to two lines for the eye", () => {
     const name = "Bolsa Amora em crochê com alça de couro, forro interno e bolso lateral"
     renderCatalog({ products: [{ ...products[0], name }] })
 
-    const [title, tooltip] = screen.getAllByText(name)
-    expect(title).toHaveClass("line-clamp-2")
-    expect(tooltip).toHaveAttribute("aria-hidden", "true")
-
-    // Both nodes live inside the card, and the accessibility tree still sees the name once.
-    // Both nodes live inside the card, and the accessibility tree still hears the name once.
-    const card = screen.getByRole("link", {
-      name: (accessibleName: string) => accessibleName.split(name).length - 1 === 1,
-    })
-    expect(within(card).getAllByText(name)).toHaveLength(2)
+    const link = screen.getByRole("link", { name })
+    expect(link).toHaveClass("line-clamp-2")
+    expect(screen.getAllByText(name)).toHaveLength(1)
   })
 
   it("has no accessibility violations", async () => {

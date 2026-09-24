@@ -73,7 +73,7 @@ export function StorefrontProductGrid({
         messages={messages}
       />
 
-      <ul className={cn("grid gap-3", COLUMNS[columns])}>
+      <ul className={cn("grid gap-4", COLUMNS[columns])}>
         {products.map((product) => (
           <li key={product.id}>
             <StorefrontProductCard

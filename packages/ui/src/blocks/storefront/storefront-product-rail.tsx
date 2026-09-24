@@ -36,7 +36,7 @@ export interface StorefrontProductRailProps {
  * peek is deliberate. With no arrows, a card cut by the edge is the whole affordance: it is what
  * says the row keeps going.
  */
-const CARD_WIDTH = "w-44 shop-sm:w-52 shop-lg:w-64"
+const CARD_WIDTH = "w-48 shop-sm:w-56 shop-lg:w-64"
 
 /**
  * The home's band of products, running sideways.
@@ -85,7 +85,7 @@ export function StorefrontProductRail({
         previousLabel={text.railPrevious}
         nextLabel={text.railNext}
       >
-        <ul className="flex gap-3 px-4">
+        <ul className="flex gap-4 px-4">
           {products.map((product) => (
             <li key={product.id} className={cn("shrink-0 snap-start", CARD_WIDTH)}>
               <StorefrontProductCard
