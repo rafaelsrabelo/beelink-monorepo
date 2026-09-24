@@ -16,31 +16,60 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * The shop window's breakpoints, measured on the window and not on the browser's.
+ * The shop window's breakpoints: the viewport's on the shop, the painted surface's in design mode.
  *
- * The same four widths as `sm:` to `xl:`, asked of the nearest `@container/shop` — the root of
- * StorefrontWindow. On the shop it spans the page, so they fall where the viewport's would; in
- * design mode's preview it is the painted surface, so a 390px phone is laid out as a phone inside a
- * desktop window, which a media query can never do.
+ * On a page they are `sm:` to `xl:` exactly — a media query, which counts a classic scrollbar the
+ * way the widths always did. Inside design mode's preview (`data-shop-preview`) they ask the `shop`
+ * container instead, which is the surface built at the device's width, so a 390px phone is laid out
+ * as a phone inside a desktop window — which a media query can never do. `:where()` keeps both at
+ * the specificity a plain `sm:` has.
  */
 @custom-variant shop-sm {
-    @container shop (width >= 40rem) {
-        @slot;
+    &:where(:not([data-shop-preview] *)) {
+        @media (width >= 40rem) {
+            @slot;
+        }
+    }
+    &:where([data-shop-preview] *) {
+        @container shop (width >= 40rem) {
+            @slot;
+        }
     }
 }
 @custom-variant shop-md {
-    @container shop (width >= 48rem) {
-        @slot;
+    &:where(:not([data-shop-preview] *)) {
+        @media (width >= 48rem) {
+            @slot;
+        }
+    }
+    &:where([data-shop-preview] *) {
+        @container shop (width >= 48rem) {
+            @slot;
+        }
     }
 }
 @custom-variant shop-lg {
-    @container shop (width >= 64rem) {
-        @slot;
+    &:where(:not([data-shop-preview] *)) {
+        @media (width >= 64rem) {
+            @slot;
+        }
+    }
+    &:where([data-shop-preview] *) {
+        @container shop (width >= 64rem) {
+            @slot;
+        }
     }
 }
 @custom-variant shop-xl {
-    @container shop (width >= 80rem) {
-        @slot;
+    &:where(:not([data-shop-preview] *)) {
+        @media (width >= 80rem) {
+            @slot;
+        }
+    }
+    &:where([data-shop-preview] *) {
+        @container shop (width >= 80rem) {
+            @slot;
+        }
     }
 }
 

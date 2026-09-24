@@ -37,9 +37,10 @@ export interface DesignPreviewProps {
  * **Why a phone is a phone here.** A media query resolves against the window, which the surface's
  * width does not change: measured in Chrome at a 1574px window, a 390px surface still matched `sm:`
  * and the payment band drew four columns where a real phone draws two. So the shop's blocks do not
- * ask the window — they ask the `shop` container (`shop-sm:` and the rest, in globals.css), which
- * StorefrontWindow is. On the shop it spans the page; here it is this surface, built at the
- * device's width, so a phone is laid out as a phone and the desktop as a desktop.
+ * ask the window here — inside this surface (`data-shop-preview`) the `shop-sm:` variants and the
+ * rest (globals.css) ask the `shop` container, which is this surface, built at the device's width.
+ * A phone is laid out as a phone and the desktop as a desktop; the shop itself keeps its media
+ * queries.
  *
  * The wrapper's height has to be set by hand: a scaled element still occupies its unscaled box, so
  * without this the pane would reserve the full 1440-wide height and leave a hole under the shop.
@@ -108,11 +109,15 @@ export function DesignPreview({ device = "DESKTOP", children }: DesignPreviewPro
       {/* The device's own column, centred: a phone is a strip down the middle of the pane, not its left edge. */}
       <div
         data-device={device}
-        className={cn("h-full", phone && "border-shell-border mx-auto border-x")}
+        // `box-content`: the frame's borders sit outside the phone's width instead of inside it.
+        className={cn("h-full", phone && "border-shell-border mx-auto box-content border-x")}
         style={{ width: width * scale }}
       >
         <div
           ref={surface}
+          // The shop's `shop-*` breakpoints ask this surface, not the window: see globals.css.
+          data-shop-preview=""
+          className="@container/shop"
           style={{
             width,
             transform: `scale(${scale})`,

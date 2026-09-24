@@ -64,3 +64,27 @@ nem para o armazenamento do navegador: recarregar começa no celular, como o ped
 
 - Tablet.
 - Girar o celular.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente confirmou quatro pontos, todos corrigidos, e o primeiro muda a decisão 1:
+
+- **Na loja, com barra de rolagem clássica (Windows, Linux), os limites viraram 15px depois.** Uma
+  media query mede a janela com a barra; o contêiner mede sem ela. Em 645px a loja caía para o
+  layout de celular, onde antes era tablet. **A decisão 1 passa a ser:** as variantes `shop-*` são a
+  media query de sempre fora do preview, e a container query só dentro dele (`data-shop-preview`).
+  O contêiner `shop` sai da raiz da janela da loja e vai para a superfície do preview. Medido com
+  barra clássica: 645px → respiro de 24px, 1030px → 40px, como antes do ticket. O preview de
+  celular continua empilhando as metades.
+- **No preview de celular, a alça de arrastar a faixa ficava embaixo da capa de edição do bloco.**
+  Com margem de 16px no celular, a capa cobria a alça e o arraste pelo mouse não pegava. A alça
+  sobe acima da capa (`z-20`); medido: as dez alças do preview ficam por cima.
+- **A borda do celular comia 2px da largura.** A moldura passa a ficar fora dos 390px
+  (`box-content`).
+- **O decorator do Storybook (decisão 2) colapsava stories centralizadas, e as stories do arnês de
+  design ficavam sem contêiner.** Com a decisão 1 nova, as stories da vitrine voltam a responder à
+  janela do Storybook sem decorator nenhum, e o arnês ganha o contêiner da superfície do preview.
+  A decisão 2 deixa de existir.
+
+Um ponto de teste ausente foi refutado como defeito, mas atendido: um teste lê o CSS e confirma as
+duas formas de cada variante, e outro confirma a superfície marcada.

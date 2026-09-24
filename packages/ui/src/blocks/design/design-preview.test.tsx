@@ -39,6 +39,19 @@ describe("DesignPreview", () => {
     expect(container.querySelector("[data-device='PHONE']")?.className).toContain("mx-auto")
   })
 
+  // The shop's shop-* breakpoints ask this surface inside the preview, and the window outside it.
+  it("is the shop's container, marked as the preview", () => {
+    const { container } = render(
+      <DesignPreview device="PHONE">
+        <p>Vitrine</p>
+      </DesignPreview>,
+    )
+
+    const surface = container.querySelector<HTMLElement>("[data-shop-preview]")
+    expect(surface?.className).toContain("@container/shop")
+    expect(surface?.style.width).toBe(`${PHONE_WIDTH}px`)
+  })
+
   /**
    * The chrome the editor draws over the shop is painted by the same transform, so it needs the
    * number to undo it. Published as data rather than measured a second time — two measurements of

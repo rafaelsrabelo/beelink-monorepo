@@ -287,7 +287,7 @@ export function StorefrontWindow({
   } as CSSProperties
 
   return (
-    <div style={dressed} className="@container/shop flex min-h-svh flex-col">
+    <div style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
         <StorefrontAnnouncement
