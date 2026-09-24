@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
+import { plainTextOf } from "@harness-monorepo/ui/lib/markdown"
 import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
 // App
@@ -56,15 +57,27 @@ export async function generateMetadata({
     // The shop's name after the product's: a search result reads "Bolsa Amora · Lessari", which is
     // the order someone scanning a page of results needs them in.
     title: `${product.name} · ${store.name}`,
-    description: product.description ?? store.description ?? undefined,
+    // The words alone: the description is Markdown at rest, and a search result showing `**` is
+    // a search result nobody clicks.
+    description: descriptionOf(product.description) ?? store.description ?? undefined,
     alternates: { canonical: storefrontRoutes(store).product(product.slug) },
     openGraph: {
       title: product.name,
-      description: product.description ?? undefined,
+      description: descriptionOf(product.description),
       images: product.images[0]?.url ?? store.logoUrl ?? undefined,
       type: "website",
     },
   }
+}
+
+/** Cut where a search result cuts, on a word, so the tail is never half a sentence. */
+const DESCRIPTION_MAX_LENGTH = 160
+
+function descriptionOf(markdown: string | null): string | undefined {
+  if (!markdown) return undefined
+  const text = plainTextOf(markdown)
+  if (text.length <= DESCRIPTION_MAX_LENGTH) return text || undefined
+  return `${text.slice(0, DESCRIPTION_MAX_LENGTH).replace(/\s+\S*$/, "")}…`
 }
 
 export default async function ProductPage({ params, searchParams }: PageProps<"/[slug]/[section]/[item]">) {

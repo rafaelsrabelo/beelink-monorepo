@@ -26,6 +26,7 @@ import { WhatsAppIcon } from "../store/store-brand-icons"
 import { StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
+import { StorefrontRichText } from "./storefront-rich-text"
 import { StorefrontVariantPicker } from "./storefront-variant-picker"
 
 export type { StorefrontProductImage } from "./storefront-product-gallery"
@@ -147,7 +148,8 @@ export function StorefrontProductDetail({
             />
           </div>
         ) : null}
-        {description ? <p className="text-sm whitespace-pre-line opacity-80">{description}</p> : null}
+        {/* Formatted as it was written: the description is Markdown at rest, never HTML. */}
+        {description ? <StorefrontRichText markdown={description} className="opacity-85" /> : null}
       </div>
 
       {choosing ? (
