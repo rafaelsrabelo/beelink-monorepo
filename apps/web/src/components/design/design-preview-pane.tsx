@@ -152,14 +152,13 @@ export function DesignPreviewPane({
                   renderBlock={(component, block) => {
                     const label = labelOf(component.kind, component.title ?? component.sourceCategory?.name ?? null, messages)
                     const unserved = component.kind === "PRODUCTS" && !shelves.has(component.id)
+                    // No category on the shop window: the block would say the visitor's sentence here.
+                    const noCategories = component.kind === "CATEGORIES" && categories.length === 0
                     // The one rule the renderer already answers, asked here so the page can hold a
                     // place for a block the shop window would draw nothing for.
-                    const empty = isEmptyComponent(
-                      component.kind,
-                      component.title,
-                      component.body,
-                      component.items,
-                    )
+                    const empty =
+                      noCategories ||
+                      isEmptyComponent(component.kind, component.title, component.body, component.items)
 
                     return (
                       <DesignEditTag
@@ -178,6 +177,7 @@ export function DesignPreviewPane({
                             kind={component.kind}
                             label={label}
                             {...(unserved ? { action: text.showcaseOnPublish } : {})}
+                            {...(noCategories ? { action: text.categoriesHiddenAction } : {})}
                             messages={messages}
                           />
                         ) : (

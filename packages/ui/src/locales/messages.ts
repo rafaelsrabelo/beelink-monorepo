@@ -326,6 +326,20 @@ export interface UiMessages {
     emptyAction: Record<ComponentKind, string>
     /** A showcase shown again in the draft, whose products the page has not been served yet. */
     showcaseOnPublish: string
+    /** A categories block with no category the shop window would show — said to the owner, not a visitor. */
+    categoriesHiddenAction: string
+    /**
+     * Why a block draws nothing, said in its sheet, with the way out. `{count}` is how many
+     * categories have no product yet.
+     */
+    emptyStates: {
+      categoriesUnlinked: { title: string; body: string; bodyOne: string; action: string }
+      categoriesNone: { title: string; body: string; action: string }
+      productsNone: { title: string; body: string; action: string }
+      sourceEmpty: { title: string; body: string }
+      /** Said after a link that leaves the arrangement's draft where it is. */
+      opensInNewTab: string
+    }
     /** The gallery a block is added from. */
     gallery: {
       title: string

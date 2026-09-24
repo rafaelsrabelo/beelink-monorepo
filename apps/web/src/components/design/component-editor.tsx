@@ -24,6 +24,8 @@ import { useUpdateComponent, useUpdateSection } from "@/services/page/page-hooks
 import { useImageUpload } from "@/services/uploads/upload-hooks"
 import { toForm, toPayload } from "./component-form-values"
 import { labelOf } from "./design-draft"
+import { emptyStateOf } from "./empty-state"
+import { EmptyStateNote } from "./empty-state-note"
 import { pageErrorCopy } from "./page-error-copy"
 
 import type { WebMessages } from "@/locales"
@@ -36,6 +38,9 @@ export interface ComponentEditorProps {
   bandBackground: string | null
   /** What the page is painted, so turning the strip's colour on starts somewhere visible. */
   pageBackground: string
+  /** How many categories the shop window shows, and whether this showcase's shelf came back empty. */
+  categoriesShown: number
+  shelfEmpty: boolean
   onClose: () => void
   /** Told after a save lands, so the screen can take what only the server knows — a showcase's products. */
   onSaved?: (component: StoreComponent) => void
@@ -60,6 +65,8 @@ export function ComponentEditor({
   component,
   bandBackground,
   pageBackground,
+  categoriesShown,
+  shelfEmpty,
   onClose,
   onSaved,
   messages,
@@ -90,6 +97,8 @@ export function ComponentEditor({
             component={component}
             bandBackground={bandBackground}
             pageBackground={pageBackground}
+            categoriesShown={categoriesShown}
+            shelfEmpty={shelfEmpty}
             onClose={onClose}
             {...(onSaved ? { onSaved } : {})}
             messages={messages}
@@ -106,6 +115,8 @@ function ComponentEditorBody({
   component,
   bandBackground,
   pageBackground,
+  categoriesShown,
+  shelfEmpty,
   onClose,
   onSaved,
   messages,
@@ -117,8 +128,9 @@ function ComponentEditorBody({
   const update = useUpdateComponent(slug)
   const updateBand = useUpdateSection(slug)
   const image = useImageUpload()
-  // A banner and the strip point at a category or a product; a showcase draws from one or picks them.
-  const points = component.kind === "BANNER" || component.kind === "ANNOUNCEMENT" || component.kind === "PRODUCTS"
+  // A banner and the strip point at a category or a product; a showcase draws from one or picks them;
+  // the categories block counts them, to say why it draws nothing.
+  const points = ["BANNER", "ANNOUNCEMENT", "PRODUCTS", "CATEGORIES"].includes(component.kind)
   const categories = useProductCategories(points ? slug : "")
   // The admin list's own ceiling (PRODUCTS_PAGE_SIZE_MAX): asking for more answers this many anyway.
   const products = useProducts(points ? slug : "", { pageSize: 96 })
@@ -126,6 +138,13 @@ function ComponentEditorBody({
     categories.isError || products.isError ? "failed" : categories.isPending || products.isPending ? "loading" : "ready"
   // The strip's link keeps its id across saves, so a re-pointed strip is the same link moved.
   const linkId = (component.items[0] as { id?: string } | undefined)?.id ?? crypto.randomUUID()
+
+  const empty = emptyStateOf(component.kind, {
+    categoriesShown,
+    categories: categories.data ? categories.data.filter((row) => row.isActive).length : null,
+    products: products.data?.total ?? null,
+    shelfEmpty,
+  })
 
   const categoryOptions: SlideTargetOption[] = (categories.data ?? []).map((row) => ({ id: row.id, name: row.name }))
   const productOptions: SlideTargetOption[] = (products.data?.products ?? []).map((row) => ({
@@ -139,7 +158,8 @@ function ComponentEditorBody({
         <SheetTitle>{text.editComponent}</SheetTitle>
         <SheetDescription>{labelOf(component.kind, component.title, messages)}</SheetDescription>
       </SheetHeader>
-      <div className="px-4 pb-4">
+      <div className="flex flex-col gap-4 px-4 pb-4">
+        {empty ? <EmptyStateNote state={empty} slug={slug} messages={messages} /> : null}
         <ComponentForm
           value={value}
           onChange={setValue}

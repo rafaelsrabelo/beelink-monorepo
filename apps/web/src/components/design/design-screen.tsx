@@ -142,6 +142,8 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         component={editing}
         bandBackground={saved.find((section) => section.id === editing?.sectionId)?.background ?? null}
         pageBackground={palette.background}
+        categoriesShown={categories.length}
+        shelfEmpty={editing ? shelves.get(editing.id)?.items.length === 0 : false}
         onClose={() => setEditingComponent(null)}
         onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
         messages={messages}
@@ -173,7 +175,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         />
 
         <DesignPanel
-          bands={arrangementOf(rows, saved, shelves)}
+          bands={arrangementOf(rows, saved, shelves, categories.length)}
           loading={draft.loading}
           onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
           onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}

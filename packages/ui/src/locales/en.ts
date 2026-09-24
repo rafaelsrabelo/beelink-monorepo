@@ -235,6 +235,30 @@ export const en: UiMessages = {
       CONTACT: "Choose the fields",
     },
     showcaseOnPublish: "Its products appear once you publish",
+    categoriesHiddenAction: "No category shows in the shop yet",
+    emptyStates: {
+      categoriesUnlinked: {
+        title: "No category shows in the shop",
+        body: "{count} categories have no product yet, and a category with no product does not show in the shop.",
+        bodyOne: "1 category has no product yet, and a category with no product does not show in the shop.",
+        action: "Link products to categories",
+      },
+      categoriesNone: {
+        title: "The shop has no categories yet",
+        body: "Create categories and link products to them for this block to show.",
+        action: "Create categories",
+      },
+      productsNone: {
+        title: "The shop has no products yet",
+        body: "A showcase only shows in the shop with products for sale.",
+        action: "Add the first product",
+      },
+      sourceEmpty: {
+        title: "This source has no product right now",
+        body: "The showcase does not show in the shop while its source is empty. Choose another source below.",
+      },
+      opensInNewTab: "opens in another tab",
+    },
     gallery: {
       title: "Add to the page",
       description: "Pick a block. It arrives empty, at the end of the page, and you fill it in there.",

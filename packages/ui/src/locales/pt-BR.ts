@@ -235,6 +235,30 @@ export const ptBR: UiMessages = {
       CONTACT: "Escolher os campos",
     },
     showcaseOnPublish: "Os produtos aparecem ao publicar",
+    categoriesHiddenAction: "Nenhuma categoria aparece na loja ainda",
+    emptyStates: {
+      categoriesUnlinked: {
+        title: "Nenhuma categoria aparece na loja",
+        body: "{count} categorias ainda não têm produto, e categoria sem produto não aparece na loja.",
+        bodyOne: "1 categoria ainda não tem produto, e categoria sem produto não aparece na loja.",
+        action: "Vincular produtos às categorias",
+      },
+      categoriesNone: {
+        title: "A loja ainda não tem categorias",
+        body: "Crie categorias e vincule produtos a elas para este bloco aparecer.",
+        action: "Criar categorias",
+      },
+      productsNone: {
+        title: "A loja ainda não tem produtos",
+        body: "Uma vitrine só aparece na loja com produtos à venda.",
+        action: "Cadastrar o primeiro produto",
+      },
+      sourceEmpty: {
+        title: "Esta fonte não traz nenhum produto agora",
+        body: "A vitrine não aparece na loja enquanto a fonte estiver vazia. Escolha outra fonte aqui embaixo.",
+      },
+      opensInNewTab: "abre em outra aba",
+    },
     gallery: {
       title: "Adicionar à página",
       description: "Escolha um bloco. Ele entra vazio, no fim da página, e você preenche ali mesmo.",

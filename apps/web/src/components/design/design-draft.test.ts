@@ -253,6 +253,16 @@ describe("shelvesOf — each showcase's cards, from the shop as served", () => {
   })
 })
 
+describe("arrangementOf — a categories block with none to show", () => {
+  // Four categories and no product in any: the shop window draws nothing, and the panel says so.
+  it("calls a categories block empty when the shop window shows no category", () => {
+    const rows = [section("x", [component("x1", { kind: "CATEGORIES" })])]
+
+    expect(arrangementOf(rows.map(toDraft), rows, NO_SHELVES, 0)[0]!.components[0]).toMatchObject({ empty: true })
+    expect(arrangementOf(rows.map(toDraft), rows, NO_SHELVES, 3)[0]!.components[0]).toMatchObject({ empty: false })
+  })
+})
+
 describe("arrangementOf — what the panel lists", () => {
   // The card says the band's width beside the block's, and it has to be the band's as saved.
   it("carries each band's width, for the card to say beside the block's", () => {
