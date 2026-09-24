@@ -9,6 +9,7 @@ import type { Section } from "@harness-monorepo/contracts"
 // UI
 import { BandForm } from "@harness-monorepo/ui/blocks/design/band-form"
 import type { BandFormValues } from "@harness-monorepo/ui/blocks/design/band-form"
+import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import {
   Sheet,
   SheetContent,
@@ -16,7 +17,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@harness-monorepo/ui/components/sheet"
-import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -26,7 +26,7 @@ export interface BandEditorProps {
   slug: string
   /** The band being edited, or null while the sheet is closed. */
   section: Section | null
-  /** Where it sits, one-based, because a band has no name and is called by its place. */
+  /** Where it sits, one-based: what an unnamed band is called by. */
   position: number
   /** The page's own background, so turning a band's colour on starts somewhere visible. */
   pageBackground: string
@@ -82,7 +82,8 @@ function BandEditorBody({
   return (
     <>
       <SheetHeader>
-        <SheetTitle>{format(text.bandNumber, { position: String(position) })}</SheetTitle>
+        {/* What is being typed, not what was saved: renaming the band renames the sheet as it goes. */}
+        <SheetTitle>{bandLabelOf(value.name, position, messages)}</SheetTitle>
         <SheetDescription>{isStrip ? text.stripBandHelp : text.bandWidthHelp}</SheetDescription>
       </SheetHeader>
       <div className="px-4 pb-4">

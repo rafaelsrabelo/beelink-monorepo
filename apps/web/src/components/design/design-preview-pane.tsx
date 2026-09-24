@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import type { ComponentProps } from "react"
+import { useState, type ComponentProps } from "react"
 
 // Types
 import type { PublicProductCategory, PublicSection, PublicStore } from "@harness-monorepo/contracts"
@@ -10,10 +10,11 @@ import type { PublicProductCategory, PublicSection, PublicStore } from "@harness
 import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
 import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/design-block-placeholder"
 import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
+import { bandAnnouncements, bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
+import { PreviewDeviceToggle, type PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
 import { StorefrontShelfSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-shelf-skeleton"
-import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -83,99 +84,115 @@ export function DesignPreviewPane({
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
   const text = messages.design
+  // A phone first, because that is where the shop sells. Held here and nowhere else: the pane is not
+  // remounted when a sheet opens, and a reload starting over at the phone is what was asked for.
+  const [device, setDevice] = useState<PreviewDevice>("PHONE")
 
   return (
-    /*
-      Nothing in the preview navigates. The inert link component covers what the blocks inject; the
-      capture handlers cover the anchors and the one form that bypass it — the WhatsApp button, the
-      social icons and the search. Together they also catch a middle click and an Enter in the form.
-    */
-    <div
-      className="border-shell-border min-w-0 flex-1 overflow-hidden rounded-xl border"
-      onClickCapture={(event) => event.preventDefault()}
-      onSubmitCapture={(event) => event.preventDefault()}
-    >
+    <div className="flex min-w-0 flex-1 flex-col gap-2">
+      {/* Outside the pane below, whose capture handlers swallow every click inside it. */}
+      <div className="flex justify-end">
+        <PreviewDeviceToggle value={device} onChange={setDevice} messages={messages} />
+      </div>
       {/*
-        The second board, over the same ids as the panel's. Two and not one spanning both: a single
-        context would make the shop and the list each other's drop targets, so a band could be
-        dragged out of the window and into the panel.
+        Nothing in the preview navigates. The inert link component covers what the blocks inject; the
+        capture handlers cover the anchors and the one form that bypass it — the WhatsApp button, the
+        social icons and the search. Together they also catch a middle click and an Enter in the form.
       */}
-      <ArrangeBoard ids={orderedIds} onReorder={onReorder} layout="grid">
-        <DesignPreview>
-          <StorefrontFrame
-            store={store}
-            colors={colors}
-            {...(announcementOf(sections) ? { announcement: announcementOf(sections)! } : {})}
-            // The draft's bands, so a site's menu in the preview is the menu being arranged.
-            sections={sections}
-            categories={categories}
-            year={year}
-            searchSlot={null}
-            linkComponent={InertLink}
-            messages={messages}
-            blocks={
-              <StorefrontSections
-                sections={sections}
-                primary={colors.primary}
-                categories={categories}
-                routes={routes}
-                showPrice={layout.showProductPrice ?? true}
-                showBadge={layout.showProductBadges ?? true}
-                linkComponent={InertLink}
-                renderSection={(section, band) => (
-                  <DesignHandle
-                    id={section.id}
-                    label={format(text.bandNumber, {
-                      position: String(orderedIds.indexOf(section.id) + 1),
-                    })}
-                    messages={messages}
-                  >
-                    {band}
-                  </DesignHandle>
-                )}
-                renderBlock={(component, block) => {
-                  const label = labelOf(component.kind, component.title ?? component.sourceCategory?.name ?? null, messages)
-                  const unserved = component.kind === "PRODUCTS" && !shelves.has(component.id)
-                  // The one rule the renderer already answers, asked here so the page can hold a
-                  // place for a block the shop window would draw nothing for.
-                  const empty = isEmptyComponent(
-                    component.kind,
-                    component.title,
-                    component.body,
-                    component.items,
-                  )
-
-                  return (
-                    <DesignEditTag
-                      label={label}
-                      selected={component.id === selectedId}
-                      onEdit={() => onEdit(component.id)}
+      <div
+        className="border-shell-border overflow-hidden rounded-xl border"
+        onClickCapture={(event) => event.preventDefault()}
+        onSubmitCapture={(event) => event.preventDefault()}
+      >
+        {/*
+          The second board, over the same ids as the panel's. Two and not one spanning both: a single
+          context would make the shop and the list each other's drop targets, so a band could be
+          dragged out of the window and into the panel.
+        */}
+        <ArrangeBoard
+          ids={orderedIds}
+          onReorder={onReorder}
+          layout="grid"
+          // The panel's words for the same bands, rather than dnd-kit's English and a row's id.
+          announcements={bandAnnouncements(
+            orderedIds.map((id) => ({ id, name: sections.find((section) => section.id === id)?.name ?? null })),
+            messages,
+          )}
+        >
+          <DesignPreview device={device}>
+            <StorefrontFrame
+              store={store}
+              colors={colors}
+              {...(announcementOf(sections) ? { announcement: announcementOf(sections)! } : {})}
+              // The draft's bands, so a site's menu in the preview is the menu being arranged.
+              sections={sections}
+              categories={categories}
+              year={year}
+              searchSlot={null}
+              linkComponent={InertLink}
+              messages={messages}
+              blocks={
+                <StorefrontSections
+                  sections={sections}
+                  primary={colors.primary}
+                  categories={categories}
+                  routes={routes}
+                  showPrice={layout.showProductPrice ?? true}
+                  showBadge={layout.showProductBadges ?? true}
+                  linkComponent={InertLink}
+                  renderSection={(section, band) => (
+                    <DesignHandle
+                      id={section.id}
+                      label={bandLabelOf(section.name, orderedIds.indexOf(section.id) + 1, messages)}
                       messages={messages}
                     >
-                      {component.id === refreshingId ? (
-                        <StorefrontShelfSkeleton
-                          display={component.display === "GRID" ? "GRID" : "RAIL"}
-                          messages={messages}
-                        />
-                      ) : empty ? (
-                        <DesignBlockPlaceholder
-                          kind={component.kind}
-                          label={label}
-                          {...(unserved ? { action: text.showcaseOnPublish } : {})}
-                          messages={messages}
-                        />
-                      ) : (
-                        block
-                      )}
-                    </DesignEditTag>
-                  )
-                }}
-                messages={messages}
-              />
-            }
-          />
-        </DesignPreview>
-      </ArrangeBoard>
+                      {band}
+                    </DesignHandle>
+                  )}
+                  renderBlock={(component, block) => {
+                    const label = labelOf(component.kind, component.title ?? component.sourceCategory?.name ?? null, messages)
+                    const unserved = component.kind === "PRODUCTS" && !shelves.has(component.id)
+                    // No category on the shop window: the block would say the visitor's sentence here.
+                    const noCategories = component.kind === "CATEGORIES" && categories.length === 0
+                    // The one rule the renderer already answers, asked here so the page can hold a
+                    // place for a block the shop window would draw nothing for.
+                    const empty =
+                      noCategories ||
+                      isEmptyComponent(component.kind, component.title, component.body, component.items)
+
+                    return (
+                      <DesignEditTag
+                        label={label}
+                        selected={component.id === selectedId}
+                        onEdit={() => onEdit(component.id)}
+                        messages={messages}
+                      >
+                        {component.id === refreshingId ? (
+                          <StorefrontShelfSkeleton
+                            display={component.display === "GRID" ? "GRID" : "RAIL"}
+                            messages={messages}
+                          />
+                        ) : empty ? (
+                          <DesignBlockPlaceholder
+                            kind={component.kind}
+                            label={label}
+                            {...(unserved ? { action: text.showcaseOnPublish } : {})}
+                            {...(noCategories ? { action: text.categoriesHiddenAction } : {})}
+                            messages={messages}
+                          />
+                        ) : (
+                          block
+                        )}
+                      </DesignEditTag>
+                    )
+                  }}
+                  messages={messages}
+                />
+              }
+            />
+          </DesignPreview>
+        </ArrangeBoard>
+      </div>
     </div>
   )
 }

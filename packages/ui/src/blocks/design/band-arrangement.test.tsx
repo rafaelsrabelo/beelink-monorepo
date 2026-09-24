@@ -59,7 +59,8 @@ describe("BandArrangement", () => {
 
     // Rows reading "Sem título" would say which are unfinished and nothing about which is which —
     // the one question a list of components exists to answer.
-    expect(screen.getByRole("button", { name: "Arrastar: Banner" })).toBeInTheDocument()
+    // The first band holds one block, so its card is the block's: named by the block, moved as the band.
+    expect(screen.getByRole("button", { name: /^Banner/ })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Arrastar: Vitrine de produtos" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Arrastar: Frete grátis" })).toBeInTheDocument()
   })
@@ -152,9 +153,9 @@ describe("BandArrangement", () => {
     const user = userEvent.setup()
     const { onToggleBand } = renderBands()
 
-    await user.click(screen.getByRole("button", { name: "Esconder da loja: Faixa 1" }))
+    await user.click(screen.getByRole("button", { name: "Esconder da loja: Faixa 2" }))
 
-    expect(onToggleBand).toHaveBeenCalledWith("band-1", false)
+    expect(onToggleBand).toHaveBeenCalledWith("band-2", false)
   })
 
   /**
@@ -175,7 +176,8 @@ describe("BandArrangement", () => {
   it("draws no bin on the band that holds the product list", () => {
     renderBands()
 
-    expect(screen.getByRole("button", { name: "Excluir faixa: Faixa 1" })).toBeInTheDocument()
+    // The first band's card deletes the band with its one block; the second holds the last shelf.
+    expect(screen.getByRole("button", { name: "Excluir bloco: Banner" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Excluir faixa: Faixa 2" })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Esconder da loja: Faixa 2" })).toBeInTheDocument()
   })

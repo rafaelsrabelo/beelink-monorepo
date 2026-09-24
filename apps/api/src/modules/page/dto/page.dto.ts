@@ -25,6 +25,7 @@ import type {
   ComponentItem,
   ComponentKind,
   ComponentSpan,
+  AddComponentPayload,
   CreateComponentPayload,
   CreateSectionPayload,
   PageErrorCode,
@@ -182,6 +183,21 @@ export class CreateSectionDto implements CreateSectionPayload {
   @ValidateNested()
   @Type(() => ComponentDto)
   component!: ComponentDto;
+
+  @ApiPropertyOptional({ minimum: 0, description: 'Its place among the bands, 0 first. Absent or past the end: last.' })
+  @IsOptional()
+  @IsInt({ context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  @Min(0, { context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  position?: number;
+}
+
+/** A component added into a band that exists, and where among the band's own it lands. */
+export class AddComponentDto extends ComponentDto implements AddComponentPayload {
+  @ApiPropertyOptional({ minimum: 0, description: 'Its place in the band, 0 first. Absent or past the end: last.' })
+  @IsOptional()
+  @IsInt({ context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  @Min(0, { context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  position?: number;
 }
 
 /**

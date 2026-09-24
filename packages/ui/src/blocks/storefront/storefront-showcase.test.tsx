@@ -41,7 +41,7 @@ describe("StorefrontShowcase", () => {
    */
   it("takes its proportion from the slice it sits in", () => {
     const { rerender } = render(<StorefrontShowcase items={[creatina]} span="FULL" />)
-    expect(screen.getByRole("link").className).toContain("lg:aspect-[21/9]")
+    expect(screen.getByRole("link").className).toContain("shop-lg:aspect-[21/9]")
 
     rerender(<StorefrontShowcase items={[creatina]} span="THIRD" />)
     expect(screen.getByRole("link").className).toContain("aspect-[4/3]")

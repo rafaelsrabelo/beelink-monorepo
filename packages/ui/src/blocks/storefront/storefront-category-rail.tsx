@@ -27,7 +27,7 @@ export interface StorefrontCategoryRailProps {
  * is an accident of the viewport. Narrower than a product's, because a category card holds a name
  * and not a price — three and a peek on a phone.
  */
-const CARD_WIDTH = "w-32 sm:w-40 lg:w-48"
+const CARD_WIDTH = "w-32 shop-sm:w-40 shop-lg:w-48"
 
 /**
  * Every category the shop has, on one row that scrolls sideways — what the shopkeeper asked for
