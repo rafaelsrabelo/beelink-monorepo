@@ -12,6 +12,7 @@ import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/desig
 import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
+import { StorefrontShelfSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-shelf-skeleton"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -30,6 +31,8 @@ export interface DesignPreviewPaneProps {
   sections: readonly PublicSection[]
   /** The showcases the shop was served with; one missing is hidden on the server, shown in the draft. */
   shelves: Shelves
+  /** The showcase whose products are being fetched again, drawn as its skeleton until they land. */
+  refreshingId?: string | null
   /** The palette being edited, so the preview answers the picker and not the database. */
   colors: PublicStore["colors"]
   /** The bands, in order — what the board over the preview drags. */
@@ -69,6 +72,7 @@ export function DesignPreviewPane({
   year,
   sections,
   shelves,
+  refreshingId = null,
   colors,
   orderedIds,
   onReorder,
@@ -148,7 +152,12 @@ export function DesignPreviewPane({
                       onEdit={() => onEdit(component.id)}
                       messages={messages}
                     >
-                      {empty ? (
+                      {component.id === refreshingId ? (
+                        <StorefrontShelfSkeleton
+                          display={component.display === "GRID" ? "GRID" : "RAIL"}
+                          messages={messages}
+                        />
+                      ) : empty ? (
                         <DesignBlockPlaceholder
                           kind={component.kind}
                           label={label}

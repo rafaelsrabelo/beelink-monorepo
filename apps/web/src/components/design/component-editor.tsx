@@ -24,6 +24,9 @@ import { useUpdateComponent, useUpdateSection } from "@/services/page/page-hooks
 import { useImageUpload } from "@/services/uploads/upload-hooks"
 import { toForm, toPayload } from "./component-form-values"
 import { labelOf } from "./design-draft"
+import { pageErrorCopy } from "./page-error-copy"
+
+import type { WebMessages } from "@/locales"
 
 export interface ComponentEditorProps {
   slug: string
@@ -34,7 +37,11 @@ export interface ComponentEditorProps {
   /** What the page is painted, so turning the strip's colour on starts somewhere visible. */
   pageBackground: string
   onClose: () => void
+  /** Told after a save lands, so the screen can take what only the server knows — a showcase's products. */
+  onSaved?: (component: StoreComponent) => void
   messages: UiMessages
+  /** Where a refusal's `errorCode` becomes a sentence. */
+  web: WebMessages
 }
 
 /**
@@ -48,7 +55,16 @@ export interface ComponentEditorProps {
  * the last one's fields over the new one's name. That exact confusion was reported once: a slide
  * id where a component id belonged, and the form showing one thing while the page showed another.
  */
-export function ComponentEditor({ slug, component, bandBackground, pageBackground, onClose, messages }: ComponentEditorProps) {
+export function ComponentEditor({
+  slug,
+  component,
+  bandBackground,
+  pageBackground,
+  onClose,
+  onSaved,
+  messages,
+  web,
+}: ComponentEditorProps) {
   return (
     <Sheet
       open={component !== null}
@@ -75,7 +91,9 @@ export function ComponentEditor({ slug, component, bandBackground, pageBackgroun
             bandBackground={bandBackground}
             pageBackground={pageBackground}
             onClose={onClose}
+            {...(onSaved ? { onSaved } : {})}
             messages={messages}
+            web={web}
           />
         ) : null}
       </SheetContent>
@@ -89,7 +107,9 @@ function ComponentEditorBody({
   bandBackground,
   pageBackground,
   onClose,
+  onSaved,
   messages,
+  web,
 }: Omit<ComponentEditorProps, "component"> & { component: StoreComponent }) {
   const text = messages.design
   const [value, setValue] = useState<ComponentFormValues>(() => toForm(component, bandBackground))
@@ -97,8 +117,8 @@ function ComponentEditorBody({
   const update = useUpdateComponent(slug)
   const updateBand = useUpdateSection(slug)
   const image = useImageUpload()
-  // Only a banner and the strip need something to point at; the other kinds never ask.
-  const points = component.kind === "BANNER" || component.kind === "ANNOUNCEMENT"
+  // A banner and the strip point at a category or a product; a showcase draws from one or picks them.
+  const points = component.kind === "BANNER" || component.kind === "ANNOUNCEMENT" || component.kind === "PRODUCTS"
   const categories = useProductCategories(points ? slug : "")
   const products = useProducts(points ? slug : "", { pageSize: 100 })
   // The strip's link keeps its id across saves, so a re-pointed strip is the same link moved.
@@ -132,7 +152,8 @@ function ComponentEditorBody({
             update.mutate(
               { componentId: component.id, payload: toPayload(value, linkId) },
               {
-                onSuccess: () => {
+                onSuccess: (saved) => {
+                  onSaved?.(saved)
                   // The strip's colour lives on its band. Written second and only when it moved:
                   // a save that only changed the words touches one row, not two.
                   const background = value.background || null
@@ -147,6 +168,11 @@ function ComponentEditorBody({
           pending={update.isPending || updateBand.isPending}
           messages={messages}
         />
+        {update.error ? (
+          <p role="alert" className="text-destructive mt-3 text-sm">
+            {pageErrorCopy(update.error, web)}
+          </p>
+        ) : null}
       </div>
     </>
   )

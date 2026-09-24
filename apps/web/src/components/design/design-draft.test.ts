@@ -13,6 +13,7 @@ import {
   labelOf,
   reconcile,
   orderedIdsOf,
+  takenKindsOf,
   toDraft,
   type SectionDraft,
 } from "./design-draft"
@@ -235,7 +236,7 @@ describe("shelvesOf — each showcase's cards, from the shop as served", () => {
       items: [card],
       sourceCategory: { slug: "blusas", name: "Blusas", description: null },
     })
-    // Listed by its category, the way the page heads it, rather than as one more "Lista de produtos".
+    // Listed by its category, the way the page heads it, rather than as one more "Vitrine de produtos".
     expect(arrangementOf(draft, saved, shelves)[1]!.components[1]).toMatchObject({ empty: false, title: "Blusas" })
   })
 
@@ -320,5 +321,16 @@ describe("reconcile — the server changes, the arrangement survives", () => {
     const next = reconcile(arranged, changed)
 
     expect(next[1]!.components.map((row) => row.id)).toEqual(["b2", "b3"])
+  })
+})
+
+describe("takenKindsOf — what the gallery stops offering", () => {
+  // A second showcase is the point of the epic; a second strip has nowhere to go.
+  it("keeps offering a showcase however many the page has, and stops at one strip", () => {
+    const rows = [
+      section("a", [component("a1", { kind: "PRODUCTS" }), component("a2", { kind: "ANNOUNCEMENT" })]),
+    ].map(toDraft)
+
+    expect(takenKindsOf(rows)).toEqual(["ANNOUNCEMENT"])
   })
 })

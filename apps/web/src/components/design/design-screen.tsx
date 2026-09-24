@@ -8,8 +8,6 @@ import type { ComponentKind, PublicProductCategory, PublicStore, StoreColors } f
 
 // UI
 import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete"
-import { Badge } from "@harness-monorepo/ui/components/badge"
-import { Button } from "@harness-monorepo/ui/components/button"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -18,15 +16,17 @@ import { useCreateComponent, useCreateSection } from "@/services/page/page-hooks
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
 import { BandEditor } from "./band-editor"
 import { ComponentEditor } from "./component-editor"
+import { DesignHeader } from "./design-header"
 import { DesignPanel } from "./design-panel"
 import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
 
 // App
 import { DesignPreviewPane } from "./design-preview-pane"
-import { applyComponentOrder, applyOrder, componentsOf, labelOf, orderedIdsOf } from "./design-draft"
+import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
 import { arrangementOf, previewOf, shelvesOf } from "./design-draft-preview"
 import { pageErrorCopy } from "./page-error-copy"
 import { useDesignDraft } from "./use-design-draft"
+import { useShopRefresh } from "./use-shop-refresh"
 
 import type { WebMessages } from "@/locales"
 
@@ -67,6 +67,12 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const addSection = useCreateSection(slug)
   const addToBand = useCreateComponent(slug)
   const shelves = shelvesOf(store.sections)
+  const shop = useShopRefresh()
+  // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
+  const opened = (component: { id: string; kind: ComponentKind }) => {
+    setEditingComponent(component.id)
+    if (component.kind === "PRODUCTS") shop.refresh(component.id)
+  }
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
@@ -88,9 +94,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   // symptom until the API answered 409.
   const unavailableKinds: ComponentKind[] =
     store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]
-  const takenKinds = componentsOf(rows)
-    .map((component) => component.kind)
-    .filter((kind) => kind === "ANNOUNCEMENT" || kind === "PRODUCTS")
+  const takenKinds = takenKindsOf(rows)
   const bandName = (id: string) =>
     format(text.bandNumber, { position: String(rows.findIndex((row) => row.id === id) + 1) })
 
@@ -99,31 +103,13 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">{text.title}</h1>
-          <p className="text-muted-foreground text-sm">{text.description}</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/*
-            `changed` and not `dirty`: the badge answers the diff against the server, so moving a
-            band and moving it back stops claiming there is something to publish — and Publish
-            stops being enabled for a write that would send nothing.
-          */}
-          {draft.changed ? <Badge variant="outline">{text.unpublished}</Badge> : null}
-          {draft.changed ? (
-            <Button type="button" variant="ghost" disabled={draft.publishing} onClick={draft.discard}>
-              {text.discard}
-            </Button>
-          ) : null}
-          <Button type="button" disabled={!draft.changed || draft.publishing} onClick={draft.publish}>
-            {draft.publishing ? text.publishing : text.publish}
-          </Button>
-        </div>
-      </header>
-
-      {draft.changed ? <p className="text-muted-foreground text-sm">{text.leaveWarning}</p> : null}
+      <DesignHeader
+        changed={draft.changed}
+        publishing={draft.publishing}
+        onPublish={draft.publish}
+        onDiscard={draft.discard}
+        messages={messages}
+      />
 
       <ConfirmDelete
         question={
@@ -156,7 +142,9 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         bandBackground={saved.find((section) => section.id === editing?.sectionId)?.background ?? null}
         pageBackground={palette.background}
         onClose={() => setEditingComponent(null)}
+        onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
         messages={messages}
+        web={web}
       />
       <BandEditor
         slug={slug}
@@ -174,6 +162,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           year={year}
           sections={previewOf(rows, saved, shelves)}
           shelves={shelves}
+          refreshingId={shop.refreshingId}
           colors={palette}
           orderedIds={orderedIdsOf(rows)}
           onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
@@ -211,7 +200,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           onAdd={(kind) =>
             addSection.mutate(
               { component: { kind } },
-              { onSuccess: (section) => setEditingComponent(section.components[0]?.id ?? null) },
+              { onSuccess: (section) => (section.components[0] ? opened(section.components[0]) : undefined) },
             )
           }
           /*
@@ -233,7 +222,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
               onAdd={(kind) =>
                 addToBand.mutate(
                   { sectionId, payload: { kind } },
-                  { onSuccess: (component) => setEditingComponent(component.id) },
+                  { onSuccess: opened },
                 )
               }
               messages={messages}

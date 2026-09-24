@@ -136,6 +136,17 @@ export function hasChanges(changes: ReturnType<typeof changesOf>): boolean {
 }
 
 /**
+ * The kinds the gallery stops offering once the page holds one: the strip, which sits above the
+ * header and has nowhere to be a second time. A showcase is not among them — a shop may draw as
+ * many shelves as it has sources.
+ */
+export function takenKindsOf(rows: readonly SectionDraft[]): ComponentKind[] {
+  return componentsOf(rows)
+    .map((component) => component.kind)
+    .filter((kind) => kind === "ANNOUNCEMENT")
+}
+
+/**
  * What a component is called in the editor.
  *
  * One the shopkeeper titled is called by that title; one they have not is called by its kind. The
