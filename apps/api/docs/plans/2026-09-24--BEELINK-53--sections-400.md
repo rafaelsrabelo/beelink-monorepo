@@ -62,3 +62,22 @@ nunca 500. Um campo novo que repetir o buraco entra na tabela.
 ## Fora de escopo
 
 - Os outros módulos da API. O ticket fala do módulo de página.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente tentou, de verdade, arrancar um 500 de cada rota do módulo, e conseguiu por
+mais quatro caminhos. Nenhum foi aberto por este ticket, e todos estavam no escopo dele:
+
+- **Texto que o Postgres não guarda.** Um NUL (U+0000) em qualquer texto, ou meio par de UTF-16 dentro
+  de `items`, era recusado pelo banco. O pipe global agora percorre o corpo antes de validar e
+  responde 400. Isso vale para a API inteira, que tinha o mesmo buraco em todo módulo.
+- **Um corpo aninhado fundo demais** (40 níveis, 3 KB) estourava a recursão do class-transformer com
+  um `RangeError`. O mesmo percurso recusa passar de 32 níveis.
+- **`@MaxLength` e `VARCHAR` contam diferente.** O validador conta um coração e o seletor de variação
+  como um caractere, e o Postgres conta dois. Sessenta e um corações passavam num título de 120.
+  `MaxCodePoints` conta como o banco nos três campos `VARCHAR` do módulo. Os outros módulos têm o
+  mesmo risco e ficam para quando alguém mexer neles.
+- **Um id que não é uuid** chegava a uma coluna uuid e voltava 500. Agora é o mesmo 404 nomeado de um
+  bloco que não existe.
+
+A varredura e2e ganhou uma linha para cada um.

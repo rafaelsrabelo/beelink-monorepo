@@ -17,6 +17,9 @@ import {
   SINGLETON_COMPONENT_KINDS,
 } from './page.constants.js';
 
+/** Any version: the ids are uuid v7, and the check is only that Postgres could read one. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Keeps every code this module answers inside the contract's union. */
 export function pageError(errorCode: PageErrorCode, message: string): { errorCode: PageErrorCode; message: string } {
   return { errorCode, message };
@@ -152,6 +155,12 @@ export class PageRules {
 
   /** A band that exists but belongs to another shop answers 404: this shop does not have one. */
   async ownedSection(storeId: string, sectionId: string): Promise<void> {
+    // An id that is not a uuid cannot name a row, and Postgres answers one in a uuid column with an
+    // error that left as a 500. It is the same answer as a band that is not here.
+    if (!UUID.test(sectionId)) {
+      throw new NotFoundException(pageError('SECTION_NOT_FOUND', `No band ${sectionId} in this shop`));
+    }
+
     const row = await this.prisma.storeSection.findUnique({
       where: { id: sectionId },
       select: { storeId: true },
@@ -164,6 +173,10 @@ export class PageRules {
 
   /** Returns what it found, so a caller that has to reason about it needs no second read. */
   async ownedComponent(storeId: string, componentId: string): Promise<{ kind: ComponentKind }> {
+    if (!UUID.test(componentId)) {
+      throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
+    }
+
     const row = await this.prisma.storeComponent.findUnique({
       where: { id: componentId },
       select: { storeId: true, kind: true },

@@ -54,7 +54,7 @@ describe('page — an invalid body is a 400, never a 500', () => {
     componentId = section.components[0]!.id;
   });
 
-  function call(method: Method | 'GET', url: string, payload?: unknown) {
+  function call(method: Method | 'GET' | 'DELETE', url: string, payload?: unknown) {
     return app.inject({
       method,
       url,
@@ -92,8 +92,35 @@ describe('page — an invalid body is a 400, never a 500', () => {
     { name: 'a component patched to a display that is a number', method: 'PATCH', url: () => `/api/stores/padaria-do-bairro/components/${componentId}`, body: { display: 5 } },
     { name: 'a band order with no ids', method: 'PUT', url: () => '/api/stores/padaria-do-bairro/sections/reorder', body: {} },
     { name: 'a band order of null', method: 'PUT', url: () => '/api/stores/padaria-do-bairro/sections/reorder', body: { ids: null } },
+    { name: 'a heading whose title holds a NUL', method: 'POST', url: () => '/api/stores/padaria-do-bairro/sections', body: { component: { kind: 'HEADING', title: 'a\u0000b' } } },
+    { name: 'a band whose name holds a NUL', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/sections/${sectionId}`, body: { name: 'a\u0000' } },
+    { name: 'a slide whose title is half a character', method: 'POST', url: () => `/api/stores/padaria-do-bairro/sections/${sectionId}/components`, body: { kind: 'BANNER', items: [{ id: 's', imageUrl: 'https://cdn.example/a.png', target: 'NONE', title: 'a\ud800' }] } },
+    { name: 'a title of sixty-one hearts, 122 code points in a VARCHAR(120)', method: 'PATCH', url: () => `/api/stores/padaria-do-bairro/components/${componentId}`, body: { title: '❤️'.repeat(61) } },
+    { name: 'a band name one variation selector over its sixty', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/sections/${sectionId}`, body: { name: `${'a'.repeat(60)}\ufe0f` } },
+    { name: 'a body nested forty levels deep', method: 'POST', url: () => '/api/stores/padaria-do-bairro/sections', body: { component: { kind: 'HEADING', items: Array.from({ length: 40 }).reduce<unknown>((inner) => [inner], []) } } },
     { name: 'a component order that is not ids', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/sections/${sectionId}/components/reorder`, body: { ids: [1, 2] } },
   ];
+
+  /**
+   * An id that is not a uuid cannot name a row, and Postgres answered one in a uuid column with a
+   * 500. It is the same 404 as a band or a component this shop does not have.
+   */
+  it('answers an id that cannot exist as not found, at every route that takes one', async () => {
+    const routes: [Method | 'DELETE', string, unknown?][] = [
+      ['PUT', '/api/stores/padaria-do-bairro/sections/nao-e-um-id', { name: 'x' }],
+      ['DELETE', '/api/stores/padaria-do-bairro/sections/nao-e-um-id'],
+      ['POST', '/api/stores/padaria-do-bairro/sections/nao-e-um-id/components', { kind: 'HEADING' }],
+      ['PATCH', '/api/stores/padaria-do-bairro/components/nao-e-um-id', { title: 'x' }],
+      ['DELETE', '/api/stores/padaria-do-bairro/components/nao-e-um-id'],
+    ];
+
+    for (const [method, url, body] of routes) {
+      const response = await call(method, url, body);
+
+      expect(response.statusCode, `${method} ${url}`).toBe(404);
+      expect(['SECTION_NOT_FOUND', 'COMPONENT_NOT_FOUND']).toContain(response.json<ApiErrorBody>().errorCode);
+    }
+  });
 
   it.each(cases)('refuses $name with a 400', async ({ method, url, body }) => {
     const response = await call(method, url(), body);

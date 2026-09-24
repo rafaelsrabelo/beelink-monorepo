@@ -34,6 +34,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import {
   COMPONENT_BODY_MAX_LENGTH,
   COMPONENT_DISPLAYS,
@@ -64,13 +65,13 @@ export class ComponentDto implements CreateComponentPayload {
   @ApiPropertyOptional({ maxLength: COMPONENT_TITLE_MAX_LENGTH })
   @IsOptional()
   @IsString()
-  @MaxLength(COMPONENT_TITLE_MAX_LENGTH)
+  @MaxCodePoints(COMPONENT_TITLE_MAX_LENGTH)
   title?: string | null;
 
   @ApiPropertyOptional({ maxLength: COMPONENT_SUBTITLE_MAX_LENGTH })
   @IsOptional()
   @IsString()
-  @MaxLength(COMPONENT_SUBTITLE_MAX_LENGTH)
+  @MaxCodePoints(COMPONENT_SUBTITLE_MAX_LENGTH)
   subtitle?: string | null;
 
   @ApiPropertyOptional({ maxLength: COMPONENT_BODY_MAX_LENGTH })
@@ -134,7 +135,7 @@ export class CreateSectionDto implements CreateSectionPayload {
   @ApiPropertyOptional({ maxLength: SECTION_NAME_MAX_LENGTH, nullable: true, description: 'Named bands are a site’s menu.' })
   @IsOptional()
   @IsString()
-  @MaxLength(SECTION_NAME_MAX_LENGTH)
+  @MaxCodePoints(SECTION_NAME_MAX_LENGTH)
   name?: string | null;
 
   @ApiPropertyOptional({ enum: SECTION_WIDTHS })
@@ -173,7 +174,7 @@ export class UpdateSectionDto implements UpdateSectionPayload {
   @ApiPropertyOptional({ maxLength: SECTION_NAME_MAX_LENGTH, nullable: true, description: 'Named bands are a site’s menu.' })
   @IsOptional()
   @IsString()
-  @MaxLength(SECTION_NAME_MAX_LENGTH)
+  @MaxCodePoints(SECTION_NAME_MAX_LENGTH)
   name?: string | null;
 
   @ApiPropertyOptional({ enum: SECTION_WIDTHS })
