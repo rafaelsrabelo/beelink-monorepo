@@ -53,3 +53,31 @@ props.
 ## Fora de escopo
 
 - Usar os primitivos: cada tela do catálogo os usa no seu ticket.
+
+## Adendo — revisão independente (24/09/2026)
+
+Duas leituras (contrato do design system; acessibilidade e comportamento). Cada achado passou por
+um verificador que tentou refutá-lo. Nove achados confirmados, todos introduzidos por este ticket e
+todos corrigidos:
+
+1. **Slider — polegares sem nome.** O `aria-label` no `Slider` só nomeava o grupo, e os polegares
+   não recebiam nada. O `Slider` passa a aceitar `getAriaLabel` e `getAriaValueText` e a
+   repassá-los a cada polegar.
+2. **Slider — texto em inglês.** O Base UI lê "50 start range" num intervalo de dois polegares. O
+   padrão agora é só o número, e a tela pode trocar.
+3. **Slider — cor literal.** O polegar usava `bg-white` e passa a usar `bg-background`, o token que
+   o `switch` já usa.
+4. **Slider — polegares a mais.** Um valor só desenhava dois polegares. Agora desenha um.
+5. **`DialogFooter` com `showCloseButton`.** Escrevia "Close" visível, sem como trocar. Ganha
+   `closeLabel`, como o `DialogContent`.
+6. **`CommandDialog` sem `closeLabel`.** Não repassava a prop e passa a repassar.
+7. **`CommandDialog` — cabeçalho fora do popup.** O título e a descrição ficavam fora do popup,
+   presentes na página com o diálogo fechado. Agora ficam dentro.
+8. **`PaginationLink` anunciado como botão.** Era anunciado como botão, e passa a ser um link com
+   o visual do botão (`buttonVariants`).
+9. **`PaginationLink` sem link da app.** Não aceitava o link da aplicação. Ganha `render`, como o
+   `BreadcrumbLink`, para o web passar o `next/link`.
+
+A evidência está em `packages/ui/src/components/primitives-a11y.test.tsx`: os nomes e o texto do
+valor dos polegares, um polegar para um valor, o link com `aria-current` e o componente injetado,
+e o "Fechar" do rodapé e do `CommandDialog`.
