@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
@@ -13,6 +16,8 @@ export interface StorefrontProduct {
   priceCents: number
   compareAtPriceCents: number | null
   imageUrl: string | null
+  /** Whether it sells combinations: known on a shelf, and what decides a card's action. */
+  hasOptions?: boolean
 }
 
 export interface StorefrontProductCardProps {
@@ -22,6 +27,8 @@ export interface StorefrontProductCardProps {
   locale: string
   showPrice?: boolean
   showBadge?: boolean
+  /** Under the price, above the card's link: the web's "Adicionar ao carrinho". */
+  action?: ReactNode
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -45,13 +52,14 @@ export function StorefrontProductCard({
   locale,
   showPrice = true,
   showBadge = true,
+  action,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductCardProps) {
   const text = messages.storefront
 
   return (
-    <article className="relative flex flex-col overflow-hidden rounded-xl border border-shop-line bg-shop-background">
+    <article className="relative flex h-full flex-col overflow-hidden rounded-xl border border-shop-line bg-shop-background">
       <div className="relative aspect-[259/230] w-full overflow-hidden bg-shop-placeholder">
         {product.imageUrl ? (
           <img
@@ -91,6 +99,9 @@ export function StorefrontProductCard({
             messages={messages}
           />
         ) : null}
+
+        {/* Above the name's stretched link, so a press on it is the action's and not the page's. */}
+        {action ? <div className="relative z-10 mt-auto pt-1.5">{action}</div> : null}
       </div>
     </article>
   )

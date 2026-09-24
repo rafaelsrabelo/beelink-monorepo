@@ -27,6 +27,7 @@ import { StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
 import { StorefrontRichText } from "./storefront-rich-text"
+import { StorefrontBuyActions } from "./storefront-buy-actions"
 import { StorefrontVariantPicker } from "./storefront-variant-picker"
 
 export type { StorefrontProductImage } from "./storefront-product-gallery"
@@ -51,6 +52,11 @@ export interface StorefrontProductDetailProps {
   initialVariantId?: string | null
   /** Told each choice, so the screen can keep the address in step. */
   onVariantChange?: (variantId: string) => void
+  /**
+   * Puts the chosen combination in the cart — null for a product without options — with the cart's
+   * address for "Comprar agora". Absent, the page offers the WhatsApp order alone.
+   */
+  cart?: { onAdd: (variantId: string | null, qty: number) => void; href: string }
   /** "Avise-me" for a sold-out combination; absent, the page offers none. */
   restock?: {
     onSubmit: (variantId: string, submission: RestockSubmission) => void
@@ -85,6 +91,7 @@ export function StorefrontProductDetail({
   variants = [],
   initialVariantId,
   onVariantChange,
+  cart,
   restock,
   locale,
   showPrice = true,
@@ -180,6 +187,8 @@ export function StorefrontProductDetail({
             </button>
           ) : null}
         </div>
+      ) : cart ? (
+        <StorefrontBuyActions name={name} onAdd={(qty) => cart.onAdd(variant?.id ?? null, qty)} cartHref={cart.href} orderHref={order} messages={messages} />
       ) : order ? (
         <a
           href={order}

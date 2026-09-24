@@ -29,6 +29,19 @@ function renderProduct(overrides: Partial<Parameters<typeof StorefrontProductDet
 }
 
 describe("StorefrontProductDetail", () => {
+  it("adds a product without options as itself, and offers no cart when sold out", async () => {
+    const user = userEvent.setup()
+    const onAdd = vi.fn()
+    const { rerender } = renderProduct({ cart: { onAdd, href: "/loja/carrinho" } })
+
+    await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
+    expect(onAdd).toHaveBeenCalledWith(null, 1)
+
+    rerender(<StorefrontProductDetail name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={null} images={images} locale="pt-BR" soldOut cart={{ onAdd, href: "#" }} />)
+    expect(screen.queryByRole("button", { name: "Adicionar ao carrinho" })).toBeNull()
+  })
+
+
   it("names the product as the page's one heading", () => {
     renderProduct()
 
@@ -112,6 +125,19 @@ describe("StorefrontProductDetail", () => {
       variants: BLOUSE_VARIANTS,
       orderHref: `https://wa.me/5511?text=Blusa${ORDER_VARIANT_MARK}`,
     }
+
+    it("puts the chosen combination in the cart, in the quantity chosen, when the page has a cart", async () => {
+      const user = userEvent.setup()
+      const onAdd = vi.fn()
+      renderProduct({ ...withVariants, initialVariantId: "g-preto", cart: { onAdd, href: "/loja/carrinho" } })
+
+      await user.click(screen.getByRole("button", { name: "Aumentar a quantidade de Bolsa Amora" }))
+      await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
+
+      expect(onAdd).toHaveBeenCalledWith("g-preto", 2)
+      // WhatsApp stays, now the quieter way.
+      expect(screen.getByRole("link", { name: /Pedir/ })).toHaveAttribute("href", expect.stringContaining("wa.me"))
+    })
 
     it("opens on the combination the address asked for", () => {
       renderProduct({ ...withVariants, initialVariantId: "g-preto" })

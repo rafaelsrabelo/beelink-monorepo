@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -13,6 +16,8 @@ export interface StorefrontProductRailProps {
   products: readonly StorefrontProduct[]
   /** Built by the screen: a block never knows that a product lives under `/<shop>/<word>/<slug>`. */
   productHref: (productSlug: string) => string
+  /** What each card offers under its price — the web\'s "Adicionar ao carrinho". */
+  cardAction?: (product: StorefrontProduct) => ReactNode
   locale: string
   /** The band's title, and the name the scrollable region answers to. Defaults to "Destaques". */
   title?: string
@@ -54,6 +59,7 @@ const CARD_WIDTH = "w-48 shop-sm:w-56 shop-lg:w-64"
 export function StorefrontProductRail({
   products,
   productHref,
+  cardAction,
   locale,
   title,
   label,
@@ -94,6 +100,7 @@ export function StorefrontProductRail({
                 locale={locale}
                 showPrice={showPrice}
                 showBadge={showBadge}
+                action={cardAction?.(product)}
                 linkComponent={Link}
                 messages={messages}
               />

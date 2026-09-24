@@ -198,6 +198,15 @@ export interface UiMessages {
     cartUnavailable: string
     /** Lines whose product left the shop, taken out when the page opened. */
     cartGone: string
+    /** Adding to the cart (F3), on a card and on the product page. */
+    addToCart: string
+    addedToCart: string
+    /** `{name}` — said to a reader once the cart has it. */
+    addedToCartStatus: string
+    /** A card whose product has options: the page is where one is chosen. */
+    seeOptions: string
+    buyNow: string
+    viewCart: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */

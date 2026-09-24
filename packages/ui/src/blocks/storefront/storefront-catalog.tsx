@@ -13,6 +13,8 @@ import { StorefrontProductCard, type StorefrontProduct } from "./storefront-prod
 export interface StorefrontCatalogProps {
   products: readonly StorefrontProduct[]
   productHref: (productSlug: string) => string
+  /** What each card offers under its price — the web\'s "Adicionar ao carrinho". */
+  cardAction?: (product: StorefrontProduct) => ReactNode
   /** Where "see everything" goes when a filter left nothing behind. */
   clearHref?: string
   locale: string
@@ -48,6 +50,7 @@ export const CATALOG_COLUMNS: Record<2 | 3 | 4, string> = {
 export function StorefrontCatalog({
   products,
   productHref,
+  cardAction,
   clearHref,
   locale,
   productsPerRow = 3,
@@ -71,6 +74,7 @@ export function StorefrontCatalog({
                 locale={locale}
                 showPrice={showPrice}
                 showBadge={showBadge}
+                action={cardAction?.(product)}
                 linkComponent={Link}
                 messages={messages}
               />
