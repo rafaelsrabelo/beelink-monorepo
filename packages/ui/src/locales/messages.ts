@@ -273,6 +273,16 @@ export interface UiMessages {
     filterPriceUpTo: string
     filterPriceFrom: string
     filterDiscount: string
+    filterPrice: string
+    /** `{min}` — the last quick range: "Acima de R$ 200". */
+    filterPriceAbove: string
+    filterPriceMin: string
+    filterPriceMax: string
+    /** The min/max form's button. */
+    filterPriceApply: string
+    /** What each slider thumb is called to a reader. */
+    filterPriceLowest: string
+    filterPriceHighest: string
     /** Opens the rest of a long group — past the first five values. */
     filterShowMore: string
     sortPriceAsc: string
