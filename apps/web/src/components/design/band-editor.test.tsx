@@ -59,4 +59,15 @@ describe("BandEditor — the sheet is titled by the band", () => {
     expect(screen.getByRole("heading", { name: "Faixa 2" })).toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
   })
+
+  it("renames a named band's sheet as it is typed, and falls back to its place when cleared", async () => {
+    const user = userEvent.setup()
+    open(band("A5 grade"))
+
+    await user.clear(screen.getByLabelText("Nome da faixa"))
+    expect(screen.getByRole("heading", { name: "Faixa 2" })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText("Nome da faixa"), "Grade de verão")
+    expect(screen.getByRole("heading", { name: "Grade de verão" })).toBeInTheDocument()
+  })
 })

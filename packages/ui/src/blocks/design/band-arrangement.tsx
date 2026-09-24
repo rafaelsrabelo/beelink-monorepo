@@ -4,15 +4,14 @@
 import type { ReactNode } from "react"
 
 // Libs
-import type { Announcements } from "@dnd-kit/core"
 
 // Locales
-import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ArrangeBoard } from "./design-arrange"
-import { bandLabelOf } from "./band-label"
+import { bandAnnouncements } from "./band-label"
 import { BandRow } from "./band-row"
 import type { ArrangementItem, ArrangementSpan } from "./arrangement-row"
 import type { SectionWidth } from "./design-types"
@@ -80,25 +79,7 @@ export function BandArrangement({
 }: BandArrangementProps) {
   const text = messages.design
 
-  function nameOf(id: string | number) {
-    const at = bands.findIndex((band) => band.id === id)
-    return at < 0 ? "" : bandLabelOf(bands[at]!.name, at + 1, messages)
-  }
-
-  /**
-   * What a screen reader is told, in the shop's own words.
-   *
-   * dnd-kit ships English defaults. A shopkeeper driving this from a keyboard would otherwise hear
-   * the one part of the panel that never learned their language.
-   */
-  const announcements: Announcements = {
-    onDragStart: ({ active }) => format(text.dragStart, { name: nameOf(active.id) }),
-    onDragOver: ({ active, over }) =>
-      over ? format(text.dragOver, { name: nameOf(active.id), position: nameOf(over.id) }) : "",
-    onDragEnd: ({ active, over }) =>
-      over ? format(text.dragEnd, { name: nameOf(active.id), position: nameOf(over.id) }) : "",
-    onDragCancel: ({ active }) => format(text.dragCancel, { name: nameOf(active.id) }),
-  }
+  const announcements = bandAnnouncements(bands, messages)
 
   if (!bands.length) {
     return (

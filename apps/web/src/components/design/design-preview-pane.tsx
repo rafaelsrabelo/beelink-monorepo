@@ -10,7 +10,7 @@ import type { PublicProductCategory, PublicSection, PublicStore } from "@harness
 import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
 import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/design-block-placeholder"
 import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
-import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
+import { bandAnnouncements, bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
 import { PreviewDeviceToggle, type PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
@@ -109,7 +109,16 @@ export function DesignPreviewPane({
           context would make the shop and the list each other's drop targets, so a band could be
           dragged out of the window and into the panel.
         */}
-        <ArrangeBoard ids={orderedIds} onReorder={onReorder} layout="grid">
+        <ArrangeBoard
+          ids={orderedIds}
+          onReorder={onReorder}
+          layout="grid"
+          // The panel's words for the same bands, rather than dnd-kit's English and a row's id.
+          announcements={bandAnnouncements(
+            orderedIds.map((id) => ({ id, name: sections.find((section) => section.id === id)?.name ?? null })),
+            messages,
+          )}
+        >
           <DesignPreview device={device}>
             <StorefrontFrame
               store={store}

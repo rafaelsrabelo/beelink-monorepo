@@ -38,3 +38,16 @@ toda folha do modo design; o que o pedido quer é que o título não espere o sa
 ## Fora de escopo
 
 - Renomear a faixa direto no painel.
+
+## Adendo — 24/09/2026, depois da revisão
+
+A revisão independente não achou defeito introduzido por este ticket. Confirmou dois pontos
+anteriores a ele, ambos no mesmo assunto (como uma faixa é dita), e os dois foram corrigidos aqui:
+
+- **Arrastar uma faixa pelo teclado anunciava "na posição Serviços".** O modelo promete uma posição,
+  e recebia o nome da faixa de destino. Agora recebe o número.
+- **O quadro de arrastar do preview falava inglês e citava o id da faixa.** Ele não recebia os
+  anúncios que o painel tem. Os dois quadros agora usam o mesmo `bandAnnouncements`.
+
+Um teste de renomear uma faixa que já tem nome foi acrescentado, a partir de um ponto de evidência
+que a revisão refutou como defeito.

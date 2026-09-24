@@ -1,3 +1,6 @@
+// Libs
+import type { Announcements } from "@dnd-kit/core"
+
 // Locales
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -12,4 +15,32 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
  */
 export function bandLabelOf(name: string | null | undefined, position: number, messages: UiMessages): string {
   return name?.trim() || format(messages.design.bandNumber, { position: String(position) })
+}
+
+/**
+ * What a screen reader is told while a band is dragged, in the shop's own words: the band by what
+ * it is called, and the place it lands by its number — "na posição 3", never "na posição Serviços".
+ *
+ * dnd-kit ships English defaults that name an item by its id. The panel's board and the preview's
+ * both drag bands, so both ask here, and a shopkeeper at the keyboard hears the same thing from each.
+ */
+export function bandAnnouncements(
+  bands: readonly { id: string; name?: string | null }[],
+  messages: UiMessages,
+): Announcements {
+  const text = messages.design
+  const positionOf = (id: string | number) => bands.findIndex((band) => band.id === id) + 1
+  const nameOf = (id: string | number) => {
+    const at = positionOf(id)
+    return at === 0 ? "" : bandLabelOf(bands[at - 1]!.name, at, messages)
+  }
+
+  return {
+    onDragStart: ({ active }) => format(text.dragStart, { name: nameOf(active.id) }),
+    onDragOver: ({ active, over }) =>
+      over ? format(text.dragOver, { name: nameOf(active.id), position: String(positionOf(over.id)) }) : "",
+    onDragEnd: ({ active, over }) =>
+      over ? format(text.dragEnd, { name: nameOf(active.id), position: String(positionOf(over.id)) }) : "",
+    onDragCancel: ({ active }) => format(text.dragCancel, { name: nameOf(active.id) }),
+  }
 }
