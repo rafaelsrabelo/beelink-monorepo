@@ -37,6 +37,12 @@ The local mirror of CI. It runs **every** step even after one fails, then summar
 
 Turborepo's strict env mode passes a task only the variables a `turbo.json` task declares, and a job's `env:` block is not one of them. `pnpm --filter api test:e2e` keeps the job's `DATABASE_URL`, `SMTP_URL` and the rest, without teaching `turbo.json` about CI's secrets. Service containers also start before the checkout, so the test database is created by the image's `POSTGRES_DB` rather than by the init script that local compose uses.
 
+### Why `type-check`, `lint` and `test` depend on `transit`
+
+A turbo task's cache key holds its own package's files and the tasks it `dependsOn`, and nothing else. With `"type-check": {}`, a change to `packages/contracts` left the web's key unchanged, so `pnpm ci-check` replayed yesterday's green for a web that no longer compiled. It was measured on BEELINK-52: a field added to `PublicComponent` broke four web files, and `turbo type-check` answered from cache.
+
+`transit` is turbo's documented transit node. It does no work, and `"dependsOn": ["^transit"]` chains it through every internal dependency, so a task that depends on it is re-run when any package it imports changes. `build` needs no transit because `^build` already is one.
+
 ### Why jobs are filtered inside the workflow, not with `on.paths`
 
 A workflow filtered out at the trigger reports **no status at all**. If that workflow backs a required check, the check stays *pending* forever and the PR cannot merge. A job skipped by `if:` reports **skipped**, which branch protection accepts as satisfied. So the `changes` job computes what was touched, and every other job reads its output.
