@@ -56,7 +56,15 @@ type PanelPageErrorCode = Extract<
 /** The catalogue codes a save from the product editor can meet and a shopkeeper can act on. */
 type PanelCatalogErrorCode = Extract<
   CatalogErrorCode,
-  "PRODUCT_SLUG_TAKEN" | "PRODUCT_SKU_TAKEN" | "PRODUCT_HAS_OPTIONS"
+  | "PRODUCT_SLUG_TAKEN"
+  | "PRODUCT_SKU_TAKEN"
+  | "PRODUCT_HAS_OPTIONS"
+  | "PRODUCT_OPTION_DUPLICATE"
+  | "PRODUCT_OPTION_NOT_FOUND"
+  | "PRODUCT_VARIANTS_LIMIT"
+  | "PRODUCT_VARIANT_NOT_FOUND"
+  | "CATALOG_PRICE_INVALID"
+  | "CATALOG_PARCEL_INCOMPLETE"
 >
 
 export interface WebMessages {
