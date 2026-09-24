@@ -58,19 +58,6 @@ export interface StorefrontFooterColumn {
   items: readonly { label: string; href: string }[]
 }
 
-/** One of the promises a shop makes above its products — free delivery, instalments, PIX. */
-export interface StorefrontHighlight {
-  id: string
-  title: string
-  detail?: string
-  /**
-   * The mark beside the words. A node and not an icon name, because the block would otherwise hold
-   * a table mapping "pix" to a glyph — which is knowledge about what a shop takes at the door, and
-   * belongs to the screen that already knows it.
-   */
-  icon?: ReactNode
-}
-
 export interface StorefrontBanner {
   imageUrl: string
   /** Where "comprar agora" goes. Absent means the banner is a picture and not a promise. */
@@ -140,8 +127,6 @@ export interface StorefrontWindowProps {
    * Every other page keeps passing `children`, because a product page is not an arrangement.
    */
   blocks?: ReactNode
-  /** Band 4 — what the shop promises. Empty means the band is absent, never an empty strip. */
-  highlights?: readonly StorefrontHighlight[]
 
   /** Band 5 — the products. */
   children?: ReactNode
@@ -199,8 +184,8 @@ function Section({ banner, Link, tall }: { banner: StorefrontBanner; Link: LinkC
 }
 
 /**
- * A shop window, as a page of full-width bands: header, categories, cover, promises, products, a
- * second cover, footer. That order is the one every Brazilian shop this was measured against uses,
+ * A shop window, as a page of full-width bands: header, categories, cover, products, a second
+ * cover, footer. That order is the one every Brazilian shop this was measured against uses,
  * and each band is optional — a band with no data does not render, so a shop with six handmade
  * bags and no banner is a short page rather than a page of empty strips.
  *
@@ -233,7 +218,6 @@ export function StorefrontWindow({
   banner,
   blocks,
   bannerBelow,
-  highlights = [],
   children,
   footerColumns = [],
   copyright,
@@ -320,37 +304,6 @@ export function StorefrontWindow({
 
       {/* ---------------------------------------------------------------- 3 · the cover */}
       {blocks ? null : banner ? <Section banner={banner} Link={Link} tall /> : null}
-
-      {/* ---------------------------------------------------------------- 4 · what the shop promises */}
-      {blocks || !highlights.length ? null : (
-        <div className="w-full" style={{ backgroundColor: "color-mix(in oklab, var(--shop-header) 10%, transparent)" }}>
-          <ul className={cn(BAND, "grid grid-cols-2 gap-x-6 gap-y-5 py-6 shop-sm:grid-cols-4")}>
-            {highlights.map((highlight) => (
-              // Icon beside the words and not above them: four stacked icons read as a row of
-              // buttons, and none of these is one. Left-aligned for the same reason — a centred
-              // two-line block with a mark on top is a feature grid, and this is a receipt.
-              <li key={highlight.id} className="flex items-center gap-3">
-                {highlight.icon ? (
-                  <span
-                    aria-hidden="true"
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full"
-                    style={{
-                      backgroundColor: "color-mix(in oklab, var(--shop-primary) 14%, transparent)",
-                      color: "var(--shop-primary-ink)",
-                    }}
-                  >
-                    {highlight.icon}
-                  </span>
-                ) : null}
-                <div className="flex min-w-0 flex-col">
-                  <p className="text-sm font-semibold">{highlight.title}</p>
-                  {highlight.detail ? <p className="text-xs opacity-70">{highlight.detail}</p> : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {/* ---------------------------------------------------------------- 5 · the shop itself */}
       {blocks ? (

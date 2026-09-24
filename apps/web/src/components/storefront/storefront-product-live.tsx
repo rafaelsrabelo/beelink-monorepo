@@ -23,8 +23,6 @@ export interface StorefrontProductLiveProps {
   product: PublicProductDetail
   /** The combination the address asked for, read on the server so the page opens on it. */
   initialVariantId: string | null
-  backHref: string
-  categoryName: string | null
   orderHref?: string
   showPrice: boolean
   showBadge: boolean
@@ -42,8 +40,6 @@ export function StorefrontProductLive({
   slug,
   product,
   initialVariantId,
-  backHref,
-  categoryName,
   orderHref,
   showPrice,
   showBadge,
@@ -62,8 +58,6 @@ export function StorefrontProductLive({
       priceCents={product.priceCents}
       compareAtPriceCents={product.compareAtPriceCents}
       images={product.images}
-      categoryName={categoryName}
-      backHref={backHref}
       orderHref={orderHref}
       soldOut={product.soldOut}
       options={product.options}

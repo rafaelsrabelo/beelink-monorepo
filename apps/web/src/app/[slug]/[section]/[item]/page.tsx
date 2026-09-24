@@ -104,11 +104,12 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
       */}
       <StorefrontBreadcrumb
         homeHref={routes.home}
+        // Início › category › product, as the design draws it. The catalogue crumb stands in only
+        // for a product filed under no category, which otherwise would hang straight off the door.
         items={[
-          { label: ui.storefront.catalogTitle, href: routes.catalog() },
-          ...(product.category
-            ? [{ label: product.category.name, href: routes.category(product.category.slug) }]
-            : []),
+          product.category
+            ? { label: product.category.name, href: routes.category(product.category.slug) }
+            : { label: ui.storefront.catalogTitle, href: routes.catalog() },
           { label: product.name },
         ]}
         messages={ui}
@@ -118,8 +119,6 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         slug={slug}
         product={product}
         initialVariantId={typeof variant === "string" ? variant : null}
-        categoryName={product.category?.name ?? null}
-        backHref={product.category ? routes.category(product.category.slug) : routes.catalog()}
         orderHref={orderHref}
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}

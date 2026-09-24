@@ -12,7 +12,6 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
-import { paymentHighlightsOf } from "./storefront-highlights"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -33,11 +32,6 @@ export interface StorefrontFrameProps {
   description?: string | null
   /** The cover, which only the home shows, and only when the shopkeeper chose that layout. */
   showBanner?: boolean
-  /**
-   * The band of what the shop takes, which belongs above a shelf and not above one product: on a
-   * product page the thing someone came to see is what has to be at the top.
-   */
-  showHighlights?: boolean
   /**
    * The year on the footer's last line. It arrives from the page rather than from `new Date()` in
    * here, because a component that reads the clock renders differently on the server and in the
@@ -106,7 +100,6 @@ export function StorefrontFrame({
   searchValue,
   description = null,
   showBanner = false,
-  showHighlights = false,
   blocks,
   colors,
   announcement,
@@ -203,7 +196,6 @@ export function StorefrontFrame({
           ? { imageUrl: store.bannerImageUrl }
           : null
       }
-      highlights={showHighlights ? paymentHighlightsOf(store, messages) : []}
       footerColumns={footerColumns}
       copyright={text.copyright.replace("{year}", String(year)).replace("{name}", store.name)}
       links={storefrontLinksOf(store)}

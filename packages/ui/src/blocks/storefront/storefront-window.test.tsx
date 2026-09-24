@@ -170,13 +170,6 @@ describe("StorefrontWindow", () => {
       expect(screen.getByAltText("Bolos de aniversário")).not.toHaveAttribute("aria-hidden")
     })
 
-    it("states what the shop promises, and nothing when it promises nothing", () => {
-      renderWindow({ highlights: [{ id: "1", title: "Entrega no bairro", detail: "Sem taxa acima de R$ 60" }] })
-
-      expect(screen.getByText("Entrega no bairro")).toBeInTheDocument()
-      expect(screen.getByText("Sem taxa acima de R$ 60")).toBeInTheDocument()
-    })
-
     it("renders the catalogue the screen put under it", () => {
       renderWindow({ children: <p>A grade de produtos</p> })
 
@@ -247,7 +240,6 @@ describe("StorefrontWindow", () => {
         cartCount={2}
         accountHref="/padaria-da-ana/conta"
         banner={{ imageUrl: "https://cdn/capa.png", alt: "Bolos" }}
-        highlights={[{ id: "1", title: "Entrega no bairro" }]}
         orderHref="https://wa.me/5585999998888"
         links={[{ network: "instagram", href: "https://instagram.com/padaria" }]}
         addressLine="Rua das Flores, 120"

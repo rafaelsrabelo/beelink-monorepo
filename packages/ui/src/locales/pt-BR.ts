@@ -192,13 +192,9 @@ export const ptBR: UiMessages = {
     copyright: "© {year} {name}. Todos os direitos reservados.",
     payments: {
       money: "Dinheiro",
-      moneyDetail: "Na entrega",
       pix: "PIX",
-      pixDetail: "Transferência na hora",
       creditCard: "Cartão de crédito",
-      creditCardDetail: "Principais bandeiras",
       debitCard: "Cartão de débito",
-      debitCardDetail: "Débito na conta",
     },
     contact: {
       nameLabel: "Seu nome",

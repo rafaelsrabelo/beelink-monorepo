@@ -36,12 +36,6 @@ export const Completa: Story = {
   args: {
     banner: { imageUrl: "https://picsum.photos/seed/capa/1600/600", href: "/padaria-da-ana?categoria=promocoes" },
     bannerBelow: { imageUrl: "https://picsum.photos/seed/rodape/1600/400" },
-    highlights: [
-      { id: "1", title: "Entrega no bairro", detail: "Sem taxa acima de R$ 60" },
-      { id: "2", title: "Pague no PIX", detail: "Confirmação na hora" },
-      { id: "3", title: "Feito no dia", detail: "Saiu do forno hoje" },
-      { id: "4", title: "Fale direto", detail: "WhatsApp, sem robô" },
-    ],
   },
 }
 

@@ -22,7 +22,6 @@ function renderProduct(overrides: Partial<Parameters<typeof StorefrontProductDet
       priceCents={18900}
       compareAtPriceCents={24900}
       images={images}
-      backHref="/lessari?categoria=mais-vendidos"
       locale="pt-BR"
       {...overrides}
     />,
@@ -34,21 +33,6 @@ describe("StorefrontProductDetail", () => {
     renderProduct()
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Bolsa Amora")
-  })
-
-  it("goes back to the category it came from, named", () => {
-    renderProduct({ categoryName: "Mais vendidos" })
-
-    expect(screen.getByRole("link", { name: /Mais vendidos/ })).toHaveAttribute(
-      "href",
-      "/lessari?categoria=mais-vendidos",
-    )
-  })
-
-  it("falls back to the shop when the product belongs to no category", () => {
-    renderProduct({ categoryName: null, backHref: "/lessari" })
-
-    expect(screen.getByRole("link", { name: /Voltar para a loja/ })).toHaveAttribute("href", "/lessari")
   })
 
   /**
@@ -96,7 +80,6 @@ describe("StorefrontProductDetail", () => {
 
   it("has no accessibility violations", async () => {
     const { container } = renderProduct({
-      categoryName: "Mais vendidos",
       orderHref: "https://wa.me/5585999998888",
     })
 

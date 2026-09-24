@@ -287,13 +287,9 @@ export interface UiMessages {
      */
     payments: {
       money: string
-      moneyDetail: string
       pix: string
-      pixDetail: string
       creditCard: string
-      creditCardDetail: string
       debitCard: string
-      debitCardDetail: string
     }
     /** A site's contact form, as the visitor fills it in. */
     contact: {

@@ -212,7 +212,6 @@ export default async function StorefrontSectionPage({
       categories={catalogue.categories}
       activeCategory={category?.slug ?? null}
       searchValue={term}
-      showHighlights={loaded.section.kind !== "cart"}
       year={new Date().getFullYear()}
       messages={ui}
     >

@@ -192,13 +192,9 @@ export const en: UiMessages = {
     copyright: "© {year} {name}. All rights reserved.",
     payments: {
       money: "Cash",
-      moneyDetail: "On delivery",
       pix: "PIX",
-      pixDetail: "Instant transfer",
       creditCard: "Credit card",
-      creditCardDetail: "Major networks",
       debitCard: "Debit card",
-      debitCardDetail: "Straight from the account",
     },
     contact: {
       nameLabel: "Your name",

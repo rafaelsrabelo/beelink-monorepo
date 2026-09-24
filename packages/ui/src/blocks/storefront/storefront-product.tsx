@@ -3,9 +3,6 @@
 // React
 import { useState } from "react"
 
-// Libs
-import { ChevronLeftIcon } from "lucide-react"
-
 // UI
 import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
 import {
@@ -25,7 +22,6 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { WhatsAppIcon } from "../store/store-brand-icons"
 import { StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
@@ -40,9 +36,6 @@ export interface StorefrontProductDetailProps {
   priceCents: number
   compareAtPriceCents: number | null
   images: readonly StorefrontProductImage[]
-  categoryName?: string | null
-  /** Back to the catalogue, filtered to this product's category when it has one. */
-  backHref: string
   /** `wa.me/<digits>?text=…`, built by the screen, with `ORDER_VARIANT_MARK` where the combination goes. */
   orderHref?: string
   /**
@@ -69,7 +62,6 @@ export interface StorefrontProductDetailProps {
   locale: string
   showPrice?: boolean
   showBadge?: boolean
-  linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
@@ -86,8 +78,6 @@ export function StorefrontProductDetail({
   priceCents,
   compareAtPriceCents,
   images,
-  categoryName,
-  backHref,
   orderHref,
   soldOut = false,
   options = [],
@@ -98,7 +88,6 @@ export function StorefrontProductDetail({
   locale,
   showPrice = true,
   showBadge = true,
-  linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductDetailProps) {
   const text = messages.storefront
@@ -130,11 +119,6 @@ export function StorefrontProductDetail({
 
   return (
     <article className="flex w-full flex-col gap-5">
-      <Link href={backHref} className="inline-flex items-center gap-1 self-start text-sm opacity-75">
-        <ChevronLeftIcon aria-hidden="true" className="size-4" />
-        {categoryName ?? text.backToShop}
-      </Link>
-
       <StorefrontProductGallery
         key={shownImages.map((image) => image.id).join("|")}
         images={shownImages}
