@@ -22,7 +22,8 @@ enum ComponentKind {
   BENEFITS
   /// The shop's categories, as a grid of cards.
   CATEGORIES
-  /// What the shop sells. One per shop, and it cannot be deleted.
+  /// A showcase of what the shop sells, drawn from its `source`. As many as the shop wants; the
+  /// last one cannot be deleted.
   PRODUCTS
   /// A form a visitor fills in, beside the ways to reach the owner. Its `items` are the fields;
   /// what arrives through it is a `Lead`. A site's kind — a shop takes orders, not contact.
@@ -59,11 +60,31 @@ enum ComponentSpan {
   TWO_THIRDS
 }
 
-/// How a component with several pictures lays them out: one at a time, or side by side. Read on
-/// BANNER. A choice, where it used to be the slide count deciding without being asked.
+/// How a component with several things in it lays them out. A banner's pictures take turns
+/// (CAROUSEL) or share the space (GRID); a showcase's products scroll on one row (RAIL) or wrap into
+/// rows (GRID). A carousel and a rail are not the same thing: one shows a single picture at a time,
+/// the other shows as many cards as fit and lets the rest scroll.
 enum ComponentDisplay {
   CAROUSEL
   GRID
+  RAIL
+}
+
+/// Which products a showcase draws.
+///
+/// There is no best sellers: nothing records a sale yet, and a source named for sales would draw
+/// some other order under that name. It is one value added the day orders exist.
+enum ProductSource {
+  /// Everything on the shelf, in the shopkeeper's order.
+  ALL
+  /// One category and its subcategories. The category is `sourceCategoryId`.
+  CATEGORY
+  /// The products the shopkeeper picked, in the order they picked them. They are the `items`.
+  SELECTION
+  /// The most recently created first.
+  NEWEST
+  /// The ones with a "was" price.
+  ON_SALE
 }
 
 /// One band of a shop's landing page.
@@ -134,10 +155,20 @@ model StoreComponent {
   /// Its slice of the band, on every kind.
   span ComponentSpan @default(FULL)
 
-  /// Read on BANNER. Null on every other kind: PRODUCTS and CATEGORIES draw their own way until
-  /// someone decides what this means for them, and a value there would be that decision taken
-  /// silently.
+  /// Read on BANNER and PRODUCTS, each with its own two values. Null on every other kind.
   display ComponentDisplay?
+
+  /// What a showcase draws. Read on PRODUCTS, null on every other kind.
+  source ProductSource?
+
+  /// The category a CATEGORY showcase draws, and null for every other source. A category deleted
+  /// under it leaves the showcase asking for one rather than taking it down.
+  sourceCategoryId String?          @db.Uuid
+  sourceCategory   ProductCategory? @relation(fields: [sourceCategoryId], references: [id], onDelete: SetNull)
+
+  /// How many products a showcase draws, at most. Null is 24, what the landing page drew before a
+  /// shop could have more than one.
+  limit Int?
 
   /// How many across a grid draws. Read on CATEGORIES and PRODUCTS.
   columns Int?

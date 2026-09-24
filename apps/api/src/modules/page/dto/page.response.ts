@@ -7,6 +7,7 @@ import type {
   ComponentItem,
   ComponentKind,
   ComponentSpan,
+  ProductSource,
   PublicComponent,
   PublicComponentItem,
   PublicSection,
@@ -21,6 +22,7 @@ import {
   COMPONENT_DISPLAYS,
   COMPONENT_KINDS,
   COMPONENT_SPANS,
+  PRODUCT_SOURCES,
   SECTION_WIDTHS,
   TEXT_ALIGNS,
 } from '../page.constants.js';
@@ -37,7 +39,7 @@ export class PublicComponentResponse implements PublicComponent {
   @ApiProperty({ nullable: true, type: String, description: 'The paragraph, on a TEXT.' })
   body!: string | null;
   @ApiProperty({ enum: COMPONENT_SPANS, description: 'Its slice of the band.' }) span!: ComponentSpan;
-  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER. Null on every other kind.' })
+  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER and PRODUCTS. Null on every other kind.' })
   display!: ComponentDisplay | null;
   @ApiProperty({
     type: 'array',
@@ -68,8 +70,12 @@ export class ComponentResponse implements StoreComponent {
   @ApiProperty({ nullable: true, type: String }) subtitle!: string | null;
   @ApiProperty({ nullable: true, type: String }) body!: string | null;
   @ApiProperty({ enum: COMPONENT_SPANS, description: 'Its slice of the band.' }) span!: ComponentSpan;
-  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER. Null on every other kind.' })
+  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER and PRODUCTS. Null on every other kind.' })
   display!: ComponentDisplay | null;
+  @ApiProperty({ enum: PRODUCT_SOURCES, nullable: true, description: 'A showcase’s. Null on every other kind.' })
+  source!: ProductSource | null;
+  @ApiProperty({ format: 'uuid', nullable: true, type: String }) sourceCategoryId!: string | null;
+  @ApiProperty({ nullable: true, type: Number, description: 'Null is 24.' }) limit!: number | null;
   @ApiProperty({
     type: 'array',
     items: { type: 'object', additionalProperties: true },

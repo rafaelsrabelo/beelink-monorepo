@@ -12,6 +12,7 @@ import { StoresService } from '../stores/stores.service.js';
 import { sectionInclude, toComponent, toSection } from './page.mapper.js';
 import { PageRules, pageError } from './page.rules.js';
 import { componentPatch, componentRow } from './page-rows.js';
+import { ShowcaseRules } from './showcase.rules.js';
 import { openingItemsOf } from './page-seed.js';
 
 /**
@@ -28,6 +29,7 @@ export class PageService {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly rules: PageRules,
+    private readonly showcases: ShowcaseRules,
   ) {}
 
   /** The panel's read: hidden bands and hidden components included, in the arranged order. */
@@ -54,8 +56,11 @@ export class PageService {
 
     await this.rules.refuseSecond(storeId, dto.component.kind);
     this.rules.refuseDisplayFor(dto.component.kind, dto.component.display);
+    this.showcases.refuseOn(dto.component.kind, dto.component);
     // A kind created bare opens with what it cannot be without — a form's first fields.
     const items = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
+    const showcase =
+      dto.component.kind === 'PRODUCTS' ? await this.showcases.forCreate(storeId, dto.component, items) : null;
 
     // Last, the way a new category lands last. A band that inserted itself at the top would
     // rearrange a page the shopkeeper had already arranged.
@@ -69,7 +74,7 @@ export class PageService {
         background: dto.background ?? null,
         position: (last._max.position ?? -1) + 1,
         isActive: dto.isActive ?? true,
-        components: { create: componentRow(storeId, dto.component, items, 0) },
+        components: { create: componentRow(storeId, dto.component, items, 0, showcase) },
       },
       include: sectionInclude,
     });
@@ -147,15 +152,17 @@ export class PageService {
     await this.rules.ownedSection(storeId, sectionId);
     await this.rules.refuseSecond(storeId, dto.kind);
     this.rules.refuseDisplayFor(dto.kind, dto.display);
+    this.showcases.refuseOn(dto.kind, dto);
 
     const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
+    const showcase = dto.kind === 'PRODUCTS' ? await this.showcases.forCreate(storeId, dto, items) : null;
     const last = await this.prisma.storeComponent.aggregate({
       where: { sectionId },
       _max: { position: true },
     });
 
     const row = await this.prisma.storeComponent.create({
-      data: { sectionId, ...componentRow(storeId, dto, items, (last._max.position ?? -1) + 1) },
+      data: { sectionId, ...componentRow(storeId, dto, items, (last._max.position ?? -1) + 1, showcase) },
     });
 
     return toComponent(row);
@@ -186,12 +193,15 @@ export class PageService {
     }
 
     this.rules.refuseDisplayFor(current.kind, dto.display);
+    this.showcases.refuseOn(current.kind, dto);
 
     const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
+    const showcase =
+      current.kind === 'PRODUCTS' ? await this.showcases.forUpdate(storeId, componentId, dto, items) : null;
 
     const row = await this.prisma.storeComponent.update({
       where: { id: componentId },
-      data: componentPatch(dto, items),
+      data: componentPatch(dto, items, showcase),
     });
 
     return toComponent(row);

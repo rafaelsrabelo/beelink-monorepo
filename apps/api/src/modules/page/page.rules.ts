@@ -12,7 +12,7 @@ import type {
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { componentItemsFor } from './component-items.schema.js';
 import {
-  DISPLAY_KINDS,
+  DISPLAYS_OF_KIND,
   REQUIRED_COMPONENT_KINDS,
   SINGLETON_COMPONENT_KINDS,
 } from './page.constants.js';
@@ -132,23 +132,26 @@ export class PageRules {
   }
 
   /**
-   * A display only on a kind that draws one, and never taken back to null there.
+   * A display only from the two its kind draws, and never taken back to null there.
    *
-   * A value on any other kind would be stored for nobody; null on a banner would undo the choice
-   * every banner has had since the column was created.
+   * A value on a kind that draws none would be stored for nobody; one its kind does not draw — a
+   * banner as a rail, a showcase as a carousel — would be a choice the page cannot honour; and null
+   * on a kind that draws one would undo the choice every row of it has had since its migration.
    */
   refuseDisplayFor(kind: ComponentKind, display: ComponentDisplay | null | undefined): void {
     if (display === undefined) return;
 
-    const drawn = (DISPLAY_KINDS as readonly ComponentKind[]).includes(kind);
-
-    if (drawn && display === null) {
-      throw new BadRequestException(pageError('COMPONENT_DISPLAY_INVALID', 'Um banner é carrossel ou grade.'));
-    }
+    const drawn = DISPLAYS_OF_KIND[kind];
 
     if (!drawn && display !== null) {
       throw new BadRequestException(
-        pageError('COMPONENT_DISPLAY_INVALID', 'Só um banner escolhe entre carrossel e grade.'),
+        pageError('COMPONENT_DISPLAY_INVALID', 'Só um banner e uma vitrine escolhem como mostrar o que têm.'),
+      );
+    }
+
+    if (drawn && (display === null || !drawn.includes(display))) {
+      throw new BadRequestException(
+        pageError('COMPONENT_DISPLAY_INVALID', `Este bloco é ${drawn.join(' ou ')}.`),
       );
     }
   }

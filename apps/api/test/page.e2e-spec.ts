@@ -124,6 +124,6 @@ describe('page — span and display', () => {
       expect(component).toHaveProperty('display');
     }
     expect(components.find((component) => component.kind === 'BANNER')).toMatchObject({ span: 'THIRD', display: 'CAROUSEL' });
-    expect(components.find((component) => component.kind === 'PRODUCTS')).toMatchObject({ span: 'FULL', display: null });
+    expect(components.find((component) => component.kind === 'PRODUCTS')).toMatchObject({ span: 'FULL', display: 'RAIL' });
   });
 });

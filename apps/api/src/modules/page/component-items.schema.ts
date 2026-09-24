@@ -9,6 +9,7 @@ import type {
   ComponentItem,
   ComponentKind,
   ContactField,
+  ShowcaseProduct,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -18,6 +19,7 @@ import {
   CONTACT_FIELD_LABEL_MAX_LENGTH,
   CONTACT_FIELD_TYPES,
   CONTACT_OPTIONS_MAX,
+  SHOWCASE_LIMIT_MAX,
   CONTACT_OPTION_MAX_LENGTH,
 } from './page.constants.js';
 
@@ -123,25 +125,42 @@ const contactForm = z
     message: 'O formulário precisa de um campo obrigatório de e-mail ou telefone',
   });
 
+/**
+ * One product of a hand-picked showcase, by id: the price and the picture are read when the page is.
+ * Whether the id is this shop's is `PageRules`' question, because it needs the database.
+ */
+const showcaseProduct = z.strictObject({
+  id: z.string().min(1).max(64),
+  productId: z.uuid(),
+}) satisfies z.ZodType<ShowcaseProduct>;
+
+const showcaseSelection = z
+  .array(showcaseProduct)
+  .max(SHOWCASE_LIMIT_MAX)
+  .refine((rows) => new Set(rows.map((row) => row.productId)).size === rows.length, {
+    message: 'O mesmo produto duas vezes na vitrine',
+  });
+
 /** What a component with no items of its own holds, and what an unknown kind falls back to. */
 const NOTHING = z.array(z.never()).length(0);
 
 /**
  * The table, closed with `satisfies`. A ninth kind fails to compile here until it says what its
- * items are — even if the answer is "none", which is what four of the eight say.
+ * items are — even if the answer is "none", which is what three of the eight say.
  */
 const ITEMS_OF = {
-  /** One picture is a poster; several are a carousel. The count is the whole of that decision. */
+  /** A banner's pictures. Whether they take turns or share the space is its `display`, not their count. */
   BANNER: z.array(bannerSlide).max(20),
   BENEFITS: z.array(benefitRow).max(12),
   /** At most one: the strip is one sentence, and one sentence leads one place. */
   ANNOUNCEMENT: z.array(announcementLink).max(1),
   CONTACT: contactForm,
+  /** The products a SELECTION showcase draws, in order; empty for every other source. */
+  PRODUCTS: showcaseSelection,
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
   HEADING: NOTHING,
   TEXT: NOTHING,
   CATEGORIES: NOTHING,
-  PRODUCTS: NOTHING,
 } as const satisfies Record<ComponentKind, z.ZodType>;
 
 /**

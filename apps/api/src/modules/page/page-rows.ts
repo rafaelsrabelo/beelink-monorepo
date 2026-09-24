@@ -1,5 +1,6 @@
 // Types
 import type { ComponentDto, UpdateComponentDto } from './dto/page.dto.js';
+import type { ShowcaseFields } from './showcase.rules.js';
 
 // App
 import { openingDisplayOf } from './page-seed.js';
@@ -12,9 +13,16 @@ import { openingDisplayOf } from './page-seed.js';
  * update is what made a save answer 200 and change nothing.
  *
  * `items` arrive already checked by `PageRules`, and so does `display`, which is why an absent one
- * can safely become the kind's opening value.
+ * can safely become the kind's opening value. A showcase's fields arrive normalized by
+ * `ShowcaseRules`, its `items` among them.
  */
-export function componentRow(storeId: string, dto: ComponentDto, items: object[], position: number) {
+export function componentRow(
+  storeId: string,
+  dto: ComponentDto,
+  items: object[],
+  position: number,
+  showcase: ShowcaseFields | null,
+) {
   return {
     storeId,
     kind: dto.kind,
@@ -25,14 +33,17 @@ export function componentRow(storeId: string, dto: ComponentDto, items: object[]
     display: dto.display !== undefined ? dto.display : openingDisplayOf(dto.kind),
     columns: dto.columns ?? null,
     align: dto.align ?? null,
-    items,
+    ...(showcase ?? { items }),
     position,
     isActive: dto.isActive ?? true,
   };
 }
 
-/** A patch of one component, as the update writes it. A key left out is a column left alone. */
-export function componentPatch(dto: UpdateComponentDto, items: object[] | undefined) {
+/**
+ * A patch of one component, as the update writes it. A key left out is a column left alone; a
+ * showcase touched at all is written whole, as `ShowcaseRules` normalized it.
+ */
+export function componentPatch(dto: UpdateComponentDto, items: object[] | undefined, showcase: ShowcaseFields | null) {
   return {
     ...(dto.title !== undefined ? { title: dto.title } : {}),
     ...(dto.subtitle !== undefined ? { subtitle: dto.subtitle } : {}),
@@ -46,5 +57,6 @@ export function componentPatch(dto: UpdateComponentDto, items: object[] | undefi
     // guessing where it goes — and leaving this line out of the update is what once made a
     // save answer 200 and change nothing at all.
     ...(items === undefined ? {} : { items }),
+    ...(showcase ?? {}),
   };
 }

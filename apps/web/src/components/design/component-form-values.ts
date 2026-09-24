@@ -26,8 +26,9 @@ export function toForm(component: StoreComponent, bandBackground: string | null)
     title: component.title ?? "",
     subtitle: component.subtitle ?? "",
     body: component.body ?? "",
-    // Null on every kind but a banner, and a banner always has one; the form holds one regardless.
-    display: component.display ?? "CAROUSEL",
+    // The banner's two. A showcase's rail is its own editor's to hold, and the form sends this for a
+    // banner only; null on every other kind, and the form holds one regardless.
+    display: component.display === "GRID" ? "GRID" : "CAROUSEL",
     columns: component.columns ?? 0,
     // Resolved for the form, so the toggle marks one; a null on the wire is the kind's own habit.
     align: component.align ?? defaultAlignOf(component.kind),

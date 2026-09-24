@@ -82,6 +82,9 @@ model ProductCategory {
 
   products Product[]
 
+  /// The showcases that draw this category. Deleting the category leaves them asking for another.
+  showcases StoreComponent[]
+
   @@unique([storeId, slug])
   /// The storefront's category list, in one index scan.
   @@index([storeId, isActive, position])
