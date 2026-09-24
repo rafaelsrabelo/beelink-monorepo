@@ -33,10 +33,19 @@ export type WebErrorCode = "CEP_INVALID" | "CEP_NOT_FOUND" | "CEP_UNAVAILABLE" |
  * into a sentence — the one place that mapping exists, per apps/web/AGENTS.md.
  */
 /**
- * The page codes a shopkeeper can meet from the panel: a delete the shop cannot afford, and a
- * second of something it may have one of. The others answer a call the panel never makes.
+ * The page codes a shopkeeper can meet from the panel: a delete the shop cannot afford, a second of
+ * something it may have one of, and a showcase whose source the API will not take. The others
+ * answer a call the panel never makes.
  */
-type PanelPageErrorCode = Extract<PageErrorCode, "COMPONENT_REQUIRED" | "COMPONENT_KIND_SINGLETON">
+type PanelPageErrorCode = Extract<
+  PageErrorCode,
+  | "COMPONENT_REQUIRED"
+  | "COMPONENT_KIND_SINGLETON"
+  | "SHOWCASE_SOURCE_INVALID"
+  | "SHOWCASE_CATEGORY_INVALID"
+  | "SHOWCASE_PRODUCTS_INVALID"
+  | "SHOWCASE_LIMIT_INVALID"
+>
 
 export interface WebMessages {
   metadata: {

@@ -10,7 +10,6 @@ const empty: ComponentFormValues = {
   title: "Novidades da semana",
   subtitle: "Chegou agora",
   body: "",
-  layout: "FULL",
   display: "CAROUSEL",
   columns: 0,
   align: "CENTER",
@@ -22,6 +21,10 @@ const empty: ComponentFormValues = {
   slides: [],
   benefits: [],
   fields: [],
+  source: "ALL",
+  sourceCategoryId: "",
+  picks: [],
+  limit: "",
 }
 
 const meta = {
@@ -72,7 +75,6 @@ export const Banner: Story = {
       kind: "BANNER",
       title: "",
       subtitle: "",
-      layout: "HALVES",
       slides: [
         {
           id: "s1",
@@ -115,9 +117,14 @@ export const Vantagens: Story = {
   },
 }
 
-/** A grade de categorias ganha o seu ajuste: quantas colunas. */
+/** As categorias em grade ganham o seu ajuste: quantas colunas. */
 export const Categorias: Story = {
-  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", columns: 3 } },
+  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", display: "GRID", columns: 3 } },
+}
+
+/** Em trilho, as categorias rolam para o lado, e as colunas não são perguntadas. */
+export const CategoriasEmTrilho: Story = {
+  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", display: "RAIL", columns: 0 } },
 }
 
 /**

@@ -8,17 +8,22 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { BannerFields } from "./banner-fields"
 
 describe("BannerFields", () => {
-  it("says the shape in words and offers a first picture", () => {
-    render(<BannerFields value={{ layout: "THIRDS", display: "CAROUSEL", slides: [] }} onChange={vi.fn()} categories={[]} products={[]} newItemId={() => "new"} />)
+  /**
+   * The width is not asked here any more. It is every block's, chosen on the block's card, and the
+   * "Tamanho" this sheet used to hold wrote the same column behind the draft's back.
+   */
+  it("asks for the format and the pictures, and not for a width", () => {
+    render(<BannerFields value={{ display: "CAROUSEL", slides: [] }} onChange={vi.fn()} categories={[]} products={[]} newItemId={() => "new"} />)
 
-    expect(screen.getByRole("combobox", { name: "Tamanho" })).toHaveTextContent("Um terço")
+    expect(screen.getByRole("group", { name: "Formato" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Adicionar imagem" })).toBeInTheDocument()
+    expect(screen.queryByRole("combobox", { name: /Tamanho|Largura/ })).not.toBeInTheDocument()
   })
 
   it("hands a new picture back as a partial change", async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
-    render(<BannerFields value={{ layout: "FULL", display: "CAROUSEL", slides: [] }} onChange={onChange} categories={[]} products={[]} newItemId={() => "new"} />)
+    render(<BannerFields value={{ display: "CAROUSEL", slides: [] }} onChange={onChange} categories={[]} products={[]} newItemId={() => "new"} />)
 
     await user.click(screen.getByRole("button", { name: "Adicionar imagem" }))
 
@@ -32,7 +37,7 @@ describe("BannerFields", () => {
   it("asks whether the pictures take turns or share the space, and reports the answer", async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
-    render(<BannerFields value={{ layout: "FULL", display: "CAROUSEL", slides: [] }} onChange={onChange} categories={[]} products={[]} newItemId={() => "new"} />)
+    render(<BannerFields value={{ display: "CAROUSEL", slides: [] }} onChange={onChange} categories={[]} products={[]} newItemId={() => "new"} />)
 
     expect(screen.getByRole("button", { name: /Carrossel/, pressed: true })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /Grade/ }))
@@ -42,7 +47,7 @@ describe("BannerFields", () => {
 
   it("has no accessibility violations", async () => {
     const { container } = render(
-      <BannerFields value={{ layout: "FULL", display: "CAROUSEL", slides: [] }} onChange={vi.fn()} categories={[]} products={[]} newItemId={() => "new"} />,
+      <BannerFields value={{ display: "CAROUSEL", slides: [] }} onChange={vi.fn()} categories={[]} products={[]} newItemId={() => "new"} />,
     )
 
     await expectNoA11yViolations(container)

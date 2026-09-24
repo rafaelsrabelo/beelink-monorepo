@@ -3,14 +3,18 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
+  IsDefined,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -21,17 +25,19 @@ import type {
   ComponentItem,
   ComponentKind,
   ComponentSpan,
+  AddComponentPayload,
   CreateComponentPayload,
   CreateSectionPayload,
   PageErrorCode,
+  ProductSource,
   SectionWidth,
-  ShowcaseLayout,
   TextAlign,
   UpdateComponentPayload,
   UpdateSectionPayload,
 } from '@harness-monorepo/contracts';
 
 // App
+import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import {
   COMPONENT_BODY_MAX_LENGTH,
   COMPONENT_DISPLAYS,
@@ -42,9 +48,10 @@ import {
   COMPONENT_SUBTITLE_MAX_LENGTH,
   COMPONENT_TITLE_MAX_LENGTH,
   HEX_COLOUR,
+  PRODUCT_SOURCES,
   SECTION_NAME_MAX_LENGTH,
   SECTION_WIDTHS,
-  SHOWCASE_LAYOUTS,
+  SHOWCASE_LIMIT_MAX,
   TEXT_ALIGNS,
 } from '../page.constants.js';
 
@@ -63,13 +70,13 @@ export class ComponentDto implements CreateComponentPayload {
   @ApiPropertyOptional({ maxLength: COMPONENT_TITLE_MAX_LENGTH })
   @IsOptional()
   @IsString()
-  @MaxLength(COMPONENT_TITLE_MAX_LENGTH)
+  @MaxCodePoints(COMPONENT_TITLE_MAX_LENGTH)
   title?: string | null;
 
   @ApiPropertyOptional({ maxLength: COMPONENT_SUBTITLE_MAX_LENGTH })
   @IsOptional()
   @IsString()
-  @MaxLength(COMPONENT_SUBTITLE_MAX_LENGTH)
+  @MaxCodePoints(COMPONENT_SUBTITLE_MAX_LENGTH)
   subtitle?: string | null;
 
   @ApiPropertyOptional({ maxLength: COMPONENT_BODY_MAX_LENGTH })
@@ -78,22 +85,32 @@ export class ComponentDto implements CreateComponentPayload {
   @MaxLength(COMPONENT_BODY_MAX_LENGTH)
   body?: string | null;
 
-  @ApiPropertyOptional({ enum: SHOWCASE_LAYOUTS, deprecated: true, description: 'Send `span`. Ignored when `span` is sent.' })
-  @IsOptional()
-  @IsIn(SHOWCASE_LAYOUTS)
-  layout?: ShowcaseLayout;
-
-  // A null passes here, as on every optional field, and `PageRules.checkedSpan` refuses it: the
-  // column is NOT NULL, and a patch's `PartialType` would make this optional whatever it said.
   @ApiPropertyOptional({ enum: COMPONENT_SPANS })
-  @IsOptional()
+  @ValidateIf((dto: ComponentDto) => dto.span !== undefined)
   @IsIn(COMPONENT_SPANS, { context: { errorCode: 'COMPONENT_SPAN_INVALID' satisfies PageErrorCode } })
   span?: ComponentSpan;
 
-  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER. Null on every other kind.' })
+  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'CAROUSEL or GRID on a BANNER, RAIL or GRID on PRODUCTS and CATEGORIES. Null on every other kind.' })
   @IsOptional()
   @IsIn(COMPONENT_DISPLAYS, { context: { errorCode: 'COMPONENT_DISPLAY_INVALID' satisfies PageErrorCode } })
   display?: ComponentDisplay | null;
+
+  @ApiPropertyOptional({ enum: PRODUCT_SOURCES, description: 'A showcase’s. CATEGORY needs sourceCategoryId; SELECTION needs items.' })
+  @IsOptional()
+  @IsIn(PRODUCT_SOURCES, { context: { errorCode: 'SHOWCASE_SOURCE_INVALID' satisfies PageErrorCode } })
+  source?: ProductSource;
+
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @IsOptional()
+  @IsUUID('all', { context: { errorCode: 'SHOWCASE_CATEGORY_INVALID' satisfies PageErrorCode } })
+  sourceCategoryId?: string | null;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: SHOWCASE_LIMIT_MAX, nullable: true, description: 'Null is 24.' })
+  @IsOptional()
+  @IsInt({ context: { errorCode: 'SHOWCASE_LIMIT_INVALID' satisfies PageErrorCode } })
+  @Min(1, { context: { errorCode: 'SHOWCASE_LIMIT_INVALID' satisfies PageErrorCode } })
+  @Max(SHOWCASE_LIMIT_MAX, { context: { errorCode: 'SHOWCASE_LIMIT_INVALID' satisfies PageErrorCode } })
+  limit?: number | null;
 
   @ApiPropertyOptional({ type: Object, isArray: true })
   @IsOptional()
@@ -114,13 +131,21 @@ export class ComponentDto implements CreateComponentPayload {
   align?: TextAlign | null;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @ValidateIf((dto: ComponentDto) => dto.isActive !== undefined)
   @IsBoolean()
   isActive?: boolean;
 }
 
-/** A patch of one component. A key left out is a column left alone. */
-export class UpdateComponentDto extends PartialType(ComponentDto) implements UpdateComponentPayload {}
+/**
+ * A patch of one component. A key left out is a column left alone.
+ *
+ * `skipNullProperties: false` because the default puts `@IsOptional()` on every inherited field,
+ * and `@IsOptional()` lets a null through as well as an absence: a null on a NOT NULL column went
+ * on to the database and came back as a 500. With it, a null is checked by the field's own rules.
+ */
+export class UpdateComponentDto
+  extends PartialType(ComponentDto, { skipNullProperties: false })
+  implements UpdateComponentPayload {}
 
 /**
  * A new band, and the one component it is created around.
@@ -132,11 +157,11 @@ export class CreateSectionDto implements CreateSectionPayload {
   @ApiPropertyOptional({ maxLength: SECTION_NAME_MAX_LENGTH, nullable: true, description: 'Named bands are a site’s menu.' })
   @IsOptional()
   @IsString()
-  @MaxLength(SECTION_NAME_MAX_LENGTH)
+  @MaxCodePoints(SECTION_NAME_MAX_LENGTH)
   name?: string | null;
 
   @ApiPropertyOptional({ enum: SECTION_WIDTHS })
-  @IsOptional()
+  @ValidateIf((dto: { width?: unknown }) => dto.width !== undefined)
   @IsIn(SECTION_WIDTHS)
   width?: SectionWidth;
 
@@ -146,14 +171,33 @@ export class CreateSectionDto implements CreateSectionPayload {
   background?: string | null;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @ValidateIf((dto: { isActive?: unknown }) => dto.isActive !== undefined)
   @IsBoolean()
   isActive?: boolean;
 
+  // Declared, not left to `@ValidateNested()`: class-validator skips a nested field that is absent,
+  // and the service then read a kind off `undefined` — a 500 for a body with no component.
   @ApiProperty({ type: ComponentDto })
+  @IsDefined({ context: { errorCode: 'SECTION_COMPONENT_REQUIRED' satisfies PageErrorCode } })
+  @IsObject({ context: { errorCode: 'SECTION_COMPONENT_REQUIRED' satisfies PageErrorCode } })
   @ValidateNested()
   @Type(() => ComponentDto)
   component!: ComponentDto;
+
+  @ApiPropertyOptional({ minimum: 0, description: 'Its place among the bands, 0 first. Absent or past the end: last.' })
+  @IsOptional()
+  @IsInt({ context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  @Min(0, { context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  position?: number;
+}
+
+/** A component added into a band that exists, and where among the band's own it lands. */
+export class AddComponentDto extends ComponentDto implements AddComponentPayload {
+  @ApiPropertyOptional({ minimum: 0, description: 'Its place in the band, 0 first. Absent or past the end: last.' })
+  @IsOptional()
+  @IsInt({ context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  @Min(0, { context: { errorCode: 'POSITION_INVALID' satisfies PageErrorCode } })
+  position?: number;
 }
 
 /**
@@ -167,11 +211,11 @@ export class UpdateSectionDto implements UpdateSectionPayload {
   @ApiPropertyOptional({ maxLength: SECTION_NAME_MAX_LENGTH, nullable: true, description: 'Named bands are a site’s menu.' })
   @IsOptional()
   @IsString()
-  @MaxLength(SECTION_NAME_MAX_LENGTH)
+  @MaxCodePoints(SECTION_NAME_MAX_LENGTH)
   name?: string | null;
 
   @ApiPropertyOptional({ enum: SECTION_WIDTHS })
-  @IsOptional()
+  @ValidateIf((dto: { width?: unknown }) => dto.width !== undefined)
   @IsIn(SECTION_WIDTHS)
   width?: SectionWidth;
 
@@ -181,7 +225,7 @@ export class UpdateSectionDto implements UpdateSectionPayload {
   background?: string | null;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @ValidateIf((dto: { isActive?: unknown }) => dto.isActive !== undefined)
   @IsBoolean()
   isActive?: boolean;
 }

@@ -13,11 +13,15 @@ import {
   labelOf,
   reconcile,
   orderedIdsOf,
+  serverPlaceOf,
+  takenKindsOf,
   toDraft,
   type SectionDraft,
 } from "./design-draft"
-import { arrangementOf, previewOf } from "./design-draft-preview"
+import { arrangementOf, previewOf, shelvesOf, type Shelves } from "./design-draft-preview"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
+
+const NO_SHELVES: Shelves = new Map()
 
 function component(id: string, over: Partial<StoreComponent> = {}): StoreComponent {
   return {
@@ -27,9 +31,11 @@ function component(id: string, over: Partial<StoreComponent> = {}): StoreCompone
     title: id,
     subtitle: null,
     body: null,
-    layout: "FULL",
     span: "FULL",
     display: null,
+    source: null,
+    sourceCategoryId: null,
+    limit: null,
     items: [],
     columns: null,
     align: null,
@@ -142,7 +148,7 @@ describe("previewOf — what the shop window would be served", () => {
       row.id === "a" ? { ...row, components: row.components.map((c) => ({ ...c, span: "THIRD" as const })) } : row,
     )
 
-    const [band] = previewOf(next, saved)
+    const [band] = previewOf(next, saved, NO_SHELVES)
 
     expect(band!.components[0]).toMatchObject({ id: "a1", span: "THIRD" })
   })
@@ -156,14 +162,14 @@ describe("previewOf — what the shop window would be served", () => {
           : row,
     )
 
-    const preview = previewOf(next, saved)
+    const preview = previewOf(next, saved, NO_SHELVES)
 
     expect(preview.map((row) => row.id)).toEqual(["a", "b"])
     expect(preview[1]!.components.map((row) => row.id)).toEqual(["b2"])
   })
 
   it("serves a banner's slides with no address, because nothing in the preview navigates", () => {
-    const preview = previewOf(draft, saved)
+    const preview = previewOf(draft, saved, NO_SHELVES)
 
     expect(preview[0]!.components[0]!.items).toEqual([
       { id: "s", imageUrl: "/s.jpg", title: null, subtitle: null, href: null, external: false },
@@ -171,7 +177,7 @@ describe("previewOf — what the shop window would be served", () => {
   })
 
   it("carries the band's width and colour, which are what the band is", () => {
-    const preview = previewOf(draft, saved)
+    const preview = previewOf(draft, saved, NO_SHELVES)
 
     expect(preview[0]).toMatchObject({ width: "FULL", background: null })
   })
@@ -190,17 +196,84 @@ describe("previewOf — what the shop window would be served", () => {
         : row,
     )
 
-    const preview = previewOf(draft, later)
+    const preview = previewOf(draft, later, NO_SHELVES)
 
     expect(preview[2]).toMatchObject({ background: "navy" })
     expect(preview[2]!.components[0]).toMatchObject({ title: "Por que comprar aqui" })
-    expect(arrangementOf(draft, later)[2]).toMatchObject({ background: "navy" })
+    expect(arrangementOf(draft, later, NO_SHELVES)[2]).toMatchObject({ background: "navy" })
+  })
+})
+
+describe("shelvesOf — each showcase's cards, from the shop as served", () => {
+  const card = { id: "p", slug: "blusa", name: "Blusa", priceCents: 100, compareAtPriceCents: null, imageUrl: null, categorySlug: null }
+
+  it("draws a showcase with the cards and the category the public read resolved", () => {
+    const shelves = shelvesOf([
+      {
+        id: "b",
+        name: null,
+        width: "CONTAINED",
+        background: null,
+        components: [
+          {
+            id: "b2",
+            kind: "PRODUCTS",
+            title: null,
+            subtitle: null,
+            body: null,
+            span: "FULL",
+            display: "RAIL",
+            source: "CATEGORY",
+            sourceCategory: { slug: "blusas", name: "Blusas", description: null },
+            items: [card],
+            columns: null,
+            align: null,
+          },
+        ],
+      },
+    ])
+
+    expect(previewOf(draft, saved, shelves)[1]!.components[1]).toMatchObject({
+      items: [card],
+      sourceCategory: { slug: "blusas", name: "Blusas", description: null },
+    })
+    // Listed by its category, the way the page heads it, rather than as one more "Vitrine de produtos".
+    expect(arrangementOf(draft, saved, shelves)[1]!.components[1]).toMatchObject({ empty: false, title: "Blusas" })
+  })
+
+  /** Only a resolved shelf can say a showcase is empty: its saved items are a pick, not cards. */
+  it("calls a showcase empty when the public read resolved it to nothing, and not when it was not served", () => {
+    const empty: Shelves = new Map([["b2", { items: [], sourceCategory: null }]])
+
+    expect(arrangementOf(draft, saved, empty)[1]!.components[1]).toMatchObject({ empty: true })
+    expect(arrangementOf(draft, saved, NO_SHELVES)[1]!.components[1]).toMatchObject({ empty: false })
+  })
+
+  it("reads no shelf from a cached shop with no sections", () => {
+    expect(shelvesOf(undefined).size).toBe(0)
+  })
+})
+
+describe("arrangementOf — a categories block with none to show", () => {
+  // Four categories and no product in any: the shop window draws nothing, and the panel says so.
+  it("calls a categories block empty when the shop window shows no category", () => {
+    const rows = [section("x", [component("x1", { kind: "CATEGORIES" })])]
+
+    expect(arrangementOf(rows.map(toDraft), rows, NO_SHELVES, 0)[0]!.components[0]).toMatchObject({ empty: true })
+    expect(arrangementOf(rows.map(toDraft), rows, NO_SHELVES, 3)[0]!.components[0]).toMatchObject({ empty: false })
   })
 })
 
 describe("arrangementOf — what the panel lists", () => {
+  // The card says the band's width beside the block's, and it has to be the band's as saved.
+  it("carries each band's width, for the card to say beside the block's", () => {
+    const bands = arrangementOf(draft, saved, NO_SHELVES)
+
+    expect(bands.map((band) => band.width)).toEqual(["FULL", "CONTAINED", "CONTAINED"])
+  })
+
   it("shows a banner's first picture and says which components are empty", () => {
-    const bands = arrangementOf(draft, saved)
+    const bands = arrangementOf(draft, saved, NO_SHELVES)
 
     expect(bands[0]!.components[0]).toMatchObject({ imageUrl: "/s.jpg", empty: false })
     expect(bands[2]!.components[0]).toMatchObject({ kind: "BENEFITS", empty: true })
@@ -211,11 +284,11 @@ describe("arrangementOf — what the panel lists", () => {
    * not in the row from the kind — that rule left a shop with two shelves and no bin on either.
    */
   it("lets every row go but the shop's last product list", () => {
-    const bands = arrangementOf(draft, saved)
+    const bands = arrangementOf(draft, saved, NO_SHELVES)
     expect(bands[1]!.components.map((row) => row.deletable)).toEqual([true, false])
 
     const twice = [...saved, section("d", [component("d1", { kind: "PRODUCTS" })])]
-    expect(arrangementOf(twice.map(toDraft), twice)[1]!.components[1]).toMatchObject({ deletable: true })
+    expect(arrangementOf(twice.map(toDraft), twice, NO_SHELVES)[1]!.components[1]).toMatchObject({ deletable: true })
   })
 })
 
@@ -226,7 +299,8 @@ describe("isEmptyComponent — what draws nothing", () => {
     expect(isEmptyComponent("HEADING", "  ", null, [])).toBe(true)
     expect(isEmptyComponent("TEXT", null, "", [])).toBe(true)
     expect(isEmptyComponent("TEXT", null, "Olá", [])).toBe(false)
-    expect(isEmptyComponent("PRODUCTS", null, null, [])).toBe(false)
+    expect(isEmptyComponent("PRODUCTS", null, null, [])).toBe(true)
+    expect(isEmptyComponent("PRODUCTS", null, null, [{ id: "p" }])).toBe(false)
   })
 })
 
@@ -238,18 +312,27 @@ describe("labelOf", () => {
 })
 
 describe("reconcile — the server changes, the arrangement survives", () => {
-  it("keeps the arranged order and appends what the server grew", () => {
+  // A new band lands right after the one it follows on the server, in the order the owner arranged.
+  it("keeps the arranged order and places what the server grew after its neighbour there", () => {
     const arranged = applyOrder(draft, ["c", "b", "a"])
     const grown = [...saved, section("d", [component("d1")])]
 
-    expect(orderedIdsOf(reconcile(arranged, grown))).toEqual(["c", "b", "a", "d"])
+    expect(orderedIdsOf(reconcile(arranged, grown))).toEqual(["c", "d", "b", "a"])
+  })
+
+  // The "+" between a and b asked the API for the second place; the draft shows it there too.
+  it("places a band added in the middle where it was added", () => {
+    const between = [saved[0]!, section("x", [component("x1")]), ...saved.slice(1)]
+
+    expect(orderedIdsOf(reconcile(draft, between))).toEqual(["a", "x", "b", "c"])
+    expect(orderedIdsOf(reconcile(draft, [section("x", [component("x1")]), ...saved]))).toEqual(["x", "a", "b", "c"])
   })
 
   it("drops a band the server no longer has", () => {
     expect(orderedIdsOf(reconcile(draft, saved.slice(1)))).toEqual(["b", "c"])
   })
 
-  it("does the same one level down: a new component lands last in its band, a deleted one goes", () => {
+  it("does the same one level down: a new component lands after its neighbour, a deleted one goes", () => {
     const arranged = applyComponentOrder(draft, "b", ["b2", "b1"])
     const changed = saved.map((row) =>
       row.id === "b" ? section("b", [component("b2", { kind: "PRODUCTS" }), component("b3")]) : row,
@@ -258,5 +341,51 @@ describe("reconcile — the server changes, the arrangement survives", () => {
     const next = reconcile(arranged, changed)
 
     expect(next[1]!.components.map((row) => row.id)).toEqual(["b2", "b3"])
+  })
+
+  // The block half of the "+": the draft moved b2 above b1, and a block added first on the server
+  // lands first in the draft too — not appended after the owner's order.
+  it("places a block added inside a rearranged band where its + was", () => {
+    const arranged = applyComponentOrder(draft, "b", ["b2", "b1"])
+    const at = serverPlaceOf(["b2", "b1"], ["b1", "b2"], 0)
+    const grown = saved.map((row) =>
+      row.id === "b" ? section("b", [component("x"), component("b1"), component("b2", { kind: "PRODUCTS" })]) : row,
+    )
+
+    expect(at).toBe(0)
+    expect(reconcile(arranged, grown)[1]!.components.map((row) => row.id)).toEqual(["x", "b2", "b1"])
+  })
+})
+
+describe("takenKindsOf — what the gallery stops offering", () => {
+  // A second showcase is the point of the epic; a second strip has nowhere to go.
+  it("keeps offering a showcase however many the page has, and stops at one strip", () => {
+    const rows = [
+      section("a", [component("a1", { kind: "PRODUCTS" }), component("a2", { kind: "ANNOUNCEMENT" })]),
+    ].map(toDraft)
+
+    expect(takenKindsOf(rows)).toEqual(["ANNOUNCEMENT"])
+  })
+})
+
+describe("serverPlaceOf — where the API puts what a + adds", () => {
+  it("asks for the place right after the draft row above the +, counted on the server", () => {
+    // Draft rearranged c, a, b; the server still holds a, b, c.
+    expect(serverPlaceOf(["c", "a", "b"], ["a", "b", "c"], 1)).toBe(3)
+    expect(serverPlaceOf(["c", "a", "b"], ["a", "b", "c"], 2)).toBe(1)
+    expect(serverPlaceOf(["a", "b", "c"], ["a", "b", "c"], 3)).toBe(3)
+  })
+
+  it("asks for the first place for a + above everything", () => {
+    expect(serverPlaceOf(["c", "a"], ["a", "c"], 0)).toBe(0)
+  })
+
+  // The API's answer and reconcile agree: the newcomer lands after the same neighbour in the draft.
+  it("lands the newcomer where the + was, once the draft is reconciled", () => {
+    const arranged = applyOrder(draft, ["c", "a", "b"])
+    const at = serverPlaceOf(orderedIdsOf(arranged), saved.map((row) => row.id), 2)
+    const grown = [...saved.slice(0, at), section("x", [component("x1")]), ...saved.slice(at)]
+
+    expect(orderedIdsOf(reconcile(arranged, grown))).toEqual(["c", "a", "x", "b"])
   })
 })

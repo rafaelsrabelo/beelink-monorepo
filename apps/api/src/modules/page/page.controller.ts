@@ -20,7 +20,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { PageService } from './page.service.js';
-import { ComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
+import { AddComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
 import { ComponentResponse, SectionResponse } from './dto/page.response.js';
 import { ReorderDto } from '../catalog/dto/reorder.dto.js';
 
@@ -52,7 +52,7 @@ export class SectionsController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'A band and the component it is built around. It lands last' })
+  @ApiOperation({ summary: 'A band and the component it is built around, where position says, or last' })
   @ApiCreatedResponse({ type: SectionResponse })
   @ApiBadRequestResponse({ description: 'COMPONENT_ITEMS_INVALID' })
   @ApiConflictResponse({ description: 'COMPONENT_KIND_SINGLETON' })
@@ -104,7 +104,7 @@ export class SectionsController {
   }
 
   @Post(':sectionId/components')
-  @ApiOperation({ summary: 'Add a component to a band. It lands last inside it' })
+  @ApiOperation({ summary: 'Add a component to a band, where position says, or last inside it' })
   @ApiCreatedResponse({ type: ComponentResponse })
   @ApiBadRequestResponse({ description: 'COMPONENT_ITEMS_INVALID' })
   @ApiConflictResponse({ description: 'COMPONENT_KIND_SINGLETON' })
@@ -112,7 +112,7 @@ export class SectionsController {
     @Param('storeSlug') storeSlug: string,
     @Param('sectionId') sectionId: string,
     @CurrentUser() current: AuthenticatedUser,
-    @Body() dto: ComponentDto,
+    @Body() dto: AddComponentDto,
   ): Promise<ComponentResponse> {
     return this.page.createComponent(storeSlug, current.id, sectionId, dto);
   }

@@ -44,11 +44,12 @@ export const SemFotos: Story = {
 }
 
 export const DuasPorLinha: Story = {
-  args: { categoriesPerRow: 2, categories: categories.slice(0, 2) },
+  args: { columns: 2, categories: categories.slice(0, 2) },
 }
 
+/** Four where the cell has room for four; widen and narrow the canvas to watch it step down. */
 export const QuatroPorLinha: Story = {
-  args: { categoriesPerRow: 4 },
+  args: { columns: 4 },
 }
 
 /** A shop that never separated what it sells: a sentence and a door, never a blank page. */

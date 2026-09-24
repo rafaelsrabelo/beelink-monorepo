@@ -41,7 +41,7 @@ export function StorefrontBenefits({ items }: StorefrontBenefitsProps) {
       className="w-full"
       style={{ backgroundColor: "color-mix(in oklab, var(--shop-header) 10%, transparent)" }}
     >
-      <ul className={cn(BAND, "grid grid-cols-2 gap-x-6 gap-y-5 py-6 sm:grid-cols-4")}>
+      <ul className={cn(BAND, "grid grid-cols-2 gap-x-6 gap-y-5 py-6 shop-sm:grid-cols-4")}>
         {items.map((item) => (
           // Icon beside the words and not above them: four stacked icons read as a row of buttons,
           // and none of these is one. Left-aligned for the same reason — a centred two-line block

@@ -46,7 +46,7 @@ describe("StorefrontHero", () => {
     const { container } = render(<StorefrontHero items={[slide("1")]} span="FULL" />)
 
     expect(container.querySelector("img")!.className).toContain("h-44")
-    expect(screen.getByText("Banner 1").className).toContain("sm:text-4xl")
+    expect(screen.getByText("Banner 1").className).toContain("shop-sm:text-4xl")
   })
 
   it("draws nothing at all when it has nothing to draw", () => {

@@ -101,6 +101,15 @@ describe("StorefrontCategoryGrid", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument()
   })
 
+  // The editor offered two to six, and the grid used to ignore it; the cell decides how many fit.
+  it("lays the columns the shopkeeper chose, read from its cell", () => {
+    const { container } = renderGrid({ columns: 5 })
+
+    expect(container.querySelector("section")!.className).toContain("@container")
+    expect(container.querySelector("ul")!.className).toContain("@5xl:grid-cols-5")
+    expect(container.querySelector("ul")!.className).not.toContain("@6xl:grid-cols-6")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = renderGrid()
 

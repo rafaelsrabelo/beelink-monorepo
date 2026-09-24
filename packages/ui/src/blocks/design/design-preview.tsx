@@ -3,13 +3,22 @@
 // React
 import { useCallback, useRef, useSyncExternalStore, type ReactNode } from "react"
 
+// UI
+import { cn } from "@harness-monorepo/ui/lib/utils"
+
 // Block
 import { ArrangeScale } from "./design-arrange"
+import type { PreviewDevice } from "./preview-device-toggle"
 
 /** What the surface is built at. It is what the storefront's own `max-w-[1440px]` targets. */
 export const PREVIEW_WIDTH = 1440
 
+/** A phone's width, the one a shop opened from WhatsApp is most often read at. */
+export const PHONE_WIDTH = 390
+
 export interface DesignPreviewProps {
+  /** Which width the shop is laid out at. The desktop's when none is said. */
+  device?: PreviewDevice
   children: ReactNode
 }
 
@@ -25,21 +34,22 @@ export interface DesignPreviewProps {
  * So the surface is built at a desktop width and `transform: scale()` paints it smaller.
  * `transform` runs at paint time and changes no layout, so nothing inside is squeezed.
  *
- * **Why this is a desktop preview and not a device switcher.** A media query resolves against the
- * window, which the surface's width does not change. The storefront uses `sm:` and `lg:` and no
- * other breakpoint, so at any editor window of 1024px or more the 1440px surface draws exactly
- * what a desktop visitor is served — the preview is true. A 390px surface is not: measured in
- * Chrome at a 1574px window, `sm:` still matched and the payment band drew its four columns inside
- * 390 pixels, where a real phone draws two. Scaling cannot fix that; only a separate viewport can,
- * which means an iframe. Until there is one, this shows the one width it can show honestly.
+ * **Why a phone is a phone here.** A media query resolves against the window, which the surface's
+ * width does not change: measured in Chrome at a 1574px window, a 390px surface still matched `sm:`
+ * and the payment band drew four columns where a real phone draws two. So the shop's blocks do not
+ * ask the window here — inside this surface (`data-shop-preview`) the `shop-sm:` variants and the
+ * rest (globals.css) ask the `shop` container, which is this surface, built at the device's width.
+ * A phone is laid out as a phone and the desktop as a desktop; the shop itself keeps its media
+ * queries.
  *
  * The wrapper's height has to be set by hand: a scaled element still occupies its unscaled box, so
  * without this the pane would reserve the full 1440-wide height and leave a hole under the shop.
  */
-export function DesignPreview({ children }: DesignPreviewProps) {
+export function DesignPreview({ device = "DESKTOP", children }: DesignPreviewProps) {
   const pane = useRef<HTMLDivElement>(null)
   const surface = useRef<HTMLDivElement>(null)
-  const width = PREVIEW_WIDTH
+  const phone = device === "PHONE"
+  const width = phone ? PHONE_WIDTH : PREVIEW_WIDTH
 
   // The measurement, taken in the observer and kept in a ref.
   //
@@ -96,24 +106,35 @@ export function DesignPreview({ children }: DesignPreviewProps) {
 
   return (
     <div ref={pane} className="w-full overflow-hidden" style={height ? { height: height * scale } : undefined}>
+      {/* The device's own column, centred: a phone is a strip down the middle of the pane, not its left edge. */}
       <div
-        ref={surface}
-        style={{
-          width,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-          // The scale, published as data so the chrome inside can undo it.
-          //
-          // Everything the editor draws over the shop — the name chip, the band handle — is painted
-          // by this transform too: at a 384px panel the scale lands near 0.5, so a 12px name paints
-          // at 6px and a 36px handle at 18px. The surface that is supposed to get richer is the one
-          // being painted below the floor of legibility. A counter-scale needs the number, and a
-          // custom property is how CSS gets it without a second measurement.
-          ["--design-scale" as string]: String(scale),
-        }}
+        data-device={device}
+        // `box-content`: the frame's borders sit outside the phone's width instead of inside it.
+        className={cn("h-full", phone && "border-shell-border mx-auto box-content border-x")}
+        style={{ width: width * scale }}
       >
-        {/* Anything dragged in here is painted at this scale; the pointer is not. */}
-        <ArrangeScale scale={scale}>{children}</ArrangeScale>
+        <div
+          ref={surface}
+          // The shop's `shop-*` breakpoints ask this surface, not the window: see globals.css.
+          data-shop-preview=""
+          className="@container/shop"
+          style={{
+            width,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+            // The scale, published as data so the chrome inside can undo it.
+            //
+            // Everything the editor draws over the shop — the name chip, the band handle — is painted
+            // by this transform too: at a 384px panel the scale lands near 0.5, so a 12px name paints
+            // at 6px and a 36px handle at 18px. The surface that is supposed to get richer is the one
+            // being painted below the floor of legibility. A counter-scale needs the number, and a
+            // custom property is how CSS gets it without a second measurement.
+            ["--design-scale" as string]: String(scale),
+          }}
+        >
+          {/* Anything dragged in here is painted at this scale; the pointer is not. */}
+          <ArrangeScale scale={scale}>{children}</ArrangeScale>
+        </div>
       </div>
     </div>
   )

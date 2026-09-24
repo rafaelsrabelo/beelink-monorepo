@@ -16,7 +16,6 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     title: "",
     subtitle: "",
     body: "",
-    layout: "FULL",
   display: "CAROUSEL",
     columns: 0,
     align: "LEFT",
@@ -28,6 +27,10 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     slides: [],
     benefits: [],
     fields: [],
+    source: "ALL",
+    sourceCategoryId: "",
+    picks: [],
+    limit: "",
     ...over,
   }
 }
@@ -72,10 +75,10 @@ describe("ComponentForm", () => {
     expect(screen.queryByLabelText("Título")).not.toBeInTheDocument()
   })
 
-  it("offers a banner its size and a way to add a picture", () => {
+  it("offers a banner its format and a way to add a picture", () => {
     renderForm(values({ kind: "BANNER" }))
 
-    expect(screen.getByRole("combobox", { name: "Tamanho" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Formato" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Adicionar imagem" })).toBeInTheDocument()
   })
 
@@ -102,10 +105,42 @@ describe("ComponentForm", () => {
     expect(screen.getByText("A cor padrão, derivada da página.")).toBeInTheDocument()
   })
 
-  it("offers the categories grid its columns", () => {
-    renderForm(values({ kind: "CATEGORIES" }))
+  it("offers the categories a rail or a grid, and the grid its columns", () => {
+    renderForm(values({ kind: "CATEGORIES", display: "GRID" }))
 
+    expect(screen.getByRole("button", { name: /Grade/, pressed: true })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /Carrossel/ })).not.toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Colunas" })).toHaveTextContent("Automático")
+  })
+
+  // A rail's cards have their own width, so a column count there would change nothing.
+  it("asks a rail of categories for no columns", async () => {
+    const user = userEvent.setup()
+    const { onChange } = renderForm(values({ kind: "CATEGORIES", display: "RAIL" }))
+
+    expect(screen.queryByRole("combobox", { name: "Colunas" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /Grade/ }))
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ kind: "CATEGORIES", display: "GRID" }))
+  })
+
+  // What the source needs is missing, so the save would only be a 400: the button says so first.
+  it("holds a showcase's save until its source has what it needs", () => {
+    const { unmount } = renderForm(values({ kind: "PRODUCTS", source: "CATEGORY" }))
+    expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled()
+    unmount()
+
+    renderForm(values({ kind: "PRODUCTS", source: "SELECTION", picks: [{ id: "a", productId: "p1" }] }))
+    expect(screen.getByRole("button", { name: "Salvar" })).toBeEnabled()
+  })
+
+  it("never saves a showcase from its search box", async () => {
+    const user = userEvent.setup()
+    const { onSubmit } = renderForm(values({ kind: "PRODUCTS", source: "SELECTION", picks: [{ id: "a", productId: "p1" }] }))
+
+    await user.type(screen.getByLabelText("Buscar produto para adicionar"), "vest{Enter}")
+
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it("hands every keystroke back rather than holding it", async () => {
