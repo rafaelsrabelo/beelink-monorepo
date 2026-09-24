@@ -273,6 +273,14 @@ export interface UiMessages {
     filterPriceUpTo: string
     filterPriceFrom: string
     filterDiscount: string
+    /** The phone's door to the filters: "Filtrar", and "Filtrar ({n})" with `{n}` in force. */
+    filtersOpen: string
+    filtersOpenCount: string
+    filtersClose: string
+    /** `{count}` — the sheet's footer, which closes it on the shelf as it now stands. */
+    filtersShowResults: string
+    filtersShowResultsOne: string
+    filtersShowResultsNone: string
     filterPrice: string
     /** `{min}` — the last quick range: "Acima de R$ 200". */
     filterPriceAbove: string

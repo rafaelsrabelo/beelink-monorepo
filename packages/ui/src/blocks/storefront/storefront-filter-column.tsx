@@ -1,21 +1,15 @@
 // React
 import type { ReactNode } from "react"
 
-// Libs
-import { XIcon } from "lucide-react"
-
 // Locales
-import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { StorefrontFilterChips, type StorefrontFilterChip } from "./storefront-filter-chips"
 
-export interface StorefrontFilterChip {
-  label: string
-  /** The same shelf without this one filter. */
-  href: string
-}
+export type { StorefrontFilterChip }
 
 export interface StorefrontFilterColumnProps {
   /** The filters in force, each a way to take it off. The route's own category is never one. */
@@ -55,22 +49,7 @@ export function StorefrontFilterColumn({
         ) : null}
       </div>
 
-      {chips.length ? (
-        <ul className="flex flex-wrap gap-1.5 border-b border-shop-line pb-4">
-          {chips.map((chip) => (
-            <li key={chip.href}>
-              <Link
-                href={chip.href}
-                aria-label={format(text.filterRemove, { label: chip.label })}
-                className="inline-flex h-[30px] items-center gap-1.5 rounded-full border border-[color-mix(in_oklab,var(--shop-primary)_40%,transparent)] bg-[color-mix(in_oklab,var(--shop-primary)_6%,transparent)] px-2.5 text-xs font-semibold text-shop-primary-ink"
-              >
-                {chip.label}
-                <XIcon aria-hidden="true" className="size-3" />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {chips.length ? <StorefrontFilterChips chips={chips} linkComponent={Link} messages={messages} className="border-b border-shop-line pb-4" /> : null}
 
       {children}
     </aside>
