@@ -220,11 +220,11 @@ export function DesignScreen({ store, categories, bands, year, messages, web }: 
           /*
             Adding INTO a band, which is the only way two blocks end up side by side.
 
-            A run of posters is found inside one band (`runsOf`, storefront-sections.tsx), and every
-            other way of adding wrapped the block in a band of its own — so "metade" and "um terço"
-            were unreachable by construction, and a third-width poster alone in its row drew a third
-            of width with two thirds of nothing. `useCreateComponent` had been built for exactly
-            this and had no caller.
+            Blocks share a row only inside one band's twelve-column grid (`StorefrontBandGrid`, in
+            storefront-sections.tsx), and every other way of adding wraps the block in a band of its
+            own — so "metade" and "um terço" were unreachable by construction, and a third-width
+            poster alone in its row drew a third of width with two thirds of nothing.
+            `useCreateComponent` had been built for exactly this and had no caller.
           */
           renderAddToBand={(sectionId) => (
             <BlockGallery

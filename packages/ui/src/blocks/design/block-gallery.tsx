@@ -56,8 +56,8 @@ export interface BlockGalleryProps {
   /**
    * The words on the trigger. The gallery is opened from two places that mean different things:
    * the top of the panel, which adds a band, and a band's own foot, which adds INTO that band —
-   * and only the second puts two posters side by side, because a run of posters cannot cross a
-   * band (`runsOf` in storefront-sections.tsx).
+   * and only the second puts two blocks side by side, because blocks share a row only inside one
+   * band's grid (`StorefrontBandGrid`).
    */
   triggerLabel?: string
   triggerClassName?: string

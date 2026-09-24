@@ -3,19 +3,26 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 
 // Block
+import { expectNoA11yViolations } from "../../test/a11y"
 import { STOREFRONT_SPANS, StorefrontBandCell } from "./storefront-band-cell"
 
-const COLUMNS_OF = { FULL: 12, TWO_THIRDS: 8, HALF: 6, THIRD: 4 } as const
+/** From 1024px each slice is its own share of twelve; from 640px a third and two thirds are halves. */
+const CLASSES_OF = {
+  FULL: ["sm:col-span-12"],
+  TWO_THIRDS: ["sm:col-span-6", "lg:col-span-8"],
+  HALF: ["sm:col-span-6"],
+  THIRD: ["sm:col-span-6", "lg:col-span-4"],
+} as const
 
 describe("StorefrontBandCell", () => {
   /**
    * jsdom has no layout, so the widths themselves are measured in the browser. What this pins is the
    * arithmetic: each slice's share of twelve, which is what two halves sitting side by side rests on.
    */
-  it.each(STOREFRONT_SPANS)("takes %s's share of twelve columns from 640px up", (span) => {
+  it.each(STOREFRONT_SPANS)("takes %s's share of twelve columns", (span) => {
     render(<StorefrontBandCell span={span}>bloco</StorefrontBandCell>)
 
-    expect(screen.getByText("bloco").className).toContain(`sm:col-span-${COLUMNS_OF[span]}`)
+    expect(screen.getByText("bloco").className.split(" ")).toEqual(expect.arrayContaining([...CLASSES_OF[span]]))
   })
 
   it("is the whole width below 640px, whatever its slice", () => {
@@ -24,5 +31,15 @@ describe("StorefrontBandCell", () => {
     const cell = screen.getByText("bloco")
     expect(cell.className.split(" ")).toContain("col-span-12")
     expect(cell).toHaveAttribute("data-span", "THIRD")
+  })
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(
+      <StorefrontBandCell span="HALF">
+        <p>bloco</p>
+      </StorefrontBandCell>,
+    )
+
+    await expectNoA11yViolations(container)
   })
 })

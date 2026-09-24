@@ -55,10 +55,10 @@ export function BandRow({
    * A way into this band, drawn at its foot. The screen supplies it, because choosing a kind is
    * the gallery's job and calling the API is the screen's.
    *
-   * It is what makes "metade" and "um terço" reachable at all: a run of posters is found inside
-   * ONE band (`runsOf` in storefront-sections.tsx), and every other way of adding a block wraps it
-   * in a band of its own — so a third-width poster was always alone in its row, drawn a third wide
-   * with two thirds of nothing beside it.
+   * It is what makes "metade" and "um terço" reachable at all: blocks share a row only inside ONE
+   * band's grid (`StorefrontBandGrid`), and every other way of adding a block wraps it in a band of
+   * its own — so a third-width poster was always alone in its row, drawn a third wide with two
+   * thirds of nothing beside it.
    */
   addSlot?: ReactNode
   messages: UiMessages

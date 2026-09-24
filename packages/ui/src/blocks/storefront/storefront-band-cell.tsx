@@ -12,14 +12,18 @@ export const STOREFRONT_SPANS = ["FULL", "HALF", "THIRD", "TWO_THIRDS"] as const
 export type StorefrontSpan = (typeof STOREFRONT_SPANS)[number]
 
 /**
- * Twelve columns from 640px up, which is the smallest grid all four slices divide. Below 640px
- * every block is the whole width: a third of a phone is a thumbnail with a headline that cannot fit.
+ * Twelve columns, which is the smallest grid all four slices divide.
+ *
+ * Below 640px every block is the whole width: a third of a phone is a thumbnail with a headline
+ * that cannot fit. From 640px to 1024px the thirds are halves, as the posters were before the band
+ * was a grid — a third of 640px is 187px, and a linked poster's title and arrow do not fit in it. A
+ * third and two thirds still share a row there, as two halves. From 1024px every slice is its own.
  */
 const COLUMNS: Record<StorefrontSpan, string> = {
   FULL: "sm:col-span-12",
-  TWO_THIRDS: "sm:col-span-8",
+  TWO_THIRDS: "sm:col-span-6 lg:col-span-8",
   HALF: "sm:col-span-6",
-  THIRD: "sm:col-span-4",
+  THIRD: "sm:col-span-6 lg:col-span-4",
 }
 
 export interface StorefrontBandCellProps {

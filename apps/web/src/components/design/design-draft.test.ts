@@ -112,6 +112,21 @@ describe("changesOf — only what moved is written", () => {
     expect(changes.sections).toEqual([])
   })
 
+  /**
+   * The panel's size control writes the draft, and publishing is what reaches the server. A width
+   * that changed has to be one of the writes, and it has to leave as `span` — the band reads nothing
+   * else.
+   */
+  it("reports a component whose width changed", () => {
+    const next = draft.map((row) =>
+      row.id === "a" ? { ...row, components: row.components.map((c) => ({ ...c, span: "HALF" as const })) } : row,
+    )
+
+    const changes = changesOf(next, saved)
+
+    expect(changes.components).toEqual([expect.objectContaining({ id: "a1", span: "HALF" })])
+  })
+
   it("reports the inner order only for the band whose order changed", () => {
     const changes = changesOf(applyComponentOrder(draft, "b", ["b2", "b1"]), saved)
 
@@ -121,6 +136,17 @@ describe("changesOf — only what moved is written", () => {
 })
 
 describe("previewOf — what the shop window would be served", () => {
+  // The owner has to see a width before publishing it, so the preview's span is the draft's.
+  it("draws the width the draft holds, not the one saved", () => {
+    const next = draft.map((row) =>
+      row.id === "a" ? { ...row, components: row.components.map((c) => ({ ...c, span: "THIRD" as const })) } : row,
+    )
+
+    const [band] = previewOf(next, saved)
+
+    expect(band!.components[0]).toMatchObject({ id: "a1", span: "THIRD" })
+  })
+
   it("drops hidden bands and hidden components, keeping the rest in order", () => {
     const next = draft.map((row) =>
       row.id === "b"

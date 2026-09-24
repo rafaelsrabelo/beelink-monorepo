@@ -84,3 +84,27 @@ empilhados. Faixa ponta a ponta: sem espaço, como antes.
 - A folha do banner ainda tem o seu "Tamanho", que grava `layout` direto no servidor. São dois
   controles para o mesmo campo, e o rascunho não vê o que a folha salvou até recarregar. Esse
   defeito já existe com `layout`, e o A6 junta os dois controles num só.
+
+## Adendo — 24/09/2026, depois da revisão
+
+Uma revisão independente (três leituras, cada achado verificado por quem tentou refutá-lo) confirmou
+sete defeitos deste diff. Todos foram corrigidos:
+
+- **O carrossel numa fatia menor que a faixa** mantinha as alturas fixas e o título grande de quem
+  ocupa a faixa inteira. Num terço, ele ficava mais alto que os pôsteres ao lado e cortava o título.
+  Agora `StorefrontHero` recebe o `span` e, fora da largura cheia, usa a proporção e o título do
+  pôster daquela fatia (`storefront-span-shape.ts`, compartilhado pelos dois). Medido em 1440px: o
+  carrossel e o pôster, os dois num terço, têm 332px de altura.
+- **A decisão 4 estava errada.** Pôsteres lado a lado numa faixa ponta a ponta tinham 16px entre
+  eles, e não zero. A faixa ponta a ponta mantém 16px entre vizinhos, e os blocos empilhados seguem
+  encostados.
+- **Um terço a partir de 640px** tem 187px e cortava o título de um pôster com link. Entre 640px e
+  1024px os terços viram metades, como os pôsteres eram antes da grade. Dois terços também viram
+  metade ali, então os dois continuam dividindo a fileira. A partir de 1024px cada fatia é a sua. Os
+  critérios do ticket, medidos em 1440px e 390px, continuam valendo.
+- **Dois terços em 8:3** fica 6px mais alto que o terço em 4:3 ao lado, por causa do espaço de 16px
+  entre as colunas. O comentário que dizia "a mesma altura" foi corrigido. Uma proporção simples não
+  chega mais perto que isso.
+- **A grade não tinha teste**, e a célula não tinha checagem de acessibilidade (axe). Agora as duas
+  têm.
+- **Quatro comentários citavam o `runsOf`**, que este diff removeu. Foram reescritos.

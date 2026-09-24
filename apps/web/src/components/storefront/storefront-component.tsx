@@ -57,10 +57,10 @@ export interface StorefrontComponentProps {
 /**
  * One component of a band, drawn.
  *
- * Every kind but the poster, which is not drawn one at a time: a run of posters is one showcase
- * row, and the row is what decides their columns, so `StorefrontSections` keeps that case. Its
- * own file because the renderer that held this had passed the line limit, and the seam falls
- * here — how bands and runs are laid out on one side, how one thing draws on the other.
+ * Every kind but the poster: a one-picture banner is drawn as a showcase card sized by its span,
+ * so `StorefrontSections` keeps that case. Its own file because the renderer that held this had
+ * passed the line limit, and the seam falls here — how a band is laid out on one side, how one
+ * thing draws on the other.
  */
 export function StorefrontComponent({
   component,
@@ -76,8 +76,8 @@ export function StorefrontComponent({
   const link = linkComponent ? { linkComponent } : {}
 
   if (component.kind === "BANNER") {
-    // One picture is a poster; several are a carousel. The count is the whole of that decision —
-    // making a carousel used to mean creating two banners and hoping they stayed adjacent.
+    // Several pictures: the carousel, sized to the slice its span gives it. One picture never gets
+    // here — `StorefrontSections` draws it as a poster.
     return (
       <StorefrontHero
         items={(component.items as PublicBannerSlide[]).map((slide) => ({
@@ -91,6 +91,7 @@ export function StorefrontComponent({
         // The band owns the measure now, so a hero never adds its own: doing both would inset a
         // cover inside a band that is already inset.
         width="FULL"
+        span={component.span}
         {...link}
         messages={messages}
       />

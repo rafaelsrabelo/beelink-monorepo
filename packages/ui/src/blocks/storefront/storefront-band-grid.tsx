@@ -6,8 +6,9 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 
 export interface StorefrontBandGridProps {
   /**
-   * An edge-to-edge band. Its blocks touch, the way they did when the band stacked them: a gap
-   * between two full-bleed pictures is a stripe of page colour through the middle of the band.
+   * An edge-to-edge band. Blocks stacked in it touch, the way they did when the band was a column;
+   * blocks side by side keep 16px between them, the way posters sharing a row always did — without
+   * it two rounded cards meet at the corners and leave a notch of page colour between them.
    */
   bleed?: boolean
   /** `StorefrontBandCell`s. Anything else takes one column of twelve. */
@@ -23,9 +24,9 @@ export interface StorefrontBandGridProps {
  * thirds of nothing beside it. Blocks flow now: a half and a half share a row, and so do a third and
  * two thirds.
  *
- * The gaps are the band's old ones: 32px between rows, which was the space between stacked blocks,
- * and 16px between neighbours, which was the space between posters that shared a row.
+ * In a contained band, 32px between rows, which was the space between stacked blocks, and 16px
+ * between neighbours, which was the space between posters that shared a row.
  */
 export function StorefrontBandGrid({ bleed = false, children, className }: StorefrontBandGridProps) {
-  return <div className={cn("grid grid-cols-12", bleed ? "gap-0" : "gap-x-4 gap-y-8", className)}>{children}</div>
+  return <div className={cn("grid grid-cols-12 gap-x-4", !bleed && "gap-y-8", className)}>{children}</div>
 }

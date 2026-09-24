@@ -29,6 +29,26 @@ describe("StorefrontHero", () => {
     expect(screen.getByRole("button", { name: "Próximos" })).toBeInTheDocument()
   })
 
+  /**
+   * A carousel in a third that kept the full band's fixed height stood half again as tall as the
+   * posters beside it and clipped its headline. Out of the full width it is a card among cards.
+   */
+  it("takes a card's proportion and headline in a slice smaller than the band", () => {
+    const { container } = render(<StorefrontHero items={[slide("1")]} span="THIRD" />)
+
+    const picture = container.querySelector("img")!.className
+    expect(picture).toContain("aspect-[4/3]")
+    expect(picture).not.toContain("h-44")
+    expect(screen.getByText("Banner 1").className).toContain("text-lg")
+  })
+
+  it("stays the cover it was across the whole band", () => {
+    const { container } = render(<StorefrontHero items={[slide("1")]} span="FULL" />)
+
+    expect(container.querySelector("img")!.className).toContain("h-44")
+    expect(screen.getByText("Banner 1").className).toContain("sm:text-4xl")
+  })
+
   it("draws nothing at all when it has nothing to draw", () => {
     const { container } = render(<StorefrontHero items={[]} />)
 

@@ -78,10 +78,16 @@ describe("StorefrontSections — a band is a grid", () => {
     expect(screen.getByText("Título b").closest("[data-span]")).toHaveAttribute("data-span", "THIRD")
   })
 
-  it("lets an edge-to-edge band's blocks touch, as they did when the band stacked them", () => {
+  /**
+   * Stacked blocks in an edge-to-edge band touched when the band was a column; posters side by side
+   * always had 16px between them. Both stay true.
+   */
+  it("keeps side-by-side blocks apart in an edge-to-edge band, and stacked ones touching", () => {
     const { container } = draw([band([poster("a", "HALF"), poster("b", "HALF")], "FULL")])
 
-    expect(container.querySelector("[data-span]")!.parentElement!.className).toContain("gap-0")
+    const grid = container.querySelector("[data-span]")!.parentElement!.className.split(" ")
+    expect(grid).toContain("gap-x-4")
+    expect(grid).not.toContain("gap-y-8")
   })
 
   it("leaves the strip above the header out of the band's cells", () => {

@@ -7,6 +7,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { StorefrontSpan } from "./storefront-band-cell"
+import { SPAN_HEIGHT, SPAN_TITLE } from "./storefront-span-shape"
 
 export interface StorefrontShowcaseItem {
   id: string
@@ -31,27 +32,6 @@ export interface StorefrontShowcaseProps {
    */
   span: StorefrontSpan
   linkComponent?: LinkComponent
-}
-
-/**
- * A poster that keeps its cinema ratio on a phone is a letterbox two fingers tall with a headline
- * that will not fit, so the full-width one gets taller as the screen gets narrower.
- *
- * Two thirds is 8:3 from 640px so that it stands as tall as the 4:3 third beside it: the two share a
- * row, and a row of posters with ragged bottoms reads as a layout that broke.
- */
-const HEIGHT: Record<StorefrontSpan, string> = {
-  FULL: "aspect-[4/3] sm:aspect-[2/1] lg:aspect-[21/9]",
-  TWO_THIRDS: "aspect-[16/9] sm:aspect-[8/3]",
-  HALF: "aspect-[16/9]",
-  THIRD: "aspect-[4/3]",
-}
-
-const TITLE: Record<StorefrontSpan, string> = {
-  FULL: "text-2xl sm:text-4xl",
-  TWO_THIRDS: "text-xl sm:text-2xl",
-  HALF: "text-lg",
-  THIRD: "text-lg",
 }
 
 /**
@@ -105,7 +85,7 @@ export function StorefrontShowcase({ items, span, linkComponent: Link = AnchorLi
               style={{ color: "var(--shop-on-text)" }}
             >
               <div className="flex min-w-0 flex-col gap-1">
-                <p className={cn("leading-tight font-semibold text-balance", TITLE[span])}>{item.title}</p>
+                <p className={cn("leading-tight font-semibold text-balance", SPAN_TITLE[span])}>{item.title}</p>
                 {item.subtitle ? (
                   <p
                     className={cn(
@@ -130,7 +110,7 @@ export function StorefrontShowcase({ items, span, linkComponent: Link = AnchorLi
           </>
         )
 
-        const shape = cn("group relative block w-full overflow-hidden rounded-2xl", HEIGHT[span])
+        const shape = cn("group relative block w-full overflow-hidden rounded-2xl", SPAN_HEIGHT[span])
 
         const card = item.href ? (
           <Link

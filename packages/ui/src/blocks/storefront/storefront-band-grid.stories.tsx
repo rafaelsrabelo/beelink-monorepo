@@ -50,14 +50,14 @@ export const Metades: Story = {
   args: { children: [poster("2", "Frete grátis", "HALF"), poster("3", "Pix com desconto", "HALF")] },
 }
 
-/** Três terços numa fileira, sem ninguém precisar agrupá-los. */
+/** Três terços numa fileira a partir de 1024px; entre 640px e 1024px, dois por fileira. */
 export const Tercos: Story = {
   args: {
     children: [poster("4", "Troca fácil", "THIRD"), poster("5", "Entrega rápida", "THIRD"), poster("6", "Parcelado", "THIRD")],
   },
 }
 
-/** Dois terços e um terço: a mesma altura, porque as proporções foram escolhidas para isso. */
+/** Dois terços e um terço na mesma fileira. Entre 640px e 1024px viram duas metades. */
 export const DoisTercosEUmTerco: Story = {
   args: { children: [poster("7", "Lançamento da semana", "TWO_THIRDS"), poster("8", "Mais vendido", "THIRD")] },
 }
@@ -75,7 +75,7 @@ export const Misturado: Story = {
   },
 }
 
-/** Faixa ponta a ponta: os blocos se encostam, como antes da grade. */
+/** Faixa ponta a ponta: 16px entre vizinhos, e blocos empilhados se encostam, como antes da grade. */
 export const PontaAPonta: Story = {
   args: { bleed: true, children: [poster("14", "Esquerda", "HALF"), poster("15", "Direita", "HALF")] },
 }
