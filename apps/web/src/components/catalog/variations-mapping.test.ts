@@ -10,12 +10,19 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { EMPTY_FORM } from "./product-form-mapping"
-import { optionsPayloadOf, rekeyDraft, toVariationsDraft, variantsPayloadOf, variationIssuesOf } from "./variations-mapping"
+import {
+  imagesPayloadOf,
+  optionsPayloadOf,
+  rekeyDraft,
+  toVariationsDraft,
+  variantsPayloadOf,
+  variationIssuesOf,
+} from "./variations-mapping"
 
 const base = { isActive: true, price: "189,00", stock: "", sku: "", weight: "" }
 
 function detail(over: Partial<ProductDetail>): ProductDetail {
-  return { id: "p1", options: [], variants: [], ...over } as unknown as ProductDetail
+  return { id: "p1", options: [], variants: [], images: [], ...over } as unknown as ProductDetail
 }
 
 const variant = (id: string, optionValueIds: string[], over: object = {}) => ({
@@ -170,5 +177,48 @@ describe("what the save sends", () => {
     expect(issues.blocked).toBe(true)
     expect(issues.options).toEqual({ a: "Dê um nome para a opção.", b: "Adicione pelo menos um valor." })
     expect(issues.rows.x).toBe("Informe o preço de X.")
+  })
+})
+
+describe("the photos of a product with variations", () => {
+  const flavours = { id: "sabor", name: "Sabor", values: [{ id: "choc", name: "Chocolate", colorHex: null }, { id: "mor", name: "Morango", colorHex: null }] }
+  const photo = (url: string, optionValueIds: string[]) => ({ id: url, url, alt: null, optionValueIds })
+
+  it("reads what each photo is of, and keeps no entry for a photo of every combination", () => {
+    const draft = toVariationsDraft(
+      detail({
+        options: [flavours],
+        variants: [variant("v1", ["choc"]), variant("v2", ["mor"])],
+        images: [photo("/geral.jpg", []), photo("/mor.jpg", ["mor"])],
+      }),
+      defaultMessages,
+    )
+
+    expect(draft.photos).toEqual({ "/mor.jpg": ["mor"] })
+  })
+
+  it("names a new value by the id it was given, and drops a value the product no longer has", () => {
+    const draft: VariationsValue = {
+      options: [{ key: "sabor", name: "Sabor", isColor: false, values: [{ key: "choc", name: "Chocolate", colorHex: null }, { key: "new:mor", name: "Morango", colorHex: null }] }],
+      rows: {},
+      photos: { "/mor.jpg": ["new:mor"], "/antiga.jpg": ["baunilha"] },
+    }
+    const saved = detail({ options: [flavours] })
+
+    expect(imagesPayloadOf(["/geral.jpg", "/mor.jpg", "/antiga.jpg"], draft, saved)).toEqual([
+      { url: "/geral.jpg", optionValueIds: [] },
+      { url: "/mor.jpg", optionValueIds: ["mor"] },
+      { url: "/antiga.jpg", optionValueIds: [] },
+    ])
+  })
+
+  it("renames a photo's new keys after a partial save, like the rows'", () => {
+    const draft: VariationsValue = {
+      options: [{ key: "new:sabor", name: "Sabor", isColor: false, values: [{ key: "new:choc", name: "Chocolate", colorHex: null }, { key: "new:mor", name: "Morango", colorHex: null }] }],
+      rows: {},
+      photos: { "/mor.jpg": ["new:mor"] },
+    }
+
+    expect(rekeyDraft(draft, detail({ options: [flavours] })).photos).toEqual({ "/mor.jpg": ["mor"] })
   })
 })

@@ -41,7 +41,7 @@ describe("saveProduct", () => {
   it("saves a product that sells one thing in one request, price included", async () => {
     const calls = answerInOrder()
 
-    await saveProduct("lessari", { ...base, variations: { options: { options: [] }, variants: () => [], hasCombinations: false } })
+    await saveProduct("lessari", { ...base, variations: { options: { options: [] }, variants: () => [], images: () => [], hasCombinations: false } })
 
     expect(calls).toHaveLength(1)
     expect(calls[0]).toContain("PUT /api/stores/lessari/products/p1 ")
@@ -54,15 +54,50 @@ describe("saveProduct", () => {
 
     await saveProduct("lessari", {
       ...base,
-      variations: { options: { options: [{ name: "Tamanho", values: [{ name: "P" }] }] }, variants, hasCombinations: true },
+      variations: {
+        options: { options: [{ name: "Tamanho", values: [{ name: "P" }] }] },
+        variants,
+        images: () => [],
+        hasCombinations: true,
+      },
     })
 
     expect(calls.map((call) => call.split(" ").slice(0, 2).join(" "))).toEqual([
       "PUT /api/stores/lessari/products/p1",
       "PUT /api/stores/lessari/products/p1/options",
       "PUT /api/stores/lessari/products/p1/variants",
+      "PUT /api/stores/lessari/products/p1",
     ])
     expect(variants).toHaveBeenCalledWith(detail)
+  })
+
+  it("sends the photos last on a product with options, with the values each is of", async () => {
+    const calls = answerInOrder()
+    const images = vi.fn(() => [{ url: "/morango.jpg", optionValueIds: ["v-morango"] }])
+
+    await saveProduct("lessari", {
+      ...base,
+      fields: { name: "Whey", images: [{ url: "/morango.jpg" }] },
+      hadOptions: true,
+      variations: { options: { options: [] }, variants: () => [], images, hasCombinations: true },
+    })
+
+    expect(calls[0]).not.toContain("images")
+    expect(calls[3]).toContain('"images":[{"url":"/morango.jpg","optionValueIds":["v-morango"]}]')
+    expect(images).toHaveBeenCalledWith(detail)
+  })
+
+  it("keeps the photos in the one request of a product that sells one thing", async () => {
+    const calls = answerInOrder()
+
+    await saveProduct("lessari", {
+      ...base,
+      fields: { name: "Blusa", images: [{ url: "/blusa.jpg" }] },
+      variations: { options: { options: [] }, variants: () => [], images: () => [], hasCombinations: false },
+    })
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).toContain('"images":[{"url":"/blusa.jpg"}]')
   })
 
   it("never sends a price with the product once it has options", async () => {
@@ -71,7 +106,7 @@ describe("saveProduct", () => {
     await saveProduct("lessari", {
       ...base,
       hadOptions: true,
-      variations: { options: { options: [] }, variants: () => [], hasCombinations: true },
+      variations: { options: { options: [] }, variants: () => [], images: () => [], hasCombinations: true },
     })
 
     expect(calls[0]).not.toContain("priceCents")
@@ -83,7 +118,7 @@ describe("saveProduct", () => {
     await saveProduct("lessari", {
       ...base,
       hadOptions: true,
-      variations: { options: { options: [] }, variants: () => [], hasCombinations: false },
+      variations: { options: { options: [] }, variants: () => [], images: () => [], hasCombinations: false },
     })
 
     expect(calls.map((call) => call.split(" ").slice(0, 2).join(" "))).toEqual([
@@ -92,6 +127,7 @@ describe("saveProduct", () => {
       "PUT /api/stores/lessari/products/p1",
     ])
     expect(calls[2]).toContain('"priceCents":18900')
+    expect(calls[2]).toContain('"images":[]')
   })
 
   it("says which product exists when a later step of creating it is refused", async () => {
@@ -103,7 +139,7 @@ describe("saveProduct", () => {
     const saving = saveProduct("lessari", {
       ...base,
       productId: undefined,
-      variations: { options: { options: [] }, variants: () => [], hasCombinations: true },
+      variations: { options: { options: [] }, variants: () => [], images: () => [], hasCombinations: true },
     })
 
     await expect(saving).rejects.toBeInstanceOf(SaveProductError)

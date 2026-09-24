@@ -1,6 +1,7 @@
 // Types
 import type {
   ProductDetail,
+  ProductImagePayload,
   ProductVariantPayload,
   ReplaceProductOptionsPayload,
 } from "@harness-monorepo/contracts"
@@ -13,6 +14,7 @@ import {
   combinationsOf,
   isNewKey,
   labelOf,
+  photoValuesOf,
   type VariationRow,
   type VariationsValue,
 } from "@harness-monorepo/ui/lib/variations"
@@ -57,6 +59,10 @@ export function toVariationsDraft(product: ProductDetail, messages: UiMessages):
           weight: variant.weightGrams === null ? "" : String(variant.weightGrams),
         } satisfies VariationRow,
       ]),
+    ),
+    // Only the marked photos, as the draft stores them: a photo of every combination has no entry.
+    photos: Object.fromEntries(
+      product.images.filter((image) => image.optionValueIds.length > 0).map((image) => [image.url, image.optionValueIds]),
     ),
   }
 }
@@ -112,7 +118,27 @@ export function rekeyDraft(draft: VariationsValue, saved: ProductDetail): Variat
     rows: Object.fromEntries(
       Object.entries(draft.rows).map(([key, row]) => [combinationKey(key === "" ? [] : key.split("|").map(keyOf)), row]),
     ),
+    ...(draft.photos
+      ? { photos: Object.fromEntries(Object.entries(draft.photos).map(([url, keys]) => [url, keys.map(keyOf)])) }
+      : {}),
   }
+}
+
+/**
+ * The gallery as the API takes it, once the options are saved: each photo with the ids of the
+ * values it is of. A new value is matched to its id by place, as the variants are; a value that
+ * is no longer one of the product's is dropped, which leaves its photo of every combination.
+ */
+export function imagesPayloadOf(urls: readonly string[], draft: VariationsValue, saved: ProductDetail): ProductImagePayload[] {
+  const ids = savedIds(draft, saved)
+  const current = new Set(saved.options.flatMap((option) => option.values.map((value) => value.id)))
+
+  return urls.map((url) => ({
+    url,
+    optionValueIds: photoValuesOf(draft, url)
+      .map((key) => ids.get(key) ?? key)
+      .filter((id) => current.has(id)),
+  }))
 }
 
 /**
