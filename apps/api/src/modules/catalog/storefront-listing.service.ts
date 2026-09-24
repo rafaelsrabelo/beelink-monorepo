@@ -57,6 +57,7 @@ export class StorefrontListingService {
     pageSize: number,
     categories: readonly PublicProductCategory[],
   ): Promise<StorefrontListing> {
+    filters = { ...filters, searchKey: await this.searchKeyOf(filters.search) };
     const where = this.where(storeId, filters);
 
     const [[rows, total], facets] = await Promise.all([
@@ -79,6 +80,15 @@ export class StorefrontListingService {
       facets,
       applied: appliedOf(filters, categories, facets),
     };
+  }
+
+  /** The term as the trigger writes the column: see `ListingFilters.searchKey`. */
+  private async searchKeyOf(search: string | undefined): Promise<string | undefined> {
+    const term = search?.trim();
+    if (!term) return undefined;
+
+    const [row] = await this.prisma.$queryRaw<{ key: string }[]>(Prisma.sql`SELECT trim(lower(unaccent(${term}))) AS "key"`);
+    return row?.key || undefined;
   }
 
   private where(storeId: string, filters: ListingFilters, without?: FacetKey): ProductWhereInput {

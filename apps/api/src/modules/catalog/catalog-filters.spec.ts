@@ -5,15 +5,17 @@ import { describe, expect, it } from 'vitest';
 import type { ProductFieldRefs } from '../../generated/prisma/models/Product.js';
 
 // App
-import { appliedOf, listingWhere, normalizeSearch, orderByOf, parseOptionFilters, type ListingFilters } from './catalog-filters.js';
+import { appliedOf, likeLiteral, listingWhere, orderByOf, parseOptionFilters, type ListingFilters } from './catalog-filters.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 const PRICE = { name: 'priceCents' } as unknown as ProductFieldRefs['priceCents'];
 const none: ListingFilters = { discount: false, options: [], sort: 'relevancia' };
 
 describe('the storefront listing filters', () => {
-  it('searches as the column stores text: no accents, no case', () => {
-    expect(normalizeSearch('  Crochê BLUSÃO ')).toBe('croche blusao');
+  it('matches a search literally: % and _ are text, not wildcards', () => {
+    expect(likeLiteral('100% algodao')).toBe('100\\% algodao');
+    expect(likeLiteral('_a\\b')).toBe('\\_a\\\\b');
+    expect(likeLiteral('croche')).toBe('croche');
   });
 
   it('groups option filters by name without regard to case, and drops malformed ones', () => {
@@ -34,7 +36,7 @@ describe('the storefront listing filters', () => {
   it('narrows by every filter, a parent category holding its children', () => {
     const where = listingWhere(
       's1',
-      { category: 'blusas', search: 'Crochê', priceMinCents: 5000, priceMaxCents: 20000, discount: true, options: [], sort: 'relevancia' },
+      { category: 'blusas', search: 'Crochê', searchKey: 'croche', priceMinCents: 5000, priceMaxCents: 20000, discount: true, options: [], sort: 'relevancia' },
       PRICE,
     );
 
@@ -73,6 +75,13 @@ describe('the storefront listing filters', () => {
     expect(JSON.stringify(listingWhere('s1', filters, PRICE, 'price'))).not.toContain('gte');
   });
 
+  it('drops a search that has nothing left to match, from the shelf and from what is applied', () => {
+    const filters: ListingFilters = { ...none, search: '´' };
+
+    expect(JSON.stringify(listingWhere('s1', filters, PRICE))).not.toContain('searchText');
+    expect(appliedOf(filters, [], { categories: [], discount: { count: 0, selected: false }, price: null, options: [] })).toEqual([]);
+  });
+
   it('orders by the shopkeeper by default, and always ends on the id', () => {
     expect(orderByOf('relevancia').at(-1)).toEqual({ id: 'asc' });
     expect(orderByOf('menor-preco')[0]).toEqual({ priceCents: 'asc' });
@@ -81,7 +90,7 @@ describe('the storefront listing filters', () => {
 
   it('lists the filters in force, named as the shop names them', () => {
     const applied = appliedOf(
-      { ...none, category: 'blusas', search: 'croche', priceMaxCents: 20000, discount: true, options: [{ name: 'tamanho', values: ['p'] }] },
+      { ...none, category: 'blusas', search: 'Crochê', searchKey: 'croche', priceMaxCents: 20000, discount: true, options: [{ name: 'tamanho', values: ['p'] }] },
       [{ id: 'c1', slug: 'blusas', name: 'Blusas', description: null, imageUrl: null, parentSlug: null, productCount: 1 }],
       {
         categories: [],
@@ -93,7 +102,7 @@ describe('the storefront listing filters', () => {
 
     expect(applied).toEqual([
       { key: 'categoria', value: 'blusas', label: 'Blusas' },
-      { key: 'busca', value: 'croche', label: 'croche' },
+      { key: 'busca', value: 'Crochê', label: 'Crochê' },
       { key: 'precoMax', value: '200', label: '200' },
       { key: 'desconto', value: '1', label: '1' },
       { key: 'opcao', value: 'Tamanho:P', label: 'Tamanho: P' },

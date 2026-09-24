@@ -30,7 +30,15 @@ export interface OptionFilter {
 
 export interface ListingFilters {
   category?: string;
+  /** As the visitor typed it, which is what the applied filters echo back. */
   search?: string;
+  /**
+   * The search as the column holds text, which is what is matched. The service asks Postgres for it
+   * with the trigger's own `lower(unaccent())`: NFD in JavaScript strips accents but leaves º, ª, ’
+   * and — as they are, and `unaccent` rewrites each of them, so "1ª linha" would never find itself.
+   * Absent when the term has nothing left to match.
+   */
+  searchKey?: string;
   priceMinCents?: number;
   priceMaxCents?: number;
   discount: boolean;
@@ -41,13 +49,12 @@ export interface ListingFilters {
 /** A filter a facet leaves out of its own count. */
 export type FacetKey = 'category' | 'price' | 'discount' | `option:${string}`;
 
-/** As the search column holds text: lower case, no accents. `unaccent` and NFD agree on Portuguese. */
-export function normalizeSearch(term: string): string {
-  return term
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim();
+/**
+ * A term matched literally by `LIKE`. Prisma's `contains` passes `%` and `_` through as wildcards, so
+ * "100%" would find "1000ml" and "_" the whole shelf; the backslash is `LIKE`'s default escape.
+ */
+export function likeLiteral(term: string): string {
+  return term.replace(/[\\%_]/g, '\\$&');
 }
 
 /** The key two spellings of one option name share. */
@@ -109,8 +116,7 @@ export function listingWhere(
     });
   }
 
-  const search = filters.search ? normalizeSearch(filters.search) : '';
-  if (search) and.push({ searchText: { contains: search } });
+  if (filters.searchKey) and.push({ searchText: { contains: likeLiteral(filters.searchKey) } });
 
   if (without !== 'price') {
     if (filters.priceMinCents !== undefined) and.push({ priceCents: { gte: filters.priceMinCents } });
@@ -169,7 +175,7 @@ export function appliedOf(
     const name = categories.find((category) => category.slug === filters.category)?.name;
     applied.push({ key: 'categoria', value: filters.category, label: name ?? filters.category });
   }
-  if (filters.search?.trim()) applied.push({ key: 'busca', value: filters.search.trim(), label: filters.search.trim() });
+  if (filters.searchKey && filters.search?.trim()) applied.push({ key: 'busca', value: filters.search.trim(), label: filters.search.trim() });
   if (filters.priceMinCents !== undefined) {
     const reais = String(filters.priceMinCents / 100);
     applied.push({ key: 'precoMin', value: reais, label: reais });

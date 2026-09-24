@@ -110,6 +110,31 @@ describe('the storefront listing, filtered, ordered and faceted', () => {
       expect(names(await shelf(`?busca=${encodeURIComponent('crochê')}`))).toEqual(['Blusa de Crochê', 'Saia Midi']);
       expect(names(await shelf(`?busca=${encodeURIComponent('à mão')}`))).toEqual(['Saia Midi']);
     });
+
+    it('finds a name by its own spelling, ordinals and curly quotes included, and reads % and _ as text', async () => {
+      const prisma = app.get(PrismaService);
+      const extra = await Promise.all(
+        ['Chuteira 1ª linha', 'Caixa d’água 500L', 'Anel nº 18', 'Camiseta 100% algodão', 'Caneca 1000ml'].map((name) =>
+          add<ProductDetail>('/api/stores/lessari/products', { name, priceCents: 5000 }),
+        ),
+      );
+      const search = async (term: string) => names(await shelf(`?busca=${encodeURIComponent(term)}`));
+
+      try {
+        // Postgres's unaccent turns ª, º and ’ into a, o and ', and the term goes through it too.
+        expect(await search('1ª linha')).toEqual(['Chuteira 1ª linha']);
+        expect(await search('d’água')).toEqual(['Caixa d’água 500L']);
+        expect(await search("d'agua")).toEqual(['Caixa d’água 500L']);
+        expect(await search('nº 18')).toEqual(['Anel nº 18']);
+        expect(await search('100%')).toEqual(['Camiseta 100% algodão']);
+        expect(await search('_')).toEqual([]);
+
+        const echoed = await shelf(`?busca=${encodeURIComponent('1ª linha')}`);
+        expect(echoed.applied).toEqual([{ key: 'busca', value: '1ª linha', label: '1ª linha' }]);
+      } finally {
+        await prisma.product.deleteMany({ where: { id: { in: extra.map((product) => product.id) } } });
+      }
+    });
   });
 
   describe('facets', () => {

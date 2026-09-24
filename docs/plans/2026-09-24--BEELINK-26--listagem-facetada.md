@@ -103,3 +103,22 @@ para todo push, e o PR registra o número medido.
 
 - Marca, mais vendidos, avaliação, frete grátis e retirada, como o ticket diz.
 - A interface das facetas (B3, B4) e os campos derivados de preço e estoque (B2).
+
+## Adendo — revisão independente (24/09/2026)
+
+Uma revisão com um verificador que tentou refutar cada achado. Dois confirmados, os dois corrigidos:
+
+1. **A busca não achava o próprio nome** (grave, introduzido por este ticket). A decisão 4 estava
+   errada: `unaccent` e NFD **não** concordam no português do varejo. O `unaccent` troca ª e º por
+   a e o, as aspas curvas (’) pelas retas, travessões por hífen e reticências por três pontos. O
+   NFD em JS deixa todos como estão. Por isso "1ª linha", "nº 18" e "d’água" voltavam vazias,
+   embora o `ILIKE` antigo as achasse. O teclado do iPhone digita ’ por padrão.
+
+   Agora o termo passa pela mesma função do trigger, no próprio Postgres
+   (`SELECT trim(lower(unaccent($1)))`), antes de montar o `where`. Custa uma ida ao banco a mais,
+   só quando há busca. Um termo que fica vazio depois disso não filtra a vitrine e não aparece nos
+   filtros aplicados.
+2. **`%` e `_` funcionavam como curingas** (menor, herdado do `ILIKE` antigo). "100%" achava
+   "1000ml", e "_" devolvia a vitrine inteira. O termo agora é escapado para o `LIKE` (`likeLiteral`).
+
+O teste e2e da listagem cobre "1ª linha", "d’água", "d'agua", "nº 18", "100%" e "_".
