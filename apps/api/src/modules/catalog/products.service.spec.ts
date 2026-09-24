@@ -227,7 +227,7 @@ describe('ProductsService.list — the panel, filtered', () => {
     expect(conditions[0]?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode', 'variants']);
   });
 
-  /** A product with options has a code per combination, and the one in hand may be any of them. */
+  /** A product with options has a code per combination, and the one in hand may be any current one. */
   it('also matches the code and the barcode of every variant', async () => {
     const { service, findMany } = buildOwned(ownerRows(1), 1);
 
@@ -237,6 +237,7 @@ describe('ProductsService.list — the panel, filtered', () => {
     expect(conditions[0]?.OR[3]).toEqual({
       variants: {
         some: {
+          archivedAt: null,
           OR: [
             { sku: { contains: 'BLS-P-ARE', mode: 'insensitive' } },
             { barcode: { contains: 'BLS-P-ARE', mode: 'insensitive' } },

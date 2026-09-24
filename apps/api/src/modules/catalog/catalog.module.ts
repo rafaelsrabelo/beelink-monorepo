@@ -9,6 +9,7 @@ import { ProductCategoriesService } from './product-categories.service.js';
 import { ProductsController } from './products.controller.js';
 import { StorefrontController } from './storefront.controller.js';
 import { ProductsService } from './products.service.js';
+import { ProductVariantsService } from './product-variants.service.js';
 
 /**
  * The catalogue: the shopkeeper's categories and the things they sell.
@@ -20,7 +21,7 @@ import { ProductsService } from './products.service.js';
 @Module({
   imports: [StoresModule],
   controllers: [StorefrontController, ProductCategoriesController, ProductsController],
-  providers: [CatalogSlugService, ProductCategoriesService, ProductsService],
+  providers: [CatalogSlugService, ProductCategoriesService, ProductsService, ProductVariantsService],
   exports: [ProductCategoriesService, ProductsService],
 })
 export class CatalogModule {}

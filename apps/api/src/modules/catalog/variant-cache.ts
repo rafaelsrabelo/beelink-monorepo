@@ -69,11 +69,21 @@ export function productCacheOf(variants: readonly VariantCacheRow[]): PerUnitVal
 /** Required on a variant: a null for one of these in a patch means "not sent", as it always has. */
 const REQUIRED_FIELDS: ReadonlySet<PerUnitField> = new Set(['priceCents', 'trackStock']);
 
-/** The per-unit fields a patch carries, and only those. */
-export function perUnitPatchOf(patch: Partial<Record<PerUnitField, unknown>>): Partial<PerUnitValues> {
+/**
+ * The per-unit fields a patch carries, and only those — leaving out any that match what `current`
+ * already holds. A patch that repeats a product's own values changes nothing, and the editor sends
+ * every field on every save, including a rename of a product whose values belong to its variants.
+ */
+export function perUnitPatchOf(
+  patch: Partial<Record<PerUnitField, unknown>>,
+  current?: PerUnitValues,
+): Partial<PerUnitValues> {
   return Object.fromEntries(
     PER_UNIT_FIELDS.filter(
-      (field) => patch[field] !== undefined && !(patch[field] === null && REQUIRED_FIELDS.has(field)),
+      (field) =>
+        patch[field] !== undefined &&
+        !(patch[field] === null && REQUIRED_FIELDS.has(field)) &&
+        patch[field] !== current?.[field],
     ).map((field) => [field, patch[field]]),
   ) as Partial<PerUnitValues>;
 }
@@ -88,10 +98,10 @@ export async function lockProduct(db: Db, productId: string): Promise<void> {
   await db.$queryRaw`SELECT 1 FROM "products" WHERE "id" = ${productId}::uuid FOR UPDATE`;
 }
 
-/** Rewrites a product's cache from its variants. Call it inside the transaction that changed them. */
+/** Rewrites a product's cache from its current variants. Call it inside the transaction that changed them. */
 export async function syncProductCache(db: Db, productId: string): Promise<void> {
   const variants = await db.productVariant.findMany({
-    where: { productId },
+    where: { productId, archivedAt: null },
     orderBy: [{ position: 'asc' }, { id: 'asc' }],
   });
 

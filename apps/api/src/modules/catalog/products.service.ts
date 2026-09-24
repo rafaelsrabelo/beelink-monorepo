@@ -1,9 +1,10 @@
 // Nest
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
 import type {
   Product,
+  ProductDetail,
   ProductListQuery,
   ProductPage,
   ProductStockFilter,
@@ -25,19 +26,9 @@ import {
   PRODUCTS_PAGE_SIZE_MAX,
 } from './catalog.constants.js';
 import { productInclude, toProduct, toPublicProduct, toPublicProductCard } from './catalog.mapper.js';
+import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
 import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
-
-/**
- * The model whose unique index refused a write, or null when the error is something else. A product
- * write can trip two: the slug on Product, and the SKU on ProductVariant — including through a
- * nested create, which Prisma still reports under the variant.
- */
-function uniqueViolationOn(error: unknown): string | null {
-  if (typeof error !== 'object' || error === null || !('code' in error) || error.code !== 'P2002') return null;
-
-  const meta = 'meta' in error ? (error.meta as { modelName?: unknown } | undefined) : undefined;
-  return typeof meta?.modelName === 'string' ? meta.modelName : null;
-}
+import { productDetailInclude, toProductDetail } from './variant.mapper.js';
 
 /** The rows a write should store for a product's photos, in the order they were sent. */
 function imageRows(images: CreateProductDto['images']): { url: string; alt: string | null; position: number }[] {
@@ -116,6 +107,7 @@ export class ProductsService {
                   {
                     variants: {
                       some: {
+                        archivedAt: null,
                         OR: [
                           { sku: { contains: search, mode: 'insensitive' as const } },
                           { barcode: { contains: search, mode: 'insensitive' as const } },
@@ -232,18 +224,24 @@ export class ProductsService {
     return toPublicProduct(row);
   }
 
-  async byId(storeSlug: string, productId: string, userId: string): Promise<Product> {
+  async byId(storeSlug: string, productId: string, userId: string): Promise<ProductDetail> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const row = await this.prisma.product.findFirst({
+      where: { id: productId, storeId },
+      include: productDetailInclude,
+    });
 
-    return toProduct(await this.owned(storeId, productId));
+    if (!row) throw this.notFound(productId);
+
+    return toProductDetail(row);
   }
 
-  async create(storeSlug: string, userId: string, dto: CreateProductDto): Promise<Product> {
+  async create(storeSlug: string, userId: string, dto: CreateProductDto): Promise<ProductDetail> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const slug = this.slugs.resolve(dto.slug, dto.name);
 
-    this.assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
-    this.assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
+    assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
+    assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
 
     const last = await this.prisma.product.aggregate({ where: { storeId }, _max: { position: true } });
@@ -280,10 +278,10 @@ export class ProductsService {
           images: { create: imageRows(dto.images) },
           variants: { create: [{ storeId, position: 0, ...perUnit }] },
         },
-        include: productInclude,
+        include: productDetailInclude,
       });
 
-      return toProduct(row);
+      return toProductDetail(row);
     } catch (error) {
       throw this.conflictOf(error, slug);
     }
@@ -294,12 +292,11 @@ export class ProductsService {
     productId: string,
     userId: string,
     dto: UpdateProductDto,
-  ): Promise<Product> {
+  ): Promise<ProductDetail> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     await this.owned(storeId, productId);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
 
-    const perUnit = perUnitPatchOf(dto);
     const renaming = dto.slug !== undefined || dto.name !== undefined;
     let slug = dto.slug ?? '';
 
@@ -309,6 +306,7 @@ export class ProductsService {
         // Read again under the lock: the checks and the rename are judged against the row as it is
         // now, not as it was before another save of the same product finished.
         const current = await tx.product.findUniqueOrThrow({ where: { id: productId } });
+        const perUnit = perUnitPatchOf(dto, current);
 
         // First, so a product with options answers why before any price rule does. A product with
         // options prices and counts each combination on its own; one price sent for the whole
@@ -320,11 +318,11 @@ export class ProductsService {
         }
 
         const after = { ...current, ...perUnit };
-        this.assertPrices(after.priceCents, after.compareAtPriceCents);
+        assertPrices(after.priceCents, after.compareAtPriceCents);
         // Against what the row will hold after the patch, not against what was sent: sending one
         // side on a product that already has the other two is a complete box, and refusing it
         // would be a rule about the request rather than about the parcel.
-        this.assertParcel(after.lengthMm, after.widthMm, after.heightMm);
+        assertParcel(after.lengthMm, after.widthMm, after.heightMm);
 
         slug = renaming ? this.slugs.resolve(dto.slug, dto.name ?? current.name) : current.slug;
 
@@ -353,14 +351,14 @@ export class ProductsService {
 
         if (Object.keys(perUnit).length > 0) {
           // Without options, the product's one variant is its default, and it takes the values.
-          await tx.productVariant.updateMany({ where: { productId }, data: perUnit });
+          await tx.productVariant.updateMany({ where: { productId, archivedAt: null }, data: perUnit });
           await syncProductCache(tx, productId);
         }
 
-        return tx.product.findUniqueOrThrow({ where: { id: productId }, include: productInclude });
+        return tx.product.findUniqueOrThrow({ where: { id: productId }, include: productDetailInclude });
       });
 
-      return toProduct(row);
+      return toProductDetail(row);
     } catch (error) {
       throw this.conflictOf(error, slug);
     }
@@ -400,41 +398,6 @@ export class ProductsService {
     return rows.map(toProduct);
   }
 
-  /**
-   * A "was" price at or below the price is not a discount, it is a number that makes the storefront
-   * render a negative percentage. Refused here rather than in the DTO because it is a rule about
-   * two fields, and on update one of them may be the stored value rather than one that was sent.
-   */
-  private assertPrices(priceCents: number, compareAtPriceCents: number | null): void {
-    if (compareAtPriceCents !== null && compareAtPriceCents <= priceCents) {
-      throw new BadRequestException(
-        catalogError(
-          'CATALOG_PRICE_INVALID',
-          'compareAtPriceCents must be above priceCents, or absent when there is no discount',
-        ),
-      );
-    }
-  }
-
-  /**
-   * All three sides or none.
-   *
-   * A carrier quotes on a box, and a box with two of its three sides is not a box. Refusing it
-   * here is what stops the shape reaching Melhor Envio in phase 4 and being refused there — where
-   * the message is about their API and arrives while a customer is waiting at a checkout.
-   */
-  private assertParcel(length: number | null, width: number | null, height: number | null): void {
-    const given = [length, width, height].filter((side) => side !== null).length
-    if (given !== 0 && given !== 3) {
-      throw new BadRequestException(
-        catalogError(
-          'CATALOG_PARCEL_INCOMPLETE',
-          'Send all three of lengthMm, widthMm and heightMm, or none of them',
-        ),
-      )
-    }
-  }
-
   private async assertCategoryOwned(storeId: string, categoryId: string): Promise<void> {
     const row = await this.prisma.productCategory.findFirst({
       where: { id: categoryId, storeId },
@@ -454,22 +417,20 @@ export class ProductsService {
       include: productInclude,
     });
 
-    if (!row) {
-      throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product ${productId} in this shop`));
-    }
+    if (!row) throw this.notFound(productId);
 
     return row;
+  }
+
+  private notFound(productId: string): NotFoundException {
+    return new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product ${productId} in this shop`));
   }
 
   /** A refused unique index as the conflict it means, or the error as it came. */
   private conflictOf(error: unknown, slug: string): unknown {
     const model = uniqueViolationOn(error);
 
-    if (model === 'ProductVariant') {
-      return new ConflictException(
-        catalogError('PRODUCT_SKU_TAKEN', 'Another product of this shop already uses this SKU'),
-      );
-    }
+    if (model === 'ProductVariant') return skuTaken();
     if (model === 'Product') {
       return new ConflictException(
         catalogError('PRODUCT_SLUG_TAKEN', `This shop already has a product at "${slug}"`),
