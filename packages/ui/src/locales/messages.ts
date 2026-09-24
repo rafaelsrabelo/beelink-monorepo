@@ -207,6 +207,19 @@ export interface UiMessages {
     seeOptions: string
     buyNow: string
     viewCart: string
+    /** Closing the order on the shop's WhatsApp (F4). */
+    checkoutWhatsApp: string
+    checkoutName: string
+    /** A shop with no WhatsApp on file: no button, and why. */
+    checkoutNoWhatsApp: string
+    checkoutSent: string
+    checkoutSentHint: string
+    checkoutRetry: string
+    /** The message itself. `{shop}`; `{qty}` `{name}` `{total}`; `{total}`; `{name}`. */
+    orderGreeting: string
+    orderLine: string
+    orderTotal: string
+    orderCustomer: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
