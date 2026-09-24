@@ -59,8 +59,8 @@ model ProductCategory {
   ///
   /// Cascade, because a subcategory outliving its parent is a category with a parent that is not
   /// there, and the storefront would have to invent a place to show it.
-  parentId String?          @db.Uuid
-  parent   ProductCategory? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId String?           @db.Uuid
+  parent   ProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
   children ProductCategory[] @relation("CategoryTree")
 
   /// The order the shopkeeper chose. The storefront shows them in it, because the shopkeeper knows
@@ -112,18 +112,21 @@ model Product {
 
   description String?
 
+  // From here to `heightMm`, every per-unit column is a cache of the product's variants, written
+  // by the API whenever a variant changes and never on its own. See ProductVariant.
+
   /// Whole cents, and the `Cents` suffix is here so the ambiguity cannot return by inattention.
   /// The legacy kept reais, cents and "R$ 25,00" in one column and chose between them with
   /// `if (price < 1000)`, which is why a product could be sold for a hundredth of its price.
-  priceCents Int
+  priceCents          Int
   /// What the price was before. Null means no discount; the percentage is computed where it is
   /// rendered rather than stored, so a stored percentage can never disagree with the two numbers
   /// it was derived from. The API refuses a value at or below `priceCents`.
   compareAtPriceCents Int?
 
-  position Int @default(0)
+  position Int            @default(0)
   /// See ProductStatus. Only ACTIVE rows leave this table for the shop window.
-  status   ProductStatus @default(ACTIVE)
+  status   ProductStatus  @default(ACTIVE)
   /// See ProductOrigin. Null means the shopkeeper has not said.
   origin   ProductOrigin?
 
@@ -131,9 +134,8 @@ model Product {
   /// beside the price, and it must never reach `PublicProduct`.
   costCents Int?
 
-  /// The shopkeeper's own code for the thing. Not unique — two shops, and even one shop's two
-  /// listings of the same item, may legitimately share one; the API does not police it because
-  /// the only rule anyone could state about it belongs to the shopkeeper.
+  /// The shopkeeper's own code for the thing. Unique within a shop, but that is enforced on
+  /// ProductVariant, which owns the code: this column is part of the cache described there.
   sku     String? @db.VarChar(64)
   /// EAN, UPC or whatever is printed on the box. A string and not a number: leading zeros matter.
   barcode String? @db.VarChar(64)
@@ -168,7 +170,9 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  images  ProductImage[]
+  images   ProductImage[]
+  options  ProductOption[]
+  variants ProductVariant[]
 
   @@unique([storeId, slug])
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
@@ -200,4 +204,114 @@ model ProductImage {
 
   @@index([productId, position])
   @@map("product_images")
+}
+
+/// A choice the customer makes before ordering — Tamanho, Cor, Sabor. At most three per product,
+/// which a trigger in the migration enforces: every combination of values is a variant, and three
+/// options of five values each is already 125 rows for a shopkeeper to price.
+model ProductOption {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  productId String  @db.Uuid
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  name     String @db.VarChar(40)
+  position Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  values        ProductOptionValue[]
+  variantValues ProductVariantValue[]
+
+  @@index([productId, position])
+  @@map("product_options")
+}
+
+/// One answer to an option — P, Areia, Frutas vermelhas.
+model ProductOptionValue {
+  id       String        @id @default(uuid(7)) @db.Uuid
+  optionId String        @db.Uuid
+  option   ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  name     String  @db.VarChar(60)
+  /// A colour option's swatch, as `#rrggbb`. Data the shopkeeper chose, applied at runtime — the
+  /// same exception a shop's brand colour is. Null on every value of an option that is not a colour.
+  colorHex String? @db.VarChar(7)
+  position Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  variantValues ProductVariantValue[]
+
+  @@index([optionId, position])
+  @@map("product_option_values")
+}
+
+/// One thing that can actually be ordered: a product with one value of each of its options picked.
+/// A product with no options still has exactly one — its default variant, with no values — so a
+/// price and a stock always belong to a variant, and an order always names one.
+///
+/// Product keeps its per-unit columns as a cache of these rows, recomputed by the API on every
+/// write: the cheapest variant on sale sets the price the grid shows, the stock is the sum of what
+/// is on sale, and the codes, weight and box come from the first variant on sale. That is what lets
+/// the shelf rule, the showcases and the cards keep reading one table.
+model ProductVariant {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  productId String  @db.Uuid
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// The product's shop, repeated here only so the SKU below can be unique per shop.
+  storeId   String  @db.Uuid
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  position Int     @default(0)
+  /// Whether this combination is sold at all. Off is "não vendo esta" — a combination that does
+  /// not exist — and is different from sold out, which is a counted variant at zero.
+  isActive Boolean @default(true)
+
+  /// Same meaning and rules as the column of the same name on Product.
+  priceCents          Int
+  compareAtPriceCents Int?
+  costCents           Int?
+
+  /// Unique within the shop, so an order line, a restock request or a spreadsheet can name one
+  /// variant by it. Null is not a code, and any number of variants may have none.
+  sku     String? @db.VarChar(64)
+  barcode String? @db.VarChar(64)
+
+  trackStock    Boolean @default(false)
+  stockQuantity Int?
+
+  weightGrams Int?
+  lengthMm    Int?
+  widthMm     Int?
+  heightMm    Int?
+
+  /// A URL rather than a ProductImage id: the gallery is replaced whole on every save, which gives
+  /// every image a new id, and a foreign key to one would be cut by the next unrelated edit.
+  imageUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  values ProductVariantValue[]
+
+  @@unique([storeId, sku])
+  @@index([productId, position])
+  @@map("product_variants")
+}
+
+/// Which value of each option a variant is. The key is the variant and the option, so a variant
+/// holds at most one value of each; the option is repeated beside the value for that reason.
+model ProductVariantValue {
+  variantId String             @db.Uuid
+  variant   ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  optionId  String             @db.Uuid
+  option    ProductOption      @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  valueId   String             @db.Uuid
+  value     ProductOptionValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+
+  @@id([variantId, optionId])
+  @@index([valueId])
+  @@map("product_variant_values")
 }

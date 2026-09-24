@@ -194,6 +194,32 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "product_images" pi WHERE pi."productId" = p.id AND pi.position = i.n
 );
 
+-- ---------------------------------------------------------------- one variant per product
+-- A product sells its variants, and the price written above is only their cache. A product with no
+-- variant gets its default one here; a seeded product without options has its default variant take
+-- the price the upsert just wrote, so editing a price in this file and re-running still changes it.
+INSERT INTO "product_variants" (
+  "id", "productId", "storeId", "position", "isActive",
+  "priceCents", "compareAtPriceCents", "costCents", "sku", "barcode",
+  "trackStock", "stockQuantity", "weightGrams", "lengthMm", "widthMm", "heightMm",
+  "createdAt", "updatedAt"
+)
+SELECT
+  uuidv7(), p.id, p."storeId", 0, true,
+  p."priceCents", p."compareAtPriceCents", p."costCents", p."sku", p."barcode",
+  p."trackStock", p."stockQuantity", p."weightGrams", p."lengthMm", p."widthMm", p."heightMm",
+  now(), now()
+FROM "products" p
+WHERE NOT EXISTS (SELECT 1 FROM "product_variants" v WHERE v."productId" = p.id);
+
+UPDATE "product_variants" v
+SET "priceCents" = p."priceCents", "compareAtPriceCents" = p."compareAtPriceCents", "updatedAt" = now()
+FROM "products" p, shop_segment sh
+WHERE v."productId" = p.id
+  AND p."storeId" = sh.store_id
+  AND NOT EXISTS (SELECT 1 FROM "product_options" o WHERE o."productId" = p.id)
+  AND (v."priceCents", v."compareAtPriceCents") IS DISTINCT FROM (p."priceCents", p."compareAtPriceCents");
+
 DROP VIEW shop_segment;
 DROP VIEW seed_category;
 DROP VIEW seed_product;
