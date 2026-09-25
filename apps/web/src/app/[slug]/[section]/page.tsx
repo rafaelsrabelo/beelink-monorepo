@@ -20,7 +20,7 @@ import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
-import { storefrontRoutes } from "@/lib/storefront-routes"
+import { BACK_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
 
 /**
@@ -113,6 +113,12 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           goneOnArrival={cart.gone > 0}
           shopName={store.name}
           whatsapp={store.socialNetworks.whatsapp?.replace(/\D/g, "") || null}
+          shopper={shopper}
+          identityHrefs={{
+            signInHref: routes.signIn({ back: routes.cart() }),
+            signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
+            editHref: `${routes.account()}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
+          }}
           locale={locale}
           messages={ui}
         />

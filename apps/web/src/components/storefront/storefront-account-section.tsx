@@ -7,7 +7,7 @@ import type { CustomerProfile } from "@harness-monorepo/contracts"
 import type { WebMessages } from "@/locales"
 
 // App
-import { paramOf } from "@/lib/storefront-routes"
+import { BACK_KEY, paramOf, safeBackOf } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 
 export interface StorefrontAccountSectionProps {
@@ -30,7 +30,8 @@ export function StorefrontAccountSection({ slug, accountHref, profile, query, er
         profile={profile}
         action={`/api/storefront/${slug}/customer/perfil`}
         signOutAction={`/api/storefront/${slug}/customer/sair`}
-        hidden={{ retorno: accountHref }}
+        // Reached from the cart's "Alterar dados", a save goes back to the cart; otherwise, here.
+        hidden={{ retorno: paramOf(query[BACK_KEY]) ? safeBackOf(slug, paramOf(query[BACK_KEY])) : accountHref }}
         error={code ? (errors[code as keyof WebMessages["errors"]] ?? errors.UNKNOWN) : null}
         saved={paramOf(query.salvo) === "1"}
         messages={messages}

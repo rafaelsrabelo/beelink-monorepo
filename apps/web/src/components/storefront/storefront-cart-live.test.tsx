@@ -25,6 +25,15 @@ const blusa = {
 
 const gone = "01a0d395-c1ab-7399-a472-000000000999"
 
+const bia = {
+  id: "c1",
+  name: "Bia Cliente",
+  email: "bia@exemplo.com",
+  phone: "11988887777",
+  address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: null, city: "São Paulo", state: "SP" },
+}
+const identityHrefs = { signInHref: "/loja/entrar?voltar=%2Floja%2Fcarrinho", signUpHref: "/loja/entrar?modo=criar", editHref: "/loja/conta?voltar=%2Floja%2Fcarrinho" }
+
 function cookieLines() {
   return decodeCart(
     document.cookie
@@ -34,7 +43,7 @@ function cookieLines() {
   )
 }
 
-function renderCart(goneOnArrival = false) {
+function renderCart(goneOnArrival = false, shopper: typeof bia | null = bia) {
   return render(
     <CartProvider
       slug="loja"
@@ -43,7 +52,7 @@ function renderCart(goneOnArrival = false) {
         ...(goneOnArrival ? [{ productId: gone, variantId: null, qty: 1 }] : []),
       ]}
     >
-      <StorefrontCartLive products={[blusa]} hrefs={{ [blusa.id]: "/loja/produtos/blusa" }} continueHref="/loja/produtos" goneOnArrival={goneOnArrival} shopName="Loja" whatsapp="5511999998888" locale="pt-BR" messages={ptBR} />
+      <StorefrontCartLive products={[blusa]} hrefs={{ [blusa.id]: "/loja/produtos/blusa" }} continueHref="/loja/produtos" goneOnArrival={goneOnArrival} shopName="Loja" whatsapp="5511999998888" shopper={shopper} identityHrefs={identityHrefs} locale="pt-BR" messages={ptBR} />
     </CartProvider>,
   )
 }
@@ -82,13 +91,25 @@ describe("StorefrontCartLive", () => {
     const link = screen.getByRole("link", { name: "Fechar pedido pelo WhatsApp" })
     const href = link.getAttribute("href") ?? ""
     expect(href.startsWith("https://wa.me/5511999998888?text=")).toBe(true)
-    expect(decodeURIComponent(href.split("text=")[1] ?? "")).toContain("2× Blusa")
+    const message = decodeURIComponent(href.split("text=")[1] ?? "")
+    expect(message).toContain("2× Blusa")
+    expect(message).toContain("Nome: Bia Cliente")
+    expect(message).toContain("Endereço: Av. Paulista, 1000 — São Paulo/SP — CEP 01310-930")
 
     fireEvent.click(link)
 
     expect(screen.getByRole("status")).toHaveTextContent("Seu pedido foi para o WhatsApp da loja.")
     expect(screen.getByRole("link", { name: /Tente de novo/ })).toHaveAttribute("href", href)
     expect(cookieLines()).toEqual([])
+  })
+
+  it("asks a visitor to sign in to order, and comes back to this cart", () => {
+    renderCart(false, null)
+
+    expect(screen.queryByRole("link", { name: "Fechar pedido pelo WhatsApp" })).toBeNull()
+    expect(screen.getByRole("link", { name: "Entrar para fazer o pedido" })).toHaveAttribute("href", identityHrefs.signInHref)
+    // The cart itself stays open: the total is there for anyone.
+    expect(screen.getByText(/Subtotal \(2 itens\)/)).toBeInTheDocument()
   })
 
   it("takes out a line whose product left the shop, and says so", () => {
