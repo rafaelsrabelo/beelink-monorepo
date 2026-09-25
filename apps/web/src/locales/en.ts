@@ -90,12 +90,6 @@ export const en: WebMessages = {
         leadsAction: "See leads",
       },
     },
-    soon: {
-      ordersTitle: "No orders yet",
-      ordersText: "When a customer places one, it shows up here.",
-      customersTitle: "No customers yet",
-      customersText: "Whoever buys from your shop is recorded here.",
-    },
     list: {
       description: "Pick a shop to manage, or create another one.",
       create: "New shop",

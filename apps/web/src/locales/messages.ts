@@ -191,13 +191,6 @@ export interface WebMessages {
         leadsAction: string
       }
     }
-    /** Screens that exist so the menu does not lie, and say plainly that nothing is here yet. */
-    soon: {
-      ordersTitle: string
-      ordersText: string
-      customersTitle: string
-      customersText: string
-    }
     list: {
       description: string
       create: string

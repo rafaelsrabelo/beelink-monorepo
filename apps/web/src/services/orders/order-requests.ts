@@ -1,0 +1,36 @@
+// Types
+import type { OrderListQuery, OrderPage } from "@harness-monorepo/contracts"
+
+/** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
+export class OrderRequestError extends Error {
+  constructor(readonly errorCode: string) {
+    super(errorCode)
+    this.name = "OrderRequestError"
+  }
+}
+
+/** Declared on every call: `refuseCrossOrigin` answers 415 to a request that does not say it speaks JSON. */
+const JSON_HEADERS: Record<string, string> = { "content-type": "application/json" }
+
+function errorCodeOf(payload: unknown): string {
+  return typeof payload === "object" && payload !== null && "errorCode" in payload
+    ? String((payload as { errorCode: unknown }).errorCode)
+    : "UNKNOWN"
+}
+
+/** A page of the shop's orders, through this app's own route handler; the API's address is server-only. */
+export async function fetchOrders(slug: string, query: OrderListQuery = {}): Promise<OrderPage> {
+  const search = new URLSearchParams()
+  if (query.status) search.set("status", query.status)
+  if (query.q) search.set("q", query.q)
+  if (query.page && query.page > 1) search.set("page", String(query.page))
+  if (query.pageSize) search.set("pageSize", String(query.pageSize))
+
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders${search.size ? `?${search.toString()}` : ""}`, {
+    method: "GET",
+    headers: JSON_HEADERS,
+  })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
+  return payload as OrderPage
+}

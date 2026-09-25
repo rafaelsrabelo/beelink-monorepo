@@ -90,12 +90,6 @@ export const ptBR: WebMessages = {
         leadsAction: "Ver leads",
       },
     },
-    soon: {
-      ordersTitle: "Nenhum pedido ainda",
-      ordersText: "Quando um cliente fechar um pedido, ele aparece aqui.",
-      customersTitle: "Nenhum cliente ainda",
-      customersText: "Quem comprar na sua loja fica registrado aqui.",
-    },
     list: {
       description: "Escolha uma loja para gerenciar ou crie mais uma.",
       create: "Nova loja",
