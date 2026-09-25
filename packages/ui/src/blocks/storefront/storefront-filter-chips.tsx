@@ -38,6 +38,7 @@ export function StorefrontFilterChips({ chips, className, linkComponent: Link = 
         <li key={chip.href}>
           <Link
             href={chip.href}
+            rel="nofollow"
             aria-label={format(messages.storefront.filterRemove, { label: chip.label })}
             className="inline-flex h-[30px] items-center gap-1.5 rounded-full border border-[color-mix(in_oklab,var(--shop-primary)_40%,transparent)] bg-[color-mix(in_oklab,var(--shop-primary)_6%,transparent)] px-2.5 text-xs font-semibold text-shop-primary-ink"
           >
