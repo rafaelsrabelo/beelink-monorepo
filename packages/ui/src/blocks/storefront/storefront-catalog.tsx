@@ -13,8 +13,17 @@ import { StorefrontProductCard, type StorefrontProduct } from "./storefront-prod
 export interface StorefrontCatalogProps {
   products: readonly StorefrontProduct[]
   productHref: (productSlug: string) => string
-  /** Where "see everything" goes when a filter left nothing behind. */
+  /** What each card offers under its price — the web\'s "Adicionar ao carrinho". */
+  cardAction?: (product: StorefrontProduct) => ReactNode
+  /**
+   * The way out of an empty shelf: with filters in force, the address of "Limpar tudo"; without,
+   * the whole catalogue. Absent on the catalogue itself, which has nowhere wider to go.
+   */
   clearHref?: string
+  /** Filters are in force: the empty shelf says so, and offers "Ver tudo". */
+  filtered?: boolean
+  /** The shelf could not be read: it says so, and offers this address again. */
+  retryHref?: string
   locale: string
   productsPerRow?: 2 | 3 | 4
   showPrice?: boolean
@@ -35,6 +44,9 @@ export const CATALOG_COLUMNS: Record<2 | 3 | 4, string> = {
   4: "grid-cols-2 @xl:grid-cols-3 @4xl:grid-cols-4",
 }
 
+/** The one button an empty or failed shelf offers. */
+const WAY_OUT = "mt-2 rounded-xl bg-shop-primary px-4 py-2 text-sm font-medium text-shop-on-primary"
+
 /**
  * What the shop is selling, as a grid.
  *
@@ -48,7 +60,10 @@ export const CATALOG_COLUMNS: Record<2 | 3 | 4, string> = {
 export function StorefrontCatalog({
   products,
   productHref,
+  cardAction,
   clearHref,
+  filtered = false,
+  retryHref,
   locale,
   productsPerRow = 3,
   showPrice = true,
@@ -71,23 +86,29 @@ export function StorefrontCatalog({
                 locale={locale}
                 showPrice={showPrice}
                 showBadge={showBadge}
+                action={cardAction?.(product)}
                 linkComponent={Link}
                 messages={messages}
               />
             </li>
           ))}
         </ul>
+      ) : retryHref ? (
+        // An outage is not an empty shop: "nothing found" here would send the visitor away for good.
+        <div className="flex flex-col items-center gap-2 py-16 text-center">
+          <p className="font-medium">{text.shelfFailed}</p>
+          <p className="text-sm text-shop-muted">{text.shelfFailedHint}</p>
+          <Link href={retryHref} className={WAY_OUT}>
+            {text.shelfRetry}
+          </Link>
+        </div>
       ) : (
         <div className="flex flex-col items-center gap-2 py-16 text-center">
-          <p className="font-medium">{text.empty}</p>
-          <p className="text-sm opacity-70">{text.emptyHint}</p>
+          <p className="font-medium">{filtered ? text.emptyFiltered : text.empty}</p>
+          <p className="text-sm text-shop-muted">{filtered ? text.emptyFilteredHint : text.emptyHint}</p>
           {clearHref ? (
-            <Link
-              href={clearHref}
-              className="mt-2 rounded-xl px-4 py-2 text-sm font-medium"
-              style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
-            >
-              {text.allCategories}
+            <Link href={clearHref} className={WAY_OUT}>
+              {filtered ? text.emptySeeAll : text.emptyCatalog}
             </Link>
           ) : null}
         </div>

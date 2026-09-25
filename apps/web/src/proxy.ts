@@ -3,6 +3,8 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 // App
+import { CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE, clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import { refreshCustomerSession } from "@/lib/refresh-customer-session"
 import { refreshSession } from "@/lib/refresh-session"
 import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, setSessionCookies } from "@/lib/session-cookies"
 
@@ -11,6 +13,43 @@ const AUTH_PATHS = ["/login", "/signup", "/verify-email", "/forgot-password", "/
 
 function isAuthPath(pathname: string): boolean {
   return AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+}
+
+/** The panel's own paths; everything else the matcher hands over is a shop window. */
+const PANEL_PATHS = ["/dashboard", "/admin", "/create-store"]
+
+function isPanelPath(pathname: string): boolean {
+  return isAuthPath(pathname) || PANEL_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+}
+
+/**
+ * A shopper's session, kept alive on a shop's pages. The matcher only hands a shop path over when a
+ * shopper's refresh cookie is there and the access cookie is not, so an anonymous visitor and a
+ * crawler never reach this. It never redirects: the shop is public, signed in or not, and a
+ * refusal only means the shopper browses signed out from here.
+ */
+async function keepShopperSignedIn(request: NextRequest): Promise<NextResponse> {
+  const slug = request.nextUrl.pathname.split("/")[1] ?? ""
+  const refreshToken = request.cookies.get(CUSTOMER_REFRESH_COOKIE)?.value
+
+  if (!refreshToken || request.cookies.has(CUSTOMER_ACCESS_COOKIE) || !/^[a-z0-9-]+$/.test(slug)) return NextResponse.next()
+
+  const outcome = await refreshCustomerSession(slug, refreshToken, request.headers.get("x-forwarded-for"))
+
+  if (outcome.status === "unavailable") return NextResponse.next()
+
+  if (outcome.status === "rejected") {
+    const answer = NextResponse.next()
+    clearCustomerSessionCookies(answer.cookies)
+    return answer
+  }
+
+  // Upstream too, so the page rendering this request already knows who is signed in.
+  request.cookies.set(CUSTOMER_ACCESS_COOKIE, outcome.session.accessToken)
+  request.cookies.set(CUSTOMER_REFRESH_COOKIE, outcome.session.refreshToken)
+  const answer = NextResponse.next({ request: { headers: request.headers } })
+  setCustomerSessionCookies(answer.cookies, outcome.session)
+  return answer
 }
 
 /**
@@ -22,6 +61,8 @@ function isAuthPath(pathname: string): boolean {
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
+  if (!isPanelPath(pathname)) return keepShopperSignedIn(request)
+
   const onAuthPath = isAuthPath(pathname)
   const hasAccess = request.cookies.has(ACCESS_COOKIE)
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value
@@ -87,5 +128,12 @@ export const config = {
     "/verify-email",
     "/forgot-password",
     "/reset-password",
+    // A shop window, but only for a signed-in shopper whose short-lived token has run out: the
+    // conditions below keep every anonymous request — and every crawler — out of the proxy.
+    {
+      source: "/:slug((?!_next|api)[^/.]+)/:path*",
+      has: [{ type: "cookie", key: "bl_customer_refresh" }],
+      missing: [{ type: "cookie", key: "bl_customer_access" }],
+    },
   ],
 }
