@@ -1,3 +1,6 @@
+// UI
+import { cn } from "@harness-monorepo/ui/lib/utils"
+
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -59,7 +62,8 @@ export function StorefrontBuyActions({ name, qty, onQtyChange, added, onAdd, car
         onClick={() => {
           if (!added) onAdd()
         }}
-        className={`${BUY_PILL} bg-shop-text text-shop-on-text`}
+        // Outlined beside the filled "Adicionar ao carrinho": one main action, and the other beside it.
+        className={cn(BUY_PILL, "border-2 border-shop-primary bg-shop-background text-shop-primary-ink")}
       >
         {text.buyNow}
       </a>

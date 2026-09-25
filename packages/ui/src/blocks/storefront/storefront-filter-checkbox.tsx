@@ -26,7 +26,8 @@ export interface StorefrontFilterCheckboxProps {
  */
 export function StorefrontFilterCheckbox({ label, href, count, selected, locale, linkComponent: Link = AnchorLink }: StorefrontFilterCheckboxProps) {
   return (
-    <Link href={href} role="checkbox" aria-checked={selected} className="group flex items-center gap-2.5 text-sm">
+    // A combination of filters is not a page to crawl: the shelf without them is.
+    <Link href={href} rel="nofollow" role="checkbox" aria-checked={selected} className="group flex items-center gap-2.5 text-sm">
       <span
         aria-hidden="true"
         className={cn(

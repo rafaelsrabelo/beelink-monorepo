@@ -73,7 +73,7 @@ export function StorefrontPriceFilter({
         <ul className="flex flex-col gap-1.5 text-sm">
           {ranges.map((range) => (
             <li key={range.label}>
-              <Link href={range.href} aria-current={range.selected ? "true" : undefined} className={cn("hover:underline", range.selected && "font-bold")}>
+              <Link href={range.href} rel="nofollow" aria-current={range.selected ? "true" : undefined} className={cn("hover:underline", range.selected && "font-bold")}>
                 {range.label}
               </Link>
             </li>

@@ -22,6 +22,7 @@ import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
 import { BACK_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
+import { filterCountOf } from "@/lib/storefront-filters"
 
 /**
  * The second segment of a shop's URL, whatever it turned out to mean.
@@ -50,9 +51,10 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
     title: `${headingOf(place)} · ${place.store.name}`,
     description: place.store.description ?? undefined,
     alternates: { canonical: canonicalOf(place, storefrontRoutes(place.store)) },
-    // A paged or searched shelf is not a landing page; it is the same shelf, reached differently.
+    // A paged or searched shelf is not a landing page; it is the same shelf, reached differently. Nor
+    // is a deep combination of filters: three narrowings of one shelf are not a page of their own.
     robots:
-      place.page > 1 || place.term || ["cart", "signIn", "account"].includes(place.section.kind)
+      place.page > 1 || place.term || filterCountOf(place) >= 3 || ["cart", "signIn", "account"].includes(place.section.kind)
         ? { index: false, follow: true }
         : undefined,
   }
@@ -68,7 +70,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const { store, category, navigation, messages: ui, scope } = place
   const routes = storefrontRoutes(store)
   const locale = "pt-BR"
-  const productsPerRow = store.layoutSettings.productsPerRow ?? 3
+  // 5a's four across; the shop's own choice, when it has made one, wins.
+  const productsPerRow = store.layoutSettings.productsPerRow ?? 4
   // Asked once, awaited twice: by the band's count and by the grid, each under its own boundary.
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
