@@ -9,25 +9,22 @@ import type { ComponentKind, PublicProductCategory, PublicStore, StoreColors } f
 // UI
 import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignEditorBar } from "@harness-monorepo/ui/blocks/design/design-editor-bar"
-import { DesignEditorFrame, usePreviewDevice, useWideEditor } from "@harness-monorepo/ui/blocks/design/design-editor-frame"
-import { DesignLeaveDialog } from "@harness-monorepo/ui/blocks/design/design-leave-dialog"
+import { DesignEditorFrame, usePreviewDevice } from "@harness-monorepo/ui/blocks/design/design-editor-frame"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
-import { BandEditor } from "./band-editor"
-import { DesignDeleteConfirm, type PendingDelete } from "./design-delete-confirm"
+import type { PendingDelete } from "./design-delete-confirm"
 import { DesignInspector } from "./design-inspector"
 import { DesignPanel } from "./design-panel"
-import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
-
-// App
+import { DesignScreenDialogs } from "./design-screen-dialogs"
 import { LivePreviewPane } from "./live-preview-pane"
 import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
 import { arrangementOf, shelvesOf } from "./design-draft-preview"
 import { useBlockInsert } from "./use-block-insert"
 import { useDesignDraft } from "./use-design-draft"
+import { useDesignSelection } from "./use-design-selection"
 import { useLeaveGuard } from "./use-leave-guard"
 import { useShopRefresh } from "./use-shop-refresh"
 
@@ -69,22 +66,10 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const shop = useShopRefresh()
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
-  const [editingComponent, setEditingComponent] = useState<string | null>(null)
   const [panelTab, setPanelTab] = useState<"blocks" | "colors">("blocks")
   const [device, setDevice] = usePreviewDevice()
-  // The side columns' drawers, where the three columns do not fit.
-  const [structureOpen, setStructureOpen] = useState(false)
-  const [inspectorOpen, setInspectorOpen] = useState(false)
-  const wide = useWideEditor()
-  // Every choice of a block shows its fields — in the right column, or in its drawer on a narrow
-  // screen. On a wide one no drawer opens: it would pop up, modal, the moment the window narrowed.
-  const choose = (id: string) => {
-    setEditingComponent(id)
-    if (wide) return
-    setStructureOpen(false)
-    setInspectorOpen(true)
-  }
-  const [editingBand, setEditingBand] = useState<string | null>(null)
+  const selection = useDesignSelection()
+  const { choose, editingComponent, editingBand } = selection
   // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
   const opened = (component: { id: string; kind: ComponentKind }) => {
     choose(component.id)
@@ -113,23 +98,21 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
 
   return (
     <>
-      <DesignLeaveDialog open={guard.asking} onStay={guard.stay} onLeave={guard.leave} messages={messages} />
-
-      <DesignDeleteConfirm
-        pending={pendingDelete}
+      <DesignScreenDialogs
+        slug={slug}
+        guard={guard}
         draft={draft}
-        onDone={() => setPendingDelete(null)}
+        pendingDelete={pendingDelete}
+        onDeleteDone={() => setPendingDelete(null)}
+        editingSection={editingSection}
+        editingPosition={rows.findIndex((row) => row.id === editingBand) + 1}
+        pageBackground={palette.background}
+        onBandClose={() => selection.setEditingBand(null)}
+        adding={adding}
+        takenKinds={takenKinds}
+        unavailableKinds={unavailableKinds}
         messages={messages}
         web={web}
-      />
-
-      <BandEditor
-        slug={slug}
-        section={editingSection}
-        position={rows.findIndex((row) => row.id === editingBand) + 1}
-        pageBackground={palette.background}
-        onClose={() => setEditingBand(null)}
-        messages={messages}
       />
 
       <DesignEditorFrame
@@ -146,8 +129,8 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             onPublish={draft.publish}
             onDiscard={draft.discard}
             shopHref={`/${slug}`}
-            onOpenStructure={() => setStructureOpen(true)}
-            onOpenInspector={() => setInspectorOpen(true)}
+            onOpenStructure={() => selection.setStructureOpen(true)}
+            onOpenInspector={() => selection.setInspectorOpen(true)}
             linkComponent={AppLink}
             messages={messages}
           />
@@ -159,7 +142,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
             onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}
             onToggleBand={(id, isActive) => draft.patchSection(id, { isActive })}
-            onEditBand={setEditingBand}
+            onEditBand={selection.setEditingBand}
             onDeleteBand={(id) => setPendingDelete({ level: "band", id, name: bandName(id) })}
             onToggle={(id, isActive) => draft.patchComponent(id, { isActive })}
             onSpanChange={(id, span) => draft.patchComponent(id, { span })}
@@ -211,37 +194,18 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             pageBackground={palette.background}
             categoriesShown={categories.length}
             shelves={shelves}
-            onClose={() => {
-              setEditingComponent(null)
-              setInspectorOpen(false)
-            }}
+            onClose={selection.close}
             onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
             messages={messages}
             web={web}
           />
         }
-        structureOpen={structureOpen}
-        onStructureOpenChange={setStructureOpen}
-        inspectorOpen={inspectorOpen}
-        onInspectorOpenChange={setInspectorOpen}
+        structureOpen={selection.structureOpen}
+        onStructureOpenChange={selection.setStructureOpen}
+        inspectorOpen={selection.inspectorOpen}
+        onInspectorOpenChange={selection.setInspectorOpen}
         // The block's fields close themselves; the hint has nothing to close, so the drawer does.
         inspectorHasOwnClose={editing !== null}
-        messages={messages}
-      />
-
-      {/*
-        The one gallery every "+" opens, already knowing where the block goes. Adding is a saved
-        write, not a draft edit — a reload must not lose what the owner watched appear — and the form
-        then opens on the block just created, so nothing lands somewhere the owner has to find it.
-      */}
-      <BlockGallery
-        open={adding.insertAt !== null}
-        onOpenChange={(open) => (open ? undefined : adding.setInsertAt(null))}
-        // The strip is the one kind a page has once; a site has no catalogue, a shop no form leads.
-        taken={takenKinds}
-        unavailable={adding.unavailableWith(unavailableKinds)}
-        onAdd={adding.insert}
-        offerRows={adding.insertAt?.level === "band"}
         messages={messages}
       />
     </>
