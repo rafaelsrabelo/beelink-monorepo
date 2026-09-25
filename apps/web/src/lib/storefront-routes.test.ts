@@ -97,5 +97,11 @@ describe("the sign-in page's addresses", () => {
       expect(safeBackOf("loja", unsafe)).toBe("/loja")
     }
   })
+
+  it("keeps to the site when the slug itself is not one", () => {
+    for (const slug of ["/evil.example", "\\evil.example", ""]) {
+      expect(safeBackOf(slug, `/${slug}`)).toBe("/")
+    }
+  })
 })
 

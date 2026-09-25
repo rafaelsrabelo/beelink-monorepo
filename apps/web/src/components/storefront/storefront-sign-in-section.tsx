@@ -33,7 +33,7 @@ export function StorefrontSignInSection({ place, routes, query, errors }: Storef
     <div className="py-4">
       <StorefrontSignIn
         mode={mode}
-        action={`/api/storefront/${store.slug}/customer/${mode}`}
+        action={`/${store.slug}/api/customer/${mode}`}
         hidden={{ [BACK_KEY]: back, retorno: routes.signIn() }}
         email={paramOf(query.email) ?? ""}
         error={error}

@@ -16,7 +16,8 @@ import { AppLink } from "@/components/app-link"
 import { useResetPassword } from "@/services/auth/auth-hooks"
 import { errorCopy } from "./auth-error-copy"
 
-export function ResetPasswordScreen({ ui, web, token }: { ui: UiMessages; web: WebMessages; token?: string }) {
+/** `signInHref` is where the new password is used: a shopper's shop, or the panel. */
+export function ResetPasswordScreen({ ui, web, token, signInHref }: { ui: UiMessages; web: WebMessages; token?: string; signInHref: string }) {
   const router = useRouter()
   const reset = useResetPassword()
 
@@ -25,6 +26,7 @@ export function ResetPasswordScreen({ ui, web, token }: { ui: UiMessages; web: W
     return (
       <VerifyEmailStatus
         state="invalid"
+        loginHref={signInHref}
         messages={{ ...ui, verifyEmail: { ...ui.verifyEmail, invalidBody: web.auth.missingToken } }}
         linkComponent={AppLink}
       />
@@ -35,6 +37,7 @@ export function ResetPasswordScreen({ ui, web, token }: { ui: UiMessages; web: W
     <ResetPasswordForm
       messages={ui}
       linkComponent={AppLink}
+      loginHref={signInHref}
       pending={reset.isPending}
       error={errorCopy(reset.error, web)}
       onSubmit={({ password }) =>
@@ -42,7 +45,7 @@ export function ResetPasswordScreen({ ui, web, token }: { ui: UiMessages; web: W
           { token, password },
           {
             onSuccess: () => {
-              router.replace("/login")
+              router.replace(signInHref as Parameters<typeof router.replace>[0])
             },
           },
         )

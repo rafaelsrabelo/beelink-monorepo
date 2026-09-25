@@ -120,20 +120,28 @@ describe("a shopper on a shop's pages", () => {
     const fetched = vi.fn(async () => Response.json(SESSION, { status: 200 }))
     vi.stubGlobal("fetch", fetched)
 
-    const response = await proxy(request("/minha-loja/produtos", "bl_customer_refresh=old"))
+    const response = await proxy(request("/minha-loja/produtos", "bl_shopper_refresh=old"))
 
     expect(response.headers.get("location")).toBeNull()
-    expect(response.cookies.get("bl_customer_access")?.value).toBe("new-access")
+    expect(response.cookies.get("bl_shopper_access")).toMatchObject({ value: "new-access", path: "/minha-loja" })
     expect(String((fetched.mock.calls[0] as unknown[] | undefined)?.[0])).toContain("/stores/minha-loja/customer/refresh")
   })
 
   it("lets a refused shopper browse on, signed out", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "AUTH_TOKEN_INVALID" }, { status: 401 })))
 
-    const response = await proxy(request("/minha-loja", "bl_customer_refresh=old"))
+    const response = await proxy(request("/minha-loja", "bl_shopper_refresh=old"))
 
     expect(response.headers.get("location")).toBeNull()
-    expect(response.cookies.get("bl_customer_refresh")?.value).toBe("")
+    expect(response.cookies.get("bl_shopper_refresh")).toMatchObject({ value: "", path: "/minha-loja" })
+  })
+
+  it("opens a shopper's e-mailed link even with a panel session in the same browser", async () => {
+    for (const path of ["/verify-email?token=t&voltar=%2Fminha-loja", "/reset-password?token=t&voltar=%2Fminha-loja"]) {
+      expect((await proxy(request(path, "bl_access=owner"))).headers.get("location")).toBeNull()
+    }
+    // A shopkeeper's own link, with no shop to return to, is still the panel's.
+    expect((await proxy(request("/reset-password?token=t", "bl_access=owner"))).headers.get("location")).toBe("http://localhost:3000/admin")
   })
 
   it("leaves a shop page alone with no shopper's session, the panel's cookies notwithstanding", async () => {
@@ -155,9 +163,11 @@ describe("the proxy matcher", () => {
     expect(selects("/minha-loja")).toBe(false)
     expect(selects("/minha-loja/produto-1")).toBe(false)
     // Nor for a shopper whose session is alive, or one who has none: only an expired one is kept up.
-    expect(selects("/minha-loja", ["bl_customer_refresh", "bl_customer_access"])).toBe(false)
+    expect(selects("/minha-loja", ["bl_shopper_refresh", "bl_shopper_access"])).toBe(false)
     expect(selects("/minha-loja", ["bl_access", "bl_refresh"])).toBe(false)
-    expect(selects("/minha-loja/produtos", ["bl_customer_refresh"])).toBe(true)
+    expect(selects("/minha-loja/produtos", ["bl_shopper_refresh"])).toBe(true)
+    // The handlers that read a shopper's session live on the shop's path, so they are kept up too.
+    expect(selects("/minha-loja/api/customer/perfil", ["bl_shopper_refresh"])).toBe(true)
 
     // And were it handed over anyway, the proxy lets a shop path through: it never sends one to /login.
     const response = await proxy(request("/minha-loja"))

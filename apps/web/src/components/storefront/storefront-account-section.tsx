@@ -28,8 +28,8 @@ export function StorefrontAccountSection({ slug, accountHref, profile, query, er
     <div className="py-4">
       <StorefrontAccountForm
         profile={profile}
-        action={`/api/storefront/${slug}/customer/perfil`}
-        signOutAction={`/api/storefront/${slug}/customer/sair`}
+        action={`/${slug}/api/customer/perfil`}
+        signOutAction={`/${slug}/api/customer/sair`}
         // Reached from the cart's "Alterar dados", a save goes back to the cart; otherwise, here.
         hidden={{ retorno: paramOf(query[BACK_KEY]) ? safeBackOf(slug, paramOf(query[BACK_KEY])) : accountHref }}
         error={code ? (errors[code as keyof WebMessages["errors"]] ?? errors.UNKNOWN) : null}

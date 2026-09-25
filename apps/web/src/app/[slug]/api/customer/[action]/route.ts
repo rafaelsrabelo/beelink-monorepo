@@ -17,6 +17,9 @@ import { refreshCustomerSession } from "@/lib/refresh-customer-session"
 import { BACK_KEY, MODE_KEY, safeBackOf } from "@/lib/storefront-routes"
 
 /**
+ * Under the shop's own path, not `/api`: the shopper's session cookies live on `/<slug>`, and a
+ * handler anywhere else would never receive them (`customer-session-cookies.ts`).
+ *
  * The shop's sign-in page posts here, as a plain `<form>`: signing in (`entrar`), signing up
  * (`criar`), asking for a new password (`senha`), saving the shopper's details (`perfil`) and signing
  * out (`sair`). Every answer is a 303 —
@@ -26,7 +29,7 @@ import { BACK_KEY, MODE_KEY, safeBackOf } from "@/lib/storefront-routes"
  * A form post, so it takes the origin check alone: a form cannot say it speaks JSON. The origin is
  * what stops another site posting a sign-in in the shopper's browser.
  */
-export async function POST(request: NextRequest, { params }: RouteContext<"/api/storefront/[slug]/customer/[action]">) {
+export async function POST(request: NextRequest, { params }: RouteContext<"/[slug]/api/customer/[action]">) {
   const refused = refuseForeignOrigin(request)
   if (refused) return refused
 
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/api/
       if (!response?.ok) return bounce("entrar", { erro: response ? await codeOf(response) : "UNKNOWN", email })
 
       const answer = NextResponse.redirect(new URL(back, request.url), 303)
-      setCustomerSessionCookies(answer.cookies, (await response.json()) as AuthSession)
+      setCustomerSessionCookies(answer.cookies, slug, (await response.json()) as AuthSession)
       return answer
     }
     case "criar": {
@@ -70,7 +73,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/api/
       return bounce("criar", { enviado: "1", email })
     }
     case "senha": {
-      const response = await callApi({ path: "/auth/forgot-password", body: { email }, clientIp }).catch(() => null)
+      const response = await callApi({ path: `${shop}/forgot-password`, body: { email }, clientIp }).catch(() => null)
       if (!response?.ok) return bounce("senha", { erro: response ? await codeOf(response) : "UNKNOWN", email })
       return bounce("senha", { enviado: "1" })
     }
@@ -92,7 +95,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/api/
         const outcome = refreshToken ? await refreshCustomerSession(slug, refreshToken, clientIp) : { status: "rejected" as const }
         if (outcome.status !== "renewed") {
           const signedOut = NextResponse.redirect(new URL(`/${slug}`, request.url), 303)
-          clearCustomerSessionCookies(signedOut.cookies)
+          clearCustomerSessionCookies(signedOut.cookies, slug)
           return signedOut
         }
         renewed = outcome.session
@@ -103,7 +106,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/api/
       else page.searchParams.set("erro", response?.status === 400 ? "CUSTOMER_FIELDS_INVALID" : response ? await codeOf(response) : "UNKNOWN")
 
       const answer = NextResponse.redirect(page, 303)
-      if (renewed) setCustomerSessionCookies(answer.cookies, renewed)
+      if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
       return answer
     }
     case "sair": {
@@ -112,7 +115,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/api/
       if (refreshToken) await callApi({ path: `${shop}/logout`, body: { refreshToken }, clientIp }).catch(() => null)
 
       const answer = NextResponse.redirect(new URL(`/${slug}`, request.url), 303)
-      clearCustomerSessionCookies(answer.cookies)
+      clearCustomerSessionCookies(answer.cookies, slug)
       return answer
     }
     default:

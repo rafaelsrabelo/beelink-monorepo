@@ -13,17 +13,17 @@ const SESSION = {
   user: { id: "1", name: "Bia", email: "bia@exemplo.com", emailVerified: true, createdAt: "" },
 }
 
-function post(action: string, fields: Record<string, string>, init: { origin?: string | null; cookie?: string } = {}) {
+function post(action: string, fields: Record<string, string>, init: { origin?: string | null; cookie?: string } = {}, slug = "loja") {
   const headers = new Headers({ "content-type": "application/x-www-form-urlencoded" })
   if (init.origin !== null) headers.set("origin", init.origin ?? "http://localhost:3000")
   if (init.cookie) headers.set("cookie", init.cookie)
 
-  const request = new NextRequest(`http://localhost:3000/api/storefront/loja/customer/${action}`, {
+  const request = new NextRequest(`http://localhost:3000/loja/api/customer/${action}`, {
     method: "POST",
     headers,
     body: new URLSearchParams(fields).toString(),
   })
-  return POST(request, { params: Promise.resolve({ slug: "loja", action }) })
+  return POST(request, { params: Promise.resolve({ slug, action }) })
 }
 
 const form = { email: "bia@exemplo.com", password: "uma-senha-comprida", voltar: "/loja/carrinho", retorno: "/loja/entrar" }
@@ -42,7 +42,8 @@ describe("the shop's sign-in form", () => {
     expect(response.status).toBe(303)
     expect(response.headers.get("location")).toBe("http://localhost:3000/loja/carrinho")
     expect(String((fetched.mock.calls[0] as unknown[] | undefined)?.[0])).toContain("/stores/loja/customer/login")
-    expect(response.cookies.get("bl_customer_access")).toMatchObject({ value: "shopper-access", httpOnly: true, path: "/" })
+    // On the shop's path: the session is this shop's, and another shop's pages never receive it.
+    expect(response.cookies.get("bl_shopper_access")).toMatchObject({ value: "shopper-access", httpOnly: true, path: "/loja" })
     // Never the panel's cookies: one person may be both, and the two sessions stay apart.
     expect(response.cookies.get("bl_access")).toBeUndefined()
   })
@@ -66,6 +67,16 @@ describe("the shop's sign-in form", () => {
     }
   })
 
+  it("never builds an address off the site out of a slug that is not one", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "STORE_NOT_FOUND" }, { status: 404 })))
+
+    // The segment arrives decoded: `%2Fevil.example` is `/evil.example`, and `/` + it is `//evil.example`.
+    for (const slug of ["/evil.example", "\\evil.example"]) {
+      const location = new URL((await post("entrar", { ...form, voltar: "", retorno: "" }, {}, slug)).headers.get("location") ?? "")
+      expect(location.origin).toBe("http://localhost:3000")
+    }
+  })
+
   it("signs up and says the link is on its way — the same whatever the API knew about the address", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 202 })))
 
@@ -75,13 +86,13 @@ describe("the shop's sign-in form", () => {
     expect(location.searchParams.get("enviado")).toBe("1")
   })
 
-  it("asks for a new password through the account's own door", async () => {
+  it("asks for a new password at the shop the account belongs to", async () => {
     const fetched = vi.fn(async () => new Response(null, { status: 202 }))
     vi.stubGlobal("fetch", fetched)
 
     const location = new URL((await post("senha", { email: "bia@exemplo.com", retorno: "/loja/entrar" })).headers.get("location") ?? "")
 
-    expect(String((fetched.mock.calls[0] as unknown[] | undefined)?.[0])).toContain("/auth/forgot-password")
+    expect(String((fetched.mock.calls[0] as unknown[] | undefined)?.[0])).toContain("/stores/loja/customer/forgot-password")
     expect(location.searchParams.get("modo")).toBe("senha")
     expect(location.searchParams.get("enviado")).toBe("1")
   })
@@ -89,17 +100,17 @@ describe("the shop's sign-in form", () => {
   it("signs out, the cookies going whether or not the API answered", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline") }))
 
-    const response = await post("sair", {}, { cookie: "bl_customer_refresh=r; bl_customer_access=a" })
+    const response = await post("sair", {}, { cookie: "bl_shopper_refresh=r; bl_shopper_access=a" })
 
     expect(response.headers.get("location")).toBe("http://localhost:3000/loja")
-    expect(response.cookies.get("bl_customer_refresh")?.value).toBe("")
+    expect(response.cookies.get("bl_shopper_refresh")).toMatchObject({ value: "", path: "/loja" })
   })
 
   it("saves the shopper's details with their token, and comes back saying so", async () => {
     const fetched = vi.fn(async () => Response.json({ id: "c1" }, { status: 200 }))
     vi.stubGlobal("fetch", fetched)
 
-    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", city: "São Paulo", retorno: "/loja/conta" }, { cookie: "bl_customer_access=a" })
+    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", city: "São Paulo", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })
     const [url, init] = (fetched.mock.calls[0] ?? []) as unknown as [string, RequestInit]
 
     expect(url).toContain("/stores/loja/customer/me")
@@ -117,17 +128,17 @@ describe("the shop's sign-in form", () => {
       .mockResolvedValueOnce(Response.json({ id: "c1" }, { status: 200 }))
     vi.stubGlobal("fetch", fetched)
 
-    const response = await post("perfil", { name: "Bia", retorno: "/loja/conta" }, { cookie: "bl_customer_access=old; bl_customer_refresh=r" })
+    const response = await post("perfil", { name: "Bia", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=old; bl_shopper_refresh=r" })
 
     expect(response.headers.get("location")).toBe("http://localhost:3000/loja/conta?salvo=1")
-    expect(response.cookies.get("bl_customer_access")?.value).toBe("shopper-access")
+    expect(response.cookies.get("bl_shopper_access")).toMatchObject({ value: "shopper-access", path: "/loja" })
     expect(fetched).toHaveBeenCalledTimes(3)
   })
 
   it("says what to fix when the details are refused", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "BAD_REQUEST" }, { status: 400 })))
 
-    const location = new URL((await post("perfil", { phone: "12", retorno: "/loja/conta" }, { cookie: "bl_customer_access=a" })).headers.get("location") ?? "")
+    const location = new URL((await post("perfil", { phone: "12", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })).headers.get("location") ?? "")
 
     expect(location.searchParams.get("erro")).toBe("CUSTOMER_FIELDS_INVALID")
   })
