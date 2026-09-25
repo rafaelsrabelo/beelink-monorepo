@@ -5,7 +5,7 @@ import type { StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
 import { BandArrangement } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import type { ArrangementBand, ArrangementSpan, InsertAt, JoinAbove } from "@harness-monorepo/ui/blocks/design/band-arrangement"
+import type { ArrangementBand, InsertAt, JoinAbove } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
@@ -17,10 +17,10 @@ export interface DesignPanelProps {
   onReorder: (ids: string[]) => void
   onReorderComponents: (sectionId: string, ids: string[]) => void
   onToggleBand: (id: string, isActive: boolean) => void
+  /** A band's header, or a lone block's swatch: the band chosen, its Estilo in the panel. */
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onSpanChange: (id: string, span: ArrangementSpan) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
   /** A "+" was pressed — between bands, or inside one. The screen opens the gallery for that place. */
@@ -31,6 +31,8 @@ export interface DesignPanelProps {
   /** What an add or a move answered when it failed, in the owner's words. */
   error?: string | null
   selectedId: string | null
+  /** The band chosen on its own. */
+  selectedBandId: string | null
   /** Held by the screen, so the tab survives the column turning into a drawer and back. */
   tab: "blocks" | "colors"
   onTabChange: (tab: "blocks" | "colors") => void
@@ -61,7 +63,6 @@ export function DesignPanel({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onSpanChange,
   onDelete,
   onEdit,
   onInsert,
@@ -69,6 +70,7 @@ export function DesignPanel({
   inserting,
   error = null,
   selectedId,
+  selectedBandId,
   tab,
   onTabChange,
   palette,
@@ -114,7 +116,6 @@ export function DesignPanel({
             onEditBand={onEditBand}
             onDeleteBand={onDeleteBand}
             onToggle={onToggle}
-            onSpanChange={onSpanChange}
             onDelete={onDelete}
             onEdit={onEdit}
             // A band or a block is created saved, not as part of the draft: holding a new row in the
@@ -123,6 +124,7 @@ export function DesignPanel({
             onJoinAbove={onJoinAbove}
             inserting={inserting}
             selectedId={selectedId}
+            selectedBandId={selectedBandId}
             messages={messages}
           />
         )}

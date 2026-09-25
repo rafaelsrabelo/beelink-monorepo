@@ -25,8 +25,8 @@ type Bands = readonly { id: string; components: readonly { id: string }[] }[]
  * What a "+" starts: the gallery opens knowing where the block goes, and choosing a kind writes it
  * there. A saved write and not a draft edit — a reload must not lose what the owner watched appear.
  *
- * The neighbours that give up room for a block beside them change slice the way a SpanField changes
- * one: in the draft, until Publish. A dirty draft keeps its own slice for the blocks it holds, so a
+ * The neighbours that give up room for a block beside them change slice the way the Layout tab
+ * changes one: in the draft, until Publish. A dirty draft keeps its own slice for the blocks it holds, so a
  * slice changed on the server under it would be written back over at Publish.
  */
 export function useBlockInsert(

@@ -15,8 +15,8 @@ import { useArrangeItem } from "./design-arrange"
 import { RowThumbnail } from "./row-thumbnail"
 import type { StorefrontSpan } from "../storefront/storefront-band-cell"
 import { BesideActions } from "./beside-actions"
-import type { ComponentKind, SectionWidth } from "./design-types"
-import { SpanField } from "./span-field"
+import type { ComponentKind } from "./design-types"
+import { spanLabelOf } from "./span-field"
 
 /** A block's slice of its band. The storefront's own type: the row offers what the band draws. */
 export type ArrangementSpan = StorefrontSpan
@@ -58,13 +58,20 @@ export function hasSpan(item: Pick<ArrangementItem, "kind">): boolean {
   return item.kind !== "ANNOUNCEMENT"
 }
 
+/**
+ * What a row says under a block's name: its kind — or that it is empty — and its slice. The slice is
+ * chosen in the Layout tab; said here, a band's arrangement still reads at a glance.
+ */
+export function rowLineOf(item: Pick<ArrangementItem, "kind" | "span" | "empty">, messages: UiMessages): string {
+  const kind = item.empty ? messages.design.emptyBlock : messages.design.kinds[item.kind]
+  return hasSpan(item) ? `${kind} · ${spanLabelOf(item.span, messages)}` : kind
+}
+
 export function ArrangementRow({
   item,
   onToggle,
-  onSpanChange,
   onDelete,
   onEdit,
-  bandWidth,
   selected = false,
   onAddBeside,
   inserting = false,
@@ -74,13 +81,10 @@ export function ArrangementRow({
   /** Its fields are open: marked here as the preview marks it. */
   selected?: boolean
   onToggle: (id: string, isActive: boolean) => void
-  onSpanChange: (id: string, span: ArrangementSpan) => void
   /** Absent where a kind cannot be deleted; the row then draws no bin at all. */
   onDelete?: (id: string) => void
   /** Absent where a kind has nothing to write; the row is then not a button. */
   onEdit?: (id: string) => void
-  /** The width of the band the block sits in, said beside the block's own. */
-  bandWidth?: SectionWidth
   /** A block beside this one, in its row. Absent when the row has no room. */
   onAddBeside?: () => void
   inserting?: boolean
@@ -107,13 +111,10 @@ export function ArrangementRow({
       {...(selected ? { "aria-current": "true" as const } : {})}
     >
       {/*
-        Identity on the first line, and only identity.
-
-        Measured in the harness at the panel's real 380px: the row has ~305px, and handle (24) +
-        thumbnail (56) + size control (130) + hide (32) + delete (32) left the name EIGHT pixels —
-        the word in the DOM for a screen reader and invisible to everyone else. A first attempt
-        swapped the 112px select for three glyphs and made it WORSE, at 130. The control does not
-        fit beside the name at any spelling, so it stops trying: the name gets the line.
+        One compact line: the handle, the picture, the name with its kind and slice, and the two
+        actions. The slice's control lives in the Layout tab: measured at the panel's real width, a
+        size control beside the name left the name eight pixels, and on a line of its own it made
+        every row twice as tall.
       */}
       <div className="flex items-center gap-2">
       {/*
@@ -144,16 +145,12 @@ export function ArrangementRow({
           className="focus-visible:ring-ring flex min-w-0 flex-1 flex-col rounded-md px-1 text-left outline-none hover:underline focus-visible:ring-2"
         >
           <span className="truncate text-sm font-medium">{name}</span>
-          <span className="text-muted-foreground truncate text-xs">
-            {item.empty ? text.emptyBlock : text.kinds[item.kind]}
-          </span>
+          <span className="text-muted-foreground truncate text-xs">{rowLineOf(item, messages)}</span>
         </button>
       ) : (
         <div className="flex min-w-0 flex-1 flex-col px-1">
           <p className="truncate text-sm font-medium">{name}</p>
-          <p className="text-muted-foreground truncate text-xs">
-            {item.empty ? text.emptyBlock : text.kinds[item.kind]}
-          </p>
+          <p className="text-muted-foreground truncate text-xs">{rowLineOf(item, messages)}</p>
         </div>
       )}
 
@@ -185,17 +182,6 @@ export function ArrangementRow({
         </Button>
       ) : null}
       </div>
-
-      {hasSpan(item) ? (
-        // The second line, because the control and the band's width do not fit beside the name.
-        <SpanField
-          value={item.span}
-          onChange={(span) => onSpanChange(item.id, span)}
-          name={name}
-          {...(bandWidth ? { bandWidth } : {})}
-          messages={messages}
-        />
-      ) : null}
 
       <BesideActions name={name} {...(onAddBeside ? { onAddBeside } : {})} disabled={inserting} messages={messages} />
     </li>

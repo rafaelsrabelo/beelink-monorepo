@@ -14,7 +14,6 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { ArrangeBoard, useArrangeItem } from "./design-arrange"
 import { ArrangementRow } from "./arrangement-row"
-import type { ArrangementSpan } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
 import { besideInBand, type BesideInBand } from "./band-beside"
 import type { BesideActionsProps } from "./beside-actions"
@@ -38,7 +37,6 @@ export function BandRow({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onSpanChange,
   onDelete,
   onEdit,
   onInsertBlock,
@@ -46,16 +44,17 @@ export function BandRow({
   joinAbove = null,
   inserting = false,
   selectedId = null,
+  selected = false,
   messages,
 }: {
   band: ArrangementBand
   position: number
   onReorderComponents: (sectionId: string, ids: string[]) => void
   onToggleBand: (id: string, isActive: boolean) => void
+  /** The header, or a lone block's swatch: the band's Estilo, in the panel. */
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onSpanChange: (id: string, span: ArrangementSpan) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
   /**
@@ -74,6 +73,8 @@ export function BandRow({
   inserting?: boolean
   /** The block whose fields are open. */
   selectedId?: string | null
+  /** The band itself is chosen, on its own. */
+  selected?: boolean
   messages: UiMessages
 }) {
   const text = messages.design
@@ -83,6 +84,7 @@ export function BandRow({
     format(text.insertBlock, { band: name, position: String(index + 1) })
   const [only] = band.components
   const single = only && band.components.length === 1 ? only : null
+  const marked = selected || (!!single && single.id === selectedId)
   const besideAt = (at: number) => {
     const id = band.components[at]?.id
     const beside = onInsertBeside && id ? besideInBand(band.components, id) : null
@@ -94,12 +96,12 @@ export function BandRow({
       ref={drag.setNodeRef}
       style={drag.style}
       // The single card is the selected block itself, so the band's item carries the mark.
-      {...(single?.id === selectedId ? { "aria-current": "true" as const } : {})}
+      {...(marked ? { "aria-current": "true" as const } : {})}
       className={cn(
         "bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-2",
         drag.isDragging && "z-10 opacity-80 shadow-md",
         !(single ? singleShown(band, single) : band.isActive) && "opacity-60",
-        single?.id === selectedId && "ring-primary ring-2",
+        marked && "ring-primary ring-2",
       )}
     >
       {/*
@@ -118,7 +120,6 @@ export function BandRow({
           onEditBand={onEditBand}
           onDeleteBand={onDeleteBand}
           onToggle={onToggle}
-          onSpanChange={onSpanChange}
           onEdit={onEdit}
           {...besideAt(0)}
           joinAbove={joinAbove}
@@ -216,8 +217,6 @@ export function BandRow({
                   item={component}
                   selected={component.id === selectedId}
                   onToggle={onToggle}
-                  onSpanChange={onSpanChange}
-                  {...(band.width ? { bandWidth: band.width } : {})}
                   onDelete={onDelete}
                   onEdit={onEdit}
                   {...besideAt(at)}

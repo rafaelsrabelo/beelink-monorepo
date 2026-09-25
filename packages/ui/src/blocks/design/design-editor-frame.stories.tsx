@@ -52,7 +52,6 @@ const meta = {
         onEditBand={fn()}
         onDeleteBand={fn()}
         onToggle={fn()}
-        onSpanChange={fn()}
         onDelete={fn()}
         onEdit={fn()}
         onInsert={fn()}

@@ -70,7 +70,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const [panelTab, setPanelTab] = useState<"blocks" | "colors">("blocks")
   const [device, setDevice] = usePreviewDevice()
   const selection = useDesignSelection(rows)
-  const { choose, target, editingBand } = selection
+  const { choose, target } = selection
   const edited = editedOf(target)
   const chooseBlock = (id: string) => choose({ level: "block", id })
   // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
@@ -95,21 +95,15 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const bandName = (id: string) =>
     bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
 
-  const editingSection = saved.find((section) => section.id === editingBand) ?? null
   const guard = useLeaveGuard(draft.changed)
 
   return (
     <>
       <DesignScreenDialogs
-        slug={slug}
         guard={guard}
         draft={draft}
         pendingDelete={pendingDelete}
         onDeleteDone={() => setPendingDelete(null)}
-        editingSection={editingSection}
-        editingPosition={rows.findIndex((row) => row.id === editingBand) + 1}
-        pageBackground={palette.background}
-        onBandClose={() => selection.setEditingBand(null)}
         adding={adding}
         takenKinds={takenKinds}
         unavailableKinds={unavailableKinds}
@@ -144,10 +138,9 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
             onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}
             onToggleBand={(id, isActive) => draft.patchSection(id, { isActive })}
-            onEditBand={selection.setEditingBand}
+            onEditBand={(id) => choose({ level: "band", id })}
             onDeleteBand={(id) => setPendingDelete({ level: "band", id, name: bandName(id) })}
             onToggle={(id, isActive) => draft.patchComponent(id, { isActive })}
-            onSpanChange={(id, span) => draft.patchComponent(id, { span })}
             onDelete={(id) => {
               const component = saved.flatMap((section) => section.components).find((c) => c.id === id)
               if (component) {
@@ -157,6 +150,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             onEdit={chooseBlock}
             {...adding.panel}
             selectedId={edited?.componentId ?? null}
+            selectedBandId={target?.level === "band" && !target.blockId ? target.id : null}
             tab={panelTab}
             onTabChange={setPanelTab}
             palette={palette}

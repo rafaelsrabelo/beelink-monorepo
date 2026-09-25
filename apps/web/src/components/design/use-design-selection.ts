@@ -24,7 +24,6 @@ import { targetOf, type DesignSelection } from "./design-selection"
 export function useDesignSelection(rows: readonly SectionDraft[]) {
   const [selection, setSelection] = useState<DesignSelection | null>(null)
   const [tab, setTab] = useState<InspectorTab>("content")
-  const [editingBand, setEditingBand] = useState<string | null>(null)
   const [structureOpen, setStructureOpen] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)
   const wide = useWideEditor()
@@ -53,8 +52,6 @@ export function useDesignSelection(rows: readonly SectionDraft[]) {
     close,
     tab,
     setTab,
-    editingBand,
-    setEditingBand,
     structureOpen,
     setStructureOpen,
     inspectorOpen,

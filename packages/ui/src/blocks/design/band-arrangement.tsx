@@ -44,10 +44,10 @@ export interface BandArrangementProps {
   /** One band's components in their new order. Never across two bands — see the block doc. */
   onReorderComponents: (sectionId: string, ids: string[]) => void
   onToggleBand: (id: string, isActive: boolean) => void
+  /** A band's header, or a lone block's swatch: the band chosen, its Estilo in the panel. */
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onSpanChange: (id: string, span: ArrangementSpan) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
   /**
@@ -64,6 +64,8 @@ export interface BandArrangementProps {
   inserting?: boolean
   /** The block whose fields are open, marked here as the preview marks it. */
   selectedId?: string | null
+  /** The band chosen on its own, marked as a block is. */
+  selectedBandId?: string | null
   messages?: UiMessages
 }
 
@@ -77,7 +79,7 @@ export type InsertAt =
   | { level: "block"; sectionId: string; index: number }
   | { level: "beside"; sectionId: string; afterId: string; span: ArrangementSpan; rebalance: readonly SpanChange[] }
 
-/** A block that changes slice so a row has room: the width change a SpanField makes, by id. */
+/** A block that changes slice so a row has room: the width change the Layout tab makes, by id. */
 export interface SpanChange {
   id: string
   span: ArrangementSpan
@@ -114,13 +116,13 @@ export function BandArrangement({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onSpanChange,
   onDelete,
   onEdit,
   onInsert,
   onJoinAbove,
   inserting = false,
   selectedId = null,
+  selectedBandId = null,
   messages = defaultMessages,
 }: BandArrangementProps) {
   const text = messages.design
@@ -200,7 +202,6 @@ export function BandArrangement({
             onEditBand={onEditBand}
             onDeleteBand={onDeleteBand}
             onToggle={onToggle}
-            onSpanChange={onSpanChange}
             onDelete={onDelete}
             onEdit={onEdit}
             {...(onInsert
@@ -213,6 +214,7 @@ export function BandArrangement({
             joinAbove={joinAboveOf(at)}
             inserting={inserting}
             selectedId={selectedId}
+            selected={band.id === selectedBandId}
             messages={messages}
           />,
         ])}

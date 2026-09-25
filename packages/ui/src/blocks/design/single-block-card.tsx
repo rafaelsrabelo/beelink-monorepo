@@ -10,12 +10,11 @@ import { Button } from "@harness-monorepo/ui/components/button"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { hasSpan, type ArrangementItem, type ArrangementSpan } from "./arrangement-row"
+import { rowLineOf, type ArrangementItem } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
 import { BesideActions, type BesideActionsProps } from "./beside-actions"
 import type { useArrangeItem } from "./design-arrange"
 import { RowThumbnail } from "./row-thumbnail"
-import { SpanField } from "./span-field"
 
 export interface SingleBlockCardProps {
   band: ArrangementBand
@@ -27,10 +26,10 @@ export interface SingleBlockCardProps {
   /** The band's handle on the board of bands — the card is that band's item there. */
   drag: ReturnType<typeof useArrangeItem>
   onToggleBand: (id: string, isActive: boolean) => void
+  /** The swatch: the band's Estilo, in the panel. */
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onSpanChange: (id: string, span: ArrangementSpan) => void
   onEdit: (id: string) => void
   /** See `BesideActions`: absent when the row has no room, null when there is nothing above to join. */
   onAddBeside?: () => void
@@ -50,7 +49,7 @@ export function singleShown(band: Pick<ArrangementBand, "isActive">, block: Pick
  * All five bands of the real shop this editor was measured on hold a single block, and each drew
  * as a container with one child: two handles, two eyes and two bins for one thing on the page. The
  * card keeps the block's face — its picture, its name, its width — and the band's reach: the handle
- * moves the band, the swatch opens the band's sheet, and the bin deletes the band, because the API
+ * moves the band, the swatch opens the band's Estilo, and the bin deletes the band, because the API
  * would otherwise leave an empty band behind. It becomes a container the moment a second block
  * arrives. It is the inside of the band's `<li>`, which `BandRow` keeps, so the add slot below it is
  * the same element before and after — a keyboard user adding the second block keeps their place.
@@ -68,7 +67,6 @@ export function SingleBlockCard({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onSpanChange,
   onEdit,
   onAddBeside,
   joinAbove = null,
@@ -106,7 +104,7 @@ export function SingleBlockCard({
         >
           <span className="truncate text-sm font-medium">{name}</span>
           <span className="text-muted-foreground truncate text-xs">
-            {bandName} · {block.empty ? text.emptyBlock : text.kinds[block.kind]}
+            {bandName} · {rowLineOf(block, messages)}
           </span>
         </button>
 
@@ -150,16 +148,6 @@ export function SingleBlockCard({
           </Button>
         ) : null}
       </div>
-
-      {hasSpan(block) ? (
-        <SpanField
-          value={block.span}
-          onChange={(span) => onSpanChange(block.id, span)}
-          name={name}
-          {...(band.width ? { bandWidth: band.width } : {})}
-          messages={messages}
-        />
-      ) : null}
 
       <BesideActions name={name} {...(onAddBeside ? { onAddBeside } : {})} joinAbove={joinAbove} disabled={inserting} messages={messages} />
     </>
