@@ -9,6 +9,7 @@ import type {
   ProductVariant,
   PublicProductDetail,
   PublicProductVariant,
+  StorefrontCartProducts,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -76,4 +77,12 @@ export class PublicProductDetailResponse extends PublicProductResponse implement
     description: 'Every combination the shop sells; one it switched off is absent.',
   })
   variants!: PublicProductVariantResponse[];
+}
+
+export class StorefrontCartProductsResponse implements StorefrontCartProducts {
+  @ApiProperty({
+    type: [PublicProductDetailResponse],
+    description: 'The active products among the ids asked, in their order; one drafted or gone is absent.',
+  })
+  products!: PublicProductDetailResponse[];
 }

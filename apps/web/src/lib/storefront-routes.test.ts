@@ -2,11 +2,11 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { listingFiltersOf, storefrontRoutes, toggledOption } from "./storefront-routes"
+import { listingFiltersOf, safeBackOf, sectionOf, signInModeOf, storefrontRoutes, toggledOption } from "./storefront-routes"
 
 const routes = storefrontRoutes({
   slug: "mutante",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
 })
 
 describe("listingFiltersOf", () => {
@@ -77,3 +77,25 @@ describe("toggledOption", () => {
     expect(toggledOption(off, "Peso:900").options).toBeUndefined()
   })
 })
+
+describe("the sign-in page's addresses", () => {
+  it("is a route word of its own, with its faces and its way back in the address", () => {
+    const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" } }
+    const shopRoutes = storefrontRoutes(shop)
+
+    expect(sectionOf("entrar", shop.routeWords)).toEqual({ kind: "signIn" })
+    expect(shopRoutes.signIn()).toBe("/loja/entrar")
+    expect(shopRoutes.signIn({ mode: "criar", back: "/loja/carrinho" })).toBe("/loja/entrar?modo=criar&voltar=%2Floja%2Fcarrinho")
+    expect(signInModeOf("senha")).toBe("senha")
+    expect(signInModeOf("qualquer")).toBe("entrar")
+  })
+
+  it("follows a return path only inside the shop", () => {
+    expect(safeBackOf("loja", "/loja/carrinho")).toBe("/loja/carrinho")
+    expect(safeBackOf("loja", "/loja")).toBe("/loja")
+    for (const unsafe of ["https://evil.example", "//evil.example", "/lojaoutra", "/loja//x", undefined]) {
+      expect(safeBackOf("loja", unsafe)).toBe("/loja")
+    }
+  })
+})
+
