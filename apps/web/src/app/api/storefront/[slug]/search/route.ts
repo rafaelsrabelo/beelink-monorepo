@@ -48,5 +48,7 @@ export async function GET(
     pageSize: SUGGESTIONS,
   })
 
-  return NextResponse.json({ products: catalogue.products, total: catalogue.total }, { status: 200 })
+  // A suggestion shows one photo: the card's gallery stays on the server, off the dropdown's wire.
+  const products = catalogue.products.map((product) => ({ ...product, imageUrls: undefined }))
+  return NextResponse.json({ products, total: catalogue.total }, { status: 200 })
 }

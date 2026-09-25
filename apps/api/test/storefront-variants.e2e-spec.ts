@@ -138,6 +138,20 @@ describe('a product’s variants on the storefront', () => {
     expect(page).not.toHaveProperty('hasOptions');
   });
 
+  it("sums up a card's first option, and nothing for a product without one", async () => {
+    await wheyInThreeSizes();
+    await addProduct({ name: 'Blusa', slug: 'blusa', priceCents: 5990 });
+
+    const shopWindow = await visit<StorefrontCatalog>('/api/stores/lessari/catalog');
+    const page = await visit<PublicProductDetail>('/api/stores/lessari/catalog/blusa');
+
+    expect(shopWindow.products.find((card) => card.slug === 'whey')?.optionSummary).toEqual({ name: 'Peso', valueCount: 3 });
+    expect(shopWindow.products.find((card) => card.slug === 'blusa')?.optionSummary).toBeNull();
+    expect(shopWindow.products.find((card) => card.slug === 'blusa')?.imageUrls).toEqual([]);
+    // The page reads the whole gallery and the options themselves; the summary is a shelf's.
+    expect(page).not.toHaveProperty('optionSummary');
+  });
+
   it('widens the range as combinations come back', async () => {
     const detail = await wheyInThreeSizes();
     await ownerCall('PUT', `/api/stores/lessari/products/${detail.id}/variants`, {

@@ -6,12 +6,15 @@ import type {
   PublicProductCard,
   PublicProductCategory,
   PublicProductImage,
+  CardOptionSummary,
 } from '@harness-monorepo/contracts';
 import type {
   ProductCategoryModel,
   ProductImageModel,
   ProductModel,
 } from '../../generated/prisma/models.js';
+import type { ProductOptionOrderByWithRelationInput } from '../../generated/prisma/models/ProductOption.js';
+import { CARD_PHOTOS_MAX } from './catalog.constants.js';
 import { isSoldOut, ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 /**
@@ -82,7 +85,10 @@ export const productInclude = {
   category: { include: productCategoryInclude },
 } as const;
 
-/** What a card is drawn from: the first photo's address and nothing else of the gallery. */
+/** A product's first option as a shelf reads it: its name and how many values it has. */
+export type CardOptionRow = { name: string; _count: { values: number } };
+
+/** What a card is drawn from: its first photos' addresses and nothing else of the gallery. */
 export type ProductCardRow = ProductModel & {
   images: { url: string }[];
   category: ProductCategoryRow | null;
@@ -90,14 +96,33 @@ export type ProductCardRow = ProductModel & {
   _count?: { options: number };
 };
 
+/** A shelf's row: the card's, with its first photos and first option. See `productCardInclude`. */
+export type ShelfCardRow = ProductCardRow & { options: CardOptionRow[] };
+
+/**
+ * The first option and its values, counted in the same read: one more query per page for every
+ * card at once, never one per product.
+ */
+export const cardOptionSelect = {
+  select: { name: true, _count: { select: { values: true } } } as const,
+  orderBy: [{ position: 'asc' }, { id: 'asc' }] satisfies ProductOptionOrderByWithRelationInput[],
+  take: 1,
+};
+
+export function optionSummaryOf(options: readonly CardOptionRow[]): CardOptionSummary | null {
+  const first = options[0];
+  return first ? { name: first.name, valueCount: first._count.values } : null;
+}
+
 /**
  * The storefront grid's read. A page of cards shows one photo each, so it asks for one — not every
  * photo and what each is of, which is a second query over up to 96 galleries that the grid drops.
  */
 export const productCardInclude = {
-  images: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
+  images: { select: { url: true }, orderBy: { position: 'asc' }, take: CARD_PHOTOS_MAX },
   category: { include: productCategoryInclude },
   _count: { select: { options: true } },
+  options: cardOptionSelect,
 } as const;
 
 export function toPublicProductCategory(row: ProductCategoryRow): PublicProductCategory {
@@ -151,6 +176,18 @@ export function toPublicProductCard(row: ProductCardRow): PublicProductCard {
     categorySlug: row.category?.slug ?? null,
     priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
     ...(row._count ? { hasOptions: row._count.options > 0 } : {}),
+  } satisfies PublicProductCard;
+}
+
+/**
+ * A card on a shelf: the photos a card passes through and its "4 sabores". Its own mapper, since
+ * the panel's and the product page's rows carry every option in full and no count.
+ */
+export function toShelfCard(row: ShelfCardRow): PublicProductCard {
+  return {
+    ...toPublicProductCard(row),
+    imageUrls: row.images.slice(0, CARD_PHOTOS_MAX).map((image) => image.url),
+    optionSummary: optionSummaryOf(row.options),
   } satisfies PublicProductCard;
 }
 

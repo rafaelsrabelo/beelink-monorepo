@@ -12,6 +12,8 @@ import type {
 // App
 import { parseComponentItems } from '../page/component-items.schema.js';
 import { SHOWCASE_LIMIT_DEFAULT, SHOWCASE_LIMIT_MAX } from '../page/page.constants.js';
+import { CARD_PHOTOS_MAX } from './catalog.constants.js';
+import { cardOptionSelect, optionSummaryOf } from './catalog.mapper.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 /**
@@ -26,9 +28,10 @@ export const SHOWCASE_CARD_SELECT = {
   priceCents: true,
   compareAtPriceCents: true,
   maxPriceCents: true,
-  images: { select: { url: true }, orderBy: [{ position: 'asc' }, { id: 'asc' }], take: 1 },
+  images: { select: { url: true }, orderBy: [{ position: 'asc' }, { id: 'asc' }], take: CARD_PHOTOS_MAX },
   category: { select: { slug: true } },
   _count: { select: { options: true } },
+  options: cardOptionSelect,
 } satisfies ProductSelect;
 
 export type ShowcaseCardRow = ProductGetPayload<{ select: typeof SHOWCASE_CARD_SELECT }>;
@@ -138,5 +141,7 @@ export function toShowcaseCard(row: ShowcaseCardRow): PublicProductCard {
     categorySlug: row.category?.slug ?? null,
     priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
     hasOptions: row._count.options > 0,
+    imageUrls: row.images.map((image) => image.url),
+    optionSummary: optionSummaryOf(row.options),
   } satisfies PublicProductCard;
 }

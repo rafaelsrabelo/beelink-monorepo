@@ -3,7 +3,8 @@ import type { ProductFieldRefs } from '../../generated/prisma/models/Product.js'
 
 // App
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
-import { selectionOf, shelfOf, showcaseQuery, type ShowcaseCardRow } from './showcase.query.js';
+import { CARD_PHOTOS_MAX } from './catalog.constants.js';
+import { SHOWCASE_CARD_SELECT, selectionOf, shelfOf, showcaseQuery, toShowcaseCard, type ShowcaseCardRow } from './showcase.query.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
 const CATEGORY = '0199d000-0000-7000-8000-000000000001';
@@ -28,6 +29,7 @@ function row(id: string): ShowcaseCardRow {
     images: [{ url: `/${id}.jpg` }],
     category: { slug: 'blusas' },
     _count: { options: 0 },
+    options: [],
   };
 }
 
@@ -125,7 +127,34 @@ describe('shelfOf — the cards, in the order the showcase wants', () => {
         categorySlug: 'blusas',
         priceRange: { minCents: 100, maxCents: 150 },
         hasOptions: false,
+        imageUrls: ['/p1.jpg'],
+        optionSummary: null,
       },
     ]);
+  });
+});
+
+describe('toShowcaseCard — what a showcase card carries', () => {
+  /** B11: photos to pass through and "4 sabores", from the same read — no query per product. */
+  it('asks for up to five photos and the first option with its values counted, in the one select', () => {
+    expect(SHOWCASE_CARD_SELECT.images.take).toBe(CARD_PHOTOS_MAX);
+    expect(SHOWCASE_CARD_SELECT.options).toMatchObject({ take: 1, select: { name: true, _count: { select: { values: true } } } });
+  });
+
+  it("carries the photos in the shopkeeper's order, the cover first, and sums up the first option", () => {
+    const card = toShowcaseCard({
+      ...row(P1),
+      images: [{ url: '/capa.jpg' }, { url: '/2.jpg' }, { url: '/3.jpg' }],
+      _count: { options: 2 },
+      options: [{ name: 'Sabor', _count: { values: 4 } }],
+    });
+
+    expect(card.imageUrl).toBe('/capa.jpg');
+    expect(card.imageUrls).toEqual(['/capa.jpg', '/2.jpg', '/3.jpg']);
+    expect(card.optionSummary).toEqual({ name: 'Sabor', valueCount: 4 });
+  });
+
+  it('says a product without options has no summary', () => {
+    expect(toShowcaseCard(row(P1)).optionSummary).toBeNull();
   });
 });
