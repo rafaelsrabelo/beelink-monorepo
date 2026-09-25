@@ -275,6 +275,10 @@ export interface UiMessages {
     /** The buy column's landmark name. */
     buyBoxLabel: string
     descriptionHeading: string
+    /** "Sobre este item": the description's first list, in the info column. */
+    aboutItem: string
+    /** Down to the rest of the description; the "›" is drawn apart. */
+    fullDescription: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */

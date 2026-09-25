@@ -1,5 +1,8 @@
 // React
-import type { ReactNode } from "react"
+import { Fragment, type ReactNode } from "react"
+
+// UI
+import { firstListOf, withoutFirstList } from "@harness-monorepo/ui/lib/markdown"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -7,6 +10,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { StorefrontAboutItem } from "./storefront-about-item"
+import { PRODUCT_DESCRIPTION_ID } from "./storefront-product-section"
 
 export interface StorefrontProductInfoProps {
   shopName: string
@@ -19,16 +24,37 @@ export interface StorefrontProductInfoProps {
   price?: ReactNode
   /** The options, when the product has any. */
   picker?: ReactNode
+  /** The product's Markdown: its first bulleted list becomes "Sobre este item". */
+  description?: string | null
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
 /**
- * 5b's middle column: the shop over the title, the title as the page's one `h1`, then the price and
- * the choice. It draws what it is handed; the product block owns the choice and passes each part.
+ * 5b's middle column: the shop over the title, the title as the page's one `h1`, then the price, the
+ * choice and "Sobre este item", a hairline above each. It draws what it is handed; the product block
+ * owns the choice and passes each part. A part that is absent takes its hairline with it.
  */
-export function StorefrontProductInfo({ shopName, homeHref, name, unavailable, price, picker, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontProductInfoProps) {
+export function StorefrontProductInfo({
+  shopName,
+  homeHref,
+  name,
+  unavailable,
+  price,
+  picker,
+  description,
+  linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
+}: StorefrontProductInfoProps) {
   const text = messages.storefront
+  const about = description ? firstListOf(description) : []
+  // The link only when the description section has something the list did not say.
+  const more = description && withoutFirstList(description).length > 0 ? `#${PRODUCT_DESCRIPTION_ID}` : undefined
+  const parts = [
+    ["price", price],
+    ["picker", picker],
+    ["about", about.length > 0 ? <StorefrontAboutItem items={about} moreHref={more} messages={messages} /> : null],
+  ] as const
 
   return (
     <div className="flex min-w-0 flex-col gap-3.5">
@@ -40,8 +66,14 @@ export function StorefrontProductInfo({ shopName, homeHref, name, unavailable, p
         Its own line above the price: this is the one fact that changes what the visitor can do here.
       */}
       {unavailable ? <p className="text-sm font-semibold tracking-wide text-shop-muted uppercase">{text.soldOut}</p> : null}
-      {price}
-      {picker}
+      {parts.map(([key, part]) =>
+        part ? (
+          <Fragment key={key}>
+            <div aria-hidden="true" className="h-px bg-shop-line" />
+            {part}
+          </Fragment>
+        ) : null,
+      )}
     </div>
   )
 }

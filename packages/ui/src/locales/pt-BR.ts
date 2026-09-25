@@ -210,6 +210,8 @@ export const ptBR: UiMessages = {
     visitShop: "Visite a loja {name}",
     buyBoxLabel: "Comprar",
     descriptionHeading: "Descrição do produto",
+    aboutItem: "Sobre este item",
+    fullDescription: "Ver descrição completa",
     accountGreeting: "Olá, entre",
     cartEmpty: "Seu carrinho está vazio.",
     cartEmptyHint: "O que você adicionar na loja aparece aqui.",

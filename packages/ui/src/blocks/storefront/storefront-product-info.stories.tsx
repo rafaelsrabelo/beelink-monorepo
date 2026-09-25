@@ -23,7 +23,18 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A coluna do meio de 5b: a loja, o título e o preço. */
-export const Padrao: Story = {}
+const HAZE = [
+  "Pré-treino para quem treina pesado.",
+  "",
+  "- **Mais energia** para treinos intensos do começo ao fim.",
+  "- **Foco total** para manter a cabeça no treino.",
+  "- **Sabor incrível**, fácil de misturar na coqueteleira.",
+].join("\n")
+
+/** A coluna do meio de 5b: a loja, o título, o preço e "Sobre este item", com as divisórias. */
+export const Padrao: Story = { args: { description: HAZE } }
+
+/** A descrição sem lista: nada de "Sobre este item", e a última divisória vai junto. */
+export const SemListaNaDescricao: Story = { args: { description: "Pré-treino para quem treina pesado." } }
 
 export const Esgotado: Story = { args: { unavailable: true } }

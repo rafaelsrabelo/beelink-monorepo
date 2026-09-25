@@ -210,6 +210,8 @@ export const en: UiMessages = {
     visitShop: "Visit {name}",
     buyBoxLabel: "Buy",
     descriptionHeading: "Product description",
+    aboutItem: "About this item",
+    fullDescription: "See the full description",
     accountGreeting: "Hello, sign in",
     cartEmpty: "Your cart is empty.",
     cartEmptyHint: "What you add in the shop shows up here.",

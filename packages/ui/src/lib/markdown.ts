@@ -137,8 +137,22 @@ export function plainTextOf(markdown: string): string {
     .trim()
 }
 
-/** The first list's items as words — the "about this item" bullets, until a field of their own exists. */
-export function firstListOf(markdown: string): string[] {
-  const list = parseMarkdown(markdown).find((block) => block.kind === "list")
-  return list ? list.items.map(inlineText) : []
+function isBulleted(block: MarkdownBlock): boolean {
+  return block.kind === "list" && !block.ordered
+}
+
+/**
+ * The first bulleted list's items, each keeping its marks — the "Sobre este item" bullets, until a
+ * field of their own exists. A numbered list is steps, not highlights, and is left where it is.
+ */
+export function firstListOf(markdown: string): MarkdownInline[][] {
+  const list = parseMarkdown(markdown).find(isBulleted)
+  return list?.kind === "list" ? list.items : []
+}
+
+/** Every block but that first bulleted list: the description, once "Sobre este item" has drawn it. */
+export function withoutFirstList(markdown: string): MarkdownBlock[] {
+  const blocks = parseMarkdown(markdown)
+  const at = blocks.findIndex(isBulleted)
+  return at === -1 ? blocks : blocks.filter((_, index) => index !== at)
 }

@@ -40,8 +40,8 @@ export interface StorefrontProductDetailProps {
   homeHref: string
   name: string
   /**
-   * The product's Markdown. The page draws the whole of it in its own section (`#descricao`); the
-   * info column draws only its first list, as "Sobre este item" (D6).
+   * The product's Markdown. The info column draws its first bulleted list as "Sobre este item"; the
+   * page draws the rest in its own section (`#descricao`).
    */
   description: string | null
   priceCents: number
@@ -94,6 +94,7 @@ export function StorefrontProductDetail({
   shopName,
   homeHref,
   name,
+  description,
   priceCents,
   compareAtPriceCents,
   images,
@@ -122,8 +123,7 @@ export function StorefrontProductDetail({
   const variant = choosing ? variantOf(selection, options, variants) : undefined
   const label = variant ? variantLabelOf(variant, options) : ""
   const unavailable = choosing ? !variant?.available : soldOut
-  // The chosen combination's photos, the most specific first; a variant's own photo, when the API
-  // has one, still leads them.
+  // The chosen combination's photos, the most specific first, behind the variant's own when it has one.
   const fitting = variant
     ? photosOf(images, optionOfValue(options, (option) => option.values, (entry) => entry.id), variant.optionValueIds)
     : images
@@ -167,9 +167,8 @@ export function StorefrontProductDetail({
   return (
     <>
       {/*
-        5b's top row: photos | information | buy box — 540 | 452 | 320 at 1440 from shop-xl, the first
-        two sharing what a narrower window leaves. Two columns from shop-lg, where the first row hugs
-        the information so the buy box sits under the price; one on a phone, in that order.
+        5b's top row: photos | information | buy box, 540 | 452 | 320 at 1440. Two columns from shop-lg,
+        the first row hugging the information so the buy box sits under the price; one on a phone.
       */}
       <article className="grid grid-cols-1 items-start gap-6 pt-1 pb-8 leading-[1.2] text-shop-on-background shop-lg:grid-cols-2 shop-lg:grid-rows-[auto_1fr] shop-lg:gap-8 shop-xl:grid-cols-[minmax(0,540fr)_minmax(0,452fr)_320px] shop-xl:grid-rows-none">
         <div className="min-w-0 shop-lg:row-span-2 shop-xl:row-span-1">
@@ -188,6 +187,7 @@ export function StorefrontProductDetail({
           unavailable={unavailable}
           price={price}
           picker={picker}
+          description={description}
           {...(linkComponent ? { linkComponent } : {})}
           messages={messages}
         />

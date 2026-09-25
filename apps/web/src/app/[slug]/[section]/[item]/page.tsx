@@ -4,9 +4,9 @@ import type { Metadata } from "next"
 
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
-import { StorefrontProductSection } from "@harness-monorepo/ui/blocks/storefront/storefront-product-section"
+import { PRODUCT_DESCRIPTION_ID, StorefrontProductSection } from "@harness-monorepo/ui/blocks/storefront/storefront-product-section"
 import { StorefrontRichText } from "@harness-monorepo/ui/blocks/storefront/storefront-rich-text"
-import { plainTextOf } from "@harness-monorepo/ui/lib/markdown"
+import { plainTextOf, withoutFirstList } from "@harness-monorepo/ui/lib/markdown"
 import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
 // App
@@ -158,12 +158,13 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
       />
 
       {/*
-        The whole description, in the server's HTML where a crawler reads it, as 5b's first lower
-        section. The info column shows only its first list (D6), and links here.
+        The description, in the server's HTML where a crawler reads it, as 5b's first lower section.
+        Its first bulleted list is already "Sobre este item" in the info column, which links here, so
+        this draws the rest — and nothing when the list was all of it.
       */}
-      {product.description ? (
-        <StorefrontProductSection id="descricao" title={ui.storefront.descriptionHeading} className="pb-12">
-          <StorefrontRichText markdown={product.description} className="text-[15px] leading-[1.6] text-shop-on-background" />
+      {product.description && withoutFirstList(product.description).length > 0 ? (
+        <StorefrontProductSection id={PRODUCT_DESCRIPTION_ID} title={ui.storefront.descriptionHeading} className="pb-12">
+          <StorefrontRichText markdown={product.description} skipFirstList className="text-[15px] leading-[1.6] text-shop-on-background" />
         </StorefrontProductSection>
       ) : null}
     </StorefrontFrame>

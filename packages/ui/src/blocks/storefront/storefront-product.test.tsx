@@ -56,6 +56,14 @@ describe("StorefrontProductDetail", () => {
     expect(buy).toContainElement(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
   })
 
+  it("draws the description's first list as 'Sobre este item' in the information, before the region for buying", () => {
+    renderProduct({ description: "Feita à mão.\n\n- **Algodão** cru\n- Alça longa", cart: { onAdd: () => {}, href: "#" } })
+
+    const about = screen.getByRole("heading", { level: 2, name: "Sobre este item" })
+    expect(screen.getByText("Algodão", { selector: "strong" })).toBeInTheDocument()
+    expect(about.compareDocumentPosition(screen.getByRole("region", { name: "Comprar" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it("names the product as the page's one heading", () => {
     renderProduct()
 
