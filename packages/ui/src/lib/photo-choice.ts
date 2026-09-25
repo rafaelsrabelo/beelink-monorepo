@@ -58,3 +58,14 @@ export function photosOf<Photo extends TaggedPhoto>(
   if (fitting.length === 0) return [...photos]
   return fitting.sort((a, b) => b.specificity - a.specificity || a.index - b.index).map((entry) => entry.photo)
 }
+
+/**
+ * A value's own photo: the first one tagged with it and with nothing outside its option — the
+ * flavour's tub for "Uva". The 900 g Morango tub is no size's photo: shown on "900 g", it would
+ * picture Morango whatever flavour was chosen, and turn the sizes into photo cards.
+ *
+ * `siblings` are the ids of every value of that option, the value itself included.
+ */
+export function valuePhotoOf<Photo extends TaggedPhoto>(photos: readonly Photo[], valueId: string, siblings: readonly string[]): Photo | undefined {
+  return photos.find((photo) => photo.optionValueIds?.includes(valueId) && photo.optionValueIds.every((id) => siblings.includes(id)))
+}

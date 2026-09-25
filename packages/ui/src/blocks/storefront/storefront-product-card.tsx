@@ -1,5 +1,9 @@
+// React
+import type { ReactNode } from "react"
+
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { StorefrontCardPhotos } from "./storefront-card-photos"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 
 // Locales
@@ -13,6 +17,10 @@ export interface StorefrontProduct {
   priceCents: number
   compareAtPriceCents: number | null
   imageUrl: string | null
+  /** Up to five photos, the cover first: with two or more, the card passes through them. */
+  imageUrls?: readonly string[]
+  /** Whether it sells combinations: known on a shelf, and what decides a card's action. */
+  hasOptions?: boolean
 }
 
 export interface StorefrontProductCardProps {
@@ -22,15 +30,32 @@ export interface StorefrontProductCardProps {
   locale: string
   showPrice?: boolean
   showBadge?: boolean
+  /** Under the price, above the card's link: the web's "Adicionar ao carrinho". */
+  action?: ReactNode
+  /**
+   * `compact` is 5b's related card: the whole card one link with no frame, a 180px photo, the name in
+   * the link colour and the price as one string. No badge and no action: it is a suggestion, and
+   * the product's own page is where buying happens.
+   */
+  density?: "default" | "compact"
+  /** The card stands on a rail that scrolls sideways, which changes what a finger on its photo does. */
+  inRail?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
 /**
- * One product, as a window lists it.
+ * One product, as a window lists it — the card 5a draws, everywhere a product is a card: the
+ * home's grids and rails, the catalogue, a category, the search.
  *
- * The whole card is the link, not a button inside it: a card where only part of it is clickable
- * teaches a visitor that clicking it does nothing, and they stop trying.
+ * A bordered `<article>` with the photo flush at the top and the words under it. The name is the
+ * one link, and it stretches over the whole card: a card where only part of it is clickable
+ * teaches a visitor that clicking it does nothing, and they stop trying — while a photo that is a
+ * second link to the same place is the same product read twice to a screen reader. Anything the
+ * card later gains of its own (a rating's link, a button) sits above the stretched link.
+ *
+ * No hover zoom on the photo: the photos will move on their own once a card can pass through
+ * them, and a zoom that fights a swipe is worse than none.
  */
 export function StorefrontProductCard({
   product,
@@ -38,32 +63,50 @@ export function StorefrontProductCard({
   locale,
   showPrice = true,
   showBadge = true,
+  action,
+  density = "default",
+  inRail = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductCardProps) {
   const text = messages.storefront
 
+  if (density === "compact") {
+    return (
+      // Relative, so the price's screen-reader text is placed inside the card: positioned against
+      // an ancestor outside the rail's scroller, it escapes the clip and widens the page.
+      // The focus ring drawn inside: a rail's scroller clips whatever falls outside the card.
+      <Link href={href} className="relative flex h-full flex-col gap-1.5 text-shop-on-background focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-shop-primary-ink">
+        <span className="block h-[180px] overflow-hidden rounded-[12px] bg-shop-placeholder">
+          {/* Decorative, as on the full card: the name right under it says what it is. */}
+          {product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" /> : null}
+        </span>
+        <span className="line-clamp-2 text-[14px] leading-[1.35] text-shop-primary-ink">{product.name}</span>
+        {showPrice ? (
+          <StorefrontPrice priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} locale={locale} size="compact" className="leading-[1.2]" messages={messages} />
+        ) : null}
+      </Link>
+    )
+  }
+
   return (
-    <Link
-      href={href}
-      className="group flex flex-col gap-2 rounded-xl p-2 transition-colors hover:bg-black/5"
-    >
-      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-black/5">
-        {product.imageUrl ? (
+    <article className="group/card relative flex h-full flex-col overflow-hidden rounded-xl border border-shop-line bg-shop-background">
+      <div className="relative aspect-[259/230] w-full overflow-hidden bg-shop-placeholder">
+        {product.imageUrls && product.imageUrls.length > 1 ? (
+          <StorefrontCardPhotos urls={product.imageUrls} href={href} inRail={inRail} />
+        ) : product.imageUrl ? (
           <img
             src={product.imageUrl}
             // Decorative on purpose: the title sits right below, so naming the photograph after
             // the product makes a screen reader read the same name twice per card.
             alt=""
             loading="lazy"
-            className="size-full object-cover transition-transform group-hover:scale-105"
+            className="size-full object-cover"
           />
         ) : (
           // A product with no photo yet still has a name and a price; an empty frame says so
           // without pretending an image failed to load.
-          <div className="flex size-full items-center justify-center text-xs opacity-50">
-            {text.noPhoto}
-          </div>
+          <div className="flex size-full items-center justify-center text-xs text-shop-muted">{text.noPhoto}</div>
         )}
         {/* The saving over the photo, as 5a draws it, and never without a real one. */}
         {showBadge ? (
@@ -71,36 +114,32 @@ export function StorefrontProductCard({
         ) : null}
       </div>
 
-      <div className="relative">
-        <p className="line-clamp-2 text-sm font-medium">{product.name}</p>
-
-        {/*
-          The title is clamped to two lines, so a long one ends mid-word and the card stops
-          answering "which one is this?". The tooltip is the rest of the name.
-
-          It is aria-hidden on purpose: line-clamp truncates the picture, not the DOM, so a
-          screen reader already reads the whole name — announcing it twice would be noise.
-          That also keeps the card renderable on the server: a CSS-only reveal costs the
-          catalogue grid no hydration, which a Base UI tooltip on every card would.
-        */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-full left-0 z-10 mb-1 w-max max-w-64 rounded-md px-2 py-1 text-xs opacity-0 shadow-sm transition-opacity group-focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
-          style={{ backgroundColor: "var(--shop-text)", color: "var(--shop-on-text)" }}
+      <div className="flex flex-1 flex-col gap-1.5 p-3.5">
+        {/* Clamped to two lines: the DOM keeps the whole name, so a reader hears all of it. */}
+        <Link
+          href={href}
+          className="line-clamp-2 min-h-10 text-[15px] leading-[1.35] font-medium text-shop-on-background after:absolute after:inset-0 after:content-['']"
         >
           {product.name}
-        </span>
-      </div>
+        </Link>
 
-      {showPrice ? (
-        <StorefrontPrice
-          priceCents={product.priceCents}
-          compareAtPriceCents={product.compareAtPriceCents}
-          locale={locale}
-          size="card"
-          messages={messages}
-        />
-      ) : null}
-    </Link>
+        {showPrice ? (
+          <StorefrontPrice
+            priceCents={product.priceCents}
+            compareAtPriceCents={product.compareAtPriceCents}
+            locale={locale}
+            size="card"
+            messages={messages}
+          />
+        ) : null}
+
+        {/* Above the name's stretched link, so a press on it is the action's and not the page's. */}
+        {/*
+          Transparent to the pointer except for the action's own controls: "Ver opções" is drawn, not a
+          second link, and a press on it has to reach the card's stretched link underneath.
+        */}
+        {action ? <div className="pointer-events-none relative z-10 mt-auto pt-1.5">{action}</div> : null}
+      </div>
+    </article>
   )
 }
