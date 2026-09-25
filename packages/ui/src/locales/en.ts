@@ -539,6 +539,7 @@ export const en: UiMessages = {
       style: "Style",
       needsAttention: "needs attention",
       layoutNote: "Changes the preview now; reaches the shop when you publish.",
+      sharedWith: "Applies to all {count} blocks in this band.",
     },
     addBlock: "Add block",
     addToBand: "Add to this band",

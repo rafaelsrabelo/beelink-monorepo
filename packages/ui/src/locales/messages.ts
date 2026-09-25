@@ -674,6 +674,8 @@ export interface UiMessages {
       needsAttention: string
       /** The Layout tab's promise: what changes there shows at once, and waits for Publicar. */
       layoutNote: string
+      /** Above a band's style when it holds several blocks. `{count}`. */
+      sharedWith: string
     }
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */

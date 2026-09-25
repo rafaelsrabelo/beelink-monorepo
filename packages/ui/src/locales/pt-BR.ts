@@ -539,6 +539,7 @@ export const ptBR: UiMessages = {
       style: "Estilo",
       needsAttention: "precisa de atenção",
       layoutNote: "Muda na prévia agora; vai para a loja quando você publicar.",
+      sharedWith: "Vale para os {count} blocos desta faixa.",
     },
     addBlock: "Adicionar bloco",
     addToBand: "Adicionar nesta faixa",

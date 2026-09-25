@@ -7,9 +7,9 @@ import { useState } from "react"
 import type { Section } from "@harness-monorepo/contracts"
 
 // UI
-import { BandForm } from "@harness-monorepo/ui/blocks/design/band-form"
-import type { BandFormValues } from "@harness-monorepo/ui/blocks/design/band-form"
 import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
+import { BandStyleFields, type BandFormValues } from "@harness-monorepo/ui/blocks/design/band-style-fields"
+import { InspectorTabs } from "@harness-monorepo/ui/blocks/design/inspector-tabs"
 import {
   Sheet,
   SheetContent,
@@ -77,7 +77,7 @@ function BandEditorBody({
   const update = useUpdateSection(slug)
   // The strip's band is drawn above the header, edge to edge, whatever its width says — so the
   // width is not offered there, and the sheet says why instead of promising "ponta a ponta".
-  const isStrip = section.components.every((component) => component.kind === "ANNOUNCEMENT")
+  const isStrip = section.components.length > 0 && section.components.every((component) => component.kind === "ANNOUNCEMENT")
 
   return (
     <>
@@ -87,11 +87,11 @@ function BandEditorBody({
         <SheetDescription>{isStrip ? text.stripBandHelp : text.bandWidthHelp}</SheetDescription>
       </SheetHeader>
       <div className="px-4 pb-4">
-        <BandForm
-          value={value}
-          onChange={setValue}
-          widthEditable={!isStrip}
-          pageBackground={pageBackground}
+        <InspectorTabs
+          tab="style"
+          onTabChange={() => undefined}
+          name={bandLabelOf(value.name, position, messages)}
+          style={<BandStyleFields value={value} onChange={setValue} strip={isStrip} pageBackground={pageBackground} messages={messages} />}
           onSubmit={() =>
             update.mutate(
               {
