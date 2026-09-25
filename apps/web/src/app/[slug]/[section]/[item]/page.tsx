@@ -141,11 +141,6 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
       body={{ layout: "flush" }}
       messages={ui}
     >
-      {/*
-        The deepest trail in the shop, and the page that needs it most: someone who arrived here
-        from Google or from a WhatsApp link has no history to go back through, and this is the only
-        thing on the page saying the product sits in a category inside a shop.
-      */}
       {/* In the server's HTML, before any script: what a search result draws the price and trail from. */}
       <script
         type="application/ld+json"
@@ -169,6 +164,11 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         }}
       />
 
+      {/*
+        The deepest trail in the shop, and the page that needs it most: someone who arrived here
+        from Google or from a WhatsApp link has no history to go back through, and this is the only
+        thing on the page saying the product sits in a category inside a shop.
+      */}
       <div className="py-3.5 leading-[1.2]">
         <StorefrontBreadcrumb
           homeHref={routes.home}

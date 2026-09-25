@@ -14,6 +14,8 @@ const product = {
   description: "**Energia** para o treino.\n\n- Foco",
   priceCents: 11990,
   compareAtPriceCents: 14990,
+  // What the API serves: the range of what can be ordered now — v2 is sold out.
+  priceRange: { minCents: 6990, maxCents: 11990 },
   soldOut: false,
   images: [{ id: "i1", url: "https://cdn/1.jpg", alt: null }],
   category: { id: "c1", slug: "pre-treino", name: "Pré-treino" },
@@ -21,6 +23,7 @@ const product = {
   variants: [
     { id: "v1", optionValueIds: [], priceCents: 6990, compareAtPriceCents: null, imageUrl: null, available: true },
     { id: "v2", optionValueIds: [], priceCents: 20990, compareAtPriceCents: null, imageUrl: null, available: false },
+    { id: "v3", optionValueIds: [], priceCents: 11990, compareAtPriceCents: null, imageUrl: null, available: true },
   ],
 } as unknown as PublicProductDetail
 
@@ -31,7 +34,7 @@ const crumbs = [
 ]
 
 describe("productJsonLd", () => {
-  it("describes the product with an offer from the cheapest to the dearest combination", () => {
+  it("describes the product with the range of what can be ordered, never a sold-out price", () => {
     const [item, trail] = productJsonLd({ product, url: "/loja/produtos/haze", shopName: "Loja", crumbs, showPrice: true }) as [Record<string, unknown>, Record<string, unknown>]
 
     expect(item).toMatchObject({
@@ -39,7 +42,7 @@ describe("productJsonLd", () => {
       name: "Pré-Treino Haze",
       description: "Energia para o treino. Foco",
       image: ["https://cdn/1.jpg"],
-      offers: { "@type": "AggregateOffer", priceCurrency: "BRL", lowPrice: "69.90", highPrice: "209.90", offerCount: 2, availability: "https://schema.org/InStock" },
+      offers: { "@type": "AggregateOffer", priceCurrency: "BRL", lowPrice: "69.90", highPrice: "119.90", offerCount: 2, availability: "https://schema.org/InStock" },
     })
     expect(item).not.toHaveProperty("aggregateRating")
     expect(trail).toMatchObject({ "@type": "BreadcrumbList", itemListElement: [{ position: 1, name: "Início", item: "/loja" }, { position: 2 }, { position: 3, name: "Pré-Treino Haze" }] })
@@ -54,10 +57,11 @@ describe("productJsonLd", () => {
     expect(hidden).not.toHaveProperty("offers")
   })
 
-  it("prices a product without combinations at its own price", () => {
-    const [item] = productJsonLd({ product: { ...product, variants: [] }, url: "/x", shopName: "Loja", crumbs, showPrice: true }) as [Record<string, { lowPrice: string; highPrice: string }>]
+  it("prices a product without options — one default combination — at its own price", () => {
+    const single = { ...product, priceRange: { minCents: 11990, maxCents: 11990 }, variants: [{ ...product.variants[0]!, priceCents: 11990 }] }
+    const [item] = productJsonLd({ product: single, url: "/x", shopName: "Loja", crumbs, showPrice: true }) as [Record<string, { lowPrice: string; highPrice: string; offerCount: number }>]
 
-    expect(item.offers).toMatchObject({ lowPrice: "119.90", highPrice: "119.90" })
+    expect(item.offers).toMatchObject({ lowPrice: "119.90", highPrice: "119.90", offerCount: 1 })
   })
 })
 

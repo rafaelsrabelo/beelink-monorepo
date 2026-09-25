@@ -19,16 +19,18 @@ const reais = (cents: number) => (cents / 100).toFixed(2)
 
 /**
  * What a search result draws a product from: schema.org's `Product` with an `AggregateOffer` — the
- * lowest and highest price across the combinations, and whether any can be ordered — and the
- * `BreadcrumbList` of the page's trail. Only real data: no rating until reviews exist, and never
+ * price range the shop's cards show, from what can be ordered now, and whether anything can — and
+ * the `BreadcrumbList` of the page's trail. Only real data: no rating until reviews exist, and never
  * the Markdown, only its words.
  *
  * The addresses are the site's own paths. A search engine resolves them against the page; an
  * absolute origin waits for a setting that says what the site's address is.
  */
 export function productJsonLd({ product, url, shopName, crumbs, showPrice }: ProductJsonLdInput): object[] {
-  const prices = product.variants.length > 0 ? product.variants.map((variant) => variant.priceCents) : [product.priceCents]
-  const available = product.variants.length > 0 ? product.variants.some((variant) => variant.available) : !product.soldOut
+  // The API's range, not one worked out again here: it runs over what a customer can order now, so a
+  // sold-out combination at 69,90 never becomes a "from" price nobody can buy at.
+  const orderable = product.variants.filter((variant) => variant.available).length
+  const available = orderable > 0 && !product.soldOut
   const description = product.description ? plainTextOf(product.description) : ""
 
   return [
@@ -44,9 +46,9 @@ export function productJsonLd({ product, url, shopName, crumbs, showPrice }: Pro
             offers: {
               "@type": "AggregateOffer",
               priceCurrency: "BRL",
-              lowPrice: reais(Math.min(...prices)),
-              highPrice: reais(Math.max(...prices)),
-              offerCount: prices.length,
+              lowPrice: reais(product.priceRange.minCents),
+              highPrice: reais(product.priceRange.maxCents),
+              offerCount: orderable || product.variants.length,
               availability: available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
               seller: { "@type": "Organization", name: shopName },
             },

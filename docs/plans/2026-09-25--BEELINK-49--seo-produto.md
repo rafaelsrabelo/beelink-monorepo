@@ -56,3 +56,14 @@ Os dois ficam para tickets próprios; medir de novo depois deles, num build de p
 
 - Resolver a renderização dinâmica e o redimensionamento de fotos.
 - `aggregateRating` e `review`: sem avaliações reais.
+
+## Revisão (25/09/2026)
+
+Três leituras independentes, cada achado verificado por um revisor que tentou refutá-lo. Dois
+distintos, os dois corrigidos:
+
+- **A oferta usa a faixa de preço da API** (`priceRange`), a mesma dos cards: do que pode ser pedido
+  agora. Calculada de novo aqui sobre todas as combinações, um sabor esgotado de R$ 69,90 virava um
+  "a partir de" que ninguém consegue comprar. `offerCount` conta as combinações que podem ser pedidas.
+  Isso corrige o item 2 da Definição de Pronto, que dizia "das combinações".
+- **O comentário da trilha voltou para cima da trilha**: o script de JSON-LD tinha entrado entre os dois.
