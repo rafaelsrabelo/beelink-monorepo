@@ -802,6 +802,45 @@ export interface UiMessages {
       /** "Faz tempo que você não passa aqui". */
       INACTIVE: string
     }
+    /** A customer's record: who they are, their numbers, their orders, and the way to correct them. */
+    record: {
+      /** The way back to the list. */
+      back: string
+      /** Under the name: "Na loja desde {date}". */
+      since: string
+      newOrder: string
+      numbers: string
+      orders: string
+      spent: string
+      /** Total spent over the valid orders. */
+      averageTicket: string
+      firstOrder: string
+      lastOrder: string
+      daysSince: string
+      details: string
+      name: string
+      email: string
+      emailVerified: string
+      emailUnverified: string
+      /** A customer the shop registered, who has no account and so no e-mail. */
+      noEmail: string
+      /** Under the e-mail while editing: why it is not a field. */
+      emailFixed: string
+      phone: string
+      noPhone: string
+      address: string
+      noAddress: string
+      edit: string
+      save: string
+      saving: string
+      cancel: string
+      saved: string
+      history: string
+      historyEmpty: string
+      historyEmptyHint: string
+      /** The accessible name of a history row's link: "Abrir o pedido #{number}". */
+      openOrder: string
+    }
   }
   /** The panel's orders: the list, and later the order and its form. */
   orders: {

@@ -33,6 +33,17 @@ export interface CustomerListItem {
   daysSinceLastOrder: number | null
 }
 
+/** A customer's record: the wire's `StoreCustomerDetail`, as the record reads it. */
+export interface CustomerRecordView extends CustomerListItem {
+  /** ISO-8601: when the customer joined the shop's list. */
+  createdAt: string
+  address: Record<"zipCode" | "street" | "number" | "complement" | "neighborhood" | "city" | "state", string | null>
+  /** ISO-8601; null with no valid order. */
+  firstOrderAt: string | null
+  /** Whole cents, as the API divides them; null with no valid order. */
+  averageTicketCents: number | null
+}
+
 /** What the table and the cards both draw from, already formatted for the shop's locale. */
 export interface CustomerRowsProps {
   customers: readonly CustomerListItem[]

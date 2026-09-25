@@ -18,6 +18,8 @@ export interface CustomerWhatsAppProps {
   href: string | null
   /** What the button says: in full on a card, short in the table's narrow column. */
   label: string
+  /** Small on a row; the record's header draws it beside its other actions, at their size. */
+  size?: "sm" | "default"
   messages: UiMessages
 }
 
@@ -26,15 +28,15 @@ export interface CustomerWhatsAppProps {
  * with the reason written under it and given as its description — not a tooltip: a disabled button
  * takes neither focus nor hover, so a tooltip on it would never open.
  */
-export function CustomerWhatsApp({ name, href, label, messages }: CustomerWhatsAppProps) {
+export function CustomerWhatsApp({ name, href, label, size = "sm", messages }: CustomerWhatsAppProps) {
   const text = messages.customers
   const reasonId = useId()
   const accessibleName = format(text.whatsappLabel, { name })
-  const icon = <WhatsAppIcon className="size-3.5" />
+  const icon = <WhatsAppIcon className={size === "sm" ? "size-3.5" : "size-4"} />
 
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" aria-label={accessibleName} className={buttonVariants({ variant: "outline", size: "sm" })}>
+      <a href={href} target="_blank" rel="noopener noreferrer" aria-label={accessibleName} className={buttonVariants({ variant: "outline", size })}>
         {icon}
         {label}
       </a>
@@ -43,7 +45,7 @@ export function CustomerWhatsApp({ name, href, label, messages }: CustomerWhatsA
 
   return (
     <span className="flex flex-col items-start gap-1">
-      <Button type="button" variant="outline" size="sm" disabled aria-label={accessibleName} aria-describedby={reasonId}>
+      <Button type="button" variant="outline" size={size} disabled aria-label={accessibleName} aria-describedby={reasonId}>
         {icon}
         {label}
       </Button>
