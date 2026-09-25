@@ -46,3 +46,14 @@ distintos, os dois corrigidos; três rejeitados.
   que falhou responde erro do servidor, que o buscador tenta de novo.
 - **O painel de filtros do celular não aparece numa prateleira que falhou**: o botão dele diria
   "Nenhum resultado" com o zero inventado.
+
+## Revisão (25/09/2026)
+
+Três leituras independentes, cada achado verificado por um revisor que tentou refutá-lo. Dois
+distintos, os dois corrigidos; três rejeitados.
+
+- **Uma queda da API não vira mais 404 numa categoria.** O menu que não pôde ser lido agora diz isso
+  (`failed`), e uma categoria ausente de um menu assim responde erro de servidor — que o buscador
+  tenta de novo — em vez de 404, que ele descarta.
+- **A folha de filtros do celular não abre numa prateleira que falhou**: a contagem dela seria o zero
+  inventado, "Nenhum resultado", contradizendo a mensagem de falha logo atrás.
