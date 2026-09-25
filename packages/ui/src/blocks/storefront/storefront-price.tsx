@@ -178,9 +178,9 @@ export function StorefrontDiscountBadge({
   return (
     <span
       className={cn(
-        "absolute font-extrabold text-shop-on-sale bg-shop-sale",
-        placement === "card" ? "top-2.5 right-2.5 rounded-md px-2 py-1 text-xs" : // Over a photo that zooms and opens on a click: the pointer passes through it.
-          "pointer-events-none top-3.5 left-3.5 rounded-[8px] px-2.5 py-[5px] text-[13px]",
+        // Over a photo that passes, zooms or opens on a press: above it, and the pointer goes through.
+        "pointer-events-none absolute z-[2] font-extrabold text-shop-on-sale bg-shop-sale",
+        placement === "card" ? "top-2.5 right-2.5 rounded-md px-2 py-1 text-xs" : "top-3.5 left-3.5 rounded-[8px] px-2.5 py-[5px] text-[13px]",
         className,
       )}
     >

@@ -108,7 +108,7 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
           filtered={chips.length > 0}
           {...(catalogue.failed ? { retryHref: pageHrefOf(place, routes)(page) } : {})}
           locale={locale}
-          productsPerRow={layout.productsPerRow ?? 3}
+          productsPerRow={layout.productsPerRow ?? 4}
           showPrice={layout.showProductPrice ?? true}
           showBadge={layout.showProductBadges ?? true}
           {...(layout.showQuickAdd ?? true ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={ui} /> } : {})}
