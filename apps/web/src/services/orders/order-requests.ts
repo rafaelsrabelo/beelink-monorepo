@@ -1,5 +1,5 @@
 // Types
-import type { OrderListQuery, OrderPage } from "@harness-monorepo/contracts"
+import type { CreateOrderPayload, Order, OrderListQuery, OrderPage } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class OrderRequestError extends Error {
@@ -33,4 +33,16 @@ export async function fetchOrders(slug: string, query: OrderListQuery = {}): Pro
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
   return payload as OrderPage
+}
+
+/** Registers an order the shop closed elsewhere. The API prices it; what comes back is what it wrote. */
+export async function createOrder(slug: string, payload: CreateOrderPayload): Promise<Order> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(body))
+  return body as Order
 }

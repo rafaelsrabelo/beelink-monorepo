@@ -1,5 +1,5 @@
 // Types
-import type { StoreCustomerListQuery, StoreCustomerPage } from "@harness-monorepo/contracts"
+import type { CreateStoreCustomerPayload, StoreCustomer, StoreCustomerListQuery, StoreCustomerPage } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class CustomerRequestError extends Error {
@@ -32,4 +32,27 @@ export async function fetchStoreCustomers(slug: string, query: StoreCustomerList
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new CustomerRequestError(errorCodeOf(payload))
   return payload as StoreCustomerPage
+}
+
+/** One of the shop's customers — the one a new order was opened for. */
+export async function fetchStoreCustomer(slug: string, customerId: string): Promise<StoreCustomer> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers/${encodeURIComponent(customerId)}`, {
+    method: "GET",
+    headers: JSON_HEADERS,
+  })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new CustomerRequestError(errorCodeOf(payload))
+  return payload as StoreCustomer
+}
+
+/** Registers a customer with no account; a phone the shop has is `CUSTOMER_PHONE_TAKEN`. */
+export async function createStoreCustomer(slug: string, payload: CreateStoreCustomerPayload): Promise<StoreCustomer> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new CustomerRequestError(errorCodeOf(body))
+  return body as StoreCustomer
 }
