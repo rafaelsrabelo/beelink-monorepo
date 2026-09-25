@@ -47,6 +47,18 @@ export class StoreCustomersController {
     return this.customers.create(storeSlug, current.id, dto);
   }
 
+  @Get(':customerId')
+  @ApiOperation({ summary: 'One of the shop\'s customers' })
+  @ApiOkResponse({ type: StoreCustomerResponse })
+  @ApiNotFoundResponse({ description: 'CUSTOMER_NOT_FOUND — no such customer in this shop' })
+  findOne(
+    @Param('storeSlug') storeSlug: string,
+    @Param('customerId') customerId: string,
+    @CurrentUser() current: AuthenticatedUser,
+  ): Promise<StoreCustomerResponse> {
+    return this.customers.findOne(storeSlug, current.id, customerId);
+  }
+
   @Get()
   @ApiOperation({ summary: "One page of the shop's customers, newest first" })
   @ApiOkResponse({ type: StoreCustomerPageResponse })

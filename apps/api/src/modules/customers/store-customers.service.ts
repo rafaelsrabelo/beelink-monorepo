@@ -1,5 +1,5 @@
 // Nest
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
 import type { StoreCustomer, StoreCustomerListQuery, StoreCustomerPage } from '@harness-monorepo/contracts';
@@ -11,6 +11,9 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { CUSTOMERS_PAGE_SIZE, CUSTOMERS_PAGE_SIZE_MAX } from './customers.constants.js';
 import type { CreateStoreCustomerDto } from './dto/store-customer.dto.js';
+
+/** A customer id is a uuid column: anything else is no customer, never a query the database refuses. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type CustomerRow = CustomerModel & { user: { email: string; emailVerifiedAt: Date | null } | null };
 
@@ -60,6 +63,20 @@ export class StoreCustomersService {
       }
       throw error;
     }
+  }
+
+  /** One of the shop's customers — another shop's, however real, is not found here. */
+  async findOne(storeSlug: string, userId: string, customerId: string): Promise<StoreCustomer> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+
+    const row = UUID.test(customerId)
+      ? await this.prisma.customer.findFirst({
+          where: { id: customerId.toLowerCase(), storeId },
+          include: { user: { select: { email: true, emailVerifiedAt: true } } },
+        })
+      : null;
+    if (!row) throw new NotFoundException({ errorCode: 'CUSTOMER_NOT_FOUND', message: 'No such customer in this shop' });
+    return toStoreCustomer(row);
   }
 
   /** One page, with the bounds used echoed and never the ones asked for. */

@@ -124,6 +124,8 @@ export interface GoogleSignIn {
 /** What a shopper's door answers besides the account's own codes (`AuthErrorCode`). */
 export type CustomerErrorCode =
   | "CUSTOMER_PHONE_TAKEN"
+  /** The panel asked for a customer this shop does not have. */
+  | "CUSTOMER_NOT_FOUND"
   /** Google sign-in is not set up on this deployment. */
   | "GOOGLE_SIGN_IN_UNAVAILABLE"
   /** The state is unknown, used or expired: the flow was not started here, or took too long. */
