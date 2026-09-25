@@ -707,6 +707,27 @@ export interface UiMessages {
     }
   }
   /** What arrived through a site's contact form, as its owner works through it. */
+  /** The panel's list of who opened an account at the shop. */
+  customers: {
+    title: string
+    description: string
+    searchLabel: string
+    searchPlaceholder: string
+    name: string
+    contact: string
+    place: string
+    stage: string
+    since: string
+    stages: { LEAD: string; CUSTOMER: string }
+    /** Beside an e-mail its owner never confirmed. */
+    unverified: string
+    empty: string
+    emptyHint: string
+    emptySearch: string
+    range: string
+    previous: string
+    next: string
+  }
   leads: {
     title: string
     description: string
