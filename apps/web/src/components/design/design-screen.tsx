@@ -73,8 +73,8 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
   const [panelTab, setPanelTab] = useState<"blocks" | "colors">("blocks")
-  // A phone first, because that is where the shop sells; a reload starts over at the phone.
-  const [device, setDevice] = useState<PreviewDevice>("PHONE")
+  // The computer first, the owner's call: a phone preview stacks every row of blocks side by side.
+  const [device, setDevice] = useState<PreviewDevice>("DESKTOP")
   // The side columns' drawers, where the three columns do not fit.
   const [structureOpen, setStructureOpen] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)
