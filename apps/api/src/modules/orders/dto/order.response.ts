@@ -6,6 +6,7 @@ import type {
   Order,
   OrderActor,
   OrderCustomer,
+  OrderCustomerDetail,
   OrderEvent,
   OrderFulfillment,
   OrderItem,
@@ -16,6 +17,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { CustomerAddressResponse } from '../../customers/dto/customer.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import { ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
 
@@ -29,6 +31,10 @@ export class OrderCustomerResponse implements OrderCustomer {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String, description: 'Digits only.' }) phone!: string | null;
+}
+
+export class OrderCustomerDetailResponse extends OrderCustomerResponse implements OrderCustomerDetail {
+  @ApiProperty({ type: CustomerAddressResponse, description: "The shop's record as it is now." }) address!: CustomerAddressResponse;
 }
 
 export class OrderItemResponse implements OrderItem {
@@ -54,7 +60,7 @@ export class OrderResponse implements Order {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ description: 'Sequential within the shop.' }) number!: number;
   @ApiProperty({ enum: ORDER_STATUSES }) status!: OrderStatus;
-  @ApiProperty({ type: OrderCustomerResponse }) customer!: OrderCustomerResponse;
+  @ApiProperty({ type: OrderCustomerDetailResponse }) customer!: OrderCustomerDetailResponse;
   @ApiProperty({ enum: ORDER_FULFILLMENTS }) fulfillment!: OrderFulfillment;
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
   @ApiProperty({ type: [OrderItemResponse] }) items!: OrderItemResponse[];

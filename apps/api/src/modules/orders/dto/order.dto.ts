@@ -31,7 +31,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
+import { blankToNull, normaliseWhatsapp, trim } from '../../stores/dto/store-fields.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
   ORDER_AMOUNT_MAX_CENTS,
@@ -40,9 +40,13 @@ import {
   ORDER_NOTE_MAX_LENGTH,
   ORDER_QUANTITY_MAX,
   ORDER_STATUSES,
+  ORDERS_PAGE_MAX,
   ORDERS_PAGE_SIZE,
   ORDERS_PAGE_SIZE_MAX,
 } from '../orders.constants.js';
+
+/** A UUID in the case Postgres answers it in, so an id sent in capitals still matches its row. */
+const lowerCase = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.toLowerCase() : value));
 
 /**
  * The customer, as a flat shape: `id` for one the shop has, or `name` and `phone` to register one
@@ -52,6 +56,7 @@ export class OrderCustomerDto {
   @ApiPropertyOptional({ format: 'uuid', description: 'A customer of this shop.' })
   @IsOptional()
   @IsUUID()
+  @lowerCase
   id?: string;
 
   @ApiPropertyOptional({ example: 'Ana Souza', minLength: 2, maxLength: 120 })
@@ -62,16 +67,21 @@ export class OrderCustomerDto {
   @MaxLength(120)
   name?: string;
 
-  @ApiPropertyOptional({ example: '5511999998888', description: 'Digits only; the phone the shop knows them by.' })
+  @ApiPropertyOptional({
+    example: '(11) 99999-8888',
+    description: 'Any way a person writes it; kept as a WhatsApp link wants it, which is the key the shop finds them by.',
+  })
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.replace(/\D/g, '') : value))
-  @Matches(/^\d{10,15}$/)
+  @IsString()
+  @Matches(/^\d{12,15}$/, { message: 'phone must be a phone number, area code included' })
+  @normaliseWhatsapp
   phone?: string;
 }
 
 export class OrderItemDto implements CreateOrderItemInput {
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
+  @lowerCase
   variantId!: string;
 
   @ApiProperty({ minimum: 1, maximum: ORDER_QUANTITY_MAX })
@@ -154,10 +164,11 @@ export class ListOrdersDto implements OrderListQuery {
   q?: string;
 
   // `@Type(() => Number)` and not the pipe's implicit conversion — apps/api/AGENTS.md, rule 6.
-  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @ApiPropertyOptional({ minimum: 1, maximum: ORDERS_PAGE_MAX, default: 1 })
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(ORDERS_PAGE_MAX)
   @Type(() => Number)
   page?: number;
 

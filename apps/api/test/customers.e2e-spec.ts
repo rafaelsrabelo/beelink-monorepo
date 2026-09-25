@@ -89,7 +89,8 @@ describe("a shopper's door into a shop", () => {
       payload: { phone: '(11) 98888-7777', address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' } },
     });
     expect(updated.statusCode).toBe(200);
-    expect(updated.json<CustomerProfile>()).toMatchObject({ phone: '11988887777', address: { city: 'São Paulo', state: 'SP' } });
+    // Kept as a WhatsApp link wants it: the key an order finds the customer by.
+    expect(updated.json<CustomerProfile>()).toMatchObject({ phone: '5511988887777', address: { city: 'São Paulo', state: 'SP' } });
   });
 
   it("keeps an account to the shop it was opened at: anywhere else, its password is an unknown e-mail's", async () => {

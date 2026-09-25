@@ -25,7 +25,9 @@ model Customer {
   /// The shop's books on this customer, kept by the transaction that places or cancels an order so
   /// the list can filter and sort by them without reading the orders. Cancelled ones do not count.
   ordersCount     Int       @default(0)
-  totalSpentCents Int       @default(0)
+  /// BigInt: one order is capped, a customer's lifetime is not, and an overflow here would fail
+  /// every later order of theirs.
+  totalSpentCents BigInt    @default(0)
   firstOrderAt    DateTime?
   lastOrderAt     DateTime?
   createdAt    DateTime @default(now())

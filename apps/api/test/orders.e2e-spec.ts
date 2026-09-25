@@ -87,7 +87,7 @@ describe("a shop's orders", () => {
     expect(order).toMatchObject({
       number: 1,
       status: 'ACCEPTED',
-      customer: { name: 'Bia Souza', phone: '11988887777' },
+      customer: { name: 'Bia Souza', phone: '5511988887777', address: { city: null } },
       subtotalCents: 23970,
       deliveryFeeCents: 1000,
       discountCents: 500,
@@ -101,7 +101,7 @@ describe("a shop's orders", () => {
     expect(order.events).toEqual([expect.objectContaining({ status: 'ACCEPTED', actor: 'SHOPKEEPER' })]);
 
     const books = await prisma.customer.findUniqueOrThrow({ where: { id: order.customer.id } });
-    expect(books).toMatchObject({ ordersCount: 1, totalSpentCents: 24470 });
+    expect(books).toMatchObject({ ordersCount: 1, totalSpentCents: 24470n });
     expect(books.lastOrderAt?.toISOString()).toBe(order.placedAt);
   });
 
@@ -139,7 +139,7 @@ describe("a shop's orders", () => {
 
     expect((await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'CANCELLED' })).statusCode).toBe(200);
     const books = await prisma.customer.findUniqueOrThrow({ where: { id: old.customer.id } });
-    expect(books).toMatchObject({ ordersCount: 1, totalSpentCents: old.totalCents });
+    expect(books).toMatchObject({ ordersCount: 1, totalSpentCents: BigInt(old.totalCents) });
     expect(books.lastOrderAt?.toISOString()).toBe('2026-09-01T12:00:00.000Z');
 
     const again = await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'DELIVERED' });
@@ -163,6 +163,7 @@ describe("a shop's orders", () => {
 
   it('refuses what it cannot price or place, and saves nothing', async () => {
     const outraWhey = await variantOf(await addProduct('Whey', 8990, 'outra'));
+    const pricey = await variantOf(await addProduct('Caro', 60_000_000));
     await prisma.store.update({ where: { slug: 'lessari' }, data: { paymentMethods: ['PIX'] } });
     const cases: [object, string][] = [
       [{ items: [{ variantId: outraWhey, quantity: 1 }] }, 'ORDER_VARIANT_INVALID'],
@@ -172,6 +173,9 @@ describe("a shop's orders", () => {
       [{ discountCents: 999_999 }, 'ORDER_DISCOUNT_TOO_LARGE'],
       [{ customer: { id: '01999999-0000-7000-8000-000000000000' } }, 'ORDER_CUSTOMER_NOT_FOUND'],
       [{ items: [{ variantId: whey, quantity: 0 }] }, 'BAD_REQUEST'],
+      // ISO-shaped, and no day at all.
+      [{ placedAt: '2026-02-30T12:00:00Z' }, 'BAD_REQUEST'],
+      [{ items: [{ variantId: pricey, quantity: 2 }], fulfillment: 'PICKUP' }, 'ORDER_TOTAL_TOO_LARGE'],
     ];
 
     for (const [payload, errorCode] of cases) {
@@ -182,12 +186,51 @@ describe("a shop's orders", () => {
     expect(await prisma.order.count()).toBe(0);
   });
 
-  it("finds a customer the shop knows by the phone, keeping their name", async () => {
+  it("finds a customer the shop knows by the phone, however it is written, keeping their name", async () => {
     const first = (await place()).json<Order>();
-    const second = (await place({ customer: { name: 'Outro Nome', phone: '11 98888 7777' } })).json<Order>();
 
-    expect(second.customer).toEqual(first.customer);
+    for (const phone of ['11 98888 7777', '+55 11 98888-7777', '(011) 98888-7777']) {
+      const again = (await place({ customer: { name: 'Outro Nome', phone } })).json<Order>();
+      expect(again.customer, phone).toEqual(first.customer);
+    }
     expect(await prisma.customer.count()).toBe(1);
+  });
+
+  it('takes an id in capitals, and names what an out-of-range number cannot be', async () => {
+    expect((await place({ items: [{ variantId: whey.toUpperCase(), quantity: 1 }] })).statusCode).toBe(201);
+
+    for (const number of ['2147483648', '99999999999', 'abc', '0']) {
+      const response = await call('GET', `/api/stores/lessari/orders/${number}`, owner);
+      expect(response.statusCode, number).toBe(404);
+      expect(response.json(), number).toMatchObject({ errorCode: 'ORDER_NOT_FOUND' });
+    }
+    expect((await call('GET', '/api/stores/lessari/orders?page=99999999', owner)).statusCode).toBe(400);
+  });
+
+  it("leaves the shop's own updatedAt alone: an order is not an edit of the shop", async () => {
+    const before = (await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } })).updatedAt;
+
+    await place();
+    await call('PATCH', '/api/stores/lessari/orders/1/status', owner, { status: 'PREPARING' });
+
+    expect((await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } })).updatedAt).toEqual(before);
+  });
+
+  // The catalog allows three options of 40 characters, each with a value of 60.
+  it('photographs the longest variant label the catalog allows', async () => {
+    const product = await addProduct('Kit', 1000);
+    const variant = await variantOf(product);
+    for (const position of [0, 1, 2]) {
+      const option = await prisma.productOption.create({
+        data: { productId: product.id, name: `${position}`.repeat(40), position, values: { create: [{ name: 'v'.repeat(60) }] } },
+        include: { values: true },
+      });
+      await prisma.productVariantValue.create({ data: { variantId: variant, optionId: option.id, valueId: option.values[0]!.id } });
+    }
+
+    const response = await place({ items: [{ variantId: variant, quantity: 1 }] });
+    expect(response.statusCode).toBe(201);
+    expect(response.json<Order>().items[0]!.variantLabel).toHaveLength(312);
   });
 
   it('lists the most recent first, and finds by status, number, name and phone', async () => {

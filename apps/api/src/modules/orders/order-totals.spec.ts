@@ -16,8 +16,16 @@ describe('totalsOf', () => {
   });
 
   it('refuses a discount that takes the total below zero, and allows one that takes it to zero', () => {
-    expect(totalsOf([{ unitPriceCents: 1000, quantity: 1 }], 'DELIVERY', 500, 1501)).toBeNull();
+    expect(totalsOf([{ unitPriceCents: 1000, quantity: 1 }], 'DELIVERY', 500, 1501)).toBe('DISCOUNT_TOO_LARGE');
     expect(totalsOf([{ unitPriceCents: 1000, quantity: 1 }], 'DELIVERY', 500, 1500)).toMatchObject({ totalCents: 0 });
+  });
+
+  // Every amount has to fit the columns' INT4; one order past R$ 1.000.000,00 is a typo anyway.
+  it('refuses a line or an order past the cap, before any amount can overflow', () => {
+    expect(totalsOf([{ unitPriceCents: 100_000_000, quantity: 22 }], 'PICKUP', 0, 0)).toBe('TOTAL_TOO_LARGE');
+    expect(totalsOf([{ unitPriceCents: 60_000_000, quantity: 1 }, { unitPriceCents: 60_000_000, quantity: 1 }], 'PICKUP', 0, 0)).toBe('TOTAL_TOO_LARGE');
+    expect(totalsOf([{ unitPriceCents: 100_000_000, quantity: 1 }], 'DELIVERY', 1, 0)).toBe('TOTAL_TOO_LARGE');
+    expect(totalsOf([{ unitPriceCents: 100_000_000, quantity: 1 }], 'PICKUP', 0, 0)).toMatchObject({ totalCents: 100_000_000 });
   });
 });
 

@@ -37,22 +37,25 @@ export class OrdersService {
     }
 
     const placedAt = dto.placedAt ? new Date(dto.placedAt) : new Date();
+    // ISO-shaped is not a date: "2026-02-30" passes the shape and parses to nothing.
+    if (Number.isNaN(placedAt.getTime())) {
+      throw new BadRequestException({ errorCode: 'BAD_REQUEST', message: 'placedAt is not a date' });
+    }
     if (placedAt.getTime() > Date.now() + PLACED_AT_SKEW_MS) {
       throw new BadRequestException(orderError('ORDER_PLACED_IN_FUTURE', 'An order cannot be placed in the future'));
     }
 
     const lines = await this.linesOf(storeId, dto);
     const totals = totalsOf(lines, dto.fulfillment, dto.deliveryFeeCents ?? 0, dto.discountCents ?? 0);
-    if (!totals) {
+    if (totals === 'DISCOUNT_TOO_LARGE') {
       throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount is larger than the order'));
+    }
+    if (totals === 'TOTAL_TOO_LARGE') {
+      throw new BadRequestException(orderError('ORDER_TOTAL_TOO_LARGE', 'A line or the order is past what one order may be'));
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const { orderSequence: number } = await tx.store.update({
-        where: { id: storeId },
-        data: { orderSequence: { increment: 1 } },
-        select: { orderSequence: true },
-      });
+      const number = await this.nextNumber(tx, storeId);
       const customerId = await this.customerOf(tx, storeId, dto.customer);
 
       const order = await tx.order.create({
@@ -136,7 +139,7 @@ export class OrdersService {
 
     return this.prisma.$transaction(async (tx) => {
       // The same row lock as a new order takes, so a status change and a placement never interleave.
-      await tx.store.update({ where: { id: storeId }, data: { orderSequence: { increment: 0 } }, select: { id: true } });
+      await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
 
       const current = await tx.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true, status: true, customerId: true } });
       if (!current) throw this.notFound(number);
@@ -155,6 +158,16 @@ export class OrdersService {
       if (status === 'CANCELLED') await this.refreshBooks(tx, current.customerId);
       return toOrder(order);
     });
+  }
+
+  /**
+   * The shop's next order number, taken under the lock of the shop's row until the commit. Raw SQL
+   * so the shop's `updatedAt` stays the shopkeeper's: an order is not an edit of the shop.
+   */
+  private async nextNumber(tx: Tx, storeId: string): Promise<number> {
+    const [row] = await tx.$queryRaw<{ orderSequence: number }[]>`
+      UPDATE "stores" SET "orderSequence" = "orderSequence" + 1 WHERE "id" = ${storeId}::uuid RETURNING "orderSequence"`;
+    return row!.orderSequence;
   }
 
   /** The lines as they will be photographed: each variant read from this shop, and priced by it. */
@@ -239,7 +252,7 @@ export class OrdersService {
       where: { id: customerId },
       data: {
         ordersCount: books._count._all,
-        totalSpentCents: books._sum.totalCents ?? 0,
+        totalSpentCents: BigInt(books._sum.totalCents ?? 0),
         firstOrderAt: books._min.placedAt,
         lastOrderAt: books._max.placedAt,
       },

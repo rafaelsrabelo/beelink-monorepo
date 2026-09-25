@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -20,6 +20,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { CreateOrderDto, ListOrdersDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { OrderPageResponse, OrderResponse } from './dto/order.response.js';
+import { OrderNumberPipe } from './order-number.pipe.js';
 import { OrdersService } from './orders.service.js';
 
 /** The owner's side of a shop's orders. Closed, like every panel route; a shopper's token is refused. */
@@ -38,7 +39,7 @@ export class OrdersController {
   @ApiCreatedResponse({ type: OrderResponse })
   @ApiBadRequestResponse({
     description:
-      'ORDER_CUSTOMER_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_PLACED_IN_FUTURE · ORDER_DISCOUNT_TOO_LARGE',
+      'ORDER_CUSTOMER_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_PLACED_IN_FUTURE · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE',
   })
   create(
     @Param('storeSlug') storeSlug: string,
@@ -64,7 +65,7 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   get(
     @Param('storeSlug') storeSlug: string,
-    @Param('number', ParseIntPipe) number: number,
+    @Param('number', OrderNumberPipe) number: number,
     @CurrentUser() current: AuthenticatedUser,
   ): Promise<OrderResponse> {
     return this.orders.get(storeSlug, current.id, number);
@@ -76,7 +77,7 @@ export class OrdersController {
   @ApiConflictResponse({ description: 'ORDER_CANCELLED · ORDER_STATUS_UNCHANGED' })
   updateStatus(
     @Param('storeSlug') storeSlug: string,
-    @Param('number', ParseIntPipe) number: number,
+    @Param('number', OrderNumberPipe) number: number,
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: UpdateOrderStatusDto,
   ): Promise<OrderResponse> {

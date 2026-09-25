@@ -14,6 +14,11 @@ export const ORDER_FULFILLMENTS = ['DELIVERY', 'PICKUP'] as const satisfies read
 
 export const ORDERS_PAGE_SIZE = 20;
 export const ORDERS_PAGE_SIZE_MAX = 100;
+/** Far past any shop's history; past it, an offset that would only strain the database. */
+export const ORDERS_PAGE_MAX = 10_000;
+
+/** The largest order number a column holds (INT4). A number past it names no order. */
+export const ORDER_NUMBER_MAX = 2_147_483_647;
 
 /** A shop's order, not a warehouse's: past these, a body is a mistake or an attack. */
 export const ORDER_ITEMS_MAX = 100;

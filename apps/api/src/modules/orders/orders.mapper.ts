@@ -1,12 +1,24 @@
 // Types
-import type { Order, OrderCustomer, OrderSummary } from '@harness-monorepo/contracts';
+import type { Order, OrderCustomer, OrderCustomerDetail, OrderSummary } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 const customerSelect = { id: true, name: true, phone: true } as const;
 
+/** An opened order names where the customer is: the shop's record as it is now. */
+const customerDetailSelect = {
+  ...customerSelect,
+  zipCode: true,
+  street: true,
+  number: true,
+  complement: true,
+  neighborhood: true,
+  city: true,
+  state: true,
+} as const;
+
 /** What a full order is read with. */
 export const ORDER_INCLUDE = {
-  customer: { select: customerSelect },
+  customer: { select: customerDetailSelect },
   items: { orderBy: { position: 'asc' } },
   events: { orderBy: { createdAt: 'asc' } },
 } as const satisfies Prisma.OrderInclude;
@@ -24,12 +36,17 @@ function toCustomer(customer: { id: string; name: string; phone: string | null }
   return { id: customer.id, name: customer.name, phone: customer.phone };
 }
 
+function toCustomerDetail(customer: OrderRow['customer']): OrderCustomerDetail {
+  const { zipCode, street, number, complement, neighborhood, city, state } = customer;
+  return { ...toCustomer(customer), address: { zipCode, street, number, complement, neighborhood, city, state } };
+}
+
 export function toOrder(row: OrderRow): Order {
   return {
     id: row.id,
     number: row.number,
     status: row.status,
-    customer: toCustomer(row.customer),
+    customer: toCustomerDetail(row.customer),
     fulfillment: row.fulfillment,
     paymentMethod: row.paymentMethod,
     items: row.items.map((item) => ({
