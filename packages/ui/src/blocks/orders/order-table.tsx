@@ -61,8 +61,10 @@ export function OrderTable({ orders, hrefOf, money, when, linkComponent: Link, m
               <TableCell className="text-muted-foreground tabular-nums">{when(order.placedAt)}</TableCell>
               <TableCell>
                 <div className="flex flex-col">
-                  <span className="font-medium">{order.customer.name}</span>
-                  {order.customer.phone ? <span className="text-muted-foreground text-xs">{order.customer.phone}</span> : null}
+                  <span className="max-w-56 truncate font-medium" title={order.customer.name}>
+                    {order.customer.name}
+                  </span>
+                  {order.customer.phone ? <span className="text-muted-foreground text-xs tabular-nums">{order.customer.phone}</span> : null}
                 </div>
               </TableCell>
               <TableCell className="text-muted-foreground">{itemsLabel(order.itemsCount, messages)}</TableCell>

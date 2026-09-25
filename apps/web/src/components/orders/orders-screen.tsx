@@ -12,6 +12,7 @@ import type { OrderStatus } from "@harness-monorepo/contracts"
 // UI
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
 import { OrderList } from "@harness-monorepo/ui/blocks/orders/order-list"
+import { buttonVariants } from "@harness-monorepo/ui/components/button"
 import { Input } from "@harness-monorepo/ui/components/input"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@harness-monorepo/ui/components/toggle-group"
@@ -28,6 +29,9 @@ import { useOrders } from "@/services/orders/order-hooks"
 const STATUSES = ["RECEIVED", "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"] as const satisfies readonly OrderStatus[]
 
 const SEARCH_DEBOUNCE_MS = 350
+
+/** The primitive's pressed grey is lost against the panel's surface; the filter on has to read as on. */
+const PRESSED = "aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
 
 function statusOf(raw: string | null): OrderStatus | null {
   return STATUSES.find((status) => status === raw) ?? null
@@ -61,7 +65,8 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
   const [lastSeen, setLastSeen] = useState(q)
   if (q !== lastSeen) {
     setLastSeen(q)
-    setTyped(q)
+    // The address holds the text trimmed: the box keeps the space just typed before a surname.
+    if (typed.trim() !== q) setTyped(q)
   }
   const settled = useDebouncedValue(typed, SEARCH_DEBOUNCE_MS)
 
@@ -92,10 +97,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
           <h1 className="text-2xl font-semibold">{text.title}</h1>
           <p className="text-muted-foreground text-sm">{text.description}</p>
         </div>
-        <AppLink
-          href={`/admin/${slug}/orders/new`}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex h-9 items-center rounded-lg px-4 text-sm font-medium outline-none focus-visible:ring-2"
-        >
+        <AppLink href={`/admin/${slug}/orders/new`} className={buttonVariants()}>
           {text.newOrder}
         </AppLink>
       </header>
@@ -115,11 +117,11 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
           onValueChange={(next: string[]) => apply({ status: statusOf(next[0] ?? null), q })}
           className="flex-wrap"
         >
-          <ToggleGroupItem value="ALL" variant="outline">
+          <ToggleGroupItem value="ALL" variant="outline" className={PRESSED}>
             {text.all}
           </ToggleGroupItem>
           {STATUSES.map((option) => (
-            <ToggleGroupItem key={option} value={option} variant="outline">
+            <ToggleGroupItem key={option} value={option} variant="outline" className={PRESSED}>
               {text.statuses[option]}
             </ToggleGroupItem>
           ))}
@@ -134,10 +136,10 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
           <Skeleton className="h-14 w-full" />
           <Skeleton className="h-14 w-full" />
         </div>
-      ) : (
+      ) : orders.data ? (
         <>
           <OrderList
-            orders={orders.data?.orders ?? []}
+            orders={orders.data.orders}
             filtered={status !== null || q !== ""}
             hrefOf={(number) => `/admin/${slug}/orders/${number}`}
             newHref={`/admin/${slug}/orders/new`}
@@ -145,9 +147,9 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
             messages={messages}
           />
           <TablePager
-            page={orders.data?.page ?? page}
-            pageSize={orders.data?.pageSize ?? 20}
-            total={orders.data?.total ?? 0}
+            page={orders.data.page}
+            pageSize={orders.data.pageSize}
+            total={orders.data.total}
             onPageChange={(next) => apply({ status, q }, next)}
             busy={orders.isFetching}
             previousLabel={text.previous}
@@ -155,7 +157,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
             rangeLabel={(from, to, total) => format(text.range, { from: String(from), to: String(to), total: String(total) })}
           />
         </>
-      )}
+      ) : null}
     </div>
   )
 }

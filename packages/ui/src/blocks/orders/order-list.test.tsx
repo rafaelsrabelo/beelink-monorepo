@@ -34,6 +34,23 @@ describe("OrderList", () => {
     }
   })
 
+  it("keeps a card's status, total and phone readable, outside its link", () => {
+    render(<OrderList orders={orders} hrefOf={hrefOf} newHref="/admin/loja/orders/new" />)
+
+    const card = screen.getAllByRole("listitem")[0]!
+    expect(within(card).getByRole("link")).toHaveTextContent(/^#12$/)
+    expect(card).toHaveTextContent("Em preparo")
+    expect(card).toHaveTextContent("R$ 244,70")
+    expect(card).toHaveTextContent("5511988887777")
+  })
+
+  it("says the year of an order from another year", () => {
+    const old = { ...orders[0]!, number: 1, placedAt: "2024-03-02T15:00:00.000Z" }
+    render(<OrderList orders={[old]} hrefOf={hrefOf} newHref="/admin/loja/orders/new" />)
+
+    expect(within(screen.getByRole("table")).getAllByRole("row")[1]).toHaveTextContent("2024")
+  })
+
   it("invites the first order when there is none, and says nothing matches when a filter is on", () => {
     const { rerender } = render(<OrderList orders={[]} hrefOf={hrefOf} newHref="/admin/loja/orders/new" />)
 

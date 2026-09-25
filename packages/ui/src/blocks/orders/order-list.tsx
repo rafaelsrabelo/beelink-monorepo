@@ -1,3 +1,7 @@
+// UI
+import { buttonVariants } from "@harness-monorepo/ui/components/button"
+import { cn } from "@harness-monorepo/ui/lib/utils"
+
 // Locales
 import { defaultLocale, defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -26,6 +30,7 @@ export interface OrderListProps {
 /**
  * A shop's orders: a table where there is room, cards on a phone behind the counter. The two are
  * drawn by CSS, not by measuring, so the server sends the right one and nothing jumps on arrival.
+ * Room is the panel's main column (`@container/main`), not the window: the rail takes its share.
  */
 export function OrderList({
   orders,
@@ -38,12 +43,18 @@ export function OrderList({
   messages = defaultMessages,
 }: OrderListProps) {
   const text = messages.orders
+  const thisYear = new Date().getFullYear()
   const date = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+  // An order from another year says so; this year's would only be longer for it.
+  const dated = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
   const rows = {
     orders,
     hrefOf,
     money: (cents: number) => formatCents(cents, locale, currency),
-    when: (iso: string) => date.format(new Date(iso)),
+    when: (iso: string) => {
+      const placed = new Date(iso)
+      return (placed.getFullYear() === thisYear ? date : dated).format(placed)
+    },
     linkComponent: Link,
     messages,
   }
@@ -57,7 +68,7 @@ export function OrderList({
             <p className="text-muted-foreground max-w-md text-sm">{text.emptyHint}</p>
             <Link
               href={newHref}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring mt-2 inline-flex h-9 items-center rounded-lg px-4 text-sm font-medium outline-none focus-visible:ring-2"
+              className={cn(buttonVariants(), "mt-2")}
             >
               {text.newOrder}
             </Link>
@@ -69,10 +80,10 @@ export function OrderList({
 
   return (
     <>
-      <div className="hidden md:block">
+      <div className="hidden @4xl/main:block">
         <OrderTable {...rows} />
       </div>
-      <div className="md:hidden">
+      <div className="@4xl/main:hidden">
         <OrderCards {...rows} />
       </div>
     </>
