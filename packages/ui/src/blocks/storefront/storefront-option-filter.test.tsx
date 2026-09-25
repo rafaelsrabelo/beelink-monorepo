@@ -40,6 +40,12 @@ describe("StorefrontOptionFilter", () => {
     expect(container.querySelector("details")).toHaveAttribute("open")
   })
 
+  it("keeps crawlers off every combination of filters", () => {
+    render(<StorefrontOptionFilter title="Sabor" values={flavours} locale="pt-BR" />)
+
+    for (const link of screen.getAllByRole("checkbox")) expect(link).toHaveAttribute("rel", "nofollow")
+  })
+
   it("makes every pill a checkbox a reader can hear the state of", () => {
     render(<StorefrontOptionFilter title="Tamanho" values={[value("P"), value("M", true)]} locale="pt-BR" />)
 

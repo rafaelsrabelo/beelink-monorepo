@@ -41,11 +41,27 @@ describe("StorefrontCatalog", () => {
   })
 
   /** Someone who filtered into a corner needs the door more than an explanation. */
-  it("offers a way out when nothing matched", () => {
-    renderCatalog({ products: [], clearHref: "/lessari" })
+  it("offers the whole catalogue when a category or a search found nothing", () => {
+    renderCatalog({ products: [], clearHref: "/lessari/produtos" })
 
     expect(screen.getByText("Nada encontrado por aqui.")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Tudo" })).toHaveAttribute("href", "/lessari")
+    expect(screen.getByRole("link", { name: "Ver todos os produtos" })).toHaveAttribute("href", "/lessari/produtos")
+  })
+
+  it("says the filters left nothing, and offers 'Ver tudo' at the address of 'Limpar tudo'", () => {
+    renderCatalog({ products: [], clearHref: "/lessari/produtos?ordenar=menor-preco", filtered: true })
+
+    expect(screen.getByText("Nenhum produto com esses filtros.")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Ver tudo" })).toHaveAttribute("href", "/lessari/produtos?ordenar=menor-preco")
+  })
+
+  // An outage read as "nothing found" sends a visitor away for good.
+  it("says the shelf could not be read, and offers the same address again", () => {
+    renderCatalog({ products: [], clearHref: "/lessari/produtos", retryHref: "/lessari/produtos?pagina=2" })
+
+    expect(screen.getByText("Não conseguimos carregar os produtos agora.")).toBeInTheDocument()
+    expect(screen.queryByText("Nada encontrado por aqui.")).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Tentar de novo" })).toHaveAttribute("href", "/lessari/produtos?pagina=2")
   })
 
   it("says nothing more than the sentence when there is nowhere to send them", () => {
