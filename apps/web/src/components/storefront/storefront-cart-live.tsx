@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react"
 
 // Types
-import type { PublicProductDetail } from "@harness-monorepo/contracts"
+import type { CustomerProfile, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontCart } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
@@ -15,6 +15,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { useCart } from "./cart-provider"
 import { cartViewOf, rowKeyOf } from "@/lib/cart-view"
+import { addressLineOf, isReachable } from "@/lib/customer-address"
 import { orderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
 
 export interface StorefrontCartLiveProps {
@@ -28,6 +29,10 @@ export interface StorefrontCartLiveProps {
   shopName: string
   /** The shop's WhatsApp as `wa.me` wants it, digits only; null when it has none. */
   whatsapp: string | null
+  /** The signed-in shopper's record at this shop; null for a visitor, who is asked to sign in to order. */
+  shopper: CustomerProfile | null
+  /** Sign in, sign up and change details — each coming back to this cart. */
+  identityHrefs: { signInHref: string; signUpHref: string; editHref: string }
   locale: string
   messages: UiMessages
 }
@@ -37,7 +42,18 @@ export interface StorefrontCartLiveProps {
  * writes the cookie — and the totals are recomputed from the prices the page was served with, so
  * nothing is asked of the server until the next page.
  */
-export function StorefrontCartLive({ products, hrefs, continueHref, goneOnArrival, shopName, whatsapp, locale, messages }: StorefrontCartLiveProps) {
+export function StorefrontCartLive({
+  products,
+  hrefs,
+  continueHref,
+  goneOnArrival,
+  shopName,
+  whatsapp,
+  shopper,
+  identityHrefs,
+  locale,
+  messages,
+}: StorefrontCartLiveProps) {
   const lines = useCart((cart) => cart.lines)
   const setQty = useCart((cart) => cart.setQty)
   const remove = useCart((cart) => cart.remove)
@@ -64,11 +80,17 @@ export function StorefrontCartLive({ products, hrefs, continueHref, goneOnArriva
       notice={goneOnArrival ? messages.storefront.cartGone : null}
       checkout={
         <StorefrontCheckout
-          hrefFor={
-            whatsapp
-              ? (customerName) => whatsappOrderHref(whatsapp, orderMessageOf({ shopName, view, customerName, locale, messages }))
+          href={whatsapp ? whatsappOrderHref(whatsapp, orderMessageOf({ shopName, view, customer: shopper, locale, messages })) : null}
+          customer={
+            shopper
+              ? {
+                  lines: [shopper.name, shopper.phone, addressLineOf(shopper.address)].filter((line): line is string => Boolean(line)),
+                  complete: isReachable(shopper),
+                  editHref: identityHrefs.editHref,
+                }
               : null
           }
+          signIn={identityHrefs}
           disabled={view.count === 0}
           onSend={(href) => {
             setSent(href)

@@ -62,6 +62,7 @@ export type StorefrontSection =
   | { kind: "search" }
   | { kind: "cart" }
   | { kind: "signIn" }
+  | { kind: "account" }
   | { kind: "category"; slug: string }
 
 /**
@@ -219,6 +220,9 @@ export function storefrontRoutes(shop: StorefrontShop) {
     signIn: ({ mode, back }: { mode?: SignInMode; back?: string } = {}) =>
       withQuery(`${home}/${routeWords.signIn}`, { [MODE_KEY]: mode === "entrar" ? undefined : mode, [BACK_KEY]: back }),
 
+    /** The shopper's own page at this shop: their name, phone and address as the shop keeps them. */
+    account: () => `${home}/${routeWords.account}`,
+
     /** One product. It never nests under a category: a product in two would have two addresses. */
     product: (productSlug: string) => `${home}/${routeWords.products}/${productSlug}`,
   }
@@ -245,6 +249,7 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (segment === routeWords.search) return { kind: "search" }
   if (segment === routeWords.cart) return { kind: "cart" }
   if (segment === routeWords.signIn) return { kind: "signIn" }
+  if (segment === routeWords.account) return { kind: "account" }
 
   return { kind: "category", slug: segment }
 }

@@ -7,12 +7,19 @@ import type { AuthSession } from "@harness-monorepo/contracts"
 // App
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, refuseForeignOrigin } from "@/lib/bff"
-import { CUSTOMER_REFRESH_COOKIE, clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
+import {
+  CUSTOMER_ACCESS_COOKIE,
+  CUSTOMER_REFRESH_COOKIE,
+  clearCustomerSessionCookies,
+  setCustomerSessionCookies,
+} from "@/lib/customer-session-cookies"
+import { refreshCustomerSession } from "@/lib/refresh-customer-session"
 import { BACK_KEY, MODE_KEY, safeBackOf } from "@/lib/storefront-routes"
 
 /**
  * The shop's sign-in page posts here, as a plain `<form>`: signing in (`entrar`), signing up
- * (`criar`), asking for a new password (`senha`) and signing out (`sair`). Every answer is a 303 —
+ * (`criar`), asking for a new password (`senha`), saving the shopper's details (`perfil`) and signing
+ * out (`sair`). Every answer is a 303 —
  * to where the shopper was going, or back to the page with the refusal in the address — so it all
  * works with no script on the page, and the password never passes through page code.
  *
@@ -58,6 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/api/
     }
     case "criar": {
       const response = await callApi({ path: `${shop}/register`, body: { name: field("name").trim(), email, password: field("password") }, clientIp }).catch(() => null)
+      if (response?.status === 400) return bounce("criar", { erro: "CUSTOMER_SIGN_UP_INVALID", email })
       if (!response?.ok) return bounce("criar", { erro: response ? await codeOf(response) : "UNKNOWN", email })
       return bounce("criar", { enviado: "1", email })
     }
@@ -65,6 +73,38 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/api/
       const response = await callApi({ path: "/auth/forgot-password", body: { email }, clientIp }).catch(() => null)
       if (!response?.ok) return bounce("senha", { erro: response ? await codeOf(response) : "UNKNOWN", email })
       return bounce("senha", { enviado: "1" })
+    }
+    case "perfil": {
+      const page = new URL(safeBackOf(slug, field("retorno")), request.url)
+      const body = {
+        name: field("name").trim(),
+        phone: field("phone"),
+        address: Object.fromEntries(["zipCode", "street", "number", "complement", "neighborhood", "city", "state"].map((key) => [key, field(key)])),
+      }
+      const save = (accessToken: string) => callApi({ path: `${shop}/me`, method: "PATCH", body, accessToken, clientIp }).catch(() => null)
+
+      // The proxy never sees /api, so a token that ran out since the page loaded is renewed here —
+      // once — and the new pair stored on this answer.
+      let renewed: AuthSession | null = null
+      let response = await save(request.cookies.get(CUSTOMER_ACCESS_COOKIE)?.value ?? "")
+      if (response?.status === 401) {
+        const refreshToken = request.cookies.get(CUSTOMER_REFRESH_COOKIE)?.value
+        const outcome = refreshToken ? await refreshCustomerSession(slug, refreshToken, clientIp) : { status: "rejected" as const }
+        if (outcome.status !== "renewed") {
+          const signedOut = NextResponse.redirect(new URL(`/${slug}`, request.url), 303)
+          clearCustomerSessionCookies(signedOut.cookies)
+          return signedOut
+        }
+        renewed = outcome.session
+        response = await save(renewed.accessToken)
+      }
+
+      if (response?.ok) page.searchParams.set("salvo", "1")
+      else page.searchParams.set("erro", response?.status === 400 ? "CUSTOMER_FIELDS_INVALID" : response ? await codeOf(response) : "UNKNOWN")
+
+      const answer = NextResponse.redirect(page, 303)
+      if (renewed) setCustomerSessionCookies(answer.cookies, renewed)
+      return answer
     }
     case "sair": {
       const refreshToken = request.cookies.get(CUSTOMER_REFRESH_COOKIE)?.value

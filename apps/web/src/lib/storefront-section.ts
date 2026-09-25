@@ -68,6 +68,9 @@ export async function placeOf(slug: string, segment: string, query: SectionQuery
   const category =
     section.kind === "category" ? (navigation.categories.find((entry) => entry.slug === section.slug) ?? null) : null
 
+  // A category missing from a menu that could not be read is an outage, not a page that is gone:
+  // it answers a server error, which a crawler retries, and never a 404, which it drops.
+  if (section.kind === "category" && !category && navigation.failed) throw new Error(`The menu of ${slug} could not be read`)
   if (section.kind === "category" && !category) return null
 
   const parentCategory = category?.parentSlug
@@ -126,6 +129,8 @@ export function headingOf({ section, category, navigation, scope, signInMode, me
       return text.cart
     case "signIn":
       return signInMode === "criar" ? text.signUpTitle : signInMode === "senha" ? text.forgotTitle : text.signInTitle
+    case "account":
+      return text.account
     case "category":
       return category?.name ?? text.catalogTitle
   }
@@ -176,6 +181,8 @@ export function canonicalOf({ section, category }: SectionPlace, routes: Storefr
       return routes.cart()
     case "signIn":
       return routes.signIn()
+    case "account":
+      return routes.account()
     case "catalog":
       return routes.catalog()
   }

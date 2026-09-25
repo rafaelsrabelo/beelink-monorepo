@@ -2,7 +2,7 @@
 import { Suspense } from "react"
 
 // Next
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import type { Metadata } from "next"
 
 // UI
@@ -13,13 +13,16 @@ import { StorefrontListingSkeleton } from "@harness-monorepo/ui/blocks/storefron
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
+import { StorefrontAccountSection } from "@/components/storefront/storefront-account-section"
 import { StorefrontSectionBand } from "@/components/storefront/storefront-section-band"
 import { StorefrontSignInSection } from "@/components/storefront/storefront-sign-in-section"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
+import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
-import { storefrontRoutes } from "@/lib/storefront-routes"
+import { BACK_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
+import { filterCountOf } from "@/lib/storefront-filters"
 
 /**
  * The second segment of a shop's URL, whatever it turned out to mean.
@@ -48,9 +51,10 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
     title: `${headingOf(place)} · ${place.store.name}`,
     description: place.store.description ?? undefined,
     alternates: { canonical: canonicalOf(place, storefrontRoutes(place.store)) },
-    // A paged or searched shelf is not a landing page; it is the same shelf, reached differently.
+    // A paged or searched shelf is not a landing page; it is the same shelf, reached differently. Nor
+    // is a deep combination of filters: three narrowings of one shelf are not a page of their own.
     robots:
-      place.page > 1 || place.term || place.section.kind === "cart" || place.section.kind === "signIn"
+      place.page > 1 || place.term || filterCountOf(place) >= 3 || ["cart", "signIn", "account"].includes(place.section.kind)
         ? { index: false, follow: true }
         : undefined,
   }
@@ -66,11 +70,16 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const { store, category, navigation, messages: ui, scope } = place
   const routes = storefrontRoutes(store)
   const locale = "pt-BR"
-  const productsPerRow = store.layoutSettings.productsPerRow ?? 3
+  // 5a's four across; the shop's own choice, when it has made one, wins.
+  const productsPerRow = store.layoutSettings.productsPerRow ?? 4
   // Asked once, awaited twice: by the band's count and by the grid, each under its own boundary.
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
   const cart = place.section.kind === "cart" ? await cartAt(store.slug) : null
+  const shopper = await shopperAt(store.slug)
+
+  // The shopper's own page is theirs alone: a visitor is sent to sign in, and brought back here.
+  if (place.section.kind === "account" && !shopper) redirect(routes.signIn({ back: routes.account() }) as Parameters<typeof redirect>[0])
 
   return (
     <StorefrontFrame
@@ -84,6 +93,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       searchValue={place.term}
       searchScope={scope ?? null}
       year={new Date().getFullYear()}
+      shopper={shopper}
       body={catalogue ? { layout: "flush", surface: "canvas" } : undefined}
       pageHeader={<StorefrontSectionBand place={place} routes={routes} {...(catalogue ? { catalogue } : {})} locale={locale} />}
       messages={ui}
@@ -94,6 +104,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
         <Suspense fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
+      ) : place.section.kind === "account" && shopper ? (
+        <StorefrontAccountSection slug={store.slug} accountHref={routes.account()} profile={shopper} query={query} errors={(await getMessages()).web.errors} messages={ui} />
       ) : place.section.kind === "signIn" ? (
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (
@@ -104,6 +116,12 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           goneOnArrival={cart.gone > 0}
           shopName={store.name}
           whatsapp={store.socialNetworks.whatsapp?.replace(/\D/g, "") || null}
+          shopper={shopper}
+          identityHrefs={{
+            signInHref: routes.signIn({ back: routes.cart() }),
+            signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
+            editHref: `${routes.account()}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
+          }}
           locale={locale}
           messages={ui}
         />
