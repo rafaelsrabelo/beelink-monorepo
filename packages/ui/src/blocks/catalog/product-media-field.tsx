@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useId, useRef, useState } from "react"
+import { useId, useRef, useState, type ReactNode } from "react"
 
 // Libs
 import { GripVerticalIcon, ImagePlusIcon, XIcon } from "lucide-react"
@@ -24,6 +24,8 @@ export interface ProductMediaFieldProps {
   pending?: boolean
   error?: { message?: string }
   disabled?: boolean
+  /** Drawn under each photo — what a product with variations says the photo is of. */
+  photoFooter?: (url: string, index: number) => ReactNode
   messages?: UiMessages
 }
 
@@ -51,6 +53,7 @@ export function ProductMediaField({
   pending = false,
   error,
   disabled = false,
+  photoFooter,
   messages = defaultMessages,
 }: ProductMediaFieldProps) {
   const id = useId()
@@ -88,46 +91,50 @@ export function ProductMediaField({
       {value.length ? (
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {value.map((url, index) => (
-            <li key={url} className="group relative">
-              {/*
-                Named rather than decorative. The remove and reorder buttons refer to these by
-                number, so a screen reader that cannot tell photo 2 from photo 3 cannot use them —
-                an empty alt would make the controls beside it unusable.
-              */}
-              <img
-                src={url}
-                alt={format(text.photo, { number: String(index + 1) })}
-                className="border-border aspect-square w-full rounded-lg border object-cover"
-              />
-              {index === 0 ? (
-                <span className="bg-primary text-primary-foreground absolute top-1 left-1 rounded px-1.5 py-0.5 text-[11px] font-medium">
-                  {text.cover}
-                </span>
-              ) : null}
-              <div className="absolute right-1 bottom-1 flex gap-1">
-                {index > 0 ? (
+            <li key={url} className="group">
+              {/* The controls sit on the photo, so they are placed against it and not the footer. */}
+              <div className="relative">
+                {/*
+                  Named rather than decorative. The remove and reorder buttons refer to these by
+                  number, so a screen reader that cannot tell photo 2 from photo 3 cannot use them —
+                  an empty alt would make the controls beside it unusable.
+                */}
+                <img
+                  src={url}
+                  alt={format(text.photo, { number: String(index + 1) })}
+                  className="border-border aspect-square w-full rounded-lg border object-cover"
+                />
+                {index === 0 ? (
+                  <span className="bg-primary text-primary-foreground absolute top-1 left-1 rounded px-1.5 py-0.5 text-[11px] font-medium">
+                    {text.cover}
+                  </span>
+                ) : null}
+                <div className="absolute right-1 bottom-1 flex gap-1">
+                  {index > 0 ? (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      disabled={disabled}
+                      aria-label={`${text.moveEarlier} ${index + 1}`}
+                      onClick={() => move(index, index - 1)}
+                    >
+                      <GripVerticalIcon aria-hidden="true" className="size-3.5" />
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     size="icon"
                     variant="secondary"
                     disabled={disabled}
-                    aria-label={`${text.moveEarlier} ${index + 1}`}
-                    onClick={() => move(index, index - 1)}
+                    aria-label={`${text.remove} ${index + 1}`}
+                    onClick={() => onChange(value.filter((entry) => entry !== url))}
                   >
-                    <GripVerticalIcon aria-hidden="true" className="size-3.5" />
+                    <XIcon aria-hidden="true" className="size-3.5" />
                   </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="secondary"
-                  disabled={disabled}
-                  aria-label={`${text.remove} ${index + 1}`}
-                  onClick={() => onChange(value.filter((entry) => entry !== url))}
-                >
-                  <XIcon aria-hidden="true" className="size-3.5" />
-                </Button>
+                </div>
               </div>
+              {photoFooter ? <div className="mt-1.5">{photoFooter(url, index)}</div> : null}
             </li>
           ))}
         </ul>

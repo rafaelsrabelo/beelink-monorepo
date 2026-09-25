@@ -9,7 +9,7 @@ const meta = {
   args: {
     homeHref: "/lessari",
     items: [
-      { label: "Todos os produtos", href: "/lessari/produtos" },
+      { label: "Produtos", href: "/lessari/produtos" },
       { label: "Proteínas", href: "/lessari/proteinas" },
       { label: "Whey Protein Concentrado 900g" },
     ],
@@ -24,5 +24,5 @@ export const Produto: Story = {}
 
 /** Uma prateleira: dois passos e pronto. */
 export const Categoria: Story = {
-  args: { items: [{ label: "Todos os produtos", href: "/lessari/produtos" }, { label: "Proteínas" }] },
+  args: { items: [{ label: "Produtos", href: "/lessari/produtos" }, { label: "Proteínas" }] },
 }

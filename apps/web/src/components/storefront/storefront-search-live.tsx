@@ -27,6 +27,9 @@ export interface StorefrontSearchLiveProps {
    */
   routeWords: StorefrontRouteWords
   initialTerm?: string
+  /** The categories the search can be narrowed to, and the one it opens narrowed to. */
+  scopes?: readonly { value: string; label: string }[]
+  initialScope?: string
   autoFocus?: boolean
   locale: string
   messages: UiMessages
@@ -44,13 +47,16 @@ export function StorefrontSearchLive({
   slug,
   routeWords,
   initialTerm = "",
+  scopes,
+  initialScope = "",
   autoFocus = false,
   locale,
   messages,
 }: StorefrontSearchLiveProps) {
   const [term, setTerm] = useState(initialTerm)
+  const [scope, setScope] = useState(initialScope)
   const settled = useDebouncedValue(term, DEBOUNCE_MS)
-  const { products, total, pending } = useStorefrontSearch(slug, settled)
+  const { products, total, pending } = useStorefrontSearch(slug, settled, scope)
 
   const routes = storefrontRoutes({ slug, routeWords })
   const money = new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" })
@@ -70,10 +76,13 @@ export function StorefrontSearchLive({
       action={routes.search()}
       value={term}
       onValueChange={setTerm}
+      scopes={scopes}
+      scope={scope}
+      onScopeChange={setScope}
       suggestions={suggestions}
       pending={pending}
       total={total}
-      seeAllHref={routes.search(settled)}
+      seeAllHref={routes.search(settled, scope ? { category: scope } : {})}
       autoFocus={autoFocus}
       tone="panel"
       messages={messages}

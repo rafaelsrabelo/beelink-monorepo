@@ -115,6 +115,46 @@
     --color-nav-active: var(--nav-active);
     --color-nav-active-foreground: var(--nav-active-foreground);
 
+    /*
+     * The shop window's palette as utilities, so a block can say `text-shop-muted` or
+     * `border-shop-line` instead of an inline `var()`. The runtime ones are set by
+     * lib/shop-palette.ts on the window's root; the semantic ones are declared below.
+     */
+    --color-shop-background: var(--shop-background);
+    --color-shop-on-background: var(--shop-on-background);
+    --color-shop-primary: var(--shop-primary);
+    --color-shop-on-primary: var(--shop-on-primary);
+    --color-shop-primary-ink: var(--shop-primary-ink);
+    --color-shop-header: var(--shop-header);
+    --color-shop-on-header: var(--shop-on-header);
+    --color-shop-primary-on-header: var(--shop-primary-on-header);
+    --color-shop-on-primary-on-header: var(--shop-on-primary-on-header);
+    --color-shop-primary-on-header-soft: var(--shop-primary-on-header-soft);
+    --color-shop-footer: var(--shop-footer);
+    --color-shop-on-footer: var(--shop-on-footer);
+    --color-shop-text: var(--shop-text);
+    --color-shop-on-text: var(--shop-on-text);
+    --color-shop-muted: var(--shop-muted);
+    --color-shop-line: var(--shop-line);
+    --color-shop-line-strong: var(--shop-line-strong);
+    --color-shop-frame: var(--shop-frame);
+    --color-shop-fill: var(--shop-fill);
+    --color-shop-placeholder: var(--shop-placeholder);
+    --color-shop-canvas: var(--shop-canvas);
+    --color-shop-primary-tint: var(--shop-primary-tint);
+    --color-shop-primary-tint-strong: var(--shop-primary-tint-strong);
+    --color-shop-sale: var(--shop-sale);
+    --color-shop-on-sale: var(--shop-on-sale);
+    --color-shop-sale-ink: var(--shop-sale-ink);
+    --color-shop-positive: var(--shop-positive);
+    --color-shop-on-positive: var(--shop-on-positive);
+    --color-shop-positive-ink: var(--shop-positive-ink);
+    --color-shop-rating: var(--shop-rating);
+    --color-shop-on-rating: var(--shop-on-rating);
+    --color-shop-verified: var(--shop-verified);
+    --color-shop-on-verified: var(--shop-on-verified);
+    --color-shop-verified-ink: var(--shop-verified-ink);
+
     --spacing-header: var(--header-height);
     --spacing-sidebar: var(--sidebar-width);
     --spacing-sidebar-icon: var(--sidebar-width-icon);
@@ -232,6 +272,28 @@
     --sidebar-width: 15rem;                        /* 240px */
     --sidebar-width-icon: 3.5rem;                  /* 56px — the rail recolhido, icons only */
 
+    /*
+     * The shop window's semantic colours: the four the designs use that are nobody's brand — a
+     * sale, a good sign, a star, a verified purchase. Everything else the window wears is the
+     * shopkeeper's data, derived at runtime in lib/shop-palette.ts; these are the product's, so
+     * they are written here, in the one file a colour may be written in.
+     *
+     * Three forms each: the surface (a badge's fill), what reads on that surface (`-on-`), and an
+     * ink for a dark page (`-on-dark`), because the same red that reads on white vanishes on
+     * black. lib/shop-palette.ts picks the ink for the shop into `--shop-<name>-ink`.
+     */
+    --shop-sale: oklch(0.500 0.182 29.5);              /* #b42318 */
+    --shop-sale-on-dark: oklch(0.758 0.145 29.0);      /* #ff8a7a */
+    --shop-on-sale: oklch(1 0 0);
+    --shop-positive: oklch(0.499 0.117 157.1);         /* #067647 */
+    --shop-positive-on-dark: oklch(0.784 0.136 159.9); /* #5cd39a */
+    --shop-on-positive: oklch(1 0 0);
+    --shop-rating: oklch(0.769 0.165 70.1);            /* #f59e0b — a star reads on either page */
+    --shop-on-rating: oklch(0.145 0 0);
+    --shop-verified: oklch(0.470 0.143 37.3);          /* #9a3412 */
+    --shop-verified-on-dark: oklch(0.786 0.111 47.5);  /* #f4a37a */
+    --shop-on-verified: oklch(1 0 0);
+
 }
 
 .dark {
@@ -278,6 +340,15 @@
   html {
     @apply font-sans;
     }
+  /*
+   * The product page's phone bar is up (StorefrontProductPurchase sets the attribute): whatever Tab
+   * reaches is scrolled clear of it rather than under it. Only below shop-lg, where the bar shows.
+   */
+  @media (width < 64rem) {
+    html[data-buy-bar] {
+      scroll-padding-bottom: 6rem;
+    }
+  }
 }
 /**
  * A row that scrolls sideways without the bar underneath it.
