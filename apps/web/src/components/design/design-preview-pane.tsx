@@ -7,14 +7,18 @@ import type { ComponentProps } from "react"
 import type { PublicProductCategory, PublicSection, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
+import type { InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
+import { DesignBesideSlot } from "@harness-monorepo/ui/blocks/design/design-beside-slot"
 import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/design-block-placeholder"
 import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
 import { bandAnnouncements, bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
 import type { PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
+import { StorefrontBandCell } from "@harness-monorepo/ui/blocks/storefront/storefront-band-cell"
 import { StorefrontShelfSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-shelf-skeleton"
+import { besideOf } from "@harness-monorepo/ui/lib/band-rows"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -46,6 +50,9 @@ export interface DesignPreviewPaneProps {
   onEdit: (componentId: string) => void
   /** The component whose form is open, drawn as selected here too. */
   selectedId?: string | null
+  /** The room a row has left, pressed: a block beside the row's last one. Without it none is drawn. */
+  onInsert?: (at: InsertAt) => void
+  inserting?: boolean
   messages: UiMessages
 }
 
@@ -83,11 +90,27 @@ export function DesignPreviewPane({
   onReorder,
   onEdit,
   selectedId = null,
+  onInsert,
+  inserting = false,
   messages,
 }: DesignPreviewPaneProps) {
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
   const text = messages.design
+
+  // The room the band's last row has left, as a cell the size of the block that would land there.
+  // Only room there is: splitting a full row evenly is the panel's "Adicionar ao lado".
+  const besideSlotOf = (section: PublicSection) => {
+    const last = section.components.at(-1)
+    const room = last ? besideOf(section.components.map((component) => component.span), section.components.length - 1) : null
+    if (!onInsert || !last || !room || room.rebalance.length) return null
+    const at: InsertAt = { level: "beside", sectionId: section.id, index: section.components.length, span: room.span, rebalance: [] }
+    return (
+      <StorefrontBandCell span={room.span}>
+        <DesignBesideSlot name={labelOf(last.kind, last.title, messages)} onAdd={() => onInsert(at)} disabled={inserting} messages={messages} />
+      </StorefrontBandCell>
+    )
+  }
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -137,6 +160,7 @@ export function DesignPreviewPane({
                   showBadge={layout.showProductBadges ?? true}
                   quickAdd={layout.showQuickAdd ?? true}
                   linkComponent={InertLink}
+                  renderBandEnd={besideSlotOf}
                   renderSection={(section, band) => (
                     <DesignHandle
                       id={section.id}

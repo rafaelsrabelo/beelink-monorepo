@@ -26,6 +26,7 @@ function props(over: Partial<ComponentProps<typeof DesignPanel>> = {}): Componen
     onDelete: vi.fn(),
     onEdit: vi.fn(),
     onInsert: vi.fn(),
+    onJoinAbove: vi.fn(),
     inserting: false,
     selectedId: null,
     tab: "blocks",

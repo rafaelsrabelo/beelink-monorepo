@@ -5,7 +5,7 @@ import type { StoreColorPreset, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
 import { BandArrangement } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import type { ArrangementBand, ArrangementSpan, InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
+import type { ArrangementBand, ArrangementSpan, InsertAt, JoinAbove } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { DesignColors } from "@harness-monorepo/ui/blocks/design/design-colors"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
@@ -25,6 +25,8 @@ export interface DesignPanelProps {
   onEdit: (id: string) => void
   /** A "+" was pressed — between bands, or inside one. The screen opens the gallery for that place. */
   onInsert: (at: InsertAt) => void
+  /** A band's only block, moved up beside the band above's last. */
+  onJoinAbove: (move: JoinAbove) => void
   inserting: boolean
   selectedId: string | null
   /** Held by the screen, so the tab survives the column turning into a drawer and back. */
@@ -61,6 +63,7 @@ export function DesignPanel({
   onDelete,
   onEdit,
   onInsert,
+  onJoinAbove,
   inserting,
   selectedId,
   tab,
@@ -109,6 +112,7 @@ export function DesignPanel({
             // A band or a block is created saved, not as part of the draft: holding a new row in the
             // browser until Publish would mean a reload could lose something the owner watched appear.
             onInsert={onInsert}
+            onJoinAbove={onJoinAbove}
             inserting={inserting}
             selectedId={selectedId}
             messages={messages}

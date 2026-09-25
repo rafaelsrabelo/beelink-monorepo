@@ -62,6 +62,11 @@ export interface StorefrontSectionsProps {
    * is a different gesture from editing what is inside it — so it is a different hook.
    */
   renderSection?: (section: PublicSection, band: ReactNode) => ReactNode
+  /**
+   * Drawn after a band's blocks, inside its grid. Design mode puts the room a row has left there, as
+   * a place to add beside; the shop passes nothing.
+   */
+  renderBandEnd?: (section: PublicSection) => ReactNode
   /** What a contact form sends with. The shop window passes it; the preview does not, and sends nothing. */
   contact?: LiveContact | null
   messages: UiMessages
@@ -115,6 +120,7 @@ export function StorefrontSections({
   linkComponent,
   renderBlock,
   renderSection,
+  renderBandEnd,
   contact = null,
   messages,
 }: StorefrontSectionsProps) {
@@ -171,6 +177,7 @@ export function StorefrontSections({
                   </StorefrontBandCell>
                 )
               })}
+              {renderBandEnd?.(section)}
             </StorefrontBandGrid>
           </StorefrontSectionBand>
         )

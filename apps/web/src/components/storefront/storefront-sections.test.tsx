@@ -378,3 +378,23 @@ describe("StorefrontSections — one spacing, and edge to edge means edge to edg
     expect(screen.getByText("Espaço para vazio")).toBeInTheDocument()
   })
 })
+
+describe("StorefrontSections — design mode's room beside a block", () => {
+  it("draws what design mode puts after a band's blocks inside the same grid, so it shares their row", () => {
+    const { container } = render(
+      <StorefrontSections
+        sections={[band([poster("a", "THIRD")])]}
+        primary=""
+        categories={[]}
+        routes={routes}
+        showPrice
+        showBadge
+        messages={ptBR}
+        renderBandEnd={() => <div data-span="THIRD">Adicionar ao lado</div>}
+      />,
+    )
+
+    const grid = container.querySelector("[data-span]")!.parentElement!
+    expect(grid.lastElementChild).toHaveTextContent("Adicionar ao lado")
+  })
+})

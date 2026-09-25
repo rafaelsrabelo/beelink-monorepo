@@ -91,7 +91,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
     choose(component.id)
     if (component.kind === "PRODUCTS") shop.refresh(component.id)
   }
-  const adding = useBlockInsert(slug, rows, saved, opened)
+  const adding = useBlockInsert(slug, draft, opened)
 
   /*
     The palette is its own draft, and it saves on its own — a colour is the kind of thing you want
@@ -171,8 +171,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
               }
             }}
             onEdit={choose}
-            onInsert={adding.setInsertAt}
-            inserting={adding.inserting}
+            {...adding.panel}
             selectedId={editingComponent}
             tab={panelTab}
             onTabChange={setPanelTab}
@@ -197,6 +196,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             colors={palette}
             orderedIds={orderedIdsOf(rows)}
             onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
+            {...adding.preview}
             onEdit={choose}
             selectedId={editingComponent}
             messages={messages}
