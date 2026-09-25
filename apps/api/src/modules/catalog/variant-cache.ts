@@ -27,33 +27,41 @@ export type PerUnitField = (typeof PER_UNIT_FIELDS)[number];
 export type PerUnitValues = Pick<ProductVariantModel, PerUnitField>;
 export type VariantCacheRow = PerUnitValues & Pick<ProductVariantModel, 'isActive'>;
 
+/** What the product's cache holds: its per-unit columns, plus the top of its price range. */
+export type ProductCache = PerUnitValues & { maxPriceCents: number };
+
 /**
  * What a product's own per-unit columns hold, given its variants in position order.
  *
- * Only what is on sale counts, because the grid, the shelf rule and the showcases read these
+ * What is on sale is what counts, because the grid, the shelf rule and the showcases read these
  * columns to describe what a visitor can order:
- * - the price is the cheapest variant on sale, with that variant's "was" price, so a card never
- *   pairs one variant's price with another's discount;
- * - the product is counted only when every variant on sale is counted — one made to order is enough
- *   for it never to be sold out — and the stock is the sum of theirs;
+ * - the price range runs from the cheapest to the dearest variant a customer can order now — on
+ *   sale and not sold out — with the cheapest one's "was" price, so a card never pairs one
+ *   variant's price with another's discount. With nothing orderable, it is taken from what is on
+ *   sale, and with nothing on sale, from every variant, so a product always has a price;
+ * - the product is counted only when every variant on sale is counted — one made to order is
+ *   enough for it never to be sold out — and the stock is the sum of theirs;
  * - the codes, cost, weight and box come from the first variant on sale.
  *
  * With nothing on sale the product is counted with none left, which takes it off the shelf the way
  * a sold-out product leaves it. A product with a single variant gets that variant's values as they
  * are, so a product without options reads back exactly what was written to it.
  */
-export function productCacheOf(variants: readonly VariantCacheRow[]): PerUnitValues {
+export function productCacheOf(variants: readonly VariantCacheRow[]): ProductCache {
   const selling = variants.filter((variant) => variant.isActive);
-  const pool = selling.length > 0 ? selling : variants;
-  const [lead] = pool;
+  const orderable = selling.filter((variant) => !variant.trackStock || (variant.stockQuantity ?? 0) > 0);
+  const [lead] = selling.length > 0 ? selling : variants;
   if (!lead) throw new Error('A product always has at least one variant');
 
-  const cheapest = pool.reduce((best, variant) => (variant.priceCents < best.priceCents ? variant : best), lead);
+  const priced = orderable.length > 0 ? orderable : selling.length > 0 ? selling : variants;
+  const cheapest = priced.reduce((best, variant) => (variant.priceCents < best.priceCents ? variant : best));
+  const dearest = priced.reduce((best, variant) => (variant.priceCents > best.priceCents ? variant : best));
   const counts = selling.flatMap((variant) => (variant.stockQuantity === null ? [] : [variant.stockQuantity]));
 
   return {
     priceCents: cheapest.priceCents,
     compareAtPriceCents: cheapest.compareAtPriceCents,
+    maxPriceCents: dearest.priceCents,
     costCents: lead.costCents,
     sku: lead.sku,
     barcode: lead.barcode,
@@ -69,11 +77,21 @@ export function productCacheOf(variants: readonly VariantCacheRow[]): PerUnitVal
 /** Required on a variant: a null for one of these in a patch means "not sent", as it always has. */
 const REQUIRED_FIELDS: ReadonlySet<PerUnitField> = new Set(['priceCents', 'trackStock']);
 
-/** The per-unit fields a patch carries, and only those. */
-export function perUnitPatchOf(patch: Partial<Record<PerUnitField, unknown>>): Partial<PerUnitValues> {
+/**
+ * The per-unit fields a patch carries, and only those — leaving out any that match what `current`
+ * already holds. A patch that repeats a product's own values changes nothing, and the editor sends
+ * every field on every save, including a rename of a product whose values belong to its variants.
+ */
+export function perUnitPatchOf(
+  patch: Partial<Record<PerUnitField, unknown>>,
+  current?: PerUnitValues,
+): Partial<PerUnitValues> {
   return Object.fromEntries(
     PER_UNIT_FIELDS.filter(
-      (field) => patch[field] !== undefined && !(patch[field] === null && REQUIRED_FIELDS.has(field)),
+      (field) =>
+        patch[field] !== undefined &&
+        !(patch[field] === null && REQUIRED_FIELDS.has(field)) &&
+        patch[field] !== current?.[field],
     ).map((field) => [field, patch[field]]),
   ) as Partial<PerUnitValues>;
 }
@@ -88,10 +106,10 @@ export async function lockProduct(db: Db, productId: string): Promise<void> {
   await db.$queryRaw`SELECT 1 FROM "products" WHERE "id" = ${productId}::uuid FOR UPDATE`;
 }
 
-/** Rewrites a product's cache from its variants. Call it inside the transaction that changed them. */
+/** Rewrites a product's cache from its current variants. Call it inside the transaction that changed them. */
 export async function syncProductCache(db: Db, productId: string): Promise<void> {
   const variants = await db.productVariant.findMany({
-    where: { productId },
+    where: { productId, archivedAt: null },
     orderBy: [{ position: 'asc' }, { id: 'asc' }],
   });
 

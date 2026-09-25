@@ -148,6 +148,21 @@ describe('product variants', () => {
       expect(after?.updatedAt).toEqual(before?.updatedAt);
     });
 
+    it('writes a stock edit to a default variant the shop switched off', async () => {
+      const product = await addProduct({ name: 'Whey', priceCents: 4990, trackStock: true, stockQuantity: 7 });
+      const [base] = await variantsOf(product.id);
+      await prisma.productVariant.update({ where: { id: base!.id }, data: { isActive: false } });
+
+      const response = await call('PUT', `/api/stores/lessari/products/${product.id}`, owner, {
+        trackStock: true,
+        stockQuantity: 0,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const [after] = await variantsOf(product.id);
+      expect(after?.stockQuantity).toBe(0);
+    });
+
     it('reads a null price as not sent, as it did before variants', async () => {
       const product = await addProduct({ name: 'Whey', priceCents: 4990 });
 

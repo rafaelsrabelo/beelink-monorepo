@@ -15,6 +15,8 @@ export interface ProductShippingFieldsProps {
   value: ProductFormValues
   onChange: (value: ProductFormValues) => void
   errors?: ProductFormIssues
+  /** The product has variations: each combination carries its own weight; the box stays here. */
+  perCombination?: boolean
   disabled?: boolean
   messages?: UiMessages
 }
@@ -33,6 +35,7 @@ export function ProductShippingFields({
   value,
   onChange,
   errors,
+  perCombination = false,
   disabled = false,
   messages = defaultMessages,
 }: ProductShippingFieldsProps) {
@@ -50,19 +53,23 @@ export function ProductShippingFields({
 
   return (
     <div className="flex flex-col gap-4">
-      <Field>
-        <FieldLabel htmlFor="product-weight">{fields.weightLabel}</FieldLabel>
-        <Input
-          id="product-weight"
-          inputMode="numeric"
-          autoComplete="off"
-          disabled={disabled}
-          className="max-w-40"
-          value={value.weight}
-          onChange={(event) => set("weight", event.target.value)}
-        />
-        <FieldDescription>{fields.weightHint}</FieldDescription>
-      </Field>
+      {perCombination ? (
+        <p className="text-muted-foreground text-sm">{fields.weightPerCombination}</p>
+      ) : (
+        <Field>
+          <FieldLabel htmlFor="product-weight">{fields.weightLabel}</FieldLabel>
+          <Input
+            id="product-weight"
+            inputMode="numeric"
+            autoComplete="off"
+            disabled={disabled}
+            className="max-w-40"
+            value={value.weight}
+            onChange={(event) => set("weight", event.target.value)}
+          />
+          <FieldDescription>{fields.weightHint}</FieldDescription>
+        </Field>
+      )}
 
       <Field data-invalid={errors?.length ? true : undefined}>
         <FieldLabel>{fields.dimensionsLabel}</FieldLabel>

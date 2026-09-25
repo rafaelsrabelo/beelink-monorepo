@@ -12,12 +12,15 @@ import type {
 // App
 import { parseComponentItems } from '../page/component-items.schema.js';
 import { SHOWCASE_LIMIT_DEFAULT, SHOWCASE_LIMIT_MAX } from '../page/page.constants.js';
+import { CARD_PHOTOS_MAX } from './catalog.constants.js';
+import { cardOptionSelect, optionSummaryOf } from './catalog.mapper.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 /**
- * What a showcase's card needs, and nothing more: the first picture and the category's slug. The
- * catalogue's own include counts every category's products, which is right for a catalogue page
- * and a query per card too many for a landing page of several showcases.
+ * What a showcase's card needs, and nothing more: its first photos' addresses (up to
+ * `CARD_PHOTOS_MAX`), the first option's summary and the category's slug. The catalogue's own
+ * include counts every category's products, which is right for a catalogue page and a query per
+ * card too many for a landing page of several showcases.
  */
 export const SHOWCASE_CARD_SELECT = {
   id: true,
@@ -25,8 +28,11 @@ export const SHOWCASE_CARD_SELECT = {
   name: true,
   priceCents: true,
   compareAtPriceCents: true,
-  images: { select: { url: true }, orderBy: [{ position: 'asc' }, { id: 'asc' }], take: 1 },
+  maxPriceCents: true,
+  images: { select: { url: true }, orderBy: [{ position: 'asc' }, { id: 'asc' }], take: CARD_PHOTOS_MAX },
   category: { select: { slug: true } },
+  _count: { select: { options: true } },
+  options: cardOptionSelect,
 } satisfies ProductSelect;
 
 export type ShowcaseCardRow = ProductGetPayload<{ select: typeof SHOWCASE_CARD_SELECT }>;
@@ -134,5 +140,9 @@ export function toShowcaseCard(row: ShowcaseCardRow): PublicProductCard {
     compareAtPriceCents: row.compareAtPriceCents,
     imageUrl: row.images[0]?.url ?? null,
     categorySlug: row.category?.slug ?? null,
+    priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
+    hasOptions: row._count.options > 0,
+    imageUrls: row.images.map((image) => image.url),
+    optionSummary: optionSummaryOf(row.options),
   } satisfies PublicProductCard;
 }

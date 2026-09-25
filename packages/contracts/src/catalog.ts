@@ -32,6 +32,13 @@ export interface StorefrontRouteWords {
    * exactly this.
    */
   cart: string;
+  /**
+   * Where a shopper signs in, and — as `?modo=criar` and `?modo=senha` — signs up and asks for a new
+   * password: `/<shop>/entrar`. Reserved since the beginning with the cart.
+   */
+  signIn: string;
+  /** The shopper's own page at this shop: `/<shop>/conta`. */
+  account: string;
 }
 
 /**
@@ -85,6 +92,18 @@ export interface PublicProductImage {
   url: string;
   /** What a screen reader says. Null falls back to the product's name, never to the file name. */
   alt: string | null;
+  /**
+   * The option values this photo is of — the Morango tub, or the 900 g Morango tub. Empty: every
+   * combination. A combination shows it when, for every option named here, its value is one of the
+   * ones named: values of one option widen, different options narrow, as the listing's filters do.
+   */
+  optionValueIds: string[];
+}
+
+/** A product's first option, as a card sums it up: "Sabor" with 4 values reads "4 sabores". */
+export interface CardOptionSummary {
+  name: string;
+  valueCount: number;
 }
 
 /**
@@ -109,6 +128,33 @@ export interface PublicProductCard {
   /** The first image, or null for a product whose photos are not in yet. */
   imageUrl: string | null;
   categorySlug: string | null;
+  /**
+   * The cheapest and the dearest variant a customer can order, so a card can say "a partir de" or
+   * show a range. Equal on a product with one variant. `minCents` is `priceCents`.
+   */
+  priceRange: PriceRange;
+  /**
+   * Whether it sells combinations. A card adds a product without them straight to the cart, and
+   * sends one with them to its page to choose. Served on the shop window's shelves — the listing and
+   * the showcases — and absent elsewhere; absent reads as "choose on the page".
+   */
+  hasOptions?: boolean;
+  /**
+   * Up to five photos in the shopkeeper's order, for a card to pass through; the first is
+   * `imageUrl`, the cover. On the shelves and the showcases only, like `hasOptions`.
+   */
+  imageUrls?: string[];
+  /**
+   * The first option and how many values it offers, for the card's "4 sabores"; null for a product
+   * without options. On the shelves and the showcases only.
+   */
+  optionSummary?: CardOptionSummary | null;
+}
+
+/** Whole cents, both ends included. */
+export interface PriceRange {
+  minCents: number;
+  maxCents: number;
 }
 
 /** One product's own page: the card plus everything only that page renders. */
@@ -128,6 +174,44 @@ export interface PublicProduct extends PublicProductCard {
   description: string | null;
   images: PublicProductImage[];
   category: PublicProductCategory | null;
+}
+
+/**
+ * One combination as a visitor may see it. No code, no cost, no count: those are the shop's.
+ * A combination the shop does not sell is absent rather than listed as unavailable.
+ */
+export interface PublicProductVariant {
+  id: string;
+  /** One value id per option, in the options' order. Empty on the default variant. */
+  optionValueIds: string[];
+  priceCents: number;
+  compareAtPriceCents: number | null;
+  /** This combination's photo, when it has one of its own. */
+  imageUrl: string | null;
+  /**
+   * It can be ordered now. False is sold out — the shop counts it and has none left — which is
+   * derived by the same rule that takes a sold-out product off the shelf, and never the count.
+   */
+  available: boolean;
+}
+
+/**
+ * The product page's answer: the product, its options and every combination it sells. A product
+ * without options has one variant with no values.
+ */
+export interface PublicProductDetail extends PublicProduct {
+  options: ProductOption[];
+  variants: PublicProductVariant[];
+}
+
+/**
+ * The products a cart names, as their own pages show them — names, prices, combinations, photos.
+ * The cart cookie holds only ids and quantities; this is where they become something to read.
+ * A product the shop drafted, deleted or never had is absent, and the cart drops that line rather
+ * than the page failing. A sold-out one is present, marked, so the cart can say so.
+ */
+export interface StorefrontCartProducts {
+  products: PublicProductDetail[];
 }
 
 /**
@@ -155,6 +239,76 @@ export interface StorefrontCatalog {
    * request above the ceiling is served at the ceiling instead of refused.
    */
   pageSize: number;
+  /** The order the page is in — the one asked for, or `relevancia`, the shopkeeper's own. */
+  sort: StorefrontSort;
+  /** What the shelf can still be narrowed by. Each facet counts under every filter but its own. */
+  facets: CatalogFacets;
+  /** The filters in force, one entry per value, so a page can list them and take each one off. */
+  applied: AppliedCatalogFilter[];
+}
+
+/**
+ * How a shelf can be ordered, as the address spells it. `relevancia` is the shopkeeper's own order;
+ * `maior-desconto` puts the deepest cut first and what is not on sale last. "Mais vendidos" waits
+ * for orders to exist.
+ */
+export type StorefrontSort = "relevancia" | "menor-preco" | "maior-preco" | "novidades" | "maior-desconto";
+
+/** One value a facet offers. */
+export interface CatalogFacetValue {
+  /** What goes in the address: a category's slug, an option value's name. */
+  value: string;
+  /** What a visitor reads — the shop's own words, never a code. */
+  label: string;
+  /** Products on the shelf with this value, under every other filter in force. */
+  count: number;
+  /** False when that count is zero; the page decides whether to hide or disable it. */
+  available: boolean;
+  /** Whether it is one of the filters in force. */
+  selected: boolean;
+  /** A colour value's swatch, `#rrggbb`; null elsewhere. */
+  colorHex: string | null;
+}
+
+/**
+ * The facets of a shelf. Labels that are interface copy — "Preço", "Em oferta" — are the page's; this
+ * carries only the shop's own names.
+ */
+export interface CatalogFacets {
+  /** Every category the shop shows, a parent counting what its children hold. */
+  categories: CatalogFacetValue[];
+  /** One facet per option name across the shelf, "Tamanho" and "tamanho" being one. */
+  options: CatalogOptionFacet[];
+  /**
+   * How many are on sale — a "was" price above the price — and how many at each cut the shelf
+   * offers as a filter ("10% ou mais"), each counted under every other filter in force.
+   */
+  discount: { count: number; selected: boolean; ranges: CatalogDiscountRange[] };
+  /** The cheapest and dearest product under the other filters; null on an empty shelf. */
+  price: { minCents: number; maxCents: number } | null;
+}
+
+/** One "N% ou mais" the shelf can be narrowed to; `desconto=<minPercent>` asks for it. */
+export interface CatalogDiscountRange {
+  minPercent: number;
+  count: number;
+  selected: boolean;
+}
+
+export interface CatalogOptionFacet {
+  /** The option's name as the shop wrote it, and what `opcao=<name>:<value>` names. */
+  name: string;
+  values: CatalogFacetValue[];
+}
+
+/** A filter in force, as the address holds it and as a visitor reads it. */
+export interface AppliedCatalogFilter {
+  /** The address's parameter: `categoria`, `busca`, `precoMin`, `precoMax`, `desconto`, `opcao`. */
+  key: "categoria" | "busca" | "precoMin" | "precoMax" | "desconto" | "opcao";
+  /** Its value in the address: a slug, a term, whole reais, `1` or a minimum percent, `Tamanho:P`. */
+  value: string;
+  /** The shop's own name for it where there is one — a category's, a value's — else the value. */
+  label: string;
 }
 
 
@@ -316,6 +470,120 @@ export type UpdateProductPayload = Partial<CreateProductPayload>;
 export interface ProductImagePayload {
   url: string;
   alt?: string | null;
+  /**
+   * Values of this product's options that the photo is of; see `PublicProductImage`. Absent or empty
+   * is every combination. A value of another product is refused with `PRODUCT_OPTION_NOT_FOUND`.
+   */
+  optionValueIds?: string[];
+}
+
+/* ── options and variants ───────────────────────────────────────────────── */
+
+/** One answer to an option — P, Areia, Frutas vermelhas. */
+export interface ProductOptionValue {
+  id: string;
+  name: string;
+  /**
+   * A colour option's swatch, `#rrggbb`. It is the shopkeeper's data, applied at runtime the way a
+   * shop's brand colour is. Null on every value of an option that is not a colour.
+   */
+  colorHex: string | null;
+}
+
+/** A choice made before ordering — Tamanho, Cor. At most three per product, values in order. */
+export interface ProductOption {
+  id: string;
+  name: string;
+  values: ProductOptionValue[];
+}
+
+/**
+ * One thing that can be ordered: one value of each option. A product with no options has exactly
+ * one, with no values — its default variant.
+ */
+export interface ProductVariant extends ProductStock, ProductParcel {
+  id: string;
+  /** One value id per option, in the options' order. Empty on the default variant. */
+  optionValueIds: string[];
+  /** Off is "não vendo esta": a combination the shop does not sell, not one that sold out. */
+  isActive: boolean;
+  priceCents: number;
+  compareAtPriceCents: number | null;
+  /** Owner-only, like the product's. */
+  costCents: number | null;
+  /** Unique within the shop. */
+  sku: string | null;
+  barcode: string | null;
+  /** This combination's photo, when it has one of its own. */
+  imageUrl: string | null;
+}
+
+/**
+ * One product with everything its editor needs. A product's own per-unit fields are, from here on,
+ * a summary of its variants: the cheapest price on sale, the stock summed, the first variant's
+ * codes and box.
+ */
+export interface ProductDetail extends Product {
+  options: ProductOption[];
+  /** In the order of the combinations: the first option changes slowest. */
+  variants: ProductVariant[];
+}
+
+/** A value as the editor sends it. With an `id` it is that value, renamed; without, a new one. */
+export interface ProductOptionValuePayload {
+  id?: string;
+  name: string;
+  colorHex?: string | null;
+}
+
+/** An option as the editor sends it. With an `id` it is that option; without, a new one. */
+export interface ProductOptionPayload {
+  id?: string;
+  name: string;
+  /** At least one, in the order the shopkeeper arranged them. */
+  values: ProductOptionValuePayload[];
+}
+
+/**
+ * The product's options, whole and in order. What is left out is removed.
+ *
+ * A combination that still exists keeps its variant, with its price, stock and code. A new option
+ * extends every variant with its first value. A combination nobody had before is created with the
+ * price of the variant closest to it. A variant whose combination no longer exists is archived,
+ * never deleted, so an order that named it keeps something to point at.
+ */
+export interface ReplaceProductOptionsPayload {
+  options: ProductOptionPayload[];
+}
+
+/** One variant's changes. Only what is sent changes. */
+export interface ProductVariantPayload extends Partial<ProductStock & ProductParcel> {
+  id: string;
+  isActive?: boolean;
+  priceCents?: number;
+  compareAtPriceCents?: number | null;
+  costCents?: number | null;
+  sku?: string | null;
+  barcode?: string | null;
+  imageUrl?: string | null;
+}
+
+/** Several variants of one product at once. Variants not listed are left as they are. */
+export interface UpdateProductVariantsPayload {
+  variants: ProductVariantPayload[];
+}
+
+/**
+ * A visitor's "Avise-me" for one sold-out combination. Answered 201 with no body, and a second
+ * request from the same number for the same combination is the same request.
+ */
+export interface CreateRestockRequestPayload {
+  variantId: string;
+  /** WhatsApp with area code; the country code is added when missing. */
+  phone: string;
+  name?: string | null;
+  /** The trap: drawn out of sight, and a body that fills it is answered and not saved. */
+  website?: string;
 }
 
 /**
@@ -344,4 +612,14 @@ export type CatalogErrorCode =
   /** Another product of the same shop already uses the code. */
   | "PRODUCT_SKU_TAKEN"
   /** A price or stock sent for a whole product that has options: those belong to its variants. */
-  | "PRODUCT_HAS_OPTIONS";
+  | "PRODUCT_HAS_OPTIONS"
+  /** An option or value id that is not one of this product's. */
+  | "PRODUCT_OPTION_NOT_FOUND"
+  /** Two options with one name, or two values with one name in one option. */
+  | "PRODUCT_OPTION_DUPLICATE"
+  /** The options would make more combinations than a product may have. */
+  | "PRODUCT_VARIANTS_LIMIT"
+  /** A variant id that is not one of this product's current variants. */
+  | "PRODUCT_VARIANT_NOT_FOUND"
+  /** A restock request for a product or combination this shop does not sell. */
+  | "RESTOCK_VARIANT_INVALID";

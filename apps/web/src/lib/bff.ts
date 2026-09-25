@@ -76,6 +76,8 @@ export async function forwardToApi(request: NextRequest, path: string): Promise<
   if (response.status === 204) return new NextResponse(null, { status: 204 })
 
   const payload: unknown = await response.json().catch(() => null)
+  // A success with no body — the API's 201 for a restock request — is forwarded as one.
+  if (payload === null && response.ok) return new NextResponse(null, { status: response.status })
   return NextResponse.json(payload ?? errorBody(response.status, "UNKNOWN", "Unexpected answer"), {
     status: response.status,
   })
