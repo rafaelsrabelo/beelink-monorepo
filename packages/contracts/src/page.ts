@@ -374,6 +374,23 @@ export interface AddComponentPayload extends CreateComponentPayload {
   position?: number;
 }
 
+/**
+ * A component moved into another band that exists — how two blocks stacked in two bands end up side
+ * by side in one row, without being made again. Blocks share a row only inside one band's grid.
+ *
+ * Its own route and not a `sectionId` on the PATCH: a move changes two bands at once (where it
+ * lands, and what closes up behind it), and the band it leaves is deleted when it leaves it empty —
+ * a band never exists empty.
+ */
+export interface MoveComponentPayload {
+  /** The band it goes to. The same band it is in reorders it there. */
+  sectionId: string;
+  /** Its place in that band, 0 first. Absent, or past the end, it lands last. */
+  position?: number;
+  /** The slice it takes there, so the row it joins can have room for it in the same write. */
+  span?: ComponentSpan;
+}
+
 /** The `errorCode` values the page module answers. The apps own the sentences. */
 export type PageErrorCode =
   | "SECTION_NOT_FOUND"
@@ -421,7 +438,12 @@ export type PageErrorCode =
    * Added after a shop lost its shelves exactly this way: the component's own row drew no bin,
    * and the section's bin took the component with it. The UI is not the lock; this is.
    */
-  | "COMPONENT_REQUIRED";
+  | "COMPONENT_REQUIRED"
+  /**
+   * A move of the strip above the header, or into its band: the strip's band is its colour, drawn
+   * above the masthead, and not a row anything can sit beside.
+   */
+  | "COMPONENT_NOT_MOVABLE";
 
 /**
  * The arrangements a site may open with.
