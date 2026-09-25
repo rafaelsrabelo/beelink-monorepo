@@ -21,6 +21,9 @@ import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
  */
 export async function GET(request: NextRequest, { params }: RouteContext<"/api/storefront/[slug]/customer/google">) {
   const { slug } = await params
+  // The segment arrives decoded, so `%2Fevil.example` is a "slug" whose home is another site.
+  if (!/^[a-z0-9-]+$/.test(slug)) return NextResponse.redirect(new URL("/", request.url), 303)
+
   const query = request.nextUrl.searchParams
   const back = safeBackOf(slug, query.get(BACK_KEY) ?? undefined)
   const signIn = safeBackOf(slug, query.get("retorno") ?? undefined)
@@ -41,6 +44,6 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/api/s
 
   const { url, state } = (await response.json()) as GoogleAuthorization
   const answer = NextResponse.redirect(url, 303)
-  setGoogleStateCookie(answer.cookies, { state, slug, signIn })
+  setGoogleStateCookie(answer.cookies, { state, slug, signIn, back })
   return answer
 }

@@ -8,7 +8,7 @@ import type { GoogleSignIn } from "@harness-monorepo/contracts"
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf } from "@/lib/bff"
 import { clearGoogleStateCookie, googleFlightOf, GOOGLE_STATE_COOKIE, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
-import { safeBackOf } from "@/lib/storefront-routes"
+import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
 
 /**
  * Where Google sends every shop's shopper back — one fixed address, registered once in Google's
@@ -22,10 +22,14 @@ export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams
   const flight = googleFlightOf(request.cookies.get(GOOGLE_STATE_COOKIE)?.value)
 
-  // Back to the shop's sign-in page with what to say; with no flight in hand, the shop is unknown.
+  // Back to the face the shopper left, with what to say and where they were going; with no flight
+  // in hand, the shop is unknown.
   const fail = (code: string) => {
     const page = new URL(flight ? safeBackOf(flight.slug, flight.signIn) : "/", request.url)
-    if (flight) page.searchParams.set("erro", code)
+    if (flight) {
+      page.searchParams.set(BACK_KEY, safeBackOf(flight.slug, flight.back))
+      page.searchParams.set("erro", code)
+    }
     const answer = NextResponse.redirect(page, 303)
     clearGoogleStateCookie(answer.cookies)
     return answer

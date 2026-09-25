@@ -29,9 +29,10 @@ export async function StorefrontSignInSection({ place, routes, query, errors }: 
   // Only a code the web has a sentence for is shown; anything else a hand-typed address carries is
   // the catch-all, never an identifier on a shopper's screen.
   const error = code ? (errors[code as keyof WebMessages["errors"]] ?? errors.UNKNOWN) : null
-  // Google only when the API has it set up; its link carries where to return and this page.
+  // Google only when the API has it set up; its link carries where to return and this face, which
+  // a refusal or a cancel on Google's page comes back to.
   const { google } = await signInOptionsAt()
-  const googleHref = `/api/storefront/${store.slug}/customer/google?${new URLSearchParams({ [BACK_KEY]: back, retorno: routes.signIn() }).toString()}`
+  const googleHref = `/api/storefront/${store.slug}/customer/google?${new URLSearchParams({ [BACK_KEY]: back, retorno: routes.signIn({ mode }) }).toString()}`
 
   return (
     <div className="py-4">

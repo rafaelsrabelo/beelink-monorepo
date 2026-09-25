@@ -65,11 +65,14 @@ describe("StorefrontSignIn", () => {
     expect(screen.queryByText("ou")).not.toBeInTheDocument()
   })
 
-  it("has no accessibility violations, on each face", async () => {
+  it("has no accessibility violations, on each face, with Google offered or not", async () => {
+    const google = { href: "/api/storefront/loja/customer/google", iconSrc: "/brand/google.svg" }
     for (const mode of ["entrar", "criar", "senha"] as const) {
-      const { container, unmount } = renderFace(mode)
-      await expectNoA11yViolations(container)
-      unmount()
+      for (const extra of [{}, { google }]) {
+        const { container, unmount } = renderFace(mode, extra)
+        await expectNoA11yViolations(container)
+        unmount()
+      }
     }
   })
 })

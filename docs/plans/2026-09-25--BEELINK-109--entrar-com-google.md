@@ -66,3 +66,20 @@ O logo fica em `apps/web/public/brand/google.svg` e o bloco recebe o endereço.
 
 - Outros provedores (Apple, Facebook) e Google no painel do lojista.
 - Domínio próprio por loja: o retorno fixo assume a vitrine no domínio do bee-link.
+
+## Adendo — 25/09, depois do G7 e da revisão
+
+O G7 (BEELINK-111) tornou a conta do cliente da loja, e este ticket foi refeito em cima dele:
+
+- A conta aberta ou ligada pelo Google é sempre uma conta **da loja** onde o fluxo começou. A
+  identidade guarda a loja, e o único é `(loja, provedor, sub)`: a mesma conta Google abre uma conta em
+  cada loja, e nunca toca a conta da bee-link do lojista. Isso substitui os itens 5 e 6 da Definição
+  de Pronto, onde se lia "conta" como "conta da bee-link".
+- O item 5 ficou mais estrito, como a revisão pediu: ligar a uma conta **existente** exige que o
+  Google seja dono do endereço, isto é, Gmail ou domínio Workspace (`hd`). Para outros endereços,
+  `email_verified` só diz que a caixa foi conferida quando a conta Google foi criada. Nesse caso uma
+  conta nova ainda pode ser aberta, e a existente é recusada com `GOOGLE_EMAIL_UNVERIFIED`.
+- O callback grava a sessão no caminho da loja (`bl_shopper_*`, `path=/<slug>`), como a porta de senha.
+- Revisão: o início do fluxo recusa um slug que não tem forma de slug (um `%2F` decodificado montava
+  um endereço fora do site). Uma recusa ou um cancelamento no Google agora volta para a face de onde o
+  cliente saiu (entrar ou criar), com o `voltar`. E o axe passa a cobrir o botão do Google.

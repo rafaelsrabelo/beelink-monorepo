@@ -13,7 +13,7 @@ const SESSION = {
   user: { id: "1", name: "Bia", email: "bia@exemplo.com", emailVerified: true, createdAt: "" },
 }
 
-const FLIGHT = `bl_oauth_google=${encodeURIComponent(new URLSearchParams({ state: "abc", slug: "loja", signIn: "/loja/entrar" }).toString())}`
+const FLIGHT = `bl_oauth_google=${encodeURIComponent(new URLSearchParams({ state: "abc", slug: "loja", signIn: "/loja/entrar?modo=criar", back: "/loja/carrinho" }).toString())}`
 
 function back(query: string, cookie: string | null = FLIGHT) {
   const headers = new Headers()
@@ -56,12 +56,15 @@ describe("GET /api/customer/google/callback", () => {
     expect(response.headers.get("set-cookie") ?? "").not.toContain("bl_shopper_access=")
   })
 
-  it("says the shopper cancelled when Google sends an error instead of a code", async () => {
+  it("says the shopper cancelled when Google sends an error instead of a code, on the face they left", async () => {
     vi.stubGlobal("fetch", vi.fn())
 
     const location = new URL((await back("error=access_denied&state=abc")).headers.get("location") ?? "")
 
     expect(location.searchParams.get("erro")).toBe("GOOGLE_CANCELLED")
+    // Where they were going survives the detour, and so does the face — signing up, here.
+    expect(location.searchParams.get("voltar")).toBe("/loja/carrinho")
+    expect(location.searchParams.get("modo")).toBe("criar")
   })
 
   it("passes the API's refusal on to the sign-in page", async () => {

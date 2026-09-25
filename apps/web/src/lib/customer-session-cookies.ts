@@ -33,7 +33,7 @@ export function setCustomerSessionCookies(jar: CookieJar, slug: string, session:
 
 /**
  * A Google sign-in in flight, held to the browser that started it: the state sent to Google, the shop
- * it began at, and that shop's sign-in page to come back to on a refusal. Only the fixed callback
+ * it began at, that shop's sign-in face to come back to on a refusal, and where the shopper was going. Only the fixed callback
  * reads it, for ten minutes — the state's own life at the API. Comparing it with the state that
  * comes back is what stops someone finishing, in another person's browser, a sign-in they started.
  */
@@ -43,8 +43,10 @@ export const GOOGLE_CALLBACK_PATH = "/api/customer/google/callback"
 export interface GoogleFlight {
   state: string
   slug: string
-  /** The shop's sign-in page, for a refusal to land on. */
+  /** The shop's sign-in face the flow began on, for a refusal to land on. */
   signIn: string
+  /** Where the shopper was going (`voltar`), kept through a refusal as through a sign-in. */
+  back: string
 }
 
 export function setGoogleStateCookie(jar: CookieJar, flight: GoogleFlight): void {
@@ -54,8 +56,8 @@ export function setGoogleStateCookie(jar: CookieJar, flight: GoogleFlight): void
 export function googleFlightOf(value: string | undefined): GoogleFlight | null {
   if (!value) return null
   const read = new URLSearchParams(value)
-  const [state, slug, signIn] = [read.get("state"), read.get("slug"), read.get("signIn")]
-  return state && slug && signIn ? { state, slug, signIn } : null
+  const [state, slug, signIn, back] = [read.get("state"), read.get("slug"), read.get("signIn"), read.get("back")]
+  return state && slug && signIn && back ? { state, slug, signIn, back } : null
 }
 
 export function clearGoogleStateCookie(jar: CookieJar): void {

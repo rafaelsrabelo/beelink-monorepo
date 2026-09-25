@@ -5,9 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 // App
 import { GET } from "./route"
 
-function start(query: string) {
+function start(query: string, slug = "loja") {
   const request = new NextRequest(`http://localhost:3000/api/storefront/loja/customer/google?${query}`)
-  return GET(request, { params: Promise.resolve({ slug: "loja" }) })
+  return GET(request, { params: Promise.resolve({ slug }) })
 }
 
 afterEach(() => vi.unstubAllGlobals())
@@ -28,6 +28,7 @@ describe("GET /api/storefront/[slug]/customer/google", () => {
     const cookie = response.headers.get("set-cookie") ?? ""
     expect(cookie).toContain("bl_oauth_google=")
     expect(cookie).toContain("state%3Dabc")
+    expect(cookie).toContain("back%3D%252Floja%252Fcarrinho")
     expect(cookie).toMatch(/HttpOnly/i)
     expect(cookie).toContain("Path=/api/customer/google/callback")
   })
@@ -40,6 +41,18 @@ describe("GET /api/storefront/[slug]/customer/google", () => {
 
     const [, init] = fetched.mock.calls[0]! as unknown as [string, RequestInit]
     expect(JSON.parse(String(init.body))).toEqual({ returnTo: "/loja" })
+  })
+
+  // A plain link anyone can hand out: the decoded segment must never become an address off the site.
+  it("never sends a shopper off the site through a slug that is not one", async () => {
+    const fetched = vi.fn()
+    vi.stubGlobal("fetch", fetched)
+
+    for (const slug of ["/evil.example", "\\evil.example"]) {
+      const location = new URL((await start("retorno=%2F%2Fevil.example", slug)).headers.get("location") ?? "")
+      expect(location.origin).toBe("http://localhost:3000")
+    }
+    expect(fetched).not.toHaveBeenCalled()
   })
 
   it("goes back to the sign-in page, saying why, when the API cannot start the flow", async () => {
