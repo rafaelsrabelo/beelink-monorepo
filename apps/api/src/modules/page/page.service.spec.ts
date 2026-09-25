@@ -1,3 +1,6 @@
+// Nest
+import { ConflictException } from '@nestjs/common';
+
 // Types
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { StoresService } from '../stores/stores.service.js';
@@ -81,6 +84,8 @@ function build(
     goneProducts?: string[]
     /** What a showcase being patched already holds. */
     storedShowcase?: { source: string | null; sourceCategoryId: string | null; limit: number | null; items: object[] }
+    /** The components each band holds, by band id, when a move reads two bands. */
+    bands?: Record<string, { id: string; position: number; kind: string }[]>
   } = {},
 ) {
   const createSection = vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
@@ -137,7 +142,15 @@ function build(
       update: updateComponent,
       delete: vi.fn().mockResolvedValue({}),
       aggregate: vi.fn().mockResolvedValue({ _max: { position: 0 } }),
-      findMany: vi.fn().mockResolvedValue(found.owned ?? [{ id: COMPONENT }]),
+      findMany: vi
+        .fn()
+        .mockImplementation(({ where }: { where: { sectionId?: string; id?: { not: string } } }) =>
+          Promise.resolve(
+            found.bands && where.sectionId !== undefined
+              ? (found.bands[where.sectionId] ?? []).filter((row) => row.id !== where.id?.not)
+              : (found.owned ?? [{ id: COMPONENT }]),
+          ),
+        ),
       findFirst: vi.fn().mockResolvedValue(found.existing ?? null),
       // One fake, three questions: inside this band, in the shop's other bands, in the whole shop.
       count: vi.fn().mockImplementation(({ where }: { where: { sectionId?: unknown } }) =>
@@ -149,7 +162,7 @@ function build(
               : (found.requiredInShop ?? 1),
         ),
       ),
-      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER' }),
+      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER', sectionId: SECTION }),
       findUniqueOrThrow: vi
         .fn()
         .mockResolvedValue(found.storedShowcase ?? { source: 'ALL', sourceCategoryId: null, limit: null, items: [] }),
@@ -555,6 +568,104 @@ describe('PageService — an order is the whole list or nothing', () => {
       where: { id: 'component-2' },
       data: { position: 0 },
     });
+  });
+});
+
+const OTHER_SECTION = '0199b000-0000-7000-8000-000000000002';
+
+describe('PageService — a block moves into another band', () => {
+  /** Two stacked bands: the block moving and a paragraph in one, two banners in the other. */
+  const bands = {
+    [SECTION]: [
+      { id: COMPONENT, position: 0, kind: 'BANNER' },
+      { id: 'left-behind', position: 1, kind: 'TEXT' },
+    ],
+    [OTHER_SECTION]: [
+      { id: 'first', position: 0, kind: 'BANNER' },
+      { id: 'second', position: 1, kind: 'BANNER' },
+    ],
+  };
+
+  function writes(prisma: PrismaService) {
+    return vi.mocked(prisma.storeComponent.update).mock.calls.map(([args]) => args);
+  }
+
+  it('lands where it is told in the band it joins, and closes up the band it left', async () => {
+    const { service, prisma } = build({ bands });
+
+    await service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, position: 1 });
+
+    expect(writes(prisma)).toEqual([
+      { where: { id: 'second' }, data: { position: 2 } },
+      { where: { id: COMPONENT }, data: { sectionId: OTHER_SECTION, position: 1 } },
+      { where: { id: 'left-behind' }, data: { position: 0 } },
+    ]);
+    expect(prisma.storeSection.delete).not.toHaveBeenCalled();
+    // Under the shop's lock, taken before either band is read.
+    expect(vi.mocked(prisma.$queryRaw).mock.invocationCallOrder[0]!).toBeLessThan(
+      vi.mocked(prisma.storeComponent.findMany).mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it('deletes the band it leaves empty, once it has left it', async () => {
+    const { service, prisma } = build({ bands: { ...bands, [SECTION]: [{ id: COMPONENT, position: 0, kind: 'BANNER' }] } });
+
+    await service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION });
+
+    expect(writes(prisma)).toEqual([{ where: { id: COMPONENT }, data: { sectionId: OTHER_SECTION, position: 2 } }]);
+    expect(prisma.storeSection.delete).toHaveBeenCalledWith({ where: { id: SECTION } });
+    // Deleting a band cascades to what it still holds: the block is out of it first.
+    expect(vi.mocked(prisma.storeComponent.update).mock.invocationCallOrder[0]!).toBeLessThan(
+      vi.mocked(prisma.storeSection.delete).mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it('reorders it inside its own band when that is the band it is sent to, and deletes nothing', async () => {
+    const { service, prisma } = build({ bands });
+
+    await service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: SECTION, position: 1 });
+
+    expect(writes(prisma)).toEqual([
+      { where: { id: 'left-behind' }, data: { position: 0 } },
+      { where: { id: COMPONENT }, data: { sectionId: SECTION, position: 1 } },
+    ]);
+    expect(prisma.storeSection.delete).not.toHaveBeenCalled();
+  });
+
+  it('takes the span it is sent, so the row it joins has room for it in the same write', async () => {
+    const { service, prisma } = build({ bands });
+
+    await service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, span: 'THIRD' });
+
+    expect(prisma.storeComponent.update).toHaveBeenCalledWith({
+      where: { id: COMPONENT },
+      data: { sectionId: OTHER_SECTION, position: 2, span: 'THIRD' },
+    });
+  });
+
+  it('refuses to move the strip above the header, and to move anything into its band', async () => {
+    const strip = build({ kind: 'ANNOUNCEMENT', bands });
+    const intoStrip = build({ bands: { ...bands, [OTHER_SECTION]: [{ id: 'strip', position: 0, kind: 'ANNOUNCEMENT' }] } });
+
+    for (const { service, prisma } of [strip, intoStrip]) {
+      const refusal: unknown = await service
+        .moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION })
+        .catch((error: unknown) => error);
+
+      expect(refusal).toBeInstanceOf(ConflictException);
+      expect(refusal).toMatchObject({ response: { errorCode: 'COMPONENT_NOT_MOVABLE' } });
+      expect(prisma.storeComponent.update).not.toHaveBeenCalled();
+      expect(prisma.storeSection.delete).not.toHaveBeenCalled();
+    }
+  });
+
+  it('answers another shop’s band as one this shop does not have, and moves nothing', async () => {
+    const { service, prisma } = build({ bands, sectionOfAnotherShop: true });
+
+    await expect(
+      service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
+    ).rejects.toMatchObject({ response: { errorCode: 'SECTION_NOT_FOUND' } });
+    expect(prisma.storeComponent.update).not.toHaveBeenCalled();
   });
 });
 

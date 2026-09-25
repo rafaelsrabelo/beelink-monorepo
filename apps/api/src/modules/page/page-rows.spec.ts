@@ -1,5 +1,5 @@
 // App
-import { placedAt } from './page-rows.js';
+import { closedUp, placedAt } from './page-rows.js';
 
 describe('placedAt — where a new row lands in its list', () => {
   const rows = [
@@ -25,5 +25,25 @@ describe('placedAt — where a new row lands in its list', () => {
   it('treats a place past the end as last', () => {
     expect(placedAt(rows, 99).at).toBe(3);
     expect(placedAt([], 5)).toEqual({ at: 0, moves: [] });
+  });
+});
+
+describe('closedUp — what a list keeps when one of its rows leaves', () => {
+  it('renumbers from 0, writing only the rows whose number changes', () => {
+    const kept = [
+      { id: 'a', position: 0 },
+      { id: 'c', position: 2 },
+      { id: 'd', position: 3 },
+    ];
+
+    expect(closedUp(kept)).toEqual([
+      { id: 'c', position: 1 },
+      { id: 'd', position: 2 },
+    ]);
+  });
+
+  it('writes nothing when nothing is left, or nothing has a gap', () => {
+    expect(closedUp([])).toEqual([]);
+    expect(closedUp([{ id: 'a', position: 0 }])).toEqual([]);
   });
 });

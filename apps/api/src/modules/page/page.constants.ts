@@ -89,6 +89,12 @@ export const SECTION_WIDTHS = ['FULL', 'CONTAINED'] as const satisfies readonly 
 export const SINGLETON_COMPONENT_KINDS = ['ANNOUNCEMENT'] as const satisfies readonly ComponentKind[];
 
 /**
+ * The kinds that stay in their own band, and whose band takes nothing moved in: the strip above the
+ * header. Its band is its colour, drawn above the masthead, and not a row anything can sit beside.
+ */
+export const UNMOVABLE_COMPONENT_KINDS = ['ANNOUNCEMENT'] as const satisfies readonly ComponentKind[];
+
+/**
  * The kinds a shop cannot be without, at either level: the last one may not be deleted, and neither
  * may the section holding it. Hiding is what exists for "not now"; a second one can go.
  *

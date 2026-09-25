@@ -17,6 +17,7 @@ import {
   DISPLAYS_OF_KIND,
   REQUIRED_COMPONENT_KINDS,
   SINGLETON_COMPONENT_KINDS,
+  UNMOVABLE_COMPONENT_KINDS,
 } from './page.constants.js';
 
 /** Any version: the ids are uuid v7, and the check is only that Postgres could read one. */
@@ -192,20 +193,41 @@ export class PageRules {
   }
 
   /** Returns what it found, so a caller that has to reason about it needs no second read. */
-  async ownedComponent(storeId: string, componentId: string, db: Db = this.prisma): Promise<{ kind: ComponentKind }> {
+  async ownedComponent(
+    storeId: string,
+    componentId: string,
+    db: Db = this.prisma,
+  ): Promise<{ kind: ComponentKind; sectionId: string }> {
     if (!UUID.test(componentId)) {
       throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
     }
 
     const row = await db.storeComponent.findUnique({
       where: { id: componentId },
-      select: { storeId: true, kind: true },
+      select: { storeId: true, kind: true, sectionId: true },
     });
 
     if (!row || row.storeId !== storeId) {
       throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
     }
 
-    return { kind: row.kind };
+    return { kind: row.kind, sectionId: row.sectionId };
+  }
+
+  /**
+   * The strip above the header does not move, and nothing moves into its band.
+   *
+   * `joined` is what the band it goes to already holds, read by the move itself: the refusal and the
+   * placement are then answered from the same rows.
+   */
+  refuseMove(kind: ComponentKind, joined: readonly { kind: ComponentKind }[]): void {
+    const unmovable = (candidate: ComponentKind) =>
+      (UNMOVABLE_COMPONENT_KINDS as readonly ComponentKind[]).includes(candidate);
+
+    if (unmovable(kind) || joined.some((row) => unmovable(row.kind))) {
+      throw new ConflictException(
+        pageError('COMPONENT_NOT_MOVABLE', 'A barra de aviso fica na faixa dela, e nada entra ao lado dela.'),
+      );
+    }
   }
 }

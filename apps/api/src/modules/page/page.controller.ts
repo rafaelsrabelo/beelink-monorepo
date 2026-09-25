@@ -21,6 +21,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { PageService } from './page.service.js';
 import { AddComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
+import { MoveComponentDto } from './dto/move-component.dto.js';
 import { ComponentResponse, SectionResponse } from './dto/page.response.js';
 import { ReorderDto } from '../catalog/dto/reorder.dto.js';
 
@@ -159,6 +160,23 @@ export class ComponentsController {
     @Body() dto: UpdateComponentDto,
   ): Promise<ComponentResponse> {
     return this.page.updateComponent(storeSlug, current.id, componentId, dto);
+  }
+
+  // A route of its own and not a `sectionId` on the PATCH: a move changes two bands at once, and
+  // may delete the one it leaves.
+  @Put(':componentId/section')
+  @ApiOperation({ summary: 'Move a component into another band, or to another place in its own' })
+  @ApiOkResponse({ type: SectionResponse, isArray: true, description: 'The whole page after the move' })
+  @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND · COMPONENT_NOT_FOUND · SECTION_NOT_FOUND' })
+  @ApiBadRequestResponse({ description: 'POSITION_INVALID · COMPONENT_SPAN_INVALID' })
+  @ApiConflictResponse({ description: 'COMPONENT_NOT_MOVABLE — the strip above the header, or into its band' })
+  move(
+    @Param('storeSlug') storeSlug: string,
+    @Param('componentId') componentId: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: MoveComponentDto,
+  ): Promise<SectionResponse[]> {
+    return this.page.moveComponent(storeSlug, current.id, componentId, dto);
   }
 
   @Delete(':componentId')

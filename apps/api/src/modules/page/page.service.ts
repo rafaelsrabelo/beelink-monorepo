@@ -4,6 +4,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 // Types
 import type { Section, StoreComponent } from '@harness-monorepo/contracts';
 import type { AddComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
+import type { MoveComponentDto } from './dto/move-component.dto.js';
 import type { ReorderDto } from '../catalog/dto/reorder.dto.js';
 
 // App
@@ -11,7 +12,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { sectionInclude, toComponent, toSection } from './page.mapper.js';
 import { PageRules, pageError } from './page.rules.js';
-import { componentPatch, componentRow, placedAt } from './page-rows.js';
+import { closedUp, componentPatch, componentRow, placedAt } from './page-rows.js';
 import { ShowcaseRules } from './showcase.rules.js';
 import { openingItemsOf } from './page-seed.js';
 
@@ -269,6 +270,66 @@ export class PageService {
 
       for (const [position, id] of dto.ids.entries()) {
         await tx.storeComponent.update({ where: { id }, data: { position } });
+      }
+    });
+
+    return this.list(storeSlug, userId);
+  }
+
+  /**
+   * A component into another band, or to another place in its own — how two blocks stacked in two
+   * bands end up side by side, without being made again.
+   *
+   * Both bands in one transaction, under the shop's lock: the band it joins makes room, and the band
+   * it leaves closes up behind it — or is deleted, when that left it empty, since a band never exists
+   * empty. Answered with the whole page, because two bands changed and one of them may be gone.
+   */
+  async moveComponent(
+    storeSlug: string,
+    userId: string,
+    componentId: string,
+    dto: MoveComponentDto,
+  ): Promise<Section[]> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const moving = await this.rules.ownedComponent(storeId, componentId, tx);
+      await this.rules.ownedSection(storeId, dto.sectionId, tx);
+
+      // Without the one moving, so its own band reorders it like any other.
+      const othersIn = (sectionId: string) =>
+        tx.storeComponent.findMany({
+          where: { sectionId, id: { not: componentId } },
+          orderBy: [{ position: 'asc' }, { id: 'asc' }],
+          select: { id: true, position: true, kind: true },
+        });
+      const joined = await othersIn(dto.sectionId);
+      this.rules.refuseMove(moving.kind, joined);
+
+      const { at, moves } = placedAt(joined, dto.position);
+
+      for (const move of moves) {
+        await tx.storeComponent.update({ where: { id: move.id }, data: { position: move.position } });
+      }
+
+      await tx.storeComponent.update({
+        where: { id: componentId },
+        data: { sectionId: dto.sectionId, position: at, ...(dto.span !== undefined ? { span: dto.span } : {}) },
+      });
+
+      if (moving.sectionId === dto.sectionId) return;
+
+      const left = await othersIn(moving.sectionId);
+
+      // After the component has left, never before: deleting a band cascades to what it still holds.
+      if (left.length === 0) {
+        await tx.storeSection.delete({ where: { id: moving.sectionId } });
+        return;
+      }
+
+      for (const move of closedUp(left)) {
+        await tx.storeComponent.update({ where: { id: move.id }, data: { position: move.position } });
       }
     });
 

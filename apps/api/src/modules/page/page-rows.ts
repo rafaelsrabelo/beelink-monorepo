@@ -80,3 +80,11 @@ export function placedAt(
 
   return { at, moves };
 }
+
+/**
+ * The rows a list keeps after one of its own left it, renumbered from 0 so the gap closes. Only the
+ * rows whose number changes are written, as in `placedAt`.
+ */
+export function closedUp(rows: readonly { id: string; position: number }[]): { id: string; position: number }[] {
+  return rows.flatMap((row, index) => (row.position === index ? [] : [{ id: row.id, position: index }]));
+}
