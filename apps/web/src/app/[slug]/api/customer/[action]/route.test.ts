@@ -67,14 +67,32 @@ describe("the shop's sign-in form", () => {
     }
   })
 
-  it("never builds an address off the site out of a slug that is not one", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "STORE_NOT_FOUND" }, { status: 404 })))
+  it("answers a slug that is not one with 404, before it can become an address off the site", async () => {
+    const fetched = vi.fn()
+    vi.stubGlobal("fetch", fetched)
 
     // The segment arrives decoded: `%2Fevil.example` is `/evil.example`, and `/` + it is `//evil.example`.
     for (const slug of ["/evil.example", "\\evil.example"]) {
-      const location = new URL((await post("entrar", { ...form, voltar: "", retorno: "" }, {}, slug)).headers.get("location") ?? "")
-      expect(location.origin).toBe("http://localhost:3000")
+      for (const action of ["entrar", "sair", "perfil"]) {
+        const response = await post(action, { ...form, voltar: "", retorno: "" }, {}, slug)
+        expect(response.status).toBe(404)
+        expect(response.headers.get("location")).toBeNull()
+      }
     }
+    expect(fetched).not.toHaveBeenCalled()
+  })
+
+  it("asks the shop for a new confirmation link, and says on its sign-up face where it went", async () => {
+    const fetched = vi.fn(async () => new Response(null, { status: 202 }))
+    vi.stubGlobal("fetch", fetched)
+
+    const location = new URL((await post("reenviar", { email: "bia@exemplo.com", retorno: "/loja/entrar" })).headers.get("location") ?? "")
+
+    expect(String((fetched.mock.calls[0] as unknown[] | undefined)?.[0])).toContain("/stores/loja/customer/resend-verification")
+    expect(location.pathname).toBe("/loja/entrar")
+    expect(location.searchParams.get("modo")).toBe("criar")
+    expect(location.searchParams.get("enviado")).toBe("1")
+    expect(location.searchParams.get("email")).toBe("bia@exemplo.com")
   })
 
   it("signs up and says the link is on its way — the same whatever the API knew about the address", async () => {

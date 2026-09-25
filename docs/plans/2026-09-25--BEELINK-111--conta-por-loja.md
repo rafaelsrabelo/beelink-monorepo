@@ -93,3 +93,17 @@ em vez do "reenviar" do painel, que procuraria a conta no escopo errado.
 - O G5 (Google): refeito em cima desta branch, com a identidade do Google presa à conta da loja.
 - Domínio próprio por loja: o caminho do cookie assume a vitrine em `/<slug>` do domínio da bee-link.
 - Juntar contas, ou apagar as contas da bee-link que só eram de cliente.
+
+## Adendo — 25/09, revisão
+
+A revisão em três lentes confirmou quatro pontos, todos corrigidos neste PR:
+
+- A tela de link de confirmação inválido de um cliente pedia "um novo link" sem oferecer como. Agora
+  ela tem um formulário que pede o link **à loja**: ação nova `reenviar` no handler, que responde na
+  face de criar conta dizendo para onde o link foi.
+- O handler movido ainda montava `/${slug}` sem conferir o slug no `sair` e no `perfil` sem sessão:
+  agora um slug que não tem forma de slug responde 404 antes de qualquer redirect ou cookie.
+- Dois comentários velhos (o proxy agora vê `/<slug>/api`; o JSDoc do `refresh`).
+
+Dois achados sobre tokens de e-mail pendentes na migração foram refutados na verificação: a cópia
+não toca os tokens, e o caso que eles descrevem pede dados de produção que não existem.

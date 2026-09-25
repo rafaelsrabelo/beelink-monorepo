@@ -5,6 +5,7 @@ import { VerifyEmailStatus } from "@harness-monorepo/ui/blocks/auth/verify-email
 // App
 import { AppLink } from "@/components/app-link"
 import { ResendVerification } from "@/components/auth/resend-verification"
+import { ShopResendVerification } from "@/components/auth/shop-resend-verification"
 import { callApi } from "@/lib/api"
 import { getMessages } from "@/lib/locale"
 import { signInAfter } from "@/lib/sign-in-after"
@@ -42,8 +43,7 @@ export default async function VerifyEmailPage({ searchParams }: PageProps<"/veri
         <p className="text-sm text-muted-foreground">
           {typeof token === "string" && token !== "" ? ui.verifyEmail.invalidBody : web.auth.missingToken}
         </p>
-        {/* A shop's account is resent from the shop: signing up there again sends a fresh link. */}
-        {signIn.atShop ? null : <ResendVerification ui={ui} />}
+        {signIn.slug ? <ShopResendVerification ui={ui} slug={signIn.slug} signInHref={signIn.href} /> : <ResendVerification ui={ui} />}
       </div>
     </AuthCard>
   )

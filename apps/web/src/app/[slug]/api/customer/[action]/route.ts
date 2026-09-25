@@ -21,8 +21,8 @@ import { BACK_KEY, MODE_KEY, safeBackOf } from "@/lib/storefront-routes"
  * handler anywhere else would never receive them (`customer-session-cookies.ts`).
  *
  * The shop's sign-in page posts here, as a plain `<form>`: signing in (`entrar`), signing up
- * (`criar`), asking for a new password (`senha`), saving the shopper's details (`perfil`) and signing
- * out (`sair`). Every answer is a 303 —
+ * (`criar`), asking for a new password (`senha`) or a new confirmation link (`reenviar`, from an
+ * expired one), saving the shopper's details (`perfil`) and signing out (`sair`). Every answer is a 303 —
  * to where the shopper was going, or back to the page with the refusal in the address — so it all
  * works with no script on the page, and the password never passes through page code.
  *
@@ -34,6 +34,9 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   if (refused) return refused
 
   const { slug, action } = await params
+  // The segment arrives decoded: with `%2Fevil.example`, every `/${slug}` below would be another site.
+  if (!/^[a-z0-9-]+$/.test(slug)) return NextResponse.json({ statusCode: 404, errorCode: "NOT_FOUND", message: "No such shop" }, { status: 404 })
+
   const form = await request.formData().catch(() => null)
   const field = (name: string) => {
     const value = form?.get(name)
@@ -77,6 +80,11 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       if (!response?.ok) return bounce("senha", { erro: response ? await codeOf(response) : "UNKNOWN", email })
       return bounce("senha", { enviado: "1" })
     }
+    case "reenviar": {
+      const response = await callApi({ path: `${shop}/resend-verification`, body: { email }, clientIp }).catch(() => null)
+      if (!response?.ok) return bounce("criar", { erro: response ? await codeOf(response) : "UNKNOWN", email })
+      return bounce("criar", { enviado: "1", email })
+    }
     case "perfil": {
       const page = new URL(safeBackOf(slug, field("retorno")), request.url)
       const body = {
@@ -86,8 +94,8 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       }
       const save = (accessToken: string) => callApi({ path: `${shop}/me`, method: "PATCH", body, accessToken, clientIp }).catch(() => null)
 
-      // The proxy never sees /api, so a token that ran out since the page loaded is renewed here —
-      // once — and the new pair stored on this answer.
+      // The proxy renews a session whose access cookie is gone before this runs; a token that ran
+      // out in between is renewed here — once — and the new pair stored on this answer.
       let renewed: AuthSession | null = null
       let response = await save(request.cookies.get(CUSTOMER_ACCESS_COOKIE)?.value ?? "")
       if (response?.status === 401) {

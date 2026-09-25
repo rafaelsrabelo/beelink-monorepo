@@ -2,10 +2,10 @@
 import { shopAt } from "./storefront-data"
 import { storefrontRoutes } from "./storefront-routes"
 
-/** Where the person behind an e-mailed link signs in, and whether that is a shop's door. */
+/** Where the person behind an e-mailed link signs in, and the shop whose door that is, if one. */
 export interface SignInAfter {
   href: string
-  atShop: boolean
+  slug: string | null
 }
 
 /**
@@ -17,5 +17,5 @@ export async function signInAfter(voltar: string | string[] | undefined): Promis
   const slug = typeof voltar === "string" ? /^\/([a-z0-9-]+)$/.exec(voltar)?.[1] : undefined
   const shop = slug ? await shopAt(slug) : null
 
-  return shop ? { href: storefrontRoutes(shop).signIn(), atShop: true } : { href: "/login", atShop: false }
+  return shop ? { href: storefrontRoutes(shop).signIn(), slug: shop.slug } : { href: "/login", slug: null }
 }

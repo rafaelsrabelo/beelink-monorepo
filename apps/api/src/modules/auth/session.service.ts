@@ -42,8 +42,9 @@ export class SessionService {
   /**
    * Rotates the chain. A token already spent means it was copied — unless it was spent moments ago,
    * which is the same browser racing itself (a second tab, a prefetch) and is allowed to rotate.
+   *
+   * `storeId` is the shop a shopper's session must belong to; null, as a shopkeeper's is bee-link's.
    */
-  /** `storeId` is the shop a shopper's session must belong to; null, as a shopkeeper's is bee-link's. */
   async refresh(refreshToken: string, audience: SessionAudience = 'OWNER', storeId: string | null = null): Promise<AuthSession> {
     const record = await this.prisma.refreshToken.findUnique({
       where: { tokenHash: hashToken(refreshToken) },
