@@ -121,6 +121,7 @@ export const en: WebMessages = {
     AUTH_UNAUTHENTICATED: "Sign in to continue.",
     COMPONENT_REQUIRED: "The last product showcase cannot be deleted. Hide the band instead.",
     COMPONENT_KIND_SINGLETON: "The shop already has a block of that kind.",
+    COMPONENT_NOT_MOVABLE: "The announcement bar does not change bands, and no block goes into its band.",
     SHOWCASE_SOURCE_INVALID: "Only a product showcase has a source and a limit.",
     SHOWCASE_CATEGORY_INVALID: "Choose one of this shop's categories for the showcase.",
     SHOWCASE_PRODUCTS_INVALID: "Choose at least one of this shop's products for the showcase.",

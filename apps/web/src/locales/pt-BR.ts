@@ -121,6 +121,7 @@ export const ptBR: WebMessages = {
     AUTH_UNAUTHENTICATED: "Faça login para continuar.",
     COMPONENT_REQUIRED: "A última vitrine de produtos não pode ser apagada. Esconda a faixa em vez disso.",
     COMPONENT_KIND_SINGLETON: "A loja já tem um bloco desse tipo.",
+    COMPONENT_NOT_MOVABLE: "A barra de aviso não muda de faixa, e nenhum bloco entra na faixa dela.",
     SHOWCASE_SOURCE_INVALID: "Só uma vitrine de produtos tem fonte e limite.",
     SHOWCASE_CATEGORY_INVALID: "Escolha uma categoria desta loja para a vitrine.",
     SHOWCASE_PRODUCTS_INVALID: "Escolha ao menos um produto desta loja para a vitrine.",

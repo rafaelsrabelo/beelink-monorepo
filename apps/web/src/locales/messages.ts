@@ -50,13 +50,14 @@ export type WebErrorCode =
  */
 /**
  * The page codes a shopkeeper can meet from the panel: a delete the shop cannot afford, a second of
- * something it may have one of, and a showcase whose source the API will not take. The others
- * answer a call the panel never makes.
+ * something it may have one of, a move the strip above the header does not make, and a showcase
+ * whose source the API will not take. The others answer a call the panel never makes.
  */
 type PanelPageErrorCode = Extract<
   PageErrorCode,
   | "COMPONENT_REQUIRED"
   | "COMPONENT_KIND_SINGLETON"
+  | "COMPONENT_NOT_MOVABLE"
   | "SHOWCASE_SOURCE_INVALID"
   | "SHOWCASE_CATEGORY_INVALID"
   | "SHOWCASE_PRODUCTS_INVALID"
