@@ -9,6 +9,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
+import { MastheadHeight } from "./masthead-height"
 import { StorefrontAccountLink } from "./storefront-account-link"
 import { StorefrontCartLink } from "./storefront-cart-link"
 import { StorefrontSearch, type StorefrontSearchScope } from "./storefront-search"
@@ -196,6 +197,7 @@ export function StorefrontMasthead({
           <div className={BAND}>{categories}</div>
         </div>
       ) : null}
+      <MastheadHeight />
     </header>
   )
 }

@@ -39,7 +39,7 @@ export function StorefrontBuyActions({ name, onAdd, cartHref, orderHref, maxQty 
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <div role="group" aria-label={`${text.cartQuantity}: ${name}`} className="flex shrink-0 items-center rounded-xl border border-current/25">
           <button type="button" aria-label={format(text.cartDecrease, { name })} disabled={qty <= 1} onClick={() => setQty(qty - 1)} className={STEP}>
             <MinusIcon aria-hidden="true" className="size-4" />
@@ -55,7 +55,7 @@ export function StorefrontBuyActions({ name, onAdd, cartHref, orderHref, maxQty 
             onAdd(qty)
             setAdded(true)
           }}
-          className="flex-1 rounded-xl bg-shop-primary px-5 py-3 text-base font-semibold text-shop-on-primary transition-opacity hover:opacity-90"
+          className="flex-1 rounded-xl bg-shop-primary px-5 py-3 text-base font-semibold whitespace-nowrap text-shop-on-primary transition-opacity hover:opacity-90"
         >
           {text.addToCart}
         </button>

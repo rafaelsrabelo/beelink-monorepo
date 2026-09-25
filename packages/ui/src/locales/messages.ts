@@ -269,6 +269,11 @@ export interface UiMessages {
     accountState: string
     accountSave: string
     accountSaved: string
+    /** The product page (5b). `{name}` — the shop, over the title. */
+    visitShop: string
+    /** The buy column's landmark name. */
+    buyBoxLabel: string
+    descriptionHeading: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */

@@ -26,14 +26,23 @@ import { WhatsAppIcon } from "../store/store-brand-icons"
 import { StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
-import { StorefrontRichText } from "./storefront-rich-text"
+import type { LinkComponent } from "../auth/auth-link"
 import { StorefrontBuyActions } from "./storefront-buy-actions"
+import { StorefrontProductBuy } from "./storefront-product-buy"
+import { StorefrontProductInfo } from "./storefront-product-info"
 import { StorefrontVariantPicker } from "./storefront-variant-picker"
 
 export type { StorefrontProductImage } from "./storefront-product-gallery"
 
 export interface StorefrontProductDetailProps {
+  /** The shop, over the title: "Visite a loja …" leads to its front door. */
+  shopName: string
+  homeHref: string
   name: string
+  /**
+   * The product's Markdown. The page draws the whole of it in its own section (`#descricao`); the
+   * info column draws only its first list, as "Sobre este item" (D6).
+   */
   description: string | null
   priceCents: number
   compareAtPriceCents: number | null
@@ -69,19 +78,22 @@ export interface StorefrontProductDetailProps {
   locale: string
   showPrice?: boolean
   showBadge?: boolean
+  linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
 /**
- * One product's page, and the combination chosen on it.
+ * One product's page as 5b lays it out — photos, information and choice, the buy box — and the
+ * combination chosen on it.
  *
  * The choice drives what the page says: the price, the photo, whether it can be ordered and what
  * the order message names. A combination that ran out keeps its place and offers "Avise-me" instead
  * of the order button.
  */
 export function StorefrontProductDetail({
+  shopName,
+  homeHref,
   name,
-  description,
   priceCents,
   compareAtPriceCents,
   images,
@@ -96,6 +108,7 @@ export function StorefrontProductDetail({
   locale,
   showPrice = true,
   showBadge = true,
+  linkComponent,
   messages = defaultMessages,
 }: StorefrontProductDetailProps) {
   const text = messages.storefront
@@ -125,82 +138,91 @@ export function StorefrontProductDetail({
 
   const order = orderHref?.replace(ORDER_VARIANT_MARK, label ? encodeURIComponent(` (${label})`) : "")
 
-  return (
-    <article className="flex w-full flex-col gap-5">
-      <StorefrontProductGallery
-        key={shownImages.map((image) => image.id).join("|")}
-        images={shownImages}
-        name={name}
+  const price = showPrice ? (
+    // Announced as it changes with the choice, so a screen reader hears the new price.
+    <div aria-live="polite">
+      <StorefrontPrice
+        priceCents={variant?.priceCents ?? priceCents}
+        compareAtPriceCents={variant ? variant.compareAtPriceCents : compareAtPriceCents}
+        locale={locale}
+        size="product"
+        showBadge={showBadge}
         messages={messages}
       />
+    </div>
+  ) : undefined
 
-      <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold">{name}</h1>
-        {/*
-          Its own line above the price: this is the one fact that changes what the visitor can do
-          here. No token — the shop window is painted from the shopkeeper's own colours.
-        */}
-        {unavailable ? (
-          <p className="text-sm font-semibold tracking-wide uppercase opacity-70">{text.soldOut}</p>
-        ) : null}
-        {showPrice ? (
-          // Announced as it changes with the choice, so a screen reader hears the new price.
-          <div aria-live="polite">
-            <StorefrontPrice
-              priceCents={variant?.priceCents ?? priceCents}
-              compareAtPriceCents={variant ? variant.compareAtPriceCents : compareAtPriceCents}
-              locale={locale}
-              size="product"
-              showBadge={showBadge}
-              messages={messages}
-            />
-          </div>
-        ) : null}
-        {/* Formatted as it was written: the description is Markdown at rest, never HTML. */}
-        {description ? <StorefrontRichText markdown={description} className="opacity-85" /> : null}
-      </div>
+  const picker = choosing ? (
+    <StorefrontVariantPicker
+      options={options}
+      variants={variants}
+      selection={selection}
+      onSelect={choose}
+      locale={showPrice ? locale : undefined}
+      messages={messages}
+    />
+  ) : undefined
 
-      {choosing ? (
-        <StorefrontVariantPicker
-          options={options}
-          variants={variants}
-          selection={selection}
-          onSelect={choose}
-          locale={showPrice ? locale : undefined}
+  return (
+    <>
+      {/*
+        5b's top row: photos | information and choice | the buy box. One column on a phone, in that
+        order; two from shop-lg, the photos beside the other two; three from shop-xl, at 540 | 452 |
+        320 on the 1440px the design draws, the first two sharing what a narrower window leaves.
+      */}
+      <article className="grid grid-cols-1 items-start gap-6 pt-1 pb-8 leading-[1.2] text-shop-on-background shop-lg:grid-cols-2 shop-lg:gap-8 shop-xl:grid-cols-[minmax(0,540fr)_minmax(0,452fr)_320px]">
+        <div className="min-w-0 shop-lg:row-span-2 shop-xl:row-span-1">
+          <StorefrontProductGallery
+            key={shownImages.map((image) => image.id).join("|")}
+            images={shownImages}
+            name={name}
+            messages={messages}
+          />
+        </div>
+
+        <StorefrontProductInfo
+          shopName={shopName}
+          homeHref={homeHref}
+          name={name}
+          unavailable={unavailable}
+          price={price}
+          picker={picker}
+          {...(linkComponent ? { linkComponent } : {})}
           messages={messages}
         />
-      ) : null}
 
-      {unavailable ? (
-        <div className="flex flex-col gap-3">
-          {/* A bordered box and not a tinted one: an opacity tint would fade the sentence with it. */}
-          <p className="rounded-xl border border-current/20 px-5 py-3 text-center text-sm opacity-70">
-            {choosing ? text.combinationSoldOut : text.soldOutHint}
-          </p>
-          {restock && (variant ?? variants[0]) ? (
-            <button
-              type="button"
-              onClick={() => setAsking(true)}
-              className="inline-flex w-full items-center justify-center rounded-xl border-2 border-current px-5 py-3 text-base font-medium"
+        <StorefrontProductBuy messages={messages}>
+          {unavailable ? (
+            <div className="flex flex-col gap-3">
+              {/* A bordered box and not a tinted one: an opacity tint would fade the sentence with it. */}
+              <p className="rounded-xl border border-shop-line px-5 py-3 text-center text-sm text-shop-muted">
+                {choosing ? text.combinationSoldOut : text.soldOutHint}
+              </p>
+              {restock && (variant ?? variants[0]) ? (
+                <button
+                  type="button"
+                  onClick={() => setAsking(true)}
+                  className="inline-flex w-full items-center justify-center rounded-xl border-2 border-current px-5 py-3 text-base font-medium"
+                >
+                  {text.notifyMe}
+                </button>
+              ) : null}
+            </div>
+          ) : cart ? (
+            <StorefrontBuyActions name={name} onAdd={(qty) => cart.onAdd(variant?.id ?? null, qty)} cartHref={cart.href} orderHref={order} messages={messages} />
+          ) : order ? (
+            <a
+              href={order}
+              rel="noreferrer"
+              target="_blank"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-shop-primary px-5 py-3 text-base font-medium text-shop-on-primary"
             >
-              {text.notifyMe}
-            </button>
+              <WhatsAppIcon className="size-5" />
+              {text.orderThis}
+            </a>
           ) : null}
-        </div>
-      ) : cart ? (
-        <StorefrontBuyActions name={name} onAdd={(qty) => cart.onAdd(variant?.id ?? null, qty)} cartHref={cart.href} orderHref={order} messages={messages} />
-      ) : order ? (
-        <a
-          href={order}
-          rel="noreferrer"
-          target="_blank"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-medium"
-          style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
-        >
-          <WhatsAppIcon className="size-5" />
-          {text.orderThis}
-        </a>
-      ) : null}
+        </StorefrontProductBuy>
+      </article>
 
       {restock ? (
         <StorefrontRestockDialog
@@ -221,6 +243,6 @@ export function StorefrontProductDetail({
           messages={messages}
         />
       ) : null}
-    </article>
+    </>
   )
 }

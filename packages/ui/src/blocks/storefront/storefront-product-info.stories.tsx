@@ -1,0 +1,29 @@
+import type { Meta, StoryObj } from "@storybook/react-vite"
+
+import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
+
+import { sampleColorPresets } from "../store/store.fixtures"
+import { StorefrontPrice } from "./storefront-price"
+import { StorefrontProductInfo } from "./storefront-product-info"
+
+const meta = {
+  title: "Blocos/Vitrine/Produto · coluna de informações",
+  component: StorefrontProductInfo,
+  parameters: { layout: "padded" },
+  decorators: [(Story) => <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), maxWidth: 452 }}>{Story()}</div>],
+  args: {
+    shopName: "Mutante Suplementos",
+    homeHref: "#",
+    name: "Pré-Treino Haze Hardcore 300g — Energia, Foco e Performance",
+    unavailable: false,
+    price: <StorefrontPrice priceCents={11990} compareAtPriceCents={14990} locale="pt-BR" size="product" />,
+  },
+} satisfies Meta<typeof StorefrontProductInfo>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+/** A coluna do meio de 5b: a loja, o título e o preço. */
+export const Padrao: Story = {}
+
+export const Esgotado: Story = { args: { unavailable: true } }

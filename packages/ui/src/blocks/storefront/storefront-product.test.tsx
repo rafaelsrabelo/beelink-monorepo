@@ -17,6 +17,8 @@ const images = [
 function renderProduct(overrides: Partial<Parameters<typeof StorefrontProductDetail>[0]> = {}) {
   return render(
     <StorefrontProductDetail
+      shopName="Lessari"
+      homeHref="/lessari"
       name="Bolsa Amora"
       description="Feita à mão em fio de algodão."
       priceCents={18900}
@@ -37,10 +39,22 @@ describe("StorefrontProductDetail", () => {
     await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
     expect(onAdd).toHaveBeenCalledWith(null, 1)
 
-    rerender(<StorefrontProductDetail name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={null} images={images} locale="pt-BR" soldOut cart={{ onAdd, href: "#" }} />)
+    rerender(<StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={null} images={images} locale="pt-BR" soldOut cart={{ onAdd, href: "#" }} />)
     expect(screen.queryByRole("button", { name: "Adicionar ao carrinho" })).toBeNull()
   })
 
+
+  it("lays out 5b's three parts in order: the photos, the information under the shop's name, and a region for buying", () => {
+    renderProduct({ cart: { onAdd: () => {}, href: "/lessari/carrinho" } })
+
+    const photo = screen.getAllByRole("img")[0]!
+    const heading = screen.getByRole("heading", { level: 1 })
+    const buy = screen.getByRole("region", { name: "Comprar" })
+    expect(screen.getByRole("link", { name: "Visite a loja Lessari" })).toHaveAttribute("href", "/lessari")
+    expect(photo.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(heading.compareDocumentPosition(buy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(buy).toContainElement(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
+  })
 
   it("names the product as the page's one heading", () => {
     renderProduct()
