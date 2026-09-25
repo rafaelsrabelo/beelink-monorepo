@@ -50,6 +50,33 @@ describe("StorefrontCategories", () => {
     expect(screen.getByRole("link", { name: /Mais vendidos/ })).not.toHaveAttribute("aria-current")
   })
 
+  it("names Tudo as the page only on the catalogue's own page, never by default", () => {
+    const { rerender } = renderCategories()
+    expect(screen.getByRole("link", { name: "Tudo" })).not.toHaveAttribute("aria-current")
+
+    rerender(<StorefrontCategories categories={categories} href={() => "/lessari"} allActive />)
+    expect(screen.getByRole("link", { name: "Tudo" })).toHaveAttribute("aria-current", "page")
+  })
+
+  // A product's category is underlined as 5b draws it, but the product page is not that category's page.
+  it("underlines a marked one without calling it the page", () => {
+    renderCategories({ marked: "promocoes" })
+
+    const link = screen.getByRole("link", { name: /Promoções/ })
+    expect(link).not.toHaveAttribute("aria-current")
+    expect(link.style.boxShadow).toContain("var(--shop-primary-on-header)")
+    expect(screen.getByRole("link", { name: "Tudo" }).style.boxShadow).toBe("")
+  })
+
+  it("ends with the offers, apart, only when the shop has some", () => {
+    const { rerender } = renderCategories({ offersHref: "/lessari/produtos?desconto=1" })
+    expect(screen.getByRole("link", { name: "Ofertas do dia" })).toHaveAttribute("href", "/lessari/produtos?desconto=1")
+    expect(screen.getByRole("link", { name: "Ofertas do dia" }).closest("li")).toHaveClass("ml-auto")
+
+    rerender(<StorefrontCategories categories={categories} href={() => "/lessari"} />)
+    expect(screen.queryByRole("link", { name: "Ofertas do dia" })).not.toBeInTheDocument()
+  })
+
   /**
    * The default is the menu, and a menu is words. The shop owner saw the row of circles and said
    * so: a circle is a picture, and no panel screen uploads one, so every shop got a row of single

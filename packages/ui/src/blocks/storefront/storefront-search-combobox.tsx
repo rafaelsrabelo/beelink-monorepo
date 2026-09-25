@@ -11,6 +11,17 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
+// Block
+import {
+  SEARCH_BAR,
+  SEARCH_BUTTON,
+  SEARCH_FIELD,
+  SEARCH_SCOPE,
+  SEARCH_SCOPE_NAME,
+  searchButtonStyle,
+  type StorefrontSearchScope,
+} from "./storefront-search"
+
 export interface StorefrontSuggestion {
   id: string
   label: string
@@ -27,6 +38,11 @@ export interface StorefrontSearchComboboxProps {
   name?: string
   value: string
   onValueChange: (value: string) => void
+  /** The categories the search can be narrowed to; see `StorefrontSearch`. */
+  scopes?: readonly StorefrontSearchScope[]
+  scope?: string
+  /** Told when the visitor picks another scope, so the suggestions follow it. */
+  onScopeChange?: (scope: string) => void
   suggestions: readonly StorefrontSuggestion[]
   pending?: boolean
   /** How many the shop has altogether, for the last row of the list. */
@@ -58,6 +74,9 @@ export function StorefrontSearchCombobox({
   name = "q",
   value,
   onValueChange,
+  scopes,
+  scope = "",
+  onScopeChange,
   suggestions,
   pending = false,
   total = 0,
@@ -104,14 +123,33 @@ export function StorefrontSearchCombobox({
 
   return (
     <div className="relative w-full min-w-0 flex-1">
-      <form method="get" action={action} role="search" className="relative">
-        <label className="block">
+      <form
+        method="get"
+        action={action}
+        role="search"
+        className={SEARCH_BAR}
+        style={{ backgroundColor: "var(--shop-background)", color: "var(--shop-on-background)" }}
+      >
+        {scopes?.length ? (
+          <select
+            name={SEARCH_SCOPE_NAME}
+            value={scope}
+            onChange={(event) => onScopeChange?.(event.target.value)}
+            aria-label={text.searchScope}
+            className={SEARCH_SCOPE}
+            style={{ borderColor: "var(--shop-frame)" }}
+          >
+            <option value="">{text.searchScopeAll}</option>
+            {scopes.map((entry) => (
+              <option key={entry.value} value={entry.value}>
+                {entry.label}
+              </option>
+            ))}
+          </select>
+        ) : null}
+
+        <label className="flex min-w-0 flex-1">
           <span className="sr-only">{text.search}</span>
-          <SearchIcon
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 opacity-60"
-            style={tone === "panel" ? { color: "var(--shop-text)" } : undefined}
-          />
           <input
             type="search"
             name={name}
@@ -130,17 +168,12 @@ export function StorefrontSearchCombobox({
             aria-autocomplete="list"
             aria-activedescendant={active >= 0 ? optionId(active) : undefined}
             autoComplete="off"
-            className="h-10 w-full rounded-full border border-current/15 bg-transparent pr-3 pl-9 text-sm outline-none focus-visible:border-current/40"
-            style={
-              tone === "panel"
-                ? { backgroundColor: "var(--shop-background)", color: "var(--shop-text)", borderColor: "transparent" }
-                : undefined
-            }
+            className={SEARCH_FIELD}
           />
         </label>
 
-        <button type="submit" className="sr-only">
-          {text.searchAction}
+        <button type="submit" aria-label={text.searchAction} className={SEARCH_BUTTON} style={searchButtonStyle(tone)}>
+          <SearchIcon aria-hidden="true" className="size-5" strokeWidth={2} />
         </button>
       </form>
 

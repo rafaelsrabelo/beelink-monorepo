@@ -68,13 +68,16 @@ export class StoreCategoryResponse implements StoreCategory {
 /**
  * The words this shop's own URLs are built from, resolved from its `RouteVocabulary`. A class and
  * not an inline object literal because Swagger would otherwise document it as `{}`, and the web
- * builds every storefront link out of these three strings.
+ * builds every storefront link out of these strings.
  */
 export class StorefrontRouteWordsResponse implements StorefrontRouteWords {
   @ApiProperty({ example: 'produtos' }) products!: string;
   @ApiProperty({ example: 'categorias' }) categories!: string;
   @ApiProperty({ example: 'busca' }) search!: string;
   @ApiProperty({ example: 'carrinho' }) cart!: string;
+  @ApiProperty({ example: 'entrar', description: 'Sign-in, and with ?modo=criar or ?modo=senha, sign-up and a new password.' })
+  signIn!: string;
+  @ApiProperty({ example: 'conta' }) account!: string;
 }
 
 /**
