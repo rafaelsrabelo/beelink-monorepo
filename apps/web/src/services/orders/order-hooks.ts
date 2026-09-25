@@ -20,11 +20,11 @@ export const orderKeys = {
   detail: (slug: string, number: number) => [...orderKeys.store(slug), "detail", number] as const,
 }
 
-export function useOrders(slug: string, query: OrderListQuery = {}): UseQueryResult<OrderPage, Error> {
+export function useOrders(slug: string, query: OrderListQuery = {}, options?: { enabled?: boolean }): UseQueryResult<OrderPage, Error> {
   return useQuery({
     queryKey: orderKeys.list(slug, query),
     queryFn: () => fetchOrders(slug, query),
-    enabled: slug !== "",
+    enabled: slug !== "" && (options?.enabled ?? true),
     // The page on screen stays while the next one, or the next filter, is on its way.
     placeholderData: (previous) => previous,
   })
