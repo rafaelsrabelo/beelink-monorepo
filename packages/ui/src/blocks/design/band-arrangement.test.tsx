@@ -47,6 +47,20 @@ function renderBands(overrides: Partial<React.ComponentProps<typeof BandArrangem
 }
 
 describe("BandArrangement", () => {
+  // BEELINK-124: with every "+" shown on hover only, a mouse on a desktop saw no way to add anything —
+  // the shopkeeper could not find where a banner went. The one at the foot of the page stays in sight.
+  it("keeps a visible “Nova faixa” at the foot of the page, where the pointer need not find it", async () => {
+    const onInsert = vi.fn()
+    renderBands({ onInsert })
+
+    const add = screen.getByRole("button", { name: "Nova faixa na posição 3" })
+    expect(add).toHaveTextContent("Nova faixa")
+    expect(add).not.toHaveClass("opacity-0")
+
+    await userEvent.click(add)
+    expect(onInsert).toHaveBeenCalledWith({ level: "band", index: 2 })
+  })
+
   it("calls a band by where it sits, because a band has no name", () => {
     renderBands()
 

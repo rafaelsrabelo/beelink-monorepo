@@ -121,9 +121,7 @@ export function BandArrangement({
   const insertBand = (index: number) =>
     onInsert ? (
       <InsertPoint
-        // The last one keeps its key as bands arrive, so a + pressed after the last band is still the
-        // focused node once the new band is drawn above it.
-        key={index === bands.length ? "insert-end" : `insert-${index}`}
+        key={`insert-${index}`}
         label={format(text.insertBand, { position: String(index + 1) })}
         disabled={inserting}
         onInsert={() => onInsert({ level: "band", index })}
@@ -160,7 +158,23 @@ export function BandArrangement({
             messages={messages}
           />,
         ])}
-        {insertBand(bands.length)}
+        {/* The foot of the page is a button in sight, not a "+" revealed on hover: with a mouse, a
+            page whose every "+" waits for the pointer shows no way to add anything at all. */}
+        {onInsert ? (
+          <li key="insert-end" className="pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-dashed"
+              aria-label={format(text.insertBand, { position: String(bands.length + 1) })}
+              disabled={inserting}
+              onClick={() => onInsert({ level: "band", index: bands.length })}
+            >
+              <PlusIcon aria-hidden="true" className="size-4" />
+              {text.addBand}
+            </Button>
+          </li>
+        ) : null}
       </ul>
     </ArrangeBoard>
   )
