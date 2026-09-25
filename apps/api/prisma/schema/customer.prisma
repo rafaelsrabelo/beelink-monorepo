@@ -22,8 +22,16 @@ model Customer {
   neighborhood String?
   city         String?
   state        String?
+  /// The shop's books on this customer, kept by the transaction that places or cancels an order so
+  /// the list can filter and sort by them without reading the orders. Cancelled ones do not count.
+  ordersCount     Int       @default(0)
+  totalSpentCents Int       @default(0)
+  firstOrderAt    DateTime?
+  lastOrderAt     DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  orders Order[]
 
   @@unique([storeId, userId])
   @@unique([storeId, phone])

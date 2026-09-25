@@ -25,6 +25,8 @@ model User {
   stores      Store[]   @relation("StoreOwner")
   /// A shop account's record at its shop, which the shop owns and never reads this account through.
   customers   Customer[]
+  /// The order statuses this account set, as a shopkeeper.
+  orderEvents OrderEvent[]
   /// The providers this account signs in through besides its password (G5).
   identities  AccountIdentity[]
 

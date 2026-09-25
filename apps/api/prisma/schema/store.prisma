@@ -152,6 +152,10 @@ model Store {
   leads             Lead[]
   components        StoreComponent[]
   customers         Customer[]
+  orders            Order[]
+  /// The last order number given out. Incremented in the transaction that inserts the order, which
+  /// holds the shop's row until it commits: two orders at once wait for each other.
+  orderSequence     Int               @default(0)
   /// Its shoppers' accounts: opened here, and valid nowhere else.
   accounts          User[]            @relation("StoreAccounts")
   /// The Google accounts tied to them (G5).

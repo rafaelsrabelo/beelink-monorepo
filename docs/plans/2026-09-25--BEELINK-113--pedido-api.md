@@ -67,6 +67,11 @@ entradas vazias.
 `placedAt` ausente é agora; no futuro (com um minuto de folga para relógios) é recusado. É a data
 que o resumo do cliente e, depois, o estágio do CRM usam.
 
+### 7. A busca: "#" é o número; sem "#", nome e celular também
+
+"#12" acha só o pedido 12. "12" acha o pedido 12 e um cliente com "12" no nome; os dígitos procuram
+nos celulares a partir de quatro — com menos, um "1" acharia todo celular da loja.
+
 ## Fora de escopo
 
 - As telas (H2 a H4), a baixa de estoque (H8), o pedido vindo do checkout (H9).

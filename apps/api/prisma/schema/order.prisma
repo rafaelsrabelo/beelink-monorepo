@@ -1,0 +1,111 @@
+/// Where an order stands. `CANCELLED` is final; the others are the shopkeeper's to move, back as well
+/// as forward, since a status set by mistake has to be correctable.
+enum OrderStatus {
+  RECEIVED
+  ACCEPTED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+/// How the order is handed over.
+enum OrderFulfillment {
+  DELIVERY
+  PICKUP
+}
+
+/// Who set a status. Only the shopkeeper does today; the courier app and the checkout come later.
+enum OrderActor {
+  SHOPKEEPER
+  CUSTOMER
+  SYSTEM
+}
+
+/// An order: a fact about the past, in the shop that sold it (docs/product/README.md, "Orders").
+///
+/// Its lines and totals are photographs taken when it was placed — a price change or a deleted
+/// product never rewrites an order that already happened. Every amount is whole cents.
+model Order {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  storeId    String           @db.Uuid
+  store      Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// Sequential within the shop, from `Store.orderSequence`: what a shopkeeper says on the phone.
+  number     Int
+  customerId String           @db.Uuid
+  /// A customer with orders is part of the shop's books and cannot be deleted from under them.
+  /// NoAction and not Restrict: checked at the end of the statement, so deleting the whole shop,
+  /// which cascades to its customers and its orders together, still goes through.
+  customer   Customer         @relation(fields: [customerId], references: [id], onDelete: NoAction)
+  status     OrderStatus
+  fulfillment OrderFulfillment
+  /// A label for how the two of them settle it; nothing is charged by the product.
+  paymentMethod PaymentMethod
+
+  subtotalCents    Int
+  /// Zero on a pick-up. Typed by the shopkeeper until the delivery module computes it.
+  deliveryFeeCents Int @default(0)
+  discountCents    Int @default(0)
+  totalCents       Int
+
+  /// The shopkeeper's note on the order.
+  note     String?  @db.VarChar(500)
+  /// When it was sold — which may be before it was registered, never after now.
+  placedAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items  OrderItem[]
+  events OrderEvent[]
+
+  @@unique([storeId, number])
+  @@index([storeId, placedAt])
+  @@index([storeId, status])
+  @@index([customerId, placedAt])
+  @@map("orders")
+}
+
+/// One line: what was bought, how many, and the name and unit price as they were at that moment.
+model OrderItem {
+  id        String          @id @default(uuid(7)) @db.Uuid
+  orderId   String          @db.Uuid
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Kept while the product exists, so the panel can link to it; the line reads its photographs.
+  productId String?         @db.Uuid
+  product   Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId String?         @db.Uuid
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  productName  String  @db.VarChar(160)
+  /// "Sabor: Uva · 300 g" — null for a product with no options.
+  variantLabel String? @db.VarChar(200)
+  sku          String? @db.VarChar(64)
+
+  unitPriceCents Int
+  quantity       Int
+  lineTotalCents Int
+  position       Int
+
+  @@index([orderId, position])
+  @@index([productId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+/// Every status an order had, with who set it and when. The courier app will write "out for
+/// delivery" and "delivered" here, so the history already says whose word it was.
+model OrderEvent {
+  id        String      @id @default(uuid(7)) @db.Uuid
+  orderId   String      @db.Uuid
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  actor     OrderActor
+  /// The account behind it, when a person set it.
+  userId    String?     @db.Uuid
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
