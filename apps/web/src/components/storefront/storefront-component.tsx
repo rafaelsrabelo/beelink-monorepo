@@ -50,6 +50,8 @@ export interface StorefrontComponentProps {
   linkComponent?: LinkComponent
   /** Null in the preview: see `LiveContact`. */
   contact?: LiveContact | null
+  /** In an edge-to-edge band: a carousel's pictures keep square corners, to reach the edges. */
+  bleed?: boolean
   messages: UiMessages
 }
 
@@ -70,6 +72,7 @@ export function StorefrontComponent({
   quickAdd = false,
   linkComponent,
   contact = null,
+  bleed = false,
   messages,
 }: StorefrontComponentProps): ReactNode {
   const link = linkComponent ? { linkComponent } : {}
@@ -87,9 +90,7 @@ export function StorefrontComponent({
           href: slide.href,
           external: slide.external,
         }))}
-        // The band owns the measure now, so a hero never adds its own: doing both would inset a
-        // cover inside a band that is already inset.
-        width="FULL"
+        bleed={bleed}
         span={component.span}
         {...link}
         messages={messages}

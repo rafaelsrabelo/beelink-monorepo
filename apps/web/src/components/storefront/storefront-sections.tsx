@@ -23,6 +23,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
+import { reachesTheEdge, rhythmOf } from "./band-rhythm"
+import { isEmptyComponent } from "./empty-component"
 import { anchorsOf } from "./site-chrome"
 import { StorefrontComponent, type LiveContact } from "./storefront-component"
 
@@ -119,21 +121,34 @@ export function StorefrontSections({
   const link = linkComponent ? { linkComponent } : {}
   // A named band is an anchor, so a site's menu and the page agree on where "Serviços" is.
   const anchors = anchorsOf(sections)
+  // Design mode draws a placeholder where a block is still empty, so the owner can find and fill it;
+  // the shop leaves it out, and a band left with nothing, rather than spend the page's spacing on a gap.
+  const editing = renderBlock !== undefined
+  const drawn = sections
+    .map((section) => ({
+      ...section,
+      components: section.components.filter(
+        (component) =>
+          // The strip is drawn above the header by the window, so it is not one of the bands in
+          // the order — see `announcementOf`. Leaving it here would draw it twice.
+          component.kind !== "ANNOUNCEMENT" &&
+          (editing || !isEmptyComponent(component.kind, component.title, component.body, component.items)),
+      ),
+    }))
+    .filter((section) => section.components.length > 0)
+  const rhythm = rhythmOf(drawn)
 
   return (
     <>
-      {sections
-        // The strip is drawn above the header by the window, so it is not one of the bands in the
-        // order — see `announcementOf`. Leaving it here would draw it twice.
-        .filter((section) => !section.components.every((component) => component.kind === "ANNOUNCEMENT"))
-        .map((section) => {
-          const band = (
+      {drawn.map((section, at) => {
+        const bleed = section.width === "FULL"
+        const band = (
           <StorefrontSectionBand
-            key={section.id}
             {...(anchors.has(section.id) ? { id: anchors.get(section.id)! } : {})}
             background={section.background}
             primary={primary}
             width={section.width}
+            padded={rhythm[at]?.padded ?? false}
           >
             {/*
               One cell per component, each taking its own slice of twelve columns. The posters used
@@ -141,43 +156,43 @@ export function StorefrontSections({
               way two of them shared a row — and only two of the same shape, with one picture each.
               The grid does that for every kind now, a heading beside a banner included.
             */}
-            <StorefrontBandGrid bleed={section.width === "FULL"}>
-              {section.components
-                .filter((component) => component.kind !== "ANNOUNCEMENT")
-                .map((component) => {
-                  const cards = cardsOf(component)
-                  const body = cards ? (
-                    <StorefrontShowcase items={cards} span={component.span} {...link} messages={messages} />
-                  ) : (
-                    <StorefrontComponent
-                      component={component}
-                      categories={categories}
-                      routes={routes}
-                      showPrice={showPrice}
-                      showBadge={showBadge}
-                      quickAdd={quickAdd}
-                      {...link}
-                      contact={contact}
-                      messages={messages}
-                    />
-                  )
+            <StorefrontBandGrid bleed={bleed}>
+              {section.components.map((component) => {
+                const cards = cardsOf(component)
+                const body = cards ? (
+                  <StorefrontShowcase items={cards} span={component.span} bleed={bleed} {...link} messages={messages} />
+                ) : (
+                  <StorefrontComponent
+                    component={component}
+                    categories={categories}
+                    routes={routes}
+                    showPrice={showPrice}
+                    showBadge={showBadge}
+                    quickAdd={quickAdd}
+                    {...link}
+                    contact={contact}
+                    bleed={bleed}
+                    messages={messages}
+                  />
+                )
 
-                  return (
-                    <StorefrontBandCell key={component.id} span={component.span}>
-                      {renderBlock ? renderBlock(component, body) : body}
-                    </StorefrontBandCell>
-                  )
-                })}
+                return (
+                  <StorefrontBandCell key={component.id} span={component.span} gutter={bleed && !reachesTheEdge(component.kind)}>
+                    {renderBlock ? renderBlock(component, body) : body}
+                  </StorefrontBandCell>
+                )
+              })}
             </StorefrontBandGrid>
           </StorefrontSectionBand>
-          )
+        )
 
-          return renderSection ? (
-            <div key={section.id}>{renderSection(section, band)}</div>
-          ) : (
-            band
-          )
-        })}
+        // The space goes on the outermost element, so design mode's grip wraps the band and not the gap.
+        return (
+          <div key={section.id} className={rhythm[at]?.spaceBefore ? "mt-8" : undefined}>
+            {renderSection ? renderSection(section, band) : band}
+          </div>
+        )
+      })}
     </>
   )
 }

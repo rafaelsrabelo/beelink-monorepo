@@ -12,7 +12,7 @@ import type {
 import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 
 // App
-import { isEmptyComponent } from "./design-draft"
+import { isEmptyComponent } from "../storefront/empty-component"
 import type { SectionDraft } from "./design-draft"
 
 /** Each showcase's cards as the shop's public read resolved them, by component id. */

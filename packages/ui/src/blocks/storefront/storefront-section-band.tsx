@@ -22,6 +22,11 @@ export interface StorefrontSectionBandProps {
   primary: string
   /** Edge to edge, or inside the shop's measure. */
   width?: "FULL" | "CONTAINED"
+  /**
+   * 32px of the band's own colour above and below what it holds — the page's one spacing, painted.
+   * For a coloured band of words; a band of pictures lets the pictures fill its colour.
+   */
+  padded?: boolean
   children: ReactNode
   className?: string
 }
@@ -44,6 +49,7 @@ export function StorefrontSectionBand({
   background,
   primary,
   width = "CONTAINED",
+  padded = false,
   children,
   className,
 }: StorefrontSectionBandProps) {
@@ -62,9 +68,9 @@ export function StorefrontSectionBand({
   return (
     <div {...(id ? { id } : {})} style={dressed} className={cn("scroll-mt-16", background && "w-full")}>
       {width === "CONTAINED" ? (
-        <div className={cn(BAND, "flex flex-col gap-8 py-2", className)}>{children}</div>
+        <div className={cn(BAND, "flex flex-col", padded && "py-8", className)}>{children}</div>
       ) : (
-        <div className={cn("flex flex-col", className)}>{children}</div>
+        <div className={cn("flex flex-col", padded && "py-8", className)}>{children}</div>
       )}
     </div>
   )

@@ -206,10 +206,12 @@ export function StorefrontWindow({
 
       {/* ---------------------------------------------------------------- 5 · the shop itself */}
       {blocks ? (
-        <main className="flex flex-1 flex-col gap-8 pb-8">
+        <main className="flex flex-1 flex-col pb-8">
           {/*
-            No top padding, on purpose: a full-bleed hero is meant to meet the header. A block that
-            is contained supplies its own, because only it knows it is not touching the edges.
+            No gap and no top padding: the space between two bands is the bands' own, one rule
+            written once where the page is laid out (`band-rhythm.ts` in the web), because two
+            surfaces that paint edge to edge — a cover, a coloured strip — must meet, and a gap
+            here would put a stripe of page between them whatever the bands said.
           */}
           {blocks}
         </main>

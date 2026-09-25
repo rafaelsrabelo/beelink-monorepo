@@ -10,7 +10,6 @@ import {
   applyOrder,
   changeCountOf,
   changesOf,
-  isEmptyComponent,
   labelOf,
   reconcile,
   orderedIdsOf,
@@ -20,6 +19,7 @@ import {
   type SectionDraft,
 } from "./design-draft"
 import { arrangementOf, previewOf, shelvesOf, type Shelves } from "./design-draft-preview"
+import { isEmptyComponent } from "../storefront/empty-component"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 const NO_SHELVES: Shelves = new Map()

@@ -21,7 +21,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
-import { isEmptyComponent, labelOf } from "./design-draft"
+import { isEmptyComponent } from "../storefront/empty-component"
+import { labelOf } from "./design-draft"
 import type { Shelves } from "./design-draft-preview"
 
 export interface DesignPreviewPaneProps {
