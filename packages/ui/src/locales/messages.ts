@@ -629,6 +629,34 @@ export interface UiMessages {
     saveColors: string
     tabBlocks: string
     tabColors: string
+    /** The full-screen editor's frame: its bar, its three columns and, on a narrow screen, its drawers. */
+    frame: {
+      /** "← Painel": back to the shop's home in the panel. */
+      back: string
+      /** The one page there is until landing pages arrive. */
+      homePage: string
+      /** "Rascunho · {count} alterações", counted as Publish would write them; and its singular. */
+      draft: string
+      draftOne: string
+      published: string
+      viewInShop: string
+      /** The buttons that open the two side columns as drawers on a narrow screen. */
+      structure: string
+      inspector: string
+      tabSections: string
+      tabTheme: string
+      /** The right column while no block is chosen. */
+      inspectorEmpty: string
+      leaveTitle: string
+      leaveBody: string
+      leaveStay: string
+      leaveGo: string
+      /** The landmarks' names. */
+      barLabel: string
+      structureLabel: string
+      inspectorLabel: string
+      previewLabel: string
+    }
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */
     addToBand: string
