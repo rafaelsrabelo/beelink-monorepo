@@ -220,6 +220,28 @@ export interface UiMessages {
     orderLine: string
     orderTotal: string
     orderCustomer: string
+    /** The shop's sign-in page (G2): its three faces, and what each one says. */
+    signInTitle: string
+    signUpTitle: string
+    forgotTitle: string
+    signInLead: string
+    signUpLead: string
+    forgotLead: string
+    signInName: string
+    signInEmail: string
+    signInPassword: string
+    signInPasswordHint: string
+    signInSubmit: string
+    signUpSubmit: string
+    forgotSubmit: string
+    toSignUp: string
+    toSignIn: string
+    toForgot: string
+    /** `{email}` — after signing up: the link is on its way. */
+    signUpSent: string
+    /** After asking for a new password: said alike for any address. */
+    forgotSent: string
+    signOut: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
