@@ -1,48 +1,65 @@
 // Libs
-import { fireEvent, render, screen } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
-import { StorefrontBuyActions } from "./storefront-buy-actions"
+import { StorefrontBuyActions, type StorefrontBuyActionsProps } from "./storefront-buy-actions"
+
+function renderActions(over: Partial<StorefrontBuyActionsProps> = {}) {
+  const props = { name: "100% Whey", qty: 1, onQtyChange: vi.fn(), added: false, onAdd: vi.fn(), cartHref: "/loja/carrinho", ...over }
+  render(<StorefrontBuyActions {...props} />)
+  return props
+}
 
 describe("StorefrontBuyActions", () => {
-  it("adds the quantity chosen, and then offers the way to the cart", () => {
-    const onAdd = vi.fn()
-    render(<StorefrontBuyActions name="Whey" onAdd={onAdd} cartHref="/loja/carrinho" />)
+  it("offers 1 to 10 in the phone's own picker, and reports the one chosen", async () => {
+    const user = userEvent.setup()
+    const { onQtyChange } = renderActions()
 
-    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Whey" }))
-    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Whey" }))
-    fireEvent.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
+    const quantity = screen.getByRole("combobox", { name: "Quantidade" })
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"])
+    await user.selectOptions(quantity, "4")
 
-    expect(onAdd).toHaveBeenCalledWith(3)
-    expect(screen.getByRole("status")).toHaveTextContent("Whey foi adicionado ao carrinho.")
-    expect(screen.getByRole("link", { name: "Ver carrinho" })).toHaveAttribute("href", "/loja/carrinho")
+    expect(onQtyChange).toHaveBeenCalledWith(4)
   })
 
-  it("buys now by adding on the way to the cart — once, if it was just added", () => {
-    const onAdd = vi.fn()
-    render(<StorefrontBuyActions name="Whey" onAdd={onAdd} cartHref="/loja/carrinho" />)
+  // A line the cart page raised past 10 still shows what it holds.
+  it("keeps a quantity above 10 choosable", () => {
+    renderActions({ qty: 12 })
+
+    expect(screen.getByRole("combobox", { name: "Quantidade" })).toHaveValue("12")
+  })
+
+  it("adds with 'Adicionar ao carrinho', and 'Comprar agora' adds only when nothing was added yet", async () => {
+    const user = userEvent.setup()
+    const { onAdd } = renderActions({ added: true })
 
     const buyNow = screen.getByRole("link", { name: "Comprar agora" })
-    expect(buyNow).toHaveAttribute("href", "/loja/carrinho")
-    fireEvent.click(buyNow)
-    expect(onAdd).toHaveBeenCalledWith(1)
+    buyNow.addEventListener("click", (event) => event.preventDefault())
+    await user.click(buyNow)
+    expect(onAdd).not.toHaveBeenCalled()
 
-    onAdd.mockClear()
-    fireEvent.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
-    fireEvent.click(buyNow)
+    await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
     expect(onAdd).toHaveBeenCalledTimes(1)
   })
 
-  it("keeps the WhatsApp order below, when the shop has one", () => {
-    render(<StorefrontBuyActions name="Whey" onAdd={() => {}} cartHref="#" orderHref="https://wa.me/5511999998888" />)
+  it("says it was added, with the way to the cart", () => {
+    renderActions({ added: true })
 
-    expect(screen.getByRole("link", { name: /Pedir/ })).toHaveAttribute("href", "https://wa.me/5511999998888")
+    expect(screen.getByRole("status")).toHaveTextContent("100% Whey foi adicionado ao carrinho.")
+    expect(screen.getByRole("link", { name: "Ver carrinho" })).toHaveAttribute("href", "/loja/carrinho")
+  })
+
+  it("no longer offers the WhatsApp order beside the cart", () => {
+    renderActions()
+
+    expect(screen.queryByRole("link", { name: /WhatsApp/ })).not.toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {
-    const { container } = render(<StorefrontBuyActions name="Whey" onAdd={() => {}} cartHref="#" orderHref="https://wa.me/1" />)
+    const { container } = render(<StorefrontBuyActions name="Whey" qty={1} onQtyChange={() => {}} added onAdd={() => {}} cartHref="#" />)
 
     await expectNoA11yViolations(container)
   })

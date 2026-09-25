@@ -3,24 +3,28 @@ import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-p
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// Types
+import type { CustomerProfile } from "@harness-monorepo/contracts"
+
 // App
 import type { CartView } from "./cart-view"
+import { addressLineOf } from "./customer-address"
 
 export interface OrderMessageInput {
   shopName: string
   view: Pick<CartView, "rows" | "subtotalCents">
-  /** What the shopper typed, or nothing. */
-  customerName?: string
+  /** Who is ordering, as the shop keeps them: their name, phone and address go under the total. */
+  customer?: Pick<CustomerProfile, "name" | "phone" | "address"> | null
   locale: string
   messages: UiMessages
 }
 
 /**
  * The order as the shop reads it on WhatsApp: a greeting, one line per thing that can be ordered —
- * quantity, name, combination, the line's total — the total, and a name when one was given. A
+ * quantity, name, combination, the line's total — the total, and who is ordering. A
  * sold-out line is left out: the cart already said it would not be ordered.
  */
-export function orderMessageOf({ shopName, view, customerName, locale, messages }: OrderMessageInput): string {
+export function orderMessageOf({ shopName, view, customer, locale, messages }: OrderMessageInput): string {
   const text = messages.storefront
   const money = (cents: number) => formatCents(cents, locale, "BRL")
   const lines = view.rows
@@ -32,7 +36,7 @@ export function orderMessageOf({ shopName, view, customerName, locale, messages 
         total: money(row.lineTotalCents),
       }),
     )
-  const name = customerName?.trim()
+  const address = customer ? addressLineOf(customer.address) : null
 
   return [
     format(text.orderGreeting, { shop: shopName }),
@@ -40,7 +44,9 @@ export function orderMessageOf({ shopName, view, customerName, locale, messages 
     ...lines,
     "",
     format(text.orderTotal, { total: money(view.subtotalCents) }),
-    ...(name ? [format(text.orderCustomer, { name })] : []),
+    ...(customer ? [format(text.orderCustomer, { name: customer.name })] : []),
+    ...(customer?.phone ? [format(text.orderPhone, { phone: customer.phone })] : []),
+    ...(address ? [format(text.orderAddress, { address })] : []),
   ].join("\n")
 }
 
