@@ -51,6 +51,7 @@ function neutral(percent: number): string {
  * | fills, the select's surface                | `--shop-fill`                                  |
  * | image placeholders                         | `--shop-placeholder`                           |
  * | the listing's grey canvas                  | `--shop-canvas`                                |
+ * | a chosen card's wash, its empty swatch     | `--shop-primary-tint`, `--shop-primary-tint-strong` |
  * | white panels                               | `--shop-background`                            |
  * | sale red, positive green, star amber, verified brown | `--shop-sale`, `--shop-positive`, `--shop-rating`, `--shop-verified` |
  *
@@ -104,6 +105,10 @@ export function shopPaletteVariables(colors: ShopColors): CSSProperties {
     "--shop-fill": neutral(3),
     "--shop-placeholder": neutral(6),
     "--shop-canvas": neutral(4),
+    // The pale wash of a chosen card or pill (5b's lilac), and the deeper one of its empty swatch:
+    // the shop's own colour mixed into its page, so a dark shop gets a dark wash.
+    "--shop-primary-tint": "color-mix(in oklab, var(--shop-primary) 8%, var(--shop-background))",
+    "--shop-primary-tint-strong": "color-mix(in oklab, var(--shop-primary) 16%, var(--shop-background))",
     "--shop-sale-ink": semantic("sale"),
     "--shop-positive-ink": semantic("positive"),
     "--shop-verified-ink": semantic("verified"),

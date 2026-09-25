@@ -58,3 +58,11 @@ export function photosOf<Photo extends TaggedPhoto>(
   if (fitting.length === 0) return [...photos]
   return fitting.sort((a, b) => b.specificity - a.specificity || a.index - b.index).map((entry) => entry.photo)
 }
+
+/**
+ * A value's own photo: the first one tagged with it — the flavour's tub for "Uva". Its card in the
+ * picker shows it; a value with none shows its colour, or the plain placeholder.
+ */
+export function valuePhotoOf<Photo extends TaggedPhoto>(photos: readonly Photo[], valueId: string): Photo | undefined {
+  return photos.find((photo) => photo.optionValueIds?.includes(valueId))
+}

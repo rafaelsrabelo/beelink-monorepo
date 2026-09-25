@@ -158,6 +158,7 @@ export function StorefrontProductDetail({
       variants={variants}
       selection={selection}
       onSelect={choose}
+      images={images}
       locale={showPrice ? locale : undefined}
       messages={messages}
     />
@@ -166,11 +167,9 @@ export function StorefrontProductDetail({
   return (
     <>
       {/*
-        5b's top row: photos | information and choice | the buy box. One column on a phone, in that
-        order; two from shop-lg, the photos beside the other two; three from shop-xl, at 540 | 452 |
-        320 on the 1440px the design draws, the first two sharing what a narrower window leaves. With
-        two, the first row hugs the information and the second takes what the photo has left over, so
-        the buy box sits under the price rather than halfway down a tall photo.
+        5b's top row: photos | information | buy box — 540 | 452 | 320 at 1440 from shop-xl, the first
+        two sharing what a narrower window leaves. Two columns from shop-lg, where the first row hugs
+        the information so the buy box sits under the price; one on a phone, in that order.
       */}
       <article className="grid grid-cols-1 items-start gap-6 pt-1 pb-8 leading-[1.2] text-shop-on-background shop-lg:grid-cols-2 shop-lg:grid-rows-[auto_1fr] shop-lg:gap-8 shop-xl:grid-cols-[minmax(0,540fr)_minmax(0,452fr)_320px] shop-xl:grid-rows-none">
         <div className="min-w-0 shop-lg:row-span-2 shop-xl:row-span-1">

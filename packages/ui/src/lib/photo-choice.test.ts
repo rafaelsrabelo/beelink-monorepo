@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // UI
-import { optionOfValue, photosOf } from "./photo-choice"
+import { optionOfValue, photosOf, valuePhotoOf } from "./photo-choice"
 
 const options = [
   { id: "peso", values: [{ id: "900" }, { id: "750" }] },
@@ -48,5 +48,14 @@ describe("the photos a combination shows", () => {
   it("takes a photo with no values at all as one of every combination", () => {
     const unmarked: { url: string; optionValueIds?: string[] } = { url: "sem-marca" }
     expect(urls(photosOf([unmarked], optionOf, ["750", "choc"]))).toEqual(["sem-marca"])
+  })
+})
+
+describe("valuePhotoOf", () => {
+  it("finds the first photo tagged with a value, and none for a value no photo names", () => {
+    const photos = [{ url: "all.jpg" }, { url: "uva.jpg", optionValueIds: ["uva"] }, { url: "uva-2.jpg", optionValueIds: ["uva", "300g"] }]
+
+    expect(valuePhotoOf(photos, "uva")?.url).toBe("uva.jpg")
+    expect(valuePhotoOf(photos, "limao")).toBeUndefined()
   })
 })

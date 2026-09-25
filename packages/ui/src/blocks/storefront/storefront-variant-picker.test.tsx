@@ -1,5 +1,5 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -51,7 +51,7 @@ describe("StorefrontVariantPicker", () => {
 
     const medium = screen.getByRole("button", { name: "M, esgotado" })
     expect(medium).toBeEnabled()
-    expect(medium).toHaveClass("line-through")
+    expect(within(medium).getByText("M")).toHaveClass("line-through")
     await user.click(medium)
 
     expect(onSelect).toHaveBeenCalledWith("size", "M")
@@ -64,5 +64,58 @@ describe("StorefrontVariantPicker", () => {
 
     expect(screen.getByRole("button", { name: "Terracota" }).querySelector("span[aria-hidden]")).not.toBeNull()
     await expectNoA11yViolations(container)
+  })
+
+  it("draws sizes as pills and colours as cards, as 5b does", () => {
+    renderPicker()
+
+    expect(screen.getByRole("button", { name: "P" })).toHaveClass("min-w-[110px]")
+    expect(screen.getByRole("button", { name: "Areia" })).toHaveClass("items-stretch")
+  })
+
+  it("puts a price on every value when prices are shown, even when they are the same", () => {
+    render(
+      <StorefrontVariantPicker options={BLOUSE_OPTIONS} variants={BLOUSE_VARIANTS} selection={{ size: "P", colour: "areia" }} onSelect={() => {}} locale="pt-BR" />,
+    )
+
+    expect(screen.getByRole("button", { name: /^P, R\$\s189,00$/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^Areia, R\$\s189,00$/ })).toBeInTheDocument()
+    // A value no combination has costs nothing it could be bought at.
+    expect(screen.getByRole("button", { name: "GG, indisponível" })).not.toHaveTextContent("R$")
+  })
+
+  it("marks the value chosen in bold on the shop's wash, and names it in bold over the row", () => {
+    renderPicker()
+
+    const chosen = screen.getByRole("button", { name: "Areia" })
+    expect(chosen).toHaveAttribute("aria-pressed", "true")
+    expect(chosen).toHaveClass("border-2", "bg-shop-primary-tint")
+    expect(screen.getByText("Areia", { selector: "strong" })).toBeInTheDocument()
+  })
+
+  it("says 'Esgotado · avise-me' on a sold-out value, where its price would be", () => {
+    render(
+      <StorefrontVariantPicker options={BLOUSE_OPTIONS} variants={BLOUSE_VARIANTS} selection={{ size: "P", colour: "areia" }} onSelect={() => {}} locale="pt-BR" />,
+    )
+
+    const medium = screen.getByRole("button", { name: /^M, R\$\s189,00, esgotado$/ })
+    expect(medium).toHaveTextContent("Esgotado · avise-me")
+    expect(medium).not.toHaveTextContent("189")
+    expect(medium).toHaveClass("border-dashed")
+  })
+
+  it("shows a value's own photo on its card", () => {
+    render(
+      <StorefrontVariantPicker
+        options={BLOUSE_OPTIONS}
+        variants={BLOUSE_VARIANTS}
+        selection={{ size: "P", colour: "areia" }}
+        onSelect={() => {}}
+        images={[{ url: "https://cdn/terracota.jpg", optionValueIds: ["terracota"] }]}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Terracota" }).querySelector("img")).toHaveAttribute("src", "https://cdn/terracota.jpg")
+    expect(screen.getByRole("button", { name: "Areia" }).querySelector("img")).toBeNull()
   })
 })
