@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { StorefrontCardPhotos } from "./storefront-card-photos"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 
 // Locales
@@ -16,6 +17,8 @@ export interface StorefrontProduct {
   priceCents: number
   compareAtPriceCents: number | null
   imageUrl: string | null
+  /** Up to five photos, the cover first: with two or more, the card passes through them. */
+  imageUrls?: readonly string[]
   /** Whether it sells combinations: known on a shelf, and what decides a card's action. */
   hasOptions?: boolean
 }
@@ -35,6 +38,8 @@ export interface StorefrontProductCardProps {
    * the product's own page is where buying happens.
    */
   density?: "default" | "compact"
+  /** The card stands on a rail that scrolls sideways, which changes what a finger on its photo does. */
+  inRail?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -60,6 +65,7 @@ export function StorefrontProductCard({
   showBadge = true,
   action,
   density = "default",
+  inRail = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductCardProps) {
@@ -84,9 +90,11 @@ export function StorefrontProductCard({
   }
 
   return (
-    <article className="relative flex h-full flex-col overflow-hidden rounded-xl border border-shop-line bg-shop-background">
+    <article className="group/card relative flex h-full flex-col overflow-hidden rounded-xl border border-shop-line bg-shop-background">
       <div className="relative aspect-[259/230] w-full overflow-hidden bg-shop-placeholder">
-        {product.imageUrl ? (
+        {product.imageUrls && product.imageUrls.length > 1 ? (
+          <StorefrontCardPhotos urls={product.imageUrls} href={href} inRail={inRail} />
+        ) : product.imageUrl ? (
           <img
             src={product.imageUrl}
             // Decorative on purpose: the title sits right below, so naming the photograph after
@@ -126,7 +134,11 @@ export function StorefrontProductCard({
         ) : null}
 
         {/* Above the name's stretched link, so a press on it is the action's and not the page's. */}
-        {action ? <div className="relative z-10 mt-auto pt-1.5">{action}</div> : null}
+        {/*
+          Transparent to the pointer except for the action's own controls: "Ver opções" is drawn, not a
+          second link, and a press on it has to reach the card's stretched link underneath.
+        */}
+        {action ? <div className="pointer-events-none relative z-10 mt-auto pt-1.5">{action}</div> : null}
       </div>
     </article>
   )

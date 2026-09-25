@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, CustomerProfile } from '@harness-monorepo/contracts';
+import type { AuthSession, CustomerProfile, StoreCustomerPage } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -150,5 +150,51 @@ describe("a shopper's door into a shop", () => {
 
   it('answers a shop that does not exist with 404', async () => {
     expect((await post('/api/stores/nao-existe/customer/register', { name: 'Bia', email: newEmail('x'), password: PASSWORD })).statusCode).toBe(404);
+  });
+
+  describe("the owner's list of the shop's customers", () => {
+    function list(slug: string, token: string, query = '') {
+      return app.inject({ method: 'GET', url: `/api/stores/${slug}/customers${query}`, headers: { authorization: `Bearer ${token}` } });
+    }
+
+    it('lists an account opened at the shop at once, as a lead, before its first sign-in', async () => {
+      const email = newEmail('cliente');
+      await post('/api/stores/lessari/customer/register', { name: 'Bia Nova', email, password: PASSWORD });
+
+      const page = (await list('lessari', owner.accessToken)).json<StoreCustomerPage>();
+      expect(page.total).toBe(1);
+      expect(page.customers[0]).toMatchObject({ name: 'Bia Nova', email, emailVerified: false, stage: 'LEAD' });
+
+      await verifyEmailOf(app, email);
+      expect((await list('lessari', owner.accessToken)).json<StoreCustomerPage>().customers[0]).toMatchObject({ emailVerified: true });
+      // The other shop of the same owner never saw this shopper.
+      expect((await list('outra', owner.accessToken)).json<StoreCustomerPage>().total).toBe(0);
+    });
+
+    it('puts no one on the list for an e-mail that already had an account', async () => {
+      const email = newEmail('cliente');
+      await shopperAt('outra', email);
+      await post('/api/stores/lessari/customer/register', { name: 'Alguém', email, password: PASSWORD });
+
+      expect((await list('lessari', owner.accessToken)).json<StoreCustomerPage>().total).toBe(0);
+    });
+
+    it('finds a customer by part of the name, the e-mail or the phone', async () => {
+      const bia = await shopperAt('lessari', newEmail('bia'));
+      await shopperAt('lessari', newEmail('caio'));
+      await app.inject({ method: 'PATCH', url: '/api/stores/lessari/customer/me', headers: { authorization: `Bearer ${bia.accessToken}` }, payload: { phone: '11977776666' } });
+
+      expect((await list('lessari', owner.accessToken, '?q=caio')).json<StoreCustomerPage>().total).toBe(1);
+      expect((await list('lessari', owner.accessToken, '?q=(11)%2097777')).json<StoreCustomerPage>().total).toBe(1);
+      expect((await list('lessari', owner.accessToken, '?q=ninguem')).json<StoreCustomerPage>().total).toBe(0);
+    });
+
+    it("is the owner's alone: another account gets 403, and a shopper's token is refused", async () => {
+      const shopper = await shopperAt('lessari');
+      const stranger = await signUpAndSignIn(app, newEmail('estranho'));
+
+      expect((await list('lessari', stranger.accessToken)).statusCode).toBe(403);
+      expect((await list('lessari', shopper.accessToken)).statusCode).toBe(401);
+    });
   });
 });

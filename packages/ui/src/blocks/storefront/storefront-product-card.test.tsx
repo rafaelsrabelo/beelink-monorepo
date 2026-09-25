@@ -68,6 +68,24 @@ describe("StorefrontProductCard", () => {
     expect(container.querySelector("img")?.closest("span")).toHaveClass("h-[180px]")
   })
 
+  // "Ver opções" is drawn, not a link: a press on it has to fall through to the card's own link.
+  it("lets a press on the action's drawing through to the card's link", () => {
+    const { container } = renderCard({ action: <span>Ver opções</span> })
+
+    expect(screen.getByText("Ver opções").parentElement).toHaveClass("pointer-events-none")
+    expect(container.querySelector("a")).toHaveClass("after:absolute", "after:inset-0")
+  })
+
+  it("passes through its photos when it has more than one, and draws the cover alone otherwise", () => {
+    const { container, rerender } = renderCard({ product: { ...product, imageUrls: ["/1.jpg", "/2.jpg"] } })
+    expect(container.querySelectorAll("img")).toHaveLength(2)
+    expect(container.querySelector(".snap-x")).not.toBeNull()
+
+    rerender(<StorefrontProductCard product={{ ...product, imageUrls: ["/1.jpg"] }} href="/x" locale="pt-BR" />)
+    expect(container.querySelectorAll("img")).toHaveLength(1)
+    expect(container.querySelector(".snap-x")).toBeNull()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = renderCard()
 
