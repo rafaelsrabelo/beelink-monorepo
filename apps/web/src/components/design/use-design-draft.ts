@@ -19,7 +19,8 @@ import {
   useUpdateComponent,
   useUpdateSection,
 } from "@/services/page/page-hooks"
-import { changeCountOf, changesOf, hasChanges, reconcile, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
+import { changeCountOf, changesOf, hasChanges, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
+import { reconcile } from "./design-draft-reconcile"
 
 /**
  * The arrangement as a draft in this browser, until Publish.
