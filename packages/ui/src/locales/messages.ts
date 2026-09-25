@@ -748,6 +748,12 @@ export interface UiMessages {
     description: string
     searchLabel: string
     searchPlaceholder: string
+    /** The stage tabs: what they filter by, "Todos", and each stage in the plural. */
+    stageFilterLabel: string
+    all: string
+    tabs: { LEAD: string; CUSTOMER: string; INACTIVE: string }
+    sortLabel: string
+    sorts: { RECENT: string; LAST_ORDER: string; MOST_ORDERS: string; TOP_SPENT: string }
     name: string
     contact: string
     place: string
