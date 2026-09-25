@@ -163,9 +163,10 @@ describe("StorefrontProductDetail", () => {
     it("puts on each size the price it would cost with the colour kept, since sizes cost differently", () => {
       renderProduct(withVariants)
 
-      // From P·Areia: M·Areia is R$ 189,00 (sold out) and G leads to G·Preto at R$ 219,00.
+      // From P·Areia: G leads to G·Preto at R$ 219,00, and M·Areia is sold out, which it says where
+      // its price would be.
       expect(screen.getByRole("button", { name: /^G, R\$\s219,00/ })).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: /^M, R\$\s189,00, esgotado/ })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "M, Esgotado · avise-me" })).toBeInTheDocument()
     })
 
     it("changes the price, the photo and the order message with the choice, and tells the screen", async () => {
@@ -189,7 +190,7 @@ describe("StorefrontProductDetail", () => {
       const onSubmit = vi.fn()
       renderProduct({ ...withVariants, restock: { onSubmit, status: "idle" } })
 
-      await user.click(screen.getByRole("button", { name: /^M, .*esgotado/ }))
+      await user.click(screen.getByRole("button", { name: "M, Esgotado · avise-me" }))
       expect(screen.queryByRole("link", { name: /WhatsApp/ })).toBeNull()
       await user.click(screen.getByRole("button", { name: "Avise-me quando chegar" }))
       const dialog = await screen.findByRole("dialog")
