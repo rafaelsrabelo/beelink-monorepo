@@ -13,18 +13,13 @@ import type {
 import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/component-form"
 import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 
+// App
+import { displayOf } from "./component-layout"
+
 /*
   A component between the wire and its form, in both directions. Apart from the sheet that draws
   it because each kind adds a clause to both, and the sheet had passed the line limit.
 */
-
-/** The format the form offers for this kind, marked; the kind's own when the wire holds none. */
-function displayOf(component: StoreComponent): ComponentFormValues["display"] {
-  if (component.kind === "CATEGORIES") return component.display === "RAIL" ? "RAIL" : "GRID"
-  if (component.kind === "PRODUCTS") return component.display === "GRID" ? "GRID" : "RAIL"
-
-  return component.display === "GRID" ? "GRID" : "CAROUSEL"
-}
 
 /** The wire's nulls become the form's empty strings, which is the only shape an input can hold. */
 export function toForm(component: StoreComponent, bandBackground: string | null): ComponentFormValues {
@@ -37,7 +32,7 @@ export function toForm(component: StoreComponent, bandBackground: string | null)
     body: component.body ?? "",
     // A banner's two, and the categories'. A showcase's is its own editor's to hold; null on every
     // other kind, and the form holds one regardless. Null on the categories is the grid they drew.
-    display: displayOf(component),
+    display: displayOf(component.kind, component.display) ?? "CAROUSEL",
     columns: component.columns ?? 0,
     // Resolved for the form, so the toggle marks one; a null on the wire is the kind's own habit.
     align: component.align ?? defaultAlignOf(component.kind),

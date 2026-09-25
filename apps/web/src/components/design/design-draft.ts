@@ -1,6 +1,17 @@
 // Types
-import type { ComponentKind, ComponentSpan, Section, StoreComponent } from "@harness-monorepo/contracts"
+import type {
+  ComponentDisplay,
+  ComponentKind,
+  ComponentSpan,
+  Section,
+  StoreComponent,
+  TextAlign,
+  UpdateComponentPayload,
+} from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// App
+import { sameLayout } from "./component-layout"
 
 /**
  * One component as the editor holds it while the page is being arranged.
@@ -10,11 +21,17 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
  * the slides — stays out of it on purpose, and the reason was measured: the draft is re-seeded
  * only when a row arrives or leaves, so a colour saved while it held a copy of the colour sat
  * under that stale copy until the page was reloaded. What the draft does not hold cannot go stale.
+ *
+ * The layout is here and nowhere else — the slice, the format, the columns and the alignment — so
+ * nothing but Publicar writes it, and there is no second copy for it to go stale under.
  */
 export interface ComponentDraft {
   id: string
   kind: ComponentKind
   span: ComponentSpan
+  display: ComponentDisplay | null
+  columns: number | null
+  align: TextAlign | null
   isActive: boolean
 }
 
@@ -35,6 +52,9 @@ export function toComponentDraft(component: StoreComponent): ComponentDraft {
     id: component.id,
     kind: component.kind,
     span: component.span,
+    display: component.display,
+    columns: component.columns,
+    align: component.align,
     isActive: component.isActive,
   }
 }
@@ -114,8 +134,23 @@ export function changesOf(rows: readonly SectionDraft[], saved: readonly Section
     components: componentsOf(rows).filter((component) => {
       const was = savedComponents.get(component.id)
 
-      return !!was && (was.span !== component.span || was.isActive !== component.isActive)
+      return !!was && (!sameLayout(was, component) || was.isActive !== component.isActive)
     }),
+  }
+}
+
+/**
+ * What Publicar writes for a block that changed: its slice, whether it shows, and how it lays out
+ * what it holds. The format only where there is one — a banner saved before it could choose holds
+ * none, and the API refuses a banner told it has none.
+ */
+export function publishedOf(component: ComponentDraft): UpdateComponentPayload {
+  return {
+    span: component.span,
+    isActive: component.isActive,
+    columns: component.columns,
+    align: component.align,
+    ...(component.display ? { display: component.display } : {}),
   }
 }
 

@@ -19,7 +19,15 @@ import {
   useUpdateComponent,
   useUpdateSection,
 } from "@/services/page/page-hooks"
-import { changeCountOf, changesOf, hasChanges, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
+import {
+  changeCountOf,
+  changesOf,
+  hasChanges,
+  publishedOf,
+  toDraft,
+  type ComponentDraft,
+  type SectionDraft,
+} from "./design-draft"
 import { reconcile } from "./design-draft-reconcile"
 
 /**
@@ -67,7 +75,6 @@ export function useDesignDraft(slug: string) {
     setDraft((current) => (current && dirty ? reconcile(current, page.data) : page.data.map(toDraft)))
   }
 
-
   const rows: SectionDraft[] = draft ?? []
   const saved: Section[] = page.data ?? []
 
@@ -85,7 +92,7 @@ export function useDesignDraft(slug: string) {
     edit((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
   }
 
-  function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "span">>) {
+  function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "span" | "display" | "columns" | "align">>) {
     edit((current) =>
       current.map((row) => ({
         ...row,
@@ -120,10 +127,7 @@ export function useDesignDraft(slug: string) {
         updateSection.mutateAsync({ sectionId: row.id, payload: { isActive: row.isActive } }),
       ),
       ...changes.components.map((component) =>
-        updateComponent.mutateAsync({
-          componentId: component.id,
-          payload: { span: component.span, isActive: component.isActive },
-        }),
+        updateComponent.mutateAsync({ componentId: component.id, payload: publishedOf(component) }),
       ),
     ])
       .then(() => {

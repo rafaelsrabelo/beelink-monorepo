@@ -73,3 +73,27 @@ describe("useDesignDraft — two edits in one click", () => {
     expect(result.current.changed).toBe(true)
   })
 })
+
+describe("useDesignDraft — the Layout tab's changes wait for Publicar", () => {
+  it("holds a format, a column count and an alignment in the draft, and publishes them", async () => {
+    const calls: { method: string; body: unknown }[] = []
+    vi.stubGlobal("fetch", (_path: string, init: RequestInit) => {
+      calls.push({ method: init.method ?? "GET", body: init.body ? JSON.parse(String(init.body)) : null })
+      return Promise.resolve(new Response(JSON.stringify(init.method === "PATCH" ? hidden[0]!.components[0] : hidden), { status: 200 }))
+    })
+    const { result } = renderHook(() => useDesignDraft("loja"), { wrapper })
+    await waitFor(() => expect(result.current.rows).toHaveLength(1))
+
+    act(() => result.current.patchComponent("c1", { columns: 4, align: "RIGHT" }))
+    expect(result.current.changeCount).toBe(1)
+    act(() => result.current.publish())
+
+    await waitFor(() => expect(calls.find((call) => call.method === "PATCH")).toBeDefined())
+    expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({
+      span: "FULL",
+      isActive: false,
+      columns: 4,
+      align: "RIGHT",
+    })
+  })
+})

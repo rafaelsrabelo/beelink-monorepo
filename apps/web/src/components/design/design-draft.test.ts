@@ -9,6 +9,7 @@ import {
   changesOf,
   labelOf,
   orderedIdsOf,
+  publishedOf,
   serverPlaceOf,
   takenKindsOf,
   toDraft,
@@ -80,6 +81,46 @@ describe("changesOf — only what moved is written", () => {
     const changes = changesOf(next, saved)
 
     expect(changes.components).toEqual([expect.objectContaining({ id: "a1", span: "HALF" })])
+  })
+
+  // The Layout tab writes the draft: a format, a column count and an alignment wait for Publicar too.
+  it("reports a block whose format, columns or alignment changed", () => {
+    const next = draft.map((row) => ({
+      ...row,
+      components: row.components.map((c) =>
+        c.id === "b2" ? { ...c, display: "GRID" as const, columns: 3 } : c.id === "c1" ? { ...c, align: "RIGHT" as const } : c,
+      ),
+    }))
+
+    expect(changesOf(next, saved).components).toEqual([
+      expect.objectContaining({ id: "b2", display: "GRID", columns: 3 }),
+      expect.objectContaining({ id: "c1", align: "RIGHT" }),
+    ])
+  })
+
+  // Saved with nulls, a heading is centred and a showcase a rail: choosing those is no change.
+  it("reports nothing for a layout chosen back to what the page already drew", () => {
+    const next = draft.map((row) => ({
+      ...row,
+      components: row.components.map((c) =>
+        c.id === "b1" ? { ...c, align: "CENTER" as const } : c.id === "b2" ? { ...c, display: "RAIL" as const, columns: 0 } : c,
+      ),
+    }))
+
+    expect(changesOf(next, saved).components).toEqual([])
+  })
+
+  it("publishes the layout, and a format only where the block holds one", () => {
+    const [banner] = draft[0]!.components
+
+    expect(publishedOf({ ...banner!, display: "GRID", columns: null, align: "LEFT" })).toEqual({
+      span: "FULL",
+      isActive: true,
+      display: "GRID",
+      columns: null,
+      align: "LEFT",
+    })
+    expect(publishedOf(banner!)).not.toHaveProperty("display")
   })
 
   it("reports the inner order only for the band whose order changed", () => {
