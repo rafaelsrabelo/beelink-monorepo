@@ -98,3 +98,33 @@ ao pedido e do pedido à ficha.
 - Editar o e-mail ou qualquer coisa da conta do cliente.
 - Notas do lojista sobre o cliente e etiquetas.
 - O "voltar" do formulário de novo pedido levar de volta à ficha quando aberto dela.
+
+## Adendo — decisões da implementação (2026-09-25)
+
+### 10. O estágio fica ao lado do nome, não entre os números
+
+Como o status ao lado do número no pedido aberto (H4): é a primeira coisa que o lojista lê da ficha.
+O selo é o mesmo da lista, e o Inativo diz há quantos dias não compra. Os seis números ficam logo
+abaixo: pedidos, total gasto, ticket médio, primeiro e último pedido e dias sem comprar.
+
+### 11. "Na loja desde" é a data em que o cliente entrou na lista
+
+O H6 tirou "Conta criada" da tabela e prometeu a data para a ficha (decisão 6 do H6). Ela aparece
+embaixo do nome.
+
+### 12. Os dados vêm antes do histórico na leitura, e ficam na coluna lateral onde há uma
+
+No celular, a ordem é cabeçalho, números, dados e histórico: o contato vem antes da lista de pedidos.
+Com espaço, o histórico ocupa a coluna principal e os dados, a lateral; a ordem de leitura não muda.
+
+### 13. Os campos de endereço acompanham o espaço que têm, não a janela
+
+A peça comum (`CustomerAddressInputs`) monta as três linhas pelo tamanho do próprio bloco, porque
+na ficha ela mora na coluna lateral estreita. No formulário de novo pedido o resultado é o mesmo de
+antes. Cada parte ganhou o limite que a API tem (número 20, complemento, bairro e cidade 80): antes
+passavam 160 e voltavam recusados.
+
+### 14. Não verificado ao vivo
+
+O navegador compartilhado estava em uso por outra sessão; a entrega foi verificada pelos testes. Os
+e2e da API rodaram num banco próprio (`harness_h7_119_test`), apagado no fim.
