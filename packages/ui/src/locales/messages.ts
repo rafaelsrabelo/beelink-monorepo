@@ -208,6 +208,14 @@ export interface UiMessages {
     seeOptions: string
     buyNow: string
     viewCart: string
+    /** The phone bar's short line after an add: "Adicionado · Ver carrinho". */
+    addedShort: string
+    /** The buy box's stock line; a count is never public. */
+    inStock: string
+    /** Under the buy box's buttons, for a shop that takes orders on WhatsApp. */
+    finishOnWhatsApp: string
+    soldBy: string
+    payment: string
     /** Closing the order on the shop's WhatsApp (F4). */
     checkoutWhatsApp: string
     /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
@@ -449,6 +457,8 @@ export interface UiMessages {
       pix: string
       creditCard: string
       debitCard: string
+      /** Credit and debit together, as the buy box lists them. */
+      card: string
     }
     /** A site's contact form, as the visitor fills it in. */
     contact: {

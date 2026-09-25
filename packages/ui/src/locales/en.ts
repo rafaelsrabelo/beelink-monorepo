@@ -157,6 +157,11 @@ export const en: UiMessages = {
     seeOptions: "See options",
     buyNow: "Buy now",
     viewCart: "View cart",
+    addedShort: "Added",
+    inStock: "In stock",
+    finishOnWhatsApp: "You finish the order on the shop's WhatsApp.",
+    soldBy: "Sold by",
+    payment: "Payment",
     checkoutWhatsApp: "Place the order on WhatsApp",
     checkoutSignInPrompt: "To place the order, sign in. Your cart is kept.",
     checkoutSignIn: "Sign in to order",
@@ -303,9 +308,10 @@ export const en: UiMessages = {
     copyright: "© {year} {name}. All rights reserved.",
     payments: {
       money: "Cash",
-      pix: "PIX",
+      pix: "Pix",
       creditCard: "Credit card",
       debitCard: "Debit card",
+      card: "Card",
     },
     contact: {
       nameLabel: "Your name",

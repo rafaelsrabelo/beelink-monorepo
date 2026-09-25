@@ -1,7 +1,7 @@
 "use client"
 
 // Types
-import type { PublicProductDetail } from "@harness-monorepo/contracts"
+import type { PaymentMethod, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
@@ -32,6 +32,11 @@ export interface StorefrontProductLiveProps {
   cartHref: string
   showPrice: boolean
   showBadge: boolean
+  /** The layout's "Em estoque" switch. */
+  showStock: boolean
+  /** The shop takes orders on WhatsApp, which the buy box says. */
+  finishesOnWhatsApp: boolean
+  seller: { name: string; paymentMethods: readonly PaymentMethod[] }
   restockCopy: RestockCopy
   messages: UiMessages
 }
@@ -53,6 +58,9 @@ export function StorefrontProductLive({
   cartHref,
   showPrice,
   showBadge,
+  showStock,
+  finishesOnWhatsApp,
+  seller,
   restockCopy,
   messages,
 }: StorefrontProductLiveProps) {
@@ -102,6 +110,9 @@ export function StorefrontProductLive({
       locale="pt-BR"
       showPrice={showPrice}
       showBadge={showBadge}
+      showStock={showStock}
+      finishesOnWhatsApp={finishesOnWhatsApp}
+      seller={seller}
       messages={messages}
     />
   )

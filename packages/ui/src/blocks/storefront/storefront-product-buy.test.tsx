@@ -7,7 +7,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontProductBuy } from "./storefront-product-buy"
 
 describe("StorefrontProductBuy", () => {
-  it("is a region named for buying, that sticks under the header only on a wide, tall window", () => {
+  it("is a region named for buying, framed as 5b's box, that sticks under the header only on a wide, tall window", () => {
     render(
       <StorefrontProductBuy>
         <button type="button">Adicionar ao carrinho</button>
@@ -18,6 +18,7 @@ describe("StorefrontProductBuy", () => {
     expect(region).toContainElement(screen.getByRole("button"))
     expect(region.className).toContain("shop-xl:[@media(min-height:760px)]:sticky")
     expect(region.className).toContain("var(--shop-masthead-height,117px)")
+    expect(region).toHaveClass("rounded-[16px]", "border", "border-shop-frame", "p-5")
   })
 
   it("has no accessibility violations", async () => {

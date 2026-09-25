@@ -153,12 +153,12 @@ describe("StorefrontProductDetail", () => {
       const onAdd = vi.fn()
       renderProduct({ ...withVariants, initialVariantId: "g-preto", cart: { onAdd, href: "/loja/carrinho" } })
 
-      await user.click(screen.getByRole("button", { name: "Aumentar a quantidade de Bolsa Amora" }))
+      await user.selectOptions(screen.getByRole("combobox", { name: "Quantidade" }), "2")
       await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
 
       expect(onAdd).toHaveBeenCalledWith("g-preto", 2)
-      // WhatsApp stays, now the quieter way.
-      expect(screen.getByRole("link", { name: /Pedir/ })).toHaveAttribute("href", expect.stringContaining("wa.me"))
+      // Buying asks who is buying (BEELINK-108); a WhatsApp order beside the cart would skip that.
+      expect(screen.queryByRole("link", { name: /Pedir/ })).not.toBeInTheDocument()
     })
 
     it("opens on the combination the address asked for", () => {

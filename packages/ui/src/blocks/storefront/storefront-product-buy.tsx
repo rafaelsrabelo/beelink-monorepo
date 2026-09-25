@@ -19,7 +19,7 @@ export function StorefrontProductBuy({ children, messages = defaultMessages }: S
   return (
     <section
       aria-label={messages.storefront.buyBoxLabel}
-      className="flex min-w-0 flex-col gap-3.5 shop-xl:[@media(min-height:760px)]:sticky shop-xl:[@media(min-height:760px)]:top-[calc(var(--shop-masthead-height,117px)+16px)]"
+      className="flex min-w-0 flex-col gap-3.5 rounded-[16px] border border-shop-frame bg-shop-background p-5 shop-xl:[@media(min-height:760px)]:sticky shop-xl:[@media(min-height:760px)]:top-[calc(var(--shop-masthead-height,117px)+16px)]"
     >
       {children}
     </section>

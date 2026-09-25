@@ -157,6 +157,11 @@ export const ptBR: UiMessages = {
     seeOptions: "Ver opções",
     buyNow: "Comprar agora",
     viewCart: "Ver carrinho",
+    addedShort: "Adicionado",
+    inStock: "Em estoque",
+    finishOnWhatsApp: "Você finaliza o pedido pelo WhatsApp da loja.",
+    soldBy: "Vendido por",
+    payment: "Pagamento",
     checkoutWhatsApp: "Fechar pedido pelo WhatsApp",
     checkoutSignInPrompt: "Para fazer o pedido, entre na sua conta. Seu carrinho fica guardado.",
     checkoutSignIn: "Entrar para fazer o pedido",
@@ -303,9 +308,10 @@ export const ptBR: UiMessages = {
     copyright: "© {year} {name}. Todos os direitos reservados.",
     payments: {
       money: "Dinheiro",
-      pix: "PIX",
+      pix: "Pix",
       creditCard: "Cartão de crédito",
       debitCard: "Cartão de débito",
+      card: "Cartão",
     },
     contact: {
       nameLabel: "Seu nome",

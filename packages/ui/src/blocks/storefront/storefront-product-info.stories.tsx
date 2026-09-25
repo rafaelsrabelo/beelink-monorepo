@@ -15,7 +15,6 @@ const meta = {
     shopName: "Mutante Suplementos",
     homeHref: "#",
     name: "Pré-Treino Haze Hardcore 300g — Energia, Foco e Performance",
-    unavailable: false,
     price: <StorefrontPrice priceCents={11990} compareAtPriceCents={14990} locale="pt-BR" size="product" />,
   },
 } satisfies Meta<typeof StorefrontProductInfo>
@@ -36,5 +35,3 @@ export const Padrao: Story = { args: { description: HAZE } }
 
 /** A descrição sem lista: nada de "Sobre este item", e a última divisória vai junto. */
 export const SemListaNaDescricao: Story = { args: { description: "Pré-treino para quem treina pesado." } }
-
-export const Esgotado: Story = { args: { unavailable: true } }

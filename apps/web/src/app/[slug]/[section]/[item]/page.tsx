@@ -148,6 +148,9 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         cartHref={routes.cart()}
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}
+        showStock={layout.showProductStock ?? true}
+        finishesOnWhatsApp={Boolean(order)}
+        seller={{ name: store.name, paymentMethods: store.paymentMethods }}
         restockCopy={{
           RESTOCK_VARIANT_INVALID: web.errors.RESTOCK_VARIANT_INVALID,
           BAD_REQUEST: ui.validation.whatsappInvalid,
