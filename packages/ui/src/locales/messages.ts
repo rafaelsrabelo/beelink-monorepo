@@ -742,7 +742,7 @@ export interface UiMessages {
     }
   }
   /** What arrived through a site's contact form, as its owner works through it. */
-  /** The panel's list of who opened an account at the shop. */
+  /** The panel's customers, as the CRM: who never bought, who buys, and who stopped. */
   customers: {
     title: string
     description: string
@@ -754,17 +754,38 @@ export interface UiMessages {
     tabs: { LEAD: string; CUSTOMER: string; INACTIVE: string }
     sortLabel: string
     sorts: { RECENT: string; LAST_ORDER: string; MOST_ORDERS: string; TOP_SPENT: string }
-    name: string
-    contact: string
-    place: string
+    /** The columns. */
+    customer: string
     stage: string
-    since: string
+    orders: string
+    spent: string
+    lastOrder: string
+    place: string
     stages: { LEAD: string; CUSTOMER: string; INACTIVE: string }
+    /** Beside the Inativo badge: "há {days} dias". */
+    inactiveFor: string
     /** Beside an e-mail its owner never confirmed. */
     unverified: string
+    /** The accessible name of a row's link: "Abrir a ficha de {name}". */
+    open: string
+    /** A card's line: "{count} pedidos", its singular, and none. */
+    ordersCount: string
+    ordersOne: string
+    ordersNone: string
+    /** A card's line: "Último pedido em {date}". */
+    lastOrderOn: string
+    /** The button in full, where there is room; its short form in the table's column. */
+    whatsapp: string
+    whatsappShort: string
+    /** The button's accessible name, holding both forms: "Chamar no WhatsApp: {name}". */
+    whatsappLabel: string
+    /** Why the button is off. */
+    whatsappNoPhone: string
     empty: string
     emptyHint: string
     emptySearch: string
+    /** A tab with no one in it. */
+    emptyStage: string
     range: string
     previous: string
     next: string

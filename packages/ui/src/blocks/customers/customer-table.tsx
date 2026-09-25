@@ -1,92 +1,71 @@
 // UI
-import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@harness-monorepo/ui/components/table"
 
 // Locales
-import { defaultLocale, defaultMessages } from "@harness-monorepo/ui/locales/index"
-import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { format } from "@harness-monorepo/ui/locales/index"
 
-/** Where a customer stands with the shop. Mirrors the wire's `CustomerStage`; this package imports no contracts. */
-export type CustomerTableStage = "LEAD" | "CUSTOMER" | "INACTIVE"
-
-/** Filled for who buys now, muted for who never did, outlined for who stopped. */
-const STAGE_VARIANT: Record<CustomerTableStage, "default" | "secondary" | "outline"> = {
-  CUSTOMER: "default",
-  LEAD: "secondary",
-  INACTIVE: "outline",
-}
-
-export interface CustomerTableItem {
-  id: string
-  name: string
-  email: string | null
-  emailVerified: boolean
-  /** Digits, as stored. Drawn as they are: a mask would have to guess the country. */
-  phone: string | null
-  city: string | null
-  state: string | null
-  stage: CustomerTableStage
-  /** ISO-8601. */
-  createdAt: string
-}
-
-export interface CustomerTableProps {
-  customers: readonly CustomerTableItem[]
-  /** A search is on, so an empty list means "no one matches", not "no one yet". */
-  searching?: boolean
-  locale?: string
-  messages?: UiMessages
-}
+// Block
+import { CustomerContact } from "./customer-contact"
+import { CustomerStageBadge } from "./customer-stage-badge"
+import { placeOf, type CustomerRowsProps } from "./customer-types"
+import { CustomerWhatsApp } from "./customer-whatsapp"
 
 /**
- * Who opened an account at the shop, newest first: how to reach them, where they are, and where they
- * stand — a lead until they buy.
+ * The list as a table, where there is room for one: who, where they stand, how much they bought and
+ * when, where they are, and the way to message them.
+ *
+ * The name is the row's one link, stretched over it, so the whole row opens the record and a screen
+ * reader hears "Abrir a ficha de Bia Souza". The WhatsApp cell sits above the stretched link: a tap
+ * on the button opens the conversation, never the record.
  */
-export function CustomerTable({ customers, searching = false, locale = defaultLocale, messages = defaultMessages }: CustomerTableProps) {
+export function CustomerTable({ customers, hrefOf, whatsappHrefOf, money, when, linkComponent: Link, messages }: CustomerRowsProps) {
   const text = messages.customers
-  const when = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" })
-
-  if (!customers.length) {
-    return (
-      <div className="flex flex-col items-center gap-1 rounded-xl border border-dashed py-12 text-center">
-        <p className="font-medium">{searching ? text.emptySearch : text.empty}</p>
-        {searching ? null : <p className="text-muted-foreground text-sm">{text.emptyHint}</p>}
-      </div>
-    )
-  }
 
   return (
     <div className="bg-shell-surface border-shell-border rounded-xl border shadow-xs">
       <Table>
         <TableHeader className="bg-muted/40">
           <TableRow>
-            <TableHead>{text.name}</TableHead>
-            <TableHead>{text.contact}</TableHead>
-            <TableHead className="w-40">{text.place}</TableHead>
-            <TableHead className="w-28">{text.stage}</TableHead>
-            <TableHead className="w-36">{text.since}</TableHead>
+            <TableHead>{text.customer}</TableHead>
+            <TableHead className="w-36">{text.stage}</TableHead>
+            <TableHead className="w-20 text-right">{text.orders}</TableHead>
+            <TableHead className="w-28 text-right">{text.spent}</TableHead>
+            <TableHead className="w-32">{text.lastOrder}</TableHead>
+            <TableHead className="w-36">{text.place}</TableHead>
+            <TableHead className="w-32">
+              <span className="sr-only">{text.whatsappShort}</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {customers.map((customer) => (
-            <TableRow key={customer.id}>
-              <TableCell className="font-medium">{customer.name}</TableCell>
-              <TableCell className="text-muted-foreground">
-                <div className="flex flex-col">
-                  {customer.email ? (
-                    <span>
-                      {customer.email}
-                      {customer.emailVerified ? null : <span className="text-xs"> · {text.unverified}</span>}
-                    </span>
-                  ) : null}
-                  {customer.phone ? <span>{customer.phone}</span> : null}
+            <TableRow key={customer.id} className="relative">
+              <TableCell>
+                <div className="flex max-w-64 min-w-0 flex-col">
+                  <Link
+                    href={hrefOf(customer.id)}
+                    aria-label={format(text.open, { name: customer.name })}
+                    title={customer.name}
+                    className="focus-visible:ring-ring truncate rounded-sm font-medium outline-none after:absolute after:inset-0 hover:underline focus-visible:ring-2"
+                  >
+                    {customer.name}
+                  </Link>
+                  <CustomerContact customer={customer} messages={messages} />
                 </div>
               </TableCell>
-              <TableCell className="text-muted-foreground">{[customer.city, customer.state].filter(Boolean).join(" / ") || "—"}</TableCell>
               <TableCell>
-                <Badge variant={STAGE_VARIANT[customer.stage]}>{text.stages[customer.stage]}</Badge>
+                <CustomerStageBadge customer={customer} messages={messages} />
               </TableCell>
-              <TableCell className="text-muted-foreground tabular-nums">{when.format(new Date(customer.createdAt))}</TableCell>
+              <TableCell className="text-right tabular-nums">{customer.ordersCount}</TableCell>
+              <TableCell className="text-right font-medium tabular-nums">{money(customer.totalSpentCents)}</TableCell>
+              <TableCell className="text-muted-foreground tabular-nums">{customer.lastOrderAt ? when(customer.lastOrderAt) : "—"}</TableCell>
+              <TableCell className="text-muted-foreground max-w-36 truncate">{placeOf(customer) ?? "—"}</TableCell>
+              <TableCell>
+                {/* Only as wide as the button: the rest of the cell still opens the record. */}
+                <div className="relative z-10 w-fit">
+                  <CustomerWhatsApp name={customer.name} href={whatsappHrefOf(customer)} label={text.whatsappShort} messages={messages} />
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
