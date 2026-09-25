@@ -4,12 +4,16 @@
 import { useState } from "react"
 
 // Types
-import type { ComponentKind, Section } from "@harness-monorepo/contracts"
+import type { ComponentKind, ComponentSpan, Section } from "@harness-monorepo/contracts"
 import type { InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
+import type { Across } from "@harness-monorepo/ui/blocks/design/block-gallery"
 
 // App
 import { useCreateComponent, useCreateSection } from "@/services/page/page-hooks"
 import { serverPlaceOf, type SectionDraft } from "./design-draft"
+
+/** A row of banners shares its band's twelve columns evenly. */
+const SPAN_OF: Record<Across, ComponentSpan> = { 1: "FULL", 2: "HALF", 3: "THIRD" }
 
 /**
  * What a "+" starts: the gallery opens knowing where the block goes, and choosing a kind writes it
@@ -25,12 +29,13 @@ export function useBlockInsert(
   const addToBand = useCreateComponent(slug)
   const [insertAt, setInsertAt] = useState<InsertAt | null>(null)
 
-  // Sent where the "+" is, counted in the server's order: see `serverPlaceOf`.
-  const insert = (kind: ComponentKind) => {
+  // Sent where the "+" is, counted in the server's order: see `serverPlaceOf`. `across` is more
+  // than one only where a band is created — the gallery offers a row nowhere else (`offerRows`).
+  const insert = (kind: ComponentKind, across: Across = 1) => {
     if (insertAt?.level === "band") {
       const position = serverPlaceOf(rows.map((row) => row.id), saved.map((row) => row.id), insertAt.index)
       addSection.mutate(
-        { component: { kind }, position },
+        { payload: { component: { kind, span: SPAN_OF[across] }, position }, alongside: across - 1 },
         { onSuccess: (section) => (section.components[0] ? onCreated(section.components[0]) : undefined) },
       )
     } else if (insertAt?.level === "block") {

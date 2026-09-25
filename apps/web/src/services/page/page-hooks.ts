@@ -17,7 +17,7 @@ import type {
 // App
 import {
   createComponent,
-  createSection,
+  createSectionRow,
   deleteComponent,
   deleteSection,
   fetchSections,
@@ -45,17 +45,24 @@ export function useSections(slug: string): UseQueryResult<Section[], Error> {
   })
 }
 
-export function useCreateSection(slug: string): UseMutationResult<Section, Error, CreateSectionPayload> {
+export interface CreateSectionVariables {
+  payload: CreateSectionPayload
+  /** How many more of the band's first block go in beside it: a row of banners (`createSectionRow`). */
+  alongside?: number
+}
+
+export function useCreateSection(slug: string): UseMutationResult<Section, Error, CreateSectionVariables> {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: CreateSectionPayload) => createSection(slug, payload),
+    mutationFn: ({ payload, alongside = 0 }: CreateSectionVariables) => createSectionRow(slug, payload, alongside),
     // The promise is RETURNED, not fired and forgotten, and the screen depends on it: a mutation's
-    // own onSuccess is awaited before the one passed to `mutate`, so returning this is what makes
+    // own callbacks are awaited before the ones passed to `mutate`, so returning this is what makes
     // the list already hold the new block when the screen opens its form. Drop the `return` — by
     // writing a block body — and adding a block silently opens nothing, because the id would name
-    // a component the cache has not fetched yet.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    // a component the cache has not fetched yet. Settled and not only succeeded: when a banner of a
+    // row fails, the band and the others are already written, and the list must show them.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
   })
 }
 

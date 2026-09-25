@@ -85,6 +85,22 @@ export function createComponent(
   })
 }
 
+/**
+ * A band, and `alongside` more of its first block in beside it: a row of banners. The API builds a
+ * band around exactly one block, so the others are added into it right after — at once, since each
+ * lands last in the band under the shop's lock and they are alike. A failure between the writes
+ * leaves a band holding fewer, never an empty one.
+ */
+export async function createSectionRow(
+  slug: string,
+  payload: CreateSectionPayload,
+  alongside: number,
+): Promise<Section> {
+  const section = await createSection(slug, payload)
+  await Promise.all(Array.from({ length: alongside }, () => createComponent(slug, section.id, payload.component)))
+  return section
+}
+
 export function updateComponent(
   slug: string,
   componentId: string,

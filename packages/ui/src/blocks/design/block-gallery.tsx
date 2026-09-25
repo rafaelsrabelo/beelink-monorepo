@@ -28,6 +28,9 @@ import { BlockThumbnail } from "./block-thumbnail"
 import { BLOCK_GROUPS, COMPONENT_KINDS, GROUP_OF_KIND } from "./design-types"
 import type { Across, ComponentKind } from "./design-types"
 
+// What `onAdd` hands back, for the screen: `design-types.ts` is not among this package's exports.
+export type { Across }
+
 /** One card of the gallery: a kind, and how many of it share the row it makes. */
 interface GalleryEntry {
   kind: ComponentKind

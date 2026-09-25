@@ -242,6 +242,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         taken={takenKinds}
         unavailable={unavailableKinds}
         onAdd={adding.insert}
+        offerRows={adding.insertAt?.level === "band"}
         messages={messages}
       />
     </>
