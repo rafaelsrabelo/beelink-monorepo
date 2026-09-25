@@ -51,7 +51,7 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
     .filter((row) => row.isActive)
     .map((row) => ({
       id: row.id,
-      // The band's own attributes come from the server and never from the draft: the band's sheet
+      // The band's own attributes come from the server and never from the draft: the Estilo tab
       // saves them straight there, and a copy held here would hide the save until a reload.
       name: savedSections.get(row.id)?.name ?? null,
       width: savedSections.get(row.id)?.width ?? "CONTAINED",
@@ -67,13 +67,13 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             title: was?.title ?? null,
             subtitle: was?.subtitle ?? null,
             body: was?.body ?? null,
-            // As drafted: the band draws it, and the owner has to see a width before publishing it.
+            // As drafted: the layout waits for Publicar, and the owner has to see it before publishing it.
             span: component.span,
-            display: was?.display ?? null,
+            display: component.display,
             source: was?.source ?? null,
             sourceCategory: shelves.get(component.id)?.sourceCategory ?? null,
-            columns: was?.columns ?? null,
-            align: was?.align ?? null,
+            columns: component.columns,
+            align: component.align,
             /*
               A banner's slides arrive from the panel carrying ids, and the shop window is served
               them carrying addresses. The preview builds the second shape from the first with no

@@ -31,55 +31,42 @@ function component(over: Partial<StoreComponent> = {}): StoreComponent {
   }
 }
 
-describe("component-form-values — a banner's format", () => {
-  it("opens the sheet on the format the banner has", () => {
-    expect(toForm(component(), null).display).toBe("GRID")
+describe("component-form-values — how a block sits is not Salvar's", () => {
+  /**
+   * The format, the columns and the alignment are the Layout tab's, held in the draft until
+   * Publicar. Salvar sending them too would write a second copy over the draft's, which is how a
+   * colour once sat under a stale copy until a reload.
+   */
+  it("sends no format, columns or alignment for any kind", () => {
+    for (const kind of ["BANNER", "CATEGORIES", "PRODUCTS", "HEADING", "TEXT"] as const) {
+      const payload = toPayload(toForm(component({ kind, display: "GRID", columns: 4, align: "RIGHT" })), "link")
+
+      expect(payload, kind).not.toHaveProperty("display")
+      expect(payload, kind).not.toHaveProperty("columns")
+      expect(payload, kind).not.toHaveProperty("align")
+    }
   })
 
-  // Null on every kind but a banner; the form holds one anyway, and never sends it for them.
-  it("holds a format for a kind that has none, without sending it", () => {
-    const heading = toForm(component({ kind: "HEADING", title: "Oi", display: null, items: [] }), null)
-
-    expect(heading.display).toBe("CAROUSEL")
-    expect(toPayload(heading, "link")).not.toHaveProperty("display")
-  })
-
-  /** The API refuses a display on a kind that does not draw one, so only a banner's save carries it. */
-  it("sends the format a banner's sheet holds, not the one it opened with", () => {
-    const form = { ...toForm(component({ display: "CAROUSEL" }), null), display: "GRID" as const }
-
-    expect(toPayload(form, "link")).toMatchObject({ display: "GRID" })
-  })
-})
-
-describe("component-form-values — the categories' format", () => {
-  const categories = (display: "RAIL" | "GRID" | null) =>
-    toForm(component({ kind: "CATEGORIES", title: null, display, items: [] }), null)
-
-  // A block saved before it could choose drew a grid, and opens on the grid it draws.
-  it("opens on the format the block has, and on the grid when it has none", () => {
-    expect(categories("RAIL").display).toBe("RAIL")
-    expect(categories("GRID").display).toBe("GRID")
-    expect(categories(null).display).toBe("GRID")
-  })
-
-  it("sends the format the sheet holds, with the columns", () => {
-    const form = { ...categories("GRID"), display: "RAIL" as const, columns: 4 }
-
-    expect(toPayload(form, "link")).toMatchObject({ display: "RAIL", columns: 4 })
+  it("still sends a banner's pictures, and the words of every kind", () => {
+    expect(toPayload({ ...toForm(component()), title: " Verão " }, "link")).toEqual({
+      title: "Verão",
+      subtitle: null,
+      body: null,
+      items: [expect.objectContaining({ id: "s", imageUrl: "/s.jpg" })],
+    })
   })
 })
 
 describe("component-form-values — a showcase", () => {
   const PICK = { id: "a", productId: "0199e000-0000-7000-8000-000000000001" }
   const showcase = (over: Parameters<typeof component>[0] = {}) =>
-    toForm(component({ kind: "PRODUCTS", title: null, display: "RAIL", source: "ALL", items: [], ...over }), null)
+    toForm(component({ kind: "PRODUCTS", title: null, display: "RAIL", source: "ALL", items: [], ...over }))
 
-  it("opens on the source, the category, the pick, the shape and the limit it has", () => {
-    const form = showcase({ source: "SELECTION", items: [PICK], display: "GRID", limit: 12 })
+  it("opens on the source, the category, the pick and the limit it has", () => {
+    const form = showcase({ source: "SELECTION", items: [PICK], limit: 12 })
 
-    expect(form).toMatchObject({ source: "SELECTION", picks: [PICK], display: "GRID", limit: "12", sourceCategoryId: "" })
-    expect(showcase({ limit: null, display: null })).toMatchObject({ limit: "", display: "RAIL", source: "ALL" })
+    expect(form).toMatchObject({ source: "SELECTION", picks: [PICK], limit: "12", sourceCategoryId: "" })
+    expect(showcase({ limit: null })).toMatchObject({ limit: "", source: "ALL" })
   })
 
   // What the source does not read stays in the form, for switching back, and never goes on the wire.
@@ -100,6 +87,6 @@ describe("component-form-values — a showcase", () => {
 
   it("sends a blank limit as the default, and a typed one as a number", () => {
     expect(toPayload({ ...showcase(), limit: "" }, "link")).toMatchObject({ limit: null })
-    expect(toPayload({ ...showcase(), limit: " 8 " }, "link")).toMatchObject({ limit: 8, display: "RAIL" })
+    expect(toPayload({ ...showcase(), limit: " 8 " }, "link")).toMatchObject({ limit: 8 })
   })
 })

@@ -2,18 +2,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 // Block
-import { sampleColorPresets as presets } from "../store/store.fixtures"
-import { ComponentForm, type ComponentFormValues } from "./component-form"
+import { ComponentContentFields, type ComponentFormValues } from "./component-content-fields"
 
 const empty: ComponentFormValues = {
   kind: "HEADING",
   title: "Novidades da semana",
   subtitle: "Chegou agora",
   body: "",
-  display: "CAROUSEL",
-  columns: 0,
-  align: "CENTER",
-  background: "",
   target: "NONE",
   categoryId: "",
   productId: "",
@@ -28,35 +23,32 @@ const empty: ComponentFormValues = {
 }
 
 const meta = {
-  title: "Blocos/Modo design/Formulário do componente",
-  component: ComponentForm,
+  title: "Blocos/Modo design/Conteúdo do bloco",
+  component: ComponentContentFields,
   parameters: { layout: "padded" },
   args: {
     value: empty,
     onChange: () => {},
-    pageBackground: presets[0]!.colors.background,
     categories: [
       { id: "cat-1", name: "Blusas" },
       { id: "cat-2", name: "Calças" },
     ],
     products: [{ id: "prod-1", name: "Whey 900g" }],
     newItemId: () => `new-${Math.random().toString(36).slice(2, 8)}`,
-    onSubmit: () => {},
-    onCancel: () => {},
   },
   decorators: [
     (Story) => (
-      <div className="max-w-lg">
+      <div className="flex max-w-lg flex-col gap-4">
         <Story />
       </div>
     ),
   ],
-} satisfies Meta<typeof ComponentForm>
+} satisfies Meta<typeof ComponentContentFields>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Um título e a linha embaixo dele. Uma placa, não um cartão. */
+/** Um título e a linha embaixo dele. Uma placa, não um cartão. O alinhamento é do Layout. */
 export const Titulo: Story = {}
 
 /** Um parágrafo. Tipo próprio, e não um modo do título: um formulário com modo são dois formulários. */
@@ -64,12 +56,10 @@ export const Paragrafo: Story = {
   args: { value: { ...empty, kind: "TEXT", title: "", subtitle: "", body: "Entregamos em todo o Brasil.\nPeça pelo WhatsApp." } },
 }
 
-/**
- * Um banner: uma imagem é um cartaz, várias viram um carousel. Não há interruptor — a forma é
- * lida da quantidade, que é o que o dono pediu em tantas palavras.
- */
+/** Um banner: as imagens, cada uma com as suas palavras e o seu destino. Carrossel ou grade é do Layout. */
 export const Banner: Story = {
   args: {
+    display: "GRID",
     value: {
       ...empty,
       kind: "BANNER",
@@ -117,22 +107,17 @@ export const Vantagens: Story = {
   },
 }
 
-/** As categorias em grade ganham o seu ajuste: quantas colunas. */
+/** As categorias: só o título. Trilho ou grade, e as colunas, são do Layout. */
 export const Categorias: Story = {
-  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", display: "GRID", columns: 3 } },
-}
-
-/** Em trilho, as categorias rolam para o lado, e as colunas não são perguntadas. */
-export const CategoriasEmTrilho: Story = {
-  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "", display: "RAIL", columns: 0 } },
+  args: { value: { ...empty, kind: "CATEGORIES", title: "Categorias", subtitle: "" } },
 }
 
 /**
- * A barra de aviso: as palavras, e a cor da faixa dela — que é a cor da barra, porque a barra é o
- * único componente cuja faixa não é desenhada onde está. Na loja, esse texto rola na horizontal.
+ * A barra de aviso: as palavras e para onde leva. Na loja, esse texto rola na horizontal. A cor dela
+ * é a da faixa, no Estilo.
  */
 export const BarraDeAviso: Story = {
   args: {
-    value: { ...empty, kind: "ANNOUNCEMENT", title: "Frete grátis acima de R$ 199", subtitle: "Só até domingo", background: presets[2]!.colors.primary },
+    value: { ...empty, kind: "ANNOUNCEMENT", title: "Frete grátis acima de R$ 199", subtitle: "Só até domingo", target: "CATEGORY", categoryId: "cat-1" },
   },
 }

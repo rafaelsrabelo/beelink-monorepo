@@ -10,19 +10,16 @@ import type {
 } from "@harness-monorepo/contracts"
 
 // UI
-import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/component-form"
-import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
-
-// App
-import { displayOf } from "./component-layout"
+import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/component-content-fields"
 
 /*
-  A component between the wire and its form, in both directions. Apart from the sheet that draws
-  it because each kind adds a clause to both, and the sheet had passed the line limit.
+  A component's content between the wire and its Conteúdo tab, in both directions. Apart from the
+  panel that draws it because each kind adds a clause to both, and the panel had passed the line
+  limit. How the block sits — its format, columns and alignment — is not here: that is the draft's.
 */
 
 /** The wire's nulls become the form's empty strings, which is the only shape an input can hold. */
-export function toForm(component: StoreComponent, bandBackground: string | null): ComponentFormValues {
+export function toForm(component: StoreComponent): ComponentFormValues {
   const link = component.kind === "ANNOUNCEMENT" ? (component.items[0] as AnnouncementLink | undefined) : undefined
 
   return {
@@ -30,13 +27,6 @@ export function toForm(component: StoreComponent, bandBackground: string | null)
     title: component.title ?? "",
     subtitle: component.subtitle ?? "",
     body: component.body ?? "",
-    // A banner's two, and the categories'. A showcase's is its own editor's to hold; null on every
-    // other kind, and the form holds one regardless. Null on the categories is the grid they drew.
-    display: displayOf(component.kind, component.display) ?? "CAROUSEL",
-    columns: component.columns ?? 0,
-    // Resolved for the form, so the toggle marks one; a null on the wire is the kind's own habit.
-    align: component.align ?? defaultAlignOf(component.kind),
-    background: bandBackground ?? "",
     target: link?.target ?? "NONE",
     categoryId: link?.categoryId ?? "",
     productId: link?.productId ?? "",
@@ -142,11 +132,7 @@ export function toPayload(value: ComponentFormValues, linkId: string): UpdateCom
     title: value.title.trim() || null,
     subtitle: value.subtitle.trim() || null,
     body: value.body.trim() || null,
-    columns: value.columns || null,
-    align: value.align,
-    // `display` only where the form offers it: the API refuses a value on a kind that does not draw one.
-    ...(value.kind === "BANNER" ? { items: slides, display: value.display } : {}),
-    ...(value.kind === "CATEGORIES" ? { display: value.display } : {}),
+    ...(value.kind === "BANNER" ? { items: slides } : {}),
     ...(value.kind === "PRODUCTS" ? showcaseOf(value) : {}),
     ...(value.kind === "BENEFITS" ? { items: benefits } : {}),
     ...(value.kind === "ANNOUNCEMENT" ? { items: link } : {}),
@@ -163,7 +149,6 @@ function showcaseOf(value: ComponentFormValues): UpdateComponentPayload {
   const limit = value.limit.trim()
 
   return {
-    display: value.display,
     source: value.source,
     sourceCategoryId: value.source === "CATEGORY" ? value.sourceCategoryId || null : null,
     limit: limit === "" ? null : Number(limit),

@@ -22,6 +22,7 @@ import { DesignScreenDialogs } from "./design-screen-dialogs"
 import { LivePreviewPane } from "./live-preview-pane"
 import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
 import { arrangementOf, shelvesOf } from "./design-draft-preview"
+import { editedOf } from "./design-selection"
 import { useBlockInsert } from "./use-block-insert"
 import { useDesignDraft } from "./use-design-draft"
 import { useDesignSelection } from "./use-design-selection"
@@ -48,11 +49,11 @@ export interface DesignScreenProps {
 const COLOUR_KEYS = ["background", "primary", "header", "footer"] as const satisfies readonly (keyof StoreColors)[]
 
 /**
- * The full-screen editor: the bar above, and the structure, the shop and the chosen block's fields.
+ * The full-screen editor: the bar above, and the structure, the shop and the chosen block's panel.
  *
- * The arrangement is a draft until Publish — `useDesignDraft` says why. What a component says, and
- * what colour a band is, save on their own the moment the owner hits save in the sheet: those are
- * things they want to see land, not an order to hold back.
+ * The arrangement is a draft until Publish — `useDesignDraft` says why — and so is how each block
+ * sits. What a component says, and what a band looks like, save on their own the moment the owner
+ * hits Salvar in the panel: those are things they want to see land, not an order to hold back.
  */
 export function DesignScreen({ store, categories, year, messages, web }: DesignScreenProps) {
   const text = messages.design
@@ -68,11 +69,13 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [panelTab, setPanelTab] = useState<"blocks" | "colors">("blocks")
   const [device, setDevice] = usePreviewDevice()
-  const selection = useDesignSelection()
-  const { choose, editingComponent, editingBand } = selection
+  const selection = useDesignSelection(rows)
+  const { choose, target, editingBand } = selection
+  const edited = editedOf(target)
+  const chooseBlock = (id: string) => choose({ level: "block", id })
   // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
   const opened = (component: { id: string; kind: ComponentKind }) => {
-    choose(component.id)
+    chooseBlock(component.id)
     if (component.kind === "PRODUCTS") shop.refresh(component.id)
   }
   const adding = useBlockInsert(slug, draft, opened, web)
@@ -92,7 +95,6 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const bandName = (id: string) =>
     bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
 
-  const editing = saved.flatMap((section) => section.components).find((c) => c.id === editingComponent) ?? null
   const editingSection = saved.find((section) => section.id === editingBand) ?? null
   const guard = useLeaveGuard(draft.changed)
 
@@ -152,9 +154,9 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
                 setPendingDelete({ level: "component", id, name: labelOf(component.kind, component.title, messages) })
               }
             }}
-            onEdit={choose}
+            onEdit={chooseBlock}
             {...adding.panel}
-            selectedId={editingComponent}
+            selectedId={edited?.componentId ?? null}
             tab={panelTab}
             onTabChange={setPanelTab}
             palette={palette}
@@ -173,7 +175,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             year={year}
             rows={rows}
             saved={saved}
-            editingId={editingComponent}
+            editing={edited}
             shelves={shelves}
             refreshingId={shop.refreshingId}
             device={device}
@@ -181,16 +183,20 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             orderedIds={orderedIdsOf(rows)}
             onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
             {...adding.preview}
-            onEdit={choose}
-            selectedId={editingComponent}
+            onEdit={chooseBlock}
+            selectedId={edited?.componentId ?? null}
             messages={messages}
           />
         }
         inspector={
           <DesignInspector
             slug={slug}
-            editing={editing}
+            target={target}
+            rows={rows}
             saved={saved}
+            tab={selection.tab}
+            onTabChange={selection.setTab}
+            onLayoutChange={(id, patch) => draft.patchComponent(id, patch)}
             pageBackground={palette.background}
             categoriesShown={categories.length}
             shelves={shelves}
@@ -205,7 +211,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         inspectorOpen={selection.inspectorOpen}
         onInspectorOpenChange={selection.setInspectorOpen}
         // The block's fields close themselves; the hint has nothing to close, so the drawer does.
-        inspectorHasOwnClose={editing !== null}
+        inspectorHasOwnClose={target !== null}
         messages={messages}
       />
     </>

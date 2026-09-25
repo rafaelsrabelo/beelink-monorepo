@@ -8,21 +8,20 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { BannerSlidesField } from "./banner-slides-field"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import type { ComponentDisplay } from "./design-types"
-import { DisplayField } from "./display-field"
 
 /**
- * What a banner has beyond a heading: how its pictures sit, and the pictures. Not its width — that
- * is every block's, chosen on the block's card in the panel, and a second control for it here wrote
- * the same column behind the draft's back.
+ * What a banner has beyond a heading: its pictures. Not its width nor its format — those are how it
+ * sits, asked in the Layout tab and held in the draft until Publicar.
  */
 export interface BannerValue {
-  display: ComponentDisplay
   slides: SlideValue[]
 }
 
 export interface BannerFieldsProps {
   value: BannerValue
   onChange: (next: Partial<BannerValue>) => void
+  /** How the pictures sit, chosen in the Layout tab: the hint says what one more picture does there. */
+  display?: ComponentDisplay
   categories: readonly SlideTargetOption[]
   products: readonly SlideTargetOption[]
   onUploadImage?: (file: File) => Promise<string>
@@ -32,7 +31,7 @@ export interface BannerFieldsProps {
 }
 
 /**
- * A banner's own fields: whether its pictures take turns or share the space, and the pictures.
+ * A banner's own fields: the pictures, each with its words and where it leads.
  *
  * Its own block because the component form had passed the line limit, and the seam falls here —
  * the form knows which kind it is holding, and this knows what a banner is.
@@ -40,6 +39,7 @@ export interface BannerFieldsProps {
 export function BannerFields({
   value,
   onChange,
+  display = "CAROUSEL",
   categories,
   products,
   onUploadImage,
@@ -48,20 +48,16 @@ export function BannerFields({
   messages = defaultMessages,
 }: BannerFieldsProps) {
   return (
-    <>
-      <DisplayField value={value.display} onChange={(display) => onChange({ display })} messages={messages} />
-
-      <BannerSlidesField
-        value={value.slides}
-        onChange={(next) => onChange({ slides: next })}
-        categories={categories}
-        products={products}
-        {...(onUploadImage ? { onUploadImage } : {})}
-        imagePending={imagePending}
-        newSlideId={newItemId}
-        display={value.display}
-        messages={messages}
-      />
-    </>
+    <BannerSlidesField
+      value={value.slides}
+      onChange={(next) => onChange({ slides: next })}
+      categories={categories}
+      products={products}
+      {...(onUploadImage ? { onUploadImage } : {})}
+      imagePending={imagePending}
+      newSlideId={newItemId}
+      display={display}
+      messages={messages}
+    />
   )
 }

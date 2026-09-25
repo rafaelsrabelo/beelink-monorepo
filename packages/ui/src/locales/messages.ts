@@ -676,6 +676,8 @@ export interface UiMessages {
       layoutNote: string
       /** Above a band's style when it holds several blocks. `{count}`. */
       sharedWith: string
+      /** The panel's title while a band is chosen on its own. */
+      editBand: string
     }
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */

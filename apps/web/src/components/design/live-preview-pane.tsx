@@ -19,21 +19,23 @@ const Pane = memo(DesignPreviewPane)
 export interface LivePreviewPaneProps extends Omit<DesignPreviewPaneProps, "sections"> {
   rows: readonly SectionDraft[]
   saved: readonly Section[]
-  /** The block whose fields are open. An edit left behind by fields that closed draws nothing. */
-  editingId: string | null
+  /** The band and the block whose panel is open. An edit left behind by a panel that closed draws nothing. */
+  editing: { sectionId: string; componentId: string | null } | null
 }
 
 /**
- * The preview, drawing the block being edited as the owner has it now — the picture the moment it
- * lands, the title as it is written — before Salvar.
+ * The preview, drawing the block and the band being edited as the owner has them now — the picture
+ * the moment it lands, the title as it is written, the band's colour as it is picked — before Salvar.
  *
  * Its own component so the screen does not render on every key: this one subscribes to the edit,
  * and the structure column, the bar and their drag boards stay where they are. The deferred value
  * keeps typing quick; the shop catches up a frame behind the field.
  */
-export function LivePreviewPane({ rows, saved, editingId, shelves, ...pane }: LivePreviewPaneProps) {
+export function LivePreviewPane({ rows, saved, editing, shelves, ...pane }: LivePreviewPaneProps) {
   const edit = useDesignEdit((state) => state.edit)
-  const live = useDeferredValue(edit && edit.componentId === editingId ? edit : null)
+  const open =
+    edit && editing?.sectionId === edit.sectionId && editing.componentId === (edit.component?.id ?? null) ? edit : null
+  const live = useDeferredValue(open)
   const sections = useMemo(() => previewOf(rows, withLiveEdit(saved, live), shelves), [rows, saved, live, shelves])
 
   // Unsaved fields do not outlive the editor: coming back must show what is saved, not what was abandoned.
