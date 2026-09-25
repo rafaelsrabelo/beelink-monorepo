@@ -22,14 +22,13 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { WhatsAppIcon } from "../store/store-brand-icons"
-import { StorefrontPrice } from "./storefront-price"
+import type { PaymentMethod } from "../store/store-types"
+import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
 import type { LinkComponent } from "../auth/auth-link"
-import { StorefrontBuyActions } from "./storefront-buy-actions"
-import { StorefrontProductBuy } from "./storefront-product-buy"
 import { StorefrontProductInfo } from "./storefront-product-info"
+import { StorefrontProductPurchase } from "./storefront-product-purchase"
 import { StorefrontVariantPicker } from "./storefront-variant-picker"
 
 export type { StorefrontProductImage } from "./storefront-product-gallery"
@@ -78,6 +77,12 @@ export interface StorefrontProductDetailProps {
   locale: string
   showPrice?: boolean
   showBadge?: boolean
+  /** "Em estoque" in the buy box; the shop's layout may hide it. */
+  showStock?: boolean
+  /** The shop takes orders on WhatsApp, which the buy box says. */
+  finishesOnWhatsApp?: boolean
+  /** "Vendido por" and "Pagamento", under the buy box's buttons. */
+  seller?: { name: string; paymentMethods: readonly PaymentMethod[] }
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -109,10 +114,12 @@ export function StorefrontProductDetail({
   locale,
   showPrice = true,
   showBadge = true,
+  showStock,
+  finishesOnWhatsApp,
+  seller,
   linkComponent,
   messages = defaultMessages,
 }: StorefrontProductDetailProps) {
-  const text = messages.storefront
   const choosing = options.length > 0 && variants.length > 0
   const [selection, setSelection] = useState<Selection>(() => {
     const first = initialVariantOf(variants, initialVariantId)
@@ -123,6 +130,9 @@ export function StorefrontProductDetail({
   const variant = choosing ? variantOf(selection, options, variants) : undefined
   const label = variant ? variantLabelOf(variant, options) : ""
   const unavailable = choosing ? !variant?.available : soldOut
+  // The chosen combination's price, or the product's: the column, the box and the photo's badge.
+  const cents = variant?.priceCents ?? priceCents
+  const was = variant ? variant.compareAtPriceCents : compareAtPriceCents
   // The chosen combination's photos, the most specific first, behind the variant's own when it has one.
   const fitting = variant
     ? photosOf(images, optionOfValue(options, (option) => option.values, (entry) => entry.id), variant.optionValueIds)
@@ -142,8 +152,8 @@ export function StorefrontProductDetail({
     // Announced as it changes with the choice, so a screen reader hears the new price.
     <div aria-live="polite">
       <StorefrontPrice
-        priceCents={variant?.priceCents ?? priceCents}
-        compareAtPriceCents={variant ? variant.compareAtPriceCents : compareAtPriceCents}
+        priceCents={cents}
+        compareAtPriceCents={was}
         locale={locale}
         size="product"
         showBadge={showBadge}
@@ -176,6 +186,7 @@ export function StorefrontProductDetail({
             key={shownImages.map((image) => image.id).join("|")}
             images={shownImages}
             name={name}
+            badge={showPrice && showBadge ? <StorefrontDiscountBadge priceCents={cents} compareAtPriceCents={was} placement="photo" messages={messages} /> : undefined}
             messages={messages}
           />
         </div>
@@ -184,7 +195,6 @@ export function StorefrontProductDetail({
           shopName={shopName}
           homeHref={homeHref}
           name={name}
-          unavailable={unavailable}
           price={price}
           picker={picker}
           description={description}
@@ -192,37 +202,23 @@ export function StorefrontProductDetail({
           messages={messages}
         />
 
-        <StorefrontProductBuy messages={messages}>
-          {unavailable ? (
-            <div className="flex flex-col gap-3">
-              {/* A bordered box and not a tinted one: an opacity tint would fade the sentence with it. */}
-              <p className="rounded-xl border border-shop-line px-5 py-3 text-center text-sm text-shop-muted">
-                {choosing ? text.combinationSoldOut : text.soldOutHint}
-              </p>
-              {restock && (variant ?? variants[0]) ? (
-                <button
-                  type="button"
-                  onClick={() => setAsking(true)}
-                  className="inline-flex w-full items-center justify-center rounded-xl border-2 border-current px-5 py-3 text-base font-medium"
-                >
-                  {text.notifyMe}
-                </button>
-              ) : null}
-            </div>
-          ) : cart ? (
-            <StorefrontBuyActions name={name} onAdd={(qty) => cart.onAdd(variant?.id ?? null, qty)} cartHref={cart.href} orderHref={order} messages={messages} />
-          ) : order ? (
-            <a
-              href={order}
-              rel="noreferrer"
-              target="_blank"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-shop-primary px-5 py-3 text-base font-medium text-shop-on-primary"
-            >
-              <WhatsAppIcon className="size-5" />
-              {text.orderThis}
-            </a>
-          ) : null}
-        </StorefrontProductBuy>
+        <StorefrontProductPurchase
+          name={name}
+          priceCents={cents}
+          compareAtPriceCents={was}
+          locale={locale}
+          showPrice={showPrice}
+          available={!unavailable}
+          choosing={choosing}
+          choiceKey={variant?.id ?? "product"}
+          showStock={showStock}
+          cart={cart ? { onAdd: (qty) => cart.onAdd(variant?.id ?? null, qty), href: cart.href } : undefined}
+          onNotify={restock && (variant ?? variants[0]) ? () => setAsking(true) : undefined}
+          orderHref={order}
+          finishesOnWhatsApp={finishesOnWhatsApp}
+          seller={seller}
+          messages={messages}
+        />
       </article>
 
       {restock ? (

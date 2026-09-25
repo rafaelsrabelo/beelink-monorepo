@@ -44,6 +44,9 @@ function renderLive() {
         cartHref="/lessari/carrinho"
         showPrice
         showBadge
+        showStock
+        finishesOnWhatsApp={false}
+        seller={{ name: "Lessari", paymentMethods: ["PIX"] }}
         restockCopy={copy}
         messages={ptBR}
       />

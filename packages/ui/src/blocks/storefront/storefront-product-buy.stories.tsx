@@ -11,11 +11,11 @@ const meta = {
   component: StorefrontProductBuy,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), width: 320 }}>{Story()}</div>],
-  args: { children: <StorefrontBuyActions name="Pré-Treino Haze" onAdd={() => {}} cartHref="#" /> },
+  args: { children: <StorefrontBuyActions name="Pré-Treino Haze" qty={1} onQtyChange={() => {}} added={false} onAdd={() => {}} cartHref="#" /> },
 } satisfies Meta<typeof StorefrontProductBuy>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A terceira coluna de 5b: fica visível sob o cabeçalho ao rolar, numa tela larga e alta. */
+/** A moldura da caixa de compra de 5b: fica visível sob o cabeçalho ao rolar, numa tela larga e alta. */
 export const Padrao: Story = {}

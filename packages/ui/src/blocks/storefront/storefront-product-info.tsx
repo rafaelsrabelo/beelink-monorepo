@@ -18,8 +18,6 @@ export interface StorefrontProductInfoProps {
   /** The shop's front door, for "Visite a loja". */
   homeHref: string
   name: string
-  /** Nothing of the chosen combination can be ordered now. */
-  unavailable: boolean
   /** The price as the page draws it, announced as it changes; absent when the shop hides prices. */
   price?: ReactNode
   /** The options, when the product has any. */
@@ -39,7 +37,6 @@ export function StorefrontProductInfo({
   shopName,
   homeHref,
   name,
-  unavailable,
   price,
   picker,
   description,
@@ -62,10 +59,6 @@ export function StorefrontProductInfo({
         {format(text.visitShop, { name: shopName })}
       </Link>
       <h1 className="text-[26px] leading-[1.25] font-bold text-shop-on-background">{name}</h1>
-      {/*
-        Its own line above the price: this is the one fact that changes what the visitor can do here.
-      */}
-      {unavailable ? <p className="text-sm font-semibold tracking-wide text-shop-muted uppercase">{text.soldOut}</p> : null}
       {parts.map(([key, part]) =>
         part ? (
           <Fragment key={key}>

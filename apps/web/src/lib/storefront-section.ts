@@ -68,6 +68,9 @@ export async function placeOf(slug: string, segment: string, query: SectionQuery
   const category =
     section.kind === "category" ? (navigation.categories.find((entry) => entry.slug === section.slug) ?? null) : null
 
+  // A category missing from a menu that could not be read is an outage, not a page that is gone:
+  // it answers a server error, which a crawler retries, and never a 404, which it drops.
+  if (section.kind === "category" && !category && navigation.failed) throw new Error(`The menu of ${slug} could not be read`)
   if (section.kind === "category" && !category) return null
 
   const parentCategory = category?.parentSlug

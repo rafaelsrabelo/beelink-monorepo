@@ -340,6 +340,15 @@
   html {
     @apply font-sans;
     }
+  /*
+   * The product page's phone bar is up (StorefrontProductPurchase sets the attribute): whatever Tab
+   * reaches is scrolled clear of it rather than under it. Only below shop-lg, where the bar shows.
+   */
+  @media (width < 64rem) {
+    html[data-buy-bar] {
+      scroll-padding-bottom: 6rem;
+    }
+  }
 }
 /**
  * A row that scrolls sideways without the bar underneath it.
