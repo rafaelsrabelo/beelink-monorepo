@@ -59,3 +59,18 @@ Como no seletor (BEELINK-91): uma cor de loja clara fica abaixo de 3:1 sobre o b
 - Coração de favoritos (sem favoritos), miniatura de vídeo (a API não tem vídeo), o rótulo "Tabela"
   (arte do design) e setas sobre a foto (5b não tem; a tela cheia tem).
 - Redimensionar as fotos: as miniaturas baixam o original, porque só há uma URL por foto.
+
+## Revisão (25/09/2026)
+
+Três leituras independentes, cada achado verificado por um revisor que tentou refutá-lo. Dez
+confirmados (seis distintos), todos corrigidos; quatro rejeitados.
+
+- **← e → na foto levam o foco junto.** Antes a faixa andava e o foco ficava na foto anterior, fora
+  da tela, e Enter abria a foto errada.
+- **As miniaturas cabem na linha do celular.** Elas encolhem até caber, com o "+N" junto, em vez de
+  rolar escondidas: a 390px, cinco de 56px e o "+2" dentro dos 343px da coluna. Sem rolagem, o
+  contorno do foco também deixa de ser cortado.
+- **As setas da tela cheia continuam focáveis nas pontas** (`aria-disabled`), sem jogar o foco para o
+  corpo da página.
+- **O selo de desconto deixa o ponteiro passar**, então o zoom e o clique funcionam também sobre ele.
+- O teste do "+3" confere que a tela cheia abre na sexta foto.

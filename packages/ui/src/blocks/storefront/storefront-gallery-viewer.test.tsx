@@ -27,7 +27,9 @@ describe("StorefrontGalleryViewer", () => {
 
     fireEvent.scroll(strip)
     expect(within(viewer).getByText("Foto 2 de 3")).toHaveAttribute("aria-live", "polite")
-    expect(within(viewer).getByRole("button", { name: "Foto anterior" })).toBeEnabled()
+    expect(within(viewer).getByRole("button", { name: "Foto anterior" })).toHaveAttribute("aria-disabled", "false")
+    // At an end the step stays focusable, marked rather than disabled, so the focus is not dropped.
+    expect(within(viewer).getByRole("button", { name: "Próxima foto" })).toBeEnabled()
   })
 
   it("closes with Esc", async () => {

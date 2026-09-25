@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useRef, useState, type PointerEvent, type ReactNode } from "react"
+import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react"
 
 // UI
 import { scrollToSlide, useSnapIndex } from "@harness-monorepo/ui/hooks/use-snap-index"
@@ -63,6 +63,15 @@ export function StorefrontProductGallery({ images, name, badge, messages = defau
   const [viewing, setViewing] = useState<number | null>(null)
   const total = String(images.length)
 
+  // ← and → step the photo and take the focus with it, so Enter opens the one on screen.
+  function stepFrom(event: KeyboardEvent<HTMLButtonElement>, at: number) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return
+    event.preventDefault()
+    const next = Math.max(0, Math.min(images.length - 1, at + (event.key === "ArrowRight" ? 1 : -1)))
+    scrollToSlide(strip.current, next, images.length)
+    strip.current?.querySelectorAll<HTMLButtonElement>(":scope > button")[next]?.focus({ preventScroll: true })
+  }
+
   return (
     <div className="flex flex-col gap-3 shop-lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col gap-2.5">
@@ -82,6 +91,7 @@ export function StorefrontProductGallery({ images, name, badge, messages = defau
                   tabIndex={at === shown ? 0 : -1}
                   aria-label={format(text.galleryOpen, { n: String(at + 1), total })}
                   onClick={() => setViewing(at)}
+                  onKeyDown={(event) => stepFrom(event, at)}
                   onPointerMove={zoomAt}
                   onPointerLeave={unzoom}
                   className="relative size-full shrink-0 snap-center overflow-hidden focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-shop-primary-ink"

@@ -29,7 +29,8 @@ export interface StorefrontGalleryViewerProps {
   messages?: UiMessages
 }
 
-const STEP = "flex size-11 items-center justify-center rounded-full border border-shop-frame bg-shop-background text-shop-on-background disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-shop-primary-ink"
+// `aria-disabled`, not `disabled`: a button disabled under the focus drops it to the page's body.
+const STEP = "flex size-11 items-center justify-center rounded-full border border-shop-frame bg-shop-background text-shop-on-background aria-disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-shop-primary-ink"
 
 /**
  * The photos at the size of the screen: swiped like the page's strip, stepped with the arrows or
@@ -94,13 +95,13 @@ function ViewerStrip({ images, name, start, messages }: { images: readonly Store
         ))}
       </div>
       <div className="flex items-center justify-center gap-4 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-        <button type="button" aria-label={text.photoPrevious} disabled={shown <= 0} onClick={() => scrollToSlide(strip.current, shown - 1, count)} className={STEP}>
+        <button type="button" aria-label={text.photoPrevious} aria-disabled={shown <= 0} onClick={() => scrollToSlide(strip.current, shown - 1, count)} className={STEP}>
           <ChevronLeftIcon aria-hidden="true" className="size-5" />
         </button>
         <p aria-live="polite" className="min-w-24 text-center text-sm tabular-nums">
           {format(text.photoOf, { n: String(shown + 1), total: String(count) })}
         </p>
-        <button type="button" aria-label={text.photoNext} disabled={shown >= count - 1} onClick={() => scrollToSlide(strip.current, shown + 1, count)} className={STEP}>
+        <button type="button" aria-label={text.photoNext} aria-disabled={shown >= count - 1} onClick={() => scrollToSlide(strip.current, shown + 1, count)} className={STEP}>
           <ChevronRightIcon aria-hidden="true" className="size-5" />
         </button>
       </div>

@@ -1,7 +1,7 @@
 // Libs
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
@@ -15,6 +15,8 @@ function stripOf(container: HTMLElement): HTMLElement {
   Object.defineProperty(strip, "clientWidth", { configurable: true, value: 400 })
   return strip
 }
+
+afterEach(() => vi.restoreAllMocks())
 
 describe("StorefrontProductGallery", () => {
   it("puts every photo in the strip, the first loaded at once and the rest when reached", () => {
@@ -43,6 +45,8 @@ describe("StorefrontProductGallery", () => {
 
   it("draws five thumbnails and '+3' for eight photos, which opens the viewer on the sixth", async () => {
     const user = userEvent.setup()
+    // Every strip gets a width, the viewer's included, so opening on a photo can scroll to it.
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(400)
     render(<StorefrontProductGallery images={photos(8)} name="Blusa" />)
 
     expect(screen.getAllByRole("button", { pressed: false }).length + screen.getAllByRole("button", { pressed: true }).length).toBe(5)
@@ -50,6 +54,20 @@ describe("StorefrontProductGallery", () => {
 
     const viewer = await screen.findByRole("dialog", { name: "Fotos de Blusa" })
     expect(within(viewer).getAllByRole("img")).toHaveLength(8)
+    fireEvent.scroll(viewer.querySelector("[data-slot='viewer-strip']")!)
+    expect(within(viewer).getByText("Foto 6 de 8")).toBeInTheDocument()
+  })
+
+  it("steps the photo with ← and →, and takes the focus along so Enter opens the one on screen", async () => {
+    const user = userEvent.setup()
+    const { container } = render(<StorefrontProductGallery images={photos(3)} name="Blusa" />)
+    const strip = stripOf(container)
+
+    screen.getByRole("button", { name: "Ampliar foto 1 de 3" }).focus()
+    await user.keyboard("{ArrowRight}")
+
+    expect(strip.scrollLeft).toBe(400)
+    expect(screen.getByRole("button", { name: "Ampliar foto 2 de 3" })).toHaveFocus()
   })
 
   it("opens the photo at full screen on a click, and closes with Esc", async () => {
