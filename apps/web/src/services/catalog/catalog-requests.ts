@@ -2,12 +2,14 @@
 import type {
   CreateProductCategoryPayload,
   CreateProductPayload,
-  Product,
   ProductCategory,
+  ProductDetail,
   ProductListQuery,
   ProductPage,
+  ReplaceProductOptionsPayload,
   UpdateProductCategoryPayload,
   UpdateProductPayload,
+  UpdateProductVariantsPayload,
 } from "@harness-monorepo/contracts"
 
 /**
@@ -109,20 +111,44 @@ export function fetchProducts(slug: string, query: ProductListQuery = {}): Promi
   return call<ProductPage>(`${productsPath(slug)}${search ? `?${search}` : ""}`, { method: "GET" })
 }
 
-export function fetchProduct(slug: string, productId: string): Promise<Product> {
-  return call<Product>(`${productsPath(slug)}/${encodeURIComponent(productId)}`, { method: "GET" })
+export function fetchProduct(slug: string, productId: string): Promise<ProductDetail> {
+  return call<ProductDetail>(`${productsPath(slug)}/${encodeURIComponent(productId)}`, { method: "GET" })
 }
 
-export function createProduct(slug: string, payload: CreateProductPayload): Promise<Product> {
-  return call<Product>(productsPath(slug), { method: "POST", body: JSON.stringify(payload) })
+export function createProduct(slug: string, payload: CreateProductPayload): Promise<ProductDetail> {
+  return call<ProductDetail>(productsPath(slug), { method: "POST", body: JSON.stringify(payload) })
 }
 
 export function updateProduct(
   slug: string,
   productId: string,
   payload: UpdateProductPayload,
-): Promise<Product> {
-  return call<Product>(`${productsPath(slug)}/${encodeURIComponent(productId)}`, {
+): Promise<ProductDetail> {
+  return call<ProductDetail>(`${productsPath(slug)}/${encodeURIComponent(productId)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })
+}
+
+/** The options whole and in order; the answer is the product as it now is, variants included. */
+export function replaceProductOptions(
+  slug: string,
+  productId: string,
+  payload: ReplaceProductOptionsPayload,
+): Promise<ProductDetail> {
+  return call<ProductDetail>(`${productsPath(slug)}/${encodeURIComponent(productId)}/options`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })
+}
+
+/** Several variants at once; the ones not listed are left as they are. */
+export function updateProductVariants(
+  slug: string,
+  productId: string,
+  payload: UpdateProductVariantsPayload,
+): Promise<ProductDetail> {
+  return call<ProductDetail>(`${productsPath(slug)}/${encodeURIComponent(productId)}/variants`, {
     method: "PUT",
     body: JSON.stringify(payload),
   })

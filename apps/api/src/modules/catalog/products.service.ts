@@ -1,14 +1,14 @@
 // Nest
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
 import type {
   Product,
+  ProductDetail,
   ProductListQuery,
   ProductPage,
   ProductStockFilter,
-  PublicProduct,
-  PublicProductCard,
+  PublicProductDetail,
 } from '@harness-monorepo/contracts';
 import type { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
 import type { ReorderDto } from './dto/reorder.dto.js';
@@ -18,26 +18,15 @@ import type { ProductWhereInput } from '../../generated/prisma/models/Product.js
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
-import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 import {
   PRODUCTS_ADMIN_PAGE_SIZE,
-  PRODUCTS_PAGE_SIZE,
   PRODUCTS_PAGE_SIZE_MAX,
 } from './catalog.constants.js';
-import { productInclude, toProduct, toPublicProduct, toPublicProductCard } from './catalog.mapper.js';
-
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
-}
-
-/** The rows a write should store for a product's photos, in the order they were sent. */
-function imageRows(images: CreateProductDto['images']): { url: string; alt: string | null; position: number }[] {
-  return (images ?? []).map((image, position) => ({
-    url: image.url,
-    alt: image.alt ?? null,
-    position,
-  }));
-}
+import { productInclude, toProduct } from './catalog.mapper.js';
+import { imageRows, refuseForeignImageValues } from './product-images.js';
+import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
+import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
+import { productDetailInclude, toProductDetail, toPublicProductDetail } from './variant.mapper.js';
 
 /**
  * The three answers to "how many are left", as a `where` fragment.
@@ -103,6 +92,18 @@ export class ProductsService {
                   { name: { contains: search, mode: 'insensitive' as const } },
                   { sku: { contains: search, mode: 'insensitive' as const } },
                   { barcode: { contains: search, mode: 'insensitive' as const } },
+                  // Every variant's code, not only the one the product's cache repeats.
+                  {
+                    variants: {
+                      some: {
+                        archivedAt: null,
+                        OR: [
+                          { sku: { contains: search, mode: 'insensitive' as const } },
+                          { barcode: { contains: search, mode: 'insensitive' as const } },
+                        ],
+                      },
+                    },
+                  },
                 ],
               },
             ]
@@ -125,78 +126,10 @@ export class ProductsService {
   }
 
   /**
-   * The storefront's list: one page of what a shop published, in the order the shopkeeper arranged it.
-   *
-   * Unavailable products are absent rather than greyed out — a window that shows what it will not
-   * sell teaches a visitor to distrust the rest of it. The filters are here and not in the browser
-   * because a shop with three hundred products would otherwise ship all three hundred to render
-   * six, and because a search the server did is a search a crawler can follow.
-   *
-   * `total` counts the filter and not the page, because that is what the pager divides. The count
-   * runs over the same `where` inside one transaction: read separately, the two could fall either
-   * side of a write and disagree, and a pager that disagrees with its pages offers a last page that
-   * is empty or hides one that is not.
-   */
-  async listPublic(
-    storeId: string,
-    filters: { category?: string; search?: string; page?: number; pageSize?: number } = {},
-  ): Promise<{ products: PublicProductCard[]; total: number }> {
-    const search = filters.search?.trim();
-    const pageSize = filters.pageSize ?? PRODUCTS_PAGE_SIZE;
-    const page = filters.page ?? 1;
-
-    // Both the shelf rule and the search carry an `OR`, so they are held in `AND` rather than
-    // spread into one object — spread, the second would overwrite the first and the filtered
-    // search would quietly answer the search alone. See catalog.visibility.ts.
-    const where = {
-      storeId,
-      // A parent's shelf holds what is under it. Filtering `Proteínas` and getting nothing because
-      // every whey is filed under `Proteínas → Whey` is the failure this avoids — and it is the one
-      // a shopkeeper reports as "my category is empty" without ever mentioning subcategories.
-      ...(filters.category
-        ? {
-            category: {
-              isActive: true,
-              OR: [{ slug: filters.category }, { parent: { slug: filters.category, isActive: true } }],
-            },
-          }
-        : {}),
-      AND: [
-        ON_THE_SHELF_WHERE,
-        // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
-        // and someone searching "crochê" means to find it.
-        ...(search
-          ? [
-              {
-                OR: [
-                  { name: { contains: search, mode: 'insensitive' as const } },
-                  { description: { contains: search, mode: 'insensitive' as const } },
-                ],
-              },
-            ]
-          : []),
-      ],
-    };
-
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.product.findMany({
-        where,
-        include: productInclude,
-        orderBy: [{ position: 'asc' }, { name: 'asc' }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      this.prisma.product.count({ where }),
-    ]);
-
-    return { products: rows.map(toPublicProductCard), total };
-  }
-
-  /**
    * One product, by the slug in its address. `slugHistory` is not consulted here: a renamed
    * product's old address is a redirect the web app owns, not a second name the API answers to.
    */
-  async publicBySlug(storeId: string, slug: string): Promise<PublicProduct> {
+  async publicBySlug(storeId: string, slug: string): Promise<PublicProductDetail> {
     // Status only, on purpose — a sold-out product still has a page. This is the address that goes
     // out on WhatsApp, and the schema's note on `slugHistory` calls a 404 here the most visible
     // failure this product can produce. The answer carries `soldOut`, and the page drops the way to
@@ -204,29 +137,68 @@ export class ProductsService {
     // catalog.visibility.ts.
     const row = await this.prisma.product.findFirst({
       where: { storeId, slug, status: 'ACTIVE' },
-      include: productInclude,
+      include: productDetailInclude,
     });
 
     if (!row) throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product at "${slug}"`));
 
-    return toPublicProduct(row);
+    return toPublicProductDetail(row);
   }
 
-  async byId(storeSlug: string, productId: string, userId: string): Promise<Product> {
+  /** The active products among these ids, in the order asked; a sold-out one is included, marked. */
+  async publicByIds(storeId: string, ids: readonly string[]): Promise<PublicProductDetail[]> {
+    const rows = await this.prisma.product.findMany({
+      where: { storeId, id: { in: [...ids] }, status: 'ACTIVE' },
+      include: productDetailInclude,
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+
+    return ids.flatMap((id) => {
+      const row = byId.get(id);
+      return row ? [toPublicProductDetail(row)] : [];
+    });
+  }
+
+  async byId(storeSlug: string, productId: string, userId: string): Promise<ProductDetail> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const row = await this.prisma.product.findFirst({
+      where: { id: productId, storeId },
+      include: productDetailInclude,
+    });
 
-    return toProduct(await this.owned(storeId, productId));
+    if (!row) throw this.notFound(productId);
+
+    return toProductDetail(row);
   }
 
-  async create(storeSlug: string, userId: string, dto: CreateProductDto): Promise<Product> {
+  async create(storeSlug: string, userId: string, dto: CreateProductDto): Promise<ProductDetail> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const slug = this.slugs.resolve(dto.slug, dto.name);
 
-    this.assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
-    this.assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
+    assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
+    assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
+    // A product being created has no options, so no photo of it can name a value yet.
+    await refuseForeignImageValues(this.prisma, null, dto.images);
 
     const last = await this.prisma.product.aggregate({ where: { storeId }, _max: { position: true } });
+
+    // A new product has no options, so it sells one thing: its default variant, which holds the
+    // per-unit values. The product's own columns get the same values, which is what the cache of a
+    // single variant is.
+    const perUnit = {
+      priceCents: dto.priceCents,
+      compareAtPriceCents: dto.compareAtPriceCents ?? null,
+      costCents: dto.costCents ?? null,
+      sku: dto.sku ?? null,
+      barcode: dto.barcode ?? null,
+      trackStock: dto.trackStock ?? false,
+      stockQuantity: dto.stockQuantity ?? null,
+      weightGrams: dto.weightGrams ?? null,
+      lengthMm: dto.lengthMm ?? null,
+      widthMm: dto.widthMm ?? null,
+      heightMm: dto.heightMm ?? null,
+    };
 
     try {
       const row = await this.prisma.product.create({
@@ -235,30 +207,21 @@ export class ProductsService {
           slug,
           name: dto.name,
           description: dto.description ?? null,
-          priceCents: dto.priceCents,
-          compareAtPriceCents: dto.compareAtPriceCents ?? null,
           categoryId: dto.categoryId ?? null,
           status: dto.status ?? 'ACTIVE',
           origin: dto.origin ?? null,
-          costCents: dto.costCents ?? null,
-          sku: dto.sku ?? null,
-          barcode: dto.barcode ?? null,
-          trackStock: dto.trackStock ?? false,
-          stockQuantity: dto.stockQuantity ?? null,
-          weightGrams: dto.weightGrams ?? null,
-          lengthMm: dto.lengthMm ?? null,
-          widthMm: dto.widthMm ?? null,
-          heightMm: dto.heightMm ?? null,
+          ...perUnit,
+          maxPriceCents: perUnit.priceCents,
           position: (last._max.position ?? -1) + 1,
           images: { create: imageRows(dto.images) },
+          variants: { create: [{ storeId, position: 0, ...perUnit }] },
         },
-        include: productInclude,
+        include: productDetailInclude,
       });
 
-      return toProduct(row);
+      return toProductDetail(row);
     } catch (error) {
-      if (isUniqueViolation(error)) throw this.taken(slug);
-      throw error;
+      throw this.conflictOf(error, slug);
     }
   }
 
@@ -267,64 +230,86 @@ export class ProductsService {
     productId: string,
     userId: string,
     dto: UpdateProductDto,
-  ): Promise<Product> {
+  ): Promise<ProductDetail> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const current = await this.owned(storeId, productId);
-
-    const priceCents = dto.priceCents ?? current.priceCents;
-    const compareAt =
-      dto.compareAtPriceCents !== undefined ? dto.compareAtPriceCents : current.compareAtPriceCents;
-    this.assertPrices(priceCents, compareAt ?? null);
-    // Against what the row will hold after the patch, not against what was sent: sending one side
-    // on a product that already has the other two is a complete box, and refusing it would be a
-    // rule about the request rather than about the parcel.
-    this.assertParcel(
-      dto.lengthMm !== undefined ? dto.lengthMm : current.lengthMm,
-      dto.widthMm !== undefined ? dto.widthMm : current.widthMm,
-      dto.heightMm !== undefined ? dto.heightMm : current.heightMm,
-    );
-
+    await this.owned(storeId, productId);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
 
     const renaming = dto.slug !== undefined || dto.name !== undefined;
-    const slug = renaming ? this.slugs.resolve(dto.slug, dto.name ?? current.name) : current.slug;
+    let slug = dto.slug ?? '';
 
     try {
-      const row = await this.prisma.product.update({
-        where: { id: productId },
-        data: {
-          slug,
-          slugHistory: this.slugs.historyAfterRename(current.slug, slug, current.slugHistory),
-          name: dto.name ?? current.name,
-          priceCents,
-          ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
-          ...(dto.compareAtPriceCents !== undefined ? { compareAtPriceCents: dto.compareAtPriceCents } : {}),
-          ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
-          ...(dto.status !== undefined ? { status: dto.status } : {}),
-          ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
-          ...(dto.costCents !== undefined ? { costCents: dto.costCents } : {}),
-          ...(dto.sku !== undefined ? { sku: dto.sku ?? null } : {}),
-          ...(dto.barcode !== undefined ? { barcode: dto.barcode ?? null } : {}),
-          ...(dto.trackStock !== undefined ? { trackStock: dto.trackStock } : {}),
-          ...(dto.stockQuantity !== undefined ? { stockQuantity: dto.stockQuantity } : {}),
-          ...(dto.weightGrams !== undefined ? { weightGrams: dto.weightGrams } : {}),
-          ...(dto.lengthMm !== undefined ? { lengthMm: dto.lengthMm } : {}),
-          ...(dto.widthMm !== undefined ? { widthMm: dto.widthMm } : {}),
-          ...(dto.heightMm !== undefined ? { heightMm: dto.heightMm } : {}),
-          // Images are replaced whole when the key is sent: the panel's gallery reports the list it
-          // now holds, including the order, and reconciling that row by row would be a diff the
-          // client already computed. Omitting the key leaves the photos alone.
-          ...(dto.images !== undefined
-            ? { images: { deleteMany: {}, create: imageRows(dto.images) } }
-            : {}),
-        },
-        include: productInclude,
+      const row = await this.prisma.$transaction(async (tx) => {
+        await lockProduct(tx, productId);
+        // Read again under the lock: the checks and the rename are judged against the row as it is
+        // now, not as it was before another save of the same product finished.
+        const current = await tx.product.findUniqueOrThrow({ where: { id: productId } });
+        const hasOptions = (await tx.productOption.count({ where: { productId } })) > 0;
+        // Under the lock, so a value removed by a concurrent save of the options is foreign here.
+        await refuseForeignImageValues(tx, productId, dto.images);
+
+        // On a product with options the product's values are a summary, and a patch that repeats
+        // them changes nothing. Without options they are its one variant's, and a patch equal to a
+        // summary of a variant that is switched off is still a change to that variant.
+        const perUnit = perUnitPatchOf(dto, hasOptions ? current : undefined);
+        // Uncounted stock has no quantity to agree with; the summary of mixed variants still has one.
+        if (hasOptions && perUnit.stockQuantity === null && (perUnit.trackStock ?? current.trackStock) === false) {
+          delete perUnit.stockQuantity;
+        }
+
+        // First, so a product with options answers why before any price rule does. A product with
+        // options prices and counts each combination on its own; one price sent for the whole
+        // product would be a claim about every variant that no variant made.
+        if (Object.keys(perUnit).length > 0 && hasOptions) {
+          throw new ConflictException(
+            catalogError('PRODUCT_HAS_OPTIONS', 'This product has options: price and stock belong to its variants'),
+          );
+        }
+
+        const after = { ...current, ...perUnit };
+        assertPrices(after.priceCents, after.compareAtPriceCents);
+        // Against what the row will hold after the patch, not against what was sent: sending one
+        // side on a product that already has the other two is a complete box, and refusing it
+        // would be a rule about the request rather than about the parcel.
+        assertParcel(after.lengthMm, after.widthMm, after.heightMm);
+
+        slug = renaming ? this.slugs.resolve(dto.slug, dto.name ?? current.name) : current.slug;
+
+        await tx.product.update({
+          where: { id: productId },
+          data: {
+            ...(renaming
+              ? {
+                  slug,
+                  slugHistory: this.slugs.historyAfterRename(current.slug, slug, current.slugHistory),
+                  name: dto.name ?? current.name,
+                }
+              : {}),
+            ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
+            ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId ?? null } : {}),
+            ...(dto.status !== undefined ? { status: dto.status } : {}),
+            ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
+            // Images are replaced whole when the key is sent: the panel's gallery reports the list
+            // it now holds, including the order, and reconciling that row by row would be a diff
+            // the client already computed. Omitting the key leaves the photos alone.
+            ...(dto.images !== undefined
+              ? { images: { deleteMany: {}, create: imageRows(dto.images) } }
+              : {}),
+          },
+        });
+
+        if (Object.keys(perUnit).length > 0) {
+          // Without options, the product's one variant is its default, and it takes the values.
+          await tx.productVariant.updateMany({ where: { productId, archivedAt: null }, data: perUnit });
+          await syncProductCache(tx, productId);
+        }
+
+        return tx.product.findUniqueOrThrow({ where: { id: productId }, include: productDetailInclude });
       });
 
-      return toProduct(row);
+      return toProductDetail(row);
     } catch (error) {
-      if (isUniqueViolation(error)) throw this.taken(slug);
-      throw error;
+      throw this.conflictOf(error, slug);
     }
   }
 
@@ -362,41 +347,6 @@ export class ProductsService {
     return rows.map(toProduct);
   }
 
-  /**
-   * A "was" price at or below the price is not a discount, it is a number that makes the storefront
-   * render a negative percentage. Refused here rather than in the DTO because it is a rule about
-   * two fields, and on update one of them may be the stored value rather than one that was sent.
-   */
-  private assertPrices(priceCents: number, compareAtPriceCents: number | null): void {
-    if (compareAtPriceCents !== null && compareAtPriceCents <= priceCents) {
-      throw new BadRequestException(
-        catalogError(
-          'CATALOG_PRICE_INVALID',
-          'compareAtPriceCents must be above priceCents, or absent when there is no discount',
-        ),
-      );
-    }
-  }
-
-  /**
-   * All three sides or none.
-   *
-   * A carrier quotes on a box, and a box with two of its three sides is not a box. Refusing it
-   * here is what stops the shape reaching Melhor Envio in phase 4 and being refused there — where
-   * the message is about their API and arrives while a customer is waiting at a checkout.
-   */
-  private assertParcel(length: number | null, width: number | null, height: number | null): void {
-    const given = [length, width, height].filter((side) => side !== null).length
-    if (given !== 0 && given !== 3) {
-      throw new BadRequestException(
-        catalogError(
-          'CATALOG_PARCEL_INCOMPLETE',
-          'Send all three of lengthMm, widthMm and heightMm, or none of them',
-        ),
-      )
-    }
-  }
-
   private async assertCategoryOwned(storeId: string, categoryId: string): Promise<void> {
     const row = await this.prisma.productCategory.findFirst({
       where: { id: categoryId, storeId },
@@ -416,16 +366,26 @@ export class ProductsService {
       include: productInclude,
     });
 
-    if (!row) {
-      throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product ${productId} in this shop`));
-    }
+    if (!row) throw this.notFound(productId);
 
     return row;
   }
 
-  private taken(slug: string): ConflictException {
-    return new ConflictException(
-      catalogError('PRODUCT_SLUG_TAKEN', `This shop already has a product at "${slug}"`),
-    );
+  private notFound(productId: string): NotFoundException {
+    return new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product ${productId} in this shop`));
+  }
+
+  /** A refused unique index as the conflict it means, or the error as it came. */
+  private conflictOf(error: unknown, slug: string): unknown {
+    const model = uniqueViolationOn(error);
+
+    if (model === 'ProductVariant') return skuTaken();
+    if (model === 'Product') {
+      return new ConflictException(
+        catalogError('PRODUCT_SLUG_TAKEN', `This shop already has a product at "${slug}"`),
+      );
+    }
+
+    return error;
   }
 }

@@ -34,9 +34,11 @@ export const imageUrl = IsUrl({ protocols: ['http', 'https'], require_protocol: 
  * other reading — and prepending 55 is what stops the link reaching nobody. The legacy stripped
  * punctuation at six call sites and prepended nothing.
  */
-const normaliseWhatsapp = Transform(({ value }: { value: unknown }) => {
+export const normaliseWhatsapp = Transform(({ value }: { value: unknown }) => {
   if (typeof value !== 'string') return value;
-  const digits = value.replace(/\D/g, '');
+  // "(011) 98888-7777" and "0 21 11 98888-7777" are the same number written with the long-distance
+  // prefix and a carrier code; neither is part of it, and no number in E.164 starts with 0.
+  const digits = value.replace(/\D/g, '').replace(/^0(?:\d{2})?(?=\d{10,11}$)/, '');
   return digits.length === 10 || digits.length === 11 ? `55${digits}` : digits;
 });
 

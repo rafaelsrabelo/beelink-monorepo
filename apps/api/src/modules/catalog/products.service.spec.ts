@@ -5,8 +5,7 @@ import type { CatalogSlugService } from './catalog-slug.service.js';
 import type { ProductRow } from './catalog.mapper.js';
 
 // App
-import { PRODUCTS_PAGE_SIZE, PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
-import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
+import { PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
 import { ProductsService } from './products.service.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -18,6 +17,7 @@ function rows(count: number): ProductRow[] {
     slug: `produto-${index}`,
     name: `Produto ${index}`,
     priceCents: 4990,
+    maxPriceCents: 4990,
     compareAtPriceCents: null,
     images: [],
     category: null,
@@ -43,120 +43,6 @@ function build(page: ProductRow[], total: number) {
 
   return { service, findMany, count, transaction };
 }
-
-describe('ProductsService.listPublic — the page and what it is a page of', () => {
-  it('answers how many the filter matched, never how many came back', async () => {
-    // `total: products.length` is the classic version of this bug: it reports a last page of six of
-    // a hundred and thirty-seven as six, and the pager it feeds then offers no page at all.
-    const { service } = build(rows(PRODUCTS_PAGE_SIZE), 137);
-
-    const answer = await service.listPublic(STORE, { search: 'croche' });
-
-    expect(answer.total).toBe(137);
-    expect(answer.products).toHaveLength(PRODUCTS_PAGE_SIZE);
-  });
-
-  it('counts over the same filter the page was read with', async () => {
-    const { service, findMany, count } = build(rows(2), 2);
-
-    await service.listPublic(STORE, { category: 'blusas', search: 'croche' });
-
-    expect(count.mock.calls[0][0].where).toEqual(findMany.mock.calls[0][0].where);
-    expect(count.mock.calls[0][0].where).toMatchObject({
-      storeId: STORE,
-      category: {
-        isActive: true,
-        // The shelf of a parent holds what is under it. Without the second arm, filtering
-        // `Proteínas` in a shop that files every whey under `Proteínas → Whey` answers with
-        // nothing — and the shopkeeper reports it as "my category is empty".
-        OR: [{ slug: 'blusas' }, { parent: { slug: 'blusas', isActive: true } }],
-      },
-    });
-  });
-
-  /**
-   * The shelf rule and the search each carry an `OR`. Spread into one object the second overwrites
-   * the first, and the shop window answers the search over sold-out products too — with a total
-   * that agrees with it, so nothing looks wrong until someone counts by hand.
-   */
-  it('keeps the shelf rule and the search as separate conditions', async () => {
-    const { service, findMany } = build(rows(1), 1);
-
-    await service.listPublic(STORE, { search: 'croche' });
-
-    const and = findMany.mock.calls[0][0].where.AND as { status?: string; OR: unknown[] }[];
-    expect(and).toHaveLength(2);
-    expect(and[0]).toEqual(ON_THE_SHELF_WHERE);
-    expect(and[1]?.OR).toHaveLength(2);
-  });
-
-  it('leaves a sold-out product off the shelf, counting a null quantity as none', async () => {
-    const { service, findMany } = build(rows(1), 1);
-
-    await service.listPublic(STORE);
-
-    const [shelf] = findMany.mock.calls[0][0].where.AND as { status: string; OR: unknown[] }[];
-    expect(shelf?.status).toBe('ACTIVE');
-    expect(shelf?.OR).toEqual([{ trackStock: false }, { stockQuantity: { gt: 0 } }]);
-  });
-
-  /**
-   * The product page is the one public read that does NOT apply the shelf rule, and it is a
-   * decision: this address goes out on WhatsApp, and a 404 the day the stock runs out breaks every
-   * link already shared. The page answers, marked sold out, with no way to order.
-   */
-  it('still serves the page of a product whose shelf is empty', async () => {
-    const [row] = rows(1);
-    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: true, stockQuantity: 0 });
-    const service = new ProductsService(
-      { product: { findFirst } } as never,
-      {} as StoresService,
-      {} as CatalogSlugService,
-    );
-
-    const product = await service.publicBySlug(STORE, 'bolsa-amora');
-
-    expect(findFirst.mock.calls[0][0].where).toEqual({ storeId: STORE, slug: 'bolsa-amora', status: 'ACTIVE' });
-    expect(product.soldOut).toBe(true);
-  });
-
-  it('does not call a made-to-order product sold out, however empty its count column is', async () => {
-    const [row] = rows(1);
-    const findFirst = vi.fn().mockResolvedValue({ ...row, description: null, trackStock: false, stockQuantity: 0 });
-    const service = new ProductsService(
-      { product: { findFirst } } as never,
-      {} as StoresService,
-      {} as CatalogSlugService,
-    );
-
-    expect((await service.publicBySlug(STORE, 'bolsa-amora')).soldOut).toBe(false);
-  });
-
-  it('reads both in one transaction, so they cannot fall either side of a write', async () => {
-    const { service, transaction } = build(rows(1), 1);
-
-    await service.listPublic(STORE);
-
-    expect(transaction).toHaveBeenCalledTimes(1);
-    expect(transaction.mock.calls[0]?.[0]).toHaveLength(2);
-  });
-
-  it('skips the pages before the one asked for', async () => {
-    const { service, findMany } = build(rows(12), 137);
-
-    await service.listPublic(STORE, { page: 3, pageSize: 12 });
-
-    expect(findMany.mock.calls[0]?.[0]).toMatchObject({ skip: 24, take: 12 });
-  });
-
-  it('serves the first page of PRODUCTS_PAGE_SIZE when the caller asks for neither', async () => {
-    const { service, findMany } = build(rows(PRODUCTS_PAGE_SIZE), 137);
-
-    await service.listPublic(STORE);
-
-    expect(findMany.mock.calls[0]?.[0]).toMatchObject({ skip: 0, take: PRODUCTS_PAGE_SIZE });
-  });
-});
 
 describe('ProductsService.list — the panel, filtered', () => {
   /**
@@ -215,7 +101,7 @@ describe('ProductsService.list — the panel, filtered', () => {
     const and = findMany.mock.calls[0][0].where.AND as { OR?: unknown[]; trackStock?: boolean }[];
     expect(and).toHaveLength(2);
     expect(and[0]).toMatchObject({ trackStock: true });
-    expect(and[1]?.OR).toHaveLength(3);
+    expect(and[1]?.OR).toHaveLength(4);
   });
 
   it('matches the name, the code and the barcode — whichever the shopkeeper has in hand', async () => {
@@ -224,7 +110,27 @@ describe('ProductsService.list — the panel, filtered', () => {
     await service.list('lessari', 'user-1', { search: 'WH-900' });
 
     const conditions = findMany.mock.calls[0][0].where.AND as { OR: Record<string, unknown>[] }[];
-    expect(conditions[0]?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode']);
+    expect(conditions[0]?.OR.map((arm) => Object.keys(arm)[0])).toEqual(['name', 'sku', 'barcode', 'variants']);
+  });
+
+  /** A product with options has a code per combination, and the one in hand may be any current one. */
+  it('also matches the code and the barcode of every variant', async () => {
+    const { service, findMany } = buildOwned(ownerRows(1), 1);
+
+    await service.list('lessari', 'user-1', { search: 'BLS-P-ARE' });
+
+    const conditions = findMany.mock.calls[0][0].where.AND as { OR: Record<string, unknown>[] }[];
+    expect(conditions[0]?.OR[3]).toEqual({
+      variants: {
+        some: {
+          archivedAt: null,
+          OR: [
+            { sku: { contains: 'BLS-P-ARE', mode: 'insensitive' } },
+            { barcode: { contains: 'BLS-P-ARE', mode: 'insensitive' } },
+          ],
+        },
+      },
+    });
   });
 
   /**

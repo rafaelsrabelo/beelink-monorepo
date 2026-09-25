@@ -103,9 +103,46 @@ describe("proxy", () => {
  * any other shape, such as the template's `/((?!api|…).*)`, falls through as the regex it already is
  * and is caught for what it selects.
  */
-function selects(pathname: string): boolean {
-  return config.matcher.some((entry) => new RegExp(`^${entry.replace("/:path*", "(?:/.*)?")}$`).test(pathname))
+function selects(pathname: string, cookies: readonly string[] = []): boolean {
+  return config.matcher.some((entry) => {
+    if (typeof entry === "string") return new RegExp(`^${entry.replace("/:path*", "(?:/.*)?")}$`).test(pathname)
+
+    // The shop window's entry: a first segment that is neither Next's nor the API's, and the
+    // shopper's cookies present and absent as the conditions say.
+    const segment = pathname.split("/")[1] ?? ""
+    const shaped = /^[^/.]+$/.test(segment) && !/^(_next|api)/.test(segment)
+    return shaped && entry.has.every((rule) => cookies.includes(rule.key)) && entry.missing.every((rule) => !cookies.includes(rule.key))
+  })
 }
+
+describe("a shopper on a shop's pages", () => {
+  it("renews an expired session in place, and never redirects", async () => {
+    const fetched = vi.fn(async () => Response.json(SESSION, { status: 200 }))
+    vi.stubGlobal("fetch", fetched)
+
+    const response = await proxy(request("/minha-loja/produtos", "bl_customer_refresh=old"))
+
+    expect(response.headers.get("location")).toBeNull()
+    expect(response.cookies.get("bl_customer_access")?.value).toBe("new-access")
+    expect(String((fetched.mock.calls[0] as unknown[] | undefined)?.[0])).toContain("/stores/minha-loja/customer/refresh")
+  })
+
+  it("lets a refused shopper browse on, signed out", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "AUTH_TOKEN_INVALID" }, { status: 401 })))
+
+    const response = await proxy(request("/minha-loja", "bl_customer_refresh=old"))
+
+    expect(response.headers.get("location")).toBeNull()
+    expect(response.cookies.get("bl_customer_refresh")?.value).toBe("")
+  })
+
+  it("leaves a shop page alone with no shopper's session, the panel's cookies notwithstanding", async () => {
+    const response = await proxy(request("/minha-loja", "bl_refresh=owner"))
+
+    expect(response.headers.get("location")).toBeNull()
+    expect(response.cookies.get("bl_access")).toBeUndefined()
+  })
+})
 
 describe("the proxy matcher", () => {
   /**
@@ -117,10 +154,14 @@ describe("the proxy matcher", () => {
   it("never selects a storefront path, which is the only reason one stays public", async () => {
     expect(selects("/minha-loja")).toBe(false)
     expect(selects("/minha-loja/produto-1")).toBe(false)
+    // Nor for a shopper whose session is alive, or one who has none: only an expired one is kept up.
+    expect(selects("/minha-loja", ["bl_customer_refresh", "bl_customer_access"])).toBe(false)
+    expect(selects("/minha-loja", ["bl_access", "bl_refresh"])).toBe(false)
+    expect(selects("/minha-loja/produtos", ["bl_customer_refresh"])).toBe(true)
 
-    // What the storefront is spared, shown once: asked directly, the proxy sends it to /login.
+    // And were it handed over anyway, the proxy lets a shop path through: it never sends one to /login.
     const response = await proxy(request("/minha-loja"))
-    expect(response.headers.get("location")).toBe("http://localhost:3000/login")
+    expect(response.headers.get("location")).toBeNull()
   })
 
   it("still selects everything that needs a session, and the screens that end one", () => {

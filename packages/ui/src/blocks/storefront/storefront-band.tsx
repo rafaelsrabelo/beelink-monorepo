@@ -12,8 +12,11 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
  * side, and a rail of four product cards inside it has cards the size of stamps. Every shop this
  * was measured against runs to about this width and then stops — stopping matters too, because a
  * line of body text the full width of a 27-inch screen is a line nobody finishes.
+ *
+ * 32px at the sides from `shop-lg`, which is the gutter the 5a/5b designs draw at 1440: the
+ * header, every band and the footer line up on it. Below that, the phone's 16 and the tablet's 24.
  */
-export const BAND = "mx-auto w-full max-w-[1440px] px-4 shop-sm:px-6 shop-lg:px-10"
+export const BAND = "mx-auto w-full max-w-[1440px] px-4 shop-sm:px-6 shop-lg:px-8"
 
 export interface StorefrontBandProps {
   children: ReactNode

@@ -3,6 +3,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Types
 import type {
+  CardOptionSummary,
+  PriceRange,
   Product,
   ProductCategory,
   ProductPage,
@@ -13,10 +15,13 @@ import type {
   PublicProductCategory,
   PublicProductImage,
   StorefrontCatalog,
+  StorefrontSort,
 } from '@harness-monorepo/contracts';
 
 // App
+import { STOREFRONT_SORTS } from '../catalog-filters.js';
 import { PRODUCT_ORIGINS, PRODUCT_STATUSES, PRODUCTS_PAGE_SIZE } from '../catalog.constants.js';
+import { AppliedCatalogFilterResponse, CatalogFacetsResponse } from './listing.response.js';
 
 /**
  * The shapes out, for Swagger. Each `implements` its contract type, so a field added to the wire
@@ -58,6 +63,22 @@ export class PublicProductImageResponse implements PublicProductImage {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() url!: string;
   @ApiProperty({ nullable: true, type: String }) alt!: string | null;
+  @ApiProperty({
+    type: [String],
+    format: 'uuid',
+    description: 'The option values the photo is of. Empty: every combination. One option widens, several narrow.',
+  })
+  optionValueIds!: string[];
+}
+
+export class PriceRangeResponse implements PriceRange {
+  @ApiProperty({ example: 6990, description: 'Whole cents; the same as priceCents.' }) minCents!: number;
+  @ApiProperty({ example: 20990, description: 'Whole cents.' }) maxCents!: number;
+}
+
+export class CardOptionSummaryResponse implements CardOptionSummary {
+  @ApiProperty({ example: 'Sabor' }) name!: string;
+  @ApiProperty({ example: 4 }) valueCount!: number;
 }
 
 export class PublicProductCardResponse implements PublicProductCard {
@@ -69,6 +90,26 @@ export class PublicProductCardResponse implements PublicProductCard {
   compareAtPriceCents!: number | null;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({ nullable: true, type: String }) categorySlug!: string | null;
+  @ApiProperty({ type: PriceRangeResponse, description: 'The cheapest and dearest variant a customer can order.' })
+  priceRange!: PriceRangeResponse;
+  @ApiProperty({
+    required: false,
+    description: 'Whether it sells combinations. On the shop window\'s shelves only; absent reads as "choose on the page".',
+  })
+  hasOptions?: boolean;
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: "Up to five photos in the shopkeeper's order, the cover first. On the shop window's shelves and showcases only.",
+  })
+  imageUrls?: string[];
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    type: CardOptionSummaryResponse,
+    description: 'The first option and how many values it offers ("4 sabores"); null without options. On the shelves and showcases only.',
+  })
+  optionSummary?: CardOptionSummaryResponse | null;
 }
 
 export class PublicProductResponse extends PublicProductCardResponse implements PublicProduct {
@@ -138,4 +179,13 @@ export class StorefrontCatalogResponse implements StorefrontCatalog {
 
   @ApiProperty({ example: PRODUCTS_PAGE_SIZE, description: 'The page size actually served.' })
   pageSize!: number;
+
+  @ApiProperty({ enum: STOREFRONT_SORTS, description: 'The order served.' })
+  sort!: StorefrontSort;
+
+  @ApiProperty({ type: CatalogFacetsResponse, description: 'Each facet counts under every filter but its own.' })
+  facets!: CatalogFacetsResponse;
+
+  @ApiProperty({ type: [AppliedCatalogFilterResponse] })
+  applied!: AppliedCatalogFilterResponse[];
 }

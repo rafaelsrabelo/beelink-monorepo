@@ -20,8 +20,12 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { ProductsService } from './products.service.js';
+import { ProductVariantsService } from './product-variants.service.js';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
+import { ReplaceProductOptionsDto } from './dto/product-options.dto.js';
+import { UpdateProductVariantsDto } from './dto/product-variants.dto.js';
 import { ProductPageResponse, ProductResponse } from './dto/catalog.response.js';
+import { ProductDetailResponse } from './dto/variant.response.js';
 import { ListProductsDto } from './dto/list-products.dto.js';
 import { ReorderDto } from './dto/reorder.dto.js';
 
@@ -32,7 +36,10 @@ import { ReorderDto } from './dto/reorder.dto.js';
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
 @Controller('stores/:storeSlug/products')
 export class ProductsController {
-  constructor(private readonly products: ProductsService) {}
+  constructor(
+    private readonly products: ProductsService,
+    private readonly variants: ProductVariantsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: "One page of the shop's products, drafts included, in the chosen order" })
@@ -50,14 +57,14 @@ export class ProductsController {
 
   @Post()
   @ApiOperation({ summary: 'Add a product. Money is whole cents' })
-  @ApiCreatedResponse({ type: ProductResponse })
+  @ApiCreatedResponse({ type: ProductDetailResponse })
   @ApiBadRequestResponse({ description: 'CATALOG_SLUG_RESERVED · CATALOG_SLUG_EMPTY · CATALOG_PRICE_INVALID' })
-  @ApiConflictResponse({ description: 'PRODUCT_SLUG_TAKEN' })
+  @ApiConflictResponse({ description: 'PRODUCT_SLUG_TAKEN · PRODUCT_SKU_TAKEN' })
   create(
     @Param('storeSlug') storeSlug: string,
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: CreateProductDto,
-  ): Promise<ProductResponse> {
+  ): Promise<ProductDetailResponse> {
     return this.products.create(storeSlug, current.id, dto);
   }
 
@@ -75,30 +82,69 @@ export class ProductsController {
   }
 
   @Get(':productId')
-  @ApiOperation({ summary: 'One product, as its owner edits it' })
-  @ApiOkResponse({ type: ProductResponse })
+  @ApiOperation({ summary: 'One product, as its owner edits it, with its options and variants' })
+  @ApiOkResponse({ type: ProductDetailResponse })
   @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND' })
   byId(
     @Param('storeSlug') storeSlug: string,
     @Param('productId') productId: string,
     @CurrentUser() current: AuthenticatedUser,
-  ): Promise<ProductResponse> {
+  ): Promise<ProductDetailResponse> {
     return this.products.byId(storeSlug, productId, current.id);
   }
 
   @Put(':productId')
   @ApiOperation({ summary: 'Edit a product. Sending images replaces the gallery; omitting it leaves it' })
-  @ApiOkResponse({ type: ProductResponse })
+  @ApiOkResponse({ type: ProductDetailResponse })
   @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND · PRODUCT_CATEGORY_NOT_FOUND' })
   @ApiBadRequestResponse({ description: 'CATALOG_SLUG_RESERVED · CATALOG_PRICE_INVALID' })
-  @ApiConflictResponse({ description: 'PRODUCT_SLUG_TAKEN' })
+  @ApiConflictResponse({ description: 'PRODUCT_SLUG_TAKEN · PRODUCT_SKU_TAKEN · PRODUCT_HAS_OPTIONS' })
   update(
     @Param('storeSlug') storeSlug: string,
     @Param('productId') productId: string,
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: UpdateProductDto,
-  ): Promise<ProductResponse> {
+  ): Promise<ProductDetailResponse> {
     return this.products.update(storeSlug, productId, current.id, dto);
+  }
+
+  @Put(':productId/options')
+  @ApiOperation({
+    summary: 'Replace the options, whole and in order',
+    description:
+      'A combination that still exists keeps its variant, price, stock and code. A new option extends every ' +
+      'variant with its first value; a new combination takes the price of the variant closest to it. A ' +
+      'variant whose combination is gone is archived, never deleted, and releases its code.',
+  })
+  @ApiOkResponse({ type: ProductDetailResponse })
+  @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND · PRODUCT_OPTION_NOT_FOUND' })
+  @ApiBadRequestResponse({
+    description: 'PRODUCT_OPTION_DUPLICATE · PRODUCT_VARIANTS_LIMIT · BAD_REQUEST (more than 3 options, an option with no value)',
+  })
+  replaceOptions(
+    @Param('storeSlug') storeSlug: string,
+    @Param('productId') productId: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: ReplaceProductOptionsDto,
+  ): Promise<ProductDetailResponse> {
+    return this.variants.replaceOptions(storeSlug, productId, current.id, dto);
+  }
+
+  @Put(':productId/variants')
+  @ApiOperation({ summary: 'Edit several variants at once. Variants not listed are left as they are' })
+  @ApiOkResponse({ type: ProductDetailResponse })
+  @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND · PRODUCT_VARIANT_NOT_FOUND' })
+  @ApiBadRequestResponse({
+    description: 'CATALOG_PRICE_INVALID · CATALOG_PARCEL_INCOMPLETE · BAD_REQUEST (a negative price, more than 100 variants)',
+  })
+  @ApiConflictResponse({ description: 'PRODUCT_SKU_TAKEN' })
+  updateVariants(
+    @Param('storeSlug') storeSlug: string,
+    @Param('productId') productId: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: UpdateProductVariantsDto,
+  ): Promise<ProductDetailResponse> {
+    return this.variants.updateVariants(storeSlug, productId, current.id, dto);
   }
 
   @Delete(':productId')

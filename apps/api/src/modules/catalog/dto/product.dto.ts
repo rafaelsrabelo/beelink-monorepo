@@ -35,6 +35,7 @@ import {
   PARCEL_GRAMS_MAX,
   PARCEL_MM_MAX,
   PRICE_CENTS_MAX,
+  PRODUCT_IMAGE_VALUES_MAX,
   PRODUCT_IMAGES_MAX,
   PRODUCT_NAME_MAX_LENGTH,
   PRODUCT_ORIGINS,
@@ -55,6 +56,18 @@ export class ProductImageDto implements ProductImagePayload {
   @MaxLength(IMAGE_ALT_MAX_LENGTH)
   @blankToNull
   alt?: string | null;
+
+  @ApiPropertyOptional({
+    type: [String],
+    format: 'uuid',
+    maxItems: PRODUCT_IMAGE_VALUES_MAX,
+    description: "Values of this product's options that the photo is of. Absent or empty: every combination.",
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(PRODUCT_IMAGE_VALUES_MAX)
+  @IsUUID('all', { each: true })
+  optionValueIds?: string[];
 }
 
 export class CreateProductDto implements CreateProductPayload {
