@@ -532,6 +532,13 @@ export const ptBR: UiMessages = {
       inspectorLabel: "Editar bloco",
       previewLabel: "Prévia da loja",
     },
+    inspector: {
+      tabsLabel: "Editar {name}",
+      content: "Conteúdo",
+      layout: "Layout",
+      style: "Estilo",
+      needsAttention: "precisa de atenção",
+    },
     addBlock: "Adicionar bloco",
     addToBand: "Adicionar nesta faixa",
     insertBand: "Nova faixa na posição {position}",

@@ -532,6 +532,13 @@ export const en: UiMessages = {
       inspectorLabel: "Edit block",
       previewLabel: "Shop preview",
     },
+    inspector: {
+      tabsLabel: "Edit {name}",
+      content: "Content",
+      layout: "Layout",
+      style: "Style",
+      needsAttention: "needs attention",
+    },
     addBlock: "Add block",
     addToBand: "Add to this band",
     insertBand: "New band at position {position}",

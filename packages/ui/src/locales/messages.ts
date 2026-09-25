@@ -663,6 +663,16 @@ export interface UiMessages {
       inspectorLabel: string
       previewLabel: string
     }
+    /** The chosen block's panel: Conteúdo, Layout and Estilo, and what each one says of itself. */
+    inspector: {
+      /** "Editar {name}": the tabs' name for a reader. */
+      tabsLabel: string
+      content: string
+      layout: string
+      style: string
+      /** Said to a reader beside a tab holding what keeps Salvar off. */
+      needsAttention: string
+    }
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */
     addToBand: string
