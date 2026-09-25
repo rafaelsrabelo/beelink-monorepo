@@ -22,8 +22,9 @@ export interface ScrollRailProps {
   heading?: ReactNode
   /**
    * "Página {current} de {total}". Given, the arrows step a page at a time and the heading's row says
-   * which page is in view — from shop-lg, where a page is several cards; on a phone it would count
-   * nine pages of two.
+   * which page is in view — from shop-sm, where a page is three cards or more; on a phone it would
+   * count nine pages of two. On a touch tablet, with no arrows and no scrollbar, it is what says there
+   * is more.
    */
   pageStatus?: string
 }
@@ -170,7 +171,9 @@ export function ScrollRail({ label, previousLabel, nextLabel, children, heading,
         <div className="flex items-baseline gap-4">
           {heading}
           {pageStatus && total !== "1" ? (
-            <p className="ml-auto hidden text-[13px] text-shop-muted shop-lg:block">{format(pageStatus, { current: current ?? "1", total: total ?? "1" })}</p>
+            <p aria-live="polite" className="ml-auto hidden text-[13px] text-shop-muted shop-sm:block">
+              {format(pageStatus, { current: current ?? "1", total: total ?? "1" })}
+            </p>
           ) : null}
         </div>
       ) : null}

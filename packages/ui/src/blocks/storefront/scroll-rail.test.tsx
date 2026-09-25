@@ -194,7 +194,8 @@ describe("ScrollRail", () => {
   it("says which page is in view beside its heading, and nothing when there is only one", () => {
     const { unmount } = renderRail({ paged: true, contentWidth: 2368, at: 784 })
     expect(screen.getByRole("heading", { name: "Você também pode gostar" })).toBeInTheDocument()
-    expect(screen.getByText("Página 2 de 3")).toHaveClass("hidden", "shop-lg:block")
+    expect(screen.getByText("Página 2 de 3")).toHaveClass("hidden", "shop-sm:block")
+    expect(screen.getByText("Página 2 de 3")).toHaveAttribute("aria-live", "polite")
     unmount()
 
     renderRail({ paged: true, contentWidth: 700 })

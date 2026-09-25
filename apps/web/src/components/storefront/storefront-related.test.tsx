@@ -22,12 +22,18 @@ async function renderRelated(catalogue: Promise<StorefrontCatalog | null>, produ
 }
 
 describe("StorefrontRelated", () => {
-  it("never suggests the product on the page, and holds three pages of six", async () => {
-    await renderRelated(Promise.resolve(catalogueOf(19)))
+  it("never suggests the product on the page", async () => {
+    await renderRelated(Promise.resolve(catalogueOf(5)))
 
-    const links = screen.getAllByRole("link")
-    expect(links).toHaveLength(18)
-    expect(screen.queryByRole("link", { name: /^Produto 0\b/ })).not.toBeInTheDocument()
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"))
+    expect(hrefs).toHaveLength(4)
+    expect(hrefs).not.toContain("/loja/produtos/produto-0")
+  })
+
+  it("holds three pages of six, whatever the read brings", async () => {
+    await renderRelated(Promise.resolve(catalogueOf(25)), "outro")
+
+    expect(screen.getAllByRole("link")).toHaveLength(18)
   })
 
   it("draws no rail when the read failed, or found only this product", async () => {

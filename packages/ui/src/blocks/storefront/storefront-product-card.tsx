@@ -69,13 +69,16 @@ export function StorefrontProductCard({
     return (
       // Relative, so the price's screen-reader text is placed inside the card: positioned against
       // an ancestor outside the rail's scroller, it escapes the clip and widens the page.
-      <Link href={href} className="relative flex h-full flex-col gap-1.5 text-shop-on-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-shop-primary-ink">
+      // The focus ring drawn inside: a rail's scroller clips whatever falls outside the card.
+      <Link href={href} className="relative flex h-full flex-col gap-1.5 text-shop-on-background focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-shop-primary-ink">
         <span className="block h-[180px] overflow-hidden rounded-[12px] bg-shop-placeholder">
           {/* Decorative, as on the full card: the name right under it says what it is. */}
           {product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" /> : null}
         </span>
         <span className="line-clamp-2 text-[14px] leading-[1.35] text-shop-primary-ink">{product.name}</span>
-        {showPrice ? <StorefrontPrice priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} locale={locale} size="compact" messages={messages} /> : null}
+        {showPrice ? (
+          <StorefrontPrice priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} locale={locale} size="compact" className="leading-[1.2]" messages={messages} />
+        ) : null}
       </Link>
     )
   }

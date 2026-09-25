@@ -60,3 +60,22 @@ do D4; SKU nunca é público (BEELINK-21).
 
 - "Compre junto" (sem combos, C6), avaliações (adiadas) e a área de imagens da descrição.
 - Nota e Pix nos cards relacionados (sem dados).
+
+## Revisão (25/09/2026)
+
+Três leituras independentes, cada achado verificado por um revisor que tentou refutá-lo. Seis
+confirmados, todos corrigidos; dois rejeitados.
+
+- **"Página X de Y" a partir de `shop-sm`, não de `shop-lg`** (corrige o item 2 da Definição de
+  Pronto). Num tablet de toque o trilho não tem barra, nem setas, nem ponta do próximo card: o
+  contador é o que diz que há mais. Ele é `aria-live`, então quem usa leitor de tela ouve a página
+  mudar ao usar as setas.
+- **O contorno do foco do card compacto fica dentro do card**: o rolador cortava o que passava da
+  borda.
+- **Alturas de 5b**: a linha do preço do card compacto e as linhas da tabela técnica com altura de
+  linha 1,2 (22px e 38px, como no design).
+- **Os testes dos relacionados passam a provar** que o próprio produto nunca aparece e que o trilho
+  para em 18.
+
+Rejeitados: a tabela listar valores de opção sem combinação à venda (é o que a loja cadastrou), e o
+alinhamento vertical dos rótulos (5b tem uma linha só por rótulo).

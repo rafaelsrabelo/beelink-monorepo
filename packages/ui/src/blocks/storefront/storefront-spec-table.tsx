@@ -10,7 +10,7 @@ export function StorefrontSpecTable({ rows }: StorefrontSpecTableProps) {
   if (rows.length === 0) return null
 
   return (
-    <table className="w-full border-collapse border border-shop-line text-[14px]">
+    <table className="w-full border-collapse border border-shop-line text-[14px] leading-[1.2]">
       <tbody>
         {rows.map((row) => (
           <tr key={row.label} className="border-b border-shop-line last:border-b-0">
