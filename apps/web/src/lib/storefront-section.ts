@@ -126,6 +126,8 @@ export function headingOf({ section, category, navigation, scope, signInMode, me
       return text.cart
     case "signIn":
       return signInMode === "criar" ? text.signUpTitle : signInMode === "senha" ? text.forgotTitle : text.signInTitle
+    case "account":
+      return text.account
     case "category":
       return category?.name ?? text.catalogTitle
   }
@@ -176,6 +178,8 @@ export function canonicalOf({ section, category }: SectionPlace, routes: Storefr
       return routes.cart()
     case "signIn":
       return routes.signIn()
+    case "account":
+      return routes.account()
     case "catalog":
       return routes.catalog()
   }

@@ -95,6 +95,43 @@ describe("the shop's sign-in form", () => {
     expect(response.cookies.get("bl_customer_refresh")?.value).toBe("")
   })
 
+  it("saves the shopper's details with their token, and comes back saying so", async () => {
+    const fetched = vi.fn(async () => Response.json({ id: "c1" }, { status: 200 }))
+    vi.stubGlobal("fetch", fetched)
+
+    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", city: "São Paulo", retorno: "/loja/conta" }, { cookie: "bl_customer_access=a" })
+    const [url, init] = (fetched.mock.calls[0] ?? []) as unknown as [string, RequestInit]
+
+    expect(url).toContain("/stores/loja/customer/me")
+    expect(init.method).toBe("PATCH")
+    expect(new Headers(init.headers).get("authorization")).toBe("Bearer a")
+    expect(JSON.parse(String(init.body))).toMatchObject({ name: "Bia", phone: "(11) 98888-7777", address: { city: "São Paulo", street: "" } })
+    expect(response.headers.get("location")).toBe("http://localhost:3000/loja/conta?salvo=1")
+  })
+
+  it("renews a token that ran out since the page loaded, once, and keeps the new pair", async () => {
+    const fetched = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ errorCode: "AUTH_UNAUTHENTICATED" }, { status: 401 }))
+      .mockResolvedValueOnce(Response.json(SESSION, { status: 200 }))
+      .mockResolvedValueOnce(Response.json({ id: "c1" }, { status: 200 }))
+    vi.stubGlobal("fetch", fetched)
+
+    const response = await post("perfil", { name: "Bia", retorno: "/loja/conta" }, { cookie: "bl_customer_access=old; bl_customer_refresh=r" })
+
+    expect(response.headers.get("location")).toBe("http://localhost:3000/loja/conta?salvo=1")
+    expect(response.cookies.get("bl_customer_access")?.value).toBe("shopper-access")
+    expect(fetched).toHaveBeenCalledTimes(3)
+  })
+
+  it("says what to fix when the details are refused", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "BAD_REQUEST" }, { status: 400 })))
+
+    const location = new URL((await post("perfil", { phone: "12", retorno: "/loja/conta" }, { cookie: "bl_customer_access=a" })).headers.get("location") ?? "")
+
+    expect(location.searchParams.get("erro")).toBe("CUSTOMER_FIELDS_INVALID")
+  })
+
   it("refuses a post from another site", async () => {
     expect((await post("entrar", form, { origin: "https://evil.example" })).status).toBe(403)
   })

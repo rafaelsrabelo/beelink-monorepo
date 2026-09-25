@@ -2,7 +2,7 @@
 import { Suspense } from "react"
 
 // Next
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import type { Metadata } from "next"
 
 // UI
@@ -13,10 +13,12 @@ import { StorefrontListingSkeleton } from "@harness-monorepo/ui/blocks/storefron
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
+import { StorefrontAccountSection } from "@/components/storefront/storefront-account-section"
 import { StorefrontSectionBand } from "@/components/storefront/storefront-section-band"
 import { StorefrontSignInSection } from "@/components/storefront/storefront-sign-in-section"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
+import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
@@ -50,7 +52,7 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
     alternates: { canonical: canonicalOf(place, storefrontRoutes(place.store)) },
     // A paged or searched shelf is not a landing page; it is the same shelf, reached differently.
     robots:
-      place.page > 1 || place.term || place.section.kind === "cart" || place.section.kind === "signIn"
+      place.page > 1 || place.term || ["cart", "signIn", "account"].includes(place.section.kind)
         ? { index: false, follow: true }
         : undefined,
   }
@@ -71,6 +73,10 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
   const cart = place.section.kind === "cart" ? await cartAt(store.slug) : null
+  const shopper = await shopperAt(store.slug)
+
+  // The shopper's own page is theirs alone: a visitor is sent to sign in, and brought back here.
+  if (place.section.kind === "account" && !shopper) redirect(routes.signIn({ back: routes.account() }) as Parameters<typeof redirect>[0])
 
   return (
     <StorefrontFrame
@@ -84,6 +90,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       searchValue={place.term}
       searchScope={scope ?? null}
       year={new Date().getFullYear()}
+      shopper={shopper}
       body={catalogue ? { layout: "flush", surface: "canvas" } : undefined}
       pageHeader={<StorefrontSectionBand place={place} routes={routes} {...(catalogue ? { catalogue } : {})} locale={locale} />}
       messages={ui}
@@ -94,6 +101,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
         <Suspense fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
+      ) : place.section.kind === "account" && shopper ? (
+        <StorefrontAccountSection slug={store.slug} accountHref={routes.account()} profile={shopper} query={query} errors={(await getMessages()).web.errors} messages={ui} />
       ) : place.section.kind === "signIn" ? (
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (

@@ -11,6 +11,7 @@ import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
 import { getMessages } from "@/lib/locale"
+import { shopperAt } from "@/lib/shopper"
 import { navigationAt, productAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 
@@ -110,6 +111,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
       markedCategory={product.category?.slug ?? null}
       onSale={onSale}
       year={new Date().getFullYear()}
+      shopper={await shopperAt(slug)}
       messages={ui}
     >
       {/*
