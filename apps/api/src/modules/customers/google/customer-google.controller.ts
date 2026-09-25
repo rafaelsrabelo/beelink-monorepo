@@ -13,7 +13,7 @@ import {
   GoogleAuthorizeDto,
   GoogleCallbackDto,
   GoogleSignInResponse,
-} from './customer-google.dto.js';
+} from '../dto/customer-google.dto.js';
 
 /** Keyed by IP, as the password door is. */
 const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMIT_WINDOW };
