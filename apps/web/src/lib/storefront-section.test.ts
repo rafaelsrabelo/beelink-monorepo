@@ -16,7 +16,7 @@ import { LISTING_PAGE_SIZE, canonicalOf, headingOf, isShelf, listingAskOf, pageH
 const store = {
   slug: "loja",
   name: "Loja",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
 } as unknown as PublicStore
 
 const category = (slug: string, parentSlug: string | null = null) =>
@@ -41,6 +41,15 @@ describe("placeOf", () => {
 
     expect(await placeOf("nada", "produtos", {})).toBeNull()
     expect(await placeOf("loja", "qualquer-coisa", {})).toBeNull()
+  })
+
+  // A 404 tells a crawler the page is gone; an outage must not.
+  it("throws — a server error — when the menu could not be read, rather than calling a category missing", async () => {
+    arrange()
+    vi.spyOn(data, "navigationAt").mockResolvedValue({ categories: [], onSale: false, failed: true })
+
+    await expect(placeOf("loja", "whey", {})).rejects.toThrow()
+    expect(await placeOf("loja", "produtos", {})).not.toBeNull()
   })
 
   it("finds a category and the shelf it sits on, from the navigation alone", async () => {

@@ -138,6 +138,7 @@ export function DesignPreviewPane({
                   routes={routes}
                   showPrice={layout.showProductPrice ?? true}
                   showBadge={layout.showProductBadges ?? true}
+                  quickAdd={layout.showQuickAdd ?? true}
                   linkComponent={InertLink}
                   renderSection={(section, band) => (
                     <DesignHandle

@@ -9,6 +9,8 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
+import { MastheadHeight } from "./masthead-height"
+import { StorefrontAccountLink } from "./storefront-account-link"
 import { StorefrontCartLink } from "./storefront-cart-link"
 import { StorefrontSearch, type StorefrontSearchScope } from "./storefront-search"
 
@@ -38,6 +40,8 @@ export interface StorefrontMastheadProps {
   /** Replaces the cart link: the web's live one, which follows the cart as it fills. */
   cartSlot?: ReactNode
   accountHref?: string
+  /** The signed-in shopper's name; absent or null, the link invites them to sign in. */
+  accountName?: string | null
   /** A site's named bands, as anchors. A shop passes none. */
   menu?: readonly StorefrontMenuItem[]
   /** A site's button — its contact band. Kept out of `menu`, which would list it twice. */
@@ -48,9 +52,8 @@ export interface StorefrontMastheadProps {
   messages?: UiMessages
 }
 
-/** The top row, as 5a and 5b draw it, and the menu row under it with its border. */
+/** The top row, as 5a and 5b draw it. */
 const ROW_HEIGHT_PX = 72
-const MENU_HEIGHT_PX = 45
 
 /**
  * The top of the shop window: logo, then either a shop's search and links or a site's menu and
@@ -61,10 +64,8 @@ const MENU_HEIGHT_PX = 45
  * as words beside their marks. The search used to be capped and centred at the owner's request;
  * the designs settled it the other way, and this follows them.
  *
- * It writes its own height into `--shop-masthead-height`, for what sticks below it — the product
- * page's buy box — to read instead of hardcoding a number. The value counts the categories row
- * as the bar draws it; the row of photographs is taller, and whoever needs the exact height under
- * that variant measures it.
+ * It sticks to the top of the page, and `MastheadHeight` measures it into `--shop-masthead-height`
+ * on the window's root, for what sticks or scrolls below it — the product page's buy box — to read.
  */
 export function StorefrontMasthead({
   name,
@@ -81,6 +82,7 @@ export function StorefrontMasthead({
   cartCount = 0,
   cartSlot,
   accountHref,
+  accountName,
   menu = [],
   cta = null,
   categories,
@@ -88,7 +90,6 @@ export function StorefrontMasthead({
   messages = defaultMessages,
 }: StorefrontMastheadProps) {
   const text = messages.storefront
-  const height = ROW_HEIGHT_PX + (categories ? MENU_HEIGHT_PX : 0)
 
   return (
     /*
@@ -111,7 +112,6 @@ export function StorefrontMasthead({
         {
           backgroundColor: "var(--shop-header)",
           color: "var(--shop-on-header)",
-          "--shop-masthead-height": `${height}px`,
         } as CSSProperties
       }
     >
@@ -179,12 +179,7 @@ export function StorefrontMasthead({
           </Link>
         ) : null}
 
-        {accountHref ? (
-          <Link href={accountHref} className="hidden shrink-0 flex-col text-xs leading-[1.3] shop-lg:flex">
-            <span className="opacity-85">{text.accountGreeting}</span>
-            <span className="text-sm font-bold">{text.account}</span>
-          </Link>
-        ) : null}
+        {accountHref ? <StorefrontAccountLink href={accountHref} name={accountName ?? null} linkComponent={Link} messages={messages} /> : null}
 
         {cartSlot ?? (cartHref ? <StorefrontCartLink href={cartHref} count={cartCount} linkComponent={Link} messages={messages} /> : null)}
       </div>
@@ -197,6 +192,7 @@ export function StorefrontMasthead({
           <div className={BAND}>{categories}</div>
         </div>
       ) : null}
+      <MastheadHeight />
     </header>
   )
 }
