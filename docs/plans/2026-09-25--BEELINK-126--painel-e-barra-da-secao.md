@@ -1,0 +1,110 @@
+# BEELINK-126 — O painel em abas e a barra da seção
+
+> **Tier:** plans — verdadeiro num momento, para um ticket. Fica velho por construção, e é append-only.
+>
+> I2 do Épico I (modo design). É a coluna da direita da tela 9a do canvas ("Editor-secoes") e a barra
+> que flutua sobre a seção escolhida na prévia. Empilhado sobre o I11 (BEELINK-135), a ponta da pilha
+> do modo design (124 → 125 → 136 → 137 → 132 → 133 → 134 → 135).
+
+## Quatro PRs, empilhados
+
+| PR | Branch | O que entrega | Workspaces |
+|---|---|---|---|
+| 1 | `feat/BEELINK-126-painel-em-abas` | O bloco escolhido abre em **Conteúdo, Layout e Estilo**; a folha da faixa vira a aba Estilo. | ui, web |
+| 2 | `feat/BEELINK-126-barra-da-secao` | Uma **barra flutuante** sobre a seleção na prévia (Subir, Descer, Trocar layout, Ocultar, Excluir), e ↑↓, Alt+↑↓ e Delete. | ui, web |
+| 3 | `feat/BEELINK-126-duplicar` | **Duplicar** uma faixa e um bloco: API, barra e Cmd/Ctrl+D. | api, web, ui |
+| 4 | `feat/BEELINK-126-aparece-em` | **"Aparece em: computador · celular"** em faixas e blocos; a loja esconde pelo tamanho da tela. | contracts, api, web, ui |
+
+Cada PR acrescenta aqui a sua seção. Este é o PR 1.
+
+Decididas pelo dono antes de começar, e não reabertas aqui:
+
+- **Sem espaçamento por faixa no Estilo.** Contradiria o I9 (BEELINK-133, "os espaçamentos têm que ser
+  padrão"; uma regra só, em `band-rhythm.ts`). Estilo é nome, cor de fundo e ponta a ponta / dentro da
+  margem.
+- Uma faixa duplicada (PR 3) nasce sem nome: um nome põe a faixa no menu do site.
+
+## PR 1 — o painel em Conteúdo | Layout | Estilo
+
+### Definição de Pronto
+
+1. Escolher um bloco mostra três abas. **Conteúdo**: textos, imagens, links, o link da barra de aviso e
+   a fonte da vitrine, os escolhidos e o limite. **Layout**: a largura do bloco, o formato (carrossel,
+   grade ou trilho, conforme o tipo), as colunas quando é grade e o alinhamento no título e no
+   parágrafo. **Estilo**: o nome da faixa, a cor de fundo e ponta a ponta / dentro da margem.
+2. A faixa da barra de aviso mostra no Estilo só a cor, sem largura (a regra fica no bloco do
+   `packages/ui`).
+3. Clicar no cabeçalho de uma faixa com vários blocos, ou no botão de paleta do cartão de um bloco
+   sozinho, escolhe a faixa e abre o Estilo. A folha `BandEditor` deixa de existir.
+4. O que muda no Layout aparece na prévia na hora, entra em "Rascunho · N alterações", vai com o
+   Publicar e volta com o Descartar. A aba diz isso ("Muda na prévia agora; vai para a loja quando você
+   publicar") e não tem Salvar próprio.
+5. Um Salvar só grava o bloco (`PATCH`) e depois a faixa (`PUT`), o segundo só se o Estilo mudou.
+   Cancelar desfaz os dois. A cor e a largura da faixa aparecem na prévia antes do Salvar.
+6. As linhas da estrutura perdem o controle de largura: mostram o ícone, o nome e "tipo · largura", e
+   continuam com os botões do I10 ("Adicionar ao lado", "Pôr ao lado de…").
+7. Uma imagem a caminho sobrevive a uma troca de aba: o painel de Conteúdo fica montado.
+8. Os testes de hoje continuam passando, mudados de lugar onde o código mudou.
+
+### Decisões
+
+#### 1. Uma seleção só, e o bloco sozinho age como a faixa dele
+
+Saem `editingComponent` e `editingBand`; entra `DesignSelection` (`design-selection.ts`), uma faixa ou
+um bloco. `targetOf` diz o que a seleção edita: um bloco sozinho na faixa age como a faixa (como o
+cartão de um bloco só (BEELINK-64) já faz — a alça move a faixa, o olho esconde a faixa, a lixeira apaga a faixa), então
+escolher o bloco ou a paleta do cartão abre o mesmo painel, com as três abas. Uma faixa com vários
+blocos, escolhida pelo cabeçalho, abre só o Estilo, que diz "vale para os N blocos desta faixa".
+
+A aba fica num `useState` da tela, não no endereço: a guarda de saída empurra um passo no histórico no
+mesmo endereço (I1), e uma aba na URL brigaria com ele. Escolher um bloco abre Conteúdo; escolher a
+faixa abre Estilo.
+
+#### 2. O Layout vai para o rascunho; Conteúdo e Estilo continuam gravando no Salvar
+
+| O que muda | Quando chega à loja |
+|---|---|
+| Conteúdo: textos, imagens, links, a fonte da vitrine | Salvar → `PATCH /components/:id` na hora (como hoje) |
+| Layout: largura, formato (`display`), `columns`, `align` | **Rascunho, até o Publicar.** A largura já era; formato, colunas e alinhamento entram no rascunho, e o Salvar deixa de mandá-los |
+| Estilo: nome, cor e largura da faixa | Salvar → `PUT /sections/:id` na hora (o que a folha da faixa fazia) |
+
+Sem isso, uma aba teria uma largura esperando o Publicar ao lado de um formato que vai ao ar no Salvar.
+E com um escritor só o problema da cópia velha (`design-draft.ts`) não acontece: o Salvar do Conteúdo
+não escreve mais esses três campos.
+
+O rascunho compara o que a loja desenha, não o valor cru: um título salvo sem alinhamento é centrado,
+então escolher "esquerda" e voltar para "centro" não é alteração, como uma faixa movida e devolvida
+não é. O Publicar manda o formato só quando há um (um banner antigo guarda nulo, e a API recusa
+formato nulo num banner).
+
+#### 3. A faixa é gravada só no que mudou aqui
+
+O Salvar manda à faixa só os campos que o Estilo mudou, e a prévia pinta só esses. É a regra da barra
+de aviso do I11 (a cor dela era a da faixa) generalizada: o que a prévia desenha é o que o Salvar
+escreveria, e um valor salvo por outra aba enquanto este painel estava aberto não é escrito por cima.
+
+#### 4. O estado em edição continua no store do I11, agora com a faixa
+
+`useDesignEdit` guarda a faixa (`band`, e como ela abriu, `bandOpened`) e o bloco, quando há um. As
+garantias do I11 ficam: uma mudança só vale para a faixa ou o bloco abertos; abrir de novo o mesmo
+alvo mantém o que foi digitado; sair do editor limpa tudo.
+
+#### 5. A barra de aviso não tem Layout
+
+Ela é desenhada acima do topo, fora da grade, sem largura, formato ou alinhamento: a aba Layout não
+aparece para ela. O Estilo dela é só a cor, com as palavras da barra ("Cor da barra").
+
+#### 6. Linhas compactas na estrutura
+
+A largura sai da linha e vai para a aba Layout. A linha diz "tipo · largura" ("Banner · Metade"), o
+que ainda deixa ver de relance a arrumação de uma faixa; os botões "Adicionar ao lado" e "Pôr ao lado
+de…" do I10 ficam, porque são o jeito de pôr blocos lado a lado sem saber o que é uma faixa.
+
+### Fora de escopo
+
+- A barra flutuante, o teclado e escolher uma faixa pela prévia (PR 2); Duplicar (PR 3); "Aparece em"
+  (PR 4).
+- Espaçamento por faixa (decisão do dono, acima).
+- Perguntar antes de trocar de bloco ou de sair com campos não salvos (já fora no I11).
+- A coluna Estrutura voltar aos 280 px da 9a: as linhas encolheram, mas os botões do I10 ainda pedem
+  a largura de hoje.
