@@ -23,10 +23,10 @@ export type StorefrontColors = ShopColors
 // Declared beside the footer now; re-exported because screens import them from here.
 export type { StorefrontFooterColumn, StorefrontLink, StorefrontNetwork } from "./storefront-footer"
 
-/** The strip above the header: what the shop is shouting this week, on each side of the page. */
+/** The strip above the header: what the shop is shouting this week — its title, and a second line. */
 export interface StorefrontAnnouncement {
   left: string
-  /** Joined to the left with a dot: the strip scrolls one sentence, and this is its second half. */
+  /** A second message beside the first, as the design draws them; never joined into one sentence. */
   right?: string
   /** The strip's own colour, which is its band's. Null is the page's ink, as it always was. */
   background?: string | null
@@ -42,7 +42,8 @@ export type { StorefrontBanner } from "./storefront-cover"
 export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
-    "searchAction" | "searchValue" | "searchHidden" | "searchSlot" | "cartHref" | "cartCount" | "accountHref" | "menu" | "cta" | "categories"
+    "searchAction" | "searchValue" | "searchHidden" | "searchScopes" | "searchScope" | "searchSlot"
+    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories"
   > {
   name: string
   description?: string | null
@@ -74,9 +75,10 @@ export interface StorefrontWindowProps
   blocks?: ReactNode
 
   /**
-   * A strip between the masthead and the page, drawn edge to edge: the listing's results band in
-   * 5a, with its trail, heading and sort. Each page builds its own; the window only gives it the
-   * full width, which a child inside the measured `<main>` cannot take.
+   * A strip at the top of the page, drawn edge to edge: the listing's results band in 5a, with its
+   * trail, heading and sort. Each page builds its own; the window gives it the full width, which a
+   * child inside the measure cannot take. It sits inside `<main>`, because it carries the page's
+   * `h1`: a reader who jumps to the main content has to land on the title, not under it.
    */
   pageHeader?: ReactNode
 
@@ -135,9 +137,13 @@ export function StorefrontWindow({
   searchAction,
   searchValue = "",
   searchHidden,
+  searchScopes,
+  searchScope,
   cartHref,
   cartCount,
+  cartSlot,
   accountHref,
+  accountName,
   menu = [],
   cta = null,
   categories,
@@ -156,17 +162,17 @@ export function StorefrontWindow({
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontWindowProps) {
-  // Every `--shop-*` variable, in the HTML on the first paint: see lib/shop-palette.ts.
-  const dressed = shopPaletteStyle(colors)
+  // Every `--shop-*` variable, in the HTML on the first paint: see lib/shop-palette.ts. The
+  // typeface is the app's to name (`next/font` cannot run here); where nobody did, the page's.
+  const dressed = { ...shopPaletteStyle(colors), fontFamily: "var(--font-shop, inherit)" }
 
   return (
     <ShopPaletteProvider colors={colors}>
-    <div style={dressed} className="flex min-h-svh flex-col">
+    <div data-shop-window="" style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
         <StorefrontAnnouncement
-          left={announcement.left}
-          {...(announcement.right ? { right: announcement.right } : {})}
+          messages={[announcement.left, ...(announcement.right ? [announcement.right] : [])]}
           background={announcement.background ?? null}
           href={announcement.href ?? null}
           external={announcement.external ?? false}
@@ -182,9 +188,12 @@ export function StorefrontWindow({
         {...(searchAction ? { searchAction } : {})}
         searchValue={searchValue}
         {...(searchHidden ? { searchHidden } : {})}
+        {...(searchScopes ? { searchScopes } : {})}
+        {...(searchScope ? { searchScope } : {})}
         {...(cartHref ? { cartHref } : {})}
         {...(cartCount !== undefined ? { cartCount } : {})}
-        {...(accountHref ? { accountHref } : {})}
+        cartSlot={cartSlot}
+        {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
         menu={menu}
         cta={cta}
         categories={categories}
@@ -194,9 +203,6 @@ export function StorefrontWindow({
 
       {/* ---------------------------------------------------------------- 3 · the cover */}
       {blocks ? null : banner ? <StorefrontCover banner={banner} tall linkComponent={Link} /> : null}
-
-      {/* ---------------------------------------------------------------- 4 · the page's own strip */}
-      {pageHeader ?? null}
 
       {/* ---------------------------------------------------------------- 5 · the shop itself */}
       {blocks ? (
@@ -208,11 +214,10 @@ export function StorefrontWindow({
           {blocks}
         </main>
       ) : (
-        <main
-          className={cn("flex flex-1 flex-col", layout === "padded" && "gap-8 py-8")}
-          style={surface === "canvas" ? { backgroundColor: "var(--shop-canvas)" } : undefined}
-        >
-          <div className={cn(BAND, "flex flex-1 flex-col", layout === "padded" && "gap-8")}>
+        <main className="flex flex-1 flex-col" style={surface === "canvas" ? { backgroundColor: "var(--shop-canvas)" } : undefined}>
+          {/* 4 · the page's own strip, edge to edge above the measure. */}
+          {pageHeader ?? null}
+          <div className={cn(BAND, "flex flex-1 flex-col", layout === "padded" && "gap-8 py-8")}>
             {description ? <StorefrontPitch name={name} description={description} orderHref={orderHref} messages={messages} /> : null}
             {children}
           </div>

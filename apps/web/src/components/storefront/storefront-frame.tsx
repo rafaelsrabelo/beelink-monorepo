@@ -6,12 +6,14 @@ import type { PublicProductCategory, PublicSection, PublicStore } from "@harness
 
 // UI
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
-import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
+import { StorefrontWindow, type StorefrontWindowProps } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
+import { announcementOf } from "./storefront-sections"
+import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -24,10 +26,24 @@ export interface StorefrontFrameProps {
    * page of the category it hangs off.
    */
   categories: readonly PublicProductCategory[]
-  /** The category being shown, so the band marks it. Null on every page that is not one. */
+  /** The category whose own page this is. Null on every page that is not one. */
   activeCategory?: string | null
+  /** Whether this is the whole catalogue's page, the one the menu's "Tudo" names. */
+  catalogActive?: boolean
+  /**
+   * A category to underline without calling it the page: a product's (5b), or the one a search was
+   * narrowed to. A subcategory marks its parent, which is the heading the menu can show.
+   */
+  markedCategory?: string | null
+  /** Whether the shop has anything on sale, so the menu ends with "Ofertas do dia". */
+  onSale?: boolean
   /** What was searched for, said back in the field someone typed it into. */
   searchValue?: string
+  /**
+   * The category the search opens narrowed to, on a page that was reached narrowed: the search
+   * and the catalogue with `?categoria=`. A category's own page needs none — it is its own scope.
+   */
+  searchScope?: string | null
   /** The shop's pitch, which only the home shows: an inner page is about the goods. */
   description?: string | null
   /** The cover, which only the home shows, and only when the shopkeeper chose that layout. */
@@ -39,27 +55,18 @@ export interface StorefrontFrameProps {
    */
   year: number
   /**
-   * Replaces the live search. The design preview passes a plain form, because the live one asks
-   * the API on every keystroke and a preview that talks to the network is a preview that costs
-   * something to look at.
-   */
-  /**
    * The landing page's own blocks, drawn edge to edge in the shopkeeper's order.
    *
    * When it is given the frame stops drawing the cover and the promises band from the shop's
    * columns: on that page they are blocks. Every other page passes `children` and keeps them.
    */
   blocks?: ReactNode
-  /**
-   * The palette to paint with, when it is not the one the shop has saved.
-   *
-   * Design mode passes the colours being edited, so the preview answers the picker rather than
-   * the database. Nothing else passes it: a shop window painting anything other than what the
-   * shop stores would be a shop window showing a page no visitor gets.
-   */
+  /** The page's strip under the menu, edge to edge: the listing's results band (5a). */
+  pageHeader?: ReactNode
+  /** How the page below it sits: 5a's listing draws its own columns on the canvas. */
+  body?: Pick<StorefrontWindowProps, "layout" | "surface">
+  /** The palette being edited in design mode, so the preview answers the picker. Nothing else passes it. */
   colors?: PublicStore["colors"]
-  /** The strip above the masthead. Built by the page from the same list the blocks come from. */
-  announcement?: { left: string; right?: string; background?: string | null; href?: string | null; external?: boolean }
   /**
    * The arrangement being drawn, when it is not the one the store has saved.
    *
@@ -68,7 +75,10 @@ export interface StorefrontFrameProps {
    * else passes it.
    */
   sections?: readonly PublicSection[]
+  /** Replaces the live search: the design preview's plain form, which costs nothing to look at. */
   searchSlot?: ReactNode
+  /** The signed-in shopper, read once per request by the page; null or absent, a visitor. */
+  shopper?: { name: string } | null
   /**
    * How every injected link is drawn. The preview passes one that renders no `href`, so nothing
    * in it navigates and nothing in it takes a tab stop. `StorefrontWindow` does not forward this
@@ -97,15 +107,21 @@ export function StorefrontFrame({
   store,
   categories,
   activeCategory = null,
+  catalogActive = false,
+  markedCategory = null,
+  onSale = false,
   searchValue,
+  searchScope = null,
   description = null,
   showBanner = false,
   blocks,
+  pageHeader,
+  body,
   colors,
-  announcement,
   sections,
   year,
   searchSlot,
+  shopper,
   linkComponent,
   messages,
   children,
@@ -123,9 +139,13 @@ export function StorefrontFrame({
   const topLevel = categories.filter((category) => !category.parentSlug)
 
   // A subcategory being open marks its parent up here: the heading the visitor is standing under
-  // is the one the menu can show, and marking nothing would say they are nowhere.
-  const openCategory = categories.find((category) => category.slug === activeCategory)
-  const markedCategory = openCategory?.parentSlug ?? activeCategory
+  // is the one the menu can show. Only a top-level category's own page is the page the menu names.
+  const parentOf = (slug: string | null) => categories.find((category) => category.slug === slug)?.parentSlug ?? null
+  const current = activeCategory && !parentOf(activeCategory) ? activeCategory : null
+  const marked = parentOf(activeCategory) ?? parentOf(markedCategory) ?? markedCategory
+  // "Buscar em": every top-level category, opening on the one whose page this is.
+  const scopes = topLevel.map((category) => ({ value: category.slug, label: category.name }))
+  const scope = (activeCategory ? (parentOf(activeCategory) ?? activeCategory) : searchScope) ?? ""
 
   // The shop's own pages, and how to reach a person. Built here and not in the block for the
   // reason every href is: a block that knew "Produtos" links to `routeWords.products` would be
@@ -147,6 +167,9 @@ export function StorefrontFrame({
   ]
   const drawn = sections ?? store.sections
   const footerColumns = site ? siteFooterColumnsOf(store, drawn, messages) : shopColumns
+  // The strip is above the masthead on every page, so it is read here from the same bands the
+  // landing page's blocks come from — the draft's in design mode, the shop's everywhere else.
+  const announcement = announcementOf(drawn)
 
   return (
     <StorefrontWindow
@@ -165,23 +188,31 @@ export function StorefrontFrame({
                 slug={store.slug}
                 routeWords={store.routeWords}
                 initialTerm={searchValue}
+                scopes={scopes}
+                initialScope={scope}
                 locale="pt-BR"
                 messages={messages}
               />
             ),
             searchAction: routes.search(),
-            // Both icons, on every page. They were held back while they had nowhere to go; the
-            // basket has an address now, and the account is the sign-in the platform already has.
+            searchScopes: scopes,
+            searchScope: scope,
+            // The basket and the shopper's own door — the shop's sign-in, never the panel's `/login`.
             cartHref: routes.cart(),
-            accountHref: "/login",
+            cartSlot: <StorefrontCartLinkLive href={routes.cart()} messages={messages} />,
+            accountHref: shopper ? routes.account() : routes.signIn(),
+            accountName: shopper?.name ?? null,
           })}
       {...(linkComponent ? { linkComponent } : {})}
       categories={
         !site && topLevel.length ? (
           <StorefrontCategories
             categories={topLevel}
-            active={markedCategory}
+            active={current}
+            allActive={catalogActive}
+            marked={marked}
             href={(categorySlug) => (categorySlug ? routes.category(categorySlug) : routes.catalog())}
+            offersHref={onSale ? routes.catalog({ discount: true }) : null}
             // The menu, unless the shopkeeper asked for the row of photographs. The switch in the
             // panel is called "ícones de categoria", and that is exactly what it now chooses.
             variant={store.layoutSettings.showCategoryIcons ? "tiles" : "bar"}
@@ -190,6 +221,8 @@ export function StorefrontFrame({
         ) : undefined
       }
       {...(blocks ? { blocks } : {})}
+      {...(pageHeader ? { pageHeader } : {})}
+      {...body}
       {...(announcement ? { announcement } : {})}
       banner={
         showBanner && store.layoutType === "BANNER" && store.bannerImageUrl
