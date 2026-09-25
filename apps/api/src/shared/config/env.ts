@@ -7,6 +7,10 @@ expand(config({ quiet: true }));
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 
+/** An optional variable left as `NAME=` in a copied `.env` is absent, not an empty value to refuse. */
+const blankAsAbsent = <Schema extends z.ZodType>(schema: Schema) =>
+  z.preprocess((value) => (value === '' ? undefined : value), schema.optional());
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
@@ -91,7 +95,23 @@ const envSchema = z.object({
   LEAD_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
 
   TRUST_PROXY: z.string().default('loopback'),
-});
+
+  /**
+   * Google, for "Continuar com Google" at a shop (G5). Optional as a group: without them the shop
+   * window shows no Google button and the API refuses its routes with GOOGLE_SIGN_IN_UNAVAILABLE.
+   *
+   * `GOOGLE_REDIRECT_URI` is the one fixed address Google sends every shop's shopper back to — the
+   * web's `/api/customer/google/callback` — registered once in the Google console, not per shop.
+   */
+  GOOGLE_CLIENT_ID: blankAsAbsent(z.string().min(1)),
+  GOOGLE_CLIENT_SECRET: blankAsAbsent(z.string().min(1)),
+  GOOGLE_REDIRECT_URI: blankAsAbsent(z.url()),
+}).refine(
+  // All three or none: half of it is a deployment that shows the button and fails at the callback.
+  (value) => [value.GOOGLE_CLIENT_ID, value.GOOGLE_CLIENT_SECRET, value.GOOGLE_REDIRECT_URI].every((part) => part === undefined) ||
+    [value.GOOGLE_CLIENT_ID, value.GOOGLE_CLIENT_SECRET, value.GOOGLE_REDIRECT_URI].every((part) => part !== undefined),
+  { message: 'GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI go together: set all three or none', path: ['GOOGLE_CLIENT_ID'] },
+);
 
 /**
  * The only reader of `process.env` (gate `api/env-through-schema`). Parsed once, at import, so a

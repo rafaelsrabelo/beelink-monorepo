@@ -136,8 +136,8 @@ export class CustomersService {
     return user;
   }
 
-  /** The shop's record of this account, made on first use with the account's name. */
-  private recordOf(storeId: string, user: Pick<UserModel, 'id' | 'name'>): Promise<CustomerModel> {
+  /** The shop's record of this account, made on first use with the account's name — also by Google's door. */
+  recordOf(storeId: string, user: Pick<UserModel, 'id' | 'name'>): Promise<CustomerModel> {
     return this.prisma.customer.upsert({
       where: { storeId_userId: { storeId, userId: user.id } },
       create: { storeId, userId: user.id, name: user.name },

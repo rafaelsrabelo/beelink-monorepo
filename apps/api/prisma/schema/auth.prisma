@@ -25,12 +25,53 @@ model User {
   stores      Store[]   @relation("StoreOwner")
   /// A shop account's record at its shop, which the shop owns and never reads this account through.
   customers   Customer[]
+  /// The providers this account signs in through besides its password (G5).
+  identities  AccountIdentity[]
 
   @@unique([storeId, email])
   // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null
   // `storeId` as distinct — so theirs is its own index.
   @@unique([email], where: { storeId: null }, map: "users_email_key")
   @@map("users")
+}
+
+enum IdentityProvider {
+  GOOGLE
+}
+
+/// One provider's account tied to one shop's account: Google's `sub` for this person, at this shop.
+/// A subject is tied once per shop — the unique triple — so one Google account never opens two
+/// accounts at a shop, and at another shop it opens that shop's own.
+model AccountIdentity {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  provider  IdentityProvider
+  /// The provider's stable id for the person — Google's `sub`, never the e-mail, which can change.
+  subject   String
+  /// The shop of the account it opens, repeated from it so the tie can be unique per shop.
+  storeId   String           @db.Uuid
+  store     Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId    String           @db.Uuid
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+
+  @@unique([storeId, provider, subject])
+  @@index([userId])
+  @@map("account_identities")
+}
+
+/// A Google sign-in in flight: the state sent to Google, the PKCE verifier kept from it, the shop it
+/// began at and where to return. Used once and short-lived; a row past `expiresAt` is refused.
+model OAuthState {
+  /// Random, sent to Google and back, and held in the browser's cookie to tie the flow to it.
+  state        String   @id
+  codeVerifier String
+  storeId      String   @db.Uuid
+  returnTo     String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("oauth_states")
 }
 
 /// One signed-in device. Every refresh token it was ever given belongs to it, so reusing a spent
