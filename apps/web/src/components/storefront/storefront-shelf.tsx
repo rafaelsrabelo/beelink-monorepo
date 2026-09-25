@@ -3,11 +3,13 @@ import type { PublicComponent, PublicProductCard } from "@harness-monorepo/contr
 
 // UI
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
+import type { StorefrontProduct } from "@harness-monorepo/ui/blocks/storefront/storefront-product-card"
 import { StorefrontProductGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-product-grid"
 import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/storefront-product-rail"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { StorefrontCardCartLive } from "./storefront-card-cart-live"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { gridColumnsOf } from "./grid-columns"
 
@@ -17,6 +19,8 @@ export interface StorefrontShelfProps {
   routes: StorefrontRoutes
   showPrice: boolean
   showBadge: boolean
+  /** "Adicionar ao carrinho" on each card — the shop's `showQuickAdd`. */
+  quickAdd?: boolean
   linkComponent?: LinkComponent
   messages: UiMessages
 }
@@ -54,6 +58,7 @@ export function StorefrontShelf({
   routes,
   showPrice,
   showBadge,
+  quickAdd = false,
   linkComponent,
   messages,
 }: StorefrontShelfProps) {
@@ -69,6 +74,7 @@ export function StorefrontShelf({
     locale: "pt-BR",
     showPrice,
     showBadge,
+    ...(quickAdd ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={messages} /> } : {}),
     ...(linkComponent ? { linkComponent } : {}),
     messages,
   }

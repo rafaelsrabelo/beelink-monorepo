@@ -43,7 +43,7 @@ export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
     "searchAction" | "searchValue" | "searchHidden" | "searchScopes" | "searchScope" | "searchSlot"
-    | "cartHref" | "cartCount" | "accountHref" | "menu" | "cta" | "categories"
+    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories"
   > {
   name: string
   description?: string | null
@@ -141,7 +141,9 @@ export function StorefrontWindow({
   searchScope,
   cartHref,
   cartCount,
+  cartSlot,
   accountHref,
+  accountName,
   menu = [],
   cta = null,
   categories,
@@ -166,7 +168,7 @@ export function StorefrontWindow({
 
   return (
     <ShopPaletteProvider colors={colors}>
-    <div style={dressed} className="flex min-h-svh flex-col">
+    <div data-shop-window="" style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
         <StorefrontAnnouncement
@@ -190,7 +192,8 @@ export function StorefrontWindow({
         {...(searchScope ? { searchScope } : {})}
         {...(cartHref ? { cartHref } : {})}
         {...(cartCount !== undefined ? { cartCount } : {})}
-        {...(accountHref ? { accountHref } : {})}
+        cartSlot={cartSlot}
+        {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
         menu={menu}
         cta={cta}
         categories={categories}
