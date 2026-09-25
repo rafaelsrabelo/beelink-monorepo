@@ -130,6 +130,8 @@ export interface ShopNavigation {
   categories: PublicProductCategory[]
   /** Whether the shop has anything on sale: the menu's "Ofertas do dia" is drawn only then. */
   onSale: boolean
+  /** The read failed: an empty menu here is an outage, not a shop without categories. */
+  failed?: true
 }
 
 /**
@@ -141,7 +143,7 @@ export interface ShopNavigation {
  */
 export async function navigationAt(slug: string): Promise<ShopNavigation> {
   const catalogue = await catalogueAt(slug, { pageSize: 1 })
-  return { categories: catalogue.categories, onSale: catalogue.facets.discount.count > 0 }
+  return { categories: catalogue.categories, onSale: catalogue.facets.discount.count > 0, ...(catalogue.failed ? { failed: true as const } : {}) }
 }
 
 /** Every category the shop shows: its categories block reads these. */

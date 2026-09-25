@@ -34,3 +34,15 @@ API nunca manda esse campo; ele não entra em `packages/contracts`.
 
 O ticket pede `noindex` sempre para `exibicao=lista`, mas a listagem não tem visão em lista hoje: não
 há o que marcar. Quando a visão existir, ela entra na mesma condição de `robots`.
+
+## Revisão (25/09/2026)
+
+Três leituras independentes, cada achado verificado por um revisor que tentou refutá-lo. Dois
+distintos, os dois corrigidos; três rejeitados.
+
+- **Uma queda ao ler o menu não vira 404.** O menu da loja vem da mesma leitura do catálogo; com a
+  falha virando prateleira vazia, uma página de categoria real respondia 404 durante a queda, e um
+  buscador a tiraria do índice. Agora o menu carrega `failed`, e a categoria não encontrada num menu
+  que falhou responde erro do servidor, que o buscador tenta de novo.
+- **O painel de filtros do celular não aparece numa prateleira que falhou**: o botão dele diria
+  "Nenhum resultado" com o zero inventado.

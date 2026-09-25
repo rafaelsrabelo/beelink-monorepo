@@ -69,9 +69,12 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         {/* The phone's door to the same groups, and what is in force, above the grid. */}
         <div className="flex flex-col gap-3 shop-lg:hidden">
-          <StorefrontFilterSheet applied={chips.length} total={catalogue.total} locale={locale} messages={ui}>
-            {groups}
-          </StorefrontFilterSheet>
+          {/* Not on a shelf that failed: its count would be the made-up zero, "Nenhum resultado". */}
+          {catalogue.failed ? null : (
+            <StorefrontFilterSheet applied={chips.length} total={catalogue.total} locale={locale} messages={ui}>
+              {groups}
+            </StorefrontFilterSheet>
+          )}
           <StorefrontFilterChips chips={chips} messages={ui} />
         </div>
 
