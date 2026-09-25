@@ -83,3 +83,14 @@ O G7 (BEELINK-111) tornou a conta do cliente da loja, e este ticket foi refeito 
 - Revisão: o início do fluxo recusa um slug que não tem forma de slug (um `%2F` decodificado montava
   um endereço fora do site). Uma recusa ou um cancelamento no Google agora volta para a face de onde o
   cliente saiu (entrar ou criar), com o `voltar`. E o axe passa a cobrir o botão do Google.
+
+## Adendo — 25/09, segunda revisão (depois do rebase)
+
+- O "G" em `public/brand/google.svg` era um redesenho com as cores do Material. Agora é a marca oficial
+  do Google, nas quatro cores do guia de marca do "Sign in with Google" — a mesma que o Storybook mostra.
+- Dois callbacks da mesma conta Google ao mesmo tempo, na primeira entrada numa loja, podiam dar 500 ao
+  criar o registro de cliente: o `upsert` do Prisma lê e depois insere. `recordOf` agora lê o registro
+  que o outro criou; vale também para a porta de senha.
+- `voltar` com `..` (`/loja/../outra`, ou `%2e%2e`) saía da loja depois de resolvido pelo navegador: a
+  web e a API agora conferem o caminho já resolvido.
+- O teste de "a mesma conta Google volta à mesma conta" passou a conferir o status e a conta de fato.

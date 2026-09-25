@@ -42,8 +42,11 @@ export function safeBackOf(slug: string, raw: string | string[] | undefined | nu
 
   const home = `/${slug}`
   const value = typeof raw === "string" ? raw : ""
+  if (value !== home && (!value.startsWith(`${home}/`) || value.includes("//") || value.includes("\\"))) return home
 
-  return value === home || (value.startsWith(`${home}/`) && !value.includes("//") && !value.includes("\\")) ? value : home
+  // Resolved as the browser will resolve it: `/loja/../outra` is `/outra`, and so is `%2e%2e`.
+  const resolved = URL.canParse(value, "http://shop.invalid") ? new URL(value, "http://shop.invalid").pathname : ""
+  return resolved === home || resolved.startsWith(`${home}/`) ? value : home
 }
 
 /** Everything a URL needs to know about a shop, and nothing else — a page passes its store. */

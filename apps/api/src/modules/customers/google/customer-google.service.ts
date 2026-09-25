@@ -18,8 +18,13 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 /** Only an address inside the shop the flow began at comes back out; anything else is dropped. */
 function returnToOf(storeSlug: string, returnTo: string | undefined): string | null {
   const shop = `/${storeSlug}`;
-  if (!returnTo || returnTo.startsWith('//')) return null;
-  return returnTo === shop || returnTo.startsWith(`${shop}/`) || returnTo.startsWith(`${shop}?`) ? returnTo : null;
+  const inside = (path: string) => path === shop || path.startsWith(`${shop}/`);
+  if (!returnTo || returnTo.startsWith('//') || returnTo.includes('\\')) return null;
+  if (!inside(returnTo) && !returnTo.startsWith(`${shop}?`)) return null;
+
+  // Resolved as a browser resolves it: `/loja/../outra` is `/outra`, and so is `%2e%2e`.
+  const resolved = URL.canParse(returnTo, 'http://shop.invalid') ? new URL(returnTo, 'http://shop.invalid').pathname : '';
+  return inside(resolved) ? returnTo : null;
 }
 
 /**

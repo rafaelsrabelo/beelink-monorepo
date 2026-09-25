@@ -136,11 +136,15 @@ describe("a shopper's Google door into a shop", () => {
 
   it('ties one Google account to one account, whatever e-mail it later reports', async () => {
     const sub = randomUUID();
+    const before = newEmail('antes');
     const first = await start();
-    await finish(google.grant({ sub, email: newEmail('antes') }), first.state);
+    const opened = await finish(google.grant({ sub, email: before }), first.state);
     const second = await start();
-    await finish(google.grant({ sub, email: newEmail('depois') }), second.state);
+    const again = await finish(google.grant({ sub, email: newEmail('depois') }), second.state);
 
+    expect([opened.statusCode, again.statusCode]).toEqual([200, 200]);
+    // The second sign-in lands on the account the first one opened, e-mail and all.
+    expect(again.json<GoogleSignIn>().session.user).toMatchObject({ id: opened.json<GoogleSignIn>().session.user.id, email: before });
     expect(await prisma.user.count({ where: { identities: { some: {} } } })).toBe(1);
   });
 
@@ -225,10 +229,11 @@ describe("a shopper's Google door into a shop", () => {
   });
 
   it('keeps a return address only inside the shop the flow began at', async () => {
-    const { state } = await start('https://evil.example/lessari');
-    const response = await finish(google.grant({ email: newEmail('volta') }), state);
-
-    expect(response.json<GoogleSignIn>().returnTo).toBeNull();
+    for (const returnTo of ['https://evil.example/lessari', '/lessari/../outra', '/lessari/%2e%2e/outra']) {
+      const { state } = await start(returnTo);
+      const response = await finish(google.grant({ email: newEmail('volta') }), state);
+      expect(response.json<GoogleSignIn>().returnTo).toBeNull();
+    }
   });
 
   it('keeps the session Google opened, renewing it like any other', async () => {
