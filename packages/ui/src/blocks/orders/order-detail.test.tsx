@@ -1,3 +1,6 @@
+// React
+import { useState } from "react"
+
 // Libs
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -8,6 +11,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { OrderDetail } from "./order-detail"
 import { order } from "./order-detail.fixtures"
 import { nextStatusOf, otherStatusesOf } from "./order-status-actions"
+import type { OrderDetailView, OrderStatusValue } from "./order-types"
 
 const props = { backHref: "/admin/loja/orders", addressLine: "Av. Paulista, 1000 — São Paulo/SP", whatsappHref: "https://wa.me/5511988887777?text=Oi", onStatusChange: () => {} }
 
@@ -78,6 +82,61 @@ describe("OrderDetail", () => {
     expect(screen.queryByRole("button", { name: /Marcar como/ })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Outros status" })).not.toBeInTheDocument()
     expect(screen.getByText("Este pedido foi cancelado e não muda mais de status.")).toBeInTheDocument()
+  })
+
+  it("keeps a note's line breaks, and wraps a long unbroken one inside the card", () => {
+    render(<OrderDetail order={{ ...order, note: "Entregar depois das 18h\nPortão azul" }} {...props} />)
+
+    const note = within(screen.getByRole("region", { name: "Cliente" })).getByText(/Portão azul/)
+    expect(note.textContent).toBe("Entregar depois das 18h\nPortão azul")
+    expect(note).toHaveClass("whitespace-pre-line", "break-words")
+  })
+
+  describe("after a press moves the order", () => {
+    /** The screen's part: the order on screen follows the move, as the cache does after the PATCH. */
+    function Moving({ from }: { from: OrderDetailView }) {
+      const [status, setStatus] = useState<OrderStatusValue>(from.status)
+      return <OrderDetail order={{ ...from, status }} {...props} onStatusChange={setStatus} />
+    }
+
+    it("keeps the focus on the step button and says the new status", async () => {
+      render(<Moving from={order} />)
+
+      await userEvent.click(screen.getByRole("button", { name: "Marcar como em preparo" }))
+
+      expect(screen.getByRole("status")).toHaveTextContent("Status do pedido: Em preparo")
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: /Marcar como/ }))
+    })
+
+    // "Entregue" has no next step: the pressed button goes, and the focus must not fall to the page.
+    it("holds the focus in the block when the pressed button goes away", async () => {
+      render(<Moving from={{ ...order, status: "OUT_FOR_DELIVERY" }} />)
+
+      await userEvent.click(screen.getByRole("button", { name: "Marcar como entregue" }))
+
+      expect(screen.getByRole("status")).toHaveTextContent("Status do pedido: Entregue")
+      expect(document.activeElement).not.toBe(document.body)
+      expect(document.activeElement?.contains(screen.getByRole("group", { name: "Status do pedido" }))).toBe(true)
+    })
+
+    it("holds the focus in the block once a cancel takes every control away", async () => {
+      render(<Moving from={order} />)
+
+      await userEvent.click(screen.getByRole("button", { name: "Outros status" }))
+      await userEvent.click(await screen.findByRole("menuitem", { name: "Cancelar pedido" }))
+      await userEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Cancelar pedido" }))
+
+      expect(await screen.findByText("Este pedido foi cancelado e não muda mais de status.")).toBeInTheDocument()
+      expect(screen.getByRole("status")).toHaveTextContent("Status do pedido: Cancelado")
+      expect(document.activeElement).not.toBe(document.body)
+    })
+
+    it("stays focusable while the move is on its way", () => {
+      render(<OrderDetail order={order} {...props} statusPending />)
+
+      expect(screen.getByRole("button", { name: "Marcar como em preparo" })).toHaveAttribute("aria-disabled", "true")
+      expect(screen.getByRole("button", { name: "Marcar como em preparo" })).not.toHaveAttribute("disabled")
+    })
   })
 
   it("has no accessibility violations", async () => {

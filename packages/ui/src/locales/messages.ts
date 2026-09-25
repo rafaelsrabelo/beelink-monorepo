@@ -872,10 +872,6 @@ export interface UiMessages {
       noPhone: string
       noAddress: string
       items: string
-      product: string
-      quantity: string
-      unitPrice: string
-      lineTotal: string
       subtotal: string
       fee: string
       discount: string

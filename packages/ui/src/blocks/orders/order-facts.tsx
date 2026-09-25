@@ -21,11 +21,11 @@ export interface OrderFactsProps {
   messages?: UiMessages
 }
 
-function Fact({ label, children }: { label: string; children: React.ReactNode }) {
+function Fact({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="text-muted-foreground text-xs">{label}</dt>
-      <dd className="text-sm">{children}</dd>
+      <dd className={cn("text-sm", className)}>{children}</dd>
     </div>
   )
 }
@@ -54,7 +54,12 @@ export function OrderFacts({ order, addressLine, whatsappHref, messages = defaul
       <dl className="grid gap-3 border-t pt-4">
         <Fact label={text.fulfillment}>{labels.fulfillments[order.fulfillment]}</Fact>
         <Fact label={text.payment}>{labels.payments[order.paymentMethod]}</Fact>
-        {order.note ? <Fact label={text.note}>{order.note}</Fact> : null}
+        {/* Typed in a textarea: its line breaks are the shopkeeper's, and a pasted link must not run out of the card. */}
+        {order.note ? (
+          <Fact label={text.note} className="break-words whitespace-pre-line">
+            {order.note}
+          </Fact>
+        ) : null}
       </dl>
     </section>
   )

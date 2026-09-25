@@ -15,7 +15,8 @@ import { createOrder, fetchOrder, fetchOrders, updateOrderStatus } from "./order
 export const orderKeys = {
   all: ["orders"] as const,
   store: (slug: string) => [...orderKeys.all, slug] as const,
-  list: (slug: string, query: OrderListQuery) => [...orderKeys.store(slug), "list", query] as const,
+  lists: (slug: string) => [...orderKeys.store(slug), "list"] as const,
+  list: (slug: string, query: OrderListQuery) => [...orderKeys.lists(slug), query] as const,
   detail: (slug: string, number: number) => [...orderKeys.store(slug), "detail", number] as const,
 }
 
@@ -42,6 +43,10 @@ export function useOrder(slug: string, number: number): UseQueryResult<Order, Er
 /**
  * The answer is the whole order, which replaces the one on screen at once. The lists and the
  * customers are read again: a cancelled order leaves its customer's books.
+ *
+ * A refusal reads the order again: the API refuses only a move the screen should not have offered —
+ * the order was cancelled or moved in another tab — so the screen was stale, and left alone it
+ * would keep offering the same refused move next to the error.
  */
 export function useUpdateOrderStatus(slug: string, number: number): UseMutationResult<Order, Error, OrderStatus> {
   const queryClient = useQueryClient()
@@ -50,10 +55,11 @@ export function useUpdateOrderStatus(slug: string, number: number): UseMutationR
     onSuccess: (order) => {
       queryClient.setQueryData(orderKeys.detail(slug, number), order)
       return Promise.all([
-        queryClient.invalidateQueries({ queryKey: [...orderKeys.store(slug), "list"] }),
+        queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }),
         queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
       ])
     },
+    onError: () => queryClient.invalidateQueries({ queryKey: orderKeys.detail(slug, number) }),
   })
 }
 
