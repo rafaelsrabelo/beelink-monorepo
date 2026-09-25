@@ -20,6 +20,9 @@ const shopBody = {
 
 type Method = 'POST' | 'PUT' | 'PATCH';
 
+/** An id the pipe takes, so a row that names it is refused for its other field and for nothing else. */
+const WELL_FORMED_ID = '0199b000-0000-7000-8000-000000000001';
+
 /**
  * Every write route of the page module, fed bodies it must refuse.
  *
@@ -99,6 +102,11 @@ describe('page — an invalid body is a 400, never a 500', () => {
     { name: 'a band name one variation selector over its sixty', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/sections/${sectionId}`, body: { name: `${'a'.repeat(60)}\ufe0f` } },
     { name: 'a body nested forty levels deep', method: 'POST', url: () => '/api/stores/padaria-do-bairro/sections', body: { component: { kind: 'HEADING', items: Array.from({ length: 40 }).reduce<unknown>((inner) => [inner], []) } } },
     { name: 'a component order that is not ids', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/sections/${sectionId}/components/reorder`, body: { ids: [1, 2] } },
+    { name: 'a move with no band', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/components/${componentId}/section`, body: { position: 0 } },
+    { name: 'a move to a band that is not an id', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/components/${componentId}/section`, body: { sectionId: 5 } },
+    { name: 'a move to a place that is not a whole number', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/components/${componentId}/section`, body: { sectionId: WELL_FORMED_ID, position: 'dois' } },
+    { name: 'a move with a span that is not one of the four', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/components/${componentId}/section`, body: { sectionId: WELL_FORMED_ID, span: 'QUARTER' } },
+    { name: 'a move with a null span', method: 'PUT', url: () => `/api/stores/padaria-do-bairro/components/${componentId}/section`, body: { sectionId: WELL_FORMED_ID, span: null } },
   ];
 
   /**
@@ -112,6 +120,7 @@ describe('page — an invalid body is a 400, never a 500', () => {
       ['POST', '/api/stores/padaria-do-bairro/sections/nao-e-um-id/components', { kind: 'HEADING' }],
       ['PATCH', '/api/stores/padaria-do-bairro/components/nao-e-um-id', { title: 'x' }],
       ['DELETE', '/api/stores/padaria-do-bairro/components/nao-e-um-id'],
+      ['PUT', '/api/stores/padaria-do-bairro/components/nao-e-um-id/section', { sectionId }],
     ];
 
     for (const [method, url, body] of routes) {
