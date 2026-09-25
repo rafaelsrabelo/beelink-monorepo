@@ -27,8 +27,8 @@ const ORDER: readonly StorefrontSpan[] = ["FULL", "TWO_THIRDS", "HALF", "THIRD"]
 export interface SpanFieldProps {
   value: StorefrontSpan
   onChange: (value: StorefrontSpan) => void
-  /** The block's name, so four identical groups in one panel are told apart by a screen reader. */
-  name: string
+  /** The block's name, so four identical groups in one list are told apart by a screen reader. */
+  name?: string
   /** The band's own width, said beside the block's. Absent where the band is not known. */
   bandWidth?: SectionWidth
   messages?: UiMessages
@@ -59,7 +59,7 @@ export function SpanField({ value, onChange, name, bandWidth, messages = default
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <ToggleGroup
         multiple={false}
-        aria-label={`${text.spanLabel}: ${name}`}
+        aria-label={name ? `${text.spanLabel}: ${name}` : text.spanLabel}
         variant="outline"
         size="sm"
         value={[value]}

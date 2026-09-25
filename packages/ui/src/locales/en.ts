@@ -538,6 +538,7 @@ export const en: UiMessages = {
       layout: "Layout",
       style: "Style",
       needsAttention: "needs attention",
+      layoutNote: "Changes the preview now; reaches the shop when you publish.",
     },
     addBlock: "Add block",
     addToBand: "Add to this band",

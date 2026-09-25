@@ -672,6 +672,8 @@ export interface UiMessages {
       style: string
       /** Said to a reader beside a tab holding what keeps Salvar off. */
       needsAttention: string
+      /** The Layout tab's promise: what changes there shows at once, and waits for Publicar. */
+      layoutNote: string
     }
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */
