@@ -794,6 +794,70 @@ export interface UiMessages {
     range: string
     previous: string
     next: string
+    /** The new-order form's words. */
+    form: {
+      title: string
+      description: string
+      back: string
+      customer: string
+      customerSearchLabel: string
+      customerSearchPlaceholder: string
+      customerNone: string
+      customerChange: string
+      customerCreate: string
+      customerName: string
+      customerPhone: string
+      customerPhoneHint: string
+      customerNameInvalid: string
+      customerPhoneInvalid: string
+      customerAddress: string
+      zipCode: string
+      street: string
+      number: string
+      complement: string
+      neighborhood: string
+      city: string
+      state: string
+      zipCodeInvalid: string
+      stateInvalid: string
+      customerSave: string
+      customerSaving: string
+      customerCancel: string
+      customerExists: string
+      customerUse: string
+      products: string
+      productSearchLabel: string
+      productSearchPlaceholder: string
+      productNone: string
+      productBack: string
+      productChoose: string
+      variantAdd: string
+      outOfStock: string
+      linesEmpty: string
+      quantity: string
+      remove: string
+      fulfillment: string
+      deliveryFee: string
+      payment: string
+      discount: string
+      note: string
+      notePlaceholder: string
+      placedAt: string
+      summary: string
+      subtotal: string
+      fee: string
+      discountLine: string
+      total: string
+      discountTooLarge: string
+      totalTooLarge: string
+      invalidMoney: string
+      missingCustomer: string
+      missingItems: string
+      missingPayment: string
+      placedAtInvalid: string
+      save: string
+      saving: string
+    }
   }
   leads: {
     title: string

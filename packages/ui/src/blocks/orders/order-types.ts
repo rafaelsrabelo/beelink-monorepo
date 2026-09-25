@@ -1,9 +1,9 @@
+import type { OrderFulfillmentValue, OrderPaymentValue } from "@harness-monorepo/ui/lib/order-form"
+
 /** Mirrors the wire's `OrderStatus`; this package imports no contracts. */
 export type OrderStatusValue = "RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
 
-export type OrderPaymentValue = "MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD"
-
-export type OrderFulfillmentValue = "DELIVERY" | "PICKUP"
+export type { OrderFulfillmentValue, OrderPaymentValue } from "@harness-monorepo/ui/lib/order-form"
 
 /** One row of the list: the wire's `OrderSummary`, as the list reads it. */
 export interface OrderListItem {
