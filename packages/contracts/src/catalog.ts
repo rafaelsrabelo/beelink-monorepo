@@ -32,6 +32,13 @@ export interface StorefrontRouteWords {
    * exactly this.
    */
   cart: string;
+  /**
+   * Where a shopper signs in, and — as `?modo=criar` and `?modo=senha` — signs up and asks for a new
+   * password: `/<shop>/entrar`. Reserved since the beginning with the cart.
+   */
+  signIn: string;
+  /** The shopper's own page at this shop: `/<shop>/conta`. */
+  account: string;
 }
 
 /**
@@ -93,6 +100,12 @@ export interface PublicProductImage {
   optionValueIds: string[];
 }
 
+/** A product's first option, as a card sums it up: "Sabor" with 4 values reads "4 sabores". */
+export interface CardOptionSummary {
+  name: string;
+  valueCount: number;
+}
+
 /**
  * What a grid needs and nothing more. The detail page asks for `PublicProduct`; a listing of forty
  * products must not carry forty descriptions, because this shape is what ends up in the cached HTML
@@ -120,6 +133,22 @@ export interface PublicProductCard {
    * show a range. Equal on a product with one variant. `minCents` is `priceCents`.
    */
   priceRange: PriceRange;
+  /**
+   * Whether it sells combinations. A card adds a product without them straight to the cart, and
+   * sends one with them to its page to choose. Served on the shop window's shelves — the listing and
+   * the showcases — and absent elsewhere; absent reads as "choose on the page".
+   */
+  hasOptions?: boolean;
+  /**
+   * Up to five photos in the shopkeeper's order, for a card to pass through; the first is
+   * `imageUrl`, the cover. On the shelves and the showcases only, like `hasOptions`.
+   */
+  imageUrls?: string[];
+  /**
+   * The first option and how many values it offers, for the card's "4 sabores"; null for a product
+   * without options. On the shelves and the showcases only.
+   */
+  optionSummary?: CardOptionSummary | null;
 }
 
 /** Whole cents, both ends included. */
@@ -176,6 +205,16 @@ export interface PublicProductDetail extends PublicProduct {
 }
 
 /**
+ * The products a cart names, as their own pages show them — names, prices, combinations, photos.
+ * The cart cookie holds only ids and quantities; this is where they become something to read.
+ * A product the shop drafted, deleted or never had is absent, and the cart drops that line rather
+ * than the page failing. A sold-out one is present, marked, so the cart can say so.
+ */
+export interface StorefrontCartProducts {
+  products: PublicProductDetail[];
+}
+
+/**
  * One answer for one shop-window page: the navigation and a page of what the filter matched. Two
  * round trips for a page that renders neither without the other would be two chances for one of
  * them to be stale against the other.
@@ -209,10 +248,11 @@ export interface StorefrontCatalog {
 }
 
 /**
- * How a shelf can be ordered, as the address spells it. `relevancia` is the shopkeeper's own order.
- * "Mais vendidos" waits for orders to exist.
+ * How a shelf can be ordered, as the address spells it. `relevancia` is the shopkeeper's own order;
+ * `maior-desconto` puts the deepest cut first and what is not on sale last. "Mais vendidos" waits
+ * for orders to exist.
  */
-export type StorefrontSort = "relevancia" | "menor-preco" | "maior-preco" | "novidades";
+export type StorefrontSort = "relevancia" | "menor-preco" | "maior-preco" | "novidades" | "maior-desconto";
 
 /** One value a facet offers. */
 export interface CatalogFacetValue {
@@ -239,10 +279,20 @@ export interface CatalogFacets {
   categories: CatalogFacetValue[];
   /** One facet per option name across the shelf, "Tamanho" and "tamanho" being one. */
   options: CatalogOptionFacet[];
-  /** How many are on sale — a "was" price above the price. */
-  discount: { count: number; selected: boolean };
+  /**
+   * How many are on sale — a "was" price above the price — and how many at each cut the shelf
+   * offers as a filter ("10% ou mais"), each counted under every other filter in force.
+   */
+  discount: { count: number; selected: boolean; ranges: CatalogDiscountRange[] };
   /** The cheapest and dearest product under the other filters; null on an empty shelf. */
   price: { minCents: number; maxCents: number } | null;
+}
+
+/** One "N% ou mais" the shelf can be narrowed to; `desconto=<minPercent>` asks for it. */
+export interface CatalogDiscountRange {
+  minPercent: number;
+  count: number;
+  selected: boolean;
 }
 
 export interface CatalogOptionFacet {
@@ -255,7 +305,7 @@ export interface CatalogOptionFacet {
 export interface AppliedCatalogFilter {
   /** The address's parameter: `categoria`, `busca`, `precoMin`, `precoMax`, `desconto`, `opcao`. */
   key: "categoria" | "busca" | "precoMin" | "precoMax" | "desconto" | "opcao";
-  /** Its value in the address: a slug, a term, whole reais, `1`, `Tamanho:P`. */
+  /** Its value in the address: a slug, a term, whole reais, `1` or a minimum percent, `Tamanho:P`. */
   value: string;
   /** The shop's own name for it where there is one — a category's, a value's — else the value. */
   label: string;

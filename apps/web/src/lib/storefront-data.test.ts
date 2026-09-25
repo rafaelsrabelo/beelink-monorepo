@@ -46,7 +46,7 @@ function catalogue(over: Partial<StorefrontCatalog>): StorefrontCatalog {
     page: 1,
     pageSize: 1,
     sort: "relevancia",
-    facets: { categories: [], options: [], discount: { count: 0, selected: false }, price: null },
+    facets: { categories: [], options: [], discount: { count: 0, selected: false, ranges: [] }, price: null },
     applied: [],
     ...over,
   }
@@ -122,5 +122,18 @@ describe("shopAt — the shop, its showcases' cards included", () => {
     await shopAt("lessari")
 
     expect(asked[0]?.tags).toEqual([storeTag("lessari"), catalogTag("lessari")])
+  })
+})
+
+describe("catalogueAt — a shelf that could not be read", () => {
+  it("says it failed when the API broke or never answered, and is plain empty when a filter was refused", async () => {
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 503 })))
+    expect(await catalogueAt("loja")).toMatchObject({ failed: true, products: [], total: 0 })
+
+    vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")))
+    expect(await catalogueAt("loja")).toMatchObject({ failed: true })
+
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 400 })))
+    expect(await catalogueAt("loja")).not.toHaveProperty("failed")
   })
 })

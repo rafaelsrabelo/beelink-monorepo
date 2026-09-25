@@ -2,11 +2,11 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { listingFiltersOf, storefrontRoutes, toggledOption } from "./storefront-routes"
+import { listingFiltersOf, safeBackOf, sectionOf, signInModeOf, storefrontRoutes, toggledOption } from "./storefront-routes"
 
 const routes = storefrontRoutes({
   slug: "mutante",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
 })
 
 describe("listingFiltersOf", () => {
@@ -27,6 +27,13 @@ describe("listingFiltersOf", () => {
     expect(listingFiltersOf({ precoMin: "100,50", precoMax: "199.2" })).toEqual({ priceMin: 100, priceMax: 200 })
     expect(listingFiltersOf({ precoMin: "300", precoMax: "100" })).toEqual({ priceMin: 100, priceMax: 300 })
     expect(listingFiltersOf({ precoMin: "abc", precoMax: "-5" })).toEqual({})
+  })
+
+  it("reads a least cut, in percent, and keeps desconto=1 as any discount", () => {
+    expect(listingFiltersOf({ desconto: "20" })).toEqual({ discount: true, discountMinPercent: 20 })
+    expect(listingFiltersOf({ desconto: "1" })).toEqual({ discount: true })
+    expect(listingFiltersOf({ desconto: "0" })).toEqual({})
+    expect(routes.catalog({ discount: true, discountMinPercent: 30 })).toBe("/mutante/produtos?desconto=30")
   })
 
   it("ignores a sort it does not know, and the shop's own order", () => {
@@ -70,3 +77,25 @@ describe("toggledOption", () => {
     expect(toggledOption(off, "Peso:900").options).toBeUndefined()
   })
 })
+
+describe("the sign-in page's addresses", () => {
+  it("is a route word of its own, with its faces and its way back in the address", () => {
+    const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" } }
+    const shopRoutes = storefrontRoutes(shop)
+
+    expect(sectionOf("entrar", shop.routeWords)).toEqual({ kind: "signIn" })
+    expect(shopRoutes.signIn()).toBe("/loja/entrar")
+    expect(shopRoutes.signIn({ mode: "criar", back: "/loja/carrinho" })).toBe("/loja/entrar?modo=criar&voltar=%2Floja%2Fcarrinho")
+    expect(signInModeOf("senha")).toBe("senha")
+    expect(signInModeOf("qualquer")).toBe("entrar")
+  })
+
+  it("follows a return path only inside the shop", () => {
+    expect(safeBackOf("loja", "/loja/carrinho")).toBe("/loja/carrinho")
+    expect(safeBackOf("loja", "/loja")).toBe("/loja")
+    for (const unsafe of ["https://evil.example", "//evil.example", "/lojaoutra", "/loja//x", undefined]) {
+      expect(safeBackOf("loja", unsafe)).toBe("/loja")
+    }
+  })
+})
+
