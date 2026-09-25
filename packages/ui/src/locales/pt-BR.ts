@@ -613,6 +613,12 @@ export const ptBR: UiMessages = {
     range: "{from}–{to} de {total}",
     previous: "Anterior",
     next: "Próxima",
+    message: {
+      greeting: "Olá, {name}! Aqui é da {shop}.",
+      LEAD: "Vi que você criou sua conta com a gente e ainda não fez o primeiro pedido. Posso te ajudar a escolher alguma coisa?",
+      CUSTOMER: "Obrigado por comprar com a gente! Se precisar de alguma coisa, é só chamar por aqui.",
+      INACTIVE: "Faz tempo que você não passa aqui! Chegaram novidades na loja. Quer que eu te mostre?",
+    },
   },
   orders: {
     title: "Pedidos",

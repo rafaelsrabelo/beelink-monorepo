@@ -613,6 +613,12 @@ export const en: UiMessages = {
     range: "{from}–{to} of {total}",
     previous: "Previous",
     next: "Next",
+    message: {
+      greeting: "Hi, {name}! This is {shop}.",
+      LEAD: "I saw you opened an account with us and have not placed your first order yet. Can I help you pick something?",
+      CUSTOMER: "Thank you for buying with us! If you need anything, just message us here.",
+      INACTIVE: "It has been a while since you stopped by! There is something new at the shop. Shall I show you?",
+    },
   },
   orders: {
     title: "Orders",

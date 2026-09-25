@@ -762,6 +762,19 @@ export interface UiMessages {
     range: string
     previous: string
     next: string
+    /**
+     * The WhatsApp conversation the list opens, from the shop to the customer: a greeting, then one
+     * sentence for where they stand. Fixed per stage; the shopkeeper does not edit them.
+     */
+    message: {
+      /** `{name}` is the first name, `{shop}` the shop's. */
+      greeting: string
+      /** An invitation to the first order. */
+      LEAD: string
+      CUSTOMER: string
+      /** "Faz tempo que você não passa aqui". */
+      INACTIVE: string
+    }
   }
   /** The panel's orders: the list, and later the order and its form. */
   orders: {
