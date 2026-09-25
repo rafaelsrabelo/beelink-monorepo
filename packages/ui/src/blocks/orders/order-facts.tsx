@@ -6,10 +6,11 @@ import { buttonVariants } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { OrderDetailView } from "./order-types"
 
 export interface OrderFactsProps {
@@ -18,6 +19,9 @@ export interface OrderFactsProps {
   addressLine: string | null
   /** The conversation with the order already typed; null when the customer has no phone. */
   whatsappHref: string | null
+  /** The customer's record; absent, the name is only text. */
+  customerHref?: string
+  linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
@@ -30,8 +34,11 @@ function Fact({ label, children, className }: { label: string; children: React.R
   )
 }
 
-/** Who bought, where they are, how it leaves and how it was paid — and a way to talk to them. */
-export function OrderFacts({ order, addressLine, whatsappHref, messages = defaultMessages }: OrderFactsProps) {
+/**
+ * Who bought — the name leading to their record — where they are, how it leaves and how it was
+ * paid, and a way to talk to them.
+ */
+export function OrderFacts({ order, addressLine, whatsappHref, customerHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: OrderFactsProps) {
   const text = messages.orders.detail
   const labels = messages.orders
 
@@ -41,7 +48,17 @@ export function OrderFacts({ order, addressLine, whatsappHref, messages = defaul
         {text.customer}
       </h2>
       <div className="flex flex-col gap-1">
-        <span className="font-medium">{order.customer.name}</span>
+        {customerHref ? (
+          <Link
+            href={customerHref}
+            aria-label={format(messages.customers.open, { name: order.customer.name })}
+            className="focus-visible:ring-ring w-fit rounded-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-2"
+          >
+            {order.customer.name}
+          </Link>
+        ) : (
+          <span className="font-medium">{order.customer.name}</span>
+        )}
         <span className="text-muted-foreground text-sm tabular-nums">{order.customer.phone ?? text.noPhone}</span>
         <span className="text-muted-foreground text-sm">{addressLine ?? text.noAddress}</span>
       </div>

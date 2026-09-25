@@ -54,6 +54,17 @@ describe("OrderDetail", () => {
     expect(within(facts).getByRole("link", { name: "Chamar no WhatsApp" })).toHaveAttribute("href", props.whatsappHref)
   })
 
+  it("leads the customer's name to their record when it is given one, and leaves it text otherwise", () => {
+    const { rerender } = render(<OrderDetail order={order} {...props} customerHref="/admin/loja/customers/c1" />)
+
+    const name = within(screen.getByRole("region", { name: "Cliente" })).getByRole("link", { name: `Abrir a ficha de ${order.customer.name}` })
+    expect(name).toHaveAttribute("href", "/admin/loja/customers/c1")
+    expect(name).toHaveTextContent(order.customer.name)
+
+    rerender(<OrderDetail order={order} {...props} />)
+    expect(screen.queryByRole("link", { name: `Abrir a ficha de ${order.customer.name}` })).not.toBeInTheDocument()
+  })
+
   it("moves the order to its next step with one press", async () => {
     const onStatusChange = vi.fn()
     render(<OrderDetail order={order} {...props} onStatusChange={onStatusChange} />)
