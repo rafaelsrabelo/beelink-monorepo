@@ -26,19 +26,26 @@ export interface StorefrontVariantOptionProps {
   messages?: UiMessages
 }
 
-// The primitive draws in the panel's tokens; every state here is the shop's own. `hover:` and
-// `aria-pressed:` are restated because the primitive sets both.
+// The primitive draws in the panel's tokens; every state here is the shop's own. `hover:`,
+// `aria-pressed:` and the focus border are restated because the primitive sets them, and the outline
+// needs its style back: the primitive's `outline-none` leaves `outline-2` drawing nothing.
 const BASE =
   "h-auto min-w-0 rounded-[12px] border border-shop-line-strong bg-shop-background text-left leading-[1.2] font-normal whitespace-normal text-shop-on-background " +
   "hover:border-shop-primary hover:bg-shop-background hover:text-shop-on-background aria-pressed:bg-shop-primary-tint " +
-  "focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-shop-primary-ink"
+  "focus-visible:border-shop-line-strong focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-shop-primary-ink"
 const CARD = "flex-col items-stretch justify-start gap-1.5 p-2"
-const PILL = "min-w-[110px] flex-col items-start justify-start gap-0.5 px-3 py-2.5"
+const PILL = "max-w-full flex-col items-start justify-start gap-0.5 px-3 py-2.5 shop-sm:min-w-[110px]"
 // Chosen: a 2px border on the wash, the padding a pixel smaller so nothing moves when it grows. The
-// border is the ink, not the brand colour: a pale brand colour on white falls under 3:1.
-const CHOSEN = {
-  cards: "border-2 border-shop-primary-ink bg-shop-primary-tint p-[7px]",
-  pills: "border-2 border-shop-primary-ink bg-shop-primary-tint px-[11px] py-[9px]",
+// border is the ink, not the brand colour, in every state: a pale brand colour on white falls under 3:1.
+const INK = "border-2 border-shop-primary-ink bg-shop-primary-tint hover:border-shop-primary-ink focus-visible:border-shop-primary-ink"
+const CHOSEN = { cards: `${INK} p-[7px]`, pills: `${INK} px-[11px] py-[9px]` }
+// 5b's four columns of about 107px, never wider than 120 where the column is wide; on a phone, as
+// many as keep a price on one line. The pills share a phone's row the same way, and keep 5b's 110px
+// from shop-sm. `w-full` because the primitive sets `w-fit`, and an intrinsically sized grid
+// resolves `auto-fill` to one column.
+const ROW = {
+  cards: "grid w-full grid-cols-[repeat(auto-fill,minmax(76px,1fr))] items-stretch gap-2 shop-sm:grid-cols-[repeat(4,minmax(0,120px))]",
+  pills: "grid w-full grid-cols-[repeat(auto-fill,minmax(96px,1fr))] items-stretch gap-2 shop-sm:flex shop-sm:w-fit shop-sm:flex-wrap",
 }
 
 /**
@@ -74,12 +81,7 @@ export function StorefrontVariantOption({ option, states, prices, photos, chosen
           const valueId = next[0]
           if (valueId) onSelect(valueId)
         }}
-        // 5b's four columns; on a phone, as many as keep a price on one line — four at 360, three at 320.
-        className={
-          layout === "cards"
-            ? "grid w-full grid-cols-[repeat(auto-fill,minmax(76px,1fr))] items-stretch gap-2 shop-sm:grid-cols-4"
-            : "flex flex-wrap items-stretch gap-2"
-        }
+        className={ROW[layout]}
       >
         {option.values.map((value, index) => {
           const state = states[index] ?? "missing"
@@ -87,8 +89,14 @@ export function StorefrontVariantOption({ option, states, prices, photos, chosen
           const photo = photos[index] ?? null
           const isChosen = value.id === chosen?.id
           const out = state !== "available"
-          // Spelled out rather than read off the content: a name, its price and its state.
-          const name = [value.name, price ? `, ${price}` : "", state === "missing" ? text.valueMissing : state === "soldOut" ? text.valueSoldOut : ""].join("")
+          // Spelled out rather than read off the content, and saying what is on it: a name and its
+          // price, or a name and "Esgotado · avise-me" where the price would be.
+          const name =
+            state === "missing"
+              ? `${value.name}${text.valueMissing}`
+              : state === "soldOut"
+                ? `${value.name}, ${text.valueSoldOutNotify}`
+                : `${value.name}${price ? `, ${price}` : ""}`
 
           return (
             <ToggleGroupItem
@@ -96,14 +104,15 @@ export function StorefrontVariantOption({ option, states, prices, photos, chosen
               value={value.id}
               aria-label={name}
               disabled={state === "missing"}
-              className={cn(BASE, layout === "cards" ? CARD : PILL, isChosen && CHOSEN[layout], state === "soldOut" && "border-dashed text-shop-muted", state === "missing" && "line-through")}
+              className={cn(BASE, layout === "cards" ? CARD : PILL, isChosen && CHOSEN[layout], state === "soldOut" && "border-dashed text-shop-muted hover:text-shop-muted", state === "missing" && "line-through")}
             >
               {layout === "cards" ? (
                 <span
                   aria-hidden="true"
                   className={cn(
                     "block h-[52px] w-full overflow-hidden rounded-[8px]",
-                    photo || value.colorHex ? null : state === "soldOut" ? "bg-shop-canvas" : isChosen ? "bg-shop-primary-tint-strong" : "bg-shop-placeholder",
+                    // A colour gets a hairline, so a white swatch on a white card still has an edge.
+                    photo ? null : value.colorHex ? "ring-1 ring-shop-line ring-inset" : state === "soldOut" ? "bg-shop-canvas" : isChosen ? "bg-shop-primary-tint-strong" : "bg-shop-placeholder",
                   )}
                   // The shopkeeper's swatch: data applied at runtime, like a shop's own colours.
                   style={!photo && value.colorHex ? { backgroundColor: value.colorHex } : undefined}
@@ -111,7 +120,7 @@ export function StorefrontVariantOption({ option, states, prices, photos, chosen
                   {photo ? <img src={photo} alt="" loading="lazy" decoding="async" className={cn("size-full object-cover", out && "opacity-50")} /> : null}
                 </span>
               ) : null}
-              <span className={cn(layout === "cards" ? "text-[13px]" : "text-[14px]", isChosen ? "font-bold" : "font-semibold", out && "line-through")}>{value.name}</span>
+              <span className={cn(layout === "cards" ? "text-[13px]" : "text-[14px]", "[overflow-wrap:anywhere]", isChosen ? "font-bold" : "font-semibold", out && "line-through")}>{value.name}</span>
               {state === "soldOut" ? (
                 <span className="text-[12px]">{text.valueSoldOutNotify}</span>
               ) : price ? (

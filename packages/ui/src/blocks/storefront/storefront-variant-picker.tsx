@@ -33,7 +33,8 @@ export function StorefrontVariantPicker({ options, variants, selection, onSelect
   return (
     <div className="flex flex-col gap-3.5">
       {options.map((option) => {
-        const photos = option.values.map((value) => valuePhotoOf(images, value.id)?.url ?? null)
+        const siblings = option.values.map((value) => value.id)
+        const photos = option.values.map((value) => valuePhotoOf(images, value.id, siblings)?.url ?? null)
         const cards = photos.some(Boolean) || option.values.some((value) => value.colorHex)
 
         return (

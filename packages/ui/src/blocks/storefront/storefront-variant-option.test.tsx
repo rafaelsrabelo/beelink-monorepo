@@ -52,6 +52,8 @@ describe("StorefrontVariantOption", () => {
     const chosen = screen.getByRole("button", { name: "Frutas vermelhas, R$ 119,90" })
     expect(chosen).toHaveAttribute("aria-pressed", "true")
     expect(chosen).toHaveClass("border-2", "border-shop-primary-ink", "bg-shop-primary-tint")
+    // The ink holds under the pointer and under focus, where the base would put the brand colour or the line.
+    expect(chosen).toHaveClass("hover:border-shop-primary-ink", "focus-visible:border-shop-primary-ink")
     expect(chosen.querySelector("img")).toHaveAttribute("src", "https://cdn/frutas.jpg")
     expect(within(chosen).getByText("Frutas vermelhas")).toHaveClass("font-bold")
     expect(within(screen.getByRole("button", { name: "Uva, R$ 129,90" })).getByText("Uva")).toHaveClass("font-semibold")
@@ -61,7 +63,7 @@ describe("StorefrontVariantOption", () => {
     const user = userEvent.setup()
     const { onSelect } = renderOption()
 
-    const sold = screen.getByRole("button", { name: "Maçã verde, R$ 119,90, esgotado" })
+    const sold = screen.getByRole("button", { name: "Maçã verde, Esgotado · avise-me" })
     expect(sold).toBeEnabled()
     expect(sold).toHaveClass("border-dashed", "text-shop-muted")
     expect(sold).toHaveTextContent("Esgotado · avise-me")
@@ -83,7 +85,7 @@ describe("StorefrontVariantOption", () => {
     renderOption({ layout: "pills", photos: [null, null, null, null] })
 
     const pill = screen.getByRole("button", { name: "Uva, R$ 129,90" })
-    expect(pill).toHaveClass("min-w-[110px]")
+    expect(pill).toHaveClass("shop-sm:min-w-[110px]", "max-w-full")
     expect(pill.querySelector("span[aria-hidden]")).toBeNull()
   })
 
@@ -106,13 +108,20 @@ describe("StorefrontVariantOption", () => {
     await user.keyboard("{ArrowRight}")
     expect(screen.getByRole("button", { name: "Uva, R$ 129,90" })).toHaveFocus()
     await user.keyboard("{ArrowRight}")
-    expect(screen.getByRole("button", { name: "Maçã verde, R$ 119,90, esgotado" })).toHaveFocus()
+    expect(screen.getByRole("button", { name: "Maçã verde, Esgotado · avise-me" })).toHaveFocus()
     await user.keyboard(" ")
     expect(onSelect).toHaveBeenCalledWith("maca")
 
     // Coco is disabled, so the next arrow wraps round to the first value.
     await user.keyboard("{ArrowRight}")
     expect(screen.getByRole("button", { name: "Frutas vermelhas, R$ 119,90" })).toHaveFocus()
+  })
+
+  // The primitive's `outline-none` leaves `outline-2` drawing nothing unless the style comes back.
+  it("draws a focus outline in the shop's ink", () => {
+    renderOption()
+
+    expect(screen.getByRole("button", { name: "Uva, R$ 129,90" })).toHaveClass("focus-visible:outline-solid", "focus-visible:outline-shop-primary-ink")
   })
 
   it("has no accessibility violations, as cards or as pills", async () => {

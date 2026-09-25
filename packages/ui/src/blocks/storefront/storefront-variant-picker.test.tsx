@@ -49,7 +49,7 @@ describe("StorefrontVariantPicker", () => {
     const user = userEvent.setup()
     const onSelect = renderPicker()
 
-    const medium = screen.getByRole("button", { name: "M, esgotado" })
+    const medium = screen.getByRole("button", { name: "M, Esgotado · avise-me" })
     expect(medium).toBeEnabled()
     expect(within(medium).getByText("M")).toHaveClass("line-through")
     await user.click(medium)
@@ -69,7 +69,7 @@ describe("StorefrontVariantPicker", () => {
   it("draws sizes as pills and colours as cards, as 5b does", () => {
     renderPicker()
 
-    expect(screen.getByRole("button", { name: "P" })).toHaveClass("min-w-[110px]")
+    expect(screen.getByRole("button", { name: "P" })).toHaveClass("shop-sm:min-w-[110px]")
     expect(screen.getByRole("button", { name: "Areia" })).toHaveClass("items-stretch")
   })
 
@@ -98,10 +98,27 @@ describe("StorefrontVariantPicker", () => {
       <StorefrontVariantPicker options={BLOUSE_OPTIONS} variants={BLOUSE_VARIANTS} selection={{ size: "P", colour: "areia" }} onSelect={() => {}} locale="pt-BR" />,
     )
 
-    const medium = screen.getByRole("button", { name: /^M, R\$\s189,00, esgotado$/ })
+    const medium = screen.getByRole("button", { name: "M, Esgotado · avise-me" })
     expect(medium).toHaveTextContent("Esgotado · avise-me")
     expect(medium).not.toHaveTextContent("189")
     expect(medium).toHaveClass("border-dashed")
+  })
+
+  it("keeps sizes as pills when a photo names a size together with a colour", () => {
+    render(
+      <StorefrontVariantPicker
+        options={BLOUSE_OPTIONS}
+        variants={BLOUSE_VARIANTS}
+        selection={{ size: "P", colour: "areia" }}
+        onSelect={() => {}}
+        images={[{ url: "https://cdn/p-terracota.jpg", optionValueIds: ["P", "terracota"] }]}
+      />,
+    )
+
+    const small = screen.getByRole("button", { name: "P" })
+    expect(small).toHaveClass("shop-sm:min-w-[110px]")
+    expect(small.querySelector("img")).toBeNull()
+    expect(screen.getByRole("button", { name: "Terracota" }).querySelector("img")).toBeNull()
   })
 
   it("shows a value's own photo on its card", () => {

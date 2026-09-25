@@ -161,7 +161,6 @@ export interface UiMessages {
     /** Read after a value no combination has: ", indisponível". */
     valueMissing: string
     /** Read after a value whose combination is sold out: ", esgotado". */
-    valueSoldOut: string
     /** A sold-out value's second line on its card or pill, where its price would be. */
     valueSoldOutNotify: string
     /** Said in place of the order button when the chosen combination is sold out. */

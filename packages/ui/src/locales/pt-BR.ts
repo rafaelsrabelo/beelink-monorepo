@@ -124,7 +124,6 @@ export const ptBR: UiMessages = {
     soldOutHint: "Acabou por enquanto. Fale com a loja para saber quando volta.",
     chosenValue: "{option}: {value}",
     valueMissing: ", indisponível",
-    valueSoldOut: ", esgotado",
     valueSoldOutNotify: "Esgotado · avise-me",
     combinationSoldOut: "Esta combinação acabou por enquanto.",
     notifyMe: "Avise-me quando chegar",

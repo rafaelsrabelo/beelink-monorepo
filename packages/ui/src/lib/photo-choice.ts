@@ -60,9 +60,12 @@ export function photosOf<Photo extends TaggedPhoto>(
 }
 
 /**
- * A value's own photo: the first one tagged with it — the flavour's tub for "Uva". Its card in the
- * picker shows it; a value with none shows its colour, or the plain placeholder.
+ * A value's own photo: the first one tagged with it and with nothing outside its option — the
+ * flavour's tub for "Uva". The 900 g Morango tub is no size's photo: shown on "900 g", it would
+ * picture Morango whatever flavour was chosen, and turn the sizes into photo cards.
+ *
+ * `siblings` are the ids of every value of that option, the value itself included.
  */
-export function valuePhotoOf<Photo extends TaggedPhoto>(photos: readonly Photo[], valueId: string): Photo | undefined {
-  return photos.find((photo) => photo.optionValueIds?.includes(valueId))
+export function valuePhotoOf<Photo extends TaggedPhoto>(photos: readonly Photo[], valueId: string, siblings: readonly string[]): Photo | undefined {
+  return photos.find((photo) => photo.optionValueIds?.includes(valueId) && photo.optionValueIds.every((id) => siblings.includes(id)))
 }

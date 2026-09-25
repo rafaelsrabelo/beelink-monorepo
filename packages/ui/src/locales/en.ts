@@ -124,7 +124,6 @@ export const en: UiMessages = {
     soldOutHint: "None left for now. Ask the shop when it comes back.",
     chosenValue: "{option}: {value}",
     valueMissing: ", unavailable",
-    valueSoldOut: ", sold out",
     valueSoldOutNotify: "Sold out · notify me",
     combinationSoldOut: "This combination is sold out for now.",
     notifyMe: "Tell me when it is back",

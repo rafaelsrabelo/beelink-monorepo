@@ -52,10 +52,25 @@ describe("the photos a combination shows", () => {
 })
 
 describe("valuePhotoOf", () => {
-  it("finds the first photo tagged with a value, and none for a value no photo names", () => {
-    const photos = [{ url: "all.jpg" }, { url: "uva.jpg", optionValueIds: ["uva"] }, { url: "uva-2.jpg", optionValueIds: ["uva", "300g"] }]
+  const flavours = ["uva", "limao", "morango"]
 
-    expect(valuePhotoOf(photos, "uva")?.url).toBe("uva.jpg")
-    expect(valuePhotoOf(photos, "limao")).toBeUndefined()
+  it("finds the first photo tagged with a value, and none for a value no photo names", () => {
+    const photos = [{ url: "all.jpg" }, { url: "uva.jpg", optionValueIds: ["uva"] }, { url: "uva-2.jpg", optionValueIds: ["uva"] }]
+
+    expect(valuePhotoOf(photos, "uva", flavours)?.url).toBe("uva.jpg")
+    expect(valuePhotoOf(photos, "limao", flavours)).toBeUndefined()
+  })
+
+  it("skips a photo that also names another option's value, for either of them", () => {
+    const photos = [{ url: "uva-300.jpg", optionValueIds: ["uva", "300g"] }, { url: "uva.jpg", optionValueIds: ["uva"] }]
+
+    expect(valuePhotoOf(photos, "uva", flavours)?.url).toBe("uva.jpg")
+    expect(valuePhotoOf(photos, "300g", ["150g", "300g"])).toBeUndefined()
+  })
+
+  it("keeps a photo tagged with two values of the same option, for each of them", () => {
+    const photos = [{ url: "uva-ou-limao.jpg", optionValueIds: ["uva", "limao"] }]
+
+    expect(valuePhotoOf(photos, "limao", flavours)?.url).toBe("uva-ou-limao.jpg")
   })
 })
