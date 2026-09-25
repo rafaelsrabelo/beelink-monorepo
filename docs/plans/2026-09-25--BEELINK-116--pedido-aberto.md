@@ -56,3 +56,16 @@ clientes são relidos, porque cancelar muda o resumo do cliente.
 
 - Editar um pedido (itens, valores) e a baixa de estoque (H8).
 - A ficha do cliente (H7): o nome do cliente ainda não leva a ela.
+
+## Adendo — verificado ao vivo (2026-09-25)
+
+Na loja-do-design, pedido #4 (entrega, do Caio Lima):
+- "Marcar como em preparo" gravou o status e acrescentou a linha no histórico;
+- "Cancelar pedido", depois da confirmação, tirou o #4 do resumo do Caio: sobraram 3 pedidos
+  válidos, total gasto 36870 centavos (a soma dos três), e o último pedido passou a ser o mais
+  recente dos que restaram;
+- depois de cancelado, a tela mostra só o aviso, sem botão nem menu.
+
+O pedido #2 (retirada, entregue) não tem próximo passo; o menu leva de volta a qualquer status, sem
+"Saiu para entrega". O link do WhatsApp abre `wa.me/5511977776666` com o pedido escrito. Não há
+rolagem lateral a 390 px.
