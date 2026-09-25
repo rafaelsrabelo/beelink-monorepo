@@ -17,8 +17,9 @@ import {
   type VariationRow,
   type VariationsValue,
 } from "./variations"
+import { photoValuesOf, setPhotoValues } from "./variation-photos"
 
-const base: VariationRow = { isActive: true, price: "189,00", stock: "4", sku: "BLS" }
+const base: VariationRow = { isActive: true, price: "189,00", stock: "4", sku: "BLS", weight: "900" }
 
 function option(key: string, name: string, values: string[] = []): VariationOption {
   return { key, name, isColor: false, values: values.map((value) => ({ key: value, name: value, colorHex: null })) }
@@ -52,7 +53,7 @@ describe("the variations draft", () => {
     let draft = addValue(withOption(EMPTY_VARIATIONS, option("size", "Tamanho")), "size", { key: "P", name: "P", colorHex: null }, base)
     draft = addValue(draft, "size", { key: "M", name: "M", colorHex: null }, base)
 
-    expect(combinationsOf(draft, base)[1]?.row).toEqual({ isActive: true, price: "189,00", stock: "", sku: "" })
+    expect(combinationsOf(draft, base)[1]?.row).toEqual({ isActive: true, price: "189,00", stock: "", sku: "", weight: "900" })
   })
 
   it("carries every row onto a new option's first value", () => {
@@ -144,5 +145,34 @@ describe("the variations draft", () => {
 
     expect(removeOption(draft, "size", base)).toEqual(EMPTY_VARIATIONS)
     expect(removeValue(draft, "size", "P").rows).toEqual({})
+  })
+
+  describe("the photos' marks", () => {
+    const whey: VariationsValue = {
+      options: [option("peso", "Peso", ["900", "750"]), option("sabor", "Sabor", ["choc", "mor"])],
+      rows: {},
+    }
+
+    it("marks a photo, and stores nothing for one of every combination", () => {
+      const marked = setPhotoValues(whey, "/mor.jpg", ["mor"])
+
+      expect(photoValuesOf(marked, "/mor.jpg")).toEqual(["mor"])
+      expect(photoValuesOf(marked, "/geral.jpg")).toEqual([])
+      expect(setPhotoValues(marked, "/mor.jpg", []).photos).toBeUndefined()
+    })
+
+    it("drops a removed value from every photo, and keeps the photo", () => {
+      const marked = setPhotoValues(setPhotoValues(whey, "/mor.jpg", ["mor"]), "/mor-900.jpg", ["mor", "900"])
+      const withoutMorango = removeValue(marked, "sabor", "mor")
+
+      expect(withoutMorango.photos).toEqual({ "/mor-900.jpg": ["900"] })
+      expect(removeOption(marked, "peso", base).photos).toEqual({ "/mor.jpg": ["mor"], "/mor-900.jpg": ["mor"] })
+    })
+
+    it("keeps the marks when a value is added", () => {
+      const marked = setPhotoValues(whey, "/mor.jpg", ["mor"])
+
+      expect(addValue(marked, "sabor", { key: "baun", name: "Baunilha", colorHex: null }, base).photos).toEqual({ "/mor.jpg": ["mor"] })
+    })
   })
 })

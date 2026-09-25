@@ -2,6 +2,7 @@
 import type {
   AuthErrorCode,
   CatalogErrorCode,
+  CustomerErrorCode,
   LeadErrorCode,
   StoreErrorCode,
   PageErrorCode,
@@ -32,7 +33,14 @@ export type HttpFallbackErrorCode =
   | "SERVICE_UNAVAILABLE"
 
 /** What this app's own route handlers answer for the two things no API endpoint serves yet. */
-export type WebErrorCode = "CEP_INVALID" | "CEP_NOT_FOUND" | "CEP_UNAVAILABLE" | "UPLOAD_NOT_CONFIGURED"
+export type WebErrorCode =
+  | "CEP_INVALID"
+  | "CEP_NOT_FOUND"
+  | "CEP_UNAVAILABLE"
+  | "UPLOAD_NOT_CONFIGURED"
+  // A shopper's form refused as a whole (400): the handler names which, so the sentence can say what to fix.
+  | "CUSTOMER_SIGN_UP_INVALID"
+  | "CUSTOMER_FIELDS_INVALID"
 
 /**
  * What the screens say, on top of what the blocks already carry. `errors` turns an API `errorCode`
@@ -66,6 +74,9 @@ type PanelCatalogErrorCode = Extract<
   | "CATALOG_PRICE_INVALID"
   | "CATALOG_PARCEL_INCOMPLETE"
 >
+
+/** The catalogue codes a visitor can meet on a product page. */
+type StorefrontCatalogErrorCode = Extract<CatalogErrorCode, "RESTOCK_VARIANT_INVALID">
 
 export interface WebMessages {
   metadata: {
@@ -208,12 +219,14 @@ export interface WebMessages {
    */
   errors: Record<
     | AuthErrorCode
+    | CustomerErrorCode
     | StoreErrorCode
     | LeadErrorCode
     | HttpFallbackErrorCode
     | WebErrorCode
     | PanelPageErrorCode
     | PanelCatalogErrorCode
+    | StorefrontCatalogErrorCode
     | "UNKNOWN",
     string
   >

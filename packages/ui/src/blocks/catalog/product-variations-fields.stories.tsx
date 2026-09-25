@@ -9,11 +9,19 @@ import { EMPTY_VARIATIONS, type VariationsValue } from "@harness-monorepo/ui/lib
 
 // Block
 import { ProductVariationsFields } from "./product-variations-fields"
-import { BASE_ROW, BLOUSE } from "./variation-fixtures"
+import { BASE_ROW, BLOUSE, WHEY, WHEY_PHOTOS } from "./variation-fixtures"
 
-function Controlled({ initial, trackStock = true }: { initial: VariationsValue; trackStock?: boolean }) {
+function Controlled({
+  initial,
+  trackStock = true,
+  photos,
+}: {
+  initial: VariationsValue
+  trackStock?: boolean
+  photos?: readonly string[]
+}) {
   const [value, setValue] = useState(initial)
-  return <ProductVariationsFields value={value} onChange={setValue} base={BASE_ROW} trackStock={trackStock} />
+  return <ProductVariationsFields value={value} onChange={setValue} base={BASE_ROW} trackStock={trackStock} photos={photos} />
 }
 
 const meta = {
@@ -50,4 +58,9 @@ export const ComAvisos: Story = {
       rows: { "P|areia": "Informe o preço de P · Areia." },
     },
   },
+}
+
+/** Com fotos marcadas por sabor e por combinação: cada linha mostra a foto com que a vitrine abre. */
+export const ComFotos: Story = {
+  render: () => <Controlled initial={WHEY} photos={WHEY_PHOTOS} trackStock={false} />,
 }

@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 
 // Types
 import type { AuthSession } from '@harness-monorepo/contracts';
+import type { SessionAudience } from '../../generated/prisma/enums.js';
 import type { UserModel } from '../../generated/prisma/models.js';
 
 // App
@@ -18,6 +19,13 @@ import { toUser } from './user.mapper.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * What an access token says about the door it came through. A shopkeeper's carries nothing extra —
+ * every token already handed out is one — and a shopper's says `customer`, signed, so a guard can
+ * refuse it without a read.
+ */
+export const CUSTOMER_TOKEN_KIND = 'customer';
+
 /** One session is one signed-in device; its refresh tokens form a chain, each used once. */
 @Injectable()
 export class SessionService {
@@ -26,22 +34,24 @@ export class SessionService {
     private readonly jwt: JwtService,
   ) {}
 
-  async start(user: UserModel, userAgent?: string): Promise<AuthSession> {
-    const session = await this.prisma.session.create({ data: { userId: user.id, userAgent } });
-    return this.issue(user, session.id);
+  async start(user: UserModel, userAgent?: string, audience: SessionAudience = 'OWNER'): Promise<AuthSession> {
+    const session = await this.prisma.session.create({ data: { userId: user.id, userAgent, audience } });
+    return this.issue(user, session.id, audience);
   }
 
   /**
    * Rotates the chain. A token already spent means it was copied — unless it was spent moments ago,
    * which is the same browser racing itself (a second tab, a prefetch) and is allowed to rotate.
    */
-  async refresh(refreshToken: string): Promise<AuthSession> {
+  async refresh(refreshToken: string, audience: SessionAudience = 'OWNER'): Promise<AuthSession> {
     const record = await this.prisma.refreshToken.findUnique({
       where: { tokenHash: hashToken(refreshToken) },
       include: { session: { include: { user: true } } },
     });
 
-    if (!record || record.session.revokedAt || record.expiresAt.getTime() <= Date.now()) {
+    // A session refreshes only through the door it was opened by: a shopper's refresh token handed
+    // to the panel's endpoint is as invalid as one that does not exist.
+    if (!record || record.session.revokedAt || record.session.audience !== audience || record.expiresAt.getTime() <= Date.now()) {
       throw new UnauthorizedException({ errorCode: 'AUTH_TOKEN_INVALID', message: 'Invalid refresh token' });
     }
 
@@ -61,7 +71,7 @@ export class SessionService {
       });
     }
 
-    return this.issue(record.session.user, record.sessionId);
+    return this.issue(record.session.user, record.sessionId, record.session.audience);
   }
 
   /** Idempotent: an unknown or already spent token still ends in "you are signed out". */
@@ -99,7 +109,7 @@ export class SessionService {
     });
   }
 
-  private async issue(user: UserModel, sessionId: string): Promise<AuthSession> {
+  private async issue(user: UserModel, sessionId: string, audience: SessionAudience): Promise<AuthSession> {
     const refreshToken = createOpaqueToken();
     const refreshTokenExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_DAYS * DAY_MS);
 
@@ -108,7 +118,7 @@ export class SessionService {
     });
 
     const accessToken = await this.jwt.signAsync(
-      { sub: user.id, sid: sessionId },
+      { sub: user.id, sid: sessionId, ...(audience === 'CUSTOMER' ? { kind: CUSTOMER_TOKEN_KIND } : {}) },
       { expiresIn: ACCESS_TOKEN_TTL_SECONDS },
     );
 

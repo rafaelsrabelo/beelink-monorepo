@@ -10,12 +10,19 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { EMPTY_FORM } from "./product-form-mapping"
-import { optionsPayloadOf, rekeyDraft, toVariationsDraft, variantsPayloadOf, variationIssuesOf } from "./variations-mapping"
+import {
+  imagesPayloadOf,
+  optionsPayloadOf,
+  rekeyDraft,
+  toVariationsDraft,
+  variantsPayloadOf,
+  variationIssuesOf,
+} from "./variations-mapping"
 
-const base = { isActive: true, price: "189,00", stock: "", sku: "" }
+const base = { isActive: true, price: "189,00", stock: "", sku: "", weight: "" }
 
 function detail(over: Partial<ProductDetail>): ProductDetail {
-  return { id: "p1", options: [], variants: [], ...over } as unknown as ProductDetail
+  return { id: "p1", options: [], variants: [], images: [], ...over } as unknown as ProductDetail
 }
 
 const variant = (id: string, optionValueIds: string[], over: object = {}) => ({
@@ -48,7 +55,7 @@ describe("the variations draft of a saved product", () => {
     )
 
     expect(draft.options[0]).toMatchObject({ key: "size", isColor: false, values: [{ key: "P" }] })
-    expect(draft.rows.P).toEqual({ isActive: true, price: "189,00", stock: "3", sku: "BLS-P" })
+    expect(draft.rows.P).toEqual({ isActive: true, price: "189,00", stock: "3", sku: "BLS-P", weight: "" })
   })
 
   it("has no options and no rows for a product that sells one thing", () => {
@@ -79,7 +86,10 @@ describe("what the save sends", () => {
       },
       { key: "new:empty", name: "Cor", isColor: true, values: [] },
     ],
-    rows: { P: { isActive: true, price: "189,00", stock: "4", sku: "BLS-P" }, "new:m": { isActive: false, price: "199,00", stock: "", sku: "" } },
+    rows: {
+      P: { isActive: true, price: "189,00", stock: "4", sku: "BLS-P", weight: "900" },
+      "new:m": { isActive: false, price: "199,00", stock: "", sku: "", weight: "750" },
+    },
   }
 
   it("sends only options with values, with ids only for what the API has seen", () => {
@@ -103,11 +113,12 @@ describe("what the save sends", () => {
       variants: [variant("v1", ["P"]), variant("v2", ["M-id"])],
     })
 
-    const payload = variantsPayloadOf(draft, saved, base, { ...EMPTY_FORM, trackStock: true, weight: "300" })
+    // The product's own weight field is ignored: each combination sends its own; the box is shared.
+    const payload = variantsPayloadOf(draft, saved, base, { ...EMPTY_FORM, trackStock: true, weight: "300", length: "10", width: "10", height: "20" })
 
     expect(payload).toEqual([
-      { id: "v1", isActive: true, priceCents: 18900, sku: "BLS-P", trackStock: true, stockQuantity: 4, weightGrams: 300, lengthMm: null, widthMm: null, heightMm: null },
-      { id: "v2", isActive: false, priceCents: 19900, sku: null, trackStock: true, stockQuantity: null, weightGrams: 300, lengthMm: null, widthMm: null, heightMm: null },
+      { id: "v1", isActive: true, priceCents: 18900, sku: "BLS-P", trackStock: true, stockQuantity: 4, weightGrams: 900, lengthMm: 100, widthMm: 100, heightMm: 200 },
+      { id: "v2", isActive: false, priceCents: 19900, sku: null, trackStock: true, stockQuantity: null, weightGrams: 750, lengthMm: 100, widthMm: 100, heightMm: 200 },
     ])
   })
 
@@ -116,7 +127,7 @@ describe("what the save sends", () => {
       options: [{ id: "size", name: "Tamanho", values: [{ id: "P", name: "P", colorHex: null }, { id: "M-id", name: "M", colorHex: null }] }],
       variants: [variant("v1", ["P"]), variant("v2", ["M-id"])],
     })
-    const off = { ...draft, rows: { ...draft.rows, "new:m": { isActive: false, price: "", stock: "", sku: "" } } }
+    const off = { ...draft, rows: { ...draft.rows, "new:m": { isActive: false, price: "", stock: "", sku: "", weight: "" } } }
 
     const payload = variantsPayloadOf(off, saved, base, EMPTY_FORM)
 
@@ -157,7 +168,7 @@ describe("what the save sends", () => {
           { key: "a", name: "", isColor: false, values: [{ key: "x", name: "X", colorHex: null }] },
           { key: "b", name: "Cor", isColor: true, values: [] },
         ],
-        rows: { [combinationKey(["x"])]: { isActive: true, price: "", stock: "", sku: "" } },
+        rows: { [combinationKey(["x"])]: { isActive: true, price: "", stock: "", sku: "", weight: "" } },
       },
       { ...base, price: "" },
       defaultMessages,
@@ -166,5 +177,48 @@ describe("what the save sends", () => {
     expect(issues.blocked).toBe(true)
     expect(issues.options).toEqual({ a: "Dê um nome para a opção.", b: "Adicione pelo menos um valor." })
     expect(issues.rows.x).toBe("Informe o preço de X.")
+  })
+})
+
+describe("the photos of a product with variations", () => {
+  const flavours = { id: "sabor", name: "Sabor", values: [{ id: "choc", name: "Chocolate", colorHex: null }, { id: "mor", name: "Morango", colorHex: null }] }
+  const photo = (url: string, optionValueIds: string[]) => ({ id: url, url, alt: null, optionValueIds })
+
+  it("reads what each photo is of, and keeps no entry for a photo of every combination", () => {
+    const draft = toVariationsDraft(
+      detail({
+        options: [flavours],
+        variants: [variant("v1", ["choc"]), variant("v2", ["mor"])],
+        images: [photo("/geral.jpg", []), photo("/mor.jpg", ["mor"])],
+      }),
+      defaultMessages,
+    )
+
+    expect(draft.photos).toEqual({ "/mor.jpg": ["mor"] })
+  })
+
+  it("names a new value by the id it was given, and drops a value the product no longer has", () => {
+    const draft: VariationsValue = {
+      options: [{ key: "sabor", name: "Sabor", isColor: false, values: [{ key: "choc", name: "Chocolate", colorHex: null }, { key: "new:mor", name: "Morango", colorHex: null }] }],
+      rows: {},
+      photos: { "/mor.jpg": ["new:mor"], "/antiga.jpg": ["baunilha"] },
+    }
+    const saved = detail({ options: [flavours] })
+
+    expect(imagesPayloadOf(["/geral.jpg", "/mor.jpg", "/antiga.jpg"], draft, saved)).toEqual([
+      { url: "/geral.jpg", optionValueIds: [] },
+      { url: "/mor.jpg", optionValueIds: ["mor"] },
+      { url: "/antiga.jpg", optionValueIds: [] },
+    ])
+  })
+
+  it("renames a photo's new keys after a partial save, like the rows'", () => {
+    const draft: VariationsValue = {
+      options: [{ key: "new:sabor", name: "Sabor", isColor: false, values: [{ key: "new:choc", name: "Chocolate", colorHex: null }, { key: "new:mor", name: "Morango", colorHex: null }] }],
+      rows: {},
+      photos: { "/mor.jpg": ["new:mor"] },
+    }
+
+    expect(rekeyDraft(draft, detail({ options: [flavours] })).photos).toEqual({ "/mor.jpg": ["mor"] })
   })
 })
