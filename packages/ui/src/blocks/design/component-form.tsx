@@ -237,6 +237,8 @@ export function ComponentForm({
           type="submit"
           disabled={
             pending ||
+            // Saved mid-upload, the slide goes without its picture and the picture then lands nowhere.
+            imagePending ||
             (value.kind === "CONTACT" && !reachesBack(value.fields)) ||
             (value.kind === "PRODUCTS" && !showcaseReady(value))
           }

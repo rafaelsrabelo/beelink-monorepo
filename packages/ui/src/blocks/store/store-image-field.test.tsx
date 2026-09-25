@@ -49,6 +49,50 @@ describe("StoreImageField", () => {
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(sampleImage))
   })
 
+  /**
+   * The picture lands a second after the pick, and the owner may have typed meanwhile: handed to the
+   * `onChange` of the pick's render, it would put that render's form back over what was typed.
+   */
+  it("hands a picture that lands late to the form as it is now, not as it was when picked", async () => {
+    let land: (url: string) => void = () => undefined
+    const onUpload = vi.fn(() => new Promise<string>((resolve) => (land = resolve)))
+    const whenPicked = vi.fn()
+    const now = vi.fn()
+    const field = (onChange: (url: string) => void) => (
+      <StoreImageField id="slide" label="Imagem" previewAlt="Imagem" value="" onChange={onChange} onUpload={onUpload} />
+    )
+    const { rerender } = render(field(whenPicked))
+
+    await userEvent.upload(screen.getByLabelText(CTA), imageNamed("capa.png"))
+    rerender(field(now))
+    land(sampleImage)
+
+    await waitFor(() => expect(now).toHaveBeenCalledWith(sampleImage))
+    expect(whenPicked).not.toHaveBeenCalled()
+  })
+
+  it("hands a late picture to no one once the field has left the page", async () => {
+    let land: (url: string) => void = () => undefined
+    const onChange = vi.fn()
+    const { unmount } = render(
+      <StoreImageField
+        id="slide"
+        label="Imagem"
+        previewAlt="Imagem"
+        value=""
+        onChange={onChange}
+        onUpload={() => new Promise<string>((resolve) => (land = resolve))}
+      />,
+    )
+
+    await userEvent.upload(screen.getByLabelText(CTA), imageNamed("capa.png"))
+    unmount()
+    land(sampleImage)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it("takes a file dropped on the area, not only one picked through the dialog", async () => {
     const { onChange, onUpload } = renderField()
 

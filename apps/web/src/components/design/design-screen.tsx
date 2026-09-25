@@ -23,9 +23,9 @@ import { DesignPanel } from "./design-panel"
 import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
 
 // App
-import { DesignPreviewPane } from "./design-preview-pane"
+import { LivePreviewPane } from "./live-preview-pane"
 import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
-import { arrangementOf, previewOf, shelvesOf } from "./design-draft-preview"
+import { arrangementOf, shelvesOf } from "./design-draft-preview"
 import { useBlockInsert } from "./use-block-insert"
 import { useDesignDraft } from "./use-design-draft"
 import { useLeaveGuard } from "./use-leave-guard"
@@ -49,7 +49,6 @@ export interface DesignScreenProps {
 
 /** Spelled out so a fifth colour is a compile error here rather than a field nobody compares. */
 const COLOUR_KEYS = ["background", "primary", "header", "footer"] as const satisfies readonly (keyof StoreColors)[]
-
 
 /**
  * The full-screen editor: the bar above, and the structure, the shop and the chosen block's fields.
@@ -185,11 +184,13 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           />
         }
         preview={
-          <DesignPreviewPane
+          <LivePreviewPane
             store={store}
             categories={categories}
             year={year}
-            sections={previewOf(rows, saved, shelves)}
+            rows={rows}
+            saved={saved}
+            editingId={editingComponent}
             shelves={shelves}
             refreshingId={shop.refreshingId}
             device={device}

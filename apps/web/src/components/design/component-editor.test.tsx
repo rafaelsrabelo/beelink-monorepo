@@ -13,6 +13,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
 import { en as web } from "@/locales/en"
+import { useDesignEdit } from "@/stores/design-edit"
 import { ComponentEditor } from "./component-editor"
 
 const heading: StoreComponent = {
@@ -91,5 +92,22 @@ describe("ComponentEditor — the panel's inspector", () => {
 
     rerender(<Screen component={null} onClose={onClose} />)
     expect(screen.getByRole("button", { name: "Linha na lista" })).toHaveFocus()
+  })
+
+  // The owner's "em tempo real": what is typed reaches the preview through the edit, before Salvar.
+  it("hands what is typed to the preview before Salvar, and forgets it on Cancelar", async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(<Screen component={heading} onClose={onClose} />, { wrapper })
+
+    const title = screen.getByRole("textbox", { name: /Título/ })
+    await user.clear(title)
+    await user.type(title, "Coleção nova")
+    expect(useDesignEdit.getState().edit).toMatchObject({ componentId: "c1", value: { title: "Coleção nova" } })
+    expect(title).toHaveValue("Coleção nova")
+
+    await user.click(screen.getByRole("button", { name: "Cancelar" }))
+    expect(useDesignEdit.getState().edit).toBeNull()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 })

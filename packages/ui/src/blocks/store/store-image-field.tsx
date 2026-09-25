@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Libs
 import { ImageIcon, UploadCloudIcon } from "lucide-react"
@@ -110,6 +110,23 @@ export function StoreImageField({
 }: StoreImageFieldProps) {
   const text = messages.store.image
   const fileInput = useRef<HTMLInputElement>(null)
+  /*
+    The upload lands a second later, and by then the owner may have typed beside it: the `onChange`
+    of the render the file was picked in carries the form as it was then, and handing the picture to
+    it would put that old form back over what was typed. So the picture goes to the latest one — and
+    to none, once this field has left the page.
+  */
+  const latestOnChange = useRef(onChange)
+  const mounted = useRef(false)
+  useEffect(() => {
+    latestOnChange.current = onChange
+  })
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
   const [dragging, setDragging] = useState(false)
   /**
    * A file this block refused to send. It is not an errorCode and never becomes one — nothing was
@@ -152,7 +169,8 @@ export function StoreImageField({
 
     setRefusal(undefined)
     try {
-      onChange(await onUpload(file))
+      const url = await onUpload(file)
+      if (mounted.current) latestOnChange.current(url)
     } catch {
       // The screen owns the sentence: it turns the failure into copy and hands it back as `error`.
       // Swallowing it here is what keeps this block from ever knowing an errorCode (rule 5).

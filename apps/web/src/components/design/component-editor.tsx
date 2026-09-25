@@ -19,6 +19,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { useProductCategories, useProducts } from "@/services/catalog/catalog-hooks"
 import { useUpdateComponent, useUpdateSection } from "@/services/page/page-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
+import { useDesignEdit } from "@/stores/design-edit"
 import { toForm, toPayload } from "./component-form-values"
 import { labelOf } from "./design-draft"
 import { emptyStateOf } from "./empty-state"
@@ -83,7 +84,22 @@ function ComponentEditorBody({
   web,
 }: Omit<ComponentEditorProps, "component"> & { component: StoreComponent }) {
   const text = messages.design
-  const [value, setValue] = useState<ComponentFormValues>(() => toForm(component, bandBackground))
+  const [initial] = useState<ComponentFormValues>(() => toForm(component, bandBackground))
+  // The strip's link keeps its id across saves, so a re-pointed strip is the same link moved. Minted
+  // once: the preview draws the fields through `toPayload` on every change, and a fresh id each time
+  // would be a different link each time.
+  const [linkId] = useState(() => (component.items[0] as { id?: string } | undefined)?.id ?? crypto.randomUUID())
+  // The fields as typed live in `useDesignEdit`, where the preview reads them before Salvar.
+  const open = useDesignEdit((state) => state.open)
+  const change = useDesignEdit((state) => state.change)
+  const close = useDesignEdit((state) => state.close)
+  const value = useDesignEdit((state) => (state.edit?.componentId === component.id ? state.edit.value : null)) ?? initial
+  useEffect(() => open(component.id, initial, linkId), [open, component.id, initial, linkId])
+  // Saved, cancelled or closed: the preview goes back to what is saved, and these fields with it.
+  const done = () => {
+    close()
+    onClose()
+  }
   const title = useRef<HTMLHeadingElement>(null)
   // What opened this: the preview's block or the list's row. Read while rendering, before the effect
   // of the inspector this replaces has run its cleanup and moved the focus somewhere else.
@@ -112,8 +128,6 @@ function ComponentEditorBody({
   const products = useProducts(points ? slug : "", { pageSize: 96 })
   const optionsState =
     categories.isError || products.isError ? "failed" : categories.isPending || products.isPending ? "loading" : "ready"
-  // The strip's link keeps its id across saves, so a re-pointed strip is the same link moved.
-  const linkId = (component.items[0] as { id?: string } | undefined)?.id ?? crypto.randomUUID()
 
   const page = products.data
   const onShelf = page?.products.filter((row) => row.status === "ACTIVE" && !row.soldOut).length ?? 0
@@ -149,7 +163,7 @@ function ComponentEditorBody({
             {labelOf(component.kind, component.title, messages)}
           </p>
         </div>
-        <Button type="button" variant="ghost" size="icon" aria-label={text.closeInspector} onClick={onClose}>
+        <Button type="button" variant="ghost" size="icon" aria-label={text.closeInspector} onClick={done}>
           <XIcon aria-hidden="true" className="size-4" />
         </Button>
       </header>
@@ -157,7 +171,7 @@ function ComponentEditorBody({
         {empty ? <EmptyStateNote state={empty} slug={slug} messages={messages} /> : null}
         <ComponentForm
           value={value}
-          onChange={setValue}
+          onChange={change}
           categories={categoryOptions}
           products={productOptions}
           optionsState={points ? optionsState : "ready"}
@@ -176,14 +190,14 @@ function ComponentEditorBody({
                   // The strip's colour lives on its band. Written second and only when it moved:
                   // a save that only changed the words touches one row, not two.
                   const background = value.background || null
-                  if (component.kind !== "ANNOUNCEMENT" || background === (openedWith || null)) return onClose()
+                  if (component.kind !== "ANNOUNCEMENT" || background === (openedWith || null)) return done()
 
-                  updateBand.mutate({ sectionId: component.sectionId, payload: { background } }, { onSuccess: onClose })
+                  updateBand.mutate({ sectionId: component.sectionId, payload: { background } }, { onSuccess: done })
                 },
               },
             )
           }
-          onCancel={onClose}
+          onCancel={done}
           pending={update.isPending || updateBand.isPending}
           messages={messages}
         />

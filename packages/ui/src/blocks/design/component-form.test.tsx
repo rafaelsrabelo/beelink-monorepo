@@ -161,6 +161,25 @@ describe("ComponentForm", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1)
   })
 
+  // Saved mid-upload, the slide went without its picture and the picture then landed nowhere.
+  it("holds the save while a picture is on its way", () => {
+    render(
+      <ComponentForm
+        value={values({ kind: "BANNER" })}
+        onChange={vi.fn()}
+        pageBackground={page}
+        categories={[]}
+        products={[]}
+        newItemId={() => "new"}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        imagePending
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <ComponentForm
