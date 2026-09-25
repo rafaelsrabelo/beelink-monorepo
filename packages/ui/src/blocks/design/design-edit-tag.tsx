@@ -19,10 +19,17 @@ export interface DesignEditTagProps {
   onEdit: () => void
   /** Drawn as selected: the panel's row and the block are the same thing seen twice. */
   selected?: boolean
+  /** The chosen block's actions (`DesignSelectionBar`), drawn in the chip's place while it is selected. */
+  bar?: ReactNode
+  /** The node the editor's keys walk from — ↑↓ and Alt+↑↓ work with the focus on the block. */
+  nodeId?: string
   children: ReactNode
   className?: string
   messages?: UiMessages
 }
+
+/** Undoes the surface's scale, anchored top right — the chip's reasoning below applies to the bar alike. */
+const COUNTER_SCALE = { transform: "scale(calc(1 / var(--design-scale, 1)))", transformOrigin: "top right" } as const
 
 /**
  * Something in the shop preview, and the way into its fields.
@@ -45,6 +52,8 @@ export function DesignEditTag({
   label,
   onEdit,
   selected = false,
+  bar,
+  nodeId,
   children,
   className,
   messages = defaultMessages,
@@ -62,6 +71,8 @@ export function DesignEditTag({
     this correctly, and until that exists the panel's row is the way to find a block.
   */
 
+  const barShown = selected && bar !== undefined
+
   return (
     <div className={cn("relative", className)}>
       {children}
@@ -70,6 +81,7 @@ export function DesignEditTag({
         type="button"
         aria-label={`${text.editComponent}: ${label}`}
         aria-current={selected ? "true" : undefined}
+        {...(nodeId ? { "data-design-node": nodeId } : {})}
         // Stops the capture handler above the preview from swallowing it — that handler exists to
         // make the shop's own links inert, and this is the one click in the preview that should land.
         onClick={(event) => {
@@ -87,33 +99,42 @@ export function DesignEditTag({
         {/*
           The chip carries the pencil and the name together. Shown on hover, on focus and while the
           block is the selected one — the third case is what keeps the preview and the panel
-          agreeing about which block the open form belongs to.
+          agreeing about which block the open form belongs to. The bar takes its place when given.
         */}
-        <span
-          /*
-            Undoes the surface's scale, so the name is the size it says it is.
+        {barShown ? null : (
+          <span
+            /*
+              Undoes the surface's scale, so the name is the size it says it is.
 
-            `DesignPreview` paints the shop at a desktop width and shrinks it with `transform`,
-            which shrinks this chip too: at the panel widths the admin actually gives, the scale
-            lands near 0.5 and a 12px name paints at 6px. The number arrives as `--design-scale`,
-            published by the surface, so there is no second measurement to drift from the first.
-            Absolutely positioned and anchored top-right, so undoing the scale moves nothing in
-            flow — the surface's own height measurement feeds a ResizeObserver, and changing what
-            it measures from inside it is how a layout loop starts.
-          */
-          style={{ transform: "scale(calc(1 / var(--design-scale, 1)))", transformOrigin: "top right" }}
-          className={cn(
-            "bg-background/90 text-foreground flex max-w-[70%] items-center gap-1.5 rounded-full",
-            "px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur",
-            "opacity-0 transition-opacity",
-            "group-hover/edit:opacity-100 group-focus-visible/edit:opacity-100",
-            selected && "opacity-100",
-          )}
-        >
-          <PencilIcon aria-hidden="true" className="size-3.5 shrink-0" />
-          <span className="truncate">{label}</span>
-        </span>
+              `DesignPreview` paints the shop at a desktop width and shrinks it with `transform`,
+              which shrinks this chip too: at the panel widths the admin actually gives, the scale
+              lands near 0.5 and a 12px name paints at 6px. The number arrives as `--design-scale`,
+              published by the surface, so there is no second measurement to drift from the first.
+              Absolutely positioned and anchored top-right, so undoing the scale moves nothing in
+              flow — the surface's own height measurement feeds a ResizeObserver, and changing what
+              it measures from inside it is how a layout loop starts.
+            */
+            style={COUNTER_SCALE}
+            className={cn(
+              "bg-background/90 text-foreground flex max-w-[70%] items-center gap-1.5 rounded-full",
+              "px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur",
+              "opacity-0 transition-opacity",
+              "group-hover/edit:opacity-100 group-focus-visible/edit:opacity-100",
+              selected && "opacity-100",
+            )}
+          >
+            <PencilIcon aria-hidden="true" className="size-3.5 shrink-0" />
+            <span className="truncate">{label}</span>
+          </span>
+        )}
       </button>
+
+      {/* Beside the cover and not in it: a button inside a button is invalid, and its clicks would open the fields again. */}
+      {barShown ? (
+        <div className="absolute top-3 right-3 z-20" style={COUNTER_SCALE}>
+          {bar}
+        </div>
+      ) : null}
     </div>
   )
 }

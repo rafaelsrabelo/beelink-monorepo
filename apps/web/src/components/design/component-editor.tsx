@@ -45,6 +45,10 @@ export interface ComponentEditorProps {
   categoriesShown: number
   shelfEmpty: boolean
   onClose: () => void
+  /** Whether the heading takes the focus on the way in: not when the editor's keys chose. */
+  takeFocus?: boolean
+  /** The key the editor's ↑↓ know this panel's target by. */
+  nodeId?: string
   /** Told after a save lands, so the screen can take what only the server knows — a showcase's products. */
   onSaved?: (component: StoreComponent) => void
   messages: UiMessages
@@ -75,6 +79,8 @@ export function ComponentEditor({
   categoriesShown,
   shelfEmpty,
   onClose,
+  takeFocus = true,
+  nodeId,
   onSaved,
   messages,
   web,
@@ -149,7 +155,14 @@ export function ComponentEditor({
       aria-describedby={`${INSPECTOR_TITLE}-block`}
       className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-3"
     >
-      <InspectorHeader title={component ? text.editComponent : text.inspector.editBand} name={name} onClose={done} messages={messages} />
+      <InspectorHeader
+        title={component ? text.editComponent : text.inspector.editBand}
+        name={name}
+        onClose={done}
+        takeFocus={takeFocus}
+        {...(nodeId ? { nodeId } : {})}
+        messages={messages}
+      />
 
       <InspectorTabs
         tab={tab}

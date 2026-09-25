@@ -108,3 +108,58 @@ de…" do I10 ficam, porque são o jeito de pôr blocos lado a lado sem saber o 
 - Perguntar antes de trocar de bloco ou de sair com campos não salvos (já fora no I11).
 - A coluna Estrutura voltar aos 280 px da 9a: as linhas encolheram, mas os botões do I10 ainda pedem
   a largura de hoje.
+
+## PR 2 — a barra flutuante e o teclado
+
+*Acrescentado em 2026-09-25, ao começar o PR 2.*
+
+### Definição de Pronto
+
+1. O que está escolhido na prévia tem uma barra por cima: Subir, Descer, Trocar layout (um menu com
+   os formatos do tipo; some nos tipos que não têm), Ocultar e Excluir.
+2. Cada ação segue a regra do alvo do PR 1: o bloco sozinho age como a faixa dele; Trocar layout é
+   sempre do bloco. Subir e Descer ficam desligados nas pontas. Excluir some na última vitrine da loja.
+3. Subir, Descer, Ocultar e Trocar layout mexem no rascunho; Trocar layout também abre a aba Layout.
+   Excluir abre a confirmação de sempre.
+4. ↑↓ andam pela estrutura (toda faixa e todo bloco, os ocultos também; a faixa de um bloco só é uma
+   parada). Alt+↑↓ movem. Delete e Backspace perguntam antes de excluir; Cancelar devolve o foco.
+5. Nada reage a tecla digitada num campo.
+
+### Decisões
+
+#### 1. As teclas só valem onde o foco está numa parada
+
+Uma parada é o que tem `data-design-node`: o nome na estrutura, o bloco na prévia, a barra e o título
+do painel. Um `onKeyDown` só, na moldura do editor, olha de onde a tecla veio; num campo, numa alça
+de arrastar (o teclado do dnd-kit continua) ou num menu aberto, ele não faz nada.
+
+#### 2. ↑↓ não troca de escolha com campos não salvos
+
+Trocar de bloco com o painel aberto joga fora o que foi digitado. Pelo clique isso já era assim (fora
+de escopo no I11); por uma seta, é uma tecla de distância. Então a seta não troca e diz por quê na
+região de status ("Salve ou cancele o que mudou em … antes de escolher outro.").
+
+#### 3. O foco fica com as teclas
+
+Escolher pelas setas não abre a gaveta numa tela estreita nem puxa o foco para o título do painel: o
+foco vai para a nova parada na mesma região (estrutura, prévia ou painel). Na prévia, desenhada com
+`transform: scale()`, o foco usa `preventScroll` e a rolagem é feita pela diferença entre os
+retângulos, nunca com `scrollIntoView`.
+
+#### 4. Um bloco sobe e desce dentro da faixa dele
+
+Para outra faixa é o arrastar da estrutura, que grava na hora. A barra e Alt+↑↓ são um passo do
+rascunho, que o Publicar manda.
+
+#### 5. A barra da faixa escolhida sozinha
+
+Uma faixa de vários blocos escolhida pelo cabeçalho ganha um contorno e a barra no canto dela, sem
+Trocar layout.
+
+### Fora de escopo
+
+- Escolher o próximo depois de excluir: a confirmação não diz se excluiu ou cancelou, e escolher no
+  cancelar tiraria o foco de onde ele estava.
+- Dicas (tooltip) com o atalho: o `title` e o `aria-keyshortcuts` dizem; um Tooltip por botão fica
+  para quando a barra tiver Duplicar (PR 3).
+- O primitivo de Toolbar do Base UI: o foco com ← → foi escrito na barra, que é a única que precisa.

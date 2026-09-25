@@ -141,6 +141,7 @@ export function ArrangementRow({
       {onEdit ? (
         <button
           type="button"
+          data-design-node={item.id}
           onClick={() => onEdit(item.id)}
           className="focus-visible:ring-ring flex min-w-0 flex-1 flex-col rounded-md px-1 text-left outline-none hover:underline focus-visible:ring-2"
         >

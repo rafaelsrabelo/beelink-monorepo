@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react"
+import { useEffect, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from "react"
 
 // UI
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@harness-monorepo/ui/components/sheet"
@@ -74,6 +74,10 @@ export interface DesignEditorFrameProps {
   onInspectorOpenChange: (open: boolean) => void
   /** The panel in the drawer draws its own close button, so the drawer does not add a second. */
   inspectorHasOwnClose?: boolean
+  /** The editor's keys, heard once for the whole screen; the handler decides what they reach. */
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void
+  /** What the editor just did, said to a screen reader: a move, a choice by the keys. */
+  status?: string
   messages?: UiMessages
 }
 
@@ -94,6 +98,8 @@ export function DesignEditorFrame({
   inspectorOpen,
   onInspectorOpenChange,
   inspectorHasOwnClose = false,
+  onKeyDown,
+  status = "",
   messages = defaultMessages,
 }: DesignEditorFrameProps) {
   const text = messages.design.frame
@@ -108,7 +114,10 @@ export function DesignEditorFrame({
   }, [wide, onStructureOpenChange, onInspectorOpenChange])
 
   return (
-    <div className="bg-shell flex h-dvh flex-col">
+    <div className="bg-shell flex h-dvh flex-col" onKeyDown={onKeyDown}>
+      <p role="status" className="sr-only">
+        {status}
+      </p>
       {bar}
       <div className="flex min-h-0 flex-1">
         {wide ? (

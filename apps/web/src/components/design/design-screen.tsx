@@ -27,6 +27,7 @@ import { useBlockInsert } from "./use-block-insert"
 import { useDesignDraft } from "./use-design-draft"
 import { useDesignSelection } from "./use-design-selection"
 import { useLeaveGuard } from "./use-leave-guard"
+import { useSelectionControls } from "./use-selection-controls"
 import { useShopRefresh } from "./use-shop-refresh"
 
 import type { WebMessages } from "@/locales"
@@ -96,6 +97,20 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
     bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
 
   const guard = useLeaveGuard(draft.changed)
+  const bands = arrangementOf(rows, saved, shelves, categories.length)
+  const bandAlone = target?.level === "band" && !target.blockId ? target.id : null
+  const controls = useSelectionControls({
+    rows,
+    saved,
+    bands,
+    target,
+    draft,
+    choose,
+    onLayoutTab: () => selection.setTab("layout"),
+    onDelete: setPendingDelete,
+    bandName,
+    messages,
+  })
 
   return (
     <>
@@ -133,7 +148,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         }
         structure={
           <DesignPanel
-            bands={arrangementOf(rows, saved, shelves, categories.length)}
+            bands={bands}
             loading={draft.loading}
             onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
             onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}
@@ -150,7 +165,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             onEdit={chooseBlock}
             {...adding.panel}
             selectedId={edited?.componentId ?? null}
-            selectedBandId={target?.level === "band" && !target.blockId ? target.id : null}
+            selectedBandId={bandAlone}
             tab={panelTab}
             onTabChange={setPanelTab}
             palette={palette}
@@ -179,6 +194,8 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             {...adding.preview}
             onEdit={chooseBlock}
             selectedId={edited?.componentId ?? null}
+            selectedBandId={bandAlone}
+            selectionBar={controls.bar}
             messages={messages}
           />
         }
@@ -195,6 +212,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             categoriesShown={categories.length}
             shelves={shelves}
             onClose={selection.close}
+            takeFocus={selection.takeFocus}
             onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
             messages={messages}
             web={web}
@@ -206,6 +224,8 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         onInspectorOpenChange={selection.setInspectorOpen}
         // The panel closes itself; the hint has nothing to close, so the drawer does.
         inspectorHasOwnClose={target !== null}
+        onKeyDown={controls.onKeyDown}
+        status={controls.status}
         messages={messages}
       />
     </>

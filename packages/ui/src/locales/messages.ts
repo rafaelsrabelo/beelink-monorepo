@@ -690,6 +690,26 @@ export interface UiMessages {
     addBesideOf: string
     /** Moves a band's only block up, beside the last block of the band above: `{name}` is that block. */
     joinAbove: string
+    /** The bar over the chosen block or band in the preview, and what the editor says as it acts. `{name}` is what it acts on. */
+    bar: {
+      label: string
+      moveUp: string
+      moveDown: string
+      layout: string
+      hide: string
+      /** On something hidden: the same button brings it back. */
+      show: string
+      delete: string
+      /** Said after a move: `{position}` counts from 1. */
+      movedTo: string
+      /** Said after Ocultar: it leaves the shop on Publicar. */
+      hidden: string
+      shown: string
+      /** Said when the keys choose something. */
+      chosen: string
+      /** Said instead of choosing, while the open panel has fields not yet saved. */
+      unsaved: string
+    }
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
     /** Said in place of the kind when a block has nothing for the shop window to draw. */

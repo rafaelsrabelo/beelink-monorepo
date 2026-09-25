@@ -10,7 +10,7 @@ import { toBandForm } from "./band-form-values"
 import { toForm } from "./component-form-values"
 import { toDraft } from "./design-draft"
 import { previewOf } from "./design-draft-preview"
-import { withLiveEdit } from "./live-edit"
+import { hasUnsaved, withLiveEdit } from "./live-edit"
 
 function component(id: string, over: Partial<StoreComponent> = {}): StoreComponent {
   return {
@@ -159,5 +159,23 @@ describe("useDesignEdit", () => {
     useDesignEdit.getState().close()
 
     expect(useDesignEdit.getState().edit).toBeNull()
+  })
+})
+
+// ↑↓ choosing another would throw away what the panel holds, so the keys ask this first.
+describe("hasUnsaved", () => {
+  it("is false for a panel as it opened, and for none", () => {
+    expect(hasUnsaved(edit(banner), saved)).toBe(false)
+    expect(hasUnsaved(edit(null), saved)).toBe(false)
+    expect(hasUnsaved(null, saved)).toBe(false)
+  })
+
+  it("is true once a word is typed or a picture lands, before Salvar", () => {
+    expect(hasUnsaved(edit(null, { component: { id: "banner", value: { ...toForm(banner), title: "Novo" }, linkId: "l1" } }), saved)).toBe(true)
+    expect(hasUnsaved(edit(null, { component: { id: "banner", value: { ...toForm(banner), slides: [slide] }, linkId: "l1" } }), saved)).toBe(true)
+  })
+
+  it("is true once the band's style changed", () => {
+    expect(hasUnsaved(edit(null, { band: { ...topBand, name: "Capa" } }), saved)).toBe(true)
   })
 })
