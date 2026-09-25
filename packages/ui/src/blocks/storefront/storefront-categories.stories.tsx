@@ -1,5 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
+import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
+
+import { sampleColorPresets } from "../store/store.fixtures"
 import { StorefrontCategories } from "./storefront-categories"
 
 const categories = [
@@ -13,6 +16,14 @@ const meta = {
   title: "Blocos/Vitrine/Categorias",
   component: StorefrontCategories,
   parameters: { layout: "padded" },
+  // The bar is painted on the header, so it is dressed as the masthead would dress it.
+  decorators: [
+    (Story) => (
+      <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), backgroundColor: "var(--shop-header)", color: "var(--shop-on-header)" }}>
+        <Story />
+      </div>
+    ),
+  ],
   args: {
     categories,
     href: (slug: string | null) => (slug ? `/lessari?categoria=${slug}` : "/lessari"),
@@ -26,6 +37,11 @@ export const Padrao: Story = {}
 
 export const ComUmaAberta: Story = {
   args: { active: "promocoes" },
+}
+
+/** Na página de um produto: a categoria dele sublinhada, e "Ofertas do dia" no fim. */
+export const MarcadaComOfertas: Story = {
+  args: { marked: "novidades", offersHref: "/lessari/produtos?desconto=1" },
 }
 
 /** The row of photographs, for a shop that has photographed its categories. */

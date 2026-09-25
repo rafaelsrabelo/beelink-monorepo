@@ -117,7 +117,9 @@ export class StorefrontController {
       search,
       priceMinCents: centsOfReais(priceMin),
       priceMaxCents: centsOfReais(priceMax),
-      discount: discount === '1',
+      // `1` is "on sale at all"; a whole number above one is the least cut, in percent.
+      discount: discount !== undefined && Number(discount) >= 1,
+      ...(Number(discount) > 1 && Number.isInteger(Number(discount)) ? { discountMinPercent: Number(discount) } : {}),
       options: parseOptionFilters(options),
       sort,
     };

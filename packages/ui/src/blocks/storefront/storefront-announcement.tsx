@@ -9,8 +9,8 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 
 export interface StorefrontAnnouncementProps {
-  left: string
-  right?: string
+  /** What the shop is shouting this week, one message per entry. Empty entries are dropped. */
+  messages: readonly string[]
   /** The strip's own colour — its band's. Null paints it in the page's ink, as it always was. */
   background?: string | null
   /** Already resolved by the API from the slug the target has now. Null goes nowhere. */
@@ -21,54 +21,50 @@ export interface StorefrontAnnouncementProps {
 }
 
 /**
- * The strip's speed, in CSS pixels per second, and the width a character is assumed to take at
+ * The marquee's speed, in CSS pixels per second, and the width a character is assumed to take at
  * this size. The second is an estimate, and it errs low on purpose: the track cannot be measured
  * before it is painted, and a few copies too many cost nothing while one too few leaves a gap at
- * the right edge. Measured at about 6 in the browser; 7 was tried first and left a 155-pixel gap
- * on a 1440 page, because half the track came out narrower than the page.
+ * the right edge.
  */
 const PIXELS_PER_SECOND = 60
-const PIXELS_PER_CHARACTER = 5
-const GAP_PIXELS = 48
-/**
- * The strip runs the full width of the window, not the shop's measure — so this is a screen, not
- * the 1440 the bands line up against. A 27-inch monitor; wider ones get a gap, and are rare.
- */
-const WIDEST_SCREEN = 2560
+const PIXELS_PER_CHARACTER = 6
+const GAP_PIXELS = 56
+/** The strip runs the width of the window; below the tablet breakpoint this is the widest phone. */
+const WIDEST_PHONE = 640
 
 /**
- * The strip above the header, with its words going by.
+ * The strip above the header, on every page of the shop.
  *
- * A marquee, because the shopkeeper asked for "aquele que fica scrollando horizontalmente" — and
- * because a strip this thin with a sentence longer than a phone is wide had to either cut it or
- * scroll it. It scrolls at a constant speed whatever the length: the duration is derived from the
- * text, so a short notice does not race and a long one does not crawl.
+ * From the tablet breakpoint up it is what the 5a/5b designs draw: the messages side by side,
+ * centred and still, in capitals. The shopkeeper once asked for "aquele que fica scrollando" and
+ * got a marquee; the design settled the desktop, and the marquee stays only where the messages
+ * cannot fit, which is a phone — there a strip this thin had to either cut the words or move them.
  *
- * The track holds an even number of copies and moves by exactly half of itself, which is what
- * makes the loop seamless. Every copy but the first is hidden from assistive technology, so a
- * screen reader hears the sentence once. Under `prefers-reduced-motion` nothing moves: the first
- * copy sits centred, the rest are not drawn.
+ * The phone's track holds an even number of copies and moves by exactly half of itself, which is
+ * what makes the loop seamless. Every copy but the first is hidden from assistive technology, so a
+ * screen reader hears the messages once; from the tablet up the extra copies are not drawn at all.
+ * Under `prefers-reduced-motion` nothing moves on any width.
  *
- * It runs edge to edge and not inside the shop's measure, and it does not pause under the
- * pointer. Both were the first draft and both were asked to go: a strip that stops at the header's
- * margins on a wide screen reads as a header row, and a strip that freezes when the mouse crosses
- * it reads as broken. Reduced motion is the way to hold it still.
+ * It runs edge to edge and not inside the shop's measure, and does not pause under the pointer:
+ * a strip that stops at the header's margins reads as a header row, and one that freezes when
+ * the mouse crosses it reads as broken.
  *
  * Given somewhere to go, the whole strip is one link — the same way a poster is.
  */
 export function StorefrontAnnouncement({
-  left,
-  right,
+  messages,
   background,
   href,
   external = false,
   linkComponent: Link = AnchorLink,
   className,
 }: StorefrontAnnouncementProps) {
-  const text = right ? `${left} · ${right}` : left
-  const copyWidth = text.length * PIXELS_PER_CHARACTER + GAP_PIXELS
-  // Even, and wide enough that half the track covers the widest screen it may be drawn on.
-  const copies = 2 * Math.max(2, Math.ceil(WIDEST_SCREEN / copyWidth))
+  const said = messages.map((message) => message.trim()).filter(Boolean)
+  if (said.length === 0) return null
+
+  const copyWidth = said.reduce((width, message) => width + message.length * PIXELS_PER_CHARACTER + GAP_PIXELS, 0)
+  // Even, and wide enough that half the track covers the widest phone it may scroll on.
+  const copies = 2 * Math.max(2, Math.ceil(WIDEST_PHONE / copyWidth))
   const duration = Math.round(((copies / 2) * copyWidth) / PIXELS_PER_SECOND)
 
   const painted: CSSProperties = background
@@ -79,21 +75,28 @@ export function StorefrontAnnouncement({
     <div className="flex h-8 w-full items-center overflow-hidden">
       <div
         className={cn(
-          "animate-marquee flex w-max shrink-0 items-center gap-12 whitespace-nowrap",
+          "animate-marquee flex w-max shrink-0 items-center gap-14 whitespace-nowrap",
           "motion-reduce:w-full motion-reduce:animate-none motion-reduce:justify-center",
+          "shop-sm:w-full shop-sm:animate-none shop-sm:justify-center",
         )}
         style={{ "--marquee-duration": `${duration}s` } as CSSProperties}
       >
         {Array.from({ length: copies }, (_, at) => (
-          <p key={at} {...(at > 0 ? { "aria-hidden": true, className: "motion-reduce:hidden" } : {})}>
-            {text}
+          <p
+            key={at}
+            className={cn("flex items-center gap-14", at > 0 && "motion-reduce:hidden shop-sm:hidden")}
+            {...(at > 0 ? { "aria-hidden": true } : {})}
+          >
+            {said.map((message, index) => (
+              <span key={index}>{message}</span>
+            ))}
           </p>
         ))}
       </div>
     </div>
   )
 
-  const surface = cn("block w-full overflow-hidden text-[11px] font-medium tracking-wide uppercase", className)
+  const surface = cn("block w-full overflow-hidden text-xs font-bold tracking-[0.04em] uppercase", className)
 
   return href ? (
     <Link href={href} className={surface} style={painted} {...(external ? { target: "_blank", rel: "noreferrer" } : {})}>

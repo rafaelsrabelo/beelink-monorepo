@@ -19,7 +19,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
-import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
+import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { isEmptyComponent, labelOf } from "./design-draft"
 import type { Shelves } from "./design-draft-preview"
@@ -123,7 +123,6 @@ export function DesignPreviewPane({
             <StorefrontFrame
               store={store}
               colors={colors}
-              {...(announcementOf(sections) ? { announcement: announcementOf(sections)! } : {})}
               // The draft's bands, so a site's menu in the preview is the menu being arranged.
               sections={sections}
               categories={categories}
@@ -139,6 +138,7 @@ export function DesignPreviewPane({
                   routes={routes}
                   showPrice={layout.showProductPrice ?? true}
                   showBadge={layout.showProductBadges ?? true}
+                  quickAdd={layout.showQuickAdd ?? true}
                   linkComponent={InertLink}
                   renderSection={(section, band) => (
                     <DesignHandle
