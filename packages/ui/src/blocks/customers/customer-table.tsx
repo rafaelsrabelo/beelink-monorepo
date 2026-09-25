@@ -7,7 +7,14 @@ import { defaultLocale, defaultMessages } from "@harness-monorepo/ui/locales/ind
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 /** Where a customer stands with the shop. Mirrors the wire's `CustomerStage`; this package imports no contracts. */
-export type CustomerTableStage = "LEAD" | "CUSTOMER"
+export type CustomerTableStage = "LEAD" | "CUSTOMER" | "INACTIVE"
+
+/** Filled for who buys now, muted for who never did, outlined for who stopped. */
+const STAGE_VARIANT: Record<CustomerTableStage, "default" | "secondary" | "outline"> = {
+  CUSTOMER: "default",
+  LEAD: "secondary",
+  INACTIVE: "outline",
+}
 
 export interface CustomerTableItem {
   id: string
@@ -77,7 +84,7 @@ export function CustomerTable({ customers, searching = false, locale = defaultLo
               </TableCell>
               <TableCell className="text-muted-foreground">{[customer.city, customer.state].filter(Boolean).join(" / ") || "—"}</TableCell>
               <TableCell>
-                <Badge variant={customer.stage === "CUSTOMER" ? "default" : "secondary"}>{text.stages[customer.stage]}</Badge>
+                <Badge variant={STAGE_VARIANT[customer.stage]}>{text.stages[customer.stage]}</Badge>
               </TableCell>
               <TableCell className="text-muted-foreground tabular-nums">{when.format(new Date(customer.createdAt))}</TableCell>
             </TableRow>

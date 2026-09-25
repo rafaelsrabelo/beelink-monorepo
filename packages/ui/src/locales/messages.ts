@@ -31,6 +31,7 @@ export interface UiMessages {
     ufInvalid: string
     colorInvalid: string
     paymentMethodsMin: string
+    inactiveAfterDaysRange: string
     slugMin: string
     slugMax: string
     slugInvalid: string
@@ -752,7 +753,7 @@ export interface UiMessages {
     place: string
     stage: string
     since: string
-    stages: { LEAD: string; CUSTOMER: string }
+    stages: { LEAD: string; CUSTOMER: string; INACTIVE: string }
     /** Beside an e-mail its owner never confirmed. */
     unverified: string
     empty: string
@@ -1404,6 +1405,7 @@ export interface UiMessages {
       tabSocial: string
       tabAppearance: string
       tabPayment: string
+      tabCustomers: string
       save: string
       saving: string
       loading: string
@@ -1497,6 +1499,12 @@ export interface UiMessages {
       previewLabel: string
       previewSample: string
       previewAction: string
+    }
+    customers: {
+      legend: string
+      inactiveAfterDays: string
+      days: string
+      hint: string
     }
     payment: {
       legend: string

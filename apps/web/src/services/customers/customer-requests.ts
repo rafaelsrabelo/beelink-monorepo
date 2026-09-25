@@ -22,6 +22,8 @@ function errorCodeOf(payload: unknown): string {
 export async function fetchStoreCustomers(slug: string, query: StoreCustomerListQuery = {}): Promise<StoreCustomerPage> {
   const search = new URLSearchParams()
   if (query.q) search.set("q", query.q)
+  if (query.stage) search.set("stage", query.stage)
+  if (query.sort) search.set("sort", query.sort)
   if (query.page && query.page > 1) search.set("page", String(query.page))
   if (query.pageSize) search.set("pageSize", String(query.pageSize))
 

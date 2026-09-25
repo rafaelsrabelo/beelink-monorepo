@@ -26,17 +26,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { StoreAddressFields } from "./store-address-fields"
 import { StoreAppearanceFields } from "./store-appearance-fields"
+import { StoreCustomersFields } from "./store-customers-fields"
 import { StoreIdentityFields } from "./store-identity-fields"
 import { StorePaymentMethodsFields } from "./store-payment-methods-fields"
+import type { StoreSettingsFormProps } from "./store-settings-form-props"
 import { createStoreSettingsSchema, type StoreSettingsValues } from "./store-schemas"
 import { StoreSocialFields } from "./store-social-fields"
-import type {
-  StoreAddressSuggestion,
-  StoreCategoryOption,
-  StoreColorPreset,
-  StorePoint,
-  StoreZipCodeAddress,
-} from "./store-types"
 
 /** Which tab holds which slice, so a refused save can open the tab that was refused. */
 const TAB_OF_SLICE = {
@@ -45,44 +40,13 @@ const TAB_OF_SLICE = {
   social: "social",
   appearance: "appearance",
   paymentMethods: "payment",
+  customers: "customers",
 } as const satisfies Record<keyof StoreSettingsValues, string>
 
-export interface StoreSettingsFormProps {
-  /** The shop's URL segment. Shown by the identity tab, never edited. */
-  slug: string
-  defaultValues: StoreSettingsValues
-  onSubmit: (values: StoreSettingsValues) => void | Promise<void>
-  categories: StoreCategoryOption[]
-  colorPresets?: StoreColorPreset[]
-  /**
-   * Asked to fill the address from the postcode, and its answer is used — `void` here is what made
-   * the lookup run, resolve, and discard what it found, with no complaint from the compiler.
-   */
-  onZipCodeLookup?: (zipCode: string) => Promise<StoreZipCodeAddress | null>
-  zipCodeLookupPending?: boolean
-  /** What is in the street field, for the screen to search with. It debounces; this does not. */
-  onAddressSearch?: (query: string) => void
-  suggestions?: readonly StoreAddressSuggestion[]
-  addressSearchPending?: boolean
-  /** Where a picked suggestion says the shop is; the screen turns it into `mapSrc`. */
-  onPointChange?: (point: StorePoint) => void
-  point?: StorePoint | null
-  mapTileUrl?: string
-  /**
-   * Hands one image to whoever keeps bytes and answers with its URL. One callback serves the logo
-   * and the banner alike, because one upload endpoint serves both — where the bytes land is the
-   * screen's business and never this form's.
-   */
-  onImageUpload?: (file: File) => Promise<string>
-  imageUploadPending?: boolean
-  pending?: boolean
-  /** A sentence the reader can act on. The screen turns an API errorCode into it. */
-  error?: string
-  messages?: UiMessages
-}
+export type { StoreSettingsFormProps } from "./store-settings-form-props"
 
 /**
- * Everything the panel edits about a shop, in one form over five tabs and one save — the legacy
+ * Everything the panel edits about a shop, in one form over six tabs and one save — the legacy
  * panel's single "Salvar alterações", and the shape `PUT /stores/:slug` replaces whole. The tabs
  * are panels of this form, not forms of their own: a partial save would clear what another tab holds.
  */
@@ -148,6 +112,7 @@ export function StoreSettingsForm({
               <TabsTrigger value="social">{text.tabSocial}</TabsTrigger>
               <TabsTrigger value="appearance">{text.tabAppearance}</TabsTrigger>
               <TabsTrigger value="payment">{text.tabPayment}</TabsTrigger>
+              <TabsTrigger value="customers">{text.tabCustomers}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="identity" className="pt-4">
@@ -239,6 +204,22 @@ export function StoreSettingsForm({
                     value={field.value}
                     onChange={field.onChange}
                     error={errors.paymentMethods}
+                    disabled={pending}
+                    messages={messages}
+                  />
+                )}
+              />
+            </TabsContent>
+
+            <TabsContent value="customers" className="pt-4">
+              <Controller
+                control={form.control}
+                name="customers"
+                render={({ field }) => (
+                  <StoreCustomersFields
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.customers?.inactiveAfterDays}
                     disabled={pending}
                     messages={messages}
                   />
