@@ -20,13 +20,24 @@ import {
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { BlockThumbnail } from "./block-thumbnail"
 import { BLOCK_GROUPS, COMPONENT_KINDS, GROUP_OF_KIND } from "./design-types"
-import type { ComponentKind } from "./design-types"
+import type { Across, ComponentKind } from "./design-types"
+
+/** One card of the gallery: a kind, and how many of it share the row it makes. */
+interface GalleryEntry {
+  kind: ComponentKind
+  across: Across
+  name: string
+  hint: string
+}
+
+/** The rows a banner is offered in besides the whole one, in the order the owner asked for them. */
+const BANNER_ROWS = [2, 3] as const satisfies readonly Across[]
 
 /**
  * The gallery a shopkeeper adds a block from.
@@ -51,7 +62,14 @@ export interface BlockGalleryProps {
    * form would gather leads it has no screen to show. Apart from `taken`, which is about how many.
    */
   unavailable?: readonly ComponentKind[]
-  onAdd: (kind: ComponentKind) => void
+  /** `across` is 1 for every card but a row of banners. */
+  onAdd: (kind: ComponentKind, across: Across) => void
+  /**
+   * Offers "2 banners lado a lado" and "3 banners lado a lado" beside the banner. Only where a band
+   * is created: a row is a band (`Across`), and from a band's own "+" the gallery adds one block
+   * into what is already there.
+   */
+  offerRows?: boolean
   pending?: boolean
   /**
    * The words on the trigger. The gallery is opened from two places that mean different things:
@@ -79,6 +97,7 @@ export function BlockGallery({
   taken = [],
   unavailable = [],
   onAdd,
+  offerRows = false,
   pending = false,
   defaultOpen = false,
   triggerLabel,
@@ -101,18 +120,30 @@ export function BlockGallery({
 
   if (!offered.length) return null
 
+  const entries = offered.flatMap((kind): GalleryEntry[] => {
+    const one: GalleryEntry = { kind, across: 1, name: text.kinds[kind], hint: gallery.hints[kind] }
+    if (kind !== "BANNER" || !offerRows) return [one]
+    return [
+      one,
+      ...BANNER_ROWS.map((across) => ({
+        kind,
+        across,
+        name: format(gallery.bannersAcross, { count: String(across) }),
+        hint: gallery.bannersAcrossHints[across],
+      })),
+    ]
+  })
+
   // Name and hint both, because the shopkeeper who searches "carrossel" is looking for the banner
   // and the word is only in the hint. Accent-insensitive is deliberately not attempted here: the
   // copy is pt-BR and folding it would need the locale's collator for one field of one panel.
   const needle = query.trim().toLocaleLowerCase()
-  const matches = offered.filter((kind) =>
-    needle === ""
-      ? true
-      : `${text.kinds[kind]} ${gallery.hints[kind]}`.toLocaleLowerCase().includes(needle),
+  const matches = entries.filter((entry) =>
+    needle === "" ? true : `${entry.name} ${entry.hint}`.toLocaleLowerCase().includes(needle),
   )
 
-  const add = (kind: ComponentKind) => {
-    onAdd(kind)
+  const add = (entry: GalleryEntry) => {
+    onAdd(entry.kind, entry.across)
     setOpen(false)
     setQuery("")
   }
@@ -156,7 +187,7 @@ export function BlockGallery({
             <p className="text-muted-foreground py-6 text-center text-sm">{gallery.empty}</p>
           ) : (
             BLOCK_GROUPS.map((group) => {
-              const inGroup = matches.filter((kind) => GROUP_OF_KIND[kind] === group)
+              const inGroup = matches.filter((entry) => GROUP_OF_KIND[entry.kind] === group)
               // Not drawn when empty: a heading over nothing is what filing by page type would
               // have produced for every site, for every shop.
               if (!inGroup.length) return null
@@ -167,17 +198,17 @@ export function BlockGallery({
                     {gallery.groups[group]}
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
-                    {inGroup.map((kind) => (
+                    {inGroup.map((entry) => (
                       <button
-                        key={kind}
+                        key={`${entry.kind}-${entry.across}`}
                         type="button"
                         disabled={pending}
-                        onClick={() => add(kind)}
+                        onClick={() => add(entry)}
                         className="hover:border-primary hover:bg-accent focus-visible:border-ring focus-visible:ring-ring/50 flex cursor-pointer flex-col gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <BlockThumbnail kind={kind} />
-                        <span className="text-sm font-semibold">{text.kinds[kind]}</span>
-                        <span className="text-muted-foreground text-xs">{gallery.hints[kind]}</span>
+                        <BlockThumbnail kind={entry.kind} across={entry.across} />
+                        <span className="text-sm font-semibold">{entry.name}</span>
+                        <span className="text-muted-foreground text-xs">{entry.hint}</span>
                       </button>
                     ))}
                   </div>

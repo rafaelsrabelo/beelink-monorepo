@@ -443,6 +443,11 @@ export const en: UiMessages = {
         PRODUCTS: "A rail or a grid, from the source you choose",
         CONTACT: "A form that receives enquiries",
       },
+      bannersAcross: "{count} banners side by side",
+      bannersAcrossHints: {
+        2: "In one row, half each",
+        3: "In one row, a third each",
+      },
     },
     showcase: {
       sourceLabel: "Where the products come from",

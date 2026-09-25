@@ -143,10 +143,62 @@ describe("BlockGallery", () => {
     await open(user)
     await user.click(screen.getByRole("button", { name: /Título/ }))
 
-    expect(onAdd).toHaveBeenCalledWith("HEADING")
+    expect(onAdd).toHaveBeenCalledWith("HEADING", 1)
     // Closing is the block's own doing: the shopkeeper's next move is filling the block in, not
     // adding a second one, and a panel left open covers the page it was just added to.
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
+  /**
+   * Blocks share a row only inside one band, so a row of banners is a band of its own: it is
+   * offered where a band is created, and "3 banners lado a lado" hands back three, not a banner.
+   */
+  it("offers a row of two and of three banners where a band is created", async () => {
+    const user = userEvent.setup()
+    const onAdd = vi.fn()
+    render(<BlockGallery onAdd={onAdd} offerRows />)
+
+    await open(user)
+
+    expect(screen.getByRole("button", { name: /2 banners lado a lado/ })).toHaveTextContent(
+      "Na mesma linha, metade cada",
+    )
+    await user.click(screen.getByRole("button", { name: /3 banners lado a lado/ }))
+
+    expect(onAdd).toHaveBeenCalledWith("BANNER", 3)
+  })
+
+  it("keeps the whole banner beside the rows, as one", async () => {
+    const user = userEvent.setup()
+    const onAdd = vi.fn()
+    render(<BlockGallery onAdd={onAdd} offerRows />)
+
+    await open(user)
+    await user.click(screen.getByRole("button", { name: /^Banner/ }))
+
+    expect(onAdd).toHaveBeenCalledWith("BANNER", 1)
+  })
+
+  // From a band's own "+", a row would have to say what becomes of what the band already holds.
+  it("offers one banner only where a block goes into a band", async () => {
+    const user = userEvent.setup()
+    render(<BlockGallery onAdd={vi.fn()} />)
+
+    await open(user)
+
+    expect(screen.getByRole("button", { name: /^Banner/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /banners lado a lado/ })).not.toBeInTheDocument()
+  })
+
+  it("finds the rows by what they are", async () => {
+    const user = userEvent.setup()
+    render(<BlockGallery onAdd={vi.fn()} offerRows />)
+
+    await open(user)
+    await user.type(screen.getByRole("searchbox", { name: "Buscar bloco" }), "lado a lado")
+
+    expect(screen.getByRole("button", { name: /2 banners lado a lado/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /^Banner/ })).not.toBeInTheDocument()
   })
 
   it("draws no control at all when there is nothing left to add", () => {
@@ -158,7 +210,7 @@ describe("BlockGallery", () => {
   it("has no accessibility violations, opened", async () => {
     // `document.body`, because the panel is portalled out of the render container — and opened,
     // because a panel nobody opened in a test is a panel nobody has checked.
-    render(<BlockGallery onAdd={vi.fn()} defaultOpen />)
+    render(<BlockGallery onAdd={vi.fn()} offerRows defaultOpen />)
 
     await screen.findByRole("dialog")
 
@@ -175,7 +227,7 @@ describe("BlockGallery", () => {
     expect(screen.queryByRole("button", { name: "Adicionar bloco" })).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /Título/ }))
 
-    expect(onAdd).toHaveBeenCalledWith("HEADING")
+    expect(onAdd).toHaveBeenCalledWith("HEADING", 1)
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })

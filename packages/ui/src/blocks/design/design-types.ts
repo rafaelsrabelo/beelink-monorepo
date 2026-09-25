@@ -48,6 +48,15 @@ export const GROUP_OF_KIND = {
   CONTACT: "CONTACT",
 } as const satisfies Record<ComponentKind, BlockGroup>
 
+/**
+ * How many banners the gallery puts in one row: a whole one, two halves or three thirds.
+ *
+ * A row is a band — blocks share a row only inside one band's grid (`StorefrontBandGrid`) — so a
+ * row of two or three is offered only where a band is created, never from a band's own "+".
+ */
+export const ACROSS = [1, 2, 3] as const
+export type Across = (typeof ACROSS)[number]
+
 /** What one field of a contact form may ask for. The contract's `ContactFieldType`, restated. */
 export const CONTACT_FIELD_TYPES = ["TEXT", "EMAIL", "PHONE", "TEXTAREA", "SELECT", "DATE"] as const
 export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]

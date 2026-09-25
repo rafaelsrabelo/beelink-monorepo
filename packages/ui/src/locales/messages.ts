@@ -1,4 +1,4 @@
-import type { BlockGroup, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
+import type { Across, BlockGroup, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
@@ -568,6 +568,10 @@ export interface UiMessages {
       groups: Record<BlockGroup, string>
       /** One line of what a kind is, read beside its wireframe and searched with its name. */
       hints: Record<ComponentKind, string>
+      /** A row of banners, by `{count}`: "3 banners lado a lado". */
+      bannersAcross: string
+      /** The line under a row of banners, by how many it holds. */
+      bannersAcrossHints: Record<Exclude<Across, 1>, string>
     }
     /** A showcase's own questions: where its products come from, how many, and in what shape. */
     showcase: {

@@ -443,6 +443,11 @@ export const ptBR: UiMessages = {
         PRODUCTS: "Trilho ou grade, da fonte que você escolher",
         CONTACT: "Formulário que recebe contatos",
       },
+      bannersAcross: "{count} banners lado a lado",
+      bannersAcrossHints: {
+        2: "Na mesma linha, metade cada",
+        3: "Na mesma linha, um terço cada",
+      },
     },
     showcase: {
       sourceLabel: "De onde vêm os produtos",

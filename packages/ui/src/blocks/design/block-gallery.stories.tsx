@@ -36,6 +36,13 @@ export const Padrao: Story = {}
  */
 export const Loja: Story = { args: { unavailable: ["CONTACT"] } }
 
+/**
+ * Aberta onde nasce uma faixa: o banner vem também em linha de dois e de três. Blocos só dividem a
+ * linha dentro da mesma faixa, então "3 banners lado a lado" cria uma faixa com três banners em um
+ * terço — e pelo "+" de dentro de uma faixa a galeria continua pondo um bloco só.
+ */
+export const OndeNasceUmaFaixa: Story = { args: { offerRows: true } }
+
 /** Um site: sem catálogo. O grupo *Catálogo* desaparece pela mesma razão. */
 export const Site: Story = { args: { unavailable: ["PRODUCTS", "CATEGORIES"] } }
 

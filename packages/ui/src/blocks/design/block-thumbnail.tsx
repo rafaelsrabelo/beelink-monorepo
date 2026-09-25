@@ -2,7 +2,7 @@
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
-import type { ComponentKind } from "./design-types"
+import type { Across, ComponentKind } from "./design-types"
 
 /**
  * A wireframe of what a kind looks like on the page, drawn for the gallery.
@@ -18,7 +18,7 @@ import type { ComponentKind } from "./design-types"
 const BAR = "rounded-sm bg-muted-foreground/40"
 const ACCENT = "rounded-sm bg-primary/70"
 
-function Shape({ kind }: { kind: ComponentKind }) {
+function Shape({ kind, across }: { kind: ComponentKind; across: Across }) {
   switch (kind) {
     // Edge to edge and above everything, which is the one thing that makes it not a heading.
     case "ANNOUNCEMENT":
@@ -29,8 +29,15 @@ function Shape({ kind }: { kind: ComponentKind }) {
           <span className={cn(BAR, "h-1.5 w-1/2")} />
         </>
       )
+    // A row of them is drawn as the row: the count is what sets the three banner cards apart.
     case "BANNER":
-      return <span className={cn(ACCENT, "h-full w-full")} />
+      return (
+        <span className="flex h-full w-full gap-1">
+          {Array.from({ length: across }, (_, at) => (
+            <span key={at} className={cn(ACCENT, "h-full flex-1")} />
+          ))}
+        </span>
+      )
     case "HEADING":
       return (
         <>
@@ -90,6 +97,8 @@ function Shape({ kind }: { kind: ComponentKind }) {
 
 export interface BlockThumbnailProps {
   kind: ComponentKind
+  /** How many of it share the row. Only a banner is offered more than one at a time. */
+  across?: Across
   className?: string
 }
 
@@ -97,7 +106,7 @@ export interface BlockThumbnailProps {
  * Decoration, so it is hidden from a screen reader: the card around it already carries the kind's
  * name and what it does as text. Announcing the bars again would read the same card twice.
  */
-export function BlockThumbnail({ kind, className }: BlockThumbnailProps) {
+export function BlockThumbnail({ kind, across = 1, className }: BlockThumbnailProps) {
   return (
     <span
       aria-hidden="true"
@@ -106,7 +115,7 @@ export function BlockThumbnail({ kind, className }: BlockThumbnailProps) {
         className,
       )}
     >
-      <Shape kind={kind} />
+      <Shape kind={kind} across={across} />
     </span>
   )
 }
