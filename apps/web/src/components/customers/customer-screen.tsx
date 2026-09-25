@@ -1,11 +1,15 @@
 "use client"
 
+// React
+import { useEffect, useRef } from "react"
+
 // UI
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
 import { CustomerOrders } from "@harness-monorepo/ui/blocks/customers/customer-orders"
 import { CustomerProfile } from "@harness-monorepo/ui/blocks/customers/customer-profile"
 import { CustomerRecordHeader } from "@harness-monorepo/ui/blocks/customers/customer-record-header"
 import { CustomerStats } from "@harness-monorepo/ui/blocks/customers/customer-stats"
+import { Button } from "@harness-monorepo/ui/components/button"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -37,6 +41,20 @@ export function CustomerScreen({ slug, customerId, messages, web }: CustomerScre
   // Already cached by the panel's shell: the message says which shop is writing.
   const store = useStore(slug)
   const listHref = `/admin/${slug}/customers`
+  const history = view.history.data
+  const historyTop = useRef<HTMLDivElement>(null)
+  const { page, goToPage } = view
+
+  // A page past the end — a link kept from when there were more — would read as "no orders yet".
+  useEffect(() => {
+    if (history && history.orders.length === 0 && history.total > 0 && page > 1) goToPage(1)
+  }, [history, page, goToPage])
+
+  // The history is the last section: a new page is brought into view, where the pager was pressed.
+  const toPage = (next: number) => {
+    goToPage(next)
+    historyTop.current?.scrollIntoView({ block: "start" })
+  }
 
   if (view.record.isPending) return <CustomerScreenSkeleton />
 
@@ -54,7 +72,6 @@ export function CustomerScreen({ slug, customerId, messages, web }: CustomerScre
   }
 
   const customer = view.record.data
-  const history = view.history.data
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 lg:px-6">
@@ -74,33 +91,42 @@ export function CustomerScreen({ slug, customerId, messages, web }: CustomerScre
         <div className="@4xl/main:col-start-2 @4xl/main:row-start-1">
           <CustomerProfile customer={customer} addressLine={addressLineOf(customer.address)} {...view.profile} messages={messages} />
         </div>
-        <div className="flex min-w-0 flex-col gap-3 @4xl/main:col-start-1 @4xl/main:row-start-1">
+        <div ref={historyTop} className="flex min-w-0 scroll-mt-4 flex-col gap-3 @4xl/main:col-start-1 @4xl/main:row-start-1">
           {view.history.error ? (
             <p role="alert" className="text-destructive text-sm">
               {pageErrorCopy(view.history.error, web)}
             </p>
           ) : null}
-          <CustomerOrders
-            orders={history?.orders ?? []}
-            loading={!history && !view.history.error}
-            hrefOf={(number) => `/admin/${slug}/orders/${number}`}
-            pager={
-              history ? (
-                <TablePager
-                  page={history.page}
-                  pageSize={history.pageSize}
-                  total={history.total}
-                  onPageChange={view.goToPage}
-                  busy={view.history.isFetching}
-                  previousLabel={text.previous}
-                  nextLabel={text.next}
-                  rangeLabel={(from, to, total) => format(text.range, { from: String(from), to: String(to), total: String(total) })}
-                />
-              ) : null
-            }
-            linkComponent={AppLink}
-            messages={messages}
-          />
+          {/* A history that did not load says so above, and never "no orders yet" under it. */}
+          {!history && view.history.error ? (
+            page > 1 ? (
+              <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => toPage(page - 1)}>
+                {text.previous}
+              </Button>
+            ) : null
+          ) : (
+            <CustomerOrders
+              orders={history?.orders ?? []}
+              loading={!history && !view.history.error}
+              hrefOf={(number) => `/admin/${slug}/orders/${number}`}
+              pager={
+                history ? (
+                  <TablePager
+                    page={history.page}
+                    pageSize={history.pageSize}
+                    total={history.total}
+                    onPageChange={toPage}
+                    busy={view.history.isFetching}
+                    previousLabel={text.previous}
+                    nextLabel={text.next}
+                    rangeLabel={(from, to, total) => format(text.range, { from: String(from), to: String(to), total: String(total) })}
+                  />
+                ) : null
+              }
+              linkComponent={AppLink}
+              messages={messages}
+            />
+          )}
         </div>
       </div>
     </div>

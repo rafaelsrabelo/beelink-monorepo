@@ -56,7 +56,9 @@ export function useCustomerRecord(slug: string, customerId: string, web: WebMess
     record,
     history,
     page,
-    goToPage: (next: number) => router.replace((next > 1 ? `${here}?page=${next}` : here) as Parameters<typeof router.replace>[0]),
+    // No scroll to the top: the screen brings the history into view instead, where the pager was.
+    goToPage: (next: number) =>
+      router.replace((next > 1 ? `${here}?page=${next}` : here) as Parameters<typeof router.replace>[0], { scroll: false }),
     profile: {
       editing,
       onEdit: () => {

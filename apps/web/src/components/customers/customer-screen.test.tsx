@@ -106,12 +106,35 @@ describe("CustomerScreen", () => {
     expect(screen.getByRole("link", { name: "Abrir o pedido #9" })).toHaveAttribute("href", "/admin/loja/orders/9")
   })
 
-  it("writes the next page of the history into the address", async () => {
+  // The history is the last section: the next page is brought into view, not the top of the record.
+  it("writes the next page of the history into the address, without jumping to the top", async () => {
+    const scrolled = vi.fn()
+    Element.prototype.scrollIntoView = scrolled
     renderScreen()
 
     await userEvent.click(screen.getByRole("button", { name: "Próxima" }))
 
-    expect(mocks.replace).toHaveBeenCalledWith(`/admin/loja/customers/${ID}?page=2`)
+    expect(mocks.replace).toHaveBeenCalledWith(`/admin/loja/customers/${ID}?page=2`, { scroll: false })
+    expect(scrolled).toHaveBeenCalled()
+  })
+
+  // The figures may say 3 orders: a history that did not load must not answer "none yet" under its error.
+  it("says the history did not load, and never that there are no orders", () => {
+    mocks.search = new URLSearchParams("page=2")
+    mocks.orders.mockReturnValue({ data: undefined, error: new Error("boom"), isFetching: false })
+    renderScreen()
+
+    expect(screen.getByRole("alert")).toBeInTheDocument()
+    expect(screen.queryByText("Nenhum pedido ainda.")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Anterior" })).toBeInTheDocument()
+  })
+
+  it("goes back to the first page from a page past the end", () => {
+    mocks.search = new URLSearchParams("page=5")
+    mocks.orders.mockReturnValue({ data: { ...history, orders: [], page: 5 }, error: null, isFetching: false })
+    renderScreen()
+
+    expect(mocks.replace).toHaveBeenCalledWith(`/admin/loja/customers/${ID}`, { scroll: false })
   })
 
   it("opens a new order with the customer already chosen, and WhatsApp with the message for their stage", () => {
