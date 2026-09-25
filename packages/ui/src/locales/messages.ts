@@ -209,7 +209,15 @@ export interface UiMessages {
     viewCart: string
     /** Closing the order on the shop's WhatsApp (F4). */
     checkoutWhatsApp: string
-    checkoutName: string
+    /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
+    checkoutSignInPrompt: string
+    checkoutSignIn: string
+    checkoutSignUp: string
+    /** Over the shopper's details, as the shop keeps them. */
+    checkoutFor: string
+    checkoutEdit: string
+    /** A shopper with no phone on file: the shop has no way to reach them but the WhatsApp itself. */
+    checkoutPhoneMissing: string
     /** A shop with no WhatsApp on file: no button, and why. */
     checkoutNoWhatsApp: string
     checkoutSent: string
@@ -220,6 +228,9 @@ export interface UiMessages {
     orderLine: string
     orderTotal: string
     orderCustomer: string
+    /** `{phone}`, `{address}` — the shopper's lines under the order. */
+    orderPhone: string
+    orderAddress: string
     /** The shop's sign-in page (G2): its three faces, and what each one says. */
     signInTitle: string
     signUpTitle: string
