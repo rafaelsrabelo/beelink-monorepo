@@ -161,7 +161,8 @@ export interface UiMessages {
     /** Read after a value no combination has: ", indisponível". */
     valueMissing: string
     /** Read after a value whose combination is sold out: ", esgotado". */
-    valueSoldOut: string
+    /** A sold-out value's second line on its card or pill, where its price would be. */
+    valueSoldOutNotify: string
     /** Said in place of the order button when the chosen combination is sold out. */
     combinationSoldOut: string
     notifyMe: string
@@ -177,10 +178,131 @@ export interface UiMessages {
     restockCancel: string
     /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
     photoOf: string
+    /** Under the product photo, only where a pointer hovers. */
+    galleryHint: string
+    /** The thumbnails that did not fit: "+{count}". */
+    galleryMore: string
+    galleryMoreLabel: string
+    /** A slide of the product photo, which opens the viewer. */
+    galleryOpen: string
+    galleryViewerTitle: string
+    galleryClose: string
+    photoPrevious: string
+    photoNext: string
     /** The header's basket, which now has an address of its own. */
     cart: string
     /** `{count}` — the basket's accessible name, which says how many lines it holds. */
     cartWithCount: string
+    /** The cart link's name with a single item: "Carrinho, 1 item". */
+    cartWithOne: string
+    /** The cart page (F2). `{name}` names the line a control acts on, for a reader. */
+    cartSummary: string
+    cartSubtotal: string
+    /** `{count}` — units that can be ordered now. */
+    cartItems: string
+    cartItemsOne: string
+    cartQuantity: string
+    cartDecrease: string
+    cartIncrease: string
+    cartRemove: string
+    cartContinue: string
+    /** A sold-out line: kept in view, out of the order. */
+    cartUnavailable: string
+    /** Lines whose product left the shop, taken out when the page opened. */
+    cartGone: string
+    /** Adding to the cart (F3), on a card and on the product page. */
+    addToCart: string
+    addedToCart: string
+    /** `{name}` — said to a reader once the cart has it. */
+    addedToCartStatus: string
+    /** A card whose product has options: the page is where one is chosen. */
+    seeOptions: string
+    buyNow: string
+    viewCart: string
+    /** The phone bar's short line after an add: "Adicionado · Ver carrinho". */
+    addedShort: string
+    /** The buy box's stock line; a count is never public. */
+    inStock: string
+    /** Under the buy box's buttons, for a shop that takes orders on WhatsApp. */
+    finishOnWhatsApp: string
+    soldBy: string
+    payment: string
+    /** Closing the order on the shop's WhatsApp (F4). */
+    checkoutWhatsApp: string
+    /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
+    checkoutSignInPrompt: string
+    checkoutSignIn: string
+    checkoutSignUp: string
+    /** Over the shopper's details, as the shop keeps them. */
+    checkoutFor: string
+    checkoutEdit: string
+    /** A shopper with no phone on file: the shop has no way to reach them but the WhatsApp itself. */
+    checkoutPhoneMissing: string
+    /** A shop with no WhatsApp on file: no button, and why. */
+    checkoutNoWhatsApp: string
+    checkoutSent: string
+    checkoutSentHint: string
+    checkoutRetry: string
+    /** The message itself. `{shop}`; `{qty}` `{name}` `{total}`; `{total}`; `{name}`. */
+    orderGreeting: string
+    orderLine: string
+    orderTotal: string
+    orderCustomer: string
+    /** `{phone}`, `{address}` — the shopper's lines under the order. */
+    orderPhone: string
+    orderAddress: string
+    /** The shop's sign-in page (G2): its three faces, and what each one says. */
+    signInTitle: string
+    signUpTitle: string
+    forgotTitle: string
+    signInLead: string
+    signUpLead: string
+    forgotLead: string
+    signInName: string
+    signInEmail: string
+    signInPassword: string
+    signInPasswordHint: string
+    signInSubmit: string
+    signUpSubmit: string
+    forgotSubmit: string
+    toSignUp: string
+    toSignIn: string
+    toForgot: string
+    /** `{email}` — after signing up: the link is on its way. */
+    signUpSent: string
+    /** After asking for a new password: said alike for any address. */
+    forgotSent: string
+    signOut: string
+    /** `{name}` — the header's greeting once signed in: "Olá, Bia". */
+    accountHello: string
+    /** The shopper's page at a shop (G3). */
+    accountLead: string
+    accountDetails: string
+    accountAddress: string
+    accountPhone: string
+    accountZipCode: string
+    accountStreet: string
+    accountNumber: string
+    accountComplement: string
+    accountNeighborhood: string
+    accountCity: string
+    accountState: string
+    accountSave: string
+    accountSaved: string
+    /** The product page (5b). `{name}` — the shop, over the title. */
+    visitShop: string
+    /** The buy column's landmark name. */
+    buyBoxLabel: string
+    descriptionHeading: string
+    /** The product page's related rail: what it is, never "customers who viewed" — nothing is tracked. */
+    relatedHeading: string
+    specsHeading: string
+    /** The technical table's row for the product's category. */
+    specCategory: string
+    /** "Sobre este item": the description's first list, in the info column. */
+    aboutItem: string
+    /** Down to the rest of the description; the "›" is drawn apart. */
+    fullDescription: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
@@ -231,6 +353,16 @@ export interface UiMessages {
     breadcrumbHome: string
     empty: string
     emptyHint: string
+    /** An empty shelf with filters in force, and its way out to the same address as "Limpar tudo". */
+    emptyFiltered: string
+    emptyFilteredHint: string
+    emptySeeAll: string
+    /** An empty category or search, and its way out to the whole catalogue. */
+    emptyCatalog: string
+    /** The shelf could not be read: an outage, never "nothing found". */
+    shelfFailed: string
+    shelfFailedHint: string
+    shelfRetry: string
     productsHeading: string
     /**
      * "{count} produtos", under the catalogue's title and on a category's card. One pair serves
@@ -258,6 +390,41 @@ export interface UiMessages {
     resultsNone: string
     /** The word before a searched term in the count: "… resultados para "whey"". */
     resultsFor: string
+    /** The listing's filter column (5a): its heading, and the link that takes every filter off. */
+    filtersTitle: string
+    filtersClear: string
+    /** `{label}` — a chip's accessible name: "Remover filtro 300 g". */
+    filterRemove: string
+    filterCategory: string
+    /** The chip of `desconto=1`. */
+    filterOnSale: string
+    /** `{percent}` — the chip of `desconto=<n>`: "10% ou mais". */
+    filterDiscountAtLeast: string
+    /** `{min}` `{max}` — a price range's chip, whole reais already formatted. */
+    filterPriceBetween: string
+    filterPriceUpTo: string
+    filterPriceFrom: string
+    filterDiscount: string
+    /** The phone's door to the filters: "Filtrar", and "Filtrar ({n})" with `{n}` in force. */
+    filtersOpen: string
+    filtersOpenCount: string
+    filtersClose: string
+    /** `{count}` — the sheet's footer, which closes it on the shelf as it now stands. */
+    filtersShowResults: string
+    filtersShowResultsOne: string
+    filtersShowResultsNone: string
+    filterPrice: string
+    /** `{min}` — the last quick range: "Acima de R$ 200". */
+    filterPriceAbove: string
+    filterPriceMin: string
+    filterPriceMax: string
+    /** The min/max form's button. */
+    filterPriceApply: string
+    /** What each slider thumb is called to a reader. */
+    filterPriceLowest: string
+    filterPriceHighest: string
+    /** Opens the rest of a long group — past the first five values. */
+    filterShowMore: string
     sortPriceAsc: string
     sortPriceDesc: string
     /** The categories index, and the same heading over the home's band of them. */
@@ -316,6 +483,8 @@ export interface UiMessages {
       pix: string
       creditCard: string
       debitCard: string
+      /** Credit and debit together, as the buy box lists them. */
+      card: string
     }
     /** A site's contact form, as the visitor fills it in. */
     contact: {
@@ -538,6 +707,27 @@ export interface UiMessages {
     }
   }
   /** What arrived through a site's contact form, as its owner works through it. */
+  /** The panel's list of who opened an account at the shop. */
+  customers: {
+    title: string
+    description: string
+    searchLabel: string
+    searchPlaceholder: string
+    name: string
+    contact: string
+    place: string
+    stage: string
+    since: string
+    stages: { LEAD: string; CUSTOMER: string }
+    /** Beside an e-mail its owner never confirmed. */
+    unverified: string
+    empty: string
+    emptyHint: string
+    emptySearch: string
+    range: string
+    previous: string
+    next: string
+  }
   leads: {
     title: string
     description: string
