@@ -284,6 +284,19 @@ describe('StoresService.update', () => {
   });
 });
 
+describe('StoresService.update, the inactive threshold', () => {
+  // The one field a PUT keeps when it is left out: an older client must not reset it to 60.
+  it('keeps the stored number when the body leaves it out, and writes it when sent', async () => {
+    const { service, fakes } = build();
+
+    await service.update('padaria-do-bairro', OWNER, updateDto);
+    await service.update('padaria-do-bairro', OWNER, { ...updateDto, inactiveAfterDays: 90 });
+
+    expect(fakes.update.mock.calls[0]?.[0].data).not.toHaveProperty('inactiveAfterDays');
+    expect(fakes.update.mock.calls[1]?.[0].data).toMatchObject({ inactiveAfterDays: 90 });
+  });
+});
+
 describe('StoresService.publicBySlug', () => {
   it('serves the storefront shape and nothing an owner alone may read', async () => {
     const { service } = build();

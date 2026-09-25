@@ -254,7 +254,8 @@ describe("a shop's orders", () => {
     const customers = (query = '') => call('GET', `/api/stores/lessari/customers${query}`, owner).then((response) => response.json<StoreCustomerPage>());
     const stageOf = (page: StoreCustomerPage, name: string) => page.customers.find((customer) => customer.name === name)?.stage;
 
-    async function setInactiveAfter(days: number) {
+    /** Absent (`undefined`) leaves the key out of the body, as an older client would. */
+    async function setInactiveAfter(days: number | null | undefined) {
       const store = (await call('GET', '/api/stores/lessari', owner)).json<Store>();
       return call('PUT', '/api/stores/lessari', owner, {
         name: store.name,
@@ -263,7 +264,7 @@ describe("a shop's orders", () => {
         colors: store.colors,
         socialNetworks: { whatsapp: store.socialNetworks.whatsapp },
         paymentMethods: store.paymentMethods,
-        inactiveAfterDays: days,
+        ...(days === undefined ? {} : { inactiveAfterDays: days }),
       });
     }
 
@@ -312,7 +313,12 @@ describe("a shop's orders", () => {
 
       expect((await setInactiveAfter(6)).statusCode).toBe(400);
       expect((await setInactiveAfter(366)).statusCode).toBe(400);
-      expect((await call('GET', '/api/stores/lessari', owner)).json<Store>().inactiveAfterDays).toBe(90);
+      // A null is a client error, not a way to reach the NOT NULL column as a 500.
+      expect((await setInactiveAfter(null)).statusCode).toBe(400);
+      // A body without it keeps it: an older client must not reset the shop's number.
+      const kept = await setInactiveAfter(undefined);
+      expect(kept.statusCode).toBe(200);
+      expect(kept.json<Store>().inactiveAfterDays).toBe(90);
     });
 
     it('sorts by the latest order, the most orders and the most spent, those who never bought last', async () => {

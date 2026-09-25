@@ -18,6 +18,7 @@ import {
   Min,
   MinLength,
   Validate,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -203,7 +204,9 @@ export class UpdateStoreDto implements UpdateStorePayload {
   paymentMethods!: PaymentMethod[];
 
   @ApiPropertyOptional({ minimum: INACTIVE_AFTER_DAYS_MIN, maximum: INACTIVE_AFTER_DAYS_MAX, description: 'Absent keeps what is stored.' })
-  @IsOptional()
+  // Not `@IsOptional()`, which lets a null through to a NOT NULL column as a 500: absent is "keep
+  // what is stored", and null is a client error.
+  @ValidateIf((_dto: unknown, value: unknown) => value !== undefined)
   @IsInt()
   @Min(INACTIVE_AFTER_DAYS_MIN)
   @Max(INACTIVE_AFTER_DAYS_MAX)

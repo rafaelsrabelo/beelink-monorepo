@@ -29,7 +29,7 @@ import { StoreAppearanceFields } from "./store-appearance-fields"
 import { StoreCustomersFields } from "./store-customers-fields"
 import { StoreIdentityFields } from "./store-identity-fields"
 import { StorePaymentMethodsFields } from "./store-payment-methods-fields"
-import type { StoreSettingsFormProps } from "./store-settings-form-props"
+import type { StoreSettingsFormProps } from "./store-settings-form.types"
 import { createStoreSettingsSchema, type StoreSettingsValues } from "./store-schemas"
 import { StoreSocialFields } from "./store-social-fields"
 
@@ -43,7 +43,7 @@ const TAB_OF_SLICE = {
   customers: "customers",
 } as const satisfies Record<keyof StoreSettingsValues, string>
 
-export type { StoreSettingsFormProps } from "./store-settings-form-props"
+export type { StoreSettingsFormProps } from "./store-settings-form.types"
 
 /**
  * Everything the panel edits about a shop, in one form over six tabs and one save — the legacy

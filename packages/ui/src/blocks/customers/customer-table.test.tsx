@@ -37,6 +37,13 @@ describe("CustomerTable", () => {
     expect(screen.getByText("Cliente")).toBeInTheDocument()
   })
 
+  // The stage that comes from the shop's "inativo depois de N dias", in its own badge.
+  it("marks a customer who stopped buying as inactive", () => {
+    render(<CustomerTable customers={[{ ...bia, stage: "INACTIVE" }]} />)
+
+    expect(screen.getByText("Inativo")).toBeInTheDocument()
+  })
+
   it("says no one has an account yet, or that no one matches a search", () => {
     const { rerender } = render(<CustomerTable customers={[]} />)
     expect(screen.getByText("Nenhum cliente ainda.")).toBeInTheDocument()
