@@ -4,6 +4,7 @@ import type { ProductFieldRefs } from '../../generated/prisma/models/Product.js'
 // App
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 import { CARD_PHOTOS_MAX } from './catalog.constants.js';
+import { productCardInclude } from './catalog.mapper.js';
 import { SHOWCASE_CARD_SELECT, selectionOf, shelfOf, showcaseQuery, toShowcaseCard, type ShowcaseCardRow } from './showcase.query.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -137,8 +138,13 @@ describe('shelfOf — the cards, in the order the showcase wants', () => {
 describe('toShowcaseCard — what a showcase card carries', () => {
   /** B11: photos to pass through and "4 sabores", from the same read — no query per product. */
   it('asks for up to five photos and the first option with its values counted, in the one select', () => {
-    expect(SHOWCASE_CARD_SELECT.images.take).toBe(CARD_PHOTOS_MAX);
-    expect(SHOWCASE_CARD_SELECT.options).toMatchObject({ take: 1, select: { name: true, _count: { select: { values: true } } } });
+    expect(SHOWCASE_CARD_SELECT.images).toMatchObject({ take: CARD_PHOTOS_MAX, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
+    expect(productCardInclude.images).toMatchObject({ take: CARD_PHOTOS_MAX, orderBy: { position: 'asc' } });
+    // Only values a live combination uses: a switched-off one is no choice a visitor has.
+    expect(SHOWCASE_CARD_SELECT.options).toMatchObject({
+      take: 1,
+      select: { name: true, _count: { select: { values: { where: { variantValues: { some: { variant: { isActive: true, archivedAt: null } } } } } } } },
+    });
   });
 
   it("carries the photos in the shopkeeper's order, the cover first, and sums up the first option", () => {

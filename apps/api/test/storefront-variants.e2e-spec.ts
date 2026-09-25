@@ -145,11 +145,22 @@ describe('a product’s variants on the storefront', () => {
     const shopWindow = await visit<StorefrontCatalog>('/api/stores/lessari/catalog');
     const page = await visit<PublicProductDetail>('/api/stores/lessari/catalog/blusa');
 
-    expect(shopWindow.products.find((card) => card.slug === 'whey')?.optionSummary).toEqual({ name: 'Peso', valueCount: 3 });
+    // 600 g is not sold at all, so it is no choice a visitor has; 300 g ran out and still is one.
+    expect(shopWindow.products.find((card) => card.slug === 'whey')?.optionSummary).toEqual({ name: 'Peso', valueCount: 2 });
     expect(shopWindow.products.find((card) => card.slug === 'blusa')?.optionSummary).toBeNull();
     expect(shopWindow.products.find((card) => card.slug === 'blusa')?.imageUrls).toEqual([]);
     // The page reads the whole gallery and the options themselves; the summary is a shelf's.
     expect(page).not.toHaveProperty('optionSummary');
+  });
+
+  it("carries a card's first five photos in the shopkeeper's order, the cover first", async () => {
+    const urls = ['a', 'b', 'c', 'd', 'e', 'f'].map((name) => `https://res.cloudinary.com/demo/${name}.jpg`);
+    await addProduct({ name: 'Blusa', slug: 'blusa', priceCents: 5990, images: urls.map((url) => ({ url })) });
+
+    const card = (await visit<StorefrontCatalog>('/api/stores/lessari/catalog')).products.find((entry) => entry.slug === 'blusa');
+
+    expect(card?.imageUrls).toEqual(urls.slice(0, 5));
+    expect(card?.imageUrl).toBe(urls[0]);
   });
 
   it('widens the range as combinations come back', async () => {

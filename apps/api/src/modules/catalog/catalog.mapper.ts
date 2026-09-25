@@ -101,10 +101,15 @@ export type ShelfCardRow = ProductCardRow & { options: CardOptionRow[] };
 
 /**
  * The first option and its values, counted in the same read: one more query per page for every
- * card at once, never one per product.
+ * card at once, never one per product. A value counts when a live combination uses it — one the shop
+ * switched off does not exist for a visitor, as the facets already read it — and a sold-out one still
+ * counts: 5b's "4 sabores" includes the one that ran out.
  */
 export const cardOptionSelect = {
-  select: { name: true, _count: { select: { values: true } } } as const,
+  select: {
+    name: true,
+    _count: { select: { values: { where: { variantValues: { some: { variant: { isActive: true, archivedAt: null } } } } } } },
+  } as const,
   orderBy: [{ position: 'asc' }, { id: 'asc' }] satisfies ProductOptionOrderByWithRelationInput[],
   take: 1,
 };
@@ -115,8 +120,9 @@ export function optionSummaryOf(options: readonly CardOptionRow[]): CardOptionSu
 }
 
 /**
- * The storefront grid's read. A page of cards shows one photo each, so it asks for one — not every
- * photo and what each is of, which is a second query over up to 96 galleries that the grid drops.
+ * The storefront grid's read. A card passes through its first photos, so it asks for their addresses
+ * — up to `CARD_PHOTOS_MAX`, never the whole gallery with what each photo is of — and for the first
+ * option's summary, one more statement per page.
  */
 export const productCardInclude = {
   images: { select: { url: true }, orderBy: { position: 'asc' }, take: CARD_PHOTOS_MAX },

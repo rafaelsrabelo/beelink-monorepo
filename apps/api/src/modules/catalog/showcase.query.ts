@@ -17,9 +17,10 @@ import { cardOptionSelect, optionSummaryOf } from './catalog.mapper.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 /**
- * What a showcase's card needs, and nothing more: the first picture and the category's slug. The
- * catalogue's own include counts every category's products, which is right for a catalogue page
- * and a query per card too many for a landing page of several showcases.
+ * What a showcase's card needs, and nothing more: its first photos' addresses (up to
+ * `CARD_PHOTOS_MAX`), the first option's summary and the category's slug. The catalogue's own
+ * include counts every category's products, which is right for a catalogue page and a query per
+ * card too many for a landing page of several showcases.
  */
 export const SHOWCASE_CARD_SELECT = {
   id: true,

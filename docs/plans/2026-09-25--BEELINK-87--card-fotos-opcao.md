@@ -52,3 +52,17 @@ Tamanho do JSON da home (`/stores/:slug/public`), sem compressão:
 
 - Usar os campos no card: B10 (fotos) e B17 ("4 sabores").
 - Nota, selo, Pix e parcelas (sem dado).
+
+## Revisão (25/09/2026)
+
+Três leituras independentes, cada achado verificado por um revisor que tentou refutá-lo. Três
+distintos, todos corrigidos:
+
+- **`valueCount` conta só valores que uma combinação ativa usa.** Um valor cujas combinações o
+  lojista desligou ("não vendo esta") não é escolha para o visitante, e as facetas da mesma prateleira
+  já o deixam de fora; contá-lo faria o B17 dizer "2 tamanhos" onde só há um. Um valor esgotado
+  continua contando: o "4 sabores" de 5b inclui o sabor que acabou. A contagem filtrada segue no mesmo
+  statement.
+- **Um teste de ponta a ponta prova as 5 primeiras fotos na ordem do lojista** numa listagem com 6,
+  e os testes de unidade conferem o `take` e a ordem das duas leituras.
+- **Os comentários das duas leituras** diziam "uma foto"; agora dizem o que elas trazem.
