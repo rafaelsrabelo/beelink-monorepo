@@ -2,10 +2,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 // Types
-import type { CustomerStage, StoreCustomer, StoreCustomerPage } from '@harness-monorepo/contracts';
+import type { CustomerStage, StoreCustomer, StoreCustomerDetail, StoreCustomerPage } from '@harness-monorepo/contracts';
 
 // App
 import { CUSTOMER_STAGES } from '../customers.constants.js';
+import { CustomerAddressResponse } from './customer.dto.js';
 
 export class StoreCustomerResponse implements StoreCustomer {
   @ApiProperty({ format: 'uuid' }) id!: string;
@@ -24,6 +25,18 @@ export class StoreCustomerResponse implements StoreCustomer {
   @ApiProperty({ nullable: true, type: Number, description: 'Whole days since the last valid order.' })
   daysSinceLastOrder!: number | null;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
+}
+
+export class StoreCustomerDetailResponse extends StoreCustomerResponse implements StoreCustomerDetail {
+  @ApiProperty({ type: CustomerAddressResponse }) address!: CustomerAddressResponse;
+  @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'The first valid order.' })
+  firstOrderAt!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    description: 'totalSpentCents ÷ ordersCount, to the nearest whole cent; null with no valid order.',
+  })
+  averageTicketCents!: number | null;
 }
 
 export class CustomerStageCountsResponse implements Record<CustomerStage, number> {

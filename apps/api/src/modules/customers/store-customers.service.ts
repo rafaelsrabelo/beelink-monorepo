@@ -2,19 +2,30 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { CustomerStage, StoreCustomer, StoreCustomerListQuery, StoreCustomerPage, StoreCustomerSort } from '@harness-monorepo/contracts';
+import type {
+  CustomerStage,
+  StoreCustomer,
+  StoreCustomerDetail,
+  StoreCustomerListQuery,
+  StoreCustomerPage,
+  StoreCustomerSort,
+} from '@harness-monorepo/contracts';
 import type { CustomerModel } from '../../generated/prisma/models.js';
 import type { CustomerOrderByWithRelationInput, CustomerWhereInput } from '../../generated/prisma/models/Customer.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
+import { averageTicketOf } from './customer-books.js';
 import { CUSTOMER_STAGES, CUSTOMERS_PAGE_SIZE, CUSTOMERS_PAGE_SIZE_MAX } from './customers.constants.js';
 import { customerSince, daysSince, stageOf } from './customer-stage.js';
-import type { CreateStoreCustomerDto } from './dto/store-customer.dto.js';
+import type { CreateStoreCustomerDto, UpdateStoreCustomerDto } from './dto/store-customer.dto.js';
 
 /** A customer id is a uuid column: anything else is no customer, never a query the database refuses. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** What a customer is read with: the account, for its e-mail and whether it was confirmed. */
+const WITH_ACCOUNT = { user: { select: { email: true, emailVerifiedAt: true } } } as const;
 
 type CustomerRow = CustomerModel & { user: { email: string; emailVerifiedAt: Date | null } | null };
 
@@ -35,6 +46,22 @@ function toStoreCustomer(row: CustomerRow, inactiveAfterDays: number, now: Date)
     daysSinceLastOrder: daysSince(row.lastOrderAt, now),
     createdAt: row.createdAt.toISOString(),
   } satisfies StoreCustomer;
+}
+
+function toStoreCustomerDetail(row: CustomerRow, inactiveAfterDays: number, now: Date): StoreCustomerDetail {
+  const { zipCode, street, number, complement, neighborhood, city, state } = row;
+
+  return {
+    ...toStoreCustomer(row, inactiveAfterDays, now),
+    address: { zipCode, street, number, complement, neighborhood, city, state },
+    firstOrderAt: row.firstOrderAt?.toISOString() ?? null,
+    averageTicketCents: averageTicketOf(row.totalSpentCents, row.ordersCount),
+  } satisfies StoreCustomerDetail;
+}
+
+/** The phone identifies a customer within a shop: the unique index is what refuses a second one. */
+function isPhoneTaken(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'P2002';
 }
 
 /** The same cut `stageOf` makes, for the database: a stage tab and a stage badge never disagree. */
@@ -82,29 +109,59 @@ export class StoreCustomersService {
     try {
       const row = await this.prisma.customer.create({
         data: { storeId: store.id, name: dto.name, phone: dto.phone, ...dto.address },
-        include: { user: { select: { email: true, emailVerifiedAt: true } } },
+        include: WITH_ACCOUNT,
       });
       return toStoreCustomer(row, store.inactiveAfterDays, new Date());
     } catch (error) {
-      if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+      if (isPhoneTaken(error)) {
         throw new ConflictException({ errorCode: 'CUSTOMER_PHONE_TAKEN', message: 'That phone belongs to a customer of this shop' });
       }
       throw error;
     }
   }
 
-  /** One of the shop's customers — another shop's, however real, is not found here. */
-  async findOne(storeSlug: string, userId: string, customerId: string): Promise<StoreCustomer> {
+  /** One of the shop's customers, as their record reads them — another shop's, however real, is not found here. */
+  async findOne(storeSlug: string, userId: string, customerId: string): Promise<StoreCustomerDetail> {
     const store = await this.ownedStore(storeSlug, userId);
+    const row = await this.recordIn(store.id, customerId);
 
+    return toStoreCustomerDetail(row, store.inactiveAfterDays, new Date());
+  }
+
+  /**
+   * The shopkeeper's correction of the shop's record: the one the shopper sees too, so what is fixed
+   * here reads fixed there. A phone another customer of the shop has is refused and nothing of the
+   * request is written — the update is one statement, and the index refuses it whole.
+   */
+  async update(storeSlug: string, userId: string, customerId: string, dto: UpdateStoreCustomerDto): Promise<StoreCustomerDetail> {
+    const store = await this.ownedStore(storeSlug, userId);
+    const { id } = await this.recordIn(store.id, customerId);
+
+    try {
+      const row = await this.prisma.customer.update({
+        where: { id },
+        data: {
+          ...(dto.name !== undefined ? { name: dto.name } : {}),
+          ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
+          ...dto.address,
+        },
+        include: WITH_ACCOUNT,
+      });
+      return toStoreCustomerDetail(row, store.inactiveAfterDays, new Date());
+    } catch (error) {
+      if (isPhoneTaken(error)) {
+        throw new ConflictException({ errorCode: 'CUSTOMER_PHONE_TAKEN', message: 'That phone belongs to another customer of this shop' });
+      }
+      throw error;
+    }
+  }
+
+  private async recordIn(storeId: string, customerId: string): Promise<CustomerRow> {
     const row = UUID.test(customerId)
-      ? await this.prisma.customer.findFirst({
-          where: { id: customerId.toLowerCase(), storeId: store.id },
-          include: { user: { select: { email: true, emailVerifiedAt: true } } },
-        })
+      ? await this.prisma.customer.findFirst({ where: { id: customerId.toLowerCase(), storeId }, include: WITH_ACCOUNT })
       : null;
     if (!row) throw new NotFoundException({ errorCode: 'CUSTOMER_NOT_FOUND', message: 'No such customer in this shop' });
-    return toStoreCustomer(row, store.inactiveAfterDays, new Date());
+    return row;
   }
 
   /**
@@ -137,7 +194,7 @@ export class StoreCustomersService {
     const [rows, total, ...counts] = await this.prisma.$transaction([
       this.prisma.customer.findMany({
         where,
-        include: { user: { select: { email: true, emailVerifiedAt: true } } },
+        include: WITH_ACCOUNT,
         orderBy: ORDER_BY[query.sort ?? 'RECENT'],
         skip: (page - 1) * pageSize,
         take: pageSize,

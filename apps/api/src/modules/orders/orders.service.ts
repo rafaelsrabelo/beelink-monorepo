@@ -96,6 +96,7 @@ export class OrdersService {
     const where: Prisma.OrderWhereInput = {
       storeId,
       ...(query.status ? { status: query.status } : {}),
+      ...(query.customerId ? { customerId: query.customerId } : {}),
       ...(term
         ? {
             OR: [

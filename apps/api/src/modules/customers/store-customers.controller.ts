@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
@@ -17,8 +17,8 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
-import { CreateStoreCustomerDto, ListStoreCustomersDto } from './dto/store-customer.dto.js';
-import { StoreCustomerPageResponse, StoreCustomerResponse } from './dto/store-customer.response.js';
+import { CreateStoreCustomerDto, ListStoreCustomersDto, UpdateStoreCustomerDto } from './dto/store-customer.dto.js';
+import { StoreCustomerDetailResponse, StoreCustomerPageResponse, StoreCustomerResponse } from './dto/store-customer.response.js';
 import { StoreCustomersService } from './store-customers.service.js';
 
 /**
@@ -48,15 +48,29 @@ export class StoreCustomersController {
   }
 
   @Get(':customerId')
-  @ApiOperation({ summary: 'One of the shop\'s customers' })
-  @ApiOkResponse({ type: StoreCustomerResponse })
+  @ApiOperation({ summary: "One of the shop's customers, as their record reads them" })
+  @ApiOkResponse({ type: StoreCustomerDetailResponse })
   @ApiNotFoundResponse({ description: 'CUSTOMER_NOT_FOUND — no such customer in this shop' })
   findOne(
     @Param('storeSlug') storeSlug: string,
     @Param('customerId') customerId: string,
     @CurrentUser() current: AuthenticatedUser,
-  ): Promise<StoreCustomerResponse> {
+  ): Promise<StoreCustomerDetailResponse> {
     return this.customers.findOne(storeSlug, current.id, customerId);
+  }
+
+  @Patch(':customerId')
+  @ApiOperation({ summary: "Correct a customer's name, phone or address; the e-mail is the account's and is not changed here" })
+  @ApiOkResponse({ type: StoreCustomerDetailResponse })
+  @ApiNotFoundResponse({ description: 'CUSTOMER_NOT_FOUND — no such customer in this shop' })
+  @ApiConflictResponse({ description: 'CUSTOMER_PHONE_TAKEN — another customer of the shop has that phone; nothing is saved' })
+  update(
+    @Param('storeSlug') storeSlug: string,
+    @Param('customerId') customerId: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: UpdateStoreCustomerDto,
+  ): Promise<StoreCustomerDetailResponse> {
+    return this.customers.update(storeSlug, current.id, customerId, dto);
   }
 
   @Get()

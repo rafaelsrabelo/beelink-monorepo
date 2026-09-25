@@ -1,10 +1,16 @@
 // Nest
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsInt, IsObject, IsOptional, IsString, Matches, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
+import { IsIn, IsInt, IsObject, IsOptional, IsString, Matches, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 // Types
-import type { CreateStoreCustomerPayload, CustomerStage, StoreCustomerListQuery, StoreCustomerSort } from '@harness-monorepo/contracts';
+import type {
+  CreateStoreCustomerPayload,
+  CustomerStage,
+  StoreCustomerListQuery,
+  StoreCustomerSort,
+  UpdateStoreCustomerPayload,
+} from '@harness-monorepo/contracts';
 
 // App
 import { blankToNull, normaliseWhatsapp, trim } from '../../stores/dto/store-fields.dto.js';
@@ -27,6 +33,36 @@ export class CreateStoreCustomerDto implements CreateStoreCustomerPayload {
   phone!: string;
 
   @ApiPropertyOptional({ type: CustomerAddressDto })
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CustomerAddressDto)
+  address?: CustomerAddressDto;
+}
+
+/**
+ * What the shopkeeper changes of a customer. No e-mail: it is the account's, and the pipe refuses a
+ * field it does not declare. `ValidateIf` and not `IsOptional` on the name and the phone, because
+ * `IsOptional` lets a null through, and a null here would clear a name the column needs or the one
+ * phone a customer registered from an order is known by.
+ */
+export class UpdateStoreCustomerDto implements UpdateStoreCustomerPayload {
+  @ApiPropertyOptional({ example: 'Ana Souza', minLength: 2, maxLength: 120 })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsString()
+  @trim
+  @MinLength(2)
+  @MaxLength(120)
+  name?: string;
+
+  @ApiPropertyOptional({ example: '(11) 99999-8888', description: 'Any way a person writes it; kept as a WhatsApp link wants it.' })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsString()
+  @Matches(/^\d{12,15}$/, { message: 'phone must be a phone number, area code included' })
+  @normaliseWhatsapp
+  phone?: string;
+
+  @ApiPropertyOptional({ type: CustomerAddressDto, description: 'A part sent as null or blank is cleared; a part left out is kept.' })
   @IsOptional()
   @IsObject()
   @ValidateNested()
