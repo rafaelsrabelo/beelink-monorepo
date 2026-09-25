@@ -74,6 +74,17 @@ export interface StoreCustomerPage {
   pageSize: number;
 }
 
+/**
+ * A customer the shopkeeper registers — someone who bought by WhatsApp and has no account. The phone
+ * is kept as a WhatsApp link wants it and identifies them in the shop: one already there is
+ * refused with `CUSTOMER_PHONE_TAKEN`, and the panel offers that customer instead.
+ */
+export interface CreateStoreCustomerPayload {
+  name: string;
+  phone: string;
+  address?: Partial<CustomerAddress>;
+}
+
 /** How the panel asks for a page of customers. `q` matches the name, the e-mail or the phone. */
 export interface StoreCustomerListQuery {
   q?: string;

@@ -1,5 +1,5 @@
 // Nest
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 
 // Types
 import type { StoreCustomer, StoreCustomerListQuery, StoreCustomerPage } from '@harness-monorepo/contracts';
@@ -10,6 +10,7 @@ import type { CustomerWhereInput } from '../../generated/prisma/models/Customer.
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { CUSTOMERS_PAGE_SIZE, CUSTOMERS_PAGE_SIZE_MAX } from './customers.constants.js';
+import type { CreateStoreCustomerDto } from './dto/store-customer.dto.js';
 
 type CustomerRow = CustomerModel & { user: { email: string; emailVerifiedAt: Date | null } | null };
 
@@ -38,6 +39,28 @@ export class StoreCustomersService {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
   ) {}
+
+  /**
+   * A customer registered by the shopkeeper, with no account — someone who bought by WhatsApp. The
+   * phone identifies a customer in the shop, so one the shop already has is refused, and the panel
+   * offers that customer instead of a second one.
+   */
+  async create(storeSlug: string, userId: string, dto: CreateStoreCustomerDto): Promise<StoreCustomer> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+
+    try {
+      const row = await this.prisma.customer.create({
+        data: { storeId, name: dto.name, phone: dto.phone, ...dto.address },
+        include: { user: { select: { email: true, emailVerifiedAt: true } } },
+      });
+      return toStoreCustomer(row);
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+        throw new ConflictException({ errorCode: 'CUSTOMER_PHONE_TAKEN', message: 'That phone belongs to a customer of this shop' });
+      }
+      throw error;
+    }
+  }
 
   /** One page, with the bounds used echoed and never the ones asked for. */
   async list(storeSlug: string, userId: string, query: StoreCustomerListQuery = {}): Promise<StoreCustomerPage> {

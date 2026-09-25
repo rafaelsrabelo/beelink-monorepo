@@ -260,6 +260,23 @@ describe("a shopper's door into a shop", () => {
       expect((await list('lessari', owner.accessToken, '?q=ninguem')).json<StoreCustomerPage>().total).toBe(0);
     });
 
+    it('registers a customer with no account, and refuses a second one with the same phone however written', async () => {
+      const register = (payload: object, token = owner.accessToken) =>
+        app.inject({ method: 'POST', url: '/api/stores/lessari/customers', headers: { authorization: `Bearer ${token}` }, payload });
+
+      const created = await register({ name: 'Rita Balcão', phone: '(11) 96666-5555', address: { city: 'Campinas', state: 'sp' } });
+      expect(created.statusCode).toBe(201);
+      expect(created.json()).toMatchObject({ name: 'Rita Balcão', phone: '5511966665555', email: null, city: 'Campinas', state: 'SP', stage: 'LEAD' });
+
+      const again = await register({ name: 'Outra Rita', phone: '+55 11 96666-5555' });
+      expect(again.statusCode).toBe(409);
+      expect(again.json()).toMatchObject({ errorCode: 'CUSTOMER_PHONE_TAKEN' });
+      expect((await list('lessari', owner.accessToken, '?q=96666')).json<StoreCustomerPage>().total).toBe(1);
+
+      const stranger = await signUpAndSignIn(app, newEmail('estranho'));
+      expect((await register({ name: 'Estranha', phone: '11955554444' }, stranger.accessToken)).statusCode).toBe(403);
+    });
+
     it("is the owner's alone: another account gets 403, and a shopper's token is refused", async () => {
       const shopper = await shopperAt('lessari');
       const stranger = await signUpAndSignIn(app, newEmail('estranho'));

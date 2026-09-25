@@ -1,14 +1,24 @@
 // Nest
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 
 // Types
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
-import { ListStoreCustomersDto } from './dto/store-customer.dto.js';
-import { StoreCustomerPageResponse } from './dto/store-customer.response.js';
+import { CreateStoreCustomerDto, ListStoreCustomersDto } from './dto/store-customer.dto.js';
+import { StoreCustomerPageResponse, StoreCustomerResponse } from './dto/store-customer.response.js';
 import { StoreCustomersService } from './store-customers.service.js';
 
 /**
@@ -23,6 +33,19 @@ import { StoreCustomersService } from './store-customers.service.js';
 @Controller('stores/:storeSlug/customers')
 export class StoreCustomersController {
   constructor(private readonly customers: StoreCustomersService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a customer with no account — someone who bought by WhatsApp' })
+  @ApiCreatedResponse({ type: StoreCustomerResponse })
+  @ApiConflictResponse({ description: 'CUSTOMER_PHONE_TAKEN — the shop already has that phone' })
+  create(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: CreateStoreCustomerDto,
+  ): Promise<StoreCustomerResponse> {
+    return this.customers.create(storeSlug, current.id, dto);
+  }
 
   @Get()
   @ApiOperation({ summary: "One page of the shop's customers, newest first" })

@@ -1,13 +1,37 @@
 // Nest
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsObject, IsOptional, IsString, Matches, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 // Types
-import type { StoreCustomerListQuery } from '@harness-monorepo/contracts';
+import type { CreateStoreCustomerPayload, StoreCustomerListQuery } from '@harness-monorepo/contracts';
 
 // App
-import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
+import { blankToNull, normaliseWhatsapp, trim } from '../../stores/dto/store-fields.dto.js';
+import { CustomerAddressDto } from './customer.dto.js';
+
+/** A customer the shopkeeper registers, with no account: a name, the phone, and where they are. */
+export class CreateStoreCustomerDto implements CreateStoreCustomerPayload {
+  @ApiProperty({ example: 'Ana Souza', minLength: 2, maxLength: 120 })
+  @IsString()
+  @trim
+  @MinLength(2)
+  @MaxLength(120)
+  name!: string;
+
+  @ApiProperty({ example: '(11) 99999-8888', description: 'Any way a person writes it; kept as a WhatsApp link wants it.' })
+  @IsString()
+  @Matches(/^\d{12,15}$/, { message: 'phone must be a phone number, area code included' })
+  @normaliseWhatsapp
+  phone!: string;
+
+  @ApiPropertyOptional({ type: CustomerAddressDto })
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CustomerAddressDto)
+  address?: CustomerAddressDto;
+}
 import { CUSTOMERS_PAGE_SIZE, CUSTOMERS_PAGE_SIZE_MAX, CUSTOMERS_SEARCH_MAX_LENGTH } from '../customers.constants.js';
 
 /** How the panel asks for a page of customers. A bare `GET` is the first page of everyone. */
