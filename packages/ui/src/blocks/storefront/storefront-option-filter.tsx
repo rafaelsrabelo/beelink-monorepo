@@ -56,6 +56,8 @@ export function StorefrontOptionFilter({ title, values, locale, linkComponent: L
             <Link
               key={entry.value}
               href={entry.href}
+              // A combination of filters is not a page to crawl: the shelf without them is.
+              rel="nofollow"
               role="checkbox"
               aria-checked={entry.selected}
               className={cn(
