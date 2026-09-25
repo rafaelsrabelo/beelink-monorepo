@@ -43,7 +43,7 @@ export function StorefrontDiscountFilter({ onSale, ranges, locale, linkComponent
         <ul className="flex flex-col gap-1.5 text-sm">
           {ranges.map((range) => (
             <li key={range.percent}>
-              <Link href={range.href} aria-current={range.selected ? "true" : undefined} className={cn("hover:underline", range.selected && "font-bold")}>
+              <Link href={range.href} rel="nofollow" aria-current={range.selected ? "true" : undefined} className={cn("hover:underline", range.selected && "font-bold")}>
                 {format(text.filterDiscountAtLeast, { percent: String(range.percent) })}{" "}
                 <span className="text-shop-muted">({number.format(range.count)})</span>
               </Link>

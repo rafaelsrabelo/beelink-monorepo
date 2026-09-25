@@ -1,7 +1,7 @@
 "use client"
 
 // Types
-import type { PublicProductDetail } from "@harness-monorepo/contracts"
+import type { PaymentMethod, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
@@ -21,6 +21,9 @@ export interface RestockCopy {
 
 export interface StorefrontProductLiveProps {
   slug: string
+  /** The shop over the title: "Visite a loja …", to its front door. */
+  shopName: string
+  homeHref: string
   product: PublicProductDetail
   /** The combination the address asked for, read on the server so the page opens on it. */
   initialVariantId: string | null
@@ -29,6 +32,11 @@ export interface StorefrontProductLiveProps {
   cartHref: string
   showPrice: boolean
   showBadge: boolean
+  /** The layout's "Em estoque" switch. */
+  showStock: boolean
+  /** The shop takes orders on WhatsApp, which the buy box says. */
+  finishesOnWhatsApp: boolean
+  seller: { name: string; paymentMethods: readonly PaymentMethod[] }
   restockCopy: RestockCopy
   messages: UiMessages
 }
@@ -42,12 +50,17 @@ export interface StorefrontProductLiveProps {
  */
 export function StorefrontProductLive({
   slug,
+  shopName,
+  homeHref,
   product,
   initialVariantId,
   orderHref,
   cartHref,
   showPrice,
   showBadge,
+  showStock,
+  finishesOnWhatsApp,
+  seller,
   restockCopy,
   messages,
 }: StorefrontProductLiveProps) {
@@ -59,6 +72,8 @@ export function StorefrontProductLive({
 
   return (
     <StorefrontProductDetail
+      shopName={shopName}
+      homeHref={homeHref}
       name={product.name}
       description={product.description}
       priceCents={product.priceCents}
@@ -95,6 +110,9 @@ export function StorefrontProductLive({
       locale="pt-BR"
       showPrice={showPrice}
       showBadge={showBadge}
+      showStock={showStock}
+      finishesOnWhatsApp={finishesOnWhatsApp}
+      seller={seller}
       messages={messages}
     />
   )

@@ -1,18 +1,22 @@
 "use client"
 
 // React
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 // Types
-import type { PublicProductDetail } from "@harness-monorepo/contracts"
+import type { CustomerProfile, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontCart } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
+import { StorefrontCheckout } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout"
+import { StorefrontOrderSent } from "@harness-monorepo/ui/blocks/storefront/storefront-order-sent"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { useCart } from "./cart-provider"
 import { cartViewOf, rowKeyOf } from "@/lib/cart-view"
+import { addressLineOf, isReachable } from "@/lib/customer-address"
+import { orderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
 
 export interface StorefrontCartLiveProps {
   /** The products the cart named when the page was served, priced by the catalogue. */
@@ -22,6 +26,13 @@ export interface StorefrontCartLiveProps {
   continueHref: string
   /** Whether the page found lines whose product left the shop; they are taken out here. */
   goneOnArrival: boolean
+  shopName: string
+  /** The shop's WhatsApp as `wa.me` wants it, digits only; null when it has none. */
+  whatsapp: string | null
+  /** The signed-in shopper's record at this shop; null for a visitor, who is asked to sign in to order. */
+  shopper: CustomerProfile | null
+  /** Sign in, sign up and change details — each coming back to this cart. */
+  identityHrefs: { signInHref: string; signUpHref: string; editHref: string }
   locale: string
   messages: UiMessages
 }
@@ -31,10 +42,24 @@ export interface StorefrontCartLiveProps {
  * writes the cookie — and the totals are recomputed from the prices the page was served with, so
  * nothing is asked of the server until the next page.
  */
-export function StorefrontCartLive({ products, hrefs, continueHref, goneOnArrival, locale, messages }: StorefrontCartLiveProps) {
+export function StorefrontCartLive({
+  products,
+  hrefs,
+  continueHref,
+  goneOnArrival,
+  shopName,
+  whatsapp,
+  shopper,
+  identityHrefs,
+  locale,
+  messages,
+}: StorefrontCartLiveProps) {
   const lines = useCart((cart) => cart.lines)
   const setQty = useCart((cart) => cart.setQty)
   const remove = useCart((cart) => cart.remove)
+  const clear = useCart((cart) => cart.clear)
+  // The link that was opened, once the order has gone: the cart it came from is emptied.
+  const [sent, setSent] = useState<string | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
 
@@ -42,6 +67,8 @@ export function StorefrontCartLive({ products, hrefs, continueHref, goneOnArriva
   useEffect(() => {
     for (const line of view.gone) remove(line.productId, line.variantId)
   }, [view.gone, remove])
+
+  if (sent) return <StorefrontOrderSent href={sent} continueHref={continueHref} messages={messages} />
 
   return (
     <StorefrontCart
@@ -51,6 +78,27 @@ export function StorefrontCartLive({ products, hrefs, continueHref, goneOnArriva
       locale={locale}
       continueHref={continueHref}
       notice={goneOnArrival ? messages.storefront.cartGone : null}
+      checkout={
+        <StorefrontCheckout
+          href={whatsapp ? whatsappOrderHref(whatsapp, orderMessageOf({ shopName, view, customer: shopper, locale, messages })) : null}
+          customer={
+            shopper
+              ? {
+                  lines: [shopper.name, shopper.phone, addressLineOf(shopper.address)].filter((line): line is string => Boolean(line)),
+                  complete: isReachable(shopper),
+                  editHref: identityHrefs.editHref,
+                }
+              : null
+          }
+          signIn={identityHrefs}
+          disabled={view.count === 0}
+          onSend={(href) => {
+            setSent(href)
+            clear()
+          }}
+          messages={messages}
+        />
+      }
       onQtyChange={(key, qty) => {
         const row = byKey.get(key)
         if (row) setQty(row.productId, row.variantId, qty)
