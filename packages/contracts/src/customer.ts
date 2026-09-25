@@ -78,6 +78,31 @@ export interface StoreCustomer {
   createdAt: string;
 }
 
+/**
+ * One customer as their record in the panel reads them: the list's row, where they are, and the rest
+ * of their numbers — every one over the valid orders, a cancelled one counting for nothing.
+ */
+export interface StoreCustomerDetail extends StoreCustomer {
+  address: CustomerAddress;
+  /** ISO-8601; null with no valid order. */
+  firstOrderAt: string | null;
+  /** `totalSpentCents ÷ ordersCount`, rounded to the nearest whole cent; null with no valid order. */
+  averageTicketCents: number | null;
+}
+
+/**
+ * What the shopkeeper may change of a customer: the shop's own record — the same one the shopper
+ * sees at the shop. The e-mail is the account's and is not the shop's to change. An absent field is
+ * left as it is. The phone, when sent, is a phone: a customer known only by it would otherwise become
+ * unreachable, and one another customer of the shop has is refused with `CUSTOMER_PHONE_TAKEN`.
+ */
+export interface UpdateStoreCustomerPayload {
+  name?: string;
+  phone?: string;
+  /** A part sent as null or blank is cleared; a part left out is kept. */
+  address?: Partial<CustomerAddress>;
+}
+
 export interface StoreCustomerPage {
   customers: StoreCustomer[];
   total: number;

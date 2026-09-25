@@ -99,6 +99,8 @@ export interface OrderListQuery {
   status?: OrderStatus;
   /** An order number, a customer's name, or digits of their phone. */
   q?: string;
+  /** One customer's orders only — their record's history. Another shop's customer finds none. */
+  customerId?: string;
   page?: number;
   pageSize?: number;
 }
