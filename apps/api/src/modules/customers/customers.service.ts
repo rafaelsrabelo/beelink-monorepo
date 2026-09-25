@@ -1,5 +1,5 @@
 // Nest
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 
 // Types
 import type { AuthSession, CustomerProfile } from '@harness-monorepo/contracts';
@@ -7,6 +7,7 @@ import type { CustomerModel, UserModel } from '../../generated/prisma/models.js'
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import type { AccountScope } from '../auth/account-scope.js';
 import { AuthService } from '../auth/auth.service.js';
 import type { LoginDto, RegisterDto } from '../auth/dto/auth.dto.js';
 import { SessionService } from '../auth/session.service.js';
@@ -32,9 +33,9 @@ function toCustomerProfile(customer: CustomerModel, email: string): CustomerProf
 }
 
 /**
- * The shopper's door: the same accounts as the panel's, reached from a shop, with sessions of their
- * own and a customer record per shop. Nothing here reads or changes a store; the shop's slug only
- * says which shop's record to use and where the verification link should bring the person back.
+ * The shopper's door: accounts that belong to one shop, opened and signed in to there and nowhere
+ * else, with sessions of their own and the shop's record of each. Nothing here reads or changes a
+ * store; the slug says whose accounts these are and where an e-mailed link brings the person back.
  */
 @Injectable()
 export class CustomersService {
@@ -51,45 +52,54 @@ export class CustomersService {
    * gets the same answer as a new one — and, if it was never verified, a fresh link.
    */
   async register(storeSlug: string, dto: RegisterDto): Promise<void> {
-    const storeId = await this.stores.publicStoreId(storeSlug);
+    const scope = await this.scopeOf(storeSlug);
 
     try {
-      const user = await this.auth.register(dto, `/${storeSlug}`);
+      const user = await this.auth.register(dto, scope);
       // An account opened at a shop is that shop's customer from the start — a lead until it buys —
       // not only from its first sign-in. An address already in use gets no record: anyone can type
       // someone else's e-mail, and it would put that person on a shop's list they never joined.
-      await this.recordOf(storeId, user);
+      await this.recordOf(scope.storeId, user);
     } catch (error) {
       if (!(error instanceof ConflictException)) throw error;
-      await this.auth.resendVerification(dto.email, `/${storeSlug}`);
+      await this.auth.resendVerification(dto.email, scope);
     }
   }
 
   async resendVerification(storeSlug: string, email: string): Promise<void> {
-    await this.stores.publicStoreId(storeSlug);
-    await this.auth.resendVerification(email, `/${storeSlug}`);
+    await this.auth.resendVerification(email, await this.scopeOf(storeSlug));
+  }
+
+  /** The link comes back to this shop, and replaces the password of this shop's account only. */
+  async forgotPassword(storeSlug: string, email: string): Promise<void> {
+    await this.auth.forgotPassword(email, await this.scopeOf(storeSlug));
   }
 
   /** A shopper's session at this shop; the shop's record of them is made the first time. */
   async login(storeSlug: string, dto: LoginDto, userAgent?: string): Promise<AuthSession> {
-    const storeId = await this.stores.publicStoreId(storeSlug);
-    const user = await this.auth.verifiedUser(dto);
+    const scope = await this.scopeOf(storeSlug);
+    const user = await this.auth.verifiedUser(dto, scope);
 
-    await this.recordOf(storeId, user);
+    await this.recordOf(scope.storeId, user);
 
     return this.sessions.start(user, userAgent, 'CUSTOMER');
   }
 
+  async refresh(storeSlug: string, refreshToken: string): Promise<AuthSession> {
+    const { storeId } = await this.scopeOf(storeSlug);
+    return this.sessions.refresh(refreshToken, 'CUSTOMER', storeId);
+  }
+
   async me(storeSlug: string, userId: string): Promise<CustomerProfile> {
-    const storeId = await this.stores.publicStoreId(storeSlug);
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const { storeId } = await this.scopeOf(storeSlug);
+    const user = await this.accountAt(storeId, userId);
 
     return toCustomerProfile(await this.recordOf(storeId, user), user.email);
   }
 
   async update(storeSlug: string, userId: string, dto: UpdateCustomerProfileDto): Promise<CustomerProfile> {
-    const storeId = await this.stores.publicStoreId(storeSlug);
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const { storeId } = await this.scopeOf(storeSlug);
+    const user = await this.accountAt(storeId, userId);
     const record = await this.recordOf(storeId, user);
 
     try {
@@ -111,12 +121,34 @@ export class CustomersService {
     }
   }
 
-  /** The shop's record of this account, made on first use with the account's name. */
-  private recordOf(storeId: string, user: Pick<UserModel, 'id' | 'name'>): Promise<CustomerModel> {
-    return this.prisma.customer.upsert({
-      where: { storeId_userId: { storeId, userId: user.id } },
-      create: { storeId, userId: user.id, name: user.name },
-      update: {},
-    });
+  /** This shop's accounts, and where their e-mailed links lead: 404 for a shop that does not exist. */
+  private async scopeOf(storeSlug: string): Promise<AccountScope & { storeId: string }> {
+    return { storeId: await this.stores.publicStoreId(storeSlug), continuePath: `/${storeSlug}` };
+  }
+
+  /**
+   * The signed-in shopper's account, if it belongs to this shop. A token opened at another shop is
+   * refused as if there were none: that shop's account is a stranger here.
+   */
+  private async accountAt(storeId: string, userId: string): Promise<UserModel> {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, storeId } });
+    if (!user) throw new UnauthorizedException({ errorCode: 'AUTH_UNAUTHENTICATED', message: "This shopper's session belongs to another shop" });
+    return user;
+  }
+
+  /**
+   * The shop's record of this account, made on first use with the account's name — also by Google's
+   * door. Prisma's upsert reads, then inserts: two first uses at once both insert, and the one that
+   * loses reads the record the other made instead of failing.
+   */
+  async recordOf(storeId: string, user: Pick<UserModel, 'id' | 'name'>): Promise<CustomerModel> {
+    const where = { storeId_userId: { storeId, userId: user.id } };
+
+    try {
+      return await this.prisma.customer.upsert({ where, create: { storeId, userId: user.id, name: user.name }, update: {} });
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'P2002') return this.prisma.customer.findUniqueOrThrow({ where });
+      throw error;
+    }
   }
 }

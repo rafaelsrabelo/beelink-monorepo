@@ -7,6 +7,8 @@ generator client {
   output              = "../../src/generated/prisma"
   moduleFormat        = "esm"
   importFileExtension = "js"
+  // The unique e-mail of bee-link's own accounts, `users_email_key`, is a partial index.
+  previewFeatures     = ["partialIndexes"]
 }
 
 // The connection URL lives in prisma.config.ts, not here — Prisma 7 reads it from there.

@@ -15,6 +15,18 @@ function isAuthPath(pathname: string): boolean {
   return AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
 }
 
+/**
+ * A shopper's e-mailed link — confirming the address, or setting a new password — names the shop it
+ * came from (`voltar=/<slug>`). The account it acts on is that shop's, so a shopkeeper's session in
+ * the same browser has no say in it: sent to the panel instead, the link would never be spent.
+ */
+function isShopperLink({ nextUrl }: NextRequest): boolean {
+  return (
+    (nextUrl.pathname === "/verify-email" || nextUrl.pathname === "/reset-password") &&
+    /^\/[a-z0-9-]+$/.test(nextUrl.searchParams.get("voltar") ?? "")
+  )
+}
+
 /** The panel's own paths; everything else the matcher hands over is a shop window. */
 const PANEL_PATHS = ["/dashboard", "/admin", "/create-store"]
 
@@ -24,8 +36,8 @@ function isPanelPath(pathname: string): boolean {
 
 /**
  * A shopper's session, kept alive on a shop's pages. The matcher only hands a shop path over when a
- * shopper's refresh cookie is there and the access cookie is not, so an anonymous visitor and a
- * crawler never reach this. It never redirects: the shop is public, signed in or not, and a
+ * shopper's refresh cookie is there and the access cookie is not — this shop's, since both live on
+ * its path — so an anonymous visitor and a crawler never reach this. It never redirects: the shop is public, signed in or not, and a
  * refusal only means the shopper browses signed out from here.
  */
 async function keepShopperSignedIn(request: NextRequest): Promise<NextResponse> {
@@ -40,7 +52,7 @@ async function keepShopperSignedIn(request: NextRequest): Promise<NextResponse> 
 
   if (outcome.status === "rejected") {
     const answer = NextResponse.next()
-    clearCustomerSessionCookies(answer.cookies)
+    clearCustomerSessionCookies(answer.cookies, slug)
     return answer
   }
 
@@ -48,7 +60,7 @@ async function keepShopperSignedIn(request: NextRequest): Promise<NextResponse> 
   request.cookies.set(CUSTOMER_ACCESS_COOKIE, outcome.session.accessToken)
   request.cookies.set(CUSTOMER_REFRESH_COOKIE, outcome.session.refreshToken)
   const answer = NextResponse.next({ request: { headers: request.headers } })
-  setCustomerSessionCookies(answer.cookies, outcome.session)
+  setCustomerSessionCookies(answer.cookies, slug, outcome.session)
   return answer
 }
 
@@ -62,6 +74,7 @@ async function keepShopperSignedIn(request: NextRequest): Promise<NextResponse> 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
   if (!isPanelPath(pathname)) return keepShopperSignedIn(request)
+  if (isShopperLink(request)) return NextResponse.next()
 
   const onAuthPath = isAuthPath(pathname)
   const hasAccess = request.cookies.has(ACCESS_COOKIE)
@@ -132,8 +145,8 @@ export const config = {
     // conditions below keep every anonymous request — and every crawler — out of the proxy.
     {
       source: "/:slug((?!_next|api)[^/.]+)/:path*",
-      has: [{ type: "cookie", key: "bl_customer_refresh" }],
-      missing: [{ type: "cookie", key: "bl_customer_access" }],
+      has: [{ type: "cookie", key: "bl_shopper_refresh" }],
+      missing: [{ type: "cookie", key: "bl_shopper_access" }],
     },
   ],
 }

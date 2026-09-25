@@ -5,21 +5,10 @@ import { VerifyEmailStatus } from "@harness-monorepo/ui/blocks/auth/verify-email
 // App
 import { AppLink } from "@/components/app-link"
 import { ResendVerification } from "@/components/auth/resend-verification"
+import { ShopResendVerification } from "@/components/auth/shop-resend-verification"
 import { callApi } from "@/lib/api"
 import { getMessages } from "@/lib/locale"
-import { shopAt } from "@/lib/storefront-data"
-import { storefrontRoutes } from "@/lib/storefront-routes"
-
-/**
- * Where a verified person signs in: a shopper who signed up in a shop goes back to that shop's own
- * sign-in (`voltar=/<slug>`, which the API writes into the link); anyone else, the panel's.
- */
-async function signInAfter(voltar: string | string[] | undefined): Promise<string> {
-  const slug = typeof voltar === "string" ? /^\/([a-z0-9-]+)$/.exec(voltar)?.[1] : undefined
-  const shop = slug ? await shopAt(slug) : null
-
-  return shop ? storefrontRoutes(shop).signIn() : "/login"
-}
+import { signInAfter } from "@/lib/sign-in-after"
 
 /**
  * Verification runs here, on the server: the token is spent once, on the request the person's
@@ -34,8 +23,10 @@ export default async function VerifyEmailPage({ searchParams }: PageProps<"/veri
       ? (await callApi({ path: "/auth/verify-email", body: { token } })).ok
       : false
 
+  const signIn = await signInAfter(voltar)
+
   if (verified) {
-    return <VerifyEmailStatus state="verified" loginHref={await signInAfter(voltar)} messages={ui} linkComponent={AppLink} />
+    return <VerifyEmailStatus state="verified" loginHref={signIn.href} messages={ui} linkComponent={AppLink} />
   }
 
   return (
@@ -43,7 +34,7 @@ export default async function VerifyEmailPage({ searchParams }: PageProps<"/veri
       title={ui.verifyEmail.invalidTitle}
       description={ui.verifyEmail.invalidDescription}
       footer={
-        <AppLink href="/login" className="underline underline-offset-4">
+        <AppLink href={signIn.href} className="underline underline-offset-4">
           {ui.verifyEmail.backToSignIn}
         </AppLink>
       }
@@ -52,7 +43,7 @@ export default async function VerifyEmailPage({ searchParams }: PageProps<"/veri
         <p className="text-sm text-muted-foreground">
           {typeof token === "string" && token !== "" ? ui.verifyEmail.invalidBody : web.auth.missingToken}
         </p>
-        <ResendVerification ui={ui} />
+        {signIn.slug ? <ShopResendVerification ui={ui} slug={signIn.slug} signInHref={signIn.href} /> : <ResendVerification ui={ui} />}
       </div>
     </AuthCard>
   )

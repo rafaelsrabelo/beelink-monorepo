@@ -93,8 +93,14 @@ describe("the sign-in page's addresses", () => {
   it("follows a return path only inside the shop", () => {
     expect(safeBackOf("loja", "/loja/carrinho")).toBe("/loja/carrinho")
     expect(safeBackOf("loja", "/loja")).toBe("/loja")
-    for (const unsafe of ["https://evil.example", "//evil.example", "/lojaoutra", "/loja//x", undefined]) {
+    for (const unsafe of ["https://evil.example", "//evil.example", "/lojaoutra", "/loja//x", "/loja/../outra", "/loja/%2e%2e/outra", "/loja/.%2E/outra", undefined]) {
       expect(safeBackOf("loja", unsafe)).toBe("/loja")
+    }
+  })
+
+  it("keeps to the site when the slug itself is not one", () => {
+    for (const slug of ["/evil.example", "\\evil.example", ""]) {
+      expect(safeBackOf(slug, `/${slug}`)).toBe("/")
     }
   })
 })

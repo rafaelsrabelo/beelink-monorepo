@@ -1,3 +1,5 @@
+import type { AuthSession } from "./auth.js";
+
 /**
  * A shopper's own door into a shop (docs/product/README.md, "Accounts" and "Customers").
  *
@@ -79,5 +81,43 @@ export interface StoreCustomerListQuery {
   pageSize?: number;
 }
 
+/** How a shopper may sign in at a shop besides e-mail and password: Google, when it is set up. */
+export interface CustomerSignInOptions {
+  google: boolean;
+}
+
+/** Where a Google sign-in starts: the address to send the browser to, and the state to hold it to. */
+export interface GoogleAuthorization {
+  url: string;
+  state: string;
+}
+
+export interface GoogleAuthorizePayload {
+  /** Where to return inside the shop once signed in; the web keeps it inside the shop again. */
+  returnTo?: string;
+}
+
+/** What Google sent back to the fixed callback address. */
+export interface GoogleCallbackPayload {
+  code: string;
+  state: string;
+}
+
+/** A finished Google sign-in: the shopper's session at the shop the flow began in, and where to go. */
+export interface GoogleSignIn {
+  session: AuthSession;
+  storeSlug: string;
+  returnTo: string | null;
+}
+
 /** What a shopper's door answers besides the account's own codes (`AuthErrorCode`). */
-export type CustomerErrorCode = "CUSTOMER_PHONE_TAKEN";
+export type CustomerErrorCode =
+  | "CUSTOMER_PHONE_TAKEN"
+  /** Google sign-in is not set up on this deployment. */
+  | "GOOGLE_SIGN_IN_UNAVAILABLE"
+  /** The state is unknown, used or expired: the flow was not started here, or took too long. */
+  | "GOOGLE_STATE_INVALID"
+  /** Google refused the code — a wrong PKCE verifier among the reasons. */
+  | "GOOGLE_EXCHANGE_FAILED"
+  /** Google did not vouch for the e-mail, so no account is made or linked from it. */
+  | "GOOGLE_EMAIL_UNVERIFIED";

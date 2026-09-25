@@ -42,16 +42,24 @@ export class SessionService {
   /**
    * Rotates the chain. A token already spent means it was copied — unless it was spent moments ago,
    * which is the same browser racing itself (a second tab, a prefetch) and is allowed to rotate.
+   *
+   * `storeId` is the shop a shopper's session must belong to; null, as a shopkeeper's is bee-link's.
    */
-  async refresh(refreshToken: string, audience: SessionAudience = 'OWNER'): Promise<AuthSession> {
+  async refresh(refreshToken: string, audience: SessionAudience = 'OWNER', storeId: string | null = null): Promise<AuthSession> {
     const record = await this.prisma.refreshToken.findUnique({
       where: { tokenHash: hashToken(refreshToken) },
       include: { session: { include: { user: true } } },
     });
 
-    // A session refreshes only through the door it was opened by: a shopper's refresh token handed
-    // to the panel's endpoint is as invalid as one that does not exist.
-    if (!record || record.session.revokedAt || record.session.audience !== audience || record.expiresAt.getTime() <= Date.now()) {
+    // A session refreshes only through the door it was opened by, and a shopper's only at its own
+    // shop: a refresh token handed to the wrong endpoint is as invalid as one that does not exist.
+    if (
+      !record ||
+      record.session.revokedAt ||
+      record.session.audience !== audience ||
+      record.session.user.storeId !== storeId ||
+      record.expiresAt.getTime() <= Date.now()
+    ) {
       throw new UnauthorizedException({ errorCode: 'AUTH_TOKEN_INVALID', message: 'Invalid refresh token' });
     }
 

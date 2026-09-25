@@ -197,6 +197,8 @@ export const ptBR: UiMessages = {
     signInEmail: "E-mail",
     signInPassword: "Senha",
     signInPasswordHint: "No mínimo 8 caracteres.",
+    continueWithGoogle: "Continuar com Google",
+    signInOr: "ou",
     signInSubmit: "Entrar",
     signUpSubmit: "Criar conta",
     forgotSubmit: "Enviar link",

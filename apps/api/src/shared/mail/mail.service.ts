@@ -27,8 +27,8 @@ export class MailService {
   private readonly transporter: Transporter = createTransport(env.SMTP_URL);
 
   /**
-   * `continuePath` is where the web sends the person once verified: a shopper who signed up in a
-   * shop goes back to that shop, not to the panel's front door.
+   * `continuePath` is where the web sends the person once verified — or once the new password is
+   * set: a shopper goes back to the shop their account belongs to, not to the panel's front door.
    */
   async sendEmailVerification(to: string, name: string, token: string, continuePath?: string): Promise<void> {
     const back = continuePath ? `&voltar=${encodeURIComponent(continuePath)}` : '';
@@ -36,8 +36,9 @@ export class MailService {
     await this.send(to, emailVerification(name, url, EMAIL_VERIFICATION_TTL_HOURS));
   }
 
-  async sendPasswordReset(to: string, name: string, token: string): Promise<void> {
-    const url = `${env.WEB_URL}/reset-password?token=${encodeURIComponent(token)}`;
+  async sendPasswordReset(to: string, name: string, token: string, continuePath?: string): Promise<void> {
+    const back = continuePath ? `&voltar=${encodeURIComponent(continuePath)}` : '';
+    const url = `${env.WEB_URL}/reset-password?token=${encodeURIComponent(token)}${back}`;
     await this.send(to, passwordReset(name, url, PASSWORD_RESET_TTL_MINUTES));
   }
 

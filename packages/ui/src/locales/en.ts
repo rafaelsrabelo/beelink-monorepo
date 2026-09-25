@@ -197,6 +197,8 @@ export const en: UiMessages = {
     signInEmail: "E-mail",
     signInPassword: "Password",
     signInPasswordHint: "At least 8 characters.",
+    continueWithGoogle: "Continue with Google",
+    signInOr: "or",
     signInSubmit: "Sign in",
     signUpSubmit: "Create account",
     forgotSubmit: "Send link",

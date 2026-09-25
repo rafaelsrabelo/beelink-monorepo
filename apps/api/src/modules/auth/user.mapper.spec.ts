@@ -10,6 +10,7 @@ const row = {
   email: 'ana@exemplo.com',
   passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaA',
   emailVerifiedAt: null,
+  storeId: null,
   createdAt: new Date('2026-09-10T12:00:00.000Z'),
   updatedAt: new Date('2026-09-10T12:00:00.000Z'),
 } satisfies UserModel;
