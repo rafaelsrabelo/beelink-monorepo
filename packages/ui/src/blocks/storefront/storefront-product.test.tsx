@@ -161,6 +161,23 @@ describe("StorefrontProductDetail", () => {
       expect(screen.queryByRole("link", { name: /Pedir/ })).not.toBeInTheDocument()
     })
 
+    it("adds a combination chosen after an earlier add with 'Comprar agora', rather than skipping it", async () => {
+      const user = userEvent.setup()
+      const onAdd = vi.fn()
+      renderProduct({ ...withVariants, initialVariantId: "p-areia", cart: { onAdd, href: "/loja/carrinho" } })
+
+      await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
+      await user.click(screen.getByRole("button", { name: /^Terracota/ }))
+      const buyNow = screen.getByRole("link", { name: "Comprar agora" })
+      buyNow.addEventListener("click", (event) => event.preventDefault())
+      await user.click(buyNow)
+
+      expect(onAdd.mock.calls).toEqual([
+        ["p-areia", 1],
+        ["p-terracota", 1],
+      ])
+    })
+
     it("opens on the combination the address asked for", () => {
       renderProduct({ ...withVariants, initialVariantId: "g-preto" })
 

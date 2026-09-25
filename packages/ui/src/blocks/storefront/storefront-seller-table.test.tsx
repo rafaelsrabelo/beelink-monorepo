@@ -12,9 +12,9 @@ import { paymentsLineOf, StorefrontSellerTable } from "./storefront-seller-table
 const labels = defaultMessages.storefront.payments
 
 describe("paymentsLineOf", () => {
-  it("keeps the shopkeeper's order and makes credit and debit one 'Cartão', where the first of them was", () => {
-    expect(paymentsLineOf(["PIX", "CREDIT_CARD", "DEBIT_CARD", "MONEY"], labels)).toBe("Pix · Cartão · Dinheiro")
-    expect(paymentsLineOf(["MONEY", "DEBIT_CARD", "PIX"], labels)).toBe("Dinheiro · Cartão · Pix")
+  it("writes 5b's order whatever order the shop stores, with credit and debit as one 'Cartão'", () => {
+    expect(paymentsLineOf(["MONEY", "PIX", "CREDIT_CARD", "DEBIT_CARD"], labels)).toBe("Pix · Cartão · Dinheiro")
+    expect(paymentsLineOf(["DEBIT_CARD", "MONEY"], labels)).toBe("Cartão · Dinheiro")
     expect(paymentsLineOf([], labels)).toBe("")
   })
 })

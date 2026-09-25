@@ -63,3 +63,22 @@ chegar ao seletor, continua escolhível. O carrinho continua podendo aumentar a 
 
 - CEP e "Calcular" (o D3 não cota), "Frete GRÁTIS acima de…" (sem configuração), "Restam N" (a
   contagem nunca é pública), "Troca" (sem campo) e "Adicionar aos favoritos" (sem favoritos).
+
+## Revisão (25/09/2026)
+
+Três leituras independentes, cada achado verificado por um revisor que tentou refutá-lo. Dez
+confirmados (oito distintos), todos corrigidos; um rejeitado.
+
+- **"Comprar agora" pulava a combinação escolhida depois de um primeiro "Adicionar".** O "já
+  adicionado" valia para a visita inteira. Agora vale para a combinação que foi para o carrinho:
+  escolher outro sabor e tocar "Comprar agora" adiciona esse sabor.
+- **A barra cobria o que o Tab alcança** (WCAG 2.4.11). Enquanto ela está visível, a página reserva
+  6rem embaixo (`scroll-padding-bottom`), só abaixo de `shop-lg`.
+- **A barra fica abaixo do cabeçalho** (z-20), sem pintar sobre as sugestões da busca, e sem animação
+  com `prefers-reduced-motion`.
+- **As pílulas mantêm a forma no alto contraste**, com uma borda transparente.
+- **"Pagamento" na ordem de 5b.** A loja guarda as formas numa ordem fixa própria (dinheiro primeiro),
+  que não diz nada ao comprador; a linha segue "Pix · Cartão · Dinheiro". Isso corrige o item 8 da
+  Definição de Pronto, que dizia "na ordem do lojista".
+- **O observador lê o registro mais novo**, e um teste passa pela regra da barra (abaixo, alcançada,
+  acima). Um teste cobre "Comprar agora" adicionando a quantidade escolhida sem um "Adicionar" antes.

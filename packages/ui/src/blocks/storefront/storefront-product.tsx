@@ -206,6 +206,7 @@ export function StorefrontProductDetail({
           showPrice={showPrice}
           available={!unavailable}
           choosing={choosing}
+          choiceKey={variant?.id ?? "product"}
           showStock={showStock}
           cart={cart ? { onAdd: (qty) => cart.onAdd(variant?.id ?? null, qty), href: cart.href } : undefined}
           onNotify={restock && (variant ?? variants[0]) ? () => setAsking(true) : undefined}

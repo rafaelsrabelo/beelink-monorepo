@@ -42,7 +42,8 @@ export function StorefrontBuyBar({ shown, price, label, onAct, cartHref, added =
       inert={!shown}
       aria-hidden={!shown}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-30 flex flex-col gap-2 border-t border-shop-line bg-shop-background px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] text-shop-on-background transition-transform duration-200 shop-lg:hidden",
+        // Under the header (z-30), so its search suggestions are never painted over.
+        "fixed inset-x-0 bottom-0 z-20 flex flex-col gap-2 border-t border-shop-line bg-shop-background px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] text-shop-on-background transition-transform duration-200 motion-reduce:transition-none shop-lg:hidden",
         shown ? "translate-y-0" : "invisible translate-y-full",
       )}
     >

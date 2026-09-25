@@ -21,6 +21,7 @@ const meta = {
     showPrice: true,
     available: true,
     choosing: true,
+    choiceKey: "frutas-300",
     cart: { onAdd: () => {}, href: "#" },
     onNotify: () => {},
     finishesOnWhatsApp: true,

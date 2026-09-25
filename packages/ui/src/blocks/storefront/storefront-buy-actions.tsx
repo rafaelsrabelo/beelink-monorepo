@@ -17,8 +17,11 @@ export interface StorefrontBuyActionsProps {
   messages?: UiMessages
 }
 
-/** 5b's two pills: 48px, 15px bold, the whole width of the box. */
-export const BUY_PILL = "flex h-12 w-full items-center justify-center rounded-full px-5 text-[15px] font-bold transition-opacity hover:opacity-90"
+/**
+ * 5b's two pills: 48px, 15px bold, the whole width of the box. The transparent border is invisible
+ * until forced colours paint it, and then it is what keeps the pill's shape.
+ */
+export const BUY_PILL = "flex h-12 w-full items-center justify-center rounded-full border border-transparent px-5 text-[15px] font-bold transition-opacity hover:opacity-90"
 
 /**
  * The buy box's way to buy: "Quantidade" in the phone's own picker, "Adicionar ao carrinho", and

@@ -1,5 +1,5 @@
 // Libs
-import { render, screen, within } from "@testing-library/react"
+import { act, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -18,6 +18,7 @@ function renderBox(over: Partial<StorefrontProductPurchaseProps> = {}) {
       showPrice
       available
       choosing
+      choiceKey="frutas-300"
       cart={{ onAdd, href: "/loja/carrinho" }}
       finishesOnWhatsApp
       seller={{ name: "Mutante Suplementos", paymentMethods: ["PIX", "CREDIT_CARD", "DEBIT_CARD", "MONEY"] }}
@@ -56,6 +57,19 @@ describe("StorefrontProductPurchase", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Pré-Treino Haze foi adicionado ao carrinho.")
   })
 
+  it("adds the chosen quantity on the way to the cart with 'Comprar agora'", async () => {
+    const user = userEvent.setup()
+    const { onAdd } = renderBox()
+
+    await user.selectOptions(within(box()).getByRole("combobox", { name: "Quantidade" }), "3")
+    const buyNow = within(box()).getByRole("link", { name: "Comprar agora" })
+    buyNow.addEventListener("click", (event) => event.preventDefault())
+    await user.click(buyNow)
+
+    expect(onAdd).toHaveBeenCalledTimes(1)
+    expect(onAdd).toHaveBeenCalledWith(3)
+  })
+
   it("adds on the way to the cart with 'Comprar agora', and only once", async () => {
     const user = userEvent.setup()
     const { onAdd } = renderBox()
@@ -87,7 +101,7 @@ describe("StorefrontProductPurchase", () => {
     const { rerender } = renderBox({ showStock: false })
     expect(within(box()).queryByText("Em estoque")).not.toBeInTheDocument()
 
-    rerender(<StorefrontProductPurchase name="x" priceCents={1} compareAtPriceCents={null} locale="pt-BR" showPrice available={false} choosing={false} showStock={false} />)
+    rerender(<StorefrontProductPurchase name="x" priceCents={1} compareAtPriceCents={null} locale="pt-BR" showPrice available={false} choosing={false} choiceKey="product" showStock={false} />)
     expect(within(box()).getByText("Esgotado")).toBeInTheDocument()
   })
 
@@ -116,6 +130,36 @@ describe("StorefrontProductPurchase", () => {
     const bars = screen.getAllByRole("button", { name: "Adicionar ao carrinho", hidden: true })
     expect(bars).toHaveLength(2)
     expect(bars[1]!.closest("[inert]")).not.toBeNull()
+  })
+
+  it("shows the phone's bar while the box's buttons are below the screen, and not once they are reached", () => {
+    let report: (entries: Partial<IntersectionObserverEntry>[]) => void = () => {}
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(callback: (entries: Partial<IntersectionObserverEntry>[]) => void) {
+          report = callback
+        }
+        observe() {}
+        disconnect() {}
+      },
+    )
+    renderBox()
+    const bar = () => screen.getAllByRole("button", { name: "Adicionar ao carrinho", hidden: true })[1]!.closest("div.fixed")!
+    const below = { isIntersecting: false, boundingClientRect: { top: 1500 } as DOMRectReadOnly }
+    const reached = { isIntersecting: true, boundingClientRect: { top: 300 } as DOMRectReadOnly }
+    const above = { isIntersecting: false, boundingClientRect: { top: -200 } as DOMRectReadOnly }
+
+    act(() => report([below]))
+    expect(bar()).not.toHaveAttribute("inert")
+    expect(document.documentElement).toHaveAttribute("data-buy-bar")
+
+    act(() => report([below, reached]))
+    expect(bar()).toHaveAttribute("inert")
+    act(() => report([above]))
+    expect(bar()).toHaveAttribute("inert")
+    expect(document.documentElement).not.toHaveAttribute("data-buy-bar")
+    vi.unstubAllGlobals()
   })
 
   it("has no accessibility violations", async () => {

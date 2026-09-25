@@ -30,6 +30,8 @@ export interface StorefrontProductPurchaseProps {
   available: boolean
   /** The product has options, which picks the sold-out sentence. */
   choosing: boolean
+  /** What is chosen now — the combination's id — so an add counts for that choice and no other. */
+  choiceKey: string
   /** "Em estoque" is the shop's to hide; "Esgotado" never is, since it explains the missing buttons. */
   showStock?: boolean
   /** Puts that many of the chosen combination in the cart, with the cart's address. */
@@ -59,6 +61,7 @@ export function StorefrontProductPurchase({
   showPrice,
   available,
   choosing,
+  choiceKey,
   showStock = true,
   cart,
   onNotify,
@@ -69,24 +72,39 @@ export function StorefrontProductPurchase({
 }: StorefrontProductPurchaseProps) {
   const text = messages.storefront
   const [qty, setQty] = useState(1)
-  const [added, setAdded] = useState(false)
+  // Which choice was put in the cart: after another flavour is chosen, "Comprar agora" adds that one.
+  const [addedFor, setAddedFor] = useState<string | null>(null)
+  const added = addedFor === choiceKey
   const anchor = useRef<HTMLDivElement>(null)
   const [ahead, setAhead] = useState(false)
 
   // The bar shows while the box's buttons are below the screen, and not once they have been reached.
+  // The newest record wins: a fast fling can deliver several at once.
   useEffect(() => {
     const node = anchor.current
     if (!node || typeof IntersectionObserver === "undefined") return
-    const observer = new IntersectionObserver(([entry]) => {
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1]
       if (entry) setAhead(!entry.isIntersecting && entry.boundingClientRect.top > 0)
     })
     observer.observe(node)
     return () => observer.disconnect()
   }, [])
 
+  // While the bar is up, the page keeps its height clear at the bottom, so whatever Tab reaches is
+  // scrolled above the bar rather than under it. The CSS applies it only where the bar shows.
+  useEffect(() => {
+    if (!ahead) return
+    const root = document.documentElement
+    root.dataset.buyBar = ""
+    return () => {
+      delete root.dataset.buyBar
+    }
+  }, [ahead])
+
   function add() {
     cart?.onAdd(qty)
-    setAdded(true)
+    setAddedFor(choiceKey)
   }
 
   const act = available ? (cart ? add : undefined) : onNotify
