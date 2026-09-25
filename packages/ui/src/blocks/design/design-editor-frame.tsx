@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useSyncExternalStore, type ReactNode } from "react"
+import { useEffect, useSyncExternalStore, type ReactNode } from "react"
 
 // UI
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@harness-monorepo/ui/components/sheet"
@@ -42,6 +42,8 @@ export interface DesignEditorFrameProps {
   onStructureOpenChange: (open: boolean) => void
   inspectorOpen: boolean
   onInspectorOpenChange: (open: boolean) => void
+  /** The panel in the drawer draws its own close button, so the drawer does not add a second. */
+  inspectorHasOwnClose?: boolean
   messages?: UiMessages
 }
 
@@ -61,10 +63,19 @@ export function DesignEditorFrame({
   onStructureOpenChange,
   inspectorOpen,
   onInspectorOpenChange,
+  inspectorHasOwnClose = false,
   messages = defaultMessages,
 }: DesignEditorFrameProps) {
   const text = messages.design.frame
   const wide = useWideEditor()
+
+  // Widened with a drawer open, the drawer has nothing to be: its panel is a column now. Left open,
+  // it would pop back up, modal, the moment the window narrowed again.
+  useEffect(() => {
+    if (!wide) return
+    onStructureOpenChange(false)
+    onInspectorOpenChange(false)
+  }, [wide, onStructureOpenChange, onInspectorOpenChange])
 
   return (
     <div className="bg-shell flex h-dvh flex-col">
@@ -73,7 +84,8 @@ export function DesignEditorFrame({
         {wide ? (
           <aside
             aria-label={text.structureLabel}
-            className="bg-shell-surface border-shell-border w-90 shrink-0 overflow-y-auto border-r p-3"
+            // Hidden by CSS too: the server renders the wide frame, and a phone must not flash it.
+            className="bg-shell-surface border-shell-border hidden w-90 shrink-0 overflow-y-auto border-r p-3 lg:block"
           >
             {structure}
           </aside>
@@ -86,7 +98,7 @@ export function DesignEditorFrame({
         {wide ? (
           <aside
             aria-label={text.inspectorLabel}
-            className="bg-shell-surface border-shell-border w-85 shrink-0 overflow-y-auto border-l p-3"
+            className="bg-shell-surface border-shell-border hidden w-85 shrink-0 overflow-y-auto border-l p-3 lg:block"
           >
             {inspector}
           </aside>
@@ -96,7 +108,11 @@ export function DesignEditorFrame({
       {wide ? null : (
         <>
           <Sheet open={structureOpen} onOpenChange={onStructureOpenChange}>
-            <SheetContent side="left" className="w-90 max-w-[90vw] overflow-y-auto p-3">
+            <SheetContent
+              side="left"
+              closeLabel={text.close}
+              className="overflow-y-auto p-3 data-[side=left]:w-[min(22.5rem,92vw)] data-[side=left]:sm:max-w-none"
+            >
               <SheetHeader className="p-0">
                 <SheetTitle>{text.structure}</SheetTitle>
                 <SheetDescription className="sr-only">{text.structureLabel}</SheetDescription>
@@ -105,7 +121,14 @@ export function DesignEditorFrame({
             </SheetContent>
           </Sheet>
           <Sheet open={inspectorOpen} onOpenChange={onInspectorOpenChange}>
-            <SheetContent side="right" className="w-85 max-w-[90vw] overflow-y-auto p-3">
+            {/* Kept mounted while closed: the fields being typed in live here, unsaved. */}
+            <SheetContent
+              side="right"
+              keepMounted
+              showCloseButton={!inspectorHasOwnClose}
+              closeLabel={text.close}
+              className="overflow-y-auto p-3 data-[side=right]:w-[min(21.25rem,92vw)] data-[side=right]:sm:max-w-none"
+            >
               <SheetHeader className="p-0">
                 <SheetTitle>{text.inspector}</SheetTitle>
                 <SheetDescription className="sr-only">{text.inspectorLabel}</SheetDescription>

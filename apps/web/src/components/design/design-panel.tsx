@@ -27,7 +27,7 @@ export interface DesignPanelProps {
   onInsert: (at: InsertAt) => void
   inserting: boolean
   selectedId: string | null
-  /** Held by the screen, which turns it back to the blocks every time a block is chosen. */
+  /** Held by the screen, so the tab survives the column turning into a drawer and back. */
   tab: "blocks" | "colors"
   onTabChange: (tab: "blocks" | "colors") => void
 

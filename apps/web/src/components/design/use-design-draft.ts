@@ -4,7 +4,7 @@
 import { useRouter } from "next/navigation"
 
 // React
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 // Types
 import type { Section } from "@harness-monorepo/contracts"
@@ -66,15 +66,6 @@ export function useDesignDraft(slug: string) {
     setDraft((current) => (current && dirty ? reconcile(current, page.data) : page.data.map(toDraft)))
   }
 
-  useEffect(() => {
-    if (!dirty) return
-
-    // The browser writes its own wording here; the screen says `leaveWarning` in ours.
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
-    window.addEventListener("beforeunload", warn)
-
-    return () => window.removeEventListener("beforeunload", warn)
-  }, [dirty])
 
   const rows: SectionDraft[] = draft ?? []
   const saved: Section[] = page.data ?? []
@@ -194,14 +185,11 @@ export function useDesignDraft(slug: string) {
     rows,
     saved,
     loading: page.isPending,
-    /**
-     * Touched since the last publish. It still governs seeding and the leave warning, where
-     * erring towards "something changed" is the safe side of the bet.
-     */
+    /** Touched since the last publish. It governs seeding, which has its own history. */
     dirty,
     /**
-     * Actually different from the server — what the badge and Publish answer to. Separate from
-     * `dirty` on purpose: seeding has its own history and is left exactly as it was.
+     * Actually different from the server — what the bar's status, Publish and the leave guard
+     * answer to, so a band moved and moved back asks nobody anything.
      */
     changed: draft !== null && hasChanges(changesOf(rows, saved)),
     /** What Publish would write, counted — the bar's "N alterações". Zero while nothing differs. */

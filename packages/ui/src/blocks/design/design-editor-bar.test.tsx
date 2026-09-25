@@ -27,8 +27,10 @@ function renderBar(overrides: Partial<DesignEditorBarProps> = {}) {
 }
 
 describe("DesignEditorBar", () => {
-  it("goes back to the panel and says where the page is", () => {
+  it("goes back to the panel and says where the page is, as the screen's heading", () => {
     renderBar()
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Modo design: Loja do Design/Página inicial")
 
     expect(screen.getByRole("link", { name: "Painel" })).toHaveAttribute("href", "/admin/loja")
     expect(screen.getByText("Loja do Design")).toBeInTheDocument()

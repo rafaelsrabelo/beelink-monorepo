@@ -521,6 +521,7 @@ export const ptBR: UiMessages = {
       leaveBody: "A ordem, o que está oculto e as larguras ainda não foram publicados. Se sair agora, essas alterações se perdem.",
       leaveStay: "Continuar editando",
       leaveGo: "Sair sem publicar",
+      close: "Fechar",
       barLabel: "Barra do modo design",
       structureLabel: "Estrutura da página",
       inspectorLabel: "Editar bloco",

@@ -9,7 +9,7 @@ import type { ComponentKind, PublicProductCategory, PublicStore, StoreColors } f
 // UI
 import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignEditorBar } from "@harness-monorepo/ui/blocks/design/design-editor-bar"
-import { DesignEditorFrame } from "@harness-monorepo/ui/blocks/design/design-editor-frame"
+import { DesignEditorFrame, useWideEditor } from "@harness-monorepo/ui/blocks/design/design-editor-frame"
 import { DesignLeaveDialog } from "@harness-monorepo/ui/blocks/design/design-leave-dialog"
 import type { PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -18,8 +18,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AppLink } from "@/components/app-link"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
 import { BandEditor } from "./band-editor"
-import { ComponentEditor } from "./component-editor"
 import { DesignDeleteConfirm, type PendingDelete } from "./design-delete-confirm"
+import { DesignInspector } from "./design-inspector"
 import { DesignPanel } from "./design-panel"
 import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
 
@@ -78,9 +78,12 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   // The side columns' drawers, where the three columns do not fit.
   const [structureOpen, setStructureOpen] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)
-  // Every choice of a block shows its fields — in the right column, or in its drawer on a narrow screen.
+  const wide = useWideEditor()
+  // Every choice of a block shows its fields — in the right column, or in its drawer on a narrow
+  // screen. On a wide one no drawer opens: it would pop up, modal, the moment the window narrowed.
   const choose = (id: string) => {
     setEditingComponent(id)
+    if (wide) return
     setStructureOpen(false)
     setInspectorOpen(true)
   }
@@ -202,30 +205,28 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
           />
         }
         inspector={
-          editing ? (
-            <ComponentEditor
-              slug={slug}
-              component={editing}
-              bandBackground={saved.find((section) => section.id === editing.sectionId)?.background ?? null}
-              pageBackground={palette.background}
-              categoriesShown={categories.length}
-              shelfEmpty={shelves.get(editing.id)?.items.length === 0}
-              onClose={() => {
-                setEditingComponent(null)
-                setInspectorOpen(false)
-              }}
-              onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
-              messages={messages}
-              web={web}
-            />
-          ) : (
-            <p className="text-muted-foreground p-2 text-sm">{text.frame.inspectorEmpty}</p>
-          )
+          <DesignInspector
+            slug={slug}
+            editing={editing}
+            saved={saved}
+            pageBackground={palette.background}
+            categoriesShown={categories.length}
+            shelves={shelves}
+            onClose={() => {
+              setEditingComponent(null)
+              setInspectorOpen(false)
+            }}
+            onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
+            messages={messages}
+            web={web}
+          />
         }
         structureOpen={structureOpen}
         onStructureOpenChange={setStructureOpen}
         inspectorOpen={inspectorOpen}
         onInspectorOpenChange={setInspectorOpen}
+        // The block's fields close themselves; the hint has nothing to close, so the drawer does.
+        inspectorHasOwnClose={editing !== null}
         messages={messages}
       />
 

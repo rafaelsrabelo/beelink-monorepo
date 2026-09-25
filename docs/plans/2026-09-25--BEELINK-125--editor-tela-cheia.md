@@ -57,3 +57,25 @@ vêm com o I2, quando a largura passa para a aba Layout; aí a coluna pode volta
 
 - As abas Conteúdo | Layout | Estilo e a barra flutuante da seção (I2), a galeria nova (I3), a aba
   Páginas e o seletor de página (I5), desfazer/refazer e "Rascunho salvo" no servidor (I6).
+
+## Adendo — 25/09, revisão
+
+A revisão em três lentes confirmou 15 pontos distintos, todos corrigidos neste PR:
+
+- **Celular:** a barra transbordava e empurrava o Publicar para fora da tela. Agora, abaixo de 640 px,
+  ela é uma linha só, sem o seletor Celular | Computador (num telefone a prévia já é a do celular),
+  com as palavras reduzidas a ícones e Descartar como ícone; de 768 px para cima é a grade da 9a,
+  com o seletor no centro. Os controles têm 36 px, como na 9a.
+- **Gavetas:** as larguras não pegavam (o primitivo usa `data-[side]`); o formulário do bloco se
+  perdia ao fechar a gaveta com Esc — agora ela fica montada fechada (`keepMounted`, novo no
+  `SheetContent`); um só botão de fechar, em português (`closeLabel`); abrir um bloco numa tela
+  larga não deixa gaveta aberta para saltar depois.
+- **Primeira pintura no celular:** as colunas laterais também são escondidas por CSS abaixo de `lg`,
+  então o servidor não mostra três colunas num telefone antes da hidratação.
+- **Status e título:** o status existe em toda largura (o ponto; as palavras para leitor de tela
+  abaixo de 1024 px), e o `h1` voltou ("Modo design: loja / página"). O ponto de rascunho é âmbar,
+  um token novo (`header-pending`), como na 9a.
+- **Sair:** o clique com Ctrl/⌘ em "← Painel" abre outra aba sem perguntar; o Voltar do navegador
+  pergunta, por um passo empurrado no histórico no mesmo endereço (o roteador do Next adota o
+  `pushState` nativo); e um só `beforeunload`, pelo mesmo critério do status (`changed`). A guarda
+  ganhou testes.

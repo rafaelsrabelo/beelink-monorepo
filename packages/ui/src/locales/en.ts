@@ -521,6 +521,7 @@ export const en: UiMessages = {
       leaveBody: "The order, what is hidden and the widths are not published yet. Leaving now loses those changes.",
       leaveStay: "Keep editing",
       leaveGo: "Leave without publishing",
+      close: "Close",
       barLabel: "Design mode bar",
       structureLabel: "Page structure",
       inspectorLabel: "Edit block",

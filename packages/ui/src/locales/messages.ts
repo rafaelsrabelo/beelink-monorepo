@@ -651,6 +651,8 @@ export interface UiMessages {
       leaveBody: string
       leaveStay: string
       leaveGo: string
+      /** A drawer's own close button, where the panel in it has none of its own. */
+      close: string
       /** The landmarks' names. */
       barLabel: string
       structureLabel: string

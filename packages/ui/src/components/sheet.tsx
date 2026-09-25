@@ -41,11 +41,20 @@ function SheetContent({
   children,
   side = "right",
   showCloseButton = true,
+  closeLabel = "Close",
+  keepMounted = false,
   seeThrough = false,
   ...props
 }: SheetPrimitive.Popup.Props & {
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
+  /** The close button's name, in the screen's language: the sheet itself knows none. */
+  closeLabel?: string
+  /**
+   * Keeps what is inside mounted while the sheet is closed. For a form whose typing must survive
+   * the sheet being closed and opened again — unmounting would throw the unsaved fields away.
+   */
+  keepMounted?: boolean
   /**
    * Leaves the page behind the sheet unshaded and unblurred.
    *
@@ -61,7 +70,7 @@ function SheetContent({
   seeThrough?: boolean
 }) {
   return (
-    <SheetPortal>
+    <SheetPortal keepMounted={keepMounted}>
       <SheetOverlay
         className={
           seeThrough
@@ -92,7 +101,7 @@ function SheetContent({
           >
             <XIcon
             />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{closeLabel}</span>
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Popup>

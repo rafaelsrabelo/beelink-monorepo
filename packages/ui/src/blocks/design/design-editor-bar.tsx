@@ -4,7 +4,7 @@
 import type { MouseEvent } from "react"
 
 // Libs
-import { ArrowLeftIcon, ExternalLinkIcon, ListTreeIcon, SlidersHorizontalIcon } from "lucide-react"
+import { ArrowLeftIcon, ExternalLinkIcon, ListTreeIcon, RotateCcwIcon, SlidersHorizontalIcon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
@@ -41,15 +41,17 @@ export interface DesignEditorBarProps {
   messages?: UiMessages
 }
 
+/** The bar's controls, one height, on the header's own tokens. */
 const ON_DARK =
-  "text-header-foreground hover:bg-header-field-hover hover:text-header-foreground focus-visible:ring-header-foreground/70"
+  "h-9 text-header-foreground hover:bg-header-field-hover hover:text-header-foreground focus-visible:ring-header-foreground/70"
 
 /**
  * The design editor's bar: where the page is, how it is being looked at, and what is waiting to go live.
  *
- * Dark like the panel's header, because it is the same kind of chrome — the one surface that stays
- * dark in either theme. The status counts what Publish would write, so the number and the enabled
- * button never disagree.
+ * Dark like the panel's header, because it is the same kind of chrome. Three regions, as in the
+ * reference: the way back and the page on the left, the device in the middle, the draft on the
+ * right. A phone gets one row instead, words dropped to their icons and no device toggle — the
+ * preview on a phone is the phone's — so Publicar is always in reach and nothing overlaps.
  */
 export function DesignEditorBar({
   backHref,
@@ -73,37 +75,47 @@ export function DesignEditorBar({
   const status = !changed ? text.published : changes === 1 ? text.draftOne : format(text.draft, { count: String(changes) })
 
   return (
-    <header aria-label={text.barLabel} className="bg-header h-header flex shrink-0 items-center gap-2 px-3">
-      <Link
-        href={backHref}
-        onClick={onBack}
-        className={cn("flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm font-medium outline-none focus-visible:ring-2", ON_DARK)}
-      >
-        <ArrowLeftIcon aria-hidden="true" className="size-4" />
-        {text.back}
-      </Link>
+    <header
+      aria-label={text.barLabel}
+      className="bg-header h-header flex shrink-0 items-center gap-2 px-3 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <Link
+          href={backHref}
+          onClick={onBack}
+          className={cn("flex shrink-0 items-center gap-1.5 rounded-lg px-2 text-sm font-medium outline-none focus-visible:ring-2", ON_DARK)}
+        >
+          <ArrowLeftIcon aria-hidden="true" className="size-4" />
+          <span className="sr-only sm:not-sr-only">{text.back}</span>
+        </Link>
 
-      <p className="text-header-foreground/70 hidden min-w-0 items-center gap-1.5 truncate text-sm md:flex">
-        <span className="truncate">{shopName}</span>
-        <span aria-hidden="true">/</span>
-        <span className="text-header-foreground truncate font-medium">{pageName}</span>
-      </p>
+        {/* The screen's heading: read in full by a screen reader, drawn as the breadcrumb where it fits. */}
+        <h1 className="text-header-foreground/70 sr-only min-w-0 items-center gap-1.5 truncate text-sm font-normal md:not-sr-only md:flex">
+          <span className="sr-only">{messages.design.title}: </span>
+          <span className="truncate">{shopName}</span>
+          <span aria-hidden="true">/</span>
+          <span className="text-header-foreground truncate font-medium">{pageName}</span>
+        </h1>
+      </div>
 
-      <div className="ml-auto flex items-center gap-2">
-        <Button type="button" variant="ghost" size="sm" className={cn("lg:hidden", ON_DARK)} onClick={onOpenStructure}>
-          <ListTreeIcon aria-hidden="true" className="size-4" />
-          <span className="sr-only sm:not-sr-only">{text.structure}</span>
-        </Button>
-        <Button type="button" variant="ghost" size="sm" className={cn("lg:hidden", ON_DARK)} onClick={onOpenInspector}>
-          <SlidersHorizontalIcon aria-hidden="true" className="size-4" />
-          <span className="sr-only sm:not-sr-only">{text.inspector}</span>
-        </Button>
-
+      <div className="hidden sm:block">
         <PreviewDeviceToggle value={device} onChange={onDeviceChange} tone="header" messages={messages} />
+      </div>
 
-        <span role="status" className="text-header-foreground/80 hidden items-center gap-1.5 text-sm xl:flex">
-          <span aria-hidden="true" className={cn("size-2 rounded-full", changed ? "bg-header-accent" : "bg-header-foreground/40")} />
-          {status}
+      <div className="ml-auto flex min-w-0 items-center justify-end gap-1.5">
+        <Button type="button" variant="ghost" className={cn("px-2 lg:hidden", ON_DARK)} onClick={onOpenStructure}>
+          <ListTreeIcon aria-hidden="true" className="size-4" />
+          <span className="sr-only xl:not-sr-only">{text.structure}</span>
+        </Button>
+        <Button type="button" variant="ghost" className={cn("px-2 lg:hidden", ON_DARK)} onClick={onOpenInspector}>
+          <SlidersHorizontalIcon aria-hidden="true" className="size-4" />
+          <span className="sr-only xl:not-sr-only">{text.inspector}</span>
+        </Button>
+
+        {/* Always there, so a draft is never unannounced: the dot on a phone, the words where they fit. */}
+        <span role="status" className="text-header-foreground/80 flex shrink-0 items-center gap-1.5 px-1 text-sm">
+          <span aria-hidden="true" className={cn("size-2 rounded-full", changed ? "bg-header-pending" : "bg-header-foreground/40")} />
+          <span className="sr-only lg:not-sr-only">{status}</span>
         </span>
 
         <Link
@@ -111,7 +123,7 @@ export function DesignEditorBar({
           target="_blank"
           rel="noreferrer"
           className={cn(
-            "border-header-border hidden h-8 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium outline-none focus-visible:ring-2 md:flex",
+            "border-header-border hidden shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium outline-none focus-visible:ring-2 md:flex",
             ON_DARK,
           )}
         >
@@ -120,14 +132,14 @@ export function DesignEditorBar({
         </Link>
 
         {changed ? (
-          <Button type="button" variant="ghost" size="sm" className={ON_DARK} disabled={publishing} onClick={onDiscard}>
-            {messages.design.discard}
+          <Button type="button" variant="ghost" className={cn("shrink-0 px-2 sm:px-2.5", ON_DARK)} disabled={publishing} onClick={onDiscard}>
+            <RotateCcwIcon aria-hidden="true" className="size-4 sm:hidden" />
+            <span className="sr-only sm:not-sr-only">{messages.design.discard}</span>
           </Button>
         ) : null}
         <Button
           type="button"
-          size="sm"
-          className="bg-header-foreground text-header hover:bg-header-foreground/90"
+          className="bg-header-foreground text-header hover:bg-header-foreground/90 h-9 shrink-0 px-3 font-semibold sm:px-4"
           disabled={!changed || publishing}
           onClick={onPublish}
         >
