@@ -2,9 +2,6 @@
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { Field, FieldContent, FieldDescription, FieldLabel } from "@harness-monorepo/ui/components/field"
-import { Input } from "@harness-monorepo/ui/components/input"
-import { Textarea } from "@harness-monorepo/ui/components/textarea"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -17,6 +14,7 @@ import { BannerFields } from "./banner-fields"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import { BenefitRowsField } from "./benefit-rows-field"
 import { CategoriesFields } from "./categories-fields"
+import { ComponentTextFields } from "./component-text-fields"
 import type { BenefitValue } from "./benefit-rows-field"
 import { ContactFieldsField, reachesBack } from "./contact-fields-field"
 import type { ContactFieldValue } from "./contact-fields-field"
@@ -83,9 +81,6 @@ export interface ComponentFormProps {
   messages?: UiMessages
 }
 
-/** The kinds that carry a heading of their own, and what each one calls it. */
-const HAS_HEADING: readonly ComponentKind[] = ["ANNOUNCEMENT", "HEADING", "CATEGORIES", "PRODUCTS", "CONTACT"]
-
 /**
  * Every component's fields, dispatched on its kind.
  *
@@ -109,7 +104,6 @@ export function ComponentForm({
   pending = false,
   messages = defaultMessages,
 }: ComponentFormProps) {
-  const text = messages.design
   const banner = messages.banners
   const set = <K extends keyof ComponentFormValues>(key: K, next: ComponentFormValues[K]) =>
     onChange({ ...value, [key]: next })
@@ -122,33 +116,7 @@ export function ComponentForm({
         onSubmit()
       }}
     >
-      {HAS_HEADING.includes(value.kind) ? (
-        <>
-          <Field>
-            <FieldLabel htmlFor="component-title">{banner.titleLabel}</FieldLabel>
-            <FieldContent>
-              <Input
-                id="component-title"
-                value={value.title}
-                onChange={(event) => set("title", event.target.value)}
-                placeholder={banner.titlePlaceholder}
-              />
-            </FieldContent>
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="component-subtitle">{banner.subtitleLabel}</FieldLabel>
-            <FieldContent>
-              <Input
-                id="component-subtitle"
-                value={value.subtitle}
-                onChange={(event) => set("subtitle", event.target.value)}
-              />
-              <FieldDescription>{banner.subtitleHelp}</FieldDescription>
-            </FieldContent>
-          </Field>
-        </>
-      ) : null}
+      <ComponentTextFields kind={value.kind} value={value} onChange={(next) => onChange({ ...value, ...next })} messages={messages} />
 
       {value.kind === "ANNOUNCEMENT" ? (
         <AnnouncementFields
@@ -163,23 +131,6 @@ export function ComponentForm({
 
       {value.kind === "HEADING" || value.kind === "TEXT" ? (
         <AlignField value={value.align} onChange={(next) => set("align", next)} messages={messages} />
-      ) : null}
-
-      {value.kind === "TEXT" ? (
-        <Field>
-          <FieldLabel htmlFor="component-body">{text.bodyLabel}</FieldLabel>
-          <FieldContent>
-            {/* A textarea and not an input: the paragraph's own line breaks are the only
-                formatting this field has, and the storefront draws them. */}
-            <Textarea
-              id="component-body"
-              rows={6}
-              value={value.body}
-              onChange={(event) => set("body", event.target.value)}
-              placeholder={text.bodyPlaceholder}
-            />
-          </FieldContent>
-        </Field>
       ) : null}
 
       {value.kind === "CATEGORIES" ? (
