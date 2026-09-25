@@ -64,9 +64,10 @@ export const LojaSemLogo: Story = {
 export const LojaNoCelular: Story = {
   args: {
     ...Loja.args,
+    // A long name on purpose: the select is as wide as its longest option, and the field must keep its room.
     searchScopes: [
       { value: "pre-treino", label: "Pré treino" },
-      { value: "creatina", label: "Creatina" },
+      { value: "acessorios", label: "Acessórios para academia e treino funcional" },
     ],
   },
   decorators: [
