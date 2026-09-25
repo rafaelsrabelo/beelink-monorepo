@@ -1,8 +1,5 @@
 // React
-import type { ReactNode } from "react"
-
-// Libs
-import { ShoppingBagIcon, UserRoundIcon } from "lucide-react"
+import type { CSSProperties, ReactNode } from "react"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -12,7 +9,10 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
-import { StorefrontSearch } from "./storefront-search"
+import { MastheadHeight } from "./masthead-height"
+import { StorefrontAccountLink } from "./storefront-account-link"
+import { StorefrontCartLink } from "./storefront-cart-link"
+import { StorefrontSearch, type StorefrontSearchScope } from "./storefront-search"
 
 /** One entry of a site's menu: a named band, as an anchor. The screen builds them. */
 export interface StorefrontMenuItem {
@@ -25,14 +25,23 @@ export interface StorefrontMastheadProps {
   name: string
   logoUrl?: string | null
   homeHref: string
+  /** Between the logo and the search: the "Entregar em" block, when the shop has one to draw. */
+  deliverTo?: ReactNode
   /** See `StorefrontWindowProps` — the plain search goes by address, the live one as a node. */
   searchSlot?: ReactNode
   searchAction?: string
   searchValue?: string
   searchHidden?: Record<string, string>
+  /** The "Buscar em" select's entries and its current one; see `StorefrontSearch`. */
+  searchScopes?: readonly StorefrontSearchScope[]
+  searchScope?: string
   cartHref?: string
   cartCount?: number
+  /** Replaces the cart link: the web's live one, which follows the cart as it fills. */
+  cartSlot?: ReactNode
   accountHref?: string
+  /** The signed-in shopper's name; absent or null, the link invites them to sign in. */
+  accountName?: string | null
   /** A site's named bands, as anchors. A shop passes none. */
   menu?: readonly StorefrontMenuItem[]
   /** A site's button — its contact band. Kept out of `menu`, which would list it twice. */
@@ -43,22 +52,37 @@ export interface StorefrontMastheadProps {
   messages?: UiMessages
 }
 
+/** The top row, as 5a and 5b draw it. */
+const ROW_HEIGHT_PX = 72
+
 /**
- * The top of the shop window: logo, then either a shop's search and icons or a site's menu and
- * button, and the categories row under them. Its own file because the window it came out of had
- * passed the line limit and a site's button was about to make it longer.
+ * The top of the shop window: logo, then either a shop's search and links or a site's menu and
+ * button, and the categories row under them.
+ *
+ * Drawn as the 5a/5b designs draw it: a 72px row with 28px between its parts, the search taking
+ * every pixel between the "Entregar em" block and the account link, and the account and the cart
+ * as words beside their marks. The search used to be capped and centred at the owner's request;
+ * the designs settled it the other way, and this follows them.
+ *
+ * It sticks to the top of the page, and `MastheadHeight` measures it into `--shop-masthead-height`
+ * on the window's root, for what sticks or scrolls below it — the product page's buy box — to read.
  */
 export function StorefrontMasthead({
   name,
   logoUrl,
   homeHref,
+  deliverTo,
   searchSlot,
   searchAction,
   searchValue = "",
   searchHidden,
+  searchScopes,
+  searchScope,
   cartHref,
-  cartCount,
+  cartCount = 0,
+  cartSlot,
   accountHref,
+  accountName,
   menu = [],
   cta = null,
   categories,
@@ -68,27 +92,30 @@ export function StorefrontMasthead({
   const text = messages.storefront
 
   return (
-    <>
-    {/*
+    /*
       ------------------------------------------------------------- 1 · header + 2 · the menu
 
       One painted block and not two bands, because they are one thing to look at: the shops this
       was measured against put the logo, the search and the menu on a single dark slab, and a
       menu painted in the page's own background reads as content that happens to be at the top.
 
-      It is painted in `--shop-header`, which is the point of the column. The shopkeeper's panel
-      has always had a "Cor do topo" field, and the top was drawn in `--shop-background` — so the
-      one colour named after this band was the one band that ignored it.
+      It is painted in `--shop-header`, which is the point of the column: the shopkeeper's panel
+      has always had a "Cor do topo" field, and this is the band it names.
 
       One `<header>` wraps both, so the banner landmark is the whole slab: the menu is part of
       the shop's masthead, and a reader jumping to the banner should land on the thing that has
       the search and the categories in it, not on a strip with a logo.
-    */}
+    */
     <header
       className="sticky top-0 z-30 w-full"
-      style={{ backgroundColor: "var(--shop-header)", color: "var(--shop-on-header)" }}
+      style={
+        {
+          backgroundColor: "var(--shop-header)",
+          color: "var(--shop-on-header)",
+        } as CSSProperties
+      }
     >
-      <div className={cn(BAND, "flex h-16 items-center gap-3 shop-sm:gap-6")}>
+      <div className={cn(BAND, "flex items-center gap-4 shop-lg:gap-7")} style={{ height: ROW_HEIGHT_PX }}>
         {/*
           The logo stands in for the name rather than sitting beside it — so it carries the name
           as its `alt`, and the link keeps an accessible name without the word being drawn twice.
@@ -102,31 +129,26 @@ export function StorefrontMasthead({
           )}
         </Link>
 
+        {/* Hidden on a phone, where the row has room for the search and the cart and no more. */}
+        {deliverTo ? <div className="hidden shrink-0 shop-lg:block">{deliverTo}</div> : null}
+
         {/*
-          Centred and capped, not stretched.
-
-          The field used to take every pixel between the logo and the icons, so on a wide monitor
-          the shop's masthead was one enormous search box with a name at one end — and a field
-          that wide reads as the page's subject rather than as a tool. Capped, it is centred on
-          the slab whatever the logo's width, which is what the shops this was measured against
-          all do.
-
           Never autofocused: the header is on every page, and a caret that jumps into it puts a
           phone keyboard over the shop on every arrival.
         */}
-        <div className="flex min-w-0 flex-1 justify-center">
-          <div className="w-full max-w-md">
-            {searchSlot ??
-              (searchAction ? (
-                <StorefrontSearch
-                  action={searchAction}
-                  value={searchValue}
-                  hidden={searchHidden}
-                  tone="panel"
-                  messages={messages}
-                />
-              ) : null)}
-          </div>
+        <div className="flex min-w-0 flex-1">
+          {searchSlot ??
+            (searchAction ? (
+              <StorefrontSearch
+                action={searchAction}
+                value={searchValue}
+                hidden={searchHidden}
+                scopes={searchScopes}
+                {...(searchScope ? { scope: searchScope } : {})}
+                tone="panel"
+                messages={messages}
+              />
+            ) : null)}
         </div>
 
         {/*
@@ -157,37 +179,20 @@ export function StorefrontMasthead({
           </Link>
         ) : null}
 
-        <div className="flex shrink-0 items-center gap-1">
-          {accountHref ? (
-            <Link href={accountHref} aria-label={text.account} className="rounded-full p-2 opacity-80">
-              <UserRoundIcon aria-hidden="true" className="size-5" />
-            </Link>
-          ) : null}
-          {cartHref ? (
-            <Link href={cartHref} aria-label={text.cart} className="relative rounded-full p-2 opacity-80">
-              <ShoppingBagIcon aria-hidden="true" className="size-5" />
-              {cartCount ? (
-                <span
-                  className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[10px] font-semibold"
-                  style={{ backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }}
-                >
-                  {cartCount}
-                </span>
-              ) : null}
-            </Link>
-          ) : null}
-        </div>
+        {accountHref ? <StorefrontAccountLink href={accountHref} name={accountName ?? null} linkComponent={Link} messages={messages} /> : null}
+
+        {cartSlot ?? (cartHref ? <StorefrontCartLink href={cartHref} count={cartCount} linkComponent={Link} messages={messages} /> : null)}
       </div>
 
       {categories ? (
         <div
           className="w-full border-t"
-          style={{ borderColor: "color-mix(in oklab, var(--shop-on-header) 18%, transparent)" }}
+          style={{ borderColor: "color-mix(in oklab, var(--shop-on-header) 14%, transparent)" }}
         >
           <div className={BAND}>{categories}</div>
         </div>
       ) : null}
+      <MastheadHeight />
     </header>
-    </>
   )
 }

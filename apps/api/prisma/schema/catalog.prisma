@@ -165,6 +165,13 @@ model Product {
   widthMm     Int?
   heightMm    Int?
 
+  /// How much cheaper than `compareAtPriceCents` the price is, in whole percent, rounded down —
+  /// the number the shop window prints on the badge. Zero without a discount. Written by a
+  /// database trigger from the two columns beside it on every insert and every change to either,
+  /// so it cannot disagree with them, and kept only because a shelf sorts and filters by it: a
+  /// ratio Prisma cannot order by is a column Postgres keeps.
+  discountPercent Int @default(0)
+
   /// The name and the description, lower-cased and without accents, for the storefront's search:
   /// "crochê" finds "croche" and the other way round. Written by a database trigger on every
   /// insert and on every change to either column, so no writer — the API, a seed, a migration — can
@@ -192,6 +199,8 @@ model Product {
   @@index([storeId, status, createdAt])
   /// The search box: a substring match that a trigram index can serve.
   @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
+  /// "Maior desconto" and "20% ou mais", over one shop's shelf.
+  @@index([storeId, status, discountPercent])
   @@map("products")
 }
 
@@ -214,8 +223,30 @@ model ProductImage {
 
   createdAt DateTime @default(now())
 
+  /// The option values the photo is of. None: every combination.
+  values ProductImageValue[]
+
   @@index([productId, position])
   @@map("product_images")
+}
+
+/// Which option values a photo is of — the Morango tub, or the 900 g Morango tub. A combination shows
+/// a photo when, for every option the photo names, the combination's value is one the photo names:
+/// values of one option widen, different options narrow, as the storefront's filters do. A photo
+/// naming no value is of every combination.
+///
+/// The value must be of the photo's own product, which the API checks inside the write; the gallery
+/// is replaced whole on every save, and these rows go with it.
+model ProductImageValue {
+  imageId String             @db.Uuid
+  image   ProductImage       @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  /// Cascade: removing a value widens the photo, and never deletes it.
+  valueId String             @db.Uuid
+  value   ProductOptionValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+
+  @@id([imageId, valueId])
+  @@index([valueId])
+  @@map("product_image_values")
 }
 
 /// A choice the customer makes before ordering — Tamanho, Cor, Sabor. At most three per product,
@@ -255,6 +286,7 @@ model ProductOptionValue {
   updatedAt DateTime @updatedAt
 
   variantValues ProductVariantValue[]
+  imageValues   ProductImageValue[]
 
   /// Only so a variant's value can be required to belong to the option it is filed under.
   @@unique([optionId, id])

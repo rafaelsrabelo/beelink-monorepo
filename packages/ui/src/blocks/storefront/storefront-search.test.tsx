@@ -89,6 +89,34 @@ describe("StorefrontSearch", () => {
     })
   })
 
+  describe("the scope", () => {
+    const scopes = [
+      { value: "whey", label: "Whey" },
+      { value: "creatina", label: "Creatina" },
+    ]
+
+    it("offers the whole shop first, then each category, under the key the catalogue reads", () => {
+      renderSearch({ scopes })
+
+      const select = screen.getByRole("combobox", { name: "Buscar em" })
+      expect(select).toHaveAttribute("name", "categoria")
+      expect([...select.querySelectorAll("option")].map((option) => option.textContent)).toEqual(["Todos", "Whey", "Creatina"])
+      expect(select).toHaveValue("")
+    })
+
+    it("opens on the category whose page this is", () => {
+      renderSearch({ scopes, scope: "creatina" })
+
+      expect(screen.getByRole("combobox", { name: "Buscar em" })).toHaveValue("creatina")
+    })
+
+    it("draws no select when there is nothing to narrow to", () => {
+      renderSearch()
+
+      expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
+    })
+  })
+
   it("renders in English when the screen hands it the English dictionary", () => {
     renderSearch({ action: "/ana-bakery/search", messages: en })
 

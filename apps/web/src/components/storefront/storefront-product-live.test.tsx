@@ -37,12 +37,16 @@ function renderLive() {
     <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
       <StorefrontProductLive
         slug="lessari"
+        shopName="Lessari"
+        homeHref="/lessari"
         product={product}
         initialVariantId={null}
-        backHref="/lessari/produtos"
-        categoryName={null}
+        cartHref="/lessari/carrinho"
         showPrice
         showBadge
+        showStock
+        finishesOnWhatsApp={false}
+        seller={{ name: "Lessari", paymentMethods: ["PIX"] }}
         restockCopy={copy}
         messages={ptBR}
       />

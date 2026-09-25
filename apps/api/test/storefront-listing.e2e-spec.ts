@@ -175,11 +175,40 @@ describe('the storefront listing, filtered, ordered and faceted', () => {
     it('filters and counts what is on sale, and bounds the price without the price filter', async () => {
       const onSale = await shelf('?desconto=1');
       expect(names(onSale)).toEqual(['Saia Midi']);
-      expect(onSale.facets.discount).toEqual({ count: 1, selected: true });
+      expect(onSale.facets.discount).toMatchObject({ count: 1, selected: true });
 
       const priced = await shelf('?precoMin=100&precoMax=200');
       expect(names(priced)).toEqual(['Blusa de Crochê']);
       expect(priced.facets.price).toEqual({ minCents: 9900, maxCents: 24900 });
+    });
+  });
+
+  describe('the discount', () => {
+    it('orders by the deepest cut, narrows to a least cut, and counts each cut without the filter', async () => {
+      const prisma = app.get(PrismaService);
+      const extra = await Promise.all(
+        [
+          { name: 'Kit Metade', priceCents: 5000, compareAtPriceCents: 10000 },
+          { name: 'Pote Dez', priceCents: 9000, compareAtPriceCents: 10000 },
+        ].map((body) => add<ProductDetail>('/api/stores/lessari/products', body)),
+      );
+
+      try {
+        // The skirt is 23% off; the kit 50%; the pot 10%; the rest are not on sale.
+        expect(names(await shelf('?ordenar=maior-desconto')).slice(0, 3)).toEqual(['Kit Metade', 'Saia Midi', 'Pote Dez']);
+        expect(names(await shelf('?desconto=20'))).toEqual(['Saia Midi', 'Kit Metade']);
+        expect(names(await shelf('?desconto=1'))).toEqual(['Saia Midi', 'Kit Metade', 'Pote Dez']);
+
+        const cut = await shelf('?desconto=20');
+        expect(cut.applied).toEqual([{ key: 'desconto', value: '20', label: '20' }]);
+        expect(cut.facets.discount.ranges).toEqual([
+          { minPercent: 10, count: 3, selected: false },
+          { minPercent: 20, count: 2, selected: true },
+          { minPercent: 30, count: 1, selected: false },
+        ]);
+      } finally {
+        await prisma.product.deleteMany({ where: { id: { in: extra.map((product) => product.id) } } });
+      }
     });
   });
 

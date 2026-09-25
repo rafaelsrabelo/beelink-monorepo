@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
+import { ShopPaletteProvider } from "./shop-palette-context"
 import { StorefrontRestockDialog, type StorefrontRestockDialogProps } from "./storefront-restock-dialog"
 
 function renderDialog(overrides: Partial<StorefrontRestockDialogProps> = {}) {
@@ -57,5 +58,19 @@ describe("StorefrontRestockDialog", () => {
     renderDialog()
 
     await expectNoA11yViolations(await screen.findByRole("dialog"))
+  })
+
+  // The dialog is portaled out of the window, where the shop's variables are set, so it carries
+  // them along: a swatch or a button inside it painted `var(--shop-primary)` would otherwise be
+  // painted nothing.
+  it("wears the shop's palette when it opens inside a shop window", () => {
+    const colors = { background: "oklch(1 0 0)", primary: "oklch(0.3 0.1 270)", header: "oklch(0.3 0.1 270)", footer: "oklch(0.2 0 0)" }
+    render(
+      <ShopPaletteProvider colors={colors}>
+        <StorefrontRestockDialog open onOpenChange={() => {}} productName="Blusa" variantLabel="M" onSubmit={() => {}} status="idle" />
+      </ShopPaletteProvider>,
+    )
+
+    expect(screen.getByRole("dialog").getAttribute("style")).toContain("--shop-primary")
   })
 })

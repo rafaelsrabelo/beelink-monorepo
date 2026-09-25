@@ -25,6 +25,7 @@ import { useImageUpload } from "@/services/uploads/upload-hooks"
 import { EMPTY_FORM, fieldsOf, perUnitOf, toForm, type FormIssues, type FormValues } from "./product-form-mapping"
 import {
   hasCombinations,
+  imagesPayloadOf,
   optionsPayloadOf,
   rekeyDraft,
   toVariationsDraft,
@@ -97,7 +98,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
   const list = `/admin/${slug}/products` as Parameters<typeof router.push>[0]
   const text = ui.catalog.products
   const loading = Boolean(productId) && existing.isPending
-  const base = { isActive: true, price: value.price, stock: value.stock, sku: value.sku }
+  const base = { isActive: true, price: value.price, stock: value.stock, sku: value.sku, weight: value.weight }
   const combinations = hasCombinations(variations)
   const issues = variationIssuesOf(variations, base, ui)
 
@@ -121,6 +122,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
         variations: {
           options: optionsPayloadOf(variations),
           variants: (saved) => variantsPayloadOf(variations, saved, base, value),
+          images: (saved) => imagesPayloadOf(value.imageUrls, variations, saved),
           hasCombinations: combinations,
         },
       },
@@ -131,7 +133,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
         onError: (error) => {
           if (!(error instanceof SaveProductError)) return
           setCreated({ id: error.saved.id, hasOptions: error.saved.options.length > 0 })
-          if (error.saved.options.length > 0) setVariations((draft) => rekeyDraft(draft, error.saved))
+          if (error.optionsSaved) setVariations((draft) => rekeyDraft(draft, error.saved))
         },
       },
     )

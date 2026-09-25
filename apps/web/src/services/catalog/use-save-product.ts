@@ -2,7 +2,7 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query"
 
 // Types
-import type { ProductDetail, UpdateProductPayload } from "@harness-monorepo/contracts"
+import type { ProductDetail, ProductImagePayload, UpdateProductPayload } from "@harness-monorepo/contracts"
 
 // App
 import { catalogKeys } from "./catalog-hooks"
@@ -24,6 +24,11 @@ export interface SaveProductVariables {
     variants: (saved: ProductDetail) => Parameters<typeof updateProductVariants>[2]["variants"]
     /** Whether the draft sells combinations, or goes back to one default variant. */
     hasCombinations: boolean
+    /**
+     * The gallery with what each photo is of, built from the saved options for the same reason as
+     * the variants. It goes last, in place of the photos the first request would have carried.
+     */
+    images: (saved: ProductDetail) => ProductImagePayload[]
   }
 }
 
@@ -33,6 +38,12 @@ export class SaveProductError extends Error {
     readonly cause: unknown,
     /** The product as the last step that went through left it. */
     readonly saved: ProductDetail,
+    /**
+     * Whether the options were saved before the step that failed. Only then do `saved`'s options
+     * answer the draft's: before that they are the ones the draft is replacing, and matching new
+     * values to them by place would hand a new value the id of one that was removed.
+     */
+    readonly optionsSaved = false,
   ) {
     super("The product was saved, and a later step of the save was not")
   }
@@ -49,32 +60,46 @@ export class SaveProductError extends Error {
 }
 
 /**
- * One press of "Salvar", which is up to three requests.
+ * One press of "Salvar", which is up to four requests.
  *
  * The product's per-unit fields go with the product only while it sells one thing: once it has
  * options the API refuses them there, and they go to each variant instead, after the options are
  * saved and the new combinations have ids. A product whose last option is removed gets its price
  * back on the product, after the options have collapsed it to one variant.
+ *
+ * On the way through the options the photos go last, because a photo can name a value that has no
+ * id until the options are saved. Sent first as well, they would replace a gallery whose marks the
+ * last request then writes again — and a save stopped between the two would leave them off.
  */
 export async function saveProduct(
   slug: string,
   { productId, fields, perUnit, hadOptions, variations }: SaveProductVariables,
 ): Promise<ProductDetail> {
   const sellsOne = !hadOptions
+  const throughOptions = variations !== undefined && (variations.hasCombinations || hadOptions)
+  // Undefined is left out of the body, so the first request leaves the gallery as it is. A product
+  // being created still gets its photos, unmarked: if a later step fails it exists, and with them.
+  const described: UpdateProductPayload = throughOptions && productId ? { ...fields, images: undefined } : fields
+
   let saved = productId
-    ? await updateProduct(slug, productId, sellsOne ? { ...fields, ...perUnit } : fields)
-    : await createProduct(slug, { ...fields, ...perUnit } as Parameters<typeof createProduct>[1])
+    ? await updateProduct(slug, productId, sellsOne ? { ...described, ...perUnit } : described)
+    : await createProduct(slug, { ...described, ...perUnit } as Parameters<typeof createProduct>[1])
 
-  if (!variations || (!variations.hasCombinations && !hadOptions)) return saved
+  if (!variations || !throughOptions) return saved
 
+  let optionsSaved = false
   try {
     saved = await replaceProductOptions(slug, saved.id, variations.options)
-    saved = variations.hasCombinations
-      ? await updateProductVariants(slug, saved.id, { variants: variations.variants(saved) })
-      : await updateProduct(slug, saved.id, perUnit)
+    optionsSaved = true
+    if (variations.hasCombinations) {
+      saved = await updateProductVariants(slug, saved.id, { variants: variations.variants(saved) })
+      saved = await updateProduct(slug, saved.id, { images: variations.images(saved) })
+    } else {
+      saved = await updateProduct(slug, saved.id, { ...perUnit, images: variations.images(saved) })
+    }
     return saved
   } catch (error) {
-    throw new SaveProductError(error, saved)
+    throw new SaveProductError(error, saved, optionsSaved)
   }
 }
 

@@ -12,6 +12,9 @@
  * own: everything the editor can produce has to survive the round trip.
  */
 
+// Lib
+import { parseMarkdown, type MarkdownInline } from "@harness-monorepo/ui/lib/markdown"
+
 /** The formatting the toolbar offers, and therefore everything these two functions handle. */
 const INLINE = { STRONG: "**", B: "**", EM: "_", I: "_" } as const
 
@@ -72,40 +75,37 @@ export function markdownFromDom(root: Node): string {
  * Markdown as the editor should show it.
  *
  * It answers a **string of HTML**, which is the one place in this pair that could be dangerous —
- * so every character of the input is escaped first, and the tags are added afterwards from
- * patterns this function itself controls. Nothing from the stored text can become a tag.
+ * so every word is escaped on its way in, and the tags are added afterwards from the parser's
+ * block kinds. Nothing from the stored text can become a tag. The grammar is `lib/markdown`'s,
+ * the same one the shop window draws from, so what the editor shows is what the visitor sees.
  */
 export function domHtmlFromMarkdown(markdown: string): string {
-  const escaped = markdown
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-
-  const blocks = escaped.split(/\n{2,}/).filter((block) => block.trim())
-
-  return blocks
+  return parseMarkdown(markdown)
     .map((block) => {
-      const lines = block.split("\n")
-      const bulleted = lines.every((line) => /^\s*-\s+/.test(line))
-      const numbered = lines.every((line) => /^\s*\d+\.\s+/.test(line))
-
-      if (bulleted || numbered) {
-        const items = lines
-          .map((line) => `<li>${inline(line.replace(/^\s*(?:-|\d+\.)\s+/, ""))}</li>`)
-          .join("")
-        return bulleted ? `<ul>${items}</ul>` : `<ol>${items}</ol>`
-      }
-
-      return `<p>${inline(lines.join("<br>"))}</p>`
+      if (block.kind === "paragraph") return `<p>${block.lines.map(inlineHtml).join("<br>")}</p>`
+      const items = block.items.map((item) => `<li>${inlineHtml(item)}</li>`).join("")
+      return block.ordered ? `<ol>${items}</ol>` : `<ul>${items}</ul>`
     })
     .join("")
 }
 
-/** Inline marks, on text that is already escaped. The order matters: `**` before `_`. */
-function inline(text: string): string {
-  return text
-    .replace(/\\([\\`*_[\]])/g, "$1")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/_([^_]+)_/g, "<em>$1</em>")
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" rel="noreferrer">$1</a>')
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+}
+
+function inlineHtml(nodes: readonly MarkdownInline[]): string {
+  return nodes
+    .map((node) => {
+      switch (node.kind) {
+        case "text":
+          return escapeHtml(node.text)
+        case "strong":
+          return `<strong>${inlineHtml(node.children)}</strong>`
+        case "em":
+          return `<em>${inlineHtml(node.children)}</em>`
+        case "link":
+          return `<a href="${escapeHtml(node.href)}" rel="noreferrer">${inlineHtml(node.children)}</a>`
+      }
+    })
+    .join("")
 }

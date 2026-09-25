@@ -22,6 +22,8 @@ import type {
  * that file can still paint something; this one cannot.
  */
 export const sampleColorPresets: StoreColorPreset[] = palettes.presets
+/** A shop with a dark page, so a story can show the palette turning its neutrals and inks around. */
+export const sampleDarkShopColors: StoreColors = palettes.darkShop
 
 export const sampleStoreColors: StoreColors = sampleColorPresets[0].colors
 
