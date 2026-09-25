@@ -16,7 +16,7 @@ import { LISTING_PAGE_SIZE, canonicalOf, headingOf, isShelf, listingAskOf, pageH
 const store = {
   slug: "loja",
   name: "Loja",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
 } as unknown as PublicStore
 
 const category = (slug: string, parentSlug: string | null = null) =>

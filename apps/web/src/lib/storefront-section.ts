@@ -6,13 +6,16 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { getMessages } from "./locale"
 import { navigationAt, shopAt, type CatalogueAsk, type ShopNavigation } from "./storefront-data"
 import {
+  MODE_KEY,
   PAGE_KEY,
   SEARCH_KEY,
   listingFiltersOf,
   pageOf,
   paramOf,
   sectionOf,
+  signInModeOf,
   type ListingFilters,
+  type SignInMode,
   type StorefrontRoutes,
   type StorefrontSection,
 } from "./storefront-routes"
@@ -44,6 +47,8 @@ export interface SectionPlace {
   page: number
   term: string | undefined
   filters: ListingFilters
+  /** On the sign-in page, which of its faces the address asks for. */
+  signInMode: SignInMode
 }
 
 /**
@@ -80,6 +85,7 @@ export async function placeOf(slug: string, segment: string, query: SectionQuery
     page: pageOf(query[PAGE_KEY]),
     term: paramOf(query[SEARCH_KEY]),
     filters: listingFiltersOf(query),
+    signInMode: signInModeOf(query[MODE_KEY]),
   }
 }
 
@@ -105,7 +111,7 @@ export function listingAskOf(place: SectionPlace): CatalogueAsk {
 }
 
 /** The page's own title, which is also its `h1`. A search narrowed to a category is titled by it, as in 5a. */
-export function headingOf({ section, category, navigation, scope, messages }: SectionPlace): string {
+export function headingOf({ section, category, navigation, scope, signInMode, messages }: SectionPlace): string {
   const text = messages.storefront
   const scoped = scope ? navigation.categories.find((entry) => entry.slug === scope)?.name : undefined
 
@@ -118,6 +124,8 @@ export function headingOf({ section, category, navigation, scope, messages }: Se
       return scoped ?? text.searchHeading
     case "cart":
       return text.cart
+    case "signIn":
+      return signInMode === "criar" ? text.signUpTitle : signInMode === "senha" ? text.forgotTitle : text.signInTitle
     case "category":
       return category?.name ?? text.catalogTitle
   }
@@ -166,6 +174,8 @@ export function canonicalOf({ section, category }: SectionPlace, routes: Storefr
       return routes.search()
     case "cart":
       return routes.cart()
+    case "signIn":
+      return routes.signIn()
     case "catalog":
       return routes.catalog()
   }

@@ -20,6 +20,28 @@ export const SEARCH_KEY = "q"
  */
 export const PAGE_KEY = "pagina"
 
+/** The sign-in page's three faces, in the address: nothing is `entrar`. */
+export type SignInMode = "entrar" | "criar" | "senha"
+export const MODE_KEY = "modo"
+/** Where a shopper goes once signed in: a path inside the shop, checked before it is followed. */
+export const BACK_KEY = "voltar"
+
+export function signInModeOf(raw: string | string[] | undefined): SignInMode {
+  return raw === "criar" || raw === "senha" ? raw : "entrar"
+}
+
+/**
+ * A return path the shop may follow: its own, and nothing else. Anything that is not a path under
+ * `/<slug>` — another shop, another site, `//evil.example` — is the shop's front door instead, so
+ * a link someone crafted cannot send a shopper off the shop after they sign in.
+ */
+export function safeBackOf(slug: string, raw: string | string[] | undefined | null): string {
+  const home = `/${slug}`
+  const value = typeof raw === "string" ? raw : ""
+
+  return value === home || (value.startsWith(`${home}/`) && !value.includes("//") && !value.includes("\\")) ? value : home
+}
+
 /** Everything a URL needs to know about a shop, and nothing else — a page passes its store. */
 export interface StorefrontShop {
   slug: string
@@ -39,6 +61,7 @@ export type StorefrontSection =
   | { kind: "categories" }
   | { kind: "search" }
   | { kind: "cart" }
+  | { kind: "signIn" }
   | { kind: "category"; slug: string }
 
 /**
@@ -189,6 +212,13 @@ export function storefrontRoutes(shop: StorefrontShop) {
     /** The basket, which the header's icon points at from the first day. */
     cart: () => `${home}/${routeWords.cart}`,
 
+    /**
+     * Where a shopper signs in — or, by `mode`, signs up (`criar`) or asks for a new password
+     * (`senha`). `back` is where they return to afterwards, a path inside this shop.
+     */
+    signIn: ({ mode, back }: { mode?: SignInMode; back?: string } = {}) =>
+      withQuery(`${home}/${routeWords.signIn}`, { [MODE_KEY]: mode === "entrar" ? undefined : mode, [BACK_KEY]: back }),
+
     /** One product. It never nests under a category: a product in two would have two addresses. */
     product: (productSlug: string) => `${home}/${routeWords.products}/${productSlug}`,
   }
@@ -214,6 +244,7 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (segment === routeWords.categories) return { kind: "categories" }
   if (segment === routeWords.search) return { kind: "search" }
   if (segment === routeWords.cart) return { kind: "cart" }
+  if (segment === routeWords.signIn) return { kind: "signIn" }
 
   return { kind: "category", slug: segment }
 }

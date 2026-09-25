@@ -14,6 +14,8 @@ import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
 import { StorefrontSectionBand } from "@/components/storefront/storefront-section-band"
+import { StorefrontSignInSection } from "@/components/storefront/storefront-sign-in-section"
+import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
 import { catalogueAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -47,7 +49,10 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
     description: place.store.description ?? undefined,
     alternates: { canonical: canonicalOf(place, storefrontRoutes(place.store)) },
     // A paged or searched shelf is not a landing page; it is the same shelf, reached differently.
-    robots: place.page > 1 || place.term || place.section.kind === "cart" ? { index: false, follow: true } : undefined,
+    robots:
+      place.page > 1 || place.term || place.section.kind === "cart" || place.section.kind === "signIn"
+        ? { index: false, follow: true }
+        : undefined,
   }
 }
 
@@ -89,6 +94,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
         <Suspense fallback={<StorefrontListingSkeleton productsPerRow={productsPerRow} withColumn className="pt-5 pb-10" messages={ui} />}>
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
+      ) : place.section.kind === "signIn" ? (
+        <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (
         <StorefrontCartLive
           products={cart.products}
