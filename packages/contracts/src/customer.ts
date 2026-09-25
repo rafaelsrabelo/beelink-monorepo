@@ -39,3 +39,6 @@ export interface UpdateCustomerProfilePayload {
   phone?: string | null;
   address?: Partial<CustomerAddress>;
 }
+
+/** What a shopper's door answers besides the account's own codes (`AuthErrorCode`). */
+export type CustomerErrorCode = "CUSTOMER_PHONE_TAKEN";

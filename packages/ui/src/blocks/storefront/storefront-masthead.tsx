@@ -9,6 +9,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
+import { StorefrontAccountLink } from "./storefront-account-link"
 import { StorefrontCartLink } from "./storefront-cart-link"
 import { StorefrontSearch, type StorefrontSearchScope } from "./storefront-search"
 
@@ -38,6 +39,8 @@ export interface StorefrontMastheadProps {
   /** Replaces the cart link: the web's live one, which follows the cart as it fills. */
   cartSlot?: ReactNode
   accountHref?: string
+  /** The signed-in shopper's name; absent or null, the link invites them to sign in. */
+  accountName?: string | null
   /** A site's named bands, as anchors. A shop passes none. */
   menu?: readonly StorefrontMenuItem[]
   /** A site's button — its contact band. Kept out of `menu`, which would list it twice. */
@@ -81,6 +84,7 @@ export function StorefrontMasthead({
   cartCount = 0,
   cartSlot,
   accountHref,
+  accountName,
   menu = [],
   cta = null,
   categories,
@@ -179,12 +183,7 @@ export function StorefrontMasthead({
           </Link>
         ) : null}
 
-        {accountHref ? (
-          <Link href={accountHref} className="hidden shrink-0 flex-col text-xs leading-[1.3] shop-lg:flex">
-            <span className="opacity-85">{text.accountGreeting}</span>
-            <span className="text-sm font-bold">{text.account}</span>
-          </Link>
-        ) : null}
+        {accountHref ? <StorefrontAccountLink href={accountHref} name={accountName ?? null} linkComponent={Link} messages={messages} /> : null}
 
         {cartSlot ?? (cartHref ? <StorefrontCartLink href={cartHref} count={cartCount} linkComponent={Link} messages={messages} /> : null)}
       </div>

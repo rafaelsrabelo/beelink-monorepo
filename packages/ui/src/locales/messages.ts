@@ -242,6 +242,22 @@ export interface UiMessages {
     /** After asking for a new password: said alike for any address. */
     forgotSent: string
     signOut: string
+    /** `{name}` — the header's greeting once signed in: "Olá, Bia". */
+    accountHello: string
+    /** The shopper's page at a shop (G3). */
+    accountLead: string
+    accountDetails: string
+    accountAddress: string
+    accountPhone: string
+    accountZipCode: string
+    accountStreet: string
+    accountNumber: string
+    accountComplement: string
+    accountNeighborhood: string
+    accountCity: string
+    accountState: string
+    accountSave: string
+    accountSaved: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
