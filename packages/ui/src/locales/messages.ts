@@ -762,6 +762,39 @@ export interface UiMessages {
     previous: string
     next: string
   }
+  /** The panel's orders: the list, and later the order and its form. */
+  orders: {
+    title: string
+    description: string
+    /** The way to register one, from the list's header and its empty state. */
+    newOrder: string
+    searchLabel: string
+    searchPlaceholder: string
+    filterLabel: string
+    all: string
+    /** Keyed by the wire's status, spelled out: this package imports no contracts. */
+    statuses: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED", string>
+    payments: Record<"MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD", string>
+    fulfillments: Record<"DELIVERY" | "PICKUP", string>
+    number: string
+    placedAt: string
+    customer: string
+    items: string
+    /** "{count} itens", and its singular. */
+    itemsCount: string
+    itemsOne: string
+    total: string
+    payment: string
+    status: string
+    /** The accessible name of a row's link: "Abrir o pedido #{number}, de {name}". */
+    open: string
+    empty: string
+    emptyHint: string
+    emptyFiltered: string
+    range: string
+    previous: string
+    next: string
+  }
   leads: {
     title: string
     description: string
