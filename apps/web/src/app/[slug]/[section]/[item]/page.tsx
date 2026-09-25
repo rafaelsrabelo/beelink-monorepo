@@ -1,20 +1,25 @@
+// React
+import { Suspense } from "react"
+
 // Next
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
-import { PRODUCT_DESCRIPTION_ID, StorefrontProductSection } from "@harness-monorepo/ui/blocks/storefront/storefront-product-section"
-import { StorefrontRichText } from "@harness-monorepo/ui/blocks/storefront/storefront-rich-text"
-import { plainTextOf, withoutFirstList } from "@harness-monorepo/ui/lib/markdown"
+import { StorefrontProductDetails } from "@harness-monorepo/ui/blocks/storefront/storefront-product-details"
+import { StorefrontRelatedSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-related-skeleton"
+import { plainTextOf } from "@harness-monorepo/ui/lib/markdown"
+import { specRowsOf } from "@harness-monorepo/ui/lib/product-specs"
 import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
+import { StorefrontRelated } from "@/components/storefront/storefront-related"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
-import { navigationAt, productAt, shopAt } from "@/lib/storefront-data"
+import { catalogueAt, navigationAt, productAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -92,6 +97,10 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   if (!loaded) notFound()
 
   const { store, product } = loaded
+  // Started before anything else is awaited, and awaited only inside its Suspense boundary: the
+  // product is on screen while this read runs. A read that fails is no rail, never a broken page.
+  // One more than a rail holds, since the product itself is among them.
+  const related = product.category ? catalogueAt(slug, { category: product.category.slug, pageSize: 19 }).catch(() => null) : null
   // The menu on this page as on every other: cached under the catalogue's tag, like the product.
   const [{ ui, web }, { categories, onSale }] = await Promise.all([getMessages(), navigationAt(slug)])
   const routes = storefrontRoutes(store)
@@ -160,16 +169,25 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         messages={ui}
       />
 
-      {/*
-        The description, in the server's HTML where a crawler reads it, as 5b's first lower section.
-        Its first bulleted list is already "Sobre este item" in the info column, which links here, so
-        this draws the rest — and nothing when the list was all of it.
-      */}
-      {product.description && withoutFirstList(product.description).length > 0 ? (
-        <StorefrontProductSection id={PRODUCT_DESCRIPTION_ID} title={ui.storefront.descriptionHeading} className="pb-12">
-          <StorefrontRichText markdown={product.description} skipFirstList className="text-[15px] leading-[1.6] text-shop-on-background" />
-        </StorefrontProductSection>
+      {/* 5b's lower sections: other products of the category, then the description beside the specs. */}
+      {related ? (
+        <Suspense fallback={<StorefrontRelatedSkeleton />}>
+          <StorefrontRelated
+            catalogue={related}
+            productId={product.id}
+            productHref={(productSlug) => routes.product(productSlug)}
+            showPrice={layout.showProductPrice ?? true}
+            messages={ui}
+          />
+        </Suspense>
       ) : null}
+
+      {/* In the server's HTML, where a crawler reads it; `#descricao`, where "Ver descrição completa" lands. */}
+      <StorefrontProductDetails
+        description={product.description}
+        specs={specRowsOf(product.options, product.category, ui.storefront.specCategory)}
+        messages={ui}
+      />
     </StorefrontFrame>
   )
 }

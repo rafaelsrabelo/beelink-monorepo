@@ -54,6 +54,20 @@ describe("StorefrontProductCard", () => {
     expect(screen.getByRole("link", { name: "Bolsa Amora" })).toBeInTheDocument()
   })
 
+  it("is one link with no frame when compact — 5b's related card — the price one string, no badge", () => {
+    const { container } = renderCard({ density: "compact" })
+
+    const link = screen.getByRole("link", { name: /Bolsa Amora/ })
+    expect(link).toHaveAttribute("href", "/lessari/produtos/bolsa-amora")
+    // The price's sr-only text is absolute: the card has to hold it, inside the rail's scroller.
+    expect(link).toHaveClass("relative")
+    expect(container.querySelector("article")).toBeNull()
+    expect(screen.getByText("Bolsa Amora")).toHaveClass("text-[14px]", "text-shop-primary-ink")
+    expect(link).toHaveTextContent("R$ 189,00")
+    expect(screen.queryByText(/%$/)).not.toBeInTheDocument()
+    expect(container.querySelector("img")?.closest("span")).toHaveClass("h-[180px]")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = renderCard()
 

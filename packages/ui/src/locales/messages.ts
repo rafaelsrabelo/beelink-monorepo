@@ -294,6 +294,11 @@ export interface UiMessages {
     /** The buy column's landmark name. */
     buyBoxLabel: string
     descriptionHeading: string
+    /** The product page's related rail: what it is, never "customers who viewed" — nothing is tracked. */
+    relatedHeading: string
+    specsHeading: string
+    /** The technical table's row for the product's category. */
+    specCategory: string
     /** "Sobre este item": the description's first list, in the info column. */
     aboutItem: string
     /** Down to the rest of the description; the "›" is drawn apart. */

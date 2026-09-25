@@ -9,12 +9,41 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
 
+// Locales
+import { format } from "@harness-monorepo/ui/locales/index"
+
 export interface ScrollRailProps {
   /** Names the scrollable region. It is the band's own title, never "group". */
   label: string
   previousLabel: string
   nextLabel: string
   children: ReactNode
+  /** Over the rail, in its row: the band's own title. */
+  heading?: ReactNode
+  /**
+   * "Página {current} de {total}". Given, the arrows step a page at a time and the heading's row says
+   * which page is in view — from shop-lg, where a page is several cards; on a phone it would count
+   * nine pages of two.
+   */
+  pageStatus?: string
+}
+
+/** The track bleeds 16px each side (`-mx-4`) and pays it back as padding; the cards sit 16px apart. */
+const BLEED = 32
+const GAP = 16
+
+/** A page of cards, and the gap after the last of them: what one step of a paged rail moves. */
+function pageWidthOf(el: HTMLElement): number {
+  return el.clientWidth - BLEED + GAP
+}
+
+/** "current/total" — a string, so the snapshot stays equal while nothing has moved. */
+function positionOf(el: HTMLElement | null): string {
+  if (!el || el.clientWidth <= BLEED) return "1/1"
+  const width = pageWidthOf(el)
+  const total = Math.max(1, Math.ceil((el.scrollWidth - BLEED + GAP) / width - 0.02))
+  const atEnd = el.scrollLeft >= el.scrollWidth - el.clientWidth - 4
+  return `${atEnd ? total : Math.min(total, Math.round(el.scrollLeft / width) + 1)}/${total}`
 }
 
 /**
@@ -51,7 +80,7 @@ export interface ScrollRailProps {
  * HTML and appear only once something is there to work them. A button that exists before its
  * handler does is the thing this avoids.
  */
-export function ScrollRail({ label, previousLabel, nextLabel, children }: ScrollRailProps) {
+export function ScrollRail({ label, previousLabel, nextLabel, children, heading, pageStatus }: ScrollRailProps) {
   const track = useRef<HTMLDivElement>(null)
 
   // Both the viewport and the track: the row overflows when the window narrows, and also when a
@@ -66,6 +95,21 @@ export function ScrollRail({ label, previousLabel, nextLabel, children }: Scroll
 
     return () => observer.disconnect()
   }, [])
+
+  // The page in view, which moves with the scroll as well as with the size.
+  const follow = useCallback(
+    (changed: () => void) => {
+      const el = track.current
+      const unwatch = watch(changed)
+      el?.addEventListener("scroll", changed, { passive: true })
+      return () => {
+        unwatch()
+        el?.removeEventListener("scroll", changed)
+      }
+    },
+    [watch],
+  )
+  const [current, total] = useSyncExternalStore(follow, () => positionOf(track.current), () => "1/1").split("/")
 
   const overflows = useSyncExternalStore(
     watch,
@@ -106,7 +150,7 @@ export function ScrollRail({ label, previousLabel, nextLabel, children }: Scroll
     if (direction === 1 && atEnd) return el.scrollTo({ left: 0 })
     if (direction === -1 && atStart) return el.scrollTo({ left: end })
 
-    el.scrollBy({ left: direction * Math.max(el.clientWidth - 96, 160) })
+    el.scrollBy({ left: direction * (pageStatus ? pageWidthOf(el) : Math.max(el.clientWidth - 96, 160)) })
   }
 
   /**
@@ -121,56 +165,66 @@ export function ScrollRail({ label, previousLabel, nextLabel, children }: Scroll
   const keepFocus = (event: { preventDefault: () => void }) => event.preventDefault()
 
   return (
-    <div className="relative">
-      {/*
-        `tabindex={0}` and a named `role="group"`: a region that scrolls sideways cannot be reached
-        by a keyboard unless it can hold focus, because the arrow keys scroll whatever is focused
-        and a div is nothing. The links inside only hide it — the day a card carries no link the
-        region is unreachable outright. That is WCAG 2.1.1, and axe does not catch it here: jsdom
-        lays nothing out, so nothing measures as scrollable and the rule never fires.
-
-        The negative margin is the fix for the last card: a rail inside a centred container ends at
-        the container's padding, so the final card sits jammed against the text edge. The band
-        bleeds a gutter wider than the page and pays it back as padding on the track itself — not
-        on the scroller, where an end padding is the one browsers have historically dropped.
-      */}
-      <div
-        ref={track}
-        tabIndex={0}
-        role="group"
-        aria-label={label}
-        className="no-scrollbar -mx-4 overflow-x-auto overscroll-x-contain scroll-px-4 snap-x snap-mandatory focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:scroll-smooth"
-        style={{ outlineColor: "var(--shop-primary)" }}
-      >
-        {children}
-      </div>
-
-      {overflows ? (
-        <>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label={previousLabel}
-            onMouseDown={keepFocus}
-            onClick={() => step(-1)}
-            className="absolute top-1/2 -left-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm pointer-fine:flex"
-          >
-            <ChevronLeftIcon aria-hidden="true" className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label={nextLabel}
-            onMouseDown={keepFocus}
-            onClick={() => step(1)}
-            className="absolute top-1/2 -right-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm pointer-fine:flex"
-          >
-            <ChevronRightIcon aria-hidden="true" className="size-4" />
-          </Button>
-        </>
+    <>
+      {heading ? (
+        <div className="flex items-baseline gap-4">
+          {heading}
+          {pageStatus && total !== "1" ? (
+            <p className="ml-auto hidden text-[13px] text-shop-muted shop-lg:block">{format(pageStatus, { current: current ?? "1", total: total ?? "1" })}</p>
+          ) : null}
+        </div>
       ) : null}
-    </div>
+      <div className="relative">
+        {/*
+          `tabindex={0}` and a named `role="group"`: a region that scrolls sideways cannot be reached
+          by a keyboard unless it can hold focus, because the arrow keys scroll whatever is focused
+          and a div is nothing. The links inside only hide it — the day a card carries no link the
+          region is unreachable outright. That is WCAG 2.1.1, and axe does not catch it here: jsdom
+          lays nothing out, so nothing measures as scrollable and the rule never fires.
+
+          The negative margin is the fix for the last card: a rail inside a centred container ends at
+          the container's padding, so the final card sits jammed against the text edge. The band
+          bleeds a gutter wider than the page and pays it back as padding on the track itself — not
+          on the scroller, where an end padding is the one browsers have historically dropped.
+        */}
+        <div
+          ref={track}
+          tabIndex={0}
+          role="group"
+          aria-label={label}
+          className="no-scrollbar -mx-4 overflow-x-auto overscroll-x-contain scroll-px-4 snap-x snap-mandatory focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:scroll-smooth"
+          style={{ outlineColor: "var(--shop-primary)" }}
+        >
+          {children}
+        </div>
+
+        {overflows ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={previousLabel}
+              onMouseDown={keepFocus}
+              onClick={() => step(-1)}
+              className="absolute top-1/2 -left-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm pointer-fine:flex"
+            >
+              <ChevronLeftIcon aria-hidden="true" className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={nextLabel}
+              onMouseDown={keepFocus}
+              onClick={() => step(1)}
+              className="absolute top-1/2 -right-2 hidden size-9 -translate-y-1/2 rounded-full shadow-sm pointer-fine:flex"
+            >
+              <ChevronRightIcon aria-hidden="true" className="size-4" />
+            </Button>
+          </>
+        ) : null}
+      </div>
+    </>
   )
 }
