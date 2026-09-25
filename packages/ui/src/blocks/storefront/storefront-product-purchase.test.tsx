@@ -38,7 +38,8 @@ describe("StorefrontProductPurchase", () => {
     expect(within(box()).getByText("Em estoque")).toHaveClass("text-lg", "font-bold", "text-shop-positive-ink")
     expect(within(box()).getByRole("combobox", { name: "Quantidade" })).toHaveValue("1")
     expect(within(box()).getByRole("button", { name: "Adicionar ao carrinho" })).toHaveClass("h-12", "rounded-full", "bg-shop-primary")
-    expect(within(box()).getByRole("link", { name: "Comprar agora" })).toHaveClass("bg-shop-text")
+    // One main action filled, the other outlined beside it.
+    expect(within(box()).getByRole("link", { name: "Comprar agora" })).toHaveClass("border-2", "border-shop-primary", "text-shop-primary-ink")
     expect(within(box()).getByText("Você finaliza o pedido pelo WhatsApp da loja.")).toBeInTheDocument()
     expect(within(box()).getByRole("rowheader", { name: "Vendido por" })).toBeInTheDocument()
     expect(within(box()).getByRole("cell", { name: "Mutante Suplementos" })).toBeInTheDocument()

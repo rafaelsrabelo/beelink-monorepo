@@ -68,6 +68,14 @@ describe("StorefrontProductCard", () => {
     expect(container.querySelector("img")?.closest("span")).toHaveClass("h-[180px]")
   })
 
+  // "Ver opções" is drawn, not a link: a press on it has to fall through to the card's own link.
+  it("lets a press on the action's drawing through to the card's link", () => {
+    const { container } = renderCard({ action: <span>Ver opções</span> })
+
+    expect(screen.getByText("Ver opções").parentElement).toHaveClass("pointer-events-none")
+    expect(container.querySelector("a")).toHaveClass("after:absolute", "after:inset-0")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = renderCard()
 

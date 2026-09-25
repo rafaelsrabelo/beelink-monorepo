@@ -126,7 +126,11 @@ export function StorefrontProductCard({
         ) : null}
 
         {/* Above the name's stretched link, so a press on it is the action's and not the page's. */}
-        {action ? <div className="relative z-10 mt-auto pt-1.5">{action}</div> : null}
+        {/*
+          Transparent to the pointer except for the action's own controls: "Ver opções" is drawn, not a
+          second link, and a press on it has to reach the card's stretched link underneath.
+        */}
+        {action ? <div className="pointer-events-none relative z-10 mt-auto pt-1.5">{action}</div> : null}
       </div>
     </article>
   )

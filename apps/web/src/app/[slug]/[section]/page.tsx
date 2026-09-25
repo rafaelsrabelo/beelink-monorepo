@@ -70,7 +70,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const { store, category, navigation, messages: ui, scope } = place
   const routes = storefrontRoutes(store)
   const locale = "pt-BR"
-  const productsPerRow = store.layoutSettings.productsPerRow ?? 3
+  // 5a's four across; the shop's own choice, when it has made one, wins.
+  const productsPerRow = store.layoutSettings.productsPerRow ?? 4
   // Asked once, awaited twice: by the band's count and by the grid, each under its own boundary.
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
