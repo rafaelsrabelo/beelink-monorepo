@@ -52,8 +52,15 @@ export interface StorefrontMastheadProps {
   messages?: UiMessages
 }
 
-/** The top row, as 5a and 5b draw it. */
-const ROW_HEIGHT_PX = 72
+/** The top row as 5a and 5b draw it: 72px, one line. */
+const ONE_LINE = "h-[72px]"
+
+/**
+ * With a search, a phone gives it a line of its own under the logo and the icons. Beside them it
+ * got ~100px at 390px — less than its own scope and button, so the field was nothing and the button
+ * was clipped. The one row comes back at `shop-md`, where the field has ~300px.
+ */
+const SEARCH_LINE_ON_A_PHONE = "flex-wrap gap-y-3 py-3 shop-md:h-[72px] shop-md:flex-nowrap shop-md:py-0"
 
 /**
  * The top of the shop window: logo, then either a shop's search and links or a site's menu and
@@ -90,6 +97,19 @@ export function StorefrontMasthead({
   messages = defaultMessages,
 }: StorefrontMastheadProps) {
   const text = messages.storefront
+  const search =
+    searchSlot ??
+    (searchAction ? (
+      <StorefrontSearch
+        action={searchAction}
+        value={searchValue}
+        hidden={searchHidden}
+        scopes={searchScopes}
+        {...(searchScope ? { scope: searchScope } : {})}
+        tone="panel"
+        messages={messages}
+      />
+    ) : null)
 
   return (
     /*
@@ -115,13 +135,14 @@ export function StorefrontMasthead({
         } as CSSProperties
       }
     >
-      <div className={cn(BAND, "flex items-center gap-4 shop-lg:gap-7")} style={{ height: ROW_HEIGHT_PX }}>
+      <div className={cn(BAND, "flex items-center gap-x-4 shop-lg:gap-x-7", search ? SEARCH_LINE_ON_A_PHONE : ONE_LINE)}>
         {/*
           The logo stands in for the name rather than sitting beside it — so it carries the name
           as its `alt`, and the link keeps an accessible name without the word being drawn twice.
           A shop with no logo yet falls back to the name as text: the masthead is never empty.
         */}
-        <Link href={homeHref} className="flex shrink-0 items-center gap-2">
+        {/* On a phone the icons sit at the far end of the logo's line; from `shop-md` the search's flex-1 does it. */}
+        <Link href={homeHref} className={cn("flex shrink-0 items-center gap-2", search && "me-auto shop-md:me-0")}>
           {logoUrl ? (
             <img src={logoUrl} alt={name} className="h-9 w-auto max-w-40 object-contain" />
           ) : (
@@ -134,21 +155,12 @@ export function StorefrontMasthead({
 
         {/*
           Never autofocused: the header is on every page, and a caret that jumps into it puts a
-          phone keyboard over the shop on every arrival.
+          phone keyboard over the shop on every arrival. Moved below the icons on a phone by `order`
+          alone, so the focus order stays logo, search, account, cart — the desktop's, where keyboards
+          are. Without a search this is the empty flex-1 that pushes a site's menu to the right.
         */}
-        <div className="flex min-w-0 flex-1">
-          {searchSlot ??
-            (searchAction ? (
-              <StorefrontSearch
-                action={searchAction}
-                value={searchValue}
-                hidden={searchHidden}
-                scopes={searchScopes}
-                {...(searchScope ? { scope: searchScope } : {})}
-                tone="panel"
-                messages={messages}
-              />
-            ) : null)}
+        <div className={cn("flex min-w-0 flex-1", search && "order-last basis-full shop-md:order-none shop-md:basis-0")}>
+          {search}
         </div>
 
         {/*
