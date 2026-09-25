@@ -101,6 +101,7 @@ export function StorefrontProductRail({
                 showPrice={showPrice}
                 showBadge={showBadge}
                 action={cardAction?.(product)}
+                inRail
                 linkComponent={Link}
                 messages={messages}
               />

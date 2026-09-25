@@ -51,10 +51,14 @@ export class CustomersService {
    * gets the same answer as a new one — and, if it was never verified, a fresh link.
    */
   async register(storeSlug: string, dto: RegisterDto): Promise<void> {
-    await this.stores.publicStoreId(storeSlug);
+    const storeId = await this.stores.publicStoreId(storeSlug);
 
     try {
-      await this.auth.register(dto, `/${storeSlug}`);
+      const user = await this.auth.register(dto, `/${storeSlug}`);
+      // An account opened at a shop is that shop's customer from the start — a lead until it buys —
+      // not only from its first sign-in. An address already in use gets no record: anyone can type
+      // someone else's e-mail, and it would put that person on a shop's list they never joined.
+      await this.recordOf(storeId, user);
     } catch (error) {
       if (!(error instanceof ConflictException)) throw error;
       await this.auth.resendVerification(dto.email, `/${storeSlug}`);

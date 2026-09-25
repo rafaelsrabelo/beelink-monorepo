@@ -294,6 +294,11 @@ export interface UiMessages {
     /** The buy column's landmark name. */
     buyBoxLabel: string
     descriptionHeading: string
+    /** The product page's related rail: what it is, never "customers who viewed" — nothing is tracked. */
+    relatedHeading: string
+    specsHeading: string
+    /** The technical table's row for the product's category. */
+    specCategory: string
     /** "Sobre este item": the description's first list, in the info column. */
     aboutItem: string
     /** Down to the rest of the description; the "›" is drawn apart. */
@@ -348,6 +353,16 @@ export interface UiMessages {
     breadcrumbHome: string
     empty: string
     emptyHint: string
+    /** An empty shelf with filters in force, and its way out to the same address as "Limpar tudo". */
+    emptyFiltered: string
+    emptyFilteredHint: string
+    emptySeeAll: string
+    /** An empty category or search, and its way out to the whole catalogue. */
+    emptyCatalog: string
+    /** The shelf could not be read: an outage, never "nothing found". */
+    shelfFailed: string
+    shelfFailedHint: string
+    shelfRetry: string
     productsHeading: string
     /**
      * "{count} produtos", under the catalogue's title and on a category's card. One pair serves
@@ -692,6 +707,27 @@ export interface UiMessages {
     }
   }
   /** What arrived through a site's contact form, as its owner works through it. */
+  /** The panel's list of who opened an account at the shop. */
+  customers: {
+    title: string
+    description: string
+    searchLabel: string
+    searchPlaceholder: string
+    name: string
+    contact: string
+    place: string
+    stage: string
+    since: string
+    stages: { LEAD: string; CUSTOMER: string }
+    /** Beside an e-mail its owner never confirmed. */
+    unverified: string
+    empty: string
+    emptyHint: string
+    emptySearch: string
+    range: string
+    previous: string
+    next: string
+  }
   leads: {
     title: string
     description: string
