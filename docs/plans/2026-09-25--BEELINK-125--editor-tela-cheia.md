@@ -47,6 +47,12 @@ pela BFF, onde a API recusa quem não é dono. O editor não ganha uma segunda r
 O estado Celular | Computador sai de dentro da prévia e fica na tela, que o passa à barra e à prévia.
 Continua começando no celular.
 
+### 5. A coluna Estrutura tem 360 px, não os 280 da 9a
+
+As linhas de hoje carregam o controle de largura e três ações, e foram medidas para um painel de
+380 px. Com 280, o nome do bloco sumia. A 9a desenha linhas compactas (ícone, nome e layout), que
+vêm com o I2, quando a largura passa para a aba Layout; aí a coluna pode voltar aos 280.
+
 ## Fora de escopo
 
 - As abas Conteúdo | Layout | Estilo e a barra flutuante da seção (I2), a galeria nova (I3), a aba

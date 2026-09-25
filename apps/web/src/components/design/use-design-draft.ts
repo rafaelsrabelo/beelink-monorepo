@@ -19,7 +19,7 @@ import {
   useUpdateComponent,
   useUpdateSection,
 } from "@/services/page/page-hooks"
-import { changesOf, hasChanges, reconcile, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
+import { changeCountOf, changesOf, hasChanges, reconcile, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
 
 /**
  * The arrangement as a draft in this browser, until Publish.
@@ -204,6 +204,8 @@ export function useDesignDraft(slug: string) {
      * `dirty` on purpose: seeding has its own history and is left exactly as it was.
      */
     changed: draft !== null && hasChanges(changesOf(rows, saved)),
+    /** What Publish would write, counted — the bar's "N alterações". Zero while nothing differs. */
+    changeCount: draft === null ? 0 : changeCountOf(changesOf(rows, saved)),
     publishing:
       reorder.isPending || reorderComponents.isPending || updateSection.isPending || updateComponent.isPending,
     deleting: removeSection.isPending || removeComponent.isPending,

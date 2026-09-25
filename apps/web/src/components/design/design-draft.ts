@@ -136,6 +136,16 @@ export function hasChanges(changes: ReturnType<typeof changesOf>): boolean {
 }
 
 /**
+ * How many writes Publish would send — the number the editor's bar shows as "N alterações". The
+ * order of the bands is one write whatever moved; every other change is one row.
+ */
+export function changeCountOf(changes: ReturnType<typeof changesOf>): number {
+  return (
+    (changes.orderChanged ? 1 : 0) + changes.sections.length + changes.componentOrders.length + changes.components.length
+  )
+}
+
+/**
  * Where the API should put a row for a "+" at `index` of the draft: right after the draft row above
  * the "+", counted in the server's order, or first when nothing is above it. `reconcile` places the
  * newcomer after that same row, so it lands where the "+" was whether or not the draft has been

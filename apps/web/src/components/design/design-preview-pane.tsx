@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState, type ComponentProps } from "react"
+import type { ComponentProps } from "react"
 
 // Types
 import type { PublicProductCategory, PublicSection, PublicStore } from "@harness-monorepo/contracts"
@@ -13,7 +13,7 @@ import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-ta
 import { bandAnnouncements, bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
-import { PreviewDeviceToggle, type PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
+import type { PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
 import { StorefrontShelfSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-shelf-skeleton"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -34,6 +34,8 @@ export interface DesignPreviewPaneProps {
   shelves: Shelves
   /** The showcase whose products are being fetched again, drawn as its skeleton until they land. */
   refreshingId?: string | null
+  /** Chosen in the editor's bar, which owns it now that the bar and not the pane carries the toggle. */
+  device: PreviewDevice
   /** The palette being edited, so the preview answers the picker and not the database. */
   colors: PublicStore["colors"]
   /** The bands, in order — what the board over the preview drags. */
@@ -74,6 +76,7 @@ export function DesignPreviewPane({
   sections,
   shelves,
   refreshingId = null,
+  device,
   colors,
   orderedIds,
   onReorder,
@@ -84,16 +87,9 @@ export function DesignPreviewPane({
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
   const text = messages.design
-  // A phone first, because that is where the shop sells. Held here and nowhere else: the pane is not
-  // remounted when a sheet opens, and a reload starting over at the phone is what was asked for.
-  const [device, setDevice] = useState<PreviewDevice>("PHONE")
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
-      {/* Outside the pane below, whose capture handlers swallow every click inside it. */}
-      <div className="flex justify-end">
-        <PreviewDeviceToggle value={device} onChange={setDevice} messages={messages} />
-      </div>
       {/*
         Nothing in the preview navigates. The inert link component covers what the blocks inject; the
         capture handlers cover the anchors and the one form that bypass it — the WhatsApp button, the
