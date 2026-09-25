@@ -1,5 +1,5 @@
 // Types
-import type { CreateOrderPayload, Order, OrderListQuery, OrderPage } from "@harness-monorepo/contracts"
+import type { CreateOrderPayload, Order, OrderListQuery, OrderPage, OrderStatus } from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class OrderRequestError extends Error {
@@ -45,4 +45,24 @@ export async function createOrder(slug: string, payload: CreateOrderPayload): Pr
   const body: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new OrderRequestError(errorCodeOf(body))
   return body as Order
+}
+
+/** One order, by its number in the shop. */
+export async function fetchOrder(slug: string, number: number): Promise<Order> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}`, { method: "GET", headers: JSON_HEADERS })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
+  return payload as Order
+}
+
+/** Moves the order; what comes back is the whole order, with the status it now has. */
+export async function updateOrderStatus(slug: string, number: number, status: OrderStatus): Promise<Order> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/status`, {
+    method: "PATCH",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ status }),
+  })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
+  return payload as Order
 }
