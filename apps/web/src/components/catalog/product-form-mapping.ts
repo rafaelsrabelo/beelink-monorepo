@@ -99,10 +99,14 @@ export function perUnitOf(value: FormValues, priceCents: number): UpdateProductP
   }
 }
 
-/** The box, which a product with options gives every combination at once. */
+/** The weight and the box of a product that sells one thing. */
 export function shippingOf(value: FormValues): Pick<UpdateProductPayload, "weightGrams" | "lengthMm" | "widthMm" | "heightMm"> {
+  return { weightGrams: whole(value.weight), ...boxOf(value) }
+}
+
+/** The box alone, which a product with options gives every combination; each keeps its own weight. */
+export function boxOf(value: FormValues): Pick<UpdateProductPayload, "lengthMm" | "widthMm" | "heightMm"> {
   return {
-    weightGrams: whole(value.weight),
     lengthMm: millimetres(value.length),
     widthMm: millimetres(value.width),
     heightMm: millimetres(value.height),

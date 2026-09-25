@@ -4,7 +4,9 @@ model User {
   name            String
   /// Stored trimmed and lower-cased, so uniqueness ignores case.
   email           String    @unique
-  passwordHash    String
+  /// Null for an account that signs in only through an identity provider (Google, G5): it can set
+  /// one later through "forgot my password", and until then a password sign-in never matches.
+  passwordHash    String?
   emailVerifiedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -13,18 +15,29 @@ model User {
   emailTokens EmailToken[]
   /// A shopkeeper is this same account: the product adds no second notion of one.
   stores      Store[]
+  /// And so is a shopper who chose to be remembered: one record per shop bought from, which the
+  /// shop owns and never reads this account through.
+  customers   Customer[]
 
   @@map("users")
 }
 
 /// One signed-in device. Every refresh token it was ever given belongs to it, so reusing a spent
 /// token can revoke the whole session at once.
+/// Which door a session was opened through. One account, two doors, never the same session: a
+/// shopper's token must never open a shopkeeper's panel, and the reverse.
+enum SessionAudience {
+  OWNER
+  CUSTOMER
+}
+
 model Session {
-  id        String    @id @default(uuid(7)) @db.Uuid
-  userId    String    @db.Uuid
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String          @id @default(uuid(7)) @db.Uuid
+  userId    String          @db.Uuid
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audience  SessionAudience @default(OWNER)
   userAgent String?
-  createdAt DateTime  @default(now())
+  createdAt DateTime        @default(now())
   revokedAt DateTime?
 
   refreshTokens RefreshToken[]

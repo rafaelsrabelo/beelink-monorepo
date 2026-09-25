@@ -118,4 +118,18 @@ describe("ProductMediaField", () => {
 
     await expectNoA11yViolations(container)
   })
+
+  it("draws what it is given under each photo, and keeps the photo's own controls on it", () => {
+    render(
+      <ProductMediaField
+        value={["https://cdn/a.png", "https://cdn/b.png"]}
+        onChange={() => {}}
+        onUpload={async () => ""}
+        photoFooter={(url, index) => <span>{`legenda ${index + 1} ${url}`}</span>}
+      />,
+    )
+
+    expect(screen.getByText("legenda 2 https://cdn/b.png")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Remover foto 2" })).toBeInTheDocument()
+  })
 })

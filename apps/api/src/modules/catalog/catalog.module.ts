@@ -7,7 +7,9 @@ import { CatalogSlugService } from './catalog-slug.service.js';
 import { ProductCategoriesController } from './product-categories.controller.js';
 import { ProductCategoriesService } from './product-categories.service.js';
 import { ProductsController } from './products.controller.js';
+import { StorefrontCartController } from './storefront-cart.controller.js';
 import { StorefrontController } from './storefront.controller.js';
+import { StorefrontListingService } from './storefront-listing.service.js';
 import { ProductsService } from './products.service.js';
 import { ProductVariantsService } from './product-variants.service.js';
 import { RestockRequestsController } from './restock-requests.controller.js';
@@ -22,13 +24,14 @@ import { RestockRequestsService } from './restock-requests.service.js';
  */
 @Module({
   imports: [StoresModule],
-  controllers: [StorefrontController, ProductCategoriesController, ProductsController, RestockRequestsController],
+  controllers: [StorefrontController, StorefrontCartController, ProductCategoriesController, ProductsController, RestockRequestsController],
   providers: [
     CatalogSlugService,
     ProductCategoriesService,
     ProductsService,
     ProductVariantsService,
     RestockRequestsService,
+    StorefrontListingService,
   ],
   exports: [ProductCategoriesService, ProductsService],
 })

@@ -11,6 +11,8 @@ const meta = {
   component: StorefrontProductDetail,
   parameters: { layout: "padded" },
   args: {
+    shopName: "Lessari",
+    homeHref: "#",
     name: "Bolsa Amora",
     description: "Bolsa de crochê feita à mão em fio de algodão, com alça ajustável.",
     priceCents: 18900,
@@ -20,8 +22,6 @@ const meta = {
       { id: "i2", url: "https://picsum.photos/seed/a2/800/800", alt: "Aberta" },
       { id: "i3", url: "https://picsum.photos/seed/a3/800/800", alt: null },
     ],
-    categoryName: "Mais vendidos",
-    backHref: "/lessari?categoria=mais-vendidos",
     orderHref: "https://wa.me/5585999998888?text=Ol%C3%A1",
     locale: "pt-BR",
   },
@@ -59,5 +59,20 @@ export const ComVariacoes: Story = {
     variants: BLOUSE_VARIANTS,
     orderHref: `https://wa.me/5511999998888?text=Blusa${ORDER_VARIANT_MARK}`,
     restock: { onSubmit: () => {}, status: "idle" },
+  },
+}
+
+/** Fotos marcadas por cor: a galeria mostra as da cor escolhida e a geral, e troca com a escolha. */
+export const FotosPorCor: Story = {
+  args: {
+    options: BLOUSE_OPTIONS,
+    variants: BLOUSE_VARIANTS.map((variant) => ({ ...variant, imageUrl: null })),
+    images: [
+      { id: "areia", url: "https://picsum.photos/seed/areia/800/800", alt: "Areia de frente", optionValueIds: ["areia"] },
+      { id: "terracota", url: "https://picsum.photos/seed/terracota/800/800", alt: "Terracota de frente", optionValueIds: ["terracota"] },
+      { id: "preto", url: "https://picsum.photos/seed/preto/800/800", alt: "Preto de frente", optionValueIds: ["preto"] },
+      { id: "geral", url: "https://picsum.photos/seed/etiqueta/800/800", alt: "A etiqueta", optionValueIds: [] },
+    ],
+    orderHref: `https://wa.me/5511999998888?text=Blusa${ORDER_VARIANT_MARK}`,
   },
 }

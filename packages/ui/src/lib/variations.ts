@@ -9,6 +9,9 @@
  * across the way the API does when it saves: see ReplaceProductOptionsPayload.
  */
 
+// Lib
+import { photosWithout } from "@harness-monorepo/ui/lib/variation-photos"
+
 /** A value of an option. `key` is the saved value's id, or `new:…` for one not saved yet. */
 export interface VariationValue {
   key: string
@@ -31,12 +34,22 @@ export interface VariationRow {
   price: string
   stock: string
   sku: string
+  /**
+   * Grams, as typed. A combination's own, because a 750 g and a 900 g tub of one whey are quoted
+   * differently by a carrier; the box stays the product's, in its Envio section.
+   */
+  weight: string
 }
 
 export interface VariationsValue {
   options: VariationOption[]
   /** Keyed by `combinationKey`. A combination with no row yet borrows its nearest neighbour's price. */
   rows: Record<string, VariationRow>
+  /**
+   * Photo URL → the value keys the photo is of, in the one form `lib/variation-photos` keeps. A
+   * photo absent here is of every combination.
+   */
+  photos?: Readonly<Record<string, readonly string[]>>
 }
 
 export interface VariationCombination {
@@ -92,8 +105,9 @@ export function isNewKey(key: string): boolean {
 }
 
 /**
- * The row a combination nobody typed yet starts from: the price of the row that shares the most
- * values with it, and neither its stock nor its code, which describe another physical thing.
+ * The row a combination nobody typed yet starts from: the price and weight of the row that shares
+ * the most values with it — a starting point to correct, not a guess to trust — and neither its stock
+ * nor its code, which describe another physical thing.
  */
 function borrowedRow(valueKeys: readonly string[], rows: Record<string, VariationRow>, base: VariationRow): VariationRow {
   let best: VariationRow | undefined
@@ -107,7 +121,7 @@ function borrowedRow(valueKeys: readonly string[], rows: Record<string, Variatio
     }
   }
 
-  return { isActive: true, price: (best ?? base).price, stock: "", sku: "" }
+  return { isActive: true, price: (best ?? base).price, stock: "", sku: "", weight: (best ?? base).weight }
 }
 
 /** Every combination, the first option slowest, each with its row. */
@@ -142,6 +156,7 @@ export function addValue(value: VariationsValue, optionKey: string, entry: Varia
   const extending = option.values.length === 0
   const sources = Object.keys(value.rows).length > 0 || !extending ? value.rows : { "": base }
   const next: VariationsValue = {
+    ...value,
     options: value.options.map((candidate) =>
       candidate.key === optionKey ? { ...candidate, values: [...candidate.values, entry] } : candidate,
     ),
@@ -169,6 +184,8 @@ export function removeValue(value: VariationsValue, optionKey: string, valueKey:
 
   const last = option.values.length === 1
   return {
+    ...value,
+    photos: photosWithout(value.photos, [valueKey]),
     options: value.options.map((candidate) =>
       candidate.key === optionKey
         ? { ...candidate, values: candidate.values.filter((entry) => entry.key !== valueKey) }
@@ -193,6 +210,8 @@ export function removeOption(value: VariationsValue, optionKey: string, base: Va
   const rows = Object.fromEntries(ordered.map((combination) => [combination.key, combination.row]))
 
   return {
+    ...value,
+    photos: photosWithout(value.photos, option.values.map((entry) => entry.key)),
     options: value.options.filter((candidate) => candidate.key !== optionKey),
     rows: collapse(rows, option.values.map((entry) => entry.key)),
   }

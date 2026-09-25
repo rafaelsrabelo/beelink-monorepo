@@ -60,14 +60,23 @@ describe("StorefrontPagination", () => {
 
   /**
    * A disabled anchor is not a thing HTML has: it keeps its place in the tab order and a reader
-   * still offers it. So the link is absent, not greyed.
+   * still offers it. 5a keeps the word on page 1, muted, so it stays — as text hidden from a
+   * reader, never as a link. (It used to be absent; the design asks for it in place.)
    */
-  it("has no previous link on the first page, and none disabled either", () => {
+  it("keeps 'Anterior' in place on the first page as muted text, never a link, never disabled", () => {
     const { container } = renderPagination({ page: 1 })
 
     expect(screen.queryByRole("link", { name: "Anterior" })).not.toBeInTheDocument()
+    expect(screen.getByText(/Anterior/)).toHaveAttribute("aria-hidden", "true")
+    expect(screen.getByText(/Anterior/)).toHaveClass("text-shop-muted")
     expect(screen.getByRole("link", { name: "Próxima" })).toBeInTheDocument()
     expect(container.querySelectorAll("[aria-disabled], [disabled]")).toHaveLength(0)
+  })
+
+  it("marks the current page in the ink of the page", () => {
+    renderPagination({ page: 3 })
+
+    expect(screen.getByRole("link", { name: "Página 3" })).toHaveClass("bg-shop-text", "text-shop-on-text")
   })
 
   it("has no next link on the last page", () => {
@@ -98,15 +107,18 @@ describe("StorefrontPagination", () => {
   })
 
   it("walks the window with the current page, at both ends", () => {
+    // At the ends the window reaches one further inward, as 5a draws page 1: 1 2 3 … N.
     expect(offered(renderPagination({ page: 1, pageCount: 40 }).container)).toEqual([
       "1",
       "2",
+      "3",
       "…",
       "40",
     ])
     expect(offered(renderPagination({ page: 40, pageCount: 40 }).container)).toEqual([
       "1",
       "…",
+      "38",
       "39",
       "40",
     ])

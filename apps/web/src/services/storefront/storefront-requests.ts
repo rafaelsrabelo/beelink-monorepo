@@ -14,11 +14,12 @@ export interface StorefrontSearchResult {
  * one thing the BFF rule exists to stop, and a shop window is no exception to it just because it
  * carries no token.
  */
-export async function searchStorefront(slug: string, term: string): Promise<StorefrontSearchResult> {
-  const response = await fetch(
-    `/api/storefront/${encodeURIComponent(slug)}/search?q=${encodeURIComponent(term)}`,
-    { headers: { accept: "application/json" } },
-  )
+export async function searchStorefront(slug: string, term: string, scope = ""): Promise<StorefrontSearchResult> {
+  const query = new URLSearchParams({ q: term })
+  if (scope) query.set("categoria", scope)
+  const response = await fetch(`/api/storefront/${encodeURIComponent(slug)}/search?${query.toString()}`, {
+    headers: { accept: "application/json" },
+  })
 
   // A suggestion list that failed is an empty list. Someone mid-word does not want an error under
   // the field they are typing in, and the form underneath still works.
