@@ -46,13 +46,13 @@ export function CustomerStageTabs({ value, onValueChange, counts, children, mess
 
   return (
     <Tabs value={current} onValueChange={(next: unknown) => onValueChange(stageOf(next))} className="gap-4">
-      {/* A phone can be narrower than four tabs with their numbers: the row scrolls rather than
-          wraps. The scroll sits on a wrapper whose padding holds the active tab's underline, which
-          hangs below the list and an overflow on the list itself would cut off. */}
-      <div className="max-w-full overflow-x-auto pb-1.5">
-        <TabsList variant="line" aria-label={text.stageFilterLabel}>
+      {/* On a phone the four tabs share the width, which they fit at 360px; the row still scrolls,
+          with no bar drawn, if a longer language does not. The scroll sits on a wrapper whose padding
+          holds the active tab's underline, which hangs below the list and an overflow would cut off. */}
+      <div className="max-w-full overflow-x-auto pb-1.5 [scrollbar-width:none]">
+        <TabsList variant="line" aria-label={text.stageFilterLabel} className="w-full sm:w-auto">
           {tabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className="flex-none px-2.5">
+            <TabsTrigger key={tab.value} value={tab.value} className="flex-1 px-1 text-[13px] sm:flex-none sm:px-2.5 sm:text-sm">
               {tab.label}{" "}
               {tab.count === undefined ? null : <span className="text-muted-foreground text-xs tabular-nums">{tab.count}</span>}
             </TabsTrigger>

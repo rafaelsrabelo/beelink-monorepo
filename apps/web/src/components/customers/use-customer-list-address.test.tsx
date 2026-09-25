@@ -51,13 +51,33 @@ describe("customerListHref", () => {
 describe("useCustomerListAddress", () => {
   it("changes the tab or the order and returns to page one, keeping the rest", () => {
     navigation.search = new URLSearchParams("sort=TOP_SPENT&q=bia&page=4")
-    const { result } = renderHook(() => useCustomerListAddress("loja"))
+    const { result, rerender } = renderHook(() => useCustomerListAddress("loja"))
 
     act(() => result.current.apply({ stage: "INACTIVE" }))
     expect(navigation.replace).toHaveBeenLastCalledWith("/admin/loja/customers?stage=INACTIVE&sort=TOP_SPENT&q=bia")
 
-    act(() => result.current.apply({ sort: "LAST_ORDER" }))
+    // The navigation lands, and the next change starts from it.
+    navigation.search = new URLSearchParams("stage=INACTIVE&sort=TOP_SPENT&q=bia")
+    rerender()
+    act(() => result.current.apply({ stage: null, sort: "LAST_ORDER" }))
     expect(navigation.replace).toHaveBeenLastCalledWith("/admin/loja/customers?sort=LAST_ORDER&q=bia")
+  })
+
+  /**
+   * A search-param change waits for the server before the address moves, and a second write in that
+   * window discards the first navigation: a tab clicked while the search was on its way dropped the
+   * search, and the box then showed a search the list did not apply.
+   */
+  it("keeps a search still on its way when a tab is clicked before it lands, and the other way round", () => {
+    vi.useFakeTimers()
+    const { result } = renderHook(() => useCustomerListAddress("loja"))
+
+    act(() => result.current.setTyped("bia"))
+    act(() => vi.advanceTimersByTime(400))
+    expect(navigation.replace).toHaveBeenLastCalledWith("/admin/loja/customers?q=bia")
+
+    act(() => result.current.apply({ stage: "LEAD" }))
+    expect(navigation.replace).toHaveBeenLastCalledWith("/admin/loja/customers?stage=LEAD&q=bia")
   })
 
   it("turns the page and keeps the tab, the order and the search", () => {

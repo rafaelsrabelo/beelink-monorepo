@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Next
 import { useRouter, useSearchParams } from "next/navigation"
@@ -80,8 +80,23 @@ export function useCustomerListAddress(slug: string): CustomerListAddressState {
   }
   const settled = useDebouncedValue(typed, SEARCH_DEBOUNCE_MS)
 
+  /*
+    The address last written and not yet read back. A search-param change waits for the server
+    before `useSearchParams` moves, and a second write meanwhile discards the first navigation — so a
+    tab clicked while the search was on its way would drop the search, and the search settling
+    after a tab click would drop the tab. The next write starts from what was asked, not from what
+    has arrived.
+  */
+  const pending = useRef<CustomerListAddress | null>(null)
+  useEffect(() => {
+    const asked = pending.current
+    if (asked && customerListHref(slug, asked) === customerListHref(slug, address)) pending.current = null
+  })
+
   function apply(next: Partial<Omit<CustomerListAddress, "page">>, page = 1) {
-    router.replace(customerListHref(slug, { ...address, ...next, page }) as Parameters<typeof router.replace>[0])
+    const target = { ...(pending.current ?? address), ...next, page }
+    pending.current = target
+    router.replace(customerListHref(slug, target) as Parameters<typeof router.replace>[0])
   }
 
   useEffect(() => {

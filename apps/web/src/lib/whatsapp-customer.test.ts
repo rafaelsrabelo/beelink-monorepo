@@ -16,7 +16,7 @@ describe("customerMessageOf", () => {
       [
         "Olá, Bia! Aqui é da Loja do Design.",
         "",
-        "Vi que você criou sua conta com a gente e ainda não fez o primeiro pedido. Posso te ajudar a escolher alguma coisa?",
+        "Que bom ter você por aqui! Posso te ajudar a escolher alguma coisa para o seu pedido?",
       ].join("\n"),
     )
   })

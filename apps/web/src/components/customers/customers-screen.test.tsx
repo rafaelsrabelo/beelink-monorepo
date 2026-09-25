@@ -108,7 +108,7 @@ describe("CustomersScreen", () => {
 
     const lead = decodeURIComponent(within(table).getByRole("link", { name: "Chamar no WhatsApp: Bia Souza" }).getAttribute("href")!)
     expect(lead).toMatch(/^https:\/\/wa\.me\/5511977776666\?text=Olá, Bia! Aqui é da Loja do Design\./)
-    expect(lead).toContain("ainda não fez o primeiro pedido")
+    expect(lead).toContain("Posso te ajudar a escolher alguma coisa para o seu pedido")
 
     const inactive = decodeURIComponent(within(table).getByRole("link", { name: "Chamar no WhatsApp: Eva Nunes" }).getAttribute("href")!)
     expect(inactive).toContain("Faz tempo que você não passa aqui")
