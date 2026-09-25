@@ -78,7 +78,9 @@ describe("ProductEditor", () => {
     expect(props.onCancel).toHaveBeenCalled()
   })
 
-  it("has no accessibility violations with its variations", async () => {
+  // The whole editor with its variations is the largest tree axe walks here: well under a second on
+  // an idle machine, past the default 5s while the push hook runs every suite at once.
+  it("has no accessibility violations with its variations", { timeout: 20_000 }, async () => {
     const { container } = renderEditor({ variations: { value: BLOUSE, onChange: () => {} }, dirty: true })
 
     await expectNoA11yViolations(container)

@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // Lib
-import { firstListOf, parseInline, parseMarkdown, plainTextOf } from "./markdown"
+import { firstListOf, parseInline, parseMarkdown, plainTextOf, withoutFirstList } from "./markdown"
 
 describe("the description's Markdown", () => {
   it("reads paragraphs, both kinds of list, and the marks inside them", () => {
@@ -28,7 +28,37 @@ describe("the description's Markdown", () => {
     const blocks = parseMarkdown("Destaques\n\n- Proteína\n\n- Fácil de preparar\n\n- Pós-treino\n\nDepois.")
 
     expect(blocks.map((block) => block.kind)).toEqual(["paragraph", "list", "paragraph"])
-    expect(firstListOf("Destaques\n\n- Proteína\n\n- Fácil de preparar")).toEqual(["Proteína", "Fácil de preparar"])
+    expect(firstListOf("Destaques\n\n- Proteína\n\n- Fácil de preparar")).toEqual([
+      [{ kind: "text", text: "Proteína" }],
+      [{ kind: "text", text: "Fácil de preparar" }],
+    ])
+  })
+
+  it("gives 'Sobre este item' the first bulleted list with its bold leads, and never a numbered one", () => {
+    const markdown = "Modo de uso:\n\n1. Misture\n2. Beba\n\n- **Mais energia** no treino\n- Foco\n\n- depois"
+
+    expect(firstListOf(markdown)[0]).toEqual([{ kind: "strong", children: [{ kind: "text", text: "Mais energia" }] }, { kind: "text", text: " no treino" }])
+    expect(firstListOf(markdown)).toHaveLength(3)
+    expect(firstListOf("1. Misture\n2. Beba")).toEqual([])
+  })
+
+  it("leaves that list out of the rest, and only that one", () => {
+    const rest = withoutFirstList("Intro.\n\n1. Misture\n\n- **Mais energia**\n\nFim.")
+
+    expect(rest.map((block) => block.kind)).toEqual(["paragraph", "list", "paragraph"])
+    expect(rest[1]).toMatchObject({ ordered: true })
+    expect(withoutFirstList("- só\n- a lista")).toEqual([])
+    expect(withoutFirstList("Sem lista.")).toHaveLength(1)
+  })
+
+  // As the first shops wrote them: a heading line, then the list — the heading goes with it.
+  it("takes the line that introduced the list with it, and keeps a paragraph that says more", () => {
+    const kinds = (markdown: string) => withoutFirstList(markdown).map((block) => (block.kind === "paragraph" ? "p" : "list"))
+
+    expect(kinds("Creatina pura.\n\n**Destaques do produto:**\n\n- Força\n\n- Energia\n\n**Modo de uso:** misture.")).toEqual(["p", "p"])
+    expect(withoutFirstList("Intro.\n\n🥛 **Destaques do produto**\n\n- Proteína")).toHaveLength(1)
+    expect(kinds("Intro.\n\nFeita para **treinos longos** e pesados.\n\n- Proteína")).toEqual(["p", "p"])
+    expect(kinds("**Título**\nsegunda linha\n\n- Proteína")).toEqual(["p"])
   })
 
   it("keeps a mark that never closes as text, so a price with an asterisk survives", () => {
