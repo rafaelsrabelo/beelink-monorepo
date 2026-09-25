@@ -53,7 +53,8 @@ export function OrderLines({ lines, onQuantityChange, onRemove, money, messages 
                 type="button"
                 variant="outline"
                 size="icon"
-                aria-hidden
+                aria-label={format(text.decrease, { name })}
+                // The field takes the arrow keys; the buttons are for a thumb, not another tab stop.
                 tabIndex={-1}
                 disabled={line.quantity <= 1}
                 onClick={() => onQuantityChange(line.variantId, line.quantity - 1)}
@@ -74,7 +75,7 @@ export function OrderLines({ lines, onQuantityChange, onRemove, money, messages 
                 type="button"
                 variant="outline"
                 size="icon"
-                aria-hidden
+                aria-label={format(text.increase, { name })}
                 tabIndex={-1}
                 disabled={line.quantity >= ORDER_QUANTITY_MAX}
                 onClick={() => onQuantityChange(line.variantId, line.quantity + 1)}

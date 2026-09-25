@@ -72,6 +72,7 @@ export function OrderProductPicker({
           <ul className="divide-border flex flex-col divide-y rounded-lg border">
             {chosen.variants.map((variant) => {
               const name = variant.label ?? chosen.product.name
+              const full = variant.label ? `${chosen.product.name} (${variant.label})` : chosen.product.name
               return (
                 <li key={variant.id} className="flex items-center justify-between gap-3 px-3 py-2">
                   <span className="flex min-w-0 flex-col gap-0.5">
@@ -86,7 +87,7 @@ export function OrderProductPicker({
                     type="button"
                     variant="outline"
                     size="icon"
-                    aria-label={format(text.variantAdd, { name })}
+                    aria-label={format(text.variantAdd, { name: full })}
                     onClick={() => onAdd(variant)}
                   >
                     <PlusIcon />

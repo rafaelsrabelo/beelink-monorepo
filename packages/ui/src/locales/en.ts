@@ -687,6 +687,8 @@ export const en: UiMessages = {
       outOfStock: "Out of stock",
       linesEmpty: "No product on the order yet.",
       quantity: "Quantity of {name}",
+      decrease: "One fewer {name}",
+      increase: "One more {name}",
       remove: "Remove {name}",
       fulfillment: "Delivery or pick-up",
       deliveryFee: "Delivery fee (R$)",

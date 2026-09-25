@@ -687,6 +687,8 @@ export const ptBR: UiMessages = {
       outOfStock: "Sem estoque",
       linesEmpty: "Nenhum produto no pedido ainda.",
       quantity: "Quantidade de {name}",
+      decrease: "Uma unidade a menos de {name}",
+      increase: "Uma unidade a mais de {name}",
       remove: "Remover {name}",
       fulfillment: "Entrega ou retirada",
       deliveryFee: "Taxa de entrega (R$)",

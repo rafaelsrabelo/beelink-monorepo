@@ -835,6 +835,8 @@ export interface UiMessages {
       outOfStock: string
       linesEmpty: string
       quantity: string
+      decrease: string
+      increase: string
       remove: string
       fulfillment: string
       deliveryFee: string

@@ -98,7 +98,7 @@ describe("the new order's products", () => {
     expect(within(chocolate).getByText("Sem estoque")).toBeInTheDocument()
     expect(within(chocolate).getByText("R$ 134,90")).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole("button", { name: "Adicionar Sabor: Chocolate · Peso: 900 g" }))
+    await userEvent.click(screen.getByRole("button", { name: "Adicionar Whey Protein (Sabor: Chocolate · Peso: 900 g)" }))
     expect(onAdd).toHaveBeenCalledWith(variants[1])
   })
 
@@ -112,6 +112,9 @@ describe("the new order's products", () => {
 
     await userEvent.type(screen.getByLabelText("Quantidade de Coqueteleira"), "3")
     expect(onQuantityChange).toHaveBeenLastCalledWith("v3", 13)
+
+    await userEvent.click(screen.getByRole("button", { name: "Uma unidade a menos de Whey Protein (Sabor: Baunilha · Peso: 900 g)" }))
+    expect(onQuantityChange).toHaveBeenLastCalledWith("v1", 1)
 
     await userEvent.click(screen.getByRole("button", { name: "Remover Coqueteleira" }))
     expect(onRemove).toHaveBeenCalledWith("v3")
