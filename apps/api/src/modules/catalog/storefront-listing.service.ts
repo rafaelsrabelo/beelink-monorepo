@@ -24,7 +24,7 @@ import {
   type FacetKey,
   type ListingFilters,
 } from './catalog-filters.js';
-import { productCardInclude, toPublicProductCard } from './catalog.mapper.js';
+import { productCardInclude, toShelfCard } from './catalog.mapper.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 interface OptionCountRow {
@@ -83,7 +83,7 @@ export class StorefrontListingService {
     ]);
 
     return {
-      products: rows.map(toPublicProductCard),
+      products: rows.map(toShelfCard),
       total,
       facets,
       applied: appliedOf(filters, categories, facets),

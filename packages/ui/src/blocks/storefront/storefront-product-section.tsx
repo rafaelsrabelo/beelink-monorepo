@@ -4,6 +4,9 @@ import type { ReactNode } from "react"
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
+/** The description's section: "Ver descrição completa" in the info column lands on it. */
+export const PRODUCT_DESCRIPTION_ID = "descricao"
+
 /** A lower section's heading, as 5b sets every one of them: 22px, 800. */
 export const PRODUCT_SECTION_HEADING = "text-[22px] leading-[1.2] font-extrabold"
 

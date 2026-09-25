@@ -56,6 +56,14 @@ describe("StorefrontProductDetail", () => {
     expect(buy).toContainElement(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
   })
 
+  it("draws the description's first list as 'Sobre este item' in the information, before the region for buying", () => {
+    renderProduct({ description: "Feita à mão.\n\n- **Algodão** cru\n- Alça longa", cart: { onAdd: () => {}, href: "#" } })
+
+    const about = screen.getByRole("heading", { level: 2, name: "Sobre este item" })
+    expect(screen.getByText("Algodão", { selector: "strong" })).toBeInTheDocument()
+    expect(about.compareDocumentPosition(screen.getByRole("region", { name: "Comprar" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it("names the product as the page's one heading", () => {
     renderProduct()
 
@@ -67,25 +75,22 @@ describe("StorefrontProductDetail", () => {
    * would make every thumbnail a new entry in someone's history.
    */
   it("changes the picture without changing the address", async () => {
-    const { container } = renderProduct()
+    renderProduct()
+    const address = window.location.href
 
-    const thumbnails = screen.getAllByRole("button")
     // Named, not anonymous: the picture inside is decorative, so the name comes from the alt or
     // from its place in the gallery.
-    expect(thumbnails[0]).toHaveAccessibleName("De frente")
-    expect(thumbnails[1]).toHaveAccessibleName("Foto 2 de 2")
-    expect(thumbnails[0]).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "De frente" })).toHaveAttribute("aria-pressed", "true")
+    await userEvent.click(screen.getByRole("button", { name: "Foto 2 de 2" }))
 
-    await userEvent.click(thumbnails[1])
-
-    expect(thumbnails[1]).toHaveAttribute("aria-pressed", "true")
-    expect(container.querySelector("img[alt='Bolsa Amora']")).not.toBeNull()
+    expect(window.location.href).toBe(address)
   })
 
-  it("offers no gallery for a product with one photograph", () => {
+  it("offers no thumbnails for a product with one photograph", () => {
     renderProduct({ images: [images[0]] })
 
-    expect(screen.queryByRole("button")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { pressed: true })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Ampliar foto 1 de 1" })).toBeInTheDocument()
   })
 
   it("says so plainly when there is no photograph at all", () => {
@@ -145,12 +150,29 @@ describe("StorefrontProductDetail", () => {
       const onAdd = vi.fn()
       renderProduct({ ...withVariants, initialVariantId: "g-preto", cart: { onAdd, href: "/loja/carrinho" } })
 
-      await user.click(screen.getByRole("button", { name: "Aumentar a quantidade de Bolsa Amora" }))
+      await user.selectOptions(screen.getByRole("combobox", { name: "Quantidade" }), "2")
       await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
 
       expect(onAdd).toHaveBeenCalledWith("g-preto", 2)
-      // WhatsApp stays, now the quieter way.
-      expect(screen.getByRole("link", { name: /Pedir/ })).toHaveAttribute("href", expect.stringContaining("wa.me"))
+      // Buying asks who is buying (BEELINK-108); a WhatsApp order beside the cart would skip that.
+      expect(screen.queryByRole("link", { name: /Pedir/ })).not.toBeInTheDocument()
+    })
+
+    it("adds a combination chosen after an earlier add with 'Comprar agora', rather than skipping it", async () => {
+      const user = userEvent.setup()
+      const onAdd = vi.fn()
+      renderProduct({ ...withVariants, initialVariantId: "p-areia", cart: { onAdd, href: "/loja/carrinho" } })
+
+      await user.click(screen.getByRole("button", { name: "Adicionar ao carrinho" }))
+      await user.click(screen.getByRole("button", { name: /^Terracota/ }))
+      const buyNow = screen.getByRole("link", { name: "Comprar agora" })
+      buyNow.addEventListener("click", (event) => event.preventDefault())
+      await user.click(buyNow)
+
+      expect(onAdd.mock.calls).toEqual([
+        ["p-areia", 1],
+        ["p-terracota", 1],
+      ])
     })
 
     it("opens on the combination the address asked for", () => {
@@ -163,9 +185,10 @@ describe("StorefrontProductDetail", () => {
     it("puts on each size the price it would cost with the colour kept, since sizes cost differently", () => {
       renderProduct(withVariants)
 
-      // From P·Areia: M·Areia is R$ 189,00 (sold out) and G leads to G·Preto at R$ 219,00.
+      // From P·Areia: G leads to G·Preto at R$ 219,00, and M·Areia is sold out, which it says where
+      // its price would be.
       expect(screen.getByRole("button", { name: /^G, R\$\s219,00/ })).toBeInTheDocument()
-      expect(screen.getByRole("button", { name: /^M, R\$\s189,00, esgotado/ })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "M, Esgotado · avise-me" })).toBeInTheDocument()
     })
 
     it("changes the price, the photo and the order message with the choice, and tells the screen", async () => {
@@ -189,7 +212,7 @@ describe("StorefrontProductDetail", () => {
       const onSubmit = vi.fn()
       renderProduct({ ...withVariants, restock: { onSubmit, status: "idle" } })
 
-      await user.click(screen.getByRole("button", { name: /^M, .*esgotado/ }))
+      await user.click(screen.getByRole("button", { name: "M, Esgotado · avise-me" }))
       expect(screen.queryByRole("link", { name: /WhatsApp/ })).toBeNull()
       await user.click(screen.getByRole("button", { name: "Avise-me quando chegar" }))
       const dialog = await screen.findByRole("dialog")

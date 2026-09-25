@@ -45,6 +45,14 @@ describe("StorefrontRichText", () => {
     expect(container.textContent).toContain("<script>alert(1)</script>")
   })
 
+  it("leaves out the first bulleted list when 'Sobre este item' already drew it, and nothing else", () => {
+    const { container } = render(<StorefrontRichText markdown={"Intro.\n\n- Destaque\n\n1. Passo\n\n- Outra lista"} skipFirstList />)
+
+    expect(container).not.toHaveTextContent("Destaque")
+    expect(container.querySelector("ol")).toHaveTextContent("Passo")
+    expect(container.querySelector("ul")).toHaveTextContent("Outra lista")
+  })
+
   it("draws nothing for an empty description", () => {
     const { container } = render(<StorefrontRichText markdown={"  \n\n "} />)
 

@@ -10,7 +10,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import * as data from "./storefront-data"
 import * as locale from "./locale"
-import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf, priceFilterOf } from "./storefront-filters"
+import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, filterCountOf, optionFiltersOf, priceFilterOf } from "./storefront-filters"
 import { storefrontRoutes } from "./storefront-routes"
 import { placeOf } from "./storefront-section"
 
@@ -228,5 +228,13 @@ describe("priceFilterOf", () => {
     const empty = { facets: { price: null } } as unknown as Pick<StorefrontCatalog, "facets">
 
     expect(priceFilterOf((await placeOf("loja", "produtos", {}))!, empty, routes, "pt-BR")).toBeNull()
+  })
+})
+
+describe("filterCountOf", () => {
+  it("counts the price range once, the discount, each option value and a narrowing category — never the order", () => {
+    expect(filterCountOf({ filters: { sort: "menor-preco" }, scope: undefined })).toBe(0)
+    expect(filterCountOf({ filters: { priceMin: 10, priceMax: 50, options: ["Sabor:Uva"] }, scope: undefined })).toBe(2)
+    expect(filterCountOf({ filters: { discount: true, options: ["Sabor:Uva", "Peso:300 g"] }, scope: "whey" })).toBe(4)
   })
 })
