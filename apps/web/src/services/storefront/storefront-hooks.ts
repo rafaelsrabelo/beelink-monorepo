@@ -1,13 +1,13 @@
 "use client"
 
 // Libs
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, type UseMutationResult } from "@tanstack/react-query"
 
 // Types
-import type { PublicProductCard } from "@harness-monorepo/contracts"
+import type { CreateRestockRequestPayload, PublicProductCard } from "@harness-monorepo/contracts"
 
 // App
-import { searchStorefront } from "./storefront-requests"
+import { searchStorefront, sendRestockRequest } from "./storefront-requests"
 
 /** Below this a shop answers with most of itself, and every keystroke would be a request. */
 const MIN_QUERY_LENGTH = 2
@@ -17,7 +17,7 @@ const DEBOUNCE_MS = 250
 
 export const storefrontKeys = {
   all: ["storefront"] as const,
-  search: (slug: string, term: string) => [...storefrontKeys.all, slug, "search", term] as const,
+  search: (slug: string, term: string, scope: string) => [...storefrontKeys.all, slug, "search", scope, term] as const,
 }
 
 export interface StorefrontSearchHandle {
@@ -30,13 +30,14 @@ export interface StorefrontSearchHandle {
  * The same term typed, deleted and typed again is one request, because the answer is cached under
  * it — which is what makes this a query rather than something the component re-runs by hand.
  */
-export function useStorefrontSearch(slug: string, term: string): StorefrontSearchHandle {
+export function useStorefrontSearch(slug: string, term: string, scope = ""): StorefrontSearchHandle {
   const trimmed = term.trim()
   const enabled = trimmed.length >= MIN_QUERY_LENGTH
 
   const search = useQuery({
-    queryKey: storefrontKeys.search(slug, trimmed),
-    queryFn: () => searchStorefront(slug, trimmed),
+    // The scope is part of the key: "whey" in every category and "whey" in one are two lists.
+    queryKey: storefrontKeys.search(slug, trimmed, scope),
+    queryFn: () => searchStorefront(slug, trimmed, scope),
     enabled,
     // A shop's catalogue does not change while someone is typing into it, and re-running on a
     // window focus would spend a request to replace a list with itself.
@@ -53,3 +54,15 @@ export function useStorefrontSearch(slug: string, term: string): StorefrontSearc
 }
 
 export { DEBOUNCE_MS, MIN_QUERY_LENGTH }
+
+export interface RestockVariables {
+  productId: string
+  payload: CreateRestockRequestPayload
+}
+
+/** "Avise-me". Nothing is cached from it: a request is not on the shop window. */
+export function useRestockRequest(slug: string): UseMutationResult<void, Error, RestockVariables> {
+  return useMutation({
+    mutationFn: ({ productId, payload }: RestockVariables) => sendRestockRequest(slug, productId, payload),
+  })
+}
