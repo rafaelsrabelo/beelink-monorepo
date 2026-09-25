@@ -9,6 +9,7 @@ import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
+import { shopperAt } from "@/lib/shopper"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
@@ -81,6 +82,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
       // No cover and no promises band from the frame: on this page they are blocks, and which one
       // comes first is the shopkeeper's answer rather than this file's.
       year={new Date().getFullYear()}
+      shopper={await shopperAt(slug)}
       messages={ui}
       blocks={
         <>
@@ -96,6 +98,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
             routes={routes}
             showPrice={layout.showProductPrice ?? true}
             showBadge={layout.showProductBadges ?? true}
+            quickAdd={layout.showQuickAdd ?? true}
             contact={{ slug, whatsappHref: orderHrefOf(store) ?? null, copy: contactCopyOf(web) }}
             messages={ui}
           />

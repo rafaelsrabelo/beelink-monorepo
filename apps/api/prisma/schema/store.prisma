@@ -151,6 +151,7 @@ model Store {
   /// What a site's contact form received. Empty on a shop.
   leads             Lead[]
   components        StoreComponent[]
+  customers         Customer[]
 
   @@index([ownerId])
   @@index([categoryId])

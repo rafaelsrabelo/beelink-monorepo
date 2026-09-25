@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -13,6 +16,8 @@ export interface StorefrontProductRailProps {
   products: readonly StorefrontProduct[]
   /** Built by the screen: a block never knows that a product lives under `/<shop>/<word>/<slug>`. */
   productHref: (productSlug: string) => string
+  /** What each card offers under its price — the web\'s "Adicionar ao carrinho". */
+  cardAction?: (product: StorefrontProduct) => ReactNode
   locale: string
   /** The band's title, and the name the scrollable region answers to. Defaults to "Destaques". */
   title?: string
@@ -36,7 +41,7 @@ export interface StorefrontProductRailProps {
  * peek is deliberate. With no arrows, a card cut by the edge is the whole affordance: it is what
  * says the row keeps going.
  */
-const CARD_WIDTH = "w-44 shop-sm:w-52 shop-lg:w-64"
+const CARD_WIDTH = "w-48 shop-sm:w-56 shop-lg:w-64"
 
 /**
  * The home's band of products, running sideways.
@@ -54,6 +59,7 @@ const CARD_WIDTH = "w-44 shop-sm:w-52 shop-lg:w-64"
 export function StorefrontProductRail({
   products,
   productHref,
+  cardAction,
   locale,
   title,
   label,
@@ -85,7 +91,7 @@ export function StorefrontProductRail({
         previousLabel={text.railPrevious}
         nextLabel={text.railNext}
       >
-        <ul className="flex gap-3 px-4">
+        <ul className="flex gap-4 px-4">
           {products.map((product) => (
             <li key={product.id} className={cn("shrink-0 snap-start", CARD_WIDTH)}>
               <StorefrontProductCard
@@ -94,6 +100,8 @@ export function StorefrontProductRail({
                 locale={locale}
                 showPrice={showPrice}
                 showBadge={showBadge}
+                action={cardAction?.(product)}
+                inRail
                 linkComponent={Link}
                 messages={messages}
               />

@@ -13,7 +13,7 @@ import { ScrollRail } from "./scroll-rail"
  * a content width, and a spy where the browser would have a method — and the observer is a stub
  * that fires once, which is what a real one does on `observe`.
  */
-function renderRail({ contentWidth = 2400, at = 0 }: { contentWidth?: number; at?: number } = {}) {
+function renderRail({ contentWidth = 2400, at = 0, paged = false }: { contentWidth?: number; at?: number; paged?: boolean } = {}) {
   const scrollBy = vi.fn()
   const scrollTo = vi.fn()
 
@@ -46,7 +46,12 @@ function renderRail({ contentWidth = 2400, at = 0 }: { contentWidth?: number; at
   })
 
   const view = render(
-    <ScrollRail label="Destaques" previousLabel="Anterior" nextLabel="Próximos">
+    <ScrollRail
+      label="Destaques"
+      previousLabel="Anterior"
+      nextLabel="Próximos"
+      {...(paged ? { heading: <h2>Você também pode gostar</h2>, pageStatus: "Página {current} de {total}" } : {})}
+    >
       <ul>
         <li>um</li>
         <li>dois</li>
@@ -174,6 +179,27 @@ describe("ScrollRail", () => {
     await user.click(next)
 
     expect(next).not.toHaveFocus()
+  })
+
+  // A page is the width less the 32px bleed, plus the gap after the last card: 800 − 32 + 16.
+  it("steps a page at a time when it is paged, so the next page's first card lands at the edge", async () => {
+    const user = userEvent.setup()
+    const { scrollBy } = renderRail({ paged: true })
+
+    await user.click(screen.getByRole("button", { name: "Próximos" }))
+
+    expect(scrollBy).toHaveBeenCalledWith({ left: 784 })
+  })
+
+  it("says which page is in view beside its heading, and nothing when there is only one", () => {
+    const { unmount } = renderRail({ paged: true, contentWidth: 2368, at: 784 })
+    expect(screen.getByRole("heading", { name: "Você também pode gostar" })).toBeInTheDocument()
+    expect(screen.getByText("Página 2 de 3")).toHaveClass("hidden", "shop-sm:block")
+    expect(screen.getByText("Página 2 de 3")).toHaveAttribute("aria-live", "polite")
+    unmount()
+
+    renderRail({ paged: true, contentWidth: 700 })
+    expect(screen.queryByText(/^Página/)).not.toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {
