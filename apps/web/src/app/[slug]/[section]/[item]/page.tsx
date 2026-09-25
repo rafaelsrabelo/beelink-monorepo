@@ -5,11 +5,15 @@ import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
+// Types
+import type { PublicProductDetail } from "@harness-monorepo/contracts"
+
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
 import { StorefrontProductDetails } from "@harness-monorepo/ui/blocks/storefront/storefront-product-details"
 import { StorefrontRelatedSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-related-skeleton"
 import { plainTextOf } from "@harness-monorepo/ui/lib/markdown"
+import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
 import { specRowsOf } from "@harness-monorepo/ui/lib/product-specs"
 import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
@@ -18,6 +22,7 @@ import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
 import { StorefrontRelated } from "@/components/storefront/storefront-related"
 import { getMessages } from "@/lib/locale"
+import { jsonLdText, productJsonLd } from "@/lib/product-json-ld"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt, navigationAt, productAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
@@ -51,10 +56,9 @@ async function load(slug: string, section: string, productSlug: string) {
   return { store, product }
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/[slug]/[section]/[item]">): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps<"/[slug]/[section]/[item]">): Promise<Metadata> {
   const { slug, section, item } = await params
+  const { variant } = await searchParams
   const loaded = await load(slug, section, item)
 
   if (!loaded) return {}
@@ -72,10 +76,20 @@ export async function generateMetadata({
     openGraph: {
       title: product.name,
       description: descriptionOf(product.description),
-      images: product.images[0]?.url ?? store.logoUrl ?? undefined,
+      // A shared link to "Uva · 300 g" shows that tub, not the product's first photo.
+      images: sharedPhotoOf(product, typeof variant === "string" ? variant : null) ?? store.logoUrl ?? undefined,
       type: "website",
     },
   }
+}
+
+/** The chosen combination's own photo, or the most specific one tagged for it, or the first. */
+function sharedPhotoOf(product: PublicProductDetail, variantId: string | null): string | undefined {
+  const chosen = product.variants.find((entry) => entry.id === variantId)
+  if (!chosen) return product.images[0]?.url
+  if (chosen.imageUrl) return chosen.imageUrl
+  const optionOf = optionOfValue(product.options, (option) => option.values, (value) => value.id)
+  return photosOf(product.images, optionOf, chosen.optionValueIds)[0]?.url ?? product.images[0]?.url
 }
 
 /** Cut where a search result cuts, on a word, so the tail is never half a sentence. */
@@ -132,6 +146,29 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         from Google or from a WhatsApp link has no history to go back through, and this is the only
         thing on the page saying the product sits in a category inside a shop.
       */}
+      {/* In the server's HTML, before any script: what a search result draws the price and trail from. */}
+      <script
+        type="application/ld+json"
+        // Escaped by jsonLdText: every "<" is written as \u003c, so no product name can close the tag.
+        dangerouslySetInnerHTML={{
+          __html: jsonLdText(
+            productJsonLd({
+              product,
+              url: routes.product(product.slug),
+              shopName: store.name,
+              crumbs: [
+                { name: ui.storefront.breadcrumbHome, url: routes.home },
+                product.category
+                  ? { name: product.category.name, url: routes.category(product.category.slug) }
+                  : { name: ui.storefront.productsHeading, url: routes.catalog() },
+                { name: product.name, url: routes.product(product.slug) },
+              ],
+              showPrice: layout.showProductPrice ?? true,
+            }),
+          ),
+        }}
+      />
+
       <div className="py-3.5 leading-[1.2]">
         <StorefrontBreadcrumb
           homeHref={routes.home}
