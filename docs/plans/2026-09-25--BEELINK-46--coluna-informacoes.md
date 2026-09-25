@@ -54,3 +54,18 @@ O id `descricao` sai de uma constante do bloco de seção, usada pela página e 
 - Ficha rápida: escondida até existirem as especificações do D4 — feita só das opções, repetiria as
   legendas do seletor logo acima (ajuste da revisão do ticket).
 - O aviso "Esgotado" continua acima do preço até o D7 levá-lo para a caixa de compra.
+
+## Revisão (25/09/2026)
+
+Três leituras independentes, cada achado verificado por um revisor que tentou refutá-lo. Dois
+confirmados, os dois corrigidos:
+
+- **A linha que apresenta a lista vai junto com ela.** Três dos quatro produtos com lista na base
+  local — todos da loja mutante-performance — escrevem "**Destaques do produto:**" antes da lista.
+  Com a lista em "Sobre este item", o título ficava em `#descricao` sem nada embaixo. Um parágrafo
+  de uma linha logo antes da lista, que termina em dois-pontos ou é só negrito, sai com ela.
+- **Divisórias como borda.** Em modo de alto contraste o fundo é repintado e a divisória de 1px
+  sumia; a borda é mantida, como já é nas seções de baixo.
+
+Rejeitado: "Sobre este item" empurrar a caixa de compra para baixo entre 1024 e 1279px. É a ordem
+decidida no D11 (informações, depois compra), não um defeito deste ticket.

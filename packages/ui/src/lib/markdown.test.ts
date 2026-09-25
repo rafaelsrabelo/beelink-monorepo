@@ -51,6 +51,16 @@ describe("the description's Markdown", () => {
     expect(withoutFirstList("Sem lista.")).toHaveLength(1)
   })
 
+  // As the first shops wrote them: a heading line, then the list — the heading goes with it.
+  it("takes the line that introduced the list with it, and keeps a paragraph that says more", () => {
+    const kinds = (markdown: string) => withoutFirstList(markdown).map((block) => (block.kind === "paragraph" ? "p" : "list"))
+
+    expect(kinds("Creatina pura.\n\n**Destaques do produto:**\n\n- Força\n\n- Energia\n\n**Modo de uso:** misture.")).toEqual(["p", "p"])
+    expect(withoutFirstList("Intro.\n\n🥛 **Destaques do produto**\n\n- Proteína")).toHaveLength(1)
+    expect(kinds("Intro.\n\nFeita para **treinos longos** e pesados.\n\n- Proteína")).toEqual(["p", "p"])
+    expect(kinds("**Título**\nsegunda linha\n\n- Proteína")).toEqual(["p"])
+  })
+
   it("keeps a mark that never closes as text, so a price with an asterisk survives", () => {
     expect(parseInline("R$ 10 * 2 e um _ solto")).toEqual([{ kind: "text", text: "R$ 10 * 2 e um _ solto" }])
     expect(parseInline("**aberto")).toEqual([{ kind: "text", text: "**aberto" }])

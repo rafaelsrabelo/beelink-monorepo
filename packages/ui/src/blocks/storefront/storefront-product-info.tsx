@@ -69,7 +69,8 @@ export function StorefrontProductInfo({
       {parts.map(([key, part]) =>
         part ? (
           <Fragment key={key}>
-            <div aria-hidden="true" className="h-px bg-shop-line" />
+            {/* A border, not a fill: forced colours paint a background away, and keep a border. */}
+            <div aria-hidden="true" className="border-t border-shop-line" />
             {part}
           </Fragment>
         ) : null,

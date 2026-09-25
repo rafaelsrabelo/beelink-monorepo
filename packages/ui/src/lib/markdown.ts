@@ -150,9 +150,26 @@ export function firstListOf(markdown: string): MarkdownInline[][] {
   return list?.kind === "list" ? list.items : []
 }
 
-/** Every block but that first bulleted list: the description, once "Sobre este item" has drawn it. */
+/**
+ * A one-line paragraph that only introduces the list after it — "**Destaques do produto:**", or
+ * "🥛 **Destaques do produto**": it ends in a colon, or is bold and nothing else but symbols.
+ */
+function isLeadIn(block: MarkdownBlock | undefined): boolean {
+  if (block?.kind !== "paragraph" || block.lines.length !== 1) return false
+  const line = block.lines[0] as MarkdownInline[]
+  const onlyBold = line.some((node) => node.kind === "strong") && line.every((node) => node.kind === "strong" || (node.kind === "text" && !/[\p{L}\p{N}]/u.test(node.text)))
+  return onlyBold || inlineText(line).trim().endsWith(":")
+}
+
+/**
+ * Every block but that first bulleted list, and the line that introduced it: the description, once
+ * "Sobre este item" has drawn the list under a heading of its own. Left behind, "Destaques do
+ * produto:" would head nothing.
+ */
 export function withoutFirstList(markdown: string): MarkdownBlock[] {
   const blocks = parseMarkdown(markdown)
   const at = blocks.findIndex(isBulleted)
-  return at === -1 ? blocks : blocks.filter((_, index) => index !== at)
+  if (at === -1) return blocks
+  const from = isLeadIn(blocks[at - 1]) ? at - 1 : at
+  return [...blocks.slice(0, from), ...blocks.slice(at + 1)]
 }
