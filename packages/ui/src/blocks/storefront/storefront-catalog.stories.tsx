@@ -66,3 +66,9 @@ export const TituloLongo: Story = {
     ),
   ],
 }
+
+/** Os filtros não deixaram nada: "Ver tudo" leva ao mesmo endereço de "Limpar tudo". */
+export const VazioComFiltros: Story = { args: { products: [], clearHref: "#", filtered: true } }
+
+/** A leitura falhou: a prateleira diz isso, em vez de "nada encontrado", e oferece tentar de novo. */
+export const NaoCarregou: Story = { args: { products: [], retryHref: "#" } }

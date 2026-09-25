@@ -168,7 +168,7 @@ export function StorefrontWindow({
 
   return (
     <ShopPaletteProvider colors={colors}>
-    <div style={dressed} className="flex min-h-svh flex-col">
+    <div data-shop-window="" style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
         <StorefrontAnnouncement

@@ -161,7 +161,8 @@ export interface UiMessages {
     /** Read after a value no combination has: ", indisponível". */
     valueMissing: string
     /** Read after a value whose combination is sold out: ", esgotado". */
-    valueSoldOut: string
+    /** A sold-out value's second line on its card or pill, where its price would be. */
+    valueSoldOutNotify: string
     /** Said in place of the order button when the chosen combination is sold out. */
     combinationSoldOut: string
     notifyMe: string
@@ -177,6 +178,17 @@ export interface UiMessages {
     restockCancel: string
     /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
     photoOf: string
+    /** Under the product photo, only where a pointer hovers. */
+    galleryHint: string
+    /** The thumbnails that did not fit: "+{count}". */
+    galleryMore: string
+    galleryMoreLabel: string
+    /** A slide of the product photo, which opens the viewer. */
+    galleryOpen: string
+    galleryViewerTitle: string
+    galleryClose: string
+    photoPrevious: string
+    photoNext: string
     /** The header's basket, which now has an address of its own. */
     cart: string
     /** `{count}` — the basket's accessible name, which says how many lines it holds. */
@@ -207,6 +219,14 @@ export interface UiMessages {
     seeOptions: string
     buyNow: string
     viewCart: string
+    /** The phone bar's short line after an add: "Adicionado · Ver carrinho". */
+    addedShort: string
+    /** The buy box's stock line; a count is never public. */
+    inStock: string
+    /** Under the buy box's buttons, for a shop that takes orders on WhatsApp. */
+    finishOnWhatsApp: string
+    soldBy: string
+    payment: string
     /** Closing the order on the shop's WhatsApp (F4). */
     checkoutWhatsApp: string
     /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
@@ -269,6 +289,20 @@ export interface UiMessages {
     accountState: string
     accountSave: string
     accountSaved: string
+    /** The product page (5b). `{name}` — the shop, over the title. */
+    visitShop: string
+    /** The buy column's landmark name. */
+    buyBoxLabel: string
+    descriptionHeading: string
+    /** The product page's related rail: what it is, never "customers who viewed" — nothing is tracked. */
+    relatedHeading: string
+    specsHeading: string
+    /** The technical table's row for the product's category. */
+    specCategory: string
+    /** "Sobre este item": the description's first list, in the info column. */
+    aboutItem: string
+    /** Down to the rest of the description; the "›" is drawn apart. */
+    fullDescription: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
@@ -319,6 +353,16 @@ export interface UiMessages {
     breadcrumbHome: string
     empty: string
     emptyHint: string
+    /** An empty shelf with filters in force, and its way out to the same address as "Limpar tudo". */
+    emptyFiltered: string
+    emptyFilteredHint: string
+    emptySeeAll: string
+    /** An empty category or search, and its way out to the whole catalogue. */
+    emptyCatalog: string
+    /** The shelf could not be read: an outage, never "nothing found". */
+    shelfFailed: string
+    shelfFailedHint: string
+    shelfRetry: string
     productsHeading: string
     /**
      * "{count} produtos", under the catalogue's title and on a category's card. One pair serves
@@ -439,6 +483,8 @@ export interface UiMessages {
       pix: string
       creditCard: string
       debitCard: string
+      /** Credit and debit together, as the buy box lists them. */
+      card: string
     }
     /** A site's contact form, as the visitor fills it in. */
     contact: {
@@ -661,6 +707,27 @@ export interface UiMessages {
     }
   }
   /** What arrived through a site's contact form, as its owner works through it. */
+  /** The panel's list of who opened an account at the shop. */
+  customers: {
+    title: string
+    description: string
+    searchLabel: string
+    searchPlaceholder: string
+    name: string
+    contact: string
+    place: string
+    stage: string
+    since: string
+    stages: { LEAD: string; CUSTOMER: string }
+    /** Beside an e-mail its owner never confirmed. */
+    unverified: string
+    empty: string
+    emptyHint: string
+    emptySearch: string
+    range: string
+    previous: string
+    next: string
+  }
   leads: {
     title: string
     description: string
