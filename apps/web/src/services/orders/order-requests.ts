@@ -23,6 +23,7 @@ export async function fetchOrders(slug: string, query: OrderListQuery = {}): Pro
   const search = new URLSearchParams()
   if (query.status) search.set("status", query.status)
   if (query.q) search.set("q", query.q)
+  if (query.customerId) search.set("customerId", query.customerId)
   if (query.page && query.page > 1) search.set("page", String(query.page))
   if (query.pageSize) search.set("pageSize", String(query.pageSize))
 

@@ -1,5 +1,12 @@
 // Types
-import type { CreateStoreCustomerPayload, StoreCustomer, StoreCustomerListQuery, StoreCustomerPage } from "@harness-monorepo/contracts"
+import type {
+  CreateStoreCustomerPayload,
+  StoreCustomer,
+  StoreCustomerDetail,
+  StoreCustomerListQuery,
+  StoreCustomerPage,
+  UpdateStoreCustomerPayload,
+} from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class CustomerRequestError extends Error {
@@ -36,15 +43,27 @@ export async function fetchStoreCustomers(slug: string, query: StoreCustomerList
   return payload as StoreCustomerPage
 }
 
-/** One of the shop's customers — the one a new order was opened for. */
-export async function fetchStoreCustomer(slug: string, customerId: string): Promise<StoreCustomer> {
+/** One of the shop's customers, as their record reads them — also the one a new order was opened for. */
+export async function fetchStoreCustomer(slug: string, customerId: string): Promise<StoreCustomerDetail> {
   const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers/${encodeURIComponent(customerId)}`, {
     method: "GET",
     headers: JSON_HEADERS,
   })
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new CustomerRequestError(errorCodeOf(payload))
-  return payload as StoreCustomer
+  return payload as StoreCustomerDetail
+}
+
+/** Corrects the shop's record of a customer; a phone another customer has is `CUSTOMER_PHONE_TAKEN`. */
+export async function updateStoreCustomer(slug: string, customerId: string, payload: UpdateStoreCustomerPayload): Promise<StoreCustomerDetail> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers/${encodeURIComponent(customerId)}`, {
+    method: "PATCH",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new CustomerRequestError(errorCodeOf(body))
+  return body as StoreCustomerDetail
 }
 
 /** Registers a customer with no account; a phone the shop has is `CUSTOMER_PHONE_TAKEN`. */

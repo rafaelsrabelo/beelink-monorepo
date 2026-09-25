@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { CreateStoreCustomerPayload, StoreCustomer, StoreCustomerListQuery, StoreCustomerPage } from "@harness-monorepo/contracts"
+import type { CreateStoreCustomerPayload, StoreCustomer, StoreCustomerDetail, StoreCustomerListQuery, StoreCustomerPage } from "@harness-monorepo/contracts"
 
 // App
 import { createStoreCustomer, fetchStoreCustomer, fetchStoreCustomers } from "./customer-requests"
@@ -14,7 +14,8 @@ import { createStoreCustomer, fetchStoreCustomer, fetchStoreCustomers } from "./
 export const customerKeys = {
   all: ["store-customers"] as const,
   store: (slug: string) => [...customerKeys.all, slug] as const,
-  list: (slug: string, query: StoreCustomerListQuery) => [...customerKeys.store(slug), "list", query] as const,
+  lists: (slug: string) => [...customerKeys.store(slug), "list"] as const,
+  list: (slug: string, query: StoreCustomerListQuery) => [...customerKeys.lists(slug), query] as const,
   detail: (slug: string, customerId: string) => [...customerKeys.store(slug), "detail", customerId] as const,
 }
 
@@ -32,7 +33,7 @@ export function useStoreCustomers(
   })
 }
 
-export function useStoreCustomer(slug: string, customerId: string | null): UseQueryResult<StoreCustomer, Error> {
+export function useStoreCustomer(slug: string, customerId: string | null): UseQueryResult<StoreCustomerDetail, Error> {
   return useQuery({
     queryKey: customerKeys.detail(slug, customerId ?? ""),
     queryFn: () => fetchStoreCustomer(slug, customerId ?? ""),
