@@ -81,3 +81,33 @@ a tela não recalcula nada, para o selo e a frase nunca discordarem.
 - O lojista editar os textos das mensagens.
 - Exportar a lista.
 - A ficha do cliente (H7): a linha já leva a `/admin/<loja>/customers/<id>`.
+
+## Adendo — decisões da implementação (2026-09-25)
+
+### 8. O botão diz "WhatsApp" na tabela e a frase inteira no cartão
+
+A coluna da tabela é estreita, e a tabela já tem sete. O cartão tem espaço e diz "Chamar no
+WhatsApp". O nome acessível é o mesmo nos dois, "Chamar no WhatsApp: Bia Souza", e contém o que
+cada um mostra: quem navega por botões sabe com quem vai falar em cada linha.
+
+### 9. Os pedaços da lista moram em `packages/ui/src/blocks/customers/`
+
+`CustomerList` escolhe tabela ou cartões pela coluna principal (`@4xl/main`), como `OrderList`. O
+selo com os dias, a linha de contato e o botão do WhatsApp são peças da tabela e dos cartões; a
+história e o teste são da lista. As abas (`CustomerStageTabs`) e a busca com a ordem
+(`CustomerToolbar`) têm história e teste próprios.
+
+### 10. O nome da loja vem da loja em cache
+
+A mensagem diz "Aqui é da <loja>" com o nome que o menu do painel já leu (`useStore`), como o pedido
+aberto faz. Não há uma segunda leitura.
+
+### 11. O endereço da lista repete o desenho de Produtos e Pedidos
+
+A caixa de busca segurada localmente, com debounce e o "o endereço vence", agora está em três telas:
+`product-screen.tsx`, `orders-screen.tsx` e `use-customer-list-address.ts`. Extrair um hook comum
+mexe nas duas telas que já existem e fica para um ticket próprio.
+
+### 12. Não verificado ao vivo
+
+O navegador compartilhado estava em uso por outra sessão; a entrega foi verificada só pelos testes.
