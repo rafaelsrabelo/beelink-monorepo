@@ -76,6 +76,16 @@ describe("StorefrontProductCard", () => {
     expect(container.querySelector("a")).toHaveClass("after:absolute", "after:inset-0")
   })
 
+  it("passes through its photos when it has more than one, and draws the cover alone otherwise", () => {
+    const { container, rerender } = renderCard({ product: { ...product, imageUrls: ["/1.jpg", "/2.jpg"] } })
+    expect(container.querySelectorAll("img")).toHaveLength(2)
+    expect(container.querySelector(".snap-x")).not.toBeNull()
+
+    rerender(<StorefrontProductCard product={{ ...product, imageUrls: ["/1.jpg"] }} href="/x" locale="pt-BR" />)
+    expect(container.querySelectorAll("img")).toHaveLength(1)
+    expect(container.querySelector(".snap-x")).toBeNull()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = renderCard()
 
