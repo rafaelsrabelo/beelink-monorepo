@@ -14,13 +14,13 @@ What the API sends is a stable `errorCode`, never a sentence — the apps own th
 
 ## Accounts
 
-An **account** is how a person proves who they are, to bee-link. A shopkeeper has one. So does a customer who chose to be remembered — the same kind of account, reached through a different door, and the two are never the same session.
+An **account** is how a person proves who they are. A shopkeeper has one, and it is **bee-link's**: it opens the panel. A customer who chose to be remembered has one too, and it is **the shop's**: opened at one shop, it exists there and nowhere else — not at another shop, not in the panel. The same person buying from two shops has two accounts, with two passwords, and signing in at one is not signing in at the other.
 
-- It has a **name**, an **e-mail** and a **password**. No two accounts share an e-mail, compared without case and without surrounding spaces.
+- It has a **name**, an **e-mail** and a **password**. No two accounts of bee-link share an e-mail, and no two accounts of one shop do, compared without case and without surrounding spaces; the same e-mail may have an account at every shop and one more at bee-link.
 - A password has between 8 and 128 characters.
 - An account is born **unverified**. Signing up sends an e-mail with a confirmation link, valid for 24 hours and usable once. Asking again sends a new link.
 - An unverified account cannot sign in.
-- Signing in opens a **session** on that device. A session lives while it is used at least once every 30 days; signing out ends that device's session only.
+- Signing in opens a **session** on that device, at the door the account belongs to: the panel, or its shop. A session lives while it is used at least once every 30 days; signing out ends that device's session only.
 - A forgotten password is replaced through an e-mailed link, valid for 1 hour and usable once. Replacing the password ends every session of the account.
 - Whether an e-mail has an account is never revealed: "forgot password" and "resend confirmation" answer the same way for any address, and a wrong password reads the same as an unknown e-mail.
 
@@ -63,7 +63,7 @@ The panel at `/admin/<slug>` is where the shopkeeper works: the catalogue, the o
 
 A **customer** is a store's own record of someone who bought from it: a name, a phone number and an address, remembered so they do not retype it next time. The phone number identifies them **within one store**: the same person buying from two stores is two customers, and neither store learns about the other.
 
-A customer may be **linked to an account**, and that link is what lets an address follow them. The account is bee-link's; the customer record is the shopkeeper's. **No shopkeeper ever reads the account**, which is what keeps the sentence above literally true: a person with one bee-link account who buys from two stores is still two customers, and neither store can tell.
+A customer may be **linked to an account** — the shop's own, opened there — and that link is what lets an address follow them. Opening the account is what makes the person the shop's customer: a lead until they buy. **No shopkeeper ever reads the account's password or sessions**, and no account reaches past its shop, which is what keeps the sentence above literally true: a person who buys from two stores is two customers with two accounts, and neither store can tell.
 
 The link is optional, and a customer without one is not a lesser customer. Shops carried over from the legacy product arrive with no e-mail on file at all.
 
