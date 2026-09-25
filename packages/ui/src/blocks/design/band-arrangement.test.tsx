@@ -63,6 +63,63 @@ describe("BandArrangement", () => {
     expect(onInsert).toHaveBeenCalledWith({ level: "band", index: 2 })
   })
 
+  describe("side by side — the owner's “não consigo colocar banners ao lado do outro”", () => {
+    const stacked: ArrangementBand[] = [
+      { id: "top", isActive: true, components: [{ id: "a", kind: "BANNER", title: "Inverno", span: "FULL", isActive: true }] },
+      { id: "below", isActive: true, components: [{ id: "b", kind: "BANNER", title: "Verão", span: "FULL", isActive: true }] },
+    ]
+
+    it("offers “Adicionar ao lado” in words on every block, and a whole one gives up half its row", async () => {
+      const onInsert = vi.fn()
+      renderBands({ bands: stacked, onInsert })
+
+      const beside = screen.getByRole("button", { name: "Adicionar ao lado de Inverno" })
+      expect(beside).toHaveTextContent("Adicionar ao lado")
+      await userEvent.click(beside)
+
+      expect(onInsert).toHaveBeenCalledWith({
+        level: "beside",
+        sectionId: "top",
+        index: 1,
+        span: "HALF",
+        rebalance: [{ id: "a", span: "HALF" }],
+      })
+    })
+
+    it("puts a lone block up beside the band above's last one, in the same row", async () => {
+      const onJoinAbove = vi.fn()
+      renderBands({ bands: stacked, onJoinAbove })
+
+      await userEvent.click(screen.getByRole("button", { name: "Pôr ao lado de Inverno" }))
+
+      expect(onJoinAbove).toHaveBeenCalledWith({
+        componentId: "b",
+        sectionId: "top",
+        index: 1,
+        span: "HALF",
+        rebalance: [{ id: "a", span: "HALF" }],
+      })
+      // The first band has no band above it to join.
+      expect(screen.queryByRole("button", { name: /Pôr ao lado de Verão/ })).not.toBeInTheDocument()
+    })
+
+    it("offers nothing beside a full row of three, since a third is the narrowest slice", () => {
+      const onInsert = vi.fn()
+      renderBands({
+        bands: [
+          {
+            id: "row",
+            isActive: true,
+            components: ["x", "y", "z"].map((id) => ({ id, kind: "BANNER" as const, title: id, span: "THIRD" as const, isActive: true })),
+          },
+        ],
+        onInsert,
+      })
+
+      expect(screen.queryByRole("button", { name: /Adicionar ao lado de/ })).not.toBeInTheDocument()
+    })
+  })
+
   it("calls a band by where it sits, because a band has no name", () => {
     renderBands()
 

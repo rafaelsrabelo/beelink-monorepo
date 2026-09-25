@@ -669,6 +669,11 @@ export interface UiMessages {
     /** The "+" between bands and between blocks. `{position}` counts from 1; `{band}` is the band's name. */
     insertBand: string
     insertBlock: string
+    /** A block's own button, and its name for a reader: `{name}` is the block beside which it adds. */
+    addBeside: string
+    addBesideOf: string
+    /** Moves a band's only block up, beside the last block of the band above: `{name}` is that block. */
+    joinAbove: string
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
     /** Said in place of the kind when a block has nothing for the shop window to draw. */

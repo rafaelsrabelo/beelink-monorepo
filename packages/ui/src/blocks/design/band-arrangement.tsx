@@ -13,10 +13,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ArrangeBoard } from "./design-arrange"
+import { besideInBand } from "./band-beside"
 import { bandAnnouncements } from "./band-label"
 import { InsertPoint } from "./insert-point"
 import { BandRow } from "./band-row"
-import type { ArrangementItem, ArrangementSpan } from "./arrangement-row"
+import { hasSpan, type ArrangementItem, type ArrangementSpan } from "./arrangement-row"
 import type { SectionWidth } from "./design-types"
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx` and apps/web reaches
@@ -54,6 +55,11 @@ export interface BandArrangementProps {
    * band — the only way two blocks end up side by side. Without it the panel offers no "+".
    */
   onInsert?: (at: InsertAt) => void
+  /**
+   * A band's only block moved up beside the last block of the band above, when that row has room —
+   * how two banners stacked in two bands end up side by side without being made again.
+   */
+  onJoinAbove?: (move: JoinAbove) => void
   /** While an add is on its way, so a second "+" does not start a second one. */
   inserting?: boolean
   /** The block whose fields are open, marked here as the preview marks it. */
@@ -61,8 +67,32 @@ export interface BandArrangementProps {
   messages?: UiMessages
 }
 
-/** Where a "+" inserts: among the bands, or inside one of them. Indices count from 0. */
-export type InsertAt = { level: "band"; index: number } | { level: "block"; sectionId: string; index: number }
+/**
+ * Where a "+" inserts: among the bands, inside one of them, or beside a block — which also says
+ * the slice the newcomer takes and the neighbours that give up room for it (`besideOf`).
+ * Indices count from 0.
+ */
+export type InsertAt =
+  | { level: "band"; index: number }
+  | { level: "block"; sectionId: string; index: number }
+  | { level: "beside"; sectionId: string; index: number; span: ArrangementSpan; rebalance: readonly SpanChange[] }
+
+/** A block that changes slice so a row has room: the width change a SpanField makes, by id. */
+export interface SpanChange {
+  id: string
+  span: ArrangementSpan
+}
+
+/** A band's only block moved beside the last block of the band above, in the same row. */
+export interface JoinAbove {
+  componentId: string
+  /** The band above, which it joins. */
+  sectionId: string
+  /** Its place there: after the last block. */
+  index: number
+  span: ArrangementSpan
+  rebalance: readonly SpanChange[]
+}
 
 /**
  * The landing page at both of its levels: bands in order, and what is inside each one.
@@ -88,11 +118,25 @@ export function BandArrangement({
   onDelete,
   onEdit,
   onInsert,
+  onJoinAbove,
   inserting = false,
   selectedId = null,
   messages = defaultMessages,
 }: BandArrangementProps) {
   const text = messages.design
+
+  // The band's only block, beside the last block of the band above — when that row has room.
+  const joinAboveOf = (at: number) => {
+    const above = bands[at - 1]
+    const [only, second] = bands[at]?.components ?? []
+    const last = above?.components.at(-1)
+    const room = onJoinAbove && above && only && !second && hasSpan(only) ? besideInBand(above.components, above.components.length - 1) : null
+    if (!onJoinAbove || !above || !only || !last || !room) return null
+    return {
+      name: last.title?.trim() || text.kinds[last.kind],
+      onJoin: () => onJoinAbove({ componentId: only.id, sectionId: above.id, ...room }),
+    }
+  }
 
   const announcements = bandAnnouncements(bands, messages)
 
@@ -151,8 +195,13 @@ export function BandArrangement({
             onDelete={onDelete}
             onEdit={onEdit}
             {...(onInsert
-              ? { onInsertBlock: (index: number) => onInsert({ level: "block", sectionId: band.id, index }) }
+              ? {
+                  onInsertBlock: (index: number) => onInsert({ level: "block", sectionId: band.id, index }),
+                  onInsertBeside: (beside: Omit<Extract<InsertAt, { level: "beside" }>, "level" | "sectionId">) =>
+                    onInsert({ level: "beside", sectionId: band.id, ...beside }),
+                }
               : {})}
+            joinAbove={joinAboveOf(at)}
             inserting={inserting}
             selectedId={selectedId}
             messages={messages}

@@ -14,6 +14,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { useArrangeItem } from "./design-arrange"
 import { RowThumbnail } from "./row-thumbnail"
 import type { StorefrontSpan } from "../storefront/storefront-band-cell"
+import { BesideActions } from "./beside-actions"
 import type { ComponentKind, SectionWidth } from "./design-types"
 import { SpanField } from "./span-field"
 
@@ -65,6 +66,8 @@ export function ArrangementRow({
   onEdit,
   bandWidth,
   selected = false,
+  onAddBeside,
+  inserting = false,
   messages,
 }: {
   item: ArrangementItem
@@ -78,6 +81,9 @@ export function ArrangementRow({
   onEdit?: (id: string) => void
   /** The width of the band the block sits in, said beside the block's own. */
   bandWidth?: SectionWidth
+  /** A block beside this one, in its row. Absent when the row has no room. */
+  onAddBeside?: () => void
+  inserting?: boolean
   messages: UiMessages
 }) {
   const text = messages.design
@@ -190,6 +196,8 @@ export function ArrangementRow({
           messages={messages}
         />
       ) : null}
+
+      <BesideActions name={name} {...(onAddBeside ? { onAddBeside } : {})} disabled={inserting} messages={messages} />
     </li>
   )
 }

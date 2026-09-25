@@ -16,6 +16,8 @@ import { ArrangeBoard, useArrangeItem } from "./design-arrange"
 import { ArrangementRow } from "./arrangement-row"
 import type { ArrangementSpan } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
+import { besideInBand, type BesideInBand } from "./band-beside"
+import type { BesideActionsProps } from "./beside-actions"
 import { bandLabelOf } from "./band-label"
 import { InsertPoint } from "./insert-point"
 import { SingleBlockCard, singleShown } from "./single-block-card"
@@ -40,6 +42,8 @@ export function BandRow({
   onDelete,
   onEdit,
   onInsertBlock,
+  onInsertBeside,
+  joinAbove = null,
   inserting = false,
   selectedId = null,
   messages,
@@ -63,6 +67,10 @@ export function BandRow({
    * thirds of nothing beside it.
    */
   onInsertBlock?: (index: number) => void
+  /** A block beside another, with the slice it takes and the room its row gives up. */
+  onInsertBeside?: (at: BesideInBand) => void
+  /** This band's only block, moved beside the last block of the band above. */
+  joinAbove?: BesideActionsProps["joinAbove"]
   inserting?: boolean
   /** The block whose fields are open. */
   selectedId?: string | null
@@ -75,6 +83,11 @@ export function BandRow({
     format(text.insertBlock, { band: name, position: String(index + 1) })
   const [only] = band.components
   const single = only && band.components.length === 1 ? only : null
+  // Beside the block at `at` when its row has room, or when the row can be split evenly with it.
+  const besideAt = (at: number) => {
+    const beside = onInsertBeside ? besideInBand(band.components, at) : null
+    return onInsertBeside && beside ? { onAddBeside: () => onInsertBeside(beside) } : {}
+  }
 
   return (
     <li
@@ -107,6 +120,9 @@ export function BandRow({
           onToggle={onToggle}
           onSpanChange={onSpanChange}
           onEdit={onEdit}
+          {...besideAt(0)}
+          joinAbove={joinAbove}
+          inserting={inserting}
           messages={messages}
         />
       ) : (
@@ -204,6 +220,8 @@ export function BandRow({
                   {...(band.width ? { bandWidth: band.width } : {})}
                   onDelete={onDelete}
                   onEdit={onEdit}
+                  {...besideAt(at)}
+                  inserting={inserting}
                   messages={messages}
                 />,
               ])}

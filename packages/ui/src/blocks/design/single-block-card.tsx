@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { hasSpan, type ArrangementItem, type ArrangementSpan } from "./arrangement-row"
 import type { ArrangementBand } from "./band-arrangement"
+import { BesideActions, type BesideActionsProps } from "./beside-actions"
 import type { useArrangeItem } from "./design-arrange"
 import { RowThumbnail } from "./row-thumbnail"
 import { SpanField } from "./span-field"
@@ -31,6 +32,10 @@ export interface SingleBlockCardProps {
   onToggle: (id: string, isActive: boolean) => void
   onSpanChange: (id: string, span: ArrangementSpan) => void
   onEdit: (id: string) => void
+  /** See `BesideActions`: absent when the row has no room, null when there is nothing above to join. */
+  onAddBeside?: () => void
+  joinAbove?: BesideActionsProps["joinAbove"]
+  inserting?: boolean
   messages: UiMessages
 }
 
@@ -65,6 +70,9 @@ export function SingleBlockCard({
   onToggle,
   onSpanChange,
   onEdit,
+  onAddBeside,
+  joinAbove = null,
+  inserting = false,
   messages,
 }: SingleBlockCardProps) {
   const text = messages.design
@@ -152,6 +160,8 @@ export function SingleBlockCard({
           messages={messages}
         />
       ) : null}
+
+      <BesideActions name={name} {...(onAddBeside ? { onAddBeside } : {})} joinAbove={joinAbove} disabled={inserting} messages={messages} />
     </>
   )
 }
