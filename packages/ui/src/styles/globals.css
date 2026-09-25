@@ -141,6 +141,8 @@
     --color-shop-fill: var(--shop-fill);
     --color-shop-placeholder: var(--shop-placeholder);
     --color-shop-canvas: var(--shop-canvas);
+    --color-shop-primary-tint: var(--shop-primary-tint);
+    --color-shop-primary-tint-strong: var(--shop-primary-tint-strong);
     --color-shop-sale: var(--shop-sale);
     --color-shop-on-sale: var(--shop-on-sale);
     --color-shop-sale-ink: var(--shop-sale-ink);
@@ -338,6 +340,15 @@
   html {
     @apply font-sans;
     }
+  /*
+   * The product page's phone bar is up (StorefrontProductPurchase sets the attribute): whatever Tab
+   * reaches is scrolled clear of it rather than under it. Only below shop-lg, where the bar shows.
+   */
+  @media (width < 64rem) {
+    html[data-buy-bar] {
+      scroll-padding-bottom: 6rem;
+    }
+  }
 }
 /**
  * A row that scrolls sideways without the bar underneath it.

@@ -55,11 +55,6 @@ export interface StorefrontFrameProps {
    */
   year: number
   /**
-   * Replaces the live search. The design preview passes a plain form, because the live one asks
-   * the API on every keystroke and a preview that talks to the network is a preview that costs
-   * something to look at.
-   */
-  /**
    * The landing page's own blocks, drawn edge to edge in the shopkeeper's order.
    *
    * When it is given the frame stops drawing the cover and the promises band from the shop's
@@ -70,13 +65,7 @@ export interface StorefrontFrameProps {
   pageHeader?: ReactNode
   /** How the page below it sits: 5a's listing draws its own columns on the canvas. */
   body?: Pick<StorefrontWindowProps, "layout" | "surface">
-  /**
-   * The palette to paint with, when it is not the one the shop has saved.
-   *
-   * Design mode passes the colours being edited, so the preview answers the picker rather than
-   * the database. Nothing else passes it: a shop window painting anything other than what the
-   * shop stores would be a shop window showing a page no visitor gets.
-   */
+  /** The palette being edited in design mode, so the preview answers the picker. Nothing else passes it. */
   colors?: PublicStore["colors"]
   /**
    * The arrangement being drawn, when it is not the one the store has saved.
@@ -86,7 +75,10 @@ export interface StorefrontFrameProps {
    * else passes it.
    */
   sections?: readonly PublicSection[]
+  /** Replaces the live search: the design preview's plain form, which costs nothing to look at. */
   searchSlot?: ReactNode
+  /** The signed-in shopper, read once per request by the page; null or absent, a visitor. */
+  shopper?: { name: string } | null
   /**
    * How every injected link is drawn. The preview passes one that renders no `href`, so nothing
    * in it navigates and nothing in it takes a tab stop. `StorefrontWindow` does not forward this
@@ -129,6 +121,7 @@ export function StorefrontFrame({
   sections,
   year,
   searchSlot,
+  shopper,
   linkComponent,
   messages,
   children,
@@ -204,10 +197,11 @@ export function StorefrontFrame({
             searchAction: routes.search(),
             searchScopes: scopes,
             searchScope: scope,
-            // The basket, on every page: it has an address. The account link waits for a customer
-            // account to exist — `/login` is the shopkeeper's door, the wrong one for a visitor.
+            // The basket and the shopper's own door — the shop's sign-in, never the panel's `/login`.
             cartHref: routes.cart(),
             cartSlot: <StorefrontCartLinkLive href={routes.cart()} messages={messages} />,
+            accountHref: shopper ? routes.account() : routes.signIn(),
+            accountName: shopper?.name ?? null,
           })}
       {...(linkComponent ? { linkComponent } : {})}
       categories={

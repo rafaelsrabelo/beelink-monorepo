@@ -7,9 +7,15 @@ import type { ProductOrigin, ProductStatus, ProductStockFilter, RouteVocabulary,
  * literal "produtos", and changing a shop's vocabulary changes every link it renders at once.
  */
 export const ROUTE_WORDS = {
-  PT_BR: { products: 'produtos', categories: 'categorias', search: 'busca', cart: 'carrinho' },
-  EN: { products: 'products', categories: 'categories', search: 'search', cart: 'cart' },
+  PT_BR: { products: 'produtos', categories: 'categorias', search: 'busca', cart: 'carrinho', signIn: 'entrar', account: 'conta' },
+  EN: { products: 'products', categories: 'categories', search: 'search', cart: 'cart', signIn: 'login', account: 'account' },
 } as const satisfies Record<RouteVocabulary, StorefrontRouteWords>;
+
+/**
+ * How many photos a card carries: enough to pass through on a shelf, few enough that a page of
+ * cards does not ship every gallery. The product's own page reads them all.
+ */
+export const CARD_PHOTOS_MAX = 5;
 
 export const ROUTE_VOCABULARIES = ['PT_BR', 'EN'] as const satisfies readonly RouteVocabulary[];
 

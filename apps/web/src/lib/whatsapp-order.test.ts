@@ -35,7 +35,11 @@ describe("the WhatsApp order", () => {
         ],
         subtotalCents: 24970,
       },
-      customerName: "  Rafael ",
+      customer: {
+        name: "Rafael",
+        phone: "11988887777",
+        address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: "Bela Vista", city: "São Paulo", state: "SP" },
+      },
       locale: "pt-BR",
       messages: ptBR,
     }).replace(/ /g, " ")
@@ -49,14 +53,19 @@ describe("the WhatsApp order", () => {
         "",
         "Total: R$ 249,70",
         "Nome: Rafael",
+        "Celular: 11988887777",
+        "Endereço: Av. Paulista, 1000 — Bela Vista — São Paulo/SP — CEP 01310-930",
       ].join("\n"),
     )
   })
 
-  it("leaves the name out when none was given", () => {
-    const message = orderMessageOf({ shopName: "Loja", view: { rows: [row({})], subtotalCents: 9980 }, customerName: " ", locale: "pt-BR", messages: ptBR })
+  it("writes only what the shop has on file", () => {
+    const empty = { zipCode: null, street: null, number: null, complement: null, neighborhood: null, city: null, state: null }
+    const message = orderMessageOf({ shopName: "Loja", view: { rows: [row({})], subtotalCents: 9980 }, customer: { name: "Bia", phone: null, address: empty }, locale: "pt-BR", messages: ptBR })
 
-    expect(message).not.toContain("Nome:")
+    expect(message).toContain("Nome: Bia")
+    expect(message).not.toContain("Celular:")
+    expect(message).not.toContain("Endereço:")
   })
 
   it("escapes the whole message into the link, line breaks and all", () => {

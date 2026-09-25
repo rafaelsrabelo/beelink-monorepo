@@ -1,79 +1,74 @@
-"use client"
-
-// React
-import { useState } from "react"
-
-// Libs
-import { MinusIcon, PlusIcon } from "lucide-react"
+// UI
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
-// Block
-import { WhatsAppIcon } from "../store/store-brand-icons"
-
 export interface StorefrontBuyActionsProps {
-  /** The product's name, for the stepper's label and what a reader hears once it is added. */
+  /** The product's name, for what a reader hears once it is added. */
   name: string
-  /** Called with the quantity chosen; the web puts the chosen combination in the cart. */
-  onAdd: (qty: number) => void
+  qty: number
+  onQtyChange: (qty: number) => void
+  /** Whether this visit already put it in the cart, here or from the phone's bar. */
+  added: boolean
+  /** Puts `qty` in the cart; the web knows the chosen combination. */
+  onAdd: () => void
   /** The cart's address: "Comprar agora" adds, then goes there, and "Ver carrinho" follows an add. */
   cartHref: string
-  /** Straight to the shop's WhatsApp with this product, for whoever would rather talk. */
-  orderHref?: string
   maxQty?: number
   messages?: UiMessages
 }
 
-const STEP = "flex size-11 items-center justify-center disabled:opacity-40"
+/**
+ * 5b's two pills: 48px, 15px bold, the whole width of the box. The transparent border is invisible
+ * until forced colours paint it, and then it is what keeps the pill's shape.
+ */
+export const BUY_PILL = "flex h-12 w-full items-center justify-center rounded-full border border-transparent px-5 text-[15px] font-bold transition-opacity hover:opacity-90"
 
 /**
- * The product page's way to buy: how many, "Adicionar ao carrinho", "Comprar agora" — which adds
- * and goes to the cart — and the WhatsApp order kept below as the quieter way.
+ * The buy box's way to buy: "Quantidade" in the phone's own picker, "Adicionar ao carrinho", and
+ * "Comprar agora" — which adds and goes to the cart.
  */
-export function StorefrontBuyActions({ name, onAdd, cartHref, orderHref, maxQty = 99, messages = defaultMessages }: StorefrontBuyActionsProps) {
+export function StorefrontBuyActions({ name, qty, onQtyChange, added, onAdd, cartHref, maxQty = 10, messages = defaultMessages }: StorefrontBuyActionsProps) {
   const text = messages.storefront
-  const [qty, setQty] = useState(1)
-  const [added, setAdded] = useState(false)
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex gap-3">
-        <div role="group" aria-label={`${text.cartQuantity}: ${name}`} className="flex shrink-0 items-center rounded-xl border border-current/25">
-          <button type="button" aria-label={format(text.cartDecrease, { name })} disabled={qty <= 1} onClick={() => setQty(qty - 1)} className={STEP}>
-            <MinusIcon aria-hidden="true" className="size-4" />
-          </button>
-          <span className="min-w-8 text-center text-base font-semibold tabular-nums">{qty}</span>
-          <button type="button" aria-label={format(text.cartIncrease, { name })} disabled={qty >= maxQty} onClick={() => setQty(qty + 1)} className={STEP}>
-            <PlusIcon aria-hidden="true" className="size-4" />
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            onAdd(qty)
-            setAdded(true)
-          }}
-          className="flex-1 rounded-xl bg-shop-primary px-5 py-3 text-base font-semibold text-shop-on-primary transition-opacity hover:opacity-90"
+    <div className="flex flex-col gap-3.5">
+      <label className="flex items-center gap-2.5 text-[14px]">
+        {text.cartQuantity}
+        {/* Native, so a phone opens its own picker. 16px below shop-sm: iOS zooms into a smaller field. */}
+        <select
+          value={qty}
+          onChange={(event) => onQtyChange(Number(event.target.value))}
+          className="h-[38px] rounded-[10px] border border-shop-line-strong bg-shop-fill px-3 text-base font-bold text-shop-on-background shop-sm:text-[14px]"
         >
-          {text.addToCart}
-        </button>
-      </div>
+          {Array.from({ length: Math.max(maxQty, qty) }, (_, index) => index + 1).map((count) => (
+            <option key={count} value={count}>
+              {count}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <button type="button" onClick={onAdd} className={`${BUY_PILL} bg-shop-primary text-shop-on-primary`}>
+        {text.addToCart}
+      </button>
 
       {/* A link, so the cart is an address; the add happens on the way, before the page leaves —
           once: after "Adicionar ao carrinho" the line is already there. */}
       <a
         href={cartHref}
         onClick={() => {
-          if (!added) onAdd(qty)
+          if (!added) onAdd()
         }}
-        className="flex w-full items-center justify-center rounded-xl border-2 border-shop-primary px-5 py-3 text-base font-semibold text-shop-primary-ink"
+        // Outlined beside the filled "Adicionar ao carrinho": one main action, and the other beside it.
+        className={cn(BUY_PILL, "border-2 border-shop-primary bg-shop-background text-shop-primary-ink")}
       >
         {text.buyNow}
       </a>
 
-      <p role="status" className="text-center text-sm empty:hidden">
+      <p role="status" className="text-center text-[13px] empty:hidden">
         {added ? (
           <>
             {format(text.addedToCartStatus, { name })}{" "}
@@ -83,13 +78,6 @@ export function StorefrontBuyActions({ name, onAdd, cartHref, orderHref, maxQty 
           </>
         ) : null}
       </p>
-
-      {orderHref ? (
-        <a href={orderHref} rel="noreferrer" target="_blank" className="inline-flex items-center justify-center gap-2 text-sm font-medium opacity-80 hover:opacity-100">
-          <WhatsAppIcon className="size-4" />
-          {text.orderThis}
-        </a>
-      ) : null}
     </div>
   )
 }

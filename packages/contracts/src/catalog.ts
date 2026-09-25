@@ -32,6 +32,13 @@ export interface StorefrontRouteWords {
    * exactly this.
    */
   cart: string;
+  /**
+   * Where a shopper signs in, and — as `?modo=criar` and `?modo=senha` — signs up and asks for a new
+   * password: `/<shop>/entrar`. Reserved since the beginning with the cart.
+   */
+  signIn: string;
+  /** The shopper's own page at this shop: `/<shop>/conta`. */
+  account: string;
 }
 
 /**
@@ -93,6 +100,12 @@ export interface PublicProductImage {
   optionValueIds: string[];
 }
 
+/** A product's first option, as a card sums it up: "Sabor" with 4 values reads "4 sabores". */
+export interface CardOptionSummary {
+  name: string;
+  valueCount: number;
+}
+
 /**
  * What a grid needs and nothing more. The detail page asks for `PublicProduct`; a listing of forty
  * products must not carry forty descriptions, because this shape is what ends up in the cached HTML
@@ -126,6 +139,16 @@ export interface PublicProductCard {
    * the showcases — and absent elsewhere; absent reads as "choose on the page".
    */
   hasOptions?: boolean;
+  /**
+   * Up to five photos in the shopkeeper's order, for a card to pass through; the first is
+   * `imageUrl`, the cover. On the shelves and the showcases only, like `hasOptions`.
+   */
+  imageUrls?: string[];
+  /**
+   * The first option and how many values it offers, for the card's "4 sabores"; null for a product
+   * without options. On the shelves and the showcases only.
+   */
+  optionSummary?: CardOptionSummary | null;
 }
 
 /** Whole cents, both ends included. */
