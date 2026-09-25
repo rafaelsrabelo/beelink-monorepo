@@ -864,6 +864,46 @@ export interface UiMessages {
       save: string
       saving: string
     }
+    detail: {
+      title: string
+      back: string
+      placedAt: string
+      customer: string
+      noPhone: string
+      noAddress: string
+      items: string
+      product: string
+      quantity: string
+      unitPrice: string
+      lineTotal: string
+      subtotal: string
+      fee: string
+      discount: string
+      total: string
+      fulfillment: string
+      payment: string
+      note: string
+      history: string
+      actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM", string>
+      markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
+      statusLabel: string
+      moreStatuses: string
+      cancel: string
+      cancelTitle: string
+      cancelBody: string
+      cancelKeep: string
+      cancelConfirm: string
+      cancelled: string
+      whatsapp: string
+      whatsappGreeting: string
+      whatsappLine: string
+      whatsappFee: string
+      whatsappPickup: string
+      whatsappDiscount: string
+      whatsappTotal: string
+      whatsappPayment: string
+      whatsappStatus: string
+    }
   }
   leads: {
     title: string
