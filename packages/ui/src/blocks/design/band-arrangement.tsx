@@ -165,7 +165,8 @@ export function BandArrangement({
             <Button
               type="button"
               variant="outline"
-              className="w-full border-dashed"
+              // Inset: the panel scrolls, and a ring drawn outside the button would be clipped on three sides.
+              className="w-full border-dashed focus-visible:ring-inset"
               aria-label={format(text.insertBand, { position: String(bands.length + 1) })}
               disabled={inserting}
               onClick={() => onInsert({ level: "band", index: bands.length })}

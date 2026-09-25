@@ -56,6 +56,8 @@ describe("BandArrangement", () => {
     const add = screen.getByRole("button", { name: "Nova faixa na posição 3" })
     expect(add).toHaveTextContent("Nova faixa")
     expect(add).not.toHaveClass("opacity-0")
+    // Its focus ring drawn inside it: the panel scrolls and would clip one drawn outside.
+    expect(add).toHaveClass("focus-visible:ring-inset")
 
     await userEvent.click(add)
     expect(onInsert).toHaveBeenCalledWith({ level: "band", index: 2 })
