@@ -6,6 +6,7 @@ import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { StoresService } from '../stores/stores.service.js';
 
 // App
+import { PageComponentsService } from './page-components.service.js';
 import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
 import { ShowcaseRules } from './showcase.rules.js';
@@ -190,6 +191,7 @@ function build(
 
   return {
     service: new PageService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma)),
+    components: new PageComponentsService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma)),
     prisma,
     createSection,
     createComponent,
@@ -290,10 +292,10 @@ describe('PageService — a band is created around something', () => {
   });
 
   it('refuses to add a component to another shop’s band', async () => {
-    const { service } = build({ sectionOfAnotherShop: true });
+    const { components } = build({ sectionOfAnotherShop: true });
 
     await expect(
-      service.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Oi' }),
+      components.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Oi' }),
     ).rejects.toMatchObject({ response: { errorCode: 'SECTION_NOT_FOUND' } });
   });
 });
@@ -324,49 +326,49 @@ describe('PageService — a band’s own attributes', () => {
 
 describe('PageService — a component’s kind is what it is', () => {
   it('refuses a patch that changes it', async () => {
-    const { service } = build({ kind: 'PRODUCTS' });
+    const { components } = build({ kind: 'PRODUCTS' });
 
     await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, { kind: 'BANNER' }),
+      components.updateComponent('lessari', 'user-1', COMPONENT, { kind: 'BANNER' }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_KIND_IMMUTABLE' } });
   });
 
   it('lets a patch repeat the kind it already has', async () => {
     // The panel sends the whole form on every save, so the unchanged kind rides along every time.
-    const { service } = build({ kind: 'PRODUCTS' });
+    const { components } = build({ kind: 'PRODUCTS' });
 
     await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, { kind: 'PRODUCTS' }),
+      components.updateComponent('lessari', 'user-1', COMPONENT, { kind: 'PRODUCTS' }),
     ).resolves.toBeDefined();
   });
 });
 
 describe('PageService — what a component may hold', () => {
   it('refuses a slide with no picture', async () => {
-    const { service } = build({ kind: 'BANNER' });
+    const { components } = build({ kind: 'BANNER' });
 
     await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, { items: [{ id: 'x', target: 'NONE' }] as never }),
+      components.updateComponent('lessari', 'user-1', COMPONENT, { items: [{ id: 'x', target: 'NONE' }] as never }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_ITEMS_INVALID' } });
   });
 
   // `@IsArray()` proves only that it is a list. What is inside depends on the kind, and the union
   // was a validator nobody ran until this call site existed.
   it('refuses a slide that names a destination it does not carry', async () => {
-    const { service } = build({ kind: 'BANNER' });
+    const { components } = build({ kind: 'BANNER' });
 
     await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, {
+      components.updateComponent('lessari', 'user-1', COMPONENT, {
         items: [{ id: 'x', imageUrl: 'https://img/x.jpg', target: 'CATEGORY' }] as never,
       }),
     ).rejects.toThrow();
   });
 
   it('takes a slide that carries what it names', async () => {
-    const { service } = build({ kind: 'BANNER' });
+    const { components } = build({ kind: 'BANNER' });
 
     await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, {
+      components.updateComponent('lessari', 'user-1', COMPONENT, {
         items: [
           { id: 'x', imageUrl: 'https://img/x.jpg', target: 'EXTERNAL', externalUrl: 'https://wa.me/55' },
         ] as never,
@@ -375,19 +377,19 @@ describe('PageService — what a component may hold', () => {
   });
 
   it('refuses items on a kind that holds none', async () => {
-    const { service } = build({ kind: 'HEADING' });
+    const { components } = build({ kind: 'HEADING' });
 
     await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, {
+      components.updateComponent('lessari', 'user-1', COMPONENT, {
         items: [{ id: 'x', imageUrl: 'https://img/x.jpg', target: 'NONE' }] as never,
       }),
     ).rejects.toThrow();
   });
 
   it('takes the promises band’s rows', async () => {
-    const { service, updateComponent } = build({ kind: 'BENEFITS' });
+    const { components, updateComponent } = build({ kind: 'BENEFITS' });
 
-    await service.updateComponent('lessari', 'user-1', COMPONENT, {
+    await components.updateComponent('lessari', 'user-1', COMPONENT, {
       items: [{ id: 'pix', icon: 'qr-code', title: 'PIX', detail: 'Na hora' }] as never,
     });
 
@@ -401,9 +403,9 @@ describe('PageService — a patch that says nothing changes nothing', () => {
   // Reported as "says it saved and did not": the update computed the checked items and then never
   // put them in the data it wrote, so the API answered 200 with the row untouched.
   it('writes the items a patch carries', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
+    const { components, updateComponent } = build({ kind: 'BANNER' });
 
-    await service.updateComponent('lessari', 'user-1', COMPONENT, {
+    await components.updateComponent('lessari', 'user-1', COMPONENT, {
       items: [{ id: 'x', imageUrl: 'https://img/x.jpg', title: 'Novo', target: 'NONE' }] as never,
     });
 
@@ -413,9 +415,9 @@ describe('PageService — a patch that says nothing changes nothing', () => {
   });
 
   it('leaves the items alone when a patch does not mention them', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
+    const { components, updateComponent } = build({ kind: 'BANNER' });
 
-    await service.updateComponent('lessari', 'user-1', COMPONENT, { isActive: false });
+    await components.updateComponent('lessari', 'user-1', COMPONENT, { isActive: false });
 
     expect(updateComponent.mock.calls[0]![0].data).not.toHaveProperty('items');
   });
@@ -434,18 +436,18 @@ describe('PageService — a block’s span', () => {
   });
 
   it('stores the span a patch is sent, and answers it back', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
+    const { components, updateComponent } = build({ kind: 'BANNER' });
 
-    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { span: 'HALF' });
+    const updated = await components.updateComponent('lessari', 'user-1', COMPONENT, { span: 'HALF' });
 
     expect(updateComponent.mock.calls[0]![0].data).toEqual({ span: 'HALF' });
     expect(updated.span).toBe('HALF');
   });
 
   it('leaves the span alone when a patch does not mention it', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
+    const { components, updateComponent } = build({ kind: 'BANNER' });
 
-    await service.updateComponent('lessari', 'user-1', COMPONENT, { isActive: false });
+    await components.updateComponent('lessari', 'user-1', COMPONENT, { isActive: false });
 
     expect(updateComponent.mock.calls[0]![0].data).not.toHaveProperty('span');
   });
@@ -458,27 +460,27 @@ describe('PageService — a block’s span', () => {
  */
 describe('PageService — a new banner opens as a carousel', () => {
   it('writes CAROUSEL on a banner, whichever create makes it', async () => {
-    const { service, createSection, createComponent } = build();
+    const { service, createSection, createComponent, components } = build();
 
     await service.createSection('lessari', 'user-1', { component: { kind: 'BANNER', items: [SLIDE] } });
-    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'BANNER', items: [SLIDE] });
+    await components.createComponent('lessari', 'user-1', SECTION, { kind: 'BANNER', items: [SLIDE] });
 
     expect(createSection.mock.calls[0]![0].data.components.create.display).toBe('CAROUSEL');
     expect(createComponent.mock.calls[0]![0].data.display).toBe('CAROUSEL');
   });
 
   it('writes no display on a kind that does not read it', async () => {
-    const { service, createComponent } = build();
+    const { components, createComponent } = build();
 
-    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Novidades' });
+    await components.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Novidades' });
 
     expect(createComponent.mock.calls[0]![0].data.display).toBeNull();
   });
 
   it('writes the display a banner is created with', async () => {
-    const { service, createComponent } = build();
+    const { components, createComponent } = build();
 
-    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'BANNER', display: 'GRID', items: [SLIDE] });
+    await components.createComponent('lessari', 'user-1', SECTION, { kind: 'BANNER', display: 'GRID', items: [SLIDE] });
 
     expect(createComponent.mock.calls[0]![0].data.display).toBe('GRID');
   });
@@ -486,9 +488,9 @@ describe('PageService — a new banner opens as a carousel', () => {
 
 describe('PageService — a display only where it is drawn', () => {
   it('writes the display a banner is patched to', async () => {
-    const { service, updateComponent } = build({ kind: 'BANNER' });
+    const { components, updateComponent } = build({ kind: 'BANNER' });
 
-    const updated = await service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' });
+    const updated = await components.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' });
 
     expect(updateComponent.mock.calls[0]![0].data).toEqual({ display: 'GRID' });
     expect(updated.display).toBe('GRID');
@@ -497,7 +499,7 @@ describe('PageService — a display only where it is drawn', () => {
   it('refuses a display on a kind that does not draw it, at all three writes', async () => {
     const asPatch = build({ kind: 'HEADING' });
     await expect(
-      asPatch.service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' }),
+      asPatch.components.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
     expect(asPatch.updateComponent).not.toHaveBeenCalled();
 
@@ -509,25 +511,25 @@ describe('PageService — a display only where it is drawn', () => {
 
     const asComponent = build();
     await expect(
-      asComponent.service.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Oi', display: 'GRID' }),
+      asComponent.components.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Oi', display: 'GRID' }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
     expect(asComponent.createComponent).not.toHaveBeenCalled();
   });
 
   it('refuses to take a banner’s display back to null', async () => {
-    const { service } = build({ kind: 'BANNER' });
+    const { components } = build({ kind: 'BANNER' });
 
     await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, { display: null }),
+      components.updateComponent('lessari', 'user-1', COMPONENT, { display: null }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
   });
 
   // The panel sends the whole form, and null is what a heading holds there already.
   it('lets a kind that does not draw it repeat the null it has', async () => {
-    const { service } = build({ kind: 'HEADING' });
+    const { components } = build({ kind: 'HEADING' });
 
     await expect(
-      service.updateComponent('lessari', 'user-1', COMPONENT, { display: null }),
+      components.updateComponent('lessari', 'user-1', COMPONENT, { display: null }),
     ).resolves.toBeDefined();
   });
 });
@@ -560,9 +562,9 @@ describe('PageService — an order is the whole list or nothing', () => {
   });
 
   it('reorders inside one band without touching the page’s order', async () => {
-    const { service, prisma } = build({ owned: [{ id: COMPONENT }, { id: 'component-2' }] });
+    const { components, prisma } = build({ owned: [{ id: COMPONENT }, { id: 'component-2' }] });
 
-    await service.reorderComponents('lessari', 'user-1', SECTION, { ids: ['component-2', COMPONENT] });
+    await components.reorderComponents('lessari', 'user-1', SECTION, { ids: ['component-2', COMPONENT] });
 
     expect(prisma.storeComponent.update).toHaveBeenNthCalledWith(1, {
       where: { id: 'component-2' },
@@ -591,9 +593,9 @@ describe('PageService — a block moves into another band', () => {
   }
 
   it('lands where it is told in the band it joins, and closes up the band it left', async () => {
-    const { service, prisma } = build({ bands });
+    const { components, prisma } = build({ bands });
 
-    await service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, position: 1 });
+    await components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, position: 1 });
 
     expect(writes(prisma)).toEqual([
       { where: { id: 'second' }, data: { position: 2 } },
@@ -608,9 +610,9 @@ describe('PageService — a block moves into another band', () => {
   });
 
   it('deletes the band it leaves empty, once it has left it', async () => {
-    const { service, prisma } = build({ bands: { ...bands, [SECTION]: [{ id: COMPONENT, position: 0, kind: 'BANNER' }] } });
+    const { components, prisma } = build({ bands: { ...bands, [SECTION]: [{ id: COMPONENT, position: 0, kind: 'BANNER' }] } });
 
-    await service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION });
+    await components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION });
 
     expect(writes(prisma)).toEqual([{ where: { id: COMPONENT }, data: { sectionId: OTHER_SECTION, position: 2 } }]);
     expect(prisma.storeSection.delete).toHaveBeenCalledWith({ where: { id: SECTION } });
@@ -621,9 +623,9 @@ describe('PageService — a block moves into another band', () => {
   });
 
   it('reorders it inside its own band when that is the band it is sent to, and deletes nothing', async () => {
-    const { service, prisma } = build({ bands });
+    const { components, prisma } = build({ bands });
 
-    await service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: SECTION, position: 1 });
+    await components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: SECTION, position: 1 });
 
     expect(writes(prisma)).toEqual([
       { where: { id: 'left-behind' }, data: { position: 0 } },
@@ -633,9 +635,9 @@ describe('PageService — a block moves into another band', () => {
   });
 
   it('takes the span it is sent, so the row it joins has room for it in the same write', async () => {
-    const { service, prisma } = build({ bands });
+    const { components, prisma } = build({ bands });
 
-    await service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, span: 'THIRD' });
+    await components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, span: 'THIRD' });
 
     expect(prisma.storeComponent.update).toHaveBeenCalledWith({
       where: { id: COMPONENT },
@@ -647,8 +649,8 @@ describe('PageService — a block moves into another band', () => {
     const strip = build({ kind: 'ANNOUNCEMENT', bands });
     const intoStrip = build({ bands: { ...bands, [OTHER_SECTION]: [{ id: 'strip', position: 0, kind: 'ANNOUNCEMENT' }] } });
 
-    for (const { service, prisma } of [strip, intoStrip]) {
-      const refusal: unknown = await service
+    for (const { components, prisma } of [strip, intoStrip]) {
+      const refusal: unknown = await components
         .moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION })
         .catch((error: unknown) => error);
 
@@ -660,10 +662,10 @@ describe('PageService — a block moves into another band', () => {
   });
 
   it('answers another shop’s band as one this shop does not have, and moves nothing', async () => {
-    const { service, prisma } = build({ bands, sectionOfAnotherShop: true });
+    const { components, prisma } = build({ bands, sectionOfAnotherShop: true });
 
     await expect(
-      service.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
+      components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
     ).rejects.toMatchObject({ response: { errorCode: 'SECTION_NOT_FOUND' } });
     expect(prisma.storeComponent.update).not.toHaveBeenCalled();
   });
@@ -684,9 +686,9 @@ describe('PageService — the product list cannot be deleted, at either level', 
   });
 
   it('refuses to delete the component itself when it is the only one', async () => {
-    const { service, prisma } = build({ kind: 'PRODUCTS', requiredInShop: 1 });
+    const { components, prisma } = build({ kind: 'PRODUCTS', requiredInShop: 1 });
 
-    await expect(service.removeComponent('lessari', 'user-1', COMPONENT)).rejects.toMatchObject({
+    await expect(components.removeComponent('lessari', 'user-1', COMPONENT)).rejects.toMatchObject({
       response: { errorCode: 'COMPONENT_REQUIRED' },
     });
     expect(prisma.storeComponent.delete).not.toHaveBeenCalled();
@@ -698,7 +700,7 @@ describe('PageService — the product list cannot be deleted, at either level', 
    */
   it('lets a duplicate go, at both levels, as long as one remains', async () => {
     const asComponent = build({ kind: 'PRODUCTS', requiredInShop: 2 });
-    await expect(asComponent.service.removeComponent('lessari', 'user-1', COMPONENT)).resolves.toBeUndefined();
+    await expect(asComponent.components.removeComponent('lessari', 'user-1', COMPONENT)).resolves.toBeUndefined();
     expect(asComponent.prisma.storeComponent.delete).toHaveBeenCalled();
 
     const asBand = build({ requiredInSection: 1, requiredElsewhere: 1 });
@@ -720,9 +722,9 @@ const OWN_PRODUCT = '0199e000-0000-7000-8000-000000000001';
 
 describe('PageService — a showcase has a source', () => {
   it('opens as every product, on a rail, holding nothing', async () => {
-    const { service, createComponent } = build();
+    const { components, createComponent } = build();
 
-    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS' });
+    await components.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS' });
 
     expect(createComponent.mock.calls[0]![0].data).toMatchObject({
       source: 'ALL',
@@ -734,9 +736,9 @@ describe('PageService — a showcase has a source', () => {
   });
 
   it('draws one category, when the category is this shop’s', async () => {
-    const { service, createComponent } = build();
+    const { components, createComponent } = build();
 
-    await service.createComponent('lessari', 'user-1', SECTION, {
+    await components.createComponent('lessari', 'user-1', SECTION, {
       kind: 'PRODUCTS',
       source: 'CATEGORY',
       sourceCategoryId: OWN_CATEGORY,
@@ -749,12 +751,12 @@ describe('PageService — a showcase has a source', () => {
   it('refuses a category showcase with no category, or with another shop’s', async () => {
     const bare = build();
     await expect(
-      bare.service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'CATEGORY' }),
+      bare.components.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'CATEGORY' }),
     ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_CATEGORY_INVALID' } });
 
     const foreign = build({ ownCategories: 0 });
     await expect(
-      foreign.service.createComponent('lessari', 'user-1', SECTION, {
+      foreign.components.createComponent('lessari', 'user-1', SECTION, {
         kind: 'PRODUCTS',
         source: 'CATEGORY',
         sourceCategoryId: OWN_CATEGORY,
@@ -764,10 +766,10 @@ describe('PageService — a showcase has a source', () => {
   });
 
   it('draws a hand-picked list, when every product is this shop’s', async () => {
-    const { service, createComponent } = build();
+    const { components, createComponent } = build();
     const items = [{ id: 'a', productId: OWN_PRODUCT }];
 
-    await service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'SELECTION', items });
+    await components.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'SELECTION', items });
 
     expect(createComponent.mock.calls[0]![0].data).toMatchObject({ source: 'SELECTION', items });
   });
@@ -775,12 +777,12 @@ describe('PageService — a showcase has a source', () => {
   it('refuses a hand-picked list that is empty, or that names another shop’s product', async () => {
     const empty = build();
     await expect(
-      empty.service.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'SELECTION' }),
+      empty.components.createComponent('lessari', 'user-1', SECTION, { kind: 'PRODUCTS', source: 'SELECTION' }),
     ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_PRODUCTS_INVALID' } });
 
     const foreign = build({ foreignProducts: true });
     await expect(
-      foreign.service.createComponent('lessari', 'user-1', SECTION, {
+      foreign.components.createComponent('lessari', 'user-1', SECTION, {
         kind: 'PRODUCTS',
         source: 'SELECTION',
         items: [{ id: 'a', productId: OWN_PRODUCT }],
@@ -794,9 +796,9 @@ describe('PageService — a showcase has a source', () => {
    */
   it('drops a picked product that no longer exists, rather than refusing the pick', async () => {
     const gone = '0199e000-0000-7000-8000-00000000dead';
-    const { service, updateComponent } = build({ kind: 'PRODUCTS', goneProducts: [gone] });
+    const { components, updateComponent } = build({ kind: 'PRODUCTS', goneProducts: [gone] });
 
-    await service.updateComponent('lessari', 'user-1', COMPONENT, {
+    await components.updateComponent('lessari', 'user-1', COMPONENT, {
       source: 'SELECTION',
       items: [{ id: 'a', productId: gone }, { id: 'b', productId: OWN_PRODUCT }] as never,
     });
@@ -806,12 +808,12 @@ describe('PageService — a showcase has a source', () => {
 
   // Switching the source clears what the old one used, so no column holds a value nothing reads.
   it('clears the category when the source stops being one', async () => {
-    const { service, updateComponent } = build({
+    const { components, updateComponent } = build({
       kind: 'PRODUCTS',
       storedShowcase: { source: 'CATEGORY', sourceCategoryId: OWN_CATEGORY, limit: 8, items: [] },
     });
 
-    await service.updateComponent('lessari', 'user-1', COMPONENT, { source: 'NEWEST' });
+    await components.updateComponent('lessari', 'user-1', COMPONENT, { source: 'NEWEST' });
 
     expect(updateComponent.mock.calls[0]![0].data).toMatchObject({ source: 'NEWEST', sourceCategoryId: null, limit: 8, items: [] });
   });
@@ -821,18 +823,18 @@ describe('PageService — a showcase has a source', () => {
    * the stored list would fail on it. Only what a patch sends is checked.
    */
   it('writes none of a showcase’s fields on a patch that touches none of them', async () => {
-    const { service, updateComponent } = build({ kind: 'PRODUCTS' });
+    const { components, updateComponent } = build({ kind: 'PRODUCTS' });
 
-    await service.updateComponent('lessari', 'user-1', COMPONENT, { title: 'Novidades' });
+    await components.updateComponent('lessari', 'user-1', COMPONENT, { title: 'Novidades' });
 
     expect(updateComponent.mock.calls[0]![0].data).toEqual({ title: 'Novidades' });
   });
 
   it('refuses a showcase’s fields on a kind that is not one', async () => {
-    const { service } = build();
+    const { components } = build();
 
     await expect(
-      service.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Oi', source: 'ALL' }),
+      components.createComponent('lessari', 'user-1', SECTION, { kind: 'HEADING', title: 'Oi', source: 'ALL' }),
     ).rejects.toMatchObject({ response: { errorCode: 'SHOWCASE_SOURCE_INVALID' } });
   });
 });
@@ -840,30 +842,30 @@ describe('PageService — a showcase has a source', () => {
 describe('PageService — each kind draws its own two displays', () => {
   it('lets a showcase be a rail or a grid, and nothing else', async () => {
     const grid = build({ kind: 'PRODUCTS' });
-    await expect(grid.service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' })).resolves.toBeDefined();
+    await expect(grid.components.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' })).resolves.toBeDefined();
 
     const carousel = build({ kind: 'PRODUCTS' });
     await expect(
-      carousel.service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' }),
+      carousel.components.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' }),
     ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_DISPLAY_INVALID' } });
   });
 
   it('lets the categories be a rail or a grid, and never a carousel', async () => {
     for (const display of ['RAIL', 'GRID'] as const) {
-      const { service } = build({ kind: 'CATEGORIES' });
-      await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display })).resolves.toBeDefined();
+      const { components } = build({ kind: 'CATEGORIES' });
+      await expect(components.updateComponent('lessari', 'user-1', COMPONENT, { display })).resolves.toBeDefined();
     }
 
-    const { service } = build({ kind: 'CATEGORIES' });
-    await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' })).rejects.toMatchObject({
+    const { components } = build({ kind: 'CATEGORIES' });
+    await expect(components.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' })).rejects.toMatchObject({
       response: { errorCode: 'COMPONENT_DISPLAY_INVALID' },
     });
   });
 
   it('never lets a banner be a rail', async () => {
-    const { service } = build({ kind: 'BANNER' });
+    const { components } = build({ kind: 'BANNER' });
 
-    await expect(service.updateComponent('lessari', 'user-1', COMPONENT, { display: 'RAIL' })).rejects.toMatchObject({
+    await expect(components.updateComponent('lessari', 'user-1', COMPONENT, { display: 'RAIL' })).rejects.toMatchObject({
       response: { errorCode: 'COMPONENT_DISPLAY_INVALID' },
     });
   });

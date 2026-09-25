@@ -78,6 +78,16 @@ export class PageRules {
   }
 
   /**
+   * What a duplicate may not copy: the strip, which is one per shop. Answered as creating a second
+   * one is, so the editor's copy for it holds.
+   */
+  refuseCopy(kinds: readonly ComponentKind[]): void {
+    if (kinds.some((kind) => (SINGLETON_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind))) {
+      throw new ConflictException(pageError('COMPONENT_KIND_SINGLETON', 'A barra de aviso é uma só e não se duplica.'));
+    }
+  }
+
+  /**
    * One write of this kind at a time for a shop, until the transaction it is called in ends.
    *
    * The "last one" rules below are a count and then a delete, and those are only a guarantee

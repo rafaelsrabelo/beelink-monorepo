@@ -1,4 +1,9 @@
+// Node
+import { randomUUID } from 'node:crypto';
+
 // Types
+import type { Prisma } from '../../generated/prisma/client.js';
+import type { StoreComponentModel } from '../../generated/prisma/models.js';
 import type { ComponentDto, UpdateComponentDto } from './dto/page.dto.js';
 import type { ShowcaseFields } from './showcase.rules.js';
 
@@ -87,4 +92,35 @@ export function placedAt(
  */
 export function closedUp(rows: readonly { id: string; position: number }[]): { id: string; position: number }[] {
   return rows.flatMap((row, index) => (row.position === index ? [] : [{ id: row.id, position: index }]));
+}
+
+/**
+ * A component's row copied, for a duplicate: every column, at `position`, with fresh item ids.
+ *
+ * Fresh because an item's id is what the editor keys a slide or a field by, and a form's answers
+ * name the field they answered; two blocks sharing ids would have one's edits land in the other's.
+ * A product pick keeps its product — only the row's own id changes.
+ */
+export function copiedRow(row: StoreComponentModel, position: number) {
+  const items = Array.isArray(row.items) ? row.items : [];
+
+  return {
+    storeId: row.storeId,
+    kind: row.kind,
+    title: row.title,
+    subtitle: row.subtitle,
+    body: row.body,
+    span: row.span,
+    display: row.display,
+    source: row.source,
+    sourceCategoryId: row.sourceCategoryId,
+    limit: row.limit,
+    columns: row.columns,
+    align: row.align,
+    items: items.map((item) =>
+      item && typeof item === 'object' && !Array.isArray(item) && 'id' in item ? { ...item, id: randomUUID() } : item,
+    ) as Prisma.InputJsonArray,
+    position,
+    isActive: row.isActive,
+  };
 }

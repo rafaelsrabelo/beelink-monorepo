@@ -19,6 +19,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
+import { PageComponentsService } from './page-components.service.js';
 import { PageService } from './page.service.js';
 import { AddComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
 import { MoveComponentDto } from './dto/move-component.dto.js';
@@ -40,7 +41,10 @@ import { ReorderDto } from '../catalog/dto/reorder.dto.js';
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
 @Controller('stores/:storeSlug/sections')
 export class SectionsController {
-  constructor(private readonly page: PageService) {}
+  constructor(
+    private readonly page: PageService,
+    private readonly components: PageComponentsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'The page, band by band, hidden ones included, in the arranged order' })
@@ -104,6 +108,18 @@ export class SectionsController {
     return this.page.removeSection(storeSlug, current.id, sectionId);
   }
 
+  @Post(':sectionId/duplicate')
+  @ApiOperation({ summary: 'A hidden copy of the band and its blocks, right after it. Unnamed' })
+  @ApiCreatedResponse({ type: SectionResponse })
+  @ApiConflictResponse({ description: 'COMPONENT_KIND_SINGLETON — the band holds the strip' })
+  duplicate(
+    @Param('storeSlug') storeSlug: string,
+    @Param('sectionId') sectionId: string,
+    @CurrentUser() current: AuthenticatedUser,
+  ): Promise<SectionResponse> {
+    return this.page.duplicateSection(storeSlug, current.id, sectionId);
+  }
+
   @Post(':sectionId/components')
   @ApiOperation({ summary: 'Add a component to a band, where position says, or last inside it' })
   @ApiCreatedResponse({ type: ComponentResponse })
@@ -115,7 +131,7 @@ export class SectionsController {
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: AddComponentDto,
   ): Promise<ComponentResponse> {
-    return this.page.createComponent(storeSlug, current.id, sectionId, dto);
+    return this.components.createComponent(storeSlug, current.id, sectionId, dto);
   }
 
   @Put(':sectionId/components/reorder')
@@ -128,7 +144,7 @@ export class SectionsController {
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: ReorderDto,
   ): Promise<SectionResponse[]> {
-    return this.page.reorderComponents(storeSlug, current.id, sectionId, dto);
+    return this.components.reorderComponents(storeSlug, current.id, sectionId, dto);
   }
 }
 
@@ -147,7 +163,7 @@ export class SectionsController {
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
 @Controller('stores/:storeSlug/components')
 export class ComponentsController {
-  constructor(private readonly page: PageService) {}
+  constructor(private readonly components: PageComponentsService) {}
 
   @Patch(':componentId')
   @ApiOperation({ summary: 'A patch. A key left out is a column left alone' })
@@ -159,7 +175,7 @@ export class ComponentsController {
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: UpdateComponentDto,
   ): Promise<ComponentResponse> {
-    return this.page.updateComponent(storeSlug, current.id, componentId, dto);
+    return this.components.updateComponent(storeSlug, current.id, componentId, dto);
   }
 
   // A route of its own and not a `sectionId` on the PATCH: a move changes two bands at once, and
@@ -176,7 +192,19 @@ export class ComponentsController {
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: MoveComponentDto,
   ): Promise<SectionResponse[]> {
-    return this.page.moveComponent(storeSlug, current.id, componentId, dto);
+    return this.components.moveComponent(storeSlug, current.id, componentId, dto);
+  }
+
+  @Post(':componentId/duplicate')
+  @ApiOperation({ summary: 'A hidden copy of the component, right after it in its band' })
+  @ApiCreatedResponse({ type: ComponentResponse })
+  @ApiConflictResponse({ description: 'COMPONENT_KIND_SINGLETON — the strip is one per shop' })
+  duplicate(
+    @Param('storeSlug') storeSlug: string,
+    @Param('componentId') componentId: string,
+    @CurrentUser() current: AuthenticatedUser,
+  ): Promise<ComponentResponse> {
+    return this.components.duplicateComponent(storeSlug, current.id, componentId);
   }
 
   @Delete(':componentId')
@@ -189,6 +217,6 @@ export class ComponentsController {
     @Param('componentId') componentId: string,
     @CurrentUser() current: AuthenticatedUser,
   ): Promise<void> {
-    return this.page.removeComponent(storeSlug, current.id, componentId);
+    return this.components.removeComponent(storeSlug, current.id, componentId);
   }
 }

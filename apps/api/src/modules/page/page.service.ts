@@ -1,28 +1,24 @@
 // Nest
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 // Types
-import type { Section, StoreComponent } from '@harness-monorepo/contracts';
-import type { AddComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto } from './dto/page.dto.js';
-import type { MoveComponentDto } from './dto/move-component.dto.js';
+import type { Section } from '@harness-monorepo/contracts';
+import type { CreateSectionDto, UpdateSectionDto } from './dto/page.dto.js';
 import type { ReorderDto } from '../catalog/dto/reorder.dto.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
-import { sectionInclude, toComponent, toSection } from './page.mapper.js';
-import { PageRules, pageError } from './page.rules.js';
-import { closedUp, componentPatch, componentRow, placedAt } from './page-rows.js';
+import { sectionInclude, toSection } from './page.mapper.js';
+import { pageOf } from './page-read.js';
+import { PageRules } from './page.rules.js';
+import { componentRow, copiedRow, placedAt } from './page-rows.js';
 import { ShowcaseRules } from './showcase.rules.js';
 import { openingItemsOf } from './page-seed.js';
 
 /**
- * The landing page, at both of its levels.
- *
- * One service and not two, because every write at either level starts with the same question —
- * does this person own this shop — and because a band and what is in it are created together. Two
- * services would have meant one calling the other for ownership, which is one indirection standing
- * in for a shared sentence.
+ * The bands of the landing page. A band and the block it is built around are created together,
+ * here; the blocks' own writes are `PageComponentsService`'s.
  */
 @Injectable()
 export class PageService {
@@ -37,14 +33,7 @@ export class PageService {
   async list(storeSlug: string, userId: string): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
-    const rows = await this.prisma.storeSection.findMany({
-      where: { storeId },
-      include: sectionInclude,
-      // The id breaks a tie, so a list read twice is the same list, and the one an add counts in.
-      orderBy: [{ position: 'asc' }, { id: 'asc' }],
-    });
-
-    return rows.map(toSection);
+    return pageOf(this.prisma, storeId);
   }
 
   /**
@@ -163,176 +152,52 @@ export class PageService {
       }
     });
 
-    return this.list(storeSlug, userId);
+    return pageOf(this.prisma, storeId);
   }
 
-  async createComponent(
-    storeSlug: string,
-    userId: string,
-    sectionId: string,
-    dto: AddComponentDto,
-  ): Promise<StoreComponent> {
+  /**
+   * A copy of a band and of every block in it, right after it, hidden: the shop does not change
+   * until the owner publishes the draft that shows it. Each block keeps whether it shows; the band's
+   * hiding is what holds the copy back.
+   *
+   * No name: a site's menu is made of the named bands, and two with one name are one link twice.
+   * Under the shop's lock, as an add is. A band holding the strip is refused: the strip is one per shop.
+   */
+  async duplicateSection(storeSlug: string, userId: string, sectionId: string): Promise<Section> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.rules.ownedSection(storeId, sectionId);
-    await this.rules.refuseSecond(storeId, dto.kind);
-    this.rules.refuseDisplayFor(dto.kind, dto.display);
-    this.showcases.refuseOn(dto.kind, dto);
 
-    const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
-    const showcase = dto.kind === 'PRODUCTS' ? await this.showcases.forCreate(storeId, dto, items) : null;
-    const { position, ...fields } = dto;
-
-    // Where the band's "+" was pressed, or last in the band without one.
     const row = await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
-      const inBand = await tx.storeComponent.findMany({
-        where: { sectionId },
+      await this.rules.ownedSection(storeId, sectionId, tx);
+
+      const original = await tx.storeSection.findUniqueOrThrow({ where: { id: sectionId }, include: sectionInclude });
+      this.rules.refuseCopy(original.components.map((component) => component.kind));
+
+      const bands = await tx.storeSection.findMany({
+        where: { storeId },
         orderBy: [{ position: 'asc' }, { id: 'asc' }],
         select: { id: true, position: true },
       });
-      const { at, moves } = placedAt(inBand, position);
+      const { at, moves } = placedAt(bands, bands.findIndex((band) => band.id === sectionId) + 1);
 
       for (const move of moves) {
-        await tx.storeComponent.update({ where: { id: move.id }, data: { position: move.position } });
+        await tx.storeSection.update({ where: { id: move.id }, data: { position: move.position } });
       }
 
-      return tx.storeComponent.create({ data: { sectionId, ...componentRow(storeId, fields, items, at, showcase) } });
-    });
-
-    return toComponent(row);
-  }
-
-  /**
-   * A patch of one component.
-   *
-   * `kind` is not patchable, and that is the simplification this model bought. It used to be, so a
-   * banner could move between the top of the page and its body — a position expressed as a type.
-   * Where a thing sits is its band's business now, so the only reason to change a kind was one
-   * that no longer exists, and every remaining change of kind is a different shape with different
-   * fields. Sent unchanged it rides along harmlessly; sent changed it is refused.
-   */
-  async updateComponent(
-    storeSlug: string,
-    userId: string,
-    componentId: string,
-    dto: UpdateComponentDto,
-  ): Promise<StoreComponent> {
-    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const current = await this.rules.ownedComponent(storeId, componentId);
-
-    if (dto.kind !== undefined && dto.kind !== current.kind) {
-      throw new BadRequestException(
-        pageError('COMPONENT_KIND_IMMUTABLE', 'Um componente não muda de tipo. Apague e crie outro.'),
-      );
-    }
-
-    this.rules.refuseDisplayFor(current.kind, dto.display);
-    this.showcases.refuseOn(current.kind, dto);
-
-    const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
-    const showcase =
-      current.kind === 'PRODUCTS' ? await this.showcases.forUpdate(storeId, componentId, dto, items) : null;
-
-    const row = await this.prisma.storeComponent.update({
-      where: { id: componentId },
-      data: componentPatch(dto, items, showcase),
-    });
-
-    return toComponent(row);
-  }
-
-  async removeComponent(storeSlug: string, userId: string, componentId: string): Promise<void> {
-    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-
-    await this.prisma.$transaction(async (tx) => {
-      await this.rules.lockShop(tx, storeId);
-      const current = await this.rules.ownedComponent(storeId, componentId, tx);
-      await this.rules.refuseRequired(storeId, current.kind, tx);
-      await tx.storeComponent.delete({ where: { id: componentId } });
-    });
-  }
-
-  /** The components of one band, in the new order. The band itself does not move. */
-  async reorderComponents(
-    storeSlug: string,
-    userId: string,
-    sectionId: string,
-    dto: ReorderDto,
-  ): Promise<Section[]> {
-    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.rules.ownedSection(storeId, sectionId);
-
-    // The same lock an add into this band takes: see reorderSections.
-    await this.prisma.$transaction(async (tx) => {
-      await this.rules.lockShop(tx, storeId);
-      const owned = await tx.storeComponent.findMany({ where: { sectionId }, select: { id: true } });
-      this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every component of this band exactly once, in the new order');
-
-      for (const [position, id] of dto.ids.entries()) {
-        await tx.storeComponent.update({ where: { id }, data: { position } });
-      }
-    });
-
-    return this.list(storeSlug, userId);
-  }
-
-  /**
-   * A component into another band, or to another place in its own — how two blocks stacked in two
-   * bands end up side by side, without being made again.
-   *
-   * Both bands in one transaction, under the shop's lock: the band it joins makes room, and the band
-   * it leaves closes up behind it — or is deleted, when that left it empty, since a band never exists
-   * empty. Answered with the whole page, because two bands changed and one of them may be gone.
-   */
-  async moveComponent(
-    storeSlug: string,
-    userId: string,
-    componentId: string,
-    dto: MoveComponentDto,
-  ): Promise<Section[]> {
-    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-
-    await this.prisma.$transaction(async (tx) => {
-      await this.rules.lockShop(tx, storeId);
-      const moving = await this.rules.ownedComponent(storeId, componentId, tx);
-      await this.rules.ownedSection(storeId, dto.sectionId, tx);
-
-      // Without the one moving, so its own band reorders it like any other.
-      const othersIn = (sectionId: string) =>
-        tx.storeComponent.findMany({
-          where: { sectionId, id: { not: componentId } },
-          orderBy: [{ position: 'asc' }, { id: 'asc' }],
-          select: { id: true, position: true, kind: true },
-        });
-      const joined = await othersIn(dto.sectionId);
-      this.rules.refuseMove(moving.kind, joined);
-
-      const { at, moves } = placedAt(joined, dto.position);
-
-      for (const move of moves) {
-        await tx.storeComponent.update({ where: { id: move.id }, data: { position: move.position } });
-      }
-
-      await tx.storeComponent.update({
-        where: { id: componentId },
-        data: { sectionId: dto.sectionId, position: at, ...(dto.span !== undefined ? { span: dto.span } : {}) },
+      return tx.storeSection.create({
+        data: {
+          storeId,
+          name: null,
+          width: original.width,
+          background: original.background,
+          position: at,
+          isActive: false,
+          components: { create: original.components.map((component, index) => copiedRow(component, index)) },
+        },
+        include: sectionInclude,
       });
-
-      if (moving.sectionId === dto.sectionId) return;
-
-      const left = await othersIn(moving.sectionId);
-
-      // After the component has left, never before: deleting a band cascades to what it still holds.
-      if (left.length === 0) {
-        await tx.storeSection.delete({ where: { id: moving.sectionId } });
-        return;
-      }
-
-      for (const move of closedUp(left)) {
-        await tx.storeComponent.update({ where: { id: move.id }, data: { position: move.position } });
-      }
     });
 
-    return this.list(storeSlug, userId);
+    return toSection(row);
   }
 }
