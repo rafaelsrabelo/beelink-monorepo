@@ -24,19 +24,24 @@ function fill(template: string, values: Record<string, number>): string {
   )
 }
 
+/** "‹ Anterior" and "Próxima ›": 40px tall, bordered like the digits. */
+const STEP = "flex h-10 items-center gap-1 rounded-[10px] border border-shop-line-strong bg-shop-background px-3.5 transition-colors"
+
 const GAP = "gap"
 type Slot = number | typeof GAP
 
 /**
  * The first page, the last one, the current one and its two neighbours — eight entries at most,
- * whatever the catalogue's size. A shop with forty pages that prints forty links has stopped being
+ * whatever the catalogue's size. At either end the current page has one neighbour, so the window
+ * reaches one further inward: page 1 of 40 offers 1 2 3 … 40, as 5a draws it. A shop with forty pages that prints forty links has stopped being
  * navigation and become a wall, and on a phone it wraps into four rows nobody reads.
  *
  * A jump that skips a single page is written out instead of elided: "…" costs the same width as
  * the digit it is hiding, so eliding one is width spent to say less.
  */
 function slotsAround(page: number, pageCount: number): Slot[] {
-  const shown = [1, page - 1, page, page + 1, pageCount]
+  const inward = page === 1 ? [3] : page === pageCount ? [pageCount - 2] : []
+  const shown = [1, page - 1, page, page + 1, pageCount, ...inward]
     .filter((candidate) => candidate >= 1 && candidate <= pageCount)
     .sort((a, b) => a - b)
 
@@ -84,29 +89,29 @@ export function StorefrontPagination({
   return (
     <nav
       aria-label={text.paginationLabel}
-      className="flex w-full flex-wrap items-center justify-center gap-1 py-6 text-sm"
+      className="flex w-full flex-wrap items-center justify-center gap-1.5 py-2 text-sm text-shop-on-background"
     >
       {/* The window hides most of the catalogue, so someone who cannot see the row hears where
           they landed before hearing a handful of digits. */}
       <p className="sr-only">{fill(text.paginationStatus, { current, total: pageCount })}</p>
 
-      {/* No previous page means no link at all. A disabled anchor is not a thing HTML has: it
-          keeps its place in the tab order and a reader still offers it, promising a page that
-          does not exist. */}
+      {/* No previous page means no link. 5a keeps the word in place, muted, so the row does not
+          shift between page 1 and page 2 — but as text a reader skips: a disabled anchor is not a
+          thing HTML has, and it would still be offered, promising a page that does not exist. */}
       {current > 1 ? (
-        <Link
-          href={href(current - 1)}
-          rel="prev"
-          className="rounded-xl px-3 py-2 font-medium transition-colors hover:bg-black/5"
-        >
-          {text.paginationPrevious}
+        <Link href={href(current - 1)} rel="prev" className={cn(STEP, "hover:border-shop-primary")}>
+          <span aria-hidden="true">‹</span> {text.paginationPrevious}
         </Link>
-      ) : null}
+      ) : (
+        <span aria-hidden="true" className={cn(STEP, "text-shop-muted")}>
+          ‹ {text.paginationPrevious}
+        </span>
+      )}
 
-      <ol className="flex items-center gap-1">
+      <ol className="flex items-center gap-1.5">
         {slotsAround(current, pageCount).map((slot, index) =>
           slot === GAP ? (
-            <li key={`${GAP}-${index}`} aria-hidden="true" className="px-2 opacity-50">
+            <li key={`${GAP}-${index}`} aria-hidden="true" className="px-1 text-shop-muted">
               …
             </li>
           ) : (
@@ -118,14 +123,11 @@ export function StorefrontPagination({
                 aria-label={fill(text.paginationPage, { page: slot })}
                 aria-current={slot === current ? "page" : undefined}
                 className={cn(
-                  "flex min-w-9 items-center justify-center rounded-xl px-3 py-2 tabular-nums transition-colors",
-                  slot === current ? "font-semibold" : "opacity-70 hover:bg-black/5",
-                )}
-                style={
+                  "flex h-10 min-w-10 items-center justify-center rounded-[10px] border px-1.5 tabular-nums transition-colors",
                   slot === current
-                    ? { backgroundColor: "var(--shop-primary)", color: "var(--shop-on-primary)" }
-                    : undefined
-                }
+                    ? "border-transparent bg-shop-text font-bold text-shop-on-text"
+                    : "border-shop-line-strong bg-shop-background hover:border-shop-primary",
+                )}
               >
                 {slot}
               </Link>
@@ -135,12 +137,8 @@ export function StorefrontPagination({
       </ol>
 
       {current < pageCount ? (
-        <Link
-          href={href(current + 1)}
-          rel="next"
-          className="rounded-xl px-3 py-2 font-medium transition-colors hover:bg-black/5"
-        >
-          {text.paginationNext}
+        <Link href={href(current + 1)} rel="next" className={cn(STEP, "font-semibold hover:border-shop-primary")}>
+          {text.paginationNext} <span aria-hidden="true">›</span>
         </Link>
       ) : null}
     </nav>

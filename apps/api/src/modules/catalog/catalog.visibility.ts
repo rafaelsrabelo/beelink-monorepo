@@ -1,5 +1,5 @@
 // Types
-import type { ProductModel } from '../../generated/prisma/models.js';
+import type { ProductModel, ProductVariantModel } from '../../generated/prisma/models.js';
 import type { ProductWhereInput } from '../../generated/prisma/models/Product.js';
 
 /**
@@ -28,6 +28,16 @@ import type { ProductWhereInput } from '../../generated/prisma/models/Product.js
  */
 export function isSoldOut(row: Pick<ProductModel, 'trackStock' | 'stockQuantity'>): boolean {
   return row.trackStock && (row.stockQuantity ?? 0) <= 0;
+}
+
+/**
+ * One combination can be ordered now: the shop sells it, and it is not sold out by the rule above.
+ * A variant the shop does not sell never reaches a visitor, so this answers only for one that does.
+ */
+export function isVariantAvailable(
+  row: Pick<ProductVariantModel, 'isActive' | 'trackStock' | 'stockQuantity'>,
+): boolean {
+  return row.isActive && !isSoldOut(row);
 }
 
 /**

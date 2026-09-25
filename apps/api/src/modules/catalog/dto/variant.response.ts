@@ -7,10 +7,13 @@ import type {
   ProductOption,
   ProductOptionValue,
   ProductVariant,
+  PublicProductDetail,
+  PublicProductVariant,
+  StorefrontCartProducts,
 } from '@harness-monorepo/contracts';
 
 // App
-import { ProductResponse } from './catalog.response.js';
+import { ProductResponse, PublicProductResponse } from './catalog.response.js';
 
 /** The shapes of options and variants, for Swagger. Each `implements` its contract type. */
 
@@ -54,4 +57,32 @@ export class ProductDetailResponse extends ProductResponse implements ProductDet
   @ApiProperty({ type: [ProductOptionResponse] }) options!: ProductOptionResponse[];
   @ApiProperty({ type: [ProductVariantResponse], description: 'The first option changes slowest.' })
   variants!: ProductVariantResponse[];
+}
+
+export class PublicProductVariantResponse implements PublicProductVariant {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty({ type: [String], description: 'One value id per option, in the options\u2019 order.' })
+  optionValueIds!: string[];
+  @ApiProperty({ example: 18900, description: 'Whole cents.' }) priceCents!: number;
+  @ApiProperty({ nullable: true, type: Number, description: 'Whole cents.' }) compareAtPriceCents!: number | null;
+  @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
+  @ApiProperty({ description: 'It can be ordered now. False is sold out. Derived, never the count.' })
+  available!: boolean;
+}
+
+export class PublicProductDetailResponse extends PublicProductResponse implements PublicProductDetail {
+  @ApiProperty({ type: [ProductOptionResponse] }) options!: ProductOptionResponse[];
+  @ApiProperty({
+    type: [PublicProductVariantResponse],
+    description: 'Every combination the shop sells; one it switched off is absent.',
+  })
+  variants!: PublicProductVariantResponse[];
+}
+
+export class StorefrontCartProductsResponse implements StorefrontCartProducts {
+  @ApiProperty({
+    type: [PublicProductDetailResponse],
+    description: 'The active products among the ids asked, in their order; one drafted or gone is absent.',
+  })
+  products!: PublicProductDetailResponse[];
 }

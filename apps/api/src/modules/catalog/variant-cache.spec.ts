@@ -41,7 +41,7 @@ describe('productCacheOf', () => {
     });
 
     const { isActive: _isActive, ...values } = only;
-    expect(productCacheOf([only])).toEqual(values);
+    expect(productCacheOf([only])).toEqual({ ...values, maxPriceCents: 4990 });
   });
 
   it('takes the price of the cheapest variant on sale, with that variant\'s "was" price', () => {
@@ -51,7 +51,23 @@ describe('productCacheOf', () => {
       variant({ priceCents: 9900, isActive: false }),
     ]);
 
-    expect(cache).toMatchObject({ priceCents: 18900, compareAtPriceCents: 21900 });
+    expect(cache).toMatchObject({ priceCents: 18900, compareAtPriceCents: 21900, maxPriceCents: 19900 });
+  });
+
+  /** A card says what a customer can pay today, and a sold-out combination is not that. */
+  it('ranges the price over what can be ordered now, and over what is on sale only when nothing can', () => {
+    const someLeft = productCacheOf([
+      variant({ priceCents: 6990, trackStock: true, stockQuantity: 0 }),
+      variant({ priceCents: 11990, trackStock: true, stockQuantity: 3 }),
+      variant({ priceCents: 20990 }),
+    ]);
+    expect(someLeft).toMatchObject({ priceCents: 11990, maxPriceCents: 20990 });
+
+    const noneLeft = productCacheOf([
+      variant({ priceCents: 6990, trackStock: true, stockQuantity: 0 }),
+      variant({ priceCents: 11990, trackStock: true, stockQuantity: 0 }),
+    ]);
+    expect(noneLeft).toMatchObject({ priceCents: 6990, maxPriceCents: 11990 });
   });
 
   it('takes the codes, the cost and the box from the first variant on sale', () => {

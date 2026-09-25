@@ -51,6 +51,14 @@ describe("ProductShippingFields", () => {
     expect(screen.getByText("Preencha os três.")).toBeInTheDocument()
   })
 
+  it("leaves the weight to each combination on a product with variations, and keeps the box", () => {
+    render(<ProductShippingFields value={base} onChange={() => {}} perCombination />)
+
+    expect(screen.queryByLabelText("Peso")).toBeNull()
+    expect(screen.getByText(/O peso fica em cada combinação/)).toBeInTheDocument()
+    expect(screen.getByLabelText("Comprimento")).toBeInTheDocument()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<Controlled />)
 

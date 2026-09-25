@@ -205,7 +205,16 @@ describe("previewOf — what the shop window would be served", () => {
 })
 
 describe("shelvesOf — each showcase's cards, from the shop as served", () => {
-  const card = { id: "p", slug: "blusa", name: "Blusa", priceCents: 100, compareAtPriceCents: null, imageUrl: null, categorySlug: null }
+  const card = {
+    id: "p",
+    slug: "blusa",
+    name: "Blusa",
+    priceCents: 100,
+    compareAtPriceCents: null,
+    imageUrl: null,
+    categorySlug: null,
+    priceRange: { minCents: 100, maxCents: 100 },
+  }
 
   it("draws a showcase with the cards and the category the public read resolved", () => {
     const shelves = shelvesOf([

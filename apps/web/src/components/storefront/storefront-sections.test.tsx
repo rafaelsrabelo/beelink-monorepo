@@ -20,7 +20,7 @@ import { StorefrontSections } from "./storefront-sections"
 
 const routes = storefrontRoutes({
   slug: "loja",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
 })
 
 function poster(id: string, span: ComponentSpan): PublicComponent {
@@ -176,6 +176,7 @@ describe("StorefrontSections — a showcase draws its own products", () => {
     compareAtPriceCents: null,
     imageUrl: null,
     categorySlug: null,
+    priceRange: { minCents: 1000, maxCents: 1000 },
   })
 
   function showcase(over: Partial<PublicComponent> = {}): PublicComponent {

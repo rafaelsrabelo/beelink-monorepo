@@ -8,8 +8,7 @@ import type {
   ProductListQuery,
   ProductPage,
   ProductStockFilter,
-  PublicProduct,
-  PublicProductCard,
+  PublicProductDetail,
 } from '@harness-monorepo/contracts';
 import type { CreateProductDto, UpdateProductDto } from './dto/product.dto.js';
 import type { ReorderDto } from './dto/reorder.dto.js';
@@ -19,25 +18,15 @@ import type { ProductWhereInput } from '../../generated/prisma/models/Product.js
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
-import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 import {
   PRODUCTS_ADMIN_PAGE_SIZE,
-  PRODUCTS_PAGE_SIZE,
   PRODUCTS_PAGE_SIZE_MAX,
 } from './catalog.constants.js';
-import { productInclude, toProduct, toPublicProduct, toPublicProductCard } from './catalog.mapper.js';
+import { productInclude, toProduct } from './catalog.mapper.js';
+import { imageRows, refuseForeignImageValues } from './product-images.js';
 import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
 import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
-import { productDetailInclude, toProductDetail } from './variant.mapper.js';
-
-/** The rows a write should store for a product's photos, in the order they were sent. */
-function imageRows(images: CreateProductDto['images']): { url: string; alt: string | null; position: number }[] {
-  return (images ?? []).map((image, position) => ({
-    url: image.url,
-    alt: image.alt ?? null,
-    position,
-  }));
-}
+import { productDetailInclude, toProductDetail, toPublicProductDetail } from './variant.mapper.js';
 
 /**
  * The three answers to "how many are left", as a `where` fragment.
@@ -137,78 +126,10 @@ export class ProductsService {
   }
 
   /**
-   * The storefront's list: one page of what a shop published, in the order the shopkeeper arranged it.
-   *
-   * Unavailable products are absent rather than greyed out — a window that shows what it will not
-   * sell teaches a visitor to distrust the rest of it. The filters are here and not in the browser
-   * because a shop with three hundred products would otherwise ship all three hundred to render
-   * six, and because a search the server did is a search a crawler can follow.
-   *
-   * `total` counts the filter and not the page, because that is what the pager divides. The count
-   * runs over the same `where` inside one transaction: read separately, the two could fall either
-   * side of a write and disagree, and a pager that disagrees with its pages offers a last page that
-   * is empty or hides one that is not.
-   */
-  async listPublic(
-    storeId: string,
-    filters: { category?: string; search?: string; page?: number; pageSize?: number } = {},
-  ): Promise<{ products: PublicProductCard[]; total: number }> {
-    const search = filters.search?.trim();
-    const pageSize = filters.pageSize ?? PRODUCTS_PAGE_SIZE;
-    const page = filters.page ?? 1;
-
-    // Both the shelf rule and the search carry an `OR`, so they are held in `AND` rather than
-    // spread into one object — spread, the second would overwrite the first and the filtered
-    // search would quietly answer the search alone. See catalog.visibility.ts.
-    const where = {
-      storeId,
-      // A parent's shelf holds what is under it. Filtering `Proteínas` and getting nothing because
-      // every whey is filed under `Proteínas → Whey` is the failure this avoids — and it is the one
-      // a shopkeeper reports as "my category is empty" without ever mentioning subcategories.
-      ...(filters.category
-        ? {
-            category: {
-              isActive: true,
-              OR: [{ slug: filters.category }, { parent: { slug: filters.category, isActive: true } }],
-            },
-          }
-        : {}),
-      AND: [
-        ON_THE_SHELF_WHERE,
-        // Name and description both, because a shop selling "Bolsa Amora" describes it as crochet
-        // and someone searching "crochê" means to find it.
-        ...(search
-          ? [
-              {
-                OR: [
-                  { name: { contains: search, mode: 'insensitive' as const } },
-                  { description: { contains: search, mode: 'insensitive' as const } },
-                ],
-              },
-            ]
-          : []),
-      ],
-    };
-
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.product.findMany({
-        where,
-        include: productInclude,
-        orderBy: [{ position: 'asc' }, { name: 'asc' }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      this.prisma.product.count({ where }),
-    ]);
-
-    return { products: rows.map(toPublicProductCard), total };
-  }
-
-  /**
    * One product, by the slug in its address. `slugHistory` is not consulted here: a renamed
    * product's old address is a redirect the web app owns, not a second name the API answers to.
    */
-  async publicBySlug(storeId: string, slug: string): Promise<PublicProduct> {
+  async publicBySlug(storeId: string, slug: string): Promise<PublicProductDetail> {
     // Status only, on purpose — a sold-out product still has a page. This is the address that goes
     // out on WhatsApp, and the schema's note on `slugHistory` calls a 404 here the most visible
     // failure this product can produce. The answer carries `soldOut`, and the page drops the way to
@@ -216,12 +137,26 @@ export class ProductsService {
     // catalog.visibility.ts.
     const row = await this.prisma.product.findFirst({
       where: { storeId, slug, status: 'ACTIVE' },
-      include: productInclude,
+      include: productDetailInclude,
     });
 
     if (!row) throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product at "${slug}"`));
 
-    return toPublicProduct(row);
+    return toPublicProductDetail(row);
+  }
+
+  /** The active products among these ids, in the order asked; a sold-out one is included, marked. */
+  async publicByIds(storeId: string, ids: readonly string[]): Promise<PublicProductDetail[]> {
+    const rows = await this.prisma.product.findMany({
+      where: { storeId, id: { in: [...ids] }, status: 'ACTIVE' },
+      include: productDetailInclude,
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+
+    return ids.flatMap((id) => {
+      const row = byId.get(id);
+      return row ? [toPublicProductDetail(row)] : [];
+    });
   }
 
   async byId(storeSlug: string, productId: string, userId: string): Promise<ProductDetail> {
@@ -243,6 +178,8 @@ export class ProductsService {
     assertPrices(dto.priceCents, dto.compareAtPriceCents ?? null);
     assertParcel(dto.lengthMm ?? null, dto.widthMm ?? null, dto.heightMm ?? null);
     if (dto.categoryId) await this.assertCategoryOwned(storeId, dto.categoryId);
+    // A product being created has no options, so no photo of it can name a value yet.
+    await refuseForeignImageValues(this.prisma, null, dto.images);
 
     const last = await this.prisma.product.aggregate({ where: { storeId }, _max: { position: true } });
 
@@ -274,6 +211,7 @@ export class ProductsService {
           status: dto.status ?? 'ACTIVE',
           origin: dto.origin ?? null,
           ...perUnit,
+          maxPriceCents: perUnit.priceCents,
           position: (last._max.position ?? -1) + 1,
           images: { create: imageRows(dto.images) },
           variants: { create: [{ storeId, position: 0, ...perUnit }] },
@@ -307,6 +245,8 @@ export class ProductsService {
         // now, not as it was before another save of the same product finished.
         const current = await tx.product.findUniqueOrThrow({ where: { id: productId } });
         const hasOptions = (await tx.productOption.count({ where: { productId } })) > 0;
+        // Under the lock, so a value removed by a concurrent save of the options is foreign here.
+        await refuseForeignImageValues(tx, productId, dto.images);
 
         // On a product with options the product's values are a summary, and a patch that repeats
         // them changes nothing. Without options they are its one variant's, and a patch equal to a

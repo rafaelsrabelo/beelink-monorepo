@@ -9,6 +9,7 @@ import type {
   CreateProductCategoryPayload,
   CreateProductPayload,
   Product,
+  ProductDetail,
   ProductCategory,
   ProductListQuery,
   ProductPage,
@@ -124,7 +125,7 @@ export function useProduct(
   slug: string,
   productId: string,
   options?: { enabled?: boolean },
-): UseQueryResult<Product, Error> {
+): UseQueryResult<ProductDetail, Error> {
   return useQuery({
     queryKey: catalogKeys.product(slug, productId),
     queryFn: () => fetchProduct(slug, productId),

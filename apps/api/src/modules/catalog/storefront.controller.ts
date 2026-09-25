@@ -14,11 +14,20 @@ import {
 import { Public } from '../auth/auth.decorators.js';
 import { STOREFRONT_RATE_LIMIT } from '../stores/stores.constants.js';
 import { StoresService } from '../stores/stores.service.js';
-import type { PublicProduct } from '@harness-monorepo/contracts';
+import type { PublicProductDetail } from '@harness-monorepo/contracts';
+import type { StorefrontSort } from '@harness-monorepo/contracts';
+import { parseOptionFilters, STOREFRONT_SORTS } from './catalog-filters.js';
 import { PRODUCTS_PAGE_SIZE, PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
-import { PublicProductResponse, StorefrontCatalogResponse } from './dto/catalog.response.js';
+import { StorefrontCatalogResponse } from './dto/catalog.response.js';
+import { PublicProductDetailResponse } from './dto/variant.response.js';
 import { ProductCategoriesService } from './product-categories.service.js';
 import { ProductsService } from './products.service.js';
+import { StorefrontListingService } from './storefront-listing.service.js';
+
+/** Whole reais in the address, cents in the query. A negative or absent bound is no bound. */
+function centsOfReais(reais: number | undefined): number | undefined {
+  return reais === undefined || reais < 0 ? undefined : reais * 100;
+}
 
 /**
  * What an anonymous visitor is served, and no more.
@@ -38,6 +47,7 @@ export class StorefrontController {
     private readonly stores: StoresService,
     private readonly products: ProductsService,
     private readonly categories: ProductCategoriesService,
+    private readonly listing: StorefrontListingService,
   ) {}
 
   @Get()
@@ -62,7 +72,17 @@ export class StorefrontController {
     },
     description: `At most ${PRODUCTS_PAGE_SIZE_MAX}; a larger ask is served at the ceiling.`,
   })
-  @ApiOperation({ summary: "A shop's published catalogue, filtered and paged as the window asks" })
+  @ApiQuery({ name: 'ordenar', required: false, enum: STOREFRONT_SORTS, description: 'An unknown order is served as relevancia' })
+  @ApiQuery({ name: 'precoMin', required: false, schema: { type: 'integer', minimum: 0 }, description: 'Whole reais' })
+  @ApiQuery({ name: 'precoMax', required: false, schema: { type: 'integer', minimum: 0 }, description: 'Whole reais' })
+  @ApiQuery({ name: 'desconto', required: false, description: '1 keeps only products on sale' })
+  @ApiQuery({
+    name: 'opcao',
+    required: false,
+    isArray: true,
+    description: '`Nome:Valor`, repeatable. Values of one option widen; different options narrow, on one combination',
+  })
+  @ApiOperation({ summary: "A shop's published catalogue, filtered, ordered and paged as the window asks, with its facets" })
   @ApiOkResponse({ type: StorefrontCatalogResponse })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
@@ -75,6 +95,11 @@ export class StorefrontController {
     // and a crawler following a hand-edited `?pagina=0` should land on a page rather than an error.
     @Query('pagina', new ParseIntPipe({ optional: true })) askedPage?: number,
     @Query('porPagina', new ParseIntPipe({ optional: true })) askedPageSize?: number,
+    @Query('ordenar') askedSort?: string,
+    @Query('precoMin', new ParseIntPipe({ optional: true })) priceMin?: number,
+    @Query('precoMax', new ParseIntPipe({ optional: true })) priceMax?: number,
+    @Query('desconto') discount?: string,
+    @Query('opcao') options?: string | string[],
   ): Promise<StorefrontCatalogResponse> {
     const storeId = await this.stores.publicStoreId(storeSlug);
 
@@ -84,26 +109,39 @@ export class StorefrontController {
     const page = Math.max(askedPage ?? 1, 1);
     const pageSize = Math.min(Math.max(askedPageSize ?? PRODUCTS_PAGE_SIZE, 1), PRODUCTS_PAGE_SIZE_MAX);
 
+    const sort = (STOREFRONT_SORTS as readonly string[]).includes(askedSort ?? '')
+      ? (askedSort as StorefrontSort)
+      : 'relevancia';
+    const filters = {
+      category,
+      search,
+      priceMinCents: centsOfReais(priceMin),
+      priceMaxCents: centsOfReais(priceMax),
+      // `1` is "on sale at all"; a whole number above one is the least cut, in percent.
+      discount: discount !== undefined && Number(discount) >= 1,
+      ...(Number(discount) > 1 && Number.isInteger(Number(discount)) ? { discountMinPercent: Number(discount) } : {}),
+      options: parseOptionFilters(options),
+      sort,
+    };
+
     // The categories are the ones the shop has, never the ones this filter left — a window whose
     // navigation disappears when you use it is a window you cannot get back out of.
-    const [categories, { products, total }] = await Promise.all([
-      this.categories.listPublic(storeId),
-      this.products.listPublic(storeId, { category, search, page, pageSize }),
-    ]);
+    const categories = await this.categories.listPublic(storeId);
+    const { products, total, facets, applied } = await this.listing.listing(storeId, filters, page, pageSize, categories);
 
-    return { categories, products, total, page, pageSize };
+    return { categories, products, total, page, pageSize, sort, facets, applied };
   }
 
   @Get(':productSlug')
   @Public()
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
-  @ApiOperation({ summary: 'One product, as its own page shows it' })
-  @ApiOkResponse({ type: PublicProductResponse })
+  @ApiOperation({ summary: 'One product, as its own page shows it, with the combinations it sells' })
+  @ApiOkResponse({ type: PublicProductDetailResponse })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND or PRODUCT_NOT_FOUND' })
   async product(
     @Param('storeSlug') storeSlug: string,
     @Param('productSlug') productSlug: string,
-  ): Promise<PublicProduct> {
+  ): Promise<PublicProductDetail> {
     const storeId = await this.stores.publicStoreId(storeSlug);
 
     return this.products.publicBySlug(storeId, productSlug);

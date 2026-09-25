@@ -20,6 +20,11 @@ import type { ProductFormValues } from "./product-form-types"
 export interface ProductInventoryFieldsProps {
   value: ProductFormValues
   onChange: (value: ProductFormValues) => void
+  /**
+   * The product has variations: the count and the codes belong to each combination, and only the
+   * switch that says whether the shop counts at all stays here, for all of them.
+   */
+  perCombination?: boolean
   disabled?: boolean
   messages?: UiMessages
 }
@@ -34,6 +39,7 @@ export interface ProductInventoryFieldsProps {
 export function ProductInventoryFields({
   value,
   onChange,
+  perCombination = false,
   disabled = false,
   messages = defaultMessages,
 }: ProductInventoryFieldsProps) {
@@ -56,7 +62,11 @@ export function ProductInventoryFields({
 
       {/* The count only exists while it is counted. Leaving it on screen, disabled, would ask the
           shopkeeper to read a number that means nothing. */}
-      {value.trackStock ? (
+      {perCombination ? (
+        <p className="text-muted-foreground text-sm">{messages.catalog.sections.perCombination}</p>
+      ) : null}
+
+      {value.trackStock && !perCombination ? (
         <Field>
           <FieldLabel htmlFor="product-stock">{fields.stockLabel}</FieldLabel>
           <Input
@@ -71,7 +81,7 @@ export function ProductInventoryFields({
         </Field>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={perCombination ? "hidden" : "grid gap-4 sm:grid-cols-2"}>
         <Field>
           <FieldLabel htmlFor="product-sku">{fields.skuLabel}</FieldLabel>
           <Input
