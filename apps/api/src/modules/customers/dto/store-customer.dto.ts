@@ -1,13 +1,14 @@
 // Nest
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsObject, IsOptional, IsString, Matches, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
+import { IsIn, IsInt, IsObject, IsOptional, IsString, Matches, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 // Types
-import type { CreateStoreCustomerPayload, StoreCustomerListQuery } from '@harness-monorepo/contracts';
+import type { CreateStoreCustomerPayload, CustomerStage, StoreCustomerListQuery, StoreCustomerSort } from '@harness-monorepo/contracts';
 
 // App
 import { blankToNull, normaliseWhatsapp, trim } from '../../stores/dto/store-fields.dto.js';
+import { CUSTOMER_SORTS, CUSTOMER_STAGES, CUSTOMERS_PAGE_SIZE, CUSTOMERS_PAGE_SIZE_MAX, CUSTOMERS_SEARCH_MAX_LENGTH } from '../customers.constants.js';
 import { CustomerAddressDto } from './customer.dto.js';
 
 /** A customer the shopkeeper registers, with no account: a name, the phone, and where they are. */
@@ -32,7 +33,6 @@ export class CreateStoreCustomerDto implements CreateStoreCustomerPayload {
   @Type(() => CustomerAddressDto)
   address?: CustomerAddressDto;
 }
-import { CUSTOMERS_PAGE_SIZE, CUSTOMERS_PAGE_SIZE_MAX, CUSTOMERS_SEARCH_MAX_LENGTH } from '../customers.constants.js';
 
 /** How the panel asks for a page of customers. A bare `GET` is the first page of everyone. */
 export class ListStoreCustomersDto implements StoreCustomerListQuery {
@@ -43,6 +43,16 @@ export class ListStoreCustomersDto implements StoreCustomerListQuery {
   @blankToNull
   @MaxLength(CUSTOMERS_SEARCH_MAX_LENGTH)
   q?: string;
+
+  @ApiPropertyOptional({ enum: CUSTOMER_STAGES })
+  @IsOptional()
+  @IsIn(CUSTOMER_STAGES)
+  stage?: CustomerStage;
+
+  @ApiPropertyOptional({ enum: CUSTOMER_SORTS, default: 'RECENT' })
+  @IsOptional()
+  @IsIn(CUSTOMER_SORTS)
+  sort?: StoreCustomerSort;
 
   // `@Type(() => Number)` and not the pipe's implicit conversion — apps/api/AGENTS.md, rule 6.
   @ApiPropertyOptional({ minimum: 1, default: 1 })

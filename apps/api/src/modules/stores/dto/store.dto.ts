@@ -8,11 +8,14 @@ import {
   ArrayUnique,
   IsArray,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
   Validate,
   ValidateNested,
@@ -32,6 +35,8 @@ import { PAGE_TEMPLATE_IDS } from '../../page/page-templates.js';
 import { IsStoreLayoutSettings } from '../store-layout-settings.schema.js';
 import {
   DESCRIPTION_MAX_LENGTH,
+  INACTIVE_AFTER_DAYS_MAX,
+  INACTIVE_AFTER_DAYS_MIN,
   PAYMENT_METHODS,
   SLUG_MAX_LENGTH,
   SLUG_MIN_LENGTH,
@@ -196,4 +201,11 @@ export class UpdateStoreDto implements UpdateStorePayload {
   @ArrayUnique()
   @IsIn(PAYMENT_METHODS, { each: true })
   paymentMethods!: PaymentMethod[];
+
+  @ApiPropertyOptional({ minimum: INACTIVE_AFTER_DAYS_MIN, maximum: INACTIVE_AFTER_DAYS_MAX, description: 'Absent keeps what is stored.' })
+  @IsOptional()
+  @IsInt()
+  @Min(INACTIVE_AFTER_DAYS_MIN)
+  @Max(INACTIVE_AFTER_DAYS_MAX)
+  inactiveAfterDays?: number;
 }

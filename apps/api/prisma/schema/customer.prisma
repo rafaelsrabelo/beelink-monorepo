@@ -38,5 +38,7 @@ model Customer {
   @@unique([storeId, userId])
   @@unique([storeId, phone])
   @@index([userId])
+  /// The CRM's stage filter and its "latest order" sort.
+  @@index([storeId, lastOrderAt])
   @@map("customers")
 }

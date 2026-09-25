@@ -43,11 +43,14 @@ export interface UpdateCustomerProfilePayload {
 }
 
 /**
- * Where a customer stands with the shop. An account that never bought is a lead; one that bought is
- * a customer. Orders leave on WhatsApp and are not recorded yet, so today every one is a lead — the
- * stage is on the wire now so the panel and the CRM to come read it the day orders are kept.
+ * Where a customer stands with the shop, from their valid orders — a cancelled one counts for
+ * nothing. No order is a lead; the last one within the shop's `inactiveAfterDays` is a customer;
+ * longer ago is inactive. Computed when read, so changing the shop's number moves everyone at once.
  */
-export type CustomerStage = "LEAD" | "CUSTOMER";
+export type CustomerStage = "LEAD" | "CUSTOMER" | "INACTIVE";
+
+/** How the panel orders the customers: newest registered, latest order, most orders, most spent. */
+export type StoreCustomerSort = "RECENT" | "LAST_ORDER" | "MOST_ORDERS" | "TOP_SPENT";
 
 /** One of a shop's customers, as its owner sees them in the panel. Never on the shop window. */
 export interface StoreCustomer {
@@ -63,6 +66,14 @@ export interface StoreCustomer {
   /** Two letters, upper case. */
   state: string | null;
   stage: CustomerStage;
+  /** Valid orders — a cancelled one is not counted. */
+  ordersCount: number;
+  /** Whole cents, over the valid orders. */
+  totalSpentCents: number;
+  /** ISO-8601; null with no valid order. */
+  lastOrderAt: string | null;
+  /** Whole days since the last valid order; null with none. */
+  daysSinceLastOrder: number | null;
   /** When the account was opened at this shop. */
   createdAt: string;
 }
@@ -72,6 +83,8 @@ export interface StoreCustomerPage {
   total: number;
   page: number;
   pageSize: number;
+  /** How many match the search in each stage, whatever `stage` narrowed the page to. */
+  stageCounts: Record<CustomerStage, number>;
 }
 
 /**
@@ -88,6 +101,9 @@ export interface CreateStoreCustomerPayload {
 /** How the panel asks for a page of customers. `q` matches the name, the e-mail or the phone. */
 export interface StoreCustomerListQuery {
   q?: string;
+  stage?: CustomerStage;
+  /** Absent is `RECENT`. */
+  sort?: StoreCustomerSort;
   page?: number;
   pageSize?: number;
 }

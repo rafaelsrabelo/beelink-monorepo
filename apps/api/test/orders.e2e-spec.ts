@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, Order, OrderPage, Product } from '@harness-monorepo/contracts';
+import type { AuthSession, Order, OrderPage, Product, Store, StoreCustomerPage } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -40,7 +40,7 @@ describe("a shop's orders", () => {
     grape = await flavoured(await addProduct('Creatina', 5990), 'Sabor', 'Uva');
   });
 
-  function call(method: 'GET' | 'POST' | 'PATCH', url: string, session?: AuthSession, payload?: object) {
+  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, session?: AuthSession, payload?: object) {
     return app.inject({ method, url, headers: session ? { authorization: `Bearer ${session.accessToken}` } : {}, ...(payload ? { payload } : {}) });
   }
 
@@ -246,5 +246,84 @@ describe("a shop's orders", () => {
     expect((await list('?q=bia')).orders.map((order) => order.number)).toEqual([1]);
     expect((await list('?q=97777')).orders.map((order) => order.number)).toEqual([2]);
     expect(await list('?pageSize=1&page=2')).toMatchObject({ total: 2, page: 2, pageSize: 1, orders: [{ number: 1 }] });
+  });
+
+  describe("the customer's stage", () => {
+    const DAY_MS = 86_400_000;
+    const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
+    const customers = (query = '') => call('GET', `/api/stores/lessari/customers${query}`, owner).then((response) => response.json<StoreCustomerPage>());
+    const stageOf = (page: StoreCustomerPage, name: string) => page.customers.find((customer) => customer.name === name)?.stage;
+
+    async function setInactiveAfter(days: number) {
+      const store = (await call('GET', '/api/stores/lessari', owner)).json<Store>();
+      return call('PUT', '/api/stores/lessari', owner, {
+        name: store.name,
+        type: store.type,
+        layoutType: store.layoutType,
+        colors: store.colors,
+        socialNetworks: { whatsapp: store.socialNetworks.whatsapp },
+        paymentMethods: store.paymentMethods,
+        inactiveAfterDays: days,
+      });
+    }
+
+    beforeEach(async () => {
+      await place({ placedAt: daysAgo(59) });
+      await place({ customer: { name: 'Caio Lima', phone: '11977776666' }, placedAt: daysAgo(61) });
+      await place({ customer: { name: 'Eva Nunes', phone: '11966665555' } });
+      await call('PATCH', '/api/stores/lessari/orders/3/status', owner, { status: 'CANCELLED' });
+      await call('POST', '/api/stores/lessari/customers', owner, { name: 'Dani Rocha', phone: '11955554444' });
+    });
+
+    it('with N = 60, reads 59 days as a customer and 61 as inactive; a cancelled order counts for nothing', async () => {
+      const page = await customers();
+
+      expect(stageOf(page, 'Bia Souza')).toBe('CUSTOMER');
+      expect(stageOf(page, 'Caio Lima')).toBe('INACTIVE');
+      expect(stageOf(page, 'Dani Rocha')).toBe('LEAD');
+      expect(page.customers.find((customer) => customer.name === 'Eva Nunes')).toMatchObject({
+        stage: 'LEAD',
+        ordersCount: 0,
+        totalSpentCents: 0,
+        lastOrderAt: null,
+        daysSinceLastOrder: null,
+      });
+      expect(page.customers.find((customer) => customer.name === 'Bia Souza')).toMatchObject({ ordersCount: 1, totalSpentCents: 24470, daysSinceLastOrder: 59 });
+      expect(page.stageCounts).toEqual({ LEAD: 2, CUSTOMER: 1, INACTIVE: 1 });
+    });
+
+    it('filters by stage without narrowing the counts, which follow the search', async () => {
+      const inactive = await customers('?stage=INACTIVE');
+      expect(inactive.customers.map((customer) => customer.name)).toEqual(['Caio Lima']);
+      expect(inactive).toMatchObject({ total: 1, stageCounts: { LEAD: 2, CUSTOMER: 1, INACTIVE: 1 } });
+
+      expect((await customers('?q=bia')).stageCounts).toEqual({ LEAD: 0, CUSTOMER: 1, INACTIVE: 0 });
+      expect((await call('GET', '/api/stores/lessari/customers?stage=SLEEPING', owner)).statusCode).toBe(400);
+    });
+
+    it('moves every stage at once when the shop changes its number, and keeps the number within bounds', async () => {
+      const saved = await setInactiveAfter(90);
+      expect(saved.statusCode).toBe(200);
+      expect(saved.json<Store>().inactiveAfterDays).toBe(90);
+
+      const page = await customers();
+      expect(stageOf(page, 'Caio Lima')).toBe('CUSTOMER');
+      expect(page.stageCounts).toEqual({ LEAD: 2, CUSTOMER: 2, INACTIVE: 0 });
+
+      expect((await setInactiveAfter(6)).statusCode).toBe(400);
+      expect((await setInactiveAfter(366)).statusCode).toBe(400);
+      expect((await call('GET', '/api/stores/lessari', owner)).json<Store>().inactiveAfterDays).toBe(90);
+    });
+
+    it('sorts by the latest order, the most orders and the most spent, those who never bought last', async () => {
+      await place({ customer: { name: 'Caio Lima', phone: '11977776666' }, items: [{ variantId: whey, quantity: 1 }], deliveryFeeCents: 0, discountCents: 0 });
+      const names = async (sort: string) => (await customers(`?sort=${sort}`)).customers.map((customer) => customer.name);
+
+      expect((await names('LAST_ORDER')).slice(0, 2)).toEqual(['Caio Lima', 'Bia Souza']);
+      expect((await names('MOST_ORDERS'))[0]).toBe('Caio Lima');
+      // Caio's two orders (244,70 and 89,90) pass Bia's one.
+      expect((await names('TOP_SPENT')).slice(0, 2)).toEqual(['Caio Lima', 'Bia Souza']);
+      expect((await names('LAST_ORDER')).slice(2).sort()).toEqual(['Dani Rocha', 'Eva Nunes']);
+    });
   });
 });
