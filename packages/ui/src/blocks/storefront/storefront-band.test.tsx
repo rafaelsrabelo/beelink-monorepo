@@ -35,6 +35,12 @@ describe("StorefrontBand", () => {
     expect(BAND).toContain("max-w-[1440px]")
   })
 
+  // The gutter the designs draw at 1440. Every band lines up on it, so it is asserted once, here.
+  it("keeps a 32px gutter from the desktop breakpoint up", () => {
+    expect(BAND).toContain("shop-lg:px-8")
+    expect(BAND).not.toContain("px-10")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <StorefrontBand>

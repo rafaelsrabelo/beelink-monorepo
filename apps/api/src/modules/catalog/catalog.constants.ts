@@ -7,9 +7,15 @@ import type { ProductOrigin, ProductStatus, ProductStockFilter, RouteVocabulary,
  * literal "produtos", and changing a shop's vocabulary changes every link it renders at once.
  */
 export const ROUTE_WORDS = {
-  PT_BR: { products: 'produtos', categories: 'categorias', search: 'busca', cart: 'carrinho' },
-  EN: { products: 'products', categories: 'categories', search: 'search', cart: 'cart' },
+  PT_BR: { products: 'produtos', categories: 'categorias', search: 'busca', cart: 'carrinho', signIn: 'entrar', account: 'conta' },
+  EN: { products: 'products', categories: 'categories', search: 'search', cart: 'cart', signIn: 'login', account: 'account' },
 } as const satisfies Record<RouteVocabulary, StorefrontRouteWords>;
+
+/**
+ * How many photos a card carries: enough to pass through on a shelf, few enough that a page of
+ * cards does not ship every gallery. The product's own page reads them all.
+ */
+export const CARD_PHOTOS_MAX = 5;
 
 export const ROUTE_VOCABULARIES = ['PT_BR', 'EN'] as const satisfies readonly RouteVocabulary[];
 
@@ -96,6 +102,12 @@ export const PRODUCTS_PAGE_SIZE_MAX = 96;
  */
 export const PRODUCT_IMAGES_MAX = 10;
 
+/**
+ * A bound on one photo's values in a request, not a rule a shopkeeper meets: a product has at most
+ * a hundred combinations, and a photo naming every value of it is a photo of every combination.
+ */
+export const PRODUCT_IMAGE_VALUES_MAX = 100;
+
 /** Cents. A product priced above this is a typo — R$ 1.000.000,00 — not a sale. */
 export const PRICE_CENTS_MAX = 100_000_000;
 
@@ -136,3 +148,22 @@ export const PARCEL_MM_MAX = 2_000;
 
 /** A count this high is a typo, not a warehouse. */
 export const STOCK_MAX = 1_000_000;
+
+/**
+ * Options per product. Every combination of values is a variant the shopkeeper prices, and three
+ * options of five values each is already 125 of them. The database holds the same line with a
+ * trigger; see the product_variants migration.
+ */
+export const PRODUCT_OPTIONS_MAX = 3;
+
+/** Variants per product: the combinations the options make, and the rows one save may change. */
+export const PRODUCT_VARIANTS_MAX = 100;
+
+export const OPTION_NAME_MAX_LENGTH = 40;
+export const OPTION_VALUE_NAME_MAX_LENGTH = 60;
+
+/**
+ * A public write, so a write's limit and not the shop window's 300 a minute: one address may ask to
+ * be told about a handful of sold-out combinations, and never fill the table.
+ */
+export const RESTOCK_RATE_LIMIT = { max: 10, timeWindow: '10 minutes' } as const;

@@ -1,6 +1,8 @@
 // UI
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
-import { cn } from "@harness-monorepo/ui/lib/utils"
+
+// Block
+import { StorefrontCardSkeleton } from "./storefront-card-skeleton"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -11,17 +13,6 @@ export interface StorefrontShelfSkeletonProps {
   display?: "RAIL" | "GRID"
   messages?: UiMessages
 }
-
-const CARD = "flex flex-col gap-2"
-
-/** A card's picture, name and price, as grey. */
-const CARD_BODY = (
-  <>
-    <Skeleton className="aspect-square w-full rounded-xl" />
-    <Skeleton className="h-4 w-3/4" />
-    <Skeleton className="h-4 w-1/3" />
-  </>
-)
 
 /**
  * A shelf of products that has not arrived: the header, and the cards in the shape the shelf will
@@ -37,19 +28,15 @@ export function StorefrontShelfSkeleton({ display = "RAIL", messages = defaultMe
       <div aria-hidden="true" className="flex flex-col gap-3">
         <Skeleton className="h-6 w-48" />
         {display === "RAIL" ? (
-          <div className="flex gap-3 overflow-hidden">
+          <div className="flex gap-4 overflow-hidden">
             {Array.from({ length: 6 }, (_, index) => (
-              <div key={index} className={cn(CARD, "w-44 shrink-0 shop-sm:w-52 shop-lg:w-64")}>
-                {CARD_BODY}
-              </div>
+              <StorefrontCardSkeleton key={index} className="w-48 shrink-0 shop-sm:w-56 shop-lg:w-64" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 @xl:grid-cols-3 @3xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 @xl:grid-cols-3 @3xl:grid-cols-4">
             {Array.from({ length: 8 }, (_, index) => (
-              <div key={index} className={CARD}>
-                {CARD_BODY}
-              </div>
+              <StorefrontCardSkeleton key={index} />
             ))}
           </div>
         )}
