@@ -3,7 +3,9 @@ import type { ProductFieldRefs } from '../../generated/prisma/models/Product.js'
 
 // App
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
-import { selectionOf, shelfOf, showcaseQuery, type ShowcaseCardRow } from './showcase.query.js';
+import { CARD_PHOTOS_MAX } from './catalog.constants.js';
+import { productCardInclude } from './catalog.mapper.js';
+import { SHOWCASE_CARD_SELECT, selectionOf, shelfOf, showcaseQuery, toShowcaseCard, type ShowcaseCardRow } from './showcase.query.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
 const CATEGORY = '0199d000-0000-7000-8000-000000000001';
@@ -27,6 +29,8 @@ function row(id: string): ShowcaseCardRow {
     maxPriceCents: 150,
     images: [{ url: `/${id}.jpg` }],
     category: { slug: 'blusas' },
+    _count: { options: 0 },
+    options: [],
   };
 }
 
@@ -112,7 +116,7 @@ describe('shelfOf — the cards, in the order the showcase wants', () => {
     },
   );
 
-  it('serves a card with its first picture and its category', () => {
+  it('serves a card with its first picture, its category and whether it sells combinations', () => {
     expect(shelfOf(showcase(), [row('p1')])).toEqual([
       {
         id: 'p1',
@@ -123,7 +127,40 @@ describe('shelfOf — the cards, in the order the showcase wants', () => {
         imageUrl: '/p1.jpg',
         categorySlug: 'blusas',
         priceRange: { minCents: 100, maxCents: 150 },
+        hasOptions: false,
+        imageUrls: ['/p1.jpg'],
+        optionSummary: null,
       },
     ]);
+  });
+});
+
+describe('toShowcaseCard — what a showcase card carries', () => {
+  /** B11: photos to pass through and "4 sabores", from the same read — no query per product. */
+  it('asks for up to five photos and the first option with its values counted, in the one select', () => {
+    expect(SHOWCASE_CARD_SELECT.images).toMatchObject({ take: CARD_PHOTOS_MAX, orderBy: [{ position: 'asc' }, { id: 'asc' }] });
+    expect(productCardInclude.images).toMatchObject({ take: CARD_PHOTOS_MAX, orderBy: { position: 'asc' } });
+    // Only values a live combination uses: a switched-off one is no choice a visitor has.
+    expect(SHOWCASE_CARD_SELECT.options).toMatchObject({
+      take: 1,
+      select: { name: true, _count: { select: { values: { where: { variantValues: { some: { variant: { isActive: true, archivedAt: null } } } } } } } },
+    });
+  });
+
+  it("carries the photos in the shopkeeper's order, the cover first, and sums up the first option", () => {
+    const card = toShowcaseCard({
+      ...row(P1),
+      images: [{ url: '/capa.jpg' }, { url: '/2.jpg' }, { url: '/3.jpg' }],
+      _count: { options: 2 },
+      options: [{ name: 'Sabor', _count: { values: 4 } }],
+    });
+
+    expect(card.imageUrl).toBe('/capa.jpg');
+    expect(card.imageUrls).toEqual(['/capa.jpg', '/2.jpg', '/3.jpg']);
+    expect(card.optionSummary).toEqual({ name: 'Sabor', valueCount: 4 });
+  });
+
+  it('says a product without options has no summary', () => {
+    expect(toShowcaseCard(row(P1)).optionSummary).toBeNull();
   });
 });

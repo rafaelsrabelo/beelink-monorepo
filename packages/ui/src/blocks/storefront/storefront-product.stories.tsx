@@ -11,6 +11,8 @@ const meta = {
   component: StorefrontProductDetail,
   parameters: { layout: "padded" },
   args: {
+    shopName: "Lessari",
+    homeHref: "#",
     name: "Bolsa Amora",
     description: "Bolsa de crochê feita à mão em fio de algodão, com alça ajustável.",
     priceCents: 18900,
