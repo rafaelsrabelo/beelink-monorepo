@@ -17,7 +17,7 @@ import { sameLayout } from "./component-layout"
  * One component as the editor holds it while the page is being arranged.
  *
  * A shape of its own and not the wire `StoreComponent`, because these are the only fields the
- * arrangement can change. Everything a sheet saves straight to the server — a title, a paragraph,
+ * arrangement can change. Everything Salvar sends straight to the server — a title, a paragraph,
  * the slides — stays out of it on purpose, and the reason was measured: the draft is re-seeded
  * only when a row arrives or leaves, so a colour saved while it held a copy of the colour sat
  * under that stale copy until the page was reloaded. What the draft does not hold cannot go stale.
@@ -39,7 +39,7 @@ export interface ComponentDraft {
  * One band, and what is in it. The two levels the shopkeeper asked for, as the editor holds them.
  *
  * No width and no colour here, for the reason `ComponentDraft` states: both are saved by the band's
- * own sheet, and the projections read them from what the server holds.
+ * Estilo tab, and the projections read them from what the server holds.
  */
 export interface SectionDraft {
   id: string

@@ -204,7 +204,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         onStructureOpenChange={selection.setStructureOpen}
         inspectorOpen={selection.inspectorOpen}
         onInspectorOpenChange={selection.setInspectorOpen}
-        // The block's fields close themselves; the hint has nothing to close, so the drawer does.
+        // The panel closes itself; the hint has nothing to close, so the drawer does.
         inspectorHasOwnClose={target !== null}
         messages={messages}
       />
