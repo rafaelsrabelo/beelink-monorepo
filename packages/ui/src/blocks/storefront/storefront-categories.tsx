@@ -25,10 +25,22 @@ export type StorefrontCategoriesVariant = "bar" | "tiles"
 
 export interface StorefrontCategoriesProps {
   categories: readonly StorefrontCategory[]
-  /** The category being shown, or null for all of them. */
+  /**
+   * The category whose own page this is: it gets `aria-current`. Null on every other page — the
+   * home, the search, the product — where "Tudo" is not the page either.
+   */
   active?: string | null
+  /** Whether this is the whole catalogue's own page, which is the one "Tudo" names. */
+  allActive?: boolean
+  /**
+   * The category to underline without saying it is the page: a product's, as 5b draws it, or a
+   * search narrowed to it. Where `active` is given it is the same one and this can be left out.
+   */
+  marked?: string | null
   /** `(categorySlug | null) => href`, built by the screen. */
   href: (slug: string | null) => string
+  /** The catalogue narrowed to what is on sale, drawn last and apart. Absent when nothing is. */
+  offersHref?: string | null
   variant?: StorefrontCategoriesVariant
   linkComponent?: LinkComponent
   messages?: UiMessages
@@ -54,11 +66,18 @@ function initialOf(name: string): string {
  *
  * It runs the full width of its band and scrolls sideways when the words do not fit, rather than
  * wrapping: a menu two rows tall on a phone has stopped reading as a menu.
+ *
+ * Drawn as 5a and 5b draw it: 13px capitals, 28px apart, the open one underlined in the brand
+ * toned against the header — `--shop-primary` alone vanished on a header painted in the brand —
+ * and "Ofertas do dia" at the far end in the paler tone, when the shop has something on sale.
  */
 export function StorefrontCategories({
   categories,
   active = null,
+  allActive = false,
+  marked = null,
   href,
+  offersHref = null,
   variant = "bar",
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
@@ -75,31 +94,38 @@ export function StorefrontCategories({
         aria-label={text.categoriesLabel}
         // Bleeds past the band's padding so the first word starts at the page's margin and the
         // last one is not trapped behind it once the row scrolls.
-        className="no-scrollbar -mx-4 overflow-x-auto shop-sm:-mx-6"
+        className="no-scrollbar -mx-4 overflow-x-auto shop-sm:-mx-6 shop-lg:-mx-8"
       >
-        <ul className="flex items-stretch gap-1 px-4 shop-sm:px-6">
+        <ul className="flex items-stretch gap-7 px-4 text-[13px] font-bold tracking-[0.04em] uppercase shop-sm:px-6 shop-lg:px-8">
           {slugs.map((slug) => {
             const category = categories.find((entry) => entry.slug === slug)
-            const current = active === slug
+            // Null is "Tudo", and it is the page only when the page says so: the home, a search
+            // and a product are not the catalogue, and used to be marked as if they were.
+            const current = slug === null ? allActive : active === slug
+            const underlined = current || (marked !== null && marked === slug)
 
             return (
               <li key={slug ?? "all"} className="shrink-0">
                 <Link
                   href={href(slug)}
                   aria-current={current ? "page" : undefined}
-                  className={cn(
-                    "flex h-11 items-center px-3 text-xs font-semibold tracking-wide whitespace-nowrap uppercase transition-opacity",
-                    current ? "opacity-100" : "opacity-70 hover:opacity-100",
-                  )}
-                  // The open one is underlined in the shop's own colour rather than filled: a
-                  // filled chip in a menu bar reads as a button, and these are places, not actions.
-                  style={current ? { boxShadow: "inset 0 -2px 0 0 var(--shop-primary)" } : undefined}
+                  className="flex h-11 items-center whitespace-nowrap"
+                  // Underlined in the shop's own colour rather than filled: a filled chip in a menu
+                  // bar reads as a button, and these are places, not actions.
+                  style={underlined ? { boxShadow: "inset 0 -3px 0 0 var(--shop-primary-on-header)" } : undefined}
                 >
                   {category?.name ?? text.allCategories}
                 </Link>
               </li>
             )
           })}
+          {offersHref ? (
+            <li className="ml-auto shrink-0">
+              <Link href={offersHref} className="flex h-11 items-center whitespace-nowrap" style={{ color: "var(--shop-primary-on-header-soft)" }}>
+                {text.dailyOffers}
+              </Link>
+            </li>
+          ) : null}
         </ul>
       </nav>
     )

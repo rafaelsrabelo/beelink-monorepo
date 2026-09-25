@@ -109,6 +109,25 @@ describe("StorefrontSearchCombobox", () => {
     }
   })
 
+  it("reports the scope picked, so the suggestions can follow it", async () => {
+    const user = userEvent.setup()
+    const onScopeChange = vi.fn()
+    render(
+      <StorefrontSearchCombobox
+        action="/loja/busca"
+        value=""
+        onValueChange={() => {}}
+        suggestions={[]}
+        scopes={[{ value: "whey", label: "Whey" }]}
+        scope=""
+        onScopeChange={onScopeChange}
+      />,
+    )
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Buscar em" }), "whey")
+    expect(onScopeChange).toHaveBeenCalledWith("whey")
+  })
+
   it("draws no list at all when there is nothing to suggest", () => {
     renderBox({ suggestions: [] })
 

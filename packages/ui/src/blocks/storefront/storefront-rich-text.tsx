@@ -2,12 +2,14 @@
 import type { ReactNode } from "react"
 
 // UI
-import { parseMarkdown, type MarkdownInline } from "@harness-monorepo/ui/lib/markdown"
+import { parseMarkdown, withoutFirstList, type MarkdownInline } from "@harness-monorepo/ui/lib/markdown"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 export interface StorefrontRichTextProps {
   /** As the editor stored it. See `lib/markdown`. */
   markdown: string
+  /** Leaves out the first bulleted list, which "Sobre este item" already draws. */
+  skipFirstList?: boolean
   className?: string
 }
 
@@ -31,6 +33,11 @@ function renderInline(nodes: readonly MarkdownInline[]): ReactNode[] {
   })
 }
 
+/** One line's marks as elements: a bullet of "Sobre este item" keeps its bold lead. */
+export function StorefrontInline({ nodes }: { nodes: readonly MarkdownInline[] }) {
+  return <>{renderInline(nodes)}</>
+}
+
 /**
  * A description as the shopkeeper formatted it, drawn as elements and never as HTML.
  *
@@ -41,8 +48,8 @@ function renderInline(nodes: readonly MarkdownInline[]): ReactNode[] {
  * No `whitespace-pre-line`: a soft break is a `<br>` and a blank line a new paragraph, which is
  * what the editor showed while it was being written.
  */
-export function StorefrontRichText({ markdown, className }: StorefrontRichTextProps) {
-  const blocks = parseMarkdown(markdown)
+export function StorefrontRichText({ markdown, skipFirstList = false, className }: StorefrontRichTextProps) {
+  const blocks = skipFirstList ? withoutFirstList(markdown) : parseMarkdown(markdown)
   if (blocks.length === 0) return null
 
   return (

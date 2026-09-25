@@ -44,6 +44,8 @@ export interface StorefrontSectionsProps {
   routes: StorefrontRoutes
   showPrice: boolean
   showBadge: boolean
+  /** "Adicionar ao carrinho" on each card of a showcase. */
+  quickAdd?: boolean
   linkComponent?: LinkComponent
   /**
    * Wraps each drawn component. Design mode uses it to put a grip on one; the shop passes nothing.
@@ -107,6 +109,7 @@ export function StorefrontSections({
   routes,
   showPrice,
   showBadge,
+  quickAdd = false,
   linkComponent,
   renderBlock,
   renderSection,
@@ -152,6 +155,7 @@ export function StorefrontSections({
                       routes={routes}
                       showPrice={showPrice}
                       showBadge={showBadge}
+                      quickAdd={quickAdd}
                       {...link}
                       contact={contact}
                       messages={messages}
