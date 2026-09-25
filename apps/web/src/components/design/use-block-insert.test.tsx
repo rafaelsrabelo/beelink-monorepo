@@ -6,14 +6,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { Section } from "@harness-monorepo/contracts"
 
 // App
+import { en as web } from "@/locales/en"
 import { toDraft } from "./design-draft"
 import { useBlockInsert } from "./use-block-insert"
 
 type Options = { onSuccess?: (value: unknown) => void }
 
-const addSection = { mutate: vi.fn(), isPending: false }
-const addToBand = { mutate: vi.fn(), isPending: false }
-const move = { mutate: vi.fn(), isPending: false }
+const addSection = { mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null }
+const addToBand = { mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null }
+const move = { mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null }
 
 vi.mock("@/services/page/page-hooks", () => ({
   useCreateSection: () => addSection,
@@ -21,7 +22,7 @@ vi.mock("@/services/page/page-hooks", () => ({
   useMoveComponent: () => move,
 }))
 
-function band(id: string, components: { id: string; span: "FULL" | "HALF" | "THIRD" }[]): Section {
+function band(id: string, components: { id: string; span: "FULL" | "HALF" | "THIRD"; isActive?: boolean }[]): Section {
   return {
     id,
     name: null,
@@ -47,19 +48,24 @@ function band(id: string, components: { id: string; span: "FULL" | "HALF" | "THI
       columns: null,
       align: null,
       position,
-      isActive: true,
+      isActive: component.isActive ?? true,
       createdAt: "",
       updatedAt: "",
     })),
   } as unknown as Section
 }
 
-const saved = [band("top", [{ id: "a", span: "THIRD" }]), band("below", [{ id: "b", span: "FULL" }])]
+const saved = [
+  band("top", [{ id: "a", span: "THIRD" }]),
+  band("below", [{ id: "b", span: "FULL" }]),
+  // A hidden block before the last: the grid draws [x, y], the draft holds [x, hidden, y].
+  band("mixed", [{ id: "x", span: "THIRD" }, { id: "hidden", span: "HALF", isActive: false }, { id: "y", span: "THIRD" }]),
+]
 
 function hook() {
   const draft = { rows: saved.map(toDraft), saved, patchComponent: vi.fn() }
   const onCreated = vi.fn()
-  const view = renderHook(() => useBlockInsert("loja", draft, onCreated))
+  const view = renderHook(() => useBlockInsert("loja", draft, onCreated, web))
   return { ...view, draft, onCreated }
 }
 
@@ -85,7 +91,7 @@ describe("useBlockInsert", () => {
     const { result, draft, onCreated } = hook()
 
     act(() =>
-      result.current.setInsertAt({ level: "beside", sectionId: "below", index: 1, span: "HALF", rebalance: [{ id: "b", span: "HALF" }] }),
+      result.current.setInsertAt({ level: "beside", sectionId: "below", afterId: "b", span: "HALF", rebalance: [{ id: "b", span: "HALF" }] }),
     )
     act(() => result.current.insert("BANNER"))
 
@@ -102,17 +108,58 @@ describe("useBlockInsert", () => {
     expect(onCreated).toHaveBeenCalledWith({ id: "new", kind: "BANNER" })
   })
 
-  it("moves a lone block up beside the band above's last, and gives up room once it is there", () => {
-    const { result, draft } = hook()
+  it("moves a lone block up beside the band above's last, gives up room once it is there, and opens its fields", () => {
+    const { result, draft, onCreated } = hook()
 
-    act(() => result.current.panel.onJoinAbove({ componentId: "b", sectionId: "top", index: 1, span: "THIRD", rebalance: [] }))
+    act(() =>
+      result.current.panel.onJoinAbove({ componentId: "b", sectionId: "top", afterId: "a", span: "HALF", rebalance: [{ id: "a", span: "HALF" }] }),
+    )
 
     expect(move.mutate).toHaveBeenCalledWith(
-      { componentId: "b", payload: { sectionId: "top", position: 1, span: "THIRD" } },
+      { componentId: "b", payload: { sectionId: "top", position: 1, span: "HALF" } },
       expect.anything(),
     )
-    const options = move.mutate.mock.calls[0]?.[1] as Options
-    act(() => options.onSuccess?.([]))
     expect(draft.patchComponent).not.toHaveBeenCalled()
+
+    const options = move.mutate.mock.calls[0]?.[1] as Options
+    act(() => options.onSuccess?.([band("top", [{ id: "a", span: "THIRD" }, { id: "b", span: "HALF" }])]))
+    expect(draft.patchComponent).toHaveBeenCalledWith("a", { span: "HALF" })
+    expect(onCreated).toHaveBeenCalledWith(expect.objectContaining({ id: "b" }))
+  })
+
+  // The preview's slot knows the block it sits beside, not its index among blocks some of which are hidden.
+  it("places a block right after the one it goes beside, counting the hidden ones in between", () => {
+    const { result } = hook()
+
+    act(() => result.current.setInsertAt({ level: "beside", sectionId: "mixed", afterId: "y", span: "THIRD", rebalance: [] }))
+    act(() => result.current.insert("BANNER"))
+
+    expect(addToBand.mutate).toHaveBeenCalledWith(
+      { sectionId: "mixed", payload: { kind: "BANNER", position: 3, span: "THIRD" } },
+      expect.anything(),
+    )
+  })
+
+  it("reads the room at a band's foot from what the grid draws, not from a hidden block", () => {
+    const { result } = hook()
+
+    act(() => result.current.setInsertAt({ level: "block", sectionId: "mixed", index: 3 }))
+    act(() => result.current.insert("BANNER"))
+
+    // Drawn: two thirds, so the newcomer takes the third left — the hidden half is not a row.
+    expect(addToBand.mutate).toHaveBeenCalledWith(
+      { sectionId: "mixed", payload: { kind: "BANNER", position: 3, span: "THIRD" } },
+      expect.anything(),
+    )
+  })
+
+  it("keeps the strip above the header out of the gallery anywhere but where a band is made", () => {
+    const { result } = hook()
+
+    act(() => result.current.setInsertAt({ level: "block", sectionId: "top", index: 1 }))
+    expect(result.current.unavailableWith(["CONTACT"])).toEqual(["CONTACT", "ANNOUNCEMENT"])
+
+    act(() => result.current.setInsertAt({ level: "band", index: 0 }))
+    expect(result.current.unavailableWith(["CONTACT"])).toEqual(["CONTACT"])
   })
 })

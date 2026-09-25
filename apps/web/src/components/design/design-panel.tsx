@@ -28,6 +28,8 @@ export interface DesignPanelProps {
   /** A band's only block, moved up beside the band above's last. */
   onJoinAbove: (move: JoinAbove) => void
   inserting: boolean
+  /** What an add or a move answered when it failed, in the owner's words. */
+  error?: string | null
   selectedId: string | null
   /** Held by the screen, so the tab survives the column turning into a drawer and back. */
   tab: "blocks" | "colors"
@@ -65,6 +67,7 @@ export function DesignPanel({
   onInsert,
   onJoinAbove,
   inserting,
+  error = null,
   selectedId,
   tab,
   onTabChange,
@@ -92,6 +95,11 @@ export function DesignPanel({
       {/* Kept mounted while the theme shows, so a drag's announcements are not cut off mid-sentence. */}
       <TabsContent value="blocks" keepMounted className="flex flex-col gap-3 pt-3">
         <p className="text-muted-foreground text-xs">{text.previewNotice}</p>
+        {error ? (
+          <p role="alert" className="text-destructive text-sm">
+            {error}
+          </p>
+        ) : null}
         {loading ? (
           <>
             <Skeleton className="h-14 w-full" />

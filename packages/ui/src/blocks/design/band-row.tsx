@@ -83,9 +83,9 @@ export function BandRow({
     format(text.insertBlock, { band: name, position: String(index + 1) })
   const [only] = band.components
   const single = only && band.components.length === 1 ? only : null
-  // Beside the block at `at` when its row has room, or when the row can be split evenly with it.
   const besideAt = (at: number) => {
-    const beside = onInsertBeside ? besideInBand(band.components, at) : null
+    const id = band.components[at]?.id
+    const beside = onInsertBeside && id ? besideInBand(band.components, id) : null
     return onInsertBeside && beside ? { onAddBeside: () => onInsertBeside(beside) } : {}
   }
 

@@ -48,7 +48,15 @@ export function BesideActions({ name, onAddBeside, joinAbove = null, disabled = 
         </Button>
       ) : null}
       {joinAbove ? (
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={joinAbove.onJoin}>
+        // Wraps rather than running out of a 360px column: the name is the owner's, and can be long.
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-auto min-h-7 max-w-full py-1 text-left whitespace-normal"
+          disabled={disabled}
+          onClick={joinAbove.onJoin}
+        >
           <ArrowUpToLineIcon aria-hidden="true" />
           {format(text.joinAbove, { name: joinAbove.name })}
         </Button>

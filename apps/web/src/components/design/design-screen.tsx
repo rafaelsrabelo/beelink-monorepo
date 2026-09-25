@@ -91,7 +91,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
     choose(component.id)
     if (component.kind === "PRODUCTS") shop.refresh(component.id)
   }
-  const adding = useBlockInsert(slug, draft, opened)
+  const adding = useBlockInsert(slug, draft, opened, web)
 
   /*
     The palette is its own draft, and it saves on its own — a colour is the kind of thing you want
@@ -238,7 +238,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         onOpenChange={(open) => (open ? undefined : adding.setInsertAt(null))}
         // The strip is the one kind a page has once; a site has no catalogue, a shop no form leads.
         taken={takenKinds}
-        unavailable={unavailableKinds}
+        unavailable={adding.unavailableWith(unavailableKinds)}
         onAdd={adding.insert}
         offerRows={adding.insertAt?.level === "band"}
         messages={messages}

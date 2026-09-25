@@ -6,25 +6,37 @@ import { hasSpan, type ArrangementItem, type ArrangementSpan } from "./arrangeme
 import type { SpanChange } from "./band-arrangement"
 
 export interface BesideInBand {
-  /** The newcomer's place in the band: right after the block it goes beside. */
-  index: number
+  /** The block the newcomer goes right after, by id: its place in the band whatever is hidden around it. */
+  afterId: string
   span: ArrangementSpan
   rebalance: readonly SpanChange[]
 }
 
+type Placed = Pick<ArrangementItem, "id" | "kind" | "span" | "isActive">
+
 /**
- * `besideOf` said in a band's own terms — the newcomer's place, and the neighbours that give up room
- * by id — for the block at `at`. Null when that block takes no slice (the strip above the header) or
- * its row cannot hold one more.
+ * A band's blocks as its grid draws them: shown, and taking a slice. The rows are theirs — a hidden
+ * block or the strip above the header counted into a row would leave room the page does not have,
+ * and a block added "beside" would land below.
  */
-export function besideInBand(components: readonly Pick<ArrangementItem, "id" | "kind" | "span">[], at: number): BesideInBand | null {
-  const component = components[at]
-  const beside = component && hasSpan(component) ? besideOf(components.map((item) => item.span), at) : null
+export function drawnOf<T extends Placed>(components: readonly T[]): T[] {
+  return components.filter((component) => component.isActive && hasSpan(component))
+}
+
+/**
+ * `besideOf` said in a band's own terms — the block the newcomer follows, and the neighbours that
+ * give up room, by id — for the block `id`. Null when that block is not drawn or its row cannot hold
+ * one more.
+ */
+export function besideInBand(components: readonly Placed[], id: string): BesideInBand | null {
+  const drawn = drawnOf(components)
+  const at = drawn.findIndex((component) => component.id === id)
+  const beside = at < 0 ? null : besideOf(drawn.map((component) => component.span), at)
   if (!beside) return null
 
   const rebalance = beside.rebalance.flatMap(({ index, span }) => {
-    const id = components[index]?.id
-    return id ? [{ id, span }] : []
+    const neighbour = drawn[index]?.id
+    return neighbour ? [{ id: neighbour, span }] : []
   })
-  return { index: at + 1, span: beside.span, rebalance }
+  return { afterId: id, span: beside.span, rebalance }
 }

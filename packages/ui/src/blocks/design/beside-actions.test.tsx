@@ -32,6 +32,13 @@ describe("BesideActions", () => {
     expect(onJoin).toHaveBeenCalled()
   })
 
+  // The name is the owner's and can be long; a 360px column must not be run out of.
+  it("wraps a long block name inside the column instead of running out of it", () => {
+    render(<BesideActions name="Banner" joinAbove={{ name: "Coleção de inverno com frete grátis para todo o Brasil", onJoin: vi.fn() }} />)
+
+    expect(screen.getByRole("button", { name: /Pôr ao lado de Coleção de inverno/ })).toHaveClass("max-w-full", "whitespace-normal")
+  })
+
   it("draws nothing when the row has no room and there is nothing above to join", () => {
     const { container } = render(<BesideActions name="Banner" />)
 

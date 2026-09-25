@@ -13,7 +13,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ArrangeBoard } from "./design-arrange"
-import { besideInBand } from "./band-beside"
+import { besideInBand, drawnOf } from "./band-beside"
 import { bandAnnouncements } from "./band-label"
 import { InsertPoint } from "./insert-point"
 import { BandRow } from "./band-row"
@@ -75,7 +75,7 @@ export interface BandArrangementProps {
 export type InsertAt =
   | { level: "band"; index: number }
   | { level: "block"; sectionId: string; index: number }
-  | { level: "beside"; sectionId: string; index: number; span: ArrangementSpan; rebalance: readonly SpanChange[] }
+  | { level: "beside"; sectionId: string; afterId: string; span: ArrangementSpan; rebalance: readonly SpanChange[] }
 
 /** A block that changes slice so a row has room: the width change a SpanField makes, by id. */
 export interface SpanChange {
@@ -88,8 +88,8 @@ export interface JoinAbove {
   componentId: string
   /** The band above, which it joins. */
   sectionId: string
-  /** Its place there: after the last block. */
-  index: number
+  /** Its place there: right after the band's last drawn block. */
+  afterId: string
   span: ArrangementSpan
   rebalance: readonly SpanChange[]
 }
@@ -125,13 +125,22 @@ export function BandArrangement({
 }: BandArrangementProps) {
   const text = messages.design
 
-  // The band's only block, beside the last block of the band above — when that row has room.
+  /*
+    The band's only block, beside the last block of the band above — when that row has room. Only
+    between shown bands and blocks: a move is a saved write, and one that took a hidden block into a
+    shown band would put it on the shop without Publicar. And never into the strip's band, which the
+    API refuses: it is drawn above the header, not as a row.
+  */
   const joinAboveOf = (at: number) => {
     const above = bands[at - 1]
-    const [only, second] = bands[at]?.components ?? []
-    const last = above?.components.at(-1)
-    const room = onJoinAbove && above && only && !second && hasSpan(only) ? besideInBand(above.components, above.components.length - 1) : null
-    if (!onJoinAbove || !above || !only || !last || !room) return null
+    const band = bands[at]
+    const [only, second] = band?.components ?? []
+    if (!onJoinAbove || !above || !band || !only || second || !hasSpan(only)) return null
+    if (!band.isActive || !only.isActive || !above.isActive || above.components.some((c) => !hasSpan(c))) return null
+
+    const last = drawnOf(above.components).at(-1)
+    const room = last ? besideInBand(above.components, last.id) : null
+    if (!last || !room) return null
     return {
       name: last.title?.trim() || text.kinds[last.kind],
       onJoin: () => onJoinAbove({ componentId: only.id, sectionId: above.id, ...room }),

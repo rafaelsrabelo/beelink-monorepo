@@ -99,12 +99,13 @@ export function DesignPreviewPane({
   const text = messages.design
 
   // The room the band's last row has left, as a cell the size of the block that would land there.
-  // Only room there is: splitting a full row evenly is the panel's "Adicionar ao lado".
+  // Only room there is: splitting a full row evenly is the panel's "Adicionar ao lado". Not on the
+  // phone, where every block is a row and the slot would sit under the block, not beside it.
   const besideSlotOf = (section: PublicSection) => {
     const last = section.components.at(-1)
     const room = last ? besideOf(section.components.map((component) => component.span), section.components.length - 1) : null
-    if (!onInsert || !last || !room || room.rebalance.length) return null
-    const at: InsertAt = { level: "beside", sectionId: section.id, index: section.components.length, span: room.span, rebalance: [] }
+    if (!onInsert || device === "PHONE" || !last || !room || room.rebalance.length) return null
+    const at: InsertAt = { level: "beside", sectionId: section.id, afterId: last.id, span: room.span, rebalance: [] }
     return (
       <StorefrontBandCell span={room.span}>
         <DesignBesideSlot name={labelOf(last.kind, last.title, messages)} onAdd={() => onInsert(at)} disabled={inserting} messages={messages} />

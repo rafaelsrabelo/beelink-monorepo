@@ -28,8 +28,8 @@ const bands: ArrangementBand[] = [
   },
 ]
 
-function renderBands(overrides: Partial<React.ComponentProps<typeof BandArrangement>> = {}) {
-  const handlers = {
+function handlersOf() {
+  return {
     onReorder: vi.fn(),
     onReorderComponents: vi.fn(),
     onToggleBand: vi.fn(),
@@ -40,6 +40,10 @@ function renderBands(overrides: Partial<React.ComponentProps<typeof BandArrangem
     onDelete: vi.fn(),
     onEdit: vi.fn(),
   }
+}
+
+function renderBands(overrides: Partial<React.ComponentProps<typeof BandArrangement>> = {}) {
+  const handlers = handlersOf()
 
   const view = render(<BandArrangement bands={bands} {...handlers} {...overrides} />)
 
@@ -80,7 +84,7 @@ describe("BandArrangement", () => {
       expect(onInsert).toHaveBeenCalledWith({
         level: "beside",
         sectionId: "top",
-        index: 1,
+        afterId: "a",
         span: "HALF",
         rebalance: [{ id: "a", span: "HALF" }],
       })
@@ -95,12 +99,64 @@ describe("BandArrangement", () => {
       expect(onJoinAbove).toHaveBeenCalledWith({
         componentId: "b",
         sectionId: "top",
-        index: 1,
+        afterId: "a",
         span: "HALF",
         rebalance: [{ id: "a", span: "HALF" }],
       })
       // The first band has no band above it to join.
       expect(screen.queryByRole("button", { name: /Pôr ao lado de Verão/ })).not.toBeInTheDocument()
+    })
+
+    // The grid draws what is shown: a hidden block counted into a row left room the page did not have.
+    it("reads the rows from the shown blocks only, so the newcomer lands beside and not below", async () => {
+      const onInsert = vi.fn()
+      renderBands({
+        bands: [
+          {
+            id: "row",
+            isActive: true,
+            components: [
+              { id: "a", kind: "BANNER", title: "A", span: "HALF", isActive: true },
+              { id: "h", kind: "BANNER", title: "Oculto", span: "HALF", isActive: false },
+              { id: "b", kind: "BANNER", title: "B", span: "HALF", isActive: true },
+            ],
+          },
+        ],
+        onInsert,
+      })
+
+      await userEvent.click(screen.getByRole("button", { name: "Adicionar ao lado de B" }))
+
+      // Drawn [A, B] is a full row: the three become thirds, and the hidden one keeps its width.
+      expect(onInsert).toHaveBeenCalledWith({
+        level: "beside",
+        sectionId: "row",
+        afterId: "b",
+        span: "THIRD",
+        rebalance: [
+          { id: "a", span: "THIRD" },
+          { id: "b", span: "THIRD" },
+        ],
+      })
+      expect(screen.queryByRole("button", { name: "Adicionar ao lado de Oculto" })).not.toBeInTheDocument()
+    })
+
+    // A move is a saved write: a hidden block moved into a shown band would go live without Publicar.
+    it("offers no move up from or into a hidden band, nor into the strip's band", () => {
+      const onJoinAbove = vi.fn()
+      const { rerender } = renderBands({ bands: [stacked[0]!, { ...stacked[1]!, isActive: false }], onJoinAbove })
+      expect(screen.queryByRole("button", { name: /Pôr ao lado de/ })).not.toBeInTheDocument()
+
+      const strip: ArrangementBand = {
+        id: "strip",
+        isActive: true,
+        components: [
+          { id: "s", kind: "ANNOUNCEMENT", title: "Frete grátis", span: "FULL", isActive: true },
+          { id: "t", kind: "BANNER", title: "Topo", span: "HALF", isActive: true },
+        ],
+      }
+      rerender(<BandArrangement bands={[strip, stacked[1]!]} {...handlersOf()} onJoinAbove={onJoinAbove} />)
+      expect(screen.queryByRole("button", { name: /Pôr ao lado de/ })).not.toBeInTheDocument()
     })
 
     it("offers nothing beside a full row of three, since a third is the narrowest slice", () => {
