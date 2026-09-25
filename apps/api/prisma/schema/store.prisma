@@ -154,6 +154,8 @@ model Store {
   customers         Customer[]
   /// Its shoppers' accounts: opened here, and valid nowhere else.
   accounts          User[]            @relation("StoreAccounts")
+  /// The Google accounts tied to them (G5).
+  accountIdentities AccountIdentity[]
 
   @@index([ownerId])
   @@index([categoryId])

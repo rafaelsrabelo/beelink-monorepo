@@ -41,6 +41,8 @@ export type WebErrorCode =
   // A shopper's form refused as a whole (400): the handler names which, so the sentence can say what to fix.
   | "CUSTOMER_SIGN_UP_INVALID"
   | "CUSTOMER_FIELDS_INVALID"
+  // The shopper said no on Google's page: Google sends back `error`, not a code.
+  | "GOOGLE_CANCELLED"
 
 /**
  * What the screens say, on top of what the blocks already carry. `errors` turns an API `errorCode`

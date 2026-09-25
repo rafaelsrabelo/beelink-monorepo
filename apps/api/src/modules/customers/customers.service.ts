@@ -136,12 +136,19 @@ export class CustomersService {
     return user;
   }
 
-  /** The shop's record of this account, made on first use with the account's name. */
-  private recordOf(storeId: string, user: Pick<UserModel, 'id' | 'name'>): Promise<CustomerModel> {
-    return this.prisma.customer.upsert({
-      where: { storeId_userId: { storeId, userId: user.id } },
-      create: { storeId, userId: user.id, name: user.name },
-      update: {},
-    });
+  /**
+   * The shop's record of this account, made on first use with the account's name — also by Google's
+   * door. Prisma's upsert reads, then inserts: two first uses at once both insert, and the one that
+   * loses reads the record the other made instead of failing.
+   */
+  async recordOf(storeId: string, user: Pick<UserModel, 'id' | 'name'>): Promise<CustomerModel> {
+    const where = { storeId_userId: { storeId, userId: user.id } };
+
+    try {
+      return await this.prisma.customer.upsert({ where, create: { storeId, userId: user.id, name: user.name }, update: {} });
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'P2002') return this.prisma.customer.findUniqueOrThrow({ where });
+      throw error;
+    }
   }
 }

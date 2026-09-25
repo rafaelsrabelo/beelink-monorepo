@@ -5,6 +5,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { AuthSession, CustomerProfile, StoreCustomerPage } from '@harness-monorepo/contracts';
 
 // App
+import { CustomersService } from '../src/modules/customers/customers.service.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { PASSWORD, newEmail, register, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
@@ -187,6 +188,20 @@ describe("a shopper's door into a shop", () => {
     const shopper = await shopperAt('lessari');
     expect((await post('/api/stores/lessari/customer/logout', { refreshToken: shopper.refreshToken })).statusCode).toBe(204);
     expect((await me('lessari', shopper.accessToken)).statusCode).toBe(401);
+  });
+
+  it('makes one record of a shopper however many first uses race', async () => {
+    const prisma = app.get(PrismaService);
+    const store = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } });
+
+    // Several rounds: one race can be won by luck, and a record made twice fails loudly.
+    for (let round = 0; round < 10; round += 1) {
+      const user = await prisma.user.create({ data: { name: 'Bia', email: newEmail('corrida'), storeId: store.id, emailVerifiedAt: new Date() } });
+      const records = await Promise.all(Array.from({ length: 5 }, () => app.get(CustomersService).recordOf(store.id, user)));
+
+      expect(new Set(records.map((record) => record.id)).size).toBe(1);
+      expect(await prisma.customer.count({ where: { userId: user.id } })).toBe(1);
+    }
   });
 
   it('keeps a phone to one customer per shop', async () => {

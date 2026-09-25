@@ -45,11 +45,34 @@ describe("StorefrontSignIn", () => {
     expect(screen.getByRole("button", { name: "Enviar link" })).toBeInTheDocument()
   })
 
-  it("has no accessibility violations, on each face", async () => {
+  it("offers Google above the form when the shop can, as a plain link, on signing in and up only", () => {
+    const google = { href: "/api/storefront/loja/customer/google?voltar=%2Floja", iconSrc: "/brand/google.svg" }
+    const { container, rerender } = renderFace("entrar", { google })
+
+    const link = screen.getByRole("link", { name: "Continuar com Google" })
+    expect(link).toHaveAttribute("href", google.href)
+    expect(link.querySelector("img")).toHaveAttribute("src", "/brand/google.svg")
+    expect(link.compareDocumentPosition(container.querySelector("form")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    rerender(<StorefrontSignIn mode="senha" action="/x" hidden={{}} hrefs={hrefs} google={google} />)
+    expect(screen.queryByRole("link", { name: "Continuar com Google" })).not.toBeInTheDocument()
+  })
+
+  it("draws no Google button when the shop cannot offer it", () => {
+    renderFace("entrar")
+
+    expect(screen.queryByRole("link", { name: "Continuar com Google" })).not.toBeInTheDocument()
+    expect(screen.queryByText("ou")).not.toBeInTheDocument()
+  })
+
+  it("has no accessibility violations, on each face, with Google offered or not", async () => {
+    const google = { href: "/api/storefront/loja/customer/google", iconSrc: "/brand/google.svg" }
     for (const mode of ["entrar", "criar", "senha"] as const) {
-      const { container, unmount } = renderFace(mode)
-      await expectNoA11yViolations(container)
-      unmount()
+      for (const extra of [{}, { google }]) {
+        const { container, unmount } = renderFace(mode, extra)
+        await expectNoA11yViolations(container)
+        unmount()
+      }
     }
   })
 })
