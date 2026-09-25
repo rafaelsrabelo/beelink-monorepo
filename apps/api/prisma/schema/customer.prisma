@@ -1,0 +1,32 @@
+/// A shop's own record of someone who buys from it (docs/product/README.md, "Customers"): a name, a
+/// phone and an address, remembered so they are not typed again. It belongs to the shop; the account
+/// it may be linked to is bee-link's, and no shop ever reads that account through it.
+///
+/// The same person buying from two shops is two customers. The phone identifies one within a shop,
+/// and is optional because an account signs up with an e-mail — the phone arrives with the first
+/// order.
+model Customer {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  storeId      String   @db.Uuid
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// The account, when the shopper signed in. Null for one known only by an order.
+  userId       String?  @db.Uuid
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name         String
+  /// Digits only, with the country code, as `wa.me` wants it.
+  phone        String?
+  zipCode      String?
+  street       String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([storeId, userId])
+  @@unique([storeId, phone])
+  @@index([userId])
+  @@map("customers")
+}

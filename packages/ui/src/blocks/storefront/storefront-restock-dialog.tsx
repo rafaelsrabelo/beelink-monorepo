@@ -18,6 +18,9 @@ import { Input } from "@harness-monorepo/ui/components/input"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
+
+// Block
+import { useShopPalette } from "./shop-palette-context"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 export interface RestockSubmission {
@@ -62,10 +65,12 @@ export function StorefrontRestockDialog({
   const [phone, setPhone] = useState("")
   const [name, setName] = useState("")
   const [website, setWebsite] = useState("")
+  // Portaled out of the window, so the shop's variables have to come along.
+  const palette = useShopPalette()
 
   return (
     <Dialog open={open} onOpenChange={(next: boolean) => onOpenChange(next)}>
-      <DialogContent closeLabel={text.restockCancel}>
+      <DialogContent closeLabel={text.restockCancel} style={palette}>
         <DialogHeader>
           <DialogTitle>{text.restockTitle}</DialogTitle>
           <DialogDescription>

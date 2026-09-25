@@ -145,6 +145,20 @@ export class ProductsService {
     return toPublicProductDetail(row);
   }
 
+  /** The active products among these ids, in the order asked; a sold-out one is included, marked. */
+  async publicByIds(storeId: string, ids: readonly string[]): Promise<PublicProductDetail[]> {
+    const rows = await this.prisma.product.findMany({
+      where: { storeId, id: { in: [...ids] }, status: 'ACTIVE' },
+      include: productDetailInclude,
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+
+    return ids.flatMap((id) => {
+      const row = byId.get(id);
+      return row ? [toPublicProductDetail(row)] : [];
+    });
+  }
+
   async byId(storeSlug: string, productId: string, userId: string): Promise<ProductDetail> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const row = await this.prisma.product.findFirst({

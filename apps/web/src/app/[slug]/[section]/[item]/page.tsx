@@ -1,16 +1,30 @@
+// React
+import { Suspense } from "react"
+
 // Next
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
+// Types
+import type { PublicProductDetail } from "@harness-monorepo/contracts"
+
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
+import { StorefrontProductDetails } from "@harness-monorepo/ui/blocks/storefront/storefront-product-details"
+import { StorefrontRelatedSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-related-skeleton"
+import { plainTextOf } from "@harness-monorepo/ui/lib/markdown"
+import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
+import { specRowsOf } from "@harness-monorepo/ui/lib/product-specs"
 import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
+import { StorefrontRelated } from "@/components/storefront/storefront-related"
 import { getMessages } from "@/lib/locale"
-import { productAt, shopAt } from "@/lib/storefront-data"
+import { jsonLdText, productJsonLd } from "@/lib/product-json-ld"
+import { shopperAt } from "@/lib/shopper"
+import { catalogueAt, navigationAt, productAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -42,10 +56,9 @@ async function load(slug: string, section: string, productSlug: string) {
   return { store, product }
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/[slug]/[section]/[item]">): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps<"/[slug]/[section]/[item]">): Promise<Metadata> {
   const { slug, section, item } = await params
+  const { variant } = await searchParams
   const loaded = await load(slug, section, item)
 
   if (!loaded) return {}
@@ -56,15 +69,37 @@ export async function generateMetadata({
     // The shop's name after the product's: a search result reads "Bolsa Amora · Lessari", which is
     // the order someone scanning a page of results needs them in.
     title: `${product.name} · ${store.name}`,
-    description: product.description ?? store.description ?? undefined,
+    // The words alone: the description is Markdown at rest, and a search result showing `**` is
+    // a search result nobody clicks.
+    description: descriptionOf(product.description) ?? store.description ?? undefined,
     alternates: { canonical: storefrontRoutes(store).product(product.slug) },
     openGraph: {
       title: product.name,
-      description: product.description ?? undefined,
-      images: product.images[0]?.url ?? store.logoUrl ?? undefined,
+      description: descriptionOf(product.description),
+      // A shared link to "Uva · 300 g" shows that tub, not the product's first photo.
+      images: sharedPhotoOf(product, typeof variant === "string" ? variant : null) ?? store.logoUrl ?? undefined,
       type: "website",
     },
   }
+}
+
+/** The chosen combination's own photo, or the most specific one tagged for it, or the first. */
+function sharedPhotoOf(product: PublicProductDetail, variantId: string | null): string | undefined {
+  const chosen = product.variants.find((entry) => entry.id === variantId)
+  if (!chosen) return product.images[0]?.url
+  if (chosen.imageUrl) return chosen.imageUrl
+  const optionOf = optionOfValue(product.options, (option) => option.values, (value) => value.id)
+  return photosOf(product.images, optionOf, chosen.optionValueIds)[0]?.url ?? product.images[0]?.url
+}
+
+/** Cut where a search result cuts, on a word, so the tail is never half a sentence. */
+const DESCRIPTION_MAX_LENGTH = 160
+
+function descriptionOf(markdown: string | null): string | undefined {
+  if (!markdown) return undefined
+  const text = plainTextOf(markdown)
+  if (text.length <= DESCRIPTION_MAX_LENGTH) return text || undefined
+  return `${text.slice(0, DESCRIPTION_MAX_LENGTH).replace(/\s+\S*$/, "")}…`
 }
 
 export default async function ProductPage({ params, searchParams }: PageProps<"/[slug]/[section]/[item]">) {
@@ -76,7 +111,12 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   if (!loaded) notFound()
 
   const { store, product } = loaded
-  const { ui, web } = await getMessages()
+  // Started before anything else is awaited, and awaited only inside its Suspense boundary: the
+  // product is on screen while this read runs. A read that fails is no rail, never a broken page.
+  // One more than a rail holds, since the product itself is among them.
+  const related = product.category ? catalogueAt(slug, { category: product.category.slug, pageSize: 19 }).catch(() => null) : null
+  // The menu on this page as on every other: cached under the catalogue's tag, like the product.
+  const [{ ui, web }, { categories, onSale }] = await Promise.all([getMessages(), navigationAt(slug)])
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
@@ -91,43 +131,98 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   return (
     <StorefrontFrame
       store={store}
-      // No category band on a product page: this page is about one thing, and a row of every
-      // category above it is a row of doors out of the page someone just chose to open.
-      categories={[]}
+      categories={categories}
+      // The product's category underlined, not called the page: 5b draws it so.
+      markedCategory={product.category?.slug ?? null}
+      onSale={onSale}
       year={new Date().getFullYear()}
+      shopper={await shopperAt(slug)}
+      // 5b draws its own rhythm: a 14px trail strip, then the three columns, then the lower sections.
+      body={{ layout: "flush" }}
       messages={ui}
     >
+      {/* In the server's HTML, before any script: what a search result draws the price and trail from. */}
+      <script
+        type="application/ld+json"
+        // Escaped by jsonLdText: every "<" is written as \u003c, so no product name can close the tag.
+        dangerouslySetInnerHTML={{
+          __html: jsonLdText(
+            productJsonLd({
+              product,
+              url: routes.product(product.slug),
+              shopName: store.name,
+              crumbs: [
+                { name: ui.storefront.breadcrumbHome, url: routes.home },
+                product.category
+                  ? { name: product.category.name, url: routes.category(product.category.slug) }
+                  : { name: ui.storefront.productsHeading, url: routes.catalog() },
+                { name: product.name, url: routes.product(product.slug) },
+              ],
+              showPrice: layout.showProductPrice ?? true,
+            }),
+          ),
+        }}
+      />
+
       {/*
         The deepest trail in the shop, and the page that needs it most: someone who arrived here
         from Google or from a WhatsApp link has no history to go back through, and this is the only
         thing on the page saying the product sits in a category inside a shop.
       */}
-      <StorefrontBreadcrumb
-        homeHref={routes.home}
-        // Início › category › product, as the design draws it. The catalogue crumb stands in only
-        // for a product filed under no category, which otherwise would hang straight off the door.
-        items={[
-          product.category
-            ? { label: product.category.name, href: routes.category(product.category.slug) }
-            : { label: ui.storefront.catalogTitle, href: routes.catalog() },
-          { label: product.name },
-        ]}
-        messages={ui}
-      />
+      <div className="py-3.5 leading-[1.2]">
+        <StorefrontBreadcrumb
+          homeHref={routes.home}
+          // Início › category › product, as the design draws it. The catalogue crumb stands in only
+          // for a product filed under no category, which otherwise would hang straight off the door.
+          items={[
+            product.category
+              ? { label: product.category.name, href: routes.category(product.category.slug) }
+              : { label: ui.storefront.productsHeading, href: routes.catalog() },
+            { label: product.name },
+          ]}
+          messages={ui}
+        />
+      </div>
 
       <StorefrontProductLive
         slug={slug}
+        shopName={store.name}
+        homeHref={routes.home}
         product={product}
         initialVariantId={typeof variant === "string" ? variant : null}
         orderHref={orderHref}
+        cartHref={routes.cart()}
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}
+        showStock={layout.showProductStock ?? true}
+        finishesOnWhatsApp={Boolean(order)}
+        seller={{ name: store.name, paymentMethods: store.paymentMethods }}
         restockCopy={{
           RESTOCK_VARIANT_INVALID: web.errors.RESTOCK_VARIANT_INVALID,
           BAD_REQUEST: ui.validation.whatsappInvalid,
           RATE_LIMITED: web.errors.RATE_LIMITED,
           UNKNOWN: web.errors.UNKNOWN,
         }}
+        messages={ui}
+      />
+
+      {/* 5b's lower sections: other products of the category, then the description beside the specs. */}
+      {related ? (
+        <Suspense fallback={<StorefrontRelatedSkeleton />}>
+          <StorefrontRelated
+            catalogue={related}
+            productId={product.id}
+            productHref={(productSlug) => routes.product(productSlug)}
+            showPrice={layout.showProductPrice ?? true}
+            messages={ui}
+          />
+        </Suspense>
+      ) : null}
+
+      {/* In the server's HTML, where a crawler reads it; `#descricao`, where "Ver descrição completa" lands. */}
+      <StorefrontProductDetails
+        description={product.description}
+        specs={specRowsOf(product.options, product.category, ui.storefront.specCategory)}
         messages={ui}
       />
     </StorefrontFrame>

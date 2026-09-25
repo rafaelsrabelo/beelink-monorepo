@@ -26,6 +26,12 @@ describe("StorefrontWindow", () => {
    * arrive as data and become custom properties, which is also why the no-hex-colors gate is
    * untroubled — it forbids a literal in source, and there is none.
    */
+  it("wears the typeface the app names, and the page's where none is named", () => {
+    const { container } = renderWindow()
+
+    expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe("var(--font-shop, inherit)")
+  })
+
   it("wears the shop's own colours, from data", () => {
     const { container } = renderWindow()
     const dressed = container.firstElementChild as HTMLElement
@@ -122,15 +128,15 @@ describe("StorefrontWindow", () => {
     it("offers no cart and no account until the screen has somewhere to send them", () => {
       renderWindow()
 
-      expect(screen.queryByRole("link", { name: "Carrinho" })).not.toBeInTheDocument()
+      expect(screen.queryByRole("link", { name: /Carrinho/ })).not.toBeInTheDocument()
       expect(screen.queryByRole("link", { name: "Minha conta" })).not.toBeInTheDocument()
     })
 
     it("shows them, counted, once it does", () => {
       renderWindow({ cartHref: "/padaria-da-ana/carrinho", cartCount: 3, accountHref: "/padaria-da-ana/conta" })
 
-      expect(screen.getByRole("link", { name: "Carrinho" })).toHaveAttribute("href", "/padaria-da-ana/carrinho")
-      expect(screen.getByRole("link", { name: "Minha conta" })).toBeInTheDocument()
+      expect(screen.getByRole("link", { name: "Carrinho, 3 itens" })).toHaveAttribute("href", "/padaria-da-ana/carrinho")
+      expect(screen.getByRole("link", { name: /Minha conta/ })).toBeInTheDocument()
       expect(screen.getByText("3")).toBeInTheDocument()
     })
   })
@@ -174,6 +180,32 @@ describe("StorefrontWindow", () => {
       renderWindow({ children: <p>A grade de produtos</p> })
 
       expect(screen.getByText("A grade de produtos")).toBeInTheDocument()
+    })
+  })
+
+  describe("the page's own strip and rhythm", () => {
+    // The strip carries the page's h1, so it opens the main landmark rather than sitting above it:
+    // "skip to content" has to land on the title.
+    it("opens the main with the page's strip, edge to edge and before the measured page", () => {
+      renderWindow({ pageHeader: <div data-testid="strip">Pré-treino · 86 resultados</div>, children: <p>A grade</p> })
+
+      const strip = screen.getByTestId("strip")
+      const main = screen.getByRole("main")
+      expect(main.firstElementChild).toBe(strip)
+      expect(strip.compareDocumentPosition(screen.getByText("A grade")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(screen.getByRole("banner").contains(strip)).toBe(false)
+    })
+
+    it("keeps the plain page's rhythm by default, and hands it to the page when asked", () => {
+      const { rerender } = renderWindow({ children: <p>A grade</p> })
+      expect(screen.getByText("A grade").parentElement).toHaveClass("py-8")
+
+      rerender(<StorefrontWindow name="Padaria da Ana" homeHref="/padaria-da-ana" colors={colors} layout="flush" surface="canvas"><p>A grade</p></StorefrontWindow>)
+      const main = screen.getByRole("main")
+      expect(screen.getByText("A grade").parentElement).not.toHaveClass("py-8")
+      expect(main.style.backgroundColor).toBe("var(--shop-canvas)")
+      // The measure stays: flush is about rhythm, never about width.
+      expect(screen.getByText("A grade").parentElement).toHaveClass("max-w-[1440px]")
     })
   })
 

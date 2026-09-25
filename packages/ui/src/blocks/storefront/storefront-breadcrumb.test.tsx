@@ -35,8 +35,17 @@ describe("StorefrontBreadcrumb", () => {
   it("keeps the order, because the order is the meaning", () => {
     const { container } = renderTrail()
 
-    const labels = [...container.querySelectorAll("li")].map((item) => item.textContent?.trim())
+    const labels = [...container.querySelectorAll("li")].map((item) => item.textContent?.replace("›", "").trim())
     expect(labels).toEqual(["Início", "Todos os produtos", "Proteínas", "Whey Protein Concentrado 900g"])
+  })
+
+  // The separator is furniture: drawn as the design draws it, and never read out between steps.
+  it("draws a › between steps that a screen reader never hears", () => {
+    const { container } = renderTrail()
+
+    const separators = [...container.querySelectorAll("[aria-hidden='true']")]
+    expect(separators.map((node) => node.textContent)).toEqual(["›", "›", "›"])
+    expect(screen.getByRole("navigation", { name: "Você está em" })).toBeInTheDocument()
   })
 
   it("renders nothing on a page that is the front door itself", () => {
