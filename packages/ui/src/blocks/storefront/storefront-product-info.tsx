@@ -32,7 +32,7 @@ export function StorefrontProductInfo({ shopName, homeHref, name, unavailable, p
 
   return (
     <div className="flex min-w-0 flex-col gap-3.5">
-      <Link href={homeHref} className="self-start text-sm font-semibold text-shop-primary-ink hover:underline">
+      <Link href={homeHref} className="self-start text-[14px] font-semibold text-shop-primary-ink hover:underline">
         {format(text.visitShop, { name: shopName })}
       </Link>
       <h1 className="text-[26px] leading-[1.25] font-bold text-shop-on-background">{name}</h1>

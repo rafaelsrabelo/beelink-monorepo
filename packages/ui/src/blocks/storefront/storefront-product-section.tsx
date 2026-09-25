@@ -5,7 +5,7 @@ import type { ReactNode } from "react"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 /** A lower section's heading, as 5b sets every one of them: 22px, 800. */
-export const PRODUCT_SECTION_HEADING = "text-[22px] font-extrabold"
+export const PRODUCT_SECTION_HEADING = "text-[22px] leading-[1.2] font-extrabold"
 
 export interface StorefrontProductSectionProps {
   /** An anchor for links on the page to land on: `descricao`. */

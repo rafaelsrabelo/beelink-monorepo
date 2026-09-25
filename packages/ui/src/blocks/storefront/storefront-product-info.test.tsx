@@ -19,9 +19,9 @@ describe("StorefrontProductInfo", () => {
   })
 
   it("says the shelf is empty above the price when nothing can be ordered", () => {
-    render(<StorefrontProductInfo shopName="Loja" homeHref="/" name="Blusa" unavailable />)
+    render(<StorefrontProductInfo shopName="Loja" homeHref="/" name="Blusa" unavailable price={<p>R$ 119,90</p>} />)
 
-    expect(screen.getByText("Esgotado")).toBeInTheDocument()
+    expect(screen.getByText("Esgotado").compareDocumentPosition(screen.getByText("R$ 119,90")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it("has no accessibility violations", async () => {

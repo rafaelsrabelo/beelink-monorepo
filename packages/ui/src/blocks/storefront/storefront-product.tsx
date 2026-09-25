@@ -168,9 +168,11 @@ export function StorefrontProductDetail({
       {/*
         5b's top row: photos | information and choice | the buy box. One column on a phone, in that
         order; two from shop-lg, the photos beside the other two; three from shop-xl, at 540 | 452 |
-        320 on the 1440px the design draws, the first two sharing what a narrower window leaves.
+        320 on the 1440px the design draws, the first two sharing what a narrower window leaves. With
+        two, the first row hugs the information and the second takes what the photo has left over, so
+        the buy box sits under the price rather than halfway down a tall photo.
       */}
-      <article className="grid grid-cols-1 items-start gap-6 pt-1 pb-8 leading-[1.2] text-shop-on-background shop-lg:grid-cols-2 shop-lg:gap-8 shop-xl:grid-cols-[minmax(0,540fr)_minmax(0,452fr)_320px]">
+      <article className="grid grid-cols-1 items-start gap-6 pt-1 pb-8 leading-[1.2] text-shop-on-background shop-lg:grid-cols-2 shop-lg:grid-rows-[auto_1fr] shop-lg:gap-8 shop-xl:grid-cols-[minmax(0,540fr)_minmax(0,452fr)_320px] shop-xl:grid-rows-none">
         <div className="min-w-0 shop-lg:row-span-2 shop-xl:row-span-1">
           <StorefrontProductGallery
             key={shownImages.map((image) => image.id).join("|")}
