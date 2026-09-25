@@ -1,6 +1,8 @@
 // UI
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
-import { cn } from "@harness-monorepo/ui/lib/utils"
+
+// Block
+import { StorefrontCardSkeleton } from "./storefront-card-skeleton"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -11,21 +13,6 @@ export interface StorefrontShelfSkeletonProps {
   display?: "RAIL" | "GRID"
   messages?: UiMessages
 }
-
-/** The card's own shape: a bordered frame, the photo flush at the top, two lines of name, the price. */
-const CARD = "flex flex-col overflow-hidden rounded-xl border border-shop-line"
-
-/** A card's picture, name and price, as grey. */
-const CARD_BODY = (
-  <>
-    <Skeleton className="aspect-[259/230] w-full rounded-none" />
-    <div className="flex flex-col gap-1.5 p-3.5">
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-2/3" />
-      <Skeleton className="mt-1 h-7 w-1/2" />
-    </div>
-  </>
-)
 
 /**
  * A shelf of products that has not arrived: the header, and the cards in the shape the shelf will
@@ -43,17 +30,13 @@ export function StorefrontShelfSkeleton({ display = "RAIL", messages = defaultMe
         {display === "RAIL" ? (
           <div className="flex gap-4 overflow-hidden">
             {Array.from({ length: 6 }, (_, index) => (
-              <div key={index} className={cn(CARD, "w-48 shrink-0 shop-sm:w-56 shop-lg:w-64")}>
-                {CARD_BODY}
-              </div>
+              <StorefrontCardSkeleton key={index} className="w-48 shrink-0 shop-sm:w-56 shop-lg:w-64" />
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 @xl:grid-cols-3 @3xl:grid-cols-4">
             {Array.from({ length: 8 }, (_, index) => (
-              <div key={index} className={CARD}>
-                {CARD_BODY}
-              </div>
+              <StorefrontCardSkeleton key={index} />
             ))}
           </div>
         )}

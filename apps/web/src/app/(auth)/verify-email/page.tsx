@@ -7,6 +7,19 @@ import { AppLink } from "@/components/app-link"
 import { ResendVerification } from "@/components/auth/resend-verification"
 import { callApi } from "@/lib/api"
 import { getMessages } from "@/lib/locale"
+import { shopAt } from "@/lib/storefront-data"
+import { storefrontRoutes } from "@/lib/storefront-routes"
+
+/**
+ * Where a verified person signs in: a shopper who signed up in a shop goes back to that shop's own
+ * sign-in (`voltar=/<slug>`, which the API writes into the link); anyone else, the panel's.
+ */
+async function signInAfter(voltar: string | string[] | undefined): Promise<string> {
+  const slug = typeof voltar === "string" ? /^\/([a-z0-9-]+)$/.exec(voltar)?.[1] : undefined
+  const shop = slug ? await shopAt(slug) : null
+
+  return shop ? storefrontRoutes(shop).signIn() : "/login"
+}
 
 /**
  * Verification runs here, on the server: the token is spent once, on the request the person's
@@ -14,7 +27,7 @@ import { getMessages } from "@/lib/locale"
  */
 export default async function VerifyEmailPage({ searchParams }: PageProps<"/verify-email">) {
   const { ui, web } = await getMessages()
-  const { token } = await searchParams
+  const { token, voltar } = await searchParams
 
   const verified =
     typeof token === "string" && token !== ""
@@ -22,7 +35,7 @@ export default async function VerifyEmailPage({ searchParams }: PageProps<"/veri
       : false
 
   if (verified) {
-    return <VerifyEmailStatus state="verified" messages={ui} linkComponent={AppLink} />
+    return <VerifyEmailStatus state="verified" loginHref={await signInAfter(voltar)} messages={ui} linkComponent={AppLink} />
   }
 
   return (
