@@ -21,6 +21,9 @@ export interface RestockCopy {
 
 export interface StorefrontProductLiveProps {
   slug: string
+  /** The shop over the title: "Visite a loja …", to its front door. */
+  shopName: string
+  homeHref: string
   product: PublicProductDetail
   /** The combination the address asked for, read on the server so the page opens on it. */
   initialVariantId: string | null
@@ -42,6 +45,8 @@ export interface StorefrontProductLiveProps {
  */
 export function StorefrontProductLive({
   slug,
+  shopName,
+  homeHref,
   product,
   initialVariantId,
   orderHref,
@@ -59,6 +64,8 @@ export function StorefrontProductLive({
 
   return (
     <StorefrontProductDetail
+      shopName={shopName}
+      homeHref={homeHref}
       name={product.name}
       description={product.description}
       priceCents={product.priceCents}

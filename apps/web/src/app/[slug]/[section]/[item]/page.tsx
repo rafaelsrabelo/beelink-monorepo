@@ -4,6 +4,8 @@ import type { Metadata } from "next"
 
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
+import { StorefrontProductSection } from "@harness-monorepo/ui/blocks/storefront/storefront-product-section"
+import { StorefrontRichText } from "@harness-monorepo/ui/blocks/storefront/storefront-rich-text"
 import { plainTextOf } from "@harness-monorepo/ui/lib/markdown"
 import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
@@ -112,6 +114,8 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
       onSale={onSale}
       year={new Date().getFullYear()}
       shopper={await shopperAt(slug)}
+      // 5b draws its own rhythm: a 14px trail strip, then the three columns, then the lower sections.
+      body={{ layout: "flush" }}
       messages={ui}
     >
       {/*
@@ -119,21 +123,25 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         from Google or from a WhatsApp link has no history to go back through, and this is the only
         thing on the page saying the product sits in a category inside a shop.
       */}
-      <StorefrontBreadcrumb
-        homeHref={routes.home}
-        // Início › category › product, as the design draws it. The catalogue crumb stands in only
-        // for a product filed under no category, which otherwise would hang straight off the door.
-        items={[
-          product.category
-            ? { label: product.category.name, href: routes.category(product.category.slug) }
-            : { label: ui.storefront.productsHeading, href: routes.catalog() },
-          { label: product.name },
-        ]}
-        messages={ui}
-      />
+      <div className="py-3.5 leading-[1.2]">
+        <StorefrontBreadcrumb
+          homeHref={routes.home}
+          // Início › category › product, as the design draws it. The catalogue crumb stands in only
+          // for a product filed under no category, which otherwise would hang straight off the door.
+          items={[
+            product.category
+              ? { label: product.category.name, href: routes.category(product.category.slug) }
+              : { label: ui.storefront.productsHeading, href: routes.catalog() },
+            { label: product.name },
+          ]}
+          messages={ui}
+        />
+      </div>
 
       <StorefrontProductLive
         slug={slug}
+        shopName={store.name}
+        homeHref={routes.home}
         product={product}
         initialVariantId={typeof variant === "string" ? variant : null}
         orderHref={orderHref}
@@ -148,6 +156,16 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         }}
         messages={ui}
       />
+
+      {/*
+        The whole description, in the server's HTML where a crawler reads it, as 5b's first lower
+        section. The info column shows only its first list (D6), and links here.
+      */}
+      {product.description ? (
+        <StorefrontProductSection id="descricao" title={ui.storefront.descriptionHeading} className="pb-12">
+          <StorefrontRichText markdown={product.description} className="text-[15px] leading-[1.6] text-shop-on-background" />
+        </StorefrontProductSection>
+      ) : null}
     </StorefrontFrame>
   )
 }

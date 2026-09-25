@@ -37,6 +37,8 @@ function renderLive() {
     <QueryClientProvider client={new QueryClient({ defaultOptions: { mutations: { retry: false } } })}>
       <StorefrontProductLive
         slug="lessari"
+        shopName="Lessari"
+        homeHref="/lessari"
         product={product}
         initialVariantId={null}
         cartHref="/lessari/carrinho"
