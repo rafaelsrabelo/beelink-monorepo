@@ -59,7 +59,7 @@ describe("withLiveEdit — the preview draws the fields before Salvar", () => {
   it("draws a picture that just landed, and the words being typed, over what is saved", () => {
     const value = { ...toForm(banner, null), slides: [slide] }
 
-    const [section] = previewOf(saved.map(toDraft), withLiveEdit(saved, { componentId: "banner", value, linkId: "l1" }), new Map())
+    const [section] = previewOf(saved.map(toDraft), withLiveEdit(saved, { componentId: "banner", value, linkId: "l1", openedBackground: "" }), new Map())
 
     expect(section?.components[0]?.items).toEqual([
       { id: "s1", imageUrl: "https://cdn/nova.jpg", title: "Coleção nova", subtitle: null, href: null, external: false },
@@ -69,7 +69,7 @@ describe("withLiveEdit — the preview draws the fields before Salvar", () => {
   it("leaves out a slide still without its picture, as Salvar would", () => {
     const value = { ...toForm(banner, null), slides: [{ ...slide, imageUrl: "" }] }
 
-    const live = withLiveEdit(saved, { componentId: "banner", value, linkId: "l1" })
+    const live = withLiveEdit(saved, { componentId: "banner", value, linkId: "l1", openedBackground: "" })
 
     expect((live[0]?.components[0]?.items as BannerSlide[] | undefined) ?? []).toEqual([])
   })
@@ -78,7 +78,7 @@ describe("withLiveEdit — the preview draws the fields before Salvar", () => {
     const value = { ...toForm(banner, null), title: "Novo" }
     const rows = saved.map(toDraft).map((row) => ({ ...row, components: row.components.map((c) => ({ ...c, span: "THIRD" as const })) }))
 
-    const [section] = previewOf(rows, withLiveEdit(saved, { componentId: "banner", value, linkId: "l1" }), new Map())
+    const [section] = previewOf(rows, withLiveEdit(saved, { componentId: "banner", value, linkId: "l1", openedBackground: "" }), new Map())
 
     expect(section?.components[0]).toMatchObject({ title: "Novo", span: "THIRD" })
     expect(section?.components[1]).toMatchObject({ title: "Outro" })
@@ -89,7 +89,20 @@ describe("withLiveEdit — the preview draws the fields before Salvar", () => {
     const bands = [band("strip-band", [strip])]
     const value = { ...toForm(strip, null), background: "oklch(0.5 0.2 300)" }
 
-    expect(withLiveEdit(bands, { componentId: "strip", value, linkId: "l1" })[0]?.background).toBe("oklch(0.5 0.2 300)")
+    expect(withLiveEdit(bands, { componentId: "strip", value, linkId: "l1", openedBackground: "" })[0]?.background).toBe(
+      "oklch(0.5 0.2 300)",
+    )
+  })
+
+  // The band's sheet saved a colour while the strip's fields were open: the fields did not change it.
+  it("leaves a band colour saved meanwhile alone when the fields did not change it", () => {
+    const strip = component("strip", { kind: "ANNOUNCEMENT", title: "Frete grátis" })
+    const bands = [band("strip-band", [strip], { background: "oklch(0.3 0.1 20)" })]
+    const value = toForm(strip, "oklch(0.5 0.2 300)")
+
+    const live = withLiveEdit(bands, { componentId: "strip", value, linkId: "l1", openedBackground: "oklch(0.5 0.2 300)" })
+
+    expect(live[0]?.background).toBe("oklch(0.3 0.1 20)")
   })
 
   it("draws what is saved when nothing is being edited", () => {
@@ -105,11 +118,21 @@ describe("useDesignEdit", () => {
     const { open, change } = useDesignEdit.getState()
 
     open("banner", value, "l1")
-    change({ ...value, title: "Digitado" })
+    change("banner", { ...value, title: "Digitado" })
     open("banner", value, "l1")
     expect(useDesignEdit.getState().edit?.value.title).toBe("Digitado")
 
     open("other", value, "l2")
+    expect(useDesignEdit.getState().edit).toMatchObject({ componentId: "other", value: { title: "" } })
+  })
+
+  // A picture landing late for fields that closed must not write into the block opened since.
+  it("takes a change only for the block whose fields are open", () => {
+    const value = toForm(banner, null)
+    useDesignEdit.getState().open("other", value, "l2")
+
+    useDesignEdit.getState().change("banner", { ...value, title: "Tarde demais" })
+
     expect(useDesignEdit.getState().edit).toMatchObject({ componentId: "other", value: { title: "" } })
   })
 

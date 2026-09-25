@@ -71,26 +71,26 @@ describe("StoreImageField", () => {
     expect(whenPicked).not.toHaveBeenCalled()
   })
 
-  it("hands a late picture to no one once the field has left the page", async () => {
+  // A settings tab switched away mid-upload: its form lives above the field and must still get the logo.
+  it("still hands a late picture on once the field has left the page", async () => {
     let land: (url: string) => void = () => undefined
     const onChange = vi.fn()
     const { unmount } = render(
       <StoreImageField
-        id="slide"
-        label="Imagem"
-        previewAlt="Imagem"
+        id="logo"
+        label="Logo"
+        previewAlt="Logo"
         value=""
         onChange={onChange}
         onUpload={() => new Promise<string>((resolve) => (land = resolve))}
       />,
     )
 
-    await userEvent.upload(screen.getByLabelText(CTA), imageNamed("capa.png"))
+    await userEvent.upload(screen.getByLabelText(CTA), imageNamed("logo.png"))
     unmount()
     land(sampleImage)
-    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(onChange).not.toHaveBeenCalled()
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(sampleImage))
   })
 
   it("takes a file dropped on the area, not only one picked through the dialog", async () => {

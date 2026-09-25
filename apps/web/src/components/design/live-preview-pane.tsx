@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useDeferredValue } from "react"
+import { memo, useDeferredValue, useEffect, useMemo } from "react"
 
 // Types
 import type { Section } from "@harness-monorepo/contracts"
@@ -12,6 +12,9 @@ import type { SectionDraft } from "./design-draft"
 import { previewOf } from "./design-draft-preview"
 import { DesignPreviewPane, type DesignPreviewPaneProps } from "./design-preview-pane"
 import { withLiveEdit } from "./live-edit"
+
+/** Memoised, so the urgent render of a keystroke skips the shop and only the deferred one draws it. */
+const Pane = memo(DesignPreviewPane)
 
 export interface LivePreviewPaneProps extends Omit<DesignPreviewPaneProps, "sections"> {
   rows: readonly SectionDraft[]
@@ -31,6 +34,10 @@ export interface LivePreviewPaneProps extends Omit<DesignPreviewPaneProps, "sect
 export function LivePreviewPane({ rows, saved, editingId, shelves, ...pane }: LivePreviewPaneProps) {
   const edit = useDesignEdit((state) => state.edit)
   const live = useDeferredValue(edit && edit.componentId === editingId ? edit : null)
+  const sections = useMemo(() => previewOf(rows, withLiveEdit(saved, live), shelves), [rows, saved, live, shelves])
 
-  return <DesignPreviewPane {...pane} shelves={shelves} sections={previewOf(rows, withLiveEdit(saved, live), shelves)} />
+  // Unsaved fields do not outlive the editor: coming back must show what is saved, not what was abandoned.
+  useEffect(() => () => useDesignEdit.getState().close(), [])
+
+  return <Pane {...pane} shelves={shelves} sections={sections} />
 }

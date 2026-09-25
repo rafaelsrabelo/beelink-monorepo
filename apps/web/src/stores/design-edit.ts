@@ -10,12 +10,18 @@ export interface DesignEdit {
   value: ComponentFormValues
   /** The strip's link id, minted once: an overlay built on every render would mint a new one each time. */
   linkId: string
+  /**
+   * The strip's band colour as the fields opened with it. The band's own sheet can save another one
+   * meanwhile; the preview paints the typed colour only when it was changed here, as Salvar writes it.
+   */
+  openedBackground: string
 }
 
 interface DesignEditState {
   edit: DesignEdit | null
   open: (componentId: string, value: ComponentFormValues, linkId: string) => void
-  change: (value: ComponentFormValues) => void
+  /** Only the open block's: a picture landing late for fields that closed must not write into another's. */
+  change: (componentId: string, value: ComponentFormValues) => void
   close: () => void
 }
 
@@ -33,7 +39,12 @@ export const useDesignEdit = create<DesignEditState>()((set) => ({
   // The same block opened again keeps what was typed: a narrow window's drawer mounts its own copy
   // of the fields as the wide column's unmounts, and the owner is still editing the same thing.
   open: (componentId, value, linkId) =>
-    set((state) => (state.edit?.componentId === componentId ? state : { edit: { componentId, value, linkId } })),
-  change: (value) => set((state) => (state.edit ? { edit: { ...state.edit, value } } : state)),
+    set((state) =>
+      state.edit?.componentId === componentId
+        ? state
+        : { edit: { componentId, value, linkId, openedBackground: value.background } },
+    ),
+  change: (componentId, value) =>
+    set((state) => (state.edit?.componentId === componentId ? { edit: { ...state.edit, value } } : state)),
   close: () => set({ edit: null }),
 }))

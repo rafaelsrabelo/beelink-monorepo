@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 
 // Libs
 import { ImageIcon, UploadCloudIcon } from "lucide-react"
@@ -14,6 +14,7 @@ import {
   FieldLegend,
   FieldSet,
 } from "@harness-monorepo/ui/components/field"
+import { useLatest } from "@harness-monorepo/ui/hooks/use-latest"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -21,24 +22,8 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { FORMAT_NAMES, MEGABYTE } from "./store-image-formats"
 import type { FieldIssue } from "./store-types"
-
-/**
- * What a media type is called when it is shown to a shopkeeper. `image/jpeg` is the truth the
- * browser tells and "JPEG" is the word the person reading the form knows, and those are not the
- * same register. A type with no entry here falls back to its subtype, so an `accept` this map has
- * not caught up with still reads as something rather than as a blank.
- */
-const FORMAT_NAMES: Record<string, string> = {
-  "image/png": "PNG",
-  "image/jpeg": "JPEG",
-  "image/webp": "WebP",
-  "image/gif": "GIF",
-  "image/avif": "AVIF",
-  "image/svg+xml": "SVG",
-}
-
-const MEGABYTE = 1024 * 1024
 
 export interface StoreImageFieldProps {
   /** Names the file input, as `<id>-file`. */
@@ -110,23 +95,10 @@ export function StoreImageField({
 }: StoreImageFieldProps) {
   const text = messages.store.image
   const fileInput = useRef<HTMLInputElement>(null)
-  /*
-    The upload lands a second later, and by then the owner may have typed beside it: the `onChange`
-    of the render the file was picked in carries the form as it was then, and handing the picture to
-    it would put that old form back over what was typed. So the picture goes to the latest one — and
-    to none, once this field has left the page.
-  */
-  const latestOnChange = useRef(onChange)
-  const mounted = useRef(false)
-  useEffect(() => {
-    latestOnChange.current = onChange
-  })
-  useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
-    }
-  }, [])
+  // The picture lands a second after the pick, to the latest `onChange`: the pick's carries the form
+  // as it was then, and would put it back over what was typed meanwhile. A field that left the page
+  // (a tab switched away) still hands it on — its form lives above it and must not lose the picture.
+  const latestOnChange = useLatest(onChange)
   const [dragging, setDragging] = useState(false)
   /**
    * A file this block refused to send. It is not an errorCode and never becomes one — nothing was
@@ -169,8 +141,9 @@ export function StoreImageField({
 
     setRefusal(undefined)
     try {
+      // Two statements: in `f(await x)` the callee is read before the await, which is the old one.
       const url = await onUpload(file)
-      if (mounted.current) latestOnChange.current(url)
+      latestOnChange.current(url)
     } catch {
       // The screen owns the sentence: it turns the failure into copy and hands it back as `error`.
       // Swallowing it here is what keeps this block from ever knowing an errorCode (rule 5).

@@ -23,8 +23,11 @@ export function withLiveEdit(saved: readonly Section[], edit: DesignEdit | null)
     const live = { ...was, ...toPayload(edit.value, edit.linkId) } as StoreComponent
     return {
       ...section,
-      // The strip's colour is its band's, asked for beside the words it paints.
-      ...(was.kind === "ANNOUNCEMENT" ? { background: edit.value.background || null } : {}),
+      // The strip's colour is its band's, asked for beside the words it paints — drawn only when
+      // changed here, so a colour the band's sheet saved meanwhile is not painted over.
+      ...(was.kind === "ANNOUNCEMENT" && edit.value.background !== edit.openedBackground
+        ? { background: edit.value.background || null }
+        : {}),
       components: section.components.map((component) => (component.id === was.id ? live : component)),
     }
   })

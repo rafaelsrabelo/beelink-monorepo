@@ -171,7 +171,7 @@ function ComponentEditorBody({
         {empty ? <EmptyStateNote state={empty} slug={slug} messages={messages} /> : null}
         <ComponentForm
           value={value}
-          onChange={change}
+          onChange={(next) => change(component.id, next)}
           categories={categoryOptions}
           products={productOptions}
           optionsState={points ? optionsState : "ready"}
