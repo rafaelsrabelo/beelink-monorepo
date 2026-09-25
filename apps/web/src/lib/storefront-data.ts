@@ -55,12 +55,18 @@ export interface CatalogueAsk {
 }
 
 /**
+ * A shelf as this app reads it: the catalogue, and whether it could be read at all. Not a wire shape —
+ * the API never sends `failed`; this module sets it when the API could not answer.
+ */
+export type StorefrontShelf = StorefrontCatalog & { failed?: true }
+
+/**
  * The catalogue, filtered and paged as the address asks.
  *
  * Under `catalogTag` and not `storeTag`: a price change should not drop the shop's colours from the
  * cache, and a colour change should not drop every paged catalogue with it.
  */
-export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise<StorefrontCatalog> {
+export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise<StorefrontShelf> {
   const query = new URLSearchParams()
   if (ask.category) query.set("categoria", ask.category)
   if (ask.search) query.set("busca", ask.search)
@@ -76,16 +82,19 @@ export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise
 
   const suffix = query.size ? `?${query.toString()}` : ""
 
+  // A request that never reached the API throws; it is the same outage as a 500, not a broken page.
   const response = await callPublicApi({
     path: `/stores/${slug}/catalog${suffix}`,
     tags: [catalogTag(slug)],
-  })
+  }).catch(() => null)
 
   // A catalogue that would not load is an empty shelf, never a broken page: the shop's name, its
   // description and its WhatsApp are worth serving on their own. `pageSize` is echoed as asked so
-  // the pager divides by something rather than by zero.
-  if (!response.ok) {
+  // the pager divides by something rather than by zero. A 400 is a filter the API refused, which
+  // reads as "nothing found"; an outage is `failed`, so the shelf can say so and offer to try again.
+  if (!response?.ok) {
     return {
+      ...(!response || response.status >= 500 ? { failed: true as const } : {}),
       categories: [],
       products: [],
       total: 0,

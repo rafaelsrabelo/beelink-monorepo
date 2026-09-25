@@ -353,6 +353,16 @@ export interface UiMessages {
     breadcrumbHome: string
     empty: string
     emptyHint: string
+    /** An empty shelf with filters in force, and its way out to the same address as "Limpar tudo". */
+    emptyFiltered: string
+    emptyFilteredHint: string
+    emptySeeAll: string
+    /** An empty category or search, and its way out to the whole catalogue. */
+    emptyCatalog: string
+    /** The shelf could not be read: an outage, never "nothing found". */
+    shelfFailed: string
+    shelfFailedHint: string
+    shelfRetry: string
     productsHeading: string
     /**
      * "{count} produtos", under the catalogue's title and on a category's card. One pair serves

@@ -1,6 +1,3 @@
-// Types
-import type { StorefrontCatalog } from "@harness-monorepo/contracts"
-
 // UI
 import { StorefrontCatalog as StorefrontCatalogGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-catalog"
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
@@ -16,7 +13,7 @@ import { StorefrontPriceFilter } from "@harness-monorepo/ui/blocks/storefront/st
 import { StorefrontSearch } from "@harness-monorepo/ui/blocks/storefront/storefront-search"
 
 // App
-import { pageCountOf } from "@/lib/storefront-data"
+import { pageCountOf, type StorefrontShelf } from "@/lib/storefront-data"
 import { StorefrontCardCartLive } from "./storefront-card-cart-live"
 import { StorefrontListingControls } from "./storefront-listing-controls"
 import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf, priceFilterOf } from "@/lib/storefront-filters"
@@ -31,7 +28,7 @@ export interface StorefrontListingProps {
    * boundary, so the shop's header and menu are on screen while the products are not — and the
    * request stays in the page, the one lane a Server Component reads the catalogue through.
    */
-  catalogue: Promise<StorefrontCatalog>
+  catalogue: Promise<StorefrontShelf>
   locale: string
 }
 
@@ -103,7 +100,10 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
         <StorefrontCatalogGrid
           products={catalogue.products}
           productHref={routes.product}
-          clearHref={section.kind === "catalog" ? undefined : routes.catalog()}
+          // Filters in force: out through "Limpar tudo"'s own address. None: out to the whole catalogue.
+          clearHref={chips.length ? clearFiltersHrefOf(place, routes) : section.kind === "catalog" ? undefined : routes.catalog()}
+          filtered={chips.length > 0}
+          {...(catalogue.failed ? { retryHref: pageHrefOf(place, routes)(page) } : {})}
           locale={locale}
           productsPerRow={layout.productsPerRow ?? 3}
           showPrice={layout.showProductPrice ?? true}
