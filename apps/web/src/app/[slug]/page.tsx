@@ -6,10 +6,11 @@ import type { Metadata } from "next"
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { contactCopyOf } from "@/components/storefront/storefront-contact-copy"
-import { StorefrontSections, announcementOf } from "@/components/storefront/storefront-sections"
+import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { orderHrefOf } from "@/components/storefront/storefront-links"
 import { getMessages } from "@/lib/locale"
-import { categoriesAt, shopAt } from "@/lib/storefront-data"
+import { shopperAt } from "@/lib/shopper"
+import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -60,10 +61,10 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
   // visitor which shop names are taken is not this page's job.
   if (!store) notFound()
 
-  const [{ ui, web }, categories] = await Promise.all([
+  const [{ ui, web }, { categories, onSale }] = await Promise.all([
     getMessages(),
     // A site has no catalogue to ask for. The empty answer is what its page draws with anyway.
-    store.type === "INSTITUTIONAL" ? [] : categoriesAt(slug),
+    store.type === "INSTITUTIONAL" ? { categories: [], onSale: false } : navigationAt(slug),
   ])
 
   const routes = storefrontRoutes(store)
@@ -73,14 +74,15 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
     <StorefrontFrame
       store={store}
       categories={categories}
+      onSale={onSale}
       // No pitch band. It used to sit right under the cover — the shop's name, a line about the
       // shop and a WhatsApp button — and the shop owner was right that it reads as a profile page
       // rather than a landing page: three lines of prose between the cover and the first thing for
       // sale. The name is in the header and the WhatsApp is in the footer and on every product.
       // No cover and no promises band from the frame: on this page they are blocks, and which one
       // comes first is the shopkeeper's answer rather than this file's.
-      {...(announcementOf(store.sections) ? { announcement: announcementOf(store.sections)! } : {})}
       year={new Date().getFullYear()}
+      shopper={await shopperAt(slug)}
       messages={ui}
       blocks={
         <>
@@ -96,6 +98,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
             routes={routes}
             showPrice={layout.showProductPrice ?? true}
             showBadge={layout.showProductBadges ?? true}
+            quickAdd={layout.showQuickAdd ?? true}
             contact={{ slug, whatsappHref: orderHrefOf(store) ?? null, copy: contactCopyOf(web) }}
             messages={ui}
           />

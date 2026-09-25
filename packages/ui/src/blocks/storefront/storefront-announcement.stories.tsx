@@ -9,21 +9,21 @@ const meta = {
   title: "Blocos/Vitrine/Barra de aviso",
   component: StorefrontAnnouncement,
   parameters: { layout: "fullscreen" },
-  args: { left: "Frete grátis acima de R$ 199", right: "Só até domingo" },
+  args: { messages: ["Toda linha Mutante com 20% de desconto", "Frete grátis acima de R$ 199"] },
 } satisfies Meta<typeof StorefrontAnnouncement>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * As pedido: o texto fica rolando na horizontal, de ponta a ponta da janela, em velocidade
- * constante — uma frase curta não corre e uma longa não se arrasta — e não para sob o mouse. Com
- * "reduzir movimento" ligado no sistema, nada se move: a frase fica parada, centrada.
+ * Como o design desenha: as mensagens lado a lado, paradas e centralizadas, em maiúsculas. Num
+ * celular, onde não cabem, voltam a correr de ponta a ponta em velocidade constante — e com
+ * "reduzir movimento" ligado no sistema, nada se move em largura nenhuma.
  */
 export const Padrao: Story = {}
 
-/** Uma frase só, curta: mais cópias na trilha, mesma velocidade. */
-export const Curta: Story = { args: { left: "Oi", right: undefined } }
+/** Uma mensagem só, curta. */
+export const Curta: Story = { args: { messages: ["Só hoje: 5% off no Pix"] } }
 
 /**
  * Na cor da faixa dela. A tinta é derivada — o dono escolhe a cor da barra, nunca a cor do texto,

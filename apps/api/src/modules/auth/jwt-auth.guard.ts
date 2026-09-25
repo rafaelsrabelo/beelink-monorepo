@@ -14,6 +14,8 @@ import { SessionService } from './session.service.js';
 interface AccessTokenPayload {
   sub: string;
   sid: string;
+  /** `customer` on a shopper's token; absent on a shopkeeper's. */
+  kind?: string;
 }
 
 /**
@@ -59,6 +61,10 @@ export class JwtAuthGuard implements CanActivate {
     } catch {
       throw this.unauthenticated();
     }
+
+    // A shopper's token is a valid token for the shop window's door and for nothing behind this one:
+    // the panel, the store settings, the catalogue editor. One account, two doors, never crossed.
+    if (payload.kind !== undefined) throw this.unauthenticated();
 
     // Outside the try, so a revoked session is refused for being revoked and not mistaken for a
     // malformed token — and so a database error surfaces instead of reading as "signed out".

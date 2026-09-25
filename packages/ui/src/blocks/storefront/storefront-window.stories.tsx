@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
-import { sampleColorPresets } from "../store/store.fixtures"
+import { sampleColorPresets, sampleDarkShopColors } from "../store/store.fixtures"
 import { StorefrontWindow } from "./storefront-window"
 
 const links = [
@@ -80,5 +80,90 @@ export const Site: Story = {
       },
     ],
     orderHref: undefined,
+  },
+}
+
+const TOKENS = [
+  "background",
+  "on-background",
+  "primary",
+  "on-primary",
+  "primary-ink",
+  "header",
+  "on-header",
+  "primary-on-header",
+  "on-primary-on-header",
+  "primary-on-header-soft",
+  "text",
+  "on-text",
+  "muted",
+  "line",
+  "line-strong",
+  "frame",
+  "fill",
+  "placeholder",
+  "canvas",
+  "sale",
+  "sale-ink",
+  "positive",
+  "positive-ink",
+  "rating",
+  "verified",
+  "verified-ink",
+] as const
+
+/** Every `--shop-*` token, as a swatch inside the window that sets it. */
+function Swatches() {
+  return (
+    <ul className="grid grid-cols-2 gap-3 shop-sm:grid-cols-4 shop-lg:grid-cols-6">
+      {TOKENS.map((token) => (
+        <li key={token} className="flex flex-col gap-1 text-xs">
+          <span
+            className="h-12 w-full rounded-lg border"
+            style={{ backgroundColor: `var(--shop-${token})`, borderColor: "var(--shop-line-strong)" }}
+          />
+          <code>--shop-{token}</code>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** Uma loja clara, com todos os tokens da paleta desenhados como amostras. */
+export const Tokens: Story = {
+  args: { children: <Swatches /> },
+}
+
+/**
+ * Uma loja escura: os neutros clareiam, as tintas semânticas trocam para a variante de página escura
+ * e a marca amarela continua legível no cabeçalho.
+ */
+export const LojaEscura: Story = {
+  args: { colors: sampleDarkShopColors, children: <Swatches /> },
+}
+
+/**
+ * A composição de 5a: uma faixa em largura total logo abaixo do menu, e a página sobre o chão
+ * cinza, decidindo o próprio ritmo. B3 e B4 preenchem os dois.
+ */
+export const FaixaEChao: Story = {
+  args: {
+    pageHeader: (
+      <div className="w-full border-b" style={{ borderColor: "var(--shop-line)" }}>
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-4 shop-sm:px-6 shop-lg:px-8">
+          <p className="text-2xl font-extrabold">Pré-treino</p>
+          <p className="text-sm" style={{ color: "var(--shop-muted)" }}>1–16 de 86 resultados</p>
+        </div>
+      </div>
+    ),
+    layout: "flush",
+    surface: "canvas",
+    children: (
+      <div className="grid grid-cols-2 gap-4 py-5 shop-lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, at) => (
+          <div key={at} className="h-64 rounded-xl border" style={{ backgroundColor: "var(--shop-background)", borderColor: "var(--shop-line)" }} />
+        ))}
+      </div>
+    ),
   },
 }

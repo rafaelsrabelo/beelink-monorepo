@@ -4,32 +4,69 @@
     {
       "id": "azul-profissional",
       "name": "Azul profissional",
-      "colors": { "background": "#FFFFFF", "primary": "#3B82F6", "header": "#3B82F6", "footer": "#3B82F6" }
+      "colors": {
+        "background": "#FFFFFF",
+        "primary": "#3B82F6",
+        "header": "#3B82F6",
+        "footer": "#3B82F6"
+      }
     },
     {
       "id": "verde-natureza",
       "name": "Verde natureza",
-      "colors": { "background": "#FFFFFF", "primary": "#10B981", "header": "#10B981", "footer": "#10B981" }
+      "colors": {
+        "background": "#FFFFFF",
+        "primary": "#10B981",
+        "header": "#10B981",
+        "footer": "#10B981"
+      }
     },
     {
       "id": "roxo-elegante",
       "name": "Roxo elegante",
-      "colors": { "background": "#FFFFFF", "primary": "#8B5CF6", "header": "#8B5CF6", "footer": "#8B5CF6" }
+      "colors": {
+        "background": "#FFFFFF",
+        "primary": "#8B5CF6",
+        "header": "#8B5CF6",
+        "footer": "#8B5CF6"
+      }
     },
     {
       "id": "rosa-moderno",
       "name": "Rosa moderno",
-      "colors": { "background": "#FFFFFF", "primary": "#EC4899", "header": "#EC4899", "footer": "#EC4899" }
+      "colors": {
+        "background": "#FFFFFF",
+        "primary": "#EC4899",
+        "header": "#EC4899",
+        "footer": "#EC4899"
+      }
     },
     {
       "id": "laranja-energia",
       "name": "Laranja energia",
-      "colors": { "background": "#FFFFFF", "primary": "#F97316", "header": "#F97316", "footer": "#F97316" }
+      "colors": {
+        "background": "#FFFFFF",
+        "primary": "#F97316",
+        "header": "#F97316",
+        "footer": "#F97316"
+      }
     },
     {
       "id": "vermelho-classico",
       "name": "Vermelho clássico",
-      "colors": { "background": "#FFFFFF", "primary": "#EF4444", "header": "#EF4444", "footer": "#EF4444" }
+      "colors": {
+        "background": "#FFFFFF",
+        "primary": "#EF4444",
+        "header": "#EF4444",
+        "footer": "#EF4444"
+      }
     }
-  ]
+  ],
+  "darkShop": {
+    "$comment": "A shop that painted its page dark, for the stories that show the palette adapting. Not a preset the panel offers.",
+    "background": "#141413",
+    "primary": "#F5D90A",
+    "header": "#0F0F0F",
+    "footer": "#0F0F0F"
+  }
 }

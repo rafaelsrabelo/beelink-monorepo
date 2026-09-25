@@ -79,7 +79,19 @@ describe('the storefront listing filters', () => {
     const filters: ListingFilters = { ...none, search: '´' };
 
     expect(JSON.stringify(listingWhere('s1', filters, PRICE))).not.toContain('searchText');
-    expect(appliedOf(filters, [], { categories: [], discount: { count: 0, selected: false }, price: null, options: [] })).toEqual([]);
+    expect(appliedOf(filters, [], { categories: [], discount: { count: 0, selected: false, ranges: [] }, price: null, options: [] })).toEqual([]);
+  });
+
+  it('narrows to a least cut through the column the database keeps, and orders by it', () => {
+    const where = listingWhere('s1', { ...none, discount: true, discountMinPercent: 20 }, PRICE);
+    expect(where.AND).toContainEqual({ discountPercent: { gte: 20 } });
+    // "Any discount" stays the comparison of the two prices.
+    expect(listingWhere('s1', { ...none, discount: true }, PRICE).AND).toContainEqual({ compareAtPriceCents: { gt: PRICE } });
+
+    expect(orderByOf('maior-desconto')).toEqual([{ discountPercent: 'desc' }, { position: 'asc' }, { id: 'asc' }]);
+    expect(appliedOf({ ...none, discount: true, discountMinPercent: 20 }, [], { categories: [], discount: { count: 0, selected: true, ranges: [] }, price: null, options: [] })).toEqual([
+      { key: 'desconto', value: '20', label: '20' },
+    ]);
   });
 
   it('orders by the shopkeeper by default, and always ends on the id', () => {
@@ -94,7 +106,7 @@ describe('the storefront listing filters', () => {
       [{ id: 'c1', slug: 'blusas', name: 'Blusas', description: null, imageUrl: null, parentSlug: null, productCount: 1 }],
       {
         categories: [],
-        discount: { count: 0, selected: true },
+        discount: { count: 0, selected: true, ranges: [] },
         price: null,
         options: [{ name: 'Tamanho', values: [{ value: 'P', label: 'P', count: 1, available: true, selected: true, colorHex: null }] }],
       },

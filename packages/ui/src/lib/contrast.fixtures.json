@@ -14,5 +14,17 @@
     "#EF4444"
   ],
   "paleBrand": "#FFD500",
-  "darkBrand": "#1A1A2E"
+  "darkBrand": "#1A1A2E",
+  "mutante": {
+    "background": "#ffffff",
+    "primary": "#192259",
+    "header": "#192259",
+    "footer": "#192259"
+  },
+  "darkShop": {
+    "background": "#101010",
+    "primary": "#f5d90a",
+    "header": "#101010",
+    "footer": "#000000"
+  }
 }

@@ -33,3 +33,15 @@ export const ComCampoFixo: Story = {
 export const EmIngles: Story = {
   args: { action: "/ana-bakery/search", messages: en },
 }
+
+/** Com "Buscar em": o select de categorias antes do campo, aberto na categoria da página. */
+export const ComEscopo: Story = {
+  args: {
+    scopes: [
+      { value: "paes", label: "Pães" },
+      { value: "bolos", label: "Bolos" },
+      { value: "cafe", label: "Café da manhã" },
+    ],
+    scope: "bolos",
+  },
+}
