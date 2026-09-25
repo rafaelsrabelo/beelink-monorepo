@@ -56,3 +56,34 @@ lojista decide.
 
 - A baixa de estoque (H8), o pedido vindo do checkout (H9) e editar um pedido já registrado.
 - A tela do pedido aberto (H4): salvar leva a `/orders/<número>`, que o H4 cria.
+
+## Adendo — decisões da implementação (2026-09-25)
+
+### 6. Ler um cliente é uma rota nova, que o H7 amplia
+
+`?customer=<id>` precisa do nome do cliente para mostrar. `GET /stores/:slug/customers/:id` responde
+o mesmo `StoreCustomer` da lista; a ficha do H7 cresce essa rota com o que só ela mostra. Um id de
+outra loja, ou que nem é um id, é o mesmo `CUSTOMER_NOT_FOUND` (404).
+
+### 7. As contas e os tipos do formulário moram em `packages/ui/src/lib/order-form.ts`
+
+O pacote só exporta blocos `.tsx`, e a tela da web precisa de `orderTotalsOf` e dos tipos que os
+blocos recebem. Seguem o precedente de `lib/variations`: o que blocos e tela compartilham fica em
+`lib`. Os tipos de valor de pagamento e de entrega foram para lá, e `order-types.ts` os reexporta.
+
+### 8. Pagamento e entrega são botões, não um select
+
+São no máximo quatro formas e duas entregas: um toque no celular, e o escolhido fica à vista. O
+estado ligado é preenchido com a cor primária, como no filtro da lista (H2).
+
+### 9. O cadastro de cliente não é um `<form>`
+
+Ele fica dentro do formulário do pedido, onde um segundo `<form>` não é válido. O Enter é tratado ali
+mesmo: cadastra o cliente e nunca envia o pedido. O que foi digitado na busca preenche o nome ou o
+celular.
+
+### 10. Verificado ao vivo
+
+Pedido #4 da loja-do-design, registrado pela tela: o resumo mostrou R$ 293,30 e a API gravou 29330
+centavos. A data de 24/09 foi gravada como meio-dia local. O celular repetido ofereceu o cliente
+existente, e um cliente novo foi cadastrado e escolhido. Não há rolagem lateral a 390 px.
