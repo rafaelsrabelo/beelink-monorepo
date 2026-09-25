@@ -25,6 +25,7 @@ import { useImageUpload } from "@/services/uploads/upload-hooks"
 import { EMPTY_FORM, fieldsOf, perUnitOf, toForm, type FormIssues, type FormValues } from "./product-form-mapping"
 import {
   hasCombinations,
+  imagesPayloadOf,
   optionsPayloadOf,
   rekeyDraft,
   toVariationsDraft,
@@ -121,6 +122,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
         variations: {
           options: optionsPayloadOf(variations),
           variants: (saved) => variantsPayloadOf(variations, saved, base, value),
+          images: (saved) => imagesPayloadOf(value.imageUrls, variations, saved),
           hasCombinations: combinations,
         },
       },
@@ -131,7 +133,7 @@ export function ProductEditorScreen({ slug, productId, ui, web }: ProductEditorS
         onError: (error) => {
           if (!(error instanceof SaveProductError)) return
           setCreated({ id: error.saved.id, hasOptions: error.saved.options.length > 0 })
-          if (error.saved.options.length > 0) setVariations((draft) => rekeyDraft(draft, error.saved))
+          if (error.optionsSaved) setVariations((draft) => rekeyDraft(draft, error.saved))
         },
       },
     )

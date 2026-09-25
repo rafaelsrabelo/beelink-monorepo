@@ -31,6 +31,8 @@ export interface VariationTableProps {
   onBulk?: (action: "price" | "stock") => void
   /** Combination key → the sentence for its row, written by the screen. */
   errors?: Readonly<Record<string, string>>
+  /** The photo the shop window opens a combination on, and its number in the gallery. */
+  photoOf?: (combination: VariationCombination) => { url: string; number: number } | null
   disabled?: boolean
   messages?: UiMessages
 }
@@ -53,6 +55,7 @@ export function VariationTable({
   onSelection,
   onBulk,
   errors = {},
+  photoOf,
   disabled = false,
   messages = defaultMessages,
 }: VariationTableProps) {
@@ -112,6 +115,7 @@ export function VariationTable({
             const label = labelOf(combination.values)
             const error = errors[combination.key]
             const rowDisabled = disabled || !row.isActive
+            const photo = photoOf?.(combination)
 
             return (
               <TableRow key={combination.key} data-state={tableRow.getIsSelected() ? "selected" : undefined}>
@@ -123,8 +127,17 @@ export function VariationTable({
                     onCheckedChange={(checked) => tableRow.toggleSelected(checked)}
                   />
                 </TableCell>
-                <TableCell className={cn("font-medium", !row.isActive && "text-muted-foreground line-through")}>
-                  {label}
+                <TableCell className={cn("font-medium", !row.isActive && "text-muted-foreground")}>
+                  <span className="flex items-center gap-2">
+                    {photo ? (
+                      <img
+                        src={photo.url}
+                        alt={format(messages.catalog.media.photo, { number: String(photo.number) })}
+                        className="border-border size-8 shrink-0 rounded border object-cover"
+                      />
+                    ) : null}
+                    <span className={cn(!row.isActive && "line-through")}>{label}</span>
+                  </span>
                   {error ? (
                     <p role="alert" className="text-destructive text-xs font-normal no-underline">
                       {error}

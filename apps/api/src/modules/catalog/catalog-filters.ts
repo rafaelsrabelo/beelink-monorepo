@@ -20,7 +20,16 @@ import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
  * so every facet can be asked for "everything but me" and tested without a database.
  */
 
-export const STOREFRONT_SORTS = ['relevancia', 'menor-preco', 'maior-preco', 'novidades'] as const satisfies readonly StorefrontSort[];
+export const STOREFRONT_SORTS = [
+  'relevancia',
+  'menor-preco',
+  'maior-preco',
+  'novidades',
+  'maior-desconto',
+] as const satisfies readonly StorefrontSort[];
+
+/** The cuts a shelf offers as filters, as 5a draws them. */
+export const DISCOUNT_RANGES = [10, 20, 30] as const;
 
 export interface OptionFilter {
   /** As the address spelled it; matched without regard to case. */
@@ -41,7 +50,10 @@ export interface ListingFilters {
   searchKey?: string;
   priceMinCents?: number;
   priceMaxCents?: number;
+  /** On sale at all: `desconto=1`. */
   discount: boolean;
+  /** On sale by at least this much, in whole percent: `desconto=20`. Implies `discount`. */
+  discountMinPercent?: number;
   options: OptionFilter[];
   sort: StorefrontSort;
 }
@@ -123,7 +135,12 @@ export function listingWhere(
     if (filters.priceMaxCents !== undefined) and.push({ priceCents: { lte: filters.priceMaxCents } });
   }
 
-  if (filters.discount && without !== 'discount') and.push({ compareAtPriceCents: { gt: priceField } });
+  if (filters.discount && without !== 'discount') {
+    // The percent is a column the database keeps from the two prices, so a cut is one comparison.
+    and.push(
+      filters.discountMinPercent ? { discountPercent: { gte: filters.discountMinPercent } } : { compareAtPriceCents: { gt: priceField } },
+    );
+  }
 
   const groups = filters.options.filter((group) => without !== `option:${optionKey(group.name)}`);
   if (groups.length > 0) {
@@ -158,6 +175,9 @@ export function orderByOf(sort: StorefrontSort): ProductOrderByWithRelationInput
       return [{ priceCents: 'desc' }, { name: 'asc' }, { id: 'asc' }];
     case 'novidades':
       return [{ createdAt: 'desc' }, { id: 'asc' }];
+    case 'maior-desconto':
+      // The deepest cut first; ties and what is not on sale in the shopkeeper's order.
+      return [{ discountPercent: 'desc' }, { position: 'asc' }, { id: 'asc' }];
     default:
       return [{ position: 'asc' }, { name: 'asc' }, { id: 'asc' }];
   }
@@ -184,7 +204,10 @@ export function appliedOf(
     const reais = String(filters.priceMaxCents / 100);
     applied.push({ key: 'precoMax', value: reais, label: reais });
   }
-  if (filters.discount) applied.push({ key: 'desconto', value: '1', label: '1' });
+  if (filters.discount) {
+    const value = filters.discountMinPercent ? String(filters.discountMinPercent) : '1';
+    applied.push({ key: 'desconto', value, label: value });
+  }
 
   for (const group of filters.options) {
     const facet = facets.options.find((entry) => optionKey(entry.name) === optionKey(group.name));

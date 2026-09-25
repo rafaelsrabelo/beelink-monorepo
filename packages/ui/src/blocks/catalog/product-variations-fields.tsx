@@ -19,6 +19,8 @@ import {
 } from "@harness-monorepo/ui/components/alert-dialog"
 import { buttonVariants } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
+import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
+import { photoValuesOf } from "@harness-monorepo/ui/lib/variation-photos"
 import {
   addValue,
   combinationCountOf,
@@ -57,6 +59,8 @@ export interface ProductVariationsFieldsProps {
   /** The product's own price, stock and code: what the first combination starts from. */
   base: VariationRow
   trackStock: boolean
+  /** The gallery's photos, in order, so each row can show the one the shop window opens it on. */
+  photos?: readonly string[]
   errors?: VariationIssues
   disabled?: boolean
   messages?: UiMessages
@@ -74,6 +78,7 @@ export function ProductVariationsFields({
   onChange,
   base,
   trackStock,
+  photos = [],
   errors = {},
   disabled = false,
   messages = defaultMessages,
@@ -90,6 +95,8 @@ export function ProductVariationsFields({
   const selected = combinations.filter((combination) => selection[combination.key])
   const removingNumber = removing ? value.options.findIndex((option) => option.key === removing.key) + 1 : 0
   const removingName = removing?.name.trim() || format(text.optionName, { number: String(removingNumber) })
+  const marked = photos.map((url, index) => ({ url, number: index + 1, optionValueIds: photoValuesOf(value, url) }))
+  const optionOf = optionOfValue(value.options, (option) => option.values, (entry) => entry.key)
 
   // The trash button that had focus is gone with its option; the section's first control takes it,
   // so a keyboard user is not left on the page's body.
@@ -178,6 +185,7 @@ export function ProductVariationsFields({
             selection={selection}
             onSelection={select}
             errors={errors.rows}
+            photoOf={(combination) => photosOf(marked, optionOf, combination.values.map((entry) => entry.key))[0] ?? null}
             disabled={disabled}
             messages={messages}
             onRow={(combination, patch) => onChange(patchRows(value, [combination], patch, base))}

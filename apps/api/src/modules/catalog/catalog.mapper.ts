@@ -6,12 +6,15 @@ import type {
   PublicProductCard,
   PublicProductCategory,
   PublicProductImage,
+  CardOptionSummary,
 } from '@harness-monorepo/contracts';
 import type {
   ProductCategoryModel,
   ProductImageModel,
   ProductModel,
 } from '../../generated/prisma/models.js';
+import type { ProductOptionOrderByWithRelationInput } from '../../generated/prisma/models/ProductOption.js';
+import { CARD_PHOTOS_MAX } from './catalog.constants.js';
 import { isSoldOut, ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 /**
@@ -68,15 +71,64 @@ export const productCategoryAdminInclude = {
   parent: { select: { slug: true } },
 } as const;
 
+/** A photo with the option values it is of. */
+export type ProductImageRow = ProductImageModel & { values: { valueId: string }[] };
+
 /** Images are always read with a product: the card needs the first one and the page needs them all. */
 export type ProductRow = ProductModel & {
-  images: ProductImageModel[];
+  images: ProductImageRow[];
   category: ProductCategoryRow | null;
 };
 
 export const productInclude = {
-  images: { orderBy: { position: 'asc' } },
+  images: { orderBy: { position: 'asc' }, include: { values: { select: { valueId: true } } } },
   category: { include: productCategoryInclude },
+} as const;
+
+/** A product's first option as a shelf reads it: its name and how many values it has. */
+export type CardOptionRow = { name: string; _count: { values: number } };
+
+/** What a card is drawn from: its first photos' addresses and nothing else of the gallery. */
+export type ProductCardRow = ProductModel & {
+  images: { url: string }[];
+  category: ProductCategoryRow | null;
+  /** On a shelf's read only: whether a card can add the product without a choice. */
+  _count?: { options: number };
+};
+
+/** A shelf's row: the card's, with its first photos and first option. See `productCardInclude`. */
+export type ShelfCardRow = ProductCardRow & { options: CardOptionRow[] };
+
+/**
+ * The first option and its values, counted in the same read: one more query per page for every
+ * card at once, never one per product. A value counts when a live combination uses it — one the shop
+ * switched off does not exist for a visitor, as the facets already read it — and a sold-out one still
+ * counts: 5b's "4 sabores" includes the one that ran out.
+ */
+export const cardOptionSelect = {
+  select: {
+    name: true,
+    _count: { select: { values: { where: { variantValues: { some: { variant: { isActive: true, archivedAt: null } } } } } } },
+  } as const,
+  orderBy: [{ position: 'asc' }, { id: 'asc' }] satisfies ProductOptionOrderByWithRelationInput[],
+  take: 1,
+};
+
+export function optionSummaryOf(options: readonly CardOptionRow[]): CardOptionSummary | null {
+  const first = options[0];
+  return first ? { name: first.name, valueCount: first._count.values } : null;
+}
+
+/**
+ * The storefront grid's read. A card passes through its first photos, so it asks for their addresses
+ * — up to `CARD_PHOTOS_MAX`, never the whole gallery with what each photo is of — and for the first
+ * option's summary, one more statement per page.
+ */
+export const productCardInclude = {
+  images: { select: { url: true }, orderBy: { position: 'asc' }, take: CARD_PHOTOS_MAX },
+  category: { include: productCategoryInclude },
+  _count: { select: { options: true } },
+  options: cardOptionSelect,
 } as const;
 
 export function toPublicProductCategory(row: ProductCategoryRow): PublicProductCategory {
@@ -103,8 +155,13 @@ export function toProductCategory(row: ProductCategoryRow): WireProductCategory 
   } satisfies WireProductCategory;
 }
 
-function toPublicProductImage(row: ProductImageModel): PublicProductImage {
-  return { id: row.id, url: row.url, alt: row.alt } satisfies PublicProductImage;
+function toPublicProductImage(row: ProductImageRow): PublicProductImage {
+  return {
+    id: row.id,
+    url: row.url,
+    alt: row.alt,
+    optionValueIds: row.values.map((value) => value.valueId),
+  } satisfies PublicProductImage;
 }
 
 /**
@@ -114,7 +171,7 @@ function toPublicProductImage(row: ProductImageModel): PublicProductImage {
  * `imageUrl` is the first image because the rows arrive ordered by position — there is no
  * `isPrimary` flag to disagree with that order.
  */
-export function toPublicProductCard(row: ProductRow): PublicProductCard {
+export function toPublicProductCard(row: ProductCardRow): PublicProductCard {
   return {
     id: row.id,
     slug: row.slug,
@@ -124,6 +181,19 @@ export function toPublicProductCard(row: ProductRow): PublicProductCard {
     imageUrl: row.images[0]?.url ?? null,
     categorySlug: row.category?.slug ?? null,
     priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
+    ...(row._count ? { hasOptions: row._count.options > 0 } : {}),
+  } satisfies PublicProductCard;
+}
+
+/**
+ * A card on a shelf: the photos a card passes through and its "4 sabores". Its own mapper, since
+ * the panel's and the product page's rows carry every option in full and no count.
+ */
+export function toShelfCard(row: ShelfCardRow): PublicProductCard {
+  return {
+    ...toPublicProductCard(row),
+    imageUrls: row.images.slice(0, CARD_PHOTOS_MAX).map((image) => image.url),
+    optionSummary: optionSummaryOf(row.options),
   } satisfies PublicProductCard;
 }
 

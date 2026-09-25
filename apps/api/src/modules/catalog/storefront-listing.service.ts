@@ -15,8 +15,16 @@ import type { ProductWhereInput } from '../../generated/prisma/models/Product.js
 // App
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { appliedOf, listingWhere, optionKey, orderByOf, type FacetKey, type ListingFilters } from './catalog-filters.js';
-import { productInclude, toPublicProductCard } from './catalog.mapper.js';
+import {
+  appliedOf,
+  DISCOUNT_RANGES,
+  listingWhere,
+  optionKey,
+  orderByOf,
+  type FacetKey,
+  type ListingFilters,
+} from './catalog-filters.js';
+import { productCardInclude, toShelfCard } from './catalog.mapper.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 interface OptionCountRow {
@@ -64,7 +72,7 @@ export class StorefrontListingService {
       this.prisma.$transaction([
         this.prisma.product.findMany({
           where,
-          include: productInclude,
+          include: productCardInclude,
           orderBy: orderByOf(filters.sort),
           skip: (page - 1) * pageSize,
           take: pageSize,
@@ -75,7 +83,7 @@ export class StorefrontListingService {
     ]);
 
     return {
-      products: rows.map(toPublicProductCard),
+      products: rows.map(toShelfCard),
       total,
       facets,
       applied: appliedOf(filters, categories, facets),
@@ -102,7 +110,8 @@ export class StorefrontListingService {
   ): Promise<CatalogFacets> {
     const withoutPrice = this.where(storeId, filters, 'price');
 
-    const [byCategory, discount, price, options] = await Promise.all([
+    const withoutDiscount = this.where(storeId, filters, 'discount');
+    const [byCategory, discount, price, options, ...cuts] = await Promise.all([
       this.prisma.product.groupBy({
         by: ['categoryId'],
         where: this.where(storeId, filters, 'category'),
@@ -113,6 +122,11 @@ export class StorefrontListingService {
       }),
       this.prisma.product.aggregate({ where: withoutPrice, _min: { priceCents: true }, _max: { priceCents: true } }),
       this.optionFacetsOf(storeId, filters),
+      // Each cut counted without the discount filter, as the discount itself is: choosing "20%
+      // ou mais" must not make "10% ou mais" read as the same number.
+      ...DISCOUNT_RANGES.map((minPercent) =>
+        this.prisma.product.count({ where: { AND: [withoutDiscount, { discountPercent: { gte: minPercent } }] } }),
+      ),
     ]);
 
     const own = new Map(byCategory.map((row) => [row.categoryId, row._count._all]));
@@ -135,7 +149,15 @@ export class StorefrontListingService {
         } satisfies CatalogFacetValue;
       }),
       options,
-      discount: { count: discount, selected: filters.discount },
+      discount: {
+        count: discount,
+        selected: filters.discount,
+        ranges: DISCOUNT_RANGES.map((minPercent, at) => ({
+          minPercent,
+          count: cuts[at] ?? 0,
+          selected: filters.discountMinPercent === minPercent,
+        })),
+      },
       price:
         price._min.priceCents === null || price._max.priceCents === null
           ? null

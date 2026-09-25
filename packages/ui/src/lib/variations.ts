@@ -9,6 +9,9 @@
  * across the way the API does when it saves: see ReplaceProductOptionsPayload.
  */
 
+// Lib
+import { photosWithout } from "@harness-monorepo/ui/lib/variation-photos"
+
 /** A value of an option. `key` is the saved value's id, or `new:…` for one not saved yet. */
 export interface VariationValue {
   key: string
@@ -42,6 +45,11 @@ export interface VariationsValue {
   options: VariationOption[]
   /** Keyed by `combinationKey`. A combination with no row yet borrows its nearest neighbour's price. */
   rows: Record<string, VariationRow>
+  /**
+   * Photo URL → the value keys the photo is of, in the one form `lib/variation-photos` keeps. A
+   * photo absent here is of every combination.
+   */
+  photos?: Readonly<Record<string, readonly string[]>>
 }
 
 export interface VariationCombination {
@@ -148,6 +156,7 @@ export function addValue(value: VariationsValue, optionKey: string, entry: Varia
   const extending = option.values.length === 0
   const sources = Object.keys(value.rows).length > 0 || !extending ? value.rows : { "": base }
   const next: VariationsValue = {
+    ...value,
     options: value.options.map((candidate) =>
       candidate.key === optionKey ? { ...candidate, values: [...candidate.values, entry] } : candidate,
     ),
@@ -175,6 +184,8 @@ export function removeValue(value: VariationsValue, optionKey: string, valueKey:
 
   const last = option.values.length === 1
   return {
+    ...value,
+    photos: photosWithout(value.photos, [valueKey]),
     options: value.options.map((candidate) =>
       candidate.key === optionKey
         ? { ...candidate, values: candidate.values.filter((entry) => entry.key !== valueKey) }
@@ -199,6 +210,8 @@ export function removeOption(value: VariationsValue, optionKey: string, base: Va
   const rows = Object.fromEntries(ordered.map((combination) => [combination.key, combination.row]))
 
   return {
+    ...value,
+    photos: photosWithout(value.photos, option.values.map((entry) => entry.key)),
     options: value.options.filter((candidate) => candidate.key !== optionKey),
     rows: collapse(rows, option.values.map((entry) => entry.key)),
   }
