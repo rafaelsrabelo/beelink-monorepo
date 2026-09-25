@@ -1,5 +1,9 @@
+// React
+import type { ReactNode } from "react"
+
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { StorefrontCardPhotos } from "./storefront-card-photos"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 
 // Locales
@@ -13,6 +17,10 @@ export interface StorefrontProduct {
   priceCents: number
   compareAtPriceCents: number | null
   imageUrl: string | null
+  /** Up to five photos, the cover first: with two or more, the card passes through them. */
+  imageUrls?: readonly string[]
+  /** Whether it sells combinations: known on a shelf, and what decides a card's action. */
+  hasOptions?: boolean
 }
 
 export interface StorefrontProductCardProps {
@@ -22,6 +30,16 @@ export interface StorefrontProductCardProps {
   locale: string
   showPrice?: boolean
   showBadge?: boolean
+  /** Under the price, above the card's link: the web's "Adicionar ao carrinho". */
+  action?: ReactNode
+  /**
+   * `compact` is 5b's related card: the whole card one link with no frame, a 180px photo, the name in
+   * the link colour and the price as one string. No badge and no action: it is a suggestion, and
+   * the product's own page is where buying happens.
+   */
+  density?: "default" | "compact"
+  /** The card stands on a rail that scrolls sideways, which changes what a finger on its photo does. */
+  inRail?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -45,15 +63,38 @@ export function StorefrontProductCard({
   locale,
   showPrice = true,
   showBadge = true,
+  action,
+  density = "default",
+  inRail = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductCardProps) {
   const text = messages.storefront
 
+  if (density === "compact") {
+    return (
+      // Relative, so the price's screen-reader text is placed inside the card: positioned against
+      // an ancestor outside the rail's scroller, it escapes the clip and widens the page.
+      // The focus ring drawn inside: a rail's scroller clips whatever falls outside the card.
+      <Link href={href} className="relative flex h-full flex-col gap-1.5 text-shop-on-background focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-shop-primary-ink">
+        <span className="block h-[180px] overflow-hidden rounded-[12px] bg-shop-placeholder">
+          {/* Decorative, as on the full card: the name right under it says what it is. */}
+          {product.imageUrl ? <img src={product.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" /> : null}
+        </span>
+        <span className="line-clamp-2 text-[14px] leading-[1.35] text-shop-primary-ink">{product.name}</span>
+        {showPrice ? (
+          <StorefrontPrice priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} locale={locale} size="compact" className="leading-[1.2]" messages={messages} />
+        ) : null}
+      </Link>
+    )
+  }
+
   return (
-    <article className="relative flex flex-col overflow-hidden rounded-xl border border-shop-line bg-shop-background">
+    <article className="group/card relative flex h-full flex-col overflow-hidden rounded-xl border border-shop-line bg-shop-background">
       <div className="relative aspect-[259/230] w-full overflow-hidden bg-shop-placeholder">
-        {product.imageUrl ? (
+        {product.imageUrls && product.imageUrls.length > 1 ? (
+          <StorefrontCardPhotos urls={product.imageUrls} href={href} inRail={inRail} />
+        ) : product.imageUrl ? (
           <img
             src={product.imageUrl}
             // Decorative on purpose: the title sits right below, so naming the photograph after
@@ -91,6 +132,13 @@ export function StorefrontProductCard({
             messages={messages}
           />
         ) : null}
+
+        {/* Above the name's stretched link, so a press on it is the action's and not the page's. */}
+        {/*
+          Transparent to the pointer except for the action's own controls: "Ver opções" is drawn, not a
+          second link, and a press on it has to reach the card's stretched link underneath.
+        */}
+        {action ? <div className="pointer-events-none relative z-10 mt-auto pt-1.5">{action}</div> : null}
       </div>
     </article>
   )

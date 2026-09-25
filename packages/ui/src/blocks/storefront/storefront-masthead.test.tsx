@@ -44,12 +44,13 @@ describe("StorefrontMasthead", () => {
     expect(within(cart).queryByText("0")).not.toBeInTheDocument()
   })
 
-  it("tells what sticks below it how tall it is, menu row included", () => {
-    const { rerender } = render(<StorefrontMasthead name="Lessari" homeHref="/lessari" />)
-    expect(screen.getByRole("banner").style.getPropertyValue("--shop-masthead-height")).toBe("72px")
+  it("sticks to the top, and carries what measures it for the page below", () => {
+    render(<StorefrontMasthead name="Lessari" homeHref="/lessari" />)
 
-    rerender(<StorefrontMasthead name="Lessari" homeHref="/lessari" categories={<nav>Categorias</nav>} />)
-    expect(screen.getByRole("banner").style.getPropertyValue("--shop-masthead-height")).toBe("117px")
+    const banner = screen.getByRole("banner")
+    expect(banner).toHaveClass("sticky", "top-0")
+    // MastheadHeight's marker, the header's last child; its behaviour is masthead-height.test's.
+    expect(banner.lastElementChild).toHaveAttribute("hidden")
   })
 
   it("puts the search between the delivery block and the account, taking the room between them", () => {

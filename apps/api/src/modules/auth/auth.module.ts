@@ -21,6 +21,6 @@ import { SessionService } from './session.service.js';
   ],
   controllers: [AuthController],
   providers: [AuthService, SessionService, EmailTokenService],
-  exports: [SessionService],
+  exports: [AuthService, SessionService],
 })
 export class AuthModule {}
