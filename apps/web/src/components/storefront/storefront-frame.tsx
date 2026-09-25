@@ -6,13 +6,14 @@ import type { PublicProductCategory, PublicSection, PublicStore } from "@harness
 
 // UI
 import { StorefrontCategories } from "@harness-monorepo/ui/blocks/storefront/storefront-categories"
-import { StorefrontWindow } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
+import { StorefrontWindow, type StorefrontWindowProps } from "@harness-monorepo/ui/blocks/storefront/storefront-window"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
 import { announcementOf } from "./storefront-sections"
+import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -54,24 +55,17 @@ export interface StorefrontFrameProps {
    */
   year: number
   /**
-   * Replaces the live search. The design preview passes a plain form, because the live one asks
-   * the API on every keystroke and a preview that talks to the network is a preview that costs
-   * something to look at.
-   */
-  /**
    * The landing page's own blocks, drawn edge to edge in the shopkeeper's order.
    *
    * When it is given the frame stops drawing the cover and the promises band from the shop's
    * columns: on that page they are blocks. Every other page passes `children` and keeps them.
    */
   blocks?: ReactNode
-  /**
-   * The palette to paint with, when it is not the one the shop has saved.
-   *
-   * Design mode passes the colours being edited, so the preview answers the picker rather than
-   * the database. Nothing else passes it: a shop window painting anything other than what the
-   * shop stores would be a shop window showing a page no visitor gets.
-   */
+  /** The page's strip under the menu, edge to edge: the listing's results band (5a). */
+  pageHeader?: ReactNode
+  /** How the page below it sits: 5a's listing draws its own columns on the canvas. */
+  body?: Pick<StorefrontWindowProps, "layout" | "surface">
+  /** The palette being edited in design mode, so the preview answers the picker. Nothing else passes it. */
   colors?: PublicStore["colors"]
   /**
    * The arrangement being drawn, when it is not the one the store has saved.
@@ -81,7 +75,10 @@ export interface StorefrontFrameProps {
    * else passes it.
    */
   sections?: readonly PublicSection[]
+  /** Replaces the live search: the design preview's plain form, which costs nothing to look at. */
   searchSlot?: ReactNode
+  /** The signed-in shopper, read once per request by the page; null or absent, a visitor. */
+  shopper?: { name: string } | null
   /**
    * How every injected link is drawn. The preview passes one that renders no `href`, so nothing
    * in it navigates and nothing in it takes a tab stop. `StorefrontWindow` does not forward this
@@ -118,10 +115,13 @@ export function StorefrontFrame({
   description = null,
   showBanner = false,
   blocks,
+  pageHeader,
+  body,
   colors,
   sections,
   year,
   searchSlot,
+  shopper,
   linkComponent,
   messages,
   children,
@@ -197,9 +197,11 @@ export function StorefrontFrame({
             searchAction: routes.search(),
             searchScopes: scopes,
             searchScope: scope,
-            // The basket, on every page: it has an address. The account link waits for a customer
-            // account to exist — `/login` is the shopkeeper's door, the wrong one for a visitor.
+            // The basket and the shopper's own door — the shop's sign-in, never the panel's `/login`.
             cartHref: routes.cart(),
+            cartSlot: <StorefrontCartLinkLive href={routes.cart()} messages={messages} />,
+            accountHref: shopper ? routes.account() : routes.signIn(),
+            accountName: shopper?.name ?? null,
           })}
       {...(linkComponent ? { linkComponent } : {})}
       categories={
@@ -219,6 +221,8 @@ export function StorefrontFrame({
         ) : undefined
       }
       {...(blocks ? { blocks } : {})}
+      {...(pageHeader ? { pageHeader } : {})}
+      {...body}
       {...(announcement ? { announcement } : {})}
       banner={
         showBanner && store.layoutType === "BANNER" && store.bannerImageUrl

@@ -31,3 +31,12 @@ export const Padrao: Story = {
     )
   },
 }
+
+/** Como a página do produto o mostra: o preço em cada valor e a foto de cada cor no seu cartão. */
+export const ComPrecosEFotos: Story = {
+  ...Padrao,
+  args: {
+    locale: "pt-BR",
+    images: BLOUSE_OPTIONS[1]!.values.map((value) => ({ url: `https://picsum.photos/seed/${value.id}/240/140`, optionValueIds: [value.id] })),
+  },
+}

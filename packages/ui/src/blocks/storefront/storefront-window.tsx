@@ -42,18 +42,8 @@ export type { StorefrontBanner } from "./storefront-cover"
 export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
-    | "searchAction"
-    | "searchValue"
-    | "searchHidden"
-    | "searchScopes"
-    | "searchScope"
-    | "searchSlot"
-    | "cartHref"
-    | "cartCount"
-    | "accountHref"
-    | "menu"
-    | "cta"
-    | "categories"
+    "searchAction" | "searchValue" | "searchHidden" | "searchScopes" | "searchScope" | "searchSlot"
+    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories"
   > {
   name: string
   description?: string | null
@@ -85,9 +75,10 @@ export interface StorefrontWindowProps
   blocks?: ReactNode
 
   /**
-   * A strip between the masthead and the page, drawn edge to edge: the listing's results band in
-   * 5a, with its trail, heading and sort. Each page builds its own; the window only gives it the
-   * full width, which a child inside the measured `<main>` cannot take.
+   * A strip at the top of the page, drawn edge to edge: the listing's results band in 5a, with its
+   * trail, heading and sort. Each page builds its own; the window gives it the full width, which a
+   * child inside the measure cannot take. It sits inside `<main>`, because it carries the page's
+   * `h1`: a reader who jumps to the main content has to land on the title, not under it.
    */
   pageHeader?: ReactNode
 
@@ -150,7 +141,9 @@ export function StorefrontWindow({
   searchScope,
   cartHref,
   cartCount,
+  cartSlot,
   accountHref,
+  accountName,
   menu = [],
   cta = null,
   categories,
@@ -175,7 +168,7 @@ export function StorefrontWindow({
 
   return (
     <ShopPaletteProvider colors={colors}>
-    <div style={dressed} className="flex min-h-svh flex-col">
+    <div data-shop-window="" style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
       {announcement ? (
         <StorefrontAnnouncement
@@ -199,7 +192,8 @@ export function StorefrontWindow({
         {...(searchScope ? { searchScope } : {})}
         {...(cartHref ? { cartHref } : {})}
         {...(cartCount !== undefined ? { cartCount } : {})}
-        {...(accountHref ? { accountHref } : {})}
+        cartSlot={cartSlot}
+        {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
         menu={menu}
         cta={cta}
         categories={categories}
@@ -209,9 +203,6 @@ export function StorefrontWindow({
 
       {/* ---------------------------------------------------------------- 3 · the cover */}
       {blocks ? null : banner ? <StorefrontCover banner={banner} tall linkComponent={Link} /> : null}
-
-      {/* ---------------------------------------------------------------- 4 · the page's own strip */}
-      {pageHeader ?? null}
 
       {/* ---------------------------------------------------------------- 5 · the shop itself */}
       {blocks ? (
@@ -223,11 +214,10 @@ export function StorefrontWindow({
           {blocks}
         </main>
       ) : (
-        <main
-          className={cn("flex flex-1 flex-col", layout === "padded" && "gap-8 py-8")}
-          style={surface === "canvas" ? { backgroundColor: "var(--shop-canvas)" } : undefined}
-        >
-          <div className={cn(BAND, "flex flex-1 flex-col", layout === "padded" && "gap-8")}>
+        <main className="flex flex-1 flex-col" style={surface === "canvas" ? { backgroundColor: "var(--shop-canvas)" } : undefined}>
+          {/* 4 · the page's own strip, edge to edge above the measure. */}
+          {pageHeader ?? null}
+          <div className={cn(BAND, "flex flex-1 flex-col", layout === "padded" && "gap-8 py-8")}>
             {description ? <StorefrontPitch name={name} description={description} orderHref={orderHref} messages={messages} /> : null}
             {children}
           </div>
