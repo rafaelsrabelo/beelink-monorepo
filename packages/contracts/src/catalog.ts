@@ -32,6 +32,13 @@ export interface StorefrontRouteWords {
    * exactly this.
    */
   cart: string;
+  /**
+   * Where a shopper signs in, and — as `?modo=criar` and `?modo=senha` — signs up and asks for a new
+   * password: `/<shop>/entrar`. Reserved since the beginning with the cart.
+   */
+  signIn: string;
+  /** The shopper's own page at this shop: `/<shop>/conta`. */
+  account: string;
 }
 
 /**
