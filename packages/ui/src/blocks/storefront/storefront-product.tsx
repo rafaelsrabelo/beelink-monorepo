@@ -23,7 +23,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { PaymentMethod } from "../store/store-types"
-import { StorefrontPrice } from "./storefront-price"
+import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
 import type { LinkComponent } from "../auth/auth-link"
@@ -130,6 +130,9 @@ export function StorefrontProductDetail({
   const variant = choosing ? variantOf(selection, options, variants) : undefined
   const label = variant ? variantLabelOf(variant, options) : ""
   const unavailable = choosing ? !variant?.available : soldOut
+  // The chosen combination's price, or the product's: the column, the box and the photo's badge.
+  const cents = variant?.priceCents ?? priceCents
+  const was = variant ? variant.compareAtPriceCents : compareAtPriceCents
   // The chosen combination's photos, the most specific first, behind the variant's own when it has one.
   const fitting = variant
     ? photosOf(images, optionOfValue(options, (option) => option.values, (entry) => entry.id), variant.optionValueIds)
@@ -149,8 +152,8 @@ export function StorefrontProductDetail({
     // Announced as it changes with the choice, so a screen reader hears the new price.
     <div aria-live="polite">
       <StorefrontPrice
-        priceCents={variant?.priceCents ?? priceCents}
-        compareAtPriceCents={variant ? variant.compareAtPriceCents : compareAtPriceCents}
+        priceCents={cents}
+        compareAtPriceCents={was}
         locale={locale}
         size="product"
         showBadge={showBadge}
@@ -183,6 +186,7 @@ export function StorefrontProductDetail({
             key={shownImages.map((image) => image.id).join("|")}
             images={shownImages}
             name={name}
+            badge={showPrice && showBadge ? <StorefrontDiscountBadge priceCents={cents} compareAtPriceCents={was} placement="photo" messages={messages} /> : undefined}
             messages={messages}
           />
         </div>
@@ -200,8 +204,8 @@ export function StorefrontProductDetail({
 
         <StorefrontProductPurchase
           name={name}
-          priceCents={variant?.priceCents ?? priceCents}
-          compareAtPriceCents={variant ? variant.compareAtPriceCents : compareAtPriceCents}
+          priceCents={cents}
+          compareAtPriceCents={was}
           locale={locale}
           showPrice={showPrice}
           available={!unavailable}

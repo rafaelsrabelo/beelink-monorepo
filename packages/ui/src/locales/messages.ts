@@ -178,6 +178,17 @@ export interface UiMessages {
     restockCancel: string
     /** Names a gallery thumbnail, which is otherwise a button a screen reader calls "button". */
     photoOf: string
+    /** Under the product photo, only where a pointer hovers. */
+    galleryHint: string
+    /** The thumbnails that did not fit: "+{count}". */
+    galleryMore: string
+    galleryMoreLabel: string
+    /** A slide of the product photo, which opens the viewer. */
+    galleryOpen: string
+    galleryViewerTitle: string
+    galleryClose: string
+    photoPrevious: string
+    photoNext: string
     /** The header's basket, which now has an address of its own. */
     cart: string
     /** `{count}` — the basket's accessible name, which says how many lines it holds. */

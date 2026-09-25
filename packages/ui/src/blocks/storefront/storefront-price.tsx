@@ -179,7 +179,7 @@ export function StorefrontDiscountBadge({
     <span
       className={cn(
         "absolute font-extrabold text-shop-on-sale bg-shop-sale",
-        placement === "card" ? "top-2.5 right-2.5 rounded-md px-2 py-1 text-xs" : "top-3.5 left-3.5 rounded-lg px-2.5 py-1.5 text-[13px]",
+        placement === "card" ? "top-2.5 right-2.5 rounded-md px-2 py-1 text-xs" : "top-3.5 left-3.5 rounded-[8px] px-2.5 py-[5px] text-[13px]",
         className,
       )}
     >
