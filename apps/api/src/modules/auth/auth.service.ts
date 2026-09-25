@@ -12,6 +12,7 @@ import { EmailTokenPurpose } from '../../generated/prisma/enums.js';
 import type { UserModel } from '../../generated/prisma/models.js';
 import { MailService } from '../../shared/mail/mail.service.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { PANEL_ACCOUNTS, type AccountScope } from './account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from './auth.constants.js';
 import { createOpaqueToken } from './auth.tokens.js';
 import type { LoginDto, RegisterDto } from './dto/auth.dto.js';
@@ -37,16 +38,16 @@ export class AuthService {
     private readonly mail: MailService,
   ) {}
 
-  async register({ name, email, password }: RegisterDto, continuePath?: string): Promise<WireUser> {
+  async register({ name, email, password }: RegisterDto, scope: AccountScope): Promise<WireUser> {
     const passwordHash = await hash(password);
 
     try {
-      const user = await this.prisma.user.create({ data: { name, email, passwordHash } });
-      await this.sendVerification(user.id, user.email, user.name, continuePath);
+      const user = await this.prisma.user.create({ data: { name, email, passwordHash, storeId: scope.storeId } });
+      await this.sendVerification(user.id, user.email, user.name, scope.continuePath);
       return toUser(user);
     } catch (error) {
-      // P2002: the unique e-mail index. Catching it, rather than checking first, closes the race
-      // between two sign-ups of the same address.
+      // P2002: the e-mail is unique within the scope. Catching it, rather than checking first,
+      // closes the race between two sign-ups of the same address.
       if (error instanceof Error && 'code' in error && error.code === 'P2002') {
         throw new ConflictException({ errorCode: 'AUTH_EMAIL_TAKEN', message: 'E-mail already registered' });
       }
@@ -64,23 +65,24 @@ export class AuthService {
   }
 
   /** Answers the same for any address; only an existing, unverified account gets a new link. */
-  async resendVerification(email: string, continuePath?: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+  async resendVerification(email: string, scope: AccountScope): Promise<void> {
+    const user = await this.accountOf(email, scope);
     if (!user || user.emailVerifiedAt) return;
 
-    await this.sendVerification(user.id, user.email, user.name, continuePath);
+    await this.sendVerification(user.id, user.email, user.name, scope.continuePath);
   }
 
+  /** The panel's sign-in: bee-link's accounts only, so a shop's account never opens the panel. */
   async login({ email, password }: LoginDto, userAgent?: string): Promise<AuthSession> {
-    return this.sessions.start(await this.verifiedUser({ email, password }), userAgent);
+    return this.sessions.start(await this.verifiedUser({ email, password }, PANEL_ACCOUNTS), userAgent);
   }
 
   /**
    * The account behind an e-mail and password, verified — or the same refusal for every way it can
    * fail to be one, so a wrong password reads like an unknown e-mail. Both doors sign in through it.
    */
-  async verifiedUser({ email, password }: LoginDto): Promise<UserModel> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+  async verifiedUser({ email, password }: LoginDto, scope: AccountScope): Promise<UserModel> {
+    const user = await this.accountOf(email, scope);
 
     if (!user) {
       await verify(await this.decoyHash, password);
@@ -105,8 +107,8 @@ export class AuthService {
   }
 
   /** Answers the same for any address, so it never reveals who has an account. */
-  async forgotPassword(email: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+  async forgotPassword(email: string, scope: AccountScope): Promise<void> {
+    const user = await this.accountOf(email, scope);
     if (!user) return;
 
     const token = await this.emailTokens.issue(
@@ -114,7 +116,7 @@ export class AuthService {
       EmailTokenPurpose.RESET_PASSWORD,
       PASSWORD_RESET_TTL_MINUTES * MINUTE_MS,
     );
-    await this.mail.sendPasswordReset(user.email, user.name, token);
+    await this.mail.sendPasswordReset(user.email, user.name, token, scope.continuePath);
   }
 
   async resetPassword(token: string, password: string): Promise<void> {
@@ -125,6 +127,10 @@ export class AuthService {
 
     // Whoever knew the old password — including whoever prompted the reset — loses every session.
     await this.sessions.revokeAllForUser(userId);
+  }
+
+  private accountOf(email: string, { storeId }: AccountScope): Promise<UserModel | null> {
+    return this.prisma.user.findFirst({ where: { email, storeId } });
   }
 
   private async sendVerification(userId: string, email: string, name: string, continuePath?: string): Promise<void> {

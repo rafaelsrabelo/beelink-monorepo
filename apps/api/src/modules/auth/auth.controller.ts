@@ -14,6 +14,7 @@ import {
 
 // App
 import { env } from '../../shared/config/env.js';
+import { PANEL_ACCOUNTS } from './account-scope.js';
 import { Public } from './auth.decorators.js';
 import { AuthService } from './auth.service.js';
 import {
@@ -48,7 +49,7 @@ export class AuthController {
   @ApiCreatedResponse({ type: UserResponse })
   @ApiConflictResponse({ description: 'AUTH_EMAIL_TAKEN' })
   register(@Body() dto: RegisterDto): Promise<UserResponse> {
-    return this.auth.register(dto);
+    return this.auth.register(dto, PANEL_ACCOUNTS);
   }
 
   @Post('verify-email')
@@ -63,7 +64,7 @@ export class AuthController {
   @RouteConfig({ rateLimit })
   @ApiOperation({ summary: 'Send the verification e-mail again — answers 202 for any address' })
   async resendVerification(@Body() { email }: EmailDto): Promise<void> {
-    await this.auth.resendVerification(email);
+    await this.auth.resendVerification(email, PANEL_ACCOUNTS);
   }
 
   @Post('login')
@@ -98,7 +99,7 @@ export class AuthController {
   @RouteConfig({ rateLimit })
   @ApiOperation({ summary: 'E-mail a reset link — answers 202 for any address' })
   async forgotPassword(@Body() { email }: EmailDto): Promise<void> {
-    await this.auth.forgotPassword(email);
+    await this.auth.forgotPassword(email, PANEL_ACCOUNTS);
   }
 
   @Post('reset-password')

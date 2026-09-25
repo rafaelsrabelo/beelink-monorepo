@@ -61,7 +61,7 @@ model StoreCategory {
 model Store {
   id      String @id @default(uuid(7)) @db.Uuid
   ownerId String @db.Uuid
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner   User   @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   /// The public URL segment: /<slug> is the shop window and /admin/<slug> the panel. Unique across
   /// the platform and stored already normalised to lower-case [a-z0-9-], so the unique index means
@@ -152,6 +152,8 @@ model Store {
   leads             Lead[]
   components        StoreComponent[]
   customers         Customer[]
+  /// Its shoppers' accounts: opened here, and valid nowhere else.
+  accounts          User[]            @relation("StoreAccounts")
 
   @@index([ownerId])
   @@index([categoryId])

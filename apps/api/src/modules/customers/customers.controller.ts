@@ -63,6 +63,14 @@ export class CustomersController {
     await this.customers.resendVerification(storeSlug, email);
   }
 
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @RouteConfig({ rateLimit })
+  @ApiOperation({ summary: "E-mail a link to replace the password of this shop's account — 202 for any address" })
+  async forgotPassword(@Param('storeSlug') storeSlug: string, @Body() { email }: EmailDto): Promise<void> {
+    await this.customers.forgotPassword(storeSlug, email);
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @RouteConfig({ rateLimit })
@@ -80,11 +88,11 @@ export class CustomersController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Rotate a shopper's refresh token; a shopkeeper's is invalid here" })
+  @ApiOperation({ summary: "Rotate a shopper's refresh token; a shopkeeper's, or another shop's, is invalid here" })
   @ApiOkResponse({ type: AuthSessionResponse })
   @ApiUnauthorizedResponse({ description: 'AUTH_TOKEN_INVALID or AUTH_REFRESH_REUSED' })
-  refresh(@Body() { refreshToken }: RefreshDto): Promise<AuthSession> {
-    return this.sessions.refresh(refreshToken, 'CUSTOMER');
+  refresh(@Param('storeSlug') storeSlug: string, @Body() { refreshToken }: RefreshDto): Promise<AuthSession> {
+    return this.customers.refresh(storeSlug, refreshToken);
   }
 
   @Post('logout')
@@ -99,7 +107,7 @@ export class CustomersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "The shopper's record at this shop, made on first use" })
   @ApiOkResponse({ type: CustomerProfileResponse })
-  @ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, or a shopkeeper's" })
+  @ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, a shopkeeper's, or another shop's" })
   me(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer): Promise<CustomerProfile> {
     return this.customers.me(storeSlug, customer.userId);
   }

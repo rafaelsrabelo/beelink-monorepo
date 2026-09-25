@@ -6,9 +6,9 @@ import type { AuthSession, CustomerProfile, StoreCustomerPage } from '@harness-m
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
+import { PASSWORD, newEmail, register, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
-import { clearInbox, waitForMessage } from './support/mailpit.js';
+import { clearInbox, tokenFromLink, waitForMessage } from './support/mailpit.js';
 import { resetDatabase } from './support/reset-database.js';
 
 const shop = (slug: string) => ({
@@ -72,6 +72,7 @@ describe("a shopper's door into a shop", () => {
 
     expect(again.statusCode).toBe(202);
     expect(again.payload).toBe('');
+    expect(await app.get(PrismaService).user.count({ where: { email } })).toBe(1);
   });
 
   it("keeps a shop's record of the shopper, made on first sign-in, and lets them change it", async () => {
@@ -90,21 +91,73 @@ describe("a shopper's door into a shop", () => {
     expect(updated.json<CustomerProfile>()).toMatchObject({ phone: '11988887777', address: { city: 'São Paulo', state: 'SP' } });
   });
 
-  it('is two customers at two shops, and neither shop sees the other', async () => {
+  it("keeps an account to the shop it was opened at: anywhere else, its password is an unknown e-mail's", async () => {
+    const email = newEmail('cliente');
+    await shopperAt('lessari', email);
+
+    const atOutra = await post('/api/stores/outra/customer/login', { email, password: PASSWORD });
+    expect(atOutra.statusCode).toBe(401);
+    expect(atOutra.json()).toMatchObject({ errorCode: 'AUTH_INVALID_CREDENTIALS' });
+    // Nor does it open the panel, and the panel's sign-up takes the same address as a new account.
+    expect((await post('/api/auth/login', { email, password: PASSWORD })).json()).toMatchObject({ errorCode: 'AUTH_INVALID_CREDENTIALS' });
+    await expect(register(app, email)).resolves.toMatchObject({ email });
+  });
+
+  it('opens a second account with the same e-mail at another shop, with its own password, link and record', async () => {
     const email = newEmail('cliente');
     const atLessari = await shopperAt('lessari', email);
-    await app.inject({
-      method: 'PATCH',
-      url: '/api/stores/lessari/customer/me',
-      headers: { authorization: `Bearer ${atLessari.accessToken}` },
-      payload: { phone: '11988887777' },
-    });
+    await clearInbox();
 
-    const atOutra = (await post('/api/stores/outra/customer/login', { email, password: PASSWORD })).json<AuthSession>();
-    const there = (await me('outra', atOutra.accessToken)).json<CustomerProfile>();
+    expect((await post('/api/stores/outra/customer/register', { name: 'Bia na Outra', email, password: 'outra-senha-comprida' })).statusCode).toBe(202);
+    expect((await waitForMessage(email)).Text).toContain('voltar=%2Foutra');
+    await verifyEmailOf(app, email);
 
-    expect(there.phone).toBeNull();
+    expect((await post('/api/stores/outra/customer/login', { email, password: PASSWORD })).statusCode).toBe(401);
+    const atOutra = await post('/api/stores/outra/customer/login', { email, password: 'outra-senha-comprida' });
+    expect(atOutra.statusCode).toBe(200);
+
+    const there = (await me('outra', atOutra.json<AuthSession>().accessToken)).json<CustomerProfile>();
+    expect(there).toMatchObject({ name: 'Bia na Outra', phone: null });
     expect(there.id).not.toBe((await me('lessari', atLessari.accessToken)).json<CustomerProfile>().id);
+  });
+
+  it("refuses one shop's tokens at another, and makes no record there", async () => {
+    const atLessari = await shopperAt('lessari');
+
+    expect((await me('outra', atLessari.accessToken)).statusCode).toBe(401);
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: '/api/stores/outra/customer/me',
+      headers: { authorization: `Bearer ${atLessari.accessToken}` },
+      payload: { name: 'Intrusa' },
+    });
+    expect(patched.statusCode).toBe(401);
+    expect((await post('/api/stores/outra/customer/refresh', { refreshToken: atLessari.refreshToken })).statusCode).toBe(401);
+    expect(await app.get(PrismaService).customer.count({ where: { store: { slug: 'outra' } } })).toBe(0);
+    // Refused elsewhere, still good at home.
+    expect((await post('/api/stores/lessari/customer/refresh', { refreshToken: atLessari.refreshToken })).statusCode).toBe(200);
+  });
+
+  it("replaces the password of this shop's account only, through a link back to the shop", async () => {
+    const email = newEmail('cliente');
+    await shopperAt('lessari', email);
+    await clearInbox();
+    await shopperAt('outra', email);
+    await clearInbox();
+
+    expect((await post('/api/stores/lessari/customer/forgot-password', { email })).statusCode).toBe(202);
+    const message = await waitForMessage(email);
+    expect(message.Text).toContain('voltar=%2Flessari');
+    const reset = await post('/api/auth/reset-password', { token: tokenFromLink(message.Text, '/reset-password'), password: 'senha-nova-comprida' });
+    expect(reset.statusCode).toBe(204);
+
+    expect((await post('/api/stores/lessari/customer/login', { email, password: 'senha-nova-comprida' })).statusCode).toBe(200);
+    expect((await post('/api/stores/outra/customer/login', { email, password: PASSWORD })).statusCode).toBe(200);
+
+    // The panel's "forgot password" looks among bee-link's accounts, where this address has none.
+    await clearInbox();
+    expect((await post('/api/auth/forgot-password', { email })).statusCode).toBe(202);
+    await expect(waitForMessage(email, 1_000)).rejects.toThrow();
   });
 
   it("never lets one door's token through the other", async () => {
@@ -171,12 +224,14 @@ describe("a shopper's door into a shop", () => {
       expect((await list('outra', owner.accessToken)).json<StoreCustomerPage>().total).toBe(0);
     });
 
-    it('puts no one on the list for an e-mail that already had an account', async () => {
+    it("lists an e-mail that has an account at another shop as a new customer here", async () => {
       const email = newEmail('cliente');
       await shopperAt('outra', email);
       await post('/api/stores/lessari/customer/register', { name: 'Alguém', email, password: PASSWORD });
 
-      expect((await list('lessari', owner.accessToken)).json<StoreCustomerPage>().total).toBe(0);
+      const page = (await list('lessari', owner.accessToken)).json<StoreCustomerPage>();
+      expect(page.total).toBe(1);
+      expect(page.customers[0]).toMatchObject({ name: 'Alguém', email, emailVerified: false });
     });
 
     it('finds a customer by part of the name, the e-mail or the phone', async () => {

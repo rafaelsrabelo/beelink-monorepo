@@ -1,24 +1,35 @@
 /// A person with an account. The rules are in docs/product/README.md, "Accounts".
+///
+/// An account belongs to bee-link or to one shop. A shopkeeper's is bee-link's (`storeId` null) and
+/// opens the panel; a shopper's belongs to the shop it was opened at and opens nothing else. The
+/// e-mail is unique within each: the same address may have an account at every shop and one more at
+/// bee-link, each with its own password.
 model User {
   id              String    @id @default(uuid(7)) @db.Uuid
   name            String
   /// Stored trimmed and lower-cased, so uniqueness ignores case.
-  email           String    @unique
+  email           String
   /// Null for an account that signs in only through an identity provider (Google, G5): it can set
   /// one later through "forgot my password", and until then a password sign-in never matches.
   passwordHash    String?
   emailVerifiedAt DateTime?
+  /// The shop a shopper's account belongs to; null for bee-link's own, a shopkeeper's.
+  storeId         String?   @db.Uuid
+  store           Store?    @relation("StoreAccounts", fields: [storeId], references: [id], onDelete: Cascade)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   sessions    Session[]
   emailTokens EmailToken[]
-  /// A shopkeeper is this same account: the product adds no second notion of one.
-  stores      Store[]
-  /// And so is a shopper who chose to be remembered: one record per shop bought from, which the
-  /// shop owns and never reads this account through.
+  /// The shops a bee-link account owns. A shop's account never owns one.
+  stores      Store[]   @relation("StoreOwner")
+  /// A shop account's record at its shop, which the shop owns and never reads this account through.
   customers   Customer[]
 
+  @@unique([storeId, email])
+  // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null
+  // `storeId` as distinct — so theirs is its own index.
+  @@unique([email], where: { storeId: null }, map: "users_email_key")
   @@map("users")
 }
 
