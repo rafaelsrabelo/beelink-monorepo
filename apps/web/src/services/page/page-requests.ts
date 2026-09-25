@@ -2,6 +2,7 @@
 import type {
   AddComponentPayload,
   CreateSectionPayload,
+  MoveComponentPayload,
   ReorderPayload,
   Section,
   StoreComponent,
@@ -114,6 +115,17 @@ export function updateComponent(
 
 export function deleteComponent(slug: string, componentId: string): Promise<unknown> {
   return call<unknown>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, { method: "DELETE" })
+}
+
+/**
+ * A component into another band, or to another place in its own. Answers the whole page: the band it
+ * left may be gone.
+ */
+export function moveComponent(slug: string, componentId: string, payload: MoveComponentPayload): Promise<Section[]> {
+  return call<Section[]>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/section`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })
 }
 
 /** One band's components, in the new order. The band itself does not move. */

@@ -8,6 +8,7 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 import type {
   AddComponentPayload,
   CreateSectionPayload,
+  MoveComponentPayload,
   Section,
   StoreComponent,
   UpdateComponentPayload,
@@ -21,6 +22,7 @@ import {
   deleteComponent,
   deleteSection,
   fetchSections,
+  moveComponent,
   reorderComponents,
   reorderSections,
   updateComponent,
@@ -134,6 +136,23 @@ export function useUpdateComponent(
     mutationFn: ({ componentId, payload }: UpdateComponentVariables) =>
       updateComponent(slug, componentId, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+  })
+}
+
+export interface MoveComponentVariables {
+  componentId: string
+  payload: MoveComponentPayload
+}
+
+export function useMoveComponent(slug: string): UseMutationResult<Section[], Error, MoveComponentVariables> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ componentId, payload }: MoveComponentVariables) => moveComponent(slug, componentId, payload),
+    // Returned, so the list is read again before the screen's own `onSuccess` runs — the band the
+    // block left may be gone, and a screen still holding its id would open nothing. Settled and not
+    // only succeeded: a refusal may be the first news that another tab changed the page.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
   })
 }
 

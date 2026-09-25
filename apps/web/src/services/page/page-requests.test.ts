@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
-import { createSectionRow, PageRequestError } from "./page-requests"
+import { createSectionRow, moveComponent, PageRequestError } from "./page-requests"
 
 const band = { id: "s1", components: [{ id: "c1", kind: "BANNER" }] }
 
@@ -61,5 +61,25 @@ describe("createSectionRow", () => {
       createSectionRow("lessari", { component: { kind: "BANNER", span: "HALF" } }, 1),
     ).rejects.toBeInstanceOf(PageRequestError)
     expect(calls[0]).toContain("POST /api/stores/lessari/sections ")
+  })
+})
+
+describe("moveComponent", () => {
+  it("puts the block's new band, place and span to its own route, and answers the whole page", async () => {
+    const calls = answerInOrder({ status: 200, body: [band] })
+    const payload = { sectionId: "s2", position: 1, span: "HALF" } as const
+
+    const page = await moveComponent("lessari", "c1", payload)
+
+    expect(page).toEqual([band])
+    expect(calls).toEqual([`PUT /api/stores/lessari/components/c1/section ${JSON.stringify(payload)}`])
+  })
+
+  it("throws the API's code, never a sentence, when the move is refused", async () => {
+    answerInOrder({ status: 409, body: { errorCode: "COMPONENT_NOT_MOVABLE" } })
+
+    await expect(moveComponent("lessari", "c1", { sectionId: "s2" })).rejects.toMatchObject({
+      errorCode: "COMPONENT_NOT_MOVABLE",
+    })
   })
 })
