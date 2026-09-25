@@ -32,9 +32,13 @@ export const Padrao: Story = {}
 /**
  * Uma faixa escura num tema claro. O título continua na cor da marca, misturada só o bastante
  * para contrastar; o parágrafo vira claro. É a mesma regra que a vitrine aplica às quatro
- * superfícies dela, uma vez a mais, um nível abaixo.
+ * superfícies dela, uma vez a mais, um nível abaixo. Com texto, a faixa tem 32px da própria cor em
+ * cima e embaixo (`padded`): o espaçamento da página, pintado.
  */
-export const Escura: Story = { args: { background: presets[4]!.colors.header } }
+export const Escura: Story = { args: { background: presets[4]!.colors.header, padded: true } }
 
 /** Ponta a ponta: para capa e para faixas coloridas que devem sangrar até a borda. */
-export const PontaAPonta: Story = { args: { width: "FULL", background: palette.header } }
+export const PontaAPonta: Story = { args: { width: "FULL", background: palette.header, padded: true } }
+
+/** Sem `padded`: é o que uma faixa só de fotos faz, deixando a foto preencher a cor. */
+export const ColoridaSemRespiro: Story = { args: { background: presets[4]!.colors.header } }

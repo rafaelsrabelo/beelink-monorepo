@@ -62,6 +62,30 @@ describe("StorefrontSectionBand", () => {
     expect(screen.getByText("conteúdo").parentElement!.className).not.toContain("max-w-")
   })
 
+  // The page's one spacing, painted: a coloured band of words gets 32px of its colour around them.
+  it("gives its words 32px of its own colour above and below when padded, at either width", () => {
+    const { rerender } = render(
+      <StorefrontSectionBand primary={palette.primary} background={dark.header} padded>
+        <p>conteúdo</p>
+      </StorefrontSectionBand>,
+    )
+    expect(screen.getByText("conteúdo").parentElement).toHaveClass("py-8")
+
+    rerender(
+      <StorefrontSectionBand primary={palette.primary} background={dark.header} width="FULL" padded>
+        <p>conteúdo</p>
+      </StorefrontSectionBand>,
+    )
+    expect(screen.getByText("conteúdo").parentElement).toHaveClass("py-8")
+
+    rerender(
+      <StorefrontSectionBand primary={palette.primary} background={dark.header}>
+        <p>conteúdo</p>
+      </StorefrontSectionBand>,
+    )
+    expect(screen.getByText("conteúdo").parentElement).not.toHaveClass("py-8")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <StorefrontSectionBand primary={palette.primary} background={dark.header}>

@@ -24,7 +24,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { reachesTheEdge, rhythmOf } from "./band-rhythm"
-import { isEmptyComponent } from "./empty-component"
+import { drawnSectionsOf } from "./empty-component"
 import { anchorsOf } from "./site-chrome"
 import { StorefrontComponent, type LiveContact } from "./storefront-component"
 
@@ -123,19 +123,8 @@ export function StorefrontSections({
   const anchors = anchorsOf(sections)
   // Design mode draws a placeholder where a block is still empty, so the owner can find and fill it;
   // the shop leaves it out, and a band left with nothing, rather than spend the page's spacing on a gap.
-  const editing = renderBlock !== undefined
-  const drawn = sections
-    .map((section) => ({
-      ...section,
-      components: section.components.filter(
-        (component) =>
-          // The strip is drawn above the header by the window, so it is not one of the bands in
-          // the order — see `announcementOf`. Leaving it here would draw it twice.
-          component.kind !== "ANNOUNCEMENT" &&
-          (editing || !isEmptyComponent(component.kind, component.title, component.body, component.items)),
-      ),
-    }))
-    .filter((section) => section.components.length > 0)
+  // The strip is drawn above the header by the window — see `announcementOf` — so it is not one of them.
+  const drawn = drawnSectionsOf(sections, renderBlock !== undefined)
   const rhythm = rhythmOf(drawn)
 
   return (

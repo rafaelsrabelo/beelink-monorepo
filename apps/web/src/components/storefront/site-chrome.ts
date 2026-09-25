@@ -4,6 +4,7 @@ import type { StorefrontFooterColumn, StorefrontMenuItem } from "@harness-monore
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { drawnSectionsOf } from "./empty-component"
 import { orderHrefOf } from "./storefront-links"
 
 /**
@@ -43,12 +44,15 @@ export function anchorsOf(sections: readonly PublicSection[]): ReadonlyMap<strin
   return anchors
 }
 
-/** The named bands a visitor can jump to, in order, as anchors. The strip's band is never one. */
+/**
+ * The named bands a visitor can jump to, in order, as anchors: the ones the page draws, so no link
+ * points at a band left out for having nothing to show. Anchors are counted over every band, as the
+ * page counts them, so a name keeps its anchor.
+ */
 function namedBandsOf(sections: readonly PublicSection[]): StorefrontMenuItem[] {
   const anchors = anchorsOf(sections)
 
-  return sections
-    .filter((section) => !section.components.every((component) => component.kind === "ANNOUNCEMENT"))
+  return drawnSectionsOf(sections, false)
     .flatMap((section) => {
       const anchor = anchors.get(section.id)
       return anchor && section.name ? [{ id: section.id, label: section.name.trim(), href: `#${anchor}` }] : []

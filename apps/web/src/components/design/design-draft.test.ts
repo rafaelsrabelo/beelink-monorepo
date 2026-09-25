@@ -320,13 +320,15 @@ describe("arrangementOf — what the panel lists", () => {
 
 describe("isEmptyComponent — what draws nothing", () => {
   it("mirrors each renderer's own `return null`", () => {
-    expect(isEmptyComponent("BANNER", null, null, [])).toBe(true)
-    expect(isEmptyComponent("BENEFITS", null, null, [])).toBe(true)
-    expect(isEmptyComponent("HEADING", "  ", null, [])).toBe(true)
-    expect(isEmptyComponent("TEXT", null, "", [])).toBe(true)
-    expect(isEmptyComponent("TEXT", null, "Olá", [])).toBe(false)
-    expect(isEmptyComponent("PRODUCTS", null, null, [])).toBe(true)
-    expect(isEmptyComponent("PRODUCTS", null, null, [{ id: "p" }])).toBe(false)
+    expect(isEmptyComponent({ kind: "BANNER", title: null, subtitle: null, body: null, items: [] })).toBe(true)
+    expect(isEmptyComponent({ kind: "BENEFITS", title: null, subtitle: null, body: null, items: [] })).toBe(true)
+    expect(isEmptyComponent({ kind: "HEADING", title: "  ", subtitle: null, body: null, items: [] })).toBe(true)
+    // `StorefrontHeading` draws a line under a title that is not there.
+    expect(isEmptyComponent({ kind: "HEADING", title: null, subtitle: "Do pedido à entrega", body: null, items: [] })).toBe(false)
+    expect(isEmptyComponent({ kind: "TEXT", title: null, subtitle: null, body: "", items: [] })).toBe(true)
+    expect(isEmptyComponent({ kind: "TEXT", title: null, subtitle: null, body: "Olá", items: [] })).toBe(false)
+    expect(isEmptyComponent({ kind: "PRODUCTS", title: null, subtitle: null, body: null, items: [] })).toBe(true)
+    expect(isEmptyComponent({ kind: "PRODUCTS", title: null, subtitle: null, body: null, items: [{ id: "p" }] })).toBe(false)
   })
 })
 

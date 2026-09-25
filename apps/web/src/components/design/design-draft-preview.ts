@@ -155,7 +155,13 @@ export function arrangementOf(
             ? shelves.get(component.id)?.items.length === 0
             : component.kind === "CATEGORIES"
               ? categoriesShown === 0
-              : isEmptyComponent(component.kind, title, was?.body ?? null, was?.items ?? []),
+              : isEmptyComponent({
+                  kind: component.kind,
+                  title,
+                  subtitle: was?.subtitle ?? null,
+                  body: was?.body ?? null,
+                  items: was?.items ?? [],
+                }),
       }
     }),
   }))

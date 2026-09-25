@@ -155,7 +155,7 @@ export function DesignPreviewPane({
                     // place for a block the shop window would draw nothing for.
                     const empty =
                       noCategories ||
-                      isEmptyComponent(component.kind, component.title, component.body, component.items)
+                      isEmptyComponent(component)
 
                     return (
                       <DesignEditTag

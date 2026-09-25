@@ -10,8 +10,9 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { anchorOf, ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
 
+// A title, so every band here has something to draw: the menu names only the bands the page draws.
 function component(kind: PublicComponent["kind"]): PublicComponent {
-  return { id: `${kind}-c`, kind, title: null, subtitle: null, body: null, span: "FULL", display: null, source: null, sourceCategory: null, items: [], columns: null, align: null }
+  return { id: `${kind}-c`, kind, title: "Título", subtitle: null, body: null, span: "FULL", display: null, source: null, sourceCategory: null, items: [], columns: null, align: null }
 }
 
 function band(id: string, name: string | null, kind: PublicComponent["kind"] = "HEADING"): PublicSection {
@@ -39,6 +40,13 @@ describe("site chrome", () => {
 
   it("keeps the button's band out of the menu, and unnamed bands and the strip too", () => {
     expect(menuOf(sections).map((entry) => entry.label)).toEqual(["Serviços", "Como funciona"])
+  })
+
+  // The page leaves out a band with nothing to draw; a menu entry for it would link to nothing.
+  it("leaves out of the menu a named band the page does not draw, for having nothing in it", () => {
+    const empty: PublicSection = { ...band("e", "Galeria", "BANNER"), components: [{ ...component("BANNER"), items: [] }] }
+
+    expect(menuOf([...sections, empty]).map((entry) => entry.label)).not.toContain("Galeria")
   })
 
   it("has no button when no named band holds a form", () => {
