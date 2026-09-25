@@ -61,3 +61,19 @@ herdar o 1,2 do botão.
 - "econ. 12%" da pílula de 600 g: o nome do valor é texto livre, sem quantidade modelada.
 - O cartão esgotado de 5b tem cursor `not-allowed`; aqui ele continua escolhível, porque é por ele
   que se chega ao "Avise-me" (decisão 1 do BEELINK-23).
+
+## Revisão (25/09/2026)
+
+Três leituras independentes (correção, acessibilidade e responsivo, fidelidade ao 5b), cada achado
+verificado por um revisor que tentou refutá-lo. Confirmados e corrigidos:
+
+- **Foco invisível.** O `outline-none` do primitivo zerava o `outline-2`: volta com `outline-solid`.
+  O escolhido mantém a borda na tinta com foco e sob o ponteiro.
+- **Foto com sabor e tamanho.** Só conta como foto de um valor a que não marca valor de outra opção;
+  senão, a foto do "Morango · 900 g" virava cartão no tamanho, mostrando Morango com qualquer sabor.
+- **Pílulas no celular.** Abaixo de `shop-sm` elas dividem a linha numa grade: três tamanhos cabem a
+  360 e a 375px. Os 110px de 5b valem a partir de `shop-sm`.
+- **Cartões numa coluna larga.** No máximo 120px entre 640 e 1023px, em vez de 180 a 240px com uma
+  foto de 52px.
+- Nome longo quebra dentro da pílula; bolinha de cor com contorno fino; o esgotado não perde o tom
+  apagado sob o ponteiro, e o leitor de tela ouve o que está escrito nele ("Esgotado · avise-me").
