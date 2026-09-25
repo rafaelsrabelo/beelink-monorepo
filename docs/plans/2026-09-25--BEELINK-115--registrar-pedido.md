@@ -87,3 +87,43 @@ celular.
 Pedido #4 da loja-do-design, registrado pela tela: o resumo mostrou R$ 293,30 e a API gravou 29330
 centavos. A data de 24/09 foi gravada como meio-dia local. O celular repetido ofereceu o cliente
 existente, e um cliente novo foi cadastrado e escolhido. Não há rolagem lateral a 390 px.
+
+## Adendo — revisão (2026-09-25)
+
+A revisão em três lentes, com verificação adversarial, confirmou 21 achados (alguns repetidos entre
+as lentes). O que mudou:
+
+1. **Enter não registra mais o pedido.** Numa busca, numa quantidade ou num valor, o Enter só
+   buscava ou confirmava o campo, mas o formulário era enviado junto: um pedido de uma linha, que não
+   se edita, saía no meio da busca. As buscas e a quantidade seguram o próprio Enter, e o formulário
+   segura o de qualquer campo de uma linha. A observação continua aceitando quebra de linha.
+2. **"Usar <nome>" aparece com o celular escrito de qualquer jeito.** Depois do 409, a busca usa o
+   celular na forma em que a API guarda: sem o 0 de longa distância nem o código da operadora, e com
+   55. O 409 não pode trazer o cliente, porque o filtro de erros da API só repassa `errorCode` e
+   `message`.
+3. **A quantidade digitada substitui a anterior.** Antes, apagar o 2 voltava para 1, e digitar 5
+   dava 15. O campo guarda o texto enquanto se digita e fixa o número ao sair ou no Enter.
+4. **O foco não cai mais no começo da página.** Ele vai para o que substituiu o controle apertado:
+   - "Outros produtos", depois de escolher um produto;
+   - a busca, depois de voltar ou de adicionar direto;
+   - o próximo "Remover", depois de tirar uma linha;
+   - "Trocar cliente", depois de escolher o cliente;
+   - o Nome, ao abrir o cadastro.
+
+   Adicionar e remover linhas é anunciado ao leitor de tela, e um salvamento recusado leva o foco
+   até a primeira seção com erro.
+5. **Seções em cartões, com título** (Cliente, Produtos, Entrega e pagamento), como no editor de
+   produto. "No pedido" dá nome à lista de linhas.
+6. **"Sem estoque" usa o selo da lista de produtos** (contorno vermelho), por contraste.
+7. **O resumo fixo fica abaixo do header** do painel, e o botão continua desligado depois de salvar,
+   enquanto a página vai para o pedido: um segundo clique criaria um segundo pedido.
+8. **O endereço dobrado abre** quando é o CEP ou a UF que recusou o cadastro. O CEP ganhou largura.
+9. **Escolher um produto lê o preço na hora**, e uma resposta atrasada de um produto que o lojista já
+   deixou para trás é ignorada.
+10. **A linha cabe a 375 px:** quantidade, total e remover ficam juntos à direita.
+
+Recusados na verificação:
+- desligar o botão em foco durante o salvamento;
+- anunciar os resultados da busca;
+- pôr o estoque no nome do botão;
+- ligar os erros aos campos por `aria-describedby`, porque o `Field` já faz isso.

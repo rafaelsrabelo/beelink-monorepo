@@ -6,7 +6,7 @@ import type { ProductDetail } from "@harness-monorepo/contracts"
 import type { OrderDetailsValues } from "@harness-monorepo/ui/lib/order-form"
 
 // App
-import { moneyOf, orderPayloadOf, variantOptionsOf } from "./new-order-mapping"
+import { canonicalPhoneOf, moneyOf, orderPayloadOf, variantOptionsOf } from "./new-order-mapping"
 
 const details: OrderDetailsValues = { fulfillment: "DELIVERY", deliveryFee: "10", paymentMethod: "PIX", discount: "", note: "  ", placedOn: "" }
 const totals = { subtotalCents: 5000, deliveryFeeCents: 1000, discountCents: 0, totalCents: 6000 }
@@ -30,6 +30,15 @@ describe("variantOptionsOf", () => {
       { id: "v1", label: "Sabor: Uva · Peso: 300 g", priceCents: 3990, sku: "U", outOfStock: true },
       { id: "v2", label: "Sabor: Coco · Peso: 300 g", priceCents: 4290, sku: null, outOfStock: false },
     ])
+  })
+})
+
+describe("canonicalPhoneOf", () => {
+  it("writes a phone however typed as the API keeps it", () => {
+    expect(canonicalPhoneOf("(11) 97777-6666")).toBe("5511977776666")
+    expect(canonicalPhoneOf("(011) 97777-6666")).toBe("5511977776666")
+    expect(canonicalPhoneOf("0 21 11 97777-6666")).toBe("5511977776666")
+    expect(canonicalPhoneOf("+55 11 97777-6666")).toBe("5511977776666")
   })
 })
 

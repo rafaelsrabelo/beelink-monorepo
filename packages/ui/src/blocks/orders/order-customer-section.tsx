@@ -1,12 +1,13 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useId, useRef, useState } from "react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import { FieldError, FieldLegend, FieldSet } from "@harness-monorepo/ui/components/field"
+import { FieldError } from "@harness-monorepo/ui/components/field"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
+import { useFocusOnSwap } from "@harness-monorepo/ui/hooks/use-focus-on-swap"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -50,7 +51,11 @@ export function OrderCustomerSection({
   messages = defaultMessages,
 }: OrderCustomerSectionProps) {
   const text = messages.orders.form
+  const titleId = useId()
   const [creating, setCreating] = useState(false)
+  const content = useRef<HTMLDivElement>(null)
+  // The customer the page was opened for lands on the card without taking focus from anyone.
+  useFocusOnSwap(loading ? "loading" : selected ? "card" : creating ? "create" : "search", content, "loading")
 
   function choose(customer: OrderCustomerOption) {
     setCreating(false)
@@ -58,51 +63,55 @@ export function OrderCustomerSection({
   }
 
   return (
-    <FieldSet className="flex flex-col gap-3">
-      <FieldLegend className="text-base font-semibold">{text.customer}</FieldLegend>
+    <section aria-labelledby={titleId} className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-5 shadow-xs">
+      <h2 id={titleId} className="font-semibold">
+        {text.customer}
+      </h2>
 
-      {loading ? (
-        <Skeleton className="h-16 w-full" />
-      ) : selected ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-          <div className="flex min-w-0 flex-col">
-            <span className="font-medium">{selected.name}</span>
-            <span className="text-muted-foreground text-sm tabular-nums">
-              {[selected.phone, selected.email].filter(Boolean).join(" · ")}
-            </span>
+      <div ref={content} className="flex flex-col gap-3">
+        {loading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : selected ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+            <div className="flex min-w-0 flex-col">
+              <span className="font-medium">{selected.name}</span>
+              <span className="text-muted-foreground text-sm tabular-nums">
+                {[selected.phone, selected.email].filter(Boolean).join(" · ")}
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // A customer just registered here lands on the card; changing them starts from the search.
+                setCreating(false)
+                onClear()
+              }}
+            >
+              {text.customerChange}
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              // A customer just registered here lands on the card; changing them starts from the search.
+        ) : creating ? (
+          <OrderCustomerCreate
+            initial={initialOf(search.query)}
+            onSubmit={create.onSubmit}
+            pending={create.pending}
+            error={create.error}
+            existing={create.existing}
+            onUseExisting={choose}
+            onCancel={() => {
               setCreating(false)
-              onClear()
+              create.onCancel?.()
             }}
-          >
-            {text.customerChange}
-          </Button>
-        </div>
-      ) : creating ? (
-        <OrderCustomerCreate
-          initial={initialOf(search.query)}
-          onSubmit={create.onSubmit}
-          pending={create.pending}
-          error={create.error}
-          existing={create.existing}
-          onUseExisting={choose}
-          onCancel={() => {
-            setCreating(false)
-            create.onCancel?.()
-          }}
-          messages={messages}
-        />
-      ) : (
-        <OrderCustomerSearch {...search} onSelect={choose} onCreate={() => setCreating(true)} messages={messages} />
-      )}
+            messages={messages}
+          />
+        ) : (
+          <OrderCustomerSearch {...search} onSelect={choose} onCreate={() => setCreating(true)} messages={messages} />
+        )}
+      </div>
 
       {!selected ? <FieldError>{error}</FieldError> : null}
-    </FieldSet>
+    </section>
   )
 }

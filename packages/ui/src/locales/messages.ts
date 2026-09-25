@@ -834,11 +834,15 @@ export interface UiMessages {
       variantAdd: string
       outOfStock: string
       linesEmpty: string
+      linesTitle: string
+      lineAdded: string
+      lineRemoved: string
       quantity: string
       decrease: string
       increase: string
       remove: string
       fulfillment: string
+      detailsTitle: string
       deliveryFee: string
       payment: string
       discount: string

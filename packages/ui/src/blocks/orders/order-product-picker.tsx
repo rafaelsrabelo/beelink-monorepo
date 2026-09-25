@@ -1,3 +1,6 @@
+// React
+import { useRef } from "react"
+
 // Libs
 import { ArrowLeftIcon, PackageIcon, PlusIcon } from "lucide-react"
 
@@ -6,6 +9,7 @@ import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Input } from "@harness-monorepo/ui/components/input"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
+import { useFocusOnSwap } from "@harness-monorepo/ui/hooks/use-focus-on-swap"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -57,10 +61,12 @@ export function OrderProductPicker({
   messages = defaultMessages,
 }: OrderProductPickerProps) {
   const text = messages.orders.form
+  const container = useRef<HTMLDivElement>(null)
+  useFocusOnSwap(chosen ? `product:${chosen.product.id}` : "search", container)
 
   if (chosen) {
     return (
-      <div className="flex flex-col gap-3">
+      <div ref={container} className="flex flex-col gap-3">
         <Button type="button" variant="ghost" size="sm" className="self-start" onClick={onBack}>
           <ArrowLeftIcon />
           {text.productBack}
@@ -80,7 +86,11 @@ export function OrderProductPicker({
                     <span className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
                       <span className="tabular-nums">{money(variant.priceCents)}</span>
                       {variant.sku ? <span>{variant.sku}</span> : null}
-                      {variant.outOfStock ? <Badge variant="destructive">{text.outOfStock}</Badge> : null}
+                      {variant.outOfStock ? (
+                        <Badge variant="outline" className="border-destructive/40 text-destructive">
+                          {text.outOfStock}
+                        </Badge>
+                      ) : null}
                     </span>
                   </span>
                   <Button
@@ -102,13 +112,18 @@ export function OrderProductPicker({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={container} className="flex flex-col gap-3">
       <Input
         type="search"
+        enterKeyHint="search"
         aria-label={text.productSearchLabel}
         placeholder={text.productSearchPlaceholder}
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
+        // It sits in the order's form: Enter here searches, it never registers the order.
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.preventDefault()
+        }}
       />
       {searching && products.length === 0 ? (
         <Rows />

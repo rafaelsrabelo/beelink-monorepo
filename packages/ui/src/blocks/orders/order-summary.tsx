@@ -36,7 +36,7 @@ export function OrderSummary({ totals, money, pending = false, error, messages =
   const refusal = typeof totals === "string" ? (totals === "DISCOUNT_TOO_LARGE" ? text.discountTooLarge : text.totalTooLarge) : null
 
   return (
-    <section aria-labelledby="order-summary-title" className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
+    <section aria-labelledby="order-summary-title" className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-5 shadow-xs">
       <h2 id="order-summary-title" className="font-semibold">
         {text.summary}
       </h2>

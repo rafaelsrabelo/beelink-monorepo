@@ -17,6 +17,7 @@ import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { customerKeys, useCreateStoreCustomer, useStoreCustomer, useStoreCustomers } from "@/services/customers/customer-hooks"
 import { CustomerRequestError, fetchStoreCustomers } from "@/services/customers/customer-requests"
+import { canonicalPhoneOf } from "./new-order-mapping"
 
 const SEARCH_DEBOUNCE_MS = 300
 const SEARCH_PAGE_SIZE = 6
@@ -56,7 +57,7 @@ export function useOrderCustomer(slug: string, initialCustomerId: string | null,
       setPicked(optionOf(await create.mutateAsync(payloadOf(draft))))
     } catch (error) {
       if (!(error instanceof CustomerRequestError) || error.errorCode !== "CUSTOMER_PHONE_TAKEN") return
-      const digits = draft.phone.replace(/\D/g, "")
+      const digits = canonicalPhoneOf(draft.phone)
       const found = await queryClient
         .fetchQuery({ queryKey: customerKeys.list(slug, { q: digits, pageSize: 1 }), queryFn: () => fetchStoreCustomers(slug, { q: digits, pageSize: 1 }) })
         .catch(() => null)

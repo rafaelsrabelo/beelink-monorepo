@@ -28,6 +28,16 @@ export function variantOptionsOf(product: ProductDetail): OrderVariantOption[] {
     })
 }
 
+/**
+ * A phone as the API keeps it, to look up the customer it said already has it: digits, the
+ * long-distance 0 and a carrier code dropped, and 55 in front of a Brazilian number typed without
+ * it — the rule of the API's `normaliseWhatsapp`, which a 409 cannot hand back.
+ */
+export function canonicalPhoneOf(typed: string): string {
+  const digits = typed.replace(/\D/g, "").replace(/^0(?:\d{2})?(?=\d{10,11}$)/, "")
+  return digits.length === 10 || digits.length === 11 ? `55${digits}` : digits
+}
+
 /** Money as typed: empty is zero, anything unreadable is null for the field to point at. */
 export function moneyOf(typed: string): number | null {
   return typed.trim() === "" ? 0 : centsFrom(typed)

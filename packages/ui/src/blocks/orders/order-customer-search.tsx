@@ -41,10 +41,15 @@ export function OrderCustomerSearch({
     <div className="flex flex-col gap-3">
       <Input
         type="search"
+        enterKeyHint="search"
         aria-label={text.customerSearchLabel}
         placeholder={text.customerSearchPlaceholder}
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
+        // It sits in the order's form: Enter here searches, it never registers the order.
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.preventDefault()
+        }}
       />
 
       {typed && searching && results.length === 0 ? (

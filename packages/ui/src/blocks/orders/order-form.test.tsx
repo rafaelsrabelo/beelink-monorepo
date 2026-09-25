@@ -121,6 +121,63 @@ describe("the new order's products", () => {
   })
 })
 
+describe("the new order's form, as a keyboard meets it", () => {
+  it("never registers the order on Enter in a search or a quantity", async () => {
+    const onSubmit = vi.fn((event: { preventDefault: () => void }) => event.preventDefault())
+    render(
+      <form onSubmit={onSubmit}>
+        {customerSection()}
+        <OrderProductPicker query="" onQueryChange={noop} products={products} onChoose={noop} chosen={null} onBack={noop} onAdd={noop} money={money} />
+        <OrderLines lines={lines} onQuantityChange={noop} onRemove={noop} money={money} />
+        <button type="submit">Registrar</button>
+      </form>,
+    )
+
+    await userEvent.type(screen.getByRole("searchbox", { name: "Buscar cliente" }), "{Enter}")
+    await userEvent.type(screen.getByRole("searchbox", { name: "Buscar produto" }), "Whey{Enter}")
+    await userEvent.type(screen.getByLabelText("Quantidade de Coqueteleira"), "{Enter}")
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it("takes a quantity typed over the old one, not appended to it", async () => {
+    const onQuantityChange = vi.fn()
+    render(<OrderLines lines={lines} onQuantityChange={onQuantityChange} onRemove={noop} money={money} />)
+
+    const quantity = screen.getByLabelText("Quantidade de Whey Protein (Sabor: Baunilha · Peso: 900 g)")
+    await userEvent.clear(quantity)
+    await userEvent.type(quantity, "5")
+    await userEvent.tab()
+    expect(onQuantityChange).toHaveBeenLastCalledWith("v1", 5)
+    expect(onQuantityChange).not.toHaveBeenCalledWith("v1", 25)
+  })
+
+  it("puts focus on what replaced the control that was pressed", async () => {
+    const { rerender } = render(
+      <OrderProductPicker query="" onQueryChange={noop} products={products} onChoose={noop} chosen={null} onBack={noop} onAdd={noop} money={money} />,
+    )
+    rerender(<OrderProductPicker query="" onQueryChange={noop} products={products} onChoose={noop} chosen={{ product: products[0]!, variants }} onBack={noop} onAdd={noop} money={money} />)
+    expect(screen.getByRole("button", { name: "Outros produtos" })).toHaveFocus()
+
+    rerender(<OrderProductPicker query="" onQueryChange={noop} products={products} onChoose={noop} chosen={null} onBack={noop} onAdd={noop} money={money} />)
+    expect(screen.getByRole("searchbox", { name: "Buscar produto" })).toHaveFocus()
+  })
+
+  it("opens the folded address when the CEP there is what refused the customer", async () => {
+    const onSubmit = vi.fn()
+    render(customerSection({ search: { query: "Rita", onQueryChange: noop, results: [] }, create: { onSubmit } }))
+
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar cliente" }))
+    await userEvent.type(screen.getByLabelText("Celular"), "11988887777")
+    await userEvent.click(screen.getByRole("button", { name: "Endereço (opcional)" }))
+    await userEvent.type(screen.getByLabelText("CEP"), "123")
+    await userEvent.click(screen.getByRole("button", { name: "Endereço (opcional)" }))
+    await userEvent.click(screen.getByRole("button", { name: "Cadastrar" }))
+
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText("O CEP tem 8 dígitos.")).toBeVisible()
+  })
+})
+
 describe("the new order's details and summary", () => {
   it("asks a delivery's fee, not a pick-up's, and offers only the payments the shop accepts", async () => {
     const onChange = vi.fn()

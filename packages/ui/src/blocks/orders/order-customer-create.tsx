@@ -37,6 +37,17 @@ type Issues = Partial<Record<"name" | "phone" | "zipCode" | "state", string>>
 
 const ADDRESS_FIELDS = ["zipCode", "street", "number", "complement", "neighborhood", "city", "state"] as const
 
+/** Three rows of eight: CEP and street, number with complement and neighbourhood, city and UF. */
+const SPAN: Record<(typeof ADDRESS_FIELDS)[number], string> = {
+  zipCode: "sm:col-span-3",
+  street: "sm:col-span-5",
+  number: "sm:col-span-2",
+  complement: "sm:col-span-3",
+  neighborhood: "sm:col-span-3",
+  city: "sm:col-span-6",
+  state: "sm:col-span-2",
+}
+
 function issuesOf(draft: OrderCustomerDraft, text: UiMessages["orders"]["form"]): Issues {
   const digits = draft.phone.replace(/\D/g, "")
   const issues: Issues = {}
@@ -75,6 +86,8 @@ export function OrderCustomerCreate({
   function submit() {
     const found = issuesOf(draft, text)
     setIssues(found)
+    // A refusal inside a folded address would block the save with nothing on screen to say why.
+    if (found.zipCode || found.state) setAddressOpen(true)
     if (Object.keys(found).length === 0) onSubmit(draft)
   }
 
@@ -128,12 +141,12 @@ export function OrderCustomerCreate({
         {text.customerAddress}
       </Button>
 
-      <div id={`${id}-address`} hidden={!addressOpen} className="grid gap-4 sm:grid-cols-6">
+      <div id={`${id}-address`} hidden={!addressOpen} className="grid gap-4 sm:grid-cols-8">
         {ADDRESS_FIELDS.map((field) => (
           <Field
             key={field}
             data-invalid={field === "zipCode" || field === "state" ? (issues[field] ? true : undefined) : undefined}
-            className={field === "street" || field === "complement" || field === "neighborhood" ? "sm:col-span-3" : field === "city" ? "sm:col-span-2" : "sm:col-span-1"}
+            className={SPAN[field]}
           >
             <FieldLabel htmlFor={`${id}-${field}`}>{text[field]}</FieldLabel>
             <Input
