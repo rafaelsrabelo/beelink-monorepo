@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useSyncExternalStore, type ReactNode } from "react"
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react"
 
 // UI
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@harness-monorepo/ui/components/sheet"
@@ -10,14 +10,26 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
-/** Where the three columns fit side by side: the structure's 360 px, the panel's 340 px and a phone preview. */
+// Block
+import type { PreviewDevice } from "./preview-device-toggle"
+
+/** Where the three columns fit side by side: the structure's 360 px, the panel's 340 px and the preview. */
 const WIDE = "(min-width: 64rem)"
 
-function subscribe(onChange: () => void): () => void {
-  const query = window.matchMedia(WIDE)
-  query.addEventListener("change", onChange)
-  return () => query.removeEventListener("change", onChange)
+/** Where the bar has room for Celular | Computador — its `sm:` (`design-editor-bar.tsx`). */
+const ROOMY = "(min-width: 40rem)"
+
+/** Built once per query: `useSyncExternalStore` resubscribes whenever it is handed a new function. */
+function watch(media: string): (onChange: () => void) => () => void {
+  return (onChange) => {
+    const query = window.matchMedia(media)
+    query.addEventListener("change", onChange)
+    return () => query.removeEventListener("change", onChange)
+  }
 }
+
+const subscribeWide = watch(WIDE)
+const subscribeRoomy = watch(ROOMY)
 
 /**
  * Whether the columns fit. The server renders the wide frame; a narrow browser switches to drawers
@@ -25,10 +37,28 @@ function subscribe(onChange: () => void): () => void {
  */
 export function useWideEditor(): boolean {
   return useSyncExternalStore(
-    subscribe,
+    subscribeWide,
     () => window.matchMedia(WIDE).matches,
     () => true,
   )
+}
+
+/**
+ * The width the preview draws the shop at, and the owner's way to change it.
+ *
+ * The computer first, the owner's call: a phone preview stacks every row of blocks side by side. The
+ * pick lasts while the editor is open. Where the bar has no room for the toggle the preview is the
+ * phone's whatever was picked — a 1440 px shop in a phone's pane paints at a quarter scale, with no
+ * control to leave it — and the pick comes back when the window widens again.
+ */
+export function usePreviewDevice(): [PreviewDevice, (device: PreviewDevice) => void] {
+  const [picked, setPicked] = useState<PreviewDevice>("DESKTOP")
+  const roomy = useSyncExternalStore(
+    subscribeRoomy,
+    () => window.matchMedia(ROOMY).matches,
+    () => true,
+  )
+  return [roomy ? picked : "PHONE", setPicked]
 }
 
 export interface DesignEditorFrameProps {

@@ -12,7 +12,7 @@ function renderBar(overrides: Partial<DesignEditorBarProps> = {}) {
     backHref: "/admin/loja",
     shopName: "Loja do Design",
     pageName: "Página inicial",
-    device: "PHONE",
+    device: "DESKTOP",
     onDeviceChange: vi.fn(),
     changes: 0,
     publishing: false,
@@ -77,8 +77,8 @@ describe("DesignEditorBar", () => {
   it("switches the preview's device and opens the side columns as drawers", async () => {
     const { props } = renderBar()
 
-    await userEvent.click(screen.getByRole("button", { name: "Computador" }))
-    expect(props.onDeviceChange).toHaveBeenCalledWith("DESKTOP")
+    await userEvent.click(screen.getByRole("button", { name: "Celular" }))
+    expect(props.onDeviceChange).toHaveBeenCalledWith("PHONE")
     await userEvent.click(screen.getByRole("button", { name: "Estrutura" }))
     expect(props.onOpenStructure).toHaveBeenCalled()
     await userEvent.click(screen.getByRole("button", { name: "Editar" }))

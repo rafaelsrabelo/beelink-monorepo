@@ -51,7 +51,7 @@ const ON_DARK =
  * Dark like the panel's header, because it is the same kind of chrome. Three regions, as in the
  * reference: the way back and the page on the left, the device in the middle, the draft on the
  * right. A phone gets one row instead, words dropped to their icons and no device toggle — the
- * preview on a phone is the phone's — so Publicar is always in reach and nothing overlaps.
+ * preview there is always the phone's (`usePreviewDevice`) — so Publicar is in reach and nothing overlaps.
  */
 export function DesignEditorBar({
   backHref,

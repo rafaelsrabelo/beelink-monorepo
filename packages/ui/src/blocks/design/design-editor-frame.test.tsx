@@ -1,10 +1,10 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { act, render, renderHook, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // Block
-import { DesignEditorFrame, type DesignEditorFrameProps } from "./design-editor-frame"
+import { DesignEditorFrame, usePreviewDevice, type DesignEditorFrameProps } from "./design-editor-frame"
 
 const original = window.matchMedia
 
@@ -101,5 +101,84 @@ describe("DesignEditorFrame", () => {
 
     expect(onStructureOpenChange).toHaveBeenCalledWith(false)
     expect(onInspectorOpenChange).toHaveBeenCalledWith(false)
+  })
+})
+
+/**
+ * A window `width` px wide: each `(min-width: Nrem)` query answers against it, so the bar's `sm:`
+ * and the columns' `lg:` can disagree the way they do between 640 and 1023 px. `resize` tells the
+ * listeners, as a real window does.
+ */
+function windowOf(width: number) {
+  const listeners = new Set<() => void>()
+  let current = width
+  window.matchMedia = ((query: string) => ({
+    get matches() {
+      const rem = Number(/min-width:\s*([\d.]+)rem/.exec(query)?.[1] ?? 0)
+      return current >= rem * 16
+    },
+    media: query,
+    onchange: null,
+    addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+    removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia
+
+  return {
+    resize(next: number) {
+      current = next
+      act(() => listeners.forEach((listener) => listener()))
+    },
+  }
+}
+
+describe("usePreviewDevice", () => {
+  // The owner's call: a phone preview stacks every row of blocks side by side.
+  it("starts on the computer", () => {
+    windowOf(1440)
+
+    const { result } = renderHook(() => usePreviewDevice())
+
+    expect(result.current[0]).toBe("DESKTOP")
+  })
+
+  it("keeps the device the owner picks", () => {
+    windowOf(1440)
+    const { result, rerender } = renderHook(() => usePreviewDevice())
+
+    act(() => result.current[1]("PHONE"))
+    rerender()
+
+    expect(result.current[0]).toBe("PHONE")
+  })
+
+  // Below the bar's `sm:` the toggle is not drawn, so a computer preview there could not be left.
+  it("draws the phone where the bar has no room for the toggle", () => {
+    windowOf(390)
+
+    const { result } = renderHook(() => usePreviewDevice())
+
+    expect(result.current[0]).toBe("PHONE")
+  })
+
+  it("keeps the toggle's choice between the drawers' width and the columns'", () => {
+    windowOf(800)
+
+    const { result } = renderHook(() => usePreviewDevice())
+
+    expect(result.current[0]).toBe("DESKTOP")
+  })
+
+  it("gives the pick back when the window widens again", () => {
+    const screenSize = windowOf(1440)
+    const { result } = renderHook(() => usePreviewDevice())
+
+    screenSize.resize(390)
+    expect(result.current[0]).toBe("PHONE")
+
+    screenSize.resize(1440)
+    expect(result.current[0]).toBe("DESKTOP")
   })
 })

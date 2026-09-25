@@ -9,9 +9,8 @@ import type { ComponentKind, PublicProductCategory, PublicStore, StoreColors } f
 // UI
 import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignEditorBar } from "@harness-monorepo/ui/blocks/design/design-editor-bar"
-import { DesignEditorFrame, useWideEditor } from "@harness-monorepo/ui/blocks/design/design-editor-frame"
+import { DesignEditorFrame, usePreviewDevice, useWideEditor } from "@harness-monorepo/ui/blocks/design/design-editor-frame"
 import { DesignLeaveDialog } from "@harness-monorepo/ui/blocks/design/design-leave-dialog"
-import type { PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -73,8 +72,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [editingComponent, setEditingComponent] = useState<string | null>(null)
   const [panelTab, setPanelTab] = useState<"blocks" | "colors">("blocks")
-  // The computer first, the owner's call: a phone preview stacks every row of blocks side by side.
-  const [device, setDevice] = useState<PreviewDevice>("DESKTOP")
+  const [device, setDevice] = usePreviewDevice()
   // The side columns' drawers, where the three columns do not fit.
   const [structureOpen, setStructureOpen] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)

@@ -13,7 +13,7 @@ const meta = {
     backHref: "#",
     shopName: "Mutante Performance",
     pageName: "Página inicial",
-    device: "PHONE",
+    device: "DESKTOP",
     onDeviceChange: fn(),
     changes: 0,
     publishing: false,
