@@ -19,8 +19,14 @@ describe("StorefrontListingSkeleton", () => {
     const { container } = render(<StorefrontListingSkeleton productsPerRow={4} />)
 
     const grid = container.querySelector(".grid")
-    expect(grid).toHaveClass("shop-lg:grid-cols-4")
+    expect(grid).toHaveClass("@4xl:grid-cols-4")
     expect(grid?.children).toHaveLength(16)
+  })
+
+  it("keeps the filter column's place when the listing has one", () => {
+    const { container } = render(<StorefrontListingSkeleton withColumn />)
+
+    expect(container.querySelector(".w-66")).toHaveClass("hidden", "shop-lg:flex")
   })
 
   it("has no accessibility violations", async () => {
