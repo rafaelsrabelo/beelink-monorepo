@@ -1,12 +1,5 @@
 // Types
-import type {
-  PublicProductCategory,
-  PublicProductDetail,
-  PublicStore,
-  StorefrontCartProducts,
-  StorefrontCatalog,
-  StorefrontSort,
-} from "@harness-monorepo/contracts"
+import type { CustomerSignInOptions, PublicProductCategory, PublicProductDetail, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontSort } from "@harness-monorepo/contracts"
 
 // App
 import { callPublicApi } from "./public-api"
@@ -52,6 +45,16 @@ export interface CatalogueAsk {
   discountMinPercent?: number
   /** `Nome:Valor`, one entry per value, sent as a repeated `opcao`. */
   options?: readonly string[]
+}
+
+/**
+ * How a shopper may sign in besides e-mail and password — Google, when the API has it set up. Asked
+ * of the API rather than repeated here: the setup is the API's, and one place decides it.
+ */
+export async function signInOptionsAt(): Promise<CustomerSignInOptions> {
+  const response = await callPublicApi({ path: "/customer/sign-in-options", revalidate: 300 }).catch(() => null)
+  if (!response?.ok) return { google: false }
+  return (await response.json()) as CustomerSignInOptions
 }
 
 /**

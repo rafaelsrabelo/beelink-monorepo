@@ -6,7 +6,7 @@ import type { PublicProductCategory, StorefrontCatalog } from "@harness-monorepo
 
 // App
 import { catalogTag, storeTag } from "./revalidate"
-import { catalogueAt, categoriesAt, shopAt } from "./storefront-data"
+import { catalogueAt, categoriesAt, shopAt, signInOptionsAt } from "./storefront-data"
 
 /**
  * The reads the landing is built from. The network is stubbed at `fetch` because `callPublicApi`
@@ -135,5 +135,18 @@ describe("catalogueAt — a shelf that could not be read", () => {
 
     vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 400 })))
     expect(await catalogueAt("loja")).not.toHaveProperty("failed")
+  })
+})
+
+describe("signInOptionsAt — whether the shop window offers Google", () => {
+  it("says what the API says, and no Google when the API cannot answer", async () => {
+    vi.stubGlobal("fetch", () => Promise.resolve(Response.json({ google: true })))
+    expect(await signInOptionsAt()).toEqual({ google: true })
+
+    vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")))
+    expect(await signInOptionsAt()).toEqual({ google: false })
+
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 500 })))
+    expect(await signInOptionsAt()).toEqual({ google: false })
   })
 })

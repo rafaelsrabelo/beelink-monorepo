@@ -31,6 +31,37 @@ export function setCustomerSessionCookies(jar: CookieJar, slug: string, session:
   jar.set(CUSTOMER_REFRESH_COOKIE, session.refreshToken, { ...base, path, expires: new Date(session.refreshTokenExpiresAt) })
 }
 
+/**
+ * A Google sign-in in flight, held to the browser that started it: the state sent to Google, the shop
+ * it began at, and that shop's sign-in page to come back to on a refusal. Only the fixed callback
+ * reads it, for ten minutes — the state's own life at the API. Comparing it with the state that
+ * comes back is what stops someone finishing, in another person's browser, a sign-in they started.
+ */
+export const GOOGLE_STATE_COOKIE = "bl_oauth_google"
+export const GOOGLE_CALLBACK_PATH = "/api/customer/google/callback"
+
+export interface GoogleFlight {
+  state: string
+  slug: string
+  /** The shop's sign-in page, for a refusal to land on. */
+  signIn: string
+}
+
+export function setGoogleStateCookie(jar: CookieJar, flight: GoogleFlight): void {
+  jar.set(GOOGLE_STATE_COOKIE, new URLSearchParams({ ...flight }).toString(), { ...base, path: GOOGLE_CALLBACK_PATH, maxAge: 600 })
+}
+
+export function googleFlightOf(value: string | undefined): GoogleFlight | null {
+  if (!value) return null
+  const read = new URLSearchParams(value)
+  const [state, slug, signIn] = [read.get("state"), read.get("slug"), read.get("signIn")]
+  return state && slug && signIn ? { state, slug, signIn } : null
+}
+
+export function clearGoogleStateCookie(jar: CookieJar): void {
+  jar.delete({ name: GOOGLE_STATE_COOKIE, path: GOOGLE_CALLBACK_PATH })
+}
+
 export function clearCustomerSessionCookies(jar: CookieJar, slug: string): void {
   jar.delete({ name: CUSTOMER_ACCESS_COOKIE, path: `/${slug}` })
   jar.delete({ name: CUSTOMER_REFRESH_COOKIE, path: `/${slug}` })

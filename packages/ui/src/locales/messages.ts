@@ -262,6 +262,10 @@ export interface UiMessages {
     signInEmail: string
     signInPassword: string
     signInPasswordHint: string
+    /** Beside Google's "G", on the sign-in and sign-up faces. */
+    continueWithGoogle: string
+    /** Between the Google button and the e-mail form. */
+    signInOr: string
     signInSubmit: string
     signUpSubmit: string
     forgotSubmit: string

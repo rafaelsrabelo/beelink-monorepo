@@ -27,3 +27,6 @@ export const Recusado: Story = { args: { error: "E-mail ou senha incorretos.", e
 
 /** Depois de criar a conta: o link está a caminho. */
 export const LinkEnviado: Story = { args: { mode: "criar", sent: true, email: "bia@exemplo.com" } }
+
+/** Com o Google ligado na loja: "Continuar com Google" acima do formulário. */
+export const ComGoogle: Story = { args: { google: { href: "#", iconSrc: "https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" } } }
