@@ -10,14 +10,14 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import * as data from "./storefront-data"
 import * as locale from "./locale"
-import { categoryFilterOf, clearFiltersHrefOf, filterChipsOf } from "./storefront-filters"
+import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, filterCountOf, optionFiltersOf, priceFilterOf } from "./storefront-filters"
 import { storefrontRoutes } from "./storefront-routes"
 import { placeOf } from "./storefront-section"
 
 const store = {
   slug: "loja",
   name: "Loja",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
 } as unknown as PublicStore
 
 const category = (slug: string, parentSlug: string | null = null) =>
@@ -120,5 +120,121 @@ describe("categoryFilterOf", () => {
     const filter = categoryFilterOf((await placeOf("loja", "pote", {}))!, catalogue, routes)
 
     expect(filter).toEqual({ back: { label: "PRE-TREINO", href: "/loja/pre-treino" }, current: "POTE", entries: [] })
+  })
+})
+
+describe("optionFiltersOf", () => {
+  const withOptions = {
+    facets: {
+      options: [
+        { name: "Sabor", values: [{ ...facet("Uva", 3), selected: false }, { ...facet("Limão", 0), selected: false }, { ...facet("Coco", 0), available: false, selected: true }] },
+        { name: "Cor", values: [] },
+      ],
+    },
+  } as unknown as Pick<StorefrontCatalog, "facets">
+
+  it("offers each value toggled on the address, leaves out empty ones unless chosen, and drops empty groups", async () => {
+    arrange()
+    const place = (await placeOf("loja", "produtos", { opcao: "sabor:coco", ordenar: "menor-preco" }))!
+
+    const groups = optionFiltersOf(place, withOptions, routes)
+
+    expect(groups.map((group) => group.title)).toEqual(["Sabor"])
+    expect(groups[0]?.values.map((entry) => [entry.value, entry.selected])).toEqual([
+      ["Uva", false],
+      ["Coco", true],
+    ])
+    expect(groups[0]?.values[0]?.href).toBe("/loja/produtos?ordenar=menor-preco&opcao=sabor%3Acoco&opcao=Sabor%3AUva")
+    // The address spelled it in lower case; taking it off removes what the address holds.
+    expect(groups[0]?.values[1]?.href).toBe("/loja/produtos?ordenar=menor-preco")
+  })
+})
+
+describe("discountFilterOf", () => {
+  const onSale = {
+    facets: {
+      discount: {
+        count: 14,
+        selected: false,
+        ranges: [
+          { minPercent: 10, count: 12, selected: false },
+          { minPercent: 20, count: 5, selected: false },
+          { minPercent: 30, count: 0, selected: false },
+        ],
+      },
+    },
+  } as unknown as Pick<StorefrontCatalog, "facets">
+
+  it("offers 'Em promoção' and the cuts that still hold something, one cut at a time", async () => {
+    arrange()
+
+    const { onSale: box, ranges } = discountFilterOf((await placeOf("loja", "produtos", { desconto: "20" }))!, onSale, routes)
+
+    expect(box).toEqual({ href: "/loja/produtos?desconto=1", count: 14, selected: false })
+    expect(ranges.map((range) => [range.percent, range.selected, range.href])).toEqual([
+      [10, false, "/loja/produtos?desconto=10"],
+      [20, true, "/loja/produtos"],
+    ])
+  })
+
+  it("draws nothing to offer on a shelf with nothing on sale", async () => {
+    arrange()
+    const none = { facets: { discount: { count: 0, selected: false, ranges: [] } } } as unknown as Pick<StorefrontCatalog, "facets">
+
+    expect(discountFilterOf((await placeOf("loja", "produtos", {}))!, none, routes)).toEqual({ onSale: null, ranges: [] })
+  })
+})
+
+describe("priceFilterOf", () => {
+  const priced = (minCents: number, maxCents: number) => ({ facets: { price: { minCents, maxCents } } }) as unknown as Pick<StorefrontCatalog, "facets">
+  const labels = (filter: ReturnType<typeof priceFilterOf>) => filter?.ranges.map((range) => range.label.replace(/\s/g, " "))
+
+  it("offers the quick ranges that fall inside what the shelf costs, the slider's ends in whole reais", async () => {
+    arrange()
+
+    const filter = priceFilterOf((await placeOf("loja", "produtos", {}))!, priced(4990, 12990), routes, "pt-BR")
+
+    expect(labels(filter)).toEqual(["Até R$ 50", "R$ 50 a R$ 100", "R$ 100 a R$ 200"])
+    expect(filter?.bounds).toEqual({ min: 49, max: 130 })
+  })
+
+  it("marks the range in force, whose link takes it off; the others replace it", async () => {
+    arrange()
+    const place = (await placeOf("loja", "produtos", { precoMin: "100", precoMax: "200", ordenar: "menor-preco" }))!
+
+    const filter = priceFilterOf(place, priced(1000, 50000), routes, "pt-BR")!
+
+    expect(filter.ranges.map((range) => range.selected)).toEqual([false, false, true, false])
+    expect(filter.ranges[2]?.href).toBe("/loja/produtos?ordenar=menor-preco")
+    expect(filter.ranges[3]?.href).toBe("/loja/produtos?ordenar=menor-preco&precoMin=200")
+    expect(filter.value).toEqual({ min: 100, max: 200 })
+  })
+
+  it("carries every other filter through the min/max form, never the price or the page", async () => {
+    arrange()
+    const place = (await placeOf("loja", "busca", { q: "whey", precoMin: "10", opcao: "Sabor:Uva", pagina: "2" }))!
+
+    const filter = priceFilterOf(place, priced(1000, 50000), routes, "pt-BR")!
+
+    expect(filter.action).toBe("/loja/busca")
+    expect(filter.fields).toEqual([
+      ["q", "whey"],
+      ["opcao", "Sabor:Uva"],
+    ])
+  })
+
+  it("draws nothing on a shelf with no price and no price filter", async () => {
+    arrange()
+    const empty = { facets: { price: null } } as unknown as Pick<StorefrontCatalog, "facets">
+
+    expect(priceFilterOf((await placeOf("loja", "produtos", {}))!, empty, routes, "pt-BR")).toBeNull()
+  })
+})
+
+describe("filterCountOf", () => {
+  it("counts the price range once, the discount, each option value and a narrowing category — never the order", () => {
+    expect(filterCountOf({ filters: { sort: "menor-preco" }, scope: undefined })).toBe(0)
+    expect(filterCountOf({ filters: { priceMin: 10, priceMax: 50, options: ["Sabor:Uva"] }, scope: undefined })).toBe(2)
+    expect(filterCountOf({ filters: { discount: true, options: ["Sabor:Uva", "Peso:300 g"] }, scope: "whey" })).toBe(4)
   })
 })

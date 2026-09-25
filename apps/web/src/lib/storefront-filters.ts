@@ -1,7 +1,10 @@
 // Types
 import type { StorefrontCatalog } from "@harness-monorepo/contracts"
 import type { StorefrontCategoryFilterProps } from "@harness-monorepo/ui/blocks/storefront/storefront-category-filter"
+import type { StorefrontDiscountFilterProps } from "@harness-monorepo/ui/blocks/storefront/storefront-discount-filter"
 import type { StorefrontFilterChip } from "@harness-monorepo/ui/blocks/storefront/storefront-filter-column"
+import type { StorefrontFilterValue } from "@harness-monorepo/ui/blocks/storefront/storefront-option-filter"
+import type { StorefrontPriceFilterProps } from "@harness-monorepo/ui/blocks/storefront/storefront-price-filter"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
@@ -45,6 +48,16 @@ export function filterChipsOf(place: SectionPlace, routes: StorefrontRoutes, loc
   }
 
   return chips
+}
+
+/**
+ * How many filters narrow the shelf: the price range, the discount, each option value, and the
+ * category a catalogue or a search is narrowed to. The order is not one: it rearranges, it hides
+ * nothing. Three or more make a combination worth no search result of its own.
+ */
+export function filterCountOf({ filters, scope }: Pick<SectionPlace, "filters" | "scope">): number {
+  const price = filters.priceMin !== undefined || filters.priceMax !== undefined ? 1 : 0
+  return price + (filters.discount ? 1 : 0) + (filters.options?.length ?? 0) + (scope ? 1 : 0)
 }
 
 /** The shelf with every chip taken off: the order, the term and a search's category stay. */
@@ -105,5 +118,127 @@ export function categoryFilterOf(
 
         return { slug: entry.slug, label: entry.name, href, count: countOf(entry.slug), selected }
       }),
+  }
+}
+
+/**
+ * One group per option on the shelf, each value a link to the shelf with it toggled. A value with
+ * nothing under the other filters is left out, unless it is the one chosen — a filter in force
+ * has to stay visible to be taken off.
+ */
+export function optionFiltersOf(
+  place: SectionPlace,
+  catalogue: Pick<StorefrontCatalog, "facets">,
+  routes: StorefrontRoutes,
+): { title: string; values: StorefrontFilterValue[] }[] {
+  const { filters } = place
+  // The address may spell a value differently from the facet ("sabor:uva"); toggle what it holds.
+  const held = (key: string) => (filters.options ?? []).find((entry) => entry.toLocaleLowerCase() === key.toLocaleLowerCase())
+
+  return catalogue.facets.options
+    .map((option) => ({
+      title: option.name,
+      values: option.values
+        .filter((entry) => entry.available || entry.selected)
+        .map((entry) => {
+          const key = `${option.name}:${entry.value}`
+          const inForce = held(key)
+
+          return {
+            value: entry.value,
+            label: entry.label,
+            href: shelfWith(place, routes, toggledOption(filters, inForce ?? key)),
+            count: entry.count,
+            selected: entry.selected || inForce !== undefined,
+            colorHex: entry.colorHex,
+          }
+        }),
+    }))
+    .filter((group) => group.values.length)
+}
+
+/** The "Desconto" group: on sale at all, then each minimum cut the shelf offers, one at a time. */
+export function discountFilterOf(
+  place: SectionPlace,
+  catalogue: Pick<StorefrontCatalog, "facets">,
+  routes: StorefrontRoutes,
+): Pick<StorefrontDiscountFilterProps, "onSale" | "ranges"> {
+  const { filters } = place
+  const { discount } = catalogue.facets
+  const off = { ...filters, discount: undefined, discountMinPercent: undefined }
+  const onSaleOnly = Boolean(filters.discount && !filters.discountMinPercent)
+
+  return {
+    onSale:
+      discount.count > 0 || onSaleOnly
+        ? { href: shelfWith(place, routes, onSaleOnly ? off : { ...off, discount: true }), count: discount.count, selected: onSaleOnly }
+        : null,
+    ranges: discount.ranges
+      .filter((range) => range.count > 0 || filters.discountMinPercent === range.minPercent)
+      .map((range) => {
+        const selected = filters.discountMinPercent === range.minPercent
+
+        return {
+          percent: range.minPercent,
+          href: shelfWith(place, routes, selected ? off : { ...off, discount: true, discountMinPercent: range.minPercent }),
+          count: range.count,
+          selected,
+        }
+      }),
+  }
+}
+
+/** 5a's quick ranges, whole reais; an open end is undefined. The API does not count by range. */
+const PRICE_RANGES: readonly (readonly [number | undefined, number | undefined])[] = [
+  [undefined, 50],
+  [50, 100],
+  [100, 200],
+  [200, undefined],
+]
+
+/**
+ * The "Preço" group: the quick ranges that fall inside what the shelf costs, the slider's ends, and
+ * the min/max form — the shelf's own address with every other filter as a hidden field. Null on a
+ * shelf with no price to narrow and no price filter in force.
+ */
+export function priceFilterOf(
+  place: SectionPlace,
+  catalogue: Pick<StorefrontCatalog, "facets">,
+  routes: StorefrontRoutes,
+  locale: string,
+): Omit<StorefrontPriceFilterProps, "locale" | "linkComponent" | "messages"> | null {
+  const text = place.messages.storefront
+  const { filters } = place
+  const { price } = catalogue.facets
+  const money = new Intl.NumberFormat(locale, { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
+  const bounds = price ? { min: Math.floor(price.minCents / 100), max: Math.ceil(price.maxCents / 100) } : null
+  const priceless = { ...filters, priceMin: undefined, priceMax: undefined }
+
+  if (!bounds && filters.priceMin === undefined && filters.priceMax === undefined) return null
+
+  const ranges = PRICE_RANGES.filter(([low, high]) => !bounds || ((low ?? 0) <= bounds.max && (high ?? Number.POSITIVE_INFINITY) >= bounds.min)).map(
+    ([low, high]) => {
+      const selected = filters.priceMin === low && filters.priceMax === high
+      const label =
+        low === undefined
+          ? format(text.filterPriceUpTo, { max: money.format(high ?? 0) })
+          : high === undefined
+            ? format(text.filterPriceAbove, { min: money.format(low) })
+            : format(text.filterPriceBetween, { min: money.format(low), max: money.format(high) })
+
+      return { label, selected, href: shelfWith(place, routes, selected ? priceless : { ...priceless, priceMin: low, priceMax: high }) }
+    },
+  )
+  const form = new URL(shelfWith(place, routes, priceless), "http://shop.invalid")
+
+  return {
+    ranges,
+    bounds,
+    action: form.pathname,
+    fields: [...form.searchParams.entries()],
+    value: {
+      ...(filters.priceMin !== undefined ? { min: filters.priceMin } : {}),
+      ...(filters.priceMax !== undefined ? { max: filters.priceMax } : {}),
+    },
   }
 }
