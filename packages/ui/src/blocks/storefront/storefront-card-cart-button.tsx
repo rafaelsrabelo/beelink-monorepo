@@ -56,7 +56,8 @@ export function StorefrontCardCartButton({ name, hasOptions, onAdd, messages = d
           onAdd()
           setAdded(true)
         }}
-        className={cn(PILL, "bg-shop-primary text-shop-on-primary transition-opacity hover:opacity-90")}
+        // Takes the pointer back from the card's action layer, which lets every other press through.
+        className={cn(PILL, "pointer-events-auto bg-shop-primary text-shop-on-primary transition-opacity hover:opacity-90")}
       >
         {added ? <CheckIcon aria-hidden="true" className="size-4" /> : null}
         {added ? text.addedToCart : text.addToCart}

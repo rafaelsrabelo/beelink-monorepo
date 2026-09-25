@@ -50,6 +50,16 @@ export function filterChipsOf(place: SectionPlace, routes: StorefrontRoutes, loc
   return chips
 }
 
+/**
+ * How many filters narrow the shelf: the price range, the discount, each option value, and the
+ * category a catalogue or a search is narrowed to. The order is not one: it rearranges, it hides
+ * nothing. Three or more make a combination worth no search result of its own.
+ */
+export function filterCountOf({ filters, scope }: Pick<SectionPlace, "filters" | "scope">): number {
+  const price = filters.priceMin !== undefined || filters.priceMax !== undefined ? 1 : 0
+  return price + (filters.discount ? 1 : 0) + (filters.options?.length ?? 0) + (scope ? 1 : 0)
+}
+
 /** The shelf with every chip taken off: the order, the term and a search's category stay. */
 export function clearFiltersHrefOf(place: SectionPlace, routes: StorefrontRoutes): string {
   return shelfWith(place, routes, place.filters.sort ? { sort: place.filters.sort } : {})
