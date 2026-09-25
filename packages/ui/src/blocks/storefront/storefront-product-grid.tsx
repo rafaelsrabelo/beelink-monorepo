@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
@@ -16,6 +19,8 @@ export interface StorefrontProductGridProps {
   products: readonly StorefrontProduct[]
   /** Built by the screen: a block never knows that a product lives under `/<shop>/<word>/<slug>`. */
   productHref: (productSlug: string) => string
+  /** What each card offers under its price — the web\'s "Adicionar ao carrinho". */
+  cardAction?: (product: StorefrontProduct) => ReactNode
   locale: string
   title: string
   label?: string
@@ -51,6 +56,7 @@ const COLUMNS: Record<StorefrontGridColumns, string> = {
 export function StorefrontProductGrid({
   products,
   productHref,
+  cardAction,
   locale,
   title,
   label,
@@ -73,7 +79,7 @@ export function StorefrontProductGrid({
         messages={messages}
       />
 
-      <ul className={cn("grid gap-3", COLUMNS[columns])}>
+      <ul className={cn("grid gap-4", COLUMNS[columns])}>
         {products.map((product) => (
           <li key={product.id}>
             <StorefrontProductCard
@@ -82,6 +88,7 @@ export function StorefrontProductGrid({
               locale={locale}
               showPrice={showPrice}
               showBadge={showBadge}
+              action={cardAction?.(product)}
               linkComponent={Link}
               messages={messages}
             />

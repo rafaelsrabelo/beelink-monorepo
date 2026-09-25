@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 
 // App
 import { DesignScreen } from "@/components/design/design-screen"
+import { figtree, shopFontStyle } from "@/components/storefront/shop-font"
 import { getMessages } from "@/lib/locale"
 import { categoriesAt, shopAt } from "@/lib/storefront-data"
 
@@ -28,14 +29,18 @@ export default async function DesignPage({ params }: PageProps<"/admin/[slug]/de
   const categories = store.type === "INSTITUTIONAL" ? [] : await categoriesAt(slug)
 
   return (
-    <DesignScreen
-      store={store}
-      categories={categories}
-      // From the server, never `new Date()` inside a component: the clock differs between the two
-      // renders on the thirty-first of December and hydration says so out loud.
-      year={new Date().getFullYear()}
-      messages={ui}
-      web={web}
-    />
+    // The preview draws the shop in the shop's typeface, as the storefront's layout does; the
+    // panel around it stays in its own.
+    <div className={figtree.variable} style={shopFontStyle}>
+      <DesignScreen
+        store={store}
+        categories={categories}
+        // From the server, never `new Date()` inside a component: the clock differs between the two
+        // renders on the thirty-first of December and hydration says so out loud.
+        year={new Date().getFullYear()}
+        messages={ui}
+        web={web}
+      />
+    </div>
   )
 }

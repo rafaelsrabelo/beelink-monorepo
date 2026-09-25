@@ -137,8 +137,39 @@ export function plainTextOf(markdown: string): string {
     .trim()
 }
 
-/** The first list's items as words — the "about this item" bullets, until a field of their own exists. */
-export function firstListOf(markdown: string): string[] {
-  const list = parseMarkdown(markdown).find((block) => block.kind === "list")
-  return list ? list.items.map(inlineText) : []
+function isBulleted(block: MarkdownBlock): boolean {
+  return block.kind === "list" && !block.ordered
+}
+
+/**
+ * The first bulleted list's items, each keeping its marks — the "Sobre este item" bullets, until a
+ * field of their own exists. A numbered list is steps, not highlights, and is left where it is.
+ */
+export function firstListOf(markdown: string): MarkdownInline[][] {
+  const list = parseMarkdown(markdown).find(isBulleted)
+  return list?.kind === "list" ? list.items : []
+}
+
+/**
+ * A one-line paragraph that only introduces the list after it — "**Destaques do produto:**", or
+ * "🥛 **Destaques do produto**": it ends in a colon, or is bold and nothing else but symbols.
+ */
+function isLeadIn(block: MarkdownBlock | undefined): boolean {
+  if (block?.kind !== "paragraph" || block.lines.length !== 1) return false
+  const line = block.lines[0] as MarkdownInline[]
+  const onlyBold = line.some((node) => node.kind === "strong") && line.every((node) => node.kind === "strong" || (node.kind === "text" && !/[\p{L}\p{N}]/u.test(node.text)))
+  return onlyBold || inlineText(line).trim().endsWith(":")
+}
+
+/**
+ * Every block but that first bulleted list, and the line that introduced it: the description, once
+ * "Sobre este item" has drawn the list under a heading of its own. Left behind, "Destaques do
+ * produto:" would head nothing.
+ */
+export function withoutFirstList(markdown: string): MarkdownBlock[] {
+  const blocks = parseMarkdown(markdown)
+  const at = blocks.findIndex(isBulleted)
+  if (at === -1) return blocks
+  const from = isLeadIn(blocks[at - 1]) ? at - 1 : at
+  return [...blocks.slice(0, from), ...blocks.slice(at + 1)]
 }
