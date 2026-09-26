@@ -119,6 +119,17 @@ describe("the new order's products", () => {
     await userEvent.click(screen.getByRole("button", { name: "Remover Coqueteleira" }))
     expect(onRemove).toHaveBeenCalledWith("v3")
   })
+
+  it("says how many are left on a line asking for more, and nothing on one within the stock or not counted", () => {
+    const counted = [
+      { ...lines[0]!, quantity: 5, available: 3 },
+      { ...lines[1]!, variantId: "v4", quantity: 2, available: null },
+    ]
+    render(<OrderLines lines={counted} onQuantityChange={vi.fn()} onRemove={vi.fn()} money={money} />)
+
+    expect(screen.getByText("Só há 3 em estoque")).toBeInTheDocument()
+    expect(screen.queryByText("Sem estoque")).not.toBeInTheDocument()
+  })
 })
 
 describe("the new order's form, as a keyboard meets it", () => {

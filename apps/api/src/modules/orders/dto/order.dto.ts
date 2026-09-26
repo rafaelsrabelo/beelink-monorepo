@@ -163,6 +163,12 @@ export class ListOrdersDto implements OrderListQuery {
   @MaxLength(120)
   q?: string;
 
+  @ApiPropertyOptional({ format: 'uuid', description: "One customer's orders only; another shop's customer finds none." })
+  @IsOptional()
+  @IsUUID()
+  @lowerCase
+  customerId?: string;
+
   // `@Type(() => Number)` and not the pipe's implicit conversion — apps/api/AGENTS.md, rule 6.
   @ApiPropertyOptional({ minimum: 1, maximum: ORDERS_PAGE_MAX, default: 1 })
   @IsOptional()

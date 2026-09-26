@@ -13,6 +13,7 @@ const meta = {
     backHref: "#",
     addressLine: "Av. Paulista, 1000 — Bela Vista, São Paulo/SP — 01310-930",
     whatsappHref: "https://wa.me/5511988887777",
+    customerHref: "#ficha-do-cliente",
     onStatusChange: () => {},
   },
   // The page lays itself out by the panel's main column, which the shell declares.

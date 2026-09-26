@@ -294,6 +294,11 @@ export interface UiMessages {
     accountState: string
     accountSave: string
     accountSaved: string
+    /**
+     * The phone refused because the shop already has it on another record — most likely one the
+     * shopkeeper made from a WhatsApp sale. Says to talk to the shop, who can merge the two.
+     */
+    accountPhoneTaken: string
     /** The product page (5b). `{name}` — the shop, over the title. */
     visitShop: string
     /** The buy column's landmark name. */
@@ -766,6 +771,8 @@ export interface UiMessages {
     inactiveFor: string
     /** Beside an e-mail its owner never confirmed. */
     unverified: string
+    /** Beside the stage: another record of the shop may be the same person. */
+    possibleDuplicate: string
     /** The accessible name of a row's link: "Abrir a ficha de {name}". */
     open: string
     /** A card's line: "{count} pedidos", its singular, and none. */
@@ -801,6 +808,70 @@ export interface UiMessages {
       CUSTOMER: string
       /** "Faz tempo que você não passa aqui". */
       INACTIVE: string
+    }
+    /** A customer's record: who they are, their numbers, their orders, and the way to correct them. */
+    record: {
+      /** The way back to the list. */
+      back: string
+      /** Under the name: "Na loja desde {date}". */
+      since: string
+      newOrder: string
+      numbers: string
+      orders: string
+      spent: string
+      /** Total spent over the valid orders. */
+      averageTicket: string
+      firstOrder: string
+      lastOrder: string
+      daysSince: string
+      details: string
+      name: string
+      email: string
+      emailVerified: string
+      emailUnverified: string
+      /** A customer the shop registered, who has no account and so no e-mail. */
+      noEmail: string
+      /** Under the e-mail while editing: why it is not a field. */
+      emailFixed: string
+      phone: string
+      noPhone: string
+      address: string
+      noAddress: string
+      edit: string
+      save: string
+      saving: string
+      cancel: string
+      saved: string
+      history: string
+      historyEmpty: string
+      historyEmptyHint: string
+      /** The accessible name of a history row's link: "Abrir o pedido #{number}". */
+      openOrder: string
+      /** The shop's other records that may be this person, and the way to make the two one. */
+      duplicates: {
+        title: string
+        lead: string
+        /** Why each is listed: the refused phone, or the name. */
+        reasons: { PHONE: string; NAME: string }
+        /** In place of the e-mail, for a record the shop registered. */
+        noAccount: string
+        /** The button, and its accessible name: "Juntar com {name}". */
+        merge: string
+        mergeLabel: string
+        /** The dialog's title: "Juntar com {name}?". */
+        confirmTitle: string
+        /** This record is kept and `{name}`'s goes. */
+        confirmHere: string
+        /** `{name}` has the account: it is kept, and this record goes. */
+        confirmThere: string
+        /** What else moves, and that it is for good. */
+        confirmFill: string
+        confirm: string
+        merging: string
+        cancel: string
+        /** Said on the record kept, once the two are one. */
+        merged: string
+      }
     }
   }
   /** The panel's orders: the list, and later the order and its form. */
@@ -874,6 +945,8 @@ export interface UiMessages {
       productChoose: string
       variantAdd: string
       outOfStock: string
+      /** A line past what is left: "Só há {count} em estoque". */
+      onlyLeft: string
       linesEmpty: string
       linesTitle: string
       lineAdded: string
@@ -900,6 +973,8 @@ export interface UiMessages {
       invalidMoney: string
       missingCustomer: string
       missingItems: string
+      /** Said under the lines while one asks for more than the shop has. */
+      overStock: string
       missingPayment: string
       placedAtInvalid: string
       save: string

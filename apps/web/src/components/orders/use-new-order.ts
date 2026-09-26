@@ -15,13 +15,14 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
-import { ORDER_QUANTITY_MAX, orderTotalsOf } from "@harness-monorepo/ui/lib/order-form"
+import { ORDER_QUANTITY_MAX, orderTotalsOf, overStock } from "@harness-monorepo/ui/lib/order-form"
 
 // App
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { catalogKeys, useProduct, useProducts } from "@/services/catalog/catalog-hooks"
 import { fetchProduct } from "@/services/catalog/catalog-requests"
 import { useCreateOrder } from "@/services/orders/order-hooks"
+import { shortagesOf } from "@/services/orders/order-requests"
 import { moneyOf, orderPayloadOf, productOptionOf, variantOptionsOf } from "./new-order-mapping"
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -72,7 +73,7 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
         ? current.map((line) => (line.variantId === variant.id ? { ...line, quantity: Math.min(line.quantity + 1, ORDER_QUANTITY_MAX) } : line))
         : [
             ...current,
-            { variantId: variant.id, productName: product.name, variantLabel: variant.label, unitPriceCents: variant.priceCents, quantity: 1, outOfStock: variant.outOfStock },
+            { variantId: variant.id, productName: product.name, variantLabel: variant.label, unitPriceCents: variant.priceCents, quantity: 1, available: variant.available },
           ],
     )
   }
@@ -106,6 +107,7 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   if (today && placedOn > today) issues.placedOn = text.placedAtInvalid
   if (!customer) issues.customer = text.missingCustomer
   if (!lines.length) issues.lines = text.missingItems
+  else if (lines.some(overStock)) issues.lines = text.overStock
 
   /** Whether the order went out. A save under way, or one that already landed, is not sent twice. */
   function submit(): boolean {
@@ -114,7 +116,14 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     if (Object.keys(issues).length || typeof totals === "string" || !customer || !details.paymentMethod) return false
 
     const payload = orderPayloadOf({ customerId: customer.id, lines, details: { ...details, placedOn }, paymentMethod: details.paymentMethod, totals, today })
-    save.mutate(payload, { onSuccess: (order) => router.push(`/admin/${slug}/orders/${order.number}` as Parameters<typeof router.push>[0]) })
+    save.mutate(payload, {
+      onSuccess: (order) => router.push(`/admin/${slug}/orders/${order.number}` as Parameters<typeof router.push>[0]),
+      // The stock moved since the products were read: each short line learns how many are left, and says so.
+      onError: (error) => {
+        const left = new Map(shortagesOf(error).map((shortage) => [shortage.variantId, shortage.available]))
+        if (left.size) setLines((current) => current.map((line) => (left.has(line.variantId) ? { ...line, available: left.get(line.variantId)! } : line)))
+      },
+    })
     return true
   }
 
