@@ -279,3 +279,24 @@ A linha é do computador: um bloco guardado para o celular não ocupa espaço ne
 - Imagens de uma capa só no computador ainda são baixadas no celular (o `hidden` do CSS não impede o
   download).
 - Uma faixa com nome, só no computador, continua no menu do site no celular.
+
+## PR 3 — depois da revisão
+
+*Acrescentado em 2026-09-25.*
+
+- Duplicar recusa com campos não salvos no painel aberto, como as setas: a cópia sai do que está
+  gravado e vira a escolha, então o que foi digitado se perderia.
+- Uma cópia por vez: um segundo clique no mesmo instante ou o Ctrl+D segurado não fazem outra.
+- A recusa aparece também embaixo da barra, não só na região de status.
+- A cópia da faixa só casa os blocos um a um quando as listas batem. Se não batem, ela aparece como o
+  servidor a fez. A API desempata a ordem dos blocos pelo id.
+
+## PR 4 — depois da revisão
+
+*Acrescentado em 2026-09-25.*
+
+- O "+" do pé da faixa conta a linha do computador, como a prévia, e não conta um bloco guardado para
+  o celular.
+- "Pôr ao lado de…" não é oferecido para um bloco só do celular. Ele apertaria a linha do computador
+  por um bloco que ali não aparece.
+- Os testes do espaçamento agora separam o cálculo por tela do cálculo único.

@@ -1,5 +1,6 @@
 // Types
 import type { ComponentItem, ComponentKind, Section, StoreComponent } from '@harness-monorepo/contracts';
+import type { Prisma } from '../../generated/prisma/client.js';
 import type { StoreComponentModel, StoreSectionModel } from '../../generated/prisma/models.js';
 
 // App
@@ -15,8 +16,9 @@ import { parseComponentItems } from './component-items.schema.js';
 export type SectionRow = StoreSectionModel & { components: StoreComponentModel[] };
 
 export const sectionInclude = {
-  components: { orderBy: { position: 'asc' } },
-} as const;
+  // The id breaks a tie, as in every other ordered read here: a copy is paired with its original by place.
+  components: { orderBy: [{ position: 'asc' }, { id: 'asc' }] },
+} satisfies Prisma.StoreSectionInclude;
 
 /**
  * What the database gave back for `items`, narrowed to what the wire declares.

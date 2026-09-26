@@ -314,3 +314,18 @@ describe("BandArrangement — a block kept for one screen", () => {
     expect(screen.getByText("Parágrafo · Metade · Só no computador")).toBeInTheDocument()
   })
 })
+
+describe("BandArrangement — Pôr ao lado for a block kept for the phone", () => {
+  // Beside is the computer's row: a block that is not drawn there would only squeeze the one above.
+  it("does not offer to put a phone-only block beside the band above", () => {
+    renderBands({
+      onJoinAbove: vi.fn(),
+      bands: [
+        { id: "up", background: null, isActive: true, components: [{ id: "u", kind: "BANNER", title: "Capa", span: "FULL", isActive: true }] },
+        { id: "down", background: null, isActive: true, components: [{ id: "d", kind: "BANNER", title: "Só celular", span: "FULL", isActive: true, visibleOn: "PHONE" }] },
+      ],
+    })
+
+    expect(screen.queryByRole("button", { name: /Pôr ao lado de/ })).not.toBeInTheDocument()
+  })
+})

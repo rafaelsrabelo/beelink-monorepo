@@ -65,8 +65,10 @@ export function useBlockInsert(
       const { sectionId, index } = insertAt
       const components = rows.find((row) => row.id === sectionId)?.components ?? []
       // At the band's foot a block takes the room its last drawn row has left, so it lands beside and
-      // not under — counted over what the grid draws, not the hidden blocks and the strip.
-      const drawn = components.filter((component) => component.isActive && component.kind !== "ANNOUNCEMENT")
+      // not under — counted over what the computer's grid draws, as `drawnOf` and the preview's slot do.
+      const drawn = components.filter(
+        (component) => component.isActive && component.kind !== "ANNOUNCEMENT" && component.visibleOn !== "PHONE",
+      )
       const span = index >= components.length ? footSpanOf(drawn.map((component) => component.span)) : "FULL"
       addToBand.mutate({ sectionId, payload: { kind, position: placeIn(sectionId, index), span } }, { onSuccess: onCreated })
     } else if (insertAt?.level === "beside") {

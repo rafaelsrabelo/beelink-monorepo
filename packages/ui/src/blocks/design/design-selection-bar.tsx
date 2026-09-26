@@ -44,6 +44,8 @@ export interface DesignSelectionBarProps {
   onToggleHidden: () => void
   /** Absent where nothing may be deleted — the shop's last list of products. */
   onDelete?: () => void
+  /** Why the last action here was refused, shown under the bar: the status line is heard, not seen. */
+  error?: string
   /** The node the editor's keys walk from, so ↑↓ and Alt+↑↓ work from the bar too. */
   nodeId?: string
   className?: string
@@ -84,6 +86,7 @@ export function DesignSelectionBar({
   hidden = false,
   onToggleHidden,
   onDelete,
+  error,
   nodeId,
   className,
   messages = defaultMessages,
@@ -110,114 +113,121 @@ export function DesignSelectionBar({
   }
 
   return (
-    <div
-      ref={bar}
-      role="toolbar"
-      aria-label={format(text.label, { name: label })}
-      aria-orientation="horizontal"
-      {...(nodeId ? { "data-design-node": nodeId } : {})}
-      onKeyDown={onKeyDown}
-      // Its clicks are its own: the block's cover under it opens the fields, and must not open them again.
-      onClick={(event) => event.stopPropagation()}
-      className={cn("bg-background/95 text-foreground flex items-center gap-0.5 rounded-full border p-1 shadow-md backdrop-blur", className)}
-    >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={format(text.moveUp, { name: label })}
-        title={`${format(text.moveUp, { name: label })} (Alt+↑)`}
-        aria-keyshortcuts={SHORTCUT.up}
-        disabled={!canMoveUp}
-        onClick={onMoveUp}
+    <div className="flex flex-col items-end gap-1">
+      <div
+        ref={bar}
+        role="toolbar"
+        aria-label={format(text.label, { name: label })}
+        aria-orientation="horizontal"
+        {...(nodeId ? { "data-design-node": nodeId } : {})}
+        onKeyDown={onKeyDown}
+        // Its clicks are its own: the block's cover under it opens the fields, and must not open them again.
+        onClick={(event) => event.stopPropagation()}
+        className={cn("bg-background/95 text-foreground flex items-center gap-0.5 rounded-full border p-1 shadow-md backdrop-blur", className)}
       >
-        <ArrowUpIcon aria-hidden="true" />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={format(text.moveDown, { name: label })}
-        title={`${format(text.moveDown, { name: label })} (Alt+↓)`}
-        aria-keyshortcuts={SHORTCUT.down}
-        disabled={!canMoveDown}
-        onClick={onMoveDown}
-      >
-        <ArrowDownIcon aria-hidden="true" />
-      </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={format(text.moveUp, { name: label })}
+          title={`${format(text.moveUp, { name: label })} (Alt+↑)`}
+          aria-keyshortcuts={SHORTCUT.up}
+          disabled={!canMoveUp}
+          onClick={onMoveUp}
+        >
+          <ArrowUpIcon aria-hidden="true" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={format(text.moveDown, { name: label })}
+          title={`${format(text.moveDown, { name: label })} (Alt+↓)`}
+          aria-keyshortcuts={SHORTCUT.down}
+          disabled={!canMoveDown}
+          onClick={onMoveDown}
+        >
+          <ArrowDownIcon aria-hidden="true" />
+        </Button>
 
-      {layouts && layouts.length > 1 && onLayout ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={format(text.layout, { name: label })}
-                title={format(text.layout, { name: label })}
-              />
-            }
-          >
-            <LayoutGridIcon aria-hidden="true" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuRadioGroup
-              value={layout ?? undefined}
-              onValueChange={(next: unknown) => {
-                const chosen = layouts.find((option) => option === next)
-                if (chosen) onLayout(chosen)
-              }}
+        {layouts && layouts.length > 1 && onLayout ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={format(text.layout, { name: label })}
+                  title={format(text.layout, { name: label })}
+                />
+              }
             >
-              {layouts.map((option) => (
-                // Picked is done: the block shows it in its new format behind the closed menu.
-                <DropdownMenuRadioItem key={option} value={option} closeOnClick>
-                  {names[option]}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
+              <LayoutGridIcon aria-hidden="true" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuRadioGroup
+                value={layout ?? undefined}
+                onValueChange={(next: unknown) => {
+                  const chosen = layouts.find((option) => option === next)
+                  if (chosen) onLayout(chosen)
+                }}
+              >
+                {layouts.map((option) => (
+                  // Picked is done: the block shows it in its new format behind the closed menu.
+                  <DropdownMenuRadioItem key={option} value={option} closeOnClick>
+                    {names[option]}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
 
-      {onDuplicate ? (
+        {onDuplicate ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={format(text.duplicate, { name: label })}
+            title={`${format(text.duplicate, { name: label })} (Ctrl+D)`}
+            aria-keyshortcuts={SHORTCUT.duplicate}
+            disabled={duplicating}
+            onClick={onDuplicate}
+          >
+            <CopyPlusIcon aria-hidden="true" />
+          </Button>
+        ) : null}
+
         <Button
           type="button"
           variant="ghost"
           size="icon-sm"
-          aria-label={format(text.duplicate, { name: label })}
-          title={`${format(text.duplicate, { name: label })} (Ctrl+D)`}
-          aria-keyshortcuts={SHORTCUT.duplicate}
-          disabled={duplicating}
-          onClick={onDuplicate}
+          aria-label={format(hidden ? text.show : text.hide, { name: label })}
+          title={format(hidden ? text.show : text.hide, { name: label })}
+          onClick={onToggleHidden}
         >
-          <CopyPlusIcon aria-hidden="true" />
+          {hidden ? <EyeIcon aria-hidden="true" /> : <EyeOffIcon aria-hidden="true" />}
         </Button>
-      ) : null}
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={format(hidden ? text.show : text.hide, { name: label })}
-        title={format(hidden ? text.show : text.hide, { name: label })}
-        onClick={onToggleHidden}
-      >
-        {hidden ? <EyeIcon aria-hidden="true" /> : <EyeOffIcon aria-hidden="true" />}
-      </Button>
-      {onDelete ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={format(text.delete, { name: label })}
-          title={`${format(text.delete, { name: label })} (Delete)`}
-          aria-keyshortcuts={SHORTCUT.delete}
-          className="text-destructive hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2Icon aria-hidden="true" />
-        </Button>
+        {onDelete ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={format(text.delete, { name: label })}
+            title={`${format(text.delete, { name: label })} (Delete)`}
+            aria-keyshortcuts={SHORTCUT.delete}
+            className="text-destructive hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2Icon aria-hidden="true" />
+          </Button>
+        ) : null}
+      </div>
+      {error ? (
+        <p role="alert" className="bg-background text-destructive border-destructive/40 max-w-64 rounded-md border px-2 py-1 text-xs shadow-sm">
+          {error}
+        </p>
       ) : null}
     </div>
   )

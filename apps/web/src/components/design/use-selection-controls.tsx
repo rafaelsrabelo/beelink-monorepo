@@ -16,17 +16,15 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { WebMessages } from "@/locales"
-import { useDuplicateComponent, useDuplicateSection } from "@/services/page/page-hooks"
 import { useDesignEdit } from "@/stores/design-edit"
 import { displayOf } from "./component-layout"
 import type { PendingDelete } from "./design-delete-confirm"
 import { labelOf, type SectionDraft } from "./design-draft"
-import { withBandCopy, withBlockCopy } from "./design-draft-copy"
 import { focusBar, focusNode, regionOf } from "./design-focus"
 import { movedBy, neighbourOf, nodesOf, targetOf, type DesignSelection, type SelectionTarget } from "./design-selection"
 import { hasUnsaved } from "./live-edit"
-import { pageErrorCopy } from "./page-error-copy"
 import type { useDesignDraft } from "./use-design-draft"
+import { useDuplicate } from "./use-duplicate"
 
 export interface SelectionControlsInput {
   slug: string
@@ -63,9 +61,6 @@ export function useSelectionControls(input: SelectionControlsInput) {
   const { rows, saved, bands, target, draft, choose, messages } = input
   const text = messages.design.bar
   const [status, setStatus] = useState("")
-  const copyBand = useDuplicateSection(input.slug)
-  const copyBlock = useDuplicateComponent(input.slug)
-  const duplicating = copyBand.isPending || copyBlock.isPending
   // A stop ↑↓ chose that nothing on screen draws — a hidden block, the strip — to walk on from.
   const walked = useRef<{ from: string; to: string } | null>(null)
   // The same sentence twice is not read twice, so a repeat carries a trailing space.
@@ -131,40 +126,7 @@ export function useSelectionControls(input: SelectionControlsInput) {
     )
   }
 
-  /** The copy lands right after, shown as the original is, and becomes the selection. */
-  const duplicate = (of: SelectionTarget) => {
-    const facts = factsOf(of)
-    if (!facts?.copiable || duplicating) return
-    // The focus follows to the copy, in the part of the editor the owner pressed in.
-    const region = document.activeElement ? regionOf(document.activeElement) : null
-    const done = (key: string) => {
-      say(format(text.duplicated, { name: facts.name }))
-      focusNode(region, key)
-    }
-    const refused = (error: unknown) => say(pageErrorCopy(error, input.web) ?? "")
-
-    if (of.level === "block") {
-      copyBlock.mutate(of.id, {
-        onSuccess: (copy) => {
-          draft.edit((current) => withBlockCopy(current, copy, of.id))
-          choose({ level: "block", id: copy.id }, { openDrawer: false, takeFocus: false })
-          done(copy.id)
-        },
-        onError: refused,
-      })
-      return
-    }
-
-    copyBand.mutate(of.id, {
-      onSuccess: (copy) => {
-        draft.edit((current) => withBandCopy(current, saved, copy, of.id))
-        const twin = of.blockId ? copy.components[0] : undefined
-        choose(twin ? { level: "block", id: twin.id } : { level: "band", id: copy.id }, { openDrawer: false, takeFocus: false })
-        done(copy.id)
-      },
-      onError: refused,
-    })
-  }
+  const copies = useDuplicate({ ...input, factsOf, say })
 
   const setLayout = (blockId: string, display: ComponentDisplay) => {
     draft.patchComponent(blockId, { display })
@@ -181,7 +143,8 @@ export function useSelectionControls(input: SelectionControlsInput) {
     // Ctrl/⌘+D would bookmark the page: taken here, and only here, where the focus is on a stop.
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") {
       event.preventDefault()
-      return duplicate(of)
+      // A held chord repeats; each repeat would be one more hidden copy that Descartar leaves behind.
+      return event.repeat ? undefined : copies.duplicate(of)
     }
     if (event.ctrlKey || event.metaKey) return
 
@@ -217,6 +180,7 @@ export function useSelectionControls(input: SelectionControlsInput) {
   const facts = target ? factsOf(target) : null
   if (target && facts) {
     const layout = facts.layout
+    const refusal = copies.refusalFor(target.id)
     bar = (
       <DesignSelectionBar
         label={facts.name}
@@ -233,7 +197,8 @@ export function useSelectionControls(input: SelectionControlsInput) {
         {...(layout
           ? { layouts: layout.options, layout: layout.value, onLayout: (display: ComponentDisplay) => setLayout(layout.blockId, display) }
           : {})}
-        {...(facts.copiable ? { onDuplicate: () => duplicate(target), duplicating } : {})}
+        {...(facts.copiable ? { onDuplicate: () => copies.duplicate(target), duplicating: copies.duplicating } : {})}
+        {...(refusal ? { error: refusal } : {})}
         hidden={facts.hidden}
         onToggleHidden={() => toggleHidden(target)}
         {...(facts.deletable ? { onDelete: () => remove(target) } : {})}

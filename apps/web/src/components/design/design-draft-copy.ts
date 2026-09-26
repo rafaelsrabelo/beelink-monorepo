@@ -2,7 +2,7 @@
 import type { Section, StoreComponent } from "@harness-monorepo/contracts"
 
 // App
-import type { SectionDraft } from "./design-draft"
+import { toDraft, type SectionDraft } from "./design-draft"
 
 /*
   A duplicate arrives from the API hidden, so the shop does not change before Publicar. In the draft
@@ -28,15 +28,22 @@ export function withBandCopy(
   const held = saved.find((section) => section.id === originalId)
   if (!original || !held) return [...rows]
 
+  // Paired one for one only while the two lists agree: a band another tab changed before the copy
+  // was made would pair one block's layout with another's id. Then the copy shows as the server made it.
+  const pairs =
+    held.components.length === copy.components.length &&
+    held.components.every((component, index) => component.kind === copy.components[index]?.kind)
   const copyIdOf = new Map(held.components.map((component, index) => [component.id, copy.components[index]?.id]))
-  const twin: SectionDraft = {
-    id: copy.id,
-    isActive: original.isActive,
-    components: original.components.flatMap((component) => {
-      const id = copyIdOf.get(component.id)
-      return id ? [{ ...component, id }] : []
-    }),
-  }
+  const twin: SectionDraft = pairs
+    ? {
+        id: copy.id,
+        isActive: original.isActive,
+        components: original.components.flatMap((component) => {
+          const id = copyIdOf.get(component.id)
+          return id ? [{ ...component, id }] : []
+        }),
+      }
+    : { ...toDraft(copy), isActive: original.isActive }
 
   const rest = rows.filter((row) => row.id !== copy.id)
   const at = rest.findIndex((row) => row.id === originalId)
