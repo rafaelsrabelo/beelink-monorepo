@@ -2,7 +2,9 @@
 import { Module } from '@nestjs/common';
 
 // App
-import { ComponentsController, SectionsController } from './page.controller.js';
+import { ComponentsController } from './components.controller.js';
+import { SectionsController } from './page.controller.js';
+import { PageComponentMovesService } from './page-component-moves.service.js';
 import { PageComponentsService } from './page-components.service.js';
 import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
@@ -12,11 +14,12 @@ import { PageVersionsController } from './page-versions.controller.js';
 import { PageVersionsService } from './page-versions.service.js';
 import { PagesService } from './pages.service.js';
 import { ShowcaseRules } from './showcase.rules.js';
+import { FeaturedRules } from './featured.rules.js';
 import { StoresModule } from '../stores/stores.module.js';
 
 @Module({
   imports: [StoresModule],
   controllers: [SectionsController, ComponentsController, PagesController, PageVersionsController, PublicLandingsController],
-  providers: [PageService, PageComponentsService, PagesService, PageVersionsService, LandingReadService, PageRules, ShowcaseRules],
+  providers: [PageService, PageComponentsService, PageComponentMovesService, PagesService, PageVersionsService, LandingReadService, PageRules, ShowcaseRules, FeaturedRules],
 })
 export class PageModule {}

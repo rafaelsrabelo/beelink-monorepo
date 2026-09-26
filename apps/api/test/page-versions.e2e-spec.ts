@@ -111,6 +111,65 @@ describe('pages — the draft and its versions', () => {
     expect(JSON.stringify(await served())).not.toContain('Só no rascunho');
   });
 
+  // Acceptance: restoring the version before and publishing serves the shop exactly as it was.
+  it('restores a version into the draft without publishing it, and publishing it serves the shop as it was', async () => {
+    const before = await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' });
+    const first = (await draftOf(app, owner.accessToken, 'padaria-do-bairro')).published!;
+
+    const block = before.json<PublicStore>().sections.flatMap((section) => section.components)[0]!;
+    await call('PATCH', `/api/stores/padaria-do-bairro/components/${block.id}`, { title: 'Outra' });
+    await call('POST', '/api/stores/padaria-do-bairro/sections', { component: { kind: 'HEADING', title: 'Nova' } });
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const second = await served();
+
+    const home = (await draftOf(app, owner.accessToken, 'padaria-do-bairro')).page.id;
+    const restored = await call('POST', `/api/stores/padaria-do-bairro/pages/${home}/versions/${first.id}/restore`);
+    expect(restored.statusCode).toBe(200);
+    expect(restored.json<PageDraft>().hasUnpublishedChanges).toBe(true);
+    // Not published by the restore: the shop still serves the second version.
+    expect(await served()).toEqual(second);
+
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    expect((await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json()).toEqual(before.json());
+  });
+
+  it('has nothing to publish after restoring the version the shop serves', async () => {
+    const draft = await draftOf(app, owner.accessToken, 'padaria-do-bairro');
+    await call('POST', '/api/stores/padaria-do-bairro/sections', { component: { kind: 'HEADING', title: 'Rascunho' } });
+
+    const restored = (await call('POST', `/api/stores/padaria-do-bairro/pages/${draft.page.id}/versions/${draft.published!.id}/restore`)).json<PageDraft>();
+
+    expect(restored.hasUnpublishedChanges).toBe(false);
+    expect(restored.revision).toBe(draft.revision + 2);
+  });
+
+  it('refuses a version that is not this page’s', async () => {
+    const draft = await draftOf(app, owner.accessToken, 'padaria-do-bairro');
+    const response = await call('POST', `/api/stores/padaria-do-bairro/pages/${draft.page.id}/versions/0199f000-0000-7000-8000-00000000abcd/restore`);
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json<{ errorCode: string }>().errorCode).toBe('PAGE_VERSION_NOT_FOUND');
+  });
+
+  it('lists the versions newest first, the served one live', async () => {
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const home = (await draftOf(app, owner.accessToken, 'padaria-do-bairro')).page.id;
+
+    const versions = (await call('GET', `/api/stores/padaria-do-bairro/pages/${home}/versions`)).json<{ number: number; live: boolean }[]>();
+    expect(versions.map((version) => [version.number, version.live])).toEqual([
+      [2, true],
+      [1, false],
+    ]);
+  });
+
+  it('names what Publicar would serve that the owner may not mean: an empty showcase', async () => {
+    const home = (await draftOf(app, owner.accessToken, 'padaria-do-bairro')).page.id;
+
+    const problems = (await call('GET', `/api/stores/padaria-do-bairro/pages/${home}/problems`)).json<{ kind: string }[]>();
+    // A new shop has no product yet: its showcase draws nothing.
+    expect(problems.map((problem) => problem.kind)).toContain('SHOWCASE_EMPTY');
+  });
+
   // The migration froze every page as it was served; the SQL and `documentOf` must agree on what that is.
   it('freezes a page in the migration exactly as documentOf would', async () => {
     const prisma = app.get(PrismaService);

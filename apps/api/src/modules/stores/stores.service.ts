@@ -215,9 +215,7 @@ export class StoresService {
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
 
     const sections = homeSectionsOf(row);
-    const { slugs, shelves } = await lookupsOf(this.prisma, row.id, sections);
-
-    return toPublicStore(row, slugs, shelves, sections);
+    return toPublicStore(row, await lookupsOf(this.prisma, row.id, sections), sections);
   }
 
   /**

@@ -2,11 +2,11 @@
 import type {
   AnnouncementLink,
   BannerSlide,
-  ComponentKind,
-  PublicAnnouncementLink,
-  PublicBannerSlide,
+  CallToActionButton,
+  ImageTextMedia,
   PublicComponent,
   PublicComponentItem,
+  PublicFeaturedProduct,
   PublicProductCard,
   PublicSection,
   StorefrontRouteWords,
@@ -14,6 +14,8 @@ import type {
 import type { ComponentShape, SectionShape } from './page-document.js';
 
 // App
+import { hasEnded } from './page-countdown.js';
+import { NO_SLUGS, toPublicButton, toPublicLink, toPublicMedia, toPublicSlide, type SlugsByEntity } from './page-links.js';
 import { itemsOf } from './page.mapper.js';
 
 /*
@@ -21,25 +23,6 @@ import { itemsOf } from './page.mapper.js';
   the owner's mapper because the two had grown past one file; they read the same rows, which is what
   stops the storefront and the editor disagreeing about what a shop looks like.
 */
-
-/**
- * The slugs the slides point at, looked up once for the whole page.
- *
- * A slide keeps an id rather than an address, so that renaming a category moves the slide with it
- * — the promise a foreign key used to make. What it cannot have is the foreign key itself, because
- * `items` is JSON: there is no cascade, and no constraint stopping an id from outliving the row it
- * names.
- *
- * That turns out to be the better failure. A deleted category used to take the whole banner with
- * it; an id with nothing behind it resolves to null here and the slide stops being a link. The
- * picture stays on the page, which is what the shopkeeper put there.
- */
-export interface SlugsByEntity {
-  categories: ReadonlyMap<string, string>;
-  products: ReadonlyMap<string, string>;
-}
-
-export const NO_SLUGS: SlugsByEntity = { categories: new Map(), products: new Map() };
 
 /**
  * What one showcase draws, already chosen by its source: the products, as cards, and the category a
@@ -59,85 +42,46 @@ export type ShelvesByComponent = ReadonlyMap<string, Shelf>;
 
 export const NO_SHELVES: ShelvesByComponent = new Map();
 
-/** The kinds whose items point somewhere by id. */
-const POINTING: readonly ComponentKind[] = ['BANNER', 'ANNOUNCEMENT'];
-
-/** Every id every slide and the strip's link on this page name, so one query answers all of them. */
-export function slideTargetsOf(rows: readonly SectionShape[]): { categoryIds: string[]; productIds: string[] } {
-  const categoryIds = new Set<string>();
-  const productIds = new Set<string>();
-
-  for (const section of rows) {
-    for (const component of section.components) {
-      if (!POINTING.includes(component.kind)) continue;
-
-      for (const item of itemsOf(component.kind, component.items) as (BannerSlide | AnnouncementLink)[]) {
-        if (item.categoryId) categoryIds.add(item.categoryId);
-        if (item.productId) productIds.add(item.productId);
-      }
-    }
-  }
-
-  return { categoryIds: [...categoryIds], productIds: [...productIds] };
-}
-
 /**
- * The finished address, built here and not in the browser.
- *
- * This is the whole reason a slide stores an id instead of the `href` the first attempt stored:
- * the address is derived from the slug the target has **now**, so renaming a category moves every
- * slide pointing at it. The word for the product segment comes from the shop's own vocabulary,
- * never from a literal — the API's side of the rule the web keeps in one module.
+ * What a page's public read resolved besides its rows, looked up once for the whole page. One object
+ * rather than a parameter each, so a kind that resolves something new adds a field here and not an
+ * argument to every call site.
  */
-function hrefOf(
-  row: Pick<AnnouncementLink, 'target' | 'categoryId' | 'productId' | 'externalUrl'>,
-  shopSlug: string,
-  words: StorefrontRouteWords,
-  slugs: SlugsByEntity,
-): string | null {
-  const categorySlug = row.categoryId ? slugs.categories.get(row.categoryId) : undefined;
-  const productSlug = row.productId ? slugs.products.get(row.productId) : undefined;
-
-  return row.target === 'CATEGORY' && categorySlug
-    ? `/${shopSlug}/${categorySlug}`
-    : row.target === 'PRODUCT' && productSlug
-      ? `/${shopSlug}/${words.products}/${productSlug}`
-      : row.target === 'EXTERNAL'
-        ? (row.externalUrl ?? null)
-        : null;
+export interface PageLookups {
+  slugs: SlugsByEntity;
+  shelves: ShelvesByComponent;
+  /** Each featured product's card, by component id; absent where the product is not on sale. */
+  featured: ReadonlyMap<string, PublicFeaturedProduct>;
+  /** The moment the page is read, for a countdown to be left out once it has ended. Now, unless a test fixes it. */
+  now?: number;
 }
 
-/** One slide, with its address built from the slug its target has now. */
-function toPublicSlide(
-  slide: BannerSlide,
-  shopSlug: string,
-  words: StorefrontRouteWords,
-  slugs: SlugsByEntity,
-): PublicBannerSlide {
-  const href = hrefOf(slide, shopSlug, words, slugs);
+/** Nothing looked up: slides are pictures, showcases are empty and no product is featured — never a guess. */
+export const NO_LOOKUPS: PageLookups = { slugs: NO_SLUGS, shelves: NO_SHELVES, featured: new Map() };
 
-  return {
-    id: slide.id,
-    imageUrl: slide.imageUrl,
-    title: slide.title ?? null,
-    subtitle: slide.subtitle ?? null,
-    // Null rather than an empty string: the window reads it as "no link" and draws a poster. An
-    // empty href is a link to the current page, which is a card that looks live and does nothing.
-    href,
-    // On the wire rather than sniffed from the href downstream: a storefront deciding by looking
-    // for "http" would start opening the shop's own pages in a new tab the day these become
-    // absolute.
-    external: slide.target === 'EXTERNAL' && !!href,
-  } satisfies PublicBannerSlide;
+/** A block's items as a visitor is served them: resolved where they point by id, as written otherwise. */
+function publicItemsOf(row: ComponentShape, shopSlug: string, words: StorefrontRouteWords, lookups: PageLookups): PublicComponentItem[] {
+  switch (row.kind) {
+    case 'BANNER':
+      return (itemsOf(row.kind, row.items) as BannerSlide[]).map((slide) => toPublicSlide(slide, shopSlug, words, lookups.slugs));
+    case 'ANNOUNCEMENT':
+      return (itemsOf(row.kind, row.items) as AnnouncementLink[]).map((link) => toPublicLink(link, shopSlug, words, lookups.slugs));
+    case 'CALL_TO_ACTION':
+      return (itemsOf(row.kind, row.items) as CallToActionButton[]).map((button) => toPublicButton(button, shopSlug, words, lookups.slugs));
+    case 'IMAGE_TEXT':
+      return (itemsOf(row.kind, row.items) as ImageTextMedia[]).map((media) => toPublicMedia(media, shopSlug, words, lookups.slugs));
+    case 'PRODUCTS':
+      return lookups.shelves.get(row.id)?.products ?? [];
+    case 'FEATURED_PRODUCT': {
+      const card = lookups.featured.get(row.id);
+      return card ? [card] : [];
+    }
+    default:
+      return itemsOf(row.kind, row.items) as PublicComponentItem[];
+  }
 }
 
-function toPublicComponent(
-  row: ComponentShape,
-  shopSlug: string,
-  words: StorefrontRouteWords,
-  slugs: SlugsByEntity,
-  shelves: ShelvesByComponent,
-): PublicComponent {
+function toPublicComponent(row: ComponentShape, shopSlug: string, words: StorefrontRouteWords, lookups: PageLookups): PublicComponent {
   return {
     id: row.id,
     kind: row.kind,
@@ -147,23 +91,10 @@ function toPublicComponent(
     span: row.span,
     display: row.display,
     source: row.source,
-    sourceCategory: row.kind === 'PRODUCTS' ? (shelves.get(row.id)?.category ?? null) : null,
-    // A banner's slides and a showcase's products are resolved; every other kind's items are what the
-    // shopkeeper wrote. The ids never reach the wire: `PublicStore` is served to anyone who asks, and a
-    // uuid on it is a row's identity handed to a stranger for nothing.
-    items:
-      row.kind === 'BANNER'
-        ? (itemsOf(row.kind, row.items) as BannerSlide[]).map((slide) =>
-            toPublicSlide(slide, shopSlug, words, slugs),
-          )
-        : row.kind === 'ANNOUNCEMENT'
-          ? (itemsOf(row.kind, row.items) as AnnouncementLink[]).map((link) => {
-              const href = hrefOf(link, shopSlug, words, slugs);
-              return { id: link.id, href, external: link.target === 'EXTERNAL' && !!href } satisfies PublicAnnouncementLink;
-            })
-          : row.kind === 'PRODUCTS'
-            ? (shelves.get(row.id)?.products ?? [])
-            : (itemsOf(row.kind, row.items) as PublicComponentItem[]),
+    sourceCategory: row.kind === 'PRODUCTS' ? (lookups.shelves.get(row.id)?.category ?? null) : null,
+    // The ids never reach the wire: `PublicStore` is served to anyone who asks, and a uuid on it is a
+    // row's identity handed to a stranger for nothing.
+    items: publicItemsOf(row, shopSlug, words, lookups),
     columns: row.columns,
     align: row.align,
     visibleOn: row.visibleOn,
@@ -181,17 +112,17 @@ export function toPublicSection(
   row: SectionShape,
   shopSlug: string,
   words: StorefrontRouteWords,
-  slugs: SlugsByEntity = NO_SLUGS,
-  shelves: ShelvesByComponent = NO_SHELVES,
+  lookups: PageLookups = NO_LOOKUPS,
 ): PublicSection {
   return {
     id: row.id,
     name: row.name,
     width: row.width,
     background: row.background,
+    // A countdown that has ended is not served: nothing is left to count, and a stranger's page
+    // saying "00:00:00" for a sale that is over is worse than no countdown.
     components: row.components
-      .filter((component) => component.isActive)
-      .map((component) => toPublicComponent(component, shopSlug, words, slugs, shelves)),
+      .filter((component) => component.isActive && !hasEnded(component, lookups.now ?? Date.now()))
+      .map((component) => toPublicComponent(component, shopSlug, words, lookups)),
   } satisfies PublicSection;
 }
-

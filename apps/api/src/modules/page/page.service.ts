@@ -11,10 +11,12 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { sectionInclude, toSection } from './page.mapper.js';
 import { pageOf } from './page-read.js';
+import { touchDraft } from './page-draft-revision.js';
 import { pageFor, refuseOnLanding } from './page-scope.js';
 import { PageRules } from './page.rules.js';
 import { componentRow, copiedRow, placedAt } from './page-rows.js';
 import { ShowcaseRules } from './showcase.rules.js';
+import { FeaturedRules } from './featured.rules.js';
 import { openingItemsOf } from './page-seed.js';
 
 /**
@@ -28,6 +30,7 @@ export class PageService {
     private readonly stores: StoresService,
     private readonly rules: PageRules,
     private readonly showcases: ShowcaseRules,
+    private readonly featured: FeaturedRules,
   ) {}
 
   /** The panel's read of one page — the home unless another is named: hidden bands and components included. */
@@ -44,7 +47,7 @@ export class PageService {
    * Both in one transaction: a band with nothing in it draws nothing, so a half-written pair is a
    * row the shopkeeper can only meet as a gap in their own editor.
    */
-  async createSection(storeSlug: string, userId: string, dto: CreateSectionDto, pageId?: string): Promise<Section> {
+  async createSection(storeSlug: string, userId: string, dto: CreateSectionDto, pageId?: string, revision?: number): Promise<Section> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const page = await pageFor(this.prisma, storeId, pageId);
     refuseOnLanding(page.kind, dto.component.kind);
@@ -54,7 +57,8 @@ export class PageService {
     this.rules.refuseVisibilityFor(dto.component.kind, dto.component.visibleOn);
     this.showcases.refuseOn(dto.component.kind, dto.component);
     // A kind created bare opens with what it cannot be without — a form's first fields.
-    const items = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
+    const checked = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
+    const items = await this.featured.itemsFor(dto.component.kind, storeId, checked);
     const showcase =
       dto.component.kind === 'PRODUCTS' ? await this.showcases.forCreate(storeId, dto.component, items) : null;
 
@@ -63,6 +67,7 @@ export class PageService {
     // two adds at once cannot both read the same list and land on one number.
     const row = await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
+      await touchDraft(tx, page.id, revision);
       const bands = await tx.storeSection.findMany({
         where: { pageId: page.id },
         orderBy: [{ position: 'asc' }, { id: 'asc' }],
@@ -98,21 +103,27 @@ export class PageService {
     userId: string,
     sectionId: string,
     dto: UpdateSectionDto,
+    revision?: number,
   ): Promise<Section> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.rules.ownedSection(storeId, sectionId);
 
-    const row = await this.prisma.storeSection.update({
-      where: { id: sectionId },
-      data: {
-        ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.width !== undefined ? { width: dto.width } : {}),
-        // Null is a value here and not an omission: it is how a shopkeeper takes a colour back off
-        // a band, and `?? null` would make "leave it alone" and "clear it" the same request.
-        ...(dto.background !== undefined ? { background: dto.background } : {}),
-        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-      },
-      include: sectionInclude,
+    const row = await this.prisma.$transaction(async (tx) => {
+      await this.rules.lockShop(tx, storeId);
+      const { pageId } = await this.rules.ownedSection(storeId, sectionId, tx);
+      await touchDraft(tx, pageId, revision);
+
+      return tx.storeSection.update({
+        where: { id: sectionId },
+        data: {
+          ...(dto.name !== undefined ? { name: dto.name } : {}),
+          ...(dto.width !== undefined ? { width: dto.width } : {}),
+          // Null is a value here and not an omission: it is how a shopkeeper takes a colour back off
+          // a band, and `?? null` would make "leave it alone" and "clear it" the same request.
+          ...(dto.background !== undefined ? { background: dto.background } : {}),
+          ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        },
+        include: sectionInclude,
+      });
     });
 
     return toSection(row);
@@ -124,13 +135,14 @@ export class PageService {
    * Unless "everything in it" includes the product list: then the band stays, and the answer says
    * to hide it. A shop lost its shelves through this door before the check existed.
    */
-  async removeSection(storeSlug: string, userId: string, sectionId: string): Promise<void> {
+  async removeSection(storeSlug: string, userId: string, sectionId: string, revision?: number): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
     // The check and the delete in one transaction, behind the shop's lock: see `PageRules.lockShop`.
     await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
-      const { pageKind } = await this.rules.ownedSection(storeId, sectionId, tx);
+      const { pageId, pageKind } = await this.rules.ownedSection(storeId, sectionId, tx);
+      await touchDraft(tx, pageId, revision);
       // The home's last product list, only: a landing's bands go with the landing.
       if (pageKind === 'HOME') await this.rules.refuseHoldingRequired(storeId, sectionId, tx);
       await tx.storeSection.delete({ where: { id: sectionId } });
@@ -144,7 +156,7 @@ export class PageService {
    * whose missing rows keep positions that now collide, and the page they draw is neither the old
    * order nor the new one.
    */
-  async reorderSections(storeSlug: string, userId: string, dto: ReorderDto, pageId?: string): Promise<Section[]> {
+  async reorderSections(storeSlug: string, userId: string, dto: ReorderDto, pageId?: string, revision?: number): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const page = await pageFor(this.prisma, storeId, pageId);
 
@@ -152,6 +164,7 @@ export class PageService {
     // racing it would leave two bands on one number, or deadlock on the rows each holds.
     await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
+      await touchDraft(tx, page.id, revision);
       const owned = await tx.storeSection.findMany({ where: { pageId: page.id }, select: { id: true } });
       this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every band of this page exactly once, in the new order');
 
@@ -171,12 +184,13 @@ export class PageService {
    * No name: a site's menu is made of the named bands, and two with one name are one link twice.
    * Under the shop's lock, as an add is. A band holding the strip is refused: the strip is one per shop.
    */
-  async duplicateSection(storeSlug: string, userId: string, sectionId: string): Promise<Section> {
+  async duplicateSection(storeSlug: string, userId: string, sectionId: string, revision?: number): Promise<Section> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
     const row = await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
-      await this.rules.ownedSection(storeId, sectionId, tx);
+      const { pageId } = await this.rules.ownedSection(storeId, sectionId, tx);
+      await touchDraft(tx, pageId, revision);
 
       const original = await tx.storeSection.findUniqueOrThrow({ where: { id: sectionId }, include: sectionInclude });
       this.rules.refuseCopy(original.components.map((component) => component.kind));

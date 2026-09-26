@@ -92,3 +92,29 @@ voltar para a versão de ontem.
 - **Uma aba antiga aberta** durante o deploy publica o arranjo mas não congela. Ela precisa recarregar.
 - **`hasUnpublishedChanges`** pode acusar diferença quando uma categoria apagada zera a vitrine no
   rascunho. Isso não faz mal.
+
+## Depois da revisão
+
+*Acrescentado em 2026-09-26.*
+
+- **Revisão por página, não por loja:** cada escrita leva a revisão da página que está aberta no
+  editor. Ir para uma landing e voltar para a inicial não dá mais um 409 falso.
+- **Outra aba nunca é adotada sem aviso:** uma leitura do rascunho mais adiante do que as escritas
+  desta aba explicam abre o "outra aba alterou, recarregar". Antes, a leitura em segundo plano movia
+  a revisão e deixava um formulário antigo sobrescrever o trabalho da outra aba.
+- **Cabeçalho de revisão:** só dígitos, dentro do tamanho da coluna. Qualquer outra coisa é 400, nunca
+  500.
+- **`?page=` desconhecido:** abre a inicial de novo, como antes. Uma inicial que não se lê é erro, não
+  404.
+- **Status da landing pela aba Páginas:** publicar ou tirar do ar por ali atualiza o histórico e a
+  barra.
+- **Voltar:** o editor empurra um passo no histórico do navegador uma vez só, e não a cada salvamento.
+  Um Voltar sai.
+- **A barra:** sem a contagem de alterações e sem o Descartar, que o salvamento na hora tornou
+  inalcançáveis. Enquanto o rascunho não foi lido, a barra não diz "Publicado".
+- **O aviso de conflito** diz que a última alteração não foi salva.
+- **Publicar:** quando a conferência falha, o diálogo diz isso e oferece conferir de novo, no lugar de
+  "Nada a revisar". Enquanto publica, não fecha.
+- **Histórico:** quando não carrega, diz isso e oferece "Tentar de novo". Restaurar mostra o progresso
+  no próprio diálogo e, ao terminar, diz que a versão está no rascunho e que a loja só muda ao
+  publicar. As datas seguem o idioma do painel.

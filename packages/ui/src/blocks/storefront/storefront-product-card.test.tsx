@@ -47,6 +47,14 @@ describe("StorefrontProductCard", () => {
     expect(screen.queryByText("-24%")).not.toBeInTheDocument()
   })
 
+  it("says how many values its first option has under the name, and nothing for one with none to choose", () => {
+    const { rerender } = renderCard({ product: { ...product, optionSummary: { name: "Sabor", valueCount: 4 } } })
+    expect(screen.getByText("4 sabores")).toBeInTheDocument()
+
+    rerender(<StorefrontProductCard product={{ ...product, optionSummary: { name: "Sabor", valueCount: 1 } }} href="/x" locale="pt-BR" />)
+    expect(screen.queryByText(/sabor/)).not.toBeInTheDocument()
+  })
+
   it("can be told to hide the price, for a shop that quotes instead", () => {
     renderCard({ showPrice: false })
 

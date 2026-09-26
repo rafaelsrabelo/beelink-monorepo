@@ -35,6 +35,11 @@ export const SECTION_TYPES = {
   HEADING: { category: "CONTENT", recommended: false, layouts: null, rows: false },
   TEXT: { category: "CONTENT", recommended: false, layouts: null, rows: false },
   CONTACT: { category: "CONVERSION", recommended: true, layouts: null, rows: false },
+  FAQ: { category: "TRUST", recommended: false, layouts: ["ACCORDION"], rows: false },
+  CALL_TO_ACTION: { category: "CONVERSION", recommended: false, layouts: ["BAND", "CARD"], rows: false },
+  IMAGE_TEXT: { category: "CONTENT", recommended: false, layouts: ["IMAGE_LEFT", "IMAGE_RIGHT"], rows: false },
+  FEATURED_PRODUCT: { category: "SELLING", recommended: false, layouts: ["IMAGE_LEFT", "IMAGE_LARGE"], rows: false },
+  COUNTDOWN: { category: "CONVERSION", recommended: false, layouts: ["BAND", "BLOCK"], rows: false },
   ANNOUNCEMENT: { category: "CHROME", recommended: false, layouts: ["STATIC", "MARQUEE"], rows: false },
 } as const satisfies Record<ComponentKind, SectionType>
 

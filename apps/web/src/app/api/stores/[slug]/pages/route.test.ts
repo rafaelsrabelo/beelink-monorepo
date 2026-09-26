@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
 import { GET as availability } from "./availability/route"
+import { GET as problems } from "./[pageId]/problems/route"
 import { POST as publish } from "./[pageId]/publish/route"
+import { POST as restore } from "./[pageId]/versions/[versionId]/restore/route"
+import { GET as versions } from "./[pageId]/versions/route"
 import { PATCH } from "./[pageId]/route"
 import { GET, POST } from "./route"
 
@@ -83,6 +86,33 @@ describe("/api/stores/[slug]/pages", () => {
     expect(response.status).toBe(201)
     expect(spy).toHaveBeenCalledWith(`http://api.test/api/stores/${SLUG}/pages/${PAGE}/publish`, expect.objectContaining({ method: "POST" }))
     expect(revalidateStore).toHaveBeenCalledWith(SLUG)
+  })
+
+  // A restore does not publish: the shop serves what it served until Publicar.
+  it("restores a version with the revision the editor read, and leaves the shop's cache alone", async () => {
+    const spy = answer(200, { revision: 5 })
+    const VERSION = "0199f000-0000-7000-8000-0000000000aa"
+    const withRevision = request(`/${PAGE}/versions/${VERSION}/restore`, "POST")
+    withRevision.headers.set("x-page-revision", "4")
+
+    const response = await restore(withRevision, { params: Promise.resolve({ slug: SLUG, pageId: PAGE, versionId: VERSION }) })
+
+    expect(response.status).toBe(200)
+    expect(spy.mock.calls[0]?.[0]).toBe(`http://api.test/api/stores/${SLUG}/pages/${PAGE}/versions/${VERSION}/restore`)
+    expect((spy.mock.calls[0]?.[1]?.headers as Record<string, string>)["x-page-revision"]).toBe("4")
+    expect(revalidateStore).not.toHaveBeenCalled()
+  })
+
+  it("reads the history and the problems of one page", async () => {
+    const spy = answer(200, [])
+
+    await versions(request(`/${PAGE}/versions`, "GET"), { params: Promise.resolve({ slug: SLUG, pageId: PAGE }) })
+    await problems(request(`/${PAGE}/problems`, "GET"), { params: Promise.resolve({ slug: SLUG, pageId: PAGE }) })
+
+    expect(spy.mock.calls.map(([url]) => url)).toEqual([
+      `http://api.test/api/stores/${SLUG}/pages/${PAGE}/versions`,
+      `http://api.test/api/stores/${SLUG}/pages/${PAGE}/problems`,
+    ])
   })
 
   it("refuses a request from another site before it reaches the API", async () => {
