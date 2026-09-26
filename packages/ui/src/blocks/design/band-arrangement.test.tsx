@@ -1,5 +1,5 @@
 // Libs
-import { render, screen, within } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -36,7 +36,6 @@ function handlersOf() {
     onEditBand: vi.fn(),
     onDeleteBand: vi.fn(),
     onToggle: vi.fn(),
-    onSpanChange: vi.fn(),
     onDelete: vi.fn(),
     onEdit: vi.fn(),
   }
@@ -195,87 +194,47 @@ describe("BandArrangement", () => {
   })
 
   /**
-   * Every block has a slice of its band — a heading beside a banner is as reachable as two banners —
-   * so every block's card offers one. The product list included.
+   * The slice is chosen in the Layout tab now; the row says it beside the kind, so a band's
+   * arrangement still reads at a glance — and has no control that makes every row twice as tall.
    */
-  it("offers a width on every kind of block", () => {
+  it("says each block's kind and slice on one line, with no width control", () => {
     renderBands()
 
-    expect(screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })).toBeInTheDocument()
-    expect(screen.getByRole("group", { name: "Largura do bloco: Vitrine de produtos" })).toBeInTheDocument()
-  })
-
-  /**
-   * The regression this rule first shipped with, reported the day it landed: a banner added a
-   * moment ago has no picture, so a rule of "exactly one" took the control away during the whole
-   * time the owner is building the thing and deciding how wide it goes.
-   */
-  it("offers a width on a banner that has no picture yet", () => {
-    renderBands({
-      bands: [
-        {
-          id: "band-1",
-          background: null,
-          isActive: true,
-          components: [{ id: "novo", kind: "BANNER", title: null, span: "FULL", isActive: true, empty: true }],
-        },
-      ],
-    })
-
-    expect(screen.getByRole("group", { name: "Largura do bloco: Banner" })).toBeInTheDocument()
-  })
-
-  /** The strip above the header is never in a band's grid, so a width there would change nothing. */
-  it("offers no width on the strip above the header", () => {
-    renderBands({
-      bands: [
-        {
-          id: "band-1",
-          background: null,
-          isActive: true,
-          components: [{ id: "faixa", kind: "ANNOUNCEMENT", title: "Frete grátis", span: "FULL", isActive: true }],
-        },
-      ],
-    })
-
+    expect(screen.getByRole("button", { name: /^Frete grátis/ })).toHaveTextContent("Banner · Metade")
+    expect(screen.getByRole("button", { name: /^Vitrine de produtos/ })).toHaveTextContent("Vitrine de produtos · Cheio")
     expect(screen.queryByRole("group", { name: /Largura do bloco/ })).not.toBeInTheDocument()
   })
 
-  /**
-   * Four glyphs, each named by its slice, the current one pressed — and the slice written out, so
-   * the owner does not hover to learn what the block is.
-   */
-  it("names each slice, marks the current one and writes it out", () => {
-    renderBands()
+  /** The strip above the header is never in a band's grid, so it has no slice to say. */
+  it("says no slice for the strip above the header, and that an empty block is empty", () => {
+    renderBands({
+      bands: [
+        {
+          id: "band-1",
+          background: null,
+          isActive: true,
+          components: [
+            { id: "faixa", kind: "ANNOUNCEMENT", title: "Frete grátis", span: "FULL", isActive: true },
+            { id: "novo", kind: "BANNER", title: null, span: "HALF", isActive: true, empty: true },
+          ],
+        },
+      ],
+    })
 
-    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
-
-    expect(within(largura).getByRole("button", { name: "Metade", pressed: true })).toBeInTheDocument()
-    for (const other of ["Cheio", "Dois terços", "Um terço"]) {
-      expect(within(largura).getByRole("button", { name: other, pressed: false })).toBeInTheDocument()
-    }
-    expect(largura.parentElement).toHaveTextContent("Metade")
+    expect(screen.getByRole("button", { name: /^Frete grátis/ })).toHaveTextContent(/Barra de aviso$/)
+    expect(screen.getByRole("button", { name: /^Banner/ })).toHaveTextContent("Vazio — não aparece na loja · Metade")
   })
 
-  /**
-   * The band's width beside the block's, in words of its own: "Tamanho" beside the band's
-   * "Largura" read as one setting in two places.
-   */
-  it("says the band's width beside the block's, without mistaking one for the other", () => {
-    renderBands({ bands: bands.map((band) => ({ ...band, width: "FULL" as const })) })
-
-    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
-    expect(largura.parentElement).toHaveTextContent("Largura da faixa: Ponta a ponta")
-  })
-
-  it("reports the slice the owner chose, two thirds included", async () => {
+  // The header of a band of several blocks chooses the band; the panel then shows its Estilo.
+  it("chooses a band from its header, and marks it as a block is marked", async () => {
     const user = userEvent.setup()
-    const { onSpanChange } = renderBands()
+    const { onEditBand, rerender } = renderBands()
 
-    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
-    await user.click(within(largura).getByRole("button", { name: "Dois terços" }))
+    await user.click(screen.getByRole("button", { name: "Faixa 2" }))
+    expect(onEditBand).toHaveBeenCalledWith("band-2")
 
-    expect(onSpanChange).toHaveBeenCalledWith("2", "TWO_THIRDS")
+    rerender(<BandArrangement bands={bands} {...handlersOf()} selectedBandId="band-2" />)
+    expect(screen.getByRole("button", { name: "Arrastar: Faixa 2" }).closest("li")).toHaveAttribute("aria-current", "true")
   })
 
   it("asks for the opposite of what a band is now", async () => {
@@ -331,5 +290,42 @@ describe("BandArrangement", () => {
     const { container } = renderBands()
 
     await expectNoA11yViolations(container)
+  })
+})
+
+describe("BandArrangement — a block kept for one screen", () => {
+  // Said on the row, so the structure explains why the phone's preview has no such block.
+  it("says so on the row", () => {
+    renderBands({
+      bands: [
+        {
+          id: "band-9",
+          background: null,
+          isActive: true,
+          components: [
+            { id: "9", kind: "HEADING", title: "Frete", span: "HALF", isActive: true, visibleOn: "PHONE" },
+            { id: "10", kind: "TEXT", title: "Troca", span: "HALF", isActive: true, visibleOn: "DESKTOP" },
+          ],
+        },
+      ],
+    })
+
+    expect(screen.getByText("Título · Metade · Só no celular")).toBeInTheDocument()
+    expect(screen.getByText("Parágrafo · Metade · Só no computador")).toBeInTheDocument()
+  })
+})
+
+describe("BandArrangement — Pôr ao lado for a block kept for the phone", () => {
+  // Beside is the computer's row: a block that is not drawn there would only squeeze the one above.
+  it("does not offer to put a phone-only block beside the band above", () => {
+    renderBands({
+      onJoinAbove: vi.fn(),
+      bands: [
+        { id: "up", background: null, isActive: true, components: [{ id: "u", kind: "BANNER", title: "Capa", span: "FULL", isActive: true }] },
+        { id: "down", background: null, isActive: true, components: [{ id: "d", kind: "BANNER", title: "Só celular", span: "FULL", isActive: true, visibleOn: "PHONE" }] },
+      ],
+    })
+
+    expect(screen.queryByRole("button", { name: /Pôr ao lado de/ })).not.toBeInTheDocument()
   })
 })

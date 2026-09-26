@@ -54,7 +54,7 @@ describe("DesignEditorFrame", () => {
 
     expect(screen.getByRole("complementary", { name: "Estrutura da página" })).toHaveTextContent("a lista de faixas")
     expect(screen.getByRole("main", { name: "Prévia da loja" })).toHaveTextContent("a loja")
-    expect(screen.getByRole("complementary", { name: "Editar bloco" })).toHaveTextContent("os campos do bloco")
+    expect(screen.getByRole("complementary", { name: "Painel de edição" })).toHaveTextContent("os campos do bloco")
   })
 
   it("keeps the side columns in drawers on a narrow screen, each drawn once", () => {
@@ -91,6 +91,20 @@ describe("DesignEditorFrame", () => {
 
     rerender(frame({ inspectorOpen: true, inspectorHasOwnClose: true }))
     expect(screen.queryByRole("button", { name: "Fechar" })).not.toBeInTheDocument()
+  })
+
+  // A move or a choice made by the keys is said aloud, once, from one place.
+  it("says what the editor did in a status line, and hears its keys", async () => {
+    screenIs(true)
+    const onKeyDown = vi.fn()
+    renderFrame({ status: "Banner 1 agora está na posição 2.", onKeyDown, preview: <button type="button">Banner 1</button> })
+
+    expect(screen.getByRole("status")).toHaveTextContent("Banner 1 agora está na posição 2.")
+    // Spelled out, so a modal drawer, which hides everything outside it but `[aria-live]`, keeps it heard.
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite")
+    screen.getByRole("button", { name: "Banner 1" }).focus()
+    await userEvent.keyboard("{ArrowDown}")
+    expect(onKeyDown).toHaveBeenCalled()
   })
 
   it("closes its drawers when the screen widens, so they cannot pop back up", () => {

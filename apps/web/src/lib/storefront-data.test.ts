@@ -6,7 +6,7 @@ import type { PublicProductCategory, StorefrontCatalog } from "@harness-monorepo
 
 // App
 import { catalogTag, storeTag } from "./revalidate"
-import { catalogueAt, categoriesAt, shopAt, signInOptionsAt } from "./storefront-data"
+import { catalogueAt, categoriesAt, landingAt, shopAt, signInOptionsAt } from "./storefront-data"
 
 /**
  * The reads the landing is built from. The network is stubbed at `fetch` because `callPublicApi`
@@ -122,6 +122,28 @@ describe("shopAt — the shop, its showcases' cards included", () => {
     await shopAt("lessari")
 
     expect(asked[0]?.tags).toEqual([storeTag("lessari"), catalogTag("lessari")])
+  })
+})
+
+describe("landingAt — a published landing, or nothing", () => {
+  it("asks for the landing at its address, cached under the shop's tag and the catalogue's", async () => {
+    const asked = stubApi(() => ({ slug: "lancamento", sections: [] }))
+
+    expect(await landingAt("lessari", "lancamento")).toMatchObject({ slug: "lancamento" })
+    expect(asked[0]?.url.pathname).toMatch(/\/stores\/lessari\/landings\/lancamento$/)
+    expect(asked[0]?.tags).toEqual([storeTag("lessari"), catalogTag("lessari")])
+  })
+
+  it("is nothing for a draft, an outage, or an address that could not be one — which is never sent", async () => {
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 404 })))
+    expect(await landingAt("lessari", "rascunho")).toBeNull()
+
+    vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")))
+    expect(await landingAt("lessari", "lancamento")).toBeNull()
+
+    const asked = stubApi(() => ({}))
+    expect(await landingAt("lessari", "../../admin")).toBeNull()
+    expect(asked).toHaveLength(0)
   })
 })
 

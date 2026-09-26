@@ -13,10 +13,10 @@ describe("DesignLeaveDialog", () => {
     const onLeave = vi.fn()
     render(<DesignLeaveDialog open onStay={onStay} onLeave={onLeave} />)
 
-    expect(screen.getByRole("alertdialog", { name: "Sair sem publicar?" })).toBeInTheDocument()
+    expect(screen.getByRole("alertdialog", { name: "Sair antes de salvar?" })).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Continuar editando" }))
     expect(onStay).toHaveBeenCalled()
-    await userEvent.click(screen.getByRole("button", { name: "Sair sem publicar" }))
+    await userEvent.click(screen.getByRole("button", { name: "Sair mesmo assim" }))
     expect(onLeave).toHaveBeenCalled()
   })
 

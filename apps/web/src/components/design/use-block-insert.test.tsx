@@ -22,7 +22,10 @@ vi.mock("@/services/page/page-hooks", () => ({
   useMoveComponent: () => move,
 }))
 
-function band(id: string, components: { id: string; span: "FULL" | "HALF" | "THIRD"; isActive?: boolean }[]): Section {
+function band(
+  id: string,
+  components: { id: string; span: "FULL" | "HALF" | "THIRD"; isActive?: boolean; visibleOn?: "PHONE" }[],
+): Section {
   return {
     id,
     name: null,
@@ -49,6 +52,7 @@ function band(id: string, components: { id: string; span: "FULL" | "HALF" | "THI
       align: null,
       position,
       isActive: component.isActive ?? true,
+      visibleOn: component.visibleOn ?? "ALL",
       createdAt: "",
       updatedAt: "",
     })),
@@ -60,12 +64,14 @@ const saved = [
   band("below", [{ id: "b", span: "FULL" }]),
   // A hidden block before the last: the grid draws [x, y], the draft holds [x, hidden, y].
   band("mixed", [{ id: "x", span: "THIRD" }, { id: "hidden", span: "HALF", isActive: false }, { id: "y", span: "THIRD" }]),
+  // Half for everyone and half kept for the phone: the computer's row has half left.
+  band("phone", [{ id: "p", span: "HALF" }, { id: "q", span: "HALF", visibleOn: "PHONE" }]),
 ]
 
 function hook() {
   const draft = { rows: saved.map(toDraft), saved, patchComponent: vi.fn() }
   const onCreated = vi.fn()
-  const view = renderHook(() => useBlockInsert("loja", draft, onCreated, web))
+  const view = renderHook(() => useBlockInsert("loja", undefined, draft, onCreated, web))
   return { ...view, draft, onCreated }
 }
 
@@ -149,6 +155,18 @@ describe("useBlockInsert", () => {
     // Drawn: two thirds, so the newcomer takes the third left — the hidden half is not a row.
     expect(addToBand.mutate).toHaveBeenCalledWith(
       { sectionId: "mixed", payload: { kind: "BANNER", position: 3, span: "THIRD" } },
+      expect.anything(),
+    )
+  })
+
+  it("reads the room at a band's foot from the computer's row, not from a block kept for the phone", () => {
+    const { result } = hook()
+
+    act(() => result.current.setInsertAt({ level: "block", sectionId: "phone", index: 2 }))
+    act(() => result.current.insert("BANNER"))
+
+    expect(addToBand.mutate).toHaveBeenCalledWith(
+      { sectionId: "phone", payload: { kind: "BANNER", position: 2, span: "HALF" } },
       expect.anything(),
     )
   })

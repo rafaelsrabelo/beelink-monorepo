@@ -1,3 +1,4 @@
+import type { PublicPageLink } from "./store-pages.js";
 import type { PublicSection } from "./page.js";
 import type { StorefrontRouteWords } from "./catalog.js";
 import type { PageTemplateId } from "./page.js";
@@ -199,6 +200,11 @@ export interface PublicStore {
    * visitors ever see.
    */
   sections: PublicSection[];
+  /**
+   * The published landings the shop links from its menu and footer. Absent on an answer cached
+   * before pages existed, which linked none.
+   */
+  pages?: PublicPageLink[];
 }
 
 /** The shop as its owner edits it in the panel: the public shape plus what only the owner may see. */

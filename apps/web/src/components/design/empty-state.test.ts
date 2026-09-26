@@ -64,3 +64,18 @@ describe("emptyStateOf — a showcase with nothing on its shelf", () => {
     expect(emptyStateOf("BANNER", facts())).toBeNull()
   })
 })
+
+describe("emptyStateOf — a featured product the shop does not draw", () => {
+  it("says the product chosen is not on sale, and nothing while it draws", () => {
+    expect(emptyStateOf("FEATURED_PRODUCT", facts({ shelfEmpty: true }))).toEqual({ kind: "featuredUnavailable" })
+    expect(emptyStateOf("FEATURED_PRODUCT", facts())).toBeNull()
+  })
+})
+
+describe("emptyStateOf — a countdown the shop does not draw", () => {
+  it("asks for an end when it has none, says when it has passed, and nothing while it counts", () => {
+    expect(emptyStateOf("COUNTDOWN", facts())).toEqual({ kind: "countdownUnset" })
+    expect(emptyStateOf("COUNTDOWN", facts({ countdownEndsAt: "2020-01-01T00:00:00.000Z" }))).toEqual({ kind: "countdownEnded" })
+    expect(emptyStateOf("COUNTDOWN", facts({ countdownEndsAt: "2999-01-01T00:00:00.000Z" }))).toBeNull()
+  })
+})

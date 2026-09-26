@@ -63,6 +63,23 @@ describe("BannerSlidesField", () => {
     expect(screen.queryByText(/vira um carrossel/)).not.toBeInTheDocument()
   })
 
+  // "Imagem ao fundo" and "Dividida" draw the first picture alone, however many there are.
+  it("says the others are kept, under a layout that draws the first picture only", () => {
+    render(
+      <BannerSlidesField
+        value={[slide("a"), slide("b")]}
+        onChange={vi.fn()}
+        categories={[]}
+        products={[]}
+        newSlideId={() => "new"}
+        display="SPLIT"
+      />,
+    )
+
+    expect(screen.getByText(/só a primeira imagem aparece/)).toBeInTheDocument()
+    expect(screen.queryByText(/vira um carrossel/)).not.toBeInTheDocument()
+  })
+
   it("adds a picture that points nowhere, with the id the screen minted", async () => {
     const user = userEvent.setup()
     const { onChange } = renderField([])

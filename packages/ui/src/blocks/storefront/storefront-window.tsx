@@ -10,7 +10,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { ShopPaletteProvider } from "./shop-palette-context"
-import { StorefrontAnnouncement } from "./storefront-announcement"
+import { StorefrontAnnouncement, type StorefrontAnnouncementStrip } from "./storefront-announcement"
 import { BAND } from "./storefront-band"
 import { StorefrontCover, type StorefrontBanner } from "./storefront-cover"
 import { StorefrontFooter, type StorefrontFooterColumn, type StorefrontLink } from "./storefront-footer"
@@ -20,20 +20,9 @@ import { StorefrontPitch } from "./storefront-pitch"
 /** Declared beside the palette now; re-exported because screens import it from here. */
 export type StorefrontColors = ShopColors
 
-// Declared beside the footer now; re-exported because screens import them from here.
+// Declared beside their blocks now; re-exported because screens import them from here.
 export type { StorefrontFooterColumn, StorefrontLink, StorefrontNetwork } from "./storefront-footer"
-
-/** The strip above the header: what the shop is shouting this week — its title, and a second line. */
-export interface StorefrontAnnouncement {
-  left: string
-  /** A second message beside the first, as the design draws them; never joined into one sentence. */
-  right?: string
-  /** The strip's own colour, which is its band's. Null is the page's ink, as it always was. */
-  background?: string | null
-  /** Already resolved by the API. Null goes nowhere; the strip is then a poster, not a link. */
-  href?: string | null
-  external?: boolean
-}
+export type { StorefrontAnnouncementStrip } from "./storefront-announcement"
 
 // Where they are declared now; re-exported because screens import them from here.
 export type { StorefrontMenuItem } from "./storefront-masthead"
@@ -43,7 +32,7 @@ export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
     "searchAction" | "searchValue" | "searchHidden" | "searchScopes" | "searchScope" | "searchSlot"
-    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories"
+    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories" | "deliverTo"
   > {
   name: string
   description?: string | null
@@ -53,7 +42,13 @@ export interface StorefrontWindowProps
   colors: StorefrontColors
 
   /** Band 0 — the strip over everything. Absent means no strip, never an empty bar. */
-  announcement?: StorefrontAnnouncement | null
+  announcement?: StorefrontAnnouncementStrip | null
+
+  /**
+   * False draws the page alone, in the shop's colours: no strip, no header, no footer. A landing
+   * page that is its own poster asks for this; every other page keeps the shop around it.
+   */
+  chrome?: boolean
 
   // Bands 1 and 2 — the header and the menu — are the masthead's props, documented there once.
 
@@ -133,7 +128,9 @@ export function StorefrontWindow({
   homeHref,
   colors,
   announcement,
+  chrome = true,
   searchSlot,
+  deliverTo,
   searchAction,
   searchValue = "",
   searchHidden,
@@ -170,36 +167,40 @@ export function StorefrontWindow({
     <ShopPaletteProvider colors={colors}>
     <div data-shop-window="" style={dressed} className="flex min-h-svh flex-col">
       {/* ---------------------------------------------------------------- 0 · the strip */}
-      {announcement ? (
+      {announcement && chrome ? (
         <StorefrontAnnouncement
           messages={[announcement.left, ...(announcement.right ? [announcement.right] : [])]}
           background={announcement.background ?? null}
           href={announcement.href ?? null}
           external={announcement.external ?? false}
+          {...(announcement.motion ? { motion: announcement.motion } : {})}
           linkComponent={Link}
         />
       ) : null}
 
-      <StorefrontMasthead
-        name={name}
-        logoUrl={logoUrl}
-        homeHref={homeHref}
-        searchSlot={searchSlot}
-        {...(searchAction ? { searchAction } : {})}
-        searchValue={searchValue}
-        {...(searchHidden ? { searchHidden } : {})}
-        {...(searchScopes ? { searchScopes } : {})}
-        {...(searchScope ? { searchScope } : {})}
-        {...(cartHref ? { cartHref } : {})}
-        {...(cartCount !== undefined ? { cartCount } : {})}
-        cartSlot={cartSlot}
-        {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
-        menu={menu}
-        cta={cta}
-        categories={categories}
-        linkComponent={Link}
-        messages={messages}
-      />
+      {chrome ? (
+        <StorefrontMasthead
+          name={name}
+          logoUrl={logoUrl}
+          homeHref={homeHref}
+          searchSlot={searchSlot}
+          deliverTo={deliverTo}
+          {...(searchAction ? { searchAction } : {})}
+          searchValue={searchValue}
+          {...(searchHidden ? { searchHidden } : {})}
+          {...(searchScopes ? { searchScopes } : {})}
+          {...(searchScope ? { searchScope } : {})}
+          {...(cartHref ? { cartHref } : {})}
+          {...(cartCount !== undefined ? { cartCount } : {})}
+          cartSlot={cartSlot}
+          {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
+          menu={menu}
+          cta={cta}
+          categories={categories}
+          linkComponent={Link}
+          messages={messages}
+        />
+      ) : null}
 
       {/* ---------------------------------------------------------------- 3 · the cover */}
       {blocks ? null : banner ? <StorefrontCover banner={banner} tall linkComponent={Link} /> : null}
@@ -230,16 +231,18 @@ export function StorefrontWindow({
       {bannerBelow ? <StorefrontCover banner={bannerBelow} linkComponent={Link} /> : null}
 
       {/* ---------------------------------------------------------------- 7 · footer */}
-      <StorefrontFooter
-        name={name}
-        logoUrl={logoUrl}
-        addressLine={addressLine}
-        links={links}
-        columns={footerColumns}
-        copyright={copyright}
-        linkComponent={Link}
-        messages={messages}
-      />
+      {chrome ? (
+        <StorefrontFooter
+          name={name}
+          logoUrl={logoUrl}
+          addressLine={addressLine}
+          links={links}
+          columns={footerColumns}
+          copyright={copyright}
+          linkComponent={Link}
+          messages={messages}
+        />
+      ) : null}
     </div>
     </ShopPaletteProvider>
   )

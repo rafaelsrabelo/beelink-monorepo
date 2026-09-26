@@ -3,32 +3,48 @@ import type { Section, StoreComponent } from "@harness-monorepo/contracts"
 
 // App
 import type { DesignEdit } from "@/stores/design-edit"
-import { toPayload } from "./component-form-values"
+import { bandChanged, toBandPayload } from "./band-form-values"
+import { toForm, toPayload } from "./component-form-values"
 
 /**
- * The saved page with the block being edited as the owner has it now, unsaved.
+ * The saved page with the block and the band being edited as the owner has them now, unsaved.
  *
- * Through `toPayload`, the function Salvar sends, so the preview draws exactly what a save would
- * write: a slide still without its picture, a benefit without its title, are left out here as they
- * would be there. Only what the fields hold is replaced — the arrangement's width and visibility stay
- * the draft's, which `previewOf` reads separately.
+ * Through the payloads Salvar sends, so the preview draws exactly what a save would write: a slide
+ * still without its picture, a benefit without its title, are left out here as they would be there;
+ * and of the band, only what Estilo changed, so a colour saved elsewhere meanwhile is not painted
+ * over. What the arrangement holds — the order, the visibility and the layout — stays the draft's,
+ * which `previewOf` reads separately.
  */
 export function withLiveEdit(saved: readonly Section[], edit: DesignEdit | null): readonly Section[] {
   if (!edit) return saved
 
-  return saved.map((section) => {
-    const was = section.components.find((component) => component.id === edit.componentId)
-    if (!was) return section
+  const band = toBandPayload(edit.band, edit.bandOpened)
+  const block = edit.component
 
-    const live = { ...was, ...toPayload(edit.value, edit.linkId) } as StoreComponent
-    return {
-      ...section,
-      // The strip's colour is its band's, asked for beside the words it paints — drawn only when
-      // changed here, so a colour the band's sheet saved meanwhile is not painted over.
-      ...(was.kind === "ANNOUNCEMENT" && edit.value.background !== edit.openedBackground
-        ? { background: edit.value.background || null }
-        : {}),
-      components: section.components.map((component) => (component.id === was.id ? live : component)),
-    }
-  })
+  return saved.map((section) =>
+    section.id === edit.sectionId
+      ? {
+          ...section,
+          ...band,
+          components: section.components.map((component) =>
+            block && component.id === block.id
+              ? ({ ...component, ...toPayload(block.value, block.itemId) } as StoreComponent)
+              : component,
+          ),
+        }
+      : section,
+  )
+}
+
+/**
+ * Whether the open panel holds something Salvar has not sent: a band's style changed, or the block's
+ * fields no longer what is saved. Choosing another throws it away, so the editor's keys ask this first.
+ */
+export function hasUnsaved(edit: DesignEdit | null, saved: readonly Section[]): boolean {
+  if (!edit) return false
+  if (bandChanged(edit.band, edit.bandOpened)) return true
+
+  const block = edit.component
+  const was = block ? saved.flatMap((section) => section.components).find((component) => component.id === block.id) : undefined
+  return !!block && !!was && JSON.stringify(toForm(was)) !== JSON.stringify(block.value)
 }

@@ -22,13 +22,13 @@ function props(over: Partial<ComponentProps<typeof DesignPanel>> = {}): Componen
     onEditBand: vi.fn(),
     onDeleteBand: vi.fn(),
     onToggle: vi.fn(),
-    onSpanChange: vi.fn(),
     onDelete: vi.fn(),
     onEdit: vi.fn(),
     onInsert: vi.fn(),
     onJoinAbove: vi.fn(),
     inserting: false,
     selectedId: null,
+    selectedBandId: null,
     tab: "blocks",
     onTabChange: vi.fn(),
     palette: colours,
@@ -37,6 +37,7 @@ function props(over: Partial<ComponentProps<typeof DesignPanel>> = {}): Componen
     paletteChanged: false,
     savingColours: false,
     onSaveColours: vi.fn(),
+    pages: <p>As páginas</p>,
     messages: ptBR,
     ...over,
   }
@@ -63,5 +64,18 @@ describe("DesignPanel — the editor's structure column", () => {
     rerender(<DesignPanel {...props({ tab: "colors" })} />)
     expect(screen.getByRole("tab", { name: "Tema" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByRole("button", { name: /^Oi/, hidden: true })).toBeInTheDocument()
+  })
+
+  it("shows the shop's pages in a tab between the sections and the theme", async () => {
+    const user = userEvent.setup()
+    const onTabChange = vi.fn()
+    const { rerender } = render(<DesignPanel {...props({ onTabChange })} />)
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Seções", "Páginas", "Tema"])
+    await user.click(screen.getByRole("tab", { name: "Páginas" }))
+    expect(onTabChange).toHaveBeenCalledWith("pages")
+
+    rerender(<DesignPanel {...props({ tab: "pages" })} />)
+    expect(screen.getByText("As páginas")).toBeVisible()
   })
 })
