@@ -123,6 +123,7 @@ describe("withLiveEdit — the preview draws the panel before Salvar", () => {
 describe("useDesignEdit", () => {
   beforeEach(() => useDesignEdit.getState().close())
 
+  // The band's style is the band's: another block of it opens with the style as it was being picked.
   it("keeps what was typed when the same block's panel opens again, and starts afresh for another", () => {
     const { open, changeComponent, changeBand } = useDesignEdit.getState()
 
@@ -133,7 +134,28 @@ describe("useDesignEdit", () => {
     expect(useDesignEdit.getState().edit).toMatchObject({ band: { name: "Capa" }, component: { value: { title: "Digitado" } } })
 
     open(edit(component("other", { kind: "HEADING" })))
-    expect(useDesignEdit.getState().edit).toMatchObject({ band: { name: "" }, component: { id: "other", value: { title: "" } } })
+    expect(useDesignEdit.getState().edit).toMatchObject({ band: { name: "Capa" }, component: { id: "other", value: { title: "" } } })
+  })
+
+  // "Pôr ao lado de…" moves a block that is being written into the band above: still the same block.
+  it("keeps a block's typed fields when it moves to another band, and starts its new band afresh", () => {
+    useDesignEdit.getState().open(edit(banner))
+    useDesignEdit.getState().changeComponent("banner", { ...toForm(banner), title: "Digitado" })
+    useDesignEdit.getState().changeBand("top", { ...topBand, name: "Capa" })
+
+    useDesignEdit.getState().open({ ...edit(banner), sectionId: "above" })
+
+    expect(useDesignEdit.getState().edit).toMatchObject({ sectionId: "above", band: { name: "" }, component: { value: { title: "Digitado" } } })
+  })
+
+  // A band of two, chosen by its header, loses one: still the band whose colour was picked.
+  it("keeps a band's typed style when the block it carries changes", () => {
+    useDesignEdit.getState().open(edit(null))
+    useDesignEdit.getState().changeBand("top", { ...topBand, background: "oklch(0.5 0.2 300)" })
+
+    useDesignEdit.getState().open(edit(banner))
+
+    expect(useDesignEdit.getState().edit).toMatchObject({ band: { background: "oklch(0.5 0.2 300)" }, component: { id: "banner" } })
   })
 
   // The band chosen on its own and its block chosen after are two panels, not one.

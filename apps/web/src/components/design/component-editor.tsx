@@ -18,7 +18,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { useUpdateComponent, useUpdateSection } from "@/services/page/page-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
 import { useDesignEdit } from "@/stores/design-edit"
-import { bandChanged, isStripBand, toBandForm, toBandPayload } from "./band-form-values"
+import { isStripBand, toBandForm, toBandPayload } from "./band-form-values"
 import { BlockContent } from "./block-content"
 import { toForm, toPayload } from "./component-form-values"
 import { labelOf } from "./design-draft"
@@ -115,29 +115,39 @@ export function ComponentEditor({
     close()
     onClose()
   }
+  // A save that lands after the owner moved on closes nothing: the panel open now is another's.
+  const stillOpen = () => {
+    const open = useDesignEdit.getState().edit
+    return open?.sectionId === section.id && (open.component?.id ?? null) === componentId
+  }
 
   const update = useUpdateComponent(slug)
   const updateBand = useUpdateSection(slug)
   const image = useImageUpload()
-  const ready = value ? contentReady(value) : true
+  // The block is written only when Conteúdo changed it. A lone block is edited as its band, and one
+  // the API would refuse as it stands — a showcase whose category was deleted — must not hold its
+  // band's colour hostage.
+  const contentChanged =
+    !!value && !!initial && JSON.stringify(toPayload(value, linkId)) !== JSON.stringify(toPayload(initial, linkId))
+  const ready = value && contentChanged ? contentReady(value) : true
 
-  // The band second, and only when Estilo changed it: a save that only changed the words touches one
-  // row, not two. A band that fails keeps the panel open with its reason; the block is saved already.
-  const saveBand = () =>
-    bandChanged(band, bandOpened)
-      ? updateBand.mutate({ sectionId: section.id, payload: toBandPayload(band, bandOpened) }, { onSuccess: done })
-      : done()
-  const save = () => {
-    if (!component || !value) return saveBand()
-    update.mutate(
-      { componentId: component.id, payload: toPayload(value, linkId) },
-      {
-        onSuccess: (saved) => {
-          onSaved?.(saved)
-          saveBand()
-        },
-      },
-    )
+  /*
+    The block first, then the band, and only what changed: a save that only changed the words touches
+    one row, not two. Awaited here and not chained through `mutate`'s callbacks, which stop firing
+    once the panel unmounts — a close or another block chosen mid-save would drop the band's write.
+    A write that fails keeps the panel open with its reason; its mutation holds the error.
+  */
+  const save = async () => {
+    const bandPayload = toBandPayload(band, bandOpened)
+    try {
+      if (component && value && contentChanged) {
+        onSaved?.(await update.mutateAsync({ componentId: component.id, payload: toPayload(value, linkId) }))
+      }
+      if (Object.keys(bandPayload).length) await updateBand.mutateAsync({ sectionId: section.id, payload: bandPayload })
+      if (stillOpen()) done()
+    } catch {
+      // Shown by the panel from the mutation's own error.
+    }
   }
 
   const name = component ? labelOf(component.kind, component.title, messages) : bandLabelOf(band.name, position, messages)
@@ -195,7 +205,7 @@ export function ComponentEditor({
             messages={messages}
           />
         }
-        onSubmit={save}
+        onSubmit={() => void save()}
         onCancel={done}
         pending={update.isPending || updateBand.isPending}
         // Salvar waits for a picture on its way: saved now, the slide would go without it.

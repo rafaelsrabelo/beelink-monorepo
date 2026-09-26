@@ -63,11 +63,17 @@ export function useDesignDraft(slug: string) {
 
     The key names every component of every band, not only the bands: a component added inside a
     band is a change to the list the panel draws, and a key that missed it would leave the panel
-    listing a component the owner had just deleted.
+    listing a component the owner had just deleted. And what the draft holds of each — whether it
+    shows, its layout — so a clean draft follows another tab's Publicar instead of offering to undo it.
   */
   const serverKey =
     page.data
-      ?.map((section) => `${section.id}:${section.components.map((component) => component.id).join("+")}`)
+      ?.map(
+        (section) =>
+          `${section.id}${section.isActive ? "" : "!"}:${section.components
+            .map((c) => [c.id, c.isActive, c.span, c.display, c.columns, c.align].join("/"))
+            .join("+")}`,
+      )
       .join(",") ?? null
 
   if (page.data && seeded !== serverKey) {

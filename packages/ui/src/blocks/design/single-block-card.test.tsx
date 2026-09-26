@@ -53,7 +53,7 @@ describe("SingleBlockCard — a band of one block is one card", () => {
     const { onEdit, onEditBand } = renderBands([band("b1", [cover])])
 
     await user.click(screen.getByRole("button", { name: /^Capa/ }))
-    await user.click(screen.getByRole("button", { name: "Cor e nome da faixa: Faixa 1" }))
+    await user.click(screen.getByRole("button", { name: "Estilo da faixa: Faixa 1" }))
 
     expect(onEdit).toHaveBeenCalledWith("c1")
     expect(onEditBand).toHaveBeenCalledWith("b1")

@@ -108,3 +108,17 @@ de…" do I10 ficam, porque são o jeito de pôr blocos lado a lado sem saber o 
 - Perguntar antes de trocar de bloco ou de sair com campos não salvos (já fora no I11).
 - A coluna Estrutura voltar aos 280 px da 9a: as linhas encolheram, mas os botões do I10 ainda pedem
   a largura de hoje.
+
+## PR 1 — depois da revisão
+
+*Acrescentado em 2026-09-25, com as correções da revisão em três frentes.*
+
+- O que foi digitado segue cada metade pela identidade dela. O bloco continua o mesmo quando muda de
+  faixa ("Pôr ao lado de…"), e o estilo da faixa continua o mesmo quando ela ganha ou perde um bloco.
+- O Salvar espera cada gravação (`mutateAsync`), em vez de encadear pelos callbacks, que param se o
+  painel fecha no meio. Ele grava o bloco só se o Conteúdo mudou, e fecha só se o painel aberto ainda
+  é o dele.
+- Um rascunho limpo acompanha qualquer resposta do servidor, layout incluído.
+- **Fica em aberto:** com o rascunho sujo, uma publicação de outra aba num bloco que não foi mexido
+  aqui ainda pode ser desfeita no Publicar. Resolver isso pede uma fusão em três vias com a base do
+  rascunho.

@@ -103,7 +103,8 @@ export function SingleBlockCard({
           className="focus-visible:ring-ring flex min-w-0 flex-1 flex-col rounded-md px-1 text-left outline-none hover:underline focus-visible:ring-2"
         >
           <span className="truncate text-sm font-medium">{name}</span>
-          <span className="text-muted-foreground truncate text-xs">
+          {/* Two lines and not one: at the column's 360px one line cut "Faixa 2 · Banner · Metade" before the width. */}
+          <span className="text-muted-foreground line-clamp-2 text-xs">
             {bandName} · {rowLineOf(block, messages)}
           </span>
         </button>
