@@ -44,7 +44,7 @@ function launch(product: NonNullable<LandingSubject['product']>, rows: SeededIte
       { kind: 'HEADING', title: 'Por que você vai gostar', items: [], position: 0, isActive: true },
       { kind: 'TEXT', body: description, align: 'CENTER', items: [], position: 1, isActive: true },
     ]),
-    band(2, 'CONTAINED', [spotlight(product.id, 'Compre agora')]),
+    band(2, 'CONTAINED', [spotlight(product.id, { title: 'Compre agora' })]),
     promises(rows, 'CARDS', 3),
     band(4, 'CONTAINED', [
       { kind: 'PRODUCTS', title: 'Mais novidades', display: 'RAIL', source: 'NEWEST', limit: 8, items: [], position: 0, isActive: true },
@@ -59,7 +59,7 @@ function flashSale(product: NonNullable<LandingSubject['product']>, rows: Seeded
     band(0, 'FULL', [
       cover(product.imageUrl, { title: `${product.name} em oferta`, subtitle: 'Só por pouco tempo' }, { productId: product.id }, 'BACKDROP'),
     ]),
-    band(1, 'CONTAINED', [spotlight(product.id, 'Oferta relâmpago · Estoque limitado')]),
+    band(1, 'CONTAINED', [spotlight(product.id, { title: 'Oferta relâmpago', subtitle: 'Estoque limitado' })]),
     band(2, 'CONTAINED', [
       { kind: 'PRODUCTS', title: 'Mais ofertas', display: 'RAIL', source: 'ON_SALE', limit: 12, items: [], position: 0, isActive: true },
     ]),
@@ -90,7 +90,7 @@ function collection(
     return [
       band(0, 'FULL', [cover(product.imageUrl, { title: product.name, subtitle: null }, { productId: product.id }, 'BACKDROP')]),
       band(1, 'CONTAINED', [intro]),
-      band(2, 'CONTAINED', [spotlight(product.id, 'Compre agora')]),
+      band(2, 'CONTAINED', [spotlight(product.id, { title: 'Compre agora' })]),
       band(3, 'CONTAINED', [
         { kind: 'PRODUCTS', title: 'Novidades', display: 'RAIL', source: 'NEWEST', limit: 8, items: [], position: 0, isActive: true },
       ]),

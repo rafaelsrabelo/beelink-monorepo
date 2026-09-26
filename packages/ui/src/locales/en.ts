@@ -164,6 +164,7 @@ export const en: UiMessages = {
     addedToCartStatus: "{name} was added to the cart.",
     seeOptions: "See options",
     buyNow: "Buy now",
+    seeProduct: "See product",
     viewCart: "View cart",
     addedShort: "Added",
     inStock: "In stock",
@@ -375,6 +376,7 @@ export const en: UiMessages = {
       FAQ: "Frequently asked questions",
       CALL_TO_ACTION: "Call to action",
       IMAGE_TEXT: "Image and text",
+      FEATURED_PRODUCT: "Featured product",
     },
     emptyAction: {
       ANNOUNCEMENT: "Write the notice",
@@ -388,6 +390,7 @@ export const en: UiMessages = {
       FAQ: "Write the first question",
       CALL_TO_ACTION: "Write the call",
       IMAGE_TEXT: "Choose the picture",
+      FEATURED_PRODUCT: "Choose the product",
     },
     showcaseOnPublish: "Its products appear once you publish",
     categoriesHiddenAction: "No category shows in the shop yet",
@@ -427,6 +430,10 @@ export const en: UiMessages = {
         title: "This source has no product right now",
         body: "The showcase does not show in the shop while its source is empty. Choose another source below.",
       },
+      featuredUnavailable: {
+        title: "This product is not on sale",
+        body: "It is a draft or was deleted, so the feature does not show in the shop. Choose another product below.",
+      },
       opensInNewTab: "opens in another tab",
     },
     gallery: {
@@ -465,6 +472,7 @@ export const en: UiMessages = {
         ],
         callToAction: { title: "Ready to choose yours?", body: "Free delivery on orders over R$ 199.", label: "See products" },
         imageText: { title: "Made with care", body: "Tell where the pieces come from and who is behind each one." },
+        featuredTitle: "This week's pick",
       },
       placement: {
         between: "Goes between {before} and {after}.",
@@ -487,6 +495,7 @@ export const en: UiMessages = {
         FAQ: "Questions and answers that open and close",
         CALL_TO_ACTION: "A title, a line and a button",
         IMAGE_TEXT: "A picture beside a title and text",
+        FEATURED_PRODUCT: "One product, large, with its price and a buy button",
       },
       bannersAcross: "{count} banners side by side",
       bannersAcrossHints: {
@@ -558,6 +567,7 @@ export const en: UiMessages = {
       CARD: "Card",
       IMAGE_LEFT: "Picture on the left",
       IMAGE_RIGHT: "Picture on the right",
+      IMAGE_LARGE: "Large picture",
     },
     displayAuto: "Automatic: still where it fits, scrolling on a phone",
     categoriesRailHint: "One row that scrolls sideways — on a phone and on a computer.",
@@ -589,6 +599,7 @@ export const en: UiMessages = {
         LINK_TO_MISSING_CATEGORY: "{block}, in {band}: a link goes to a category that no longer exists.",
         SHOWCASE_EMPTY: "{block}, in {band}: the showcase has no products to show.",
         BANNER_WITHOUT_IMAGE: "{block}, in {band}: the banner has no picture.",
+        FEATURED_PRODUCT_UNAVAILABLE: "{block}, in {band}: the featured product is not on sale.",
       },
       note: "Note for the history (optional)",
       notePlaceholder: "E.g. Black Friday prices",
@@ -771,6 +782,12 @@ export const en: UiMessages = {
     benefitIcon: "Icon",
     benefitTitle: "Title",
     benefitDetail: "Detail",
+    featured: {
+      chosen: "Product:",
+      none: "none chosen",
+      unknown: "Product not found",
+      search: "Search products",
+    },
     imageText: {
       image: "Picture",
       imageHelp: "Sits beside the text. On a phone, it comes first.",

@@ -14,11 +14,12 @@ import { PageVersionsController } from './page-versions.controller.js';
 import { PageVersionsService } from './page-versions.service.js';
 import { PagesService } from './pages.service.js';
 import { ShowcaseRules } from './showcase.rules.js';
+import { FeaturedRules } from './featured.rules.js';
 import { StoresModule } from '../stores/stores.module.js';
 
 @Module({
   imports: [StoresModule],
   controllers: [SectionsController, ComponentsController, PagesController, PageVersionsController, PublicLandingsController],
-  providers: [PageService, PageComponentsService, PageComponentMovesService, PagesService, PageVersionsService, LandingReadService, PageRules, ShowcaseRules],
+  providers: [PageService, PageComponentsService, PageComponentMovesService, PagesService, PageVersionsService, LandingReadService, PageRules, ShowcaseRules, FeaturedRules],
 })
 export class PageModule {}

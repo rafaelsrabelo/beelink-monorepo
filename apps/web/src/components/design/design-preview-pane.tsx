@@ -167,6 +167,7 @@ export function DesignPreviewPane({
                   showPrice={layout.showProductPrice ?? true}
                   showBadge={layout.showProductBadges ?? true}
                   quickAdd={layout.showQuickAdd ?? true}
+                  cartReachable={landing?.usesChrome ?? true}
                   linkComponent={InertLink}
                   renderBandEnd={besideSlotOf}
                   renderSection={(section, band) => (

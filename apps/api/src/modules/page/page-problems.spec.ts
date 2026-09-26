@@ -44,7 +44,7 @@ describe('problemsOf', () => {
     const slugs = { categories: new Map(), products: new Map([[PRODUCT, 'whey']]) };
     const shelves = new Map([['c3', { products: [{ id: PRODUCT }], category: null }]]) as never;
 
-    expect(problemsOf(sections, { slugs, shelves })).toEqual([]);
+    expect(problemsOf(sections, { slugs, shelves, featured: new Map() })).toEqual([]);
   });
 
   it('names a call to action whose button leads to a product gone', () => {
@@ -59,6 +59,17 @@ describe('problemsOf', () => {
     const sections = [band('b1', [block('c1', 'IMAGE_TEXT', [media])])];
 
     expect(problemsOf(sections, NO_LOOKUPS)).toEqual([{ kind: 'LINK_TO_MISSING_PRODUCT', sectionId: 'b1', componentId: 'c1', itemId: 'm' }]);
+  });
+
+  it('names a featured product the shop cannot draw, and not one it can', () => {
+    const pick = [{ id: 'p', productId: PRODUCT }];
+    const sections = [band('b1', [block('c1', 'FEATURED_PRODUCT', pick), block('c2', 'FEATURED_PRODUCT', pick), block('c3', 'FEATURED_PRODUCT')])];
+    const featured = new Map([['c2', { id: PRODUCT, soldOut: true }]]) as never;
+
+    expect(problemsOf(sections, { ...NO_LOOKUPS, featured })).toEqual([
+      { kind: 'FEATURED_PRODUCT_UNAVAILABLE', sectionId: 'b1', componentId: 'c1', itemId: null },
+      { kind: 'FEATURED_PRODUCT_UNAVAILABLE', sectionId: 'b1', componentId: 'c3', itemId: null },
+    ]);
   });
 
   it('looks only at what shows: a hidden band or block is served to nobody', () => {

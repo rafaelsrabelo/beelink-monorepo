@@ -85,7 +85,7 @@ describe('a call to action\'s button', () => {
 
   it('is served with its address built from the product\'s slug, and no id', () => {
     const slugs = { categories: new Map<string, string>(), products: new Map([[PRODUCT, 'whey']]) };
-    const [served] = toPublicSection(sectionOf(cta), 'loja', ROUTE_WORDS.PT_BR, { slugs, shelves: new Map() }).components;
+    const [served] = toPublicSection(sectionOf(cta), 'loja', ROUTE_WORDS.PT_BR, { slugs, shelves: new Map(), featured: new Map() }).components;
 
     expect(served).toMatchObject({ title: 'Garanta o seu', body: 'Enquanto tem no estoque.', display: 'BAND' });
     expect(served?.items).toEqual([{ id: 'btn', label: 'Comprar agora', href: '/loja/produtos/whey', external: false }]);
@@ -109,7 +109,7 @@ describe('an image with text\'s picture', () => {
 
   it('is served with its button\'s address built, and a decorative picture as alt null', () => {
     const slugs = { categories: new Map<string, string>(), products: new Map([[PRODUCT, 'blusa']]) };
-    const [served] = toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR, { slugs, shelves: new Map() }).components;
+    const [served] = toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR, { slugs, shelves: new Map(), featured: new Map() }).components;
 
     expect(served?.items).toEqual([
       { id: 'm', imageUrl: 'https://cdn.example/a.png', alt: null, button: { label: 'Ver a peça', href: '/loja/produtos/blusa', external: false } },
@@ -120,5 +120,21 @@ describe('an image with text\'s picture', () => {
     const [served] = toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR).components;
 
     expect(served?.items).toEqual([{ id: 'm', imageUrl: 'https://cdn.example/a.png', alt: null, button: null }]);
+  });
+});
+
+describe('a featured product', () => {
+  const block = componentRow({ kind: 'FEATURED_PRODUCT', display: 'IMAGE_LEFT', items: [{ id: 'p', productId: 'x' }] });
+
+  it('is served as the card the read looked up, and never as the pick', () => {
+    const card = { id: 'x', name: 'Blusa', soldOut: false } as never;
+    const featured = new Map([[block.id, card]]);
+    const [served] = toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR, { slugs: { categories: new Map(), products: new Map() }, shelves: new Map(), featured }).components;
+
+    expect(served?.items).toEqual([card]);
+  });
+
+  it('holds nothing when the product was not found on sale', () => {
+    expect(toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR).components[0]?.items).toEqual([]);
   });
 });

@@ -135,6 +135,7 @@ export const en: WebMessages = {
     SHOWCASE_SOURCE_INVALID: "Only a product showcase has a source and a limit.",
     SHOWCASE_CATEGORY_INVALID: "Choose one of this shop's categories for the showcase.",
     SHOWCASE_PRODUCTS_INVALID: "Choose at least one of this shop's products for the showcase.",
+    FEATURED_PRODUCT_INVALID: "Choose one of this shop's products to feature.",
     SHOWCASE_LIMIT_INVALID: "The limit goes from 1 to 48 products.",
     PRODUCT_SLUG_TAKEN: "Another product of this shop already uses this address. Choose another.",
     PRODUCT_SKU_TAKEN: "Another product of this shop already uses this code.",

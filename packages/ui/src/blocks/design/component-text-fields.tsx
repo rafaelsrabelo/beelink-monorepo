@@ -50,6 +50,7 @@ const WORDS_OF = {
   FAQ: HEADED,
   CALL_TO_ACTION: { title: true, subtitle: false, body: true },
   IMAGE_TEXT: { title: true, subtitle: false, body: true },
+  FEATURED_PRODUCT: HEADED,
   TEXT: { title: false, subtitle: false, body: true },
   BANNER: WORDLESS,
   BENEFITS: WORDLESS,

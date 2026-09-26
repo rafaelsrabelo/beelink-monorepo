@@ -48,7 +48,7 @@ describe("SectionGallery — the shelves", () => {
 
   // A site sells nothing; a shop gathers no leads: a shelf left empty is not drawn at all.
   it("draws no shelf this page cannot fill", () => {
-    gallery({ unavailable: ["PRODUCTS", "CATEGORIES"] })
+    gallery({ unavailable: ["PRODUCTS", "CATEGORIES", "FEATURED_PRODUCT"] })
 
     expect(screen.queryByRole("tab", { name: /Produtos e venda/ })).not.toBeInTheDocument()
   })

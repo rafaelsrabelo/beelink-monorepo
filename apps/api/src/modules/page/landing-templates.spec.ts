@@ -52,7 +52,7 @@ describe('landingBands', () => {
     for (const id of LANDING_TEMPLATE_IDS) expect(kindsOf(id, subject())).not.toContain('ANNOUNCEMENT');
   });
 
-  it('opens a launch on the product’s picture, pointing at the product, with the product on a shelf below', () => {
+  it('opens a launch on the product’s picture, pointing at the product, with the product featured below', () => {
     const [cover, , spotlight] = landingBands('lancamento', subject());
 
     expect(cover!.components[0]).toMatchObject({
@@ -61,9 +61,9 @@ describe('landingBands', () => {
       items: [{ imageUrl: PRODUCT.imageUrl, title: PRODUCT.name, target: 'PRODUCT', productId: PRODUCT.id }],
     });
     expect(spotlight!.components[0]).toMatchObject({
-      kind: 'PRODUCTS',
+      kind: 'FEATURED_PRODUCT',
       title: 'Compre agora',
-      source: 'SELECTION',
+      display: 'IMAGE_LEFT',
       items: [{ productId: PRODUCT.id }],
     });
   });
@@ -98,7 +98,7 @@ describe('landingBands', () => {
 
     expect(withCategory).toContainEqual(expect.objectContaining({ kind: 'PRODUCTS', source: 'CATEGORY', sourceCategoryId: CATEGORY.id }));
     expect(withCategory[0]).toMatchObject({ kind: 'BANNER', items: [{ target: 'CATEGORY', categoryId: CATEGORY.id, imageUrl: PRODUCT.imageUrl }] });
-    expect(without).toContainEqual(expect.objectContaining({ kind: 'PRODUCTS', source: 'SELECTION' }));
+    expect(without).toContainEqual(expect.objectContaining({ kind: 'FEATURED_PRODUCT', items: [{ id: 'destaque', productId: PRODUCT.id }] }));
     expect(without).not.toContainEqual(expect.objectContaining({ source: 'CATEGORY' }));
   });
 

@@ -145,7 +145,7 @@ export function openingDisplayOf(kind: ComponentKind): ComponentDisplay | null {
   if (kind === 'PRODUCTS' || kind === 'CATEGORIES') return 'RAIL';
   if (kind === 'FAQ') return 'ACCORDION';
   if (kind === 'CALL_TO_ACTION') return 'BAND';
-  if (kind === 'IMAGE_TEXT') return 'IMAGE_LEFT';
+  if (kind === 'IMAGE_TEXT' || kind === 'FEATURED_PRODUCT') return 'IMAGE_LEFT';
   return null;
 }
 

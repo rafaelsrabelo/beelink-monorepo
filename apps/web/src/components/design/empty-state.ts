@@ -10,6 +10,7 @@ export type EmptyState =
   | { kind: "productsNone" }
   | { kind: "productsOffShelf" }
   | { kind: "sourceEmpty" }
+  | { kind: "featuredUnavailable" }
 
 export interface EmptyFacts {
   /** Categories the shop window shows — the public list, which leaves out a category with nothing published. */
@@ -21,7 +22,7 @@ export interface EmptyFacts {
    * second is null when it cannot be told from the page the panel loaded. Null while they load.
    */
   products: { total: number; onShelf: number | null } | null
-  /** The showcase's shelf, as the public read resolved it, came back empty. */
+  /** The showcase's shelf, or the featured product, as the public read resolved it, came back empty. */
   shelfEmpty: boolean
 }
 
@@ -54,6 +55,9 @@ export function emptyStateOf(kind: ComponentKind, facts: EmptyFacts): EmptyState
     if (products.onShelf === 0) return { kind: "productsOffShelf" }
     return facts.shelfEmpty && products.onShelf !== null ? { kind: "sourceEmpty" } : null
   }
+
+  // The product chosen is not on sale — a draft, archived or deleted — and the fix is to choose another.
+  if (kind === "FEATURED_PRODUCT") return facts.shelfEmpty ? { kind: "featuredUnavailable" } : null
 
   return null
 }

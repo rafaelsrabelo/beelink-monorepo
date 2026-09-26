@@ -137,6 +137,8 @@ const ITEMS_OF = {
   CALL_TO_ACTION: z.array(callToActionButton).max(1),
   /** At most one picture. None is the words alone. */
   IMAGE_TEXT: z.array(imageTextMedia).max(1),
+  /** The one product, picked as a showcase picks: an id, read when the page is. None is not chosen yet. */
+  FEATURED_PRODUCT: z.array(showcaseProduct).max(1),
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
   HEADING: NOTHING,
   TEXT: NOTHING,

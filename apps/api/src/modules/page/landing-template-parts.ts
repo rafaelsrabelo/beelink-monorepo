@@ -45,15 +45,16 @@ export function cover(
 }
 
 /**
- * The product itself, on a shelf of one: its price and its button, which a banner does not draw.
- * Titled, because an untitled pick is drawn as "Destaques" — a word for a shelf of several.
+ * The product itself, large: its photo, its price and stock read when the page is, and the way to buy
+ * it — which a banner does not draw. It used to be a showcase of one; a featured product says the
+ * same thing at the size the page is about.
  */
-export function spotlight(productId: string, title: string): Component {
+export function spotlight(productId: string, words: { title: string; subtitle?: string }): Component {
   return {
-    kind: 'PRODUCTS',
-    title,
-    display: 'GRID',
-    source: 'SELECTION',
+    kind: 'FEATURED_PRODUCT',
+    title: words.title,
+    subtitle: words.subtitle ?? null,
+    display: 'IMAGE_LEFT',
     items: [{ id: 'destaque', productId }],
     position: 0,
     isActive: true,

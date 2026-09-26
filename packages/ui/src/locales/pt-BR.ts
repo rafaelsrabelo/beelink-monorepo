@@ -164,6 +164,7 @@ export const ptBR: UiMessages = {
     addedToCartStatus: "{name} foi adicionado ao carrinho.",
     seeOptions: "Ver opções",
     buyNow: "Comprar agora",
+    seeProduct: "Ver produto",
     viewCart: "Ver carrinho",
     addedShort: "Adicionado",
     inStock: "Em estoque",
@@ -375,6 +376,7 @@ export const ptBR: UiMessages = {
       FAQ: "Perguntas frequentes",
       CALL_TO_ACTION: "Chamada final",
       IMAGE_TEXT: "Imagem e texto",
+      FEATURED_PRODUCT: "Produto em destaque",
     },
     emptyAction: {
       ANNOUNCEMENT: "Escrever o aviso",
@@ -388,6 +390,7 @@ export const ptBR: UiMessages = {
       FAQ: "Escrever a primeira pergunta",
       CALL_TO_ACTION: "Escrever a chamada",
       IMAGE_TEXT: "Escolher a imagem",
+      FEATURED_PRODUCT: "Escolher o produto",
     },
     showcaseOnPublish: "Os produtos aparecem ao publicar",
     categoriesHiddenAction: "Nenhuma categoria aparece na loja ainda",
@@ -427,6 +430,10 @@ export const ptBR: UiMessages = {
         title: "Esta fonte não traz nenhum produto agora",
         body: "A vitrine não aparece na loja enquanto a fonte estiver vazia. Escolha outra fonte aqui embaixo.",
       },
+      featuredUnavailable: {
+        title: "Este produto não está à venda",
+        body: "Ele está em rascunho ou foi apagado, e o destaque não aparece na loja. Escolha outro produto aqui embaixo.",
+      },
       opensInNewTab: "abre em outra aba",
     },
     gallery: {
@@ -465,6 +472,7 @@ export const ptBR: UiMessages = {
         ],
         callToAction: { title: "Pronto para escolher o seu?", body: "Frete grátis nas compras acima de R$ 199.", label: "Ver produtos" },
         imageText: { title: "Feito com cuidado", body: "Conte de onde vêm as peças e quem está por trás de cada uma." },
+        featuredTitle: "Destaque da semana",
       },
       placement: {
         between: "Entra entre {before} e {after}.",
@@ -487,6 +495,7 @@ export const ptBR: UiMessages = {
         FAQ: "Perguntas e respostas que abrem e fecham",
         CALL_TO_ACTION: "Título, texto e um botão",
         IMAGE_TEXT: "Uma imagem ao lado de título e texto",
+        FEATURED_PRODUCT: "Um produto grande, com preço e botão de comprar",
       },
       bannersAcross: "{count} banners lado a lado",
       bannersAcrossHints: {
@@ -558,6 +567,7 @@ export const ptBR: UiMessages = {
       CARD: "Cartão",
       IMAGE_LEFT: "Imagem à esquerda",
       IMAGE_RIGHT: "Imagem à direita",
+      IMAGE_LARGE: "Imagem grande",
     },
     displayAuto: "Automática: parada onde cabe, rolando no celular",
     categoriesRailHint: "Uma linha só, que rola para o lado — no celular e no computador.",
@@ -589,6 +599,7 @@ export const ptBR: UiMessages = {
         LINK_TO_MISSING_CATEGORY: "{block}, em {band}: um link leva a uma categoria que não existe mais.",
         SHOWCASE_EMPTY: "{block}, em {band}: a vitrine não tem produtos para mostrar.",
         BANNER_WITHOUT_IMAGE: "{block}, em {band}: o banner não tem imagem.",
+        FEATURED_PRODUCT_UNAVAILABLE: "{block}, em {band}: o produto em destaque não está à venda.",
       },
       note: "Nota para o histórico (opcional)",
       notePlaceholder: "Ex.: preços da Black Friday",
@@ -771,6 +782,12 @@ export const ptBR: UiMessages = {
     benefitIcon: "Ícone",
     benefitTitle: "Título",
     benefitDetail: "Detalhe",
+    featured: {
+      chosen: "Produto:",
+      none: "nenhum escolhido",
+      unknown: "Produto não encontrado",
+      search: "Buscar produto",
+    },
     imageText: {
       image: "Imagem",
       imageHelp: "Fica ao lado do texto. No celular, aparece em cima.",

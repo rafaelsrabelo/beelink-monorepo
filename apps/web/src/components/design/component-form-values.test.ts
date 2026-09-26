@@ -166,3 +166,16 @@ describe("component-form-values — an image with text", () => {
     })
   })
 })
+
+describe("component-form-values — a featured product", () => {
+  const block = component({ kind: "FEATURED_PRODUCT", display: "IMAGE_LEFT", items: [{ id: "pick", productId: "p1" }] })
+
+  it("opens on its pick and sends one product back", () => {
+    const value = toForm(block)
+    expect(value.picks).toEqual([{ id: "pick", productId: "p1" }])
+
+    expect(toPayload({ ...value, picks: [{ id: "pick", productId: "p2" }, { id: "x", productId: "p3" }] }, "item")).toMatchObject({
+      items: [{ id: "pick", productId: "p2" }],
+    })
+  })
+})

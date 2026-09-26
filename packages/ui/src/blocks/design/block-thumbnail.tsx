@@ -128,6 +128,18 @@ function Shape({ kind, across }: { kind: ComponentKind; across: Across }) {
           </span>
         </span>
       )
+    // One product, large: its photo, its name and price, its button.
+    case "FEATURED_PRODUCT":
+      return (
+        <span className="flex h-full w-full items-center gap-1.5">
+          <span className={cn(BAR, "aspect-square h-full")} />
+          <span className="flex flex-1 flex-col gap-1">
+            <span className={cn(BAR, "h-1.5 w-4/5 bg-muted-foreground/70")} />
+            <span className={cn(BAR, "h-2 w-2/5")} />
+            <span className={cn(ACCENT, "h-2 w-3/5 rounded-full")} />
+          </span>
+        </span>
+      )
     // A kind added without a drawing fails the build here instead of drawing an empty card.
     default:
       return (kind satisfies never) && null

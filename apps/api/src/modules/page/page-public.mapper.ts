@@ -6,6 +6,7 @@ import type {
   ImageTextMedia,
   PublicComponent,
   PublicComponentItem,
+  PublicFeaturedProduct,
   PublicProductCard,
   PublicSection,
   StorefrontRouteWords,
@@ -48,10 +49,12 @@ export const NO_SHELVES: ShelvesByComponent = new Map();
 export interface PageLookups {
   slugs: SlugsByEntity;
   shelves: ShelvesByComponent;
+  /** Each featured product's card, by component id; absent where the product is not on sale. */
+  featured: ReadonlyMap<string, PublicFeaturedProduct>;
 }
 
-/** Nothing looked up: slides are pictures and showcases are empty, never a guess. */
-export const NO_LOOKUPS: PageLookups = { slugs: NO_SLUGS, shelves: NO_SHELVES };
+/** Nothing looked up: slides are pictures, showcases are empty and no product is featured — never a guess. */
+export const NO_LOOKUPS: PageLookups = { slugs: NO_SLUGS, shelves: NO_SHELVES, featured: new Map() };
 
 /** A block's items as a visitor is served them: resolved where they point by id, as written otherwise. */
 function publicItemsOf(row: ComponentShape, shopSlug: string, words: StorefrontRouteWords, lookups: PageLookups): PublicComponentItem[] {
@@ -66,6 +69,10 @@ function publicItemsOf(row: ComponentShape, shopSlug: string, words: StorefrontR
       return (itemsOf(row.kind, row.items) as ImageTextMedia[]).map((media) => toPublicMedia(media, shopSlug, words, lookups.slugs));
     case 'PRODUCTS':
       return lookups.shelves.get(row.id)?.products ?? [];
+    case 'FEATURED_PRODUCT': {
+      const card = lookups.featured.get(row.id);
+      return card ? [card] : [];
+    }
     default:
       return itemsOf(row.kind, row.items) as PublicComponentItem[];
   }

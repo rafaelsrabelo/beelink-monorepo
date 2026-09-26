@@ -67,3 +67,15 @@ describe('an image with text\'s picture', () => {
     expect(media.safeParse([picture, { ...picture, id: 'n' }]).success).toBe(false);
   });
 });
+
+describe('a featured product\'s pick', () => {
+  const pick = componentItemsFor('FEATURED_PRODUCT');
+  const PRODUCT = '0199e000-0000-7000-8000-000000000001';
+
+  it('takes one product by id, or none yet, and never two', () => {
+    expect(pick.safeParse([{ id: 'p', productId: PRODUCT }]).success).toBe(true);
+    expect(pick.safeParse([]).success).toBe(true);
+    expect(pick.safeParse([{ id: 'p', productId: PRODUCT }, { id: 'q', productId: PRODUCT }]).success).toBe(false);
+    expect(pick.safeParse([{ id: 'p', productId: 'not-an-id' }]).success).toBe(false);
+  });
+});

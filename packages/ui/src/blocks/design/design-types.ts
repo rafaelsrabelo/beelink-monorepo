@@ -25,6 +25,7 @@ export const COMPONENT_KINDS = [
   "FAQ",
   "CALL_TO_ACTION",
   "IMAGE_TEXT",
+  "FEATURED_PRODUCT",
 ] as const
 export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 
@@ -61,6 +62,7 @@ export const COMPONENT_DISPLAYS = [
   "CARD",
   "IMAGE_LEFT",
   "IMAGE_RIGHT",
+  "IMAGE_LARGE",
 ] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
 
@@ -83,3 +85,11 @@ export type SectionWidth = (typeof SECTION_WIDTHS)[number]
 // file is what it is.
 export { TEXT_ALIGNS, defaultAlignOf } from "./text-align"
 export type { TextAlign } from "./text-align"
+
+/** What Publicar may warn about. The contract's `PageProblemKind`, restated. */
+export type DesignPublishProblemKind =
+  | "LINK_TO_MISSING_PRODUCT"
+  | "LINK_TO_MISSING_CATEGORY"
+  | "SHOWCASE_EMPTY"
+  | "BANNER_WITHOUT_IMAGE"
+  | "FEATURED_PRODUCT_UNAVAILABLE"

@@ -64,3 +64,10 @@ describe("emptyStateOf — a showcase with nothing on its shelf", () => {
     expect(emptyStateOf("BANNER", facts())).toBeNull()
   })
 })
+
+describe("emptyStateOf — a featured product the shop does not draw", () => {
+  it("says the product chosen is not on sale, and nothing while it draws", () => {
+    expect(emptyStateOf("FEATURED_PRODUCT", facts({ shelfEmpty: true }))).toEqual({ kind: "featuredUnavailable" })
+    expect(emptyStateOf("FEATURED_PRODUCT", facts())).toBeNull()
+  })
+})

@@ -25,6 +25,11 @@ export function problemsOf(sections: readonly SectionShape[], resolved: PageLook
         problems.push({ kind: 'SHOWCASE_EMPTY', ...where, itemId: null });
       }
 
+      // None chosen, or one no longer on sale: the shop draws nothing where the owner put a product.
+      if (component.kind === 'FEATURED_PRODUCT' && !resolved.featured.has(component.id)) {
+        problems.push({ kind: 'FEATURED_PRODUCT_UNAVAILABLE', ...where, itemId: null });
+      }
+
       const pointers = pointersOf(component.kind, component.items);
 
       if (component.kind === 'BANNER' && pointers.length === 0) {

@@ -103,6 +103,14 @@ describe("sampleSectionOf — the band a card draws", () => {
     expect(pictured?.components[0]?.items).toEqual([expect.objectContaining({ imageUrl: "/a.jpg" })])
   })
 
+  it("features the shop's first product, and keeps the wireframe for a shop with none", () => {
+    const product = { id: "p", slug: "whey", name: "Whey", priceCents: 100, compareAtPriceCents: null, imageUrl: null, categorySlug: null, priceRange: { minCents: 100, maxCents: 100 } }
+    const featured = sampleSectionOf({ kind: "FEATURED_PRODUCT", across: 1, name: "", hint: "" }, { ...empty, products: [product] }, ptBR)
+
+    expect(featured?.components[0]).toMatchObject({ kind: "FEATURED_PRODUCT", display: "IMAGE_LEFT", items: [{ name: "Whey", soldOut: false }] })
+    expect(sampleSectionOf({ kind: "FEATURED_PRODUCT", across: 1, name: "", hint: "" }, empty, ptBR)).toBeNull()
+  })
+
   it("tells a card that has a preview from one that keeps its wireframe", () => {
     expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, empty, ptBR)).toBe(false)
     expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, stock, ptBR)).toBe(true)
