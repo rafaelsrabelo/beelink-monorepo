@@ -11,7 +11,8 @@ import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import { ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
+import { ctaOf, menuOf, pageLinksOf, siteFooterColumnsOf } from "./site-chrome"
+import { shopFooterColumnsOf } from "./shop-chrome"
 import { announcementOf } from "./storefront-sections"
 import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
@@ -87,6 +88,13 @@ export interface StorefrontFrameProps {
    */
   linkComponent?: LinkComponent
   messages: UiMessages
+  /** False draws the page alone, in the shop's colours: a landing that asked for no header and footer. */
+  chrome?: boolean
+  /**
+   * The page a site's menu anchors are on, when it is not this one. A landing passes the home's
+   * address, so "Serviços" leads to `/<shop>#servicos` rather than to a band this page does not have.
+   */
+  anchorBase?: string
   /** Optional: a page that arranges its own blocks passes those instead. */
   children?: ReactNode
 }
@@ -124,6 +132,8 @@ export function StorefrontFrame({
   shopper,
   linkComponent,
   messages,
+  chrome = true,
+  anchorBase = "",
   children,
 }: StorefrontFrameProps) {
   const routes = storefrontRoutes(store)
@@ -147,26 +157,12 @@ export function StorefrontFrame({
   const scopes = topLevel.map((category) => ({ value: category.slug, label: category.name }))
   const scope = (activeCategory ? (parentOf(activeCategory) ?? activeCategory) : searchScope) ?? ""
 
-  // The shop's own pages, and how to reach a person. Built here and not in the block for the
-  // reason every href is: a block that knew "Produtos" links to `routeWords.products` would be
-  // holding the very word this whole scheme exists to keep out of components.
-  const whatsapp = orderHrefOf(store)
-  const shopColumns = [
-    {
-      id: "shop",
-      title: text.footerShop,
-      items: [
-        { label: text.catalogTitle, href: routes.catalog() },
-        { label: text.categoriesTitle, href: routes.categories() },
-        { label: text.cart, href: routes.cart() },
-      ],
-    },
-    ...(whatsapp
-      ? [{ id: "contact", title: text.footerContact, items: [{ label: text.order, href: whatsapp }] }]
-      : []),
-  ]
+  // The landings the shop links: in a site's menu, and in every footer.
+  const pages = pageLinksOf(store, routes.landing)
   const drawn = sections ?? store.sections
-  const footerColumns = site ? siteFooterColumnsOf(store, drawn, messages) : shopColumns
+  const footerColumns = site
+    ? siteFooterColumnsOf(store, drawn, messages, { base: anchorBase, pages })
+    : shopFooterColumnsOf(store, routes, messages, pages)
   // The strip is above the masthead on every page, so it is read here from the same bands the
   // landing page's blocks come from — the draft's in design mode, the shop's everywhere else.
   const announcement = announcementOf(drawn)
@@ -181,7 +177,7 @@ export function StorefrontFrame({
       // The live one, which answers while someone types. It replaces the plain form rather than
       // sitting beside it, and falls back to exactly that form when scripting is off.
       {...(site
-        ? { menu: menuOf(drawn), cta: ctaOf(drawn) }
+        ? { menu: [...menuOf(drawn, anchorBase), ...pages], cta: ctaOf(drawn, anchorBase) }
         : {
             searchSlot: searchSlot ?? (
               <StorefrontSearchLive
@@ -224,6 +220,7 @@ export function StorefrontFrame({
       {...(pageHeader ? { pageHeader } : {})}
       {...body}
       {...(announcement ? { announcement } : {})}
+      chrome={chrome}
       banner={
         showBanner && store.layoutType === "BANNER" && store.bannerImageUrl
           ? { imageUrl: store.bannerImageUrl }

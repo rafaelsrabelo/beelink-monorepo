@@ -41,6 +41,22 @@ describe("StorefrontWindow", () => {
     expect(colors.primary).toMatch(/^#[0-9A-Fa-f]{6}$/)
   })
 
+  /** A landing page that is its own poster: the page and the shop's colours, nothing around it. */
+  it("draws the page alone when the chrome is off: no strip, no header, no footer", () => {
+    const { container } = renderWindow({
+      chrome: false,
+      announcement: { left: "Frete grátis" },
+      footerColumns: [{ id: "shop", title: "Loja", items: [{ label: "Produtos", href: "/p" }] }],
+      blocks: <p>Oferta relâmpago</p>,
+    })
+
+    expect(screen.getByRole("main")).toHaveTextContent("Oferta relâmpago")
+    expect(screen.queryByRole("banner")).not.toBeInTheDocument()
+    expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument()
+    expect(screen.queryByText("Frete grátis")).not.toBeInTheDocument()
+    expect((container.firstElementChild as HTMLElement).style.getPropertyValue("--shop-primary")).toBe(colors.primary)
+  })
+
   describe("the header", () => {
     /** A site's header: the page's named bands as anchors, where a shop has its icons. */
     it("draws a site's menu of anchors, named for a screen reader", () => {
