@@ -2,7 +2,8 @@
 import type { CSSProperties, ReactNode } from "react"
 
 // UI
-import { readableOn, toneOn } from "@harness-monorepo/ui/lib/contrast"
+import { readableOn } from "@harness-monorepo/ui/lib/contrast"
+import { surfaceVariables } from "@harness-monorepo/ui/lib/shop-palette"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
@@ -22,6 +23,11 @@ export interface StorefrontSectionBandProps {
   primary: string
   /** Edge to edge, or inside the shop's measure. */
   width?: "FULL" | "CONTAINED"
+  /**
+   * 32px of the band's own colour above and below what it holds — the page's one spacing, painted.
+   * For a coloured band of words; a band of pictures lets the pictures fill its colour.
+   */
+  padded?: boolean
   children: ReactNode
   className?: string
 }
@@ -44,27 +50,22 @@ export function StorefrontSectionBand({
   background,
   primary,
   width = "CONTAINED",
+  padded = false,
   children,
   className,
 }: StorefrontSectionBandProps) {
+  // Every variable that follows the page's background, declared again for the band's: a mix left
+  // to the root keeps the page's colours inside it. See `surfaceVariables`.
   const dressed: CSSProperties | undefined = background
-    ? ({
-        "--shop-background": background,
-        "--shop-on-background": readableOn(background),
-        "--shop-primary-ink": toneOn(primary, background),
-        "--shop-text": readableOn(background),
-        "--shop-on-text": background,
-        backgroundColor: background,
-        color: readableOn(background),
-      } as CSSProperties)
+    ? ({ ...surfaceVariables(background, primary), backgroundColor: background, color: readableOn(background) } as CSSProperties)
     : undefined
 
   return (
     <div {...(id ? { id } : {})} style={dressed} className={cn("scroll-mt-16", background && "w-full")}>
       {width === "CONTAINED" ? (
-        <div className={cn(BAND, "flex flex-col gap-8 py-2", className)}>{children}</div>
+        <div className={cn(BAND, "flex flex-col", padded && "py-8", className)}>{children}</div>
       ) : (
-        <div className={cn("flex flex-col", className)}>{children}</div>
+        <div className={cn("flex flex-col", padded && "py-8", className)}>{children}</div>
       )}
     </div>
   )

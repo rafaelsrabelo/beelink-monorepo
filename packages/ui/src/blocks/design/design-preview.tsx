@@ -111,7 +111,10 @@ export function DesignPreview({ device = "DESKTOP", children }: DesignPreviewPro
         data-device={device}
         // `box-content`: the frame's borders sit outside the phone's width instead of inside it.
         className={cn("h-full", phone && "border-shell-border mx-auto box-content border-x")}
-        style={{ width: width * scale }}
+        // Out of sight until the pane is measured: before that the scale is the server's 1, and the
+        // desktop's 1440px shop would paint at full size, cropped, then jump. Hidden, not removed,
+        // because the measurement is of this very layout.
+        style={{ width: width * scale, ...(height ? {} : { visibility: "hidden" as const }) }}
       >
         <div
           ref={surface}

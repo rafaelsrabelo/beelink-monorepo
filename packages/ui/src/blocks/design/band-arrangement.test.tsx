@@ -1,5 +1,5 @@
 // Libs
-import { render, screen, within } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -28,18 +28,21 @@ const bands: ArrangementBand[] = [
   },
 ]
 
-function renderBands(overrides: Partial<React.ComponentProps<typeof BandArrangement>> = {}) {
-  const handlers = {
+function handlersOf() {
+  return {
     onReorder: vi.fn(),
     onReorderComponents: vi.fn(),
     onToggleBand: vi.fn(),
     onEditBand: vi.fn(),
     onDeleteBand: vi.fn(),
     onToggle: vi.fn(),
-    onSpanChange: vi.fn(),
     onDelete: vi.fn(),
     onEdit: vi.fn(),
   }
+}
+
+function renderBands(overrides: Partial<React.ComponentProps<typeof BandArrangement>> = {}) {
+  const handlers = handlersOf()
 
   const view = render(<BandArrangement bands={bands} {...handlers} {...overrides} />)
 
@@ -63,6 +66,115 @@ describe("BandArrangement", () => {
     expect(onInsert).toHaveBeenCalledWith({ level: "band", index: 2 })
   })
 
+  describe("side by side — the owner's “não consigo colocar banners ao lado do outro”", () => {
+    const stacked: ArrangementBand[] = [
+      { id: "top", isActive: true, components: [{ id: "a", kind: "BANNER", title: "Inverno", span: "FULL", isActive: true }] },
+      { id: "below", isActive: true, components: [{ id: "b", kind: "BANNER", title: "Verão", span: "FULL", isActive: true }] },
+    ]
+
+    it("offers “Adicionar ao lado” in words on every block, and a whole one gives up half its row", async () => {
+      const onInsert = vi.fn()
+      renderBands({ bands: stacked, onInsert })
+
+      const beside = screen.getByRole("button", { name: "Adicionar ao lado de Inverno" })
+      expect(beside).toHaveTextContent("Adicionar ao lado")
+      await userEvent.click(beside)
+
+      expect(onInsert).toHaveBeenCalledWith({
+        level: "beside",
+        sectionId: "top",
+        afterId: "a",
+        span: "HALF",
+        rebalance: [{ id: "a", span: "HALF" }],
+      })
+    })
+
+    it("puts a lone block up beside the band above's last one, in the same row", async () => {
+      const onJoinAbove = vi.fn()
+      renderBands({ bands: stacked, onJoinAbove })
+
+      await userEvent.click(screen.getByRole("button", { name: "Pôr ao lado de Inverno" }))
+
+      expect(onJoinAbove).toHaveBeenCalledWith({
+        componentId: "b",
+        sectionId: "top",
+        afterId: "a",
+        span: "HALF",
+        rebalance: [{ id: "a", span: "HALF" }],
+      })
+      // The first band has no band above it to join.
+      expect(screen.queryByRole("button", { name: /Pôr ao lado de Verão/ })).not.toBeInTheDocument()
+    })
+
+    // The grid draws what is shown: a hidden block counted into a row left room the page did not have.
+    it("reads the rows from the shown blocks only, so the newcomer lands beside and not below", async () => {
+      const onInsert = vi.fn()
+      renderBands({
+        bands: [
+          {
+            id: "row",
+            isActive: true,
+            components: [
+              { id: "a", kind: "BANNER", title: "A", span: "HALF", isActive: true },
+              { id: "h", kind: "BANNER", title: "Oculto", span: "HALF", isActive: false },
+              { id: "b", kind: "BANNER", title: "B", span: "HALF", isActive: true },
+            ],
+          },
+        ],
+        onInsert,
+      })
+
+      await userEvent.click(screen.getByRole("button", { name: "Adicionar ao lado de B" }))
+
+      // Drawn [A, B] is a full row: the three become thirds, and the hidden one keeps its width.
+      expect(onInsert).toHaveBeenCalledWith({
+        level: "beside",
+        sectionId: "row",
+        afterId: "b",
+        span: "THIRD",
+        rebalance: [
+          { id: "a", span: "THIRD" },
+          { id: "b", span: "THIRD" },
+        ],
+      })
+      expect(screen.queryByRole("button", { name: "Adicionar ao lado de Oculto" })).not.toBeInTheDocument()
+    })
+
+    // A move is a saved write: a hidden block moved into a shown band would go live without Publicar.
+    it("offers no move up from or into a hidden band, nor into the strip's band", () => {
+      const onJoinAbove = vi.fn()
+      const { rerender } = renderBands({ bands: [stacked[0]!, { ...stacked[1]!, isActive: false }], onJoinAbove })
+      expect(screen.queryByRole("button", { name: /Pôr ao lado de/ })).not.toBeInTheDocument()
+
+      const strip: ArrangementBand = {
+        id: "strip",
+        isActive: true,
+        components: [
+          { id: "s", kind: "ANNOUNCEMENT", title: "Frete grátis", span: "FULL", isActive: true },
+          { id: "t", kind: "BANNER", title: "Topo", span: "HALF", isActive: true },
+        ],
+      }
+      rerender(<BandArrangement bands={[strip, stacked[1]!]} {...handlersOf()} onJoinAbove={onJoinAbove} />)
+      expect(screen.queryByRole("button", { name: /Pôr ao lado de/ })).not.toBeInTheDocument()
+    })
+
+    it("offers nothing beside a full row of three, since a third is the narrowest slice", () => {
+      const onInsert = vi.fn()
+      renderBands({
+        bands: [
+          {
+            id: "row",
+            isActive: true,
+            components: ["x", "y", "z"].map((id) => ({ id, kind: "BANNER" as const, title: id, span: "THIRD" as const, isActive: true })),
+          },
+        ],
+        onInsert,
+      })
+
+      expect(screen.queryByRole("button", { name: /Adicionar ao lado de/ })).not.toBeInTheDocument()
+    })
+  })
+
   it("calls a band by where it sits, because a band has no name", () => {
     renderBands()
 
@@ -82,87 +194,47 @@ describe("BandArrangement", () => {
   })
 
   /**
-   * Every block has a slice of its band — a heading beside a banner is as reachable as two banners —
-   * so every block's card offers one. The product list included.
+   * The slice is chosen in the Layout tab now; the row says it beside the kind, so a band's
+   * arrangement still reads at a glance — and has no control that makes every row twice as tall.
    */
-  it("offers a width on every kind of block", () => {
+  it("says each block's kind and slice on one line, with no width control", () => {
     renderBands()
 
-    expect(screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })).toBeInTheDocument()
-    expect(screen.getByRole("group", { name: "Largura do bloco: Vitrine de produtos" })).toBeInTheDocument()
-  })
-
-  /**
-   * The regression this rule first shipped with, reported the day it landed: a banner added a
-   * moment ago has no picture, so a rule of "exactly one" took the control away during the whole
-   * time the owner is building the thing and deciding how wide it goes.
-   */
-  it("offers a width on a banner that has no picture yet", () => {
-    renderBands({
-      bands: [
-        {
-          id: "band-1",
-          background: null,
-          isActive: true,
-          components: [{ id: "novo", kind: "BANNER", title: null, span: "FULL", isActive: true, empty: true }],
-        },
-      ],
-    })
-
-    expect(screen.getByRole("group", { name: "Largura do bloco: Banner" })).toBeInTheDocument()
-  })
-
-  /** The strip above the header is never in a band's grid, so a width there would change nothing. */
-  it("offers no width on the strip above the header", () => {
-    renderBands({
-      bands: [
-        {
-          id: "band-1",
-          background: null,
-          isActive: true,
-          components: [{ id: "faixa", kind: "ANNOUNCEMENT", title: "Frete grátis", span: "FULL", isActive: true }],
-        },
-      ],
-    })
-
+    expect(screen.getByRole("button", { name: /^Frete grátis/ })).toHaveTextContent("Banner · Metade")
+    expect(screen.getByRole("button", { name: /^Vitrine de produtos/ })).toHaveTextContent("Vitrine de produtos · Cheio")
     expect(screen.queryByRole("group", { name: /Largura do bloco/ })).not.toBeInTheDocument()
   })
 
-  /**
-   * Four glyphs, each named by its slice, the current one pressed — and the slice written out, so
-   * the owner does not hover to learn what the block is.
-   */
-  it("names each slice, marks the current one and writes it out", () => {
-    renderBands()
+  /** The strip above the header is never in a band's grid, so it has no slice to say. */
+  it("says no slice for the strip above the header, and that an empty block is empty", () => {
+    renderBands({
+      bands: [
+        {
+          id: "band-1",
+          background: null,
+          isActive: true,
+          components: [
+            { id: "faixa", kind: "ANNOUNCEMENT", title: "Frete grátis", span: "FULL", isActive: true },
+            { id: "novo", kind: "BANNER", title: null, span: "HALF", isActive: true, empty: true },
+          ],
+        },
+      ],
+    })
 
-    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
-
-    expect(within(largura).getByRole("button", { name: "Metade", pressed: true })).toBeInTheDocument()
-    for (const other of ["Cheio", "Dois terços", "Um terço"]) {
-      expect(within(largura).getByRole("button", { name: other, pressed: false })).toBeInTheDocument()
-    }
-    expect(largura.parentElement).toHaveTextContent("Metade")
+    expect(screen.getByRole("button", { name: /^Frete grátis/ })).toHaveTextContent(/Barra de aviso$/)
+    expect(screen.getByRole("button", { name: /^Banner/ })).toHaveTextContent("Vazio — não aparece na loja · Metade")
   })
 
-  /**
-   * The band's width beside the block's, in words of its own: "Tamanho" beside the band's
-   * "Largura" read as one setting in two places.
-   */
-  it("says the band's width beside the block's, without mistaking one for the other", () => {
-    renderBands({ bands: bands.map((band) => ({ ...band, width: "FULL" as const })) })
-
-    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
-    expect(largura.parentElement).toHaveTextContent("Largura da faixa: Ponta a ponta")
-  })
-
-  it("reports the slice the owner chose, two thirds included", async () => {
+  // The header of a band of several blocks chooses the band; the panel then shows its Estilo.
+  it("chooses a band from its header, and marks it as a block is marked", async () => {
     const user = userEvent.setup()
-    const { onSpanChange } = renderBands()
+    const { onEditBand, rerender } = renderBands()
 
-    const largura = screen.getByRole("group", { name: "Largura do bloco: Frete grátis" })
-    await user.click(within(largura).getByRole("button", { name: "Dois terços" }))
+    await user.click(screen.getByRole("button", { name: "Faixa 2" }))
+    expect(onEditBand).toHaveBeenCalledWith("band-2")
 
-    expect(onSpanChange).toHaveBeenCalledWith("2", "TWO_THIRDS")
+    rerender(<BandArrangement bands={bands} {...handlersOf()} selectedBandId="band-2" />)
+    expect(screen.getByRole("button", { name: "Arrastar: Faixa 2" }).closest("li")).toHaveAttribute("aria-current", "true")
   })
 
   it("asks for the opposite of what a band is now", async () => {
@@ -218,5 +290,42 @@ describe("BandArrangement", () => {
     const { container } = renderBands()
 
     await expectNoA11yViolations(container)
+  })
+})
+
+describe("BandArrangement — a block kept for one screen", () => {
+  // Said on the row, so the structure explains why the phone's preview has no such block.
+  it("says so on the row", () => {
+    renderBands({
+      bands: [
+        {
+          id: "band-9",
+          background: null,
+          isActive: true,
+          components: [
+            { id: "9", kind: "HEADING", title: "Frete", span: "HALF", isActive: true, visibleOn: "PHONE" },
+            { id: "10", kind: "TEXT", title: "Troca", span: "HALF", isActive: true, visibleOn: "DESKTOP" },
+          ],
+        },
+      ],
+    })
+
+    expect(screen.getByText("Título · Metade · Só no celular")).toBeInTheDocument()
+    expect(screen.getByText("Parágrafo · Metade · Só no computador")).toBeInTheDocument()
+  })
+})
+
+describe("BandArrangement — Pôr ao lado for a block kept for the phone", () => {
+  // Beside is the computer's row: a block that is not drawn there would only squeeze the one above.
+  it("does not offer to put a phone-only block beside the band above", () => {
+    renderBands({
+      onJoinAbove: vi.fn(),
+      bands: [
+        { id: "up", background: null, isActive: true, components: [{ id: "u", kind: "BANNER", title: "Capa", span: "FULL", isActive: true }] },
+        { id: "down", background: null, isActive: true, components: [{ id: "d", kind: "BANNER", title: "Só celular", span: "FULL", isActive: true, visibleOn: "PHONE" }] },
+      ],
+    })
+
+    expect(screen.queryByRole("button", { name: /Pôr ao lado de/ })).not.toBeInTheDocument()
   })
 })

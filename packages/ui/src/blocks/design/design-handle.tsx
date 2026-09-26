@@ -20,6 +20,10 @@ export interface DesignHandleProps {
   id: string
   /** Names the grip for a screen reader. A panel of grips called "Arrastar" names nothing. */
   label: string
+  /** The band chosen on its own — a band of several blocks, whose header was picked in the structure. */
+  selected?: boolean
+  /** The chosen band's actions (`DesignSelectionBar`), over its top right corner while it is selected. */
+  bar?: ReactNode
   children: ReactNode
   className?: string
   messages?: UiMessages
@@ -39,6 +43,8 @@ export interface DesignHandleProps {
 export function DesignHandle({
   id,
   label,
+  selected = false,
+  bar,
   children,
   className,
   messages = defaultMessages,
@@ -57,6 +63,22 @@ export function DesignHandle({
       )}
     >
       {children}
+
+      {selected ? (
+        <>
+          {/* An outline over the band and not a border on it: a border would move what the shop draws. */}
+          <div aria-hidden="true" className="ring-primary pointer-events-none absolute inset-0 z-10 rounded-md ring-2" />
+          {bar ? (
+            // Above the block covers (z-10) and the grip (z-20); counter-scaled as `DesignEditTag`'s chip is.
+            <div
+              className="absolute top-3 right-3 z-30"
+              style={{ transform: "scale(calc(1 / var(--design-scale, 1)))", transformOrigin: "top right" }}
+            >
+              {bar}
+            </div>
+          ) : null}
+        </>
+      ) : null}
 
       <button
         type="button"

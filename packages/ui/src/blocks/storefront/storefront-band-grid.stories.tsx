@@ -6,11 +6,12 @@ import { StorefrontBandCell, type StorefrontSpan } from "./storefront-band-cell"
 import { StorefrontBandGrid } from "./storefront-band-grid"
 import { StorefrontShowcase } from "./storefront-showcase"
 
-function poster(id: string, title: string, span: StorefrontSpan) {
+function poster(id: string, title: string, span: StorefrontSpan, bleed = false) {
   return (
     <StorefrontBandCell key={id} span={span}>
       <StorefrontShowcase
         span={span}
+        bleed={bleed}
         items={[{ id, title, subtitle: span, imageUrl: `https://picsum.photos/seed/band-${id}/1200/700`, href: "#" }]}
       />
     </StorefrontBandCell>
@@ -75,7 +76,7 @@ export const Misturado: Story = {
   },
 }
 
-/** Faixa ponta a ponta: 16px entre vizinhos, e blocos empilhados se encostam, como antes da grade. */
+/** Faixa ponta a ponta: 16px entre os blocos nos dois sentidos, e fotos sem canto arredondado. */
 export const PontaAPonta: Story = {
-  args: { bleed: true, children: [poster("14", "Esquerda", "HALF"), poster("15", "Direita", "HALF")] },
+  args: { bleed: true, children: [poster("14", "Esquerda", "HALF", true), poster("15", "Direita", "HALF", true)] },
 }

@@ -22,6 +22,52 @@ function neutral(percent: number): string {
 }
 
 /**
+ * The variables that follow a surface's background: its ink, the neutrals and washes mixed from it,
+ * and the semantic inks chosen for its darkness. The window's root sets them for the page; a band
+ * painted in its own colour sets them again for itself. `var()` in a custom property is resolved
+ * where the property is declared, so a mix declared once on the root keeps the page's colours inside
+ * every band — a card washed in the page's pale tint under a dark band's white words — unless the
+ * band declares it again.
+ */
+export function surfaceVariables(background: string, primary: string): Record<string, string> {
+  const ink = readableOn(background)
+  const semantic = (name: string) => `var(--shop-${name}${ink === PAPER ? "-on-dark" : ""})`
+
+  return {
+    "--shop-background": background,
+    "--shop-on-background": ink,
+    /*
+      The brand as a *word* on the surface, rather than as a surface behind one. `readableOn` cannot
+      serve it: answering "black or white" would throw the brand away. This is the brand mixed
+      toward the surface's ink only as far as 4.5:1 requires — a pale yellow on white and a navy on
+      black are the two a shopkeeper cannot read at all, and every other brand comes back untouched.
+    */
+    "--shop-primary-ink": toneOn(primary, background),
+    /*
+      `--shop-text` survives as a name because it is also a *surface* — the announcement strip, the
+      current page's box and the poster's gradient are drawn in it — and it is exactly the surface's
+      ink, so the two are one value rather than two that can disagree.
+    */
+    "--shop-text": ink,
+    "--shop-on-text": background,
+    "--shop-muted": neutral(65),
+    "--shop-line": neutral(10),
+    "--shop-line-strong": neutral(22),
+    "--shop-frame": neutral(15),
+    "--shop-fill": neutral(3),
+    "--shop-placeholder": neutral(6),
+    "--shop-canvas": neutral(4),
+    // The pale wash of a chosen card or pill (5b's lilac), and the deeper one of its empty swatch:
+    // the shop's own colour mixed into its surface, so a dark surface gets a dark wash.
+    "--shop-primary-tint": "color-mix(in oklab, var(--shop-primary) 8%, var(--shop-background))",
+    "--shop-primary-tint-strong": "color-mix(in oklab, var(--shop-primary) 16%, var(--shop-background))",
+    "--shop-sale-ink": semantic("sale"),
+    "--shop-positive-ink": semantic("positive"),
+    "--shop-verified-ink": semantic("verified"),
+  }
+}
+
+/**
  * Every `--shop-*` custom property, from the four colours the shopkeeper chose — pure, so the
  * window's root, a portaled overlay and a test all compute the same palette.
  *
@@ -61,8 +107,6 @@ function neutral(percent: number): string {
  * variant on a dark one, chosen here because CSS cannot measure contrast.
  */
 export function shopPaletteVariables(colors: ShopColors): CSSProperties {
-  const ink = readableOn(colors.background)
-  const darkPage = ink === PAPER
   /*
     The brand on the header, as an accent: the active category's underline, the cart's badge and
     the search button. `--shop-primary` alone vanishes the moment a shop paints its header in its
@@ -70,20 +114,11 @@ export function shopPaletteVariables(colors: ShopColors): CSSProperties {
     as far as 4.5:1 requires, and the brand itself for every shop whose two colours differ.
   */
   const primaryOnHeader = toneOn(colors.primary, colors.header)
-  const semantic = (name: string) => `var(--shop-${name}${darkPage ? "-on-dark" : ""})`
 
   return {
-    "--shop-background": colors.background,
-    "--shop-on-background": ink,
+    ...surfaceVariables(colors.background, colors.primary),
     "--shop-primary": colors.primary,
     "--shop-on-primary": readableOn(colors.primary),
-    /*
-      The brand as a *word* on the page, rather than as a surface behind one. `readableOn` cannot
-      serve it: answering "black or white" would throw the brand away. This is the brand mixed
-      toward the page's ink only as far as 4.5:1 requires — a pale yellow on white and a navy on
-      black are the two a shopkeeper cannot read at all, and every other brand comes back untouched.
-    */
-    "--shop-primary-ink": toneOn(colors.primary, colors.background),
     "--shop-header": colors.header,
     "--shop-on-header": readableOn(colors.header),
     "--shop-primary-on-header": primaryOnHeader,
@@ -91,27 +126,6 @@ export function shopPaletteVariables(colors: ShopColors): CSSProperties {
     "--shop-primary-on-header-soft": "color-mix(in oklab, var(--shop-primary-on-header) 55%, var(--shop-on-header))",
     "--shop-footer": colors.footer,
     "--shop-on-footer": readableOn(colors.footer),
-    /*
-      `--shop-text` survives as a name because it is also a *surface* — the announcement strip, the
-      current page's box and the poster's gradient are drawn in it — and it is exactly the page's
-      ink, so the two are one value rather than two that can disagree.
-    */
-    "--shop-text": ink,
-    "--shop-on-text": colors.background,
-    "--shop-muted": neutral(65),
-    "--shop-line": neutral(10),
-    "--shop-line-strong": neutral(22),
-    "--shop-frame": neutral(15),
-    "--shop-fill": neutral(3),
-    "--shop-placeholder": neutral(6),
-    "--shop-canvas": neutral(4),
-    // The pale wash of a chosen card or pill (5b's lilac), and the deeper one of its empty swatch:
-    // the shop's own colour mixed into its page, so a dark shop gets a dark wash.
-    "--shop-primary-tint": "color-mix(in oklab, var(--shop-primary) 8%, var(--shop-background))",
-    "--shop-primary-tint-strong": "color-mix(in oklab, var(--shop-primary) 16%, var(--shop-background))",
-    "--shop-sale-ink": semantic("sale"),
-    "--shop-positive-ink": semantic("positive"),
-    "--shop-verified-ink": semantic("verified"),
   } as CSSProperties
 }
 

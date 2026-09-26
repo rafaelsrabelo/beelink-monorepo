@@ -92,6 +92,69 @@ function Shape({ kind, across }: { kind: ComponentKind; across: Across }) {
           <span className={cn(ACCENT, "h-2 w-2/5")} />
         </>
       )
+    // Questions as rows with a chevron; the first one open, its answer under it.
+    case "FAQ":
+      return (
+        <span className="flex w-full flex-col gap-1">
+          {[0, 1, 2].map((at) => (
+            <span key={at} className="flex flex-col gap-0.5">
+              <span className="flex items-center gap-1">
+                <span className={cn(BAR, "h-1.5 flex-1 bg-muted-foreground/60")} />
+                <span className="bg-primary/70 size-1.5 rounded-full" />
+              </span>
+              {at === 0 ? <span className={cn(BAR, "h-1 w-3/4")} /> : null}
+            </span>
+          ))}
+        </span>
+      )
+    // Words centred over a button, on a strip of colour.
+    case "CALL_TO_ACTION":
+      return (
+        <span className="bg-primary/15 flex h-full w-full flex-col items-center justify-center gap-1 rounded-sm">
+          <span className={cn(BAR, "h-2 w-1/2 bg-muted-foreground/70")} />
+          <span className={cn(BAR, "h-1 w-2/5")} />
+          <span className={cn(ACCENT, "h-2 w-1/4 rounded-full")} />
+        </span>
+      )
+    // A picture beside its words.
+    case "IMAGE_TEXT":
+      return (
+        <span className="flex h-full w-full items-center gap-1.5">
+          <span className={cn(ACCENT, "h-full w-2/5 shrink-0")} />
+          <span className="flex flex-1 flex-col gap-1">
+            <span className={cn(BAR, "h-2 w-4/5 bg-muted-foreground/70")} />
+            <span className={cn(BAR, "h-1 w-full")} />
+            <span className={cn(BAR, "h-1 w-3/5")} />
+          </span>
+        </span>
+      )
+    // One product, large: its photo, its name and price, its button.
+    case "FEATURED_PRODUCT":
+      return (
+        <span className="flex h-full w-full items-center gap-1.5">
+          <span className={cn(BAR, "aspect-square h-full")} />
+          <span className="flex flex-1 flex-col gap-1">
+            <span className={cn(BAR, "h-1.5 w-4/5 bg-muted-foreground/70")} />
+            <span className={cn(BAR, "h-2 w-2/5")} />
+            <span className={cn(ACCENT, "h-2 w-3/5 rounded-full")} />
+          </span>
+        </span>
+      )
+    // Four boxes of digits under a line of words.
+    case "COUNTDOWN":
+      return (
+        <span className="flex h-full w-full flex-col items-center justify-center gap-1">
+          <span className={cn(BAR, "h-1 w-2/5")} />
+          <span className="flex gap-1">
+            {[0, 1, 2, 3].map((at) => (
+              <span key={at} className={cn(ACCENT, "size-4")} />
+            ))}
+          </span>
+        </span>
+      )
+    // A kind added without a drawing fails the build here instead of drawing an empty card.
+    default:
+      return (kind satisfies never) && null
   }
 }
 

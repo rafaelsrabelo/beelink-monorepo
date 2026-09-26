@@ -51,10 +51,15 @@ export interface StorefrontSearchProps {
   messages?: UiMessages
 }
 
-/** The bar's classes, shared with the live search so the two are one thing to look at. */
+/**
+ * The bar's classes, shared with the live search so the two are one thing to look at. The field and
+ * the scope are 16px on a phone: below that, iOS zooms the page into whatever is tapped. The scope
+ * takes at most 40% of the bar: a native select is as wide as its longest option, and a long
+ * category name would squeeze the field to nothing and push the button out of the clipped bar.
+ */
 export const SEARCH_BAR = "flex h-11 w-full min-w-0 overflow-hidden rounded-[10px]"
-export const SEARCH_SCOPE = "shrink-0 border-r bg-shop-fill px-3 text-[13px] text-shop-on-background outline-none focus-visible:bg-shop-line"
-export const SEARCH_FIELD = "min-w-0 flex-1 border-0 bg-transparent px-3.5 text-[15px] text-shop-on-background outline-none"
+export const SEARCH_SCOPE = "max-w-[40%] shrink-0 border-r bg-shop-fill px-3 text-base text-shop-on-background outline-none focus-visible:bg-shop-line shop-md:text-[13px]"
+export const SEARCH_FIELD = "min-w-0 flex-1 border-0 bg-transparent px-3.5 text-base text-shop-on-background outline-none shop-md:text-[15px]"
 export const SEARCH_BUTTON = "flex w-14 shrink-0 items-center justify-center"
 
 /** The button's paint, by tone. */

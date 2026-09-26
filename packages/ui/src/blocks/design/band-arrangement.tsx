@@ -13,10 +13,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { ArrangeBoard } from "./design-arrange"
+import { besideInBand, drawnOf } from "./band-beside"
 import { bandAnnouncements } from "./band-label"
 import { InsertPoint } from "./insert-point"
 import { BandRow } from "./band-row"
-import type { ArrangementItem, ArrangementSpan } from "./arrangement-row"
+import { hasSpan, type ArrangementItem, type ArrangementSpan } from "./arrangement-row"
 import type { SectionWidth } from "./design-types"
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx` and apps/web reaches
@@ -43,10 +44,10 @@ export interface BandArrangementProps {
   /** One band's components in their new order. Never across two bands — see the block doc. */
   onReorderComponents: (sectionId: string, ids: string[]) => void
   onToggleBand: (id: string, isActive: boolean) => void
+  /** A band's header, or a lone block's swatch: the band chosen, its Estilo in the panel. */
   onEditBand: (id: string) => void
   onDeleteBand: (id: string) => void
   onToggle: (id: string, isActive: boolean) => void
-  onSpanChange: (id: string, span: ArrangementSpan) => void
   onDelete: (id: string) => void
   onEdit: (id: string) => void
   /**
@@ -54,15 +55,46 @@ export interface BandArrangementProps {
    * band — the only way two blocks end up side by side. Without it the panel offers no "+".
    */
   onInsert?: (at: InsertAt) => void
+  /**
+   * A band's only block moved up beside the last block of the band above, when that row has room —
+   * how two banners stacked in two bands end up side by side without being made again.
+   */
+  onJoinAbove?: (move: JoinAbove) => void
   /** While an add is on its way, so a second "+" does not start a second one. */
   inserting?: boolean
   /** The block whose fields are open, marked here as the preview marks it. */
   selectedId?: string | null
+  /** The band chosen on its own, marked as a block is. */
+  selectedBandId?: string | null
   messages?: UiMessages
 }
 
-/** Where a "+" inserts: among the bands, or inside one of them. Indices count from 0. */
-export type InsertAt = { level: "band"; index: number } | { level: "block"; sectionId: string; index: number }
+/**
+ * Where a "+" inserts: among the bands, inside one of them, or beside a block — which also says
+ * the slice the newcomer takes and the neighbours that give up room for it (`besideOf`).
+ * Indices count from 0.
+ */
+export type InsertAt =
+  | { level: "band"; index: number }
+  | { level: "block"; sectionId: string; index: number }
+  | { level: "beside"; sectionId: string; afterId: string; span: ArrangementSpan; rebalance: readonly SpanChange[] }
+
+/** A block that changes slice so a row has room: the width change the Layout tab makes, by id. */
+export interface SpanChange {
+  id: string
+  span: ArrangementSpan
+}
+
+/** A band's only block moved beside the last block of the band above, in the same row. */
+export interface JoinAbove {
+  componentId: string
+  /** The band above, which it joins. */
+  sectionId: string
+  /** Its place there: right after the band's last drawn block. */
+  afterId: string
+  span: ArrangementSpan
+  rebalance: readonly SpanChange[]
+}
 
 /**
  * The landing page at both of its levels: bands in order, and what is inside each one.
@@ -84,15 +116,40 @@ export function BandArrangement({
   onEditBand,
   onDeleteBand,
   onToggle,
-  onSpanChange,
   onDelete,
   onEdit,
   onInsert,
+  onJoinAbove,
   inserting = false,
   selectedId = null,
+  selectedBandId = null,
   messages = defaultMessages,
 }: BandArrangementProps) {
   const text = messages.design
+
+  /*
+    The band's only block, beside the last block of the band above — when that row has room. Only
+    between shown bands and blocks: a move is a saved write, and one that took a hidden block into a
+    shown band would put it on the shop without Publicar. And never into the strip's band, which the
+    API refuses: it is drawn above the header, not as a row.
+  */
+  const joinAboveOf = (at: number) => {
+    const above = bands[at - 1]
+    const band = bands[at]
+    const [only, second] = band?.components ?? []
+    if (!onJoinAbove || !above || !band || !only || second || !hasSpan(only)) return null
+    if (!band.isActive || !only.isActive || !above.isActive || above.components.some((c) => !hasSpan(c))) return null
+    // Beside is the computer's row, and a block kept for the phone takes no room in it.
+    if (only.visibleOn === "PHONE") return null
+
+    const last = drawnOf(above.components).at(-1)
+    const room = last ? besideInBand(above.components, last.id) : null
+    if (!last || !room) return null
+    return {
+      name: last.title?.trim() || text.kinds[last.kind],
+      onJoin: () => onJoinAbove({ componentId: only.id, sectionId: above.id, ...room }),
+    }
+  }
 
   const announcements = bandAnnouncements(bands, messages)
 
@@ -147,14 +204,19 @@ export function BandArrangement({
             onEditBand={onEditBand}
             onDeleteBand={onDeleteBand}
             onToggle={onToggle}
-            onSpanChange={onSpanChange}
             onDelete={onDelete}
             onEdit={onEdit}
             {...(onInsert
-              ? { onInsertBlock: (index: number) => onInsert({ level: "block", sectionId: band.id, index }) }
+              ? {
+                  onInsertBlock: (index: number) => onInsert({ level: "block", sectionId: band.id, index }),
+                  onInsertBeside: (beside: Omit<Extract<InsertAt, { level: "beside" }>, "level" | "sectionId">) =>
+                    onInsert({ level: "beside", sectionId: band.id, ...beside }),
+                }
               : {})}
+            joinAbove={joinAboveOf(at)}
             inserting={inserting}
             selectedId={selectedId}
+            selected={band.id === selectedBandId}
             messages={messages}
           />,
         ])}
