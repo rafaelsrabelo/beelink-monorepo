@@ -8,13 +8,6 @@ import { ArrowDownIcon, ArrowUpIcon, CopyPlusIcon, EyeIcon, EyeOffIcon, LayoutGr
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@harness-monorepo/ui/components/dropdown-menu"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
@@ -23,6 +16,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { ComponentDisplay } from "./design-types"
+import { LayoutPicker } from "./layout-picker"
 
 export interface DesignSelectionBarProps {
   /** What the bar acts on, by name: "Banner 1", "Faixa 3". */
@@ -92,7 +86,6 @@ export function DesignSelectionBar({
   messages = defaultMessages,
 }: DesignSelectionBarProps) {
   const text = messages.design.bar
-  const names = messages.design.displays
   const bar = useRef<HTMLDivElement>(null)
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -147,37 +140,24 @@ export function DesignSelectionBar({
         </Button>
 
         {layouts && layouts.length > 1 && onLayout ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={format(text.layout, { name: label })}
-                  title={format(text.layout, { name: label })}
-                />
-              }
-            >
-              <LayoutGridIcon aria-hidden="true" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuRadioGroup
-                value={layout ?? undefined}
-                onValueChange={(next: unknown) => {
-                  const chosen = layouts.find((option) => option === next)
-                  if (chosen) onLayout(chosen)
-                }}
+          <LayoutPicker
+            layouts={layouts}
+            value={layout}
+            onChange={onLayout}
+            label={format(text.layout, { name: label })}
+            trigger={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={format(text.layout, { name: label })}
+                title={format(text.layout, { name: label })}
               >
-                {layouts.map((option) => (
-                  // Picked is done: the block shows it in its new format behind the closed menu.
-                  <DropdownMenuRadioItem key={option} value={option} closeOnClick>
-                    {names[option]}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <LayoutGridIcon aria-hidden="true" />
+              </Button>
+            }
+            messages={messages}
+          />
         ) : null}
 
         {onDuplicate ? (

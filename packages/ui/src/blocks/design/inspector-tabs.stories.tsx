@@ -25,6 +25,11 @@ const empty: ComponentFormValues = {
   sourceCategoryId: "",
   picks: [],
   limit: "",
+  faq: [],
+  countdownEnd: "",
+  buttonLabel: "",
+  imageUrl: "",
+  imageAlt: "",
 }
 
 const plainBand: BandFormValues = { name: "", width: "CONTAINED", background: "" }

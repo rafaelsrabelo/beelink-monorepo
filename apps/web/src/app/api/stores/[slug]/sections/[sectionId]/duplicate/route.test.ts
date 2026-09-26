@@ -25,7 +25,7 @@ afterEach(() => {
 })
 
 describe("POST /api/stores/[slug]/sections/[sectionId]/duplicate", () => {
-  it("asks for the copy and drops what the storefront had cached for the shop", async () => {
+  it("asks for the copy, and leaves the storefront's cache alone: a draft is served to nobody", async () => {
     const fetchSpy = vi.fn(async () => Response.json({ id: "copy" }, { status: 201 }))
     vi.stubGlobal("fetch", fetchSpy)
 
@@ -37,7 +37,7 @@ describe("POST /api/stores/[slug]/sections/[sectionId]/duplicate", () => {
       `http://api.test/api/stores/${SLUG}/sections/${ID}/duplicate`,
       expect.objectContaining({ method: "POST" }),
     )
-    expect(revalidateStore).toHaveBeenCalledWith(SLUG)
+    expect(revalidateStore).not.toHaveBeenCalled()
   })
 
   it("passes a refusal through as it was written, and leaves the cache alone", async () => {

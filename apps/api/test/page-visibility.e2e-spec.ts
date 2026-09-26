@@ -9,6 +9,7 @@ import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { resetDatabase } from './support/reset-database.js';
+import { publishPage } from './support/publish.js';
 
 const shopBody = {
   name: 'Padaria do Bairro',
@@ -64,6 +65,7 @@ describe('page — a component shown only on a computer or only on a phone', () 
     expect(patched.statusCode, patched.payload).toBe(200);
     expect(patched.json<StoreComponent>().visibleOn).toBe('PHONE');
 
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
     const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
     const drawn = visitor.sections.flatMap((section) => section.components).find((component) => component.id === band.components[0]!.id);
     expect(drawn?.visibleOn).toBe('PHONE');

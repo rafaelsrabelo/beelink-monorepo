@@ -232,6 +232,12 @@ export function storefrontRoutes(shop: StorefrontShop) {
 
     /** One product. It never nests under a category: a product in two would have two addresses. */
     product: (productSlug: string) => `${home}/${routeWords.products}/${productSlug}`,
+
+    /**
+     * One landing page. `lp` in every vocabulary: it is not a word a visitor reads as the shop's, and
+     * the API reserves it so no category can take it.
+     */
+    landing: (pageSlug: string) => `${home}/lp/${pageSlug}`,
   }
 }
 
