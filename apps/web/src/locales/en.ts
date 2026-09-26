@@ -153,6 +153,7 @@ export const en: WebMessages = {
     ORDER_TOTAL_TOO_LARGE: "The order is over R$ 1,000,000.00.",
     ORDER_CANCELLED: "That order was cancelled and no longer changes.",
     ORDER_STATUS_UNCHANGED: "The order is already at that status.",
+    ORDER_STOCK_INSUFFICIENT: "There is not enough stock for everything. Change the marked quantities.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Signing in with Google is not available right now. Use your e-mail and password.",
     GOOGLE_STATE_INVALID: "The Google sign-in expired or was already used. Try again.",
     GOOGLE_EXCHANGE_FAILED: "Google did not confirm the sign-in. Try again.",

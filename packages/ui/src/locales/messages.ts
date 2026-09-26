@@ -913,6 +913,8 @@ export interface UiMessages {
       productChoose: string
       variantAdd: string
       outOfStock: string
+      /** A line past what is left: "Só há {count} em estoque". */
+      onlyLeft: string
       linesEmpty: string
       linesTitle: string
       lineAdded: string
@@ -939,6 +941,8 @@ export interface UiMessages {
       invalidMoney: string
       missingCustomer: string
       missingItems: string
+      /** Said under the lines while one asks for more than the shop has. */
+      overStock: string
       missingPayment: string
       placedAtInvalid: string
       save: string

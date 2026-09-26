@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, Order, OrderPage, Product, Store, StoreCustomerPage } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, Order, OrderPage, OrderStockDetails, Product, Store, StoreCustomerPage } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -145,6 +145,60 @@ describe("a shop's orders", () => {
     const again = await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'DELIVERED' });
     expect(again.statusCode).toBe(409);
     expect(again.json()).toMatchObject({ errorCode: 'ORDER_CANCELLED' });
+  });
+
+  describe('the stock', () => {
+    /** Counts a combination's stock, as the variations editor would. */
+    async function counted(variantId: string, stockQuantity: number | null) {
+      await prisma.productVariant.update({ where: { id: variantId }, data: { trackStock: true, stockQuantity } });
+    }
+    const stockOf = async (variantId: string) => (await prisma.productVariant.findUniqueOrThrow({ where: { id: variantId } })).stockQuantity;
+
+    it('takes a counted combination off the stock, leaves one not counted alone, and moves the product\'s count with it', async () => {
+      await counted(whey, 5);
+
+      expect((await place()).statusCode).toBe(201);
+      expect(await stockOf(whey)).toBe(3);
+      expect(await stockOf(grape)).toBeNull();
+      const product = await prisma.product.findFirstOrThrow({ where: { name: 'Whey' } });
+      expect(product.stockQuantity).toBe(3);
+    });
+
+    it('refuses to sell past what is left, naming every short line and how many are left, and saves nothing', async () => {
+      await counted(whey, 1);
+      await counted(grape, null);
+
+      const refused = await place();
+      expect(refused.statusCode).toBe(409);
+      const body = refused.json<ApiErrorBody>();
+      expect(body.errorCode).toBe('ORDER_STOCK_INSUFFICIENT');
+      expect((body.details as OrderStockDetails).shortages).toEqual([
+        { variantId: whey, available: 1 },
+        { variantId: grape, available: 0 },
+      ]);
+      expect(await stockOf(whey)).toBe(1);
+      expect(await prisma.order.count()).toBe(0);
+    });
+
+    it('never sells the last unit twice when two orders race for it', async () => {
+      await counted(whey, 2);
+
+      const both = await Promise.all([place({ items: [{ variantId: whey, quantity: 2 }] }), place({ items: [{ variantId: whey, quantity: 2 }] })]);
+      expect(both.map((response) => response.statusCode).sort()).toEqual([201, 409]);
+      expect(await stockOf(whey)).toBe(0);
+    });
+
+    it('gives a cancelled order\'s lines back, but nothing for an order placed before orders counted stock', async () => {
+      await counted(whey, 5);
+      const order = (await place()).json<Order>();
+      await call('PATCH', `/api/stores/lessari/orders/${order.number}/status`, owner, { status: 'CANCELLED' });
+      expect(await stockOf(whey)).toBe(5);
+
+      const old = (await place()).json<Order>();
+      await prisma.order.update({ where: { id: old.id }, data: { stockTaken: false } });
+      await call('PATCH', `/api/stores/lessari/orders/${old.number}/status`, owner, { status: 'CANCELLED' });
+      expect(await stockOf(whey)).toBe(3);
+    });
   });
 
   it("is the owner's alone: another of their shops, a stranger and a shopper's token all get nothing", async () => {

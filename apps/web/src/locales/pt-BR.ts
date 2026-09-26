@@ -153,6 +153,7 @@ export const ptBR: WebMessages = {
     ORDER_TOTAL_TOO_LARGE: "O pedido passa de R$ 1.000.000,00.",
     ORDER_CANCELLED: "Esse pedido foi cancelado e não muda mais.",
     ORDER_STATUS_UNCHANGED: "O pedido já está nesse status.",
+    ORDER_STOCK_INSUFFICIENT: "Não há estoque para tudo. Ajuste as quantidades marcadas.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Entrar com Google não está disponível agora. Entre com e-mail e senha.",
     GOOGLE_STATE_INVALID: "O login com Google expirou ou já foi usado. Tente de novo.",
     GOOGLE_EXCHANGE_FAILED: "O Google não confirmou o login. Tente de novo.",

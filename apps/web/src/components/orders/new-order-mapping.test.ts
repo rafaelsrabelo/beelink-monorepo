@@ -10,7 +10,7 @@ import { canonicalPhoneOf, moneyOf, orderPayloadOf, variantOptionsOf } from "./n
 
 const details: OrderDetailsValues = { fulfillment: "DELIVERY", deliveryFee: "10", paymentMethod: "PIX", discount: "", note: "  ", placedOn: "" }
 const totals = { subtotalCents: 5000, deliveryFeeCents: 1000, discountCents: 0, totalCents: 6000 }
-const lines = [{ variantId: "v1", productName: "Whey", variantLabel: null, unitPriceCents: 5000, quantity: 1, outOfStock: false }]
+const lines = [{ variantId: "v1", productName: "Whey", variantLabel: null, unitPriceCents: 5000, quantity: 1, available: null }]
 
 describe("variantOptionsOf", () => {
   it("labels each combination the shop sells as the API photographs it, and marks the one with none left", () => {
@@ -27,8 +27,8 @@ describe("variantOptionsOf", () => {
     } as unknown as ProductDetail
 
     expect(variantOptionsOf(product)).toEqual([
-      { id: "v1", label: "Sabor: Uva · Peso: 300 g", priceCents: 3990, sku: "U", outOfStock: true },
-      { id: "v2", label: "Sabor: Coco · Peso: 300 g", priceCents: 4290, sku: null, outOfStock: false },
+      { id: "v1", label: "Sabor: Uva · Peso: 300 g", priceCents: 3990, sku: "U", outOfStock: true, available: 0 },
+      { id: "v2", label: "Sabor: Coco · Peso: 300 g", priceCents: 4290, sku: null, outOfStock: false, available: null },
     ])
   })
 })
