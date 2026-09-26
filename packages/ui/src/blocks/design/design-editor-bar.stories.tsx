@@ -15,10 +15,9 @@ const meta = {
     pageName: "Página inicial",
     device: "DESKTOP",
     onDeviceChange: fn(),
-    changes: 0,
+    unpublished: false,
     publishing: false,
     onPublish: fn(),
-    onDiscard: fn(),
     shopHref: "#",
     onOpenStructure: fn(),
     onOpenInspector: fn(),
@@ -30,9 +29,9 @@ type Story = StoryObj<typeof meta>
 
 export const Publicado: Story = {}
 
-export const Rascunho: Story = { args: { changes: 3 } }
+export const Rascunho: Story = { args: { unpublished: true } }
 
-export const Publicando: Story = { args: { changes: 3, publishing: true } }
+export const Publicando: Story = { args: { unpublished: true, publishing: true } }
 
 /** Uma landing em rascunho: "Publicar página" coloca a página no ar, mesmo sem alterações. */
 export const LandingEmRascunho: Story = {

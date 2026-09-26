@@ -30,7 +30,7 @@ export interface DesignScreenBarProps {
   shopName: string
   /** The page being edited — the home or a landing — as the server read it. */
   page: StorePage
-  draft: Pick<ReturnType<typeof useDesignDraft>, "saving" | "saveError" | "publish" | "discard">
+  draft: Pick<ReturnType<typeof useDesignDraft>, "saving" | "saveError" | "publish">
   /** Asks before an unpublished arrangement is left behind, on every way out of this page. */
   onLeave: (event: MouseEvent<HTMLAnchorElement>) => void
   device: PreviewDevice
@@ -98,15 +98,13 @@ export function DesignScreenBar({
       }
       device={device}
       onDeviceChange={onDeviceChange}
-      // Nothing is held back for Publicar any more: every change is saved as it is made.
-      changes={0}
       saving={draft.saving}
-      unpublished={saved.data?.hasUnpublishedChanges ?? false}
+      // Not known until the draft is read; a read that failed leaves Publicar to its own check.
+      unpublished={saved.isError ? true : saved.data?.hasUnpublishedChanges}
       pagePublished={published}
       publishError={errorOf(freeze.error ?? draft.saveError)}
       publishing={freeze.isPending}
       onPublish={publish}
-      onDiscard={draft.discard}
       shopHref={shopHrefOf(slug, page)}
       onOpenStructure={onOpenStructure}
       onOpenInspector={onOpenInspector}

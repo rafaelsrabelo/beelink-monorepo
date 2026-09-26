@@ -666,9 +666,8 @@ export interface UiMessages {
     dragCancel: string
     publish: string
     publishing: string
-    /** Shown while there is something arranged and not yet published. */
+    /** Shown while the saved draft differs from what the shop serves. */
     unpublished: string
-    discard: string
     /** The browser's own leave-confirmation cannot be worded; this is said on screen instead. */
     leaveWarning: string
     previewNotice: string
@@ -754,9 +753,6 @@ export interface UiMessages {
       back: string
       /** The one page there is until landing pages arrive. */
       homePage: string
-      /** "Rascunho · {count} alterações", counted as Publish would write them; and its singular. */
-      draft: string
-      draftOne: string
       published: string
       viewInShop: string
       /** The buttons that open the two side columns as drawers on a narrow screen. */
