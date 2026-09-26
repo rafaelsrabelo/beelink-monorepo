@@ -53,12 +53,17 @@ export function useWideEditor(): boolean {
  */
 export function usePreviewDevice(): [PreviewDevice, (device: PreviewDevice) => void] {
   const [picked, setPicked] = useState<PreviewDevice>("DESKTOP")
-  const roomy = useSyncExternalStore(
+  const roomy = useRoomyEditor()
+  return [roomy ? picked : "PHONE", setPicked]
+}
+
+/** Whether the editor has more than a phone's width: room for two things side by side. */
+export function useRoomyEditor(): boolean {
+  return useSyncExternalStore(
     subscribeRoomy,
     () => window.matchMedia(ROOMY).matches,
     () => true,
   )
-  return [roomy ? picked : "PHONE", setPicked]
 }
 
 export interface DesignEditorFrameProps {

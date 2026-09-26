@@ -31,7 +31,7 @@ export interface DesignSelectionBarProps {
   canMoveDown: boolean
   onMoveUp: () => void
   onMoveDown: () => void
-  /** The formats the block's kind draws, to switch between (`DISPLAYS_OF_KIND`). Absent where it has none. */
+  /** The formats the block's kind draws, to switch between (`SECTION_TYPES`). Absent where it has none. */
   layouts?: readonly ComponentDisplay[]
   layout?: ComponentDisplay | null
   onLayout?: (value: ComponentDisplay) => void

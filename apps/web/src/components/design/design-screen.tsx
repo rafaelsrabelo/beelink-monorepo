@@ -23,6 +23,7 @@ import { LivePreviewPane } from "./live-preview-pane"
 import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
 import { arrangementOf, shelvesOf } from "./design-draft-preview"
 import { editedOf } from "./design-selection"
+import { revealInPreview } from "./design-focus"
 import { useBlockInsert } from "./use-block-insert"
 import { useDesignDraft } from "./use-design-draft"
 import { useDesignSelection } from "./use-design-selection"
@@ -75,9 +76,12 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const edited = editedOf(target)
   const chooseBlock = (id: string) => choose({ level: "block", id })
   // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
-  const opened = (component: { id: string; kind: ComponentKind }) => {
+  // A new section is chosen, its Conteúdo open, and the preview brought to it: the API may have put
+  // it far down the page. By its band's key too, the one a block alone in its band is drawn under.
+  const opened = (component: { id: string; kind: ComponentKind; sectionId: string }) => {
     chooseBlock(component.id)
     if (component.kind === "PRODUCTS") shop.refresh(component.id)
+    revealInPreview([component.id, component.sectionId])
   }
   const adding = useBlockInsert(slug, draft, opened, web)
 

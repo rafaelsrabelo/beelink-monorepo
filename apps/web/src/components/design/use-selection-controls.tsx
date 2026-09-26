@@ -8,7 +8,7 @@ import type { ComponentDisplay, Section } from "@harness-monorepo/contracts"
 
 // UI
 import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import { DISPLAYS_OF_KIND } from "@harness-monorepo/ui/blocks/design/component-layout-fields"
+import { layoutsOf } from "@harness-monorepo/ui/lib/section-registry"
 import { DesignSelectionBar, SELECTION_BAR_SHORTCUTS } from "@harness-monorepo/ui/blocks/design/design-selection-bar"
 import { singleShown } from "@harness-monorepo/ui/blocks/design/single-block-card"
 import { format } from "@harness-monorepo/ui/locales/index"
@@ -80,7 +80,7 @@ export function useSelectionControls(input: SelectionControlsInput) {
     const held = blockId ? rows.flatMap((row) => row.components).find((component) => component.id === blockId) : undefined
     if (!band || (blockId && !block)) return null
 
-    const options = held ? DISPLAYS_OF_KIND[held.kind] : undefined
+    const options = held ? layoutsOf(held.kind) : undefined
     return {
       name: block ? labelOf(block.kind, block.title, messages) : input.bandName(band.id),
       hidden: of.level === "band" ? !(block ? singleShown(band, block) : band.isActive) : !block?.isActive,

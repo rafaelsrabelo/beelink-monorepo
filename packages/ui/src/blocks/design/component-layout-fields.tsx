@@ -2,6 +2,7 @@
 
 // UI
 import { FieldDescription, FieldLabel, FieldSet } from "@harness-monorepo/ui/components/field"
+import { layoutsOf } from "@harness-monorepo/ui/lib/section-registry"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -37,16 +38,6 @@ export interface ComponentLayoutFieldsProps {
   messages?: UiMessages
 }
 
-/**
- * The formats each kind draws, in the order offered. Mirrors the API's `DISPLAYS_OF_KIND`
- * (apps/api/src/modules/page/page.constants.ts): a format the API refuses is one never offered.
- */
-export const DISPLAYS_OF_KIND: Partial<Record<ComponentKind, readonly ComponentDisplay[]>> = {
-  BANNER: ["CAROUSEL", "GRID"],
-  PRODUCTS: ["RAIL", "GRID"],
-  CATEGORIES: ["RAIL", "GRID"],
-}
-
 /** The grids that ask how many across. A banner's grid is its pictures side by side, sized by the band. */
 const HAS_COLUMNS: readonly ComponentKind[] = ["PRODUCTS", "CATEGORIES"]
 
@@ -70,7 +61,7 @@ export function ComponentLayoutFields({
   messages = defaultMessages,
 }: ComponentLayoutFieldsProps) {
   const text = messages.design
-  const displays = DISPLAYS_OF_KIND[kind]
+  const displays = layoutsOf(kind)
 
   return (
     <>

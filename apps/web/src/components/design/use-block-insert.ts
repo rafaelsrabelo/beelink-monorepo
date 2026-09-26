@@ -6,7 +6,7 @@ import { useState } from "react"
 // Types
 import type { ComponentKind, ComponentSpan } from "@harness-monorepo/contracts"
 import type { InsertAt, JoinAbove, SpanChange } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import type { Across } from "@harness-monorepo/ui/blocks/design/block-gallery"
+import type { Across } from "@harness-monorepo/ui/blocks/design/section-gallery"
 import { footSpanOf } from "@harness-monorepo/ui/lib/band-rows"
 
 // App
@@ -32,7 +32,7 @@ type Bands = readonly { id: string; components: readonly { id: string }[] }[]
 export function useBlockInsert(
   slug: string,
   draft: Pick<ReturnType<typeof useDesignDraft>, "rows" | "saved" | "patchComponent">,
-  onCreated: (component: { id: string; kind: ComponentKind }) => void,
+  onCreated: (component: { id: string; kind: ComponentKind; sectionId: string }) => void,
   web: WebMessages,
 ) {
   const { rows, saved } = draft

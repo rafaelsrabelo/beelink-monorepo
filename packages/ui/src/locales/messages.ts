@@ -1,4 +1,5 @@
-import type { Across, BlockGroup, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
+import type { Across, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
+import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
@@ -565,7 +566,24 @@ export interface UiMessages {
       searchPlaceholder: string
       /** Said when the search matches nothing. */
       empty: string
-      groups: Record<BlockGroup, string>
+      /** The shelves on the left, Recomendadas first. */
+      categories: Record<"RECOMMENDED" | SectionCategory, string>
+      categoriesLabel: string
+      /** Over the grid while searching: what matched in every shelf. */
+      results: string
+      add: string
+      /** The button's name for a screen reader: `{name}` is the section's. */
+      addNamed: string
+      /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
+      placement: {
+        between: string
+        first: string
+        last: string
+        only: string
+        inBand: string
+        inBandFirst: string
+        beside: string
+      }
       /** One line of what a kind is, read beside its wireframe and searched with its name. */
       hints: Record<ComponentKind, string>
       /** A row of banners, by `{count}`: "3 banners lado a lado". */
