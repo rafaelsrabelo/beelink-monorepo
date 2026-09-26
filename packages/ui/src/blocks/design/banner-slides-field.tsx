@@ -113,7 +113,10 @@ export function BannerSlidesField({
         format chosen in the Layout tab — a hint promising a carousel under "Grade" would be the page
         arguing with the panel — and shows only while there is one picture: after that the page answers.
       */}
-      {value.length === 1 ? (
+      {display === "BACKDROP" || display === "SPLIT" ? (
+        // Said with any number of pictures: past the first, nothing on the page answers for the others.
+        <p className="text-muted-foreground text-xs">{text.firstOnlyHint}</p>
+      ) : value.length === 1 ? (
         <p className="text-muted-foreground text-xs">{display === "GRID" ? text.gridHint : text.carouselHint}</p>
       ) : null}
 

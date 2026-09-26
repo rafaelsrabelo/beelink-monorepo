@@ -19,8 +19,8 @@ export interface DesignEdit {
   component: {
     id: string
     value: ComponentFormValues
-    /** The strip's link id, minted once: an overlay built on every render would mint a new one each time. */
-    linkId: string
+    /** The id of the kind's single item, minted once: an overlay built on every render would mint a new one each time. */
+    itemId: string
   } | null
 }
 

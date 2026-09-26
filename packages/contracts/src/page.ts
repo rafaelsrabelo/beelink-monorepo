@@ -1,6 +1,15 @@
 /* ── a landing page: sections that hold components ────────────────────────── */
 
 import type { PublicProductCard } from "./catalog.js";
+import type {
+  CallToActionButton,
+  CountdownEnd,
+  FaqItem,
+  ImageTextMedia,
+  PublicCallToActionButton,
+  PublicFeaturedProduct,
+  PublicImageTextMedia,
+} from "./page-items.js";
 
 /**
  * What a component is.
@@ -43,7 +52,23 @@ export type ComponentKind =
    * A form a visitor fills in, and the ways to reach the owner beside it. What it asks is its
    * `items`; what arrives through it is a lead. A site's kind: a shop takes orders, not contact.
    */
-  | "CONTACT";
+  | "CONTACT"
+  /** Questions and their answers, drawn as an accordion whose answers are in the page even closed. */
+  | "FAQ"
+  /** The page's last word: a title, a line of text and one button that leads somewhere. */
+  | "CALL_TO_ACTION"
+  /** A picture beside words — a title, a paragraph and, if it leads somewhere, a button. */
+  | "IMAGE_TEXT"
+  /**
+   * One product of the catalogue, large: its photo, its price and stock read when the page is, and
+   * the way to buy it. Its `items` hold the pick, a `ShowcaseProduct`, as a hand-picked showcase's do.
+   */
+  | "FEATURED_PRODUCT"
+  /**
+   * The time left until an instant, in its `items`. Once it has passed the shop leaves it out — the
+   * read drops it, and a page left open hides it at zero.
+   */
+  | "COUNTDOWN";
 
 /**
  * How wide a section sits on the page.
@@ -65,12 +90,53 @@ export type SectionWidth = "FULL" | "CONTAINED";
 export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
 
 /**
- * How a component with several things in it lays them out. Read on `BANNER`, `PRODUCTS` and
- * `CATEGORIES`, each with its own two, and null on every other kind: a banner's pictures take turns
- * (`CAROUSEL`) or share the space (`GRID`); a showcase's products and the shop's categories scroll on
- * one row (`RAIL`) or wrap into rows (`GRID`).
+ * A component's layout: the same content, another look. Each kind draws its own, and the API refuses
+ * one that is not its kind's; switching keeps every field, so switching back loses nothing.
+ *
+ * - A banner: `BACKDROP` (its first picture, the words over it), `SPLIT` (the words beside the
+ *   picture), `CAROUSEL` (the pictures in turn) or `GRID` (the pictures side by side).
+ * - A showcase: `RAIL` (one row that scrolls) or `GRID` (rows).
+ * - The categories: `RAIL` or `GRID` of cards with photos, or `CHIPS` (their names, as pills).
+ * - The benefits: `INLINE` (icon beside the words, in a tinted band) or `CARDS`.
+ * - The strip: `STATIC` (still) or `MARQUEE` (scrolling).
+ * - A FAQ: `ACCORDION`, its only one — named so a second is a value, not a migration of the rows.
+ * - A call to action: `BAND` (a strip of the shop's colour, edge to edge) or `CARD` (a tinted card
+ *   inside the page's margins).
+ * - An image with text: `IMAGE_LEFT` or `IMAGE_RIGHT`, stacked on a phone with the picture first.
+ * - A featured product: `IMAGE_LEFT` (the photo beside the words) or `IMAGE_LARGE` (the photo wide,
+ *   the words under it).
+ * - A countdown: `BAND` (a strip of the shop's colour) or `BLOCK` (a box that fits a slice).
+ *
+ * Null on every other kind — and on a benefits band or a strip saved before they had a choice, which
+ * draw as they always did.
  */
-export type ComponentDisplay = "CAROUSEL" | "GRID" | "RAIL";
+export type ComponentDisplay =
+  | "CAROUSEL"
+  | "GRID"
+  | "RAIL"
+  | "BACKDROP"
+  | "SPLIT"
+  | "CHIPS"
+  | "INLINE"
+  | "CARDS"
+  | "STATIC"
+  | "MARQUEE"
+  | "ACCORDION"
+  | "BAND"
+  | "CARD"
+  | "IMAGE_LEFT"
+  | "IMAGE_RIGHT"
+  | "IMAGE_LARGE"
+  | "BLOCK";
+
+/**
+ * Where a component shows: everywhere, only on a computer, or only on a phone — the shop window's
+ * `md` width, 768px, is the line between the two. Hiding it everywhere is `isActive`, not this.
+ *
+ * A component's and not a band's: a band shows wherever one of its components does, so there is
+ * one place to say it and no band and block to disagree.
+ */
+export type DeviceVisibility = "ALL" | "DESKTOP" | "PHONE";
 
 /**
  * Which products a showcase draws: all of them, one category (and its subcategories), a hand-picked
@@ -229,12 +295,31 @@ export interface ShowcaseProduct {
  * blob is invisible — sixteen of its twenty-one survived that way. An `items` nobody reads is a
  * blank band on the shop's front page, reported the same day.
  */
-export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink | ContactField | ShowcaseProduct;
+export type ComponentItem =
+  | BannerSlide
+  | BenefitRow
+  | AnnouncementLink
+  | ContactField
+  | ShowcaseProduct
+  | FaqItem
+  | CallToActionButton
+  | ImageTextMedia
+  | CountdownEnd;
 /**
  * What a visitor is served in a component's `items`: a banner's slides with their addresses built, a
  * showcase's products as cards, and every other kind's items as the shopkeeper wrote them.
  */
-export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink | ContactField | PublicProductCard;
+export type PublicComponentItem =
+  | PublicBannerSlide
+  | BenefitRow
+  | PublicAnnouncementLink
+  | ContactField
+  | PublicProductCard
+  | FaqItem
+  | PublicCallToActionButton
+  | PublicImageTextMedia
+  | PublicFeaturedProduct
+  | CountdownEnd;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {
@@ -242,11 +327,11 @@ export interface PublicComponent {
   kind: ComponentKind;
   title: string | null;
   subtitle: string | null;
-  /** The paragraph, on a `TEXT`. Null on every other kind. */
+  /** The paragraph, on a `TEXT`; the text of a call to action and of an image with text. Null otherwise. */
   body: string | null;
   /** Its slice of the band, on every kind. */
   span: ComponentSpan;
-  /** Read on `BANNER`, `PRODUCTS` and `CATEGORIES`. Null on every other kind. */
+  /** The layout, from the kind's own (`ComponentDisplay`); null where the kind has none, or had none when saved. */
   display: ComponentDisplay | null;
   /** A showcase's source, for the page to say where "ver tudo" leads. Null on every other kind. */
   source: ProductSource | null;
@@ -256,14 +341,17 @@ export interface PublicComponent {
    */
   sourceCategory: { slug: string; name: string; description: string | null } | null;
   /**
-   * A banner's slides, the benefits band's rows, the strip's one link or a form's fields — or a
-   * showcase's products, already chosen by its source, cut at its limit, and on the shelf. Empty
-   * otherwise.
+   * A banner's slides, the benefits band's rows, the strip's one link, a form's fields, a FAQ's
+   * questions, a call to action's button or an image with text's picture, their addresses built — or
+   * the cards read when the page is: a featured product's one, a showcase's products chosen by its
+   * source, cut at its limit and on the shelf. Empty otherwise.
    */
   items: PublicComponentItem[];
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */
   columns: number | null;
   align: TextAlign | null;
+  /** Absent on a page cached before it existed, which shows everywhere. */
+  visibleOn?: DeviceVisibility;
 }
 
 /** A component as its owner edits it. Slugs on the wire; the uuids stay in the database. */
@@ -285,6 +373,7 @@ export interface StoreComponent {
   items: ComponentItem[];
   columns: number | null;
   align: TextAlign | null;
+  visibleOn: DeviceVisibility;
   /** Its place inside its section. The section's own place is the section's. */
   position: number;
   isActive: boolean;
@@ -353,7 +442,7 @@ export interface CreateComponentPayload {
   subtitle?: string | null;
   body?: string | null;
   span?: ComponentSpan;
-  /** A banner's, a showcase's or the categories' choice, from the two its kind draws. Refused on any other kind. */
+  /** The layout, from the kind's own (`ComponentDisplay`). Refused on a kind with none, and null refused on a kind with some. */
   display?: ComponentDisplay | null;
   /** A showcase's. `CATEGORY` needs `sourceCategoryId`; `SELECTION` needs `items`. */
   source?: ProductSource;
@@ -363,6 +452,7 @@ export interface CreateComponentPayload {
   items?: ComponentItem[];
   columns?: number | null;
   align?: TextAlign | null;
+  visibleOn?: DeviceVisibility;
   isActive?: boolean;
 }
 
@@ -412,6 +502,30 @@ export type PageErrorCode =
   | "COMPONENT_SPAN_INVALID"
   /** A `display` that is not one of the two, or one sent to a kind that does not read it. */
   | "COMPONENT_DISPLAY_INVALID"
+  /** A `visibleOn` that is not one of the three, or one sent to the strip, which shows everywhere. */
+  | "COMPONENT_VISIBILITY_INVALID"
+  /** A kind the home holds and a landing does not: the strip, which is the shop's on every page. */
+  | "COMPONENT_KIND_HOME_ONLY"
+  /** A page that is not this shop's, or not there; a landing not published, to a visitor. */
+  | "PAGE_NOT_FOUND"
+  /** An address another page of this shop already has. */
+  | "PAGE_SLUG_TAKEN"
+  /** An address with nothing left after normalising, or longer than sixty characters. */
+  | "PAGE_SLUG_INVALID"
+  /** The home is the shop's own address and is always published: it is not patched as a page. */
+  | "PAGE_HOME_FIXED"
+  /** A template this kind of shop cannot use: a site has no catalogue to launch a product from. */
+  | "PAGE_TEMPLATE_UNAVAILABLE"
+  /** A template built around a product, sent without one. */
+  | "PAGE_PRODUCT_REQUIRED"
+  /** A product that is not this shop's. */
+  | "PAGE_PRODUCT_INVALID"
+  /** Another tab wrote to this page's draft since this one read it: reload before writing. */
+  | "PAGE_DRAFT_STALE"
+  /** An `x-page-revision` that is not a whole number. */
+  | "PAGE_REVISION_INVALID"
+  /** A version that is not this page's. */
+  | "PAGE_VERSION_NOT_FOUND"
   /** A `source` that is not one of the five, or a showcase's field sent to a kind that is not one. */
   | "SHOWCASE_SOURCE_INVALID"
   /** A `CATEGORY` showcase with no category, or with one that is not this shop's. */
@@ -420,6 +534,8 @@ export type PageErrorCode =
   | "SHOWCASE_PRODUCTS_INVALID"
   /** A `limit` outside 1 to 48. */
   | "SHOWCASE_LIMIT_INVALID"
+  /** A featured product that is another shop's. */
+  | "FEATURED_PRODUCT_INVALID"
   /** A `position` to add at that is not a whole number from 0. */
   | "POSITION_INVALID"
   /**

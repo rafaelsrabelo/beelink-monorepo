@@ -5,7 +5,9 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type {
   ComponentDisplay,
   ComponentKind,
+  DeviceVisibility,
   PageErrorCode,
+  PageKind,
 } from '@harness-monorepo/contracts';
 
 import type { Prisma } from '../../generated/prisma/client.js';
@@ -78,6 +80,27 @@ export class PageRules {
   }
 
   /**
+   * The strip shows everywhere: it is drawn above the header by the window, and a phone-only strip
+   * would be a shop whose top reads differently by the size of the screen for no one's choice.
+   */
+  refuseVisibilityFor(kind: ComponentKind, visibleOn: DeviceVisibility | undefined): void {
+    if (visibleOn === undefined || visibleOn === 'ALL') return
+    if ((UNMOVABLE_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) {
+      throw new BadRequestException(pageError('COMPONENT_VISIBILITY_INVALID', 'A barra de aviso aparece em todo lugar.'))
+    }
+  }
+
+  /**
+   * What a duplicate may not copy: the strip, which is one per shop. Answered as creating a second
+   * one is, so the editor's copy for it holds.
+   */
+  refuseCopy(kinds: readonly ComponentKind[]): void {
+    if (kinds.some((kind) => (SINGLETON_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind))) {
+      throw new ConflictException(pageError('COMPONENT_KIND_SINGLETON', 'A barra de aviso é uma só e não se duplica.'));
+    }
+  }
+
+  /**
    * One write of this kind at a time for a shop, until the transaction it is called in ends.
    *
    * The "last one" rules below are a count and then a delete, and those are only a guarantee
@@ -103,7 +126,8 @@ export class PageRules {
   async refuseRequired(storeId: string, kind: ComponentKind, db: Db = this.prisma): Promise<void> {
     if (!(REQUIRED_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) return;
 
-    const inShop = await db.storeComponent.count({ where: { storeId, kind } });
+    // The home's: a landing's showcases come and go with the landing, and the rule is the shop's front page.
+    const inShop = await db.storeComponent.count({ where: { storeId, kind, section: { page: { kind: 'HOME' } } } });
 
     if (inShop <= 1) {
       throw new BadRequestException(
@@ -119,7 +143,7 @@ export class PageRules {
     if (held === 0) return;
 
     const elsewhere = await db.storeComponent.count({
-      where: { storeId, kind: required, sectionId: { not: sectionId } },
+      where: { storeId, kind: required, sectionId: { not: sectionId }, section: { page: { kind: 'HOME' } } },
     });
 
     if (elsewhere === 0) {
@@ -150,7 +174,7 @@ export class PageRules {
   }
 
   /**
-   * A display only from the two its kind draws, and never taken back to null there.
+   * A layout only from its kind's own (`DISPLAYS_OF_KIND`), and never taken back to null there.
    *
    * A value on a kind that draws none would be stored for nobody; one its kind does not draw — a
    * banner as a rail, a showcase as a carousel — would be a choice the page cannot honour; and null
@@ -163,7 +187,7 @@ export class PageRules {
 
     if (!drawn && display !== null) {
       throw new BadRequestException(
-        pageError('COMPONENT_DISPLAY_INVALID', 'Só banner, vitrine e categorias escolhem como mostrar o que têm.'),
+        pageError('COMPONENT_DISPLAY_INVALID', 'Este bloco não tem layout para escolher.'),
       );
     }
 
@@ -174,8 +198,8 @@ export class PageRules {
     }
   }
 
-  /** A band that exists but belongs to another shop answers 404: this shop does not have one. */
-  async ownedSection(storeId: string, sectionId: string, db: Db = this.prisma): Promise<void> {
+  /** A band that exists but belongs to another shop answers 404: this shop does not have one. Returns its page. */
+  async ownedSection(storeId: string, sectionId: string, db: Db = this.prisma): Promise<{ pageId: string; pageKind: PageKind }> {
     // An id that is not a uuid cannot name a row, and Postgres answers one in a uuid column with an
     // error that left as a 500. It is the same answer as a band that is not here.
     if (!UUID.test(sectionId)) {
@@ -184,12 +208,14 @@ export class PageRules {
 
     const row = await db.storeSection.findUnique({
       where: { id: sectionId },
-      select: { storeId: true },
+      select: { storeId: true, pageId: true, page: { select: { kind: true } } },
     });
 
     if (!row || row.storeId !== storeId) {
       throw new NotFoundException(pageError('SECTION_NOT_FOUND', `No band ${sectionId} in this shop`));
     }
+
+    return { pageId: row.pageId, pageKind: row.page.kind };
   }
 
   /** Returns what it found, so a caller that has to reason about it needs no second read. */
@@ -197,21 +223,21 @@ export class PageRules {
     storeId: string,
     componentId: string,
     db: Db = this.prisma,
-  ): Promise<{ kind: ComponentKind; sectionId: string }> {
+  ): Promise<{ kind: ComponentKind; sectionId: string; pageId: string; pageKind: PageKind }> {
     if (!UUID.test(componentId)) {
       throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
     }
 
     const row = await db.storeComponent.findUnique({
       where: { id: componentId },
-      select: { storeId: true, kind: true, sectionId: true },
+      select: { storeId: true, kind: true, sectionId: true, section: { select: { pageId: true, page: { select: { kind: true } } } } },
     });
 
     if (!row || row.storeId !== storeId) {
       throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
     }
 
-    return { kind: row.kind, sectionId: row.sectionId };
+    return { kind: row.kind, sectionId: row.sectionId, pageId: row.section.pageId, pageKind: row.section.page.kind };
   }
 
   /**

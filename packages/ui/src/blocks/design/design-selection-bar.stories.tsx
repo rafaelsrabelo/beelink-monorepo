@@ -18,6 +18,7 @@ const meta = {
     canMoveDown: true,
     onMoveUp: fn(),
     onMoveDown: fn(),
+    onDuplicate: fn(),
     onToggleHidden: fn(),
     onDelete: fn(),
   },
@@ -29,6 +30,16 @@ type Story = StoryObj<typeof meta>
 /** Um banner escolhido no preview: subir, descer, trocar o formato, ocultar e excluir. */
 export const Banner: Story = {
   args: { layouts: ["CAROUSEL", "GRID"], layout: "CAROUSEL", onLayout: fn() },
+}
+
+/** A cópia está a caminho: Duplicar espera, e um clique duplo faz uma cópia só. */
+export const Duplicando: Story = {
+  args: { duplicating: true },
+}
+
+/** A barra de aviso é uma só: não se duplica. */
+export const BarraDeAviso: Story = {
+  args: { label: "Barra de aviso", onDuplicate: undefined, canMoveUp: false, canMoveDown: false },
 }
 
 /** A primeira faixa não sobe; um título não tem formato para trocar. */

@@ -61,3 +61,22 @@ export function focusBar(key: string, shortcut: string): void {
     if (target) place(target)
   })
 }
+
+/**
+ * Scrolls the preview to a section the owner just added, without taking the focus — the panel's
+ * heading takes it. Waited for: the new block is drawn only once the page is read again and the
+ * draft takes it in, a few frames after the write that made it.
+ */
+export function revealInPreview(keys: readonly string[], frames = 60): void {
+  requestAnimationFrame(() => {
+    const preview = document.querySelector<HTMLElement>("main[data-design-region]")
+    const node = keys
+      .map((key) => preview?.querySelector<HTMLElement>(`[data-design-node="${CSS.escape(key)}"]`))
+      .find((candidate) => candidate && candidate.getClientRects().length > 0)
+    if (!preview || !node) return frames > 0 ? revealInPreview(keys, frames - 1) : undefined
+
+    const box = node.getBoundingClientRect()
+    const view = preview.getBoundingClientRect()
+    if (box.top < view.top || box.bottom > view.bottom) preview.scrollBy({ top: box.top - view.top - view.height / 4, behavior: "smooth" })
+  })
+}
