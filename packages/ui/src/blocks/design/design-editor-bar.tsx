@@ -36,6 +36,8 @@ export interface DesignEditorBarProps {
    * a moment ago are not in the shop until Publicar. With no changes here, this is what the status says.
    */
   unpublished?: boolean
+  /** A change is on its way to the server: said first, and Publicar waits for it. */
+  saving?: boolean
   /**
    * False on a landing that is not up: the status says so, and Publicar puts the page up — with
    * nothing arranged to send, it is still the one thing left to do.
@@ -77,6 +79,7 @@ export function DesignEditorBar({
   onDeviceChange,
   changes,
   unpublished = false,
+  saving = false,
   pagePublished = true,
   publishError = null,
   publishing,
@@ -91,14 +94,16 @@ export function DesignEditorBar({
   const text = messages.design.frame
   const changed = changes > 0
   const counted = changes === 1 ? text.draftOne : format(text.draft, { count: String(changes) })
-  const pending = changed || unpublished || !pagePublished
-  const status = !pagePublished
-    ? messages.design.pages.notPublished
-    : changed
-      ? counted
-      : unpublished
-        ? messages.design.unpublished
-        : text.published
+  const pending = changed || unpublished || saving || !pagePublished
+  const status = saving
+    ? text.saving
+    : !pagePublished
+      ? messages.design.pages.notPublished
+      : changed
+        ? counted
+        : unpublished
+          ? messages.design.unpublished
+          : text.published
 
   return (
     <header
@@ -175,7 +180,7 @@ export function DesignEditorBar({
         <Button
           type="button"
           className="bg-header-foreground text-header hover:bg-header-foreground/90 h-9 shrink-0 px-3 font-semibold sm:px-4"
-          disabled={!pending || publishing}
+          disabled={!pending || publishing || saving}
           onClick={onPublish}
         >
           {publishing ? messages.design.publishing : pagePublished ? messages.design.publish : messages.design.pages.publishPage}

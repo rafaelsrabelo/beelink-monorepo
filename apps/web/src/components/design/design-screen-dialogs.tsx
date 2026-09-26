@@ -17,6 +17,7 @@ import { DesignDeleteConfirm, type PendingDelete } from "./design-delete-confirm
 import type { Shelves } from "./design-draft-preview"
 import { placementOf } from "./gallery-placement"
 import { GalleryPreview } from "./gallery-preview"
+import { DraftConflict } from "./draft-conflict"
 import { NewLanding } from "./new-landing"
 import { PageSettings } from "./page-settings"
 import { previewable, stockOf } from "./gallery-samples"
@@ -81,6 +82,7 @@ export function DesignScreenDialogs({
   return (
     <>
       <DesignLeaveDialog open={guard.asking} onStay={guard.stay} onLeave={guard.leave} messages={messages} />
+      <DraftConflict messages={messages} />
 
       <DesignDeleteConfirm pending={pendingDelete} draft={draft} onDone={onDeleteDone} messages={messages} web={web} />
       <NewLanding slug={gallery.store.slug} site={gallery.store.type === "INSTITUTIONAL"} go={guard.go} messages={messages} web={web} />

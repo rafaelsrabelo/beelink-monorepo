@@ -43,3 +43,8 @@ export const LandingEmRascunho: Story = {
 export const RascunhoSalvo: Story = {
   args: { unpublished: true },
 }
+
+/** Uma mudança a caminho do servidor: o Publicar espera por ela. */
+export const Salvando: Story = {
+  args: { saving: true, unpublished: true },
+}

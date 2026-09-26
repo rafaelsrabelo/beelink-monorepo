@@ -30,7 +30,7 @@ export interface DesignScreenBarProps {
   shopName: string
   /** The page being edited — the home or a landing — as the server read it. */
   page: StorePage
-  draft: Pick<ReturnType<typeof useDesignDraft>, "changeCount" | "publishing" | "publish" | "discard">
+  draft: Pick<ReturnType<typeof useDesignDraft>, "saving" | "saveError" | "publish" | "discard">
   /** Asks before an unpublished arrangement is left behind, on every way out of this page. */
   onLeave: (event: MouseEvent<HTMLAnchorElement>) => void
   device: PreviewDevice
@@ -42,12 +42,12 @@ export interface DesignScreenBarProps {
 }
 
 /**
- * The editor's bar, for whichever page is open: its name as the way to another page, and Publicar.
+ * The editor's bar, for whichever page is open: its name as the way to another page, whether what
+ * was done is saved and published, and Publicar.
  *
- * Publicar sends what was arranged in this browser, then freezes the draft as the page's next
- * version — which is what the shop serves, and what puts a landing up — and reloads the screen's
- * read so the bar says so. What was saved already (a block's words, a new band) is in the draft on
- * the server, and the API says whether it differs from what is served.
+ * Every change is saved to the page's draft on the server as it is made; Publicar freezes the draft
+ * as the page's next version — which is what the shop serves, and what puts a landing up — after
+ * whatever is still being saved, and reloads the screen's read so the bar says so.
  */
 export function DesignScreenBar({
   slug,
@@ -71,6 +71,8 @@ export function DesignScreenBar({
   const pageName = page.kind === "HOME" ? homeTitle : page.title
   const published = page.status === "PUBLISHED"
   const links = pageRowsOf(slug, pages.data ?? [], homeTitle).filter((row) => row.status !== "ARCHIVED")
+
+  const errorOf = (error: Error | null) => (error ? (pageErrorCopy(error, web) ?? messages.design.pages.publishFailed) : null)
 
   const publish = () => {
     freeze.reset()
@@ -96,11 +98,13 @@ export function DesignScreenBar({
       }
       device={device}
       onDeviceChange={onDeviceChange}
-      changes={draft.changeCount}
+      // Nothing is held back for Publicar any more: every change is saved as it is made.
+      changes={0}
+      saving={draft.saving}
       unpublished={saved.data?.hasUnpublishedChanges ?? false}
       pagePublished={published}
-      publishError={freeze.error ? (pageErrorCopy(freeze.error, web) ?? messages.design.pages.publishFailed) : null}
-      publishing={draft.publishing || freeze.isPending}
+      publishError={errorOf(freeze.error ?? draft.saveError)}
+      publishing={freeze.isPending}
       onPublish={publish}
       onDiscard={draft.discard}
       shopHref={shopHrefOf(slug, page)}

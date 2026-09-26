@@ -770,6 +770,12 @@ export interface UiMessages {
       leaveBody: string
       leaveStay: string
       leaveGo: string
+      /** The bar's status while a change is on its way to the server. */
+      saving: string
+      /** Another tab wrote to the page since this one read it: the only way on is a reload. */
+      conflictTitle: string
+      conflictBody: string
+      conflictReload: string
       /** A drawer's own close button, where the panel in it has none of its own. */
       close: string
       /** The landmarks' names. */

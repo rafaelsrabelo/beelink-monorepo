@@ -74,6 +74,13 @@ describe("DesignEditorBar", () => {
     expect(shop).toHaveAttribute("target", "_blank")
   })
 
+  it("says a change is being saved, first, and holds Publicar until it is", () => {
+    renderBar({ saving: true, unpublished: true })
+
+    expect(screen.getByRole("status")).toHaveTextContent("Salvando…")
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled()
+  })
+
   // Saved on the server a moment ago, not yet in the shop: nothing to discard here, something to publish.
   it("says the saved draft is not published, and offers Publicar with nothing arranged here", async () => {
     const { props } = renderBar({ unpublished: true })

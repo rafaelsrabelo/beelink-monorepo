@@ -107,7 +107,7 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
   const bandName = (id: string) =>
     bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
 
-  const guard = useLeaveGuard(draft.changed)
+  const guard = useLeaveGuard(draft.saving)
   const bands = arrangementOf(rows, saved, shelves, categories.length, !landing)
   const bandAlone = target?.level === "band" && !target.blockId ? target.id : null
   const controls = useSelectionControls({
