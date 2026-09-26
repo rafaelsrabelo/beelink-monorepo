@@ -17,6 +17,18 @@ function request(origin = "http://localhost:3000"): NextRequest {
 afterEach(() => vi.unstubAllGlobals())
 
 describe("GET /api/stores/[slug]/orders", () => {
+  it("forwards one customer's history as the API reads it, the filter and the page untouched", async () => {
+    const fetchSpy = vi.fn(async () => Response.json({ orders: [], total: 0, page: 1, pageSize: 20 }))
+    vi.stubGlobal("fetch", fetchSpy)
+
+    const history = new NextRequest(`http://localhost:3000/api/stores/${SLUG}/orders?customerId=c1&page=2`, {
+      headers: new Headers({ "content-type": "application/json", origin: "http://localhost:3000", cookie: "bl_access=owner-token" }),
+    })
+    await GET(history, context)
+
+    expect((fetchSpy.mock.calls[0]! as unknown as [string])[0]).toBe(`http://api.test/api/stores/${SLUG}/orders?customerId=c1&page=2`)
+  })
+
   it("forwards the status, the search and the page with the owner's token, and answers the API's page", async () => {
     const page = { orders: [], total: 0, page: 2, pageSize: 20 }
     const fetchSpy = vi.fn(async () => Response.json(page))

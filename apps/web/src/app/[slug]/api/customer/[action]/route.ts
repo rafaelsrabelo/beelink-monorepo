@@ -110,10 +110,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
         response = await save(renewed.accessToken)
       }
 
-      if (response?.ok) page.searchParams.set("salvo", "1")
-      else page.searchParams.set("erro", response?.status === 400 ? "CUSTOMER_FIELDS_INVALID" : response ? await codeOf(response) : "UNKNOWN")
+      // A refusal goes back to the form (`formulario`), wherever a save would have gone: a phone the
+      // shop already has is said there, and nowhere else.
+      const landing = response?.ok ? page : new URL(safeBackOf(slug, field("formulario") || field("retorno")), request.url)
+      if (response?.ok) landing.searchParams.set("salvo", "1")
+      else landing.searchParams.set("erro", response?.status === 400 ? "CUSTOMER_FIELDS_INVALID" : response ? await codeOf(response) : "UNKNOWN")
 
-      const answer = NextResponse.redirect(page, 303)
+      const answer = NextResponse.redirect(landing, 303)
       if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)
       return answer
     }

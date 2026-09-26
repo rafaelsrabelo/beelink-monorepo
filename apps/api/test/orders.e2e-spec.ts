@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, Order, OrderPage, Product } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, Order, OrderPage, OrderStockDetails, Product, Store, StoreCustomerPage } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -40,7 +40,7 @@ describe("a shop's orders", () => {
     grape = await flavoured(await addProduct('Creatina', 5990), 'Sabor', 'Uva');
   });
 
-  function call(method: 'GET' | 'POST' | 'PATCH', url: string, session?: AuthSession, payload?: object) {
+  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, session?: AuthSession, payload?: object) {
     return app.inject({ method, url, headers: session ? { authorization: `Bearer ${session.accessToken}` } : {}, ...(payload ? { payload } : {}) });
   }
 
@@ -147,6 +147,60 @@ describe("a shop's orders", () => {
     expect(again.json()).toMatchObject({ errorCode: 'ORDER_CANCELLED' });
   });
 
+  describe('the stock', () => {
+    /** Counts a combination's stock, as the variations editor would. */
+    async function counted(variantId: string, stockQuantity: number | null) {
+      await prisma.productVariant.update({ where: { id: variantId }, data: { trackStock: true, stockQuantity } });
+    }
+    const stockOf = async (variantId: string) => (await prisma.productVariant.findUniqueOrThrow({ where: { id: variantId } })).stockQuantity;
+
+    it('takes a counted combination off the stock, leaves one not counted alone, and moves the product\'s count with it', async () => {
+      await counted(whey, 5);
+
+      expect((await place()).statusCode).toBe(201);
+      expect(await stockOf(whey)).toBe(3);
+      expect(await stockOf(grape)).toBeNull();
+      const product = await prisma.product.findFirstOrThrow({ where: { name: 'Whey' } });
+      expect(product.stockQuantity).toBe(3);
+    });
+
+    it('refuses to sell past what is left, naming every short line and how many are left, and saves nothing', async () => {
+      await counted(whey, 1);
+      await counted(grape, null);
+
+      const refused = await place();
+      expect(refused.statusCode).toBe(409);
+      const body = refused.json<ApiErrorBody>();
+      expect(body.errorCode).toBe('ORDER_STOCK_INSUFFICIENT');
+      expect((body.details as OrderStockDetails).shortages).toEqual([
+        { variantId: whey, available: 1 },
+        { variantId: grape, available: 0 },
+      ]);
+      expect(await stockOf(whey)).toBe(1);
+      expect(await prisma.order.count()).toBe(0);
+    });
+
+    it('never sells the last unit twice when two orders race for it', async () => {
+      await counted(whey, 2);
+
+      const both = await Promise.all([place({ items: [{ variantId: whey, quantity: 2 }] }), place({ items: [{ variantId: whey, quantity: 2 }] })]);
+      expect(both.map((response) => response.statusCode).sort()).toEqual([201, 409]);
+      expect(await stockOf(whey)).toBe(0);
+    });
+
+    it('gives a cancelled order\'s lines back, but nothing for an order placed before orders counted stock', async () => {
+      await counted(whey, 5);
+      const order = (await place()).json<Order>();
+      await call('PATCH', `/api/stores/lessari/orders/${order.number}/status`, owner, { status: 'CANCELLED' });
+      expect(await stockOf(whey)).toBe(5);
+
+      const old = (await place()).json<Order>();
+      await prisma.order.update({ where: { id: old.id }, data: { stockTaken: false } });
+      await call('PATCH', `/api/stores/lessari/orders/${old.number}/status`, owner, { status: 'CANCELLED' });
+      expect(await stockOf(whey)).toBe(3);
+    });
+  });
+
   it("is the owner's alone: another of their shops, a stranger and a shopper's token all get nothing", async () => {
     await place();
 
@@ -246,5 +300,90 @@ describe("a shop's orders", () => {
     expect((await list('?q=bia')).orders.map((order) => order.number)).toEqual([1]);
     expect((await list('?q=97777')).orders.map((order) => order.number)).toEqual([2]);
     expect(await list('?pageSize=1&page=2')).toMatchObject({ total: 2, page: 2, pageSize: 1, orders: [{ number: 1 }] });
+  });
+
+  describe("the customer's stage", () => {
+    const DAY_MS = 86_400_000;
+    const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
+    const customers = (query = '') => call('GET', `/api/stores/lessari/customers${query}`, owner).then((response) => response.json<StoreCustomerPage>());
+    const stageOf = (page: StoreCustomerPage, name: string) => page.customers.find((customer) => customer.name === name)?.stage;
+
+    /** Absent (`undefined`) leaves the key out of the body, as an older client would. */
+    async function setInactiveAfter(days: number | null | undefined) {
+      const store = (await call('GET', '/api/stores/lessari', owner)).json<Store>();
+      return call('PUT', '/api/stores/lessari', owner, {
+        name: store.name,
+        type: store.type,
+        layoutType: store.layoutType,
+        colors: store.colors,
+        socialNetworks: { whatsapp: store.socialNetworks.whatsapp },
+        paymentMethods: store.paymentMethods,
+        ...(days === undefined ? {} : { inactiveAfterDays: days }),
+      });
+    }
+
+    beforeEach(async () => {
+      await place({ placedAt: daysAgo(59) });
+      await place({ customer: { name: 'Caio Lima', phone: '11977776666' }, placedAt: daysAgo(61) });
+      await place({ customer: { name: 'Eva Nunes', phone: '11966665555' } });
+      await call('PATCH', '/api/stores/lessari/orders/3/status', owner, { status: 'CANCELLED' });
+      await call('POST', '/api/stores/lessari/customers', owner, { name: 'Dani Rocha', phone: '11955554444' });
+    });
+
+    it('with N = 60, reads 59 days as a customer and 61 as inactive; a cancelled order counts for nothing', async () => {
+      const page = await customers();
+
+      expect(stageOf(page, 'Bia Souza')).toBe('CUSTOMER');
+      expect(stageOf(page, 'Caio Lima')).toBe('INACTIVE');
+      expect(stageOf(page, 'Dani Rocha')).toBe('LEAD');
+      expect(page.customers.find((customer) => customer.name === 'Eva Nunes')).toMatchObject({
+        stage: 'LEAD',
+        ordersCount: 0,
+        totalSpentCents: 0,
+        lastOrderAt: null,
+        daysSinceLastOrder: null,
+      });
+      expect(page.customers.find((customer) => customer.name === 'Bia Souza')).toMatchObject({ ordersCount: 1, totalSpentCents: 24470, daysSinceLastOrder: 59 });
+      expect(page.stageCounts).toEqual({ LEAD: 2, CUSTOMER: 1, INACTIVE: 1 });
+    });
+
+    it('filters by stage without narrowing the counts, which follow the search', async () => {
+      const inactive = await customers('?stage=INACTIVE');
+      expect(inactive.customers.map((customer) => customer.name)).toEqual(['Caio Lima']);
+      expect(inactive).toMatchObject({ total: 1, stageCounts: { LEAD: 2, CUSTOMER: 1, INACTIVE: 1 } });
+
+      expect((await customers('?q=bia')).stageCounts).toEqual({ LEAD: 0, CUSTOMER: 1, INACTIVE: 0 });
+      expect((await call('GET', '/api/stores/lessari/customers?stage=SLEEPING', owner)).statusCode).toBe(400);
+    });
+
+    it('moves every stage at once when the shop changes its number, and keeps the number within bounds', async () => {
+      const saved = await setInactiveAfter(90);
+      expect(saved.statusCode).toBe(200);
+      expect(saved.json<Store>().inactiveAfterDays).toBe(90);
+
+      const page = await customers();
+      expect(stageOf(page, 'Caio Lima')).toBe('CUSTOMER');
+      expect(page.stageCounts).toEqual({ LEAD: 2, CUSTOMER: 2, INACTIVE: 0 });
+
+      expect((await setInactiveAfter(6)).statusCode).toBe(400);
+      expect((await setInactiveAfter(366)).statusCode).toBe(400);
+      // A null is a client error, not a way to reach the NOT NULL column as a 500.
+      expect((await setInactiveAfter(null)).statusCode).toBe(400);
+      // A body without it keeps it: an older client must not reset the shop's number.
+      const kept = await setInactiveAfter(undefined);
+      expect(kept.statusCode).toBe(200);
+      expect(kept.json<Store>().inactiveAfterDays).toBe(90);
+    });
+
+    it('sorts by the latest order, the most orders and the most spent, those who never bought last', async () => {
+      await place({ customer: { name: 'Caio Lima', phone: '11977776666' }, items: [{ variantId: whey, quantity: 1 }], deliveryFeeCents: 0, discountCents: 0 });
+      const names = async (sort: string) => (await customers(`?sort=${sort}`)).customers.map((customer) => customer.name);
+
+      expect((await names('LAST_ORDER')).slice(0, 2)).toEqual(['Caio Lima', 'Bia Souza']);
+      expect((await names('MOST_ORDERS'))[0]).toBe('Caio Lima');
+      // Caio's two orders (244,70 and 89,90) pass Bia's one.
+      expect((await names('TOP_SPENT')).slice(0, 2)).toEqual(['Caio Lima', 'Bia Souza']);
+      expect((await names('LAST_ORDER')).slice(2).sort()).toEqual(['Dani Rocha', 'Eva Nunes']);
+    });
   });
 });

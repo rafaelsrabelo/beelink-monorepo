@@ -1,5 +1,13 @@
 // Types
-import type { CreateStoreCustomerPayload, StoreCustomer, StoreCustomerListQuery, StoreCustomerPage } from "@harness-monorepo/contracts"
+import type {
+  CreateStoreCustomerPayload,
+  MergeStoreCustomerPayload,
+  StoreCustomer,
+  StoreCustomerDetail,
+  StoreCustomerListQuery,
+  StoreCustomerPage,
+  UpdateStoreCustomerPayload,
+} from "@harness-monorepo/contracts"
 
 /** What a failed call carries: the API's stable code, never a sentence (apps/web/AGENTS.md, rule 9). */
 export class CustomerRequestError extends Error {
@@ -22,6 +30,8 @@ function errorCodeOf(payload: unknown): string {
 export async function fetchStoreCustomers(slug: string, query: StoreCustomerListQuery = {}): Promise<StoreCustomerPage> {
   const search = new URLSearchParams()
   if (query.q) search.set("q", query.q)
+  if (query.stage) search.set("stage", query.stage)
+  if (query.sort) search.set("sort", query.sort)
   if (query.page && query.page > 1) search.set("page", String(query.page))
   if (query.pageSize) search.set("pageSize", String(query.pageSize))
 
@@ -34,15 +44,39 @@ export async function fetchStoreCustomers(slug: string, query: StoreCustomerList
   return payload as StoreCustomerPage
 }
 
-/** One of the shop's customers — the one a new order was opened for. */
-export async function fetchStoreCustomer(slug: string, customerId: string): Promise<StoreCustomer> {
+/** One of the shop's customers, as their record reads them — also the one a new order was opened for. */
+export async function fetchStoreCustomer(slug: string, customerId: string): Promise<StoreCustomerDetail> {
   const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers/${encodeURIComponent(customerId)}`, {
     method: "GET",
     headers: JSON_HEADERS,
   })
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new CustomerRequestError(errorCodeOf(payload))
-  return payload as StoreCustomer
+  return payload as StoreCustomerDetail
+}
+
+/** Corrects the shop's record of a customer; a phone another customer has is `CUSTOMER_PHONE_TAKEN`. */
+export async function updateStoreCustomer(slug: string, customerId: string, payload: UpdateStoreCustomerPayload): Promise<StoreCustomerDetail> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers/${encodeURIComponent(customerId)}`, {
+    method: "PATCH",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new CustomerRequestError(errorCodeOf(body))
+  return body as StoreCustomerDetail
+}
+
+/** Makes two records of one person one; answers the record kept, which may be the other one. */
+export async function mergeStoreCustomer(slug: string, customerId: string, payload: MergeStoreCustomerPayload): Promise<StoreCustomerDetail> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers/${encodeURIComponent(customerId)}/merge`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new CustomerRequestError(errorCodeOf(body))
+  return body as StoreCustomerDetail
 }
 
 /** Registers a customer with no account; a phone the shop has is `CUSTOMER_PHONE_TAKEN`. */

@@ -25,6 +25,14 @@ describe('ApiExceptionFilter', () => {
     expect(body).toEqual({ statusCode: 409, errorCode: 'AUTH_EMAIL_TAKEN', message: 'E-mail already registered' });
   });
 
+  it('carries the details a service attaches to its own refusal, and none a framework error has', () => {
+    const shortages = [{ variantId: 'v1', available: 1 }];
+    const { body } = capture(new ConflictException({ errorCode: 'ORDER_STOCK_INSUFFICIENT', message: 'Short', details: { shortages } }));
+    expect(body).toMatchObject({ errorCode: 'ORDER_STOCK_INSUFFICIENT', details: { shortages } });
+
+    expect(capture(new BadRequestException({ message: 'x', details: { leaked: true } })).body).not.toHaveProperty('details');
+  });
+
   it('falls back to the status name when no errorCode was given', () => {
     expect(capture(new NotFoundException()).body).toMatchObject({ statusCode: 404, errorCode: 'NOT_FOUND' });
   });
