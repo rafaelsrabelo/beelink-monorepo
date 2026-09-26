@@ -1,6 +1,6 @@
 // Libs
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
@@ -13,6 +13,10 @@ import { DesignPreview, PHONE_WIDTH, PREVIEW_WIDTH } from "./design-preview"
  * the `shop` container inside it, not to the window. The scale itself is measured in Storybook and
  * Playwright.
  */
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
 describe("DesignPreview", () => {
   it("draws its children at a desktop width, not the pane's", () => {
     const { container } = render(
@@ -68,6 +72,26 @@ describe("DesignPreview", () => {
 
     expect(surface).not.toBeNull()
     expect(surface!.style.getPropertyValue("--design-scale")).not.toBe("")
+  })
+
+  // Before the first measurement the scale is 1: a 1440px shop painted at full size, then a jump.
+  it("keeps the shop out of sight until it has measured the pane, and shows it once it has", () => {
+    const { container, unmount } = render(
+      <DesignPreview>
+        <p>Vitrine</p>
+      </DesignPreview>,
+    )
+    expect(container.querySelector<HTMLElement>("[data-device]")?.style.visibility).toBe("hidden")
+    unmount()
+
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(720)
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(2400)
+    const measured = render(
+      <DesignPreview>
+        <p>Vitrine</p>
+      </DesignPreview>,
+    )
+    expect(measured.container.querySelector<HTMLElement>("[data-device]")?.style.visibility).toBe("")
   })
 
   it("has no accessibility violations", async () => {

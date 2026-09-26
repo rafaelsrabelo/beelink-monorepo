@@ -18,6 +18,9 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
  */
 export const BAND = "mx-auto w-full max-w-[1440px] px-4 shop-sm:px-6 shop-lg:px-8"
 
+/** BAND's side margin alone: words in an edge-to-edge band keep it while its pictures reach the edges. */
+export const GUTTER = "px-4 shop-sm:px-6 shop-lg:px-8"
+
 export interface StorefrontBandProps {
   children: ReactNode
   className?: string

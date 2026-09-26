@@ -4,30 +4,33 @@
 import { useState } from "react"
 
 // Types
-import type { ComponentKind, PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
+import type { ComponentKind, PagePreview, PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
 import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
-import { ConfirmDelete } from "@harness-monorepo/ui/blocks/shared/confirm-delete"
-import { format } from "@harness-monorepo/ui/locales/index"
+import { DesignEditorFrame, usePreviewDevice } from "@harness-monorepo/ui/blocks/design/design-editor-frame"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import { useCreateComponent, useCreateSection } from "@/services/page/page-hooks"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
-import { BandEditor } from "./band-editor"
-import { ComponentEditor } from "./component-editor"
-import { DesignHeader } from "./design-header"
-import { DesignPanel } from "./design-panel"
-import type { InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import { BlockGallery } from "@harness-monorepo/ui/blocks/design/block-gallery"
-
-// App
-import { DesignPreviewPane } from "./design-preview-pane"
-import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, serverPlaceOf, takenKindsOf } from "./design-draft"
-import { arrangementOf, previewOf, shelvesOf } from "./design-draft-preview"
-import { pageErrorCopy } from "./page-error-copy"
+import type { PendingDelete } from "./design-delete-confirm"
+import { DesignInspector } from "./design-inspector"
+import { DesignPagesTab } from "./design-pages-tab"
+import { DesignPanel, type DesignPanelTab } from "./design-panel"
+import { DesignScreenBar } from "./design-screen-bar"
+import { DesignScreenDialogs } from "./design-screen-dialogs"
+import { LivePreviewPane } from "./live-preview-pane"
+import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
+import { arrangementOf, shelvesOf } from "./design-draft-preview"
+import { resolvedOnServer, unavailableKindsOf } from "./design-kinds"
+import { editedOf } from "./design-selection"
+import { revealInPreview } from "./design-focus"
+import { useBlockInsert } from "./use-block-insert"
 import { useDesignDraft } from "./use-design-draft"
+import { useEditingPage } from "./use-editing-page"
+import { useDesignSelection } from "./use-design-selection"
+import { useLeaveGuard } from "./use-leave-guard"
+import { useSelectionControls } from "./use-selection-controls"
 import { useShopRefresh } from "./use-shop-refresh"
 
 import type { WebMessages } from "@/locales"
@@ -40,6 +43,8 @@ export interface DesignScreenProps {
    */
   store: PublicStore
   categories: readonly PublicProductCategory[]
+  /** The page being edited — the home or a landing — and its draft's bands as they would be served. */
+  page: PagePreview
   year: number
   messages: UiMessages
   /** The app's own sentences — where an API `errorCode` becomes copy. */
@@ -49,59 +54,42 @@ export interface DesignScreenProps {
 /** Spelled out so a fifth colour is a compile error here rather than a field nobody compares. */
 const COLOUR_KEYS = ["background", "primary", "header", "footer"] as const satisfies readonly (keyof StoreColors)[]
 
-/** What the dialog is about to delete. A band takes everything in it; a component leaves its band. */
-type PendingDelete = { level: "band" | "component"; id: string; name: string }
-
 /**
- * The shop on the left, its bands arranged on the right.
+ * The full-screen editor: the bar above, and the structure, the shop and the chosen block's panel.
  *
- * The arrangement is a draft until Publish — `useDesignDraft` says why. What a component says, and
- * what colour a band is, save on their own the moment the owner hits save in the sheet: those are
- * things they want to see land, not an order to hold back.
+ * The arrangement is a draft until Publish — `useDesignDraft` says why — and so is how each block
+ * sits. What a component says, and what a band looks like, save on their own the moment the owner
+ * hits Salvar in the panel: those are things they want to see land, not an order to hold back.
  */
-export function DesignScreen({ store, categories, year, messages, web }: DesignScreenProps) {
-  const text = messages.design
+export function DesignScreen({ store, categories, page, year, messages, web }: DesignScreenProps) {
   const slug = store.slug
+  const landing = page.page.kind === "LANDING" ? page.page : null
+  const pageId = page.page.id
 
-  const draft = useDesignDraft(slug)
+  const draft = useDesignDraft(slug, pageId)
+  useEditingPage(slug, pageId)
+  const { rows, saved } = draft
   const presets = useStoreColorPresets()
   const saveColors = useUpdateStoreColors(slug)
-  const addSection = useCreateSection(slug)
-  const addToBand = useCreateComponent(slug)
-  const shelves = shelvesOf(store.sections)
-  const [insertAt, setInsertAt] = useState<InsertAt | null>(null)
-  // Sent where the "+" is, counted in the server's order: see `serverPlaceOf`.
-  const insert = (kind: ComponentKind) => {
-    if (insertAt?.level === "band") {
-      const position = serverPlaceOf(rows.map((row) => row.id), saved.map((row) => row.id), insertAt.index)
-      addSection.mutate(
-        { component: { kind }, position },
-        { onSuccess: (section) => (section.components[0] ? opened(section.components[0]) : undefined) },
-      )
-    } else if (insertAt?.level === "block") {
-      const { sectionId, index } = insertAt
-      const ids = (bands: readonly { id: string; components: readonly { id: string }[] }[]) =>
-        bands.find((band) => band.id === sectionId)?.components.map((component) => component.id) ?? []
-      const position = serverPlaceOf(ids(rows), ids(saved), index)
-      addToBand.mutate({ sectionId, payload: { kind, position } }, { onSuccess: opened })
-    }
-  }
+  // The draft's shelves: `store.sections` is the home as published, which a new showcase is not in yet.
+  const shelves = shelvesOf(page.sections)
   const shop = useShopRefresh()
-  // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
-  const opened = (component: { id: string; kind: ComponentKind }) => {
-    choose(component.id)
-    if (component.kind === "PRODUCTS") shop.refresh(component.id)
-  }
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
-  const [editingComponent, setEditingComponent] = useState<string | null>(null)
-  const [panelTab, setPanelTab] = useState<"blocks" | "colors">("blocks")
-  // Every choice of a block shows its fields — the same block chosen again from the colours included.
-  const choose = (id: string) => {
-    setEditingComponent(id)
-    setPanelTab("blocks")
+  const [panelTab, setPanelTab] = useState<DesignPanelTab>("blocks")
+  const [device, setDevice] = usePreviewDevice()
+  const selection = useDesignSelection(rows)
+  const { choose, target } = selection
+  const edited = editedOf(target)
+  const chooseBlock = (id: string) => choose({ level: "block", id })
+  // A new section is chosen, its Conteúdo open, and the preview brought to it: the API may have put
+  // it far down the page. By its band's key too, the one a block alone in its band is drawn under.
+  const opened = (component: { id: string; kind: ComponentKind; sectionId: string }) => {
+    chooseBlock(component.id)
+    if (resolvedOnServer(component.kind)) shop.refresh(component.id)
+    revealInPreview([component.id, component.sectionId])
   }
-  const [editingBand, setEditingBand] = useState<string | null>(null)
+  const adding = useBlockInsert(slug, pageId, draft, opened, web)
 
   /*
     The palette is its own draft, and it saves on its own — a colour is the kind of thing you want
@@ -111,138 +99,146 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const [palette, setPalette] = useState<StoreColors>(store.colors)
   const paletteChanged = COLOUR_KEYS.some((key) => palette[key] !== store.colors[key])
 
-  const { rows, saved } = draft
-
-  // What the gallery never offers: the strip a page has once, and what this kind of page cannot hold.
-  const unavailableKinds: ComponentKind[] =
-    store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]
+  const unavailableKinds = unavailableKindsOf(store.type, !!landing)
   const takenKinds = takenKindsOf(rows)
   const bandName = (id: string) =>
     bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
 
-  const editing = saved.flatMap((section) => section.components).find((c) => c.id === editingComponent) ?? null
-  const editingSection = saved.find((section) => section.id === editingBand) ?? null
+  const guard = useLeaveGuard(draft.saving)
+  const bands = arrangementOf(rows, saved, shelves, categories.length, !landing)
+  const bandAlone = target?.level === "band" && !target.blockId ? target.id : null
+  const controls = useSelectionControls({
+    slug,
+    rows,
+    saved,
+    bands,
+    target,
+    draft,
+    choose,
+    onLayoutTab: () => selection.setTab("layout"),
+    onDelete: setPendingDelete,
+    bandName,
+    messages,
+    web,
+  })
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <DesignHeader
-        changed={draft.changed}
-        publishing={draft.publishing}
-        onPublish={draft.publish}
-        onDiscard={draft.discard}
+    <>
+      <DesignScreenDialogs
+        guard={guard}
+        draft={draft}
+        pendingDelete={pendingDelete}
+        onDeleteDone={() => setPendingDelete(null)}
+        adding={adding}
+        takenKinds={takenKinds}
+        unavailableKinds={unavailableKinds}
+        shelves={shelves}
+        gallery={{ store, categories, colors: palette }}
+        page={page.page}
         messages={messages}
+        web={web}
       />
 
-      <ConfirmDelete
-        question={
-          pendingDelete
-            ? format(pendingDelete.level === "band" ? text.deleteBandConfirm : text.deleteBlockConfirm, {
-                name: pendingDelete.name,
-              })
-            : null
+      <DesignEditorFrame
+        bar={
+          <DesignScreenBar
+            slug={slug}
+            shopName={store.name}
+            page={page.page}
+            draft={draft}
+            onLeave={guard.onLeave}
+            device={device}
+            onDeviceChange={setDevice}
+            onOpenStructure={() => selection.setStructureOpen(true)}
+            onOpenInspector={() => selection.setInspectorOpen(true)}
+            messages={messages}
+            web={web}
+          />
         }
-        pending={draft.deleting}
-        // The dialog stays open until the server agrees; a refusal is said under the question.
-        {...(draft.deleteError ? { detail: pageErrorCopy(draft.deleteError, web) } : {})}
-        onConfirm={() => {
-          if (!pendingDelete) return
-          const { level, id } = pendingDelete
-          const done = () => setPendingDelete(null)
-          if (level === "band") draft.removeBand(id, done)
-          else draft.removeRow(id, done)
-        }}
-        onCancel={() => {
-          setPendingDelete(null)
-          draft.clearDeleteError()
-        }}
+        structure={
+          <DesignPanel
+            bands={bands}
+            loading={draft.loading}
+            onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
+            onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}
+            onToggleBand={(id, isActive) => draft.patchSection(id, { isActive })}
+            onEditBand={(id) => choose({ level: "band", id })}
+            onDeleteBand={(id) => setPendingDelete({ level: "band", id, name: bandName(id) })}
+            onToggle={(id, isActive) => draft.patchComponent(id, { isActive })}
+            onDelete={(id) => {
+              const component = saved.flatMap((section) => section.components).find((c) => c.id === id)
+              if (component) {
+                setPendingDelete({ level: "component", id, name: labelOf(component.kind, component.title, messages) })
+              }
+            }}
+            onEdit={chooseBlock}
+            {...adding.panel}
+            selectedId={edited?.componentId ?? null}
+            selectedBandId={bandAlone}
+            tab={panelTab}
+            onTabChange={setPanelTab}
+            palette={palette}
+            onPalette={setPalette}
+            presets={presets.data ?? []}
+            paletteChanged={paletteChanged}
+            savingColours={saveColors.isPending}
+            onSaveColours={() => saveColors.mutate(palette)}
+            pages={<DesignPagesTab slug={slug} currentId={pageId} onNavigate={guard.onLeave} messages={messages} web={web} />}
+            messages={messages}
+          />
+        }
+        preview={
+          <LivePreviewPane
+            store={store}
+            categories={categories}
+            year={year}
+            rows={rows}
+            saved={saved}
+            editing={edited}
+            shelves={shelves}
+            refreshingId={shop.refreshingId}
+            device={device}
+            colors={palette}
+            orderedIds={orderedIdsOf(rows)}
+            onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
+            {...adding.preview}
+            onEdit={chooseBlock}
+            selectedId={edited?.componentId ?? null}
+            selectedBandId={bandAlone}
+            selectionBar={controls.bar}
+            {...(landing ? { landing: { homeSections: store.sections, usesChrome: landing.usesChrome } } : {})}
+            messages={messages}
+          />
+        }
+        inspector={
+          <DesignInspector
+            slug={slug}
+            target={target}
+            rows={rows}
+            saved={saved}
+            tab={selection.tab}
+            onTabChange={selection.setTab}
+            onLayoutChange={(id, patch) => draft.patchComponent(id, patch)}
+            pageBackground={palette.background}
+            categoriesShown={categories.length}
+            shelves={shelves}
+            onClose={selection.close}
+            takeFocus={selection.takeFocus}
+            onSaved={(component) => (resolvedOnServer(component.kind) ? shop.refresh(component.id) : undefined)}
+            messages={messages}
+            web={web}
+          />
+        }
+        structureOpen={selection.structureOpen}
+        onStructureOpenChange={selection.setStructureOpen}
+        inspectorOpen={selection.inspectorOpen}
+        onInspectorOpenChange={selection.setInspectorOpen}
+        // The panel closes itself; the hint has nothing to close, so the drawer does.
+        inspectorHasOwnClose={target !== null}
+        onKeyDown={controls.onKeyDown}
+        status={controls.status}
         messages={messages}
       />
-
-      <BandEditor
-        slug={slug}
-        section={editingSection}
-        position={rows.findIndex((row) => row.id === editingBand) + 1}
-        pageBackground={palette.background}
-        onClose={() => setEditingBand(null)}
-        messages={messages}
-      />
-
-      <div className="flex flex-col gap-4 @4xl/main:flex-row">
-        <DesignPreviewPane
-          store={store}
-          categories={categories}
-          year={year}
-          sections={previewOf(rows, saved, shelves)}
-          shelves={shelves}
-          refreshingId={shop.refreshingId}
-          colors={palette}
-          orderedIds={orderedIdsOf(rows)}
-          onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
-          onEdit={choose}
-          selectedId={editingComponent}
-          messages={messages}
-        />
-
-        <DesignPanel
-          bands={arrangementOf(rows, saved, shelves, categories.length)}
-          loading={draft.loading}
-          onReorder={(ids) => draft.edit(applyOrder(rows, ids))}
-          onReorderComponents={(sectionId, ids) => draft.edit(applyComponentOrder(rows, sectionId, ids))}
-          onToggleBand={(id, isActive) => draft.patchSection(id, { isActive })}
-          onEditBand={setEditingBand}
-          onDeleteBand={(id) => setPendingDelete({ level: "band", id, name: bandName(id) })}
-          onToggle={(id, isActive) => draft.patchComponent(id, { isActive })}
-          onSpanChange={(id, span) => draft.patchComponent(id, { span })}
-          onDelete={(id) => {
-            const component = saved.flatMap((section) => section.components).find((c) => c.id === id)
-            if (component) {
-              setPendingDelete({ level: "component", id, name: labelOf(component.kind, component.title, messages) })
-            }
-          }}
-          onEdit={choose}
-          onInsert={setInsertAt}
-          inserting={addSection.isPending || addToBand.isPending}
-          inspector={
-            <ComponentEditor
-              slug={slug}
-              component={editing}
-              bandBackground={saved.find((section) => section.id === editing?.sectionId)?.background ?? null}
-              pageBackground={palette.background}
-              categoriesShown={categories.length}
-              shelfEmpty={editing ? shelves.get(editing.id)?.items.length === 0 : false}
-              onClose={() => setEditingComponent(null)}
-              onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
-              messages={messages}
-              web={web}
-            />
-          }
-          selectedId={editingComponent}
-          tab={panelTab}
-          onTabChange={setPanelTab}
-          palette={palette}
-          onPalette={setPalette}
-          presets={presets.data ?? []}
-          paletteChanged={paletteChanged}
-          savingColours={saveColors.isPending}
-          onSaveColours={() => saveColors.mutate(palette)}
-          messages={messages}
-        />
-      </div>
-
-      {/*
-        The one gallery every "+" opens, already knowing where the block goes. Adding is a saved
-        write, not a draft edit — a reload must not lose what the owner watched appear — and the form
-        then opens on the block just created, so nothing lands somewhere the owner has to find it.
-      */}
-      <BlockGallery
-        open={insertAt !== null}
-        onOpenChange={(open) => (open ? undefined : setInsertAt(null))}
-        // The strip is the one kind a page has once; a site has no catalogue, a shop no form leads.
-        taken={takenKinds}
-        unavailable={unavailableKinds}
-        onAdd={insert}
-        messages={messages}
-      />
-    </div>
+    </>
   )
 }

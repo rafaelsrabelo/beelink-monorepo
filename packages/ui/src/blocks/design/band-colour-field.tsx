@@ -13,7 +13,7 @@ export interface BandColourFieldProps {
   onChange: (value: string) => void
   /** What the page is painted, so turning a band's own colour on starts somewhere visible. */
   pageBackground: string
-  /** What the switch and the swatch are called. The band's form and the strip's form say different things. */
+  /** What the switch and the swatch are called. A band and the strip say different things. */
   label: string
   /** Said in words when the switch is off. */
   noneLabel: string
@@ -26,8 +26,8 @@ export interface BandColourFieldProps {
  *
  * "The page's colour" and "white" are the same swatch and different things, and a shopkeeper
  * cannot tell them apart by looking at one — so the difference is said in words before the swatch
- * appears. Its own block because two forms ask it: a band's, and the announcement strip's, which
- * is the one component whose band is not drawn where it sits.
+ * appears. Its own block because it is asked in two voices: a band's, and the announcement strip's,
+ * whose band is not drawn where it sits and whose colour is the strip's to the owner.
  */
 export function BandColourField({
   value,

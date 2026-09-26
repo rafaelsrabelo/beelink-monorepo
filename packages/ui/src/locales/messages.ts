@@ -1,4 +1,12 @@
-import type { BlockGroup, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
+import type {
+  Across,
+  ComponentDisplay,
+  ComponentKind,
+  ContactFieldType,
+  DesignPublishProblemKind,
+  ProductSource,
+} from "../blocks/design/design-types"
+import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
@@ -31,6 +39,7 @@ export interface UiMessages {
     ufInvalid: string
     colorInvalid: string
     paymentMethodsMin: string
+    inactiveAfterDaysRange: string
     slugMin: string
     slugMax: string
     slugInvalid: string
@@ -218,6 +227,16 @@ export interface UiMessages {
     /** A card whose product has options: the page is where one is chosen. */
     seeOptions: string
     buyNow: string
+    /** "Entregar em" in the header: the visitor's CEP, kept for the shipping quote to come. */
+    deliverTo: { label: string; ask: string; field: string; save: string; note: string }
+    /** A featured product sold out: its page, where "Avise-me" is. */
+    seeProduct: string
+    /** A countdown's units, under its digits. */
+    countdownUnits: { days: string; hours: string; minutes: string; seconds: string }
+    /** Its end in words, for a screen reader and before the digits start: "{date}, às {time}". */
+    countdownEnds: string
+    /** Drawn in the editor over a countdown the shop no longer shows. */
+    countdownEnded: string
     viewCart: string
     /** The phone bar's short line after an add: "Adicionado · Ver carrinho". */
     addedShort: string
@@ -293,6 +312,11 @@ export interface UiMessages {
     accountState: string
     accountSave: string
     accountSaved: string
+    /**
+     * The phone refused because the shop already has it on another record — most likely one the
+     * shopkeeper made from a WhatsApp sale. Says to talk to the shop, who can merge the two.
+     */
+    accountPhoneTaken: string
     /** The product page (5b). `{name}` — the shop, over the title. */
     visitShop: string
     /** The buy column's landmark name. */
@@ -459,6 +483,10 @@ export interface UiMessages {
     featuredEyebrow: string
     categoriesEyebrow: string
     seeAll: string
+    /** The button of a banner whose words stand beside its picture. */
+    learnMore: string
+    /** Its name for a screen reader, after the banner: two "Saiba mais" in a list of links say nothing. */
+    learnMoreAbout: string
     /**
      * `{section}`. The accessible name of a "see all" link, because a home with three of them
      * hands a screen reader the same two words three times (WCAG 2.4.4).
@@ -554,6 +582,9 @@ export interface UiMessages {
       productsNone: { title: string; body: string; action: string }
       productsOffShelf: { title: string; body: string; action: string }
       sourceEmpty: { title: string; body: string }
+      featuredUnavailable: { title: string; body: string }
+      countdownEnded: { title: string; body: string }
+      countdownUnset: { title: string; body: string }
       /** Said after a link that leaves the arrangement's draft where it is. */
       opensInNewTab: string
     }
@@ -565,9 +596,47 @@ export interface UiMessages {
       searchPlaceholder: string
       /** Said when the search matches nothing. */
       empty: string
-      groups: Record<BlockGroup, string>
+      /** The shelves on the left, Recomendadas first. */
+      categories: Record<"RECOMMENDED" | SectionCategory, string>
+      categoriesLabel: string
+      /** Over the grid while searching: what matched in every shelf. */
+      results: string
+      add: string
+      /** The button's name for a screen reader: `{name}` is the section's. */
+      addNamed: string
+      /** What a card's preview says where the shop has nothing of its own to show yet. */
+      samples: {
+        bannerTitle: string
+        headingTitle: string
+        headingSubtitle: string
+        paragraph: string
+        announcement: string
+        contactTitle: string
+        benefits: { shipping: string; pix: string; exchange: string }
+        contact: { email: string; phone: string; message: string }
+        faqTitle: string
+        faq: { question: string; answer: string }[]
+        callToAction: { title: string; body: string; label: string }
+        imageText: { title: string; body: string }
+        featuredTitle: string
+        countdownTitle: string
+      }
+      /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
+      placement: {
+        between: string
+        first: string
+        last: string
+        only: string
+        inBand: string
+        inBandFirst: string
+        beside: string
+      }
       /** One line of what a kind is, read beside its wireframe and searched with its name. */
       hints: Record<ComponentKind, string>
+      /** A row of banners, by `{count}`: "3 banners lado a lado". */
+      bannersAcross: string
+      /** The line under a row of banners, by how many it holds. */
+      bannersAcrossHints: Record<Exclude<Across, 1>, string>
     }
     /** A showcase's own questions: where its products come from, how many, and in what shape. */
     showcase: {
@@ -604,9 +673,20 @@ export interface UiMessages {
     spanBandLabel: string
     /** A banner's choice between showing its pictures one at a time or all together. */
     displayLabel: string
-    displayCarousel: string
-    displayGrid: string
-    displayRail: string
+    /** "Aparece em", with the two screens a block can show on, and what a row says of one on a single screen. */
+    visibleOn: {
+      label: string
+      desktop: string
+      phone: string
+      /** Under the field: the last screen cannot be turned off here. */
+      hint: string
+      onlyDesktop: string
+      onlyPhone: string
+    }
+    /** Each layout's name, as the Layout tab and the bar offer it. */
+    displays: Record<ComponentDisplay, string>
+    /** A block with no layout chosen whose look no layout repeats: a strip saved before it had a choice. */
+    displayAuto: string
     categoriesRailHint: string
     categoriesGridHint: string
     show: string
@@ -618,9 +698,8 @@ export interface UiMessages {
     dragCancel: string
     publish: string
     publishing: string
-    /** Shown while there is something arranged and not yet published. */
+    /** Shown while the saved draft differs from what the shop serves. */
     unpublished: string
-    discard: string
     /** The browser's own leave-confirmation cannot be worded; this is said on screen instead. */
     leaveWarning: string
     previewNotice: string
@@ -629,12 +708,201 @@ export interface UiMessages {
     saveColors: string
     tabBlocks: string
     tabColors: string
+    /** Publicar's dialog: what the draft would serve that the owner may not mean, and a note. */
+    publishDialog: {
+      /** "Publicar {page}". */
+      title: string
+      intro: string
+      checking: string
+      none: string
+      /** The check did not answer: the owner may publish without it, or ask again. */
+      checkFailed: string
+      checkRetry: string
+      /** Each problem, with `{block}` and `{band}` for where it is. */
+      problems: Record<DesignPublishProblemKind, string>
+      note: string
+      notePlaceholder: string
+      publish: string
+      publishAnyway: string
+      publishing: string
+      cancel: string
+    }
+    /** A page's versions, in the Páginas tab. */
+    history: {
+      heading: string
+      empty: string
+      loadFailed: string
+      retry: string
+      /** "Versão {number}". */
+      version: string
+      live: string
+      /** "{when} · {author}". */
+      by: string
+      restore: string
+      /** "Restaurar a versão {number}?" */
+      restoreTitle: string
+      restoreBody: string
+      restoreConfirm: string
+      cancel: string
+      restoring: string
+      failed: string
+      /** "Versão {number} restaurada…": the draft holds it, and the shop has not changed. */
+      restored: string
+    }
+    tabPages: string
+    /** A shop's pages in design mode: the switcher in the bar and the Páginas tab. */
+    pages: {
+      /** The switcher's name for a screen reader: "Trocar de página — {page}". */
+      switchTo: string
+      heading: string
+      home: string
+      status: { DRAFT: string; PUBLISHED: string; ARCHIVED: string }
+      /** Beside a landing the shop links to: from its footer, and from a site's menu. */
+      inMenu: string
+      newLanding: string
+      /** "Arquivadas ({count})", collapsed under the rest. */
+      archived: string
+      /** A row's menu, named for its page: "Ações de {page}". */
+      actions: string
+      publish: string
+      unpublish: string
+      archive: string
+      restore: string
+      settings: string
+      view: string
+      /** The home's row, which no menu changes: it is the shop's own address. */
+      homeHint: string
+      empty: string
+      /** The bar's button and status on a landing that is not up. */
+      publishPage: string
+      notPublished: string
+      /** Why a row's action failed, said under the list. */
+      failed: string
+      /** The list itself could not be read, and the way to ask again. */
+      loadFailed: string
+      retry: string
+      /** Why the bar's Publicar did not put the page up, when the API gave no reason of its own. */
+      publishFailed: string
+      /** The "Nova landing page" and "Configurações da página" dialogs. */
+      form: {
+        newTitle: string
+        newDescription: string
+        settingsTitle: string
+        settingsDescription: string
+        name: string
+        namePlaceholder: string
+        address: string
+        addressChecking: string
+        addressAvailable: string
+        addressTaken: string
+        addressInvalid: string
+        template: string
+        templates: Record<"lancamento" | "promocao-relampago" | "colecao" | "em-branco", { title: string; description: string }>
+        /** Under the templates on a site, which sells no product. */
+        siteBlankOnly: string
+        product: string
+        productPlaceholder: string
+        productEmpty: string
+        productHint: string
+        inMenu: string
+        inMenuHint: string
+        usesChrome: string
+        usesChromeHint: string
+        seo: string
+        seoHint: string
+        seoTitle: string
+        seoDescription: string
+        seoImage: string
+        cancel: string
+        create: string
+        creating: string
+        save: string
+        saving: string
+      }
+    }
+    /** The full-screen editor's frame: its bar, its three columns and, on a narrow screen, its drawers. */
+    frame: {
+      /** "← Painel": back to the shop's home in the panel. */
+      back: string
+      /** The one page there is until landing pages arrive. */
+      homePage: string
+      published: string
+      viewInShop: string
+      /** The buttons that open the two side columns as drawers on a narrow screen. */
+      structure: string
+      inspector: string
+      tabSections: string
+      tabTheme: string
+      /** The right column while no block is chosen. */
+      inspectorEmpty: string
+      leaveTitle: string
+      leaveBody: string
+      leaveStay: string
+      leaveGo: string
+      /** The bar's status while a change is on its way to the server. */
+      saving: string
+      /** Another tab wrote to the page since this one read it: the only way on is a reload. */
+      conflictTitle: string
+      conflictBody: string
+      conflictReload: string
+      /** A drawer's own close button, where the panel in it has none of its own. */
+      close: string
+      /** The landmarks' names. */
+      barLabel: string
+      structureLabel: string
+      inspectorLabel: string
+      previewLabel: string
+    }
+    /** The chosen block's panel: Conteúdo, Layout and Estilo, and what each one says of itself. */
+    inspector: {
+      /** "Editar {name}": the tabs' name for a reader. */
+      tabsLabel: string
+      content: string
+      layout: string
+      style: string
+      /** Said to a reader beside a tab holding what keeps Salvar off. */
+      needsAttention: string
+      /** The Layout tab's promise: what changes there shows at once, and waits for Publicar. */
+      layoutNote: string
+      /** Above a band's style when it holds several blocks. `{count}`. */
+      sharedWith: string
+      /** The panel's title while a band is chosen on its own. */
+      editBand: string
+    }
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */
     addToBand: string
     /** The "+" between bands and between blocks. `{position}` counts from 1; `{band}` is the band's name. */
     insertBand: string
     insertBlock: string
+    /** A block's own button, and its name for a reader: `{name}` is the block beside which it adds. */
+    addBeside: string
+    addBesideOf: string
+    /** Moves a band's only block up, beside the last block of the band above: `{name}` is that block. */
+    joinAbove: string
+    /** The bar over the chosen block or band in the preview, and what the editor says as it acts. `{name}` is what it acts on. */
+    bar: {
+      label: string
+      moveUp: string
+      moveDown: string
+      layout: string
+      duplicate: string
+      hide: string
+      /** On something hidden: the same button brings it back. */
+      show: string
+      delete: string
+      /** Said after a move: `{position}` counts from 1. */
+      movedTo: string
+      /** Said after Ocultar: it leaves the shop on Publicar. */
+      hidden: string
+      shown: string
+      /** Said after Duplicar: the copy waits for Publicar like any other change. */
+      duplicated: string
+      /** Said when the keys choose something. */
+      chosen: string
+      /** Said instead of choosing, while the open panel has fields not yet saved. */
+      unsaved: string
+    }
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
     /** Said in place of the kind when a block has nothing for the shop window to draw. */
@@ -677,12 +945,58 @@ export interface UiMessages {
     carouselHint: string
     /** The same hint, for a banner whose pictures share the space. */
     gridHint: string
+    /** Under a banner laid out on its first picture alone: the others wait for another layout. */
+    firstOnlyHint: string
     /** One promise with no title yet. `{position}`. */
     benefitPosition: string
     addBenefit: string
     benefitIcon: string
     benefitTitle: string
     benefitDetail: string
+    /** A button's own words, where a block has one: a call to action's, an image with text's. */
+    button: {
+      label: string
+      placeholder: string
+      /** Said while the button leads somewhere and says nothing: Salvar waits for it. */
+      labelMissing: string
+      /** Said while the button claims a destination it does not name yet. */
+      targetMissing: string
+    }
+    /** When a countdown ends. */
+    countdown: {
+      ends: string
+      help: string
+    }
+    /** Which product is featured. */
+    featured: {
+      chosen: string
+      none: string
+      /** A pick the list does not have: deleted, or past what was loaded. */
+      unknown: string
+      search: string
+    }
+    /** An image with text's picture and what it shows. */
+    imageText: {
+      image: string
+      imageHelp: string
+      alt: string
+      altHelp: string
+    }
+    /** A FAQ's questions, as its owner writes them. */
+    faq: {
+      legend: string
+      /** One question with no words yet. `{position}`. */
+      position: string
+      question: string
+      answer: string
+      add: string
+      /** Each button named for its question: "Subir {question}". */
+      up: string
+      down: string
+      remove: string
+      /** Said while a question has no answer: Salvar waits for it. */
+      answerMissing: string
+    }
     /** Where a heading or a paragraph sits. */
     alignLabel: string
     alignLeft: string
@@ -711,26 +1025,275 @@ export interface UiMessages {
     }
   }
   /** What arrived through a site's contact form, as its owner works through it. */
-  /** The panel's list of who opened an account at the shop. */
+  /** The panel's customers, as the CRM: who never bought, who buys, and who stopped. */
   customers: {
     title: string
     description: string
     searchLabel: string
     searchPlaceholder: string
-    name: string
-    contact: string
-    place: string
+    /** The stage tabs: what they filter by, "Todos", and each stage in the plural. */
+    stageFilterLabel: string
+    all: string
+    tabs: { LEAD: string; CUSTOMER: string; INACTIVE: string }
+    sortLabel: string
+    sorts: { RECENT: string; LAST_ORDER: string; MOST_ORDERS: string; TOP_SPENT: string }
+    /** The columns. */
+    customer: string
     stage: string
-    since: string
-    stages: { LEAD: string; CUSTOMER: string }
+    orders: string
+    spent: string
+    lastOrder: string
+    place: string
+    stages: { LEAD: string; CUSTOMER: string; INACTIVE: string }
+    /** Beside the Inativo badge: "há {days} dias". */
+    inactiveFor: string
     /** Beside an e-mail its owner never confirmed. */
     unverified: string
+    /** Beside the stage: another record of the shop may be the same person. */
+    possibleDuplicate: string
+    /** The accessible name of a row's link: "Abrir a ficha de {name}". */
+    open: string
+    /** A card's line: "{count} pedidos", its singular, and none. */
+    ordersCount: string
+    ordersOne: string
+    ordersNone: string
+    /** A card's line: "Último pedido em {date}". */
+    lastOrderOn: string
+    /** The button in full, where there is room; its short form in the table's column. */
+    whatsapp: string
+    whatsappShort: string
+    /** The button's accessible name, holding both forms: "Chamar no WhatsApp: {name}". */
+    whatsappLabel: string
+    /** Why the button is off. */
+    whatsappNoPhone: string
     empty: string
     emptyHint: string
     emptySearch: string
+    /** A tab with no one in it. */
+    emptyStage: string
     range: string
     previous: string
     next: string
+    /**
+     * The WhatsApp conversation the list opens, from the shop to the customer: a greeting, then one
+     * sentence for where they stand. Fixed per stage; the shopkeeper does not edit them.
+     */
+    message: {
+      /** `{name}` is the first name, `{shop}` the shop's. */
+      greeting: string
+      /** An invitation to the first order. */
+      LEAD: string
+      CUSTOMER: string
+      /** "Faz tempo que você não passa aqui". */
+      INACTIVE: string
+    }
+    /** A customer's record: who they are, their numbers, their orders, and the way to correct them. */
+    record: {
+      /** The way back to the list. */
+      back: string
+      /** Under the name: "Na loja desde {date}". */
+      since: string
+      newOrder: string
+      numbers: string
+      orders: string
+      spent: string
+      /** Total spent over the valid orders. */
+      averageTicket: string
+      firstOrder: string
+      lastOrder: string
+      daysSince: string
+      details: string
+      name: string
+      email: string
+      emailVerified: string
+      emailUnverified: string
+      /** A customer the shop registered, who has no account and so no e-mail. */
+      noEmail: string
+      /** Under the e-mail while editing: why it is not a field. */
+      emailFixed: string
+      phone: string
+      noPhone: string
+      address: string
+      noAddress: string
+      edit: string
+      save: string
+      saving: string
+      cancel: string
+      saved: string
+      history: string
+      historyEmpty: string
+      historyEmptyHint: string
+      /** The accessible name of a history row's link: "Abrir o pedido #{number}". */
+      openOrder: string
+      /** The shop's other records that may be this person, and the way to make the two one. */
+      duplicates: {
+        title: string
+        lead: string
+        /** Why each is listed: the refused phone, or the name. */
+        reasons: { PHONE: string; NAME: string }
+        /** In place of the e-mail, for a record the shop registered. */
+        noAccount: string
+        /** The button, and its accessible name: "Juntar com {name}". */
+        merge: string
+        mergeLabel: string
+        /** The dialog's title: "Juntar com {name}?". */
+        confirmTitle: string
+        /** This record is kept and `{name}`'s goes. */
+        confirmHere: string
+        /** `{name}` has the account: it is kept, and this record goes. */
+        confirmThere: string
+        /** What else moves, and that it is for good. */
+        confirmFill: string
+        confirm: string
+        merging: string
+        cancel: string
+        /** Said on the record kept, once the two are one. */
+        merged: string
+      }
+    }
+  }
+  /** The panel's orders: the list, and later the order and its form. */
+  orders: {
+    title: string
+    description: string
+    /** The way to register one, from the list's header and its empty state. */
+    newOrder: string
+    searchLabel: string
+    searchPlaceholder: string
+    filterLabel: string
+    all: string
+    /** Keyed by the wire's status, spelled out: this package imports no contracts. */
+    statuses: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED", string>
+    payments: Record<"MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD", string>
+    fulfillments: Record<"DELIVERY" | "PICKUP", string>
+    number: string
+    placedAt: string
+    customer: string
+    items: string
+    /** "{count} itens", and its singular. */
+    itemsCount: string
+    itemsOne: string
+    total: string
+    payment: string
+    status: string
+    /** The accessible name of a row's link: "Abrir o pedido #{number}, de {name}". */
+    open: string
+    empty: string
+    emptyHint: string
+    emptyFiltered: string
+    range: string
+    previous: string
+    next: string
+    /** The new-order form's words. */
+    form: {
+      title: string
+      description: string
+      back: string
+      customer: string
+      customerSearchLabel: string
+      customerSearchPlaceholder: string
+      customerNone: string
+      customerChange: string
+      customerCreate: string
+      customerName: string
+      customerPhone: string
+      customerPhoneHint: string
+      customerNameInvalid: string
+      customerPhoneInvalid: string
+      customerAddress: string
+      zipCode: string
+      street: string
+      number: string
+      complement: string
+      neighborhood: string
+      city: string
+      state: string
+      zipCodeInvalid: string
+      stateInvalid: string
+      customerSave: string
+      customerSaving: string
+      customerCancel: string
+      customerExists: string
+      customerUse: string
+      products: string
+      productSearchLabel: string
+      productSearchPlaceholder: string
+      productNone: string
+      productBack: string
+      productChoose: string
+      variantAdd: string
+      outOfStock: string
+      /** A line past what is left: "Só há {count} em estoque". */
+      onlyLeft: string
+      linesEmpty: string
+      linesTitle: string
+      lineAdded: string
+      lineRemoved: string
+      quantity: string
+      decrease: string
+      increase: string
+      remove: string
+      fulfillment: string
+      detailsTitle: string
+      deliveryFee: string
+      payment: string
+      discount: string
+      note: string
+      notePlaceholder: string
+      placedAt: string
+      summary: string
+      subtotal: string
+      fee: string
+      discountLine: string
+      total: string
+      discountTooLarge: string
+      totalTooLarge: string
+      invalidMoney: string
+      missingCustomer: string
+      missingItems: string
+      /** Said under the lines while one asks for more than the shop has. */
+      overStock: string
+      missingPayment: string
+      placedAtInvalid: string
+      save: string
+      saving: string
+    }
+    detail: {
+      title: string
+      back: string
+      placedAt: string
+      customer: string
+      noPhone: string
+      noAddress: string
+      items: string
+      subtotal: string
+      fee: string
+      discount: string
+      total: string
+      fulfillment: string
+      payment: string
+      note: string
+      history: string
+      actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM", string>
+      markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
+      statusLabel: string
+      moreStatuses: string
+      cancel: string
+      cancelTitle: string
+      cancelBody: string
+      cancelKeep: string
+      cancelConfirm: string
+      cancelled: string
+      whatsapp: string
+      whatsappGreeting: string
+      whatsappLine: string
+      whatsappFee: string
+      whatsappPickup: string
+      whatsappDiscount: string
+      whatsappTotal: string
+      whatsappPayment: string
+      whatsappStatus: string
+    }
   }
   leads: {
     title: string
@@ -1235,6 +1798,7 @@ export interface UiMessages {
       tabSocial: string
       tabAppearance: string
       tabPayment: string
+      tabCustomers: string
       save: string
       saving: string
       loading: string
@@ -1328,6 +1892,12 @@ export interface UiMessages {
       previewLabel: string
       previewSample: string
       previewAction: string
+    }
+    customers: {
+      legend: string
+      inactiveAfterDays: string
+      days: string
+      hint: string
     }
     payment: {
       legend: string

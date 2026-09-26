@@ -161,6 +161,28 @@ describe("the shop's sign-in form", () => {
     expect(location.searchParams.get("erro")).toBe("CUSTOMER_FIELDS_INVALID")
   })
 
+  it("brings a refusal back to the form, still on its way to the cart, and a save to the cart", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "CUSTOMER_PHONE_TAKEN" }, { status: 409 })))
+    const fields = { phone: "(11) 97777-6666", retorno: "/loja/carrinho", formulario: "/loja/conta?voltar=%2Floja%2Fcarrinho" }
+
+    const refused = new URL((await post("perfil", fields, { cookie: "bl_shopper_access=a" })).headers.get("location") ?? "")
+
+    expect(refused.pathname).toBe("/loja/conta")
+    expect(refused.searchParams.get("voltar")).toBe("/loja/carrinho")
+    expect(refused.searchParams.get("erro")).toBe("CUSTOMER_PHONE_TAKEN")
+
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ id: "c1" }, { status: 200 })))
+    expect((await post("perfil", fields, { cookie: "bl_shopper_access=a" })).headers.get("location")).toBe("http://localhost:3000/loja/carrinho?salvo=1")
+  })
+
+  it("keeps a refusal inside the shop, whatever the form says it came from", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "CUSTOMER_PHONE_TAKEN" }, { status: 409 })))
+
+    const location = (await post("perfil", { retorno: "/loja/conta", formulario: "https://evil.example/x" }, { cookie: "bl_shopper_access=a" })).headers.get("location")
+
+    expect(new URL(location ?? "").origin).toBe("http://localhost:3000")
+  })
+
   it("refuses a post from another site", async () => {
     expect((await post("entrar", form, { origin: "https://evil.example" })).status).toBe(403)
   })

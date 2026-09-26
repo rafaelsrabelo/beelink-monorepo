@@ -1,76 +1,25 @@
 // Libs
 import { describe, expect, it } from "vitest"
 
-// Types
-import type { Section, StoreComponent } from "@harness-monorepo/contracts"
-
 // App
 import {
   applyComponentOrder,
   applyOrder,
   changesOf,
-  isEmptyComponent,
   labelOf,
-  reconcile,
   orderedIdsOf,
+  publishedOf,
   serverPlaceOf,
   takenKindsOf,
   toDraft,
-  type SectionDraft,
 } from "./design-draft"
+import { reconcile } from "./design-draft-reconcile"
 import { arrangementOf, previewOf, shelvesOf, type Shelves } from "./design-draft-preview"
+import { component, draft, saved, section } from "./design-draft.fixtures"
+import { isEmptyComponent } from "../storefront/empty-component"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 const NO_SHELVES: Shelves = new Map()
-
-function component(id: string, over: Partial<StoreComponent> = {}): StoreComponent {
-  return {
-    id,
-    sectionId: "band",
-    kind: "HEADING",
-    title: id,
-    subtitle: null,
-    body: null,
-    span: "FULL",
-    display: null,
-    source: null,
-    sourceCategoryId: null,
-    limit: null,
-    items: [],
-    columns: null,
-    align: null,
-    position: 0,
-    isActive: true,
-    createdAt: "2026-09-23T00:00:00.000Z",
-    updatedAt: "2026-09-23T00:00:00.000Z",
-    ...over,
-  }
-}
-
-function section(id: string, components: StoreComponent[], over: Partial<Section> = {}): Section {
-  return {
-    id,
-    name: null,
-    width: "CONTAINED",
-    background: null,
-    position: 0,
-    isActive: true,
-    components: components.map((row) => ({ ...row, sectionId: id })),
-    createdAt: "2026-09-23T00:00:00.000Z",
-    updatedAt: "2026-09-23T00:00:00.000Z",
-    ...over,
-  }
-}
-
-const saved: Section[] = [
-  section("a", [component("a1", { kind: "BANNER", items: [{ id: "s", imageUrl: "/s.jpg", target: "NONE" }] })], {
-    width: "FULL",
-  }),
-  section("b", [component("b1"), component("b2", { kind: "PRODUCTS", title: null })]),
-  section("c", [component("c1", { kind: "BENEFITS" })]),
-]
-
-const draft: SectionDraft[] = saved.map(toDraft)
 
 describe("the draft holds two levels", () => {
   it("orders bands, and orders inside one band without touching the others", () => {
@@ -131,6 +80,47 @@ describe("changesOf — only what moved is written", () => {
     const changes = changesOf(next, saved)
 
     expect(changes.components).toEqual([expect.objectContaining({ id: "a1", span: "HALF" })])
+  })
+
+  // The Layout tab writes the draft: a format, a column count and an alignment wait for Publicar too.
+  it("reports a block whose format, columns or alignment changed", () => {
+    const next = draft.map((row) => ({
+      ...row,
+      components: row.components.map((c) =>
+        c.id === "b2" ? { ...c, display: "GRID" as const, columns: 3 } : c.id === "c1" ? { ...c, align: "RIGHT" as const } : c,
+      ),
+    }))
+
+    expect(changesOf(next, saved).components).toEqual([
+      expect.objectContaining({ id: "b2", display: "GRID", columns: 3 }),
+      expect.objectContaining({ id: "c1", align: "RIGHT" }),
+    ])
+  })
+
+  // Saved with nulls, a heading is centred and a showcase a rail: choosing those is no change.
+  it("reports nothing for a layout chosen back to what the page already drew", () => {
+    const next = draft.map((row) => ({
+      ...row,
+      components: row.components.map((c) =>
+        c.id === "b1" ? { ...c, align: "CENTER" as const } : c.id === "b2" ? { ...c, display: "RAIL" as const, columns: 0 } : c,
+      ),
+    }))
+
+    expect(changesOf(next, saved).components).toEqual([])
+  })
+
+  it("publishes the layout, and a format only where the block holds one", () => {
+    const [banner] = draft[0]!.components
+
+    expect(publishedOf({ ...banner!, display: "GRID", columns: null, align: "LEFT", visibleOn: "DESKTOP" })).toEqual({
+      span: "FULL",
+      isActive: true,
+      display: "GRID",
+      columns: null,
+      align: "LEFT",
+      visibleOn: "DESKTOP",
+    })
+    expect(publishedOf(banner!)).not.toHaveProperty("display")
   })
 
   it("reports the inner order only for the band whose order changed", () => {
@@ -299,17 +289,25 @@ describe("arrangementOf — what the panel lists", () => {
     const twice = [...saved, section("d", [component("d1", { kind: "PRODUCTS" })])]
     expect(arrangementOf(twice.map(toDraft), twice, NO_SHELVES)[1]!.components[1]).toMatchObject({ deletable: true })
   })
+
+  // A landing's shelves are the shopkeeper's to take off: only the home cannot be left without one.
+  it("lets a landing's last product list go", () => {
+    const bands = arrangementOf(draft, saved, NO_SHELVES, Number.POSITIVE_INFINITY, false)
+    expect(bands[1]!.components.map((row) => row.deletable)).toEqual([true, true])
+  })
 })
 
 describe("isEmptyComponent — what draws nothing", () => {
   it("mirrors each renderer's own `return null`", () => {
-    expect(isEmptyComponent("BANNER", null, null, [])).toBe(true)
-    expect(isEmptyComponent("BENEFITS", null, null, [])).toBe(true)
-    expect(isEmptyComponent("HEADING", "  ", null, [])).toBe(true)
-    expect(isEmptyComponent("TEXT", null, "", [])).toBe(true)
-    expect(isEmptyComponent("TEXT", null, "Olá", [])).toBe(false)
-    expect(isEmptyComponent("PRODUCTS", null, null, [])).toBe(true)
-    expect(isEmptyComponent("PRODUCTS", null, null, [{ id: "p" }])).toBe(false)
+    expect(isEmptyComponent({ kind: "BANNER", title: null, subtitle: null, body: null, items: [] })).toBe(true)
+    expect(isEmptyComponent({ kind: "BENEFITS", title: null, subtitle: null, body: null, items: [] })).toBe(true)
+    expect(isEmptyComponent({ kind: "HEADING", title: "  ", subtitle: null, body: null, items: [] })).toBe(true)
+    // `StorefrontHeading` draws a line under a title that is not there.
+    expect(isEmptyComponent({ kind: "HEADING", title: null, subtitle: "Do pedido à entrega", body: null, items: [] })).toBe(false)
+    expect(isEmptyComponent({ kind: "TEXT", title: null, subtitle: null, body: "", items: [] })).toBe(true)
+    expect(isEmptyComponent({ kind: "TEXT", title: null, subtitle: null, body: "Olá", items: [] })).toBe(false)
+    expect(isEmptyComponent({ kind: "PRODUCTS", title: null, subtitle: null, body: null, items: [] })).toBe(true)
+    expect(isEmptyComponent({ kind: "PRODUCTS", title: null, subtitle: null, body: null, items: [{ id: "p" }] })).toBe(false)
   })
 })
 
@@ -317,52 +315,6 @@ describe("labelOf", () => {
   it("calls an untitled component by its kind", () => {
     expect(labelOf("HEADING", null, ptBR)).toBe("Título")
     expect(labelOf("HEADING", "Novidades", ptBR)).toBe("Novidades")
-  })
-})
-
-describe("reconcile — the server changes, the arrangement survives", () => {
-  // A new band lands right after the one it follows on the server, in the order the owner arranged.
-  it("keeps the arranged order and places what the server grew after its neighbour there", () => {
-    const arranged = applyOrder(draft, ["c", "b", "a"])
-    const grown = [...saved, section("d", [component("d1")])]
-
-    expect(orderedIdsOf(reconcile(arranged, grown))).toEqual(["c", "d", "b", "a"])
-  })
-
-  // The "+" between a and b asked the API for the second place; the draft shows it there too.
-  it("places a band added in the middle where it was added", () => {
-    const between = [saved[0]!, section("x", [component("x1")]), ...saved.slice(1)]
-
-    expect(orderedIdsOf(reconcile(draft, between))).toEqual(["a", "x", "b", "c"])
-    expect(orderedIdsOf(reconcile(draft, [section("x", [component("x1")]), ...saved]))).toEqual(["x", "a", "b", "c"])
-  })
-
-  it("drops a band the server no longer has", () => {
-    expect(orderedIdsOf(reconcile(draft, saved.slice(1)))).toEqual(["b", "c"])
-  })
-
-  it("does the same one level down: a new component lands after its neighbour, a deleted one goes", () => {
-    const arranged = applyComponentOrder(draft, "b", ["b2", "b1"])
-    const changed = saved.map((row) =>
-      row.id === "b" ? section("b", [component("b2", { kind: "PRODUCTS" }), component("b3")]) : row,
-    )
-
-    const next = reconcile(arranged, changed)
-
-    expect(next[1]!.components.map((row) => row.id)).toEqual(["b2", "b3"])
-  })
-
-  // The block half of the "+": the draft moved b2 above b1, and a block added first on the server
-  // lands first in the draft too — not appended after the owner's order.
-  it("places a block added inside a rearranged band where its + was", () => {
-    const arranged = applyComponentOrder(draft, "b", ["b2", "b1"])
-    const at = serverPlaceOf(["b2", "b1"], ["b1", "b2"], 0)
-    const grown = saved.map((row) =>
-      row.id === "b" ? section("b", [component("x"), component("b1"), component("b2", { kind: "PRODUCTS" })]) : row,
-    )
-
-    expect(at).toBe(0)
-    expect(reconcile(arranged, grown)[1]!.components.map((row) => row.id)).toEqual(["x", "b2", "b1"])
   })
 })
 

@@ -49,6 +49,15 @@ describe("StorefrontHero", () => {
     expect(screen.getByText("Banner 1").className).toContain("shop-sm:text-4xl")
   })
 
+  // A picture chosen to reach the edges loses them to a rounding, and the page shows in the cut.
+  it("keeps square corners in an edge-to-edge band, and the page's corner inside the measure", () => {
+    const { container, rerender } = render(<StorefrontHero items={[slide("1"), slide("2")]} bleed />)
+    expect(container.querySelector("img")!.className).not.toContain("rounded-2xl")
+
+    rerender(<StorefrontHero items={[slide("1"), slide("2")]} />)
+    expect(container.querySelector("img")!.className).toContain("rounded-2xl")
+  })
+
   it("draws nothing at all when it has nothing to draw", () => {
     const { container } = render(<StorefrontHero items={[]} />)
 

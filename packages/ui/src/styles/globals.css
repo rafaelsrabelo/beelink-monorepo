@@ -103,6 +103,7 @@
     --color-header-field-hover: var(--header-field-hover);
     --color-header-accent: var(--header-accent);
     --color-header-accent-foreground: var(--header-accent-foreground);
+    --color-header-pending: var(--header-pending);
 
     --color-shell: var(--shell);
     --color-shell-content: var(--shell-content);
@@ -252,6 +253,9 @@
     /* The one chromatic value: the badge behind a shop's initials, and the unread dot. */
     --header-accent: oklch(0.878 0.176 164.5);     /* #36fba1 */
     --header-accent-foreground: oklch(0.343 0.077 163.7); /* #0c5132 */
+    /* Something waiting to go live — the design editor's unpublished draft. Amber, apart from the
+       accent's green, which says something is new rather than something is pending. */
+    --header-pending: oklch(0.828 0.165 78);       /* #f5b83d */
 
     /* The rail, a shade darker than the page it sits beside — which is what separates the two
        without a border, the way the reference does it. */
