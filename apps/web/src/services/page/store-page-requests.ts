@@ -42,12 +42,14 @@ export function fetchPageSlugAvailability(slug: string, candidate: string, excep
 export async function fetchPageDraft(slug: string, pageId: string): Promise<PageDraft> {
   const draft = await call<PageDraft>(`${pagesPath(slug)}/${encodeURIComponent(pageId)}/draft`, { method: "GET" })
   // What the next write names: a read is where this tab learns the revision, and another tab's.
-  useDraftRevision.getState().saw(slug, { pageId, revision: draft.revision })
+  useDraftRevision.getState().saw(pageId, draft.revision)
   return draft
 }
 
-/** Publicar: the draft frozen as the page's next version, and served. */
-/** Queued behind the draft's writes and naming their revision: it publishes the draft this tab saw. */
+/**
+ * Publicar: the draft frozen as the page's next version, and served. Queued behind the draft's
+ * writes and naming their revision, so it publishes the draft this tab saw.
+ */
 export function publishPage(slug: string, pageId: string, payload: PublishPagePayload = {}): Promise<PublishPageResult> {
   return draftWrite(
     slug,

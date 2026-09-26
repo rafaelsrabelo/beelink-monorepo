@@ -26,6 +26,7 @@ import { editedOf } from "./design-selection"
 import { revealInPreview } from "./design-focus"
 import { useBlockInsert } from "./use-block-insert"
 import { useDesignDraft } from "./use-design-draft"
+import { useEditingPage } from "./use-editing-page"
 import { useDesignSelection } from "./use-design-selection"
 import { useLeaveGuard } from "./use-leave-guard"
 import { useSelectionControls } from "./use-selection-controls"
@@ -65,6 +66,7 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
   const pageId = page.page.id
 
   const draft = useDesignDraft(slug, pageId)
+  useEditingPage(slug, pageId)
   const { rows, saved } = draft
   const presets = useStoreColorPresets()
   const saveColors = useUpdateStoreColors(slug)

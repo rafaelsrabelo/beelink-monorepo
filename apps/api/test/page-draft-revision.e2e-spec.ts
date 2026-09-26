@@ -110,11 +110,13 @@ describe('page — the draft revision', () => {
     expect(await revision()).toBe(at);
   });
 
-  it('refuses a revision that is not a whole number', async () => {
-    const response = await call('PATCH', `/api/stores/padaria-do-bairro/components/${band.components[0]!.id}`, { title: 'X' }, 'abc');
+  it('refuses a revision that is not a whole number the column holds, never a 500', async () => {
+    for (const revision of ['abc', '1e3', '0x10', '-1', '3000000000']) {
+      const response = await call('PATCH', `/api/stores/padaria-do-bairro/components/${band.components[0]!.id}`, { title: 'X' }, revision);
 
-    expect(response.statusCode).toBe(400);
-    expect(response.json<{ errorCode: string }>().errorCode).toBe('PAGE_REVISION_INVALID');
+      expect(response.statusCode, revision).toBe(400);
+      expect(response.json<{ errorCode: string }>().errorCode).toBe('PAGE_REVISION_INVALID');
+    }
   });
 
   it('publishes only the draft the editor saw', async () => {
