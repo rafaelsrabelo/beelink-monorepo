@@ -73,12 +73,14 @@ export function DesignScreenDialogs({
   // The last "+" pressed, kept while the gallery fades out after Adicionar: read from `insertAt`, which
   // is null by then, its line would turn generic and its rows and shelves change as it disappears.
   const [shownAt, setShownAt] = useState<InsertAt | null>(null)
+  // The clock a sample countdown counts from: read once, as the editor opens, and not on every render.
+  const [openedAt] = useState(() => Date.now())
   // A page dialog left open does not outlive the editor: the store is the module's, and the next
   // editor — another shop's, even — would open on it unasked.
   useEffect(() => () => useDesignPages.getState().close(), [])
   if (adding.insertAt && adding.insertAt !== shownAt) setShownAt(adding.insertAt)
   const placement = placementOf(shownAt, draft.rows, draft.saved, shelves, messages)
-  const stock = stockOf(gallery.store, shelves, gallery.categories.length)
+  const stock = stockOf(gallery.store, shelves, gallery.categories.length, openedAt)
 
   return (
     <>

@@ -11,6 +11,7 @@ import { PageComponentsService } from './page-components.service.js';
 import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
 import { ShowcaseRules } from './showcase.rules.js';
+import { FeaturedRules } from './featured.rules.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
 const SECTION = '0199b000-0000-7000-8000-000000000001';
@@ -217,8 +218,8 @@ function build(
   const stores = { ownedStoreId: vi.fn().mockResolvedValue(STORE) } as unknown as StoresService;
 
   return {
-    service: new PageService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma)),
-    components: new PageComponentsService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma)),
+    service: new PageService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma), new FeaturedRules(prisma)),
+    components: new PageComponentsService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma), new FeaturedRules(prisma)),
     moves: new PageComponentMovesService(prisma, stores, new PageRules(prisma)),
     prisma,
     createSection,

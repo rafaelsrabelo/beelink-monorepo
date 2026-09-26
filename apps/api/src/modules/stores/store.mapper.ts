@@ -9,13 +9,7 @@ import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/mode
 
 // App
 import { readPageDocument, servedSectionsOf, type SectionShape } from '../page/page-document.js';
-import {
-  NO_SHELVES,
-  NO_SLUGS,
-  toPublicSection,
-  type ShelvesByComponent,
-  type SlugsByEntity,
-} from '../page/page-public.mapper.js';
+import { NO_LOOKUPS, toPublicSection, type PageLookups } from '../page/page-public.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 
@@ -77,7 +71,7 @@ export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
  * ends up in Google's index, so a field is added here only on purpose.
  */
 /**
- * `slugs` carries what the hero's slides point at, looked up once for the whole shop.
+ * `lookups` carries what the home's blocks point at and draw, looked up once for the whole shop.
  *
  * Defaulted to nothing rather than required, and that is the safe default: a call site that has
  * not looked them up gets slides that are pictures instead of links. The alternative — guessing —
@@ -85,8 +79,7 @@ export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
  */
 export function toPublicStore(
   row: StoreRow,
-  slugs: SlugsByEntity = NO_SLUGS,
-  shelves: ShelvesByComponent = NO_SHELVES,
+  lookups: PageLookups = NO_LOOKUPS,
   // Read once by a caller that also looked its showcases up; read here otherwise.
   sections: readonly SectionShape[] = homeSectionsOf(row),
 ): PublicStore {
@@ -121,16 +114,16 @@ export function toPublicStore(
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
     sections: sections.map((section) =>
-      toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary], slugs, shelves),
+      toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary], lookups),
     ),
     pages: row.pages.flatMap((page) => (page.slug ? [{ slug: page.slug, title: page.title }] : [])),
   } satisfies PublicStore;
 }
 
 /** The shop as its owner sees it: the public shape plus what only the owner may read. */
-export function toStore(row: StoreRow, slugs: SlugsByEntity = NO_SLUGS): WireStore {
+export function toStore(row: StoreRow): WireStore {
   return {
-    ...toPublicStore(row, slugs),
+    ...toPublicStore(row),
     ownerId: row.ownerId,
     address: {
       street: row.addressStreet,

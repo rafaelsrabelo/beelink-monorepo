@@ -87,9 +87,9 @@ export class LandingReadService {
     store: { id: string; slug: string; routeVocabulary: RouteVocabulary },
     sections: readonly SectionShape[],
   ): Promise<PublicSection[]> {
-    const { slugs, shelves } = await lookupsOf(this.prisma, store.id, sections);
+    const lookups = await lookupsOf(this.prisma, store.id, sections);
     const words = ROUTE_WORDS[store.routeVocabulary];
 
-    return sections.map((section) => toPublicSection(section, store.slug, words, slugs, shelves));
+    return sections.map((section) => toPublicSection(section, store.slug, words, lookups));
   }
 }

@@ -9,47 +9,24 @@ import { AnnouncementFields } from "./announcement-fields"
 import { BannerFields } from "./banner-fields"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import { BenefitRowsField } from "./benefit-rows-field"
+import { ButtonFields } from "./button-fields"
 import type { BenefitValue } from "./benefit-rows-field"
 import { ComponentTextFields } from "./component-text-fields"
-import { ContactFieldsField, reachesBack } from "./contact-fields-field"
+import { contentReady, type ComponentFormValues } from "./component-form"
+import { ContactFieldsField } from "./contact-fields-field"
+import { CountdownFields } from "./countdown-fields"
 import type { ContactFieldValue } from "./contact-fields-field"
-import type { ComponentDisplay, ComponentKind, ProductSource } from "./design-types"
-import { ShowcaseFields, showcaseReady } from "./showcase-fields"
+import type { ComponentDisplay } from "./design-types"
+import { FeaturedProductFields } from "./featured-product-fields"
+import { ImageTextFields } from "./image-text-fields"
+import { FaqItemsField, type FaqValue } from "./faq-items-field"
+import { ShowcaseFields } from "./showcase-fields"
 import type { ShowcasePick } from "./showcase-picks-field"
-import type { Target } from "./target-fields"
-
-/**
- * What a component's content holds while it is being filled in: one shape for every kind, of which
- * the fields draw only what the kind has. `""` where the wire carries null.
- *
- * What a block says, and nothing of how it sits: the format, the columns and the alignment are the
- * Layout tab's, held in the draft until Publicar; the strip's colour is its band's, in Estilo.
- */
-export interface ComponentFormValues {
-  kind: ComponentKind
-  title: string
-  subtitle: string
-  body: string
-  /** Where the strip leads — the same destination a slide holds, held once for the whole strip. */
-  target: Target
-  categoryId: string
-  productId: string
-  externalUrl: string
-  slides: SlideValue[]
-  benefits: BenefitValue[]
-  /** A contact form's questions. */
-  fields: ContactFieldValue[]
-  /** A showcase's source, and what that source reads: its category, or its products in order. */
-  source: ProductSource
-  sourceCategoryId: string
-  picks: ShowcasePick[]
-  /** A showcase's limit as typed; `""` is the default, 24. */
-  limit: string
-}
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx`: a types-only `.ts`
 // beside a block cannot be reached from an app.
-export type { BenefitValue, ContactFieldValue, ShowcasePick, SlideTargetOption, SlideValue }
+export type { BenefitValue, ComponentFormValues, ContactFieldValue, FaqValue, ShowcasePick, SlideTargetOption, SlideValue }
+export { contentReady }
 
 export interface ComponentContentFieldsProps {
   value: ComponentFormValues
@@ -59,21 +36,12 @@ export interface ComponentContentFieldsProps {
   categories: readonly SlideTargetOption[]
   products: readonly SlideTargetOption[]
   optionsState?: "ready" | "loading" | "failed"
+  /** What is typed in a product search, for a shop with more products than the list holds. */
+  onProductQuery?: (query: string) => void
   onUploadImage?: (file: File) => Promise<string>
   imagePending?: boolean
   newItemId: () => string
   messages?: UiMessages
-}
-
-/**
- * Whether what the fields hold is a save the API would take: a contact form someone can answer, a
- * showcase whose source has what it needs. Asked here so Salvar says so, rather than a 400.
- */
-export function contentReady(value: ComponentFormValues): boolean {
-  if (value.kind === "CONTACT") return reachesBack(value.fields)
-  if (value.kind === "PRODUCTS") return showcaseReady(value)
-
-  return true
 }
 
 /**
@@ -91,6 +59,7 @@ export function ComponentContentFields({
   categories,
   products,
   optionsState = "ready",
+  onProductQuery,
   onUploadImage,
   imagePending = false,
   newItemId,
@@ -136,6 +105,42 @@ export function ComponentContentFields({
           newFieldId={newItemId}
           messages={messages}
         />
+      ) : null}
+
+      {value.kind === "CALL_TO_ACTION" ? (
+        <ButtonFields value={value} onChange={merge} categories={categories} products={products} messages={messages} />
+      ) : null}
+
+      {value.kind === "IMAGE_TEXT" ? (
+        <ImageTextFields
+          value={value}
+          onChange={merge}
+          categories={categories}
+          products={products}
+          {...(onUploadImage ? { onUploadImage } : {})}
+          imagePending={imagePending}
+          messages={messages}
+        />
+      ) : null}
+
+      {value.kind === "FEATURED_PRODUCT" ? (
+        <FeaturedProductFields
+          value={value.picks}
+          onChange={(picks) => merge({ picks })}
+          products={products}
+          newItemId={newItemId}
+          optionsState={optionsState}
+          {...(onProductQuery ? { onQueryChange: onProductQuery } : {})}
+          messages={messages}
+        />
+      ) : null}
+
+      {value.kind === "COUNTDOWN" ? (
+        <CountdownFields value={value.countdownEnd} onChange={(countdownEnd) => merge({ countdownEnd })} messages={messages} />
+      ) : null}
+
+      {value.kind === "FAQ" ? (
+        <FaqItemsField value={value.faq} onChange={(faq) => merge({ faq })} newItemId={newItemId} messages={messages} />
       ) : null}
 
       {value.kind === "PRODUCTS" ? (

@@ -22,6 +22,7 @@ import { DesignScreenDialogs } from "./design-screen-dialogs"
 import { LivePreviewPane } from "./live-preview-pane"
 import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
 import { arrangementOf, shelvesOf } from "./design-draft-preview"
+import { resolvedOnServer, unavailableKindsOf } from "./design-kinds"
 import { editedOf } from "./design-selection"
 import { revealInPreview } from "./design-focus"
 import { useBlockInsert } from "./use-block-insert"
@@ -81,12 +82,11 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
   const { choose, target } = selection
   const edited = editedOf(target)
   const chooseBlock = (id: string) => choose({ level: "block", id })
-  // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
   // A new section is chosen, its Conteúdo open, and the preview brought to it: the API may have put
   // it far down the page. By its band's key too, the one a block alone in its band is drawn under.
   const opened = (component: { id: string; kind: ComponentKind; sectionId: string }) => {
     chooseBlock(component.id)
-    if (component.kind === "PRODUCTS") shop.refresh(component.id)
+    if (resolvedOnServer(component.kind)) shop.refresh(component.id)
     revealInPreview([component.id, component.sectionId])
   }
   const adding = useBlockInsert(slug, pageId, draft, opened, web)
@@ -99,12 +99,7 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
   const [palette, setPalette] = useState<StoreColors>(store.colors)
   const paletteChanged = COLOUR_KEYS.some((key) => palette[key] !== store.colors[key])
 
-  // What the gallery never offers: the strip a page has once, what this kind of shop cannot hold,
-  // and on a landing the strip at all — it is the home's, drawn on every page that uses the header.
-  const unavailableKinds: ComponentKind[] = [
-    ...(store.type === "INSTITUTIONAL" ? (["PRODUCTS", "CATEGORIES"] as const) : (["CONTACT"] as const)),
-    ...(landing ? (["ANNOUNCEMENT"] as const) : []),
-  ]
+  const unavailableKinds = unavailableKindsOf(store.type, !!landing)
   const takenKinds = takenKindsOf(rows)
   const bandName = (id: string) =>
     bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
@@ -229,7 +224,7 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
             shelves={shelves}
             onClose={selection.close}
             takeFocus={selection.takeFocus}
-            onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
+            onSaved={(component) => (resolvedOnServer(component.kind) ? shop.refresh(component.id) : undefined)}
             messages={messages}
             web={web}
           />

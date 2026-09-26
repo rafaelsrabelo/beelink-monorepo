@@ -11,6 +11,7 @@ import { PageComponentsService } from './page-components.service.js';
 import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
 import { ShowcaseRules } from './showcase.rules.js';
+import { FeaturedRules } from './featured.rules.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
 const BAND = '0199b000-0000-7000-8000-000000000001';
@@ -93,8 +94,8 @@ function build({ kinds = ['BANNER'] as string[], bands = ['before', BAND, 'after
 
   return {
     prisma,
-    bands: new PageService(prisma, stores, rules, new ShowcaseRules(prisma)),
-    blocks: new PageComponentsService(prisma, stores, rules, new ShowcaseRules(prisma)),
+    bands: new PageService(prisma, stores, rules, new ShowcaseRules(prisma), new FeaturedRules(prisma)),
+    blocks: new PageComponentsService(prisma, stores, rules, new ShowcaseRules(prisma), new FeaturedRules(prisma)),
     moves: new PageComponentMovesService(prisma, stores, rules),
   };
 }

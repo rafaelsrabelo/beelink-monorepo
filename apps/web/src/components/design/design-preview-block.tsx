@@ -9,6 +9,7 @@ import type { PublicComponent } from "@harness-monorepo/contracts"
 // UI
 import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/design-block-placeholder"
 import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
+import { StorefrontFeaturedSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-featured-skeleton"
 import { StorefrontShelfSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-shelf-skeleton"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -16,6 +17,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { isEmptyComponent } from "../storefront/empty-component"
 import { labelOf } from "./design-draft"
 import type { Shelves } from "./design-draft-preview"
+import { resolvedOnServer } from "./design-kinds"
 
 export interface DesignPreviewBlockProps {
   component: PublicComponent
@@ -51,7 +53,7 @@ export function DesignPreviewBlock({
 }: DesignPreviewBlockProps) {
   const text = messages.design
   const label = labelOf(component.kind, component.title ?? component.sourceCategory?.name ?? null, messages)
-  const unserved = component.kind === "PRODUCTS" && !shelves.has(component.id)
+  const unserved = resolvedOnServer(component.kind) && !shelves.has(component.id)
   // No category on the shop window: the block would say the visitor's sentence here.
   const noCategories = component.kind === "CATEGORIES" && categoriesShown === 0
   // The one rule the renderer already answers, asked here so the page can hold a place for a block
@@ -67,7 +69,9 @@ export function DesignPreviewBlock({
       onEdit={() => onEdit(component.id)}
       messages={messages}
     >
-      {refreshing ? (
+      {refreshing && component.kind === "FEATURED_PRODUCT" ? (
+        <StorefrontFeaturedSkeleton layout={component.display === "IMAGE_LARGE" ? "IMAGE_LARGE" : "IMAGE_LEFT"} />
+      ) : refreshing ? (
         <StorefrontShelfSkeleton display={component.display === "GRID" ? "GRID" : "RAIL"} messages={messages} />
       ) : empty ? (
         <DesignBlockPlaceholder
