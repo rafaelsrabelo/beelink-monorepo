@@ -4,7 +4,7 @@
 import { useState } from "react"
 
 // Types
-import type { ComponentDisplay, StoreComponent } from "@harness-monorepo/contracts"
+import type { ComponentDisplay, PublicComponentItem, StoreComponent } from "@harness-monorepo/contracts"
 
 // UI
 import { ComponentContentFields } from "@harness-monorepo/ui/blocks/design/component-content-fields"
@@ -28,9 +28,9 @@ export interface BlockContentProps {
   display: ComponentDisplay | null
   /** Held by the panel, whose Salvar waits for a picture on its way. */
   image: ImageUploadHandle
-  /** How many categories the shop window shows, and whether this showcase's shelf came back empty. */
+  /** How many categories the shop window shows, and what the public read resolved for this block. */
   categoriesShown: number
-  shelfEmpty: boolean
+  shelf?: readonly PublicComponentItem[]
   messages: UiMessages
 }
 
@@ -49,7 +49,7 @@ export function BlockContent({
   display,
   image,
   categoriesShown,
-  shelfEmpty,
+  shelf,
   messages,
 }: BlockContentProps) {
   const points = readsCatalog(component.kind)
@@ -61,8 +61,14 @@ export function BlockContent({
   const categories = useProductCategories(points ? slug : "")
   // The admin list's own ceiling (PRODUCTS_PAGE_SIZE_MAX): asking for more answers this many anyway.
   const products = useProducts(points ? slug : "", { pageSize: 96 })
+  // A search still on its way, or one the debounce has not sent yet, is not "nothing by that name".
+  const searching = featured && productQuery.trim() !== "" && (productQuery.trim() !== search || found.isPending)
   const optionsState =
-    categories.isError || products.isError ? "failed" : categories.isPending || products.isPending ? "loading" : "ready"
+    categories.isError || products.isError || (featured && found.isError)
+      ? "failed"
+      : categories.isPending || products.isPending || searching
+        ? "loading"
+        : "ready"
 
   const page = products.data
   const onShelf = page?.products.filter((row) => row.status === "ACTIVE" && !row.soldOut).length ?? 0
@@ -74,13 +80,15 @@ export function BlockContent({
         { total: page.total, onShelf: onShelf > 0 || page.total <= page.products.length ? onShelf : null }
       : null,
     // A featured product with none chosen yet is not one "not on sale": the placeholder says to choose.
-    shelfEmpty: shelfEmpty && (!featured || component.items.length > 0),
+    shelfEmpty: shelf?.length === 0 && (!featured || component.items.length > 0),
     countdownEndsAt: (component.items[0] as { endsAt?: string } | undefined)?.endsAt ?? null,
   })
 
   const categoryOptions: SlideTargetOption[] = (categories.data ?? []).map((row) => ({ id: row.id, name: row.name }))
+  // The featured card the read resolved names the pick even past the page loaded, or before it loads.
+  const resolved = featured ? (shelf?.[0] as { id: string; name: string } | undefined) : undefined
   const productOptions: SlideTargetOption[] = featured
-    ? onSale([...(page?.products ?? []), ...(found.data?.products ?? [])])
+    ? onSale([...(page?.products ?? []), ...(found.data?.products ?? []), ...(resolved ? [{ ...resolved, status: "ACTIVE" }] : [])])
     : (page?.products ?? []).map((row) => ({ id: row.id, name: row.name }))
 
   return (

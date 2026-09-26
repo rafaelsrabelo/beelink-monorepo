@@ -66,7 +66,9 @@ export function contentReady(value: ComponentFormValues): boolean {
   if (value.kind === "CONTACT") return reachesBack(value.fields)
   if (value.kind === "PRODUCTS") return showcaseReady(value)
   if (value.kind === "FAQ") return !value.faq.some(unanswered)
-  if (value.kind === "CALL_TO_ACTION" || value.kind === "IMAGE_TEXT") return buttonMissing(value) === null
+  if (value.kind === "CALL_TO_ACTION") return buttonMissing(value) === null
+  // An image with text's button goes with its picture: with none, there is no button to wait for.
+  if (value.kind === "IMAGE_TEXT") return !value.imageUrl || buttonMissing(value) === null
 
   return true
 }

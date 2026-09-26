@@ -41,9 +41,6 @@ export function previewItemsOf(
     // An address the preview has no use for: its link is inert, and the button draws where it will be.
     case "CALL_TO_ACTION":
       return ((was?.items ?? []) as CallToActionButton[]).map((button) => ({ id: button.id, label: button.label, href: "#", external: false }))
-    // What a showcase or a featured product stores is the ids picked, never the cards a visitor is
-    // served; the cards are the public read's to resolve. A showcase saved since the page loaded keeps the cards it had
-    // then until the next load.
     case "IMAGE_TEXT":
       return ((was?.items ?? []) as ImageTextMedia[]).map((media) => ({
         id: media.id,
@@ -51,6 +48,9 @@ export function previewItemsOf(
         alt: media.alt ?? null,
         button: media.button ? { label: media.button.label, href: "#", external: false } : null,
       }))
+    // What a showcase or a featured product stores is the ids picked, never the cards a visitor is
+    // served; the cards are the public read's to resolve. One saved since the page loaded keeps the
+    // cards it had then until the next load.
     case "PRODUCTS":
     case "FEATURED_PRODUCT":
       return shelves.get(component.id)?.items ?? []

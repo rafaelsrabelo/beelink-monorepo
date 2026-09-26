@@ -1,5 +1,8 @@
 "use client"
 
+// UI
+import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -39,13 +42,19 @@ export function FeaturedProductFields({
 }: FeaturedProductFieldsProps) {
   const text = messages.design.featured
   const [pick] = value
-  const chosen = pick ? (products.find((product) => product.id === pick.productId)?.name ?? text.unknown) : null
+  const known = pick ? products.find((product) => product.id === pick.productId)?.name : undefined
+  // Unknown only once the list has arrived: while it loads, a pick is not yet "não encontrado".
+  const waiting = pick && !known && optionsState === "loading"
 
   return (
     <>
       <p className="text-sm">
         <span className="text-muted-foreground">{text.chosen} </span>
-        <span className="font-medium">{chosen ?? text.none}</span>
+        {waiting ? (
+          <Skeleton className="inline-block h-4 w-32 align-middle" />
+        ) : (
+          <span className="font-medium">{pick ? (known ?? text.unknown) : text.none}</span>
+        )}
       </p>
       <OptionSearch
         id="featured-product-search"
