@@ -9,18 +9,23 @@ import { AnnouncementFields } from "./announcement-fields"
 import { BannerFields } from "./banner-fields"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import { BenefitRowsField } from "./benefit-rows-field"
+import { ButtonFields } from "./button-fields"
 import type { BenefitValue } from "./benefit-rows-field"
 import { ComponentTextFields } from "./component-text-fields"
 import { contentReady, type ComponentFormValues } from "./component-form"
 import { ContactFieldsField } from "./contact-fields-field"
+import { CountdownFields } from "./countdown-fields"
 import type { ContactFieldValue } from "./contact-fields-field"
 import type { ComponentDisplay } from "./design-types"
+import { FeaturedProductFields } from "./featured-product-fields"
+import { ImageTextFields } from "./image-text-fields"
+import { FaqItemsField, type FaqValue } from "./faq-items-field"
 import { ShowcaseFields } from "./showcase-fields"
 import type { ShowcasePick } from "./showcase-picks-field"
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx`: a types-only `.ts`
 // beside a block cannot be reached from an app.
-export type { BenefitValue, ComponentFormValues, ContactFieldValue, ShowcasePick, SlideTargetOption, SlideValue }
+export type { BenefitValue, ComponentFormValues, ContactFieldValue, FaqValue, ShowcasePick, SlideTargetOption, SlideValue }
 export { contentReady }
 
 export interface ComponentContentFieldsProps {
@@ -31,6 +36,8 @@ export interface ComponentContentFieldsProps {
   categories: readonly SlideTargetOption[]
   products: readonly SlideTargetOption[]
   optionsState?: "ready" | "loading" | "failed"
+  /** What is typed in a product search, for a shop with more products than the list holds. */
+  onProductQuery?: (query: string) => void
   onUploadImage?: (file: File) => Promise<string>
   imagePending?: boolean
   newItemId: () => string
@@ -52,6 +59,7 @@ export function ComponentContentFields({
   categories,
   products,
   optionsState = "ready",
+  onProductQuery,
   onUploadImage,
   imagePending = false,
   newItemId,
@@ -97,6 +105,42 @@ export function ComponentContentFields({
           newFieldId={newItemId}
           messages={messages}
         />
+      ) : null}
+
+      {value.kind === "CALL_TO_ACTION" ? (
+        <ButtonFields value={value} onChange={merge} categories={categories} products={products} messages={messages} />
+      ) : null}
+
+      {value.kind === "IMAGE_TEXT" ? (
+        <ImageTextFields
+          value={value}
+          onChange={merge}
+          categories={categories}
+          products={products}
+          {...(onUploadImage ? { onUploadImage } : {})}
+          imagePending={imagePending}
+          messages={messages}
+        />
+      ) : null}
+
+      {value.kind === "FEATURED_PRODUCT" ? (
+        <FeaturedProductFields
+          value={value.picks}
+          onChange={(picks) => merge({ picks })}
+          products={products}
+          newItemId={newItemId}
+          optionsState={optionsState}
+          {...(onProductQuery ? { onQueryChange: onProductQuery } : {})}
+          messages={messages}
+        />
+      ) : null}
+
+      {value.kind === "COUNTDOWN" ? (
+        <CountdownFields value={value.countdownEnd} onChange={(countdownEnd) => merge({ countdownEnd })} messages={messages} />
+      ) : null}
+
+      {value.kind === "FAQ" ? (
+        <FaqItemsField value={value.faq} onChange={(faq) => merge({ faq })} newItemId={newItemId} messages={messages} />
       ) : null}
 
       {value.kind === "PRODUCTS" ? (

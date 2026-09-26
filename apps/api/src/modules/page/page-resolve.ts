@@ -1,22 +1,61 @@
 // Types
+import type { PublicFeaturedProduct, ShowcaseProduct } from '@harness-monorepo/contracts';
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { SectionShape } from './page-document.js';
 
 // App
-import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery } from '../catalog/showcase.query.js';
+import { isSoldOut } from '../catalog/catalog.visibility.js';
+import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery, toShowcaseCard } from '../catalog/showcase.query.js';
+import { itemsOf } from './page.mapper.js';
 import { NO_SLUGS, slideTargetsOf, type SlugsByEntity } from './page-links.js';
 import { NO_SHELVES, type PageLookups, type ShelvesByComponent } from './page-public.mapper.js';
 
 /*
-  What a page's public read resolves besides its rows: the showcases' products and the slugs the
-  slides point at. Functions over the client and not a service's methods, because the shop's home
+  What a page's public read resolves besides its rows: the showcases' products, the featured ones,
+  and the slugs the slides and buttons point at. Functions over the client and not a service's methods, because the shop's home
   and a landing page are read the same way, by two services.
 */
 
 /** Every lookup for a page's bands, in parallel. */
 export async function lookupsOf(db: PrismaService, storeId: string, sections: readonly SectionShape[]): Promise<PageLookups> {
-  const [slugs, shelves] = await Promise.all([slideSlugs(db, sections), shelvesOf(db, storeId, sections)]);
-  return { slugs, shelves };
+  const [slugs, shelves, featured] = await Promise.all([
+    slideSlugs(db, sections),
+    shelvesOf(db, storeId, sections),
+    featuredOf(db, storeId, sections),
+  ]);
+  return { slugs, shelves, featured };
+}
+
+/**
+ * Each featured product's card, resolved now: its price, photo and stock are the catalogue's, so a
+ * change there shows without publishing again. One query for every featured block on the page.
+ *
+ * Not the shelf's filter: a sold-out product still draws, marked so, because showing the stock is the
+ * block's job and the product's page answers a sold-out visitor too. A deleted, draft or archived one
+ * is not found, so the block holds nothing and draws nothing.
+ */
+async function featuredOf(
+  db: PrismaService,
+  storeId: string,
+  sections: readonly SectionShape[],
+): Promise<ReadonlyMap<string, PublicFeaturedProduct>> {
+  const blocks = sections
+    .flatMap((section) => section.components)
+    .filter((component) => component.isActive && component.kind === 'FEATURED_PRODUCT')
+    .flatMap((component) => {
+      const [pick] = itemsOf(component.kind, component.items) as ShowcaseProduct[];
+      return pick ? [{ componentId: component.id, productId: pick.productId }] : [];
+    });
+
+  if (!blocks.length) return new Map();
+
+  const rows = await db.product.findMany({
+    where: { id: { in: blocks.map((block) => block.productId) }, storeId, status: 'ACTIVE' },
+    select: { ...SHOWCASE_CARD_SELECT, trackStock: true, stockQuantity: true },
+  });
+  const byId = new Map(rows.map((row) => [row.id, { ...toShowcaseCard(row), soldOut: isSoldOut(row) }]));
+
+  return new Map(blocks.flatMap((block) => (byId.has(block.productId) ? [[block.componentId, byId.get(block.productId)!] as const] : [])));
 }
 
 /**

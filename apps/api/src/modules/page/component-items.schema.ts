@@ -2,12 +2,30 @@
 import { z } from 'zod';
 
 // Types
-import type { AnnouncementLink, BannerSlide, BenefitRow, ComponentItem, ComponentKind, ShowcaseProduct } from '@harness-monorepo/contracts';
+import type {
+  AnnouncementLink,
+  BannerSlide,
+  BenefitRow,
+  CallToActionButton,
+  ComponentItem,
+  ComponentKind,
+  CountdownEnd,
+  FaqItem,
+  ImageTextMedia,
+  ShowcaseProduct,
+} from '@harness-monorepo/contracts';
 
 // App
-import { carriesWhatItNames, destination } from './component-destination.schema.js';
+import { carriesWhatItNames, componentLink, destination } from './component-destination.schema.js';
 import { contactForm } from './contact-fields.schema.js';
-import { COMPONENT_URL_MAX_LENGTH, SHOWCASE_LIMIT_MAX } from './page.constants.js';
+import {
+  COMPONENT_URL_MAX_LENGTH,
+  FAQ_ANSWER_MAX_LENGTH,
+  FAQ_ITEMS_MAX,
+  FAQ_QUESTION_MAX_LENGTH,
+  IMAGE_ALT_MAX_LENGTH,
+  SHOWCASE_LIMIT_MAX,
+} from './page.constants.js';
 
 /**
  * What a component's `items` may hold, decided by its `kind`.
@@ -68,6 +86,46 @@ const showcaseSelection = z
     message: 'O mesmo produto duas vezes na vitrine',
   });
 
+/** One question and its answer. Both required: a question with no answer is one not finished. */
+const faqItem = z.strictObject({
+  id: z.string().min(1).max(64),
+  question: z.string().trim().min(1).max(FAQ_QUESTION_MAX_LENGTH),
+  answer: z.string().trim().min(1).max(FAQ_ANSWER_MAX_LENGTH),
+}) satisfies z.ZodType<FaqItem>;
+
+const faqItems = z
+  .array(faqItem)
+  .max(FAQ_ITEMS_MAX)
+  .refine((rows) => new Set(rows.map((row) => row.id)).size === rows.length, {
+    message: 'Duas perguntas com o mesmo id',
+  });
+
+/** A call to action's button: its words and where it leads. */
+const callToActionButton = z
+  .strictObject({ id: z.string().min(1).max(64), ...componentLink })
+  .refine(carriesWhatItNames, { message: 'A button must carry the destination its target names' }) satisfies z.ZodType<CallToActionButton>;
+
+/** An image with text's picture, what it shows, and the button beside the words if there is one. */
+const imageTextMedia = z.strictObject({
+  id: z.string().min(1).max(64),
+  imageUrl: z.url({ protocol: /^https?$/ }).max(COMPONENT_URL_MAX_LENGTH),
+  alt: z.string().trim().max(IMAGE_ALT_MAX_LENGTH).nullish(),
+  button: z
+    .strictObject(componentLink)
+    .refine(carriesWhatItNames, { message: 'A button must carry the destination its target names' })
+    .nullish(),
+}) satisfies z.ZodType<ImageTextMedia>;
+
+/**
+ * When a countdown ends, with its offset — a wall time without one would be read in the server's zone,
+ * which is not the shop's — and stored in UTC. A past one is not refused: saving a title of a
+ * countdown that has ended sends its end again, and a restore carries old ends.
+ */
+const countdownEnd = z.strictObject({
+  id: z.string().min(1).max(64),
+  endsAt: z.iso.datetime({ offset: true }).transform((value) => new Date(value).toISOString()),
+}) satisfies z.ZodType<CountdownEnd, unknown>;
+
 /** What a component with no items of its own holds, and what an unknown kind falls back to. */
 const NOTHING = z.array(z.never()).length(0);
 
@@ -84,6 +142,16 @@ const ITEMS_OF = {
   CONTACT: contactForm,
   /** The products a SELECTION showcase draws, in order; empty for every other source. */
   PRODUCTS: showcaseSelection,
+  /** The questions, in the order the page draws them. */
+  FAQ: faqItems,
+  /** At most one: a call to action asks one thing. None is a block with no button. */
+  CALL_TO_ACTION: z.array(callToActionButton).max(1),
+  /** At most one picture. None is the words alone. */
+  IMAGE_TEXT: z.array(imageTextMedia).max(1),
+  /** The one product, picked as a showcase picks: an id, read when the page is. None is not chosen yet. */
+  FEATURED_PRODUCT: z.array(showcaseProduct).max(1),
+  /** One end. None is a countdown not set yet, which the shop does not draw. */
+  COUNTDOWN: z.array(countdownEnd).max(1),
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
   HEADING: NOTHING,
   TEXT: NOTHING,

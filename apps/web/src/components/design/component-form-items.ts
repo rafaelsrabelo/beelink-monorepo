@@ -1,8 +1,20 @@
 // Types
-import type { AnnouncementLink, BannerSlide, BenefitRow, ContactField, ShowcaseProduct } from "@harness-monorepo/contracts"
+import type {
+  AnnouncementLink,
+  BannerSlide,
+  BenefitRow,
+  CallToActionButton,
+  ComponentLink,
+  ContactField,
+  CountdownEnd,
+  FaqItem,
+  ImageTextMedia,
+  ShowcaseProduct,
+} from "@harness-monorepo/contracts"
 
 // UI
 import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/component-content-fields"
+import { instantOf, wallTimeOf } from "@harness-monorepo/ui/lib/shop-time"
 
 /*
   Each kind's items between the wire and the form, in both directions. Apart from `toForm` and
@@ -12,7 +24,7 @@ import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/com
 type Link = Pick<ComponentFormValues, "target" | "categoryId" | "productId" | "externalUrl">
 
 /** A link's destination as the form holds it: all three kept, so changing one's mind loses nothing. */
-export function linkToForm(link: AnnouncementLink | undefined): Link {
+export function linkToForm(link: AnnouncementLink | ComponentLink | undefined): Link {
   return {
     target: link?.target ?? "NONE",
     categoryId: link?.categoryId ?? "",
@@ -113,4 +125,57 @@ export function fieldsFromForm(fields: ComponentFormValues["fields"]): ContactFi
 
 export function picksToForm(items: readonly ShowcaseProduct[]): ComponentFormValues["picks"] {
   return items.map((row) => ({ id: row.id, productId: row.productId }))
+}
+
+export function faqToForm(items: readonly FaqItem[]): ComponentFormValues["faq"] {
+  return items.map((row) => ({ id: row.id, question: row.question, answer: row.answer }))
+}
+
+/** A question not written yet is dropped rather than sent: the API refuses one with no words. */
+export function faqFromForm(rows: ComponentFormValues["faq"]): FaqItem[] {
+  return rows
+    .filter((row) => row.question.trim())
+    .map((row) => ({ id: row.id, question: row.question.trim(), answer: row.answer.trim() }))
+}
+
+/**
+ * A block's one button, kept only when it leads somewhere and says something: a button to nowhere is
+ * no button, and the API refuses one with no words.
+ */
+export function buttonFromForm(value: Link & Pick<ComponentFormValues, "buttonLabel">, itemId: string): CallToActionButton[] {
+  const [link] = linkFromForm(value, itemId)
+  const label = value.buttonLabel.trim()
+  return link && link.target !== "NONE" && label ? [{ ...link, target: link.target, label }] : []
+}
+
+/**
+ * An image with text's picture, what it shows and its button, or nothing: a block with no picture
+ * holds no media, and its button — which sits beside the words — goes with the picture it belongs to.
+ */
+export function mediaFromForm(
+  value: Link & Pick<ComponentFormValues, "buttonLabel" | "imageUrl" | "imageAlt">,
+  itemId: string,
+): ImageTextMedia[] {
+  const imageUrl = value.imageUrl.trim()
+  if (!imageUrl) return []
+  const [button] = buttonFromForm(value, itemId)
+  return [
+    {
+      id: itemId,
+      imageUrl,
+      alt: value.imageAlt.trim() || null,
+      button: button ? { label: button.label, target: button.target, categoryId: button.categoryId, productId: button.productId, externalUrl: button.externalUrl } : null,
+    },
+  ]
+}
+
+/** A countdown's end on the shop's clock, as its field holds it; `""` when it has none. */
+export function countdownToForm(items: readonly CountdownEnd[]): string {
+  return items[0] ? wallTimeOf(items[0].endsAt) : ""
+}
+
+/** And back to an instant, with its offset: none for a field left empty or holding what is not a time. */
+export function countdownFromForm(wallTime: string, itemId: string): CountdownEnd[] {
+  const endsAt = instantOf(wallTime)
+  return endsAt ? [{ id: itemId, endsAt }] : []
 }

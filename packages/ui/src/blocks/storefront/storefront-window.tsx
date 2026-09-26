@@ -32,7 +32,7 @@ export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
     "searchAction" | "searchValue" | "searchHidden" | "searchScopes" | "searchScope" | "searchSlot"
-    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories"
+    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories" | "deliverTo"
   > {
   name: string
   description?: string | null
@@ -130,6 +130,7 @@ export function StorefrontWindow({
   announcement,
   chrome = true,
   searchSlot,
+  deliverTo,
   searchAction,
   searchValue = "",
   searchHidden,
@@ -183,6 +184,7 @@ export function StorefrontWindow({
           logoUrl={logoUrl}
           homeHref={homeHref}
           searchSlot={searchSlot}
+          deliverTo={deliverTo}
           {...(searchAction ? { searchAction } : {})}
           searchValue={searchValue}
           {...(searchHidden ? { searchHidden } : {})}

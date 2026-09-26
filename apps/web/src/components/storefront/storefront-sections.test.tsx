@@ -115,6 +115,68 @@ describe("StorefrontSections — a band is a grid", () => {
     expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
   })
 
+  it("draws a FAQ's questions with their answers in the page, and leaves out one with none", () => {
+    const faq: PublicComponent = {
+      ...heading("faq", "FULL"),
+      kind: "FAQ",
+      title: "Dúvidas",
+      display: "ACCORDION",
+      items: [{ id: "q", question: "Qual o prazo?", answer: "Três dias." }],
+    }
+    const { container } = draw([band([faq]), { ...band([{ ...faq, id: "vazio", items: [] }]), id: "outra" }])
+
+    expect(screen.getByText("Qual o prazo?").closest("summary")).toBeInTheDocument()
+    expect(container).toHaveTextContent("Três dias.")
+    expect(container.querySelectorAll("details")).toHaveLength(1)
+  })
+
+  it("draws a call to action edge to edge in a full band, with its button, and none where it leads nowhere", () => {
+    const cta: PublicComponent = {
+      ...heading("cta", "FULL"),
+      kind: "CALL_TO_ACTION",
+      title: "Garanta o seu",
+      display: "BAND",
+      items: [{ id: "b", label: "Comprar agora", href: "/loja/produtos/whey", external: false }],
+    }
+    const { container } = draw([band([cta], "FULL")])
+
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/produtos/whey")
+    expect(container.querySelector("[data-span]")!.className).not.toContain("px-")
+
+    // As a card it sits inside the page's margins, as every block of words does.
+    draw([{ ...band([{ ...cta, id: "card", display: "CARD" }], "FULL"), id: "outra" }])
+    expect(container.ownerDocument.querySelectorAll("[data-span]")[1]!.className).toContain("px-")
+  })
+
+  it("draws an image with text, and leaves out one with neither picture nor words", () => {
+    const block: PublicComponent = {
+      ...heading("img", "FULL"),
+      kind: "IMAGE_TEXT",
+      title: "Feito à mão",
+      display: "IMAGE_RIGHT",
+      items: [{ id: "m", imageUrl: "https://cdn/a.png", alt: "Uma bolsa", button: null }],
+    }
+    draw([band([block]), { ...band([{ ...block, id: "vazio", title: null, items: [] }]), id: "outra" }])
+
+    expect(screen.getByRole("img", { name: "Uma bolsa" })).toBeInTheDocument()
+    expect(screen.getAllByRole("heading", { name: "Feito à mão" })).toHaveLength(1)
+  })
+
+  it("draws a featured product with a button that fills the cart, or leads to its page where no cart is reachable", () => {
+    const card = { id: "p", slug: "whey", name: "Whey Baunilha", priceCents: 12990, compareAtPriceCents: null, imageUrl: null, categorySlug: null, priceRange: { minCents: 12990, maxCents: 12990 }, hasOptions: false, soldOut: false }
+    const featured: PublicComponent = { ...heading("destaque", "FULL"), kind: "FEATURED_PRODUCT", title: "Oferta", display: "IMAGE_LEFT", items: [card] }
+
+    const { unmount } = draw([band([featured])])
+    expect(screen.getByRole("heading", { level: 3, name: "Whey Baunilha" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/carrinho")
+    unmount()
+
+    render(
+      <StorefrontSections sections={[band([featured])]} primary="" categories={[]} routes={routes} showPrice showBadge cartReachable={false} messages={ptBR} />,
+    )
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/produtos/whey")
+  })
+
   // A cached page, or a newer API, can serve a kind this build has never heard of. It used to fall
   // through to a shelf, which read its items as product cards.
   it("draws nothing for a kind this build does not know, and drops a band left with nothing", () => {

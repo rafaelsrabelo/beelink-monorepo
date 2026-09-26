@@ -13,6 +13,8 @@ describe("component-layout — how a block sits, held and drawn", () => {
     expect(displayOf("CATEGORIES", null)).toBe("GRID")
     expect(displayOf("PRODUCTS", null)).toBe("RAIL")
     expect(displayOf("TEXT", "GRID")).toBeNull()
+    // A kind with one layout draws it whatever the row holds.
+    expect(displayOf("FAQ", null)).toBe("ACCORDION")
   })
 
   it("shows the Layout tab every null resolved", () => {
