@@ -6,9 +6,9 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 
 export interface StorefrontBandGridProps {
   /**
-   * An edge-to-edge band. Blocks stacked in it touch, the way they did when the band was a column;
-   * blocks side by side keep 16px between them, the way posters sharing a row always did — without
-   * it two rounded cards meet at the corners and leave a notch of page colour between them.
+   * An edge-to-edge band: 16px between its blocks both ways, side by side and stacked, so the seam
+   * between two pictures is one width whichever way a phone lays them. They used to touch stacked,
+   * the way they did when the band was a column, and a phone drew two banners as one.
    */
   bleed?: boolean
   /** `StorefrontBandCell`s. Anything else takes one column of twelve. */
@@ -28,5 +28,5 @@ export interface StorefrontBandGridProps {
  * between neighbours, which was the space between posters that shared a row.
  */
 export function StorefrontBandGrid({ bleed = false, children, className }: StorefrontBandGridProps) {
-  return <div className={cn("grid grid-cols-12 gap-x-4", !bleed && "gap-y-8", className)}>{children}</div>
+  return <div className={cn("grid grid-cols-12", bleed ? "gap-4" : "gap-x-4 gap-y-8", className)}>{children}</div>
 }

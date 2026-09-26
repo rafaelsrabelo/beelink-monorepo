@@ -35,6 +35,11 @@ export interface StorefrontShowcaseProps {
    * words; the width itself is the cell's, which is why this block only ever fills what it is given.
    */
   span: StorefrontSpan
+  /**
+   * In an edge-to-edge band: square corners, because a picture meant to reach the edges of the
+   * screen loses them to a rounding, and the page shows through the cut.
+   */
+  bleed?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -76,6 +81,7 @@ const COLUMNS_OF_COUNT: Record<2 | 3 | 4, string> = {
 export function StorefrontShowcase({
   items,
   span,
+  bleed = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontShowcaseProps) {
@@ -147,7 +153,8 @@ export function StorefrontShowcase({
 
           // A card sharing the cell is a fraction of it, whatever the cell's own width: a small card's 4:3.
           const shape = cn(
-            "group relative block w-full overflow-hidden rounded-2xl",
+            "group relative block w-full overflow-hidden",
+            !bleed && "rounded-2xl",
             grid ? "aspect-[4/3]" : SPAN_HEIGHT[span],
           )
 

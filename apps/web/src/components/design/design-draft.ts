@@ -1,20 +1,39 @@
 // Types
-import type { ComponentKind, ComponentSpan, Section, StoreComponent } from "@harness-monorepo/contracts"
+import type {
+  ComponentDisplay,
+  ComponentKind,
+  ComponentSpan,
+  DeviceVisibility,
+  Section,
+  StoreComponent,
+  TextAlign,
+  UpdateComponentPayload,
+} from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// App
+import { sameLayout } from "./component-layout"
 
 /**
  * One component as the editor holds it while the page is being arranged.
  *
  * A shape of its own and not the wire `StoreComponent`, because these are the only fields the
- * arrangement can change. Everything a sheet saves straight to the server — a title, a paragraph,
+ * arrangement can change. Everything Salvar sends straight to the server — a title, a paragraph,
  * the slides — stays out of it on purpose, and the reason was measured: the draft is re-seeded
  * only when a row arrives or leaves, so a colour saved while it held a copy of the colour sat
  * under that stale copy until the page was reloaded. What the draft does not hold cannot go stale.
+ *
+ * The layout is here and nowhere else — the slice, the format, the columns and the alignment — so
+ * nothing but Publicar writes it, and there is no second copy for it to go stale under.
  */
 export interface ComponentDraft {
   id: string
   kind: ComponentKind
   span: ComponentSpan
+  display: ComponentDisplay | null
+  columns: number | null
+  align: TextAlign | null
+  visibleOn: DeviceVisibility
   isActive: boolean
 }
 
@@ -22,7 +41,7 @@ export interface ComponentDraft {
  * One band, and what is in it. The two levels the shopkeeper asked for, as the editor holds them.
  *
  * No width and no colour here, for the reason `ComponentDraft` states: both are saved by the band's
- * own sheet, and the projections read them from what the server holds.
+ * Estilo tab, and the projections read them from what the server holds.
  */
 export interface SectionDraft {
   id: string
@@ -30,11 +49,15 @@ export interface SectionDraft {
   components: ComponentDraft[]
 }
 
-function toComponentDraft(component: StoreComponent): ComponentDraft {
+export function toComponentDraft(component: StoreComponent): ComponentDraft {
   return {
     id: component.id,
     kind: component.kind,
     span: component.span,
+    display: component.display,
+    columns: component.columns,
+    align: component.align,
+    visibleOn: component.visibleOn,
     isActive: component.isActive,
   }
 }
@@ -114,8 +137,24 @@ export function changesOf(rows: readonly SectionDraft[], saved: readonly Section
     components: componentsOf(rows).filter((component) => {
       const was = savedComponents.get(component.id)
 
-      return !!was && (was.span !== component.span || was.isActive !== component.isActive)
+      return !!was && (!sameLayout(was, component) || was.isActive !== component.isActive)
     }),
+  }
+}
+
+/**
+ * What Publicar writes for a block that changed: its slice, whether it shows, and how it lays out
+ * what it holds. The format only where there is one — a banner saved before it could choose holds
+ * none, and the API refuses a banner told it has none.
+ */
+export function publishedOf(component: ComponentDraft): UpdateComponentPayload {
+  return {
+    span: component.span,
+    isActive: component.isActive,
+    columns: component.columns,
+    align: component.align,
+    visibleOn: component.visibleOn,
+    ...(component.display ? { display: component.display } : {}),
   }
 }
 
@@ -132,16 +171,6 @@ export function hasChanges(changes: ReturnType<typeof changesOf>): boolean {
     changes.sections.length > 0 ||
     changes.componentOrders.length > 0 ||
     changes.components.length > 0
-  )
-}
-
-/**
- * How many writes Publish would send — the number the editor's bar shows as "N alterações". The
- * order of the bands is one write whatever moved; every other change is one row.
- */
-export function changeCountOf(changes: ReturnType<typeof changesOf>): number {
-  return (
-    (changes.orderChanged ? 1 : 0) + changes.sections.length + changes.componentOrders.length + changes.components.length
   )
 }
 
@@ -178,87 +207,4 @@ export function takenKindsOf(rows: readonly SectionDraft[]): ComponentKind[] {
  */
 export function labelOf(kind: ComponentKind, title: string | null, messages: UiMessages): string {
   return title?.trim() || messages.design.kinds[kind]
-}
-
-/**
- * Whether the shop window would draw anything at all for this component.
- *
- * The one rule that has to agree with the renderer, so it is written once here and named after
- * what it answers. Each clause mirrors a `return null` on the other side: a banner with no
- * pictures, a heading with no words, a promises band with no promises.
- *
- * It exists because a silent disagreement was reported: the panel listed blocks the preview did
- * not draw, and nothing on the screen said why.
- */
-export function isEmptyComponent(
-  kind: ComponentKind,
-  title: string | null,
-  body: string | null,
-  items: readonly unknown[],
-): boolean {
-  // A showcase's items are the cards its source resolved to, which only the public read knows.
-  if (kind === "BANNER" || kind === "BENEFITS" || kind === "PRODUCTS") return items.length === 0
-  if (kind === "HEADING" || kind === "ANNOUNCEMENT") return !title?.trim()
-  if (kind === "TEXT") return !body?.trim()
-
-  return false
-}
-
-/**
- * The draft brought back in step with the server, without throwing away the arrangement.
- *
- * The draft used to be seeded only while it was clean, so a row created or deleted after the owner
- * had moved anything never reached it. Publish then sent the list it had — and the reorder
- * endpoint answers 409 to a partial one, because the rows it omits keep positions that now
- * collide. That is exactly how it was reported: nine ids for a shop with fourteen blocks.
- *
- * Reconciled rather than replaced, because replacing would discard an unpublished arrangement the
- * owner is in the middle of. What they arranged is an order, and an order survives a row arriving
- * or leaving: the rows they still have keep their places, the ones the server no longer has go,
- * and a new one lands right after the row it follows on the server — which is where the "+" that
- * created it was, since the screen asks the API for that place.
- */
-export function reconcile(draft: readonly SectionDraft[], saved: readonly Section[]): SectionDraft[] {
-  const bySaved = new Map(saved.map((section) => [section.id, section]))
-
-  const kept = draft
-    .filter((row) => bySaved.has(row.id))
-    .map((row) => {
-      const was = bySaved.get(row.id)!
-      const known = new Set(was.components.map((component) => component.id))
-
-      return {
-        ...row,
-        components: withNewcomers(
-          row.components.filter((component) => known.has(component.id)),
-          was.components,
-          toComponentDraft,
-        ),
-      }
-    })
-
-  return withNewcomers(kept, saved, toDraft)
-}
-
-/**
- * The rows the server has and the draft lacks, each placed right after the row that precedes it on
- * the server — or first, when nothing does. Walked in the server's order, so a newcomer's
- * predecessor is always already in the list, held or placed.
- */
-function withNewcomers<Held extends { id: string }, Saved extends { id: string }>(
-  held: readonly Held[],
-  saved: readonly Saved[],
-  toHeld: (row: Saved) => Held,
-): Held[] {
-  const result = [...held]
-  const present = new Set(held.map((row) => row.id))
-
-  saved.forEach((row, at) => {
-    if (present.has(row.id)) return
-    const before = saved[at - 1]
-    result.splice(before ? result.findIndex((placed) => placed.id === before.id) + 1 : 0, 0, toHeld(row))
-    present.add(row.id)
-  })
-
-  return result
 }

@@ -2,7 +2,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 // Block
-import { sampleColorPresets as presets } from "../store/store.fixtures"
 import { AnnouncementFields } from "./announcement-fields"
 
 const meta = {
@@ -10,9 +9,8 @@ const meta = {
   component: AnnouncementFields,
   parameters: { layout: "padded" },
   args: {
-    value: { background: presets[2]!.colors.primary, target: "CATEGORY", categoryId: "cat-1", productId: "", externalUrl: "" },
+    value: { target: "CATEGORY", categoryId: "cat-1", productId: "", externalUrl: "" },
     onChange: () => {},
-    pageBackground: presets[0]!.colors.background,
     categories: [
       { id: "cat-1", name: "Blusas" },
       { id: "cat-2", name: "Calças" },
@@ -32,7 +30,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * A cor da barra — que é a cor da faixa dela — e para onde ela leva, com o mesmo bloco de destino
- * do slide do banner. Na loja, a barra inteira vira um link.
+ * Para onde a barra leva, com o mesmo bloco de destino do slide do banner. Na loja, a barra inteira
+ * vira um link. A cor dela é a da faixa, no Estilo.
  */
 export const Padrao: Story = {}

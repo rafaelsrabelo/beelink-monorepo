@@ -63,6 +63,15 @@ describe("StorefrontShowcase", () => {
     }
   })
 
+  // The owner's report: a banner meant to reach the edges came out rounded, with the page in the cut.
+  it("keeps square corners in an edge-to-edge band, and rounds them inside the measure", () => {
+    const { rerender } = render(<StorefrontShowcase items={[creatina]} span="FULL" bleed />)
+    expect(screen.getByRole("link", { name: /Creatina Ultramesh/ })).not.toHaveClass("rounded-2xl")
+
+    rerender(<StorefrontShowcase items={[creatina]} span="FULL" />)
+    expect(screen.getByRole("link", { name: /Creatina Ultramesh/ })).toHaveClass("rounded-2xl")
+  })
+
   /** A card with nowhere to go is a poster: no link, and no arrow promising one. */
   it("draws no arrow and no link for a card with no destination", () => {
     render(<StorefrontShowcase items={[{ ...creatina, href: null }]} span="HALF" />)

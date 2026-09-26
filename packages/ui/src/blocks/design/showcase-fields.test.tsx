@@ -14,7 +14,7 @@ const categories = [
 
 const products = [{ id: "p1", name: "Blusa azul" }]
 
-const base: ShowcaseValue = { source: "ALL", sourceCategoryId: "", picks: [], display: "RAIL", columns: 0, limit: "" }
+const base: ShowcaseValue = { source: "ALL", sourceCategoryId: "", picks: [], limit: "" }
 
 function renderFields(value: Partial<ShowcaseValue> = {}) {
   const onChange = vi.fn()
@@ -49,16 +49,11 @@ describe("ShowcaseFields", () => {
     expect(screen.queryByLabelText("Categoria")).not.toBeInTheDocument()
   })
 
-  it("offers a rail or a grid, and the columns only for a grid", () => {
-    renderFields({ display: "GRID" })
+  // The shape and the columns are how the showcase sits: the Layout tab's, held in the draft.
+  it("asks no shape and no columns", () => {
+    renderFields({})
 
-    expect(screen.queryByRole("button", { name: /Carrossel/ })).not.toBeInTheDocument()
-    expect(screen.getByRole("combobox", { name: "Colunas" })).toBeInTheDocument()
-  })
-
-  it("asks a rail for no columns", () => {
-    renderFields({ display: "RAIL" })
-
+    expect(screen.queryByRole("group", { name: "Formato" })).not.toBeInTheDocument()
     expect(screen.queryByRole("combobox", { name: "Colunas" })).not.toBeInTheDocument()
   })
 
@@ -69,7 +64,7 @@ describe("ShowcaseFields", () => {
   })
 
   it("has no accessibility violations", async () => {
-    const { container } = renderFields({ source: "CATEGORY", sourceCategoryId: "c1", display: "GRID" })
+    const { container } = renderFields({ source: "CATEGORY", sourceCategoryId: "c1" })
 
     await expectNoA11yViolations(container)
   })
