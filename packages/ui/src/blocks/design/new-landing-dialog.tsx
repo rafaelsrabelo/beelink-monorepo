@@ -38,9 +38,9 @@ export function needsProduct(template: LandingTemplateChoice): boolean {
   return template !== "em-branco"
 }
 
-/** The address the form shows: the one typed, or the name's until one is. */
+/** The address the form shows: the one typed, or the name's until one is — cut to the column as the API cuts it. */
 export function addressOf(value: Pick<NewLandingValue, "title" | "slug">): string {
-  return value.slug ?? slugify(value.title)
+  return value.slug ?? slugify(value.title).slice(0, 60).replace(/-+$/, "")
 }
 
 export interface NewLandingDialogProps {
@@ -55,6 +55,8 @@ export interface NewLandingDialogProps {
   templates: readonly LandingTemplateChoice[]
   products: readonly TargetOption[]
   productsState: "ready" | "loading" | "failed"
+  /** What is typed in the product search, for a shop with more products than one page holds. */
+  onProductQuery?: (query: string) => void
   onSubmit: () => void
   pending: boolean
   /** Why the API refused, in the owner's words. */
@@ -77,6 +79,7 @@ export function NewLandingDialog({
   templates,
   products,
   productsState,
+  onProductQuery,
   onSubmit,
   pending,
   error = null,
@@ -84,8 +87,10 @@ export function NewLandingDialog({
 }: NewLandingDialogProps) {
   const text = messages.design.pages.form
   const product = needsProduct(value.template)
+  // An emptied address is not "follow the name" — the owner is typing one — so it waits for one.
   const ready =
     value.title.trim() !== "" &&
+    addressOf(value).trim() !== "" &&
     addressState !== "taken" &&
     addressState !== "invalid" &&
     (!product || value.productId !== null) &&
@@ -144,6 +149,7 @@ export function NewLandingDialog({
                 {...(value.productId ? { selectedId: value.productId } : {})}
                 emptyText={text.productEmpty}
                 state={productsState}
+                {...(onProductQuery ? { onQueryChange: onProductQuery } : {})}
                 messages={messages}
               />
               <p className="text-muted-foreground text-xs">{text.productHint}</p>

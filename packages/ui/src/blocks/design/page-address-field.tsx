@@ -41,7 +41,10 @@ export function PageAddressField({ id, prefix, value, onChange, state, messages 
       <FieldLabel htmlFor={id}>{text.address}</FieldLabel>
       <FieldContent>
         <div className="border-input focus-within:ring-ring/50 focus-within:border-ring flex items-center rounded-md border focus-within:ring-3">
-          <span className="text-muted-foreground shrink-0 pl-3 text-sm">{prefix}</span>
+          {/* Gives way to the address on a phone: a long shop slug would leave the field no room. */}
+          <span title={prefix} className="text-muted-foreground max-w-[50%] min-w-0 truncate pl-3 text-sm">
+            {prefix}
+          </span>
           <Input
             id={id}
             value={value}

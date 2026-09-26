@@ -79,9 +79,19 @@ describe("NewLandingDialog", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Já existe uma página com esse endereço")
   })
 
-  it("derives the address the API would", () => {
+  it("derives the address the API would, cut to its column", () => {
     expect(addressOf({ title: "Promoção de Verão!", slug: null })).toBe("promocao-de-verao")
     expect(addressOf({ title: "Promoção", slug: "verao" })).toBe("verao")
+    expect(addressOf({ title: `${"a".repeat(59)} bcd`, slug: null })).toBe("a".repeat(59))
+  })
+
+  // Cleared to type another: not a refusal waiting at Criar, and not a snap back to the name mid-typing.
+  it("waits for an address when the owner empties it", async () => {
+    render(<Harness initial={{ ...emptyNewLanding("em-branco"), title: "Ofertas" }} />)
+
+    await userEvent.clear(screen.getByLabelText("Endereço"))
+    expect(screen.getByLabelText("Endereço")).toHaveValue("")
+    expect(screen.getByRole("button", { name: "Criar página" })).toBeDisabled()
   })
 
   it("has no accessibility violations", async () => {

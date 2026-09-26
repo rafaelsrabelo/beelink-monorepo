@@ -38,7 +38,7 @@ describe("PageSettingsDialog", () => {
     render(<Harness onSubmit={onSubmit} />)
 
     await userEvent.type(screen.getByLabelText("Nome da página"), " Whey")
-    await userEvent.click(screen.getByRole("switch", { name: "Mostrar no menu da loja" }))
+    await userEvent.click(screen.getByRole("switch", { name: "Mostrar nos links da loja" }))
     await userEvent.type(screen.getByLabelText("Título na busca"), "Whey em oferta")
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
 

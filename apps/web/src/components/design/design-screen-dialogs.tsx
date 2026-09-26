@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 // Types
 import type { ComponentKind, PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
@@ -25,6 +25,7 @@ import type { useDesignDraft } from "./use-design-draft"
 import type { useLeaveGuard } from "./use-leave-guard"
 
 import type { WebMessages } from "@/locales"
+import { useDesignPages } from "@/stores/design-pages"
 
 export interface DesignScreenDialogsProps {
   guard: ReturnType<typeof useLeaveGuard>
@@ -70,6 +71,9 @@ export function DesignScreenDialogs({
   // The last "+" pressed, kept while the gallery fades out after Adicionar: read from `insertAt`, which
   // is null by then, its line would turn generic and its rows and shelves change as it disappears.
   const [shownAt, setShownAt] = useState<InsertAt | null>(null)
+  // A page dialog left open does not outlive the editor: the store is the module's, and the next
+  // editor — another shop's, even — would open on it unasked.
+  useEffect(() => () => useDesignPages.getState().close(), [])
   if (adding.insertAt && adding.insertAt !== shownAt) setShownAt(adding.insertAt)
   const placement = placementOf(shownAt, draft.rows, draft.saved, shelves, messages)
   const stock = stockOf(gallery.store, shelves, gallery.categories.length)

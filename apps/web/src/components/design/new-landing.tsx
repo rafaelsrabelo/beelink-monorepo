@@ -10,6 +10,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { WebMessages } from "@/locales"
+import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useProducts } from "@/services/catalog/catalog-hooks"
 import { useCreatePage } from "@/services/page/store-pages-hooks"
 import { useDesignPages } from "@/stores/design-pages"
@@ -40,14 +41,17 @@ export function NewLanding({ slug, site, go, messages, web }: NewLandingProps) {
   const templates = site ? SITE_TEMPLATES : LANDING_TEMPLATES
   const [value, setValue] = useState(() => emptyNewLanding(templates[0] ?? "em-branco"))
   const create = useCreatePage(slug)
-  // Only what can be sold: a template built around a hidden product would sell nothing. The admin
-  // list's ceiling, as the showcase picker asks — a search narrows it past that.
-  const products = useProducts(open && !site ? slug : "", { pageSize: 96, status: "ACTIVE" })
+  const [productQuery, setProductQuery] = useState("")
+  const search = useDebouncedValue(productQuery.trim(), 300)
+  // Only what can be sold: a template built around a hidden product would sell nothing. A page at
+  // the admin list's ceiling, and past it the API's own search, so the 97th product can be found.
+  const products = useProducts(open && !site ? slug : "", { pageSize: 96, status: "ACTIVE", ...(search ? { search } : {}) })
   const addressState = useAddressCheck(open ? slug : "", value.slug ?? value.title)
 
   const dismiss = () => {
     close()
     create.reset()
+    setProductQuery("")
     setValue(emptyNewLanding(templates[0] ?? "em-branco"))
   }
 
@@ -80,6 +84,7 @@ export function NewLanding({ slug, site, go, messages, web }: NewLandingProps) {
       templates={templates}
       products={(products.data?.products ?? []).map((product) => ({ id: product.id, name: product.name }))}
       productsState={products.isError ? "failed" : products.isPending ? "loading" : "ready"}
+      onProductQuery={setProductQuery}
       onSubmit={submit}
       pending={create.isPending}
       error={create.error ? (pageErrorCopy(create.error, web) ?? null) : null}

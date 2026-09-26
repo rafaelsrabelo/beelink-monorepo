@@ -12,7 +12,7 @@ describe("PageDisplayFields", () => {
     const onChange = vi.fn()
     render(<PageDisplayFields id="d" value={{ inMenu: false, usesChrome: true }} onChange={onChange} />)
 
-    await userEvent.click(screen.getByRole("switch", { name: "Mostrar no menu da loja" }))
+    await userEvent.click(screen.getByRole("switch", { name: "Mostrar nos links da loja" }))
     expect(onChange).toHaveBeenLastCalledWith({ inMenu: true, usesChrome: true })
 
     await userEvent.click(screen.getByRole("switch", { name: "Usar o topo e o rodapé da loja" }))

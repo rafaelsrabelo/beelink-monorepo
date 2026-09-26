@@ -83,13 +83,26 @@ describe("NewLanding", () => {
   })
 })
 
+describe("NewLanding — a shop with more products than one page", () => {
+  it("asks the API for the products typed, only the ones for sale", async () => {
+    const calls = stubApi()
+    render(wrap(<NewLanding slug="loja" site={false} go={vi.fn()} messages={ptBR} web={web} />))
+    act(() => useDesignPages.getState().openNew())
+
+    await userEvent.type(await screen.findByLabelText("Produto principal"), "whey")
+
+    await waitFor(() => expect(calls.some((call) => call.includes("/products?") && call.includes("search=whey"))).toBe(true))
+    expect(calls.filter((call) => call.includes("/products?")).every((call) => call.includes("status=ACTIVE"))).toBe(true)
+  })
+})
+
 describe("PageSettings", () => {
   it("sends only what changed, a cleared search field as null, and reloads the page being edited", async () => {
     const calls = stubApi()
     render(wrap(<PageSettings slug="loja" currentPageId="p1" messages={ptBR} web={web} />))
     act(() => useDesignPages.getState().openSettings("p1"))
 
-    await userEvent.click(await screen.findByRole("switch", { name: "Mostrar no menu da loja" }))
+    await userEvent.click(await screen.findByRole("switch", { name: "Mostrar nos links da loja" }))
     await userEvent.clear(screen.getByLabelText("Título na busca"))
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
 
