@@ -69,9 +69,10 @@ export function StorefrontCountdown({
       {subtitle ? <p className="max-w-xl text-sm opacity-85">{subtitle}</p> : null}
       {ended ? <p className="rounded-full border border-current px-3 py-0.5 text-xs font-semibold uppercase">{text.countdownEnded}</p> : null}
       <p className={cn("text-sm", left ? "sr-only" : "opacity-85")}>{format(text.countdownEnds, { date, time })}</p>
-      <div aria-hidden="true" className="flex gap-2 shop-sm:gap-3">
+      {/* Wraps two by two where the slice is narrower than four boxes: a half or a third of a band. */}
+      <div aria-hidden="true" className="flex flex-wrap justify-center gap-2 shop-sm:gap-3">
         {units.map((unit) => (
-          <span key={unit.key} className={cn("flex min-w-14 flex-col items-center rounded-xl px-2 py-2 shop-sm:min-w-16", look.digit)}>
+          <span key={unit.key} className={cn("flex min-w-14 flex-col items-center rounded-xl px-2 py-2", look.digit)}>
             <span className="text-2xl leading-none font-bold tabular-nums shop-sm:text-3xl">
               {unit.value === undefined ? "--" : String(unit.value).padStart(2, "0")}
             </span>
