@@ -30,8 +30,10 @@ export default async function DesignPage({ params, searchParams }: PageProps<"/a
   const pageId = typeof asked === "string" && asked ? asked : null
   const [store, { ui, web }, preview] = await Promise.all([shopAt(slug), getMessages(), pagePreviewAt(slug, pageId ?? "home")])
 
-  if (!store || !preview) notFound()
-  if (pageId && preview.page.kind !== "LANDING") redirect(`/admin/${slug}/design`)
+  if (!store) notFound()
+  if (pageId && preview?.page.kind !== "LANDING") redirect(`/admin/${slug}/design`)
+  // The shop is there and its home's draft could not be read: an outage, not a page that is missing.
+  if (!preview) throw new Error(`The draft of ${slug}'s home could not be read`)
 
   // The same call the shop window's home makes. The showcases' cards need none: they came resolved
   // inside `store`, so the preview's shelves are the ones the visitor gets.
