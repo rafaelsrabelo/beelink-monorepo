@@ -8,6 +8,9 @@ import { IsObject, IsOptional, IsString, Matches, MaxLength, MinLength, Validate
 // Types
 import type { CustomerAddress, UpdateCustomerProfilePayload } from '@harness-monorepo/contracts';
 
+// App
+import { normaliseWhatsapp } from '../../stores/dto/store-fields.dto.js';
+
 const trim = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value));
 /** Blank is "not given": an empty field in a form is not a value to store. */
 const blankIsNull = Transform(({ value }: { value: unknown }) => (typeof value === 'string' && value.trim() === '' ? null : value));
@@ -51,12 +54,17 @@ export class UpdateCustomerProfileDto implements UpdateCustomerProfilePayload {
   @IsOptional() @trim @IsString() @MinLength(2) @MaxLength(120)
   name?: string;
 
-  @ApiPropertyOptional({ example: '5511999998888', nullable: true, type: String, description: 'Digits only, with the country code.' })
+  @ApiPropertyOptional({
+    example: '(11) 99999-8888',
+    nullable: true,
+    type: String,
+    description: 'Any way a person writes it; kept as a WhatsApp link wants it, the key an order finds the customer by.',
+  })
   @IsOptional()
   @blankIsNull
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.replace(/\D/g, '') : value))
+  @normaliseWhatsapp
   @ValidateIf((_, value) => value !== null)
-  @Matches(/^\d{10,15}$/)
+  @Matches(/^\d{12,15}$/)
   phone?: string | null;
 
   @ApiPropertyOptional({ type: CustomerAddressDto })

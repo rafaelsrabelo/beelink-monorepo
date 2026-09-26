@@ -7,6 +7,7 @@ import type {
   ComponentItem,
   ComponentKind,
   ComponentSpan,
+  DeviceVisibility,
   ProductSource,
   PublicComponent,
   PublicComponentItem,
@@ -20,11 +21,13 @@ import type {
 // App
 import {
   COMPONENT_DISPLAYS,
+  DEVICE_VISIBILITIES,
   COMPONENT_KINDS,
   COMPONENT_SPANS,
   PRODUCT_SOURCES,
   SECTION_WIDTHS,
   TEXT_ALIGNS,
+  displaysInWords,
 } from '../page.constants.js';
 
 /**
@@ -39,7 +42,7 @@ export class PublicComponentResponse implements PublicComponent {
   @ApiProperty({ nullable: true, type: String, description: 'The paragraph, on a TEXT.' })
   body!: string | null;
   @ApiProperty({ enum: COMPONENT_SPANS, description: 'Its slice of the band.' }) span!: ComponentSpan;
-  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER, PRODUCTS and CATEGORIES. Null on every other kind.' })
+  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: `The layout — ${displaysInWords()}. Null on every other kind, and on a BENEFITS band or strip saved before they had a choice, which draw as they always did.` })
   display!: ComponentDisplay | null;
   @ApiProperty({ enum: PRODUCT_SOURCES, nullable: true, description: 'A showcase’s source. Null on every other kind.' })
   source!: ProductSource | null;
@@ -55,6 +58,9 @@ export class PublicComponentResponse implements PublicComponent {
   columns!: number | null;
   @ApiProperty({ enum: TEXT_ALIGNS, nullable: true, description: 'Null is the kind’s own habit.' })
   align!: TextAlign | null;
+  // Always sent; optional on the contract only for a page cached before it existed.
+  @ApiProperty({ enum: DEVICE_VISIBILITIES, description: 'Where it shows. A band shows wherever one of its components does.' })
+  visibleOn?: DeviceVisibility;
 }
 
 export class PublicSectionResponse implements PublicSection {
@@ -74,7 +80,7 @@ export class ComponentResponse implements StoreComponent {
   @ApiProperty({ nullable: true, type: String }) subtitle!: string | null;
   @ApiProperty({ nullable: true, type: String }) body!: string | null;
   @ApiProperty({ enum: COMPONENT_SPANS, description: 'Its slice of the band.' }) span!: ComponentSpan;
-  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER, PRODUCTS and CATEGORIES. Null on every other kind.' })
+  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: `The layout — ${displaysInWords()}. Null on every other kind, and on a BENEFITS band or strip saved before they had a choice, which draw as they always did.` })
   display!: ComponentDisplay | null;
   @ApiProperty({ enum: PRODUCT_SOURCES, nullable: true, description: 'A showcase’s. Null on every other kind.' })
   source!: ProductSource | null;
@@ -88,6 +94,7 @@ export class ComponentResponse implements StoreComponent {
   items!: ComponentItem[];
   @ApiProperty({ nullable: true, type: Number }) columns!: number | null;
   @ApiProperty({ enum: TEXT_ALIGNS, nullable: true }) align!: TextAlign | null;
+  @ApiProperty({ enum: DEVICE_VISIBILITIES }) visibleOn!: DeviceVisibility;
   @ApiProperty({ description: 'Its place inside its band.' }) position!: number;
   @ApiProperty() isActive!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;

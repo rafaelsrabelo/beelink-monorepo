@@ -21,7 +21,6 @@ function renderBands(bands: ArrangementBand[]) {
     onEditBand: vi.fn(),
     onDeleteBand: vi.fn(),
     onToggle: vi.fn(),
-    onSpanChange: vi.fn(),
     onDelete: vi.fn(),
     onEdit: vi.fn(),
   }
@@ -45,17 +44,16 @@ describe("SingleBlockCard — a band of one block is one card", () => {
 
     expect(screen.getByRole("button", { name: "Arrastar: Destaque" })).toBeInTheDocument()
     expect(container.querySelector('img[src="/capa.jpg"]')).toBeInTheDocument()
-    expect(screen.getByText(/Ponta a ponta/)).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /^Capa/ })).toHaveTextContent("Destaque · Banner")
-    expect(screen.getByRole("group", { name: /Largura do bloco: Capa/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^Capa/ })).toHaveTextContent("Destaque · Banner · Cheio")
+    expect(screen.queryByRole("group", { name: /Largura do bloco/ })).not.toBeInTheDocument()
   })
 
-  it("opens the block's fields from its name, and the band's sheet from its swatch", async () => {
+  it("opens the block's fields from its name, and the band's Estilo from its swatch", async () => {
     const user = userEvent.setup()
     const { onEdit, onEditBand } = renderBands([band("b1", [cover])])
 
     await user.click(screen.getByRole("button", { name: /^Capa/ }))
-    await user.click(screen.getByRole("button", { name: "Cor e nome da faixa: Faixa 1" }))
+    await user.click(screen.getByRole("button", { name: "Estilo da faixa: Faixa 1" }))
 
     expect(onEdit).toHaveBeenCalledWith("c1")
     expect(onEditBand).toHaveBeenCalledWith("b1")
@@ -101,9 +99,9 @@ describe("SingleBlockCard — a band of one block is one card", () => {
   })
 
   it("becomes a container once the band holds a second block", () => {
-    const { rerender, onReorder, onReorderComponents, onToggleBand, onEditBand, onDeleteBand, onToggle, onSpanChange, onDelete, onEdit } =
+    const { rerender, onReorder, onReorderComponents, onToggleBand, onEditBand, onDeleteBand, onToggle, onDelete, onEdit } =
       renderBands([band("b1", [cover])])
-    const handlers = { onReorder, onReorderComponents, onToggleBand, onEditBand, onDeleteBand, onToggle, onSpanChange, onDelete, onEdit }
+    const handlers = { onReorder, onReorderComponents, onToggleBand, onEditBand, onDeleteBand, onToggle, onDelete, onEdit }
 
     rerender(<BandArrangement bands={[band("b1", [cover, { ...cover, id: "c2", title: "Segundo" }])]} {...handlers} />)
 
@@ -121,7 +119,6 @@ describe("SingleBlockCard — a band of one block is one card", () => {
       onEditBand: vi.fn(),
       onDeleteBand: vi.fn(),
       onToggle: vi.fn(),
-      onSpanChange: vi.fn(),
       onDelete: vi.fn(),
       onEdit: vi.fn(),
     }
@@ -152,7 +149,6 @@ describe("SingleBlockCard — a band of one block is one card", () => {
           onEditBand: vi.fn(),
           onDeleteBand: vi.fn(),
           onToggle: vi.fn(),
-          onSpanChange: vi.fn(),
           onDelete: vi.fn(),
           onEdit: vi.fn(),
         }}
@@ -175,7 +171,6 @@ describe("SingleBlockCard — a band of one block is one card", () => {
           onEditBand: vi.fn(),
           onDeleteBand: vi.fn(),
           onToggle: vi.fn(),
-          onSpanChange: vi.fn(),
           onDelete: vi.fn(),
           onEdit: vi.fn(),
         }}

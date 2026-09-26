@@ -4,6 +4,7 @@ import type { StorefrontFooterColumn, StorefrontMenuItem } from "@harness-monore
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { drawnSectionsOf } from "./empty-component"
 import { orderHrefOf } from "./storefront-links"
 
 /**
@@ -43,16 +44,27 @@ export function anchorsOf(sections: readonly PublicSection[]): ReadonlyMap<strin
   return anchors
 }
 
-/** The named bands a visitor can jump to, in order, as anchors. The strip's band is never one. */
-function namedBandsOf(sections: readonly PublicSection[]): StorefrontMenuItem[] {
+/**
+ * The named bands a visitor can jump to, in order, as anchors: the ones the page draws, so no link
+ * points at a band left out for having nothing to show. Anchors are counted over every band, as the
+ * page counts them, so a name keeps its anchor.
+ *
+ * `base` is the page the bands are on, when it is not this one: a landing's menu leads back to the
+ * home's bands, at `/<shop>#servicos`, and a bare `#servicos` there would go nowhere.
+ */
+function namedBandsOf(sections: readonly PublicSection[], base = ""): StorefrontMenuItem[] {
   const anchors = anchorsOf(sections)
 
-  return sections
-    .filter((section) => !section.components.every((component) => component.kind === "ANNOUNCEMENT"))
+  return drawnSectionsOf(sections, false)
     .flatMap((section) => {
       const anchor = anchors.get(section.id)
-      return anchor && section.name ? [{ id: section.id, label: section.name.trim(), href: `#${anchor}` }] : []
+      return anchor && section.name ? [{ id: section.id, label: section.name.trim(), href: `${base}#${anchor}` }] : []
     })
+}
+
+/** The landings the shop links from its menu and footer, each at its own address. */
+export function pageLinksOf(store: PublicStore, landing: (pageSlug: string) => string): StorefrontMenuItem[] {
+  return (store.pages ?? []).map((page) => ({ id: `page-${page.slug}`, label: page.title, href: landing(page.slug) }))
 }
 
 /**
@@ -61,11 +73,11 @@ function namedBandsOf(sections: readonly PublicSection[]): StorefrontMenuItem[] 
  * No column says "this is the button" — the band's name is its label, so an owner who wants it to
  * read "Pedir orçamento" renames the band, and the menu, the anchor and the button follow.
  */
-export function ctaOf(sections: readonly PublicSection[]): { label: string; href: string } | null {
+export function ctaOf(sections: readonly PublicSection[], base = ""): { label: string; href: string } | null {
   const holdsForm = new Set(
     sections.filter((section) => section.components.some((component) => component.kind === "CONTACT")).map((s) => s.id),
   )
-  const band = namedBandsOf(sections).find((entry) => holdsForm.has(entry.id))
+  const band = namedBandsOf(sections, base).find((entry) => holdsForm.has(entry.id))
 
   return band ? { label: band.label, href: band.href } : null
 }
@@ -74,10 +86,10 @@ export function ctaOf(sections: readonly PublicSection[]): { label: string; href
  * A site's menu: its named bands, as anchors — less the one the button already leads to, which
  * would otherwise sit in the header twice. An unnamed band is one its owner did not want reachable.
  */
-export function menuOf(sections: readonly PublicSection[]): StorefrontMenuItem[] {
-  const cta = ctaOf(sections)
+export function menuOf(sections: readonly PublicSection[], base = ""): StorefrontMenuItem[] {
+  const cta = ctaOf(sections, base)
 
-  return namedBandsOf(sections).filter((entry) => entry.href !== cta?.href)
+  return namedBandsOf(sections, base).filter((entry) => entry.href !== cta?.href)
 }
 
 /**
@@ -90,11 +102,12 @@ export function siteFooterColumnsOf(
   store: PublicStore,
   sections: readonly PublicSection[],
   messages: UiMessages,
+  { base = "", pages = [] }: { base?: string; pages?: readonly StorefrontMenuItem[] } = {},
 ): StorefrontFooterColumn[] {
   const text = messages.storefront
   // Every named band, the button's included: the header hides its menu on a phone, and this is
-  // where those names are found.
-  const menu = namedBandsOf(sections)
+  // where those names are found. Then the landings, which are pages of their own.
+  const menu = [...namedBandsOf(sections, base), ...pages]
   const whatsapp = orderHrefOf(store)
 
   return [

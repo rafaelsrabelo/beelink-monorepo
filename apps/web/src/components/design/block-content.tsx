@@ -1,0 +1,124 @@
+"use client"
+
+// React
+import { useState } from "react"
+
+// Types
+import type { ComponentDisplay, PublicComponentItem, StoreComponent } from "@harness-monorepo/contracts"
+
+// UI
+import { ComponentContentFields } from "@harness-monorepo/ui/blocks/design/component-content-fields"
+import type { ComponentFormValues, SlideTargetOption } from "@harness-monorepo/ui/blocks/design/component-content-fields"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// App
+import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
+import { useProductCategories, useProducts } from "@/services/catalog/catalog-hooks"
+import type { ImageUploadHandle } from "@/services/uploads/upload-hooks"
+import { readsCatalog } from "./design-kinds"
+import { emptyStateOf } from "./empty-state"
+import { EmptyStateNote } from "./empty-state-note"
+
+export interface BlockContentProps {
+  slug: string
+  component: StoreComponent
+  value: ComponentFormValues
+  onChange: (value: ComponentFormValues) => void
+  /** How a banner's pictures sit, from the Layout tab: the hint under them follows it. */
+  display: ComponentDisplay | null
+  /** Held by the panel, whose Salvar waits for a picture on its way. */
+  image: ImageUploadHandle
+  /** How many categories the shop window shows, and what the public read resolved for this block. */
+  categoriesShown: number
+  shelf?: readonly PublicComponentItem[]
+  messages: UiMessages
+}
+
+/**
+ * The Conteúdo tab: what the block says, and — above it — why the shop window draws nothing for
+ * it, when it does not.
+ *
+ * Its own component because the panel had passed the line limit, and the seam falls here: the
+ * categories and products a block points at are read only by what it says.
+ */
+export function BlockContent({
+  slug,
+  component,
+  value,
+  onChange,
+  display,
+  image,
+  categoriesShown,
+  shelf,
+  messages,
+}: BlockContentProps) {
+  const points = readsCatalog(component.kind)
+  // A featured product is searched past the page loaded, as a landing's product is: the 97th must be findable.
+  const featured = component.kind === "FEATURED_PRODUCT"
+  const [productQuery, setProductQuery] = useState("")
+  const search = useDebouncedValue(productQuery.trim(), 300)
+  const found = useProducts(featured && search ? slug : "", { pageSize: 96, status: "ACTIVE", search })
+  const categories = useProductCategories(points ? slug : "")
+  // The admin list's own ceiling (PRODUCTS_PAGE_SIZE_MAX): asking for more answers this many anyway.
+  const products = useProducts(points ? slug : "", { pageSize: 96 })
+  // A search still on its way, or one the debounce has not sent yet, is not "nothing by that name".
+  const searching = featured && productQuery.trim() !== "" && (productQuery.trim() !== search || found.isPending)
+  const optionsState =
+    categories.isError || products.isError || (featured && found.isError)
+      ? "failed"
+      : categories.isPending || products.isPending || searching
+        ? "loading"
+        : "ready"
+
+  const page = products.data
+  const onShelf = page?.products.filter((row) => row.status === "ACTIVE" && !row.soldOut).length ?? 0
+  const empty = emptyStateOf(component.kind, {
+    categoriesShown,
+    categories: categories.data ?? null,
+    products: page
+      ? // Beyond the page loaded, a page with none on the shelf says nothing about the rest.
+        { total: page.total, onShelf: onShelf > 0 || page.total <= page.products.length ? onShelf : null }
+      : null,
+    // A featured product with none chosen yet is not one "not on sale": the placeholder says to choose.
+    shelfEmpty: shelf?.length === 0 && (!featured || component.items.length > 0),
+    countdownEndsAt: (component.items[0] as { endsAt?: string } | undefined)?.endsAt ?? null,
+  })
+
+  const categoryOptions: SlideTargetOption[] = (categories.data ?? []).map((row) => ({ id: row.id, name: row.name }))
+  // The featured card the read resolved names the pick even past the page loaded, or before it loads.
+  const resolved = featured ? (shelf?.[0] as { id: string; name: string } | undefined) : undefined
+  const productOptions: SlideTargetOption[] = featured
+    ? onSale([...(page?.products ?? []), ...(found.data?.products ?? []), ...(resolved ? [{ ...resolved, status: "ACTIVE" }] : [])])
+    : (page?.products ?? []).map((row) => ({ id: row.id, name: row.name }))
+
+  return (
+    <>
+      {empty ? <EmptyStateNote state={empty} slug={slug} messages={messages} /> : null}
+      <ComponentContentFields
+        value={value}
+        onChange={onChange}
+        display={display}
+        categories={categoryOptions}
+        products={productOptions}
+        optionsState={points ? optionsState : "ready"}
+        {...(featured ? { onProductQuery: setProductQuery } : {})}
+        onUploadImage={image.upload}
+        imagePending={image.pending}
+        // Minted here and not in the block: the design system has no clock and no randomness,
+        // and an id it invented would be one two open tabs could invent twice.
+        newItemId={() => crypto.randomUUID()}
+        messages={messages}
+      />
+    </>
+  )
+}
+
+/** The products a featured block may show, once each: on sale, since a draft would draw nothing. */
+function onSale(rows: readonly { id: string; name: string; status: string }[]): SlideTargetOption[] {
+  const seen = new Set<string>()
+  return rows.flatMap((row) => {
+    if (row.status !== "ACTIVE" || seen.has(row.id)) return []
+    seen.add(row.id)
+    return [{ id: row.id, name: row.name }]
+  })
+}

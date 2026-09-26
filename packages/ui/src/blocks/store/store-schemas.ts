@@ -142,7 +142,7 @@ export function createStoreCreateSchema(messages: ValidationMessages) {
 }
 
 /**
- * One form, five tabs, one save — the legacy panel's single "Salvar alterações" over six tabs, and
+ * One form, six tabs, one save — the legacy panel's single "Salvar alterações" over six tabs, and
  * the shape `PUT /api/stores/:slug` replaces whole. Blank means absent; the screen maps an empty
  * string to the payload's `null`.
  */
@@ -155,6 +155,13 @@ export function createStoreSettingsSchema(messages: ValidationMessages) {
       appearance: createStoreAppearanceSchema(messages),
       // A checkout with no payment method cannot complete an order. The legacy panel only warned.
       paymentMethods: z.array(z.enum(PAYMENT_METHODS)).min(1, messages.paymentMethodsMin),
+      customers: z.object({
+        inactiveAfterDays: z
+          .number({ error: messages.inactiveAfterDaysRange })
+          .int(messages.inactiveAfterDaysRange)
+          .min(7, messages.inactiveAfterDaysRange)
+          .max(365, messages.inactiveAfterDaysRange),
+      }),
     })
     .superRefine((values, ctx) => requireWhatsappOnShop(values, ctx, messages))
 }

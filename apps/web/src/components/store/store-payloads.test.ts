@@ -10,6 +10,7 @@ import { toCreatePayload, toSettingsValues, toUpdatePayload } from "./store-payl
 const STORE: Store = {
   id: "01931f2e-1111-7000-8000-000000000001",
   ownerId: "01931f2e-0000-7000-8000-000000000009",
+  inactiveAfterDays: 45,
   slug: "doces-da-ana",
   routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
   name: "Doces da Ana",
@@ -82,6 +83,11 @@ describe("toSettingsValues", () => {
 
 describe("toUpdatePayload", () => {
   const values = toSettingsValues(STORE)
+
+  it("reads and sends back after how many days a customer turns inactive", () => {
+    expect(values.customers).toEqual({ inactiveAfterDays: 45 })
+    expect(toUpdatePayload(STORE, { ...values, customers: { inactiveAfterDays: 90 } }).inactiveAfterDays).toBe(90)
+  })
 
   it("sends back the layout switches no tab edits, so a replacement cannot clear them", () => {
     expect(toUpdatePayload(STORE, values).layoutSettings).toMatchObject(STORE.layoutSettings)

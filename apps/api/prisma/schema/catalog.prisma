@@ -190,6 +190,8 @@ model Product {
   options         ProductOption[]
   variants        ProductVariant[]
   restockRequests RestockRequest[]
+  /// Order lines that named this product; an order keeps its photograph when the product goes.
+  orderItems      OrderItem[]
 
   @@unique([storeId, slug])
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
@@ -347,6 +349,8 @@ model ProductVariant {
 
   values          ProductVariantValue[]
   restockRequests RestockRequest[]
+  /// Order lines that named this variant; an order keeps its photograph when the variant goes.
+  orderItems      OrderItem[]
 
   @@unique([storeId, sku])
   @@index([productId, position])

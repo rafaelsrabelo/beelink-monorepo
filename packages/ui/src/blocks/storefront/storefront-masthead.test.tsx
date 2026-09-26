@@ -65,6 +65,35 @@ describe("StorefrontMasthead", () => {
     expect(row.querySelector(".max-w-md")).toBeNull()
   })
 
+  /**
+   * Beside the logo and the icons a phone gave the search ~100px, less than its scope and button. So
+   * the search takes a line of its own below them until `shop-md`, moved by `order` alone: the focus
+   * order stays logo, search, account, cart. jsdom evaluates no media query, so the classes are the claim.
+   */
+  it("gives the search a line of its own on a phone, and the one row back from shop-md", () => {
+    render(<StorefrontMasthead name="Lessari" homeHref="/lessari" searchAction="/lessari/busca" accountHref="/c" cartHref="/k" />)
+
+    const row = screen.getByRole("banner").firstElementChild as HTMLElement
+    expect(row).toHaveClass("flex-wrap", "shop-md:flex-nowrap", "shop-md:h-[72px]")
+    expect(row.style.height).toBe("")
+    expect(screen.getByRole("search").parentElement).toHaveClass(
+      "order-last",
+      "basis-full",
+      "shop-md:order-none",
+      "shop-md:basis-0",
+    )
+    expect(screen.getByRole("link", { name: "Lessari" })).toHaveClass("me-auto", "shop-md:me-0")
+  })
+
+  it("keeps a site's header one 72px row, with nothing to move", () => {
+    render(<StorefrontMasthead name="Asfalto Norte" homeHref="/a" cta={{ label: "Pedir orçamento", href: "#contato" }} />)
+
+    const row = screen.getByRole("banner").firstElementChild as HTMLElement
+    expect(row).toHaveClass("h-[72px]")
+    expect(row).not.toHaveClass("flex-wrap")
+    expect(row.querySelector(".order-last")).toBeNull()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <StorefrontMasthead name="Asfalto Norte" homeHref="/a" cta={{ label: "Pedir orçamento", href: "#contato" }} />,

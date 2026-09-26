@@ -24,7 +24,6 @@ const handlers = {
   onEditBand: vi.fn(),
   onDeleteBand: vi.fn(),
   onToggle: vi.fn(),
-  onSpanChange: vi.fn(),
   onDelete: vi.fn(),
   onEdit: vi.fn(),
 }

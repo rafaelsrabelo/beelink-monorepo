@@ -57,3 +57,15 @@ export const SemIcone: Story = {
 
 /** Vazia não desenha faixa nenhuma — é assim que o lojista a desliga. */
 export const Vazia: Story = { args: { items: [] } }
+
+/** Em cartões: cada promessa no seu cartão, ícone sobre as palavras, na cor da página. */
+export const Cartoes: Story = {
+  args: {
+    layout: "CARDS",
+    items: [
+      { id: "1", title: "Frete grátis", detail: "Acima de R$ 199", icon: <BenefitIcon name="truck" /> },
+      { id: "2", title: "PIX", detail: "Transferência na hora", icon: <BenefitIcon name="qr-code" /> },
+      { id: "3", title: "Troca fácil", detail: "30 dias para mudar de ideia", icon: <BenefitIcon name="refresh-cw" /> },
+    ],
+  },
+}

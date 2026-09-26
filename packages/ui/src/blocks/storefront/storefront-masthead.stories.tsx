@@ -54,3 +54,27 @@ export const Loja: Story = {
 export const LojaSemLogo: Story = {
   args: { name: "Lessari Crochê", homeHref: "/lessari", searchAction: "/lessari/busca", cartHref: "/lessari/carrinho" },
 }
+
+/**
+ * A loja no celular: a logo, a conta e o carrinho na primeira linha, e a busca inteira embaixo. Na
+ * mesma linha ela ficava com uns 100 px, menos que o seletor e o botão dela. Desenhada como a prévia
+ * do modo design desenha um celular: numa superfície de 390 px, que é o que as larguras da vitrine
+ * perguntam ali.
+ */
+export const LojaNoCelular: Story = {
+  args: {
+    ...Loja.args,
+    // A long name on purpose: the select is as wide as its longest option, and the field must keep its room.
+    searchScopes: [
+      { value: "pre-treino", label: "Pré treino" },
+      { value: "acessorios", label: "Acessórios para academia e treino funcional" },
+    ],
+  },
+  decorators: [
+    (Story) => (
+      <div data-shop-preview="" className="@container/shop" style={{ width: 390 }}>
+        {Story()}
+      </div>
+    ),
+  ],
+}

@@ -17,6 +17,7 @@ import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { resetDatabase } from './support/reset-database.js';
+import { publishPage } from './support/publish.js';
 
 const shopBody = {
   name: 'Lessari',
@@ -85,10 +86,12 @@ describe('stores — the public read resolves each showcase', () => {
     return response.json<T>();
   }
 
+  /** A showcase added to the home and published, so a visitor is served it. */
   async function addShowcase(component: object): Promise<string> {
     const added = await created<{ id: string }>(
       call('POST', `/api/stores/lessari/sections/${bandId}/components`, { kind: 'PRODUCTS', ...component }),
     );
+    await publishPage(app, owner.accessToken, 'lessari');
     return added.id;
   }
 
@@ -156,6 +159,7 @@ describe('stores — the public read resolves each showcase', () => {
   it('answers the shop window when a stored pick no longer parses, that showcase empty', async () => {
     const id = await addShowcase({ source: 'SELECTION', items: [{ id: 'a', productId: byName['Blusa Azul']!.id }] });
     await app.get(PrismaService).storeComponent.update({ where: { id }, data: { items: [{ id: 'a', productId: 'nope' }] } });
+    await publishPage(app, owner.accessToken, 'lessari');
 
     const response = await app.inject({ method: 'GET', url: '/api/stores/lessari/public' });
 
