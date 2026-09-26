@@ -226,6 +226,8 @@ export interface UiMessages {
     /** A card whose product has options: the page is where one is chosen. */
     seeOptions: string
     buyNow: string
+    /** "Entregar em" in the header: the visitor's CEP, kept for the shipping quote to come. */
+    deliverTo: { label: string; ask: string; field: string; save: string; note: string }
     /** A featured product sold out: its page, where "Avise-me" is. */
     seeProduct: string
     /** A countdown's units, under its digits. */

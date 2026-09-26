@@ -15,6 +15,7 @@ import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
 import type { PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
 import { StorefrontBandCell } from "@harness-monorepo/ui/blocks/storefront/storefront-band-cell"
+import { StorefrontDeliverTo } from "@harness-monorepo/ui/blocks/storefront/storefront-deliver-to"
 import { besideOf } from "@harness-monorepo/ui/lib/band-rows"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -156,6 +157,7 @@ export function DesignPreviewPane({
               categories={categories}
               year={year}
               searchSlot={null}
+              deliverToSlot={<StorefrontDeliverTo cep={null} messages={messages} />}
               linkComponent={InertLink}
               messages={messages}
               blocks={

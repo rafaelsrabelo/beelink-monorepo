@@ -165,6 +165,13 @@ export const ptBR: UiMessages = {
     seeOptions: "Ver opções",
     buyNow: "Comprar agora",
     seeProduct: "Ver produto",
+    deliverTo: {
+      label: "Entregar em",
+      ask: "Informe seu CEP",
+      field: "Seu CEP",
+      save: "Usar este CEP",
+      note: "Fica salvo neste navegador, só para esta loja.",
+    },
     countdownUnits: { days: "dias", hours: "horas", minutes: "min", seconds: "seg" },
     countdownEnds: "Termina em {date}, às {time}",
     countdownEnded: "Encerrada",
