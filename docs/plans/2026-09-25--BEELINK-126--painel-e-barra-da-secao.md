@@ -177,3 +177,18 @@ Trocar layout.
 - **Fica em aberto:** com o rascunho sujo, uma publicação de outra aba num bloco que não foi mexido
   aqui ainda pode ser desfeita no Publicar. Resolver isso pede uma fusão em três vias com a base do
   rascunho.
+
+## PR 2 — depois da revisão
+
+*Acrescentado em 2026-09-25.*
+
+- Subir e Descer na barra devolvem o foco à barra (o mesmo botão, se ainda estiver ligado): o React
+  reinsere o bloco que desceu, e o botão focado ia junto.
+- A região de status tem `aria-live` explícito. A gaveta modal esconde tudo fora dela, menos o que
+  tem esse atributo.
+- As regiões do editor são marcadas pela moldura (`data-design-region`). A prévia desenha a loja com
+  um `<main>` próprio, que era achado no lugar da área que rola.
+- ↑↓ passa por paradas que a tela não desenha (um bloco oculto, a barra de aviso) em vez de parar
+  nelas. Ocultar leva o foco à parada mais próxima que ainda aparece.
+- Um painel escolhido pelas setas devolve o foco à própria parada ao fechar.
+- Excluir a faixa de um bloco só pergunta pelo nome da faixa, como a lixeira da estrutura.

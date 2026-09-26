@@ -100,6 +100,33 @@ describe("useSelectionControls — the keys", () => {
     expect(onDelete).toHaveBeenCalledWith({ level: "component", id: "b1", name: "b1" })
   })
 
+  // A lone block is its band: the question is the band's, by the band's name, as its bin asks it.
+  it("asks about a lone block's band by the band's name", async () => {
+    const onDelete = vi.fn()
+    render(<Harness selection={null} onDelete={onDelete} />)
+
+    screen.getByRole("button", { name: "Banner" }).focus()
+    await userEvent.keyboard("{Delete}")
+
+    expect(onDelete).toHaveBeenCalledWith({ level: "band", id: "a", name: "Faixa a" })
+  })
+
+  // The preview draws neither hidden blocks nor the strip; ↓ past one must not stay stuck on it.
+  it("walks on past a stop nothing on screen draws", async () => {
+    const choose = vi.fn()
+    render(<Harness selection={null} choose={choose} />)
+
+    screen.getByRole("button", { name: "b1" }).focus()
+    await userEvent.keyboard("{ArrowDown}")
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    await userEvent.keyboard("{ArrowDown}")
+
+    expect(choose.mock.calls.map(([selection]) => selection)).toEqual([
+      { level: "block", id: "b2" },
+      { level: "block", id: "c1" },
+    ])
+  })
+
   // The last showcase of the shop cannot go, and its band holds it.
   it("does not offer to delete a band holding the shop's last showcase", async () => {
     const onDelete = vi.fn()

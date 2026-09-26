@@ -46,7 +46,9 @@ export interface DesignSelectionBarProps {
   messages?: UiMessages
 }
 
-const SHORTCUT = { up: "Alt+ArrowUp", down: "Alt+ArrowDown", delete: "Delete" } as const
+/** The keys the editor answers with the same actions, as each button declares them. */
+export const SELECTION_BAR_SHORTCUTS = { up: "Alt+ArrowUp", down: "Alt+ArrowDown", delete: "Delete" } as const
+const SHORTCUT = SELECTION_BAR_SHORTCUTS
 
 /**
  * The chosen block's or band's own actions, over it in the preview: up, down, its layout, hide
@@ -83,6 +85,8 @@ export function DesignSelectionBar({
   const bar = useRef<HTMLDivElement>(null)
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    // The layout menu is a portal whose keys still bubble here: its ← → are not the bar's.
+    if (!event.currentTarget.contains(event.target as Node)) return
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return
     const items = [...(bar.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled])") ?? [])]
     const at = items.findIndex((item) => item === document.activeElement)

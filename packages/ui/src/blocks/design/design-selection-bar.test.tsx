@@ -98,6 +98,19 @@ describe("DesignSelectionBar", () => {
     expect(screen.getByRole("button", { name: "Descer Banner 1" })).toHaveFocus()
   })
 
+  // The menu is a portal whose keys still bubble through the bar: its ← → stay in the menu.
+  it("leaves the open layout menu's arrows to the menu", async () => {
+    bar({ layouts: ["CAROUSEL", "GRID"], layout: "CAROUSEL", onLayout: vi.fn() })
+
+    await userEvent.click(screen.getByRole("button", { name: "Trocar layout de Banner 1" }))
+    const item = await screen.findByRole("menuitemradio", { name: "Grade" })
+    item.focus()
+    await userEvent.keyboard("{ArrowRight}")
+
+    expect(screen.getByRole("button", { name: "Subir Banner 1" })).not.toHaveFocus()
+    expect(screen.getByRole("menu")).toBeInTheDocument()
+  })
+
   it("marks itself as the editor's stop, so its keys walk from it", () => {
     bar({ nodeId: "band-1" })
 

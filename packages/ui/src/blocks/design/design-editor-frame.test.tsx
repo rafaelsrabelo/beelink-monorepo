@@ -100,6 +100,8 @@ describe("DesignEditorFrame", () => {
     renderFrame({ status: "Banner 1 agora está na posição 2.", onKeyDown, preview: <button type="button">Banner 1</button> })
 
     expect(screen.getByRole("status")).toHaveTextContent("Banner 1 agora está na posição 2.")
+    // Spelled out, so a modal drawer, which hides everything outside it but `[aria-live]`, keeps it heard.
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite")
     screen.getByRole("button", { name: "Banner 1" }).focus()
     await userEvent.keyboard("{ArrowDown}")
     expect(onKeyDown).toHaveBeenCalled()

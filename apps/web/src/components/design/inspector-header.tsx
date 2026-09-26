@@ -10,6 +10,9 @@ import { XIcon } from "lucide-react"
 import { Button } from "@harness-monorepo/ui/components/button"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// App
+import { focusNode, regionOf } from "./design-focus"
+
 /** The panel's title, and how a closing panel tells that another has already replaced it. */
 export const INSPECTOR_TITLE = "component-inspector-title"
 
@@ -45,9 +48,12 @@ export function InspectorHeader({ title, name, onClose, takeFocus = true, nodeId
   useEffect(() => {
     if (focusOnMount) heading.current?.focus()
     return () => {
-      if (from?.isConnected && !document.getElementById(INSPECTOR_TITLE)) from.focus()
+      if (document.getElementById(INSPECTOR_TITLE)) return
+      // Chosen by ↑↓, the opener is the stop the key was pressed on, not this one: back to this one's.
+      if (!focusOnMount && nodeId) focusNode(from?.isConnected ? regionOf(from) : null, nodeId)
+      else if (from?.isConnected) from.focus()
     }
-  }, [from, focusOnMount])
+  }, [from, focusOnMount, nodeId])
 
   return (
     <header className="flex items-start justify-between gap-2">

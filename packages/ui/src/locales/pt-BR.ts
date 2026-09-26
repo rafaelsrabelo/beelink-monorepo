@@ -558,7 +558,7 @@ export const ptBR: UiMessages = {
       show: "Mostrar {name}",
       delete: "Excluir {name}",
       movedTo: "{name} agora está na posição {position}.",
-      hidden: "{name} ficou oculto. Sai da loja quando você publicar.",
+      hidden: "{name} sai da loja quando você publicar.",
       shown: "{name} volta para a loja quando você publicar.",
       chosen: "{name}.",
       unsaved: "Salve ou cancele o que mudou em {name} antes de escolher outro.",

@@ -558,7 +558,7 @@ export const en: UiMessages = {
       show: "Show {name}",
       delete: "Delete {name}",
       movedTo: "{name} is now at position {position}.",
-      hidden: "{name} is hidden. It leaves the shop when you publish.",
+      hidden: "{name} leaves the shop when you publish.",
       shown: "{name} comes back to the shop when you publish.",
       chosen: "{name}.",
       unsaved: "Save or cancel the changes to {name} before choosing another.",

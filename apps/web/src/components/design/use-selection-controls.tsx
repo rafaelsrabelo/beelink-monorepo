@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState, type KeyboardEvent, type ReactNode } from "react"
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react"
 
 // Types
 import type { ComponentDisplay, Section } from "@harness-monorepo/contracts"
@@ -9,7 +9,7 @@ import type { ComponentDisplay, Section } from "@harness-monorepo/contracts"
 // UI
 import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { DISPLAYS_OF_KIND } from "@harness-monorepo/ui/blocks/design/component-layout-fields"
-import { DesignSelectionBar } from "@harness-monorepo/ui/blocks/design/design-selection-bar"
+import { DesignSelectionBar, SELECTION_BAR_SHORTCUTS } from "@harness-monorepo/ui/blocks/design/design-selection-bar"
 import { singleShown } from "@harness-monorepo/ui/blocks/design/single-block-card"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -19,7 +19,7 @@ import { useDesignEdit } from "@/stores/design-edit"
 import { displayOf } from "./component-layout"
 import type { PendingDelete } from "./design-delete-confirm"
 import { labelOf, type SectionDraft } from "./design-draft"
-import { focusNode, regionOf } from "./design-focus"
+import { focusBar, focusNode, regionOf } from "./design-focus"
 import { movedBy, neighbourOf, nodesOf, targetOf, type DesignSelection, type SelectionTarget } from "./design-selection"
 import { hasUnsaved } from "./live-edit"
 import type { useDesignDraft } from "./use-design-draft"
@@ -55,8 +55,12 @@ export function useSelectionControls(input: SelectionControlsInput) {
   const { rows, saved, bands, target, draft, choose, messages } = input
   const text = messages.design.bar
   const [status, setStatus] = useState("")
+  // A stop ↑↓ chose that nothing on screen draws — a hidden block, the strip — to walk on from.
+  const walked = useRef<{ from: string; to: string } | null>(null)
   // The same sentence twice is not read twice, so a repeat carries a trailing space.
   const say = (sentence: string) => setStatus((current) => (current === sentence ? `${sentence} ` : sentence))
+
+  const nodes = nodesOf(rows)
 
   const factsOf = (of: SelectionTarget) => {
     const band = bands.find((row) => row.id === (of.level === "band" ? of.id : of.sectionId))
@@ -95,22 +99,29 @@ export function useSelectionControls(input: SelectionControlsInput) {
       if (facts.block && !facts.block.isActive) draft.patchComponent(facts.block.id, { isActive: true })
     }
     say(format(facts.hidden ? text.shown : text.hidden, { name: facts.name }))
-    // Hidden, it leaves the preview and its bar with it: the focus goes to its row in the structure.
-    if (!facts.hidden) focusNode(null, of.id)
+    // Hidden, it leaves the preview and its bar with it: the focus goes to its row in the structure,
+    // or, where the structure is a closed drawer, to the nearest stop the preview still draws.
+    if (!facts.hidden) {
+      const near = [neighbourOf(nodes, of.id, 1)?.key, neighbourOf(nodes, of.id, -1)?.key].filter((key) => key !== undefined)
+      focusNode(null, [of.id, ...near])
+    }
   }
 
   const remove = (of: SelectionTarget) => {
     const facts = factsOf(of)
     if (!facts?.deletable) return
-    input.onDelete({ level: of.level === "band" ? "band" : "component", id: of.id, name: facts.name })
+    // A band is asked about by its own name, as its bin in the structure asks, whatever block it carries.
+    input.onDelete(
+      of.level === "band"
+        ? { level: "band", id: of.id, name: input.bandName(of.id) }
+        : { level: "component", id: of.id, name: facts.name },
+    )
   }
 
   const setLayout = (blockId: string, display: ComponentDisplay) => {
     draft.patchComponent(blockId, { display })
     input.onLayoutTab()
   }
-
-  const nodes = nodesOf(rows)
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.defaultPrevented || event.nativeEvent.isComposing || event.ctrlKey || event.metaKey || event.shiftKey) return
@@ -127,7 +138,10 @@ export function useSelectionControls(input: SelectionControlsInput) {
         return focusNode(regionOf(from), node.key)
       }
 
-      const next = neighbourOf(nodes, node.key, step)
+      const walk = walked.current
+      walked.current = null
+      const origin = walk?.from === node.key ? walk.to : node.key
+      const next = neighbourOf(nodes, origin, step)
       const nextTarget = next ? targetOf(next.selection, rows) : null
       if (!next || !nextTarget) return
       const open = target ? factsOf(target) : null
@@ -135,7 +149,7 @@ export function useSelectionControls(input: SelectionControlsInput) {
 
       choose(next.selection, { openDrawer: false, takeFocus: false })
       say(format(text.chosen, { name: factsOf(nextTarget)?.name ?? "" }))
-      return focusNode(regionOf(from), next.key)
+      return focusNode(regionOf(from), next.key, () => (walked.current = { from: node.key, to: next.key }))
     }
 
     if ((event.key === "Delete" || event.key === "Backspace") && !event.altKey) {
@@ -153,8 +167,14 @@ export function useSelectionControls(input: SelectionControlsInput) {
         label={facts.name}
         canMoveUp={movedBy(rows, target, -1) !== null}
         canMoveDown={movedBy(rows, target, 1) !== null}
-        onMoveUp={() => move(target, -1)}
-        onMoveDown={() => move(target, 1)}
+        onMoveUp={() => {
+          move(target, -1)
+          focusBar(target.id, SELECTION_BAR_SHORTCUTS.up)
+        }}
+        onMoveDown={() => {
+          move(target, 1)
+          focusBar(target.id, SELECTION_BAR_SHORTCUTS.down)
+        }}
         {...(layout
           ? { layouts: layout.options, layout: layout.value, onLayout: (display: ComponentDisplay) => setLayout(layout.blockId, display) }
           : {})}
