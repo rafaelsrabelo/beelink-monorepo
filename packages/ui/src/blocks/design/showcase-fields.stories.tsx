@@ -16,7 +16,7 @@ const products = [
   { id: "p3", name: "Boné bordado" },
 ]
 
-const base: ShowcaseValue = { source: "ALL", sourceCategoryId: "", picks: [], display: "RAIL", columns: 0, limit: "" }
+const base: ShowcaseValue = { source: "ALL", sourceCategoryId: "", picks: [], limit: "" }
 
 let next = 0
 
@@ -40,9 +40,9 @@ export const TodosEmTrilho: Story = {}
 /** Uma categoria, com busca. */
 export const UmaCategoria: Story = { args: { value: { ...base, source: "CATEGORY", sourceCategoryId: "c2" } } }
 
-/** Escolhidos a dedo, em grade de três. */
-export const EscolhidosEmGrade: Story = {
+/** Escolhidos a dedo, até doze. A forma — trilho ou grade — é do Layout. */
+export const EscolhidosADedo: Story = {
   args: {
-    value: { ...base, source: "SELECTION", picks: [{ id: "a", productId: "p2" }], display: "GRID", columns: 3, limit: "12" },
+    value: { ...base, source: "SELECTION", picks: [{ id: "a", productId: "p2" }], limit: "12" },
   },
 }

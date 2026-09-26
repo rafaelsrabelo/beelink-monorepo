@@ -4,6 +4,9 @@ import type { ReactNode } from "react"
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
+// Block
+import { GUTTER } from "./storefront-band"
+
 /**
  * How much of its band a block takes. The contract's `ComponentSpan`, restated here for the reason
  * `design/design-types.ts` gives: a block renders in Storybook with nothing behind it.
@@ -28,6 +31,8 @@ const COLUMNS: Record<StorefrontSpan, string> = {
 
 export interface StorefrontBandCellProps {
   span: StorefrontSpan
+  /** The page's side margin, for words in an edge-to-edge band: the pictures beside them reach the edge, the words must not. */
+  gutter?: boolean
   children: ReactNode
   className?: string
 }
@@ -39,9 +44,9 @@ export interface StorefrontBandCellProps {
  * is as wide as all its slides: without it a two-slide banner in a third pushes its neighbours off
  * the row instead of scrolling inside its own cell.
  */
-export function StorefrontBandCell({ span, children, className }: StorefrontBandCellProps) {
+export function StorefrontBandCell({ span, gutter = false, children, className }: StorefrontBandCellProps) {
   return (
-    <div data-span={span} className={cn("col-span-12 min-w-0", COLUMNS[span], className)}>
+    <div data-span={span} className={cn("col-span-12 min-w-0", COLUMNS[span], gutter && GUTTER, className)}>
       {children}
     </div>
   )

@@ -142,6 +142,20 @@ export const LojaEscura: Story = {
   args: { colors: sampleDarkShopColors, children: <Swatches /> },
 }
 
+/** Uma landing page sem o topo e o rodapé da loja: só a página, nas cores da loja. */
+export const SemTopoERodape: Story = {
+  args: {
+    chrome: false,
+    announcement: { left: "Frete grátis acima de R$ 150" },
+    blocks: (
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-2 px-4 py-16 text-center">
+        <p className="text-3xl font-extrabold">Whey Baunilha em oferta</p>
+        <p style={{ color: "var(--shop-muted)" }}>Só por pouco tempo</p>
+      </div>
+    ),
+  },
+}
+
 /**
  * A composição de 5a: uma faixa em largura total logo abaixo do menu, e a página sobre o chão
  * cinza, decidindo o próprio ritmo. B3 e B4 preenchem os dois.

@@ -16,7 +16,6 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
-import { BAND } from "./storefront-band"
 import type { StorefrontSpan } from "./storefront-band-cell"
 import { SPAN_HEIGHT, SPAN_TITLE } from "./storefront-span-shape"
 
@@ -34,8 +33,12 @@ export interface StorefrontHeroItem {
 export interface StorefrontHeroProps {
   /** One is a cover. Two or more are a carousel, and nothing else decides that. */
   items: readonly StorefrontHeroItem[]
-  /** Edge to edge, or inside the shop's measure. The shopkeeper's choice, per hero. */
-  width?: "FULL" | "CONTAINED"
+  /**
+   * In an edge-to-edge band: square corners, so the pictures reach the very edges they were chosen
+   * to reach. Inside the shop's measure, the corner the rest of the page has. The band owns the
+   * measure; the hero never adds one of its own.
+   */
+  bleed?: boolean
   /**
    * The slice of the band it sits in. The whole band is the cover it always was, at fixed heights
    * and a large headline. Any smaller slice is a card among cards: it takes the poster's proportion
@@ -62,7 +65,7 @@ export interface StorefrontHeroProps {
  */
 export function StorefrontHero({
   items,
-  width = "FULL",
+  bleed = false,
   span = "FULL",
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
@@ -74,10 +77,8 @@ export function StorefrontHero({
   if (!drawn.length) return null
 
   const text = messages.storefront
-  // A contained hero gets the corner the rest of the page has; a full-bleed one must not, or the
-  // rounding cuts the picture away from the very edges it was chosen to reach.
   const card = span !== "FULL"
-  const rounded = width === "CONTAINED" || card
+  const rounded = !bleed
   const frame = cn("w-full object-cover", card ? SPAN_HEIGHT[span] : "h-44 shop-sm:h-72 shop-lg:h-96", rounded && "rounded-2xl")
 
   function one(item: StorefrontHeroItem) {
@@ -157,7 +158,5 @@ export function StorefrontHero({
       </Carousel>
     )
 
-  // The page's main band has no top padding — a full-bleed hero is meant to meet the header. A
-  // contained one is not, so it supplies the gap itself rather than making every other block pay.
-  return width === "CONTAINED" ? <div className={cn(BAND, "pt-6")}>{body}</div> : body
+  return body
 }

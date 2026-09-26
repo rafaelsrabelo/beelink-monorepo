@@ -9,6 +9,7 @@ import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { resetDatabase } from './support/reset-database.js';
+import { publishPage } from './support/publish.js';
 
 const shopBody = {
   name: 'Padaria do Bairro',
@@ -114,7 +115,8 @@ describe('page — span and display', () => {
     expect(response.json<StoreComponent>()).toMatchObject({ span: 'TWO_THIRDS', display: 'GRID' });
   });
 
-  it('hands span and display to a visitor on every component', async () => {
+  it('hands span and display to a visitor on every component, once published', async () => {
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
     const response = await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' });
     const components = response.json<PublicStore>().sections.flatMap((section) => section.components);
 
@@ -140,9 +142,109 @@ describe('page — span and display', () => {
     expect(carousel.statusCode).toBe(400);
     expect(carousel.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
 
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
     const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
     const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === categories.id);
     expect(served).toMatchObject({ display: 'GRID' });
+  });
+
+  // A FAQ opens as its one layout and empty; its questions are served to a visitor as written, in order.
+  it('creates a FAQ as an accordion, takes its questions, and serves them in order once published', async () => {
+    const created = await call('POST', '/api/stores/padaria-do-bairro/sections', { component: { kind: 'FAQ', title: 'Dúvidas' } });
+    expect(created.statusCode, created.payload).toBe(201);
+    const faq = created.json<Section>().components[0]!;
+    expect(faq).toMatchObject({ kind: 'FAQ', display: 'ACCORDION', items: [] });
+
+    const items = [
+      { id: 'b', question: 'Tem retirada?', answer: 'Sim, na loja.' },
+      { id: 'a', question: 'Qual o prazo?', answer: 'Até três dias úteis.\nFora da capital, cinco.' },
+    ];
+    const patched = await call('PATCH', `/api/stores/padaria-do-bairro/components/${faq.id}`, { items });
+    expect(patched.json<StoreComponent>()).toMatchObject({ items });
+
+    const other = await call('PATCH', `/api/stores/padaria-do-bairro/components/${faq.id}`, { display: 'RAIL' });
+    expect(other.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
+
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === faq.id);
+    expect(served).toMatchObject({ kind: 'FAQ', title: 'Dúvidas', display: 'ACCORDION', items });
+  });
+
+  // A call to action opens as a strip of the shop's colour; its button is served with the address built.
+  it('creates a call to action as a band, takes one button, lets it be a card, and serves the button', async () => {
+    const created = await call('POST', '/api/stores/padaria-do-bairro/sections', {
+      component: { kind: 'CALL_TO_ACTION', title: 'Encomende já', body: 'Pão quentinho às 7h.' },
+    });
+    expect(created.statusCode, created.payload).toBe(201);
+    const cta = created.json<Section>().components[0]!;
+    expect(cta).toMatchObject({ kind: 'CALL_TO_ACTION', display: 'BAND', items: [] });
+
+    const button = { id: 'btn', label: 'Pedir no WhatsApp', target: 'EXTERNAL', externalUrl: 'https://wa.me/5511999998888' };
+    const patched = await call('PATCH', `/api/stores/padaria-do-bairro/components/${cta.id}`, { items: [button], display: 'CARD' });
+    expect(patched.statusCode, patched.payload).toBe(200);
+
+    const nowhere = await call('PATCH', `/api/stores/padaria-do-bairro/components/${cta.id}`, { items: [{ ...button, target: 'NONE' }] });
+    expect(nowhere.statusCode).toBe(400);
+
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === cta.id);
+    expect(served).toMatchObject({
+      display: 'CARD',
+      body: 'Pão quentinho às 7h.',
+      items: [{ id: 'btn', label: 'Pedir no WhatsApp', href: 'https://wa.me/5511999998888', external: true }],
+    });
+  });
+
+  // An image with text opens with the picture on the left, and can turn it to the right.
+  it('creates an image with text, takes a picture and a button, and serves the picture on the side chosen', async () => {
+    const created = await call('POST', '/api/stores/padaria-do-bairro/sections', {
+      component: { kind: 'IMAGE_TEXT', title: 'Feito à mão', body: 'Todo dia, desde 1998.' },
+    });
+    expect(created.statusCode, created.payload).toBe(201);
+    const block = created.json<Section>().components[0]!;
+    expect(block).toMatchObject({ kind: 'IMAGE_TEXT', display: 'IMAGE_LEFT', items: [] });
+
+    const media = {
+      id: 'm',
+      imageUrl: 'https://cdn.example/forno.png',
+      alt: 'O forno a lenha',
+      button: { label: 'Encomendar', target: 'EXTERNAL', externalUrl: 'https://wa.me/5511999998888' },
+    };
+    const patched = await call('PATCH', `/api/stores/padaria-do-bairro/components/${block.id}`, { items: [media], display: 'IMAGE_RIGHT' });
+    expect(patched.statusCode, patched.payload).toBe(200);
+
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === block.id);
+    expect(served).toMatchObject({
+      display: 'IMAGE_RIGHT',
+      items: [{ id: 'm', imageUrl: media.imageUrl, alt: 'O forno a lenha', button: { label: 'Encomendar', href: 'https://wa.me/5511999998888', external: true } }],
+    });
+  });
+
+  // A countdown still running is served; one past its end is left out of the shop, and said at Publicar.
+  it('serves a countdown still running, leaves out one that has ended, and keeps the end in UTC', async () => {
+    const future = new Date(Date.now() + 86_400_000).toISOString();
+    const running = await call('POST', '/api/stores/padaria-do-bairro/sections', {
+      component: { kind: 'COUNTDOWN', title: 'A oferta termina em', items: [{ id: 'fim', endsAt: future.replace('Z', '+00:00') }] },
+    });
+    expect(running.statusCode, running.payload).toBe(201);
+    const live = running.json<Section>().components[0]!;
+    expect(live).toMatchObject({ display: 'BAND', items: [{ id: 'fim', endsAt: future }] });
+
+    const over = (
+      await call('POST', '/api/stores/padaria-do-bairro/sections', {
+        component: { kind: 'COUNTDOWN', display: 'BLOCK', items: [{ id: 'fim', endsAt: '2020-01-01T00:00:00-03:00' }] },
+      })
+    ).json<Section>().components[0]!;
+
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const ids = visitor.sections.flatMap((section) => section.components).map((row) => row.id);
+    expect(ids).toContain(live.id);
+    expect(ids).not.toContain(over.id);
   });
 
   // The panel's "+" between two bands, and between two blocks of one band.

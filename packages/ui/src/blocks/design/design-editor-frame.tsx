@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react"
+import { useEffect, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from "react"
 
 // UI
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@harness-monorepo/ui/components/sheet"
@@ -53,12 +53,17 @@ export function useWideEditor(): boolean {
  */
 export function usePreviewDevice(): [PreviewDevice, (device: PreviewDevice) => void] {
   const [picked, setPicked] = useState<PreviewDevice>("DESKTOP")
-  const roomy = useSyncExternalStore(
+  const roomy = useRoomyEditor()
+  return [roomy ? picked : "PHONE", setPicked]
+}
+
+/** Whether the editor has more than a phone's width: room for two things side by side. */
+export function useRoomyEditor(): boolean {
+  return useSyncExternalStore(
     subscribeRoomy,
     () => window.matchMedia(ROOMY).matches,
     () => true,
   )
-  return [roomy ? picked : "PHONE", setPicked]
 }
 
 export interface DesignEditorFrameProps {
@@ -74,6 +79,10 @@ export interface DesignEditorFrameProps {
   onInspectorOpenChange: (open: boolean) => void
   /** The panel in the drawer draws its own close button, so the drawer does not add a second. */
   inspectorHasOwnClose?: boolean
+  /** The editor's keys, heard once for the whole screen; the handler decides what they reach. */
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void
+  /** What the editor just did, said to a screen reader: a move, a choice by the keys. */
+  status?: string
   messages?: UiMessages
 }
 
@@ -94,6 +103,8 @@ export function DesignEditorFrame({
   inspectorOpen,
   onInspectorOpenChange,
   inspectorHasOwnClose = false,
+  onKeyDown,
+  status = "",
   messages = defaultMessages,
 }: DesignEditorFrameProps) {
   const text = messages.design.frame
@@ -108,11 +119,16 @@ export function DesignEditorFrame({
   }, [wide, onStructureOpenChange, onInspectorOpenChange])
 
   return (
-    <div className="bg-shell flex h-dvh flex-col">
+    <div className="bg-shell flex h-dvh flex-col" onKeyDown={onKeyDown}>
+      {/* `aria-live` spelled out: a modal drawer hides everything outside it but what carries it. */}
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {status}
+      </p>
       {bar}
       <div className="flex min-h-0 flex-1">
         {wide ? (
           <aside
+            data-design-region=""
             aria-label={text.structureLabel}
             // Hidden by CSS too: the server renders the wide frame, and a phone must not flash it.
             className="bg-shell-surface border-shell-border hidden w-90 shrink-0 overflow-y-auto border-r p-3 lg:block"
@@ -121,12 +137,13 @@ export function DesignEditorFrame({
           </aside>
         ) : null}
 
-        <main aria-label={text.previewLabel} className="min-w-0 flex-1 overflow-y-auto p-4 lg:px-6">
+        <main data-design-region="" aria-label={text.previewLabel} className="min-w-0 flex-1 overflow-y-auto p-4 lg:px-6">
           {preview}
         </main>
 
         {wide ? (
           <aside
+            data-design-region=""
             aria-label={text.inspectorLabel}
             className="bg-shell-surface border-shell-border hidden w-85 shrink-0 overflow-y-auto border-l p-3 lg:block"
           >
@@ -139,6 +156,7 @@ export function DesignEditorFrame({
         <>
           <Sheet open={structureOpen} onOpenChange={onStructureOpenChange}>
             <SheetContent
+              data-design-region=""
               side="left"
               closeLabel={text.close}
               className="overflow-y-auto p-3 data-[side=left]:w-[min(22.5rem,92vw)] data-[side=left]:sm:max-w-none"
@@ -153,6 +171,7 @@ export function DesignEditorFrame({
           <Sheet open={inspectorOpen} onOpenChange={onInspectorOpenChange}>
             {/* Kept mounted while closed: the fields being typed in live here, unsaved. */}
             <SheetContent
+              data-design-region=""
               side="right"
               keepMounted
               showCloseButton={!inspectorHasOwnClose}
