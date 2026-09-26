@@ -6,7 +6,7 @@ import type { NextRequest } from "next/server"
 import type { ApiErrorBody } from "@harness-monorepo/contracts"
 
 // App
-import { callApi } from "./api"
+import { callApi, PAGE_REVISION_HEADER } from "./api"
 import { ACCESS_COOKIE } from "./session-cookies"
 
 function errorBody(statusCode: number, errorCode: string, message: string): ApiErrorBody {
@@ -130,6 +130,9 @@ export async function forwardSignedIn(request: NextRequest, call: SignedInCall):
     rawBody: call.rawBody,
     accessToken,
     clientIp: clientIpOf(request),
+    // Every draft write forwards the revision the editor read, from one place: a handler that
+    // dropped it would let a stale tab write over another's changes unasked.
+    pageRevision: request.headers.get(PAGE_REVISION_HEADER),
   })
 
   const payload: unknown = await response.json().catch(() => null)

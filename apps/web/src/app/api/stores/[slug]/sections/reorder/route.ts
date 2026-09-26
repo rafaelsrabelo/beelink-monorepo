@@ -4,7 +4,6 @@ import type { NextRequest } from "next/server"
 
 // App
 import { forwardSignedIn, pageQueryOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
-import { revalidateStore } from "@/lib/revalidate"
 
 /** A page's whole list, in its new order — the home's, or the page `?pageId=` names. */
 export async function PUT(
@@ -20,8 +19,6 @@ export async function PUT(
     method: "PUT",
     body: (await readJsonBody(request)) ?? {},
   })
-
-  if (status === 200) revalidateStore(slug)
 
   return NextResponse.json(payload, { status })
 }

@@ -22,10 +22,12 @@ import { DesignScreenDialogs } from "./design-screen-dialogs"
 import { LivePreviewPane } from "./live-preview-pane"
 import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
 import { arrangementOf, shelvesOf } from "./design-draft-preview"
+import { resolvedOnServer, unavailableKindsOf } from "./design-kinds"
 import { editedOf } from "./design-selection"
 import { revealInPreview } from "./design-focus"
 import { useBlockInsert } from "./use-block-insert"
 import { useDesignDraft } from "./use-design-draft"
+import { useEditingPage } from "./use-editing-page"
 import { useDesignSelection } from "./use-design-selection"
 import { useLeaveGuard } from "./use-leave-guard"
 import { useSelectionControls } from "./use-selection-controls"
@@ -41,8 +43,8 @@ export interface DesignScreenProps {
    */
   store: PublicStore
   categories: readonly PublicProductCategory[]
-  /** The landing being edited and its bands as a visitor would be served them. Absent on the home. */
-  page?: PagePreview | null
+  /** The page being edited — the home or a landing — and its draft's bands as they would be served. */
+  page: PagePreview
   year: number
   messages: UiMessages
   /** The app's own sentences — where an API `errorCode` becomes copy. */
@@ -59,16 +61,18 @@ const COLOUR_KEYS = ["background", "primary", "header", "footer"] as const satis
  * sits. What a component says, and what a band looks like, save on their own the moment the owner
  * hits Salvar in the panel: those are things they want to see land, not an order to hold back.
  */
-export function DesignScreen({ store, categories, page = null, year, messages, web }: DesignScreenProps) {
+export function DesignScreen({ store, categories, page, year, messages, web }: DesignScreenProps) {
   const slug = store.slug
-  const landing = page?.page ?? null
-  const pageId = landing?.id
+  const landing = page.page.kind === "LANDING" ? page.page : null
+  const pageId = page.page.id
 
   const draft = useDesignDraft(slug, pageId)
+  useEditingPage(slug, pageId)
   const { rows, saved } = draft
   const presets = useStoreColorPresets()
   const saveColors = useUpdateStoreColors(slug)
-  const shelves = shelvesOf(page?.sections ?? store.sections)
+  // The draft's shelves: `store.sections` is the home as published, which a new showcase is not in yet.
+  const shelves = shelvesOf(page.sections)
   const shop = useShopRefresh()
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
@@ -78,12 +82,11 @@ export function DesignScreen({ store, categories, page = null, year, messages, w
   const { choose, target } = selection
   const edited = editedOf(target)
   const chooseBlock = (id: string) => choose({ level: "block", id })
-  // A showcase's products are resolved on the server, so a new or saved one sends the page for them.
   // A new section is chosen, its Conteúdo open, and the preview brought to it: the API may have put
   // it far down the page. By its band's key too, the one a block alone in its band is drawn under.
   const opened = (component: { id: string; kind: ComponentKind; sectionId: string }) => {
     chooseBlock(component.id)
-    if (component.kind === "PRODUCTS") shop.refresh(component.id)
+    if (resolvedOnServer(component.kind)) shop.refresh(component.id)
     revealInPreview([component.id, component.sectionId])
   }
   const adding = useBlockInsert(slug, pageId, draft, opened, web)
@@ -96,17 +99,12 @@ export function DesignScreen({ store, categories, page = null, year, messages, w
   const [palette, setPalette] = useState<StoreColors>(store.colors)
   const paletteChanged = COLOUR_KEYS.some((key) => palette[key] !== store.colors[key])
 
-  // What the gallery never offers: the strip a page has once, what this kind of shop cannot hold,
-  // and on a landing the strip at all — it is the home's, drawn on every page that uses the header.
-  const unavailableKinds: ComponentKind[] = [
-    ...(store.type === "INSTITUTIONAL" ? (["PRODUCTS", "CATEGORIES"] as const) : (["CONTACT"] as const)),
-    ...(landing ? (["ANNOUNCEMENT"] as const) : []),
-  ]
+  const unavailableKinds = unavailableKindsOf(store.type, !!landing)
   const takenKinds = takenKindsOf(rows)
   const bandName = (id: string) =>
     bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
 
-  const guard = useLeaveGuard(draft.changed)
+  const guard = useLeaveGuard(draft.saving)
   const bands = arrangementOf(rows, saved, shelves, categories.length, !landing)
   const bandAlone = target?.level === "band" && !target.blockId ? target.id : null
   const controls = useSelectionControls({
@@ -136,7 +134,7 @@ export function DesignScreen({ store, categories, page = null, year, messages, w
         unavailableKinds={unavailableKinds}
         shelves={shelves}
         gallery={{ store, categories, colors: palette }}
-        {...(pageId ? { pageId } : {})}
+        page={page.page}
         messages={messages}
         web={web}
       />
@@ -146,7 +144,7 @@ export function DesignScreen({ store, categories, page = null, year, messages, w
           <DesignScreenBar
             slug={slug}
             shopName={store.name}
-            page={landing}
+            page={page.page}
             draft={draft}
             onLeave={guard.onLeave}
             device={device}
@@ -185,7 +183,7 @@ export function DesignScreen({ store, categories, page = null, year, messages, w
             paletteChanged={paletteChanged}
             savingColours={saveColors.isPending}
             onSaveColours={() => saveColors.mutate(palette)}
-            pages={<DesignPagesTab slug={slug} currentId={pageId ?? null} onNavigate={guard.onLeave} messages={messages} web={web} />}
+            pages={<DesignPagesTab slug={slug} currentId={pageId} onNavigate={guard.onLeave} messages={messages} web={web} />}
             messages={messages}
           />
         }
@@ -226,7 +224,7 @@ export function DesignScreen({ store, categories, page = null, year, messages, w
             shelves={shelves}
             onClose={selection.close}
             takeFocus={selection.takeFocus}
-            onSaved={(component) => (component.kind === "PRODUCTS" ? shop.refresh(component.id) : undefined)}
+            onSaved={(component) => (resolvedOnServer(component.kind) ? shop.refresh(component.id) : undefined)}
             messages={messages}
             web={web}
           />

@@ -13,8 +13,9 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { ctaOf, menuOf, pageLinksOf, siteFooterColumnsOf } from "./site-chrome"
 import { shopFooterColumnsOf } from "./shop-chrome"
-import { announcementOf } from "./storefront-sections"
+import { announcementOf } from "./announcement-of"
 import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
+import { StorefrontDeliverToLive } from "./storefront-deliver-to-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
@@ -78,6 +79,8 @@ export interface StorefrontFrameProps {
   sections?: readonly PublicSection[]
   /** Replaces the live search: the design preview's plain form, which costs nothing to look at. */
   searchSlot?: ReactNode
+  /** Replaces the live "Entregar em": the design preview's, which keeps nothing. */
+  deliverToSlot?: ReactNode
   /** The signed-in shopper, read once per request by the page; null or absent, a visitor. */
   shopper?: { name: string } | null
   /**
@@ -129,6 +132,7 @@ export function StorefrontFrame({
   sections,
   year,
   searchSlot,
+  deliverToSlot,
   shopper,
   linkComponent,
   messages,
@@ -190,6 +194,8 @@ export function StorefrontFrame({
                 messages={messages}
               />
             ),
+            // The visitor's CEP, kept for the shipping quote to come. A site delivers nothing.
+            deliverTo: deliverToSlot ?? <StorefrontDeliverToLive slug={store.slug} messages={messages} />,
             searchAction: routes.search(),
             searchScopes: scopes,
             searchScope: scope,

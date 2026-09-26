@@ -28,7 +28,7 @@ export function withLiveEdit(saved: readonly Section[], edit: DesignEdit | null)
           ...band,
           components: section.components.map((component) =>
             block && component.id === block.id
-              ? ({ ...component, ...toPayload(block.value, block.linkId) } as StoreComponent)
+              ? ({ ...component, ...toPayload(block.value, block.itemId) } as StoreComponent)
               : component,
           ),
         }

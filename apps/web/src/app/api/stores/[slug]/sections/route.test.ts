@@ -44,7 +44,7 @@ describe("/api/stores/[slug]/sections — one page at a time", () => {
       `http://api.test/api/stores/${SLUG}/sections?pageId=${PAGE}`,
       `http://api.test/api/stores/${SLUG}/sections/reorder?pageId=${PAGE}`,
     ])
-    // A landing's bands are served under the shop's tags too.
-    expect(revalidateStore).toHaveBeenCalledTimes(2)
+    // The draft is served to nobody: only Publicar drops the shop's cache.
+    expect(revalidateStore).not.toHaveBeenCalled()
   })
 })

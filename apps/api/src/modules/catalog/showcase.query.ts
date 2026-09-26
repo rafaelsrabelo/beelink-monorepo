@@ -37,7 +37,8 @@ export const SHOWCASE_CARD_SELECT = {
 
 export type ShowcaseCardRow = ProductGetPayload<{ select: typeof SHOWCASE_CARD_SELECT }>;
 
-type ShowcaseRow = Pick<StoreComponentModel, 'source' | 'sourceCategoryId' | 'limit' | 'items'>;
+/** A showcase's settings, from a row or a published document: its items are read, never trusted. */
+type ShowcaseRow = Pick<StoreComponentModel, 'source' | 'sourceCategoryId' | 'limit'> & { items: unknown };
 
 /**
  * The shopkeeper's order, and a tie-breaker that is unique. Neither `position` nor `name` is: two

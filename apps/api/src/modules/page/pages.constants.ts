@@ -1,5 +1,5 @@
 // Types
-import type { PageStatus } from '@harness-monorepo/contracts';
+import type { PageRevisionHeader, PageStatus } from '@harness-monorepo/contracts';
 
 /** The closed union, as a value the validators can range over. Checked against the contract. */
 export const PAGE_STATUSES = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const satisfies readonly PageStatus[];
@@ -10,3 +10,11 @@ export const PAGE_TITLE_MAX_LENGTH = 80;
 export const PAGE_SEO_TITLE_MAX_LENGTH = 70;
 /** What a search result shows of a description before it cuts it. */
 export const PAGE_SEO_DESCRIPTION_MAX_LENGTH = 160;
+/** What a version's note may say: a line, not a changelog. */
+export const PAGE_VERSION_NOTE_MAX_LENGTH = 140;
+
+/** The header a draft write names the revision it read in. Typed once, in the contract. */
+export const PAGE_REVISION_HEADER = 'x-page-revision' satisfies PageRevisionHeader;
+
+/** How many versions the history lists: a year of weekly publishes, and a page nobody scrolls past. */
+export const PAGE_VERSIONS_LISTED = 50;

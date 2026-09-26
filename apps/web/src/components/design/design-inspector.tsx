@@ -55,7 +55,7 @@ export function DesignInspector({ target, rows, saved, shelves, onLayoutChange, 
       component={component}
       layout={drafted ? layoutOf(drafted) : null}
       onLayoutChange={(next) => (component ? onLayoutChange(component.id, heldLayoutOf(next)) : undefined)}
-      shelfEmpty={component ? shelves.get(component.id)?.items.length === 0 : false}
+      {...(component && shelves.has(component.id) ? { shelf: shelves.get(component.id)!.items } : {})}
       {...(target ? { nodeId: target.id } : {})}
       messages={messages}
       {...props}

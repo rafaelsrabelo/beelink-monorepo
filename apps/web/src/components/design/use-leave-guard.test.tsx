@@ -90,6 +90,22 @@ describe("useLeaveGuard", () => {
     expect(go).toHaveBeenCalledWith(-2)
   })
 
+  // Saved as they are made, changes come and go with each edit: Back must still leave in one press.
+  it("steps the history once, however many saves come and go, and goes on back when nothing waits", () => {
+    const pushState = vi.spyOn(window.history, "pushState")
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => undefined)
+    const { rerender, result } = renderHook(({ changed }) => useLeaveGuard(changed), { initialProps: { changed: true } })
+
+    for (const changed of [false, true, false, true, false]) rerender({ changed })
+    expect(pushState).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate"))
+    })
+    expect(result.current.asking).toBe(false)
+    expect(back).toHaveBeenCalledTimes(1)
+  })
+
   it("warns on closing the tab only while something is waiting", () => {
     const add = vi.spyOn(window, "addEventListener")
     const { rerender } = renderHook(({ changed }) => useLeaveGuard(changed), { initialProps: { changed: false } })

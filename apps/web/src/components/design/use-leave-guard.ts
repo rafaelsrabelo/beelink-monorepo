@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useState, type MouseEvent } from "react"
+import { useEffect, useRef, useState, type MouseEvent } from "react"
 
 // Next
 import { useRouter } from "next/navigation"
@@ -10,8 +10,8 @@ import { useRouter } from "next/navigation"
 const BACK = "back"
 
 /**
- * Asks before the editor is left with an arrangement nobody published — the one owner of that
- * question, so there is one rule (`changed`) for when it is asked.
+ * Asks before the editor is left with a change still on its way to the draft — the one owner of
+ * that question, so there is one rule (`changed`) for when it is asked.
  *
  * Three doors. The page's own way out ("← Painel") is stopped and asked in the page's dialog; a
  * click that opens it in another tab is not leaving, and passes. The browser's Back is caught by a
@@ -30,17 +30,39 @@ export function useLeaveGuard(changed: boolean) {
     return () => window.removeEventListener("beforeunload", warn)
   }, [changed])
 
+  /*
+    The step Back lands on is pushed once, the first time something is waiting — and not again on
+    every save: with changes saved as they are made, `changed` comes and goes with each one, and a
+    step per save left Back needing a press per edit to leave. While the step is there, Back asks if
+    something is still waiting and otherwise simply goes on back, past it.
+  */
+  const waiting = useRef(changed)
+  const stepped = useRef(false)
+
   useEffect(() => {
-    if (!changed) return
-    const step = () => window.history.pushState(window.history.state, "", window.location.href)
-    step()
+    waiting.current = changed
+  }, [changed])
+
+  useEffect(() => {
+    if (!changed || stepped.current) return
+    stepped.current = true
+    window.history.pushState(window.history.state, "", window.location.href)
+  }, [changed])
+
+  useEffect(() => {
     const onBack = () => {
-      step()
-      setPending(BACK)
+      if (!stepped.current) return
+      if (waiting.current) {
+        window.history.pushState(window.history.state, "", window.location.href)
+        setPending(BACK)
+      } else {
+        stepped.current = false
+        window.history.back()
+      }
     }
     window.addEventListener("popstate", onBack)
     return () => window.removeEventListener("popstate", onBack)
-  }, [changed])
+  }, [])
 
   return {
     onLeave: (event: MouseEvent<HTMLAnchorElement>) => {

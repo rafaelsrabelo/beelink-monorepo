@@ -46,12 +46,18 @@ export interface ComponentLayoutFieldsProps {
 /** The grids that ask how many across. A banner's grid is its pictures side by side, sized by the band. */
 const HAS_COLUMNS: readonly ComponentKind[] = ["PRODUCTS", "CATEGORIES"]
 
+/** The looks a kind offers a choice between: none when it has one, which is no choice at all. */
+function choicesOf(kind: ComponentKind): readonly ComponentDisplay[] | undefined {
+  const layouts = layoutsOf(kind)
+  return layouts && layouts.length > 1 ? layouts : undefined
+}
+
 /**
  * Whether a kind has a Layout tab: a slice of its band, or a look to choose. The strip has no slice —
  * it is drawn above the header, outside the grid — but it is still or scrolling.
  */
 export function hasLayout(kind: ComponentKind): boolean {
-  return hasSpan({ kind }) || layoutsOf(kind) !== undefined
+  return hasSpan({ kind }) || choicesOf(kind) !== undefined
 }
 
 /**
@@ -69,7 +75,7 @@ export function ComponentLayoutFields({
   messages = defaultMessages,
 }: ComponentLayoutFieldsProps) {
   const text = messages.design
-  const displays = layoutsOf(kind)
+  const displays = choicesOf(kind)
 
   return (
     <>
