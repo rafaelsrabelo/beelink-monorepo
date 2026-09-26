@@ -47,6 +47,15 @@ describe("withBandCopy — a band duplicated, in the draft", () => {
     expect(withBandCopy(reseeded, saved, bandCopy, "b")).toEqual(withBandCopy(rows, saved, bandCopy, "b"))
   })
 
+  // Another tab changed the band before the copy was made: its blocks no longer pair one for one.
+  it("shows the copy as the server made it when its blocks do not pair with the original's", () => {
+    const changed = section("b-copy", [component("x-copy", { kind: "TEXT" })], { isActive: false })
+
+    const copy = withBandCopy(rows, saved, changed, "b").find((row) => row.id === "b-copy")
+
+    expect(copy).toMatchObject({ isActive: true, components: [{ id: "x-copy", kind: "TEXT" }] })
+  })
+
   it("keeps a hidden original's copy hidden", () => {
     const hidden = rows.map((row) => (row.id === "b" ? { ...row, isActive: false } : row))
 

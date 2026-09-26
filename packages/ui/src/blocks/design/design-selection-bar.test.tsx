@@ -43,7 +43,7 @@ describe("DesignSelectionBar", () => {
   })
 
   // A copy waits for the one on its way, so a double press is one copy and not two.
-  it("duplicates, once at a time, and not on the strip", async () => {
+  it("duplicates with its own button, and says the keys that do the same", async () => {
     const onDuplicate = vi.fn()
     bar({ onDuplicate })
     await userEvent.click(screen.getByRole("button", { name: "Duplicar Banner 1" }))
@@ -51,9 +51,20 @@ describe("DesignSelectionBar", () => {
     expect(screen.getByRole("button", { name: "Duplicar Banner 1" })).toHaveAttribute("aria-keyshortcuts", "Control+D Meta+D")
   })
 
-  it("waits for a copy on its way, and offers none where there may not be one", () => {
+  it("waits for a copy on its way", () => {
     bar({ onDuplicate: vi.fn(), duplicating: true })
     expect(screen.getByRole("button", { name: "Duplicar Banner 1" })).toBeDisabled()
+  })
+
+  // The strip is one per shop: the screen gives it no Duplicar, and the bar draws none.
+  it("draws no Duplicar where no copy may be made", () => {
+    bar({ onDuplicate: undefined })
+    expect(screen.queryByRole("button", { name: /Duplicar/ })).not.toBeInTheDocument()
+  })
+
+  it("shows why its last action was refused", () => {
+    bar({ error: "Não foi possível duplicar." })
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível duplicar.")
   })
 
   it("says the keys that do the same", () => {
@@ -139,7 +150,7 @@ describe("DesignSelectionBar", () => {
   })
 
   it("has no accessibility violations", async () => {
-    const { container } = bar({ layouts: ["RAIL", "GRID"], layout: "RAIL", onLayout: vi.fn() })
+    const { container } = bar({ layouts: ["RAIL", "GRID"], layout: "RAIL", onLayout: vi.fn(), onDuplicate: vi.fn(), error: "Recusado." })
 
     await expectNoA11yViolations(container)
   })
