@@ -18,6 +18,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { AppLink } from "@/components/app-link"
 import { usePages, useUpdatePage } from "@/services/page/store-pages-hooks"
+import { useDesignPages } from "@/stores/design-pages"
 import { pageRowsOf, shopHrefOf } from "./design-pages"
 import type { useDesignDraft } from "./use-design-draft"
 
@@ -33,7 +34,6 @@ export interface DesignScreenBarProps {
   onDeviceChange: (device: PreviewDevice) => void
   onOpenStructure: () => void
   onOpenInspector: () => void
-  onCreatePage?: () => void
   messages: UiMessages
 }
 
@@ -53,10 +53,10 @@ export function DesignScreenBar({
   onDeviceChange,
   onOpenStructure,
   onOpenInspector,
-  onCreatePage,
   messages,
 }: DesignScreenBarProps) {
   const router = useRouter()
+  const openNew = useDesignPages((state) => state.openNew)
   const pages = usePages(slug)
   const update = useUpdatePage(slug)
   const homeTitle = messages.design.frame.homePage
@@ -84,7 +84,7 @@ export function DesignScreenBar({
           currentId={currentId}
           currentTitle={pageName}
           onNavigate={onLeave}
-          {...(onCreatePage ? { onCreate: onCreatePage } : {})}
+          onCreate={openNew}
           linkComponent={AppLink}
           messages={messages}
         />

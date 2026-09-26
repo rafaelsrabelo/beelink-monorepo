@@ -17,6 +17,8 @@ import { DesignDeleteConfirm, type PendingDelete } from "./design-delete-confirm
 import type { Shelves } from "./design-draft-preview"
 import { placementOf } from "./gallery-placement"
 import { GalleryPreview } from "./gallery-preview"
+import { NewLanding } from "./new-landing"
+import { PageSettings } from "./page-settings"
 import { previewable, stockOf } from "./gallery-samples"
 import type { useBlockInsert } from "./use-block-insert"
 import type { useDesignDraft } from "./use-design-draft"
@@ -41,13 +43,15 @@ export interface DesignScreenDialogsProps {
     categories: readonly PublicProductCategory[]
     colors: PublicStore["colors"]
   }
+  /** The landing being edited, whose settings reload the screen's read. Absent on the home. */
+  pageId?: string
   messages: UiMessages
   web: WebMessages
 }
 
 /**
- * What opens over the editor: the question before leaving, the question before a delete and the
- * gallery. Apart from the screen because it had reached the line limit.
+ * What opens over the editor: the question before leaving, the question before a delete, the
+ * gallery and the page dialogs. Apart from the screen because it had reached the line limit.
  */
 export function DesignScreenDialogs({
   guard,
@@ -59,6 +63,7 @@ export function DesignScreenDialogs({
   unavailableKinds,
   shelves,
   gallery,
+  pageId,
   messages,
   web,
 }: DesignScreenDialogsProps) {
@@ -74,6 +79,8 @@ export function DesignScreenDialogs({
       <DesignLeaveDialog open={guard.asking} onStay={guard.stay} onLeave={guard.leave} messages={messages} />
 
       <DesignDeleteConfirm pending={pendingDelete} draft={draft} onDone={onDeleteDone} messages={messages} web={web} />
+      <NewLanding slug={gallery.store.slug} site={gallery.store.type === "INSTITUTIONAL"} go={guard.go} messages={messages} web={web} />
+      <PageSettings slug={gallery.store.slug} currentPageId={pageId ?? null} messages={messages} web={web} />
 
       {/*
         The one gallery every "+" opens, already knowing where the block goes. Adding is a saved

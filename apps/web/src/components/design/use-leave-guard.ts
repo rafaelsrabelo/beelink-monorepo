@@ -49,6 +49,11 @@ export function useLeaveGuard(changed: boolean) {
       event.preventDefault()
       setPending(event.currentTarget.getAttribute("href"))
     },
+    /** A way out the screen takes itself, after a create: asked the same question when there is one to ask. */
+    go: (href: string) => {
+      if (changed) setPending(href)
+      else router.push(href as Parameters<typeof router.push>[0])
+    },
     asking: pending !== null,
     stay: () => setPending(null),
     leave: () => {

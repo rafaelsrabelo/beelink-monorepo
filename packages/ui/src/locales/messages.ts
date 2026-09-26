@@ -706,6 +706,42 @@ export interface UiMessages {
       notPublished: string
       /** Why a row's action failed, said under the list. */
       failed: string
+      /** The "Nova landing page" and "Configurações da página" dialogs. */
+      form: {
+        newTitle: string
+        newDescription: string
+        settingsTitle: string
+        settingsDescription: string
+        name: string
+        namePlaceholder: string
+        address: string
+        addressChecking: string
+        addressAvailable: string
+        addressTaken: string
+        addressInvalid: string
+        template: string
+        templates: Record<"lancamento" | "promocao-relampago" | "colecao" | "em-branco", { title: string; description: string }>
+        /** Under the templates on a site, which sells no product. */
+        siteBlankOnly: string
+        product: string
+        productPlaceholder: string
+        productEmpty: string
+        productHint: string
+        inMenu: string
+        inMenuHint: string
+        usesChrome: string
+        usesChromeHint: string
+        seo: string
+        seoHint: string
+        seoTitle: string
+        seoDescription: string
+        seoImage: string
+        cancel: string
+        create: string
+        creating: string
+        save: string
+        saving: string
+      }
     }
     /** The full-screen editor's frame: its bar, its three columns and, on a narrow screen, its drawers. */
     frame: {

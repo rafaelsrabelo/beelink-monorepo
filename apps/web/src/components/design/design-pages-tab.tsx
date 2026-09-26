@@ -17,17 +17,16 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AppLink } from "@/components/app-link"
 import type { WebMessages } from "@/locales"
 import { usePages, useUpdatePage } from "@/services/page/store-pages-hooks"
+import { useDesignPages } from "@/stores/design-pages"
 import { pageRowsOf } from "./design-pages"
 import { pageErrorCopy } from "./page-error-copy"
 
 export interface DesignPagesTabProps {
   slug: string
-  /** The page being edited: the home's id is the list's to know, so the home is "home" here. */
+  /** The landing being edited. Null on the home, whose id only the list knows. */
   currentId: string | null
   /** Asks before an unpublished arrangement is left behind, as "← Painel" does. */
   onNavigate: (event: MouseEvent<HTMLAnchorElement>) => void
-  onCreate?: () => void
-  onSettings?: (id: string) => void
   messages: UiMessages
   web: WebMessages
 }
@@ -37,8 +36,10 @@ export interface DesignPagesTabProps {
  * status changed where it is listed. A change to the page being edited reloads the screen's own read,
  * so the bar says at once whether the page is up.
  */
-export function DesignPagesTab({ slug, currentId, onNavigate, onCreate, onSettings, messages, web }: DesignPagesTabProps) {
+export function DesignPagesTab({ slug, currentId, onNavigate, messages, web }: DesignPagesTabProps) {
   const router = useRouter()
+  const openNew = useDesignPages((state) => state.openNew)
+  const openSettings = useDesignPages((state) => state.openSettings)
   const pages = usePages(slug)
   const update = useUpdatePage(slug)
   const rows = pages.data ? pageRowsOf(slug, pages.data, messages.design.frame.homePage) : null
@@ -53,8 +54,8 @@ export function DesignPagesTab({ slug, currentId, onNavigate, onCreate, onSettin
       currentId={current}
       onNavigate={onNavigate}
       onStatus={changeStatus}
-      {...(onCreate ? { onCreate } : {})}
-      {...(onSettings ? { onSettings } : {})}
+      onCreate={openNew}
+      onSettings={openSettings}
       busy={update.isPending}
       error={update.error ? (pageErrorCopy(update.error, web) ?? messages.design.pages.failed) : null}
       linkComponent={AppLink}

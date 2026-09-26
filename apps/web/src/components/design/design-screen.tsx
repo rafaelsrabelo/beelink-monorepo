@@ -136,6 +136,7 @@ export function DesignScreen({ store, categories, page = null, year, messages, w
         unavailableKinds={unavailableKinds}
         shelves={shelves}
         gallery={{ store, categories, colors: palette }}
+        {...(pageId ? { pageId } : {})}
         messages={messages}
         web={web}
       />

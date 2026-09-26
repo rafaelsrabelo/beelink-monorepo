@@ -47,6 +47,21 @@ describe("useLeaveGuard", () => {
     expect(result.current.asking).toBe(false)
   })
 
+  // After "Criar página" the screen goes to the new page itself — asked the same question first.
+  it("goes where the screen sends it, asking first only when something is waiting", () => {
+    const clean = renderHook(() => useLeaveGuard(false))
+    act(() => clean.result.current.go("/admin/loja/design?page=p1"))
+    expect(push).toHaveBeenCalledWith("/admin/loja/design?page=p1")
+
+    push.mockReset()
+    const dirty = renderHook(() => useLeaveGuard(true))
+    act(() => dirty.result.current.go("/admin/loja/design?page=p1"))
+    expect(push).not.toHaveBeenCalled()
+    expect(dirty.result.current.asking).toBe(true)
+    act(() => dirty.result.current.leave())
+    expect(push).toHaveBeenCalledWith("/admin/loja/design?page=p1")
+  })
+
   it("lets a click that opens another tab through: that is not leaving", () => {
     const { result } = renderHook(() => useLeaveGuard(true))
 
