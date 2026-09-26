@@ -202,7 +202,7 @@ describe("useSelectionControls — the bar", () => {
     expect(draft.patchSection).toHaveBeenCalledWith("a", { isActive: false })
 
     await userEvent.click(screen.getByRole("button", { name: "Trocar layout de a1" }))
-    await userEvent.click(await screen.findByRole("menuitemradio", { name: "Grade" }))
+    await userEvent.click(await screen.findByRole("button", { name: "Grade" }))
     expect(draft.patchComponent).toHaveBeenCalledWith("a1", { display: "GRID" })
     expect(onLayoutTab).toHaveBeenCalled()
   })
@@ -302,7 +302,7 @@ describe("useSelectionControls — Duplicar, guarded", () => {
 
   // A held chord repeats; each repeat would be one more hidden copy.
   it("makes one copy for a held Ctrl+D", async () => {
-    const fetchSpy = vi.fn(async (_url: string) => Response.json({ ...saved[1]!.components[0]!, id: "b1-copy" }, { status: 201 }))
+    const fetchSpy = vi.fn<(url: string) => Promise<Response>>(async () => Response.json({ ...saved[1]!.components[0]!, id: "b1-copy" }, { status: 201 }))
     vi.stubGlobal("fetch", fetchSpy)
     render(<Harness selection={null} />)
 

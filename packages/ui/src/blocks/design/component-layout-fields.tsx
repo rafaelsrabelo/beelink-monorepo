@@ -1,6 +1,10 @@
 "use client"
 
+// Libs
+import { ChevronDownIcon } from "lucide-react"
+
 // UI
+import { Button } from "@harness-monorepo/ui/components/button"
 import { FieldDescription, FieldLabel, FieldSet } from "@harness-monorepo/ui/components/field"
 import { layoutsOf } from "@harness-monorepo/ui/lib/section-registry"
 
@@ -13,7 +17,8 @@ import { AlignField } from "./align-field"
 import { hasSpan, type ArrangementSpan } from "./arrangement-row"
 import { ColumnsField } from "./columns-field"
 import type { ComponentDisplay, ComponentKind, DeviceVisibility, SectionWidth } from "./design-types"
-import { DisplayField } from "./display-field"
+import { LayoutPicker } from "./layout-picker"
+import { LayoutThumbnail } from "./layout-thumbnail"
 import { SpanField } from "./span-field"
 import type { TextAlign } from "./text-align"
 import { VisibleOnField } from "./visible-on-field"
@@ -41,9 +46,12 @@ export interface ComponentLayoutFieldsProps {
 /** The grids that ask how many across. A banner's grid is its pictures side by side, sized by the band. */
 const HAS_COLUMNS: readonly ComponentKind[] = ["PRODUCTS", "CATEGORIES"]
 
-/** The strip above the header is drawn outside the band's grid, so it has nothing to lay out. */
+/**
+ * Whether a kind has a Layout tab: a slice of its band, or a look to choose. The strip has no slice —
+ * it is drawn above the header, outside the grid — but it is still or scrolling.
+ */
 export function hasLayout(kind: ComponentKind): boolean {
-  return hasSpan({ kind })
+  return hasSpan({ kind }) || layoutsOf(kind) !== undefined
 }
 
 /**
@@ -75,17 +83,33 @@ export function ComponentLayoutFields({
       ) : null}
 
       {displays && value.display ? (
-        <div className="flex flex-col gap-2">
-          <DisplayField
+        <FieldSet>
+          <FieldLabel>{text.displayLabel}</FieldLabel>
+          <LayoutPicker
+            layouts={displays}
             value={value.display}
-            options={displays}
             onChange={(display) => onChange({ display })}
+            label={text.displayLabel}
+            trigger={
+              <Button
+                type="button"
+                variant="outline"
+                aria-label={`${text.displayLabel}: ${text.displays[value.display]}`}
+                className="h-auto w-full justify-between gap-3 p-2"
+              >
+                <span className="flex items-center gap-3">
+                  <LayoutThumbnail display={value.display} />
+                  <span className="text-sm font-medium">{text.displays[value.display]}</span>
+                </span>
+                <ChevronDownIcon aria-hidden="true" className="size-4 opacity-60" />
+              </Button>
+            }
             messages={messages}
           />
-          {kind === "CATEGORIES" ? (
+          {kind === "CATEGORIES" && value.display !== "CHIPS" ? (
             <FieldDescription>{value.display === "RAIL" ? text.categoriesRailHint : text.categoriesGridHint}</FieldDescription>
           ) : null}
-        </div>
+        </FieldSet>
       ) : null}
 
       {/* Asked only of a grid: a rail's cards have a width of their own at every screen. */}
@@ -97,7 +121,10 @@ export function ComponentLayoutFields({
         <AlignField value={value.align} onChange={(align) => onChange({ align })} messages={messages} />
       ) : null}
 
-      <VisibleOnField value={value.visibleOn} onChange={(visibleOn) => onChange({ visibleOn })} messages={messages} />
+      {/* The strip shows everywhere: the API refuses it anything else. */}
+      {hasSpan({ kind }) ? (
+        <VisibleOnField value={value.visibleOn} onChange={(visibleOn) => onChange({ visibleOn })} messages={messages} />
+      ) : null}
     </>
   )
 }
