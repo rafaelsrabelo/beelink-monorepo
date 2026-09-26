@@ -163,3 +163,45 @@ Trocar layout.
 - Dicas (tooltip) com o atalho: o `title` e o `aria-keyshortcuts` dizem; um Tooltip por botão fica
   para quando a barra tiver Duplicar (PR 3).
 - O primitivo de Toolbar do Base UI: o foco com ← → foi escrito na barra, que é a única que precisa.
+
+## PR 3 — Duplicar
+
+*Acrescentado em 2026-09-25, ao começar o PR 3.*
+
+### Definição de Pronto
+
+1. Duplicar, na barra e com Ctrl/⌘+D, cria uma cópia logo depois do original.
+2. A cópia é criada **oculta** no servidor e aparece no rascunho como o original está. Ela conta em
+   "N alterações" e vai para a loja no Publicar.
+3. A barra de aviso não se duplica: o botão some e a API responde 409 `COMPONENT_KIND_SINGLETON`.
+4. A escolha passa para a cópia.
+5. Testes de unidade e e2e.
+
+### Decisões
+
+#### 1. A cópia é o que o dono vê
+
+A API copia o que está gravado. O rascunho, então, põe na cópia o que o original tem no rascunho:
+visibilidade, ordem e layout dos blocos. Duplicar um banner que foi para "Um terço" sem publicar
+duplica o banner em um terço.
+
+#### 2. Oculta no servidor, mostrada no rascunho
+
+Assim a loja não muda antes do Publicar, como tudo o que o dono arruma. A cópia chega pela resposta
+da API. `withBandCopy`/`withBlockCopy` dão o mesmo resultado se o rascunho já foi recarregado com a
+cópia ou ainda não.
+
+#### 3. A faixa copiada não tem nome
+
+O menu de um site é feito das faixas com nome; duas com o mesmo nome seriam um link duas vezes.
+
+#### 4. O serviço da página foi dividido
+
+As faixas ficam em `PageService`, os blocos vão para `PageComponentsService`, e a leitura da página
+virou `pageOf()`. O arquivo tinha 338 linhas antes das cópias.
+
+### Fora de escopo
+
+- **Descartar não apaga a cópia.** Ela já foi criada, oculta, e continua na estrutura como um bloco
+  oculto; sai pela lixeira. Apagar no Descartar pediria lembrar quais cópias o rascunho criou.
+- Copiar as mensagens recebidas por um formulário: a cópia começa sem nenhuma.

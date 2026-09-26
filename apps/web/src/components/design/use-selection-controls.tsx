@@ -15,16 +15,21 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import type { WebMessages } from "@/locales"
+import { useDuplicateComponent, useDuplicateSection } from "@/services/page/page-hooks"
 import { useDesignEdit } from "@/stores/design-edit"
 import { displayOf } from "./component-layout"
 import type { PendingDelete } from "./design-delete-confirm"
 import { labelOf, type SectionDraft } from "./design-draft"
+import { withBandCopy, withBlockCopy } from "./design-draft-copy"
 import { focusNode, regionOf } from "./design-focus"
 import { movedBy, neighbourOf, nodesOf, targetOf, type DesignSelection, type SelectionTarget } from "./design-selection"
 import { hasUnsaved } from "./live-edit"
+import { pageErrorCopy } from "./page-error-copy"
 import type { useDesignDraft } from "./use-design-draft"
 
 export interface SelectionControlsInput {
+  slug: string
   rows: readonly SectionDraft[]
   saved: readonly Section[]
   /** The structure's bands, which already know each name, visibility and whether it may go. */
@@ -37,6 +42,8 @@ export interface SelectionControlsInput {
   onDelete: (pending: PendingDelete) => void
   bandName: (id: string) => string
   messages: UiMessages
+  /** Where a refused copy's `errorCode` becomes a sentence. */
+  web: WebMessages
 }
 
 const STEP = { ArrowUp: -1, ArrowDown: 1 } as const
@@ -46,7 +53,8 @@ const STEP = { ArrowUp: -1, ArrowDown: 1 } as const
  *
  * Every action follows the target's rule (`SelectionTarget`): a block alone in its band moves, hides
  * and goes with its band, as its card in the structure does. Trocar layout is always the block's.
- * Moving, hiding and the layout are draft edits, sent by Publicar; deleting asks first, as the bin does.
+ * Moving, hiding and the layout are draft edits, sent by Publicar; a copy is made hidden on the server
+ * and shown in the draft, so it waits for Publicar too; deleting asks first, as the bin does.
  *
  * The keys act only where the focus is on a stop (`data-design-node`): the structure's names, the
  * preview's blocks, the bar and the panel's heading. A key typed in a field reaches none of them.
@@ -55,6 +63,9 @@ export function useSelectionControls(input: SelectionControlsInput) {
   const { rows, saved, bands, target, draft, choose, messages } = input
   const text = messages.design.bar
   const [status, setStatus] = useState("")
+  const copyBand = useDuplicateSection(input.slug)
+  const copyBlock = useDuplicateComponent(input.slug)
+  const duplicating = copyBand.isPending || copyBlock.isPending
   // The same sentence twice is not read twice, so a repeat carries a trailing space.
   const say = (sentence: string) => setStatus((current) => (current === sentence ? `${sentence} ` : sentence))
 
@@ -69,6 +80,8 @@ export function useSelectionControls(input: SelectionControlsInput) {
     return {
       name: block ? labelOf(block.kind, block.title, messages) : input.bandName(band.id),
       hidden: of.level === "band" ? !(block ? singleShown(band, block) : band.isActive) : !block?.isActive,
+      // The strip is one per shop; the API refuses its copy, so none is offered.
+      copiable: (block ? [block] : band.components).every((component) => component.kind !== "ANNOUNCEMENT"),
       deletable: of.level === "band" ? band.components.every((component) => component.deletable !== false) : block?.deletable !== false,
       layout: held && options ? { blockId: held.id, options, value: displayOf(held.kind, held.display) } : null,
       band,
@@ -105,6 +118,36 @@ export function useSelectionControls(input: SelectionControlsInput) {
     input.onDelete({ level: of.level === "band" ? "band" : "component", id: of.id, name: facts.name })
   }
 
+  /** The copy lands right after, shown as the original is, and becomes the selection. */
+  const duplicate = (of: SelectionTarget) => {
+    const facts = factsOf(of)
+    if (!facts?.copiable || duplicating) return
+    const done = () => say(format(text.duplicated, { name: facts.name }))
+    const refused = (error: unknown) => say(pageErrorCopy(error, input.web) ?? "")
+
+    if (of.level === "block") {
+      copyBlock.mutate(of.id, {
+        onSuccess: (copy) => {
+          draft.edit((current) => withBlockCopy(current, copy, of.id))
+          choose({ level: "block", id: copy.id }, { openDrawer: false, takeFocus: false })
+          done()
+        },
+        onError: refused,
+      })
+      return
+    }
+
+    copyBand.mutate(of.id, {
+      onSuccess: (copy) => {
+        draft.edit((current) => withBandCopy(current, saved, copy, of.id))
+        const twin = of.blockId ? copy.components[0] : undefined
+        choose(twin ? { level: "block", id: twin.id } : { level: "band", id: copy.id }, { openDrawer: false, takeFocus: false })
+        done()
+      },
+      onError: refused,
+    })
+  }
+
   const setLayout = (blockId: string, display: ComponentDisplay) => {
     draft.patchComponent(blockId, { display })
     input.onLayoutTab()
@@ -113,11 +156,18 @@ export function useSelectionControls(input: SelectionControlsInput) {
   const nodes = nodesOf(rows)
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.defaultPrevented || event.nativeEvent.isComposing || event.ctrlKey || event.metaKey || event.shiftKey) return
+    if (event.defaultPrevented || event.nativeEvent.isComposing || event.shiftKey) return
     const from = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-design-node]") : null
     const node = from ? nodes.find((stop) => stop.key === from.dataset.designNode) : undefined
     const of = node ? targetOf(node.selection, rows) : null
     if (!from || !node || !of) return
+
+    // Ctrl/⌘+D would bookmark the page: taken here, and only here, where the focus is on a stop.
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") {
+      event.preventDefault()
+      return duplicate(of)
+    }
+    if (event.ctrlKey || event.metaKey) return
 
     if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault()
@@ -158,6 +208,7 @@ export function useSelectionControls(input: SelectionControlsInput) {
         {...(layout
           ? { layouts: layout.options, layout: layout.value, onLayout: (display: ComponentDisplay) => setLayout(layout.blockId, display) }
           : {})}
+        {...(facts.copiable ? { onDuplicate: () => duplicate(target), duplicating } : {})}
         hidden={facts.hidden}
         onToggleHidden={() => toggleHidden(target)}
         {...(facts.deletable ? { onDelete: () => remove(target) } : {})}

@@ -42,6 +42,20 @@ describe("DesignSelectionBar", () => {
     expect(props.onDelete).toHaveBeenCalled()
   })
 
+  // A copy waits for the one on its way, so a double press is one copy and not two.
+  it("duplicates, once at a time, and not on the strip", async () => {
+    const onDuplicate = vi.fn()
+    bar({ onDuplicate })
+    await userEvent.click(screen.getByRole("button", { name: "Duplicar Banner 1" }))
+    expect(onDuplicate).toHaveBeenCalled()
+    expect(screen.getByRole("button", { name: "Duplicar Banner 1" })).toHaveAttribute("aria-keyshortcuts", "Control+D Meta+D")
+  })
+
+  it("waits for a copy on its way, and offers none where there may not be one", () => {
+    bar({ onDuplicate: vi.fn(), duplicating: true })
+    expect(screen.getByRole("button", { name: "Duplicar Banner 1" })).toBeDisabled()
+  })
+
   it("says the keys that do the same", () => {
     bar()
 

@@ -100,6 +100,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const bands = arrangementOf(rows, saved, shelves, categories.length)
   const bandAlone = target?.level === "band" && !target.blockId ? target.id : null
   const controls = useSelectionControls({
+    slug,
     rows,
     saved,
     bands,
@@ -110,6 +111,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
     onDelete: setPendingDelete,
     bandName,
     messages,
+    web,
   })
 
   return (

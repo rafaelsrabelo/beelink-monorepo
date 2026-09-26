@@ -139,3 +139,16 @@ export function reorderComponents(
     body: JSON.stringify(payload),
   })
 }
+
+/**
+ * A hidden copy of a band and its blocks, right after it. The draft shows it; Publicar sends it to
+ * the shop, like anything else the owner arranged.
+ */
+export function duplicateSection(slug: string, sectionId: string): Promise<Section> {
+  return call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/duplicate`, { method: "POST" })
+}
+
+/** A hidden copy of one block, right after it in its band. */
+export function duplicateComponent(slug: string, componentId: string): Promise<StoreComponent> {
+  return call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/duplicate`, { method: "POST" })
+}

@@ -4,7 +4,7 @@
 import { useRef, type KeyboardEvent } from "react"
 
 // Libs
-import { ArrowDownIcon, ArrowUpIcon, EyeIcon, EyeOffIcon, LayoutGridIcon, Trash2Icon } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, CopyPlusIcon, EyeIcon, EyeOffIcon, LayoutGridIcon, Trash2Icon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
@@ -35,6 +35,10 @@ export interface DesignSelectionBarProps {
   layouts?: readonly ComponentDisplay[]
   layout?: ComponentDisplay | null
   onLayout?: (value: ComponentDisplay) => void
+  /** Absent on the strip, which is one per shop. */
+  onDuplicate?: () => void
+  /** A copy on its way: Duplicar waits for it, so one press is one copy. */
+  duplicating?: boolean
   /** Hidden in the draft: the button shows it again instead. */
   hidden?: boolean
   onToggleHidden: () => void
@@ -46,15 +50,16 @@ export interface DesignSelectionBarProps {
   messages?: UiMessages
 }
 
-const SHORTCUT = { up: "Alt+ArrowUp", down: "Alt+ArrowDown", delete: "Delete" } as const
+const SHORTCUT = { up: "Alt+ArrowUp", down: "Alt+ArrowDown", duplicate: "Control+D Meta+D", delete: "Delete" } as const
 
 /**
- * The chosen block's or band's own actions, over it in the preview: up, down, its layout, hide
- * and delete — what the owner reached for in the structure column while looking at the page.
+ * The chosen block's or band's own actions, over it in the preview: up, down, its layout, a copy,
+ * hide and delete — what the owner reached for in the structure column while looking at the page.
  *
  * A toolbar: ← → move between its buttons, as the WAI-ARIA toolbar pattern has it. Each button
  * names what it acts on, because a column of "Subir" buttons read aloud says nothing about which.
- * Up, down, the layout and hiding are draft edits, sent by Publicar; delete asks first.
+ * Up, down, the layout and hiding are draft edits, sent by Publicar; a copy is made hidden and shown
+ * in the draft, so it waits for Publicar too; delete asks first.
  * Nothing here says which band or block these act on: a block alone in its band acts as its band,
  * and that rule is the screen's.
  */
@@ -67,6 +72,8 @@ export function DesignSelectionBar({
   layouts,
   layout = null,
   onLayout,
+  onDuplicate,
+  duplicating = false,
   hidden = false,
   onToggleHidden,
   onDelete,
@@ -162,6 +169,21 @@ export function DesignSelectionBar({
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+      ) : null}
+
+      {onDuplicate ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={format(text.duplicate, { name: label })}
+          title={`${format(text.duplicate, { name: label })} (Ctrl+D)`}
+          aria-keyshortcuts={SHORTCUT.duplicate}
+          disabled={duplicating}
+          onClick={onDuplicate}
+        >
+          <CopyPlusIcon aria-hidden="true" />
+        </Button>
       ) : null}
 
       <Button

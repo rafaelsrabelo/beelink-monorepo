@@ -696,6 +696,7 @@ export interface UiMessages {
       moveUp: string
       moveDown: string
       layout: string
+      duplicate: string
       hide: string
       /** On something hidden: the same button brings it back. */
       show: string
@@ -705,6 +706,8 @@ export interface UiMessages {
       /** Said after Ocultar: it leaves the shop on Publicar. */
       hidden: string
       shown: string
+      /** Said after Duplicar: the copy waits for Publicar like any other change. */
+      duplicated: string
       /** Said when the keys choose something. */
       chosen: string
       /** Said instead of choosing, while the open panel has fields not yet saved. */

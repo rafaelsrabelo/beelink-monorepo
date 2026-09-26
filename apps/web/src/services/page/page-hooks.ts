@@ -21,6 +21,8 @@ import {
   createSectionRow,
   deleteComponent,
   deleteSection,
+  duplicateComponent,
+  duplicateSection,
   fetchSections,
   moveComponent,
   reorderComponents,
@@ -178,6 +180,30 @@ export function useReorderComponents(
   return useMutation({
     mutationFn: ({ sectionId, ids }: ReorderComponentsVariables) =>
       reorderComponents(slug, sectionId, { ids }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+  })
+}
+
+/*
+  The copy's invalidation is returned, so the list is read again before the screen's own `onSuccess`
+  runs: the screen shows the copy in its draft, and a copy the list does not hold yet would be
+  shown there and then dropped by the next reseed.
+*/
+
+export function useDuplicateSection(slug: string): UseMutationResult<Section, Error, string> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (sectionId: string) => duplicateSection(slug, sectionId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+  })
+}
+
+export function useDuplicateComponent(slug: string): UseMutationResult<StoreComponent, Error, string> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (componentId: string) => duplicateComponent(slug, componentId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
   })
 }

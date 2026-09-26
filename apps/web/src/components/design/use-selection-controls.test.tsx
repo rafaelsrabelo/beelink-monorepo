@@ -1,12 +1,15 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { render as renderTree, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { ReactElement } from "react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // UI
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
+import { en as web } from "@/locales/en"
 import { useDesignEdit } from "@/stores/design-edit"
 import { toBandForm } from "./band-form-values"
 import { toForm } from "./component-form-values"
@@ -21,6 +24,7 @@ const rows = saved.map(toDraft)
 
 function Harness({ selection, ...over }: { selection: DesignSelection | null } & Partial<SelectionControlsInput>) {
   const controls = useSelectionControls({
+    slug: "loja",
     rows,
     saved,
     bands: arrangementOf(rows, saved, new Map()),
@@ -31,6 +35,7 @@ function Harness({ selection, ...over }: { selection: DesignSelection | null } &
     onDelete: vi.fn(),
     bandName: (id) => `Faixa ${id}`,
     messages: ptBR,
+    web,
     ...over,
   })
 
@@ -65,7 +70,13 @@ function draftSpy() {
   }
 }
 
+function render(ui: ReactElement) {
+  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  return renderTree(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
+}
+
 beforeEach(() => useDesignEdit.getState().close())
+afterEach(() => vi.unstubAllGlobals())
 
 describe("useSelectionControls — the keys", () => {
   it("chooses the next stop with ↓ and keeps the focus with the keys", async () => {
@@ -174,5 +185,47 @@ describe("useSelectionControls — the bar", () => {
     render(<Harness selection={null} />)
 
     expect(screen.queryByRole("toolbar")).not.toBeInTheDocument()
+  })
+})
+
+describe("useSelectionControls — Duplicar", () => {
+  const copy = { ...saved[1]!.components[0]!, id: "b1-copy", isActive: false }
+
+  it("shows the copy right after the block in the draft, chooses it, and says so", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(copy, { status: 201 })))
+    const choose = vi.fn()
+    const { draft, state } = draftSpy()
+    render(<Harness selection={{ level: "block", id: "b1" }} draft={draft} choose={choose} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Duplicar b1" }))
+
+    await screen.findByText("Cópia de b1 criada logo depois. Vai para a loja quando você publicar.")
+    expect(state.rows[1]?.components.map((block) => [block.id, block.isActive])).toEqual([
+      ["b1", true],
+      ["b1-copy", true],
+      ["b2", true],
+    ])
+    expect(choose).toHaveBeenCalledWith({ level: "block", id: "b1-copy" }, { openDrawer: false, takeFocus: false })
+  })
+
+  // ⌘/Ctrl+D would bookmark the page; with the focus on a stop it copies instead.
+  it("copies with Ctrl+D from a stop", async () => {
+    const fetchSpy = vi.fn(async () => Response.json(copy, { status: 201 }))
+    vi.stubGlobal("fetch", fetchSpy)
+    render(<Harness selection={null} />)
+
+    screen.getByRole("button", { name: "b1" }).focus()
+    await userEvent.keyboard("{Control>}d{/Control}")
+
+    expect(fetchSpy).toHaveBeenCalledWith("/api/stores/loja/components/b1/duplicate", expect.objectContaining({ method: "POST" }))
+  })
+
+  it("says why a copy was refused", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "STORE_FORBIDDEN" }, { status: 403 })))
+    render(<Harness selection={{ level: "block", id: "b1" }} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Duplicar b1" }))
+
+    await waitFor(() => expect(screen.getByRole("status")).not.toBeEmptyDOMElement())
   })
 })
