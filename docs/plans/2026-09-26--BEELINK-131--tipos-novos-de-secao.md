@@ -207,3 +207,21 @@ continuam como estão.
 - **`readsCatalog`** em `design-kinds.ts` diz quais tipos carregam categorias e produtos no painel. A chamada final apareceu sem produtos para escolher na primeira conferência no navegador.
 - **O aviso "não está à venda"** do produto em destaque só aparece quando há um produto salvo que não resolve. Antes de escolher, o bloco mostra o convite para escolher.
 - **A galeria recebe o relógio uma vez, ao abrir o editor.** A amostra da contagem conta a partir dele, e o render continua puro.
+
+## Depois da revisão
+
+*Acrescentado em 2026-09-26.*
+
+- **Cores dentro de uma faixa pintada.** A faixa agora redefine todas as cores que derivam do fundo,
+  não só a tinta: o tom claro, os preenchimentos, as linhas e as tintas de promoção. Antes, o cartão
+  da chamada final e as caixas da contagem guardavam o fundo claro da página, com a letra branca de
+  uma faixa escura em cima.
+- **Imagem e texto:** o botão só é pedido quando há imagem, porque é guardado junto com ela. Antes, um
+  botão digitado sem imagem sumia ao salvar, sem aviso.
+- **Produto em destaque:**
+  - o produto escolhido é nomeado pelo cartão que a leitura já trouxe, então um produto além dos
+    primeiros 96 não aparece mais como "Produto não encontrado";
+  - a busca diz que ainda está procurando, em vez de "Nada com esse nome.".
+- **Swagger:** a lista de problemas do Publicar é montada a partir do tipo do contrato, e um problema
+  novo não fica mais de fora.
+- **Contagem:** os dígitos quebram em duas linhas numa metade ou num terço estreito da faixa.
