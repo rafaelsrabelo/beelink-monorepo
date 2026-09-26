@@ -114,8 +114,8 @@ export function useBlockInsert(
      * What the gallery leaves out here besides what the page cannot hold: the strip above the header
      * is made as a band of its own, and beside a block it would take a slice of a row it never draws in.
      */
-    unavailableWith: (kinds: readonly ComponentKind[]): ComponentKind[] =>
-      insertAt?.level === "band" ? [...kinds] : [...kinds, "ANNOUNCEMENT"],
+    unavailableWith: (kinds: readonly ComponentKind[], at: InsertAt | null = insertAt): ComponentKind[] =>
+      at?.level === "band" ? [...kinds] : [...kinds, "ANNOUNCEMENT"],
     /** What the preview takes: the room a row has left, as a place to add beside. */
     preview: { onInsert: setInsertAt, inserting },
   }

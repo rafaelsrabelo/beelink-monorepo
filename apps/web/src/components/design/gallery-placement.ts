@@ -9,30 +9,37 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { labelOf, type ComponentDraft, type SectionDraft } from "./design-draft"
+import type { Shelves } from "./design-draft-preview"
 
 /**
  * Where a "+" puts the section, in the owner's words — "Entra entre Capa e Produtos." — for the
  * gallery to say under its title. Counted in the draft, the order the structure and the preview show.
  *
- * A band is named as the structure names it: its own name, else the block it holds when it holds
- * one, else its place. "Entra entre Faixa 2 e Faixa 3" says less than "entre Banner e Vitrine".
+ * Named as the structure names them. Between bands, a band is its own name, else the block it holds
+ * when it holds one, else its place — "entre Banner e Vitrine" says more than "entre Faixa 2 e Faixa
+ * 3". Inside a band, the band is its name or its place, as its "+" is: "Entra em Banner, depois de
+ * Banner" would be a block inside itself. A showcase with no title is its category, as in the list.
  */
 export function placementOf(
   at: InsertAt | null,
   rows: readonly SectionDraft[],
   saved: readonly Section[],
+  shelves: Shelves,
   messages: UiMessages,
 ): string | undefined {
   if (!at) return undefined
   const text = messages.design.gallery.placement
-  const blockName = (block: ComponentDraft) =>
-    labelOf(block.kind, saved.flatMap((section) => section.components).find((was) => was.id === block.id)?.title ?? null, messages)
+  const blockName = (block: ComponentDraft) => {
+    const title = saved.flatMap((section) => section.components).find((was) => was.id === block.id)?.title
+    return labelOf(block.kind, title ?? shelves.get(block.id)?.sourceCategory?.name ?? null, messages)
+  }
+  const placeName = (row: SectionDraft) =>
+    bandLabelOf(saved.find((section) => section.id === row.id)?.name, rows.indexOf(row) + 1, messages)
   const bandName = (row: SectionDraft | undefined) => {
     if (!row) return undefined
-    const name = saved.find((section) => section.id === row.id)?.name
     const [only, second] = row.components
-    if (!name && only && !second) return blockName(only)
-    return bandLabelOf(name, rows.indexOf(row) + 1, messages)
+    if (!saved.find((section) => section.id === row.id)?.name && only && !second) return blockName(only)
+    return placeName(row)
   }
 
   if (at.level === "band") {
@@ -45,7 +52,7 @@ export function placementOf(
   }
 
   const row = rows.find((candidate) => candidate.id === at.sectionId)
-  const band = bandName(row) ?? ""
+  const band = row ? placeName(row) : ""
   if (at.level === "beside") {
     const before = row?.components.find((block) => block.id === at.afterId)
     return before ? format(text.beside, { before: blockName(before) }) : undefined
