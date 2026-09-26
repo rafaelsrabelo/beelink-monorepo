@@ -71,3 +71,7 @@ export const STOREFRONT_RATE_LIMIT = { max: 300, timeWindow: '1 minute' };
 // The limit on the two writes is deliberately not in this file: it reads `env`, and this file is
 // imported by the DTOs and by their unit tests, which must load without a `.env`. It is built in
 // stores.controller.ts, beside the routes it guards, exactly as auth.controller.ts builds its own.
+
+/** The bounds of a shop's "inactive after N days": a week at the shortest, a year at the longest. */
+export const INACTIVE_AFTER_DAYS_MIN = 7;
+export const INACTIVE_AFTER_DAYS_MAX = 365;

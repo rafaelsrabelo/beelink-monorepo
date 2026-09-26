@@ -83,6 +83,7 @@ export const sampleStoreSettingsValues: StoreSettingsValues = {
     colors: sampleStoreColors,
   },
   paymentMethods: ["MONEY", "PIX"],
+  customers: { inactiveAfterDays: 60 },
 }
 
 /** A shop as the create screen holds it before anything has been typed. */

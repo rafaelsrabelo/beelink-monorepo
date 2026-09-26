@@ -15,6 +15,10 @@ model Customer {
   name         String
   /// Digits only, with the country code, as `wa.me` wants it.
   phone        String?
+  /// The phone the account tried to save when another record of the shop had it — the only trace
+  /// the unique index leaves of one person with two records. The panel flags the pair and the
+  /// shopkeeper merges them; nothing is merged from it on its own. Cleared once a phone is saved.
+  claimedPhone String?
   zipCode      String?
   street       String?
   number       String?
@@ -22,11 +26,24 @@ model Customer {
   neighborhood String?
   city         String?
   state        String?
+  /// The shop's books on this customer, kept by the transaction that places or cancels an order so
+  /// the list can filter and sort by them without reading the orders. Cancelled ones do not count.
+  ordersCount     Int       @default(0)
+  /// BigInt: one order is capped, a customer's lifetime is not, and an overflow here would fail
+  /// every later order of theirs.
+  totalSpentCents BigInt    @default(0)
+  firstOrderAt    DateTime?
+  lastOrderAt     DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  orders Order[]
 
   @@unique([storeId, userId])
   @@unique([storeId, phone])
   @@index([userId])
+  @@index([storeId, claimedPhone])
+  /// The CRM's stage filter and its "latest order" sort.
+  @@index([storeId, lastOrderAt])
   @@map("customers")
 }

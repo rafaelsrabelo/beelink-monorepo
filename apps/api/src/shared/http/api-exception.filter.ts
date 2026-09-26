@@ -43,9 +43,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return { statusCode, errorCode: fallbackCode, message: response };
     }
 
-    const { errorCode, message } = response as {
+    const { errorCode, message, details } = response as {
       errorCode?: unknown;
       message?: unknown;
+      details?: unknown;
     };
 
     return {
@@ -57,6 +58,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
         : typeof message === 'string'
           ? message
           : exception.message,
+      // Only a service's own refusal carries it, and only as an object: never a framework's detail.
+      ...(typeof errorCode === 'string' && typeof details === 'object' && details !== null ? { details } : {}),
     };
   }
 }
