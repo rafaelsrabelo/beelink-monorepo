@@ -41,8 +41,12 @@ const slide = (n: number, title: string) => ({
   href: "/loja/promo",
 })
 
-/** Um só é capa. É o caso de quase toda loja, e não desenha controle nenhum. */
-export const Capa: Story = { args: { items: [slide(1, "Coleção de verão")] } }
+/**
+ * Um só é capa. É o caso de quase toda loja, e não desenha controle nenhum. Numa faixa de ponta a
+ * ponta ela encosta nas bordas, sem canto arredondado: o canto cortaria a foto das bordas que ela
+ * foi escolhida para alcançar, e a cor da página apareceria no corte.
+ */
+export const Capa: Story = { args: { items: [slide(1, "Coleção de verão")], bleed: true } }
 
 /**
  * Dois ou mais viram carousel, e **não existe interruptor dizendo isso** — a forma é lida da
@@ -52,12 +56,14 @@ export const Capa: Story = { args: { items: [slide(1, "Coleção de verão")] } 
 export const Carousel: Story = {
   args: {
     items: [slide(1, "Coleção de verão"), slide(2, "Frete grátis"), slide(3, "Fale no WhatsApp")],
+    bleed: true,
   },
 }
 
-/** Centralizado, para a loja que não quer a foto encostando nas bordas. */
-export const Centralizado: Story = {
-  args: { items: [slide(1, "Coleção de verão")], width: "CONTAINED" },
+/** Dentro da margem da loja: o canto que o resto da página tem, carrossel incluído. */
+export const DentroDaMargem: Story = {
+  args: { items: [slide(1, "Coleção de verão"), slide(2, "Frete grátis")] },
+  decorators: [(Story) => <div className="mx-auto max-w-5xl p-8">{Story()}</div>],
 }
 
 /** Uma foto que já traz as palavras dentro. O link ganha nome mesmo assim, por acessibilidade. */

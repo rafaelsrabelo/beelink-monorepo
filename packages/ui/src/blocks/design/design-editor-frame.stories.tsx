@@ -32,12 +32,11 @@ const meta = {
         backHref="#"
         shopName="Mutante Performance"
         pageName="Página inicial"
-        device="PHONE"
+        device="DESKTOP"
         onDeviceChange={fn()}
-        changes={2}
+        unpublished
         publishing={false}
         onPublish={fn()}
-        onDiscard={fn()}
         shopHref="#"
         onOpenStructure={fn()}
         onOpenInspector={fn()}
@@ -52,13 +51,12 @@ const meta = {
         onEditBand={fn()}
         onDeleteBand={fn()}
         onToggle={fn()}
-        onSpanChange={fn()}
         onDelete={fn()}
         onEdit={fn()}
         onInsert={fn()}
       />
     ),
-    preview: <div className="bg-background mx-auto h-[640px] w-[390px] rounded-xl border" />,
+    preview: <div className="bg-background h-[640px] w-full rounded-xl border" />,
     inspector: <p className="text-muted-foreground text-sm">Escolha um bloco na prévia ou na estrutura.</p>,
     structureOpen: false,
     onStructureOpenChange: fn(),

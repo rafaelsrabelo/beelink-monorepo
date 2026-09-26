@@ -51,3 +51,19 @@ export const NomeLongo: Story = {
     },
   },
 }
+
+/** Com opções: a linha "4 sabores" sob o nome diz o que o visitante vai escolher na página do produto. */
+export const ComOpcoes: Story = {
+  args: {
+    product: {
+      id: "p4",
+      slug: "whey",
+      name: "Whey Protein Isolado 900g",
+      priceCents: 18990,
+      compareAtPriceCents: null,
+      imageUrl: "https://picsum.photos/seed/whey/520/460",
+      hasOptions: true,
+      optionSummary: { name: "Sabor", valueCount: 4 },
+    },
+  },
+}

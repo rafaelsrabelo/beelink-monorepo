@@ -24,11 +24,23 @@ const GLYPH: Record<StorefrontSpan, typeof Columns2Icon> = {
 /** Widest first, so the row reads the way the slices shrink. */
 const ORDER: readonly StorefrontSpan[] = ["FULL", "TWO_THIRDS", "HALF", "THIRD"]
 
+/** A slice's name: "Metade". What the field marks, and what a block's row says beside its kind. */
+export function spanLabelOf(span: StorefrontSpan, messages: UiMessages = defaultMessages): string {
+  const text = messages.design
+  const label: Record<StorefrontSpan, string> = {
+    FULL: text.spanFull,
+    TWO_THIRDS: text.spanTwoThirds,
+    HALF: text.spanHalf,
+    THIRD: text.spanThird,
+  }
+  return label[span]
+}
+
 export interface SpanFieldProps {
   value: StorefrontSpan
   onChange: (value: StorefrontSpan) => void
-  /** The block's name, so four identical groups in one panel are told apart by a screen reader. */
-  name: string
+  /** The block's name, so four identical groups in one list are told apart by a screen reader. */
+  name?: string
   /** The band's own width, said beside the block's. Absent where the band is not known. */
   bandWidth?: SectionWidth
   messages?: UiMessages
@@ -37,29 +49,22 @@ export interface SpanFieldProps {
 /**
  * A block's slice of its band: the whole of it, two thirds, a half or a third.
  *
- * The one place a block's width is chosen. The banner's sheet used to hold a second "Tamanho"
- * that wrote the same column behind the draft's back, and "Tamanho" beside the band's own
+ * The one place a block's width is chosen — the Layout tab. The banner's sheet used to hold a second
+ * "Tamanho" that wrote the same column behind the draft's back, and "Tamanho" beside the band's own
  * "Largura" read as one setting in two places — so this says whose width it is, and the band's is
  * said right next to it in words of its own.
  *
- * Glyphs, because four words do not fit beside a block's name in a 380px panel; each carries the
- * slice as its name and its hover title, and the chosen one is written out beside them, so the
- * owner never has to hover to know what the block is.
+ * Glyphs, each carrying the slice as its name and its hover title, and the chosen one written out
+ * beside them, so the owner never has to hover to know what the block is.
  */
 export function SpanField({ value, onChange, name, bandWidth, messages = defaultMessages }: SpanFieldProps) {
   const text = messages.design
-  const label: Record<StorefrontSpan, string> = {
-    FULL: text.spanFull,
-    TWO_THIRDS: text.spanTwoThirds,
-    HALF: text.spanHalf,
-    THIRD: text.spanThird,
-  }
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <ToggleGroup
         multiple={false}
-        aria-label={`${text.spanLabel}: ${name}`}
+        aria-label={name ? `${text.spanLabel}: ${name}` : text.spanLabel}
         variant="outline"
         size="sm"
         value={[value]}
@@ -71,7 +76,7 @@ export function SpanField({ value, onChange, name, bandWidth, messages = default
         {ORDER.map((span) => {
           const Glyph = GLYPH[span]
           return (
-            <ToggleGroupItem key={span} value={span} aria-label={label[span]} title={label[span]}>
+            <ToggleGroupItem key={span} value={span} aria-label={spanLabelOf(span, messages)} title={spanLabelOf(span, messages)}>
               <Glyph aria-hidden="true" className="size-4" />
             </ToggleGroupItem>
           )
@@ -79,7 +84,7 @@ export function SpanField({ value, onChange, name, bandWidth, messages = default
       </ToggleGroup>
 
       <p className="text-muted-foreground text-xs">
-        <span className="text-foreground font-medium">{label[value]}</span>
+        <span className="text-foreground font-medium">{spanLabelOf(value, messages)}</span>
         {bandWidth ? (
           <>
             {" · "}

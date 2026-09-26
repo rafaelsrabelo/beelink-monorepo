@@ -116,4 +116,12 @@ describe("OptionSearch", () => {
 
     await expectNoA11yViolations(container)
   })
+
+  it("hands what is typed to a screen that asks the API for the matches", async () => {
+    const onQueryChange = vi.fn()
+    render(<OptionSearch id="q" label="Produto" placeholder="Buscar" options={[]} onPick={vi.fn()} emptyText="Nada" onQueryChange={onQueryChange} />)
+
+    await userEvent.type(screen.getByLabelText("Produto"), "wh")
+    expect(onQueryChange).toHaveBeenLastCalledWith("wh")
+  })
 })

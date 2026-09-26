@@ -29,6 +29,7 @@ model User {
   orderEvents OrderEvent[]
   /// The providers this account signs in through besides its password (G5).
   identities  AccountIdentity[]
+  pageVersions StorePageVersion[]
 
   @@unique([storeId, email])
   // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null

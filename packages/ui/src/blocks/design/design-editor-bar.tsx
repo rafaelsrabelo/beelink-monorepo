@@ -1,17 +1,17 @@
 "use client"
 
 // React
-import type { MouseEvent } from "react"
+import type { MouseEvent, ReactNode } from "react"
 
 // Libs
-import { ArrowLeftIcon, ExternalLinkIcon, ListTreeIcon, RotateCcwIcon, SlidersHorizontalIcon } from "lucide-react"
+import { ArrowLeftIcon, ExternalLinkIcon, ListTreeIcon, SlidersHorizontalIcon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
@@ -25,15 +25,29 @@ export interface DesignEditorBarProps {
   onBack?: (event: MouseEvent<HTMLAnchorElement>) => void
   shopName: string
   pageName: string
+  /** Drawn in the page name's place: the way to another page. The name still titles the screen. */
+  pageSwitcher?: ReactNode
   device: PreviewDevice
   onDeviceChange: (device: PreviewDevice) => void
-  /** How many writes Publish would send. Zero reads as published, and leaves nothing to discard. */
-  changes: number
-  publishing: boolean
+  /**
+   * Whether the draft saved on the server differs from what the shop serves — every change is saved
+   * as it is made, and none is in the shop until Publicar. Undefined while that is not known yet:
+   * the status then says nothing rather than "Publicado".
+   */
+  unpublished?: boolean
+  /** A change is on its way to the server: said first, and Publicar waits for it. */
+  saving?: boolean
+  /**
+   * False on a landing that is not up: the status says so, and Publicar puts the page up — with
+   * nothing arranged to send, it is still the one thing left to do.
+   */
+  pagePublished?: boolean
+  /** Why the last save or Publicar did not land, said in the status's place until the next one. */
+  publishError?: string | null
+  publishing?: boolean
   onPublish: () => void
-  onDiscard: () => void
-  /** The shop window, opened in a tab of its own so the editor stays where it is. */
-  shopHref: string
+  /** The page in the shop window, opened in a tab of its own. Null on a page nobody is served yet. */
+  shopHref: string | null
   /** Open the side columns as drawers; the buttons only exist where the columns do not fit. */
   onOpenStructure: () => void
   onOpenInspector: () => void
@@ -51,19 +65,22 @@ const ON_DARK =
  * Dark like the panel's header, because it is the same kind of chrome. Three regions, as in the
  * reference: the way back and the page on the left, the device in the middle, the draft on the
  * right. A phone gets one row instead, words dropped to their icons and no device toggle — the
- * preview on a phone is the phone's — so Publicar is always in reach and nothing overlaps.
+ * preview there is always the phone's (`usePreviewDevice`) — so Publicar is in reach and nothing overlaps.
  */
 export function DesignEditorBar({
   backHref,
   onBack,
   shopName,
   pageName,
+  pageSwitcher,
   device,
   onDeviceChange,
-  changes,
-  publishing,
+  unpublished,
+  saving = false,
+  pagePublished = true,
+  publishError = null,
+  publishing = false,
   onPublish,
-  onDiscard,
   shopHref,
   onOpenStructure,
   onOpenInspector,
@@ -71,8 +88,17 @@ export function DesignEditorBar({
   messages = defaultMessages,
 }: DesignEditorBarProps) {
   const text = messages.design.frame
-  const changed = changes > 0
-  const status = !changed ? text.published : changes === 1 ? text.draftOne : format(text.draft, { count: String(changes) })
+  const known = unpublished !== undefined
+  const pending = unpublished === true || saving || !pagePublished
+  const status = saving
+    ? text.saving
+    : !pagePublished
+      ? messages.design.pages.notPublished
+      : !known
+        ? ""
+        : unpublished
+          ? messages.design.unpublished
+          : text.published
 
   return (
     <header
@@ -94,8 +120,9 @@ export function DesignEditorBar({
           <span className="sr-only">{messages.design.title}: </span>
           <span className="truncate">{shopName}</span>
           <span aria-hidden="true">/</span>
-          <span className="text-header-foreground truncate font-medium">{pageName}</span>
+          {pageSwitcher ? <span className="sr-only">{pageName}</span> : <span className="text-header-foreground truncate font-medium">{pageName}</span>}
         </h1>
+        {pageSwitcher ? <div className="hidden min-w-0 md:block">{pageSwitcher}</div> : null}
       </div>
 
       <div className="hidden sm:block">
@@ -113,37 +140,39 @@ export function DesignEditorBar({
         </Button>
 
         {/* Always there, so a draft is never unannounced: the dot on a phone, the words where they fit. */}
-        <span role="status" className="text-header-foreground/80 flex shrink-0 items-center gap-1.5 px-1 text-sm">
-          <span aria-hidden="true" className={cn("size-2 rounded-full", changed ? "bg-header-pending" : "bg-header-foreground/40")} />
+        {publishError ? (
+          <span role="alert" className="text-header-foreground flex min-w-0 items-center gap-1.5 px-1 text-sm">
+            <span aria-hidden="true" className="bg-destructive size-2 shrink-0 rounded-full" />
+            <span className="truncate">{publishError}</span>
+          </span>
+        ) : null}
+        <span role="status" className={cn("text-header-foreground/80 shrink-0 items-center gap-1.5 px-1 text-sm", publishError ? "hidden" : "flex")}>
+          <span aria-hidden="true" className={cn("size-2 rounded-full", pending ? "bg-header-pending" : "bg-header-foreground/40")} />
           <span className="sr-only lg:not-sr-only">{status}</span>
         </span>
 
-        <Link
-          href={shopHref}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(
-            "border-header-border hidden shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium outline-none focus-visible:ring-2 md:flex",
-            ON_DARK,
-          )}
-        >
-          {text.viewInShop}
-          <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
-        </Link>
-
-        {changed ? (
-          <Button type="button" variant="ghost" className={cn("shrink-0 px-2 sm:px-2.5", ON_DARK)} disabled={publishing} onClick={onDiscard}>
-            <RotateCcwIcon aria-hidden="true" className="size-4 sm:hidden" />
-            <span className="sr-only sm:not-sr-only">{messages.design.discard}</span>
-          </Button>
+        {shopHref ? (
+          <Link
+            href={shopHref}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              "border-header-border hidden shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium outline-none focus-visible:ring-2 md:flex",
+              ON_DARK,
+            )}
+          >
+            {text.viewInShop}
+            <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
+          </Link>
         ) : null}
+
         <Button
           type="button"
           className="bg-header-foreground text-header hover:bg-header-foreground/90 h-9 shrink-0 px-3 font-semibold sm:px-4"
-          disabled={!changed || publishing}
+          disabled={!pending || publishing || saving}
           onClick={onPublish}
         >
-          {publishing ? messages.design.publishing : messages.design.publish}
+          {publishing ? messages.design.publishing : pagePublished ? messages.design.publish : messages.design.pages.publishPage}
         </Button>
       </div>
     </header>

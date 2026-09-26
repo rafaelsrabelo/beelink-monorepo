@@ -8,10 +8,11 @@ import type { PublicComponent, PublicSection, PublicStore } from "@harness-monor
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { anchorOf, ctaOf, menuOf, siteFooterColumnsOf } from "./site-chrome"
+import { anchorOf, ctaOf, menuOf, pageLinksOf, siteFooterColumnsOf } from "./site-chrome"
 
+// A title, so every band here has something to draw: the menu names only the bands the page draws.
 function component(kind: PublicComponent["kind"]): PublicComponent {
-  return { id: `${kind}-c`, kind, title: null, subtitle: null, body: null, span: "FULL", display: null, source: null, sourceCategory: null, items: [], columns: null, align: null }
+  return { id: `${kind}-c`, kind, title: "Título", subtitle: null, body: null, span: "FULL", display: null, source: null, sourceCategory: null, items: [], columns: null, align: null }
 }
 
 function band(id: string, name: string | null, kind: PublicComponent["kind"] = "HEADING"): PublicSection {
@@ -41,6 +42,13 @@ describe("site chrome", () => {
     expect(menuOf(sections).map((entry) => entry.label)).toEqual(["Serviços", "Como funciona"])
   })
 
+  // The page leaves out a band with nothing to draw; a menu entry for it would link to nothing.
+  it("leaves out of the menu a named band the page does not draw, for having nothing in it", () => {
+    const empty: PublicSection = { ...band("e", "Galeria", "BANNER"), components: [{ ...component("BANNER"), items: [] }] }
+
+    expect(menuOf([...sections, empty]).map((entry) => entry.label)).not.toContain("Galeria")
+  })
+
   it("has no button when no named band holds a form", () => {
     expect(ctaOf([band("a", "Serviços"), band("d", null, "CONTACT")])).toBeNull()
   })
@@ -51,5 +59,30 @@ describe("site chrome", () => {
     const [navigation] = siteFooterColumnsOf(store, sections, ptBR)
 
     expect(navigation?.items.map((item) => item.label)).toEqual(["Serviços", "Como funciona", "Pedir orçamento"])
+  })
+
+  /** On a landing the bands are the home's: an anchor alone would point at a band this page does not have. */
+  it("leads back to the home's bands from another page", () => {
+    expect(menuOf(sections, "/asfalto")[0]).toMatchObject({ label: "Serviços", href: "/asfalto#servicos" })
+    expect(ctaOf(sections, "/asfalto")).toEqual({ label: "Pedir orçamento", href: "/asfalto#pedir-orcamento" })
+    // The button's band is still left out of the menu when both carry the base.
+    expect(menuOf(sections, "/asfalto").map((entry) => entry.label)).toEqual(["Serviços", "Como funciona"])
+  })
+
+  it("links the landings the shop shows in its menu, after its own bands in the footer", () => {
+    const store = {
+      socialNetworks: { whatsapp: null },
+      pages: [{ slug: "lancamento", title: "Lançamento" }],
+    } as unknown as PublicStore
+    const pages = pageLinksOf(store, (slug) => `/asfalto/lp/${slug}`)
+
+    expect(pages).toEqual([{ id: "page-lancamento", label: "Lançamento", href: "/asfalto/lp/lancamento" }])
+    const [navigation] = siteFooterColumnsOf(store, sections, ptBR, { base: "/asfalto", pages })
+    expect(navigation?.items.at(-1)).toEqual({ label: "Lançamento", href: "/asfalto/lp/lancamento" })
+    expect(navigation?.items[0]).toEqual({ label: "Serviços", href: "/asfalto#servicos" })
+  })
+
+  it("links no landing for a shop cached before it had any", () => {
+    expect(pageLinksOf({} as PublicStore, (slug) => slug)).toEqual([])
   })
 })

@@ -14,7 +14,8 @@ const row = {
   logoUrl: null,
   bannerImageUrl: null,
   categoryId: '0199a0f1-0000-7000-8000-0000000000c1',
-  sections: [],
+  pageVersions: [],
+  pages: [],
   category: {
     id: '0199a0f1-0000-7000-8000-0000000000c1',
     slug: 'alimentacao',
@@ -139,6 +140,31 @@ describe('toPublicStore', () => {
     } as unknown as StoreRow).layoutSettings;
 
     expect(settings).toEqual({ productsPerRow: 3 });
+  });
+
+  // The query already chose them — published landings marked for the menu — so a null slug here is the home's.
+  it('links the landings the menu shows, and never the home', () => {
+    const pages = toPublicStore({
+      ...row,
+      pages: [
+        { slug: null, title: 'Página inicial' },
+        { slug: 'lancamento', title: 'Lançamento' },
+      ],
+    } as unknown as StoreRow).pages;
+
+    expect(pages).toEqual([{ slug: 'lancamento', title: 'Lançamento' }]);
+  });
+
+  // What the panel edits is the draft; a visitor is served the home as it was last published.
+  it('serves the home from its last published version, its hidden bands left out', () => {
+    const band = (id: string, isActive: boolean) => ({ id, name: null, width: 'CONTAINED', background: null, isActive, components: [] });
+    const sections = toPublicStore({
+      ...row,
+      pageVersions: [{ document: { format: 1, sections: [band('0199b000-0000-7000-8000-000000000001', true), band('0199b000-0000-7000-8000-000000000002', false)] } }],
+    } as unknown as StoreRow).sections;
+
+    expect(sections.map((section) => section.id)).toEqual(['0199b000-0000-7000-8000-000000000001']);
+    expect(toPublicStore(row).sections).toEqual([]);
   });
 
   it('keeps a layout blob it can trust', () => {

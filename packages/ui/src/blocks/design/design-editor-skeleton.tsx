@@ -18,7 +18,8 @@ export function DesignEditorSkeleton() {
           <Skeleton className="h-14 w-full" />
         </div>
         <div className="flex min-w-0 flex-1 justify-center p-4">
-          <Skeleton className="h-full w-full max-w-sm rounded-xl" />
+          {/* The shape of what opens: the computer's shop, or a phone's strip where the phone is forced. */}
+          <Skeleton className="h-full w-full max-w-sm rounded-xl sm:max-w-none" />
         </div>
         <div className="bg-shell-surface border-shell-border hidden w-85 shrink-0 flex-col gap-2 border-l p-3 lg:flex">
           <Skeleton className="h-9 w-full" />

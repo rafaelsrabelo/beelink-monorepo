@@ -32,23 +32,70 @@ function leadRow(over: Record<string, unknown> = {}) {
   };
 }
 
+/** A published page's document holding the form, as the version froze it. */
+function publishedWith(form: { id?: string; isActive?: boolean; items?: unknown }) {
+  return {
+    format: 1,
+    sections: [
+      {
+        id: '0199b000-0000-7000-8000-000000000001',
+        name: 'Contato',
+        width: 'CONTAINED',
+        background: null,
+        isActive: true,
+        components: [
+          {
+            id: form.id ?? FORM,
+            kind: 'CONTACT',
+            title: null,
+            subtitle: null,
+            body: null,
+            span: 'FULL',
+            display: null,
+            source: null,
+            sourceCategoryId: null,
+            limit: null,
+            columns: null,
+            align: null,
+            visibleOn: 'ALL',
+            items: form.items ?? FIELDS,
+            isActive: form.isActive ?? true,
+          },
+        ],
+      },
+    ],
+  };
+}
+
 /** Collaborators by hand, the way every other service spec here builds them. */
-function build(found: { form?: boolean; items?: unknown; leadOfAnotherSite?: boolean } = {}) {
+function build(
+  found: { form?: boolean; hidden?: boolean; items?: unknown; deletedFromDraft?: boolean; leadOfAnotherSite?: boolean } = {},
+) {
   const create = vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => leadRow(data));
   const sendLeadReceived = vi.fn().mockResolvedValue(undefined);
 
   const prisma = {
-    storeComponent: {
-      findFirst: vi.fn().mockResolvedValue(
-        found.form === false
-          ? null
-          : {
-              id: FORM,
-              items: found.items ?? FIELDS,
-              store: { slug: 'asfalto-norte', name: 'Asfalto Norte', owner: { name: 'Ana', email: 'ana@exemplo.test' } },
+    storePage: {
+      findMany: vi.fn().mockResolvedValue([
+        {
+          versions: [
+            {
+              document: publishedWith({
+                ...(found.form === false ? { id: '0199c000-0000-7000-8000-00000000000f' } : {}),
+                ...(found.hidden ? { isActive: false } : {}),
+                ...(found.items !== undefined ? { items: found.items } : {}),
+              }),
             },
-      ),
+          ],
+        },
+      ]),
     },
+    store: {
+      findUniqueOrThrow: vi
+        .fn()
+        .mockResolvedValue({ slug: 'asfalto-norte', name: 'Asfalto Norte', owner: { name: 'Ana', email: 'ana@exemplo.test' } }),
+    },
+    storeComponent: { count: vi.fn().mockResolvedValue(found.deletedFromDraft ? 0 : 1) },
     lead: {
       create,
       findMany: vi.fn().mockResolvedValue([leadRow()]),
@@ -103,22 +150,31 @@ describe('LeadsService — a visitor writes in', () => {
 
     expect(create).not.toHaveBeenCalled();
     expect(sendLeadReceived).not.toHaveBeenCalled();
-    expect(prisma.storeComponent.findFirst).not.toHaveBeenCalled();
+    expect(prisma.storePage.findMany).not.toHaveBeenCalled();
   });
 
-  it('refuses a form this site does not have, or has hidden', async () => {
-    const { service, prisma } = build({ form: false });
+  it('refuses a form this site has not published, has hidden, or has on a page that is not served', async () => {
+    for (const found of [{ form: false }, { hidden: true }]) {
+      const { service, prisma, create } = build(found);
 
-    await expect(
-      service.receive('asfalto-norte', { componentId: FORM, name: 'Carlos', answers: { email: 'a@b.co' } }),
-    ).rejects.toMatchObject({ response: { errorCode: 'LEAD_FORM_NOT_FOUND' } });
+      await expect(
+        service.receive('asfalto-norte', { componentId: FORM, name: 'Carlos', answers: { email: 'a@b.co' } }),
+      ).rejects.toMatchObject({ response: { errorCode: 'LEAD_FORM_NOT_FOUND' } });
+      expect(create).not.toHaveBeenCalled();
+      // Asked of the pages that are up, as they were published: a form in a draft was shown to nobody.
+      expect(prisma.storePage.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { storeId: STORE, status: 'PUBLISHED' } }),
+      );
+    }
+  });
 
-    // Hidden is part of the question, not a second read: the form has to be shown to be posted to.
-    expect(prisma.storeComponent.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ kind: 'CONTACT', isActive: true, section: { isActive: true } }),
-      }),
-    );
+  // Deleted in the draft, still published until the next Publicar: the visitor was shown it.
+  it('keeps the lead of a form deleted from the draft but still published, pointing at no row', async () => {
+    const { service, create } = build({ deletedFromDraft: true });
+
+    await service.receive('asfalto-norte', { componentId: FORM, name: 'Carlos', answers: { email: 'a@b.co' } });
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ componentId: null }) }));
   });
 
   it('refuses answers that do not fit the form, before writing anything', async () => {
@@ -133,7 +189,7 @@ describe('LeadsService — a visitor writes in', () => {
 
   /** A form whose stored fields no longer parse asks nothing, so any answer is to an unknown field. */
   it('treats a form whose fields no longer parse as a form with no fields', async () => {
-    const { service } = build({ items: { broken: true } });
+    const { service } = build({ items: [{ broken: true }] });
 
     await expect(
       service.receive('asfalto-norte', { componentId: FORM, name: 'Carlos', answers: { email: 'a@b.co' } }),

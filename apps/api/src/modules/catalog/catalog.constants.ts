@@ -62,6 +62,8 @@ export const RESERVED_PATH_SEGMENTS: readonly string[] = [
   'orders',
   'sobre',
   'about',
+  // A shop's landing pages, at `/<shop>/lp/<address>`.
+  'lp',
   // The shop window's own assets, which Next serves from paths of this shape.
   'api',
   'sitemap.xml',
