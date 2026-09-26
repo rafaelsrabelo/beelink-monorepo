@@ -2,27 +2,19 @@
 import type { ReactNode } from "react"
 
 // Types
-import type {
-  PublicAnnouncementLink,
-  PublicBannerSlide,
-  PublicComponent,
-  PublicProductCategory,
-  PublicSection,
-} from "@harness-monorepo/contracts"
+import type { PublicComponent, PublicProductCategory, PublicSection } from "@harness-monorepo/contracts"
 
 // UI
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBandCell } from "@harness-monorepo/ui/blocks/storefront/storefront-band-cell"
 import { StorefrontBandGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-band-grid"
 import { StorefrontSectionBand } from "@harness-monorepo/ui/blocks/storefront/storefront-section-band"
-import {
-  StorefrontShowcase,
-  type StorefrontShowcaseItem,
-} from "@harness-monorepo/ui/blocks/storefront/storefront-showcase"
+import { StorefrontShowcase } from "@harness-monorepo/ui/blocks/storefront/storefront-showcase"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
+import { cardsOf } from "./banner-cards"
 import { reachesTheEdge } from "./band-rhythm"
 import { deviceRhythmOf, shownClassOf, shownOn, spacingClassOf } from "./device-visibility"
 import { drawnSectionsOf } from "./empty-component"
@@ -71,34 +63,6 @@ export interface StorefrontSectionsProps {
   /** What a contact form sends with. The shop window passes it; the preview does not, and sends nothing. */
   contact?: LiveContact | null
   messages: UiMessages
-}
-
-/**
- * A banner's pictures as cards, when it is drawn as cards: one picture, whatever its display, or any
- * number with `display: GRID`. Null for everything else, which `StorefrontComponent` draws — the
- * carousel among them.
- *
- * The shopkeeper's display decides carousel or grid, and the count never overrides it: the count
- * used to be the whole decision, so a second picture turned three posters meant for one row into a
- * carousel nobody asked for. A grid of one and a carousel of one are the same card.
- */
-function cardsOf(component: PublicComponent): StorefrontShowcaseItem[] | null {
-  if (component.kind !== "BANNER") return null
-
-  // The first picture over its words, or beside them, is a layout of its own and never a card.
-  if (component.display === "BACKDROP" || component.display === "SPLIT") return null
-  const slides = component.items as PublicBannerSlide[]
-  if (slides.length !== 1 && !(component.display === "GRID" && slides.length > 1)) return null
-
-  return slides.map((slide, at) => ({
-    // The first card keeps the component's id, as the one poster always did.
-    id: at === 0 ? component.id : `${component.id}-${slide.id}`,
-    title: slide.title ?? "",
-    subtitle: slide.subtitle,
-    imageUrl: slide.imageUrl,
-    href: slide.href,
-    external: slide.external,
-  }))
 }
 
 /**
@@ -207,40 +171,4 @@ export function StorefrontSections({
       })}
     </>
   )
-}
-
-/**
- * The strip above the header, if the shop has one.
- *
- * Read out of the same arrangement as every other component, because that is where a shopkeeper
- * writes and hides it — but drawn by the window rather than among the bands, because it sits above
- * the masthead and "before the header" is not a position the arrangement can hold.
- */
-export function announcementOf(
-  sections: readonly PublicSection[] = [],
-): {
-  left: string
-  right?: string
-  background: string | null
-  href: string | null
-  external: boolean
-  motion?: "STATIC" | "MARQUEE"
-} | null {
-  const band = sections.find((section) => section.components.some((component) => component.kind === "ANNOUNCEMENT"))
-  const strip = band?.components.find((component) => component.kind === "ANNOUNCEMENT")
-
-  if (!band || !strip?.title) return null
-
-  // Already resolved by the API, the way a slide's is. At most one.
-  const link = strip.items[0] as PublicAnnouncementLink | undefined
-
-  return {
-    left: strip.title,
-    ...(strip.subtitle ? { right: strip.subtitle } : {}),
-    // The strip's colour is its band's: the one band not drawn where it sits still owns a colour.
-    background: band.background,
-    href: link?.href ?? null,
-    external: link?.external ?? false,
-    ...(strip.display === "STATIC" || strip.display === "MARQUEE" ? { motion: strip.display } : {}),
-  }
 }

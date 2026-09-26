@@ -1,12 +1,5 @@
 // Types
-import type {
-  AnnouncementLink,
-  BannerSlide,
-  PublicComponent,
-  PublicComponentItem,
-  PublicSection,
-  Section,
-} from "@harness-monorepo/contracts"
+import type { BannerSlide, PublicComponent, PublicSection, Section } from "@harness-monorepo/contracts"
 
 // UI
 import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-arrangement"
@@ -14,6 +7,7 @@ import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-ar
 // App
 import { isEmptyComponent } from "../storefront/empty-component"
 import type { SectionDraft } from "./design-draft"
+import { previewItemsOf } from "./design-preview-items"
 
 /** Each showcase's cards as the shop's public read resolved them, by component id. */
 export type Shelves = ReadonlyMap<string, Pick<PublicComponent, "items" | "sourceCategory">>
@@ -75,31 +69,7 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             columns: component.columns,
             align: component.align,
             visibleOn: component.visibleOn,
-            /*
-              A banner's slides arrive from the panel carrying ids, and the shop window is served
-              them carrying addresses. The preview builds the second shape from the first with no
-              address at all, and loses nothing by it: every link in the preview is inert by
-              construction — the pane renders an href-less anchor and swallows the click. The
-              picture, the words and the order are what is being arranged, and all three are here.
-            */
-            items:
-              component.kind === "BANNER"
-                ? ((was?.items ?? []) as BannerSlide[]).map((slide) => ({
-                    id: slide.id,
-                    imageUrl: slide.imageUrl,
-                    title: slide.title ?? null,
-                    subtitle: slide.subtitle ?? null,
-                    href: null,
-                    external: false,
-                  }))
-                : component.kind === "ANNOUNCEMENT"
-                  ? ((was?.items ?? []) as AnnouncementLink[]).map((link) => ({ id: link.id, href: null, external: false }))
-                  : component.kind === "PRODUCTS"
-                    ? // What a showcase stores is the ids it picked, never the cards a visitor is served;
-                      // the cards are the public read's to resolve. A showcase saved since the page
-                      // loaded keeps the cards it had then until the next load.
-                      (shelves.get(component.id)?.items ?? [])
-                    : ((was?.items ?? []) as PublicComponentItem[]),
+            items: previewItemsOf(component, was, shelves),
           } satisfies PublicComponent
         }),
     }))

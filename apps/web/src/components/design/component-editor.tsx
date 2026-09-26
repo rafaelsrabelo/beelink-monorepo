@@ -88,10 +88,10 @@ export function ComponentEditor({
   const text = messages.design
   const [initial] = useState(() => (component ? toForm(component) : null))
   const [bandInitial] = useState(() => toBandForm(section))
-  // The strip's link keeps its id across saves, so a re-pointed strip is the same link moved. Minted
-  // once: the preview draws the fields through `toPayload` on every change, and a fresh id each time
-  // would be a different link each time.
-  const [linkId] = useState(() => (component?.items[0] as { id?: string } | undefined)?.id ?? crypto.randomUUID())
+  // A kind's single item — the strip's link — keeps its id across saves, so a re-pointed strip is the
+  // same link moved. Minted once: the preview draws the fields through `toPayload` on every change,
+  // and a fresh id each time would be a different item each time.
+  const [itemId] = useState(() => (component?.items[0] as { id?: string } | undefined)?.id ?? crypto.randomUUID())
 
   // What is typed lives in `useDesignEdit`, where the preview reads it before Salvar.
   const open = useDesignEdit((state) => state.open)
@@ -108,9 +108,9 @@ export function ComponentEditor({
         sectionId: section.id,
         band: bandInitial,
         bandOpened: bandInitial,
-        component: componentId && initial ? { id: componentId, value: initial, linkId } : null,
+        component: componentId && initial ? { id: componentId, value: initial, itemId } : null,
       }),
-    [open, section.id, bandInitial, componentId, initial, linkId],
+    [open, section.id, bandInitial, componentId, initial, itemId],
   )
   const value = mine?.component?.value ?? initial
   const band = mine?.band ?? bandInitial
@@ -134,7 +134,7 @@ export function ComponentEditor({
   // the API would refuse as it stands — a showcase whose category was deleted — must not hold its
   // band's colour hostage.
   const contentChanged =
-    !!value && !!initial && JSON.stringify(toPayload(value, linkId)) !== JSON.stringify(toPayload(initial, linkId))
+    !!value && !!initial && JSON.stringify(toPayload(value, itemId)) !== JSON.stringify(toPayload(initial, itemId))
   const ready = value && contentChanged ? contentReady(value) : true
 
   /*
@@ -147,7 +147,7 @@ export function ComponentEditor({
     const bandPayload = toBandPayload(band, bandOpened)
     try {
       if (component && value && contentChanged) {
-        onSaved?.(await update.mutateAsync({ componentId: component.id, payload: toPayload(value, linkId) }))
+        onSaved?.(await update.mutateAsync({ componentId: component.id, payload: toPayload(value, itemId) }))
       }
       if (Object.keys(bandPayload).length) await updateBand.mutateAsync({ sectionId: section.id, payload: bandPayload })
       if (stillOpen()) done()

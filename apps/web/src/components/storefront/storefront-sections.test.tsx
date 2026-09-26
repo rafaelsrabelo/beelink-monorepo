@@ -114,6 +114,34 @@ describe("StorefrontSections — a band is a grid", () => {
 
     expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
   })
+
+  // A cached page, or a newer API, can serve a kind this build has never heard of. It used to fall
+  // through to a shelf, which read its items as product cards.
+  it("draws nothing for a kind this build does not know, and drops a band left with nothing", () => {
+    const unknown = { ...heading("novo", "FULL"), kind: "SOMETHING_NEW", items: [{ id: "q1", question: "?" }] } as unknown as PublicComponent
+    const { container } = draw([band([unknown]), { ...band([poster("a", "FULL")]), id: "outra" }])
+
+    expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
+    expect(screen.getAllByText("Pôster a").length).toBeGreaterThan(0)
+  })
+
+  it("draws nothing for a kind it does not know even in design mode", () => {
+    const unknown = { ...heading("novo", "FULL"), kind: "SOMETHING_NEW" } as unknown as PublicComponent
+    const { container } = render(
+      <StorefrontSections
+        sections={[band([unknown, heading("t", "FULL")])]}
+        primary=""
+        categories={[]}
+        routes={routes}
+        showPrice
+        showBadge
+        renderBlock={(_component, block) => block}
+        messages={ptBR}
+      />,
+    )
+
+    expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
+  })
 })
 
 /**

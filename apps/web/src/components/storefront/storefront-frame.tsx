@@ -13,7 +13,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { ctaOf, menuOf, pageLinksOf, siteFooterColumnsOf } from "./site-chrome"
 import { shopFooterColumnsOf } from "./shop-chrome"
-import { announcementOf } from "./storefront-sections"
+import { announcementOf } from "./announcement-of"
 import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
