@@ -11,8 +11,9 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
-import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
+import { homeSectionsOf, storeInclude, toPublicStore, toStore } from './store.mapper.js';
 import { writeBands } from '../page/page-bands-write.js';
+import { freezePage } from '../page/page-freeze.js';
 import { lookupsOf } from '../page/page-resolve.js';
 import { RESERVED_SLUGS } from './stores.constants.js';
 
@@ -98,6 +99,9 @@ export class StoresService {
           select: { id: true },
         });
         await writeBands(tx, created.id, home.id, openingPageOf(dto, created.paymentMethods));
+        // And frozen as its first version, which is what a visitor is served: a shop is never a
+        // draft nobody published.
+        await freezePage(tx, { storeId: created.id, pageId: home.id, authorId: ownerId });
 
         return tx.store.findUniqueOrThrow({ where: { id: created.id }, include: storeInclude });
       });
@@ -210,9 +214,8 @@ export class StoresService {
     const row = await this.prisma.store.findUnique({ where: { slug }, include: storeInclude });
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
 
-    const { slugs, shelves } = await lookupsOf(this.prisma, row.id, row.sections);
-
-    return toPublicStore(row, slugs, shelves);
+    const sections = homeSectionsOf(row);
+    return toPublicStore(row, await lookupsOf(this.prisma, row.id, sections), sections);
   }
 
   /**

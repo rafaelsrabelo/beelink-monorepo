@@ -11,7 +11,9 @@ import type { LandingSubject } from './landing-templates.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { coverImageOf, landingBands, PRODUCT_TEMPLATE_IDS, SITE_TEMPLATE_IDS } from './landing-templates.js';
+import { saleEndOf } from './page-countdown.js';
 import { writeBands } from './page-bands-write.js';
+import { freezePage } from './page-freeze.js';
 import { promisesOf } from './page-seed.js';
 import { pageSlugOf } from './page-slug.js';
 import { pageFor } from './page-scope.js';
@@ -136,6 +138,9 @@ export class PagesService {
         const current = await tx.storePage.findUniqueOrThrow({ where: { id: page.id }, select: { status: true } });
         const publishing = dto.status === 'PUBLISHED' && current.status !== 'PUBLISHED';
 
+        // Up means the draft as it is now: a landing never goes up serving an older freeze, or none.
+        if (publishing) await freezePage(tx, { storeId, pageId: page.id, authorId: userId });
+
         return tx.storePage.update({
           where: { id: page.id },
           data: {
@@ -182,7 +187,9 @@ export class PagesService {
     const promises = promisesOf(paymentMethods);
     const needsProduct = (PRODUCT_TEMPLATE_IDS as readonly LandingTemplateId[]).includes(dto.template);
 
-    if (!needsProduct) return { title: dto.title, product: null, category: null, promises };
+    // Now, and not a clock the caller hands in: a sale's end is the moment the page is made plus three days.
+    const saleEndsAt = saleEndOf(new Date());
+    if (!needsProduct) return { title: dto.title, product: null, category: null, promises, saleEndsAt };
     if (!dto.productId) {
       throw new BadRequestException(pageError('PAGE_PRODUCT_REQUIRED', 'Escolha o produto da página.'));
     }
@@ -210,6 +217,7 @@ export class PagesService {
         ? { id: category.id, name: category.name, description: category.description, imageUrl: category.imageUrl }
         : null,
       promises,
+      saleEndsAt,
     };
   }
 }

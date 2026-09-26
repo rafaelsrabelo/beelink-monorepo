@@ -21,7 +21,7 @@ const store = {
   sections: [],
 } as unknown as PublicStore
 const colors = { background: "oklch(0.98 0 0)", primary: "oklch(0.5 0.2 150)", header: "oklch(0.3 0 0)", footer: "oklch(0.2 0 0)" } as PublicStore["colors"]
-const empty = { images: [], products: [], hasCategories: false }
+const empty = { images: [], products: [], hasCategories: false, now: 0 }
 
 describe("GalleryPreview", () => {
   // The shop's own renderer, in its own palette: what is chosen is what arrives.

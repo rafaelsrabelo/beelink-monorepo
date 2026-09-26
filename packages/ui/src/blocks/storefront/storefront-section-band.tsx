@@ -2,7 +2,8 @@
 import type { CSSProperties, ReactNode } from "react"
 
 // UI
-import { readableOn, toneOn } from "@harness-monorepo/ui/lib/contrast"
+import { readableOn } from "@harness-monorepo/ui/lib/contrast"
+import { surfaceVariables } from "@harness-monorepo/ui/lib/shop-palette"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Block
@@ -53,16 +54,10 @@ export function StorefrontSectionBand({
   children,
   className,
 }: StorefrontSectionBandProps) {
+  // Every variable that follows the page's background, declared again for the band's: a mix left
+  // to the root keeps the page's colours inside it. See `surfaceVariables`.
   const dressed: CSSProperties | undefined = background
-    ? ({
-        "--shop-background": background,
-        "--shop-on-background": readableOn(background),
-        "--shop-primary-ink": toneOn(primary, background),
-        "--shop-text": readableOn(background),
-        "--shop-on-text": background,
-        backgroundColor: background,
-        color: readableOn(background),
-      } as CSSProperties)
+    ? ({ ...surfaceVariables(background, primary), backgroundColor: background, color: readableOn(background) } as CSSProperties)
     : undefined
 
   return (

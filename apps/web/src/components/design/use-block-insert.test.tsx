@@ -71,7 +71,7 @@ const saved = [
 function hook() {
   const draft = { rows: saved.map(toDraft), saved, patchComponent: vi.fn() }
   const onCreated = vi.fn()
-  const view = renderHook(() => useBlockInsert("loja", draft, onCreated, web))
+  const view = renderHook(() => useBlockInsert("loja", undefined, draft, onCreated, web))
   return { ...view, draft, onCreated }
 }
 

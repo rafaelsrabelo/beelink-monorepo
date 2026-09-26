@@ -38,8 +38,17 @@ type SlideRow = {
 /** One product a showcase picked. Same reason as `PromiseRow`. */
 type PickRow = { id: string; productId: string };
 
-/** What a seeded component may hold: a promises band's rows, a form's fields, a banner's pictures, a showcase's picks. */
-export type SeededItem = PromiseRow | ContactFieldRow | SlideRow | PickRow;
+/** One question of a FAQ. Same reason as `PromiseRow`. */
+type FaqRow = { id: string; question: string; answer: string };
+
+/** When a countdown ends. Same reason as `PromiseRow`. */
+type EndRow = { id: string; endsAt: string };
+
+/** A call to action's button, pointing at a product. Same reason as `PromiseRow`. */
+type ButtonRow = { id: string; label: string; target: 'PRODUCT'; productId: string };
+
+/** What a seeded component may hold: promises, a form's fields, pictures, picks, questions or a button. */
+export type SeededItem = PromiseRow | ContactFieldRow | SlideRow | PickRow | FaqRow | ButtonRow | EndRow;
 
 /** One band of the page a new shop or site opens with, ready for `storeSection.create`. */
 export interface SeededBand {
@@ -131,11 +140,15 @@ export function openingItemsOf(kind: ComponentKind): SeededItem[] {
  * slide has always turned it into; a showcase opens as a rail, which is what the landing page's
  * shelf has always been; the categories open as a rail too, which is what the shopkeeper asked of
  * them. The benefits and the strip open with none on purpose: unset, each keeps the look it always
- * had, which no layout of theirs repeats exactly. No other kind reads the column.
+ * had, which no layout of theirs repeats exactly. A kind born with layouts opens with its first, so
+ * it has no "none chosen". No other kind reads the column.
  */
 export function openingDisplayOf(kind: ComponentKind): ComponentDisplay | null {
   if (kind === 'BANNER') return 'CAROUSEL';
   if (kind === 'PRODUCTS' || kind === 'CATEGORIES') return 'RAIL';
+  if (kind === 'FAQ') return 'ACCORDION';
+  if (kind === 'CALL_TO_ACTION' || kind === 'COUNTDOWN') return 'BAND';
+  if (kind === 'IMAGE_TEXT' || kind === 'FEATURED_PRODUCT') return 'IMAGE_LEFT';
   return null;
 }
 

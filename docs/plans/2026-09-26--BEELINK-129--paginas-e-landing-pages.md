@@ -133,3 +133,20 @@ Os textos são em pt-BR, pelo mesmo motivo das faixas com que uma loja nasce.
   - os links de páginas na barra de categorias;
   - despublicar;
   - o fallback da coleção sem categoria.
+
+## Depois da revisão
+
+*Acrescentado em 2026-09-26.*
+
+- **Landing sem topo e rodapé:** o card não adiciona ao carrinho, porque sem o cabeçalho não há como
+  chegar a ele. O card leva à página do produto.
+- **"Publicar página" que falha:** a barra diz o motivo no lugar do status até a próxima tentativa.
+- **Aba Páginas sem lista:** quando a lista não carrega, a aba diz isso e oferece "Tentar de novo",
+  no lugar de um esqueleto para sempre.
+- **"Mostrar nos links da loja":** o nome certo para o que a loja desenha. O link fica no rodapé da
+  loja e, num site, também no menu. A barra de categorias continua fora, como estava no corte.
+- **Endereço apagado:** "Criar página" espera um endereço. O endereço mostrado é cortado em 60, como
+  a API corta.
+- **Produto principal:** a busca pergunta à API, então os produtos além dos primeiros 96 também
+  aparecem.
+- **Diálogos de página:** fecham junto com o editor e não reabrem sozinhos na próxima vez.

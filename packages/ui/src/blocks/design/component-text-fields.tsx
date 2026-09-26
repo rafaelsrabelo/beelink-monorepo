@@ -26,8 +26,36 @@ export interface ComponentTextFieldsProps {
   messages?: UiMessages
 }
 
-/** The kinds that carry a heading of their own. */
-const HAS_HEADING: readonly ComponentKind[] = ["ANNOUNCEMENT", "HEADING", "CATEGORIES", "PRODUCTS", "CONTACT"]
+/** Which of the three words a kind asks for. */
+interface Words {
+  title: boolean
+  subtitle: boolean
+  body: boolean
+}
+
+const HEADED: Words = { title: true, subtitle: true, body: false }
+const WORDLESS: Words = { title: false, subtitle: false, body: false }
+
+/**
+ * The words each kind asks for, closed with `satisfies`: a kind added without saying which fails
+ * the build here, rather than opening with no words to fill. A banner's and the promises' words are
+ * their items' own.
+ */
+const WORDS_OF = {
+  ANNOUNCEMENT: HEADED,
+  HEADING: HEADED,
+  CATEGORIES: HEADED,
+  PRODUCTS: HEADED,
+  CONTACT: HEADED,
+  FAQ: HEADED,
+  CALL_TO_ACTION: { title: true, subtitle: false, body: true },
+  IMAGE_TEXT: { title: true, subtitle: false, body: true },
+  FEATURED_PRODUCT: HEADED,
+  COUNTDOWN: HEADED,
+  TEXT: { title: false, subtitle: false, body: true },
+  BANNER: WORDLESS,
+  BENEFITS: WORDLESS,
+} as const satisfies Record<ComponentKind, Words>
 
 /**
  * What a block says in words: a heading and the line under it, or a paragraph.
@@ -38,38 +66,35 @@ const HAS_HEADING: readonly ComponentKind[] = ["ANNOUNCEMENT", "HEADING", "CATEG
 export function ComponentTextFields({ kind, value, onChange, messages = defaultMessages }: ComponentTextFieldsProps) {
   const text = messages.design
   const banner = messages.banners
+  const words = WORDS_OF[kind]
 
   return (
     <>
-      {HAS_HEADING.includes(kind) ? (
-        <>
-          <Field>
-            <FieldLabel htmlFor="component-title">{banner.titleLabel}</FieldLabel>
-            <FieldContent>
-              <Input
-                id="component-title"
-                value={value.title}
-                onChange={(event) => onChange({ title: event.target.value })}
-                placeholder={banner.titlePlaceholder}
-              />
-            </FieldContent>
-          </Field>
-
-          <Field>
-            <FieldLabel htmlFor="component-subtitle">{banner.subtitleLabel}</FieldLabel>
-            <FieldContent>
-              <Input
-                id="component-subtitle"
-                value={value.subtitle}
-                onChange={(event) => onChange({ subtitle: event.target.value })}
-              />
-              <FieldDescription>{banner.subtitleHelp}</FieldDescription>
-            </FieldContent>
-          </Field>
-        </>
+      {words.title ? (
+        <Field>
+          <FieldLabel htmlFor="component-title">{banner.titleLabel}</FieldLabel>
+          <FieldContent>
+            <Input
+              id="component-title"
+              value={value.title}
+              onChange={(event) => onChange({ title: event.target.value })}
+              placeholder={banner.titlePlaceholder}
+            />
+          </FieldContent>
+        </Field>
       ) : null}
 
-      {kind === "TEXT" ? (
+      {words.subtitle ? (
+        <Field>
+          <FieldLabel htmlFor="component-subtitle">{banner.subtitleLabel}</FieldLabel>
+          <FieldContent>
+            <Input id="component-subtitle" value={value.subtitle} onChange={(event) => onChange({ subtitle: event.target.value })} />
+            <FieldDescription>{banner.subtitleHelp}</FieldDescription>
+          </FieldContent>
+        </Field>
+      ) : null}
+
+      {words.body ? (
         <Field>
           <FieldLabel htmlFor="component-body">{text.bodyLabel}</FieldLabel>
           <FieldContent>

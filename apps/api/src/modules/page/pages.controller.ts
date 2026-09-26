@@ -100,6 +100,15 @@ export class PagesController {
     return this.pages.update(storeSlug, current.id, pageId, dto);
   }
 
+  // Declared above `:pageId/preview`, which would otherwise read `home` as a page's id. The editor
+  // opens the home without knowing its id.
+  @Get('home/preview')
+  @ApiOperation({ summary: 'The home, drawn from its draft as it would be served' })
+  @ApiOkResponse({ type: PagePreviewResponse })
+  homePreview(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser): Promise<PagePreviewResponse> {
+    return this.landings.preview(storeSlug, current.id);
+  }
+
   @Get(':pageId/preview')
   @ApiOperation({ summary: 'A page as it would be served, whatever its status: the editor’s canvas' })
   @ApiOkResponse({ type: PagePreviewResponse })
