@@ -47,3 +47,24 @@ desenhos de arame) vira um diálogo largo:
 
 - Os tipos novos (I7): o registro nasce pronto para recebê-los.
 - Layouts por tipo que mantêm o conteúdo (I4).
+
+## PR 2 — as prévias
+
+*Acrescentado em 2026-09-25.*
+
+- **O mesmo renderizador da loja.** Cada cartão desenha a seção com `StorefrontSections`, na paleta que
+  está sendo editada, em largura de computador reduzida ao cartão (`DesignPreview`).
+- **As coisas da loja:**
+  - banners com as fotos dos banners e dos produtos da loja;
+  - a vitrine com os produtos que as vitrines já mostram;
+  - as categorias da loja.
+- **Onde a seção é só palavra** (título, parágrafo, vantagens, formulário, barra de aviso), a prévia
+  usa um texto de exemplo em pt-BR ou en.
+- **Sem nada para mostrar** (loja sem foto, sem produto, sem categoria), o cartão fica com o desenho de
+  arame. Uma seção vazia não mostraria nada.
+- **Carregamento preguiçoso:** só a categoria aberta é desenhada (PR 1).
+
+### Fora de escopo
+
+- A logo aparece só onde a própria seção a desenha. O topo da loja não entra nas prévias, porque
+  ocuparia o cartão inteiro.

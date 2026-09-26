@@ -574,6 +574,17 @@ export interface UiMessages {
       add: string
       /** The button's name for a screen reader: `{name}` is the section's. */
       addNamed: string
+      /** What a card's preview says where the shop has nothing of its own to show yet. */
+      samples: {
+        bannerTitle: string
+        headingTitle: string
+        headingSubtitle: string
+        paragraph: string
+        announcement: string
+        contactTitle: string
+        benefits: { shipping: string; pix: string; exchange: string }
+        contact: { name: string; email: string; message: string }
+      }
       /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
       placement: {
         between: string

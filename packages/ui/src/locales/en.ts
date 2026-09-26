@@ -440,6 +440,16 @@ export const en: UiMessages = {
       results: "Results",
       add: "Add",
       addNamed: "Add {name}",
+      samples: {
+        bannerTitle: "New collection",
+        headingTitle: "New this week",
+        headingSubtitle: "What just arrived at the shop",
+        paragraph: "Tell your shop's story: who makes it, how, and why every piece is chosen with care.",
+        announcement: "Free shipping on orders over R$ 199",
+        contactTitle: "Get in touch",
+        benefits: { shipping: "Shipping nationwide", pix: "Pix discount", exchange: "Easy exchanges" },
+        contact: { name: "Name", email: "E-mail", message: "Message" },
+      },
       placement: {
         between: "Goes between {before} and {after}.",
         first: "Goes at the top of the page, before {after}.",

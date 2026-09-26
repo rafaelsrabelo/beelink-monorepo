@@ -440,6 +440,16 @@ export const ptBR: UiMessages = {
       results: "Resultados",
       add: "Adicionar",
       addNamed: "Adicionar {name}",
+      samples: {
+        bannerTitle: "Nova coleção",
+        headingTitle: "Novidades da semana",
+        headingSubtitle: "O que acabou de chegar na loja",
+        paragraph: "Conte a história da sua loja: quem faz, como faz e por que cada peça é escolhida com cuidado.",
+        announcement: "Frete grátis nas compras acima de R$ 199",
+        contactTitle: "Fale com a gente",
+        benefits: { shipping: "Frete para todo o Brasil", pix: "Desconto no Pix", exchange: "Troca fácil" },
+        contact: { name: "Nome", email: "E-mail", message: "Mensagem" },
+      },
       placement: {
         between: "Entra entre {before} e {after}.",
         first: "Entra no começo da página, antes de {after}.",

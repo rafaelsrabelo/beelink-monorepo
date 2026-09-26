@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import type { ComponentProps, ReactNode } from "react"
+import type { ReactNode } from "react"
 
 // Types
 import type { PublicProductCategory, PublicSection, PublicStore } from "@harness-monorepo/contracts"
@@ -23,6 +23,7 @@ import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { labelOf } from "./design-draft"
+import { InertLink } from "./inert-link"
 import type { Shelves } from "./design-draft-preview"
 import { DesignPreviewBlock } from "./design-preview-block"
 
@@ -57,16 +58,6 @@ export interface DesignPreviewPaneProps {
   onInsert?: (at: InsertAt) => void
   inserting?: boolean
   messages: UiMessages
-}
-
-/**
- * An anchor with no `href` navigates nowhere and takes no tab stop.
- *
- * The address is overridden after the spread rather than destructured away: React drops an
- * attribute set to `undefined`, and this form leaves no variable that exists only to be ignored.
- */
-function InertLink(props: ComponentProps<"a"> & { href: string }) {
-  return <a {...props} href={undefined} />
 }
 
 /**

@@ -1,7 +1,7 @@
 "use client"
 
 // Types
-import type { ComponentKind } from "@harness-monorepo/contracts"
+import type { ComponentKind, PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
 import { SectionGallery } from "@harness-monorepo/ui/blocks/design/section-gallery"
@@ -10,7 +10,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { DesignDeleteConfirm, type PendingDelete } from "./design-delete-confirm"
+import type { Shelves } from "./design-draft-preview"
 import { placementOf } from "./gallery-placement"
+import { GalleryPreview } from "./gallery-preview"
+import { stockOf } from "./gallery-samples"
 import type { useBlockInsert } from "./use-block-insert"
 import type { useDesignDraft } from "./use-design-draft"
 import type { useLeaveGuard } from "./use-leave-guard"
@@ -26,6 +29,13 @@ export interface DesignScreenDialogsProps {
   /** The kinds the gallery never offers here: the strip a page has once, and what this kind of page cannot hold. */
   takenKinds: readonly ComponentKind[]
   unavailableKinds: readonly ComponentKind[]
+  /** What the gallery's previews draw with: the shop, its categories and showcases, the palette being edited. */
+  gallery: {
+    store: PublicStore
+    categories: readonly PublicProductCategory[]
+    shelves: Shelves
+    colors: PublicStore["colors"]
+  }
   messages: UiMessages
   web: WebMessages
 }
@@ -42,10 +52,12 @@ export function DesignScreenDialogs({
   adding,
   takenKinds,
   unavailableKinds,
+  gallery,
   messages,
   web,
 }: DesignScreenDialogsProps) {
   const placement = placementOf(adding.insertAt, draft.rows, draft.saved, messages)
+  const stock = stockOf(gallery.store, gallery.shelves, gallery.categories.length)
 
   return (
     <>
@@ -67,6 +79,16 @@ export function DesignScreenDialogs({
         onAdd={adding.insert}
         offerRows={adding.insertAt?.level === "band"}
         {...(placement ? { placement } : {})}
+        renderPreview={(entry) => (
+          <GalleryPreview
+            entry={entry}
+            store={gallery.store}
+            categories={gallery.categories}
+            stock={stock}
+            colors={gallery.colors}
+            messages={messages}
+          />
+        )}
         pending={adding.inserting}
         messages={messages}
       />

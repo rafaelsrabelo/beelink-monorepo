@@ -33,7 +33,8 @@ export function SectionGalleryCard({ entry, preview, onAdd, pending = false, mes
 
   return (
     <li className="bg-card flex flex-col gap-2 rounded-lg border p-2">
-      <div aria-hidden="true" className="bg-muted/40 pointer-events-none overflow-hidden rounded-md">
+      {/* Capped: a section drawn at a computer's width and shrunk can still be taller than a card. */}
+      <div aria-hidden="true" className="bg-muted/40 pointer-events-none max-h-44 overflow-hidden rounded-md">
         {preview ?? <BlockThumbnail kind={entry.kind} across={entry.across} />}
       </div>
       <div className="flex items-start justify-between gap-2">
