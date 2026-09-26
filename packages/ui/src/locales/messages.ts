@@ -1,4 +1,11 @@
-import type { Across, ComponentDisplay, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
+import type {
+  Across,
+  ComponentDisplay,
+  ComponentKind,
+  ContactFieldType,
+  DesignPublishProblemKind,
+  ProductSource,
+} from "../blocks/design/design-types"
 import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
@@ -219,6 +226,16 @@ export interface UiMessages {
     /** A card whose product has options: the page is where one is chosen. */
     seeOptions: string
     buyNow: string
+    /** "Entregar em" in the header: the visitor's CEP, kept for the shipping quote to come. */
+    deliverTo: { label: string; ask: string; field: string; save: string; note: string }
+    /** A featured product sold out: its page, where "Avise-me" is. */
+    seeProduct: string
+    /** A countdown's units, under its digits. */
+    countdownUnits: { days: string; hours: string; minutes: string; seconds: string }
+    /** Its end in words, for a screen reader and before the digits start: "{date}, às {time}". */
+    countdownEnds: string
+    /** Drawn in the editor over a countdown the shop no longer shows. */
+    countdownEnded: string
     viewCart: string
     /** The phone bar's short line after an add: "Adicionado · Ver carrinho". */
     addedShort: string
@@ -559,6 +576,9 @@ export interface UiMessages {
       productsNone: { title: string; body: string; action: string }
       productsOffShelf: { title: string; body: string; action: string }
       sourceEmpty: { title: string; body: string }
+      featuredUnavailable: { title: string; body: string }
+      countdownEnded: { title: string; body: string }
+      countdownUnset: { title: string; body: string }
       /** Said after a link that leaves the arrangement's draft where it is. */
       opensInNewTab: string
     }
@@ -588,6 +608,12 @@ export interface UiMessages {
         contactTitle: string
         benefits: { shipping: string; pix: string; exchange: string }
         contact: { email: string; phone: string; message: string }
+        faqTitle: string
+        faq: { question: string; answer: string }[]
+        callToAction: { title: string; body: string; label: string }
+        imageText: { title: string; body: string }
+        featuredTitle: string
+        countdownTitle: string
       }
       /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
       placement: {
@@ -676,6 +702,47 @@ export interface UiMessages {
     saveColors: string
     tabBlocks: string
     tabColors: string
+    /** Publicar's dialog: what the draft would serve that the owner may not mean, and a note. */
+    publishDialog: {
+      /** "Publicar {page}". */
+      title: string
+      intro: string
+      checking: string
+      none: string
+      /** The check did not answer: the owner may publish without it, or ask again. */
+      checkFailed: string
+      checkRetry: string
+      /** Each problem, with `{block}` and `{band}` for where it is. */
+      problems: Record<DesignPublishProblemKind, string>
+      note: string
+      notePlaceholder: string
+      publish: string
+      publishAnyway: string
+      publishing: string
+      cancel: string
+    }
+    /** A page's versions, in the Páginas tab. */
+    history: {
+      heading: string
+      empty: string
+      loadFailed: string
+      retry: string
+      /** "Versão {number}". */
+      version: string
+      live: string
+      /** "{when} · {author}". */
+      by: string
+      restore: string
+      /** "Restaurar a versão {number}?" */
+      restoreTitle: string
+      restoreBody: string
+      restoreConfirm: string
+      cancel: string
+      restoring: string
+      failed: string
+      /** "Versão {number} restaurada…": the draft holds it, and the shop has not changed. */
+      restored: string
+    }
     tabPages: string
     /** A shop's pages in design mode: the switcher in the bar and the Páginas tab. */
     pages: {
@@ -880,6 +947,50 @@ export interface UiMessages {
     benefitIcon: string
     benefitTitle: string
     benefitDetail: string
+    /** A button's own words, where a block has one: a call to action's, an image with text's. */
+    button: {
+      label: string
+      placeholder: string
+      /** Said while the button leads somewhere and says nothing: Salvar waits for it. */
+      labelMissing: string
+      /** Said while the button claims a destination it does not name yet. */
+      targetMissing: string
+    }
+    /** When a countdown ends. */
+    countdown: {
+      ends: string
+      help: string
+    }
+    /** Which product is featured. */
+    featured: {
+      chosen: string
+      none: string
+      /** A pick the list does not have: deleted, or past what was loaded. */
+      unknown: string
+      search: string
+    }
+    /** An image with text's picture and what it shows. */
+    imageText: {
+      image: string
+      imageHelp: string
+      alt: string
+      altHelp: string
+    }
+    /** A FAQ's questions, as its owner writes them. */
+    faq: {
+      legend: string
+      /** One question with no words yet. `{position}`. */
+      position: string
+      question: string
+      answer: string
+      add: string
+      /** Each button named for its question: "Subir {question}". */
+      up: string
+      down: string
+      remove: string
+      /** Said while a question has no answer: Salvar waits for it. */
+      answerMissing: string
+    }
     /** Where a heading or a paragraph sits. */
     alignLabel: string
     alignLeft: string

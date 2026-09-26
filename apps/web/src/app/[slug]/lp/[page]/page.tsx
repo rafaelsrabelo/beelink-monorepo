@@ -79,6 +79,7 @@ export default async function LandingPage({ params }: PageProps<"/[slug]/lp/[pag
             // Without the shop's header and footer there is no cart to reach: a card that added to one
             // would say "Adicionado" and lead nowhere, so it leads to the product's page instead.
             quickAdd={landing.usesChrome && (layout.showQuickAdd ?? true)}
+            cartReachable={landing.usesChrome}
             contact={{ slug, whatsappHref: orderHrefOf(store) ?? null, copy: contactCopyOf(web) }}
             messages={ui}
           />

@@ -19,6 +19,7 @@ import type { WebMessages } from "@/locales"
 import { usePages, useUpdatePage } from "@/services/page/store-pages-hooks"
 import { useDesignPages } from "@/stores/design-pages"
 import { pageRowsOf } from "./design-pages"
+import { PageHistory } from "./page-history"
 import { pageErrorCopy } from "./page-error-copy"
 
 export interface DesignPagesTabProps {
@@ -49,19 +50,22 @@ export function DesignPagesTab({ slug, currentId, onNavigate, messages, web }: D
     update.mutate({ pageId, payload: { status } }, { onSuccess: () => (pageId === currentId ? router.refresh() : undefined) })
 
   return (
-    <DesignPageList
-      pages={rows}
-      currentId={current}
-      onNavigate={onNavigate}
-      onStatus={changeStatus}
-      onCreate={openNew}
-      onSettings={openSettings}
-      busy={update.isPending}
-      error={update.error ? (pageErrorCopy(update.error, web) ?? messages.design.pages.failed) : null}
-      loadFailed={pages.isError}
-      onRetry={() => void pages.refetch()}
-      linkComponent={AppLink}
-      messages={messages}
-    />
+    <div className="flex flex-col gap-6">
+      <DesignPageList
+        pages={rows}
+        currentId={current}
+        onNavigate={onNavigate}
+        onStatus={changeStatus}
+        onCreate={openNew}
+        onSettings={openSettings}
+        busy={update.isPending}
+        error={update.error ? (pageErrorCopy(update.error, web) ?? messages.design.pages.failed) : null}
+        loadFailed={pages.isError}
+        onRetry={() => void pages.refetch()}
+        linkComponent={AppLink}
+        messages={messages}
+      />
+      <PageHistory slug={slug} pageId={current} messages={messages} web={web} />
+    </div>
   )
 }

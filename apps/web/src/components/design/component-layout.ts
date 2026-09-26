@@ -27,6 +27,8 @@ export function displayOf(kind: ComponentKind, display: ComponentDisplay | null)
   const own = layoutsOf(kind)
   if (!own) return null
   if (display && own.includes(display)) return display
+  // A kind born with its layouts opens with one, so unset is a row from before it had them: its first.
+  if (own.length === 1) return own[0]!
   // Unset, each kind's habit: the look it had before there was a choice.
   if (kind === "CATEGORIES") return "GRID"
   if (kind === "PRODUCTS") return "RAIL"
