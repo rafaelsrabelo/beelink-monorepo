@@ -46,7 +46,7 @@ describe("shownOn / forDevice", () => {
 })
 
 describe("deviceRhythmOf — the page's spacing on each side of 768px", () => {
-  // A cover only on the computer: there the band under it meets it; on the phone it starts 32px under the header.
+  // A cover only on the computer: the tinted band meets it there, and meets the header on the phone.
   it("works the spacing out over what each device draws", () => {
     const cover = band([block("BANNER", "DESKTOP")], "FULL")
     const tinted = band([block("TEXT")], "CONTAINED", "oklch(0.7 0.15 160)")
@@ -57,6 +57,28 @@ describe("deviceRhythmOf — the page's spacing on each side of 768px", () => {
     expect(coverRhythm?.desktop).toMatchObject({ spaceBefore: false })
     expect(tintedRhythm?.desktop).toMatchObject({ spaceBefore: false, padded: true })
     expect(tintedRhythm?.phone).toMatchObject({ spaceBefore: false, padded: true })
+  })
+
+  // A plain band only on the computer: under it the tinted band keeps its 32px there, and on the phone,
+  // where nothing is drawn above it but the header, it meets the header. One shared rhythm cannot say both.
+  it("gives a band the space before it that each device's neighbour asks for", () => {
+    const words = band([block("TEXT", "DESKTOP")])
+    const tinted = band([block("HEADING")], "CONTAINED", "oklch(0.7 0.15 160)")
+
+    const [, tintedRhythm] = deviceRhythmOf([words, tinted])
+
+    expect(tintedRhythm?.desktop?.spaceBefore).toBe(true)
+    expect(tintedRhythm?.phone?.spaceBefore).toBe(false)
+  })
+
+  // A coloured edge-to-edge band of a picture and words: pictures only on the phone, so no padding there.
+  it("pads a band's colour only where it holds words", () => {
+    const mixed = band([block("BANNER"), block("TEXT", "DESKTOP")], "FULL", "oklch(0.3 0.1 20)")
+
+    const [rhythm] = deviceRhythmOf([mixed])
+
+    expect(rhythm?.phone?.padded).toBe(false)
+    expect(rhythm?.desktop?.padded).toBe(true)
   })
 
   // A band whose words show only on the phone leaves no empty coloured strip on the computer.
