@@ -40,4 +40,18 @@ describe("StorefrontBenefits", () => {
 
     await expectNoA11yViolations(container)
   })
+
+  // The same promises, another look: each its own card.
+  it("has no accessibility violations as cards", async () => {
+    const { container } = render(<StorefrontBenefits layout="CARDS" items={[{ id: "1", title: "Frete grátis", detail: "Acima de R$ 199" }]} />)
+
+    await expectNoA11yViolations(container)
+  })
+
+  it("gives each promise a card of its own when laid out as Cartões", () => {
+    render(<StorefrontBenefits layout="CARDS" items={[{ id: "1", title: "Frete grátis", detail: "Acima de R$ 199" }, { id: "2", title: "Pix" }]} />)
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(2)
+    expect(screen.getByText("Acima de R$ 199")).toBeInTheDocument()
+  })
 })

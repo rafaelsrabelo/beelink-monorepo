@@ -2,28 +2,21 @@
 import type { ReactNode } from "react"
 
 // Types
-import type {
-  PublicAnnouncementLink,
-  PublicBannerSlide,
-  PublicComponent,
-  PublicProductCategory,
-  PublicSection,
-} from "@harness-monorepo/contracts"
+import type { PublicComponent, PublicProductCategory, PublicSection } from "@harness-monorepo/contracts"
 
 // UI
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBandCell } from "@harness-monorepo/ui/blocks/storefront/storefront-band-cell"
 import { StorefrontBandGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-band-grid"
 import { StorefrontSectionBand } from "@harness-monorepo/ui/blocks/storefront/storefront-section-band"
-import {
-  StorefrontShowcase,
-  type StorefrontShowcaseItem,
-} from "@harness-monorepo/ui/blocks/storefront/storefront-showcase"
+import { StorefrontShowcase } from "@harness-monorepo/ui/blocks/storefront/storefront-showcase"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
-import { reachesTheEdge, rhythmOf } from "./band-rhythm"
+import { cardsOf } from "./banner-cards"
+import { reachesTheEdge } from "./band-rhythm"
+import { deviceRhythmOf, shownClassOf, shownOn, spacingClassOf } from "./device-visibility"
 import { drawnSectionsOf } from "./empty-component"
 import { anchorsOf } from "./site-chrome"
 import { StorefrontComponent, type LiveContact } from "./storefront-component"
@@ -48,6 +41,8 @@ export interface StorefrontSectionsProps {
   showBadge: boolean
   /** "Adicionar ao carrinho" on each card of a showcase. */
   quickAdd?: boolean
+  /** Whether a cart can be reached from this page: a landing without the shop's header cannot. */
+  cartReachable?: boolean
   linkComponent?: LinkComponent
   /**
    * Wraps each drawn component. Design mode uses it to put a grip on one; the shop passes nothing.
@@ -73,32 +68,6 @@ export interface StorefrontSectionsProps {
 }
 
 /**
- * A banner's pictures as cards, when it is drawn as cards: one picture, whatever its display, or any
- * number with `display: GRID`. Null for everything else, which `StorefrontComponent` draws — the
- * carousel among them.
- *
- * The shopkeeper's display decides carousel or grid, and the count never overrides it: the count
- * used to be the whole decision, so a second picture turned three posters meant for one row into a
- * carousel nobody asked for. A grid of one and a carousel of one are the same card.
- */
-function cardsOf(component: PublicComponent): StorefrontShowcaseItem[] | null {
-  if (component.kind !== "BANNER") return null
-
-  const slides = component.items as PublicBannerSlide[]
-  if (slides.length !== 1 && !(component.display === "GRID" && slides.length > 1)) return null
-
-  return slides.map((slide, at) => ({
-    // The first card keeps the component's id, as the one poster always did.
-    id: at === 0 ? component.id : `${component.id}-${slide.id}`,
-    title: slide.title ?? "",
-    subtitle: slide.subtitle,
-    imageUrl: slide.imageUrl,
-    href: slide.href,
-    external: slide.external,
-  }))
-}
-
-/**
  * The landing page, drawn from the bands the shopkeeper arranged.
  *
  * One function, used by the shop window and by design mode's preview — which is the whole reason
@@ -117,6 +86,7 @@ export function StorefrontSections({
   showPrice,
   showBadge,
   quickAdd = false,
+  cartReachable = true,
   linkComponent,
   renderBlock,
   renderSection,
@@ -131,19 +101,20 @@ export function StorefrontSections({
   // the shop leaves it out, and a band left with nothing, rather than spend the page's spacing on a gap.
   // The strip is drawn above the header by the window — see `announcementOf` — so it is not one of them.
   const drawn = drawnSectionsOf(sections, renderBlock !== undefined)
-  const rhythm = rhythmOf(drawn)
+  const rhythm = deviceRhythmOf(drawn)
 
   return (
     <>
       {drawn.map((section, at) => {
         const bleed = section.width === "FULL"
+        const { phone, desktop } = rhythm[at] ?? { phone: null, desktop: null }
         const band = (
           <StorefrontSectionBand
             {...(anchors.has(section.id) ? { id: anchors.get(section.id)! } : {})}
             background={section.background}
             primary={primary}
             width={section.width}
-            padded={rhythm[at]?.padded ?? false}
+            className={spacingClassOf("padding", !!phone?.padded, !!desktop?.padded)}
           >
             {/*
               One cell per component, each taking its own slice of twelve columns. The posters used
@@ -164,6 +135,8 @@ export function StorefrontSections({
                     showPrice={showPrice}
                     showBadge={showBadge}
                     quickAdd={quickAdd}
+                    cartReachable={cartReachable}
+                    editing={renderBlock !== undefined}
                     {...link}
                     contact={contact}
                     bleed={bleed}
@@ -172,7 +145,12 @@ export function StorefrontSections({
                 )
 
                 return (
-                  <StorefrontBandCell key={component.id} span={component.span} gutter={bleed && !reachesTheEdge(component.kind)}>
+                  <StorefrontBandCell
+                    key={component.id}
+                    span={component.span}
+                    gutter={bleed && !reachesTheEdge(component)}
+                    className={shownClassOf(shownOn(component.visibleOn, "PHONE"), shownOn(component.visibleOn, "DESKTOP"))}
+                  >
                     {renderBlock ? renderBlock(component, body) : body}
                   </StorefrontBandCell>
                 )
@@ -184,39 +162,18 @@ export function StorefrontSections({
 
         // The space goes on the outermost element, so design mode's grip wraps the band and not the gap.
         return (
-          <div key={section.id} className={rhythm[at]?.spaceBefore ? "mt-8" : undefined}>
+          <div
+            key={section.id}
+            className={
+              [shownClassOf(!!phone, !!desktop), spacingClassOf("space", !!phone?.spaceBefore, !!desktop?.spaceBefore)]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+          >
             {renderSection ? renderSection(section, band) : band}
           </div>
         )
       })}
     </>
   )
-}
-
-/**
- * The strip above the header, if the shop has one.
- *
- * Read out of the same arrangement as every other component, because that is where a shopkeeper
- * writes and hides it — but drawn by the window rather than among the bands, because it sits above
- * the masthead and "before the header" is not a position the arrangement can hold.
- */
-export function announcementOf(
-  sections: readonly PublicSection[] = [],
-): { left: string; right?: string; background: string | null; href: string | null; external: boolean } | null {
-  const band = sections.find((section) => section.components.some((component) => component.kind === "ANNOUNCEMENT"))
-  const strip = band?.components.find((component) => component.kind === "ANNOUNCEMENT")
-
-  if (!band || !strip?.title) return null
-
-  // Already resolved by the API, the way a slide's is. At most one.
-  const link = strip.items[0] as PublicAnnouncementLink | undefined
-
-  return {
-    left: strip.title,
-    ...(strip.subtitle ? { right: strip.subtitle } : {}),
-    // The strip's colour is its band's: the one band not drawn where it sits still owns a colour.
-    background: band.background,
-    href: link?.href ?? null,
-    external: link?.external ?? false,
-  }
 }

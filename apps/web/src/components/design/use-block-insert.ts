@@ -6,7 +6,7 @@ import { useState } from "react"
 // Types
 import type { ComponentKind, ComponentSpan } from "@harness-monorepo/contracts"
 import type { InsertAt, JoinAbove, SpanChange } from "@harness-monorepo/ui/blocks/design/band-arrangement"
-import type { Across } from "@harness-monorepo/ui/blocks/design/block-gallery"
+import type { Across } from "@harness-monorepo/ui/blocks/design/section-gallery"
 import { footSpanOf } from "@harness-monorepo/ui/lib/band-rows"
 
 // App
@@ -31,12 +31,13 @@ type Bands = readonly { id: string; components: readonly { id: string }[] }[]
  */
 export function useBlockInsert(
   slug: string,
+  pageId: string | undefined,
   draft: Pick<ReturnType<typeof useDesignDraft>, "rows" | "saved" | "patchComponent">,
-  onCreated: (component: { id: string; kind: ComponentKind }) => void,
+  onCreated: (component: { id: string; kind: ComponentKind; sectionId: string }) => void,
   web: WebMessages,
 ) {
   const { rows, saved } = draft
-  const addSection = useCreateSection(slug)
+  const addSection = useCreateSection(slug, pageId)
   const addToBand = useCreateComponent(slug)
   const move = useMoveComponent(slug)
   const [insertAt, setInsertAt] = useState<InsertAt | null>(null)
@@ -65,8 +66,10 @@ export function useBlockInsert(
       const { sectionId, index } = insertAt
       const components = rows.find((row) => row.id === sectionId)?.components ?? []
       // At the band's foot a block takes the room its last drawn row has left, so it lands beside and
-      // not under — counted over what the grid draws, not the hidden blocks and the strip.
-      const drawn = components.filter((component) => component.isActive && component.kind !== "ANNOUNCEMENT")
+      // not under — counted over what the computer's grid draws, as `drawnOf` and the preview's slot do.
+      const drawn = components.filter(
+        (component) => component.isActive && component.kind !== "ANNOUNCEMENT" && component.visibleOn !== "PHONE",
+      )
       const span = index >= components.length ? footSpanOf(drawn.map((component) => component.span)) : "FULL"
       addToBand.mutate({ sectionId, payload: { kind, position: placeIn(sectionId, index), span } }, { onSuccess: onCreated })
     } else if (insertAt?.level === "beside") {
@@ -112,8 +115,8 @@ export function useBlockInsert(
      * What the gallery leaves out here besides what the page cannot hold: the strip above the header
      * is made as a band of its own, and beside a block it would take a slice of a row it never draws in.
      */
-    unavailableWith: (kinds: readonly ComponentKind[]): ComponentKind[] =>
-      insertAt?.level === "band" ? [...kinds] : [...kinds, "ANNOUNCEMENT"],
+    unavailableWith: (kinds: readonly ComponentKind[], at: InsertAt | null = insertAt): ComponentKind[] =>
+      at?.level === "band" ? [...kinds] : [...kinds, "ANNOUNCEMENT"],
     /** What the preview takes: the room a row has left, as a place to add beside. */
     preview: { onInsert: setInsertAt, inserting },
   }

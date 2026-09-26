@@ -21,6 +21,8 @@ export interface StorefrontBenefit {
 
 export interface StorefrontBenefitsProps {
   items: readonly StorefrontBenefit[]
+  /** `INLINE`, the default, is the tinted receipt of icons beside words; `CARDS` gives each promise a card. */
+  layout?: "INLINE" | "CARDS"
 }
 
 /**
@@ -33,8 +35,31 @@ export interface StorefrontBenefitsProps {
  * Empty draws nothing, and that is the whole off switch: a band with no rows is a band the
  * shopkeeper emptied, not an empty strip to look at.
  */
-export function StorefrontBenefits({ items }: StorefrontBenefitsProps) {
+export function StorefrontBenefits({ items, layout = "INLINE" }: StorefrontBenefitsProps) {
   if (!items.length) return null
+
+  // Cards on the page itself, icon over the words: a promise that stands on its own, not a line of a receipt.
+  if (layout === "CARDS") {
+    return (
+      <ul className={cn(BAND, "grid grid-cols-2 gap-4 py-2 shop-sm:grid-cols-4")}>
+        {items.map((item) => (
+          <li key={item.id} className="flex flex-col items-center gap-3 rounded-2xl border p-5 text-center" style={{ borderColor: "var(--shop-line)" }}>
+            {item.icon ? (
+              <span
+                aria-hidden="true"
+                className="flex size-12 items-center justify-center rounded-full"
+                style={{ backgroundColor: "color-mix(in oklab, var(--shop-primary) 14%, transparent)", color: "var(--shop-primary-ink)" }}
+              >
+                {item.icon}
+              </span>
+            ) : null}
+            <p className="text-sm font-semibold">{item.title}</p>
+            {item.detail ? <p className="text-xs opacity-70">{item.detail}</p> : null}
+          </li>
+        ))}
+      </ul>
+    )
+  }
 
   return (
     <div

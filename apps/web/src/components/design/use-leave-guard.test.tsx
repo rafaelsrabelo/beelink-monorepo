@@ -47,6 +47,21 @@ describe("useLeaveGuard", () => {
     expect(result.current.asking).toBe(false)
   })
 
+  // After "Criar página" the screen goes to the new page itself — asked the same question first.
+  it("goes where the screen sends it, asking first only when something is waiting", () => {
+    const clean = renderHook(() => useLeaveGuard(false))
+    act(() => clean.result.current.go("/admin/loja/design?page=p1"))
+    expect(push).toHaveBeenCalledWith("/admin/loja/design?page=p1")
+
+    push.mockReset()
+    const dirty = renderHook(() => useLeaveGuard(true))
+    act(() => dirty.result.current.go("/admin/loja/design?page=p1"))
+    expect(push).not.toHaveBeenCalled()
+    expect(dirty.result.current.asking).toBe(true)
+    act(() => dirty.result.current.leave())
+    expect(push).toHaveBeenCalledWith("/admin/loja/design?page=p1")
+  })
+
   it("lets a click that opens another tab through: that is not leaving", () => {
     const { result } = renderHook(() => useLeaveGuard(true))
 
@@ -73,6 +88,22 @@ describe("useLeaveGuard", () => {
 
     act(() => result.current.leave())
     expect(go).toHaveBeenCalledWith(-2)
+  })
+
+  // Saved as they are made, changes come and go with each edit: Back must still leave in one press.
+  it("steps the history once, however many saves come and go, and goes on back when nothing waits", () => {
+    const pushState = vi.spyOn(window.history, "pushState")
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => undefined)
+    const { rerender, result } = renderHook(({ changed }) => useLeaveGuard(changed), { initialProps: { changed: true } })
+
+    for (const changed of [false, true, false, true, false]) rerender({ changed })
+    expect(pushState).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate"))
+    })
+    expect(result.current.asking).toBe(false)
+    expect(back).toHaveBeenCalledTimes(1)
   })
 
   it("warns on closing the tab only while something is waiting", () => {

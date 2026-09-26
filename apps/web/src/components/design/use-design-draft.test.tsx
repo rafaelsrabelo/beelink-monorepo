@@ -37,6 +37,7 @@ const hidden: Section[] = [
         items: [],
         columns: null,
         align: null,
+        visibleOn: "ALL",
         position: 0,
         isActive: false,
         createdAt: "2026-09-24T00:00:00.000Z",
@@ -70,12 +71,12 @@ describe("useDesignDraft — two edits in one click", () => {
     })
 
     expect(result.current.rows[0]).toMatchObject({ isActive: true, components: [{ id: "c1", isActive: true }] })
-    expect(result.current.changed).toBe(true)
+    expect(result.current.saving).toBe(true)
   })
 })
 
-describe("useDesignDraft — the Layout tab's changes wait for Publicar", () => {
-  it("holds a format, a column count and an alignment in the draft, and publishes them", async () => {
+describe("useDesignDraft — the Layout tab's changes are saved as they are made", () => {
+  it("sends a format, a column count and an alignment to the draft without waiting for Publicar", async () => {
     const calls: { method: string; body: unknown }[] = []
     vi.stubGlobal("fetch", (_path: string, init: RequestInit) => {
       calls.push({ method: init.method ?? "GET", body: init.body ? JSON.parse(String(init.body)) : null })
@@ -85,8 +86,7 @@ describe("useDesignDraft — the Layout tab's changes wait for Publicar", () => 
     await waitFor(() => expect(result.current.rows).toHaveLength(1))
 
     act(() => result.current.patchComponent("c1", { columns: 4, align: "RIGHT" }))
-    expect(result.current.changeCount).toBe(1)
-    act(() => result.current.publish())
+    expect(result.current.saving).toBe(true)
 
     await waitFor(() => expect(calls.find((call) => call.method === "PATCH")).toBeDefined())
     expect(calls.find((call) => call.method === "PATCH")?.body).toEqual({
@@ -94,6 +94,7 @@ describe("useDesignDraft — the Layout tab's changes wait for Publicar", () => 
       isActive: false,
       columns: 4,
       align: "RIGHT",
+      visibleOn: "ALL",
     })
   })
 })
@@ -113,6 +114,51 @@ describe("useDesignDraft — a clean draft follows the server", () => {
     await act(() => client.invalidateQueries())
 
     await waitFor(() => expect(result.current.rows[0]?.components[0]?.align).toBe("LEFT"))
-    expect(result.current.changeCount).toBe(0)
+    expect(result.current.saving).toBe(false)
+  })
+})
+
+// A landing is its own page: its bands are asked for by its id, and a draft one goes up after Publicar.
+describe("useDesignDraft — one page of the shop", () => {
+  it("reads the named page's bands, and runs what Publicar hands it once everything has landed", async () => {
+    const paths: string[] = []
+    vi.stubGlobal("fetch", (path: string, init: RequestInit) => {
+      paths.push(`${init.method ?? "GET"} ${path}`)
+      return Promise.resolve(new Response(JSON.stringify(init.method === "PATCH" ? hidden[0]!.components[0] : hidden), { status: 200 }))
+    })
+    const { result } = renderHook(() => useDesignDraft("loja", "page-1"), { wrapper })
+    await waitFor(() => expect(result.current.rows).toHaveLength(1))
+    expect(paths[0]).toBe("GET /api/stores/loja/sections?pageId=page-1")
+
+    const onPublished = vi.fn()
+    act(() => result.current.publish(onPublished))
+    // Nothing arranged to send: what comes after Publicar still runs.
+    await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(1))
+
+    act(() => result.current.patchComponent("c1", { columns: 4 }))
+    act(() => result.current.publish(onPublished))
+    await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(2))
+    expect(paths.some((path) => path.startsWith("PATCH /api/stores/loja/components/c1"))).toBe(true)
+  })
+})
+
+// A save the API refuses would be refused again: the arrangement goes back to the server's, and says why.
+describe("useDesignDraft — a refused save", () => {
+  it("drops the unsaved arrangement back to the server's and keeps the reason", async () => {
+    vi.stubGlobal("fetch", (_path: string, init: RequestInit) =>
+      Promise.resolve(
+        init.method === "PATCH"
+          ? new Response(JSON.stringify({ errorCode: "COMPONENT_DISPLAY_INVALID" }), { status: 400 })
+          : new Response(JSON.stringify(hidden), { status: 200 }),
+      ),
+    )
+    const { result } = renderHook(() => useDesignDraft("loja"), { wrapper })
+    await waitFor(() => expect(result.current.rows).toHaveLength(1))
+
+    act(() => result.current.patchComponent("c1", { columns: 4 }))
+
+    await waitFor(() => expect(result.current.saveError).not.toBeNull())
+    expect(result.current.rows[0]!.components[0]!.columns).toBeNull()
+    expect(result.current.saving).toBe(false)
   })
 })

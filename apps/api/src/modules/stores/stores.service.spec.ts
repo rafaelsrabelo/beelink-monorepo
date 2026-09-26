@@ -12,6 +12,7 @@ import { StoresService } from './stores.service.js';
 
 const OWNER = '0199a0f1-0000-7000-8000-00000000000a';
 const STRANGER = '0199a0f1-0000-7000-8000-00000000000b';
+const HOME = '0199a0f1-0000-7000-8000-0000000000aa';
 
 const row = {
   id: '0199a0f1-0000-7000-8000-000000000001',
@@ -23,7 +24,8 @@ const row = {
   logoUrl: null,
   bannerImageUrl: null,
   categoryId: null,
-  sections: [],
+  pageVersions: [],
+  pages: [],
   category: null,
   layoutType: 'DEFAULT',
   colorBackground: '#F0F9FF',
@@ -79,6 +81,10 @@ interface Fakes {
   locate: ReturnType<typeof vi.fn>;
   /** The bands a new shop opens with, one call per band. */
   seed: ReturnType<typeof vi.fn>;
+  /** The home a new shop opens with. */
+  home: ReturnType<typeof vi.fn>;
+  /** Its first version, which is what a visitor is served. */
+  freeze: ReturnType<typeof vi.fn>;
 }
 
 /** Collaborators by hand, the way jwt-auth.guard.spec.ts builds them — no Nest testing module. */
@@ -91,6 +97,8 @@ function build(stored: StoreRow | null = row): { service: StoresService; fakes: 
     category: vi.fn().mockResolvedValue({ id: 'category-1' }),
     locate: vi.fn().mockResolvedValue({ latitude: -23.5613, longitude: -46.6565 }),
     seed: vi.fn().mockResolvedValue({}),
+    home: vi.fn().mockResolvedValue({ id: HOME }),
+    freeze: vi.fn().mockResolvedValue({ id: 'v1', number: 1, note: null, createdAt: new Date(), author: null }),
   };
 
   const prisma = {
@@ -102,7 +110,12 @@ function build(stored: StoreRow | null = row): { service: StoresService; fakes: 
       update: fakes.update,
     },
     storeCategory: { findUnique: fakes.category },
-    storeSection: { create: fakes.seed },
+    storeSection: { create: fakes.seed, findMany: vi.fn().mockResolvedValue([]) },
+    storePage: { create: fakes.home },
+    storePageVersion: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: fakes.freeze,
+    },
     // The callback form, handed the same client: what is asserted is the writes, not the boundary.
     $transaction: vi.fn().mockImplementation((run: (tx: unknown) => unknown) => run(prisma)),
   } as unknown as PrismaService;
@@ -208,6 +221,15 @@ describe('StoresService.create', () => {
     ]);
     // Every component carries the shop's id beside its band's — the read path is scoped by it.
     expect(bands[1].components.create[0].storeId).toBe(row.id);
+    // On the shop's home, written first and published: `/<slug>` is served from the first second.
+    expect(fakes.home).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ storeId: row.id, kind: 'HOME', slug: null, status: 'PUBLISHED' }) }),
+    );
+    expect(bands.every((band) => band.pageId === HOME)).toBe(true);
+    // And frozen as version 1 by its owner: a new shop is served from the first second.
+    expect(fakes.freeze).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ pageId: HOME, storeId: row.id, number: 1, authorId: OWNER }) }),
+    );
   });
 
   /** The second product: a site opens from its template, and asks for no WhatsApp. */
@@ -217,7 +239,7 @@ describe('StoresService.create', () => {
     await service.create(OWNER, { ...createDto, type: 'INSTITUTIONAL', socialNetworks: {} } as CreateStoreDto);
 
     const bands = fakes.seed.mock.calls.map((call) => call[0].data);
-    expect(bands.map((band) => band.name)).toEqual(['Início', 'Serviços', 'Sobre', 'Como funciona', 'Contato']);
+    expect(bands.map((band) => band.name)).toEqual(['Início', 'Serviços', 'Sobre', 'Como funciona', 'Dúvidas', 'Contato']);
     expect(bands.flatMap((band) => band.components.create.map((c: { kind: string }) => c.kind))).not.toContain('PRODUCTS');
     expect(fakes.create.mock.calls[0]?.[0].data.whatsappPhone).toBeNull();
   });
