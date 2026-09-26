@@ -23,6 +23,7 @@ function component(over: Partial<StoreComponent> = {}): StoreComponent {
     items: [{ id: "s", imageUrl: "/s.jpg", target: "NONE" }],
     columns: null,
     align: null,
+    visibleOn: "ALL",
     position: 0,
     isActive: true,
     createdAt: "2026-09-24T00:00:00.000Z",
@@ -31,55 +32,42 @@ function component(over: Partial<StoreComponent> = {}): StoreComponent {
   }
 }
 
-describe("component-form-values — a banner's format", () => {
-  it("opens the sheet on the format the banner has", () => {
-    expect(toForm(component(), null).display).toBe("GRID")
+describe("component-form-values — how a block sits is not Salvar's", () => {
+  /**
+   * The format, the columns and the alignment are the Layout tab's, held in the draft until
+   * Publicar. Salvar sending them too would write a second copy over the draft's, which is how a
+   * colour once sat under a stale copy until a reload.
+   */
+  it("sends no format, columns or alignment for any kind", () => {
+    for (const kind of ["BANNER", "CATEGORIES", "PRODUCTS", "HEADING", "TEXT"] as const) {
+      const payload = toPayload(toForm(component({ kind, display: "GRID", columns: 4, align: "RIGHT" })), "link")
+
+      expect(payload, kind).not.toHaveProperty("display")
+      expect(payload, kind).not.toHaveProperty("columns")
+      expect(payload, kind).not.toHaveProperty("align")
+    }
   })
 
-  // Null on every kind but a banner; the form holds one anyway, and never sends it for them.
-  it("holds a format for a kind that has none, without sending it", () => {
-    const heading = toForm(component({ kind: "HEADING", title: "Oi", display: null, items: [] }), null)
-
-    expect(heading.display).toBe("CAROUSEL")
-    expect(toPayload(heading, "link")).not.toHaveProperty("display")
-  })
-
-  /** The API refuses a display on a kind that does not draw one, so only a banner's save carries it. */
-  it("sends the format a banner's sheet holds, not the one it opened with", () => {
-    const form = { ...toForm(component({ display: "CAROUSEL" }), null), display: "GRID" as const }
-
-    expect(toPayload(form, "link")).toMatchObject({ display: "GRID" })
-  })
-})
-
-describe("component-form-values — the categories' format", () => {
-  const categories = (display: "RAIL" | "GRID" | null) =>
-    toForm(component({ kind: "CATEGORIES", title: null, display, items: [] }), null)
-
-  // A block saved before it could choose drew a grid, and opens on the grid it draws.
-  it("opens on the format the block has, and on the grid when it has none", () => {
-    expect(categories("RAIL").display).toBe("RAIL")
-    expect(categories("GRID").display).toBe("GRID")
-    expect(categories(null).display).toBe("GRID")
-  })
-
-  it("sends the format the sheet holds, with the columns", () => {
-    const form = { ...categories("GRID"), display: "RAIL" as const, columns: 4 }
-
-    expect(toPayload(form, "link")).toMatchObject({ display: "RAIL", columns: 4 })
+  it("still sends a banner's pictures, and the words of every kind", () => {
+    expect(toPayload({ ...toForm(component()), title: " Verão " }, "link")).toEqual({
+      title: "Verão",
+      subtitle: null,
+      body: null,
+      items: [expect.objectContaining({ id: "s", imageUrl: "/s.jpg" })],
+    })
   })
 })
 
 describe("component-form-values — a showcase", () => {
   const PICK = { id: "a", productId: "0199e000-0000-7000-8000-000000000001" }
   const showcase = (over: Parameters<typeof component>[0] = {}) =>
-    toForm(component({ kind: "PRODUCTS", title: null, display: "RAIL", source: "ALL", items: [], ...over }), null)
+    toForm(component({ kind: "PRODUCTS", title: null, display: "RAIL", source: "ALL", items: [], ...over }))
 
-  it("opens on the source, the category, the pick, the shape and the limit it has", () => {
-    const form = showcase({ source: "SELECTION", items: [PICK], display: "GRID", limit: 12 })
+  it("opens on the source, the category, the pick and the limit it has", () => {
+    const form = showcase({ source: "SELECTION", items: [PICK], limit: 12 })
 
-    expect(form).toMatchObject({ source: "SELECTION", picks: [PICK], display: "GRID", limit: "12", sourceCategoryId: "" })
-    expect(showcase({ limit: null, display: null })).toMatchObject({ limit: "", display: "RAIL", source: "ALL" })
+    expect(form).toMatchObject({ source: "SELECTION", picks: [PICK], limit: "12", sourceCategoryId: "" })
+    expect(showcase({ limit: null })).toMatchObject({ limit: "", source: "ALL" })
   })
 
   // What the source does not read stays in the form, for switching back, and never goes on the wire.
@@ -100,6 +88,111 @@ describe("component-form-values — a showcase", () => {
 
   it("sends a blank limit as the default, and a typed one as a number", () => {
     expect(toPayload({ ...showcase(), limit: "" }, "link")).toMatchObject({ limit: null })
-    expect(toPayload({ ...showcase(), limit: " 8 " }, "link")).toMatchObject({ limit: 8, display: "RAIL" })
+    expect(toPayload({ ...showcase(), limit: " 8 " }, "link")).toMatchObject({ limit: 8 })
+  })
+})
+
+describe("component-form-values — a FAQ", () => {
+  const faq = component({
+    kind: "FAQ",
+    display: "ACCORDION",
+    items: [
+      { id: "a", question: "Qual o prazo?", answer: "Três dias." },
+      { id: "b", question: "Posso trocar?", answer: "Sim." },
+    ],
+  })
+
+  it("opens on its questions and sends them back in the order they are in", () => {
+    const value = toForm(faq)
+    expect(value.faq).toEqual(faq.items)
+
+    const moved = { ...value, faq: [value.faq[1]!, value.faq[0]!] }
+    expect(toPayload(moved, "item")).toMatchObject({ items: [faq.items[1], faq.items[0]] })
+  })
+
+  it("drops a question not written yet, and trims what is sent", () => {
+    const value = { ...toForm(faq), faq: [{ id: "a", question: " Qual o prazo? ", answer: " Três dias. " }, { id: "n", question: " ", answer: "" }] }
+
+    expect(toPayload(value, "item")).toMatchObject({ items: [{ id: "a", question: "Qual o prazo?", answer: "Três dias." }] })
+  })
+})
+
+describe("component-form-values — a call to action", () => {
+  const cta = component({
+    kind: "CALL_TO_ACTION",
+    title: "Garanta o seu",
+    body: "Enquanto tem estoque.",
+    display: "BAND",
+    items: [{ id: "btn", label: "Comprar agora", target: "PRODUCT", productId: "p1" }],
+  })
+
+  it("opens on its button's words and destination, and sends the same button back", () => {
+    const value = toForm(cta)
+    expect(value).toMatchObject({ buttonLabel: "Comprar agora", target: "PRODUCT", productId: "p1", body: "Enquanto tem estoque." })
+
+    expect(toPayload(value, "btn")).toMatchObject({
+      body: "Enquanto tem estoque.",
+      items: [{ id: "btn", label: "Comprar agora", target: "PRODUCT", productId: "p1", categoryId: null, externalUrl: null }],
+    })
+  })
+
+  it("sends no button when it leads nowhere or says nothing", () => {
+    expect(toPayload({ ...toForm(cta), target: "NONE" }, "btn")).toMatchObject({ items: [] })
+    expect(toPayload({ ...toForm(cta), buttonLabel: "  " }, "btn")).toMatchObject({ items: [] })
+  })
+})
+
+describe("component-form-values — an image with text", () => {
+  const block = component({
+    kind: "IMAGE_TEXT",
+    title: "Feito à mão",
+    display: "IMAGE_LEFT",
+    items: [{ id: "m", imageUrl: "/a.jpg", alt: "Uma bolsa", button: { label: "Ver", target: "CATEGORY", categoryId: "c1" } }],
+  })
+
+  it("opens on its picture, what it shows and its button, and sends them back as one item", () => {
+    const value = toForm(block)
+    expect(value).toMatchObject({ imageUrl: "/a.jpg", imageAlt: "Uma bolsa", target: "CATEGORY", categoryId: "c1", buttonLabel: "Ver" })
+
+    expect(toPayload(value, "m")).toMatchObject({
+      items: [{ id: "m", imageUrl: "/a.jpg", alt: "Uma bolsa", button: { label: "Ver", target: "CATEGORY", categoryId: "c1" } }],
+    })
+  })
+
+  it("sends no picture as no item, and a picture with no button as one with none", () => {
+    expect(toPayload({ ...toForm(block), imageUrl: " " }, "m")).toMatchObject({ items: [] })
+    expect(toPayload({ ...toForm(block), target: "NONE", imageAlt: "" }, "m")).toMatchObject({
+      items: [{ id: "m", imageUrl: "/a.jpg", alt: null, button: null }],
+    })
+  })
+})
+
+describe("component-form-values — a featured product", () => {
+  const block = component({ kind: "FEATURED_PRODUCT", display: "IMAGE_LEFT", items: [{ id: "pick", productId: "p1" }] })
+
+  it("opens on its pick and sends one product back", () => {
+    const value = toForm(block)
+    expect(value.picks).toEqual([{ id: "pick", productId: "p1" }])
+
+    expect(toPayload({ ...value, picks: [{ id: "pick", productId: "p2" }, { id: "x", productId: "p3" }] }, "item")).toMatchObject({
+      items: [{ id: "pick", productId: "p2" }],
+    })
+  })
+})
+
+describe("component-form-values — a countdown", () => {
+  const block = component({ kind: "COUNTDOWN", display: "BAND", items: [{ id: "fim", endsAt: "2026-10-01T02:59:00.000Z" }] })
+
+  it("opens on its end on the shop's clock, and sends the instant back", () => {
+    const value = toForm(block)
+    expect(value.countdownEnd).toBe("2026-09-30T23:59")
+
+    expect(toPayload({ ...value, countdownEnd: "2026-10-05T18:00" }, "fim")).toMatchObject({
+      items: [{ id: "fim", endsAt: "2026-10-05T21:00:00.000Z" }],
+    })
+  })
+
+  it("sends no end for a field left empty", () => {
+    expect(toPayload({ ...toForm(block), countdownEnd: "" }, "fim")).toMatchObject({ items: [] })
   })
 })

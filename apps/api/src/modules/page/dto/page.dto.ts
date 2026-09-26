@@ -21,13 +21,14 @@ import { Type } from 'class-transformer';
 
 // Types
 import type {
+  AddComponentPayload,
   ComponentDisplay,
   ComponentItem,
   ComponentKind,
   ComponentSpan,
-  AddComponentPayload,
   CreateComponentPayload,
   CreateSectionPayload,
+  DeviceVisibility,
   PageErrorCode,
   ProductSource,
   SectionWidth,
@@ -41,6 +42,7 @@ import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import {
   COMPONENT_BODY_MAX_LENGTH,
   COMPONENT_DISPLAYS,
+  DEVICE_VISIBILITIES,
   COMPONENT_KINDS,
   COMPONENT_MAX_COLUMNS,
   COMPONENT_MIN_COLUMNS,
@@ -53,6 +55,7 @@ import {
   SECTION_WIDTHS,
   SHOWCASE_LIMIT_MAX,
   TEXT_ALIGNS,
+  displaysInWords,
 } from '../page.constants.js';
 
 /**
@@ -90,7 +93,7 @@ export class ComponentDto implements CreateComponentPayload {
   @IsIn(COMPONENT_SPANS, { context: { errorCode: 'COMPONENT_SPAN_INVALID' satisfies PageErrorCode } })
   span?: ComponentSpan;
 
-  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'CAROUSEL or GRID on a BANNER, RAIL or GRID on PRODUCTS and CATEGORIES. Null on every other kind.' })
+  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: `The layout, from its kind's own — ${displaysInWords()}. Null only on the other kinds; refused on these.` })
   @IsOptional()
   @IsIn(COMPONENT_DISPLAYS, { context: { errorCode: 'COMPONENT_DISPLAY_INVALID' satisfies PageErrorCode } })
   display?: ComponentDisplay | null;
@@ -129,6 +132,12 @@ export class ComponentDto implements CreateComponentPayload {
   @IsOptional()
   @IsIn(TEXT_ALIGNS)
   align?: TextAlign | null;
+
+  // Not `IsOptional`: that would let a null through, and a component always shows somewhere.
+  @ApiPropertyOptional({ enum: DEVICE_VISIBILITIES, description: 'Where it shows. The strip shows everywhere.' })
+  @ValidateIf((dto: ComponentDto) => dto.visibleOn !== undefined)
+  @IsIn(DEVICE_VISIBILITIES, { context: { errorCode: 'COMPONENT_VISIBILITY_INVALID' satisfies PageErrorCode } })
+  visibleOn?: DeviceVisibility;
 
   @ApiPropertyOptional()
   @ValidateIf((dto: ComponentDto) => dto.isActive !== undefined)

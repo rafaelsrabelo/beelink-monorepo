@@ -1,4 +1,12 @@
-import type { Across, BlockGroup, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
+import type {
+  Across,
+  ComponentDisplay,
+  ComponentKind,
+  ContactFieldType,
+  DesignPublishProblemKind,
+  ProductSource,
+} from "../blocks/design/design-types"
+import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
 
@@ -218,6 +226,16 @@ export interface UiMessages {
     /** A card whose product has options: the page is where one is chosen. */
     seeOptions: string
     buyNow: string
+    /** "Entregar em" in the header: the visitor's CEP, kept for the shipping quote to come. */
+    deliverTo: { label: string; ask: string; field: string; save: string; note: string }
+    /** A featured product sold out: its page, where "Avise-me" is. */
+    seeProduct: string
+    /** A countdown's units, under its digits. */
+    countdownUnits: { days: string; hours: string; minutes: string; seconds: string }
+    /** Its end in words, for a screen reader and before the digits start: "{date}, às {time}". */
+    countdownEnds: string
+    /** Drawn in the editor over a countdown the shop no longer shows. */
+    countdownEnded: string
     viewCart: string
     /** The phone bar's short line after an add: "Adicionado · Ver carrinho". */
     addedShort: string
@@ -459,6 +477,10 @@ export interface UiMessages {
     featuredEyebrow: string
     categoriesEyebrow: string
     seeAll: string
+    /** The button of a banner whose words stand beside its picture. */
+    learnMore: string
+    /** Its name for a screen reader, after the banner: two "Saiba mais" in a list of links say nothing. */
+    learnMoreAbout: string
     /**
      * `{section}`. The accessible name of a "see all" link, because a home with three of them
      * hands a screen reader the same two words three times (WCAG 2.4.4).
@@ -554,6 +576,9 @@ export interface UiMessages {
       productsNone: { title: string; body: string; action: string }
       productsOffShelf: { title: string; body: string; action: string }
       sourceEmpty: { title: string; body: string }
+      featuredUnavailable: { title: string; body: string }
+      countdownEnded: { title: string; body: string }
+      countdownUnset: { title: string; body: string }
       /** Said after a link that leaves the arrangement's draft where it is. */
       opensInNewTab: string
     }
@@ -565,7 +590,41 @@ export interface UiMessages {
       searchPlaceholder: string
       /** Said when the search matches nothing. */
       empty: string
-      groups: Record<BlockGroup, string>
+      /** The shelves on the left, Recomendadas first. */
+      categories: Record<"RECOMMENDED" | SectionCategory, string>
+      categoriesLabel: string
+      /** Over the grid while searching: what matched in every shelf. */
+      results: string
+      add: string
+      /** The button's name for a screen reader: `{name}` is the section's. */
+      addNamed: string
+      /** What a card's preview says where the shop has nothing of its own to show yet. */
+      samples: {
+        bannerTitle: string
+        headingTitle: string
+        headingSubtitle: string
+        paragraph: string
+        announcement: string
+        contactTitle: string
+        benefits: { shipping: string; pix: string; exchange: string }
+        contact: { email: string; phone: string; message: string }
+        faqTitle: string
+        faq: { question: string; answer: string }[]
+        callToAction: { title: string; body: string; label: string }
+        imageText: { title: string; body: string }
+        featuredTitle: string
+        countdownTitle: string
+      }
+      /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
+      placement: {
+        between: string
+        first: string
+        last: string
+        only: string
+        inBand: string
+        inBandFirst: string
+        beside: string
+      }
       /** One line of what a kind is, read beside its wireframe and searched with its name. */
       hints: Record<ComponentKind, string>
       /** A row of banners, by `{count}`: "3 banners lado a lado". */
@@ -608,9 +667,20 @@ export interface UiMessages {
     spanBandLabel: string
     /** A banner's choice between showing its pictures one at a time or all together. */
     displayLabel: string
-    displayCarousel: string
-    displayGrid: string
-    displayRail: string
+    /** "Aparece em", with the two screens a block can show on, and what a row says of one on a single screen. */
+    visibleOn: {
+      label: string
+      desktop: string
+      phone: string
+      /** Under the field: the last screen cannot be turned off here. */
+      hint: string
+      onlyDesktop: string
+      onlyPhone: string
+    }
+    /** Each layout's name, as the Layout tab and the bar offer it. */
+    displays: Record<ComponentDisplay, string>
+    /** A block with no layout chosen whose look no layout repeats: a strip saved before it had a choice. */
+    displayAuto: string
     categoriesRailHint: string
     categoriesGridHint: string
     show: string
@@ -622,9 +692,8 @@ export interface UiMessages {
     dragCancel: string
     publish: string
     publishing: string
-    /** Shown while there is something arranged and not yet published. */
+    /** Shown while the saved draft differs from what the shop serves. */
     unpublished: string
-    discard: string
     /** The browser's own leave-confirmation cannot be worded; this is said on screen instead. */
     leaveWarning: string
     previewNotice: string
@@ -633,15 +702,124 @@ export interface UiMessages {
     saveColors: string
     tabBlocks: string
     tabColors: string
+    /** Publicar's dialog: what the draft would serve that the owner may not mean, and a note. */
+    publishDialog: {
+      /** "Publicar {page}". */
+      title: string
+      intro: string
+      checking: string
+      none: string
+      /** The check did not answer: the owner may publish without it, or ask again. */
+      checkFailed: string
+      checkRetry: string
+      /** Each problem, with `{block}` and `{band}` for where it is. */
+      problems: Record<DesignPublishProblemKind, string>
+      note: string
+      notePlaceholder: string
+      publish: string
+      publishAnyway: string
+      publishing: string
+      cancel: string
+    }
+    /** A page's versions, in the Páginas tab. */
+    history: {
+      heading: string
+      empty: string
+      loadFailed: string
+      retry: string
+      /** "Versão {number}". */
+      version: string
+      live: string
+      /** "{when} · {author}". */
+      by: string
+      restore: string
+      /** "Restaurar a versão {number}?" */
+      restoreTitle: string
+      restoreBody: string
+      restoreConfirm: string
+      cancel: string
+      restoring: string
+      failed: string
+      /** "Versão {number} restaurada…": the draft holds it, and the shop has not changed. */
+      restored: string
+    }
+    tabPages: string
+    /** A shop's pages in design mode: the switcher in the bar and the Páginas tab. */
+    pages: {
+      /** The switcher's name for a screen reader: "Trocar de página — {page}". */
+      switchTo: string
+      heading: string
+      home: string
+      status: { DRAFT: string; PUBLISHED: string; ARCHIVED: string }
+      /** Beside a landing the shop links to: from its footer, and from a site's menu. */
+      inMenu: string
+      newLanding: string
+      /** "Arquivadas ({count})", collapsed under the rest. */
+      archived: string
+      /** A row's menu, named for its page: "Ações de {page}". */
+      actions: string
+      publish: string
+      unpublish: string
+      archive: string
+      restore: string
+      settings: string
+      view: string
+      /** The home's row, which no menu changes: it is the shop's own address. */
+      homeHint: string
+      empty: string
+      /** The bar's button and status on a landing that is not up. */
+      publishPage: string
+      notPublished: string
+      /** Why a row's action failed, said under the list. */
+      failed: string
+      /** The list itself could not be read, and the way to ask again. */
+      loadFailed: string
+      retry: string
+      /** Why the bar's Publicar did not put the page up, when the API gave no reason of its own. */
+      publishFailed: string
+      /** The "Nova landing page" and "Configurações da página" dialogs. */
+      form: {
+        newTitle: string
+        newDescription: string
+        settingsTitle: string
+        settingsDescription: string
+        name: string
+        namePlaceholder: string
+        address: string
+        addressChecking: string
+        addressAvailable: string
+        addressTaken: string
+        addressInvalid: string
+        template: string
+        templates: Record<"lancamento" | "promocao-relampago" | "colecao" | "em-branco", { title: string; description: string }>
+        /** Under the templates on a site, which sells no product. */
+        siteBlankOnly: string
+        product: string
+        productPlaceholder: string
+        productEmpty: string
+        productHint: string
+        inMenu: string
+        inMenuHint: string
+        usesChrome: string
+        usesChromeHint: string
+        seo: string
+        seoHint: string
+        seoTitle: string
+        seoDescription: string
+        seoImage: string
+        cancel: string
+        create: string
+        creating: string
+        save: string
+        saving: string
+      }
+    }
     /** The full-screen editor's frame: its bar, its three columns and, on a narrow screen, its drawers. */
     frame: {
       /** "← Painel": back to the shop's home in the panel. */
       back: string
       /** The one page there is until landing pages arrive. */
       homePage: string
-      /** "Rascunho · {count} alterações", counted as Publish would write them; and its singular. */
-      draft: string
-      draftOne: string
       published: string
       viewInShop: string
       /** The buttons that open the two side columns as drawers on a narrow screen. */
@@ -655,6 +833,12 @@ export interface UiMessages {
       leaveBody: string
       leaveStay: string
       leaveGo: string
+      /** The bar's status while a change is on its way to the server. */
+      saving: string
+      /** Another tab wrote to the page since this one read it: the only way on is a reload. */
+      conflictTitle: string
+      conflictBody: string
+      conflictReload: string
       /** A drawer's own close button, where the panel in it has none of its own. */
       close: string
       /** The landmarks' names. */
@@ -662,6 +846,22 @@ export interface UiMessages {
       structureLabel: string
       inspectorLabel: string
       previewLabel: string
+    }
+    /** The chosen block's panel: Conteúdo, Layout and Estilo, and what each one says of itself. */
+    inspector: {
+      /** "Editar {name}": the tabs' name for a reader. */
+      tabsLabel: string
+      content: string
+      layout: string
+      style: string
+      /** Said to a reader beside a tab holding what keeps Salvar off. */
+      needsAttention: string
+      /** The Layout tab's promise: what changes there shows at once, and waits for Publicar. */
+      layoutNote: string
+      /** Above a band's style when it holds several blocks. `{count}`. */
+      sharedWith: string
+      /** The panel's title while a band is chosen on its own. */
+      editBand: string
     }
     addBlock: string
     /** Opens the gallery at a band's foot: what puts two blocks side by side. */
@@ -674,6 +874,29 @@ export interface UiMessages {
     addBesideOf: string
     /** Moves a band's only block up, beside the last block of the band above: `{name}` is that block. */
     joinAbove: string
+    /** The bar over the chosen block or band in the preview, and what the editor says as it acts. `{name}` is what it acts on. */
+    bar: {
+      label: string
+      moveUp: string
+      moveDown: string
+      layout: string
+      duplicate: string
+      hide: string
+      /** On something hidden: the same button brings it back. */
+      show: string
+      delete: string
+      /** Said after a move: `{position}` counts from 1. */
+      movedTo: string
+      /** Said after Ocultar: it leaves the shop on Publicar. */
+      hidden: string
+      shown: string
+      /** Said after Duplicar: the copy waits for Publicar like any other change. */
+      duplicated: string
+      /** Said when the keys choose something. */
+      chosen: string
+      /** Said instead of choosing, while the open panel has fields not yet saved. */
+      unsaved: string
+    }
     /** The bin on a block's row, and the question the dialog asks before it runs. */
     deleteBlock: string
     /** Said in place of the kind when a block has nothing for the shop window to draw. */
@@ -716,12 +939,58 @@ export interface UiMessages {
     carouselHint: string
     /** The same hint, for a banner whose pictures share the space. */
     gridHint: string
+    /** Under a banner laid out on its first picture alone: the others wait for another layout. */
+    firstOnlyHint: string
     /** One promise with no title yet. `{position}`. */
     benefitPosition: string
     addBenefit: string
     benefitIcon: string
     benefitTitle: string
     benefitDetail: string
+    /** A button's own words, where a block has one: a call to action's, an image with text's. */
+    button: {
+      label: string
+      placeholder: string
+      /** Said while the button leads somewhere and says nothing: Salvar waits for it. */
+      labelMissing: string
+      /** Said while the button claims a destination it does not name yet. */
+      targetMissing: string
+    }
+    /** When a countdown ends. */
+    countdown: {
+      ends: string
+      help: string
+    }
+    /** Which product is featured. */
+    featured: {
+      chosen: string
+      none: string
+      /** A pick the list does not have: deleted, or past what was loaded. */
+      unknown: string
+      search: string
+    }
+    /** An image with text's picture and what it shows. */
+    imageText: {
+      image: string
+      imageHelp: string
+      alt: string
+      altHelp: string
+    }
+    /** A FAQ's questions, as its owner writes them. */
+    faq: {
+      legend: string
+      /** One question with no words yet. `{position}`. */
+      position: string
+      question: string
+      answer: string
+      add: string
+      /** Each button named for its question: "Subir {question}". */
+      up: string
+      down: string
+      remove: string
+      /** Said while a question has no answer: Salvar waits for it. */
+      answerMissing: string
+    }
     /** Where a heading or a paragraph sits. */
     alignLabel: string
     alignLeft: string

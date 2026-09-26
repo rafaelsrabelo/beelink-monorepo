@@ -1,12 +1,5 @@
 // Types
-import type {
-  AnnouncementLink,
-  BannerSlide,
-  PublicComponent,
-  PublicComponentItem,
-  PublicSection,
-  Section,
-} from "@harness-monorepo/contracts"
+import type { BannerSlide, PublicComponent, PublicSection, Section } from "@harness-monorepo/contracts"
 
 // UI
 import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-arrangement"
@@ -14,8 +7,10 @@ import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-ar
 // App
 import { isEmptyComponent } from "../storefront/empty-component"
 import type { SectionDraft } from "./design-draft"
+import { resolvedOnServer } from "./design-kinds"
+import { previewItemsOf } from "./design-preview-items"
 
-/** Each showcase's cards as the shop's public read resolved them, by component id. */
+/** Each showcase's and featured product's cards as the shop's public read resolved them, by component id. */
 export type Shelves = ReadonlyMap<string, Pick<PublicComponent, "items" | "sourceCategory">>
 
 /**
@@ -28,7 +23,7 @@ export function shelvesOf(published: readonly PublicSection[] = []): Shelves {
   return new Map(
     published
       .flatMap((section) => section.components)
-      .filter((component) => component.kind === "PRODUCTS")
+      .filter((component) => resolvedOnServer(component.kind))
       .map((component) => [component.id, { items: component.items, sourceCategory: component.sourceCategory }]),
   )
 }
@@ -51,7 +46,7 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
     .filter((row) => row.isActive)
     .map((row) => ({
       id: row.id,
-      // The band's own attributes come from the server and never from the draft: the band's sheet
+      // The band's own attributes come from the server and never from the draft: the Estilo tab
       // saves them straight there, and a copy held here would hide the save until a reload.
       name: savedSections.get(row.id)?.name ?? null,
       width: savedSections.get(row.id)?.width ?? "CONTAINED",
@@ -67,38 +62,15 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             title: was?.title ?? null,
             subtitle: was?.subtitle ?? null,
             body: was?.body ?? null,
-            // As drafted: the band draws it, and the owner has to see a width before publishing it.
+            // As drafted: the layout waits for Publicar, and the owner has to see it before publishing it.
             span: component.span,
-            display: was?.display ?? null,
+            display: component.display,
             source: was?.source ?? null,
             sourceCategory: shelves.get(component.id)?.sourceCategory ?? null,
-            columns: was?.columns ?? null,
-            align: was?.align ?? null,
-            /*
-              A banner's slides arrive from the panel carrying ids, and the shop window is served
-              them carrying addresses. The preview builds the second shape from the first with no
-              address at all, and loses nothing by it: every link in the preview is inert by
-              construction — the pane renders an href-less anchor and swallows the click. The
-              picture, the words and the order are what is being arranged, and all three are here.
-            */
-            items:
-              component.kind === "BANNER"
-                ? ((was?.items ?? []) as BannerSlide[]).map((slide) => ({
-                    id: slide.id,
-                    imageUrl: slide.imageUrl,
-                    title: slide.title ?? null,
-                    subtitle: slide.subtitle ?? null,
-                    href: null,
-                    external: false,
-                  }))
-                : component.kind === "ANNOUNCEMENT"
-                  ? ((was?.items ?? []) as AnnouncementLink[]).map((link) => ({ id: link.id, href: null, external: false }))
-                  : component.kind === "PRODUCTS"
-                    ? // What a showcase stores is the ids it picked, never the cards a visitor is served;
-                      // the cards are the public read's to resolve. A showcase saved since the page
-                      // loaded keeps the cards it had then until the next load.
-                      (shelves.get(component.id)?.items ?? [])
-                    : ((was?.items ?? []) as PublicComponentItem[]),
+            columns: component.columns,
+            align: component.align,
+            visibleOn: component.visibleOn,
+            items: previewItemsOf(component, was, shelves),
           } satisfies PublicComponent
         }),
     }))
@@ -118,6 +90,8 @@ export function arrangementOf(
   shelves: Shelves,
   /** Categories the shop window shows: with none, a categories block draws nothing. Unknown is some. */
   categoriesShown = Number.POSITIVE_INFINITY,
+  /** Whether this page may not lose its last product list: the home's rule, and no landing's. */
+  productsRequired = true,
 ): ArrangementBand[] {
   const savedSections = new Map(saved.map((section) => [section.id, section]))
   const savedComponents = new Map(
@@ -135,7 +109,13 @@ export function arrangementOf(
     isActive: row.isActive,
     components: row.components.map((component) => {
       const was = savedComponents.get(component.id)
-      const first = was?.kind === "BANNER" ? (was.items[0] as BannerSlide | undefined) : undefined
+      // The row's picture: a banner's first, an image with text's own, a featured product's photo.
+      const first =
+        was?.kind === "BANNER" || was?.kind === "IMAGE_TEXT"
+          ? (was.items[0] as Pick<BannerSlide, "imageUrl"> | undefined)
+          : component.kind === "FEATURED_PRODUCT"
+            ? (shelves.get(component.id)?.items[0] as { imageUrl: string | null } | undefined)
+            : undefined
       // A category showcase with no title of its own is headed by its category on the page, and is
       // listed by it here; six rows reading "Vitrine de produtos" would be six rows nobody can tell apart.
       const title = was?.title ?? shelves.get(component.id)?.sourceCategory?.name ?? null
@@ -147,11 +127,12 @@ export function arrangementOf(
         imageUrl: first?.imageUrl ?? null,
         span: component.span,
         isActive: component.isActive,
-        deletable: component.kind !== "PRODUCTS" || productLists > 1,
-        // A showcase's saved items are its pick, not its cards, so only a shelf the public read
-        // resolved can say it is empty. A hidden one has none, and is not called empty for it.
+        visibleOn: component.visibleOn,
+        deletable: !productsRequired || component.kind !== "PRODUCTS" || productLists > 1,
+        // A showcase's and a featured product's saved items are a pick, not cards, so only what the
+        // public read resolved can say it is empty. A hidden one has none, and is not called empty.
         empty:
-          component.kind === "PRODUCTS"
+          resolvedOnServer(component.kind)
             ? shelves.get(component.id)?.items.length === 0
             : component.kind === "CATEGORIES"
               ? categoriesShown === 0

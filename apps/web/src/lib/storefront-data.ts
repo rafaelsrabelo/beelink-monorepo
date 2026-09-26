@@ -1,5 +1,5 @@
 // Types
-import type { CustomerSignInOptions, PublicProductCategory, PublicProductDetail, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontSort } from "@harness-monorepo/contracts"
+import type { CustomerSignInOptions, PublicLanding, PublicProductCategory, PublicProductDetail, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontSort } from "@harness-monorepo/contracts"
 
 // App
 import { callPublicApi } from "./public-api"
@@ -110,6 +110,27 @@ export async function catalogueAt(slug: string, ask: CatalogueAsk = {}): Promise
   }
 
   return (await response.json()) as StorefrontCatalog
+}
+
+/**
+ * A published landing, at `/<shop>/lp/<address>`. A draft, an archived one and an address nobody
+ * holds are all null — the page is a 404, which is what a crawler has to hear.
+ *
+ * Under both tags, like the shop: its showcases carry prices, and its bands are dropped by the same
+ * writes that drop the home's. An address that could not be one is not sent at all: the segment
+ * arrives decoded, and `..` in it would be a path on the API.
+ */
+export async function landingAt(slug: string, pageSlug: string): Promise<PublicLanding | null> {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(pageSlug)) return null
+
+  const response = await callPublicApi({
+    path: `/stores/${slug}/landings/${pageSlug}`,
+    tags: [storeTag(slug), catalogTag(slug)],
+  }).catch(() => null)
+
+  if (!response?.ok) return null
+
+  return (await response.json()) as PublicLanding
 }
 
 export async function productAt(slug: string, productSlug: string): Promise<PublicProductDetail | null> {
