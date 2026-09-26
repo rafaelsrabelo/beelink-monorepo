@@ -30,8 +30,9 @@ const shelves: Shelves = new Map([
   ["shelf-1", { items: [product("p1", "https://cdn/p1.jpg"), product("p2", null)], sourceCategory: null }],
   ["shelf-2", { items: [product("p1", "https://cdn/p1.jpg"), product("p3", "https://cdn/p3.jpg")], sourceCategory: null }],
 ])
-const stock = stockOf(store, shelves, 2)
-const empty: GalleryStock = { images: [], products: [], hasCategories: false }
+const NOW = Date.parse("2026-09-26T12:00:00Z")
+const stock = stockOf(store, shelves, 2, NOW)
+const empty: GalleryStock = { images: [], products: [], hasCategories: false, now: NOW }
 
 describe("stockOf — the shop's own things, for the previews", () => {
   it("takes the banners' pictures first, then the products', and each product once", () => {
@@ -101,6 +102,21 @@ describe("sampleSectionOf — the band a card draws", () => {
 
     const pictured = sampleSectionOf({ kind: "IMAGE_TEXT", across: 1, name: "", hint: "" }, { ...empty, images: ["/a.jpg"] }, ptBR)
     expect(pictured?.components[0]?.items).toEqual([expect.objectContaining({ imageUrl: "/a.jpg" })])
+  })
+
+  it("features the shop's first product, and keeps the wireframe for a shop with none", () => {
+    const product = { id: "p", slug: "whey", name: "Whey", priceCents: 100, compareAtPriceCents: null, imageUrl: null, categorySlug: null, priceRange: { minCents: 100, maxCents: 100 } }
+    const featured = sampleSectionOf({ kind: "FEATURED_PRODUCT", across: 1, name: "", hint: "" }, { ...empty, products: [product] }, ptBR)
+
+    expect(featured?.components[0]).toMatchObject({ kind: "FEATURED_PRODUCT", display: "IMAGE_LEFT", items: [{ name: "Whey", soldOut: false }] })
+    expect(sampleSectionOf({ kind: "FEATURED_PRODUCT", across: 1, name: "", hint: "" }, empty, ptBR)).toBeNull()
+  })
+
+  it("counts a sample countdown down from when the gallery opened, on a strip", () => {
+    const countdown = sampleSectionOf({ kind: "COUNTDOWN", across: 1, name: "", hint: "" }, empty, ptBR)?.components[0]
+
+    expect(countdown).toMatchObject({ kind: "COUNTDOWN", display: "BAND", title: "A oferta termina em" })
+    expect(Date.parse((countdown?.items[0] as { endsAt: string }).endsAt)).toBeGreaterThan(NOW + 2 * 86_400_000)
   })
 
   it("tells a card that has a preview from one that keeps its wireframe", () => {

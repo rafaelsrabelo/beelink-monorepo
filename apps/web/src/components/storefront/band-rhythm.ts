@@ -12,6 +12,7 @@ export function reachesTheEdge(component: Pick<PublicComponent, "kind" | "displa
   if (component.kind === "BENEFITS") return component.display !== "CARDS"
   // A call to action's strip is a surface of the shop's colour; as a card it sits inside the margins.
   if (component.kind === "CALL_TO_ACTION") return component.display !== "CARD"
+  if (component.kind === "COUNTDOWN") return component.display !== "BLOCK"
   return false
 }
 

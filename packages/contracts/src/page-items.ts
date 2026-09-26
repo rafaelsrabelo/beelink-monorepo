@@ -1,5 +1,6 @@
 /* ── the items of the section kinds a sales page added ──────────────────────── */
 
+import type { PublicProductCard } from "./catalog.js";
 import type { ComponentTarget } from "./page.js";
 
 /**
@@ -63,4 +64,22 @@ export interface PublicImageTextMedia {
   alt: string | null;
   /** Null when there is none, or when what it pointed at is gone. */
   button: PublicComponentLink | null;
+}
+
+/**
+ * A featured product as a visitor is served it: the card, resolved when the page is read, so a price
+ * or a photo changed since Publicar shows at once. It is drawn while it is sold out, marked so, and
+ * not drawn at all once it is deleted, a draft or archived — the block then holds no item.
+ */
+export interface PublicFeaturedProduct extends PublicProductCard {
+  soldOut: boolean;
+}
+
+/**
+ * When a countdown ends: one instant, ISO-8601 in UTC. The digits count a duration, so they need no
+ * time zone; a date said to someone is said in the shop's.
+ */
+export interface CountdownEnd {
+  id: string;
+  endsAt: string;
 }

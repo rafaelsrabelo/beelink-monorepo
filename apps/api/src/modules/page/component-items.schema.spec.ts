@@ -67,3 +67,33 @@ describe('an image with text\'s picture', () => {
     expect(media.safeParse([picture, { ...picture, id: 'n' }]).success).toBe(false);
   });
 });
+
+describe('a featured product\'s pick', () => {
+  const pick = componentItemsFor('FEATURED_PRODUCT');
+  const PRODUCT = '0199e000-0000-7000-8000-000000000001';
+
+  it('takes one product by id, or none yet, and never two', () => {
+    expect(pick.safeParse([{ id: 'p', productId: PRODUCT }]).success).toBe(true);
+    expect(pick.safeParse([]).success).toBe(true);
+    expect(pick.safeParse([{ id: 'p', productId: PRODUCT }, { id: 'q', productId: PRODUCT }]).success).toBe(false);
+    expect(pick.safeParse([{ id: 'p', productId: 'not-an-id' }]).success).toBe(false);
+  });
+});
+
+describe('a countdown\'s end', () => {
+  const end = componentItemsFor('COUNTDOWN');
+
+  it('takes an instant with its offset and keeps it in UTC', () => {
+    const read = end.safeParse([{ id: 'fim', endsAt: '2026-09-30T23:59:00-03:00' }]);
+    expect(read.success && read.data).toEqual([{ id: 'fim', endsAt: '2026-10-01T02:59:00.000Z' }]);
+  });
+
+  it('refuses a wall time with no offset, which the server would read in its own zone', () => {
+    expect(end.safeParse([{ id: 'fim', endsAt: '2026-09-30T23:59:00' }]).success).toBe(false);
+    expect(end.safeParse([{ id: 'fim', endsAt: 'amanhã' }]).success).toBe(false);
+  });
+
+  it('takes an end already past: a title saved on an ended countdown sends its end again', () => {
+    expect(end.safeParse([{ id: 'fim', endsAt: '2020-01-01T00:00:00Z' }]).success).toBe(true);
+  });
+});

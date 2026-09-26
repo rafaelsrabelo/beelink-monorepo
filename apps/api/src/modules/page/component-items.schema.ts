@@ -9,6 +9,7 @@ import type {
   CallToActionButton,
   ComponentItem,
   ComponentKind,
+  CountdownEnd,
   FaqItem,
   ImageTextMedia,
   ShowcaseProduct,
@@ -115,6 +116,16 @@ const imageTextMedia = z.strictObject({
     .nullish(),
 }) satisfies z.ZodType<ImageTextMedia>;
 
+/**
+ * When a countdown ends, with its offset — a wall time without one would be read in the server's zone,
+ * which is not the shop's — and stored in UTC. A past one is not refused: saving a title of a
+ * countdown that has ended sends its end again, and a restore carries old ends.
+ */
+const countdownEnd = z.strictObject({
+  id: z.string().min(1).max(64),
+  endsAt: z.iso.datetime({ offset: true }).transform((value) => new Date(value).toISOString()),
+}) satisfies z.ZodType<CountdownEnd, unknown>;
+
 /** What a component with no items of its own holds, and what an unknown kind falls back to. */
 const NOTHING = z.array(z.never()).length(0);
 
@@ -137,6 +148,10 @@ const ITEMS_OF = {
   CALL_TO_ACTION: z.array(callToActionButton).max(1),
   /** At most one picture. None is the words alone. */
   IMAGE_TEXT: z.array(imageTextMedia).max(1),
+  /** The one product, picked as a showcase picks: an id, read when the page is. None is not chosen yet. */
+  FEATURED_PRODUCT: z.array(showcaseProduct).max(1),
+  /** One end. None is a countdown not set yet, which the shop does not draw. */
+  COUNTDOWN: z.array(countdownEnd).max(1),
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
   HEADING: NOTHING,
   TEXT: NOTHING,

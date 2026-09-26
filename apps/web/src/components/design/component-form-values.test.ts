@@ -166,3 +166,33 @@ describe("component-form-values — an image with text", () => {
     })
   })
 })
+
+describe("component-form-values — a featured product", () => {
+  const block = component({ kind: "FEATURED_PRODUCT", display: "IMAGE_LEFT", items: [{ id: "pick", productId: "p1" }] })
+
+  it("opens on its pick and sends one product back", () => {
+    const value = toForm(block)
+    expect(value.picks).toEqual([{ id: "pick", productId: "p1" }])
+
+    expect(toPayload({ ...value, picks: [{ id: "pick", productId: "p2" }, { id: "x", productId: "p3" }] }, "item")).toMatchObject({
+      items: [{ id: "pick", productId: "p2" }],
+    })
+  })
+})
+
+describe("component-form-values — a countdown", () => {
+  const block = component({ kind: "COUNTDOWN", display: "BAND", items: [{ id: "fim", endsAt: "2026-10-01T02:59:00.000Z" }] })
+
+  it("opens on its end on the shop's clock, and sends the instant back", () => {
+    const value = toForm(block)
+    expect(value.countdownEnd).toBe("2026-09-30T23:59")
+
+    expect(toPayload({ ...value, countdownEnd: "2026-10-05T18:00" }, "fim")).toMatchObject({
+      items: [{ id: "fim", endsAt: "2026-10-05T21:00:00.000Z" }],
+    })
+  })
+
+  it("sends no end for a field left empty", () => {
+    expect(toPayload({ ...toForm(block), countdownEnd: "" }, "fim")).toMatchObject({ items: [] })
+  })
+})

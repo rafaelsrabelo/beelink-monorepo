@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import type {
   BenefitRow,
   ContactField,
+  CountdownEnd,
   FaqItem,
   PublicCallToActionButton,
   PublicComponent,
@@ -29,6 +30,8 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { ContactFormLive } from "./contact-form-live"
 import { StorefrontBannerBlock } from "./storefront-banner-block"
+import { StorefrontCountdownLive } from "./storefront-countdown-live"
+import { StorefrontFeaturedBlock } from "./storefront-featured-block"
 import { StorefrontCategoriesBlock } from "./storefront-categories-block"
 import type { ContactCopy } from "./storefront-contact-copy"
 import { StorefrontShelf } from "./storefront-shelf"
@@ -57,6 +60,10 @@ export interface StorefrontComponentProps {
   contact?: LiveContact | null
   /** In an edge-to-edge band: a carousel's pictures keep square corners, to reach the edges. */
   bleed?: boolean
+  /** Whether a cart can be reached from this page: a landing without the shop's header cannot. */
+  cartReachable?: boolean
+  /** Design mode's preview, whose buttons put nothing in a cart. */
+  editing?: boolean
   messages: UiMessages
 }
 
@@ -78,6 +85,8 @@ export function StorefrontComponent({
   linkComponent,
   contact = null,
   bleed = false,
+  cartReachable = true,
+  editing = false,
   messages,
 }: StorefrontComponentProps): ReactNode {
   const link = linkComponent ? { linkComponent } : {}
@@ -179,6 +188,34 @@ export function StorefrontComponent({
           {...link}
         />
       )
+
+    case "FEATURED_PRODUCT":
+      return (
+        <StorefrontFeaturedBlock
+          component={component}
+          routes={routes}
+          cartReachable={cartReachable}
+          editing={editing}
+          {...link}
+          messages={messages}
+        />
+      )
+
+    case "COUNTDOWN": {
+      const [end] = component.items as CountdownEnd[]
+      if (!end) return null
+      return (
+        <StorefrontCountdownLive
+          layout={component.display === "BLOCK" ? "BLOCK" : "BAND"}
+          title={component.title}
+          subtitle={component.subtitle}
+          endsAt={end.endsAt}
+          bleed={bleed}
+          editing={editing}
+          messages={messages}
+        />
+      )
+    }
 
     case "FAQ":
       return (

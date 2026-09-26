@@ -6,7 +6,7 @@ import { readsCatalog, resolvedOnServer, unavailableKindsOf } from "./design-kin
 
 describe("unavailableKindsOf", () => {
   it("keeps a site from selling and a store from taking leads by form", () => {
-    expect(unavailableKindsOf("INSTITUTIONAL", false)).toEqual(["PRODUCTS", "CATEGORIES"])
+    expect(unavailableKindsOf("INSTITUTIONAL", false)).toEqual(["PRODUCTS", "CATEGORIES", "FEATURED_PRODUCT"])
     expect(unavailableKindsOf("ECOMMERCE", false)).toEqual(["CONTACT"])
   })
 
@@ -26,6 +26,7 @@ describe("readsCatalog", () => {
 describe("resolvedOnServer", () => {
   it("names the kinds whose drawing the page has to fetch again", () => {
     expect(resolvedOnServer("PRODUCTS")).toBe(true)
+    expect(resolvedOnServer("FEATURED_PRODUCT")).toBe(true)
     expect(resolvedOnServer("BANNER")).toBe(false)
   })
 })

@@ -7,9 +7,10 @@ import type { ArrangementBand } from "@harness-monorepo/ui/blocks/design/band-ar
 // App
 import { isEmptyComponent } from "../storefront/empty-component"
 import type { SectionDraft } from "./design-draft"
+import { resolvedOnServer } from "./design-kinds"
 import { previewItemsOf } from "./design-preview-items"
 
-/** Each showcase's cards as the shop's public read resolved them, by component id. */
+/** Each showcase's and featured product's cards as the shop's public read resolved them, by component id. */
 export type Shelves = ReadonlyMap<string, Pick<PublicComponent, "items" | "sourceCategory">>
 
 /**
@@ -22,7 +23,7 @@ export function shelvesOf(published: readonly PublicSection[] = []): Shelves {
   return new Map(
     published
       .flatMap((section) => section.components)
-      .filter((component) => component.kind === "PRODUCTS")
+      .filter((component) => resolvedOnServer(component.kind))
       .map((component) => [component.id, { items: component.items, sourceCategory: component.sourceCategory }]),
   )
 }
@@ -108,8 +109,13 @@ export function arrangementOf(
     isActive: row.isActive,
     components: row.components.map((component) => {
       const was = savedComponents.get(component.id)
-      // The row's picture: a banner's first, an image with text's own.
-      const first = was?.kind === "BANNER" || was?.kind === "IMAGE_TEXT" ? (was.items[0] as Pick<BannerSlide, "imageUrl"> | undefined) : undefined
+      // The row's picture: a banner's first, an image with text's own, a featured product's photo.
+      const first =
+        was?.kind === "BANNER" || was?.kind === "IMAGE_TEXT"
+          ? (was.items[0] as Pick<BannerSlide, "imageUrl"> | undefined)
+          : component.kind === "FEATURED_PRODUCT"
+            ? (shelves.get(component.id)?.items[0] as { imageUrl: string | null } | undefined)
+            : undefined
       // A category showcase with no title of its own is headed by its category on the page, and is
       // listed by it here; six rows reading "Vitrine de produtos" would be six rows nobody can tell apart.
       const title = was?.title ?? shelves.get(component.id)?.sourceCategory?.name ?? null
@@ -123,10 +129,10 @@ export function arrangementOf(
         isActive: component.isActive,
         visibleOn: component.visibleOn,
         deletable: !productsRequired || component.kind !== "PRODUCTS" || productLists > 1,
-        // A showcase's saved items are its pick, not its cards, so only a shelf the public read
-        // resolved can say it is empty. A hidden one has none, and is not called empty for it.
+        // A showcase's and a featured product's saved items are a pick, not cards, so only what the
+        // public read resolved can say it is empty. A hidden one has none, and is not called empty.
         empty:
-          component.kind === "PRODUCTS"
+          resolvedOnServer(component.kind)
             ? shelves.get(component.id)?.items.length === 0
             : component.kind === "CATEGORIES"
               ? categoriesShown === 0

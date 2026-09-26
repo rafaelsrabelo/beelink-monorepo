@@ -17,9 +17,12 @@ export function unavailableKindsOf(storeType: StoreType, landing: boolean): Comp
   return [...cannotHold, ...(landing ? (["ANNOUNCEMENT"] as const) : [])]
 }
 
-/** Whether what a kind draws is resolved on the server, so a new or saved one sends the page for it. */
+/**
+ * Whether what a kind draws is resolved on the server — a showcase's products, a featured product's
+ * card — so a new or saved one sends the page for it, and the preview draws the server's answer.
+ */
 export function resolvedOnServer(kind: ComponentKind): boolean {
-  return kind === "PRODUCTS"
+  return kind === "PRODUCTS" || kind === "FEATURED_PRODUCT"
 }
 
 /**
@@ -34,6 +37,7 @@ export function readsCatalog(kind: ComponentKind): boolean {
     kind === "CALL_TO_ACTION" ||
     kind === "IMAGE_TEXT" ||
     kind === "PRODUCTS" ||
+    kind === "FEATURED_PRODUCT" ||
     kind === "CATEGORIES"
   )
 }

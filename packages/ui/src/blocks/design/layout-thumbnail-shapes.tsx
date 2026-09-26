@@ -163,6 +163,24 @@ export function LayoutShape({ display }: { display: ComponentDisplay }) {
           <Lines className="flex-1" />
         </span>
       )
+    // The picture wide, the words under it.
+    case "IMAGE_LARGE":
+      return (
+        <span className="flex h-full w-full flex-col items-center gap-1">
+          <span className={cn(PICTURE, "w-full flex-1")} />
+          <span className={cn(LINE, "h-1 w-1/2")} />
+        </span>
+      )
+    // A box that fits a slice, drawn smaller than the frame around it.
+    case "BLOCK":
+      return (
+        <span className="flex h-full w-full items-center justify-center">
+          <span className="border-muted-foreground/40 flex h-full w-3/5 flex-col items-center justify-center gap-1 rounded-sm border">
+            <span className={cn(LINE, "h-1 w-1/2")} />
+            <span className="bg-primary/60 h-1.5 w-3/4 rounded-full" />
+          </span>
+        </span>
+      )
     // A layout added without a drawing fails the build here instead of drawing an empty frame.
     default:
       return (display satisfies never) && null

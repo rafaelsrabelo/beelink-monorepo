@@ -162,6 +162,21 @@ describe("StorefrontSections — a band is a grid", () => {
     expect(screen.getAllByRole("heading", { name: "Feito à mão" })).toHaveLength(1)
   })
 
+  it("draws a featured product with a button that fills the cart, or leads to its page where no cart is reachable", () => {
+    const card = { id: "p", slug: "whey", name: "Whey Baunilha", priceCents: 12990, compareAtPriceCents: null, imageUrl: null, categorySlug: null, priceRange: { minCents: 12990, maxCents: 12990 }, hasOptions: false, soldOut: false }
+    const featured: PublicComponent = { ...heading("destaque", "FULL"), kind: "FEATURED_PRODUCT", title: "Oferta", display: "IMAGE_LEFT", items: [card] }
+
+    const { unmount } = draw([band([featured])])
+    expect(screen.getByRole("heading", { level: 3, name: "Whey Baunilha" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/carrinho")
+    unmount()
+
+    render(
+      <StorefrontSections sections={[band([featured])]} primary="" categories={[]} routes={routes} showPrice showBadge cartReachable={false} messages={ptBR} />,
+    )
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/produtos/whey")
+  })
+
   // A cached page, or a newer API, can serve a kind this build has never heard of. It used to fall
   // through to a shelf, which read its items as product cards.
   it("draws nothing for a kind this build does not know, and drops a band left with nothing", () => {

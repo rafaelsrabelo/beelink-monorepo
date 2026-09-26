@@ -1,6 +1,9 @@
 // React
 import type { ReactNode } from "react"
 
+// UI
+import { optionCountOf } from "@harness-monorepo/ui/lib/option-count"
+
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { StorefrontCardPhotos } from "./storefront-card-photos"
@@ -21,6 +24,8 @@ export interface StorefrontProduct {
   imageUrls?: readonly string[]
   /** Whether it sells combinations: known on a shelf, and what decides a card's action. */
   hasOptions?: boolean
+  /** Its first option and how many values it has, for the line "4 sabores" under the name. */
+  optionSummary?: { name: string; valueCount: number } | null
 }
 
 export interface StorefrontProductCardProps {
@@ -70,6 +75,8 @@ export function StorefrontProductCard({
   messages = defaultMessages,
 }: StorefrontProductCardProps) {
   const text = messages.storefront
+  // What the visitor will choose on the product's page, said before they get there.
+  const options = optionCountOf(product.optionSummary, locale)
 
   if (density === "compact") {
     return (
@@ -132,6 +139,9 @@ export function StorefrontProductCard({
             messages={messages}
           />
         ) : null}
+
+        {/* Under the price and not the name: a card with it and one without keep their prices in line. */}
+        {options ? <p className="text-xs text-shop-muted">{options}</p> : null}
 
         {/* Above the name's stretched link, so a press on it is the action's and not the page's. */}
         {/*

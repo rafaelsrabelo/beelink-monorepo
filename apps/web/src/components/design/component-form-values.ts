@@ -5,6 +5,7 @@ import type {
   BenefitRow,
   CallToActionButton,
   ContactField,
+  CountdownEnd,
   FaqItem,
   ImageTextMedia,
   ShowcaseProduct,
@@ -20,6 +21,8 @@ import {
   benefitsFromForm,
   benefitsToForm,
   buttonFromForm,
+  countdownFromForm,
+  countdownToForm,
   faqFromForm,
   faqToForm,
   fieldsFromForm,
@@ -58,9 +61,11 @@ export function toForm(component: StoreComponent): ComponentFormValues {
     fields: fieldsToForm(items("CONTACT") as ContactField[]),
     source: component.source ?? "ALL",
     sourceCategoryId: component.sourceCategoryId ?? "",
-    picks: picksToForm(items("PRODUCTS") as ShowcaseProduct[]),
+    // A featured product's pick is a showcase's, one long.
+    picks: picksToForm((component.kind === "FEATURED_PRODUCT" ? items("FEATURED_PRODUCT") : items("PRODUCTS")) as ShowcaseProduct[]),
     limit: component.limit === null ? "" : String(component.limit),
     faq: faqToForm(items("FAQ") as FaqItem[]),
+    countdownEnd: countdownToForm(items("COUNTDOWN") as CountdownEnd[]),
   }
 }
 
@@ -98,6 +103,10 @@ function itemsOf(value: ComponentFormValues, itemId: string): UpdateComponentPay
       return { items: buttonFromForm(value, itemId) }
     case "IMAGE_TEXT":
       return { items: mediaFromForm(value, itemId) }
+    case "FEATURED_PRODUCT":
+      return { items: value.picks.slice(0, 1) }
+    case "COUNTDOWN":
+      return { items: countdownFromForm(value.countdownEnd, itemId) }
     default:
       return {}
   }

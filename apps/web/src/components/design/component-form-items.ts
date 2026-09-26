@@ -6,6 +6,7 @@ import type {
   CallToActionButton,
   ComponentLink,
   ContactField,
+  CountdownEnd,
   FaqItem,
   ImageTextMedia,
   ShowcaseProduct,
@@ -13,6 +14,7 @@ import type {
 
 // UI
 import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/component-content-fields"
+import { instantOf, wallTimeOf } from "@harness-monorepo/ui/lib/shop-time"
 
 /*
   Each kind's items between the wire and the form, in both directions. Apart from `toForm` and
@@ -165,4 +167,15 @@ export function mediaFromForm(
       button: button ? { label: button.label, target: button.target, categoryId: button.categoryId, productId: button.productId, externalUrl: button.externalUrl } : null,
     },
   ]
+}
+
+/** A countdown's end on the shop's clock, as its field holds it; `""` when it has none. */
+export function countdownToForm(items: readonly CountdownEnd[]): string {
+  return items[0] ? wallTimeOf(items[0].endsAt) : ""
+}
+
+/** And back to an instant, with its offset: none for a field left empty or holding what is not a time. */
+export function countdownFromForm(wallTime: string, itemId: string): CountdownEnd[] {
+  const endsAt = instantOf(wallTime)
+  return endsAt ? [{ id: itemId, endsAt }] : []
 }
