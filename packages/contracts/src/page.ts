@@ -445,6 +445,22 @@ export type PageErrorCode =
   | "COMPONENT_DISPLAY_INVALID"
   /** A `visibleOn` that is not one of the three, or one sent to the strip, which shows everywhere. */
   | "COMPONENT_VISIBILITY_INVALID"
+  /** A kind the home holds and a landing does not: the strip, which is the shop's on every page. */
+  | "COMPONENT_KIND_HOME_ONLY"
+  /** A page that is not this shop's, or not there; a landing not published, to a visitor. */
+  | "PAGE_NOT_FOUND"
+  /** An address another page of this shop already has. */
+  | "PAGE_SLUG_TAKEN"
+  /** An address with nothing left after normalising, or longer than sixty characters. */
+  | "PAGE_SLUG_INVALID"
+  /** The home is the shop's own address and is always published: it is not patched as a page. */
+  | "PAGE_HOME_FIXED"
+  /** A template this kind of shop cannot use: a site has no catalogue to launch a product from. */
+  | "PAGE_TEMPLATE_UNAVAILABLE"
+  /** A template built around a product, sent without one. */
+  | "PAGE_PRODUCT_REQUIRED"
+  /** A product that is not this shop's. */
+  | "PAGE_PRODUCT_INVALID"
   /** A `source` that is not one of the five, or a showcase's field sent to a kind that is not one. */
   | "SHOWCASE_SOURCE_INVALID"
   /** A `CATEGORY` showcase with no category, or with one that is not this shop's. */

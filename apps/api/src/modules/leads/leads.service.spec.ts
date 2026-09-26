@@ -106,17 +106,17 @@ describe('LeadsService — a visitor writes in', () => {
     expect(prisma.storeComponent.findFirst).not.toHaveBeenCalled();
   });
 
-  it('refuses a form this site does not have, or has hidden', async () => {
+  it('refuses a form this site does not have, has hidden, or has on a page that is not served', async () => {
     const { service, prisma } = build({ form: false });
 
     await expect(
       service.receive('asfalto-norte', { componentId: FORM, name: 'Carlos', answers: { email: 'a@b.co' } }),
     ).rejects.toMatchObject({ response: { errorCode: 'LEAD_FORM_NOT_FOUND' } });
 
-    // Hidden is part of the question, not a second read: the form has to be shown to be posted to.
+    // Hidden and unpublished are part of the question, not a second read: the form has to be shown to be posted to.
     expect(prisma.storeComponent.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ kind: 'CONTACT', isActive: true, section: { isActive: true } }),
+        where: expect.objectContaining({ kind: 'CONTACT', isActive: true, section: { isActive: true, page: { status: 'PUBLISHED' } } }),
       }),
     );
   });

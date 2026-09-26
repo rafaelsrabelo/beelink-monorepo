@@ -3,6 +3,7 @@ import type {
   BenefitRow,
   ComponentDisplay,
   ComponentKind,
+  ComponentSpan,
   ContactField,
   ContactFieldType,
   PaymentMethod,
@@ -23,8 +24,22 @@ type PromiseRow = { id: string; icon: string; title: string; detail: string };
 /** One field of a contact form, as the JSON column takes it. Same reason as `PromiseRow`. */
 type ContactFieldRow = { id: string; label: string; type: ContactFieldType; required: boolean; options?: string[] };
 
-/** What a seeded component may hold: a promises band's rows, or a form's fields. */
-export type SeededItem = PromiseRow | ContactFieldRow;
+/** One picture of a banner, as the JSON column takes it. Same reason as `PromiseRow`. */
+type SlideRow = {
+  id: string;
+  imageUrl: string;
+  title?: string;
+  subtitle?: string;
+  target: 'NONE' | 'PRODUCT' | 'CATEGORY';
+  productId?: string;
+  categoryId?: string;
+};
+
+/** One product a showcase picked. Same reason as `PromiseRow`. */
+type PickRow = { id: string; productId: string };
+
+/** What a seeded component may hold: a promises band's rows, a form's fields, a banner's pictures, a showcase's picks. */
+export type SeededItem = PromiseRow | ContactFieldRow | SlideRow | PickRow;
 
 /** One band of the page a new shop or site opens with, ready for `storeSection.create`. */
 export interface SeededBand {
@@ -37,6 +52,10 @@ export interface SeededBand {
     align?: TextAlign | null;
     display?: ComponentDisplay | null;
     source?: ProductSource | null;
+    sourceCategoryId?: string | null;
+    limit?: number | null;
+    columns?: number | null;
+    span?: ComponentSpan;
     items: SeededItem[];
     position: number;
     isActive: boolean;
@@ -118,4 +137,9 @@ export function openingDisplayOf(kind: ComponentKind): ComponentDisplay | null {
   if (kind === 'BANNER') return 'CAROUSEL';
   if (kind === 'PRODUCTS' || kind === 'CATEGORIES') return 'RAIL';
   return null;
+}
+
+/** The promises a shop's payment methods make, in the order the methods are listed: a benefits band's rows. */
+export function promisesOf(paymentMethods: readonly PaymentMethod[]): SeededItem[] {
+  return paymentMethods.map((method) => PROMISE_OF[method]);
 }

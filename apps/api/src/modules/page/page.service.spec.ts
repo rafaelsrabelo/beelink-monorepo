@@ -14,6 +14,8 @@ import { ShowcaseRules } from './showcase.rules.js';
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
 const SECTION = '0199b000-0000-7000-8000-000000000001';
 const COMPONENT = '0199c000-0000-7000-8000-000000000001';
+const HOME = '0199f000-0000-7000-8000-000000000001';
+const LANDING = '0199f000-0000-7000-8000-000000000002';
 
 const SLIDE = {
   id: 'slide-1',
@@ -25,6 +27,7 @@ function sectionRow(over: Record<string, unknown> = {}) {
   return {
     id: SECTION,
     storeId: STORE,
+    pageId: HOME,
     width: 'CONTAINED',
     background: null,
     position: 0,
@@ -87,6 +90,11 @@ function build(
     storedShowcase?: { source: string | null; sourceCategoryId: string | null; limit: number | null; items: object[] }
     /** The components each band holds, by band id, when a move reads two bands. */
     bands?: Record<string, { id: string; position: number; kind: string }[]>
+    /** Which page the bands are on: the home unless said, and a band named here is on that page instead. */
+    pageKind?: 'HOME' | 'LANDING'
+    pageOfBand?: Record<string, string>
+    /** Whether the page a collection route names is this shop's. */
+    pageMissing?: boolean
   } = {},
 ) {
   const createSection = vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
@@ -121,9 +129,13 @@ function build(
       findMany: vi
         .fn()
         .mockResolvedValue((found.owned ?? [{ id: SECTION }, { id: 'section-2' }]).map(sectionRow)),
-      findUnique: vi
-        .fn()
-        .mockResolvedValue({ storeId: found.sectionOfAnotherShop ? 'another-shop' : STORE }),
+      findUnique: vi.fn().mockImplementation(({ where }: { where: { id: string } }) =>
+        Promise.resolve({
+          storeId: found.sectionOfAnotherShop ? 'another-shop' : STORE,
+          pageId: found.pageOfBand?.[where.id] ?? HOME,
+          page: { kind: found.pageKind ?? 'HOME' },
+        }),
+      ),
       update: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
         id: SECTION,
         storeId: STORE,
@@ -163,10 +175,22 @@ function build(
               : (found.requiredInShop ?? 1),
         ),
       ),
-      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: found.kind ?? 'BANNER', sectionId: SECTION }),
+      findUnique: vi.fn().mockResolvedValue({
+        storeId: STORE,
+        kind: found.kind ?? 'BANNER',
+        sectionId: SECTION,
+        section: { pageId: found.pageOfBand?.[SECTION] ?? HOME, page: { kind: found.pageKind ?? 'HOME' } },
+      }),
       findUniqueOrThrow: vi
         .fn()
         .mockResolvedValue(found.storedShowcase ?? { source: 'ALL', sourceCategoryId: null, limit: null, items: [] }),
+    },
+    storePage: {
+      findFirst: vi
+        .fn()
+        .mockImplementation(({ where }: { where: { id?: string } }) =>
+          Promise.resolve(found.pageMissing ? null : { id: where.id ?? HOME, kind: found.pageKind ?? 'HOME' }),
+        ),
     },
     productCategory: { count: vi.fn().mockResolvedValue(found.ownCategories ?? 1) },
     product: {
@@ -668,6 +692,66 @@ describe('PageService — a block moves into another band', () => {
       components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
     ).rejects.toMatchObject({ response: { errorCode: 'SECTION_NOT_FOUND' } });
     expect(prisma.storeComponent.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('PageService — a band is on one page', () => {
+  it('writes a band on the home when no page is named, and on the page named otherwise', async () => {
+    const home = build();
+    await home.service.createSection('lessari', 'user-1', { component: { kind: 'HEADING', title: 'Oi' } });
+    expect(home.createSection.mock.calls[0]![0].data).toMatchObject({ pageId: HOME });
+    expect(home.prisma.storeSection.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { pageId: HOME } }));
+
+    const landing = build({ pageKind: 'LANDING' });
+    await landing.service.createSection('lessari', 'user-1', { component: { kind: 'HEADING', title: 'Oi' } }, LANDING);
+    expect(landing.createSection.mock.calls[0]![0].data).toMatchObject({ pageId: LANDING });
+  });
+
+  it('answers a page that is not this shop’s, or not a page id at all, as one that is not there', async () => {
+    const { service, createSection } = build({ pageMissing: true });
+
+    for (const pageId of [LANDING, 'not-a-uuid']) {
+      await expect(
+        service.createSection('lessari', 'user-1', { component: { kind: 'HEADING', title: 'Oi' } }, pageId),
+      ).rejects.toMatchObject({ response: { errorCode: 'PAGE_NOT_FOUND' } });
+    }
+    expect(createSection).not.toHaveBeenCalled();
+  });
+
+  it('keeps the strip on the home: a landing draws the home’s', async () => {
+    const { service, components, createSection, createComponent } = build({ pageKind: 'LANDING' });
+
+    await expect(
+      service.createSection('lessari', 'user-1', { component: { kind: 'ANNOUNCEMENT', title: 'Frete grátis' } }, LANDING),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_KIND_HOME_ONLY' } });
+    await expect(
+      components.createComponent('lessari', 'user-1', SECTION, { kind: 'ANNOUNCEMENT', title: 'Frete grátis' }),
+    ).rejects.toMatchObject({ response: { errorCode: 'COMPONENT_KIND_HOME_ONLY' } });
+    expect(createSection).not.toHaveBeenCalled();
+    expect(createComponent).not.toHaveBeenCalled();
+  });
+
+  it('refuses a move into a band on another page, and moves nothing', async () => {
+    const { components, prisma } = build({
+      bands: { [SECTION]: [{ id: COMPONENT, position: 0, kind: 'BANNER' }], [OTHER_SECTION]: [] },
+      pageOfBand: { [OTHER_SECTION]: LANDING },
+    });
+
+    await expect(
+      components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
+    ).rejects.toMatchObject({ response: { errorCode: 'SECTION_NOT_FOUND' } });
+    expect(prisma.storeComponent.update).not.toHaveBeenCalled();
+  });
+
+  /** The home's shelves are what `/<shop>` cannot be without; a landing's are the shopkeeper's to take off. */
+  it('lets a landing’s only product list go, at both levels', async () => {
+    const asComponent = build({ kind: 'PRODUCTS', pageKind: 'LANDING', requiredInShop: 0 });
+    await expect(asComponent.components.removeComponent('lessari', 'user-1', COMPONENT)).resolves.toBeUndefined();
+    expect(asComponent.prisma.storeComponent.delete).toHaveBeenCalled();
+
+    const asBand = build({ pageKind: 'LANDING', requiredInSection: 1, requiredElsewhere: 0 });
+    await expect(asBand.service.removeSection('lessari', 'user-1', SECTION)).resolves.toBeUndefined();
+    expect(asBand.prisma.storeSection.delete).toHaveBeenCalled();
   });
 });
 

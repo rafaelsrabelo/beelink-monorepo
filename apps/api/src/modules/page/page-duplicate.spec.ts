@@ -14,6 +14,8 @@ import { ShowcaseRules } from './showcase.rules.js';
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
 const BAND = '0199b000-0000-7000-8000-000000000001';
 const BLOCK = '0199c000-0000-7000-8000-000000000001';
+const PAGE = '0199f000-0000-7000-8000-000000000001';
+const ON_PAGE = { pageId: PAGE, page: { kind: 'HOME' } };
 const AT = new Date('2026-09-25T00:00:00.000Z');
 
 function block(id: string, over: Record<string, unknown> = {}) {
@@ -46,6 +48,7 @@ function build({ kinds = ['BANNER'] as string[], bands = ['before', BAND, 'after
   const original = {
     id: BAND,
     storeId: STORE,
+    pageId: PAGE,
     name: 'Coleções',
     width: 'FULL',
     background: 'oklch(0.9 0.05 80)',
@@ -58,7 +61,7 @@ function build({ kinds = ['BANNER'] as string[], bands = ['before', BAND, 'after
 
   const prisma = {
     storeSection: {
-      findUnique: vi.fn().mockResolvedValue({ storeId: STORE }),
+      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, ...ON_PAGE }),
       findUniqueOrThrow: vi.fn().mockResolvedValue(original),
       findMany: vi.fn().mockResolvedValue(bands.map((id, position) => ({ id, position }))),
       update: vi.fn().mockResolvedValue({}),
@@ -71,7 +74,7 @@ function build({ kinds = ['BANNER'] as string[], bands = ['before', BAND, 'after
       })),
     },
     storeComponent: {
-      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: kinds[0], sectionId: BAND }),
+      findUnique: vi.fn().mockResolvedValue({ storeId: STORE, kind: kinds[0], sectionId: BAND, section: ON_PAGE }),
       findUniqueOrThrow: vi.fn().mockResolvedValue(block(BLOCK, { kind: kinds[0] })),
       findMany: vi.fn().mockResolvedValue(siblings.map((id, position) => ({ id, position }))),
       update: vi.fn().mockResolvedValue({}),
@@ -100,6 +103,9 @@ describe('PageService.duplicateSection', () => {
 
     expect(prisma.storeSection.update).toHaveBeenCalledWith({ where: { id: 'after' }, data: { position: 3 } });
     expect(prisma.storeSection.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ position: 2 }) }));
+    // On the original's page, placed among that page's bands and no other's.
+    expect(prisma.storeSection.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { pageId: PAGE } }));
+    expect(prisma.storeSection.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ pageId: PAGE }) }));
   });
 
   // Hidden until Publicar; unnamed, because the site's menu is made of the named bands.
@@ -129,7 +135,7 @@ describe('PageService.duplicateSection', () => {
 
   it('answers a band of another shop as one it does not have', async () => {
     const { bands, prisma } = build();
-    vi.mocked(prisma.storeSection.findUnique).mockResolvedValue({ storeId: 'another-shop' } as never);
+    vi.mocked(prisma.storeSection.findUnique).mockResolvedValue({ storeId: 'another-shop', ...ON_PAGE } as never);
 
     await expect(bands.duplicateSection('lessari', 'user-1', BAND)).rejects.toMatchObject({
       response: { errorCode: 'SECTION_NOT_FOUND' },

@@ -38,6 +38,7 @@ function sectionOf(component: StoreComponentModel): SectionRow {
   return {
     id: component.sectionId,
     storeId: component.storeId,
+    pageId: '0199f000-0000-7000-8000-000000000001',
     name: null,
     width: 'CONTAINED',
     background: null,

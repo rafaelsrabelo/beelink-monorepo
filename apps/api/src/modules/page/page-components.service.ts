@@ -12,6 +12,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { toComponent } from './page.mapper.js';
 import { pageOf } from './page-read.js';
+import { refuseOnLanding, refuseOtherPage } from './page-scope.js';
 import { PageRules, pageError } from './page.rules.js';
 import { closedUp, componentPatch, componentRow, copiedRow, placedAt } from './page-rows.js';
 import { ShowcaseRules } from './showcase.rules.js';
@@ -40,7 +41,8 @@ export class PageComponentsService {
     dto: AddComponentDto,
   ): Promise<StoreComponent> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.rules.ownedSection(storeId, sectionId);
+    const { pageKind } = await this.rules.ownedSection(storeId, sectionId);
+    refuseOnLanding(pageKind, dto.kind);
     await this.rules.refuseSecond(storeId, dto.kind);
     this.rules.refuseDisplayFor(dto.kind, dto.display);
     this.rules.refuseVisibilityFor(dto.kind, dto.visibleOn);
@@ -116,7 +118,8 @@ export class PageComponentsService {
     await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
       const current = await this.rules.ownedComponent(storeId, componentId, tx);
-      await this.rules.refuseRequired(storeId, current.kind, tx);
+      // The home's last product list, only: a landing's showcases go with the landing.
+      if (current.pageKind === 'HOME') await this.rules.refuseRequired(storeId, current.kind, tx);
       await tx.storeComponent.delete({ where: { id: componentId } });
     });
   }
@@ -129,7 +132,7 @@ export class PageComponentsService {
     dto: ReorderDto,
   ): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    await this.rules.ownedSection(storeId, sectionId);
+    const { pageId } = await this.rules.ownedSection(storeId, sectionId);
 
     // The same lock an add into this band takes: see reorderSections.
     await this.prisma.$transaction(async (tx) => {
@@ -142,7 +145,7 @@ export class PageComponentsService {
       }
     });
 
-    return pageOf(this.prisma, storeId);
+    return pageOf(this.prisma, pageId);
   }
 
   /**
@@ -161,10 +164,10 @@ export class PageComponentsService {
   ): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
-    await this.prisma.$transaction(async (tx) => {
+    const pageId = await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
       const moving = await this.rules.ownedComponent(storeId, componentId, tx);
-      await this.rules.ownedSection(storeId, dto.sectionId, tx);
+      refuseOtherPage(moving.pageId, await this.rules.ownedSection(storeId, dto.sectionId, tx), dto.sectionId);
 
       // Without the one moving, so its own band reorders it like any other.
       const othersIn = (sectionId: string) =>
@@ -187,22 +190,24 @@ export class PageComponentsService {
         data: { sectionId: dto.sectionId, position: at, ...(dto.span !== undefined ? { span: dto.span } : {}) },
       });
 
-      if (moving.sectionId === dto.sectionId) return;
+      if (moving.sectionId === dto.sectionId) return moving.pageId;
 
       const left = await othersIn(moving.sectionId);
 
       // After the component has left, never before: deleting a band cascades to what it still holds.
       if (left.length === 0) {
         await tx.storeSection.delete({ where: { id: moving.sectionId } });
-        return;
+        return moving.pageId;
       }
 
       for (const move of closedUp(left)) {
         await tx.storeComponent.update({ where: { id: move.id }, data: { position: move.position } });
       }
+
+      return moving.pageId;
     });
 
-    return pageOf(this.prisma, storeId);
+    return pageOf(this.prisma, pageId);
   }
 
   /**

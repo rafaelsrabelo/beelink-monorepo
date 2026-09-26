@@ -11,14 +11,15 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { sectionInclude, toSection } from './page.mapper.js';
 import { pageOf } from './page-read.js';
+import { pageFor, refuseOnLanding } from './page-scope.js';
 import { PageRules } from './page.rules.js';
 import { componentRow, copiedRow, placedAt } from './page-rows.js';
 import { ShowcaseRules } from './showcase.rules.js';
 import { openingItemsOf } from './page-seed.js';
 
 /**
- * The bands of the landing page. A band and the block it is built around are created together,
- * here; the blocks' own writes are `PageComponentsService`'s.
+ * The bands of a shop's pages. A band and the block it is built around are created together,
+ * here; the blocks' own writes are `PageComponentsService`'s, and the pages themselves `PagesService`'s.
  */
 @Injectable()
 export class PageService {
@@ -29,11 +30,12 @@ export class PageService {
     private readonly showcases: ShowcaseRules,
   ) {}
 
-  /** The panel's read: hidden bands and hidden components included, in the arranged order. */
-  async list(storeSlug: string, userId: string): Promise<Section[]> {
+  /** The panel's read of one page — the home unless another is named: hidden bands and components included. */
+  async list(storeSlug: string, userId: string, pageId?: string): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const page = await pageFor(this.prisma, storeId, pageId);
 
-    return pageOf(this.prisma, storeId);
+    return pageOf(this.prisma, page.id);
   }
 
   /**
@@ -42,8 +44,10 @@ export class PageService {
    * Both in one transaction: a band with nothing in it draws nothing, so a half-written pair is a
    * row the shopkeeper can only meet as a gap in their own editor.
    */
-  async createSection(storeSlug: string, userId: string, dto: CreateSectionDto): Promise<Section> {
+  async createSection(storeSlug: string, userId: string, dto: CreateSectionDto, pageId?: string): Promise<Section> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const page = await pageFor(this.prisma, storeId, pageId);
+    refuseOnLanding(page.kind, dto.component.kind);
 
     await this.rules.refuseSecond(storeId, dto.component.kind);
     this.rules.refuseDisplayFor(dto.component.kind, dto.component.display);
@@ -60,7 +64,7 @@ export class PageService {
     const row = await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
       const bands = await tx.storeSection.findMany({
-        where: { storeId },
+        where: { pageId: page.id },
         orderBy: [{ position: 'asc' }, { id: 'asc' }],
         select: { id: true, position: true },
       });
@@ -73,6 +77,7 @@ export class PageService {
       return tx.storeSection.create({
         data: {
           storeId,
+          pageId: page.id,
           name: dto.name ?? null,
           ...(dto.width !== undefined ? { width: dto.width } : {}),
           background: dto.background ?? null,
@@ -125,8 +130,9 @@ export class PageService {
     // The check and the delete in one transaction, behind the shop's lock: see `PageRules.lockShop`.
     await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
-      await this.rules.ownedSection(storeId, sectionId, tx);
-      await this.rules.refuseHoldingRequired(storeId, sectionId, tx);
+      const { pageKind } = await this.rules.ownedSection(storeId, sectionId, tx);
+      // The home's last product list, only: a landing's bands go with the landing.
+      if (pageKind === 'HOME') await this.rules.refuseHoldingRequired(storeId, sectionId, tx);
       await tx.storeSection.delete({ where: { id: sectionId } });
     });
   }
@@ -138,22 +144,23 @@ export class PageService {
    * whose missing rows keep positions that now collide, and the page they draw is neither the old
    * order nor the new one.
    */
-  async reorderSections(storeSlug: string, userId: string, dto: ReorderDto): Promise<Section[]> {
+  async reorderSections(storeSlug: string, userId: string, dto: ReorderDto, pageId?: string): Promise<Section[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const page = await pageFor(this.prisma, storeId, pageId);
 
     // Under the shop's lock, the list read inside it: an add renumbers these same rows, and a reorder
     // racing it would leave two bands on one number, or deadlock on the rows each holds.
     await this.prisma.$transaction(async (tx) => {
       await this.rules.lockShop(tx, storeId);
-      const owned = await tx.storeSection.findMany({ where: { storeId }, select: { id: true } });
-      this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every band of this shop exactly once, in the new order');
+      const owned = await tx.storeSection.findMany({ where: { pageId: page.id }, select: { id: true } });
+      this.rules.refuseOrderMismatch(dto.ids, owned, 'Send every band of this page exactly once, in the new order');
 
       for (const [position, id] of dto.ids.entries()) {
         await tx.storeSection.update({ where: { id }, data: { position } });
       }
     });
 
-    return pageOf(this.prisma, storeId);
+    return pageOf(this.prisma, page.id);
   }
 
   /**
@@ -174,8 +181,9 @@ export class PageService {
       const original = await tx.storeSection.findUniqueOrThrow({ where: { id: sectionId }, include: sectionInclude });
       this.rules.refuseCopy(original.components.map((component) => component.kind));
 
+      // Among its own page's bands: a copy lands on the page the original is on.
       const bands = await tx.storeSection.findMany({
-        where: { storeId },
+        where: { pageId: original.pageId },
         orderBy: [{ position: 'asc' }, { id: 'asc' }],
         select: { id: true, position: true },
       });
@@ -188,6 +196,7 @@ export class PageService {
       return tx.storeSection.create({
         data: {
           storeId,
+          pageId: original.pageId,
           name: null,
           width: original.width,
           background: original.background,

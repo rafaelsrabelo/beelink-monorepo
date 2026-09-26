@@ -11,18 +11,9 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
-import {
-  type SectionRow,
-} from '../page/page.mapper.js';
-import {
-  NO_SHELVES,
-  NO_SLUGS,
-  slideTargetsOf,
-  type ShelvesByComponent,
-  type SlugsByEntity,
-} from '../page/page-public.mapper.js';
 import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
-import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery } from '../catalog/showcase.query.js';
+import { writeBands } from '../page/page-bands-write.js';
+import { lookupsOf } from '../page/page-resolve.js';
 import { RESERVED_SLUGS } from './stores.constants.js';
 
 /** Keeps every code this module answers inside the contract's union. */
@@ -101,17 +92,12 @@ export class StoresService {
           },
         });
 
-        for (const band of openingPageOf(dto, created.paymentMethods)) {
-          await tx.storeSection.create({
-            data: {
-              storeId: created.id,
-              ...band.section,
-              components: {
-                create: band.components.map((component) => ({ storeId: created.id, ...component })),
-              },
-            },
-          });
-        }
+        // The home, published from the start: `/<slug>` is served the moment the shop exists.
+        const home = await tx.storePage.create({
+          data: { storeId: created.id, kind: 'HOME', slug: null, title: 'Página inicial', status: 'PUBLISHED', publishedAt: new Date() },
+          select: { id: true },
+        });
+        await writeBands(tx, created.id, home.id, openingPageOf(dto, created.paymentMethods));
 
         return tx.store.findUniqueOrThrow({ where: { id: created.id }, include: storeInclude });
       });
@@ -224,94 +210,9 @@ export class StoresService {
     const row = await this.prisma.store.findUnique({ where: { slug }, include: storeInclude });
     if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
 
-    const [slugs, shelves] = await Promise.all([this.slideSlugs(row.sections), this.shelvesOf(row.id, row.sections)]);
+    const { slugs, shelves } = await lookupsOf(this.prisma, row.id, row.sections);
 
     return toPublicStore(row, slugs, shelves);
-  }
-
-  /**
-   * What every showcase on the page draws, resolved from its source: a query per showcase, in
-   * parallel, and one more for the categories CATEGORY showcases name.
-   *
-   * Here and not in the catalogue's service because the catalogue module imports this one; the
-   * query each source runs lives in `catalog/showcase.query.ts`, where the rule of what is on the
-   * shelf already is. Hidden showcases are skipped — the mapper drops them anyway, and a query for a
-   * shelf nobody sees is a query the anonymous page pays for.
-   */
-  private async shelvesOf(storeId: string, sections: SectionRow[]): Promise<ShelvesByComponent> {
-    const showcases = sections
-      .flatMap((section) => section.components)
-      .filter((component) => component.isActive && component.kind === 'PRODUCTS');
-
-    if (!showcases.length) return NO_SHELVES;
-
-    const categoryIds = showcases.flatMap((showcase) =>
-      showcase.source === 'CATEGORY' && showcase.sourceCategoryId ? [showcase.sourceCategoryId] : [],
-    );
-
-    const [categories, shelves] = await Promise.all([
-      categoryIds.length
-        ? this.prisma.productCategory.findMany({
-            where: { id: { in: categoryIds }, storeId, isActive: true },
-            select: { id: true, slug: true, name: true, description: true },
-          })
-        : [],
-      Promise.all(
-        showcases.map(async (showcase) => {
-          const query = showcaseQuery(storeId, showcase, this.prisma.product.fields.priceCents);
-          const rows = query ? await this.prisma.product.findMany({ ...query, select: SHOWCASE_CARD_SELECT }) : [];
-          return [showcase, shelfOf(showcase, rows)] as const;
-        }),
-      ),
-    ]);
-
-    const categoryOf = new Map(
-      categories.map((row) => [row.id, { slug: row.slug, name: row.name, description: row.description }]),
-    );
-
-    return new Map(
-      shelves.map(([showcase, products]) => [
-        showcase.id,
-        { products, category: showcase.sourceCategoryId ? (categoryOf.get(showcase.sourceCategoryId) ?? null) : null },
-      ]),
-    );
-  }
-
-  /**
-   * What the hero's slides point at, in one round trip for the whole shop.
-   *
-   * A slide keeps an id rather than an address, so renaming a category moves the slide with it —
-   * the promise a foreign key makes, without the foreign key, because `items` is JSON. Two `IN`
-   * queries and no join: a carousel is capped at twenty slides, and this is the page a stranger
-   * asks for first.
-   *
-   * Nothing is thrown when an id resolves to nothing. It simply is not in the map, the mapper
-   * builds no address, and the slide is a picture rather than a broken link.
-   */
-  private async slideSlugs(sections: SectionRow[]): Promise<SlugsByEntity> {
-    const { categoryIds, productIds } = slideTargetsOf(sections);
-
-    if (!categoryIds.length && !productIds.length) return NO_SLUGS;
-
-    const [categories, products] = await Promise.all([
-      categoryIds.length
-        ? this.prisma.productCategory.findMany({
-            where: { id: { in: categoryIds } },
-            select: { id: true, slug: true },
-          })
-        : [],
-      productIds.length
-        ? this.prisma.product.findMany({
-            where: { id: { in: productIds } },
-            select: { id: true, slug: true },
-          })
-        : [],
-    ]);
-
-    return {
-      categories: new Map(categories.map((row) => [row.id, row.slug])),
-      products: new Map(products.map((row) => [row.id, row.slug])),
-    };
   }
 
   /**

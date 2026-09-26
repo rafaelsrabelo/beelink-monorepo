@@ -15,6 +15,7 @@ const row = {
   bannerImageUrl: null,
   categoryId: '0199a0f1-0000-7000-8000-0000000000c1',
   sections: [],
+  pages: [],
   category: {
     id: '0199a0f1-0000-7000-8000-0000000000c1',
     slug: 'alimentacao',
@@ -139,6 +140,19 @@ describe('toPublicStore', () => {
     } as unknown as StoreRow).layoutSettings;
 
     expect(settings).toEqual({ productsPerRow: 3 });
+  });
+
+  // The query already chose them — published landings marked for the menu — so a null slug here is the home's.
+  it('links the landings the menu shows, and never the home', () => {
+    const pages = toPublicStore({
+      ...row,
+      pages: [
+        { slug: null, title: 'Página inicial' },
+        { slug: 'lancamento', title: 'Lançamento' },
+      ],
+    } as unknown as StoreRow).pages;
+
+    expect(pages).toEqual([{ slug: 'lancamento', title: 'Lançamento' }]);
   });
 
   it('keeps a layout blob it can trust', () => {

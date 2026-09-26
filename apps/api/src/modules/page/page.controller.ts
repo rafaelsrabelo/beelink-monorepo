@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -25,19 +25,20 @@ import { AddComponentDto, CreateSectionDto, UpdateComponentDto, UpdateSectionDto
 import { MoveComponentDto } from './dto/move-component.dto.js';
 import { ComponentResponse, SectionResponse } from './dto/page.response.js';
 import { ReorderDto } from '../catalog/dto/reorder.dto.js';
+import { PageScopeDto } from './dto/page-scope.dto.js';
 
 /**
- * The bands of a shop's landing page, scoped to one shop by the path.
+ * The bands of a shop's pages, scoped to one shop by the path and to one page by `?pageId=` — the
+ * home when it is left out.
  *
- * There is no public route here. A visitor never asks for the page's bands on their own — they
+ * There is no public route here. A visitor never asks for a page's bands on their own: the home's
  * arrive already resolved on `PublicStore`, which the shop window fetches first and
- * unconditionally, so a second anonymous endpoint would be a second round trip for something
- * already in hand.
+ * unconditionally, and a landing's arrive with the landing (`PublicLandingsController`).
  */
 @ApiTags('page')
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'AUTH_UNAUTHENTICATED' })
-@ApiNotFoundResponse({ description: 'STORE_NOT_FOUND · SECTION_NOT_FOUND' })
+@ApiNotFoundResponse({ description: 'STORE_NOT_FOUND · SECTION_NOT_FOUND · PAGE_NOT_FOUND' })
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
 @Controller('stores/:storeSlug/sections')
 export class SectionsController {
@@ -47,13 +48,14 @@ export class SectionsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'The page, band by band, hidden ones included, in the arranged order' })
+  @ApiOperation({ summary: 'A page, band by band, hidden ones included, in the arranged order — the home unless ?pageId=' })
   @ApiOkResponse({ type: SectionResponse, isArray: true })
   list(
     @Param('storeSlug') storeSlug: string,
     @CurrentUser() current: AuthenticatedUser,
+    @Query() scope: PageScopeDto,
   ): Promise<SectionResponse[]> {
-    return this.page.list(storeSlug, current.id);
+    return this.page.list(storeSlug, current.id, scope.pageId);
   }
 
   @Post()
@@ -65,8 +67,9 @@ export class SectionsController {
     @Param('storeSlug') storeSlug: string,
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: CreateSectionDto,
+    @Query() scope: PageScopeDto,
   ): Promise<SectionResponse> {
-    return this.page.createSection(storeSlug, current.id, dto);
+    return this.page.createSection(storeSlug, current.id, dto, scope.pageId);
   }
 
   // Declared above `:sectionId`: Nest matches in declaration order, so the parameter would
@@ -79,8 +82,9 @@ export class SectionsController {
     @Param('storeSlug') storeSlug: string,
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: ReorderDto,
+    @Query() scope: PageScopeDto,
   ): Promise<SectionResponse[]> {
-    return this.page.reorderSections(storeSlug, current.id, dto);
+    return this.page.reorderSections(storeSlug, current.id, dto, scope.pageId);
   }
 
   @Put(':sectionId')

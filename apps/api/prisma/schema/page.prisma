@@ -101,6 +101,60 @@ enum ProductSource {
   ON_SALE
 }
 
+/// Which page it is: the shop's home at /<shop>, or a landing page at /<shop>/lp/<address>.
+enum PageKind {
+  HOME
+  LANDING
+}
+
+/// Whether a landing page is served. The home is always published.
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// A page of a shop, made of bands: its home, and the landing pages it builds for a launch or a promotion.
+///
+/// The header and the footer are the shop's, drawn from its home, on every page; a landing only says
+/// whether it draws them at all.
+model StorePage {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  kind PageKind @default(LANDING)
+
+  /// Where a landing lives, after /lp/. Null on the home, and only there (a CHECK in the migration).
+  slug String? @db.VarChar(60)
+
+  /// The page's name in the panel, and its title where it has no SEO title of its own.
+  title String @db.VarChar(80)
+
+  /// Whether the shop's header, footer and strip frame it. A landing without them is a page of its own.
+  usesChrome Boolean @default(true)
+
+  /// Whether it is linked from the shop's menu and footer. Read only while it is published.
+  inMenu Boolean @default(false)
+
+  seoTitle       String? @db.VarChar(70)
+  seoDescription String? @db.VarChar(160)
+  seoImageUrl    String?
+
+  status      PageStatus @default(DRAFT)
+  publishedAt DateTime?
+
+  sections StoreSection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, slug])
+  @@unique([storeId], where: raw("\"kind\" = 'HOME'"), map: "store_pages_one_home_key")
+  @@index([storeId, status, inMenu])
+  @@map("store_pages")
+}
+
 /// One band of a shop's landing page.
 ///
 /// The level the shopkeeper asked for in their own words — "seção tem atributos (cores, ordenação)
@@ -111,6 +165,10 @@ model StoreSection {
   id      String @id @default(uuid(7)) @db.Uuid
   storeId String @db.Uuid
   store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// The page it is a band of. The shop's is kept too, for the ownership every query here starts with.
+  pageId String    @db.Uuid
+  page   StorePage @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   /// What the band is called on the page, if named. On a site the named bands are the menu.
   name String? @db.VarChar(60)
@@ -134,8 +192,9 @@ model StoreSection {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  /// The storefront's read, in one index scan.
-  @@index([storeId, isActive, position])
+  /// A page's read, in one index scan; and the shop's, for the ownership checks and the cascade.
+  @@index([pageId, isActive, position])
+  @@index([storeId])
   @@map("store_sections")
 }
 

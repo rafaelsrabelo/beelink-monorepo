@@ -5,4 +5,5 @@ export type * from "./customer.js";
 export type * from "./error.js";
 export type * from "./leads.js";
 export type * from "./store.js";
+export type * from "./store-pages.js";
 export type * from "./user.js";

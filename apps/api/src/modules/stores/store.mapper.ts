@@ -32,6 +32,7 @@ import { parseLayoutSettings } from './store-layout-settings.schema.js';
 export type StoreRow = StoreModel & {
   category: StoreCategoryModel | null;
   sections: SectionRow[];
+  pages: { slug: string | null; title: string }[];
 };
 
 /** The one query shape the store mappers accept, so a call site cannot forget the include. */
@@ -43,10 +44,18 @@ export const storeInclude = {
   //
   // Hidden COMPONENTS are dropped a level down, in `toPublicSection`, and not here: this include
   // is the panel's too, and the panel has to see what it is hiding.
+  //
+  // The home's bands: `/<slug>` is the home, and a landing is read on its own (`LandingReadService`).
   sections: {
-    where: { isActive: true },
+    where: { isActive: true, page: { kind: 'HOME' } },
     orderBy: { position: 'asc' },
     include: sectionInclude,
+  },
+  // The published landings the shop links from its menu and footer, oldest first.
+  pages: {
+    where: { kind: 'LANDING', status: 'PUBLISHED', inMenu: true },
+    orderBy: { createdAt: 'asc' },
+    select: { slug: true, title: true },
   },
 } as const;
 
@@ -111,6 +120,7 @@ export function toPublicStore(
     sections: row.sections.map((section) =>
       toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary], slugs, shelves),
     ),
+    pages: row.pages.flatMap((page) => (page.slug ? [{ slug: page.slug, title: page.title }] : [])),
   } satisfies PublicStore;
 }
 

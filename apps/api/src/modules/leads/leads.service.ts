@@ -44,8 +44,15 @@ export class LeadsService {
     // nothing is written or sent — a robot shown success does not come back with a variation.
     if (dto.website) return;
 
+    // On a page that is served: a form on a draft landing is one no visitor was shown.
     const form = await this.prisma.storeComponent.findFirst({
-      where: { id: dto.componentId, storeId, kind: 'CONTACT', isActive: true, section: { isActive: true } },
+      where: {
+        id: dto.componentId,
+        storeId,
+        kind: 'CONTACT',
+        isActive: true,
+        section: { isActive: true, page: { status: 'PUBLISHED' } },
+      },
       select: {
         id: true,
         items: true,
