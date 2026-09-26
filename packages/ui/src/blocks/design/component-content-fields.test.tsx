@@ -25,6 +25,7 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     picks: [],
     limit: "",
     faq: [],
+    countdownEnd: "",
     buttonLabel: "",
     imageUrl: "",
     imageAlt: "",

@@ -71,3 +71,11 @@ describe("emptyStateOf — a featured product the shop does not draw", () => {
     expect(emptyStateOf("FEATURED_PRODUCT", facts())).toBeNull()
   })
 })
+
+describe("emptyStateOf — a countdown the shop does not draw", () => {
+  it("asks for an end when it has none, says when it has passed, and nothing while it counts", () => {
+    expect(emptyStateOf("COUNTDOWN", facts())).toEqual({ kind: "countdownUnset" })
+    expect(emptyStateOf("COUNTDOWN", facts({ countdownEndsAt: "2020-01-01T00:00:00.000Z" }))).toEqual({ kind: "countdownEnded" })
+    expect(emptyStateOf("COUNTDOWN", facts({ countdownEndsAt: "2999-01-01T00:00:00.000Z" }))).toBeNull()
+  })
+})

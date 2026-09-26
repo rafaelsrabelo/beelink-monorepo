@@ -72,6 +72,20 @@ describe('problemsOf', () => {
     ]);
   });
 
+  it('names a countdown with no end or one already past, and not one still counting', () => {
+    const now = Date.parse('2026-09-30T00:00:00.000Z');
+    const sections = [
+      band('b1', [
+        block('c1', 'COUNTDOWN'),
+        block('c2', 'COUNTDOWN', [{ id: 'fim', endsAt: '2026-09-29T00:00:00.000Z' }]),
+        block('c3', 'COUNTDOWN', [{ id: 'fim', endsAt: '2026-10-01T00:00:00.000Z' }]),
+      ]),
+    ];
+
+    expect(problemsOf(sections, { ...NO_LOOKUPS, now }).map((problem) => problem.componentId)).toEqual(['c1', 'c2']);
+    expect(problemsOf(sections, { ...NO_LOOKUPS, now })[0]).toMatchObject({ kind: 'COUNTDOWN_ENDED' });
+  });
+
   it('looks only at what shows: a hidden band or block is served to nobody', () => {
     const sections = [band('b1', [block('c1', 'BANNER')], false), band('b2', [block('c2', 'PRODUCTS', [], false)])];
 

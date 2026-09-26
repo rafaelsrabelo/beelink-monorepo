@@ -11,6 +11,8 @@ export type EmptyState =
   | { kind: "productsOffShelf" }
   | { kind: "sourceEmpty" }
   | { kind: "featuredUnavailable" }
+  | { kind: "countdownUnset" }
+  | { kind: "countdownEnded" }
 
 export interface EmptyFacts {
   /** Categories the shop window shows — the public list, which leaves out a category with nothing published. */
@@ -24,6 +26,8 @@ export interface EmptyFacts {
   products: { total: number; onShelf: number | null } | null
   /** The showcase's shelf, or the featured product, as the public read resolved it, came back empty. */
   shelfEmpty: boolean
+  /** A countdown's saved end, or null when it has none. */
+  countdownEndsAt?: string | null
 }
 
 /**
@@ -58,6 +62,12 @@ export function emptyStateOf(kind: ComponentKind, facts: EmptyFacts): EmptyState
 
   // The product chosen is not on sale — a draft, archived or deleted — and the fix is to choose another.
   if (kind === "FEATURED_PRODUCT") return facts.shelfEmpty ? { kind: "featuredUnavailable" } : null
+
+  // The shop leaves out a countdown with nothing to count; the editor still draws it, so it says why.
+  if (kind === "COUNTDOWN") {
+    if (!facts.countdownEndsAt) return { kind: "countdownUnset" }
+    return Date.parse(facts.countdownEndsAt) <= Date.now() ? { kind: "countdownEnded" } : null
+  }
 
   return null
 }

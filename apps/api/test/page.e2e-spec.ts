@@ -224,6 +224,29 @@ describe('page — span and display', () => {
     });
   });
 
+  // A countdown still running is served; one past its end is left out of the shop, and said at Publicar.
+  it('serves a countdown still running, leaves out one that has ended, and keeps the end in UTC', async () => {
+    const future = new Date(Date.now() + 86_400_000).toISOString();
+    const running = await call('POST', '/api/stores/padaria-do-bairro/sections', {
+      component: { kind: 'COUNTDOWN', title: 'A oferta termina em', items: [{ id: 'fim', endsAt: future.replace('Z', '+00:00') }] },
+    });
+    expect(running.statusCode, running.payload).toBe(201);
+    const live = running.json<Section>().components[0]!;
+    expect(live).toMatchObject({ display: 'BAND', items: [{ id: 'fim', endsAt: future }] });
+
+    const over = (
+      await call('POST', '/api/stores/padaria-do-bairro/sections', {
+        component: { kind: 'COUNTDOWN', display: 'BLOCK', items: [{ id: 'fim', endsAt: '2020-01-01T00:00:00-03:00' }] },
+      })
+    ).json<Section>().components[0]!;
+
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const ids = visitor.sections.flatMap((section) => section.components).map((row) => row.id);
+    expect(ids).toContain(live.id);
+    expect(ids).not.toContain(over.id);
+  });
+
   // The panel's "+" between two bands, and between two blocks of one band.
   it('adds a band and a block where the "+" was pressed, and refuses a place that is not one', async () => {
     const before = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);

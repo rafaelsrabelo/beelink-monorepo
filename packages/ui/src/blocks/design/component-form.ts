@@ -53,6 +53,8 @@ export interface ComponentFormValues {
   limit: string
   /** A FAQ's questions, in order. */
   faq: FaqValue[]
+  /** When a countdown ends, on the shop's clock as a `datetime-local` holds it; `""` is none. */
+  countdownEnd: string
 }
 
 /**

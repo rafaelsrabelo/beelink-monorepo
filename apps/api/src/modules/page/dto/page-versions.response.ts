@@ -50,6 +50,7 @@ const PAGE_PROBLEM_KINDS = Object.keys({
   SHOWCASE_EMPTY: true,
   BANNER_WITHOUT_IMAGE: true,
   FEATURED_PRODUCT_UNAVAILABLE: true,
+  COUNTDOWN_ENDED: true,
 } satisfies Record<PageProblemKind, true>) as PageProblemKind[];
 
 export class PageProblemResponse implements PageProblem {

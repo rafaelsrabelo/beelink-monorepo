@@ -165,6 +165,16 @@ export const en: UiMessages = {
     seeOptions: "See options",
     buyNow: "Buy now",
     seeProduct: "See product",
+    deliverTo: {
+      label: "Deliver to",
+      ask: "Enter your postcode",
+      field: "Your postcode",
+      save: "Use this postcode",
+      note: "Kept in this browser, for this shop only.",
+    },
+    countdownUnits: { days: "days", hours: "hours", minutes: "min", seconds: "sec" },
+    countdownEnds: "Ends on {date} at {time}",
+    countdownEnded: "Ended",
     viewCart: "View cart",
     addedShort: "Added",
     inStock: "In stock",
@@ -377,6 +387,7 @@ export const en: UiMessages = {
       CALL_TO_ACTION: "Call to action",
       IMAGE_TEXT: "Image and text",
       FEATURED_PRODUCT: "Featured product",
+      COUNTDOWN: "Countdown",
     },
     emptyAction: {
       ANNOUNCEMENT: "Write the notice",
@@ -391,6 +402,7 @@ export const en: UiMessages = {
       CALL_TO_ACTION: "Write the call",
       IMAGE_TEXT: "Choose the picture",
       FEATURED_PRODUCT: "Choose the product",
+      COUNTDOWN: "Choose when it ends",
     },
     showcaseOnPublish: "Its products appear once you publish",
     categoriesHiddenAction: "No category shows in the shop yet",
@@ -429,6 +441,14 @@ export const en: UiMessages = {
       sourceEmpty: {
         title: "This source has no product right now",
         body: "The showcase does not show in the shop while its source is empty. Choose another source below.",
+      },
+      countdownEnded: {
+        title: "This countdown has ended",
+        body: "It no longer shows in the shop. Choose a new date below or hide the block.",
+      },
+      countdownUnset: {
+        title: "The end date is missing",
+        body: "The countdown shows in the shop once you choose when it ends.",
       },
       featuredUnavailable: {
         title: "This product is not on sale",
@@ -473,6 +493,7 @@ export const en: UiMessages = {
         callToAction: { title: "Ready to choose yours?", body: "Free delivery on orders over R$ 199.", label: "See products" },
         imageText: { title: "Made with care", body: "Tell where the pieces come from and who is behind each one." },
         featuredTitle: "This week's pick",
+        countdownTitle: "The sale ends in",
       },
       placement: {
         between: "Goes between {before} and {after}.",
@@ -496,6 +517,7 @@ export const en: UiMessages = {
         CALL_TO_ACTION: "A title, a line and a button",
         IMAGE_TEXT: "A picture beside a title and text",
         FEATURED_PRODUCT: "One product, large, with its price and a buy button",
+        COUNTDOWN: "Days, hours and minutes until the sale ends",
       },
       bannersAcross: "{count} banners side by side",
       bannersAcrossHints: {
@@ -568,6 +590,7 @@ export const en: UiMessages = {
       IMAGE_LEFT: "Picture on the left",
       IMAGE_RIGHT: "Picture on the right",
       IMAGE_LARGE: "Large picture",
+      BLOCK: "Block",
     },
     displayAuto: "Automatic: still where it fits, scrolling on a phone",
     categoriesRailHint: "One row that scrolls sideways — on a phone and on a computer.",
@@ -600,6 +623,7 @@ export const en: UiMessages = {
         SHOWCASE_EMPTY: "{block}, in {band}: the showcase has no products to show.",
         BANNER_WITHOUT_IMAGE: "{block}, in {band}: the banner has no picture.",
         FEATURED_PRODUCT_UNAVAILABLE: "{block}, in {band}: the featured product is not on sale.",
+        COUNTDOWN_ENDED: "{block}, in {band}: the countdown has ended or has no date, and does not show in the shop.",
       },
       note: "Note for the history (optional)",
       notePlaceholder: "E.g. Black Friday prices",
@@ -782,6 +806,10 @@ export const en: UiMessages = {
     benefitIcon: "Icon",
     benefitTitle: "Title",
     benefitDetail: "Detail",
+    countdown: {
+      ends: "Ends at (Brasília time)",
+      help: "When it reaches zero, the countdown leaves the shop.",
+    },
     featured: {
       chosen: "Product:",
       none: "none chosen",

@@ -44,7 +44,7 @@ describe('documentOf', () => {
 
 describe('readPageDocument', () => {
   it('drops a block it cannot read — a kind from a newer deploy — and keeps the rest of the page', () => {
-    const raw = { format: 1, sections: [{ ...band('b1', [block('c1')]), components: [block('c1'), block('c2', { kind: 'COUNTDOWN' })] }] };
+    const raw = { format: 1, sections: [{ ...band('b1', [block('c1')]), components: [block('c1'), block('c2', { kind: 'TESTIMONIALS' as never })] }] };
 
     expect(readPageDocument(raw).sections[0]!.components.map((component) => component.id)).toEqual(['c1']);
   });

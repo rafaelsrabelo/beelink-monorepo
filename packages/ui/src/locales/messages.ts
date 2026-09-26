@@ -226,8 +226,16 @@ export interface UiMessages {
     /** A card whose product has options: the page is where one is chosen. */
     seeOptions: string
     buyNow: string
+    /** "Entregar em" in the header: the visitor's CEP, kept for the shipping quote to come. */
+    deliverTo: { label: string; ask: string; field: string; save: string; note: string }
     /** A featured product sold out: its page, where "Avise-me" is. */
     seeProduct: string
+    /** A countdown's units, under its digits. */
+    countdownUnits: { days: string; hours: string; minutes: string; seconds: string }
+    /** Its end in words, for a screen reader and before the digits start: "{date}, às {time}". */
+    countdownEnds: string
+    /** Drawn in the editor over a countdown the shop no longer shows. */
+    countdownEnded: string
     viewCart: string
     /** The phone bar's short line after an add: "Adicionado · Ver carrinho". */
     addedShort: string
@@ -569,6 +577,8 @@ export interface UiMessages {
       productsOffShelf: { title: string; body: string; action: string }
       sourceEmpty: { title: string; body: string }
       featuredUnavailable: { title: string; body: string }
+      countdownEnded: { title: string; body: string }
+      countdownUnset: { title: string; body: string }
       /** Said after a link that leaves the arrangement's draft where it is. */
       opensInNewTab: string
     }
@@ -603,6 +613,7 @@ export interface UiMessages {
         callToAction: { title: string; body: string; label: string }
         imageText: { title: string; body: string }
         featuredTitle: string
+        countdownTitle: string
       }
       /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
       placement: {
@@ -944,6 +955,11 @@ export interface UiMessages {
       labelMissing: string
       /** Said while the button claims a destination it does not name yet. */
       targetMissing: string
+    }
+    /** When a countdown ends. */
+    countdown: {
+      ends: string
+      help: string
     }
     /** Which product is featured. */
     featured: {

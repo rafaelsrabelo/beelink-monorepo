@@ -26,6 +26,7 @@ const empty: ComponentFormValues = {
   picks: [],
   limit: "",
   faq: [],
+  countdownEnd: "",
   buttonLabel: "",
   imageUrl: "",
   imageAlt: "",

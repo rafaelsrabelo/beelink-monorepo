@@ -58,7 +58,9 @@ export type PageProblemKind =
   | "SHOWCASE_EMPTY"
   | "BANNER_WITHOUT_IMAGE"
   /** A featured product with none chosen, or one deleted, a draft or archived: the block draws nothing. */
-  | "FEATURED_PRODUCT_UNAVAILABLE";
+  | "FEATURED_PRODUCT_UNAVAILABLE"
+  /** A countdown with no end, or one already past: the shop does not draw it. */
+  | "COUNTDOWN_ENDED";
 
 /** One problem, by where it is: the screen names the block and the band and writes the sentence. */
 export interface PageProblem {

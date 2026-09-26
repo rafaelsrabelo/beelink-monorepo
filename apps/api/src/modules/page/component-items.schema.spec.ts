@@ -79,3 +79,21 @@ describe('a featured product\'s pick', () => {
     expect(pick.safeParse([{ id: 'p', productId: 'not-an-id' }]).success).toBe(false);
   });
 });
+
+describe('a countdown\'s end', () => {
+  const end = componentItemsFor('COUNTDOWN');
+
+  it('takes an instant with its offset and keeps it in UTC', () => {
+    const read = end.safeParse([{ id: 'fim', endsAt: '2026-09-30T23:59:00-03:00' }]);
+    expect(read.success && read.data).toEqual([{ id: 'fim', endsAt: '2026-10-01T02:59:00.000Z' }]);
+  });
+
+  it('refuses a wall time with no offset, which the server would read in its own zone', () => {
+    expect(end.safeParse([{ id: 'fim', endsAt: '2026-09-30T23:59:00' }]).success).toBe(false);
+    expect(end.safeParse([{ id: 'fim', endsAt: 'amanhã' }]).success).toBe(false);
+  });
+
+  it('takes an end already past: a title saved on an ended countdown sends its end again', () => {
+    expect(end.safeParse([{ id: 'fim', endsAt: '2020-01-01T00:00:00Z' }]).success).toBe(true);
+  });
+});

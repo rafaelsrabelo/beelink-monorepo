@@ -140,6 +140,18 @@ function Shape({ kind, across }: { kind: ComponentKind; across: Across }) {
           </span>
         </span>
       )
+    // Four boxes of digits under a line of words.
+    case "COUNTDOWN":
+      return (
+        <span className="flex h-full w-full flex-col items-center justify-center gap-1">
+          <span className={cn(BAR, "h-1 w-2/5")} />
+          <span className="flex gap-1">
+            {[0, 1, 2, 3].map((at) => (
+              <span key={at} className={cn(ACCENT, "size-4")} />
+            ))}
+          </span>
+        </span>
+      )
     // A kind added without a drawing fails the build here instead of drawing an empty card.
     default:
       return (kind satisfies never) && null

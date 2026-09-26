@@ -26,6 +26,7 @@ export const COMPONENT_KINDS = [
   "CALL_TO_ACTION",
   "IMAGE_TEXT",
   "FEATURED_PRODUCT",
+  "COUNTDOWN",
 ] as const
 export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 
@@ -63,6 +64,7 @@ export const COMPONENT_DISPLAYS = [
   "IMAGE_LEFT",
   "IMAGE_RIGHT",
   "IMAGE_LARGE",
+  "BLOCK",
 ] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
 
@@ -93,3 +95,4 @@ export type DesignPublishProblemKind =
   | "SHOWCASE_EMPTY"
   | "BANNER_WITHOUT_IMAGE"
   | "FEATURED_PRODUCT_UNAVAILABLE"
+  | "COUNTDOWN_ENDED"

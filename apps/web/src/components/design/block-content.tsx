@@ -81,6 +81,7 @@ export function BlockContent({
       : null,
     // A featured product with none chosen yet is not one "not on sale": the placeholder says to choose.
     shelfEmpty: shelf?.length === 0 && (!featured || component.items.length > 0),
+    countdownEndsAt: (component.items[0] as { endsAt?: string } | undefined)?.endsAt ?? null,
   })
 
   const categoryOptions: SlideTargetOption[] = (categories.data ?? []).map((row) => ({ id: row.id, name: row.name }))

@@ -4,6 +4,7 @@ import type { SectionShape } from './page-document.js';
 import type { PageLookups } from './page-public.mapper.js';
 
 // App
+import { hasEnded } from './page-countdown.js';
 import { pointersOf } from './page-links.js';
 
 /**
@@ -23,6 +24,10 @@ export function problemsOf(sections: readonly SectionShape[], resolved: PageLook
 
       if (component.kind === 'PRODUCTS' && !resolved.shelves.get(component.id)?.products.length) {
         problems.push({ kind: 'SHOWCASE_EMPTY', ...where, itemId: null });
+      }
+
+      if (hasEnded(component, resolved.now ?? Date.now())) {
+        problems.push({ kind: 'COUNTDOWN_ENDED', ...where, itemId: null });
       }
 
       // None chosen, or one no longer on sale: the shop draws nothing where the owner put a product.
