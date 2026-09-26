@@ -165,6 +165,13 @@ export const en: UiMessages = {
     seeOptions: "See options",
     buyNow: "Buy now",
     seeProduct: "See product",
+    deliverTo: {
+      label: "Deliver to",
+      ask: "Enter your postcode",
+      field: "Your postcode",
+      save: "Use this postcode",
+      note: "Kept in this browser, for this shop only.",
+    },
     countdownUnits: { days: "days", hours: "hours", minutes: "min", seconds: "sec" },
     countdownEnds: "Ends on {date} at {time}",
     countdownEnded: "Ended",
