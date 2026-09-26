@@ -74,6 +74,7 @@ export function previewOf(rows: readonly SectionDraft[], saved: readonly Section
             sourceCategory: shelves.get(component.id)?.sourceCategory ?? null,
             columns: component.columns,
             align: component.align,
+            visibleOn: component.visibleOn,
             /*
               A banner's slides arrive from the panel carrying ids, and the shop window is served
               them carrying addresses. The preview builds the second shape from the first with no
@@ -147,6 +148,7 @@ export function arrangementOf(
         imageUrl: first?.imageUrl ?? null,
         span: component.span,
         isActive: component.isActive,
+        visibleOn: component.visibleOn,
         deletable: component.kind !== "PRODUCTS" || productLists > 1,
         // A showcase's saved items are its pick, not its cards, so only a shelf the public read
         // resolved can say it is empty. A hidden one has none, and is not called empty for it.

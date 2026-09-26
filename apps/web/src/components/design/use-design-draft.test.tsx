@@ -37,6 +37,7 @@ const hidden: Section[] = [
         items: [],
         columns: null,
         align: null,
+        visibleOn: "ALL",
         position: 0,
         isActive: false,
         createdAt: "2026-09-24T00:00:00.000Z",
@@ -94,6 +95,7 @@ describe("useDesignDraft — the Layout tab's changes wait for Publicar", () => 
       isActive: false,
       columns: 4,
       align: "RIGHT",
+      visibleOn: "ALL",
     })
   })
 })

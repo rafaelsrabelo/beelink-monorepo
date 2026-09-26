@@ -292,3 +292,25 @@ describe("BandArrangement", () => {
     await expectNoA11yViolations(container)
   })
 })
+
+describe("BandArrangement — a block kept for one screen", () => {
+  // Said on the row, so the structure explains why the phone's preview has no such block.
+  it("says so on the row", () => {
+    renderBands({
+      bands: [
+        {
+          id: "band-9",
+          background: null,
+          isActive: true,
+          components: [
+            { id: "9", kind: "HEADING", title: "Frete", span: "HALF", isActive: true, visibleOn: "PHONE" },
+            { id: "10", kind: "TEXT", title: "Troca", span: "HALF", isActive: true, visibleOn: "DESKTOP" },
+          ],
+        },
+      ],
+    })
+
+    expect(screen.getByText("Título · Metade · Só no celular")).toBeInTheDocument()
+    expect(screen.getByText("Parágrafo · Metade · Só no computador")).toBeInTheDocument()
+  })
+})

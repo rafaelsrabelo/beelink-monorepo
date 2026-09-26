@@ -113,12 +113,13 @@ describe("changesOf — only what moved is written", () => {
   it("publishes the layout, and a format only where the block holds one", () => {
     const [banner] = draft[0]!.components
 
-    expect(publishedOf({ ...banner!, display: "GRID", columns: null, align: "LEFT" })).toEqual({
+    expect(publishedOf({ ...banner!, display: "GRID", columns: null, align: "LEFT", visibleOn: "DESKTOP" })).toEqual({
       span: "FULL",
       isActive: true,
       display: "GRID",
       columns: null,
       align: "LEFT",
+      visibleOn: "DESKTOP",
     })
     expect(publishedOf(banner!)).not.toHaveProperty("display")
   })

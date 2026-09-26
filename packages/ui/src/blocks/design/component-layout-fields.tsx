@@ -11,10 +11,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AlignField } from "./align-field"
 import { hasSpan, type ArrangementSpan } from "./arrangement-row"
 import { ColumnsField } from "./columns-field"
-import type { ComponentDisplay, ComponentKind, SectionWidth } from "./design-types"
+import type { ComponentDisplay, ComponentKind, DeviceVisibility, SectionWidth } from "./design-types"
 import { DisplayField } from "./display-field"
 import { SpanField } from "./span-field"
 import type { TextAlign } from "./text-align"
+import { VisibleOnField } from "./visible-on-field"
 
 /** How a block sits, as the page draws it: every null already resolved to the kind's own habit. */
 export interface ComponentLayoutValues {
@@ -24,6 +25,7 @@ export interface ComponentLayoutValues {
   /** `0` is "let the grid decide", which is what null means on the wire. */
   columns: number
   align: TextAlign
+  visibleOn: DeviceVisibility
 }
 
 export interface ComponentLayoutFieldsProps {
@@ -103,6 +105,8 @@ export function ComponentLayoutFields({
       {kind === "HEADING" || kind === "TEXT" ? (
         <AlignField value={value.align} onChange={(align) => onChange({ align })} messages={messages} />
       ) : null}
+
+      <VisibleOnField value={value.visibleOn} onChange={(visibleOn) => onChange({ visibleOn })} messages={messages} />
     </>
   )
 }

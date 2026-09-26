@@ -23,6 +23,7 @@ function component(over: Partial<StoreComponent> = {}): StoreComponent {
     items: [{ id: "s", imageUrl: "/s.jpg", target: "NONE" }],
     columns: null,
     align: null,
+    visibleOn: "ALL",
     position: 0,
     isActive: true,
     createdAt: "2026-09-24T00:00:00.000Z",

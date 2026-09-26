@@ -3,6 +3,7 @@ import type {
   ComponentDisplay,
   ComponentKind,
   ComponentSpan,
+  DeviceVisibility,
   Section,
   StoreComponent,
   TextAlign,
@@ -32,6 +33,7 @@ export interface ComponentDraft {
   display: ComponentDisplay | null
   columns: number | null
   align: TextAlign | null
+  visibleOn: DeviceVisibility
   isActive: boolean
 }
 
@@ -55,6 +57,7 @@ export function toComponentDraft(component: StoreComponent): ComponentDraft {
     display: component.display,
     columns: component.columns,
     align: component.align,
+    visibleOn: component.visibleOn,
     isActive: component.isActive,
   }
 }
@@ -150,6 +153,7 @@ export function publishedOf(component: ComponentDraft): UpdateComponentPayload {
     isActive: component.isActive,
     columns: component.columns,
     align: component.align,
+    visibleOn: component.visibleOn,
     ...(component.display ? { display: component.display } : {}),
   }
 }

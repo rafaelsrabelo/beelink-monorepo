@@ -234,3 +234,48 @@ virou `pageOf()`. O arquivo tinha 338 linhas antes das cópias.
   nelas. Ocultar leva o foco à parada mais próxima que ainda aparece.
 - Um painel escolhido pelas setas devolve o foco à própria parada ao fechar.
 - Excluir a faixa de um bloco só pergunta pelo nome da faixa, como a lixeira da estrutura.
+
+## PR 4 — "Aparece em: computador · celular"
+
+*Acrescentado em 2026-09-25, ao começar o PR 4.*
+
+### Definição de Pronto
+
+1. A aba Layout pergunta "Aparece em" com dois botões, Computador e Celular. O último ligado não
+   desliga, e a dica diz: "Para tirar de todo lugar, use Ocultar."
+2. Não aparece na barra de aviso. A API recusa com `COMPONENT_VISIBILITY_INVALID`.
+3. É rascunho: vai para a loja no Publicar, como o resto da aba.
+4. A loja esconde por CSS na largura `md` (768px). O espaçamento fica certo dos dois lados, e
+   nenhuma faixa colorida sobra vazia.
+5. A prévia em Celular e em Computador bate com a loja.
+6. A linha da estrutura diz "Só no computador" ou "Só no celular".
+7. Uma página em cache sem o campo mostra tudo.
+
+### Decisões
+
+#### 1. Só no bloco; a faixa segue os blocos
+
+Cortado do plano: a faixa não tem coluna própria. Ela aparece onde algum bloco dela aparece. Assim
+há um lugar só para dizer isso, e faixa e bloco nunca discordam. O que se perde: esconder de uma vez
+uma faixa de vários blocos no celular, que agora pede um bloco por vez.
+
+#### 2. O espaçamento é calculado por tela
+
+`deviceRhythmOf` roda a regra de espaçamento uma vez para o que cada tela desenha, e escreve as
+classes com `shop-md:`. Uma capa só no computador encosta no topo ali; no celular, a faixa de baixo
+começa 32px abaixo do topo.
+
+#### 3. A leitura pública não filtra por tela
+
+A loja esconde pela largura da tela, então a mesma página serve as duas. Filtrar no servidor pediria
+saber a tela de quem pede.
+
+#### 4. "Adicionar ao lado" conta a linha do computador
+
+A linha é do computador: um bloco guardado para o celular não ocupa espaço nela.
+
+### Fora de escopo
+
+- Imagens de uma capa só no computador ainda são baixadas no celular (o `hidden` do CSS não impede o
+  download).
+- Uma faixa com nome, só no computador, continua no menu do site no celular.

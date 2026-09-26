@@ -28,6 +28,7 @@ function component(id: string, over: Partial<StoreComponent> = {}): StoreCompone
     items: [],
     columns: null,
     align: null,
+    visibleOn: "ALL",
     position: 0,
     isActive: true,
     createdAt: "2026-09-25T00:00:00.000Z",

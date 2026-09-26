@@ -71,7 +71,7 @@ export function useDesignDraft(slug: string) {
       ?.map(
         (section) =>
           `${section.id}${section.isActive ? "" : "!"}:${section.components
-            .map((c) => [c.id, c.isActive, c.span, c.display, c.columns, c.align].join("/"))
+            .map((c) => [c.id, c.isActive, c.span, c.display, c.columns, c.align, c.visibleOn].join("/"))
             .join("+")}`,
       )
       .join(",") ?? null
@@ -98,7 +98,10 @@ export function useDesignDraft(slug: string) {
     edit((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
   }
 
-  function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "span" | "display" | "columns" | "align">>) {
+  function patchComponent(
+    id: string,
+    patch: Partial<Pick<ComponentDraft, "isActive" | "span" | "display" | "columns" | "align" | "visibleOn">>,
+  ) {
     edit((current) =>
       current.map((row) => ({
         ...row,

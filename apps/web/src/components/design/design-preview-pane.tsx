@@ -107,8 +107,10 @@ export function DesignPreviewPane({
   // Only room there is: splitting a full row evenly is the panel's "Adicionar ao lado". Not on the
   // phone, where every block is a row and the slot would sit under the block, not beside it.
   const besideSlotOf = (section: PublicSection) => {
-    const last = section.components.at(-1)
-    const room = last ? besideOf(section.components.map((component) => component.span), section.components.length - 1) : null
+    // The computer's row: a block kept for the phone takes no room in it.
+    const inRow = section.components.filter((component) => component.visibleOn !== "PHONE")
+    const last = inRow.at(-1)
+    const room = last ? besideOf(inRow.map((component) => component.span), inRow.length - 1) : null
     if (!onInsert || device === "PHONE" || !last || !room || room.rebalance.length) return null
     const at: InsertAt = { level: "beside", sectionId: section.id, afterId: last.id, span: room.span, rebalance: [] }
     return (

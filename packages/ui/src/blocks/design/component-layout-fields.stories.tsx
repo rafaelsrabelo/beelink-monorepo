@@ -10,7 +10,7 @@ const meta = {
   parameters: { layout: "padded" },
   args: {
     kind: "BANNER",
-    value: { span: "HALF", display: "CAROUSEL", columns: 0, align: "LEFT" },
+    value: { span: "HALF", display: "CAROUSEL", columns: 0, align: "LEFT", visibleOn: "ALL" },
     onChange: () => {},
     bandWidth: "CONTAINED",
   },
@@ -31,10 +31,10 @@ export const Banner: Story = {}
 
 /** Uma vitrine em grade ganha a pergunta de quantas colunas; em trilho, não. */
 export const VitrineEmGrade: Story = {
-  args: { kind: "PRODUCTS", value: { span: "FULL", display: "GRID", columns: 4, align: "LEFT" }, bandWidth: "FULL" },
+  args: { kind: "PRODUCTS", value: { span: "FULL", display: "GRID", columns: 4, align: "LEFT", visibleOn: "ALL" }, bandWidth: "FULL" },
 }
 
 /** Um título: a fatia e o alinhamento — ele não tem formato. */
 export const Titulo: Story = {
-  args: { kind: "HEADING", value: { span: "FULL", display: null, columns: 0, align: "CENTER" } },
+  args: { kind: "HEADING", value: { span: "FULL", display: null, columns: 0, align: "CENTER", visibleOn: "ALL" } },
 }

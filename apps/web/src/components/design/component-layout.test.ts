@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 // App
 import { displayOf, heldLayoutOf, layoutOf, sameLayout } from "./component-layout"
 
-const heading = { kind: "HEADING" as const, span: "FULL" as const, display: null, columns: null, align: null }
+const heading = { kind: "HEADING" as const, span: "FULL" as const, display: null, columns: null, align: null, visibleOn: "ALL" as const }
 
 describe("component-layout — how a block sits, held and drawn", () => {
   // Each kind's own habit for a null, as the storefront draws it.
@@ -16,12 +16,17 @@ describe("component-layout — how a block sits, held and drawn", () => {
   })
 
   it("shows the Layout tab every null resolved", () => {
-    expect(layoutOf(heading)).toEqual({ span: "FULL", display: null, columns: 0, align: "CENTER" })
+    expect(layoutOf(heading)).toEqual({ span: "FULL", display: null, columns: 0, align: "CENTER", visibleOn: "ALL" })
   })
 
   it("compares as drawn, so choosing back what a null drew is the same layout", () => {
     expect(sameLayout(heading, { ...heading, align: "CENTER" })).toBe(true)
     expect(sameLayout(heading, { ...heading, align: "LEFT" })).toBe(false)
+  })
+
+  // Where it shows is the Layout tab's too, and waits for Publicar with the rest of it.
+  it("tells a block kept for one screen from the same block everywhere", () => {
+    expect(sameLayout(heading, { ...heading, visibleOn: "PHONE" })).toBe(false)
   })
 
   // "Automático" is the grid deciding, which the API holds as null.

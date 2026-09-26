@@ -68,6 +68,10 @@ export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]
 export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID", "RAIL"] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
 
+/** Where a block shows. The contract's `DeviceVisibility`, restated: the shop's `md` width, 768px, divides the two. */
+export const DEVICE_VISIBILITIES = ["ALL", "DESKTOP", "PHONE"] as const
+export type DeviceVisibility = (typeof DEVICE_VISIBILITIES)[number]
+
 /**
  * Which products a showcase draws. The contract's `ProductSource`, restated, in the order the editor
  * offers them: everything first, then a slice of it.

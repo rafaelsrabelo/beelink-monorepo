@@ -1,5 +1,5 @@
 // Types
-import type { ComponentDisplay, ComponentKind, ComponentSpan, TextAlign } from "@harness-monorepo/contracts"
+import type { ComponentDisplay, ComponentKind, ComponentSpan, DeviceVisibility, TextAlign } from "@harness-monorepo/contracts"
 
 // UI
 import type { ComponentLayoutValues } from "@harness-monorepo/ui/blocks/design/component-layout-fields"
@@ -12,6 +12,7 @@ export interface HeldLayout {
   display: ComponentDisplay | null
   columns: number | null
   align: TextAlign | null
+  visibleOn: DeviceVisibility
 }
 
 /**
@@ -34,6 +35,7 @@ export function layoutOf(block: HeldLayout): ComponentLayoutValues {
     display: displayOf(block.kind, block.display),
     columns: block.columns ?? 0,
     align: block.align ?? defaultAlignOf(block.kind),
+    visibleOn: block.visibleOn,
   }
 }
 
@@ -44,7 +46,13 @@ export function layoutOf(block: HeldLayout): ComponentLayoutValues {
 export function sameLayout(a: HeldLayout, b: HeldLayout): boolean {
   const [x, y] = [layoutOf(a), layoutOf(b)]
 
-  return x.span === y.span && x.display === y.display && x.columns === y.columns && x.align === y.align
+  return (
+    x.span === y.span &&
+    x.display === y.display &&
+    x.columns === y.columns &&
+    x.align === y.align &&
+    x.visibleOn === y.visibleOn
+  )
 }
 
 /** A change from the Layout tab, as the draft holds it: "automático" is null on the wire. */

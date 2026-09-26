@@ -608,6 +608,16 @@ export interface UiMessages {
     spanBandLabel: string
     /** A banner's choice between showing its pictures one at a time or all together. */
     displayLabel: string
+    /** "Aparece em", with the two screens a block can show on, and what a row says of one on a single screen. */
+    visibleOn: {
+      label: string
+      desktop: string
+      phone: string
+      /** Under the field: the last screen cannot be turned off here. */
+      hint: string
+      onlyDesktop: string
+      onlyPhone: string
+    }
     displayCarousel: string
     displayGrid: string
     displayRail: string

@@ -8,7 +8,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { ComponentLayoutFields, hasLayout, type ComponentLayoutValues } from "./component-layout-fields"
 import type { ComponentKind } from "./design-types"
 
-const base: ComponentLayoutValues = { span: "HALF", display: null, columns: 0, align: "LEFT" }
+const base: ComponentLayoutValues = { span: "HALF", display: null, columns: 0, align: "LEFT", visibleOn: "ALL" }
 
 function renderFields(kind: ComponentKind, over: Partial<ComponentLayoutValues> = {}) {
   const onChange = vi.fn()
@@ -87,5 +87,17 @@ describe("ComponentLayoutFields", () => {
     const { container } = renderFields("PRODUCTS", { display: "GRID" })
 
     await expectNoA11yViolations(container)
+  })
+})
+
+describe("ComponentLayoutFields — Aparece em", () => {
+  // Every kind with a layout says where it shows; it waits for Publicar with the rest of the tab.
+  it("asks where the block shows, and hands the answer on with the layout", async () => {
+    const onChange = vi.fn()
+    render(<ComponentLayoutFields kind="BANNER" value={{ ...base, display: "CAROUSEL" }} onChange={onChange} bandWidth="FULL" />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Celular" }))
+
+    expect(onChange).toHaveBeenCalledWith({ visibleOn: "DESKTOP" })
   })
 })

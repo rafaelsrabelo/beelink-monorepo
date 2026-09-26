@@ -23,7 +23,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
-import { reachesTheEdge, rhythmOf } from "./band-rhythm"
+import { reachesTheEdge } from "./band-rhythm"
+import { deviceRhythmOf, shownClassOf, shownOn, spacingClassOf } from "./device-visibility"
 import { drawnSectionsOf } from "./empty-component"
 import { anchorsOf } from "./site-chrome"
 import { StorefrontComponent, type LiveContact } from "./storefront-component"
@@ -131,19 +132,20 @@ export function StorefrontSections({
   // the shop leaves it out, and a band left with nothing, rather than spend the page's spacing on a gap.
   // The strip is drawn above the header by the window — see `announcementOf` — so it is not one of them.
   const drawn = drawnSectionsOf(sections, renderBlock !== undefined)
-  const rhythm = rhythmOf(drawn)
+  const rhythm = deviceRhythmOf(drawn)
 
   return (
     <>
       {drawn.map((section, at) => {
         const bleed = section.width === "FULL"
+        const { phone, desktop } = rhythm[at] ?? { phone: null, desktop: null }
         const band = (
           <StorefrontSectionBand
             {...(anchors.has(section.id) ? { id: anchors.get(section.id)! } : {})}
             background={section.background}
             primary={primary}
             width={section.width}
-            padded={rhythm[at]?.padded ?? false}
+            className={spacingClassOf("padding", !!phone?.padded, !!desktop?.padded)}
           >
             {/*
               One cell per component, each taking its own slice of twelve columns. The posters used
@@ -172,7 +174,12 @@ export function StorefrontSections({
                 )
 
                 return (
-                  <StorefrontBandCell key={component.id} span={component.span} gutter={bleed && !reachesTheEdge(component.kind)}>
+                  <StorefrontBandCell
+                    key={component.id}
+                    span={component.span}
+                    gutter={bleed && !reachesTheEdge(component.kind)}
+                    className={shownClassOf(shownOn(component.visibleOn, "PHONE"), shownOn(component.visibleOn, "DESKTOP"))}
+                  >
                     {renderBlock ? renderBlock(component, body) : body}
                   </StorefrontBandCell>
                 )
@@ -184,7 +191,14 @@ export function StorefrontSections({
 
         // The space goes on the outermost element, so design mode's grip wraps the band and not the gap.
         return (
-          <div key={section.id} className={rhythm[at]?.spaceBefore ? "mt-8" : undefined}>
+          <div
+            key={section.id}
+            className={
+              [shownClassOf(!!phone, !!desktop), spacingClassOf("space", !!phone?.spaceBefore, !!desktop?.spaceBefore)]
+                .filter(Boolean)
+                .join(" ") || undefined
+            }
+          >
             {renderSection ? renderSection(section, band) : band}
           </div>
         )
