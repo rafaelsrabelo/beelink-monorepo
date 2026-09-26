@@ -50,3 +50,20 @@ describe('a call to action\'s button', () => {
     expect(button.safeParse([{ id: 'a', ...one }, { id: 'b', ...one }]).success).toBe(false);
   });
 });
+
+describe('an image with text\'s picture', () => {
+  const media = componentItemsFor('IMAGE_TEXT');
+  const picture = { id: 'm', imageUrl: 'https://cdn.example/a.png' };
+
+  it('takes a picture, what it shows and a button, or nothing at all', () => {
+    expect(media.safeParse([picture]).success).toBe(true);
+    expect(media.safeParse([{ ...picture, alt: 'Uma blusa azul', button: { label: 'Ver', target: 'EXTERNAL', externalUrl: 'https://x.com' } }]).success).toBe(true);
+    expect(media.safeParse([]).success).toBe(true);
+  });
+
+  it('refuses a picture that is not an address, a button to nowhere, and two pictures', () => {
+    expect(media.safeParse([{ ...picture, imageUrl: 'javascript:alert(1)' }]).success).toBe(false);
+    expect(media.safeParse([{ ...picture, button: { label: 'Ver', target: 'NONE' } }]).success).toBe(false);
+    expect(media.safeParse([picture, { ...picture, id: 'n' }]).success).toBe(false);
+  });
+});

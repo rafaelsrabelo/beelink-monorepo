@@ -24,6 +24,7 @@ export const COMPONENT_KINDS = [
   "CONTACT",
   "FAQ",
   "CALL_TO_ACTION",
+  "IMAGE_TEXT",
 ] as const
 export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 
@@ -58,6 +59,8 @@ export const COMPONENT_DISPLAYS = [
   "ACCORDION",
   "BAND",
   "CARD",
+  "IMAGE_LEFT",
+  "IMAGE_RIGHT",
 ] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
 

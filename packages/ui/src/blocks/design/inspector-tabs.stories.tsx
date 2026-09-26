@@ -27,6 +27,8 @@ const empty: ComponentFormValues = {
   limit: "",
   faq: [],
   buttonLabel: "",
+  imageUrl: "",
+  imageAlt: "",
 }
 
 const plainBand: BandFormValues = { name: "", width: "CONTAINED", background: "" }

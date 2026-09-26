@@ -43,3 +43,24 @@ export interface PublicComponentLink {
 export interface PublicCallToActionButton extends PublicComponentLink {
   id: string;
 }
+
+/**
+ * An image with text's picture, and the button beside the words, if it has one. One item because the
+ * block holds one of each; the words are the block's own title and text.
+ */
+export interface ImageTextMedia {
+  id: string;
+  /** `""` never: a block with no picture holds no media and draws its words alone. */
+  imageUrl: string;
+  /** What the picture shows, for a screen reader. Absent is decorative. */
+  alt?: string | null;
+  button?: ComponentLink | null;
+}
+
+export interface PublicImageTextMedia {
+  id: string;
+  imageUrl: string;
+  alt: string | null;
+  /** Null when there is none, or when what it pointed at is gone. */
+  button: PublicComponentLink | null;
+}

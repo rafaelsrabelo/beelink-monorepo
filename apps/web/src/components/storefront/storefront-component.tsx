@@ -8,6 +8,7 @@ import type {
   FaqItem,
   PublicCallToActionButton,
   PublicComponent,
+  PublicImageTextMedia,
   PublicProductCategory,
 } from "@harness-monorepo/contracts"
 
@@ -20,6 +21,7 @@ import { StorefrontCallToAction } from "@harness-monorepo/ui/blocks/storefront/s
 import { StorefrontContact } from "@harness-monorepo/ui/blocks/storefront/storefront-contact"
 import { StorefrontFaq } from "@harness-monorepo/ui/blocks/storefront/storefront-faq"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
+import { StorefrontImageText } from "@harness-monorepo/ui/blocks/storefront/storefront-image-text"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
@@ -162,6 +164,18 @@ export function StorefrontComponent({
           body={component.body}
           button={(component.items as PublicCallToActionButton[])[0] ?? null}
           bleed={bleed}
+          {...link}
+        />
+      )
+
+    case "IMAGE_TEXT":
+      return (
+        <StorefrontImageText
+          layout={component.display === "IMAGE_RIGHT" ? "IMAGE_RIGHT" : "IMAGE_LEFT"}
+          title={component.title}
+          body={component.body}
+          media={(component.items as PublicImageTextMedia[])[0] ?? null}
+          span={component.span}
           {...link}
         />
       )

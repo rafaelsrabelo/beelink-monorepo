@@ -4,6 +4,7 @@ import type {
   BannerSlide,
   CallToActionButton,
   ComponentKind,
+  ImageTextMedia,
   PublicComponentItem,
   StoreComponent,
 } from "@harness-monorepo/contracts"
@@ -43,6 +44,13 @@ export function previewItemsOf(
     // What a showcase stores is the ids it picked, never the cards a visitor is served; the cards are
     // the public read's to resolve. A showcase saved since the page loaded keeps the cards it had
     // then until the next load.
+    case "IMAGE_TEXT":
+      return ((was?.items ?? []) as ImageTextMedia[]).map((media) => ({
+        id: media.id,
+        imageUrl: media.imageUrl,
+        alt: media.alt ?? null,
+        button: media.button ? { label: media.button.label, href: "#", external: false } : null,
+      }))
     case "PRODUCTS":
       return shelves.get(component.id)?.items ?? []
     default:

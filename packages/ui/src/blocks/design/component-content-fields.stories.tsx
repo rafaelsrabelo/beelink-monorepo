@@ -22,6 +22,8 @@ const empty: ComponentFormValues = {
   limit: "",
   faq: [],
   buttonLabel: "",
+  imageUrl: "",
+  imageAlt: "",
 }
 
 const meta = {

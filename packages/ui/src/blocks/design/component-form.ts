@@ -38,6 +38,9 @@ export interface ComponentFormValues {
   externalUrl: string
   /** What a block's one button says. */
   buttonLabel: string
+  /** An image with text's picture, and what it shows; `""` is none, and no description is decorative. */
+  imageUrl: string
+  imageAlt: string
   slides: SlideValue[]
   benefits: BenefitValue[]
   /** A contact form's questions. */
@@ -61,7 +64,7 @@ export function contentReady(value: ComponentFormValues): boolean {
   if (value.kind === "CONTACT") return reachesBack(value.fields)
   if (value.kind === "PRODUCTS") return showcaseReady(value)
   if (value.kind === "FAQ") return !value.faq.some(unanswered)
-  if (value.kind === "CALL_TO_ACTION") return buttonMissing(value) === null
+  if (value.kind === "CALL_TO_ACTION" || value.kind === "IMAGE_TEXT") return buttonMissing(value) === null
 
   return true
 }

@@ -374,6 +374,7 @@ export const en: UiMessages = {
       CONTACT: "Contact form",
       FAQ: "Frequently asked questions",
       CALL_TO_ACTION: "Call to action",
+      IMAGE_TEXT: "Image and text",
     },
     emptyAction: {
       ANNOUNCEMENT: "Write the notice",
@@ -386,6 +387,7 @@ export const en: UiMessages = {
       CONTACT: "Choose the fields",
       FAQ: "Write the first question",
       CALL_TO_ACTION: "Write the call",
+      IMAGE_TEXT: "Choose the picture",
     },
     showcaseOnPublish: "Its products appear once you publish",
     categoriesHiddenAction: "No category shows in the shop yet",
@@ -462,6 +464,7 @@ export const en: UiMessages = {
           { question: "How can I pay?", answer: "PIX, credit card or debit card." },
         ],
         callToAction: { title: "Ready to choose yours?", body: "Free delivery on orders over R$ 199.", label: "See products" },
+        imageText: { title: "Made with care", body: "Tell where the pieces come from and who is behind each one." },
       },
       placement: {
         between: "Goes between {before} and {after}.",
@@ -483,6 +486,7 @@ export const en: UiMessages = {
         CONTACT: "A form that receives enquiries",
         FAQ: "Questions and answers that open and close",
         CALL_TO_ACTION: "A title, a line and a button",
+        IMAGE_TEXT: "A picture beside a title and text",
       },
       bannersAcross: "{count} banners side by side",
       bannersAcrossHints: {
@@ -552,6 +556,8 @@ export const en: UiMessages = {
       ACCORDION: "Accordion",
       BAND: "Band",
       CARD: "Card",
+      IMAGE_LEFT: "Picture on the left",
+      IMAGE_RIGHT: "Picture on the right",
     },
     displayAuto: "Automatic: still where it fits, scrolling on a phone",
     categoriesRailHint: "One row that scrolls sideways — on a phone and on a computer.",
@@ -765,6 +771,12 @@ export const en: UiMessages = {
     benefitIcon: "Icon",
     benefitTitle: "Title",
     benefitDetail: "Detail",
+    imageText: {
+      image: "Picture",
+      imageHelp: "Sits beside the text. On a phone, it comes first.",
+      alt: "Picture description",
+      altHelp: "What the picture shows, for screen reader users. Left blank, it is decorative.",
+    },
     button: {
       label: "Button text",
       placeholder: "Buy now",

@@ -36,6 +36,8 @@ export function isEmptyComponent({ kind, title, subtitle, body, items }: Compone
   if (kind === "TEXT") return !body?.trim()
   // A button alone is not a call: `StorefrontCallToAction` draws nothing without words.
   if (kind === "CALL_TO_ACTION") return !title?.trim() && !body?.trim()
+  // With no picture it draws its words alone; with neither, nothing.
+  if (kind === "IMAGE_TEXT") return items.length === 0 && !title?.trim() && !body?.trim()
 
   return false
 }

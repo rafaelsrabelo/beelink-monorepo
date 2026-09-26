@@ -374,6 +374,7 @@ export const ptBR: UiMessages = {
       CONTACT: "Formulário de contato",
       FAQ: "Perguntas frequentes",
       CALL_TO_ACTION: "Chamada final",
+      IMAGE_TEXT: "Imagem e texto",
     },
     emptyAction: {
       ANNOUNCEMENT: "Escrever o aviso",
@@ -386,6 +387,7 @@ export const ptBR: UiMessages = {
       CONTACT: "Escolher os campos",
       FAQ: "Escrever a primeira pergunta",
       CALL_TO_ACTION: "Escrever a chamada",
+      IMAGE_TEXT: "Escolher a imagem",
     },
     showcaseOnPublish: "Os produtos aparecem ao publicar",
     categoriesHiddenAction: "Nenhuma categoria aparece na loja ainda",
@@ -462,6 +464,7 @@ export const ptBR: UiMessages = {
           { question: "Quais são as formas de pagamento?", answer: "PIX, cartão de crédito e de débito." },
         ],
         callToAction: { title: "Pronto para escolher o seu?", body: "Frete grátis nas compras acima de R$ 199.", label: "Ver produtos" },
+        imageText: { title: "Feito com cuidado", body: "Conte de onde vêm as peças e quem está por trás de cada uma." },
       },
       placement: {
         between: "Entra entre {before} e {after}.",
@@ -483,6 +486,7 @@ export const ptBR: UiMessages = {
         CONTACT: "Formulário que recebe contatos",
         FAQ: "Perguntas e respostas que abrem e fecham",
         CALL_TO_ACTION: "Título, texto e um botão",
+        IMAGE_TEXT: "Uma imagem ao lado de título e texto",
       },
       bannersAcross: "{count} banners lado a lado",
       bannersAcrossHints: {
@@ -552,6 +556,8 @@ export const ptBR: UiMessages = {
       ACCORDION: "Acordeão",
       BAND: "Faixa",
       CARD: "Cartão",
+      IMAGE_LEFT: "Imagem à esquerda",
+      IMAGE_RIGHT: "Imagem à direita",
     },
     displayAuto: "Automática: parada onde cabe, rolando no celular",
     categoriesRailHint: "Uma linha só, que rola para o lado — no celular e no computador.",
@@ -765,6 +771,12 @@ export const ptBR: UiMessages = {
     benefitIcon: "Ícone",
     benefitTitle: "Título",
     benefitDetail: "Detalhe",
+    imageText: {
+      image: "Imagem",
+      imageHelp: "Fica ao lado do texto. No celular, aparece em cima.",
+      alt: "Descrição da imagem",
+      altHelp: "O que a imagem mostra, para quem usa leitor de tela. Em branco, ela só enfeita.",
+    },
     button: {
       label: "Texto do botão",
       placeholder: "Comprar agora",

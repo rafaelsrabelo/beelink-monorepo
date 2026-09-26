@@ -4,8 +4,10 @@ import type {
   BannerSlide,
   BenefitRow,
   CallToActionButton,
+  ComponentLink,
   ContactField,
   FaqItem,
+  ImageTextMedia,
   ShowcaseProduct,
 } from "@harness-monorepo/contracts"
 
@@ -20,7 +22,7 @@ import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/com
 type Link = Pick<ComponentFormValues, "target" | "categoryId" | "productId" | "externalUrl">
 
 /** A link's destination as the form holds it: all three kept, so changing one's mind loses nothing. */
-export function linkToForm(link: AnnouncementLink | CallToActionButton | undefined): Link {
+export function linkToForm(link: AnnouncementLink | ComponentLink | undefined): Link {
   return {
     target: link?.target ?? "NONE",
     categoryId: link?.categoryId ?? "",
@@ -142,4 +144,25 @@ export function buttonFromForm(value: Link & Pick<ComponentFormValues, "buttonLa
   const [link] = linkFromForm(value, itemId)
   const label = value.buttonLabel.trim()
   return link && link.target !== "NONE" && label ? [{ ...link, target: link.target, label }] : []
+}
+
+/**
+ * An image with text's picture, what it shows and its button, or nothing: a block with no picture
+ * holds no media, and its button — which sits beside the words — goes with the picture it belongs to.
+ */
+export function mediaFromForm(
+  value: Link & Pick<ComponentFormValues, "buttonLabel" | "imageUrl" | "imageAlt">,
+  itemId: string,
+): ImageTextMedia[] {
+  const imageUrl = value.imageUrl.trim()
+  if (!imageUrl) return []
+  const [button] = buttonFromForm(value, itemId)
+  return [
+    {
+      id: itemId,
+      imageUrl,
+      alt: value.imageAlt.trim() || null,
+      button: button ? { label: button.label, target: button.target, categoryId: button.categoryId, productId: button.productId, externalUrl: button.externalUrl } : null,
+    },
+  ]
 }

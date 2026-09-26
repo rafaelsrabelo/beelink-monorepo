@@ -26,6 +26,8 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     limit: "",
     faq: [],
     buttonLabel: "",
+    imageUrl: "",
+    imageAlt: "",
     ...over,
   }
 }

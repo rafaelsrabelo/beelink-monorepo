@@ -38,7 +38,7 @@ describe("SectionGallery — the shelves", () => {
     const props = gallery()
 
     await userEvent.click(screen.getByRole("tab", { name: /Conteúdo/ }))
-    expect(cards().map((card) => within(card).getAllByText(/./)[0]?.textContent)).toEqual(["Título", "Parágrafo"])
+    expect(cards().map((card) => within(card).getAllByText(/./)[0]?.textContent)).toEqual(["Título", "Parágrafo", "Imagem e texto"])
 
     await userEvent.click(screen.getByRole("button", { name: "Adicionar Parágrafo" }))
     expect(props.onAdd).toHaveBeenCalledWith("TEXT", 1)

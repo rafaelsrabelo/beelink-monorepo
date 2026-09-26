@@ -54,6 +54,13 @@ describe('problemsOf', () => {
     expect(problemsOf(sections, NO_LOOKUPS)).toEqual([{ kind: 'LINK_TO_MISSING_PRODUCT', sectionId: 'b1', componentId: 'c1', itemId: 'btn' }]);
   });
 
+  it('names an image with text whose button leads to a product gone, by its picture', () => {
+    const media = { id: 'm', imageUrl: 'https://cdn.example/a.png', button: { label: 'Ver', target: 'PRODUCT', productId: PRODUCT } };
+    const sections = [band('b1', [block('c1', 'IMAGE_TEXT', [media])])];
+
+    expect(problemsOf(sections, NO_LOOKUPS)).toEqual([{ kind: 'LINK_TO_MISSING_PRODUCT', sectionId: 'b1', componentId: 'c1', itemId: 'm' }]);
+  });
+
   it('looks only at what shows: a hidden band or block is served to nobody', () => {
     const sections = [band('b1', [block('c1', 'BANNER')], false), band('b2', [block('c2', 'PRODUCTS', [], false)])];
 

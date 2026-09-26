@@ -95,6 +95,14 @@ describe("sampleSectionOf — the band a card draws", () => {
     expect(cta?.items).toEqual([expect.objectContaining({ label: "Ver produtos" })])
   })
 
+  it("draws an image with text with the shop's picture, and its words alone without one", () => {
+    const words = sampleSectionOf({ kind: "IMAGE_TEXT", across: 1, name: "", hint: "" }, empty, ptBR)?.components[0]
+    expect(words).toMatchObject({ kind: "IMAGE_TEXT", display: "IMAGE_LEFT", title: "Feito com cuidado", items: [] })
+
+    const pictured = sampleSectionOf({ kind: "IMAGE_TEXT", across: 1, name: "", hint: "" }, { ...empty, images: ["/a.jpg"] }, ptBR)
+    expect(pictured?.components[0]?.items).toEqual([expect.objectContaining({ imageUrl: "/a.jpg" })])
+  })
+
   it("tells a card that has a preview from one that keeps its wireframe", () => {
     expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, empty, ptBR)).toBe(false)
     expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, stock, ptBR)).toBe(true)

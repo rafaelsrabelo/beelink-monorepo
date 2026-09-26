@@ -6,6 +6,7 @@ import type {
   PublicBannerSlide,
   PublicCallToActionButton,
   PublicComponent,
+  PublicImageTextMedia,
   PublicProductCard,
   PublicSection,
   PublicStore,
@@ -135,6 +136,11 @@ export function sampleSectionOf(entry: GalleryEntry, stock: GalleryStock, messag
       return band([
         sample("CALL_TO_ACTION", id, { title: text.callToAction.title, body: text.callToAction.body, display: "BAND", items: [button] }),
       ])
+    }
+    case "IMAGE_TEXT": {
+      // The shop's own picture where it has one; the words alone otherwise, which is how it draws without one.
+      const media: PublicImageTextMedia[] = stock.images[0] ? [{ id: `${id}-imagem`, imageUrl: stock.images[0], alt: null, button: null }] : []
+      return band([sample("IMAGE_TEXT", id, { title: text.imageText.title, body: text.imageText.body, display: "IMAGE_LEFT", items: media })])
     }
     case "ANNOUNCEMENT":
       return null

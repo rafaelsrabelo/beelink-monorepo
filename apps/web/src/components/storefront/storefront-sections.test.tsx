@@ -148,6 +148,20 @@ describe("StorefrontSections — a band is a grid", () => {
     expect(container.ownerDocument.querySelectorAll("[data-span]")[1]!.className).toContain("px-")
   })
 
+  it("draws an image with text, and leaves out one with neither picture nor words", () => {
+    const block: PublicComponent = {
+      ...heading("img", "FULL"),
+      kind: "IMAGE_TEXT",
+      title: "Feito à mão",
+      display: "IMAGE_RIGHT",
+      items: [{ id: "m", imageUrl: "https://cdn/a.png", alt: "Uma bolsa", button: null }],
+    }
+    draw([band([block]), { ...band([{ ...block, id: "vazio", title: null, items: [] }]), id: "outra" }])
+
+    expect(screen.getByRole("img", { name: "Uma bolsa" })).toBeInTheDocument()
+    expect(screen.getAllByRole("heading", { name: "Feito à mão" })).toHaveLength(1)
+  })
+
   // A cached page, or a newer API, can serve a kind this build has never heard of. It used to fall
   // through to a shelf, which read its items as product cards.
   it("draws nothing for a kind this build does not know, and drops a band left with nothing", () => {

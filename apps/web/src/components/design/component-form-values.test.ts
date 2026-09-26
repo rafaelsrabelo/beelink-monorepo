@@ -141,3 +141,28 @@ describe("component-form-values — a call to action", () => {
     expect(toPayload({ ...toForm(cta), buttonLabel: "  " }, "btn")).toMatchObject({ items: [] })
   })
 })
+
+describe("component-form-values — an image with text", () => {
+  const block = component({
+    kind: "IMAGE_TEXT",
+    title: "Feito à mão",
+    display: "IMAGE_LEFT",
+    items: [{ id: "m", imageUrl: "/a.jpg", alt: "Uma bolsa", button: { label: "Ver", target: "CATEGORY", categoryId: "c1" } }],
+  })
+
+  it("opens on its picture, what it shows and its button, and sends them back as one item", () => {
+    const value = toForm(block)
+    expect(value).toMatchObject({ imageUrl: "/a.jpg", imageAlt: "Uma bolsa", target: "CATEGORY", categoryId: "c1", buttonLabel: "Ver" })
+
+    expect(toPayload(value, "m")).toMatchObject({
+      items: [{ id: "m", imageUrl: "/a.jpg", alt: "Uma bolsa", button: { label: "Ver", target: "CATEGORY", categoryId: "c1" } }],
+    })
+  })
+
+  it("sends no picture as no item, and a picture with no button as one with none", () => {
+    expect(toPayload({ ...toForm(block), imageUrl: " " }, "m")).toMatchObject({ items: [] })
+    expect(toPayload({ ...toForm(block), target: "NONE", imageAlt: "" }, "m")).toMatchObject({
+      items: [{ id: "m", imageUrl: "/a.jpg", alt: null, button: null }],
+    })
+  })
+})

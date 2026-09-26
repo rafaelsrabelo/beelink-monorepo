@@ -16,6 +16,7 @@ import { contentReady, type ComponentFormValues } from "./component-form"
 import { ContactFieldsField } from "./contact-fields-field"
 import type { ContactFieldValue } from "./contact-fields-field"
 import type { ComponentDisplay } from "./design-types"
+import { ImageTextFields } from "./image-text-fields"
 import { FaqItemsField, type FaqValue } from "./faq-items-field"
 import { ShowcaseFields } from "./showcase-fields"
 import type { ShowcasePick } from "./showcase-picks-field"
@@ -103,6 +104,18 @@ export function ComponentContentFields({
 
       {value.kind === "CALL_TO_ACTION" ? (
         <ButtonFields value={value} onChange={merge} categories={categories} products={products} messages={messages} />
+      ) : null}
+
+      {value.kind === "IMAGE_TEXT" ? (
+        <ImageTextFields
+          value={value}
+          onChange={merge}
+          categories={categories}
+          products={products}
+          {...(onUploadImage ? { onUploadImage } : {})}
+          imagePending={imagePending}
+          messages={messages}
+        />
       ) : null}
 
       {value.kind === "FAQ" ? (

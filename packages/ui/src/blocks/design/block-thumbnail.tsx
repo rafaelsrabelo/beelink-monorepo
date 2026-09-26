@@ -116,6 +116,18 @@ function Shape({ kind, across }: { kind: ComponentKind; across: Across }) {
           <span className={cn(ACCENT, "h-2 w-1/4 rounded-full")} />
         </span>
       )
+    // A picture beside its words.
+    case "IMAGE_TEXT":
+      return (
+        <span className="flex h-full w-full items-center gap-1.5">
+          <span className={cn(ACCENT, "h-full w-2/5 shrink-0")} />
+          <span className="flex flex-1 flex-col gap-1">
+            <span className={cn(BAR, "h-2 w-4/5 bg-muted-foreground/70")} />
+            <span className={cn(BAR, "h-1 w-full")} />
+            <span className={cn(BAR, "h-1 w-3/5")} />
+          </span>
+        </span>
+      )
     // A kind added without a drawing fails the build here instead of drawing an empty card.
     default:
       return (kind satisfies never) && null

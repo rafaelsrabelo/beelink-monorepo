@@ -97,3 +97,28 @@ describe('a call to action\'s button', () => {
     expect(served?.items).toEqual([{ id: 'btn', label: 'Comprar agora', href: null, external: false }]);
   });
 });
+
+describe('an image with text\'s picture', () => {
+  const PRODUCT = '0199e000-0000-7000-8000-000000000001';
+  const block = componentRow({
+    kind: 'IMAGE_TEXT',
+    title: 'Feito à mão',
+    display: 'IMAGE_RIGHT',
+    items: [{ id: 'm', imageUrl: 'https://cdn.example/a.png', button: { label: 'Ver a peça', target: 'PRODUCT', productId: PRODUCT } }],
+  });
+
+  it('is served with its button\'s address built, and a decorative picture as alt null', () => {
+    const slugs = { categories: new Map<string, string>(), products: new Map([[PRODUCT, 'blusa']]) };
+    const [served] = toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR, { slugs, shelves: new Map() }).components;
+
+    expect(served?.items).toEqual([
+      { id: 'm', imageUrl: 'https://cdn.example/a.png', alt: null, button: { label: 'Ver a peça', href: '/loja/produtos/blusa', external: false } },
+    ]);
+  });
+
+  it('keeps the picture and drops the button whose product is gone', () => {
+    const [served] = toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR).components;
+
+    expect(served?.items).toEqual([{ id: 'm', imageUrl: 'https://cdn.example/a.png', alt: null, button: null }]);
+  });
+});

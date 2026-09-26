@@ -4,9 +4,13 @@ import type {
   BannerSlide,
   CallToActionButton,
   ComponentKind,
+  ComponentLink,
+  ImageTextMedia,
   PublicAnnouncementLink,
   PublicBannerSlide,
   PublicCallToActionButton,
+  PublicComponentLink,
+  PublicImageTextMedia,
   StorefrontRouteWords,
 } from '@harness-monorepo/contracts';
 import type { SectionShape } from './page-document.js';
@@ -49,6 +53,9 @@ export function pointersOf(kind: ComponentKind, items: unknown): Pointer[] {
     case 'ANNOUNCEMENT':
     case 'CALL_TO_ACTION':
       return itemsOf(kind, items) as (BannerSlide | AnnouncementLink | CallToActionButton)[];
+    // The picture's button, named by the picture's id: one item, one place to point.
+    case 'IMAGE_TEXT':
+      return (itemsOf(kind, items) as ImageTextMedia[]).flatMap((media) => (media.button ? [{ id: media.id, ...media.button }] : []));
     default:
       return [];
   }
@@ -132,13 +139,29 @@ export function toPublicLink(
   return { id: link.id, href, external: link.target === 'EXTERNAL' && !!href } satisfies PublicAnnouncementLink;
 }
 
-/** A button, with its address built the same way; a button whose target is gone has none. */
+/** A button's words and address, built the same way; a button whose target is gone has none. */
+function toPublicLinkOf(link: ComponentLink, shopSlug: string, words: StorefrontRouteWords, slugs: SlugsByEntity): PublicComponentLink {
+  const href = hrefOf(link, shopSlug, words, slugs);
+  return { label: link.label, href, external: link.target === 'EXTERNAL' && !!href } satisfies PublicComponentLink;
+}
+
+/** A call to action's button, served. */
 export function toPublicButton(
   button: CallToActionButton,
   shopSlug: string,
   words: StorefrontRouteWords,
   slugs: SlugsByEntity,
 ): PublicCallToActionButton {
-  const href = hrefOf(button, shopSlug, words, slugs);
-  return { id: button.id, label: button.label, href, external: button.target === 'EXTERNAL' && !!href } satisfies PublicCallToActionButton;
+  return { id: button.id, ...toPublicLinkOf(button, shopSlug, words, slugs) } satisfies PublicCallToActionButton;
+}
+
+/** An image with text's picture, served, its button's address built — or no button where it is gone. */
+export function toPublicMedia(
+  media: ImageTextMedia,
+  shopSlug: string,
+  words: StorefrontRouteWords,
+  slugs: SlugsByEntity,
+): PublicImageTextMedia {
+  const button = media.button ? toPublicLinkOf(media.button, shopSlug, words, slugs) : null;
+  return { id: media.id, imageUrl: media.imageUrl, alt: media.alt ?? null, button: button?.href ? button : null } satisfies PublicImageTextMedia;
 }

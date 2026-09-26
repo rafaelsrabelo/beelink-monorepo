@@ -108,7 +108,8 @@ export function arrangementOf(
     isActive: row.isActive,
     components: row.components.map((component) => {
       const was = savedComponents.get(component.id)
-      const first = was?.kind === "BANNER" ? (was.items[0] as BannerSlide | undefined) : undefined
+      // The row's picture: a banner's first, an image with text's own.
+      const first = was?.kind === "BANNER" || was?.kind === "IMAGE_TEXT" ? (was.items[0] as Pick<BannerSlide, "imageUrl"> | undefined) : undefined
       // A category showcase with no title of its own is headed by its category on the page, and is
       // listed by it here; six rows reading "Vitrine de produtos" would be six rows nobody can tell apart.
       const title = was?.title ?? shelves.get(component.id)?.sourceCategory?.name ?? null

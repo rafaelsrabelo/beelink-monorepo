@@ -32,6 +32,8 @@ export const COMPONENT_DISPLAYS = [
   'ACCORDION',
   'BAND',
   'CARD',
+  'IMAGE_LEFT',
+  'IMAGE_RIGHT',
 ] as const satisfies readonly ComponentDisplay[];
 
 /**
@@ -47,6 +49,7 @@ export const DISPLAYS_OF_KIND: Partial<Record<ComponentKind, readonly ComponentD
   ANNOUNCEMENT: ['STATIC', 'MARQUEE'],
   FAQ: ['ACCORDION'],
   CALL_TO_ACTION: ['BAND', 'CARD'],
+  IMAGE_TEXT: ['IMAGE_LEFT', 'IMAGE_RIGHT'],
 };
 
 /**
@@ -82,6 +85,7 @@ export const COMPONENT_KINDS = [
   'CONTACT',
   'FAQ',
   'CALL_TO_ACTION',
+  'IMAGE_TEXT',
 ] as const satisfies readonly ComponentKind[];
 
 /**
@@ -110,6 +114,9 @@ export const FAQ_ANSWER_MAX_LENGTH = 1000;
 
 /** What a button says: a few words, as on the shop's own buttons. */
 export const BUTTON_LABEL_MAX_LENGTH = 40;
+
+/** What a picture shows, said in a line: a description, not a caption. */
+export const IMAGE_ALT_MAX_LENGTH = 160;
 
 /** Where a heading or a paragraph sits. Null on the wire is "as the kind always drew it". */
 export const TEXT_ALIGNS = ['LEFT', 'CENTER', 'RIGHT'] as const satisfies readonly TextAlign[];

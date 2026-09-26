@@ -4,6 +4,7 @@ import {
   HeadingIcon,
   ImageIcon,
   LayoutGridIcon,
+  LayoutPanelLeftIcon,
   MailIcon,
   MegaphoneIcon,
   MessageCircleQuestionMarkIcon,
@@ -32,6 +33,7 @@ const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
   CONTACT: MailIcon,
   FAQ: MessageCircleQuestionMarkIcon,
   CALL_TO_ACTION: MousePointerClickIcon,
+  IMAGE_TEXT: LayoutPanelLeftIcon,
 }
 
 /** A block's thumbnail on its row or its card: a banner's first picture, or its kind's glyph. */
