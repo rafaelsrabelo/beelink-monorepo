@@ -28,9 +28,11 @@ describe("ImageTextFields", () => {
     expect(onChange).toHaveBeenLastCalledWith({ imageAlt: "B" })
   })
 
-  it("offers a button that leads nowhere until told otherwise", () => {
-    render(<ImageTextFields value={value()} onChange={vi.fn()} categories={[]} products={[]} />)
+  it("offers a button that leads nowhere until told otherwise, once there is a picture to put it beside", () => {
+    const { rerender } = render(<ImageTextFields value={value()} onChange={vi.fn()} categories={[]} products={[]} />)
+    expect(screen.queryByRole("combobox", { name: "Para onde leva" })).not.toBeInTheDocument()
 
+    rerender(<ImageTextFields value={value({ imageUrl: "https://cdn.example/a.png" })} onChange={vi.fn()} categories={[]} products={[]} />)
     expect(screen.getByRole("combobox", { name: "Para onde leva" })).toHaveTextContent("Nenhum")
     expect(screen.queryByLabelText("Texto do botão")).not.toBeInTheDocument()
   })
