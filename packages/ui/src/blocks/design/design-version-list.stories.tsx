@@ -15,7 +15,7 @@ const meta = {
   title: "Blocks/Design/DesignVersionList",
   component: DesignVersionList,
   decorators: [(Story) => <div className="w-80 p-4"><Story /></div>],
-  args: { versions, onRestore: fn(), restoring: false },
+  args: { versions, asking: null, onAsk: fn(), onConfirm: fn(), restoring: false },
 } satisfies Meta<typeof DesignVersionList>
 
 export default meta
@@ -24,4 +24,7 @@ type Story = StoryObj<typeof meta>
 export const Lista: Story = {}
 export const Carregando: Story = { args: { versions: null } }
 export const Vazia: Story = { args: { versions: [] } }
-export const Restaurando: Story = { args: { restoring: true } }
+export const NaoCarregou: Story = { args: { versions: null, loadFailed: true, onRetry: fn() } }
+export const Perguntando: Story = { args: { asking: "v2" } }
+export const Restaurando: Story = { args: { asking: "v2", restoring: true } }
+export const Restaurada: Story = { args: { restored: 2 } }

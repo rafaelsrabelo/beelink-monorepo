@@ -44,10 +44,11 @@ const saved = [
 ] as unknown as Section[]
 
 /** Every call, answered as the API would, and remembered as "METHOD path body". */
-function stubApi(): string[] {
+function stubApi(failing?: string): string[] {
   const calls: string[] = []
   vi.stubGlobal("fetch", (path: string, init?: RequestInit) => {
     calls.push(`${init?.method ?? "GET"} ${path} ${init?.body ?? ""}`)
+    if (failing && path.endsWith(failing)) return Promise.resolve(new Response("{}", { status: 503 }))
     const body = path.endsWith("/problems")
       ? [{ kind: "SHOWCASE_EMPTY", sectionId: "b1", componentId: "c1", itemId: null }]
       : path.endsWith("/versions")
@@ -87,6 +88,19 @@ describe("PublishPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 
+  it("says a check that failed is not a clean page, and checks again when asked", async () => {
+    const calls = stubApi("/problems")
+    render(wrap(<PublishPage slug="loja" page={HOME} draft={{ publish: vi.fn(), saving: false, saved }} messages={ptBR} web={web} />))
+    act(() => useDesignPages.getState().openPublish())
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível conferir a página.")
+    expect(screen.queryByText(/Nada a revisar/)).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Publicar mesmo assim" })).toBeEnabled()
+
+    await userEvent.click(screen.getByRole("button", { name: "Conferir de novo" }))
+    await waitFor(() => expect(calls.filter((call) => call.includes("/problems"))).toHaveLength(2))
+  })
+
   it("does not check a draft still being saved", async () => {
     const calls = stubApi()
     render(wrap(<PublishPage slug="loja" page={HOME} draft={{ publish: vi.fn(), saving: true, saved }} messages={ptBR} web={web} />))
@@ -110,5 +124,15 @@ describe("PageHistory", () => {
     expect(calls.some((call) => call.startsWith("POST /api/stores/loja/pages/home/versions/v1/restore"))).toBe(true)
     expect(calls.some((call) => call.includes("/publish"))).toBe(false)
     expect(useDraftRevision.getState().revisions["home"]).toBe(5)
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("Versão 1 restaurada no rascunho.")
+  })
+
+  it("says the history could not be read rather than that it is empty", async () => {
+    stubApi("/versions")
+    render(wrap(<PageHistory slug="loja" pageId="home" messages={ptBR} web={web} />))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível carregar as versões.")
+    expect(screen.queryByText("Nenhuma versão publicada ainda.")).not.toBeInTheDocument()
   })
 })

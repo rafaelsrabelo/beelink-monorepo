@@ -54,6 +54,27 @@ describe("DesignPublishDialog", () => {
     expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled()
   })
 
+  it("says when the check failed rather than that the page is clean, and lets the owner ask again or publish", async () => {
+    const onRetryCheck = vi.fn()
+    const { props } = renderDialog({ problems: null, checkFailed: true, onRetryCheck })
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível conferir a página.")
+    expect(screen.queryByText(/Nada a revisar/)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Conferir de novo" }))
+    expect(onRetryCheck).toHaveBeenCalledTimes(1)
+    await userEvent.click(screen.getByRole("button", { name: "Publicar mesmo assim" }))
+    expect(props.onPublish).toHaveBeenCalledTimes(1)
+  })
+
+  it("cannot be closed while the page is going up", async () => {
+    const { props } = renderDialog({ publishing: true })
+
+    expect(await screen.findByRole("button", { name: "Cancelar" })).toBeDisabled()
+    await userEvent.keyboard("{Escape}")
+    expect(props.onOpenChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+  })
+
   it("hands the note back and says why a publish failed", async () => {
     const { props } = renderDialog({ error: "A página não foi publicada. Tente de novo." })
 

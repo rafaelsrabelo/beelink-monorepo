@@ -560,6 +560,8 @@ export const en: UiMessages = {
       intro: "The shop will show this page as it is now. First, check what may not come out as you expect.",
       checking: "Checking the page…",
       none: "Nothing to review: the page is ready to go live.",
+      checkFailed: "The page could not be checked. You can publish anyway or try again.",
+      checkRetry: "Check again",
       problems: {
         LINK_TO_MISSING_PRODUCT: "{block}, in {band}: a link goes to a product that no longer exists.",
         LINK_TO_MISSING_CATEGORY: "{block}, in {band}: a link goes to a category that no longer exists.",
@@ -576,6 +578,8 @@ export const en: UiMessages = {
     history: {
       heading: "This page's versions",
       empty: "No version published yet.",
+      loadFailed: "The versions could not be loaded.",
+      retry: "Try again",
       version: "Version {number}",
       live: "Live",
       by: "{when} · {author}",
@@ -586,6 +590,7 @@ export const en: UiMessages = {
       cancel: "Cancel",
       restoring: "Restoring…",
       failed: "The version could not be restored. Try again.",
+      restored: "Version {number} restored into the draft. Publish for the shop to change.",
     },
     tabPages: "Pages",
     pages: {

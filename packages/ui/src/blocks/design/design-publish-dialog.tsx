@@ -24,6 +24,9 @@ export interface DesignPublishDialogProps {
   pageName: string
   /** What the draft would serve that the owner may not mean. Null while it is being checked. */
   problems: readonly DesignPublishProblem[] | null
+  /** The check did not answer. Publicar stays open: the check warns, it never stops a publish. */
+  checkFailed?: boolean
+  onRetryCheck?: () => void
   note: string
   onNoteChange: (note: string) => void
   onPublish: () => void
@@ -33,7 +36,7 @@ export interface DesignPublishDialogProps {
   messages?: UiMessages
 }
 
-/** What a search result shows of a note in the history: a line, not a changelog. */
+/** The API's `PAGE_VERSION_NOTE_MAX_LENGTH`: a longer note is refused there. */
 const NOTE_MAX = 140
 
 /**
@@ -46,6 +49,8 @@ export function DesignPublishDialog({
   onOpenChange,
   pageName,
   problems,
+  checkFailed = false,
+  onRetryCheck,
   note,
   onNoteChange,
   onPublish,
@@ -55,15 +60,18 @@ export function DesignPublishDialog({
 }: DesignPublishDialogProps) {
   const text = messages.design.publishDialog
   const found = problems !== null && problems.length > 0
+  const checking = problems === null && !checkFailed
 
   return (
-    <Dialog open={open} onOpenChange={(next: boolean) => onOpenChange(next)}>
-      <DialogContent closeLabel={text.cancel} className="sm:max-w-lg">
+    // Once Publicar is pressed the dialog stays until it lands: closing it would drop the screen's
+    // refresh, and the bar would go on saying a page that just went up is not.
+    <Dialog open={open} onOpenChange={(next: boolean) => (publishing && !next ? undefined : onOpenChange(next))}>
+      <DialogContent closeLabel={text.cancel} showCloseButton={!publishing} className="sm:max-w-lg">
         <form
           className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault()
-            if (!publishing) onPublish()
+            if (!publishing && !checking) onPublish()
           }}
         >
           <DialogHeader>
@@ -71,7 +79,16 @@ export function DesignPublishDialog({
             <DialogDescription>{text.intro}</DialogDescription>
           </DialogHeader>
 
-          {problems === null ? (
+          {checkFailed ? (
+            <div role="alert" className="flex flex-col items-start gap-2">
+              <p className="text-destructive text-sm">{text.checkFailed}</p>
+              {onRetryCheck ? (
+                <Button type="button" size="sm" variant="outline" onClick={onRetryCheck}>
+                  {text.checkRetry}
+                </Button>
+              ) : null}
+            </div>
+          ) : problems === null ? (
             <div role="status" aria-busy="true" className="flex flex-col gap-2">
               <span className="sr-only">{text.checking}</span>
               <Skeleton aria-hidden="true" className="h-5 w-full" />
@@ -108,11 +125,11 @@ export function DesignPublishDialog({
           ) : null}
 
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="ghost" disabled={publishing} onClick={() => onOpenChange(false)}>
               {text.cancel}
             </Button>
-            <Button type="submit" disabled={publishing || problems === null}>
-              {publishing ? text.publishing : found ? text.publishAnyway : text.publish}
+            <Button type="submit" disabled={publishing || checking}>
+              {publishing ? text.publishing : found || checkFailed ? text.publishAnyway : text.publish}
             </Button>
           </DialogFooter>
         </form>

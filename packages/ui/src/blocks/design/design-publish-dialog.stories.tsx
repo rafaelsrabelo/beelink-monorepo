@@ -34,4 +34,5 @@ export const ComProblemas: Story = {
     ],
   },
 }
+export const ConferenciaFalhou: Story = { args: { problems: null, checkFailed: true, onRetryCheck: fn() } }
 export const Publicando: Story = { args: { publishing: true, note: "Preços da Black Friday" } }

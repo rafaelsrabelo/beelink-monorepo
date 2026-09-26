@@ -683,6 +683,9 @@ export interface UiMessages {
       intro: string
       checking: string
       none: string
+      /** The check did not answer: the owner may publish without it, or ask again. */
+      checkFailed: string
+      checkRetry: string
       /** Each problem, with `{block}` and `{band}` for where it is. */
       problems: Record<"LINK_TO_MISSING_PRODUCT" | "LINK_TO_MISSING_CATEGORY" | "SHOWCASE_EMPTY" | "BANNER_WITHOUT_IMAGE", string>
       note: string
@@ -696,6 +699,8 @@ export interface UiMessages {
     history: {
       heading: string
       empty: string
+      loadFailed: string
+      retry: string
       /** "Versão {number}". */
       version: string
       live: string
@@ -709,6 +714,8 @@ export interface UiMessages {
       cancel: string
       restoring: string
       failed: string
+      /** "Versão {number} restaurada…": the draft holds it, and the shop has not changed. */
+      restored: string
     }
     tabPages: string
     /** A shop's pages in design mode: the switcher in the bar and the Páginas tab. */

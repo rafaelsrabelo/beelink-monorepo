@@ -82,7 +82,9 @@ export function PublishPage({ slug, page, draft, messages, web }: PublishPagePro
       open={open}
       onOpenChange={(next) => (next ? undefined : dismiss())}
       pageName={page.kind === "HOME" ? messages.design.frame.homePage : page.title}
-      problems={problems.data ? namedProblems(problems.data, draft.saved, messages) : problems.isError ? [] : null}
+      problems={problems.data ? namedProblems(problems.data, draft.saved, messages) : null}
+      checkFailed={problems.isError && !problems.isFetching}
+      onRetryCheck={() => void problems.refetch()}
       note={note}
       onNoteChange={setNote}
       onPublish={publish}

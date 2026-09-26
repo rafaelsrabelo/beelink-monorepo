@@ -3,6 +3,9 @@
 // Next
 import { useRouter } from "next/navigation"
 
+// React
+import { useState } from "react"
+
 // Types
 import type { PageVersionSummary } from "@harness-monorepo/contracts"
 
@@ -16,14 +19,11 @@ import type { WebMessages } from "@/locales"
 import { usePageVersions, useRestoreVersion } from "@/services/page/page-draft-hooks"
 import { pageErrorCopy } from "./page-error-copy"
 
-/** The product's locale, as the rest of the panel writes dates in it. */
-const WHEN = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" })
-
-function versionOf(summary: PageVersionSummary): DesignVersion {
+function versionOf(summary: PageVersionSummary, when: Intl.DateTimeFormat): DesignVersion {
   return {
     id: summary.id,
     number: summary.number,
-    when: WHEN.format(new Date(summary.createdAt)),
+    when: when.format(new Date(summary.createdAt)),
     author: summary.author?.name ?? null,
     note: summary.note,
     live: summary.live,
@@ -47,12 +47,37 @@ export function PageHistory({ slug, pageId, messages, web }: PageHistoryProps) {
   const router = useRouter()
   const versions = usePageVersions(slug, pageId)
   const restore = useRestoreVersion(slug, pageId)
+  const [asking, setAsking] = useState<string | null>(null)
+  // Said until the history moves on: a publish adds a version, and the line would describe the past.
+  const [restored, setRestored] = useState<{ number: number; newest: number | undefined } | null>(null)
+  const when = new Intl.DateTimeFormat(messages.locale, { dateStyle: "short", timeStyle: "short" })
+  const newest = versions.data?.[0]?.number
+
+  const confirm = () => {
+    const version = versions.data?.find((row) => row.id === asking)
+    if (!version) return
+    restore.mutate(version.id, {
+      onSuccess: () => {
+        setAsking(null)
+        setRestored({ number: version.number, newest })
+        router.refresh()
+      },
+    })
+  }
 
   return (
     <DesignVersionList
-      versions={versions.data ? versions.data.map(versionOf) : versions.isError ? [] : null}
-      onRestore={(versionId) => restore.mutate(versionId, { onSuccess: () => router.refresh() })}
+      versions={versions.data ? versions.data.map((row) => versionOf(row, when)) : null}
+      loadFailed={versions.isError}
+      onRetry={() => void versions.refetch()}
+      asking={asking}
+      onAsk={(id) => {
+        restore.reset()
+        setAsking(id)
+      }}
+      onConfirm={confirm}
       restoring={restore.isPending}
+      restored={restored && restored.newest === newest ? restored.number : null}
       error={restore.error ? (pageErrorCopy(restore.error, web) ?? messages.design.history.failed) : null}
       messages={messages}
     />

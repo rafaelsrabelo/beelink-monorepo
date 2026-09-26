@@ -560,6 +560,8 @@ export const ptBR: UiMessages = {
       intro: "A loja passa a mostrar esta página como está agora. Antes, confira o que pode não sair como você espera.",
       checking: "Conferindo a página…",
       none: "Nada a revisar: a página está pronta para ir ao ar.",
+      checkFailed: "Não foi possível conferir a página. Você pode publicar mesmo assim ou tentar de novo.",
+      checkRetry: "Conferir de novo",
       problems: {
         LINK_TO_MISSING_PRODUCT: "{block}, em {band}: um link leva a um produto que não existe mais.",
         LINK_TO_MISSING_CATEGORY: "{block}, em {band}: um link leva a uma categoria que não existe mais.",
@@ -576,6 +578,8 @@ export const ptBR: UiMessages = {
     history: {
       heading: "Versões desta página",
       empty: "Nenhuma versão publicada ainda.",
+      loadFailed: "Não foi possível carregar as versões.",
+      retry: "Tentar de novo",
       version: "Versão {number}",
       live: "No ar",
       by: "{when} · {author}",
@@ -586,6 +590,7 @@ export const ptBR: UiMessages = {
       cancel: "Cancelar",
       restoring: "Restaurando…",
       failed: "Não foi possível restaurar. Tente de novo.",
+      restored: "Versão {number} restaurada no rascunho. Publique para a loja mudar.",
     },
     tabPages: "Páginas",
     pages: {
