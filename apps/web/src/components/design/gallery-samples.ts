@@ -62,7 +62,8 @@ function sample(kind: PublicComponent["kind"], id: string, over: Partial<PublicC
 }
 
 /**
- * The band a card of the gallery draws: the section as it would arrive, filled with the shop's own
+ * The band a card of the gallery draws: the section as it would arrive — its opening layout, in a
+ * contained band — filled with the shop's own
  * things where it has them and a line of sample copy where a section is words. Null where the shop
  * has nothing to fill it with yet — a banner with no picture, a showcase with no product — and the
  * card keeps its wireframe rather than draw an empty band. The strip is drawn apart, above the header.
@@ -70,10 +71,11 @@ function sample(kind: PublicComponent["kind"], id: string, over: Partial<PublicC
 export function sampleSectionOf(entry: GalleryEntry, stock: GalleryStock, messages: UiMessages): PublicSection | null {
   const text = messages.design.gallery.samples
   const id = `sample-${entry.kind}-${entry.across}`
-  const band = (components: PublicComponent[], width: PublicSection["width"] = "CONTAINED"): PublicSection => ({
+  // Contained, as a new band is: what the card shows is what arrives.
+  const band = (components: PublicComponent[]): PublicSection => ({
     id,
     name: null,
-    width,
+    width: "CONTAINED",
     background: null,
     components,
   })
@@ -92,14 +94,14 @@ export function sampleSectionOf(entry: GalleryEntry, stock: GalleryStock, messag
         }
         return sample("BANNER", `${id}-${at}`, { span: SPAN[entry.across], display: "CAROUSEL", items: [slide] })
       })
-      return band(banners, entry.across === 1 ? "FULL" : "CONTAINED")
+      return band(banners)
     }
     case "PRODUCTS":
       return stock.products.length
-        ? band([sample("PRODUCTS", id, { display: "GRID", columns: 4, source: "ALL", items: stock.products.slice(0, 4) })])
+        ? band([sample("PRODUCTS", id, { display: "RAIL", source: "ALL", items: stock.products.slice(0, 6) })])
         : null
     case "CATEGORIES":
-      return stock.hasCategories ? band([sample("CATEGORIES", id, { display: "GRID" })]) : null
+      return stock.hasCategories ? band([sample("CATEGORIES", id, { display: "RAIL" })]) : null
     case "HEADING":
       return band([sample("HEADING", id, { title: text.headingTitle, subtitle: text.headingSubtitle })])
     case "TEXT":
@@ -110,17 +112,24 @@ export function sampleSectionOf(entry: GalleryEntry, stock: GalleryStock, messag
         { id: "pix", icon: "qr-code", title: text.benefits.pix },
         { id: "exchange", icon: "refresh-cw", title: text.benefits.exchange },
       ]
-      return band([sample("BENEFITS", id, { items: rows })], "FULL")
+      return band([sample("BENEFITS", id, { items: rows })])
     }
     case "CONTACT": {
+      // The form a new one opens with (the API's `defaultContactFields`): the name is the form's own
+      // first question, and asked here too it would be asked twice.
       const fields: ContactField[] = [
-        { id: "name", label: text.contact.name, type: "TEXT", required: true },
         { id: "email", label: text.contact.email, type: "EMAIL", required: true },
-        { id: "message", label: text.contact.message, type: "TEXTAREA", required: false },
+        { id: "telefone", label: text.contact.phone, type: "PHONE", required: true },
+        { id: "mensagem", label: text.contact.message, type: "TEXTAREA", required: false },
       ]
       return band([sample("CONTACT", id, { title: text.contactTitle, items: fields })])
     }
     case "ANNOUNCEMENT":
       return null
   }
+}
+
+/** Whether a card has a preview to draw, or keeps its wireframe: decided before any element is made. */
+export function previewable(entry: GalleryEntry, stock: GalleryStock, messages: UiMessages): boolean {
+  return entry.kind === "ANNOUNCEMENT" || sampleSectionOf(entry, stock, messages) !== null
 }

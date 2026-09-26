@@ -449,7 +449,7 @@ export const en: UiMessages = {
         announcement: "Free shipping on orders over R$ 199",
         contactTitle: "Get in touch",
         benefits: { shipping: "Shipping nationwide", pix: "Pix discount", exchange: "Easy exchanges" },
-        contact: { name: "Name", email: "E-mail", message: "Message" },
+        contact: { email: "E-mail", phone: "Phone", message: "Message" },
       },
       placement: {
         between: "Goes between {before} and {after}.",

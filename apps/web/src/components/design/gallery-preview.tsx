@@ -9,9 +9,11 @@ import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview
 import { ShopPaletteProvider } from "@harness-monorepo/ui/blocks/storefront/shop-palette-context"
 import { StorefrontAnnouncement } from "@harness-monorepo/ui/blocks/storefront/storefront-announcement"
 import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { figtree, shopFontStyle } from "@/components/storefront/shop-font"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { sampleSectionOf, type GalleryStock } from "./gallery-samples"
@@ -40,7 +42,12 @@ export function GalleryPreview({ entry, store, categories, stock, colors, messag
   return (
     <DesignPreview device="DESKTOP">
       <ShopPaletteProvider colors={colors}>
-        <div data-shop-window="" style={shopPaletteStyle(colors)} className={section ? "py-8" : undefined}>
+        {/* The shop's typeface too: the gallery is a portal, outside the editor's font wrapper. */}
+        <div
+          data-shop-window=""
+          style={{ ...shopFontStyle, ...shopPaletteStyle(colors), fontFamily: "var(--font-shop, inherit)" }}
+          className={cn(figtree.variable, section && "py-8")}
+        >
           {section ? (
             <StorefrontSections
               sections={[section]}
@@ -49,6 +56,7 @@ export function GalleryPreview({ entry, store, categories, stock, colors, messag
               routes={storefrontRoutes(store)}
               showPrice={store.layoutSettings.showProductPrice ?? true}
               showBadge={store.layoutSettings.showProductBadges ?? true}
+              quickAdd={store.layoutSettings.showQuickAdd ?? true}
               linkComponent={InertLink}
               messages={messages}
             />

@@ -11,7 +11,7 @@ import { placementOf } from "./gallery-placement"
 
 // Band "a" holds one banner (titled "a1"); band "b" a heading and a showcase; band "c" the promises.
 const rows = saved.map(toDraft)
-const said = (at: Parameters<typeof placementOf>[0], page = saved) => placementOf(at, page.map(toDraft), page, ptBR)
+const said = (at: Parameters<typeof placementOf>[0], page = saved) => placementOf(at, page.map(toDraft), page, new Map(), ptBR)
 
 describe("placementOf — where the section goes, in words", () => {
   // A band with one block is called by the block; one of several, by its place.
@@ -37,11 +37,26 @@ describe("placementOf — where the section goes, in words", () => {
     expect(said({ level: "block", sectionId: "b", index: 0 })).toBe("Entra no começo de Faixa 2.")
   })
 
+  // The foot "+" of a band holding one block: the band by its place, not by the block it holds.
+  it("names a one-block band by its place when the section goes inside it", () => {
+    expect(said({ level: "block", sectionId: "a", index: 1 })).toBe("Entra em Faixa 1, depois de a1.")
+  })
+
+  // As the list names it: an untitled showcase is its category.
+  it("names an untitled showcase by its category", () => {
+    const shelves = new Map([["b2", { items: [], sourceCategory: { slug: "calcados", name: "Calçados", description: null } }]])
+    const page = [section("x", [component("x1"), component("b2", { kind: "PRODUCTS", title: null })]), ...saved.slice(1)]
+
+    expect(placementOf({ level: "block", sectionId: "x", index: 2 }, page.map(toDraft), page, shelves, ptBR)).toBe(
+      "Entra em Faixa 1, depois de Calçados.",
+    )
+  })
+
   it("says what it goes beside", () => {
     expect(said({ level: "beside", sectionId: "b", afterId: "b1", span: "HALF", rebalance: [] })).toBe("Entra ao lado de b1.")
   })
 
   it("says nothing while no '+' is open", () => {
-    expect(placementOf(null, rows, saved, ptBR)).toBeUndefined()
+    expect(placementOf(null, rows, saved, new Map(), ptBR)).toBeUndefined()
   })
 })

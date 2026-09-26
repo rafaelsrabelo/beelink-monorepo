@@ -1,7 +1,11 @@
 "use client"
 
+// React
+import { useState } from "react"
+
 // Types
 import type { ComponentKind, PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
+import type { InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 
 // UI
 import { SectionGallery } from "@harness-monorepo/ui/blocks/design/section-gallery"
@@ -13,7 +17,7 @@ import { DesignDeleteConfirm, type PendingDelete } from "./design-delete-confirm
 import type { Shelves } from "./design-draft-preview"
 import { placementOf } from "./gallery-placement"
 import { GalleryPreview } from "./gallery-preview"
-import { stockOf } from "./gallery-samples"
+import { previewable, stockOf } from "./gallery-samples"
 import type { useBlockInsert } from "./use-block-insert"
 import type { useDesignDraft } from "./use-design-draft"
 import type { useLeaveGuard } from "./use-leave-guard"
@@ -29,11 +33,12 @@ export interface DesignScreenDialogsProps {
   /** The kinds the gallery never offers here: the strip a page has once, and what this kind of page cannot hold. */
   takenKinds: readonly ComponentKind[]
   unavailableKinds: readonly ComponentKind[]
-  /** What the gallery's previews draw with: the shop, its categories and showcases, the palette being edited. */
+  /** The showcases' categories and products: the placement line names an untitled one by its category, and the previews draw them. */
+  shelves: Shelves
+  /** What the gallery's previews draw with besides: the shop, its categories, the palette being edited. */
   gallery: {
     store: PublicStore
     categories: readonly PublicProductCategory[]
-    shelves: Shelves
     colors: PublicStore["colors"]
   }
   messages: UiMessages
@@ -52,12 +57,17 @@ export function DesignScreenDialogs({
   adding,
   takenKinds,
   unavailableKinds,
+  shelves,
   gallery,
   messages,
   web,
 }: DesignScreenDialogsProps) {
-  const placement = placementOf(adding.insertAt, draft.rows, draft.saved, messages)
-  const stock = stockOf(gallery.store, gallery.shelves, gallery.categories.length)
+  // The last "+" pressed, kept while the gallery fades out after Adicionar: read from `insertAt`, which
+  // is null by then, its line would turn generic and its rows and shelves change as it disappears.
+  const [shownAt, setShownAt] = useState<InsertAt | null>(null)
+  if (adding.insertAt && adding.insertAt !== shownAt) setShownAt(adding.insertAt)
+  const placement = placementOf(shownAt, draft.rows, draft.saved, shelves, messages)
+  const stock = stockOf(gallery.store, shelves, gallery.categories.length)
 
   return (
     <>
@@ -75,20 +85,24 @@ export function DesignScreenDialogs({
         onOpenChange={(open) => (open ? undefined : adding.setInsertAt(null))}
         // The strip is the one kind a page has once; a site has no catalogue, a shop no form leads.
         taken={[...takenKinds]}
-        unavailable={adding.unavailableWith(unavailableKinds)}
+        unavailable={adding.unavailableWith(unavailableKinds, shownAt)}
         onAdd={adding.insert}
-        offerRows={adding.insertAt?.level === "band"}
+        offerRows={shownAt?.level === "band"}
         {...(placement ? { placement } : {})}
-        renderPreview={(entry) => (
-          <GalleryPreview
-            entry={entry}
-            store={gallery.store}
-            categories={gallery.categories}
-            stock={stock}
-            colors={gallery.colors}
-            messages={messages}
-          />
-        )}
+        // Null where the shop has nothing to draw it with, so the card keeps its wireframe: an element that
+        // renders nothing would still be a preview, and an empty one.
+        renderPreview={(entry) =>
+          previewable(entry, stock, messages) ? (
+            <GalleryPreview
+              entry={entry}
+              store={gallery.store}
+              categories={gallery.categories}
+              stock={stock}
+              colors={gallery.colors}
+              messages={messages}
+            />
+          ) : null
+        }
         pending={adding.inserting}
         messages={messages}
       />

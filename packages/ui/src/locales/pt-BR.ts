@@ -449,7 +449,7 @@ export const ptBR: UiMessages = {
         announcement: "Frete grátis nas compras acima de R$ 199",
         contactTitle: "Fale com a gente",
         benefits: { shipping: "Frete para todo o Brasil", pix: "Desconto no Pix", exchange: "Troca fácil" },
-        contact: { name: "Nome", email: "E-mail", message: "Mensagem" },
+        contact: { email: "E-mail", phone: "Telefone", message: "Mensagem" },
       },
       placement: {
         between: "Entra entre {before} e {after}.",

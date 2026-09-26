@@ -96,6 +96,17 @@ describe("SectionGallery — the search and the place", () => {
     expect(screen.getByText("Nenhuma seção com esse nome.")).toBeInTheDocument()
   })
 
+  // The shelf still marked as selected leaves the search too, not only the others.
+  it("leaves the search for the shelf pressed, the selected one included", async () => {
+    gallery()
+
+    await userEvent.type(screen.getByRole("searchbox"), "carrossel")
+    await userEvent.click(screen.getByRole("tab", { name: /Recomendadas/ }))
+
+    expect(screen.getByRole("searchbox")).toHaveValue("")
+    expect(screen.queryByRole("region", { name: "Resultados" })).not.toBeInTheDocument()
+  })
+
   it("says where the section goes", () => {
     gallery({ placement: "Entra entre Capa e Produtos." })
 
@@ -110,6 +121,22 @@ describe("SectionGallery — the search and the place", () => {
     expect(renderPreview.mock.calls.map(([entry]) => entry.kind)).not.toContain("HEADING")
     await userEvent.click(screen.getByRole("tab", { name: /Conteúdo/ }))
     expect(renderPreview.mock.calls.map(([entry]) => entry.kind)).toContain("HEADING")
+  })
+
+  // A preview is the shop's renderer: a contact form in it must not be a tab stop nobody can see.
+  it("takes the previews out of the tab order and away from assistive technology", async () => {
+    gallery({ renderPreview: () => <input aria-label="Seu nome" /> })
+
+    const field = screen.getAllByLabelText("Seu nome", { selector: "input" })[0]!
+    expect(field.closest("[inert]")).not.toBeNull()
+    await expectNoA11yViolations(screen.getByRole("dialog"))
+  })
+
+  // No preview to draw — a shop with no picture yet — and the card keeps its wireframe, never an empty box.
+  it("keeps a card's wireframe where the screen has no preview for it", () => {
+    gallery({ renderPreview: () => null })
+
+    for (const card of cards()) expect(card.querySelector("[inert]")).not.toBeEmptyDOMElement()
   })
 
   it("speaks the panel's language", () => {

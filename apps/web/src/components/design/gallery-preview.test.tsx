@@ -1,6 +1,6 @@
 // Libs
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 // Types
 import type { PublicStore } from "@harness-monorepo/contracts"
@@ -10,6 +10,9 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
 import { GalleryPreview } from "./gallery-preview"
+
+// next/font runs only in Next's compiler; the preview needs the class and the variable, not the font.
+vi.mock("@/components/storefront/shop-font", () => ({ figtree: { variable: "font-figtree" }, shopFontStyle: {} }))
 
 const store = {
   slug: "loja",
@@ -35,7 +38,8 @@ describe("GalleryPreview", () => {
     )
 
     expect(screen.getByText("Novidades da semana")).toBeInTheDocument()
-    expect(document.querySelector("[data-shop-window]")).not.toBeNull()
+    // In the shop's typeface: the gallery is a portal, outside the editor's font wrapper.
+    expect(document.querySelector("[data-shop-window]")).toHaveClass("font-figtree")
   })
 
   it("draws the strip for the strip", () => {

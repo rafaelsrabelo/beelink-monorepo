@@ -585,7 +585,7 @@ export interface UiMessages {
         announcement: string
         contactTitle: string
         benefits: { shipping: string; pix: string; exchange: string }
-        contact: { name: string; email: string; message: string }
+        contact: { email: string; phone: string; message: string }
       }
       /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
       placement: {

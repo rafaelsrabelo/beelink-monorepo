@@ -89,7 +89,8 @@ export function SectionGallery({
     cards.length === 0 ? (
       <p className="text-muted-foreground py-10 text-center text-sm">{text.empty}</p>
     ) : (
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      // Columns by the pane's width, not the window's: beside the shelves, a 640px window leaves the grid 360px.
+      <ul className="grid gap-3 @md:grid-cols-2 @3xl:grid-cols-3">
         {cards.map((entry) => (
           <SectionGalleryCard
             key={`${entry.kind}-${entry.across}`}
@@ -140,7 +141,13 @@ export function SectionGallery({
               className="h-auto w-full justify-start overflow-x-auto bg-transparent p-0 sm:flex-col sm:items-stretch sm:overflow-visible"
             >
               {shelves.map(({ shelf: value, entries: inShelf }) => (
-                <TabsTrigger key={value} value={value} className="shrink-0 justify-between gap-2 px-3 sm:w-full">
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  // A shelf pressed leaves the search, the one already selected included.
+                  onClick={() => setQuery("")}
+                  className="shrink-0 justify-between gap-2 px-3 sm:w-full"
+                >
                   {text.categories[value]}
                   <span className="text-muted-foreground text-xs tabular-nums">{inShelf.length}</span>
                 </TabsTrigger>
@@ -148,7 +155,7 @@ export function SectionGallery({
             </TabsList>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <div className="@container min-h-0 flex-1 overflow-y-auto p-4">
             {searching ? (
               <section aria-label={text.results} className="flex flex-col gap-3">
                 <h3 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">{text.results}</h3>
