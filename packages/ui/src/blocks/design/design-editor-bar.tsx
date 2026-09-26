@@ -4,14 +4,14 @@
 import type { MouseEvent, ReactNode } from "react"
 
 // Libs
-import { ArrowLeftIcon, ExternalLinkIcon, ListTreeIcon, RotateCcwIcon, SlidersHorizontalIcon } from "lucide-react"
+import { ArrowLeftIcon, ExternalLinkIcon, ListTreeIcon, SlidersHorizontalIcon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
@@ -29,18 +29,23 @@ export interface DesignEditorBarProps {
   pageSwitcher?: ReactNode
   device: PreviewDevice
   onDeviceChange: (device: PreviewDevice) => void
-  /** How many writes Publish would send. Zero reads as published, and leaves nothing to discard. */
-  changes: number
+  /**
+   * Whether the draft saved on the server differs from what the shop serves — every change is saved
+   * as it is made, and none is in the shop until Publicar. Undefined while that is not known yet:
+   * the status then says nothing rather than "Publicado".
+   */
+  unpublished?: boolean
+  /** A change is on its way to the server: said first, and Publicar waits for it. */
+  saving?: boolean
   /**
    * False on a landing that is not up: the status says so, and Publicar puts the page up — with
    * nothing arranged to send, it is still the one thing left to do.
    */
   pagePublished?: boolean
-  /** Why the last Publicar did not land, said in the status's place until the next one. */
+  /** Why the last save or Publicar did not land, said in the status's place until the next one. */
   publishError?: string | null
-  publishing: boolean
+  publishing?: boolean
   onPublish: () => void
-  onDiscard: () => void
   /** The page in the shop window, opened in a tab of its own. Null on a page nobody is served yet. */
   shopHref: string | null
   /** Open the side columns as drawers; the buttons only exist where the columns do not fit. */
@@ -70,12 +75,12 @@ export function DesignEditorBar({
   pageSwitcher,
   device,
   onDeviceChange,
-  changes,
+  unpublished,
+  saving = false,
   pagePublished = true,
   publishError = null,
-  publishing,
+  publishing = false,
   onPublish,
-  onDiscard,
   shopHref,
   onOpenStructure,
   onOpenInspector,
@@ -83,9 +88,17 @@ export function DesignEditorBar({
   messages = defaultMessages,
 }: DesignEditorBarProps) {
   const text = messages.design.frame
-  const changed = changes > 0
-  const counted = changes === 1 ? text.draftOne : format(text.draft, { count: String(changes) })
-  const status = !pagePublished ? messages.design.pages.notPublished : changed ? counted : text.published
+  const known = unpublished !== undefined
+  const pending = unpublished === true || saving || !pagePublished
+  const status = saving
+    ? text.saving
+    : !pagePublished
+      ? messages.design.pages.notPublished
+      : !known
+        ? ""
+        : unpublished
+          ? messages.design.unpublished
+          : text.published
 
   return (
     <header
@@ -134,7 +147,7 @@ export function DesignEditorBar({
           </span>
         ) : null}
         <span role="status" className={cn("text-header-foreground/80 shrink-0 items-center gap-1.5 px-1 text-sm", publishError ? "hidden" : "flex")}>
-          <span aria-hidden="true" className={cn("size-2 rounded-full", changed || !pagePublished ? "bg-header-pending" : "bg-header-foreground/40")} />
+          <span aria-hidden="true" className={cn("size-2 rounded-full", pending ? "bg-header-pending" : "bg-header-foreground/40")} />
           <span className="sr-only lg:not-sr-only">{status}</span>
         </span>
 
@@ -153,16 +166,10 @@ export function DesignEditorBar({
           </Link>
         ) : null}
 
-        {changed ? (
-          <Button type="button" variant="ghost" className={cn("shrink-0 px-2 sm:px-2.5", ON_DARK)} disabled={publishing} onClick={onDiscard}>
-            <RotateCcwIcon aria-hidden="true" className="size-4 sm:hidden" />
-            <span className="sr-only sm:not-sr-only">{messages.design.discard}</span>
-          </Button>
-        ) : null}
         <Button
           type="button"
           className="bg-header-foreground text-header hover:bg-header-foreground/90 h-9 shrink-0 px-3 font-semibold sm:px-4"
-          disabled={(pagePublished && !changed) || publishing}
+          disabled={!pending || publishing || saving}
           onClick={onPublish}
         >
           {publishing ? messages.design.publishing : pagePublished ? messages.design.publish : messages.design.pages.publishPage}

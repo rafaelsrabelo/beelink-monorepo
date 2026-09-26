@@ -74,7 +74,11 @@ function build(
       create: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => pageRow(data)),
       update: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => pageRow(data)),
     },
-    storeSection: { create: vi.fn().mockResolvedValue({}) },
+    storeSection: { create: vi.fn().mockResolvedValue({}), findMany: vi.fn().mockResolvedValue([]) },
+    storePageVersion: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ id: 'v1', number: 1, note: null, createdAt: AT, author: null }),
+    },
     $queryRaw: vi.fn().mockResolvedValue([]),
     $transaction: vi.fn(),
   } as unknown as PrismaService;
@@ -185,10 +189,15 @@ describe('PagesService.update', () => {
       status: 'PUBLISHED',
       publishedAt: expect.any(Date),
     });
+    // Up means the draft as it is now: it is frozen as the landing's next version on the way.
+    expect(going.prisma.storePageVersion.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ pageId: LANDING, number: 1, authorId: 'user-1' }) }),
+    );
 
     const up = build({ page: { kind: 'LANDING', status: 'PUBLISHED' } });
     await up.service.update('lessari', 'user-1', LANDING, { status: 'PUBLISHED' } as UpdatePageDto);
     expect(vi.mocked(up.prisma.storePage.update).mock.calls[0]![0].data).not.toHaveProperty('publishedAt');
+    expect(up.prisma.storePageVersion.create).not.toHaveBeenCalled();
   });
 
   it('clears an SEO field sent as null, and leaves one it is not sent alone', async () => {

@@ -8,7 +8,8 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 import type { CreateLandingPayload, PageSlugAvailability, StorePage, UpdatePagePayload } from "@harness-monorepo/contracts"
 
 // App
-import { createPage, fetchPageSlugAvailability, fetchPages, updatePage } from "./page-requests"
+import { sectionKeys } from "./page-hooks"
+import { createPage, fetchPageSlugAvailability, fetchPages, updatePage } from "./store-page-requests"
 
 /** Keys built from their inputs at call time, as `sectionKeys` are (docs/ai-rules/state-and-data.md). */
 export const pageKeys = {
@@ -41,7 +42,13 @@ export function useUpdatePage(slug: string): UseMutationResult<StorePage, Error,
 
   return useMutation({
     mutationFn: ({ pageId, payload }: UpdatePageVariables) => updatePage(slug, pageId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: pageKeys.list(slug) }),
+    // A status change freezes a version or takes the live one down: the draft's "not published"
+    // and the history are the shop's section reads, and are read again with the list.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: pageKeys.list(slug) }),
+        queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
+      ]),
   })
 }
 

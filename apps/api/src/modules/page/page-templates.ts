@@ -13,8 +13,8 @@ export const PAGE_TEMPLATE_IDS = ['servicos-b2b'] as const satisfies readonly Pa
  * what seeds it, the way `defaultPage` seeds a shop.
  *
  * This first one is the structure the briefing of a transport company's landing page was planned
- * from: a cover, the services, how it works, and a form to get in touch — drawn with the kinds the
- * page has today. The richer pieces (numbers, steps, testimonials) replace these bands as they
+ * from: a cover, the services, how it works, the questions a client asks first, and a form to get in
+ * touch — drawn with the kinds the page has today. The richer pieces (numbers, steps, testimonials) replace these bands as they
  * arrive, one delivery at a time, and the template grows with them.
  */
 const TEMPLATES: Record<PageTemplateId, SeededBand[]> = {
@@ -77,7 +77,24 @@ const TEMPLATES: Record<PageTemplateId, SeededBand[]> = {
       ],
     },
     {
-      section: { name: 'Contato', width: 'CONTAINED', position: 4, isActive: true },
+      section: { name: 'Dúvidas', width: 'CONTAINED', position: 4, isActive: true },
+      components: [
+        {
+          kind: 'FAQ',
+          title: 'Perguntas frequentes',
+          display: 'ACCORDION',
+          items: [
+            { id: 'prazo', question: 'Qual é o prazo de atendimento?', answer: 'Conte em quanto tempo vocês respondem e começam um trabalho.' },
+            { id: 'regiao', question: 'Vocês atendem a minha região?', answer: 'Diga as cidades e os estados em que a empresa atua.' },
+            { id: 'orcamento', question: 'Como peço um orçamento?', answer: 'Preencha o formulário abaixo e respondemos em até um dia útil.' },
+          ],
+          position: 0,
+          isActive: true,
+        },
+      ],
+    },
+    {
+      section: { name: 'Contato', width: 'CONTAINED', position: 5, isActive: true },
       components: [
         {
           kind: 'CONTACT',

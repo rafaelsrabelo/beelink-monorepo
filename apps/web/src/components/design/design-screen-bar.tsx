@@ -1,8 +1,5 @@
 "use client"
 
-// Next
-import { useRouter } from "next/navigation"
-
 // React
 import type { MouseEvent } from "react"
 
@@ -18,7 +15,9 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { AppLink } from "@/components/app-link"
 import type { WebMessages } from "@/locales"
-import { usePages, useUpdatePage } from "@/services/page/store-pages-hooks"
+import { usePageDraft } from "@/services/page/page-draft-hooks"
+import { usePages } from "@/services/page/store-pages-hooks"
+import { useDesignPages } from "@/stores/design-pages"
 import { pageRowsOf, shopHrefOf } from "./design-pages"
 import { pageErrorCopy } from "./page-error-copy"
 import type { useDesignDraft } from "./use-design-draft"
@@ -26,25 +25,26 @@ import type { useDesignDraft } from "./use-design-draft"
 export interface DesignScreenBarProps {
   slug: string
   shopName: string
-  /** The landing being edited, as the server read it. Null on the home. */
-  page: StorePage | null
-  draft: Pick<ReturnType<typeof useDesignDraft>, "changeCount" | "publishing" | "publish" | "discard">
+  /** The page being edited — the home or a landing — as the server read it. */
+  page: StorePage
+  draft: Pick<ReturnType<typeof useDesignDraft>, "saving" | "saveError">
   /** Asks before an unpublished arrangement is left behind, on every way out of this page. */
   onLeave: (event: MouseEvent<HTMLAnchorElement>) => void
   device: PreviewDevice
   onDeviceChange: (device: PreviewDevice) => void
   onOpenStructure: () => void
   onOpenInspector: () => void
-  onCreatePage?: () => void
   messages: UiMessages
   web: WebMessages
 }
 
 /**
- * The editor's bar, for whichever page is open: its name as the way to another page, and Publicar.
+ * The editor's bar, for whichever page is open: its name as the way to another page, whether what
+ * was done is saved and published, and Publicar.
  *
- * On a landing that is not up, Publicar sends what was arranged and then puts the page up — the one
- * press the shopkeeper expects of the word — and reloads the screen's read so the bar says so.
+ * Every change is saved to the page's draft on the server as it is made; Publicar opens its dialog,
+ * which lists what the page would serve that the owner may not mean, and then freezes the draft as
+ * the page's next version — what the shop serves, and what puts a landing up.
  */
 export function DesignScreenBar({
   slug,
@@ -56,27 +56,20 @@ export function DesignScreenBar({
   onDeviceChange,
   onOpenStructure,
   onOpenInspector,
-  onCreatePage,
   messages,
   web,
 }: DesignScreenBarProps) {
-  const router = useRouter()
+  const openNew = useDesignPages((state) => state.openNew)
+  const openPublish = useDesignPages((state) => state.openPublish)
   const pages = usePages(slug)
-  const update = useUpdatePage(slug)
+  const saved = usePageDraft(slug, page.id)
   const homeTitle = messages.design.frame.homePage
-  const pageName = page?.title ?? homeTitle
-  const published = !page || page.status === "PUBLISHED"
+  const pageName = page.kind === "HOME" ? homeTitle : page.title
+  const published = page.status === "PUBLISHED"
   const links = pageRowsOf(slug, pages.data ?? [], homeTitle).filter((row) => row.status !== "ARCHIVED")
-  const currentId = page?.id ?? pages.data?.find((row) => row.kind === "HOME")?.id ?? ""
 
-  const publish = () => {
-    update.reset()
-    draft.publish(
-      page && !published
-        ? () => update.mutate({ pageId: page.id, payload: { status: "PUBLISHED" } }, { onSuccess: () => router.refresh() })
-        : undefined,
-    )
-  }
+  const errorOf = (error: Error | null) => (error ? (pageErrorCopy(error, web) ?? messages.design.pages.publishFailed) : null)
+
 
   return (
     <DesignEditorBar
@@ -87,23 +80,24 @@ export function DesignScreenBar({
       pageSwitcher={
         <DesignPageSwitcher
           pages={links}
-          currentId={currentId}
+          currentId={page.id}
           currentTitle={pageName}
           onNavigate={onLeave}
-          {...(onCreatePage ? { onCreate: onCreatePage } : {})}
+          onCreate={openNew}
           linkComponent={AppLink}
           messages={messages}
         />
       }
       device={device}
       onDeviceChange={onDeviceChange}
-      changes={draft.changeCount}
+      saving={draft.saving}
+      // Not known until the draft is read; a read that failed leaves Publicar to its own check.
+      unpublished={saved.isError ? true : saved.data?.hasUnpublishedChanges}
       pagePublished={published}
-      publishError={update.error ? (pageErrorCopy(update.error, web) ?? messages.design.pages.publishFailed) : null}
-      publishing={draft.publishing || update.isPending}
-      onPublish={publish}
-      onDiscard={draft.discard}
-      shopHref={page ? shopHrefOf(slug, page) : `/${slug}`}
+      publishError={errorOf(draft.saveError)}
+      // Publicar asks first, in its own dialog (`PublishPage`), which also carries its progress.
+      onPublish={openPublish}
+      shopHref={shopHrefOf(slug, page)}
       onOpenStructure={onOpenStructure}
       onOpenInspector={onOpenInspector}
       linkComponent={AppLink}

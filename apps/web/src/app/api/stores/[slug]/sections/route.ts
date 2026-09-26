@@ -4,7 +4,6 @@ import type { NextRequest } from "next/server"
 
 // App
 import { forwardSignedIn, pageQueryOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
-import { revalidateStore } from "@/lib/revalidate"
 
 /**
  * A page's bands, hidden ones included: the home's, or the page `?pageId=` names.
@@ -43,10 +42,6 @@ export async function POST(
     method: "POST",
     body: (await readJsonBody(request)) ?? {},
   })
-
-  // A banner rides on the shop, which the window caches under this shop's tag. Without this, a
-  // shopkeeper saves a poster and then looks at their own landing page and does not see it.
-  if (status === 201) revalidateStore(slug)
 
   return NextResponse.json(payload, { status })
 }
