@@ -7,6 +7,7 @@ import type {
   ComponentKind,
   DeviceVisibility,
   PageErrorCode,
+  PageKind,
 } from '@harness-monorepo/contracts';
 
 import type { Prisma } from '../../generated/prisma/client.js';
@@ -125,7 +126,8 @@ export class PageRules {
   async refuseRequired(storeId: string, kind: ComponentKind, db: Db = this.prisma): Promise<void> {
     if (!(REQUIRED_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) return;
 
-    const inShop = await db.storeComponent.count({ where: { storeId, kind } });
+    // The home's: a landing's showcases come and go with the landing, and the rule is the shop's front page.
+    const inShop = await db.storeComponent.count({ where: { storeId, kind, section: { page: { kind: 'HOME' } } } });
 
     if (inShop <= 1) {
       throw new BadRequestException(
@@ -141,7 +143,7 @@ export class PageRules {
     if (held === 0) return;
 
     const elsewhere = await db.storeComponent.count({
-      where: { storeId, kind: required, sectionId: { not: sectionId } },
+      where: { storeId, kind: required, sectionId: { not: sectionId }, section: { page: { kind: 'HOME' } } },
     });
 
     if (elsewhere === 0) {
@@ -196,8 +198,8 @@ export class PageRules {
     }
   }
 
-  /** A band that exists but belongs to another shop answers 404: this shop does not have one. */
-  async ownedSection(storeId: string, sectionId: string, db: Db = this.prisma): Promise<void> {
+  /** A band that exists but belongs to another shop answers 404: this shop does not have one. Returns its page. */
+  async ownedSection(storeId: string, sectionId: string, db: Db = this.prisma): Promise<{ pageId: string; pageKind: PageKind }> {
     // An id that is not a uuid cannot name a row, and Postgres answers one in a uuid column with an
     // error that left as a 500. It is the same answer as a band that is not here.
     if (!UUID.test(sectionId)) {
@@ -206,12 +208,14 @@ export class PageRules {
 
     const row = await db.storeSection.findUnique({
       where: { id: sectionId },
-      select: { storeId: true },
+      select: { storeId: true, pageId: true, page: { select: { kind: true } } },
     });
 
     if (!row || row.storeId !== storeId) {
       throw new NotFoundException(pageError('SECTION_NOT_FOUND', `No band ${sectionId} in this shop`));
     }
+
+    return { pageId: row.pageId, pageKind: row.page.kind };
   }
 
   /** Returns what it found, so a caller that has to reason about it needs no second read. */
@@ -219,21 +223,21 @@ export class PageRules {
     storeId: string,
     componentId: string,
     db: Db = this.prisma,
-  ): Promise<{ kind: ComponentKind; sectionId: string }> {
+  ): Promise<{ kind: ComponentKind; sectionId: string; pageId: string; pageKind: PageKind }> {
     if (!UUID.test(componentId)) {
       throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
     }
 
     const row = await db.storeComponent.findUnique({
       where: { id: componentId },
-      select: { storeId: true, kind: true, sectionId: true },
+      select: { storeId: true, kind: true, sectionId: true, section: { select: { pageId: true, page: { select: { kind: true } } } } },
     });
 
     if (!row || row.storeId !== storeId) {
       throw new NotFoundException(pageError('COMPONENT_NOT_FOUND', `No component ${componentId} in this shop`));
     }
 
-    return { kind: row.kind, sectionId: row.sectionId };
+    return { kind: row.kind, sectionId: row.sectionId, pageId: row.section.pageId, pageKind: row.section.page.kind };
   }
 
   /**

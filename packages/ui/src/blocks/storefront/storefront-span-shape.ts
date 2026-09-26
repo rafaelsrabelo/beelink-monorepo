@@ -27,3 +27,22 @@ export const SPAN_TITLE: Record<StorefrontSpan, string> = {
   HALF: "text-lg",
   THIRD: "text-lg",
 }
+
+/**
+ * Words beside a picture where the slice holds both: a whole band, or two thirds of a wide one.
+ * Stacked everywhere else, the picture first. A "Dividida" banner and an image with text share it.
+ */
+export const SIDE_BY_SIDE: Record<StorefrontSpan, string> = {
+  FULL: "shop-md:grid-cols-2 shop-md:gap-10",
+  TWO_THIRDS: "shop-lg:grid-cols-2",
+  HALF: "",
+  THIRD: "",
+}
+
+/** Where the picture moves to the right once it sits beside the words; the same breakpoint as above. */
+export const PICTURE_LAST: Record<StorefrontSpan, string> = {
+  FULL: "shop-md:order-last",
+  TWO_THIRDS: "shop-lg:order-last",
+  HALF: "",
+  THIRD: "",
+}

@@ -4,7 +4,6 @@ import type { NextRequest } from "next/server"
 
 // App
 import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
-import { revalidateStore } from "@/lib/revalidate"
 
 /**
  * One component into another band, or to another place in its own. Answered with the whole page:
@@ -23,8 +22,6 @@ export async function PUT(
     method: "PUT",
     body: (await readJsonBody(request)) ?? {},
   })
-
-  if (status === 200) revalidateStore(slug)
 
   return NextResponse.json(payload, { status })
 }

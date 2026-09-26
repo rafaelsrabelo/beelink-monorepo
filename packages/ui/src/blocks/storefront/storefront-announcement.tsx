@@ -8,6 +8,20 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 
+/** The strip as a window is handed it: what the shop is shouting this week — its title, and a second line. */
+export interface StorefrontAnnouncementStrip {
+  left: string
+  /** A second message beside the first, as the design draws them; never joined into one sentence. */
+  right?: string
+  /** The strip's own colour, which is its band's. Null is the page's ink, as it always was. */
+  background?: string | null
+  /** Already resolved by the API. Null goes nowhere; the strip is then a poster, not a link. */
+  href?: string | null
+  external?: boolean
+  /** "Fixa" or "Rolando", the strip's layout. Unset draws as it always did. */
+  motion?: "STATIC" | "MARQUEE"
+}
+
 export interface StorefrontAnnouncementProps {
   /** What the shop is shouting this week, one message per entry. Empty entries are dropped. */
   messages: readonly string[]
