@@ -292,3 +292,40 @@ describe("BandArrangement", () => {
     await expectNoA11yViolations(container)
   })
 })
+
+describe("BandArrangement — a block kept for one screen", () => {
+  // Said on the row, so the structure explains why the phone's preview has no such block.
+  it("says so on the row", () => {
+    renderBands({
+      bands: [
+        {
+          id: "band-9",
+          background: null,
+          isActive: true,
+          components: [
+            { id: "9", kind: "HEADING", title: "Frete", span: "HALF", isActive: true, visibleOn: "PHONE" },
+            { id: "10", kind: "TEXT", title: "Troca", span: "HALF", isActive: true, visibleOn: "DESKTOP" },
+          ],
+        },
+      ],
+    })
+
+    expect(screen.getByText("Título · Metade · Só no celular")).toBeInTheDocument()
+    expect(screen.getByText("Parágrafo · Metade · Só no computador")).toBeInTheDocument()
+  })
+})
+
+describe("BandArrangement — Pôr ao lado for a block kept for the phone", () => {
+  // Beside is the computer's row: a block that is not drawn there would only squeeze the one above.
+  it("does not offer to put a phone-only block beside the band above", () => {
+    renderBands({
+      onJoinAbove: vi.fn(),
+      bands: [
+        { id: "up", background: null, isActive: true, components: [{ id: "u", kind: "BANNER", title: "Capa", span: "FULL", isActive: true }] },
+        { id: "down", background: null, isActive: true, components: [{ id: "d", kind: "BANNER", title: "Só celular", span: "FULL", isActive: true, visibleOn: "PHONE" }] },
+      ],
+    })
+
+    expect(screen.queryByRole("button", { name: /Pôr ao lado de/ })).not.toBeInTheDocument()
+  })
+})

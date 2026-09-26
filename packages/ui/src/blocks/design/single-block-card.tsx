@@ -99,6 +99,8 @@ export function SingleBlockCard({
 
         <button
           type="button"
+          // The keys' stop for the card is its band's: the band and its one block are one row.
+          data-design-node={band.id}
           onClick={() => onEdit(block.id)}
           className="focus-visible:ring-ring flex min-w-0 flex-1 flex-col rounded-md px-1 text-left outline-none hover:underline focus-visible:ring-2"
         >

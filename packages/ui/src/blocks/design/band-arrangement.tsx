@@ -139,6 +139,8 @@ export function BandArrangement({
     const [only, second] = band?.components ?? []
     if (!onJoinAbove || !above || !band || !only || second || !hasSpan(only)) return null
     if (!band.isActive || !only.isActive || !above.isActive || above.components.some((c) => !hasSpan(c))) return null
+    // Beside is the computer's row, and a block kept for the phone takes no room in it.
+    if (only.visibleOn === "PHONE") return null
 
     const last = drawnOf(above.components).at(-1)
     const room = last ? besideInBand(above.components, last.id) : null

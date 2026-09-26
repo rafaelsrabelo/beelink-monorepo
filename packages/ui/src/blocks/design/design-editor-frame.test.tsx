@@ -93,6 +93,20 @@ describe("DesignEditorFrame", () => {
     expect(screen.queryByRole("button", { name: "Fechar" })).not.toBeInTheDocument()
   })
 
+  // A move or a choice made by the keys is said aloud, once, from one place.
+  it("says what the editor did in a status line, and hears its keys", async () => {
+    screenIs(true)
+    const onKeyDown = vi.fn()
+    renderFrame({ status: "Banner 1 agora está na posição 2.", onKeyDown, preview: <button type="button">Banner 1</button> })
+
+    expect(screen.getByRole("status")).toHaveTextContent("Banner 1 agora está na posição 2.")
+    // Spelled out, so a modal drawer, which hides everything outside it but `[aria-live]`, keeps it heard.
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite")
+    screen.getByRole("button", { name: "Banner 1" }).focus()
+    await userEvent.keyboard("{ArrowDown}")
+    expect(onKeyDown).toHaveBeenCalled()
+  })
+
   it("closes its drawers when the screen widens, so they cannot pop back up", () => {
     screenIs(true)
     const onStructureOpenChange = vi.fn()

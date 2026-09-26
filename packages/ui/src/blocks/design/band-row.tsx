@@ -145,6 +145,7 @@ export function BandRow({
 
             <button
               type="button"
+              data-design-node={band.id}
               onClick={() => onEditBand(band.id)}
               className="focus-visible:ring-ring flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 text-left outline-none hover:underline focus-visible:ring-2"
             >

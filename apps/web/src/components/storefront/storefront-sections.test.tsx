@@ -114,6 +114,96 @@ describe("StorefrontSections — a band is a grid", () => {
 
     expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
   })
+
+  it("draws a FAQ's questions with their answers in the page, and leaves out one with none", () => {
+    const faq: PublicComponent = {
+      ...heading("faq", "FULL"),
+      kind: "FAQ",
+      title: "Dúvidas",
+      display: "ACCORDION",
+      items: [{ id: "q", question: "Qual o prazo?", answer: "Três dias." }],
+    }
+    const { container } = draw([band([faq]), { ...band([{ ...faq, id: "vazio", items: [] }]), id: "outra" }])
+
+    expect(screen.getByText("Qual o prazo?").closest("summary")).toBeInTheDocument()
+    expect(container).toHaveTextContent("Três dias.")
+    expect(container.querySelectorAll("details")).toHaveLength(1)
+  })
+
+  it("draws a call to action edge to edge in a full band, with its button, and none where it leads nowhere", () => {
+    const cta: PublicComponent = {
+      ...heading("cta", "FULL"),
+      kind: "CALL_TO_ACTION",
+      title: "Garanta o seu",
+      display: "BAND",
+      items: [{ id: "b", label: "Comprar agora", href: "/loja/produtos/whey", external: false }],
+    }
+    const { container } = draw([band([cta], "FULL")])
+
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/produtos/whey")
+    expect(container.querySelector("[data-span]")!.className).not.toContain("px-")
+
+    // As a card it sits inside the page's margins, as every block of words does.
+    draw([{ ...band([{ ...cta, id: "card", display: "CARD" }], "FULL"), id: "outra" }])
+    expect(container.ownerDocument.querySelectorAll("[data-span]")[1]!.className).toContain("px-")
+  })
+
+  it("draws an image with text, and leaves out one with neither picture nor words", () => {
+    const block: PublicComponent = {
+      ...heading("img", "FULL"),
+      kind: "IMAGE_TEXT",
+      title: "Feito à mão",
+      display: "IMAGE_RIGHT",
+      items: [{ id: "m", imageUrl: "https://cdn/a.png", alt: "Uma bolsa", button: null }],
+    }
+    draw([band([block]), { ...band([{ ...block, id: "vazio", title: null, items: [] }]), id: "outra" }])
+
+    expect(screen.getByRole("img", { name: "Uma bolsa" })).toBeInTheDocument()
+    expect(screen.getAllByRole("heading", { name: "Feito à mão" })).toHaveLength(1)
+  })
+
+  it("draws a featured product with a button that fills the cart, or leads to its page where no cart is reachable", () => {
+    const card = { id: "p", slug: "whey", name: "Whey Baunilha", priceCents: 12990, compareAtPriceCents: null, imageUrl: null, categorySlug: null, priceRange: { minCents: 12990, maxCents: 12990 }, hasOptions: false, soldOut: false }
+    const featured: PublicComponent = { ...heading("destaque", "FULL"), kind: "FEATURED_PRODUCT", title: "Oferta", display: "IMAGE_LEFT", items: [card] }
+
+    const { unmount } = draw([band([featured])])
+    expect(screen.getByRole("heading", { level: 3, name: "Whey Baunilha" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/carrinho")
+    unmount()
+
+    render(
+      <StorefrontSections sections={[band([featured])]} primary="" categories={[]} routes={routes} showPrice showBadge cartReachable={false} messages={ptBR} />,
+    )
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/produtos/whey")
+  })
+
+  // A cached page, or a newer API, can serve a kind this build has never heard of. It used to fall
+  // through to a shelf, which read its items as product cards.
+  it("draws nothing for a kind this build does not know, and drops a band left with nothing", () => {
+    const unknown = { ...heading("novo", "FULL"), kind: "SOMETHING_NEW", items: [{ id: "q1", question: "?" }] } as unknown as PublicComponent
+    const { container } = draw([band([unknown]), { ...band([poster("a", "FULL")]), id: "outra" }])
+
+    expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
+    expect(screen.getAllByText("Pôster a").length).toBeGreaterThan(0)
+  })
+
+  it("draws nothing for a kind it does not know even in design mode", () => {
+    const unknown = { ...heading("novo", "FULL"), kind: "SOMETHING_NEW" } as unknown as PublicComponent
+    const { container } = render(
+      <StorefrontSections
+        sections={[band([unknown, heading("t", "FULL")])]}
+        primary=""
+        categories={[]}
+        routes={routes}
+        showPrice
+        showBadge
+        renderBlock={(_component, block) => block}
+        messages={ptBR}
+      />,
+    )
+
+    expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
+  })
 })
 
 /**
@@ -305,6 +395,13 @@ describe("StorefrontSections — the categories are a rail or a grid", () => {
     expect(container.querySelector("ul")!.className).toContain("grid")
     expect(screen.queryByRole("group")).not.toBeInTheDocument()
   })
+
+  it("draws the categories as chips when told to", () => {
+    drawWith(categoriesBlock({ display: "CHIPS" }))
+
+    expect(screen.getByRole("link", { name: "Blusas" })).toBeInTheDocument()
+    expect(screen.getByRole("list", { name: "Categorias" })).toBeInTheDocument()
+  })
 })
 
 /**
@@ -396,5 +493,38 @@ describe("StorefrontSections — design mode's room beside a block", () => {
 
     const grid = container.querySelector("[data-span]")!.parentElement!
     expect(grid.lastElementChild).toHaveTextContent("Adicionar ao lado")
+  })
+})
+
+// I4: the same content, another look — and back, with nothing lost.
+describe("StorefrontSections — a block's layout, switched without losing its content", () => {
+  it("draws a banner's first picture with its words over it, beside it, or all of them in turn", () => {
+    const slides = banner("capa", "BACKDROP", 2)
+
+    const { unmount } = draw([band([slides])])
+    expect(screen.getByText("capa 1")).toBeInTheDocument()
+    expect(screen.queryByText("capa 2")).not.toBeInTheDocument()
+    unmount()
+
+    const split = draw([band([{ ...slides, display: "SPLIT" }])])
+    expect(screen.getByRole("heading", { name: "capa 1" })).toBeInTheDocument()
+    split.unmount()
+
+    // Back to a carousel: the second picture was kept all along.
+    draw([band([{ ...slides, display: "CAROUSEL" }])])
+    expect(screen.getAllByText("capa 2").length).toBeGreaterThan(0)
+  })
+
+  it("draws the benefits as cards when told to", () => {
+    const benefits: PublicComponent = {
+      ...poster("promessas", "FULL"),
+      kind: "BENEFITS",
+      display: "CARDS",
+      items: [{ id: "b1", icon: "truck", title: "Frete grátis" }],
+    }
+
+    draw([band([benefits])])
+
+    expect(screen.getByText("Frete grátis").closest("li")).toHaveClass("rounded-2xl")
   })
 })

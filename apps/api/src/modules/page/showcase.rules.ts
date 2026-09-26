@@ -8,6 +8,7 @@ import type { ComponentDto } from './dto/page.dto.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { pageError } from './page.rules.js';
+import { keptPicks } from './product-picks.js';
 
 /** What a showcase holds, as the row writes it. */
 export interface ShowcaseFields {
@@ -86,13 +87,8 @@ export class ShowcaseRules {
   }
 
   /**
-   * A category or a product sent for this showcase has to be this shop's own, and what it answers is
-   * the pick without the products that no longer exist.
-   *
-   * Gone and foreign are told apart on purpose. The panel serves a pick as it was stored, deleted
-   * products included, and sends it back on the next save: refusing those would make a list the
-   * owner was just served impossible to reorder, with a message blaming another shop. A product
-   * that exists and is another shop's is the only refusal.
+   * A category or a product sent for this showcase has to be this shop's own; what answers is the
+   * pick without the products that no longer exist — `keptPicks` says why the two differ.
    */
   private async refuseForeign(storeId: string, categoryId: string | null, items: object[]): Promise<object[]> {
     if (categoryId) {
@@ -103,20 +99,12 @@ export class ShowcaseRules {
       }
     }
 
-    const productIds = (items as ShowcaseProduct[]).map((row) => row.productId);
-    if (!productIds.length) return items;
-
-    const found = await this.prisma.product.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, storeId: true },
-    });
-
-    if (found.some((product) => product.storeId !== storeId)) {
-      throw new BadRequestException(pageError('SHOWCASE_PRODUCTS_INVALID', 'Um dos produtos não é desta loja.'));
-    }
-
-    const existing = new Set(found.map((product) => product.id));
-    return (items as ShowcaseProduct[]).filter((row) => existing.has(row.productId));
+    return keptPicks(
+      this.prisma,
+      storeId,
+      items as ShowcaseProduct[],
+      () => new BadRequestException(pageError('SHOWCASE_PRODUCTS_INVALID', 'Um dos produtos não é desta loja.')),
+    );
   }
 
   /** The source's own requirement, and nothing kept that the source does not read. */

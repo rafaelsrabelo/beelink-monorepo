@@ -33,3 +33,9 @@ export const Colorida: Story = { args: { background: sampleColorPresets[2]!.colo
 
 /** Com destino: a barra inteira é um link, como um cartaz. */
 export const ComLink: Story = { args: { href: "/lessari/frete-gratis", background: sampleColorPresets[3]!.colors.primary } }
+
+/** Fixa: nunca rola; no celular as mensagens quebram linha. */
+export const Fixa: Story = { args: { motion: "STATIC" } }
+
+/** Rolando: rola em qualquer largura, até numa tela 4K. */
+export const Rolando: Story = { args: { motion: "MARQUEE" } }

@@ -28,6 +28,8 @@ export interface DesignInspectorProps {
   categoriesShown: number
   shelves: Shelves
   onClose: () => void
+  /** Whether the panel's heading takes the focus as it opens: not when the editor's keys chose. */
+  takeFocus?: boolean
   onSaved: (component: StoreComponent) => void
   messages: UiMessages
   web: WebMessages
@@ -53,7 +55,8 @@ export function DesignInspector({ target, rows, saved, shelves, onLayoutChange, 
       component={component}
       layout={drafted ? layoutOf(drafted) : null}
       onLayoutChange={(next) => (component ? onLayoutChange(component.id, heldLayoutOf(next)) : undefined)}
-      shelfEmpty={component ? shelves.get(component.id)?.items.length === 0 : false}
+      {...(component && shelves.has(component.id) ? { shelf: shelves.get(component.id)!.items } : {})}
+      {...(target ? { nodeId: target.id } : {})}
       messages={messages}
       {...props}
     />

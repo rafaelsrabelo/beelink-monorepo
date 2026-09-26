@@ -26,16 +26,23 @@ export function useDesignSelection(rows: readonly SectionDraft[]) {
   const [tab, setTab] = useState<InspectorTab>("content")
   const [structureOpen, setStructureOpen] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)
+  const [takeFocus, setTakeFocus] = useState(true)
   const wide = useWideEditor()
 
   /**
    * A block opens on what it says, a band on its style. Chosen again, it stays on the tab it was on.
    * Every choice shows the panel — in the right column, or in its drawer on a narrow screen; on a
    * wide one no drawer opens: it would pop up, modal, the moment the window narrowed.
+   *
+   * The panel's heading takes the focus, unless the editor's ↑↓ chose: the focus stays with the keys.
    */
-  const choose = (next: DesignSelection, { openDrawer = true }: { openDrawer?: boolean } = {}) => {
+  const choose = (
+    next: DesignSelection,
+    { openDrawer = true, takeFocus: focus = true }: { openDrawer?: boolean; takeFocus?: boolean } = {},
+  ) => {
     if (next.level !== selection?.level || next.id !== selection.id) setTab(next.level === "band" ? "style" : "content")
     setSelection(next)
+    setTakeFocus(focus)
     if (wide || !openDrawer) return
     setStructureOpen(false)
     setInspectorOpen(true)
@@ -52,6 +59,7 @@ export function useDesignSelection(rows: readonly SectionDraft[]) {
     close,
     tab,
     setTab,
+    takeFocus,
     structureOpen,
     setStructureOpen,
     inspectorOpen,

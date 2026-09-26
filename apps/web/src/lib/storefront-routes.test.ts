@@ -78,6 +78,18 @@ describe("toggledOption", () => {
   })
 })
 
+describe("a landing page's address", () => {
+  it("is under lp, whatever words the shop speaks", () => {
+    const english = storefrontRoutes({
+      slug: "mutante",
+      routeWords: { products: "products", categories: "categories", search: "search", cart: "cart", signIn: "login", account: "account" },
+    })
+
+    expect(routes.landing("lancamento")).toBe("/mutante/lp/lancamento")
+    expect(english.landing("lancamento")).toBe("/mutante/lp/lancamento")
+  })
+})
+
 describe("the sign-in page's addresses", () => {
   it("is a route word of its own, with its faces and its way back in the address", () => {
     const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" } }

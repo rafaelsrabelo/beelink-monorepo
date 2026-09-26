@@ -109,6 +109,103 @@ de…" do I10 ficam, porque são o jeito de pôr blocos lado a lado sem saber o 
 - A coluna Estrutura voltar aos 280 px da 9a: as linhas encolheram, mas os botões do I10 ainda pedem
   a largura de hoje.
 
+## PR 2 — a barra flutuante e o teclado
+
+*Acrescentado em 2026-09-25, ao começar o PR 2.*
+
+### Definição de Pronto
+
+1. O que está escolhido na prévia tem uma barra por cima: Subir, Descer, Trocar layout (um menu com
+   os formatos do tipo; some nos tipos que não têm), Ocultar e Excluir.
+2. Cada ação segue a regra do alvo do PR 1: o bloco sozinho age como a faixa dele; Trocar layout é
+   sempre do bloco. Subir e Descer ficam desligados nas pontas. Excluir some na última vitrine da loja.
+3. Subir, Descer, Ocultar e Trocar layout mexem no rascunho; Trocar layout também abre a aba Layout.
+   Excluir abre a confirmação de sempre.
+4. ↑↓ andam pela estrutura (toda faixa e todo bloco, os ocultos também; a faixa de um bloco só é uma
+   parada). Alt+↑↓ movem. Delete e Backspace perguntam antes de excluir; Cancelar devolve o foco.
+5. Nada reage a tecla digitada num campo.
+
+### Decisões
+
+#### 1. As teclas só valem onde o foco está numa parada
+
+Uma parada é o que tem `data-design-node`: o nome na estrutura, o bloco na prévia, a barra e o título
+do painel. Um `onKeyDown` só, na moldura do editor, olha de onde a tecla veio; num campo, numa alça
+de arrastar (o teclado do dnd-kit continua) ou num menu aberto, ele não faz nada.
+
+#### 2. ↑↓ não troca de escolha com campos não salvos
+
+Trocar de bloco com o painel aberto joga fora o que foi digitado. Pelo clique isso já era assim (fora
+de escopo no I11); por uma seta, é uma tecla de distância. Então a seta não troca e diz por quê na
+região de status ("Salve ou cancele o que mudou em … antes de escolher outro.").
+
+#### 3. O foco fica com as teclas
+
+Escolher pelas setas não abre a gaveta numa tela estreita nem puxa o foco para o título do painel: o
+foco vai para a nova parada na mesma região (estrutura, prévia ou painel). Na prévia, desenhada com
+`transform: scale()`, o foco usa `preventScroll` e a rolagem é feita pela diferença entre os
+retângulos, nunca com `scrollIntoView`.
+
+#### 4. Um bloco sobe e desce dentro da faixa dele
+
+Para outra faixa é o arrastar da estrutura, que grava na hora. A barra e Alt+↑↓ são um passo do
+rascunho, que o Publicar manda.
+
+#### 5. A barra da faixa escolhida sozinha
+
+Uma faixa de vários blocos escolhida pelo cabeçalho ganha um contorno e a barra no canto dela, sem
+Trocar layout.
+
+### Fora de escopo
+
+- Escolher o próximo depois de excluir: a confirmação não diz se excluiu ou cancelou, e escolher no
+  cancelar tiraria o foco de onde ele estava.
+- Dicas (tooltip) com o atalho: o `title` e o `aria-keyshortcuts` dizem; um Tooltip por botão fica
+  para quando a barra tiver Duplicar (PR 3).
+- O primitivo de Toolbar do Base UI: o foco com ← → foi escrito na barra, que é a única que precisa.
+
+## PR 3 — Duplicar
+
+*Acrescentado em 2026-09-25, ao começar o PR 3.*
+
+### Definição de Pronto
+
+1. Duplicar, na barra e com Ctrl/⌘+D, cria uma cópia logo depois do original.
+2. A cópia é criada **oculta** no servidor e aparece no rascunho como o original está. Ela conta em
+   "N alterações" e vai para a loja no Publicar.
+3. A barra de aviso não se duplica: o botão some e a API responde 409 `COMPONENT_KIND_SINGLETON`.
+4. A escolha passa para a cópia.
+5. Testes de unidade e e2e.
+
+### Decisões
+
+#### 1. A cópia é o que o dono vê
+
+A API copia o que está gravado. O rascunho, então, põe na cópia o que o original tem no rascunho:
+visibilidade, ordem e layout dos blocos. Duplicar um banner que foi para "Um terço" sem publicar
+duplica o banner em um terço.
+
+#### 2. Oculta no servidor, mostrada no rascunho
+
+Assim a loja não muda antes do Publicar, como tudo o que o dono arruma. A cópia chega pela resposta
+da API. `withBandCopy`/`withBlockCopy` dão o mesmo resultado se o rascunho já foi recarregado com a
+cópia ou ainda não.
+
+#### 3. A faixa copiada não tem nome
+
+O menu de um site é feito das faixas com nome; duas com o mesmo nome seriam um link duas vezes.
+
+#### 4. O serviço da página foi dividido
+
+As faixas ficam em `PageService`, os blocos vão para `PageComponentsService`, e a leitura da página
+virou `pageOf()`. O arquivo tinha 338 linhas antes das cópias.
+
+### Fora de escopo
+
+- **Descartar não apaga a cópia.** Ela já foi criada, oculta, e continua na estrutura como um bloco
+  oculto; sai pela lixeira. Apagar no Descartar pediria lembrar quais cópias o rascunho criou.
+- Copiar as mensagens recebidas por um formulário: a cópia começa sem nenhuma.
+
 ## PR 1 — depois da revisão
 
 *Acrescentado em 2026-09-25, com as correções da revisão em três frentes.*
@@ -122,3 +219,84 @@ de…" do I10 ficam, porque são o jeito de pôr blocos lado a lado sem saber o 
 - **Fica em aberto:** com o rascunho sujo, uma publicação de outra aba num bloco que não foi mexido
   aqui ainda pode ser desfeita no Publicar. Resolver isso pede uma fusão em três vias com a base do
   rascunho.
+
+## PR 2 — depois da revisão
+
+*Acrescentado em 2026-09-25.*
+
+- Subir e Descer na barra devolvem o foco à barra (o mesmo botão, se ainda estiver ligado): o React
+  reinsere o bloco que desceu, e o botão focado ia junto.
+- A região de status tem `aria-live` explícito. A gaveta modal esconde tudo fora dela, menos o que
+  tem esse atributo.
+- As regiões do editor são marcadas pela moldura (`data-design-region`). A prévia desenha a loja com
+  um `<main>` próprio, que era achado no lugar da área que rola.
+- ↑↓ passa por paradas que a tela não desenha (um bloco oculto, a barra de aviso) em vez de parar
+  nelas. Ocultar leva o foco à parada mais próxima que ainda aparece.
+- Um painel escolhido pelas setas devolve o foco à própria parada ao fechar.
+- Excluir a faixa de um bloco só pergunta pelo nome da faixa, como a lixeira da estrutura.
+
+## PR 4 — "Aparece em: computador · celular"
+
+*Acrescentado em 2026-09-25, ao começar o PR 4.*
+
+### Definição de Pronto
+
+1. A aba Layout pergunta "Aparece em" com dois botões, Computador e Celular. O último ligado não
+   desliga, e a dica diz: "Para tirar de todo lugar, use Ocultar."
+2. Não aparece na barra de aviso. A API recusa com `COMPONENT_VISIBILITY_INVALID`.
+3. É rascunho: vai para a loja no Publicar, como o resto da aba.
+4. A loja esconde por CSS na largura `md` (768px). O espaçamento fica certo dos dois lados, e
+   nenhuma faixa colorida sobra vazia.
+5. A prévia em Celular e em Computador bate com a loja.
+6. A linha da estrutura diz "Só no computador" ou "Só no celular".
+7. Uma página em cache sem o campo mostra tudo.
+
+### Decisões
+
+#### 1. Só no bloco; a faixa segue os blocos
+
+Cortado do plano: a faixa não tem coluna própria. Ela aparece onde algum bloco dela aparece. Assim
+há um lugar só para dizer isso, e faixa e bloco nunca discordam. O que se perde: esconder de uma vez
+uma faixa de vários blocos no celular, que agora pede um bloco por vez.
+
+#### 2. O espaçamento é calculado por tela
+
+`deviceRhythmOf` roda a regra de espaçamento uma vez para o que cada tela desenha, e escreve as
+classes com `shop-md:`. Uma capa só no computador encosta no topo ali; no celular, a faixa de baixo
+começa 32px abaixo do topo.
+
+#### 3. A leitura pública não filtra por tela
+
+A loja esconde pela largura da tela, então a mesma página serve as duas. Filtrar no servidor pediria
+saber a tela de quem pede.
+
+#### 4. "Adicionar ao lado" conta a linha do computador
+
+A linha é do computador: um bloco guardado para o celular não ocupa espaço nela.
+
+### Fora de escopo
+
+- Imagens de uma capa só no computador ainda são baixadas no celular (o `hidden` do CSS não impede o
+  download).
+- Uma faixa com nome, só no computador, continua no menu do site no celular.
+
+## PR 3 — depois da revisão
+
+*Acrescentado em 2026-09-25.*
+
+- Duplicar recusa com campos não salvos no painel aberto, como as setas: a cópia sai do que está
+  gravado e vira a escolha, então o que foi digitado se perderia.
+- Uma cópia por vez: um segundo clique no mesmo instante ou o Ctrl+D segurado não fazem outra.
+- A recusa aparece também embaixo da barra, não só na região de status.
+- A cópia da faixa só casa os blocos um a um quando as listas batem. Se não batem, ela aparece como o
+  servidor a fez. A API desempata a ordem dos blocos pelo id.
+
+## PR 4 — depois da revisão
+
+*Acrescentado em 2026-09-25.*
+
+- O "+" do pé da faixa conta a linha do computador, como a prévia, e não conta um bloco guardado para
+  o celular.
+- "Pôr ao lado de…" não é oferecido para um bloco só do celular. Ele apertaria a linha do computador
+  por um bloco que ali não aparece.
+- Os testes do espaçamento agora separam o cálculo por tela do cálculo único.

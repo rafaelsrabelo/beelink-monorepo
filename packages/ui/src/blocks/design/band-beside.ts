@@ -12,15 +12,16 @@ export interface BesideInBand {
   rebalance: readonly SpanChange[]
 }
 
-type Placed = Pick<ArrangementItem, "id" | "kind" | "span" | "isActive">
+type Placed = Pick<ArrangementItem, "id" | "kind" | "span" | "isActive" | "visibleOn">
 
 /**
- * A band's blocks as its grid draws them: shown, and taking a slice. The rows are theirs — a hidden
- * block or the strip above the header counted into a row would leave room the page does not have,
- * and a block added "beside" would land below.
+ * A band's blocks as its grid draws them on a computer — the only screen where they share a row:
+ * shown, taking a slice, and not kept for the phone. The rows are theirs — a hidden block or the
+ * strip above the header counted into a row would leave room the page does not have, and a block
+ * added "beside" would land below.
  */
 export function drawnOf<T extends Placed>(components: readonly T[]): T[] {
-  return components.filter((component) => component.isActive && hasSpan(component))
+  return components.filter((component) => component.isActive && hasSpan(component) && component.visibleOn !== "PHONE")
 }
 
 /**

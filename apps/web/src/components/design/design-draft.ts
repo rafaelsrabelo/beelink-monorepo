@@ -3,6 +3,7 @@ import type {
   ComponentDisplay,
   ComponentKind,
   ComponentSpan,
+  DeviceVisibility,
   Section,
   StoreComponent,
   TextAlign,
@@ -32,6 +33,7 @@ export interface ComponentDraft {
   display: ComponentDisplay | null
   columns: number | null
   align: TextAlign | null
+  visibleOn: DeviceVisibility
   isActive: boolean
 }
 
@@ -55,6 +57,7 @@ export function toComponentDraft(component: StoreComponent): ComponentDraft {
     display: component.display,
     columns: component.columns,
     align: component.align,
+    visibleOn: component.visibleOn,
     isActive: component.isActive,
   }
 }
@@ -150,6 +153,7 @@ export function publishedOf(component: ComponentDraft): UpdateComponentPayload {
     isActive: component.isActive,
     columns: component.columns,
     align: component.align,
+    visibleOn: component.visibleOn,
     ...(component.display ? { display: component.display } : {}),
   }
 }
@@ -167,16 +171,6 @@ export function hasChanges(changes: ReturnType<typeof changesOf>): boolean {
     changes.sections.length > 0 ||
     changes.componentOrders.length > 0 ||
     changes.components.length > 0
-  )
-}
-
-/**
- * How many writes Publish would send — the number the editor's bar shows as "N alterações". The
- * order of the bands is one write whatever moved; every other change is one row.
- */
-export function changeCountOf(changes: ReturnType<typeof changesOf>): number {
-  return (
-    (changes.orderChanged ? 1 : 0) + changes.sections.length + changes.componentOrders.length + changes.components.length
   )
 }
 

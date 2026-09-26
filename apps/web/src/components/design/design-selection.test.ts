@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 // App
 import { toDraft } from "./design-draft"
 import { component, saved, section } from "./design-draft.fixtures"
-import { editedOf, targetOf } from "./design-selection"
+import { blockKeysOf, editedOf, movedBy, neighbourOf, nodesOf, targetOf } from "./design-selection"
 
 // Band "a" holds one banner; band "b" holds a heading and a showcase.
 const rows = saved.map(toDraft)
@@ -37,5 +37,67 @@ describe("editedOf — the band and the block a panel edits", () => {
     expect(editedOf({ level: "band", id: "b", blockId: null })).toEqual({ sectionId: "b", componentId: null })
     expect(editedOf({ level: "block", id: "b2", sectionId: "b" })).toEqual({ sectionId: "b", componentId: "b2" })
     expect(editedOf(null)).toBeNull()
+  })
+})
+
+describe("nodesOf — the stops the editor's ↑↓ walk", () => {
+  // As the structure lists them: a lone block's card is one row, a band of several is its header and its blocks.
+  it("walks the bands and their blocks in the structure's order, a lone block as its band", () => {
+    expect(nodesOf(rows).map((node) => node.key)).toEqual(["a", "b", "b1", "b2", "c"])
+    expect(nodesOf(rows)[0]?.selection).toEqual({ level: "block", id: "a1" })
+    expect(nodesOf(rows)[1]?.selection).toEqual({ level: "band", id: "b" })
+  })
+
+  // Hidden things are in the structure, and the keys reach them there to show them again.
+  it("keeps hidden bands and blocks", () => {
+    const hidden = rows.map((row) => ({ ...row, isActive: false }))
+
+    expect(nodesOf(hidden)).toHaveLength(5)
+  })
+
+  it("keys a block the way its stop is keyed: its band's when it is alone there", () => {
+    const keyOf = blockKeysOf(rows)
+
+    expect([keyOf("a1"), keyOf("b1"), keyOf("c1")]).toEqual(["a", "b1", "c"])
+  })
+})
+
+describe("neighbourOf", () => {
+  const nodes = nodesOf(rows)
+
+  it("steps to the stop before or after, and stops at either end", () => {
+    expect(neighbourOf(nodes, "b", 1)?.key).toBe("b1")
+    expect(neighbourOf(nodes, "b", -1)?.key).toBe("a")
+    expect(neighbourOf(nodes, "c", 1)).toBeNull()
+    expect(neighbourOf(nodes, "a", -1)).toBeNull()
+  })
+
+  it("starts from an end when nothing is chosen", () => {
+    expect(neighbourOf(nodes, null, 1)?.key).toBe("a")
+    expect(neighbourOf(nodes, null, -1)?.key).toBe("c")
+  })
+})
+
+describe("movedBy — Subir and Descer", () => {
+  it("moves a band one place, a lone block's with it, and says where it landed", () => {
+    const moved = movedBy(rows, { level: "band", id: "a", blockId: "a1" }, 1)
+
+    expect(moved?.rows.map((row) => row.id)).toEqual(["b", "a", "c"])
+    expect(moved?.position).toBe(2)
+  })
+
+  it("moves a block within its band, leaving the bands where they are", () => {
+    const moved = movedBy(rows, { level: "block", id: "b2", sectionId: "b" }, -1)
+
+    expect(moved?.rows.map((row) => row.id)).toEqual(["a", "b", "c"])
+    expect(moved?.rows[1]?.components.map((component) => component.id)).toEqual(["b2", "b1"])
+    expect(moved?.position).toBe(1)
+  })
+
+  // Into the next band is the structure's drag, which writes at once; the bar's is a draft step.
+  it("goes nowhere past an end, the band's for a block", () => {
+    expect(movedBy(rows, { level: "band", id: "a", blockId: "a1" }, -1)).toBeNull()
+    expect(movedBy(rows, { level: "band", id: "c", blockId: "c1" }, 1)).toBeNull()
+    expect(movedBy(rows, { level: "block", id: "b2", sectionId: "b" }, 1)).toBeNull()
   })
 })

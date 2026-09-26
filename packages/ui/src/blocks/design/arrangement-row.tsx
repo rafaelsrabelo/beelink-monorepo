@@ -15,7 +15,7 @@ import { useArrangeItem } from "./design-arrange"
 import { RowThumbnail } from "./row-thumbnail"
 import type { StorefrontSpan } from "../storefront/storefront-band-cell"
 import { BesideActions } from "./beside-actions"
-import type { ComponentKind } from "./design-types"
+import type { ComponentKind, DeviceVisibility } from "./design-types"
 import { spanLabelOf } from "./span-field"
 
 /** A block's slice of its band. The storefront's own type: the row offers what the band draws. */
@@ -30,6 +30,8 @@ export interface ArrangementItem {
   imageUrl?: string | null
   span: ArrangementSpan
   isActive: boolean
+  /** Where it shows. Absent is everywhere, which the row does not mention. */
+  visibleOn?: DeviceVisibility
   /**
    * Whether the row draws a bin. Absent means yes.
    *
@@ -62,9 +64,11 @@ export function hasSpan(item: Pick<ArrangementItem, "kind">): boolean {
  * What a row says under a block's name: its kind — or that it is empty — and its slice. The slice is
  * chosen in the Layout tab; said here, a band's arrangement still reads at a glance.
  */
-export function rowLineOf(item: Pick<ArrangementItem, "kind" | "span" | "empty">, messages: UiMessages): string {
+export function rowLineOf(item: Pick<ArrangementItem, "kind" | "span" | "empty" | "visibleOn">, messages: UiMessages): string {
   const kind = item.empty ? messages.design.emptyBlock : messages.design.kinds[item.kind]
-  return hasSpan(item) ? `${kind} · ${spanLabelOf(item.span, messages)}` : kind
+  const line = hasSpan(item) ? `${kind} · ${spanLabelOf(item.span, messages)}` : kind
+  const only = item.visibleOn === "DESKTOP" ? messages.design.visibleOn.onlyDesktop : item.visibleOn === "PHONE" ? messages.design.visibleOn.onlyPhone : null
+  return only ? `${line} · ${only}` : line
 }
 
 export function ArrangementRow({
@@ -141,16 +145,18 @@ export function ArrangementRow({
       {onEdit ? (
         <button
           type="button"
+          data-design-node={item.id}
           onClick={() => onEdit(item.id)}
           className="focus-visible:ring-ring flex min-w-0 flex-1 flex-col rounded-md px-1 text-left outline-none hover:underline focus-visible:ring-2"
         >
           <span className="truncate text-sm font-medium">{name}</span>
-          <span className="text-muted-foreground truncate text-xs">{rowLineOf(item, messages)}</span>
+          {/* Two lines: "Banner · Um terço · Só no computador" does not fit the column's one. */}
+          <span className="text-muted-foreground line-clamp-2 text-xs">{rowLineOf(item, messages)}</span>
         </button>
       ) : (
         <div className="flex min-w-0 flex-1 flex-col px-1">
           <p className="truncate text-sm font-medium">{name}</p>
-          <p className="text-muted-foreground truncate text-xs">{rowLineOf(item, messages)}</p>
+          <p className="text-muted-foreground line-clamp-2 text-xs">{rowLineOf(item, messages)}</p>
         </div>
       )}
 

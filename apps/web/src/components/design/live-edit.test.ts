@@ -10,7 +10,7 @@ import { toBandForm } from "./band-form-values"
 import { toForm } from "./component-form-values"
 import { toDraft } from "./design-draft"
 import { previewOf } from "./design-draft-preview"
-import { withLiveEdit } from "./live-edit"
+import { hasUnsaved, withLiveEdit } from "./live-edit"
 
 function component(id: string, over: Partial<StoreComponent> = {}): StoreComponent {
   return {
@@ -28,6 +28,7 @@ function component(id: string, over: Partial<StoreComponent> = {}): StoreCompone
     items: [],
     columns: null,
     align: null,
+    visibleOn: "ALL",
     position: 0,
     isActive: true,
     createdAt: "2026-09-25T00:00:00.000Z",
@@ -62,7 +63,7 @@ function edit(block: StoreComponent | null, over: Partial<DesignEdit> = {}): Des
     sectionId: "top",
     band: topBand,
     bandOpened: topBand,
-    component: block ? { id: block.id, value: toForm(block), linkId: "l1" } : null,
+    component: block ? { id: block.id, value: toForm(block), itemId: "l1" } : null,
     ...over,
   }
 }
@@ -70,7 +71,7 @@ function edit(block: StoreComponent | null, over: Partial<DesignEdit> = {}): Des
 describe("withLiveEdit — the preview draws the panel before Salvar", () => {
   // The owner's words: "crio o banner, adiciono a imagem e já fica na preview, em tempo real".
   it("draws a picture that just landed, and the words being typed, over what is saved", () => {
-    const live = edit(null, { component: { id: "banner", value: { ...toForm(banner), slides: [slide] }, linkId: "l1" } })
+    const live = edit(null, { component: { id: "banner", value: { ...toForm(banner), slides: [slide] }, itemId: "l1" } })
 
     const [section] = previewOf(saved.map(toDraft), withLiveEdit(saved, live), new Map())
 
@@ -80,13 +81,13 @@ describe("withLiveEdit — the preview draws the panel before Salvar", () => {
   })
 
   it("leaves out a slide still without its picture, as Salvar would", () => {
-    const live = edit(null, { component: { id: "banner", value: { ...toForm(banner), slides: [{ ...slide, imageUrl: "" }] }, linkId: "l1" } })
+    const live = edit(null, { component: { id: "banner", value: { ...toForm(banner), slides: [{ ...slide, imageUrl: "" }] }, itemId: "l1" } })
 
     expect((withLiveEdit(saved, live)[0]?.components[0]?.items as BannerSlide[] | undefined) ?? []).toEqual([])
   })
 
   it("keeps the draft's layout, which the panel's Salvar does not hold, and every other block as saved", () => {
-    const live = edit(null, { component: { id: "banner", value: { ...toForm(banner), title: "Novo" }, linkId: "l1" } })
+    const live = edit(null, { component: { id: "banner", value: { ...toForm(banner), title: "Novo" }, itemId: "l1" } })
     const rows = saved.map(toDraft).map((row) => ({
       ...row,
       components: row.components.map((c) => ({ ...c, span: "THIRD" as const, display: "GRID" as const })),
@@ -181,5 +182,23 @@ describe("useDesignEdit", () => {
     useDesignEdit.getState().close()
 
     expect(useDesignEdit.getState().edit).toBeNull()
+  })
+})
+
+// ↑↓ choosing another would throw away what the panel holds, so the keys ask this first.
+describe("hasUnsaved", () => {
+  it("is false for a panel as it opened, and for none", () => {
+    expect(hasUnsaved(edit(banner), saved)).toBe(false)
+    expect(hasUnsaved(edit(null), saved)).toBe(false)
+    expect(hasUnsaved(null, saved)).toBe(false)
+  })
+
+  it("is true once a word is typed or a picture lands, before Salvar", () => {
+    expect(hasUnsaved(edit(null, { component: { id: "banner", value: { ...toForm(banner), title: "Novo" }, itemId: "l1" } }), saved)).toBe(true)
+    expect(hasUnsaved(edit(null, { component: { id: "banner", value: { ...toForm(banner), slides: [slide] }, itemId: "l1" } }), saved)).toBe(true)
+  })
+
+  it("is true once the band's style changed", () => {
+    expect(hasUnsaved(edit(null, { band: { ...topBand, name: "Capa" } }), saved)).toBe(true)
   })
 })

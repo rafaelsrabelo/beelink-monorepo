@@ -8,7 +8,7 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { ComponentLayoutFields, hasLayout, type ComponentLayoutValues } from "./component-layout-fields"
 import type { ComponentKind } from "./design-types"
 
-const base: ComponentLayoutValues = { span: "HALF", display: null, columns: 0, align: "LEFT" }
+const base: ComponentLayoutValues = { span: "HALF", display: null, columns: 0, align: "LEFT", visibleOn: "ALL" }
 
 function renderFields(kind: ComponentKind, over: Partial<ComponentLayoutValues> = {}) {
   const onChange = vi.fn()
@@ -36,11 +36,22 @@ describe("ComponentLayoutFields", () => {
     expect(onChange).toHaveBeenCalledWith({ span: "THIRD" })
   })
 
-  it("offers a banner a carousel or a grid, and no columns or alignment", () => {
-    renderFields("BANNER", { display: "GRID" })
+  // The layout is a picker of drawings: the four a banner draws, the one in use pressed.
+  it("offers a banner its four layouts, and no columns or alignment", async () => {
+    const user = userEvent.setup()
+    const { onChange } = renderFields("BANNER", { display: "GRID" })
 
-    expect(screen.getByRole("button", { name: /Carrossel/ })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /Grade/, pressed: true })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Formato: Grade" }))
+    const picker = await screen.findByRole("group", { name: "Formato" })
+    expect(within(picker).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "Imagem ao fundo",
+      "Dividida",
+      "Carrossel",
+      "Grade",
+    ])
+    expect(within(picker).getByRole("button", { name: "Grade", pressed: true })).toBeInTheDocument()
+    await user.click(within(picker).getByRole("button", { name: "Dividida" }))
+    expect(onChange).toHaveBeenCalledWith({ display: "SPLIT" })
     expect(screen.queryByRole("combobox", { name: "Colunas" })).not.toBeInTheDocument()
     expect(screen.queryByRole("group", { name: "Alinhamento" })).not.toBeInTheDocument()
   })
@@ -49,9 +60,9 @@ describe("ComponentLayoutFields", () => {
     const user = userEvent.setup()
     const { onChange, unmount } = renderFields("PRODUCTS", { display: "RAIL" })
 
-    expect(screen.queryByRole("button", { name: /Carrossel/ })).not.toBeInTheDocument()
     expect(screen.queryByRole("combobox", { name: "Colunas" })).not.toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: /Grade/ }))
+    await user.click(screen.getByRole("button", { name: "Formato: Trilho" }))
+    await user.click(within(await screen.findByRole("group", { name: "Formato" })).getByRole("button", { name: "Grade" }))
     expect(onChange).toHaveBeenCalledWith({ display: "GRID" })
     unmount()
 
@@ -78,14 +89,49 @@ describe("ComponentLayoutFields", () => {
   })
 
   // The strip is drawn above the header, outside the band's grid.
-  it("has nothing to lay out for the strip above the header", () => {
-    expect(hasLayout("ANNOUNCEMENT")).toBe(false)
-    expect(hasLayout("CONTACT")).toBe(true)
+  // No slice and no screen to choose — it is above the header, everywhere — but still or scrolling.
+  it("asks the strip only whether it scrolls", () => {
+    expect(hasLayout("ANNOUNCEMENT")).toBe(true)
+    renderFields("ANNOUNCEMENT", { display: "STATIC" })
+
+    expect(screen.getByRole("button", { name: "Formato: Fixa" })).toBeInTheDocument()
+    expect(screen.queryByRole("group", { name: "Largura do bloco" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("group", { name: "Aparece em" })).not.toBeInTheDocument()
+  })
+
+  // One layout is no choice: a FAQ is an accordion, and the tab asks only its slice of the band.
+  it("offers no choice of layout to a kind that has one", () => {
+    renderFields("FAQ", { display: "ACCORDION" })
+
+    expect(screen.queryByRole("button", { name: /^Formato/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Largura do bloco" })).toBeInTheDocument()
+  })
+
+  // A strip saved before it had a choice draws a look no layout repeats: none is pressed, and it says so.
+  it("shows an unset strip as Automática, with no layout pressed", async () => {
+    const user = userEvent.setup()
+    renderFields("ANNOUNCEMENT", { display: null })
+
+    await user.click(screen.getByRole("button", { name: /^Formato: Automática/ }))
+    const picker = await screen.findByRole("group", { name: "Formato" })
+    expect(within(picker).queryByRole("button", { pressed: true })).not.toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {
     const { container } = renderFields("PRODUCTS", { display: "GRID" })
 
     await expectNoA11yViolations(container)
+  })
+})
+
+describe("ComponentLayoutFields — Aparece em", () => {
+  // Every kind with a layout says where it shows; it waits for Publicar with the rest of the tab.
+  it("asks where the block shows, and hands the answer on with the layout", async () => {
+    const onChange = vi.fn()
+    render(<ComponentLayoutFields kind="BANNER" value={{ ...base, display: "CAROUSEL" }} onChange={onChange} bandWidth="FULL" />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Celular" }))
+
+    expect(onChange).toHaveBeenCalledWith({ visibleOn: "DESKTOP" })
   })
 })

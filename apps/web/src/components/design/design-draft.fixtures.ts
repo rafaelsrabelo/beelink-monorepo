@@ -21,6 +21,7 @@ export function component(id: string, over: Partial<StoreComponent> = {}): Store
     items: [],
     columns: null,
     align: null,
+    visibleOn: "ALL",
     position: 0,
     isActive: true,
     createdAt: "2026-09-23T00:00:00.000Z",

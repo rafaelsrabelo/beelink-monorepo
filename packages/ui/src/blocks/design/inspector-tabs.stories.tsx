@@ -25,6 +25,11 @@ const empty: ComponentFormValues = {
   sourceCategoryId: "",
   picks: [],
   limit: "",
+  faq: [],
+  countdownEnd: "",
+  buttonLabel: "",
+  imageUrl: "",
+  imageAlt: "",
 }
 
 const plainBand: BandFormValues = { name: "", width: "CONTAINED", background: "" }
@@ -59,20 +64,20 @@ const scenarios = {
         },
       ],
     },
-    layout: { span: "HALF", display: "CAROUSEL", columns: 0, align: "LEFT" },
+    layout: { span: "HALF", display: "CAROUSEL", columns: 0, align: "LEFT", visibleOn: "ALL" },
     band: plainBand,
     sharedWith: 2,
   },
   showcase: {
     name: "Mais vendidos",
     content: { ...empty, kind: "PRODUCTS", title: "Mais vendidos", source: "CATEGORY" },
-    layout: { span: "FULL", display: "GRID", columns: 4, align: "LEFT" },
+    layout: { span: "FULL", display: "GRID", columns: 4, align: "LEFT", visibleOn: "ALL" },
     band: { ...plainBand, width: "FULL" },
   },
   heading: {
     name: "Novidades da semana",
     content: { ...empty, title: "Novidades da semana", subtitle: "Chegou agora" },
-    layout: { span: "FULL", display: null, columns: 0, align: "CENTER" },
+    layout: { span: "FULL", display: null, columns: 0, align: "CENTER", visibleOn: "ALL" },
     band: { name: "Novidades", width: "CONTAINED", background: presets[1]!.colors.header },
   },
   strip: {

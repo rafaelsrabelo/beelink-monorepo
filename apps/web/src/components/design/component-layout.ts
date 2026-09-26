@@ -1,9 +1,10 @@
 // Types
-import type { ComponentDisplay, ComponentKind, ComponentSpan, TextAlign } from "@harness-monorepo/contracts"
+import type { ComponentDisplay, ComponentKind, ComponentSpan, DeviceVisibility, TextAlign } from "@harness-monorepo/contracts"
 
 // UI
 import type { ComponentLayoutValues } from "@harness-monorepo/ui/blocks/design/component-layout-fields"
 import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
+import { layoutsOf } from "@harness-monorepo/ui/lib/section-registry"
 
 /** The layout fields a block holds on the wire, or in the draft. */
 export interface HeldLayout {
@@ -12,18 +13,27 @@ export interface HeldLayout {
   display: ComponentDisplay | null
   columns: number | null
   align: TextAlign | null
+  visibleOn: DeviceVisibility
 }
 
 /**
- * The format a block draws, where its kind has one: the kind's own when none was chosen. Each
- * branch is the storefront's own test — a banner is a carousel unless it says grid, the categories
- * a grid unless they say rail, a showcase a rail unless it says grid.
+ * The layout a block draws, where its kind has any: the one chosen, else the look the kind had before
+ * there was a choice — the storefront's own reading of an unset value.
+ *
+ * Null for a strip with none: it draws a way no option does, still where it fits and scrolling on a
+ * phone, so it is shown as none chosen, and choosing "Fixa" for it is a change Publicar sends.
  */
 export function displayOf(kind: ComponentKind, display: ComponentDisplay | null): ComponentDisplay | null {
-  if (kind === "CATEGORIES") return display === "RAIL" ? "RAIL" : "GRID"
-  if (kind === "PRODUCTS") return display === "GRID" ? "GRID" : "RAIL"
-  if (kind === "BANNER") return display === "GRID" ? "GRID" : "CAROUSEL"
-
+  const own = layoutsOf(kind)
+  if (!own) return null
+  if (display && own.includes(display)) return display
+  // A kind born with its layouts opens with one, so unset is a row from before it had them: its first.
+  if (own.length === 1) return own[0]!
+  // Unset, each kind's habit: the look it had before there was a choice.
+  if (kind === "CATEGORIES") return "GRID"
+  if (kind === "PRODUCTS") return "RAIL"
+  if (kind === "BANNER") return "CAROUSEL"
+  if (kind === "BENEFITS") return "INLINE"
   return null
 }
 
@@ -34,6 +44,7 @@ export function layoutOf(block: HeldLayout): ComponentLayoutValues {
     display: displayOf(block.kind, block.display),
     columns: block.columns ?? 0,
     align: block.align ?? defaultAlignOf(block.kind),
+    visibleOn: block.visibleOn,
   }
 }
 
@@ -44,7 +55,13 @@ export function layoutOf(block: HeldLayout): ComponentLayoutValues {
 export function sameLayout(a: HeldLayout, b: HeldLayout): boolean {
   const [x, y] = [layoutOf(a), layoutOf(b)]
 
-  return x.span === y.span && x.display === y.display && x.columns === y.columns && x.align === y.align
+  return (
+    x.span === y.span &&
+    x.display === y.display &&
+    x.columns === y.columns &&
+    x.align === y.align &&
+    x.visibleOn === y.visibleOn
+  )
 }
 
 /** A change from the Layout tab, as the draft holds it: "automático" is null on the wire. */
