@@ -11,10 +11,10 @@ import type {
   PublicSection,
   StorefrontRouteWords,
 } from '@harness-monorepo/contracts';
-import type { StoreComponentModel } from '../../generated/prisma/models.js';
+import type { ComponentShape, SectionShape } from './page-document.js';
 
 // App
-import { itemsOf, type SectionRow } from './page.mapper.js';
+import { itemsOf } from './page.mapper.js';
 
 /*
   The page as a visitor is served it: resolved, filtered, with no uuid a stranger needs. Apart from
@@ -63,7 +63,7 @@ export const NO_SHELVES: ShelvesByComponent = new Map();
 const POINTING: readonly ComponentKind[] = ['BANNER', 'ANNOUNCEMENT'];
 
 /** Every id every slide and the strip's link on this page name, so one query answers all of them. */
-export function slideTargetsOf(rows: readonly SectionRow[]): { categoryIds: string[]; productIds: string[] } {
+export function slideTargetsOf(rows: readonly SectionShape[]): { categoryIds: string[]; productIds: string[] } {
   const categoryIds = new Set<string>();
   const productIds = new Set<string>();
 
@@ -132,7 +132,7 @@ function toPublicSlide(
 }
 
 function toPublicComponent(
-  row: StoreComponentModel,
+  row: ComponentShape,
   shopSlug: string,
   words: StorefrontRouteWords,
   slugs: SlugsByEntity,
@@ -178,7 +178,7 @@ function toPublicComponent(
  * disagreeing about what a shop looks like.
  */
 export function toPublicSection(
-  row: SectionRow,
+  row: SectionShape,
   shopSlug: string,
   words: StorefrontRouteWords,
   slugs: SlugsByEntity = NO_SLUGS,

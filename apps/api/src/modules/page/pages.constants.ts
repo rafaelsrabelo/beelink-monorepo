@@ -10,3 +10,5 @@ export const PAGE_TITLE_MAX_LENGTH = 80;
 export const PAGE_SEO_TITLE_MAX_LENGTH = 70;
 /** What a search result shows of a description before it cuts it. */
 export const PAGE_SEO_DESCRIPTION_MAX_LENGTH = 160;
+/** What a version's note may say: a line, not a changelog. */
+export const PAGE_VERSION_NOTE_MAX_LENGTH = 140;

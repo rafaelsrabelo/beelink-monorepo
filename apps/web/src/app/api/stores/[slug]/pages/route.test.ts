@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
 import { GET as availability } from "./availability/route"
+import { POST as publish } from "./[pageId]/publish/route"
 import { PATCH } from "./[pageId]/route"
 import { GET, POST } from "./route"
 
@@ -70,6 +71,18 @@ describe("/api/stores/[slug]/pages", () => {
     await availability(request(`/availability?slug=Ofertas&except=${PAGE}&extra=1`, "GET"), { params: Promise.resolve({ slug: SLUG }) })
 
     expect(spy.mock.calls[0]?.[0]).toBe(`http://api.test/api/stores/${SLUG}/pages/availability?slug=Ofertas&except=${PAGE}`)
+  })
+
+  it("drops the shop's cache on Publicar, the one write a visitor is served", async () => {
+    const spy = answer(201, { page: { id: PAGE }, version: { number: 2 } })
+
+    const response = await publish(request(`/${PAGE}/publish`, "POST", { note: "Black Friday" }), {
+      params: Promise.resolve({ slug: SLUG, pageId: PAGE }),
+    })
+
+    expect(response.status).toBe(201)
+    expect(spy).toHaveBeenCalledWith(`http://api.test/api/stores/${SLUG}/pages/${PAGE}/publish`, expect.objectContaining({ method: "POST" }))
+    expect(revalidateStore).toHaveBeenCalledWith(SLUG)
   })
 
   it("refuses a request from another site before it reaches the API", async () => {

@@ -74,6 +74,16 @@ describe("DesignEditorBar", () => {
     expect(shop).toHaveAttribute("target", "_blank")
   })
 
+  // Saved on the server a moment ago, not yet in the shop: nothing to discard here, something to publish.
+  it("says the saved draft is not published, and offers Publicar with nothing arranged here", async () => {
+    const { props } = renderBar({ unpublished: true })
+
+    expect(screen.getByRole("status")).toHaveTextContent("Alterações não publicadas")
+    await userEvent.click(screen.getByRole("button", { name: "Publicar" }))
+    expect(props.onPublish).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole("button", { name: "Descartar" })).not.toBeInTheDocument()
+  })
+
   // A landing still a draft: Publicar is how it goes up, with or without anything arranged to send.
   it("says a landing is not up, and offers to put it up with nothing else to write", async () => {
     const { props } = renderBar({ pagePublished: false, pageName: "Black Friday", shopHref: null })

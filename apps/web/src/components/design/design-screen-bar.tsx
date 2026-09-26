@@ -18,7 +18,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { AppLink } from "@/components/app-link"
 import type { WebMessages } from "@/locales"
-import { usePages, useUpdatePage } from "@/services/page/store-pages-hooks"
+import { usePageDraft, usePublishPage } from "@/services/page/page-draft-hooks"
+import { usePages } from "@/services/page/store-pages-hooks"
 import { useDesignPages } from "@/stores/design-pages"
 import { pageRowsOf, shopHrefOf } from "./design-pages"
 import { pageErrorCopy } from "./page-error-copy"
@@ -27,8 +28,8 @@ import type { useDesignDraft } from "./use-design-draft"
 export interface DesignScreenBarProps {
   slug: string
   shopName: string
-  /** The landing being edited, as the server read it. Null on the home. */
-  page: StorePage | null
+  /** The page being edited — the home or a landing — as the server read it. */
+  page: StorePage
   draft: Pick<ReturnType<typeof useDesignDraft>, "changeCount" | "publishing" | "publish" | "discard">
   /** Asks before an unpublished arrangement is left behind, on every way out of this page. */
   onLeave: (event: MouseEvent<HTMLAnchorElement>) => void
@@ -43,8 +44,10 @@ export interface DesignScreenBarProps {
 /**
  * The editor's bar, for whichever page is open: its name as the way to another page, and Publicar.
  *
- * On a landing that is not up, Publicar sends what was arranged and then puts the page up — the one
- * press the shopkeeper expects of the word — and reloads the screen's read so the bar says so.
+ * Publicar sends what was arranged in this browser, then freezes the draft as the page's next
+ * version — which is what the shop serves, and what puts a landing up — and reloads the screen's
+ * read so the bar says so. What was saved already (a block's words, a new band) is in the draft on
+ * the server, and the API says whether it differs from what is served.
  */
 export function DesignScreenBar({
   slug,
@@ -62,20 +65,16 @@ export function DesignScreenBar({
   const router = useRouter()
   const openNew = useDesignPages((state) => state.openNew)
   const pages = usePages(slug)
-  const update = useUpdatePage(slug)
+  const saved = usePageDraft(slug, page.id)
+  const freeze = usePublishPage(slug, page.id)
   const homeTitle = messages.design.frame.homePage
-  const pageName = page?.title ?? homeTitle
-  const published = !page || page.status === "PUBLISHED"
+  const pageName = page.kind === "HOME" ? homeTitle : page.title
+  const published = page.status === "PUBLISHED"
   const links = pageRowsOf(slug, pages.data ?? [], homeTitle).filter((row) => row.status !== "ARCHIVED")
-  const currentId = page?.id ?? pages.data?.find((row) => row.kind === "HOME")?.id ?? ""
 
   const publish = () => {
-    update.reset()
-    draft.publish(
-      page && !published
-        ? () => update.mutate({ pageId: page.id, payload: { status: "PUBLISHED" } }, { onSuccess: () => router.refresh() })
-        : undefined,
-    )
+    freeze.reset()
+    draft.publish(() => freeze.mutate(undefined, { onSuccess: () => router.refresh() }))
   }
 
   return (
@@ -87,7 +86,7 @@ export function DesignScreenBar({
       pageSwitcher={
         <DesignPageSwitcher
           pages={links}
-          currentId={currentId}
+          currentId={page.id}
           currentTitle={pageName}
           onNavigate={onLeave}
           onCreate={openNew}
@@ -98,12 +97,13 @@ export function DesignScreenBar({
       device={device}
       onDeviceChange={onDeviceChange}
       changes={draft.changeCount}
+      unpublished={saved.data?.hasUnpublishedChanges ?? false}
       pagePublished={published}
-      publishError={update.error ? (pageErrorCopy(update.error, web) ?? messages.design.pages.publishFailed) : null}
-      publishing={draft.publishing || update.isPending}
+      publishError={freeze.error ? (pageErrorCopy(freeze.error, web) ?? messages.design.pages.publishFailed) : null}
+      publishing={draft.publishing || freeze.isPending}
       onPublish={publish}
       onDiscard={draft.discard}
-      shopHref={page ? shopHrefOf(slug, page) : `/${slug}`}
+      shopHref={shopHrefOf(slug, page)}
       onOpenStructure={onOpenStructure}
       onOpenInspector={onOpenInspector}
       linkComponent={AppLink}

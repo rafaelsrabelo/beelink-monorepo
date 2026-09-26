@@ -29,8 +29,13 @@ export interface DesignEditorBarProps {
   pageSwitcher?: ReactNode
   device: PreviewDevice
   onDeviceChange: (device: PreviewDevice) => void
-  /** How many writes Publish would send. Zero reads as published, and leaves nothing to discard. */
+  /** How many writes Publish would send from this browser. Zero leaves nothing to discard. */
   changes: number
+  /**
+   * Whether the draft saved on the server differs from what the shop serves — a block's words saved
+   * a moment ago are not in the shop until Publicar. With no changes here, this is what the status says.
+   */
+  unpublished?: boolean
   /**
    * False on a landing that is not up: the status says so, and Publicar puts the page up — with
    * nothing arranged to send, it is still the one thing left to do.
@@ -71,6 +76,7 @@ export function DesignEditorBar({
   device,
   onDeviceChange,
   changes,
+  unpublished = false,
   pagePublished = true,
   publishError = null,
   publishing,
@@ -85,7 +91,14 @@ export function DesignEditorBar({
   const text = messages.design.frame
   const changed = changes > 0
   const counted = changes === 1 ? text.draftOne : format(text.draft, { count: String(changes) })
-  const status = !pagePublished ? messages.design.pages.notPublished : changed ? counted : text.published
+  const pending = changed || unpublished || !pagePublished
+  const status = !pagePublished
+    ? messages.design.pages.notPublished
+    : changed
+      ? counted
+      : unpublished
+        ? messages.design.unpublished
+        : text.published
 
   return (
     <header
@@ -134,7 +147,7 @@ export function DesignEditorBar({
           </span>
         ) : null}
         <span role="status" className={cn("text-header-foreground/80 shrink-0 items-center gap-1.5 px-1 text-sm", publishError ? "hidden" : "flex")}>
-          <span aria-hidden="true" className={cn("size-2 rounded-full", changed || !pagePublished ? "bg-header-pending" : "bg-header-foreground/40")} />
+          <span aria-hidden="true" className={cn("size-2 rounded-full", pending ? "bg-header-pending" : "bg-header-foreground/40")} />
           <span className="sr-only lg:not-sr-only">{status}</span>
         </span>
 
@@ -162,7 +175,7 @@ export function DesignEditorBar({
         <Button
           type="button"
           className="bg-header-foreground text-header hover:bg-header-foreground/90 h-9 shrink-0 px-3 font-semibold sm:px-4"
-          disabled={(pagePublished && !changed) || publishing}
+          disabled={!pending || publishing}
           onClick={onPublish}
         >
           {publishing ? messages.design.publishing : pagePublished ? messages.design.publish : messages.design.pages.publishPage}

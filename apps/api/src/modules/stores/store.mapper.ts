@@ -4,13 +4,11 @@ import type {
   Store as WireStore,
   StoreCategory as WireStoreCategory,
 } from '@harness-monorepo/contracts';
+import type { Prisma } from '../../generated/prisma/client.js';
 import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
 
 // App
-import {
-  sectionInclude,
-  type SectionRow,
-} from '../page/page.mapper.js';
+import { readPageDocument, servedSectionsOf, type SectionShape } from '../page/page-document.js';
 import {
   NO_SHELVES,
   NO_SLUGS,
@@ -31,25 +29,23 @@ import { parseLayoutSettings } from './store-layout-settings.schema.js';
  */
 export type StoreRow = StoreModel & {
   category: StoreCategoryModel | null;
-  sections: SectionRow[];
+  /** The home's last published version, or none: its document is what `/<slug>` is served. */
+  pageVersions: { document: Prisma.JsonValue }[];
   pages: { slug: string | null; title: string }[];
 };
 
 /** The one query shape the store mappers accept, so a call site cannot forget the include. */
 export const storeInclude = {
   category: true,
-  // Only the bands a visitor may see, in the shopkeeper's order. A hidden one is still in the
-  // panel; it simply never reaches this shape. Ordered by position alone — `create` hands out the
-  // next one per shop, so two bands never share a number and there is no tie to break.
-  //
-  // Hidden COMPONENTS are dropped a level down, in `toPublicSection`, and not here: this include
-  // is the panel's too, and the panel has to see what it is hiding.
-  //
-  // The home's bands: `/<slug>` is the home, and a landing is read on its own (`LandingReadService`).
-  sections: {
-    where: { isActive: true, page: { kind: 'HOME' } },
-    orderBy: { position: 'asc' },
-    include: sectionInclude,
+  // The home as last published, and not the rows the panel edits: those are the draft, which a
+  // visitor is not served until Publicar freezes it. Hidden bands are in the document and are
+  // dropped when it is read (`homeSectionsOf`); hidden blocks a level down, in `toPublicSection`.
+  // A landing is read on its own (`LandingReadService`).
+  pageVersions: {
+    where: { page: { kind: 'HOME' } },
+    orderBy: { number: 'desc' },
+    take: 1,
+    select: { document: true },
   },
   // The published landings the shop links from its menu and footer, oldest first.
   pages: {
@@ -58,6 +54,11 @@ export const storeInclude = {
     select: { slug: true, title: true },
   },
 } as const;
+
+/** The home's bands a visitor is served, from its last published version. None before the first. */
+export function homeSectionsOf(row: Pick<StoreRow, 'pageVersions'>): SectionShape[] {
+  return servedSectionsOf(readPageDocument(row.pageVersions[0]?.document));
+}
 
 export function toStoreCategory(row: StoreCategoryModel): WireStoreCategory {
   return {
@@ -86,6 +87,8 @@ export function toPublicStore(
   row: StoreRow,
   slugs: SlugsByEntity = NO_SLUGS,
   shelves: ShelvesByComponent = NO_SHELVES,
+  // Read once by a caller that also looked its showcases up; read here otherwise.
+  sections: readonly SectionShape[] = homeSectionsOf(row),
 ): PublicStore {
   return {
     id: row.id,
@@ -117,7 +120,7 @@ export function toPublicStore(
     paymentMethods: row.paymentMethods,
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
-    sections: row.sections.map((section) =>
+    sections: sections.map((section) =>
       toPublicSection(section, row.slug, ROUTE_WORDS[row.routeVocabulary], slugs, shelves),
     ),
     pages: row.pages.flatMap((page) => (page.slug ? [{ slug: page.slug, title: page.title }] : [])),

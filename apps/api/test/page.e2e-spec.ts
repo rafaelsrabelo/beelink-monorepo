@@ -9,6 +9,7 @@ import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { resetDatabase } from './support/reset-database.js';
+import { publishPage } from './support/publish.js';
 
 const shopBody = {
   name: 'Padaria do Bairro',
@@ -114,7 +115,8 @@ describe('page — span and display', () => {
     expect(response.json<StoreComponent>()).toMatchObject({ span: 'TWO_THIRDS', display: 'GRID' });
   });
 
-  it('hands span and display to a visitor on every component', async () => {
+  it('hands span and display to a visitor on every component, once published', async () => {
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
     const response = await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' });
     const components = response.json<PublicStore>().sections.flatMap((section) => section.components);
 
@@ -140,6 +142,7 @@ describe('page — span and display', () => {
     expect(carousel.statusCode).toBe(400);
     expect(carousel.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
 
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
     const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
     const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === categories.id);
     expect(served).toMatchObject({ display: 'GRID' });

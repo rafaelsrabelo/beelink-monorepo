@@ -12,6 +12,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { coverImageOf, landingBands, PRODUCT_TEMPLATE_IDS, SITE_TEMPLATE_IDS } from './landing-templates.js';
 import { writeBands } from './page-bands-write.js';
+import { freezePage } from './page-freeze.js';
 import { promisesOf } from './page-seed.js';
 import { pageSlugOf } from './page-slug.js';
 import { pageFor } from './page-scope.js';
@@ -135,6 +136,9 @@ export class PagesService {
 
         const current = await tx.storePage.findUniqueOrThrow({ where: { id: page.id }, select: { status: true } });
         const publishing = dto.status === 'PUBLISHED' && current.status !== 'PUBLISHED';
+
+        // Up means the draft as it is now: a landing never goes up serving an older freeze, or none.
+        if (publishing) await freezePage(tx, { storeId, pageId: page.id, authorId: userId });
 
         return tx.storePage.update({
           where: { id: page.id },

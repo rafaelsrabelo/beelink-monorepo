@@ -1,52 +1,19 @@
 // Types
 import type {
   AddComponentPayload,
-  CreateLandingPayload,
   CreateSectionPayload,
   MoveComponentPayload,
-  PageSlugAvailability,
   ReorderPayload,
   Section,
   StoreComponent,
-  StorePage,
   UpdateComponentPayload,
-  UpdatePagePayload,
   UpdateSectionPayload,
 } from "@harness-monorepo/contracts"
 
-/**
- * What a failed call carries: the API's stable code, never a sentence. The screen turns the code
- * into copy in the reader's language (apps/web/AGENTS.md).
- */
-export class PageRequestError extends Error {
-  constructor(readonly errorCode: string) {
-    super(errorCode)
-    this.name = "PageRequestError"
-  }
-}
+// App
+import { call } from "./page-call"
 
-/**
- * Declared on every call, a bodyless read included: `refuseCrossOrigin` answers 415 to a request
- * that does not say it speaks JSON, which is what makes a form posted from another site unable to
- * reach these handlers at all.
- */
-const JSON_HEADERS: Record<string, string> = { "content-type": "application/json" }
-
-function errorCodeOf(payload: unknown): string {
-  return typeof payload === "object" && payload !== null && "errorCode" in payload
-    ? String((payload as { errorCode: unknown }).errorCode)
-    : "UNKNOWN"
-}
-
-/** Every path here is this app's own route handler; the API's address is server-only. */
-async function call<T>(path: string, init: RequestInit): Promise<T> {
-  const response = await fetch(path, { headers: JSON_HEADERS, ...init })
-  const payload: unknown = await response.json().catch(() => null)
-
-  if (!response.ok) throw new PageRequestError(errorCodeOf(payload))
-
-  return payload as T
-}
+export { PageRequestError } from "./page-call"
 
 const sectionsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/sections`
 
@@ -159,26 +126,4 @@ export function duplicateSection(slug: string, sectionId: string): Promise<Secti
 /** A hidden copy of one block, right after it in its band. */
 export function duplicateComponent(slug: string, componentId: string): Promise<StoreComponent> {
   return call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/duplicate`, { method: "POST" })
-}
-
-const pagesPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/pages`
-
-/** The shop's home, then its landings, newest first — archived ones too. */
-export function fetchPages(slug: string): Promise<StorePage[]> {
-  return call<StorePage[]>(pagesPath(slug), { method: "GET" })
-}
-
-/** A landing, as a draft, with the bands its template opens with. */
-export function createPage(slug: string, payload: CreateLandingPayload): Promise<StorePage> {
-  return call<StorePage>(pagesPath(slug), { method: "POST", body: JSON.stringify(payload) })
-}
-
-export function updatePage(slug: string, pageId: string, payload: UpdatePagePayload): Promise<StorePage> {
-  return call<StorePage>(`${pagesPath(slug)}/${encodeURIComponent(pageId)}`, { method: "PATCH", body: JSON.stringify(payload) })
-}
-
-/** Whether an address is free, as the API would store it. `except` is the landing being renamed. */
-export function fetchPageSlugAvailability(slug: string, candidate: string, except?: string): Promise<PageSlugAvailability> {
-  const query = new URLSearchParams({ slug: candidate, ...(except ? { except } : {}) })
-  return call<PageSlugAvailability>(`${pagesPath(slug)}/availability?${query.toString()}`, { method: "GET" })
 }

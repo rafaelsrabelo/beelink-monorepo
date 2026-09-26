@@ -1,6 +1,6 @@
 // Types
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
-import type { SectionRow } from './page.mapper.js';
+import type { SectionShape } from './page-document.js';
 
 // App
 import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery } from '../catalog/showcase.query.js';
@@ -16,7 +16,7 @@ import { NO_SHELVES, NO_SLUGS, slideTargetsOf, type ShelvesByComponent, type Slu
 export async function lookupsOf(
   db: PrismaService,
   storeId: string,
-  sections: readonly SectionRow[],
+  sections: readonly SectionShape[],
 ): Promise<{ slugs: SlugsByEntity; shelves: ShelvesByComponent }> {
   const [slugs, shelves] = await Promise.all([slideSlugs(db, sections), shelvesOf(db, storeId, sections)]);
   return { slugs, shelves };
@@ -30,7 +30,7 @@ export async function lookupsOf(
  * source runs lives in `catalog/showcase.query.ts`, where the rule of what is on the shelf already is. Hidden showcases are skipped — the mapper drops them anyway, and a query for a
  * shelf nobody sees is a query the anonymous page pays for.
  */
-async function shelvesOf(db: PrismaService, storeId: string, sections: readonly SectionRow[]): Promise<ShelvesByComponent> {
+async function shelvesOf(db: PrismaService, storeId: string, sections: readonly SectionShape[]): Promise<ShelvesByComponent> {
   const showcases = sections
     .flatMap((section) => section.components)
     .filter((component) => component.isActive && component.kind === 'PRODUCTS');
@@ -80,7 +80,7 @@ async function shelvesOf(db: PrismaService, storeId: string, sections: readonly 
  * Nothing is thrown when an id resolves to nothing. It simply is not in the map, the mapper
  * builds no address, and the slide is a picture rather than a broken link.
  */
-async function slideSlugs(db: PrismaService, sections: readonly SectionRow[]): Promise<SlugsByEntity> {
+async function slideSlugs(db: PrismaService, sections: readonly SectionShape[]): Promise<SlugsByEntity> {
   const { categoryIds, productIds } = slideTargetsOf(sections);
 
   if (!categoryIds.length && !productIds.length) return NO_SLUGS;

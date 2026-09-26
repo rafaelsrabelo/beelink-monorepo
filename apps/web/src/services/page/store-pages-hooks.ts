@@ -8,7 +8,7 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 import type { CreateLandingPayload, PageSlugAvailability, StorePage, UpdatePagePayload } from "@harness-monorepo/contracts"
 
 // App
-import { createPage, fetchPageSlugAvailability, fetchPages, updatePage } from "./page-requests"
+import { createPage, fetchPageSlugAvailability, fetchPages, updatePage } from "./store-page-requests"
 
 /** Keys built from their inputs at call time, as `sectionKeys` are (docs/ai-rules/state-and-data.md). */
 export const pageKeys = {

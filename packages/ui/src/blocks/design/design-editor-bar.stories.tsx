@@ -38,3 +38,8 @@ export const Publicando: Story = { args: { changes: 3, publishing: true } }
 export const LandingEmRascunho: Story = {
   args: { pageName: "Black Friday", pagePublished: false, shopHref: null },
 }
+
+/** O rascunho salvo no servidor difere do que a loja mostra: nada para descartar, algo para publicar. */
+export const RascunhoSalvo: Story = {
+  args: { unpublished: true },
+}

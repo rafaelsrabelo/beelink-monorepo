@@ -145,6 +145,8 @@ model StorePage {
   publishedAt DateTime?
 
   sections StoreSection[]
+  /// Every time it was published, frozen. The newest is what the shop serves.
+  versions StorePageVersion[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -273,4 +275,35 @@ model StoreComponent {
   @@index([sectionId, position])
   @@index([storeId, kind])
   @@map("store_components")
+}
+
+/// A page as it was published: its bands and blocks, frozen in `document`. Never updated.
+///
+/// The newest by `number` is the one the shop serves — there is no pointer to it: history is
+/// append-only and restoring never publishes, so the newest is always the live one. What the
+/// shopkeeper edits is the rows in `store_sections` and `store_components`, the draft; a visitor is
+/// served this. Products, prices and stock are still resolved when the page is read.
+model StorePageVersion {
+  id      String    @id @default(uuid(7)) @db.Uuid
+  pageId  String    @db.Uuid
+  page    StorePage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  /// Denormalised, as the bands' is: the shop's read of its home selects it through the shop.
+  storeId String    @db.Uuid
+  store   Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// 1, 2, 3… per page. A number and not the time, because two clocks can tie.
+  number   Int
+  /// `{ format, sections }`: see `page-document.ts`. Hidden bands and blocks included, so a restore loses nothing.
+  document Json
+  note     String? @db.VarChar(140)
+
+  /// Who published it. SetNull: a version outlives the account that made it.
+  authorId String? @db.Uuid
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([pageId, number])
+  @@index([storeId])
+  @@map("store_page_versions")
 }
