@@ -10,7 +10,6 @@ const meta = {
   parameters: { layout: "padded" },
   args: {
     value: {
-      display: "CAROUSEL",
       slides: [
         {
           id: "s1",
@@ -41,5 +40,5 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A forma na linha, e as imagens: uma é cartaz, várias são carousel. */
+/** As imagens, cada uma com as suas palavras e o seu destino. A forma delas é do Layout. */
 export const Padrao: Story = {}

@@ -66,7 +66,6 @@ const handlers = {
   onEditBand: noop,
   onDeleteBand: noop,
   onToggle: noop,
-  onSpanChange: noop,
   onDelete: noop,
   onEdit: noop,
 }

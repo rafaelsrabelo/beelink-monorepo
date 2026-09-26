@@ -9,9 +9,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { ColumnsField } from "./columns-field"
-import type { ComponentDisplay, ProductSource } from "./design-types"
-import { DisplayField } from "./display-field"
+import type { ProductSource } from "./design-types"
 import { OptionSearch } from "./option-search"
 import { ShowcasePicksField, type ShowcasePick } from "./showcase-picks-field"
 import { ShowcaseSourceField } from "./showcase-source-field"
@@ -23,9 +21,6 @@ export interface ShowcaseValue {
   sourceCategoryId: string
   /** Read only on a SELECTION showcase. */
   picks: ShowcasePick[]
-  display: ComponentDisplay
-  /** `0` is "let the grid decide". */
-  columns: number
   /** As typed, so a half-typed number is not thrown away. `""` is the default, 24. */
   limit: string
 }
@@ -40,8 +35,6 @@ export interface ShowcaseFieldsProps {
   optionsState?: "ready" | "loading" | "failed"
   messages?: UiMessages
 }
-
-const RAIL_OR_GRID = ["RAIL", "GRID"] as const satisfies readonly ComponentDisplay[]
 
 /** The most a showcase draws. The API holds `limit` to the same. */
 const LIMIT_MAX = 48
@@ -65,7 +58,7 @@ export function showcaseReady(value: ShowcaseValue): boolean {
 
 /**
  * A showcase's own fields: where its products come from, what that source needs (a category, or the
- * products themselves), the shape it is drawn in and how many it draws.
+ * products themselves) and how many it draws. The shape it is drawn in is the Layout tab's.
  *
  * Switching the source keeps what the other sources held, so an owner who tries "uma categoria"
  * and goes back to "escolhidos a dedo" finds their pick where they left it. Only what the source
@@ -113,17 +106,6 @@ export function ShowcaseFields({
           optionsState={optionsState}
           messages={messages}
         />
-      ) : null}
-
-      <DisplayField
-        value={value.display}
-        options={RAIL_OR_GRID}
-        onChange={(display) => onChange({ display })}
-        messages={messages}
-      />
-
-      {value.display === "GRID" ? (
-        <ColumnsField value={value.columns} onChange={(columns) => onChange({ columns })} messages={messages} />
       ) : null}
 
       <Field>

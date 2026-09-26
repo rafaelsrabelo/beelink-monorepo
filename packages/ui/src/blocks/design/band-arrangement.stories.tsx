@@ -72,7 +72,6 @@ const meta = {
     onEditBand: () => {},
     onDeleteBand: () => {},
     onToggle: () => {},
-    onSpanChange: () => {},
     onDelete: () => {},
     onEdit: () => {},
   },

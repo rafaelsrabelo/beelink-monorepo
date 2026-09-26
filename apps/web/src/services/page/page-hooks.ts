@@ -8,6 +8,7 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 import type {
   AddComponentPayload,
   CreateSectionPayload,
+  MoveComponentPayload,
   Section,
   StoreComponent,
   UpdateComponentPayload,
@@ -20,7 +21,10 @@ import {
   createSectionRow,
   deleteComponent,
   deleteSection,
+  duplicateComponent,
+  duplicateSection,
   fetchSections,
+  moveComponent,
   reorderComponents,
   reorderSections,
   updateComponent,
@@ -34,13 +38,20 @@ import {
  */
 export const sectionKeys = {
   all: ["sections"] as const,
-  list: (slug: string) => [...sectionKeys.all, slug] as const,
+  /** Every page of one shop: what a write drops, since a block's page is not in its id. */
+  store: (slug: string) => [...sectionKeys.all, slug] as const,
+  list: (slug: string, pageId?: string) => [...sectionKeys.store(slug), pageId ?? "home"] as const,
+  /** Under the shop's prefix, so every section write drops it with the lists. */
+  draft: (slug: string, pageId: string) => [...sectionKeys.store(slug), "draft", pageId] as const,
+  versions: (slug: string, pageId: string) => [...sectionKeys.store(slug), "versions", pageId] as const,
+  problems: (slug: string, pageId: string) => [...sectionKeys.store(slug), "problems", pageId] as const,
 }
 
-export function useSections(slug: string): UseQueryResult<Section[], Error> {
+/** One page's bands — the home unless another is named. */
+export function useSections(slug: string, pageId?: string): UseQueryResult<Section[], Error> {
   return useQuery({
-    queryKey: sectionKeys.list(slug),
-    queryFn: () => fetchSections(slug),
+    queryKey: sectionKeys.list(slug, pageId),
+    queryFn: () => fetchSections(slug, pageId),
     enabled: slug !== "",
   })
 }
@@ -51,18 +62,18 @@ export interface CreateSectionVariables {
   alongside?: number
 }
 
-export function useCreateSection(slug: string): UseMutationResult<Section, Error, CreateSectionVariables> {
+export function useCreateSection(slug: string, pageId?: string): UseMutationResult<Section, Error, CreateSectionVariables> {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ payload, alongside = 0 }: CreateSectionVariables) => createSectionRow(slug, payload, alongside),
+    mutationFn: ({ payload, alongside = 0 }: CreateSectionVariables) => createSectionRow(slug, payload, alongside, pageId),
     // The promise is RETURNED, not fired and forgotten, and the screen depends on it: a mutation's
     // own callbacks are awaited before the ones passed to `mutate`, so returning this is what makes
     // the list already hold the new block when the screen opens its form. Drop the `return` — by
     // writing a block body — and adding a block silently opens nothing, because the id would name
     // a component the cache has not fetched yet. Settled and not only succeeded: when a banner of a
     // row fails, the band and the others are already written, and the list must show them.
-    onSettled: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
   })
 }
 
@@ -76,7 +87,7 @@ export function useUpdateSection(slug: string): UseMutationResult<Section, Error
 
   return useMutation({
     mutationFn: ({ sectionId, payload }: UpdateSectionVariables) => updateSection(slug, sectionId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
   })
 }
 
@@ -85,7 +96,7 @@ export function useDeleteSection(slug: string): UseMutationResult<unknown, Error
 
   return useMutation({
     mutationFn: (sectionId: string) => deleteSection(slug, sectionId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
   })
 }
 
@@ -94,12 +105,12 @@ export function useDeleteSection(slug: string): UseMutationResult<unknown, Error
  * and in the BFF months ago and never got a request, a hook or a control — so moving a category
  * has never been possible from a screen. The drag ticket inherits this one.
  */
-export function useReorderSections(slug: string): UseMutationResult<Section[], Error, string[]> {
+export function useReorderSections(slug: string, pageId?: string): UseMutationResult<Section[], Error, string[]> {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (ids: string[]) => reorderSections(slug, { ids }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    mutationFn: (ids: string[]) => reorderSections(slug, { ids }, pageId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
   })
 }
 
@@ -116,7 +127,7 @@ export function useCreateComponent(
   return useMutation({
     mutationFn: ({ sectionId, payload }: CreateComponentVariables) =>
       createComponent(slug, sectionId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
   })
 }
 
@@ -133,7 +144,24 @@ export function useUpdateComponent(
   return useMutation({
     mutationFn: ({ componentId, payload }: UpdateComponentVariables) =>
       updateComponent(slug, componentId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
+  })
+}
+
+export interface MoveComponentVariables {
+  componentId: string
+  payload: MoveComponentPayload
+}
+
+export function useMoveComponent(slug: string): UseMutationResult<Section[], Error, MoveComponentVariables> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ componentId, payload }: MoveComponentVariables) => moveComponent(slug, componentId, payload),
+    // Returned, so the list is read again before the screen's own `onSuccess` runs — the band the
+    // block left may be gone, and a screen still holding its id would open nothing. Settled and not
+    // only succeeded: a refusal may be the first news that another tab changed the page.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
   })
 }
 
@@ -142,7 +170,7 @@ export function useDeleteComponent(slug: string): UseMutationResult<unknown, Err
 
   return useMutation({
     mutationFn: (componentId: string) => deleteComponent(slug, componentId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
   })
 }
 
@@ -159,6 +187,30 @@ export function useReorderComponents(
   return useMutation({
     mutationFn: ({ sectionId, ids }: ReorderComponentsVariables) =>
       reorderComponents(slug, sectionId, { ids }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.list(slug) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
+  })
+}
+
+/*
+  The copy's invalidation is returned, so the list is read again before the screen's own `onSuccess`
+  runs: the screen shows the copy in its draft, and a copy the list does not hold yet would be
+  shown there and then dropped by the next reseed.
+*/
+
+export function useDuplicateSection(slug: string): UseMutationResult<Section, Error, string> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (sectionId: string) => duplicateSection(slug, sectionId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
+  })
+}
+
+export function useDuplicateComponent(slug: string): UseMutationResult<StoreComponent, Error, string> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (componentId: string) => duplicateComponent(slug, componentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
   })
 }

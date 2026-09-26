@@ -45,6 +45,11 @@ export interface OptionSearchProps {
   state?: "ready" | "loading" | "failed"
   /** The search box, for a screen that has to put the focus back in it. */
   inputRef?: RefObject<HTMLInputElement | null>
+  /**
+   * What is typed, for a screen whose list is longer than it holds: it asks the API for the matches
+   * and hands them back as `options`, which are still narrowed here as the same letters.
+   */
+  onQueryChange?: (query: string) => void
   messages?: UiMessages
 }
 
@@ -74,6 +79,7 @@ export function OptionSearch({
   limit = 8,
   state = "ready",
   inputRef,
+  onQueryChange,
   messages = defaultMessages,
 }: OptionSearchProps) {
   const [query, setQuery] = useState("")
@@ -102,7 +108,10 @@ export function OptionSearch({
           id={id}
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value)
+            onQueryChange?.(event.target.value)
+          }}
           // The search sits inside the component's form, and Enter there — or a phone keyboard's
           // search key — would submit it: a showcase saved to the live shop mid-search. It narrows
           // instead, and picks the one match when only one is left.

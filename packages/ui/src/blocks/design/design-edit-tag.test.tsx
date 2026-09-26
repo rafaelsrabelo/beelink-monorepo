@@ -105,6 +105,30 @@ describe("DesignEditTag", () => {
     expect(chip!.style.transform).toContain("--design-scale")
   })
 
+  // The chosen block's actions sit where its name was, beside the cover and not inside it.
+  it("draws the selection's bar in the chip's place, outside the cover", () => {
+    render(
+      <DesignEditTag label="Banner" onEdit={vi.fn()} selected nodeId="band-1" bar={<button type="button">Subir Banner</button>}>
+        <p>bloco</p>
+      </DesignEditTag>,
+    )
+
+    const cover = screen.getByRole("button", { name: /Editar.*Banner/ })
+    expect(cover).toHaveAttribute("data-design-node", "band-1")
+    expect(cover.querySelector("span")).toBeNull()
+    expect(cover).not.toContainElement(screen.getByRole("button", { name: "Subir Banner" }))
+  })
+
+  it("keeps the bar away while the block is not the chosen one", () => {
+    render(
+      <DesignEditTag label="Banner" onEdit={vi.fn()} bar={<button type="button">Subir Banner</button>}>
+        <p>bloco</p>
+      </DesignEditTag>,
+    )
+
+    expect(screen.queryByRole("button", { name: "Subir Banner" })).not.toBeInTheDocument()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <DesignEditTag label="Banner" onEdit={vi.fn()}>

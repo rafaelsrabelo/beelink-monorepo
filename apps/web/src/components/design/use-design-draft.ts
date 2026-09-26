@@ -4,7 +4,7 @@
 import { useRouter } from "next/navigation"
 
 // React
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Types
 import type { Section } from "@harness-monorepo/contracts"
@@ -19,24 +19,35 @@ import {
   useUpdateComponent,
   useUpdateSection,
 } from "@/services/page/page-hooks"
-import { changeCountOf, changesOf, hasChanges, reconcile, toDraft, type ComponentDraft, type SectionDraft } from "./design-draft"
+import {
+  changesOf,
+  hasChanges,
+  publishedOf,
+  toDraft,
+  type ComponentDraft,
+  type SectionDraft,
+} from "./design-draft"
+import { reconcile } from "./design-draft-reconcile"
+
+/** How long an arrangement rests before it is saved: long enough to take a drag as one change. */
+const SAVE_DELAY_MS = 400
 
 /**
- * The arrangement as a draft in this browser, until Publish.
+ * The arrangement as it is being edited, saved to the page's draft on the server a moment after each
+ * change. The shop does not change until Publicar: the draft is the server's, not this browser's.
  *
- * That is the owner's decision, and it is not a breach of "server data never enters a store":
- * what is held here is not what the server has, it is what has not been sent yet. TanStack Query
- * stays the owner of the saved arrangement; this state owns the unsent edit, and no refetch may
- * overwrite it.
+ * What is held here is only what has not been sent yet — not what the server has — so it is not a
+ * breach of "server data never enters a store". TanStack Query stays the owner of the saved
+ * arrangement; this state owns the unsent edit, and no refetch may overwrite it before it is saved.
  *
  * A hook and not part of the screen, because the screen had passed the line limit and the seam
  * falls here: this knows what the draft is and how it reaches the server, and the screen knows
  * what is on the page.
  */
-export function useDesignDraft(slug: string) {
+export function useDesignDraft(slug: string, pageId?: string) {
   const router = useRouter()
-  const page = useSections(slug)
-  const reorder = useReorderSections(slug)
+  const page = useSections(slug, pageId)
+  const reorder = useReorderSections(slug, pageId)
   const reorderComponents = useReorderComponents(slug)
   const updateSection = useUpdateSection(slug)
   const updateComponent = useUpdateComponent(slug)
@@ -54,18 +65,23 @@ export function useDesignDraft(slug: string) {
 
     The key names every component of every band, not only the bands: a component added inside a
     band is a change to the list the panel draws, and a key that missed it would leave the panel
-    listing a component the owner had just deleted.
+    listing a component the owner had just deleted. And what the draft holds of each — whether it
+    shows, its layout — so a clean draft follows another tab's Publicar instead of offering to undo it.
   */
   const serverKey =
     page.data
-      ?.map((section) => `${section.id}:${section.components.map((component) => component.id).join("+")}`)
+      ?.map(
+        (section) =>
+          `${section.id}${section.isActive ? "" : "!"}:${section.components
+            .map((c) => [c.id, c.isActive, c.span, c.display, c.columns, c.align, c.visibleOn].join("/"))
+            .join("+")}`,
+      )
       .join(",") ?? null
 
   if (page.data && seeded !== serverKey) {
     setSeeded(serverKey)
     setDraft((current) => (current && dirty ? reconcile(current, page.data) : page.data.map(toDraft)))
   }
-
 
   const rows: SectionDraft[] = draft ?? []
   const saved: Section[] = page.data ?? []
@@ -78,13 +94,17 @@ export function useDesignDraft(slug: string) {
   function edit(next: SectionDraft[] | ((current: SectionDraft[]) => SectionDraft[])) {
     setDraft((current) => (typeof next === "function" ? next(current ?? []) : next))
     setDirty(true)
+    latest.current.edits += 1
   }
 
   function patchSection(id: string, patch: Partial<Pick<SectionDraft, "isActive">>) {
     edit((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
   }
 
-  function patchComponent(id: string, patch: Partial<Pick<ComponentDraft, "isActive" | "span">>) {
+  function patchComponent(
+    id: string,
+    patch: Partial<Pick<ComponentDraft, "isActive" | "span" | "display" | "columns" | "align" | "visibleOn">>,
+  ) {
     edit((current) =>
       current.map((row) => ({
         ...row,
@@ -102,51 +122,78 @@ export function useDesignDraft(slug: string) {
     setDraft(page.data ? page.data.map(toDraft) : null)
   }
 
+  // What the latest render holds, for a save that starts after a timer and finishes after renders.
+  const latest = useRef({ rows, saved: page.data, edits: 0 })
+  latest.current = { ...latest.current, rows, saved: page.data }
+  const inFlight = useRef<Promise<void> | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<Error | null>(null)
   /**
-   * Only what moved is written: an order per level where it changed, a patch per row whose
-   * attributes changed. A write per row would touch `updatedAt` on everything the owner never
-   * opened.
+   * The arrangement, sent: only what moved — an order per level where it changed, a patch per row
+   * whose attributes changed — so nothing the owner never opened has its `updatedAt` touched.
+   *
+   * One save at a time, and another after it if the owner arranged more meanwhile. The draft stays
+   * dirty until the server's answer matches it; an edit made while a save was out is not lost when
+   * that save lands. A refused save drops the unsent arrangement back to what the server holds and
+   * says why: retrying a write the API refuses would only refuse it again.
    */
-  function publish() {
-    if (!page.data) return
+  function flush(): Promise<void> {
+    if (inFlight.current) return inFlight.current.then(() => flush())
 
-    const changes = changesOf(rows, page.data)
+    const { rows: now, saved: server, edits } = latest.current
+    if (!server) return Promise.resolve()
+    const changes = changesOf(now, server)
+    if (!hasChanges(changes)) return Promise.resolve()
 
-    Promise.all([
+    setSaving(true)
+    setSaveError(null)
+    const run = Promise.all([
       ...(changes.orderChanged ? [reorder.mutateAsync(changes.ids)] : []),
       ...changes.componentOrders.map((order) => reorderComponents.mutateAsync(order)),
-      ...changes.sections.map((row) =>
-        updateSection.mutateAsync({ sectionId: row.id, payload: { isActive: row.isActive } }),
-      ),
+      ...changes.sections.map((row) => updateSection.mutateAsync({ sectionId: row.id, payload: { isActive: row.isActive } })),
       ...changes.components.map((component) =>
-        updateComponent.mutateAsync({
-          componentId: component.id,
-          payload: { span: component.span, isActive: component.isActive },
-        }),
+        updateComponent.mutateAsync({ componentId: component.id, payload: publishedOf(component) }),
       ),
     ])
       .then(() => {
-        setDirty(false)
+        if (latest.current.edits === edits) setDirty(false)
         setSeeded(null)
-        // The shop as served is the page's server read, the showcases' products in it: a showcase
-        // shown again has none in the preview until that read is taken again.
+        // The preview's shelves are the page's server read: a showcase shown again has none until it is taken again.
         router.refresh()
       })
-      .catch(() => {
-        // The mutation's own error state is what the screen would show; the draft is kept so
-        // nothing the owner arranged is lost to a failed write.
+      .catch((error: unknown) => {
+        discard()
+        setSaveError(error instanceof Error ? error : new Error(String(error)))
       })
+      .finally(() => {
+        inFlight.current = null
+        setSaving(false)
+      })
+
+    inFlight.current = run
+    return run
+  }
+
+  const changed = draft !== null && hasChanges(changesOf(rows, saved))
+
+  // Saved a moment after the last change, not on every one: a drag across four bands is one save.
+  // `flush` reads the latest render through its ref; the arrangement is what schedules it.
+  useEffect(() => {
+    if (!changed) return
+    const timer = setTimeout(() => void flush(), SAVE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [rows, changed]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Publicar, after whatever is still to be saved: the freeze is queued behind those writes. */
+  function publish(onPublished?: () => void) {
+    void flush().then(() => onPublished?.())
   }
 
   /**
-   * Deleted for good, and at once — not held in the draft until Publish. Publish sends an
-   * arrangement, and a row that is gone has no position to send; holding the delete would also
-   * mean a reload could bring back something the owner watched disappear.
-   *
-   * The draft drops it once the server has, and not before: the API refuses to delete what the
-   * shop cannot be without, and a draft that had already dropped the row would then be arranging a
-   * page with a band the shop still has. The round trip is the cost, and it is one. `onDone` is
-   * how the dialog learns it may close — a refusal keeps it open, with the reason.
+   * Deleted from the draft at once, and dropped here once the server has, not before: the API
+   * refuses to delete what the shop cannot be without, and a row dropped early would leave the
+   * editor arranging a page the draft does not hold. `onDone` is how the dialog learns it may
+   * close — a refusal keeps it open, with the reason.
    */
   function removeBand(id: string, onDone: () => void) {
     removeSection.mutate(id, {
@@ -170,10 +217,7 @@ export function useDesignDraft(slug: string) {
     })
   }
 
-  /**
-   * Why the last delete was refused, for the dialog to say. Cleared when the dialog closes, so the
-   * next question does not open under the previous answer.
-   */
+  /** Why the last delete was refused, for the dialog to say. Cleared when the dialog closes. */
   const deleteError = removeSection.error ?? removeComponent.error ?? null
 
   function clearDeleteError() {
@@ -185,17 +229,12 @@ export function useDesignDraft(slug: string) {
     rows,
     saved,
     loading: page.isPending,
-    /** Touched since the last publish. It governs seeding, which has its own history. */
+    /** Touched since it was last saved. It governs seeding, which has its own history. */
     dirty,
-    /**
-     * Actually different from the server — what the bar's status, Publish and the leave guard
-     * answer to, so a band moved and moved back asks nobody anything.
-     */
-    changed: draft !== null && hasChanges(changesOf(rows, saved)),
-    /** What Publish would write, counted — the bar's "N alterações". Zero while nothing differs. */
-    changeCount: draft === null ? 0 : changeCountOf(changesOf(rows, saved)),
-    publishing:
-      reorder.isPending || reorderComponents.isPending || updateSection.isPending || updateComponent.isPending,
+    /** Arranged here and not yet on the server — about to be saved, or being saved. */
+    saving: saving || changed,
+    /** Why the last save was refused, in the API's code; the arrangement went back to the server's. */
+    saveError,
     deleting: removeSection.isPending || removeComponent.isPending,
     deleteError,
     clearDeleteError,

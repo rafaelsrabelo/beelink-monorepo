@@ -1,29 +1,32 @@
 "use client"
 
 // React
-import type { ComponentProps } from "react"
+import type { ReactNode } from "react"
 
 // Types
 import type { PublicProductCategory, PublicSection, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
+import type { InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 import { ArrangeBoard } from "@harness-monorepo/ui/blocks/design/design-arrange"
-import { DesignBlockPlaceholder } from "@harness-monorepo/ui/blocks/design/design-block-placeholder"
-import { DesignEditTag } from "@harness-monorepo/ui/blocks/design/design-edit-tag"
+import { DesignBesideSlot } from "@harness-monorepo/ui/blocks/design/design-beside-slot"
 import { bandAnnouncements, bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
 import { DesignHandle } from "@harness-monorepo/ui/blocks/design/design-handle"
 import { DesignPreview } from "@harness-monorepo/ui/blocks/design/design-preview"
 import type { PreviewDevice } from "@harness-monorepo/ui/blocks/design/preview-device-toggle"
-import { StorefrontShelfSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-shelf-skeleton"
+import { StorefrontBandCell } from "@harness-monorepo/ui/blocks/storefront/storefront-band-cell"
+import { StorefrontDeliverTo } from "@harness-monorepo/ui/blocks/storefront/storefront-deliver-to"
+import { besideOf } from "@harness-monorepo/ui/lib/band-rows"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontSections } from "@/components/storefront/storefront-sections"
 import { storefrontRoutes } from "@/lib/storefront-routes"
-import { isEmptyComponent } from "../storefront/empty-component"
 import { labelOf } from "./design-draft"
+import { InertLink } from "./inert-link"
 import type { Shelves } from "./design-draft-preview"
+import { DesignPreviewBlock } from "./design-preview-block"
 
 export interface DesignPreviewPaneProps {
   store: PublicStore
@@ -46,17 +49,21 @@ export interface DesignPreviewPaneProps {
   onEdit: (componentId: string) => void
   /** The component whose form is open, drawn as selected here too. */
   selectedId?: string | null
+  /** The band chosen on its own — one of several blocks, picked by its header. */
+  selectedBandId?: string | null
+  /** The selection's actions, drawn over whichever of the two is chosen. */
+  selectionBar?: ReactNode
+  /** The key the editor's ↑↓ know a block by: its band's when it is alone there. */
+  nodeOf?: (componentId: string) => string
+  /** The room a row has left, pressed: a block beside the row's last one. Without it none is drawn. */
+  onInsert?: (at: InsertAt) => void
+  inserting?: boolean
+  /**
+   * On a landing: the home's saved bands, which its strip and a site's menu are read from, and
+   * whether the page asked for the shop's header and footer at all. Absent on the home.
+   */
+  landing?: { homeSections: readonly PublicSection[]; usesChrome: boolean }
   messages: UiMessages
-}
-
-/**
- * An anchor with no `href` navigates nowhere and takes no tab stop.
- *
- * The address is overridden after the spread rather than destructured away: React drops an
- * attribute set to `undefined`, and this form leaves no variable that exists only to be ignored.
- */
-function InertLink(props: ComponentProps<"a"> & { href: string }) {
-  return <a {...props} href={undefined} />
 }
 
 /**
@@ -83,11 +90,33 @@ export function DesignPreviewPane({
   onReorder,
   onEdit,
   selectedId = null,
+  selectedBandId = null,
+  selectionBar,
+  nodeOf = (componentId) => componentId,
+  onInsert,
+  inserting = false,
+  landing,
   messages,
 }: DesignPreviewPaneProps) {
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
-  const text = messages.design
+
+  // The room the band's last row has left, as a cell the size of the block that would land there.
+  // Only room there is: splitting a full row evenly is the panel's "Adicionar ao lado". Not on the
+  // phone, where every block is a row and the slot would sit under the block, not beside it.
+  const besideSlotOf = (section: PublicSection) => {
+    // The computer's row: a block kept for the phone takes no room in it.
+    const inRow = section.components.filter((component) => component.visibleOn !== "PHONE")
+    const last = inRow.at(-1)
+    const room = last ? besideOf(inRow.map((component) => component.span), inRow.length - 1) : null
+    if (!onInsert || device === "PHONE" || !last || !room || room.rebalance.length) return null
+    const at: InsertAt = { level: "beside", sectionId: section.id, afterId: last.id, span: room.span, rebalance: [] }
+    return (
+      <StorefrontBandCell span={room.span}>
+        <DesignBesideSlot name={labelOf(last.kind, last.title, messages)} onAdd={() => onInsert(at)} disabled={inserting} messages={messages} />
+      </StorefrontBandCell>
+    )
+  }
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -120,11 +149,15 @@ export function DesignPreviewPane({
             <StorefrontFrame
               store={store}
               colors={colors}
-              // The draft's bands, so a site's menu in the preview is the menu being arranged.
-              sections={sections}
+              // The draft's bands, so a site's menu in the preview is the menu being arranged — or,
+              // on a landing, the home's, which its strip and menu are drawn from.
+              sections={landing?.homeSections ?? sections}
+              chrome={landing?.usesChrome ?? true}
+              {...(landing ? { anchorBase: routes.home } : {})}
               categories={categories}
               year={year}
               searchSlot={null}
+              deliverToSlot={<StorefrontDeliverTo cep={null} messages={messages} />}
               linkComponent={InertLink}
               messages={messages}
               blocks={
@@ -136,53 +169,34 @@ export function DesignPreviewPane({
                   showPrice={layout.showProductPrice ?? true}
                   showBadge={layout.showProductBadges ?? true}
                   quickAdd={layout.showQuickAdd ?? true}
+                  cartReachable={landing?.usesChrome ?? true}
                   linkComponent={InertLink}
+                  renderBandEnd={besideSlotOf}
                   renderSection={(section, band) => (
                     <DesignHandle
                       id={section.id}
                       label={bandLabelOf(section.name, orderedIds.indexOf(section.id) + 1, messages)}
+                      selected={section.id === selectedBandId}
+                      {...(section.id === selectedBandId && selectionBar ? { bar: selectionBar } : {})}
                       messages={messages}
                     >
                       {band}
                     </DesignHandle>
                   )}
-                  renderBlock={(component, block) => {
-                    const label = labelOf(component.kind, component.title ?? component.sourceCategory?.name ?? null, messages)
-                    const unserved = component.kind === "PRODUCTS" && !shelves.has(component.id)
-                    // No category on the shop window: the block would say the visitor's sentence here.
-                    const noCategories = component.kind === "CATEGORIES" && categories.length === 0
-                    // The one rule the renderer already answers, asked here so the page can hold a
-                    // place for a block the shop window would draw nothing for.
-                    const empty =
-                      noCategories ||
-                      isEmptyComponent(component)
-
-                    return (
-                      <DesignEditTag
-                        label={label}
-                        selected={component.id === selectedId}
-                        onEdit={() => onEdit(component.id)}
-                        messages={messages}
-                      >
-                        {component.id === refreshingId ? (
-                          <StorefrontShelfSkeleton
-                            display={component.display === "GRID" ? "GRID" : "RAIL"}
-                            messages={messages}
-                          />
-                        ) : empty ? (
-                          <DesignBlockPlaceholder
-                            kind={component.kind}
-                            label={label}
-                            {...(unserved ? { action: text.showcaseOnPublish } : {})}
-                            {...(noCategories ? { action: text.categoriesHiddenAction } : {})}
-                            messages={messages}
-                          />
-                        ) : (
-                          block
-                        )}
-                      </DesignEditTag>
-                    )
-                  }}
+                  renderBlock={(component, block) => (
+                    <DesignPreviewBlock
+                      component={component}
+                      block={block}
+                      shelves={shelves}
+                      categoriesShown={categories.length}
+                      refreshing={component.id === refreshingId}
+                      selected={component.id === selectedId}
+                      {...(component.id === selectedId && selectionBar ? { bar: selectionBar } : {})}
+                      nodeId={nodeOf(component.id)}
+                      onEdit={onEdit}
+                      messages={messages}
+                    />
+                  )}
                   messages={messages}
                 />
               }

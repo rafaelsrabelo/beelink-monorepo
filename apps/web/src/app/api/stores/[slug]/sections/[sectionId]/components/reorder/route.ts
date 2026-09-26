@@ -4,7 +4,6 @@ import type { NextRequest } from "next/server"
 
 // App
 import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
-import { revalidateStore } from "@/lib/revalidate"
 
 /** Every component of one band, in its new order. The band's own place does not change. */
 export async function PUT(
@@ -20,8 +19,6 @@ export async function PUT(
     method: "PUT",
     body: (await readJsonBody(request)) ?? {},
   })
-
-  if (status === 200) revalidateStore(slug)
 
   return NextResponse.json(payload, { status })
 }
