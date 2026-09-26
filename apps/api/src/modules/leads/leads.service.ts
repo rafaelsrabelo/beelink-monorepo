@@ -6,6 +6,7 @@ import type { ContactField, Lead, LeadListQuery, LeadPage } from '@harness-monor
 import type { CreateLeadDto, UpdateLeadDto } from './dto/lead.dto.js';
 
 // App
+import { readPageDocument, servedSectionsOf } from '../page/page-document.js';
 import { MailService } from '../../shared/mail/mail.service.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { parseComponentItems } from '../page/component-items.schema.js';
@@ -44,24 +45,36 @@ export class LeadsService {
     // nothing is written or sent — a robot shown success does not come back with a variation.
     if (dto.website) return;
 
-    const form = await this.prisma.storeComponent.findFirst({
-      where: { id: dto.componentId, storeId, kind: 'CONTACT', isActive: true, section: { isActive: true } },
-      select: {
-        id: true,
-        items: true,
-        store: { select: { slug: true, name: true, owner: { select: { name: true, email: true } } } },
-      },
+    // The form a visitor was shown: on a page that is up, as it was published — the draft's rows are
+    // the owner's until Publicar, and a field added there is not one anybody was asked.
+    const pages = await this.prisma.storePage.findMany({
+      where: { storeId, status: 'PUBLISHED' },
+      select: { versions: { orderBy: { number: 'desc' }, take: 1, select: { document: true } } },
     });
+    const form = pages
+      .flatMap((page) => servedSectionsOf(readPageDocument(page.versions[0]?.document)))
+      .flatMap((section) => section.components)
+      .find((component) => component.id === dto.componentId && component.kind === 'CONTACT' && component.isActive);
 
     if (!form) throw new NotFoundException(leadError('LEAD_FORM_NOT_FOUND', 'Este site não tem esse formulário'));
 
     const fields = parseComponentItems('CONTACT', form.items) as ContactField[];
     const checked = checkAnswers(fields, dto.answers);
 
+    // A form deleted from the draft is still published until the next Publicar: its lead is kept,
+    // with no row to point at, as a lead whose form was deleted always has been.
+    const [store, drafted] = await Promise.all([
+      this.prisma.store.findUniqueOrThrow({
+        where: { id: storeId },
+        select: { slug: true, name: true, owner: { select: { name: true, email: true } } },
+      }),
+      this.prisma.storeComponent.count({ where: { id: form.id, storeId } }),
+    ]);
+
     const row = await this.prisma.lead.create({
       data: {
         storeId,
-        componentId: form.id,
+        componentId: drafted ? form.id : null,
         name: dto.name,
         email: checked.email,
         phone: checked.phone,
@@ -69,10 +82,10 @@ export class LeadsService {
       },
     });
 
-    void this.mail.sendLeadReceived(form.store.owner.email, {
-      ownerName: form.store.owner.name,
-      siteName: form.store.name,
-      siteSlug: form.store.slug,
+    void this.mail.sendLeadReceived(store.owner.email, {
+      ownerName: store.owner.name,
+      siteName: store.name,
+      siteSlug: store.slug,
       lead: toLead(row),
     });
   }

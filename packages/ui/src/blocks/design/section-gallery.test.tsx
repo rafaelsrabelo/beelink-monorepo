@@ -38,7 +38,7 @@ describe("SectionGallery — the shelves", () => {
     const props = gallery()
 
     await userEvent.click(screen.getByRole("tab", { name: /Conteúdo/ }))
-    expect(cards().map((card) => within(card).getAllByText(/./)[0]?.textContent)).toEqual(["Título", "Parágrafo"])
+    expect(cards().map((card) => within(card).getAllByText(/./)[0]?.textContent)).toEqual(["Título", "Parágrafo", "Imagem e texto"])
 
     await userEvent.click(screen.getByRole("button", { name: "Adicionar Parágrafo" }))
     expect(props.onAdd).toHaveBeenCalledWith("TEXT", 1)
@@ -48,7 +48,7 @@ describe("SectionGallery — the shelves", () => {
 
   // A site sells nothing; a shop gathers no leads: a shelf left empty is not drawn at all.
   it("draws no shelf this page cannot fill", () => {
-    gallery({ unavailable: ["PRODUCTS", "CATEGORIES"] })
+    gallery({ unavailable: ["PRODUCTS", "CATEGORIES", "FEATURED_PRODUCT"] })
 
     expect(screen.queryByRole("tab", { name: /Produtos e venda/ })).not.toBeInTheDocument()
   })
@@ -130,6 +130,13 @@ describe("SectionGallery — the search and the place", () => {
     const field = screen.getAllByLabelText("Seu nome", { selector: "input" })[0]!
     expect(field.closest("[inert]")).not.toBeNull()
     await expectNoA11yViolations(screen.getByRole("dialog"))
+  })
+
+  // No preview to draw — a shop with no picture yet — and the card keeps its wireframe, never an empty box.
+  it("keeps a card's wireframe where the screen has no preview for it", () => {
+    gallery({ renderPreview: () => null })
+
+    for (const card of cards()) expect(card.querySelector("[inert]")).not.toBeEmptyDOMElement()
   })
 
   it("speaks the panel's language", () => {

@@ -177,7 +177,7 @@ describe("useSelectionControls — the keys", () => {
       sectionId: "a",
       band: toBandForm(saved[0]!),
       bandOpened: toBandForm(saved[0]!),
-      component: { id: banner.id, value: { ...toForm(banner), title: "Digitado" }, linkId: "l1" },
+      component: { id: banner.id, value: { ...toForm(banner), title: "Digitado" }, itemId: "l1" },
     })
     render(<Harness selection={{ level: "block", id: "a1" }} choose={choose} />)
 
@@ -202,7 +202,7 @@ describe("useSelectionControls — the bar", () => {
     expect(draft.patchSection).toHaveBeenCalledWith("a", { isActive: false })
 
     await userEvent.click(screen.getByRole("button", { name: "Trocar layout de a1" }))
-    await userEvent.click(await screen.findByRole("menuitemradio", { name: "Grade" }))
+    await userEvent.click(await screen.findByRole("button", { name: "Grade" }))
     expect(draft.patchComponent).toHaveBeenCalledWith("a1", { display: "GRID" })
     expect(onLayoutTab).toHaveBeenCalled()
   })
@@ -290,7 +290,7 @@ describe("useSelectionControls — Duplicar, guarded", () => {
       sectionId: "b",
       band: toBandForm(saved[1]!),
       bandOpened: toBandForm(saved[1]!),
-      component: { id: b1.id, value: { ...toForm(b1), title: "Digitado" }, linkId: "l1" },
+      component: { id: b1.id, value: { ...toForm(b1), title: "Digitado" }, itemId: "l1" },
     })
     render(<Harness selection={{ level: "block", id: "b1" }} />)
 
@@ -302,7 +302,7 @@ describe("useSelectionControls — Duplicar, guarded", () => {
 
   // A held chord repeats; each repeat would be one more hidden copy.
   it("makes one copy for a held Ctrl+D", async () => {
-    const fetchSpy = vi.fn(async (_url: string) => Response.json({ ...saved[1]!.components[0]!, id: "b1-copy" }, { status: 201 }))
+    const fetchSpy = vi.fn<(url: string) => Promise<Response>>(async () => Response.json({ ...saved[1]!.components[0]!, id: "b1-copy" }, { status: 201 }))
     vi.stubGlobal("fetch", fetchSpy)
     render(<Harness selection={null} />)
 

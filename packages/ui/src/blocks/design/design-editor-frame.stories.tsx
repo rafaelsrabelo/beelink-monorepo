@@ -34,10 +34,9 @@ const meta = {
         pageName="Página inicial"
         device="DESKTOP"
         onDeviceChange={fn()}
-        changes={2}
+        unpublished
         publishing={false}
         onPublish={fn()}
-        onDiscard={fn()}
         shopHref="#"
         onOpenStructure={fn()}
         onOpenInspector={fn()}

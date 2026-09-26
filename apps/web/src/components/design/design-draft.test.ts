@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest"
 import {
   applyComponentOrder,
   applyOrder,
-  changeCountOf,
   changesOf,
   labelOf,
   orderedIdsOf,
@@ -129,22 +128,6 @@ describe("changesOf — only what moved is written", () => {
 
     expect(changes.componentOrders).toEqual([{ sectionId: "b", ids: ["b2", "b1"] }])
     expect(changes.orderChanged).toBe(false)
-  })
-})
-
-describe("changeCountOf — the bar's \"N alterações\"", () => {
-  it("counts nothing on an untouched draft", () => {
-    expect(changeCountOf(changesOf(draft, saved))).toBe(0)
-  })
-
-  it("counts the order of the bands once, however many moved, and each other change by its row", () => {
-    const moved = applyOrder(draft, ["c", "b", "a"]).map((row) => (row.id === "c" ? { ...row, isActive: false } : row))
-    const next = applyComponentOrder(moved, "b", ["b2", "b1"]).map((row) =>
-      row.id === "a" ? { ...row, components: row.components.map((c) => ({ ...c, span: "HALF" as const })) } : row,
-    )
-
-    // The order, band c hidden, band b's inner order and block a1's width: four writes.
-    expect(changeCountOf(changesOf(next, saved))).toBe(4)
   })
 })
 
@@ -305,6 +288,12 @@ describe("arrangementOf — what the panel lists", () => {
 
     const twice = [...saved, section("d", [component("d1", { kind: "PRODUCTS" })])]
     expect(arrangementOf(twice.map(toDraft), twice, NO_SHELVES)[1]!.components[1]).toMatchObject({ deletable: true })
+  })
+
+  // A landing's shelves are the shopkeeper's to take off: only the home cannot be left without one.
+  it("lets a landing's last product list go", () => {
+    const bands = arrangementOf(draft, saved, NO_SHELVES, Number.POSITIVE_INFINITY, false)
+    expect(bands[1]!.components.map((row) => row.deletable)).toEqual([true, true])
   })
 })
 
