@@ -4,6 +4,7 @@ import type {
   CatalogErrorCode,
   CustomerErrorCode,
   LeadErrorCode,
+  OrderErrorCode,
   StoreErrorCode,
   PageErrorCode,
 } from "@harness-monorepo/contracts"
@@ -217,6 +218,7 @@ export interface WebMessages {
     | CustomerErrorCode
     | StoreErrorCode
     | LeadErrorCode
+    | OrderErrorCode
     | HttpFallbackErrorCode
     | WebErrorCode
     | PanelPageErrorCode
