@@ -15,6 +15,7 @@ import type {
 } from "@harness-monorepo/contracts"
 
 // App
+import { customerKeys } from "../customers/customer-hooks"
 import {
   createStore,
   fetchMyStores,
@@ -108,6 +109,10 @@ export function useUpdateStoreColors(slug: string): UseMutationResult<Store, Err
   })
 }
 
+/**
+ * The customers are read again too: their stage is worked out from the shop's "inativo depois de
+ * N dias", which this form sets, so a cached list would keep the old badges for a minute.
+ */
 export function useUpdateStore(slug: string): UseMutationResult<Store, Error, UpdateStorePayload> {
   const queryClient = useQueryClient()
 
@@ -115,7 +120,10 @@ export function useUpdateStore(slug: string): UseMutationResult<Store, Error, Up
     mutationFn: (payload: UpdateStorePayload) => updateStore(slug, payload),
     onSuccess: async (store) => {
       queryClient.setQueryData(storeKeys.detail(slug), store)
-      await queryClient.invalidateQueries({ queryKey: storeKeys.mine() })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: storeKeys.mine() }),
+        queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+      ])
     },
   })
 }

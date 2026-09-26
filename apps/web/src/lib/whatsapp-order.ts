@@ -85,7 +85,7 @@ export function shopOrderMessageOf({ shopName, order, locale, messages }: ShopOr
   ].join("\n")
 }
 
-/** `wa.me/<digits>?text=…`: the shop's number as it is stored, the message escaped whole. */
+/** `wa.me/<digits>?text=…`: a number as it is stored — the shop's or a customer's — the message escaped whole. */
 export function whatsappOrderHref(digits: string, message: string): string {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
 }

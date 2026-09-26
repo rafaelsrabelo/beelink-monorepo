@@ -210,6 +210,7 @@ export class StoresService {
         ...(moved ? { latitude: point?.latitude ?? null, longitude: point?.longitude ?? null } : {}),
         layoutSettings: { ...dto.layoutSettings },
         paymentMethods: dto.paymentMethods,
+        ...(dto.inactiveAfterDays === undefined ? {} : { inactiveAfterDays: dto.inactiveAfterDays }),
       },
       include: storeInclude,
     });

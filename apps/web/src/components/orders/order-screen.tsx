@@ -68,6 +68,7 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
         backHref={listHref}
         addressLine={addressLineOf(current.customer.address)}
         whatsappHref={whatsappHref}
+        customerHref={`/admin/${slug}/customers/${current.customer.id}`}
         onStatusChange={(next) => status.mutate(next)}
         statusPending={status.isPending}
         statusError={pageErrorCopy(status.error, web)}

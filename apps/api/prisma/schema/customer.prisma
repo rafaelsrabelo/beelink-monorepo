@@ -15,6 +15,10 @@ model Customer {
   name         String
   /// Digits only, with the country code, as `wa.me` wants it.
   phone        String?
+  /// The phone the account tried to save when another record of the shop had it — the only trace
+  /// the unique index leaves of one person with two records. The panel flags the pair and the
+  /// shopkeeper merges them; nothing is merged from it on its own. Cleared once a phone is saved.
+  claimedPhone String?
   zipCode      String?
   street       String?
   number       String?
@@ -38,5 +42,8 @@ model Customer {
   @@unique([storeId, userId])
   @@unique([storeId, phone])
   @@index([userId])
+  @@index([storeId, claimedPhone])
+  /// The CRM's stage filter and its "latest order" sort.
+  @@index([storeId, lastOrderAt])
   @@map("customers")
 }

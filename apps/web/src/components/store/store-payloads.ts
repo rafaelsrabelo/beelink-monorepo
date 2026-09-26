@@ -100,6 +100,7 @@ export function toSettingsValues(store: Store): StoreSettingsValues {
       colors: store.colors,
     },
     paymentMethods: store.paymentMethods,
+    customers: { inactiveAfterDays: store.inactiveAfterDays },
   }
 }
 
@@ -130,6 +131,7 @@ export function toUpdatePayload(store: Store, values: StoreSettingsValues): Upda
     address: toAddressPayload(values.address),
     layoutSettings: { ...store.layoutSettings, cardLayout: values.appearance.cardLayout },
     paymentMethods: values.paymentMethods,
+    inactiveAfterDays: values.customers.inactiveAfterDays,
   } satisfies UpdateStorePayload
 }
 

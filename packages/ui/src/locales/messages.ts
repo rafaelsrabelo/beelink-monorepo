@@ -31,6 +31,7 @@ export interface UiMessages {
     ufInvalid: string
     colorInvalid: string
     paymentMethodsMin: string
+    inactiveAfterDaysRange: string
     slugMin: string
     slugMax: string
     slugInvalid: string
@@ -293,6 +294,11 @@ export interface UiMessages {
     accountState: string
     accountSave: string
     accountSaved: string
+    /**
+     * The phone refused because the shop already has it on another record — most likely one the
+     * shopkeeper made from a WhatsApp sale. Says to talk to the shop, who can merge the two.
+     */
+    accountPhoneTaken: string
     /** The product page (5b). `{name}` — the shop, over the title. */
     visitShop: string
     /** The buy column's landmark name. */
@@ -741,26 +747,132 @@ export interface UiMessages {
     }
   }
   /** What arrived through a site's contact form, as its owner works through it. */
-  /** The panel's list of who opened an account at the shop. */
+  /** The panel's customers, as the CRM: who never bought, who buys, and who stopped. */
   customers: {
     title: string
     description: string
     searchLabel: string
     searchPlaceholder: string
-    name: string
-    contact: string
-    place: string
+    /** The stage tabs: what they filter by, "Todos", and each stage in the plural. */
+    stageFilterLabel: string
+    all: string
+    tabs: { LEAD: string; CUSTOMER: string; INACTIVE: string }
+    sortLabel: string
+    sorts: { RECENT: string; LAST_ORDER: string; MOST_ORDERS: string; TOP_SPENT: string }
+    /** The columns. */
+    customer: string
     stage: string
-    since: string
-    stages: { LEAD: string; CUSTOMER: string }
+    orders: string
+    spent: string
+    lastOrder: string
+    place: string
+    stages: { LEAD: string; CUSTOMER: string; INACTIVE: string }
+    /** Beside the Inativo badge: "há {days} dias". */
+    inactiveFor: string
     /** Beside an e-mail its owner never confirmed. */
     unverified: string
+    /** Beside the stage: another record of the shop may be the same person. */
+    possibleDuplicate: string
+    /** The accessible name of a row's link: "Abrir a ficha de {name}". */
+    open: string
+    /** A card's line: "{count} pedidos", its singular, and none. */
+    ordersCount: string
+    ordersOne: string
+    ordersNone: string
+    /** A card's line: "Último pedido em {date}". */
+    lastOrderOn: string
+    /** The button in full, where there is room; its short form in the table's column. */
+    whatsapp: string
+    whatsappShort: string
+    /** The button's accessible name, holding both forms: "Chamar no WhatsApp: {name}". */
+    whatsappLabel: string
+    /** Why the button is off. */
+    whatsappNoPhone: string
     empty: string
     emptyHint: string
     emptySearch: string
+    /** A tab with no one in it. */
+    emptyStage: string
     range: string
     previous: string
     next: string
+    /**
+     * The WhatsApp conversation the list opens, from the shop to the customer: a greeting, then one
+     * sentence for where they stand. Fixed per stage; the shopkeeper does not edit them.
+     */
+    message: {
+      /** `{name}` is the first name, `{shop}` the shop's. */
+      greeting: string
+      /** An invitation to the first order. */
+      LEAD: string
+      CUSTOMER: string
+      /** "Faz tempo que você não passa aqui". */
+      INACTIVE: string
+    }
+    /** A customer's record: who they are, their numbers, their orders, and the way to correct them. */
+    record: {
+      /** The way back to the list. */
+      back: string
+      /** Under the name: "Na loja desde {date}". */
+      since: string
+      newOrder: string
+      numbers: string
+      orders: string
+      spent: string
+      /** Total spent over the valid orders. */
+      averageTicket: string
+      firstOrder: string
+      lastOrder: string
+      daysSince: string
+      details: string
+      name: string
+      email: string
+      emailVerified: string
+      emailUnverified: string
+      /** A customer the shop registered, who has no account and so no e-mail. */
+      noEmail: string
+      /** Under the e-mail while editing: why it is not a field. */
+      emailFixed: string
+      phone: string
+      noPhone: string
+      address: string
+      noAddress: string
+      edit: string
+      save: string
+      saving: string
+      cancel: string
+      saved: string
+      history: string
+      historyEmpty: string
+      historyEmptyHint: string
+      /** The accessible name of a history row's link: "Abrir o pedido #{number}". */
+      openOrder: string
+      /** The shop's other records that may be this person, and the way to make the two one. */
+      duplicates: {
+        title: string
+        lead: string
+        /** Why each is listed: the refused phone, or the name. */
+        reasons: { PHONE: string; NAME: string }
+        /** In place of the e-mail, for a record the shop registered. */
+        noAccount: string
+        /** The button, and its accessible name: "Juntar com {name}". */
+        merge: string
+        mergeLabel: string
+        /** The dialog's title: "Juntar com {name}?". */
+        confirmTitle: string
+        /** This record is kept and `{name}`'s goes. */
+        confirmHere: string
+        /** `{name}` has the account: it is kept, and this record goes. */
+        confirmThere: string
+        /** What else moves, and that it is for good. */
+        confirmFill: string
+        confirm: string
+        merging: string
+        cancel: string
+        /** Said on the record kept, once the two are one. */
+        merged: string
+      }
+    }
   }
   /** The panel's orders: the list, and later the order and its form. */
   orders: {
@@ -833,6 +945,8 @@ export interface UiMessages {
       productChoose: string
       variantAdd: string
       outOfStock: string
+      /** A line past what is left: "Só há {count} em estoque". */
+      onlyLeft: string
       linesEmpty: string
       linesTitle: string
       lineAdded: string
@@ -859,6 +973,8 @@ export interface UiMessages {
       invalidMoney: string
       missingCustomer: string
       missingItems: string
+      /** Said under the lines while one asks for more than the shop has. */
+      overStock: string
       missingPayment: string
       placedAtInvalid: string
       save: string
@@ -1404,6 +1520,7 @@ export interface UiMessages {
       tabSocial: string
       tabAppearance: string
       tabPayment: string
+      tabCustomers: string
       save: string
       saving: string
       loading: string
@@ -1497,6 +1614,12 @@ export interface UiMessages {
       previewLabel: string
       previewSample: string
       previewAction: string
+    }
+    customers: {
+      legend: string
+      inactiveAfterDays: string
+      days: string
+      hint: string
     }
     payment: {
       legend: string

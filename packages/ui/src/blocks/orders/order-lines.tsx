@@ -9,7 +9,7 @@ import { Trash2Icon } from "lucide-react"
 // UI
 import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Button } from "@harness-monorepo/ui/components/button"
-import type { OrderFormLine } from "@harness-monorepo/ui/lib/order-form"
+import { overStock, type OrderFormLine } from "@harness-monorepo/ui/lib/order-form"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
@@ -63,9 +63,9 @@ export function OrderLines({ lines, onQuantityChange, onRemove, money, labelledB
               <span className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
                 {line.variantLabel ? <span>{line.variantLabel}</span> : null}
                 <span className="tabular-nums">{money(line.unitPriceCents)}</span>
-                {line.outOfStock ? (
+                {overStock(line) ? (
                   <Badge variant="outline" className="border-destructive/40 text-destructive">
-                    {text.outOfStock}
+                    {line.available === 0 ? text.outOfStock : format(text.onlyLeft, { count: String(line.available) })}
                   </Badge>
                 ) : null}
               </span>

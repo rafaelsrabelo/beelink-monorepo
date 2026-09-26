@@ -11,7 +11,7 @@ export interface StoreSettingsSkeletonProps {
 }
 
 /**
- * The settings form while the shop loads: the same card, the same row of five tabs and the same
+ * The settings form while the shop loads: the same card, the same row of six tabs and the same
  * four fields below them, so nothing moves when the data arrives.
  */
 export function StoreSettingsSkeleton({ messages = defaultMessages }: StoreSettingsSkeletonProps) {
@@ -25,7 +25,7 @@ export function StoreSettingsSkeleton({ messages = defaultMessages }: StoreSetti
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <div className="flex gap-2">
-            {Array.from({ length: 5 }, (_, index) => (
+            {Array.from({ length: 6 }, (_, index) => (
               <Skeleton key={index} className="h-8 w-28" />
             ))}
           </div>
