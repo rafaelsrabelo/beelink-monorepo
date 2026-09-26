@@ -6,6 +6,7 @@ import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { StoresService } from '../stores/stores.service.js';
 
 // App
+import { PageComponentMovesService } from './page-component-moves.service.js';
 import { PageComponentsService } from './page-components.service.js';
 import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
@@ -81,6 +82,8 @@ function build({ kinds = ['BANNER'] as string[], bands = ['before', BAND, 'after
       create: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => ({ id: 'copy', createdAt: AT, updatedAt: AT, ...data })),
     },
     $queryRaw: vi.fn().mockResolvedValue([]),
+    // The draft's revision, bumped by every write: one row, as the page exists.
+    $executeRaw: vi.fn().mockResolvedValue(1),
     $transaction: vi.fn(),
   } as unknown as PrismaService;
   vi.mocked(prisma.$transaction).mockImplementation(((work: (tx: PrismaService) => unknown) => work(prisma)) as never);
@@ -92,6 +95,7 @@ function build({ kinds = ['BANNER'] as string[], bands = ['before', BAND, 'after
     prisma,
     bands: new PageService(prisma, stores, rules, new ShowcaseRules(prisma)),
     blocks: new PageComponentsService(prisma, stores, rules, new ShowcaseRules(prisma)),
+    moves: new PageComponentMovesService(prisma, stores, rules),
   };
 }
 
@@ -146,9 +150,9 @@ describe('PageService.duplicateSection', () => {
 
 describe('PageComponentsService.duplicateComponent', () => {
   it('lands a hidden copy right after the block, in its band, with fresh item ids', async () => {
-    const { blocks, prisma } = build({ siblings: [BLOCK, 'next'] });
+    const { moves, prisma } = build({ siblings: [BLOCK, 'next'] });
 
-    const copy = await blocks.duplicateComponent('lessari', 'user-1', BLOCK);
+    const copy = await moves.duplicateComponent('lessari', 'user-1', BLOCK);
 
     expect(prisma.storeComponent.update).toHaveBeenCalledWith({ where: { id: 'next' }, data: { position: 2 } });
     const { data } = vi.mocked(prisma.storeComponent.create).mock.calls[0]![0] as unknown as { data: Record<string, unknown> & { items: { id: string }[] } };
@@ -158,18 +162,18 @@ describe('PageComponentsService.duplicateComponent', () => {
   });
 
   it('refuses the strip', async () => {
-    const { blocks, prisma } = build({ kinds: ['ANNOUNCEMENT'] });
+    const { moves, prisma } = build({ kinds: ['ANNOUNCEMENT'] });
 
-    await expect(blocks.duplicateComponent('lessari', 'user-1', BLOCK)).rejects.toMatchObject({
+    await expect(moves.duplicateComponent('lessari', 'user-1', BLOCK)).rejects.toMatchObject({
       response: { errorCode: 'COMPONENT_KIND_SINGLETON' },
     });
     expect(prisma.storeComponent.create).not.toHaveBeenCalled();
   });
 
   it('answers an id that is not a block as one this shop does not have', async () => {
-    const { blocks } = build();
+    const { moves } = build();
 
-    await expect(blocks.duplicateComponent('lessari', 'user-1', 'not-a-uuid')).rejects.toMatchObject({
+    await expect(moves.duplicateComponent('lessari', 'user-1', 'not-a-uuid')).rejects.toMatchObject({
       response: { errorCode: 'COMPONENT_NOT_FOUND' },
     });
   });

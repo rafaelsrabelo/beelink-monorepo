@@ -144,6 +144,10 @@ model StorePage {
   status      PageStatus @default(DRAFT)
   publishedAt DateTime?
 
+  /// One more on every accepted write to the page's draft — its bands and blocks — and never on a
+  /// refused one. A write that names the revision it read is refused (409) when another landed since.
+  draftRevision Int @default(0)
+
   sections StoreSection[]
   /// Every time it was published, frozen. The newest is what the shop serves.
   versions StorePageVersion[]

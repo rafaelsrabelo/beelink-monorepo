@@ -461,6 +461,12 @@ export type PageErrorCode =
   | "PAGE_PRODUCT_REQUIRED"
   /** A product that is not this shop's. */
   | "PAGE_PRODUCT_INVALID"
+  /** Another tab wrote to this page's draft since this one read it: reload before writing. */
+  | "PAGE_DRAFT_STALE"
+  /** An `x-page-revision` that is not a whole number. */
+  | "PAGE_REVISION_INVALID"
+  /** A version that is not this page's. */
+  | "PAGE_VERSION_NOT_FOUND"
   /** A `source` that is not one of the five, or a showcase's field sent to a kind that is not one. */
   | "SHOWCASE_SOURCE_INVALID"
   /** A `CATEGORY` showcase with no category, or with one that is not this shop's. */

@@ -25,6 +25,12 @@ export interface PageVersionSummary {
  */
 export interface PageDraft {
   page: StorePage;
+  /**
+   * One more on every accepted write to the draft. A write sends the revision it read as
+   * `x-page-revision` and is refused (409, PAGE_DRAFT_STALE) when another write landed since; an
+   * accepted one leaves the page at the sent revision plus one.
+   */
+  revision: number;
   /** Whether Publicar would change what a visitor is served. */
   hasUnpublishedChanges: boolean;
   /** The version the shop serves now, or null before the first publish. */
@@ -40,4 +46,19 @@ export interface PublishPagePayload {
 export interface PublishPageResult {
   page: StorePage;
   version: PageVersionSummary;
+}
+
+/** The header a draft write names the revision it read in. */
+export type PageRevisionHeader = "x-page-revision";
+
+/** What Publicar would serve that the owner may not mean to. None of them stops a publish. */
+export type PageProblemKind = "LINK_TO_MISSING_PRODUCT" | "LINK_TO_MISSING_CATEGORY" | "SHOWCASE_EMPTY" | "BANNER_WITHOUT_IMAGE";
+
+/** One problem, by where it is: the screen names the block and the band and writes the sentence. */
+export interface PageProblem {
+  kind: PageProblemKind;
+  sectionId: string;
+  componentId: string;
+  /** The slide or link at fault, when the block holds several. */
+  itemId: string | null;
 }

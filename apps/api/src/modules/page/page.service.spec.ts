@@ -6,6 +6,7 @@ import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { StoresService } from '../stores/stores.service.js';
 
 // App
+import { PageComponentMovesService } from './page-component-moves.service.js';
 import { PageComponentsService } from './page-components.service.js';
 import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
@@ -203,6 +204,8 @@ function build(
       ),
     },
     $queryRaw: vi.fn().mockResolvedValue([]),
+    // The draft's revision, bumped by every write: one row, as the page exists.
+    $executeRaw: vi.fn().mockResolvedValue(1),
     $transaction: vi.fn(),
   } as unknown as PrismaService;
 
@@ -216,6 +219,7 @@ function build(
   return {
     service: new PageService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma)),
     components: new PageComponentsService(prisma, stores, new PageRules(prisma), new ShowcaseRules(prisma)),
+    moves: new PageComponentMovesService(prisma, stores, new PageRules(prisma)),
     prisma,
     createSection,
     createComponent,
@@ -586,9 +590,9 @@ describe('PageService — an order is the whole list or nothing', () => {
   });
 
   it('reorders inside one band without touching the page’s order', async () => {
-    const { components, prisma } = build({ owned: [{ id: COMPONENT }, { id: 'component-2' }] });
+    const { moves, prisma } = build({ owned: [{ id: COMPONENT }, { id: 'component-2' }] });
 
-    await components.reorderComponents('lessari', 'user-1', SECTION, { ids: ['component-2', COMPONENT] });
+    await moves.reorderComponents('lessari', 'user-1', SECTION, { ids: ['component-2', COMPONENT] });
 
     expect(prisma.storeComponent.update).toHaveBeenNthCalledWith(1, {
       where: { id: 'component-2' },
@@ -617,9 +621,9 @@ describe('PageService — a block moves into another band', () => {
   }
 
   it('lands where it is told in the band it joins, and closes up the band it left', async () => {
-    const { components, prisma } = build({ bands });
+    const { moves, prisma } = build({ bands });
 
-    await components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, position: 1 });
+    await moves.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, position: 1 });
 
     expect(writes(prisma)).toEqual([
       { where: { id: 'second' }, data: { position: 2 } },
@@ -634,9 +638,9 @@ describe('PageService — a block moves into another band', () => {
   });
 
   it('deletes the band it leaves empty, once it has left it', async () => {
-    const { components, prisma } = build({ bands: { ...bands, [SECTION]: [{ id: COMPONENT, position: 0, kind: 'BANNER' }] } });
+    const { moves, prisma } = build({ bands: { ...bands, [SECTION]: [{ id: COMPONENT, position: 0, kind: 'BANNER' }] } });
 
-    await components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION });
+    await moves.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION });
 
     expect(writes(prisma)).toEqual([{ where: { id: COMPONENT }, data: { sectionId: OTHER_SECTION, position: 2 } }]);
     expect(prisma.storeSection.delete).toHaveBeenCalledWith({ where: { id: SECTION } });
@@ -647,9 +651,9 @@ describe('PageService — a block moves into another band', () => {
   });
 
   it('reorders it inside its own band when that is the band it is sent to, and deletes nothing', async () => {
-    const { components, prisma } = build({ bands });
+    const { moves, prisma } = build({ bands });
 
-    await components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: SECTION, position: 1 });
+    await moves.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: SECTION, position: 1 });
 
     expect(writes(prisma)).toEqual([
       { where: { id: 'left-behind' }, data: { position: 0 } },
@@ -659,9 +663,9 @@ describe('PageService — a block moves into another band', () => {
   });
 
   it('takes the span it is sent, so the row it joins has room for it in the same write', async () => {
-    const { components, prisma } = build({ bands });
+    const { moves, prisma } = build({ bands });
 
-    await components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, span: 'THIRD' });
+    await moves.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION, span: 'THIRD' });
 
     expect(prisma.storeComponent.update).toHaveBeenCalledWith({
       where: { id: COMPONENT },
@@ -673,8 +677,8 @@ describe('PageService — a block moves into another band', () => {
     const strip = build({ kind: 'ANNOUNCEMENT', bands });
     const intoStrip = build({ bands: { ...bands, [OTHER_SECTION]: [{ id: 'strip', position: 0, kind: 'ANNOUNCEMENT' }] } });
 
-    for (const { components, prisma } of [strip, intoStrip]) {
-      const refusal: unknown = await components
+    for (const { moves, prisma } of [strip, intoStrip]) {
+      const refusal: unknown = await moves
         .moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION })
         .catch((error: unknown) => error);
 
@@ -686,10 +690,10 @@ describe('PageService — a block moves into another band', () => {
   });
 
   it('answers another shop’s band as one this shop does not have, and moves nothing', async () => {
-    const { components, prisma } = build({ bands, sectionOfAnotherShop: true });
+    const { moves, prisma } = build({ bands, sectionOfAnotherShop: true });
 
     await expect(
-      components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
+      moves.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
     ).rejects.toMatchObject({ response: { errorCode: 'SECTION_NOT_FOUND' } });
     expect(prisma.storeComponent.update).not.toHaveBeenCalled();
   });
@@ -732,13 +736,13 @@ describe('PageService — a band is on one page', () => {
   });
 
   it('refuses a move into a band on another page, and moves nothing', async () => {
-    const { components, prisma } = build({
+    const { moves, prisma } = build({
       bands: { [SECTION]: [{ id: COMPONENT, position: 0, kind: 'BANNER' }], [OTHER_SECTION]: [] },
       pageOfBand: { [OTHER_SECTION]: LANDING },
     });
 
     await expect(
-      components.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
+      moves.moveComponent('lessari', 'user-1', COMPONENT, { sectionId: OTHER_SECTION }),
     ).rejects.toMatchObject({ response: { errorCode: 'SECTION_NOT_FOUND' } });
     expect(prisma.storeComponent.update).not.toHaveBeenCalled();
   });
