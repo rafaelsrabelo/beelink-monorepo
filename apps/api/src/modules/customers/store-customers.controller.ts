@@ -1,6 +1,7 @@
 // Nest
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -17,7 +18,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
-import { CreateStoreCustomerDto, ListStoreCustomersDto, UpdateStoreCustomerDto } from './dto/store-customer.dto.js';
+import { CreateStoreCustomerDto, ListStoreCustomersDto, MergeStoreCustomerDto, UpdateStoreCustomerDto } from './dto/store-customer.dto.js';
 import { StoreCustomerDetailResponse, StoreCustomerPageResponse, StoreCustomerResponse } from './dto/store-customer.response.js';
 import { StoreCustomersService } from './store-customers.service.js';
 
@@ -71,6 +72,24 @@ export class StoreCustomersController {
     @Body() dto: UpdateStoreCustomerDto,
   ): Promise<StoreCustomerDetailResponse> {
     return this.customers.update(storeSlug, current.id, customerId, dto);
+  }
+
+  @Post(':customerId/merge')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Make two records of one person one: the orders move to the record with an account, and the other is deleted',
+  })
+  @ApiOkResponse({ type: StoreCustomerDetailResponse, description: 'The record kept — not always the one in the address.' })
+  @ApiBadRequestResponse({ description: 'CUSTOMER_MERGE_SELF — the same record on both sides' })
+  @ApiNotFoundResponse({ description: 'CUSTOMER_NOT_FOUND — either record is not this shop\'s' })
+  @ApiConflictResponse({ description: 'CUSTOMER_MERGE_TWO_ACCOUNTS — both records have an account' })
+  merge(
+    @Param('storeSlug') storeSlug: string,
+    @Param('customerId') customerId: string,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: MergeStoreCustomerDto,
+  ): Promise<StoreCustomerDetailResponse> {
+    return this.customers.merge(storeSlug, current.id, customerId, dto);
   }
 
   @Get()

@@ -1,4 +1,5 @@
 // Locales
+import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
@@ -31,6 +32,20 @@ export interface CustomerListItem {
   lastOrderAt: string | null
   /** Whole days since the last order, as the API counts them for the stage; null with none. */
   daysSinceLastOrder: number | null
+  /** Another record of the shop may be the same person; the record lists them. */
+  possibleDuplicate: boolean
+}
+
+/** Another record that may be the same person: the wire's `CustomerDuplicate`, as the record offers it. */
+export interface CustomerDuplicateView {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  /** The record with an account is the one kept. */
+  hasAccount: boolean
+  ordersCount: number
+  reason: "PHONE" | "NAME"
 }
 
 /** A customer's record: the wire's `StoreCustomerDetail`, as the record reads it. */
@@ -55,6 +70,13 @@ export interface CustomerRowsProps {
   when: (iso: string) => string
   linkComponent: LinkComponent
   messages: UiMessages
+}
+
+/** "Nenhum pedido", "1 pedido", "3 pedidos". */
+export function ordersLabel(count: number, messages: UiMessages): string {
+  const text = messages.customers
+  if (count === 0) return text.ordersNone
+  return count === 1 ? text.ordersOne : format(text.ordersCount, { count: String(count) })
 }
 
 /** "São Paulo / SP", either half alone, or null with neither. */

@@ -1,6 +1,7 @@
 // Types
 import type {
   CreateStoreCustomerPayload,
+  MergeStoreCustomerPayload,
   StoreCustomer,
   StoreCustomerDetail,
   StoreCustomerListQuery,
@@ -58,6 +59,18 @@ export async function fetchStoreCustomer(slug: string, customerId: string): Prom
 export async function updateStoreCustomer(slug: string, customerId: string, payload: UpdateStoreCustomerPayload): Promise<StoreCustomerDetail> {
   const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers/${encodeURIComponent(customerId)}`, {
     method: "PATCH",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(payload),
+  })
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new CustomerRequestError(errorCodeOf(body))
+  return body as StoreCustomerDetail
+}
+
+/** Makes two records of one person one; answers the record kept, which may be the other one. */
+export async function mergeStoreCustomer(slug: string, customerId: string, payload: MergeStoreCustomerPayload): Promise<StoreCustomerDetail> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/customers/${encodeURIComponent(customerId)}/merge`, {
+    method: "POST",
     headers: JSON_HEADERS,
     body: JSON.stringify(payload),
   })

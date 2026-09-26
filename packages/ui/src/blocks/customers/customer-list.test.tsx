@@ -129,6 +129,17 @@ describe("CustomerList", () => {
     expect(bia).not.toHaveTextContent("R$")
   })
 
+  it("flags a possible duplicate under the stage, in the table and on the card, and nobody else", () => {
+    renderList()
+    const [bia, caio] = tableRows()
+    const [biaCard, caioCard] = screen.getAllByRole("listitem")
+
+    expect(within(bia!).getAllByRole("cell")[1]).toHaveTextContent("LeadPossível duplicado")
+    expect(caio).not.toHaveTextContent("Possível duplicado")
+    expect(biaCard).toHaveTextContent("Possível duplicado")
+    expect(caioCard).not.toHaveTextContent("Possível duplicado")
+  })
+
   it("says the year of a last order from another year", () => {
     renderList({ customers: [{ ...customers[1]!, lastOrderAt: "2024-03-02T15:00:00.000Z" }] })
 

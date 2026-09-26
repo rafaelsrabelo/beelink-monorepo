@@ -1,19 +1,12 @@
 // Locales
 import { format } from "@harness-monorepo/ui/locales/index"
-import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { CustomerContact } from "./customer-contact"
+import { CustomerDuplicateBadge } from "./customer-duplicate-badge"
 import { CustomerStageBadge } from "./customer-stage-badge"
-import { placeOf, type CustomerRowsProps } from "./customer-types"
+import { ordersLabel, placeOf, type CustomerRowsProps } from "./customer-types"
 import { CustomerWhatsApp } from "./customer-whatsapp"
-
-/** "Nenhum pedido", "1 pedido", "3 pedidos". */
-function ordersLabel(count: number, messages: UiMessages): string {
-  const text = messages.customers
-  if (count === 0) return text.ordersNone
-  return count === 1 ? text.ordersOne : format(text.ordersCount, { count: String(count) })
-}
 
 /**
  * The list as cards, on a phone behind the counter. The name is the card's one link, stretched over
@@ -43,7 +36,10 @@ export function CustomerCards({ customers, hrefOf, whatsappHrefOf, money, when, 
                 </Link>
                 <CustomerContact customer={customer} messages={messages} />
               </span>
-              <CustomerStageBadge customer={customer} messages={messages} />
+              <span className="flex flex-col items-end gap-1">
+                <CustomerStageBadge customer={customer} messages={messages} />
+                {customer.possibleDuplicate ? <CustomerDuplicateBadge messages={messages} /> : null}
+              </span>
             </span>
             <span className="text-muted-foreground flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs">
               <span className="tabular-nums">

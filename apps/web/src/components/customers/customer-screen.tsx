@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react"
 
 // UI
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
+import { CustomerDuplicates } from "@harness-monorepo/ui/blocks/customers/customer-duplicates"
 import { CustomerOrders } from "@harness-monorepo/ui/blocks/customers/customer-orders"
 import { CustomerProfile } from "@harness-monorepo/ui/blocks/customers/customer-profile"
 import { CustomerRecordHeader } from "@harness-monorepo/ui/blocks/customers/customer-record-header"
@@ -21,6 +22,7 @@ import { addressLineOf } from "@/lib/customer-address"
 import { customerWhatsappHref } from "@/lib/whatsapp-customer"
 import { useStore } from "@/services/stores/store-hooks"
 import { CustomerScreenSkeleton } from "./customer-screen-skeleton"
+import { useCustomerMerge } from "./use-customer-merge"
 import { useCustomerRecord } from "./use-customer-record"
 
 export interface CustomerScreenProps {
@@ -33,11 +35,14 @@ export interface CustomerScreenProps {
 /**
  * Everything the shop knows of one customer on one page: who they are and how to reach them, their
  * figures, every order they made — each leading to it — a new order already made out to them, and
- * the WhatsApp message for where they stand. Their details are corrected here, in their card.
+ * the WhatsApp message for where they stand. Their details are corrected here, in their card, and
+ * another record of the same person is merged into one from here.
  */
 export function CustomerScreen({ slug, customerId, messages, web }: CustomerScreenProps) {
   const text = messages.customers
   const view = useCustomerRecord(slug, customerId, web)
+  const merge = useCustomerMerge(slug, customerId, web)
+  const mergedNote = useRef<HTMLParagraphElement>(null)
   // Already cached by the panel's shell: the message says which shop is writing.
   const store = useStore(slug)
   const listHref = `/admin/${slug}/customers`
@@ -49,6 +54,13 @@ export function CustomerScreen({ slug, customerId, messages, web }: CustomerScre
   useEffect(() => {
     if (history && history.orders.length === 0 && history.total > 0 && page > 1) goToPage(1)
   }, [history, page, goToPage])
+
+  // The question and the "Juntar" pressed are gone once the two are one: the focus goes to the
+  // sentence that says so, on the record kept — which it reads, being where the reader now is.
+  const merged = merge.merged && Boolean(view.record.data)
+  useEffect(() => {
+    if (merged) mergedNote.current?.focus()
+  }, [merged])
 
   // The history is the last section: a new page is brought into view, where the pager was pressed.
   const toPage = (next: number) => {
@@ -84,7 +96,19 @@ export function CustomerScreen({ slug, customerId, messages, web }: CustomerScre
         messages={messages}
       />
 
+      <p ref={mergedNote} role="status" tabIndex={-1} className="text-sm outline-none empty:hidden">
+        {merge.merged ? text.record.duplicates.merged : null}
+      </p>
+
       <CustomerStats customer={customer} messages={messages} />
+
+      <CustomerDuplicates
+        duplicates={customer.duplicates}
+        hrefOf={(id) => `/admin/${slug}/customers/${encodeURIComponent(id)}`}
+        {...merge.duplicates}
+        linkComponent={AppLink}
+        messages={messages}
+      />
 
       {/* The details come first to be read, and sit in the side column where there is one. */}
       <div className="grid items-start gap-6 @4xl/main:grid-cols-[minmax(0,1fr)_22rem]">

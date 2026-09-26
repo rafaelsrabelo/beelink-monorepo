@@ -76,6 +76,32 @@ export interface StoreCustomer {
   daysSinceLastOrder: number | null;
   /** When the account was opened at this shop. */
   createdAt: string;
+  /** Another record of the shop may be the same person (`CustomerDuplicate`); the record lists them. */
+  possibleDuplicate: boolean;
+}
+
+/**
+ * Why two of a shop's records may be one person. `PHONE`: one of them tried to save the other's phone
+ * — the phone is unique in a shop, so a refused save is the only trace of it. `NAME`: the names read
+ * the same, case and extra spaces aside. Two records with an account are never flagged: they cannot
+ * be merged.
+ */
+export type CustomerDuplicateReason = "PHONE" | "NAME";
+
+/** Another record of the shop that may be the same person, as the record offers to merge it. */
+export interface CustomerDuplicate {
+  id: string;
+  name: string;
+  /** Digits only, with the country code. */
+  phone: string | null;
+  /** The account's e-mail; null for a record the shopkeeper registered. */
+  email: string | null;
+  /** Whether it has an account: the one that has one is the one kept. */
+  hasAccount: boolean;
+  /** Valid orders — a cancelled one is not counted. */
+  ordersCount: number;
+  /** `PHONE` wins when both apply. */
+  reason: CustomerDuplicateReason;
 }
 
 /**
@@ -88,6 +114,18 @@ export interface StoreCustomerDetail extends StoreCustomer {
   firstOrderAt: string | null;
   /** `totalSpentCents ÷ ordersCount`, rounded to the nearest whole cent; null with no valid order. */
   averageTicketCents: number | null;
+  /** The shop's other records that may be this person, strongest reason first. */
+  duplicates: CustomerDuplicate[];
+}
+
+/**
+ * Two records of one person made one, by the shopkeeper — never on their own: anyone can type
+ * someone else's phone. The record with an account is kept; with neither, the one in the address.
+ * Every order moves to it, the books are read again from them, a missing phone or a missing address
+ * is taken from the other, and the other is deleted. Answers the kept record.
+ */
+export interface MergeStoreCustomerPayload {
+  otherId: string;
 }
 
 /**
@@ -167,6 +205,10 @@ export type CustomerErrorCode =
   | "CUSTOMER_PHONE_TAKEN"
   /** The panel asked for a customer this shop does not have. */
   | "CUSTOMER_NOT_FOUND"
+  /** A record merged with itself. */
+  | "CUSTOMER_MERGE_SELF"
+  /** Both records have an account: two people's sign-ins cannot become one record. */
+  | "CUSTOMER_MERGE_TWO_ACCOUNTS"
   /** Google sign-in is not set up on this deployment. */
   | "GOOGLE_SIGN_IN_UNAVAILABLE"
   /** The state is unknown, used or expired: the flow was not started here, or took too long. */

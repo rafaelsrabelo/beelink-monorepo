@@ -1,12 +1,13 @@
 // Nest
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsInt, IsObject, IsOptional, IsString, Matches, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { IsIn, IsInt, IsObject, IsOptional, IsString, IsUUID, Matches, MaxLength, Min, MinLength, ValidateIf, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 // Types
 import type {
   CreateStoreCustomerPayload,
   CustomerStage,
+  MergeStoreCustomerPayload,
   StoreCustomerListQuery,
   StoreCustomerSort,
   UpdateStoreCustomerPayload,
@@ -68,6 +69,13 @@ export class UpdateStoreCustomerDto implements UpdateStoreCustomerPayload {
   @ValidateNested()
   @Type(() => CustomerAddressDto)
   address?: CustomerAddressDto;
+}
+
+/** The other record of the same person, to be made one with the record in the address. */
+export class MergeStoreCustomerDto implements MergeStoreCustomerPayload {
+  @ApiProperty({ format: 'uuid', description: 'Another customer of the shop. The one with an account is kept.' })
+  @IsUUID('all')
+  otherId!: string;
 }
 
 /** How the panel asks for a page of customers. A bare `GET` is the first page of everyone. */
