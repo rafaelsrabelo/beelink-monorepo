@@ -52,6 +52,9 @@ model Order {
   note     String?  @db.VarChar(500)
   /// When it was sold — which may be before it was registered, never after now.
   placedAt DateTime
+  /// Whether placing it took its counted lines off the stock, so cancelling gives them back. False
+  /// on an order placed before orders counted stock: cancelling it returns nothing never taken.
+  stockTaken Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

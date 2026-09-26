@@ -6,6 +6,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // Block
 import { CustomerContact } from "./customer-contact"
+import { CustomerDuplicateBadge } from "./customer-duplicate-badge"
 import { CustomerStageBadge } from "./customer-stage-badge"
 import { placeOf, type CustomerRowsProps } from "./customer-types"
 import { CustomerWhatsApp } from "./customer-whatsapp"
@@ -54,7 +55,10 @@ export function CustomerTable({ customers, hrefOf, whatsappHrefOf, money, when, 
                 </div>
               </TableCell>
               <TableCell>
-                <CustomerStageBadge customer={customer} messages={messages} />
+                <div className="flex flex-col items-start gap-1">
+                  <CustomerStageBadge customer={customer} messages={messages} />
+                  {customer.possibleDuplicate ? <CustomerDuplicateBadge messages={messages} /> : null}
+                </div>
               </TableCell>
               <TableCell className="text-right tabular-nums">{customer.ordersCount}</TableCell>
               <TableCell className="text-right font-medium tabular-nums">{money(customer.totalSpentCents)}</TableCell>

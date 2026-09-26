@@ -8,6 +8,7 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 import type { CreateOrderPayload, Order, OrderListQuery, OrderPage, OrderStatus } from "@harness-monorepo/contracts"
 
 // App
+import { catalogKeys } from "../catalog/catalog-hooks"
 import { customerKeys } from "../customers/customer-hooks"
 import { createOrder, fetchOrder, fetchOrders, updateOrderStatus } from "./order-requests"
 
@@ -57,6 +58,8 @@ export function useUpdateOrderStatus(slug: string, number: number): UseMutationR
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }),
         queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+        // A cancelled order gives its counted lines back to the stock the catalogue shows.
+        ...(order.status === "CANCELLED" ? [queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) })] : []),
       ])
     },
     onError: () => queryClient.invalidateQueries({ queryKey: orderKeys.detail(slug, number) }),
@@ -72,6 +75,8 @@ export function useCreateOrder(slug: string): UseMutationResult<Order, Error, Cr
       Promise.all([
         queryClient.invalidateQueries({ queryKey: orderKeys.store(slug) }),
         queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+        // Placing it took its counted lines off the stock the catalogue shows.
+        queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) }),
       ]),
   })
 }

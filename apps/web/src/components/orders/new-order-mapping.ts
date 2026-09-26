@@ -24,6 +24,7 @@ export function variantOptionsOf(product: ProductDetail): OrderVariantOption[] {
         priceCents: variant.priceCents,
         sku: variant.sku,
         outOfStock: variant.trackStock && (variant.stockQuantity ?? 0) <= 0,
+        available: variant.trackStock ? Math.max(variant.stockQuantity ?? 0, 0) : null,
       }
     })
 }

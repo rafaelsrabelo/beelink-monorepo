@@ -20,9 +20,20 @@ export interface StorefrontAccountSectionProps {
   messages: UiMessages
 }
 
+/**
+ * A refused save in the shopper's words. A phone the shop already has is most likely the record the
+ * shopkeeper made from a WhatsApp sale: the shopper is told to talk to the shop, which can merge the
+ * two — never that another customer has it, and never merged from here.
+ */
+function errorOf(code: string, errors: WebMessages["errors"], messages: UiMessages): string {
+  if (code === "CUSTOMER_PHONE_TAKEN") return messages.storefront.accountPhoneTaken
+  return errors[code as keyof WebMessages["errors"]] ?? errors.UNKNOWN
+}
+
 /** The shopper's page at a shop, and what the last save came back with (`salvo`, `erro`). */
 export function StorefrontAccountSection({ slug, accountHref, profile, query, errors, messages }: StorefrontAccountSectionProps) {
   const code = paramOf(query.erro)
+  const back = paramOf(query[BACK_KEY]) ? safeBackOf(slug, paramOf(query[BACK_KEY])) : null
 
   return (
     <div className="py-4">
@@ -30,9 +41,13 @@ export function StorefrontAccountSection({ slug, accountHref, profile, query, er
         profile={profile}
         action={`/${slug}/api/customer/perfil`}
         signOutAction={`/${slug}/api/customer/sair`}
-        // Reached from the cart's "Alterar dados", a save goes back to the cart; otherwise, here.
-        hidden={{ retorno: paramOf(query[BACK_KEY]) ? safeBackOf(slug, paramOf(query[BACK_KEY])) : accountHref }}
-        error={code ? (errors[code as keyof WebMessages["errors"]] ?? errors.UNKNOWN) : null}
+        // Reached from the cart's "Alterar dados", a save goes back to the cart; otherwise, here. A
+        // refusal always comes back here, still on its way to the cart: the cart has no form to say it on.
+        hidden={{
+          retorno: back ?? accountHref,
+          formulario: back ? `${accountHref}?${new URLSearchParams({ [BACK_KEY]: back }).toString()}` : accountHref,
+        }}
+        error={code ? errorOf(code, errors, messages) : null}
         saved={paramOf(query.salvo) === "1"}
         messages={messages}
       />

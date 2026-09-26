@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   mutate: vi.fn(),
   reset: vi.fn(),
+  merge: vi.fn(),
+  mergeMutate: vi.fn(),
 }))
 
 vi.mock("next/navigation", () => ({
@@ -30,7 +32,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => mocks.search,
 }))
 vi.mock("@/services/customers/customer-hooks", () => ({ useStoreCustomer: mocks.record }))
-vi.mock("@/services/customers/customer-record-hooks", () => ({ useUpdateStoreCustomer: mocks.update }))
+vi.mock("@/services/customers/customer-record-hooks", () => ({ useUpdateStoreCustomer: mocks.update, useMergeStoreCustomer: mocks.merge }))
 vi.mock("@/services/orders/order-hooks", () => ({ useOrders: mocks.orders }))
 vi.mock("@/services/stores/store-hooks", () => ({ useStore: () => ({ data: { name: "Loja do Design" } }) }))
 
@@ -53,6 +55,8 @@ const caio: StoreCustomerDetail = {
   address: { zipCode: "13015-904", street: "Rua Barão de Jaguara", number: "1000", complement: null, neighborhood: "Centro", city: "Campinas", state: "SP" },
   firstOrderAt: "2026-07-13T12:00:00.000Z",
   averageTicketCents: 12290,
+  possibleDuplicate: false,
+  duplicates: [],
 }
 
 const history: OrderPage = {
@@ -74,6 +78,7 @@ beforeEach(() => {
   mocks.record.mockReturnValue({ data: caio, error: null, isPending: false })
   mocks.orders.mockReturnValue({ data: history, error: null, isFetching: false })
   mocks.update.mockReturnValue(saving())
+  mocks.merge.mockReturnValue(saving({ mutate: mocks.mergeMutate }))
 })
 
 afterEach(() => {
@@ -104,6 +109,44 @@ describe("CustomerScreen", () => {
     expect(mocks.orders).toHaveBeenCalledWith("loja", { customerId: ID, page: 2 }, { enabled: true })
     expect(screen.getByRole("link", { name: "Abrir o pedido #14" })).toHaveAttribute("href", "/admin/loja/orders/14")
     expect(screen.getByRole("link", { name: "Abrir o pedido #9" })).toHaveAttribute("href", "/admin/loja/orders/9")
+  })
+
+  it("offers another record of the same person, and merges it after asking, going on to the record kept", async () => {
+    const withAccount = { id: "d1", name: "Caio (conta)", phone: null, email: "caio@exemplo.com", hasAccount: true, ordersCount: 0, reason: "PHONE" as const }
+    mocks.record.mockReturnValue({ data: { ...caio, possibleDuplicate: true, duplicates: [withAccount] }, error: null, isPending: false })
+    renderScreen()
+
+    const section = screen.getByRole("region", { name: "Possíveis duplicados" })
+    expect(within(section).getByRole("link", { name: "Caio (conta)" })).toHaveAttribute("href", "/admin/loja/customers/d1")
+    await userEvent.click(within(section).getByRole("button", { name: "Juntar com Caio (conta)" }))
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Caio (conta) tem conta na loja")
+    await userEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Juntar" }))
+
+    const [payload, options] = mocks.mergeMutate.mock.calls[0] as [object, { onSuccess: (kept: StoreCustomerDetail) => void }]
+    expect(payload).toEqual({ otherId: "d1" })
+    options.onSuccess({ ...caio, id: "d1" })
+    // Replaced, not pushed: Back must not lead to the record that is gone.
+    expect(mocks.replace).toHaveBeenCalledWith("/admin/loja/customers/d1?juntado=1")
+  })
+
+  it("says the merge on the record kept, and puts the focus there", () => {
+    mocks.search = new URLSearchParams("juntado=1")
+    renderScreen()
+
+    expect(screen.getByText("Cadastros juntados. Os pedidos dos dois estão aqui.")).toHaveFocus()
+    expect(screen.queryByRole("region", { name: "Possíveis duplicados" })).not.toBeInTheDocument()
+  })
+
+  it("says a refused merge in the question, in words, and forgets it when asked again", async () => {
+    const other = { id: "d1", name: "Caio (conta)", phone: null, email: "c@x.com", hasAccount: true, ordersCount: 0, reason: "NAME" as const }
+    mocks.record.mockReturnValue({ data: { ...caio, possibleDuplicate: true, duplicates: [other] }, error: null, isPending: false })
+    mocks.merge.mockReturnValue(saving({ mutate: mocks.mergeMutate, error: new CustomerRequestError("CUSTOMER_MERGE_TWO_ACCOUNTS") }))
+    renderScreen()
+
+    await userEvent.click(screen.getByRole("button", { name: "Juntar com Caio (conta)" }))
+
+    expect(mocks.reset).toHaveBeenCalled()
+    expect(within(screen.getByRole("alertdialog")).getByRole("alert")).toHaveTextContent("Os dois cadastros têm conta na loja, e duas contas não se juntam.")
   })
 
   // The history is the last section: the next page is brought into view, not the top of the record.

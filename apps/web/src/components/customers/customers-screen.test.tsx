@@ -40,6 +40,7 @@ const customer = (over: Partial<StoreCustomer>): StoreCustomer => ({
   lastOrderAt: null,
   daysSinceLastOrder: null,
   createdAt: "2026-09-01T10:00:00.000Z",
+  possibleDuplicate: false,
   ...over,
 })
 

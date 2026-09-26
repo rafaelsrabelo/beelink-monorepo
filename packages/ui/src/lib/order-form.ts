@@ -52,6 +52,8 @@ export interface OrderVariantOption {
   priceCents: number
   sku: string | null
   outOfStock: boolean
+  /** How many the shop has, when it counts this combination; null when it does not. */
+  available: number | null
 }
 
 /** A line on the order being written. The price is shown, never sent: the API prices the variant. */
@@ -61,7 +63,13 @@ export interface OrderFormLine {
   variantLabel: string | null
   unitPriceCents: number
   quantity: number
-  outOfStock: boolean
+  /** How many the shop has, when it counts it: from the product read, or from the API's refusal. */
+  available: number | null
+}
+
+/** Whether a line asks for more than the shop has: the API refuses such an order, so the form says so first. */
+export function overStock(line: Pick<OrderFormLine, "quantity" | "available">): boolean {
+  return line.available !== null && line.quantity > line.available
 }
 
 /** The rest of the order, as typed: money stays text until it is read, so "10," is not lost. */

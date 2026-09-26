@@ -49,7 +49,7 @@ function NewOrder({ initialLines }: { initialLines: OrderFormLine[] }) {
           onAdd={(variant) =>
             setLines([
               ...lines,
-              { variantId: variant.id, productName: chosen?.name ?? "", variantLabel: variant.label, unitPriceCents: variant.priceCents, quantity: 1, outOfStock: variant.outOfStock },
+              { variantId: variant.id, productName: chosen?.name ?? "", variantLabel: variant.label, unitPriceCents: variant.priceCents, quantity: 1, available: variant.available },
             ])
           }
           money={money}
