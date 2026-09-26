@@ -33,8 +33,8 @@ export interface BannerFieldsProps {
 /**
  * A banner's own fields: the pictures, each with its words and where it leads.
  *
- * Its own block because the component form had passed the line limit, and the seam falls here —
- * the form knows which kind it is holding, and this knows what a banner is.
+ * Its own block, and the seam falls here: `ComponentContentFields` knows which kind it is holding,
+ * and this knows what a banner is.
  */
 export function BannerFields({
   value,

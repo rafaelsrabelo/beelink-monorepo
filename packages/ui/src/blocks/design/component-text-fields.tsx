@@ -32,8 +32,8 @@ const HAS_HEADING: readonly ComponentKind[] = ["ANNOUNCEMENT", "HEADING", "CATEG
 /**
  * What a block says in words: a heading and the line under it, or a paragraph.
  *
- * Its own block because the component's form had reached the line limit, and the seam falls here —
- * every kind with words asks them the same way, and the form only dispatches on the kind.
+ * Its own block, and the seam falls here: every kind with words asks them the same way, and
+ * `ComponentContentFields` only dispatches on the kind.
  */
 export function ComponentTextFields({ kind, value, onChange, messages = defaultMessages }: ComponentTextFieldsProps) {
   const text = messages.design

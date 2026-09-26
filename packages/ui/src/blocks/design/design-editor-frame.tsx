@@ -115,13 +115,15 @@ export function DesignEditorFrame({
 
   return (
     <div className="bg-shell flex h-dvh flex-col" onKeyDown={onKeyDown}>
-      <p role="status" className="sr-only">
+      {/* `aria-live` spelled out: a modal drawer hides everything outside it but what carries it. */}
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {status}
       </p>
       {bar}
       <div className="flex min-h-0 flex-1">
         {wide ? (
           <aside
+            data-design-region=""
             aria-label={text.structureLabel}
             // Hidden by CSS too: the server renders the wide frame, and a phone must not flash it.
             className="bg-shell-surface border-shell-border hidden w-90 shrink-0 overflow-y-auto border-r p-3 lg:block"
@@ -130,12 +132,13 @@ export function DesignEditorFrame({
           </aside>
         ) : null}
 
-        <main aria-label={text.previewLabel} className="min-w-0 flex-1 overflow-y-auto p-4 lg:px-6">
+        <main data-design-region="" aria-label={text.previewLabel} className="min-w-0 flex-1 overflow-y-auto p-4 lg:px-6">
           {preview}
         </main>
 
         {wide ? (
           <aside
+            data-design-region=""
             aria-label={text.inspectorLabel}
             className="bg-shell-surface border-shell-border hidden w-85 shrink-0 overflow-y-auto border-l p-3 lg:block"
           >
@@ -148,6 +151,7 @@ export function DesignEditorFrame({
         <>
           <Sheet open={structureOpen} onOpenChange={onStructureOpenChange}>
             <SheetContent
+              data-design-region=""
               side="left"
               closeLabel={text.close}
               className="overflow-y-auto p-3 data-[side=left]:w-[min(22.5rem,92vw)] data-[side=left]:sm:max-w-none"
@@ -162,6 +166,7 @@ export function DesignEditorFrame({
           <Sheet open={inspectorOpen} onOpenChange={onInspectorOpenChange}>
             {/* Kept mounted while closed: the fields being typed in live here, unsaved. */}
             <SheetContent
+              data-design-region=""
               side="right"
               keepMounted
               showCloseButton={!inspectorHasOwnClose}

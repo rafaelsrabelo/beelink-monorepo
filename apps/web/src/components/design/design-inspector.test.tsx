@@ -64,12 +64,13 @@ const onBlock = (id: string): SelectionTarget => ({ level: "block", id, sectionI
 
 interface Props {
   target: SelectionTarget | null
+  section?: Section
   tab?: InspectorTab
   onClose?: () => void
   onLayoutChange?: () => void
 }
 
-function Screen({ target, tab = "content", onClose = vi.fn(), onLayoutChange = vi.fn() }: Props) {
+function Screen({ target, section = band, tab = "content", onClose = vi.fn(), onLayoutChange = vi.fn() }: Props) {
   return (
     <>
       <button type="button">Bloco no preview</button>
@@ -77,8 +78,8 @@ function Screen({ target, tab = "content", onClose = vi.fn(), onLayoutChange = v
       <DesignInspector
         slug="loja"
         target={target}
-        rows={[toDraft(band)]}
-        saved={[band]}
+        rows={[toDraft(section)]}
+        saved={[section]}
         tab={tab}
         onTabChange={vi.fn()}
         onLayoutChange={onLayoutChange}
@@ -126,7 +127,7 @@ describe("DesignInspector — the panel's focus", () => {
     expect(screen.getByRole("heading", { name: "Editar componente" })).toHaveFocus()
     expect(screen.getByRole("region", { name: "Editar componente" })).toHaveTextContent("Novidades")
 
-    await user.click(screen.getByRole("button", { name: "Fechar os campos do bloco" }))
+    await user.click(screen.getByRole("button", { name: "Fechar o painel" }))
     expect(onClose).toHaveBeenCalledOnce()
 
     rerender(<Screen target={null} onClose={onClose} />)
@@ -165,12 +166,14 @@ describe("DesignInspector — Conteúdo, Layout and Estilo under one Salvar", ()
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it("writes the block, then the band, when Estilo changed", async () => {
+  it("writes the block, then the band, when both changed", async () => {
     const user = userEvent.setup()
     const calls = stubApi()
     const onClose = vi.fn()
-    render(<Screen target={onBlock("c1")} tab="style" onClose={onClose} />, { wrapper })
+    const { rerender } = render(<Screen target={onBlock("c1")} onClose={onClose} />, { wrapper })
 
+    await user.type(screen.getByRole("textbox", { name: /Título/ }), "!")
+    rerender(<Screen target={onBlock("c1")} tab="style" onClose={onClose} />)
     await user.type(screen.getByLabelText("Nome da faixa"), "Destaques")
     expect(screen.getByText("Vale para os 2 blocos desta faixa.")).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Salvar" }))
@@ -194,6 +197,49 @@ describe("DesignInspector — Conteúdo, Layout and Estilo under one Salvar", ()
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
     expect(calls.map((call) => call.method)).toEqual(["PATCH"])
     expect(calls[0]?.body).not.toHaveProperty("align")
+  })
+
+  // A lone block is edited as its band; one the API would refuse as it stands must not hold the band hostage.
+  it("writes the band alone when only Estilo changed, even under a block that could not be saved", async () => {
+    const user = userEvent.setup()
+    const calls = stubApi()
+    const onClose = vi.fn()
+    // A form nobody could answer: the API refuses it as it stands.
+    const form = block("p1", { kind: "CONTACT", title: "Fale conosco", items: [] })
+    const lone = { ...band, id: "b9", components: [{ ...form, sectionId: "b9" }] }
+    render(<Screen target={{ level: "band", id: "b9", blockId: "p1" }} section={lone} tab="style" onClose={onClose} />, { wrapper })
+
+    await user.type(screen.getByLabelText("Nome da faixa"), "Vitrine")
+    await user.click(screen.getByRole("button", { name: "Salvar" }))
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
+    expect(calls.map((call) => call.method)).toEqual(["PUT"])
+  })
+
+  // Closed mid-save, the band's write still goes, and closing the next panel is not this one's to do.
+  it("finishes a save after the panel is gone, and closes nothing it no longer owns", async () => {
+    const user = userEvent.setup()
+    const calls: string[] = []
+    let answer = () => {}
+    const held = new Promise<void>((resolve) => (answer = resolve))
+    vi.stubGlobal("fetch", async (_path: string, init: RequestInit) => {
+      calls.push(init.method ?? "GET")
+      if (init.method === "PATCH") await held
+      return new Response(JSON.stringify(init.method === "PATCH" ? band.components[0] : band), { status: 200 })
+    })
+    const onClose = vi.fn()
+    const { rerender } = render(<Screen target={onBlock("c1")} onClose={onClose} />, { wrapper })
+
+    await user.type(screen.getByRole("textbox", { name: /Título/ }), "!")
+    rerender(<Screen target={onBlock("c1")} tab="style" onClose={onClose} />)
+    await user.type(screen.getByLabelText("Nome da faixa"), "Destaques")
+    await user.click(screen.getByRole("button", { name: "Salvar" }))
+    rerender(<Screen target={onBlock("c2")} onClose={onClose} />)
+    answer()
+
+    await waitFor(() => expect(calls.filter((method) => method !== "GET")).toEqual(["PATCH", "PUT"]))
+    expect(onClose).not.toHaveBeenCalled()
+    expect(useDesignEdit.getState().edit?.component?.id).toBe("c2")
   })
 
   it("says why the band was refused, and stays open with it", async () => {
@@ -243,5 +289,43 @@ describe("DesignInspector — Conteúdo, Layout and Estilo under one Salvar", ()
 
     await waitFor(() => expect(calls.map((call) => call.method)).toEqual(["PUT"]))
     expect(calls[0]?.body).toEqual({ name: "Serviços" })
+  })
+})
+
+// Reproduced once: the list called a band HERO SECTION and its panel called it "Faixa 2".
+describe("DesignInspector — a band chosen on its own is called by its name", () => {
+  const onBand: SelectionTarget = { level: "band", id: "b1", blockId: null }
+  const named = (name: string | null): Section => ({ ...band, name })
+  const title = () => document.getElementById("component-inspector-title-block")
+
+  it("names the panel after a named band", () => {
+    render(<Screen target={onBand} section={named("HERO SECTION")} />, { wrapper })
+    expect(title()).toHaveTextContent("HERO SECTION")
+  })
+
+  it("names an unnamed band's panel after its place", () => {
+    render(<Screen target={onBand} section={named(null)} />, { wrapper })
+    expect(title()).toHaveTextContent("Faixa 1")
+  })
+
+  it("renames the panel as the name is typed, without closing it", async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(<Screen target={onBand} section={named(null)} onClose={onClose} />, { wrapper })
+
+    await user.type(screen.getByLabelText("Nome da faixa"), "Serviços")
+    expect(title()).toHaveTextContent("Serviços")
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it("falls back to the band's place when its name is cleared", async () => {
+    const user = userEvent.setup()
+    render(<Screen target={onBand} section={named("A5 grade")} />, { wrapper })
+
+    await user.clear(screen.getByLabelText("Nome da faixa"))
+    expect(title()).toHaveTextContent("Faixa 1")
+
+    await user.type(screen.getByLabelText("Nome da faixa"), "Grade de verão")
+    expect(title()).toHaveTextContent("Grade de verão")
   })
 })
