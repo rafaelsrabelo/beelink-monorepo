@@ -99,7 +99,7 @@ describe("PublishPage", () => {
 
 describe("PageHistory", () => {
   it("restores a version into the draft with the revision it read, and never publishes", async () => {
-    useDraftRevision.setState({ cursors: { loja: { pageId: "home", revision: 4 } }, stale: false })
+    useDraftRevision.setState({ editing: { loja: "home" }, revisions: { home: 4 }, sending: {}, stale: false })
     const calls = stubApi()
     render(wrap(<PageHistory slug="loja" pageId="home" messages={ptBR} web={web} />))
 
@@ -109,6 +109,6 @@ describe("PageHistory", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled())
     expect(calls.some((call) => call.startsWith("POST /api/stores/loja/pages/home/versions/v1/restore"))).toBe(true)
     expect(calls.some((call) => call.includes("/publish"))).toBe(false)
-    expect(useDraftRevision.getState().cursors["loja"]!.revision).toBe(5)
+    expect(useDraftRevision.getState().revisions["home"]).toBe(5)
   })
 })
