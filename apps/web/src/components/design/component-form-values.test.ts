@@ -91,3 +91,28 @@ describe("component-form-values — a showcase", () => {
     expect(toPayload({ ...showcase(), limit: " 8 " }, "link")).toMatchObject({ limit: 8 })
   })
 })
+
+describe("component-form-values — a FAQ", () => {
+  const faq = component({
+    kind: "FAQ",
+    display: "ACCORDION",
+    items: [
+      { id: "a", question: "Qual o prazo?", answer: "Três dias." },
+      { id: "b", question: "Posso trocar?", answer: "Sim." },
+    ],
+  })
+
+  it("opens on its questions and sends them back in the order they are in", () => {
+    const value = toForm(faq)
+    expect(value.faq).toEqual(faq.items)
+
+    const moved = { ...value, faq: [value.faq[1]!, value.faq[0]!] }
+    expect(toPayload(moved, "item")).toMatchObject({ items: [faq.items[1], faq.items[0]] })
+  })
+
+  it("drops a question not written yet, and trims what is sent", () => {
+    const value = { ...toForm(faq), faq: [{ id: "a", question: " Qual o prazo? ", answer: " Três dias. " }, { id: "n", question: " ", answer: "" }] }
+
+    expect(toPayload(value, "item")).toMatchObject({ items: [{ id: "a", question: "Qual o prazo?", answer: "Três dias." }] })
+  })
+})

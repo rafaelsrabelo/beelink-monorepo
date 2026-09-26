@@ -15,12 +15,13 @@ import { contentReady, type ComponentFormValues } from "./component-form"
 import { ContactFieldsField } from "./contact-fields-field"
 import type { ContactFieldValue } from "./contact-fields-field"
 import type { ComponentDisplay } from "./design-types"
+import { FaqItemsField, type FaqValue } from "./faq-items-field"
 import { ShowcaseFields } from "./showcase-fields"
 import type { ShowcasePick } from "./showcase-picks-field"
 
 // Re-exported, because the package's export map points `./blocks/*` at `.tsx`: a types-only `.ts`
 // beside a block cannot be reached from an app.
-export type { BenefitValue, ComponentFormValues, ContactFieldValue, ShowcasePick, SlideTargetOption, SlideValue }
+export type { BenefitValue, ComponentFormValues, ContactFieldValue, FaqValue, ShowcasePick, SlideTargetOption, SlideValue }
 export { contentReady }
 
 export interface ComponentContentFieldsProps {
@@ -97,6 +98,10 @@ export function ComponentContentFields({
           newFieldId={newItemId}
           messages={messages}
         />
+      ) : null}
+
+      {value.kind === "FAQ" ? (
+        <FaqItemsField value={value.faq} onChange={(faq) => merge({ faq })} newItemId={newItemId} messages={messages} />
       ) : null}
 
       {value.kind === "PRODUCTS" ? (

@@ -68,6 +68,16 @@ describe('landingBands', () => {
     });
   });
 
+  it('ends a launch with the questions a first buyer asks, paying answered from the shop\'s own methods', () => {
+    const bands = landingBands('lancamento', subject());
+    const faq = bands.at(-1)!.components[0]!;
+
+    expect(faq).toMatchObject({ kind: 'FAQ', display: 'ACCORDION', title: 'Perguntas frequentes' });
+    expect(faq.items).toContainEqual({ id: 'pagamento', question: 'Quais são as formas de pagamento?', answer: 'Aceitamos PIX e dinheiro.' });
+    const unpaid = landingBands('lancamento', subject({ promises: [] })).at(-1)!.components[0]!;
+    expect(unpaid.items).toContainEqual(expect.objectContaining({ id: 'pagamento', answer: 'Conte quais formas de pagamento a loja aceita.' }));
+  });
+
   it('opens on the words alone when there is no picture: a banner with no slide draws nothing', () => {
     const [cover] = landingBands('promocao-relampago', subject({ product: { ...PRODUCT, imageUrl: null } }));
 

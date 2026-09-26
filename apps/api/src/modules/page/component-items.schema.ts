@@ -2,12 +2,26 @@
 import { z } from 'zod';
 
 // Types
-import type { AnnouncementLink, BannerSlide, BenefitRow, ComponentItem, ComponentKind, ShowcaseProduct } from '@harness-monorepo/contracts';
+import type {
+  AnnouncementLink,
+  BannerSlide,
+  BenefitRow,
+  ComponentItem,
+  ComponentKind,
+  FaqItem,
+  ShowcaseProduct,
+} from '@harness-monorepo/contracts';
 
 // App
 import { carriesWhatItNames, destination } from './component-destination.schema.js';
 import { contactForm } from './contact-fields.schema.js';
-import { COMPONENT_URL_MAX_LENGTH, SHOWCASE_LIMIT_MAX } from './page.constants.js';
+import {
+  COMPONENT_URL_MAX_LENGTH,
+  FAQ_ANSWER_MAX_LENGTH,
+  FAQ_ITEMS_MAX,
+  FAQ_QUESTION_MAX_LENGTH,
+  SHOWCASE_LIMIT_MAX,
+} from './page.constants.js';
 
 /**
  * What a component's `items` may hold, decided by its `kind`.
@@ -68,6 +82,20 @@ const showcaseSelection = z
     message: 'O mesmo produto duas vezes na vitrine',
   });
 
+/** One question and its answer. Both required: a question with no answer is one not finished. */
+const faqItem = z.strictObject({
+  id: z.string().min(1).max(64),
+  question: z.string().trim().min(1).max(FAQ_QUESTION_MAX_LENGTH),
+  answer: z.string().trim().min(1).max(FAQ_ANSWER_MAX_LENGTH),
+}) satisfies z.ZodType<FaqItem>;
+
+const faqItems = z
+  .array(faqItem)
+  .max(FAQ_ITEMS_MAX)
+  .refine((rows) => new Set(rows.map((row) => row.id)).size === rows.length, {
+    message: 'Duas perguntas com o mesmo id',
+  });
+
 /** What a component with no items of its own holds, and what an unknown kind falls back to. */
 const NOTHING = z.array(z.never()).length(0);
 
@@ -84,6 +112,8 @@ const ITEMS_OF = {
   CONTACT: contactForm,
   /** The products a SELECTION showcase draws, in order; empty for every other source. */
   PRODUCTS: showcaseSelection,
+  /** The questions, in the order the page draws them. */
+  FAQ: faqItems,
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
   HEADING: NOTHING,
   TEXT: NOTHING,

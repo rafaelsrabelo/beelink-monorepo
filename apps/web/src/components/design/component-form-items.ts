@@ -1,5 +1,5 @@
 // Types
-import type { AnnouncementLink, BannerSlide, BenefitRow, ContactField, ShowcaseProduct } from "@harness-monorepo/contracts"
+import type { AnnouncementLink, BannerSlide, BenefitRow, ContactField, FaqItem, ShowcaseProduct } from "@harness-monorepo/contracts"
 
 // UI
 import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/component-content-fields"
@@ -113,4 +113,15 @@ export function fieldsFromForm(fields: ComponentFormValues["fields"]): ContactFi
 
 export function picksToForm(items: readonly ShowcaseProduct[]): ComponentFormValues["picks"] {
   return items.map((row) => ({ id: row.id, productId: row.productId }))
+}
+
+export function faqToForm(items: readonly FaqItem[]): ComponentFormValues["faq"] {
+  return items.map((row) => ({ id: row.id, question: row.question, answer: row.answer }))
+}
+
+/** A question not written yet is dropped rather than sent: the API refuses one with no words. */
+export function faqFromForm(rows: ComponentFormValues["faq"]): FaqItem[] {
+  return rows
+    .filter((row) => row.question.trim())
+    .map((row) => ({ id: row.id, question: row.question.trim(), answer: row.answer.trim() }))
 }

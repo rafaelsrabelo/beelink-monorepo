@@ -1,5 +1,6 @@
 export type * from "./auth.js";
 export type * from "./page.js";
+export type * from "./page-items.js";
 export type * from "./catalog.js";
 export type * from "./customer.js";
 export type * from "./error.js";

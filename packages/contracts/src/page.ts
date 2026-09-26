@@ -1,6 +1,7 @@
 /* ── a landing page: sections that hold components ────────────────────────── */
 
 import type { PublicProductCard } from "./catalog.js";
+import type { FaqItem } from "./page-items.js";
 
 /**
  * What a component is.
@@ -43,7 +44,9 @@ export type ComponentKind =
    * A form a visitor fills in, and the ways to reach the owner beside it. What it asks is its
    * `items`; what arrives through it is a lead. A site's kind: a shop takes orders, not contact.
    */
-  | "CONTACT";
+  | "CONTACT"
+  /** Questions and their answers, drawn as an accordion whose answers are in the page even closed. */
+  | "FAQ";
 
 /**
  * How wide a section sits on the page.
@@ -74,6 +77,7 @@ export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
  * - The categories: `RAIL` or `GRID` of cards with photos, or `CHIPS` (their names, as pills).
  * - The benefits: `INLINE` (icon beside the words, in a tinted band) or `CARDS`.
  * - The strip: `STATIC` (still) or `MARQUEE` (scrolling).
+ * - A FAQ: `ACCORDION`, its only one — named so a second is a value, not a migration of the rows.
  *
  * Null on every other kind — and on a benefits band or a strip saved before they had a choice, which
  * draw as they always did.
@@ -88,7 +92,8 @@ export type ComponentDisplay =
   | "INLINE"
   | "CARDS"
   | "STATIC"
-  | "MARQUEE";
+  | "MARQUEE"
+  | "ACCORDION";
 
 /**
  * Where a component shows: everywhere, only on a computer, or only on a phone — the shop window's
@@ -256,12 +261,18 @@ export interface ShowcaseProduct {
  * blob is invisible — sixteen of its twenty-one survived that way. An `items` nobody reads is a
  * blank band on the shop's front page, reported the same day.
  */
-export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink | ContactField | ShowcaseProduct;
+export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink | ContactField | ShowcaseProduct | FaqItem;
 /**
  * What a visitor is served in a component's `items`: a banner's slides with their addresses built, a
  * showcase's products as cards, and every other kind's items as the shopkeeper wrote them.
  */
-export type PublicComponentItem = PublicBannerSlide | BenefitRow | PublicAnnouncementLink | ContactField | PublicProductCard;
+export type PublicComponentItem =
+  | PublicBannerSlide
+  | BenefitRow
+  | PublicAnnouncementLink
+  | ContactField
+  | PublicProductCard
+  | FaqItem;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {
@@ -283,9 +294,9 @@ export interface PublicComponent {
    */
   sourceCategory: { slug: string; name: string; description: string | null } | null;
   /**
-   * A banner's slides, the benefits band's rows, the strip's one link or a form's fields — or a
-   * showcase's products, already chosen by its source, cut at its limit, and on the shelf. Empty
-   * otherwise.
+   * A banner's slides, the benefits band's rows, the strip's one link, a form's fields or a FAQ's
+   * questions — or a showcase's products, already chosen by its source, cut at its limit, and on the
+   * shelf. Empty otherwise.
    */
   items: PublicComponentItem[];
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */

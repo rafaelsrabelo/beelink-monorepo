@@ -18,7 +18,8 @@ export interface ComponentContent {
  *
  * The one rule that has to agree with the renderer, so it is written once here and named after
  * what it answers. Each clause mirrors a `return null` on the other side: a banner with no
- * pictures, a heading with neither words nor a line under them, a promises band with no promises.
+ * pictures, a heading with neither words nor a line under them, a promises band with no promises, a
+ * FAQ with no questions.
  *
  * It exists because a silent disagreement was reported: the panel listed blocks the preview did
  * not draw, and nothing on the screen said why. The shop reads it too, to leave out a band with
@@ -28,7 +29,7 @@ export function isEmptyComponent({ kind, title, subtitle, body, items }: Compone
   // A kind this build does not know — a cached page, or a newer API's — has nothing that draws it.
   if (!isKnownKind(kind)) return true
   // A showcase's items are the cards its source resolved to, which only the public read knows.
-  if (kind === "BANNER" || kind === "BENEFITS" || kind === "PRODUCTS") return items.length === 0
+  if (kind === "BANNER" || kind === "BENEFITS" || kind === "PRODUCTS" || kind === "FAQ") return items.length === 0
   // `StorefrontHeading` draws a line under a title that is not there; the strip is its title alone.
   if (kind === "HEADING") return !title?.trim() && !subtitle?.trim()
   if (kind === "ANNOUNCEMENT") return !title?.trim()

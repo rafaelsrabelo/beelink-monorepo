@@ -28,6 +28,8 @@ enum ComponentKind {
   /// A form a visitor fills in, beside the ways to reach the owner. Its `items` are the fields;
   /// what arrives through it is a `Lead`. A site's kind — a shop takes orders, not contact.
   CONTACT
+  /// Questions and their answers, in `items`. Drawn as an accordion whose answers are in the page.
+  FAQ
 }
 
 /// How wide a section sits on the page. It belongs to the band and not to what is inside it, which
@@ -75,6 +77,8 @@ enum ComponentDisplay {
   CARDS
   STATIC
   MARQUEE
+  /// A FAQ's only layout, named so a second one is a value and not a migration of the rows.
+  ACCORDION
 }
 
 /// Where a component shows. The shop window's `md` width is the line between a phone and a computer.

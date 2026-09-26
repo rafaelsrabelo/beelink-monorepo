@@ -4,6 +4,7 @@ import type { ContactFieldValue } from "./contact-fields-field"
 import type { SlideValue } from "./banner-slides-field"
 import type { BenefitValue } from "./benefit-rows-field"
 import type { ComponentKind, ProductSource } from "./design-types"
+import { unanswered, type FaqValue } from "./faq-items-field"
 import { showcaseReady } from "./showcase-fields"
 import type { ShowcasePick } from "./showcase-picks-field"
 import type { Target } from "./target-fields"
@@ -41,15 +42,18 @@ export interface ComponentFormValues {
   picks: ShowcasePick[]
   /** A showcase's limit as typed; `""` is the default, 24. */
   limit: string
+  /** A FAQ's questions, in order. */
+  faq: FaqValue[]
 }
 
 /**
  * Whether what the fields hold is a save the API would take: a contact form someone can answer, a
- * showcase whose source has what it needs. Asked here so Salvar says so, rather than a 400.
+ * showcase whose source has what it needs, a FAQ whose every question has its answer. Asked here so Salvar says so, rather than a 400.
  */
 export function contentReady(value: ComponentFormValues): boolean {
   if (value.kind === "CONTACT") return reachesBack(value.fields)
   if (value.kind === "PRODUCTS") return showcaseReady(value)
+  if (value.kind === "FAQ") return !value.faq.some(unanswered)
 
   return true
 }

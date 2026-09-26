@@ -148,6 +148,29 @@ describe('page — span and display', () => {
     expect(served).toMatchObject({ display: 'GRID' });
   });
 
+  // A FAQ opens as its one layout and empty; its questions are served to a visitor as written, in order.
+  it('creates a FAQ as an accordion, takes its questions, and serves them in order once published', async () => {
+    const created = await call('POST', '/api/stores/padaria-do-bairro/sections', { component: { kind: 'FAQ', title: 'Dúvidas' } });
+    expect(created.statusCode, created.payload).toBe(201);
+    const faq = created.json<Section>().components[0]!;
+    expect(faq).toMatchObject({ kind: 'FAQ', display: 'ACCORDION', items: [] });
+
+    const items = [
+      { id: 'b', question: 'Tem retirada?', answer: 'Sim, na loja.' },
+      { id: 'a', question: 'Qual o prazo?', answer: 'Até três dias úteis.\nFora da capital, cinco.' },
+    ];
+    const patched = await call('PATCH', `/api/stores/padaria-do-bairro/components/${faq.id}`, { items });
+    expect(patched.json<StoreComponent>()).toMatchObject({ items });
+
+    const other = await call('PATCH', `/api/stores/padaria-do-bairro/components/${faq.id}`, { display: 'RAIL' });
+    expect(other.json<ApiErrorBody>().errorCode).toBe('COMPONENT_DISPLAY_INVALID');
+
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === faq.id);
+    expect(served).toMatchObject({ kind: 'FAQ', title: 'Dúvidas', display: 'ACCORDION', items });
+  });
+
   // The panel's "+" between two bands, and between two blocks of one band.
   it('adds a band and a block where the "+" was pressed, and refuses a place that is not one', async () => {
     const before = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);

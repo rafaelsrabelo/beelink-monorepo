@@ -6,6 +6,7 @@ import {
   LayoutGridIcon,
   MailIcon,
   MegaphoneIcon,
+  MessageCircleQuestionMarkIcon,
   TagsIcon,
   TypeIcon,
 } from "lucide-react"
@@ -16,7 +17,7 @@ import type { ComponentKind } from "./design-types"
 /**
  * The picture a row shows beside the title, or the glyph that stands in for one.
  *
- * Six of the eight kinds have no picture, and a blank grey rectangle beside each of them makes a
+ * Most kinds have no picture, and a blank grey rectangle beside each of them makes a
  * list of components read as a list of broken images.
  */
 const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
@@ -28,6 +29,7 @@ const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
   CATEGORIES: TagsIcon,
   PRODUCTS: LayoutGridIcon,
   CONTACT: MailIcon,
+  FAQ: MessageCircleQuestionMarkIcon,
 }
 
 /** A block's thumbnail on its row or its card: a banner's first picture, or its kind's glyph. */

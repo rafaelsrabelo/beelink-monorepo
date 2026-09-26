@@ -115,6 +115,24 @@ function Shape({ display }: { display: ComponentDisplay }) {
           </span>
         </span>
       )
+    // Rows that open one at a time: the first open over its answer, the others closed.
+    case "ACCORDION":
+      return (
+        <span className="flex h-full w-full flex-col justify-center gap-1">
+          {[0, 1, 2].map((at) => (
+            <span key={at} className={cn("flex flex-col gap-0.5 rounded-sm px-1", at === 0 && "bg-muted")}>
+              <span className="flex items-center gap-1">
+                <span className={cn(LINE, "h-1 flex-1")} />
+                <span className="bg-primary/60 size-1 rounded-full" />
+              </span>
+              {at === 0 ? <span className={cn(LINE, "h-0.5 w-2/3")} /> : null}
+            </span>
+          ))}
+        </span>
+      )
+    // A layout added without a drawing fails the build here instead of drawing an empty frame.
+    default:
+      return (display satisfies never) && null
   }
 }
 

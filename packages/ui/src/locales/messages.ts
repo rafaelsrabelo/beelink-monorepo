@@ -588,6 +588,8 @@ export interface UiMessages {
         contactTitle: string
         benefits: { shipping: string; pix: string; exchange: string }
         contact: { email: string; phone: string; message: string }
+        faqTitle: string
+        faq: { question: string; answer: string }[]
       }
       /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
       placement: {
@@ -921,6 +923,21 @@ export interface UiMessages {
     benefitIcon: string
     benefitTitle: string
     benefitDetail: string
+    /** A FAQ's questions, as its owner writes them. */
+    faq: {
+      legend: string
+      /** One question with no words yet. `{position}`. */
+      position: string
+      question: string
+      answer: string
+      add: string
+      /** Each button named for its question: "Subir {question}". */
+      up: string
+      down: string
+      remove: string
+      /** Said while a question has no answer: Salvar waits for it. */
+      answerMissing: string
+    }
     /** Where a heading or a paragraph sits. */
     alignLabel: string
     alignLeft: string

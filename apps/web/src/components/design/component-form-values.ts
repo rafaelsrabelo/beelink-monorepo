@@ -4,6 +4,7 @@ import type {
   BannerSlide,
   BenefitRow,
   ContactField,
+  FaqItem,
   ShowcaseProduct,
   StoreComponent,
   UpdateComponentPayload,
@@ -16,6 +17,8 @@ import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/com
 import {
   benefitsFromForm,
   benefitsToForm,
+  faqFromForm,
+  faqToForm,
   fieldsFromForm,
   fieldsToForm,
   linkFromForm,
@@ -48,6 +51,7 @@ export function toForm(component: StoreComponent): ComponentFormValues {
     sourceCategoryId: component.sourceCategoryId ?? "",
     picks: picksToForm(items("PRODUCTS") as ShowcaseProduct[]),
     limit: component.limit === null ? "" : String(component.limit),
+    faq: faqToForm(items("FAQ") as FaqItem[]),
   }
 }
 
@@ -77,6 +81,8 @@ function itemsOf(value: ComponentFormValues, itemId: string): UpdateComponentPay
       return { items: linkFromForm(value, itemId) }
     case "CONTACT":
       return { items: fieldsFromForm(value.fields) }
+    case "FAQ":
+      return { items: faqFromForm(value.faq) }
     default:
       return {}
   }

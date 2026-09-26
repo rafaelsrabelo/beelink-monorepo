@@ -22,6 +22,7 @@ export const COMPONENT_KINDS = [
   "CATEGORIES",
   "PRODUCTS",
   "CONTACT",
+  "FAQ",
 ] as const
 export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 
@@ -42,7 +43,19 @@ export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]
  * A block's layout. The contract's `ComponentDisplay`, restated; which kind draws which is
  * `SECTION_TYPES` (lib/section-registry.ts), and every other kind holds null.
  */
-export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID", "RAIL", "BACKDROP", "SPLIT", "CHIPS", "INLINE", "CARDS", "STATIC", "MARQUEE"] as const
+export const COMPONENT_DISPLAYS = [
+  "CAROUSEL",
+  "GRID",
+  "RAIL",
+  "BACKDROP",
+  "SPLIT",
+  "CHIPS",
+  "INLINE",
+  "CARDS",
+  "STATIC",
+  "MARQUEE",
+  "ACCORDION",
+] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
 
 /** Where a block shows. The contract's `DeviceVisibility`, restated: the shop's `md` width, 768px, divides the two. */

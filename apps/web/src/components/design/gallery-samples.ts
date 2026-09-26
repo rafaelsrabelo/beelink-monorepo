@@ -2,6 +2,7 @@
 import type {
   BenefitRow,
   ContactField,
+  FaqItem,
   PublicBannerSlide,
   PublicComponent,
   PublicProductCard,
@@ -123,6 +124,10 @@ export function sampleSectionOf(entry: GalleryEntry, stock: GalleryStock, messag
         { id: "mensagem", label: text.contact.message, type: "TEXTAREA", required: false },
       ]
       return band([sample("CONTACT", id, { title: text.contactTitle, items: fields })])
+    }
+    case "FAQ": {
+      const items: FaqItem[] = text.faq.map((row, at) => ({ id: `${id}-${at}`, ...row }))
+      return band([sample("FAQ", id, { title: text.faqTitle, display: "ACCORDION", items })])
     }
     case "ANNOUNCEMENT":
       return null

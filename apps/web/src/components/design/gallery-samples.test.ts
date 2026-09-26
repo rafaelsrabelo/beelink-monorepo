@@ -81,6 +81,13 @@ describe("sampleSectionOf — the band a card draws", () => {
     expect(fields.map((field) => field.type)).toEqual(["EMAIL", "PHONE", "TEXTAREA"])
   })
 
+  it("draws a FAQ with sample questions, as the accordion a new one opens as", () => {
+    const faq = sampleSectionOf({ kind: "FAQ", across: 1, name: "", hint: "" }, empty, ptBR)?.components[0]
+
+    expect(faq).toMatchObject({ kind: "FAQ", display: "ACCORDION", title: "Perguntas frequentes" })
+    expect(faq?.items).toHaveLength(3)
+  })
+
   it("tells a card that has a preview from one that keeps its wireframe", () => {
     expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, empty, ptBR)).toBe(false)
     expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, stock, ptBR)).toBe(true)

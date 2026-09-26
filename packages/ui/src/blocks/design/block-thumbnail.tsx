@@ -92,6 +92,24 @@ function Shape({ kind, across }: { kind: ComponentKind; across: Across }) {
           <span className={cn(ACCENT, "h-2 w-2/5")} />
         </>
       )
+    // Questions as rows with a chevron; the first one open, its answer under it.
+    case "FAQ":
+      return (
+        <span className="flex w-full flex-col gap-1">
+          {[0, 1, 2].map((at) => (
+            <span key={at} className="flex flex-col gap-0.5">
+              <span className="flex items-center gap-1">
+                <span className={cn(BAR, "h-1.5 flex-1 bg-muted-foreground/60")} />
+                <span className="bg-primary/70 size-1.5 rounded-full" />
+              </span>
+              {at === 0 ? <span className={cn(BAR, "h-1 w-3/4")} /> : null}
+            </span>
+          ))}
+        </span>
+      )
+    // A kind added without a drawing fails the build here instead of drawing an empty card.
+    default:
+      return (kind satisfies never) && null
   }
 }
 

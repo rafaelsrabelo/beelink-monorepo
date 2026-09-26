@@ -47,6 +47,7 @@ const WORDS_OF = {
   CATEGORIES: HEADED,
   PRODUCTS: HEADED,
   CONTACT: HEADED,
+  FAQ: HEADED,
   TEXT: { title: false, subtitle: false, body: true },
   BANNER: WORDLESS,
   BENEFITS: WORDLESS,

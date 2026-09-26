@@ -115,6 +115,21 @@ describe("StorefrontSections — a band is a grid", () => {
     expect([...container.querySelectorAll("[data-span]")]).toHaveLength(1)
   })
 
+  it("draws a FAQ's questions with their answers in the page, and leaves out one with none", () => {
+    const faq: PublicComponent = {
+      ...heading("faq", "FULL"),
+      kind: "FAQ",
+      title: "Dúvidas",
+      display: "ACCORDION",
+      items: [{ id: "q", question: "Qual o prazo?", answer: "Três dias." }],
+    }
+    const { container } = draw([band([faq]), { ...band([{ ...faq, id: "vazio", items: [] }]), id: "outra" }])
+
+    expect(screen.getByText("Qual o prazo?").closest("summary")).toBeInTheDocument()
+    expect(container).toHaveTextContent("Três dias.")
+    expect(container.querySelectorAll("details")).toHaveLength(1)
+  })
+
   // A cached page, or a newer API, can serve a kind this build has never heard of. It used to fall
   // through to a shelf, which read its items as product cards.
   it("draws nothing for a kind this build does not know, and drops a band left with nothing", () => {

@@ -99,6 +99,14 @@ describe("ComponentLayoutFields", () => {
     expect(screen.queryByRole("group", { name: "Aparece em" })).not.toBeInTheDocument()
   })
 
+  // One layout is no choice: a FAQ is an accordion, and the tab asks only its slice of the band.
+  it("offers no choice of layout to a kind that has one", () => {
+    renderFields("FAQ", { display: "ACCORDION" })
+
+    expect(screen.queryByRole("button", { name: /^Formato/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Largura do bloco" })).toBeInTheDocument()
+  })
+
   // A strip saved before it had a choice draws a look no layout repeats: none is pressed, and it says so.
   it("shows an unset strip as Automática, with no layout pressed", async () => {
     const user = userEvent.setup()

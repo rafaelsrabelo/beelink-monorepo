@@ -68,6 +68,38 @@ export function promises(rows: SeededItem[], display: 'INLINE' | 'CARDS', positi
   };
 }
 
+/** "PIX, Dinheiro e Cartão de crédito": a list as a sentence says it. */
+function listed(words: readonly string[]): string {
+  return words.length > 1 ? `${words.slice(0, -1).join(', ')} e ${words.at(-1)}` : (words[0] ?? '');
+}
+
+/**
+ * The questions a first buyer asks, with answers written as a start for the shopkeeper to finish —
+ * except payment, which the shop's own methods already answer.
+ */
+export function faq(rows: SeededItem[], position: number): SeededBand {
+  const methods = rows.flatMap((row) => ('icon' in row ? [row.title.toLowerCase() === 'pix' ? 'PIX' : row.title.toLowerCase()] : []));
+
+  return band(position, 'CONTAINED', [
+    {
+      kind: 'FAQ',
+      title: 'Perguntas frequentes',
+      display: 'ACCORDION',
+      items: [
+        { id: 'entrega', question: 'Quanto tempo leva a entrega?', answer: 'Conte o prazo e a forma de entrega para a região do cliente.' },
+        { id: 'troca', question: 'Posso trocar ou devolver?', answer: 'Explique como funciona a troca: em quantos dias e em que condições.' },
+        {
+          id: 'pagamento',
+          question: 'Quais são as formas de pagamento?',
+          answer: methods.length ? `Aceitamos ${listed(methods)}.` : 'Conte quais formas de pagamento a loja aceita.',
+        },
+      ],
+      position: 0,
+      isActive: true,
+    },
+  ]);
+}
+
 export function band(position: number, width: 'FULL' | 'CONTAINED', components: Component[]): SeededBand {
   return { section: { width, position, isActive: true }, components };
 }

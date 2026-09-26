@@ -3,7 +3,7 @@ import type { LandingTemplateId } from '@harness-monorepo/contracts';
 import type { SeededBand, SeededItem } from './page-seed.js';
 
 // App
-import { band, clip, cover, promises, spotlight, type Component } from './landing-template-parts.js';
+import { band, clip, cover, faq, promises, spotlight, type Component } from './landing-template-parts.js';
 import { COMPONENT_BODY_MAX_LENGTH, COMPONENT_TITLE_MAX_LENGTH } from './page.constants.js';
 
 /** Every arrangement a landing may open with. The dialog offers exactly these, by this list. */
@@ -49,6 +49,7 @@ function launch(product: NonNullable<LandingSubject['product']>, rows: SeededIte
     band(4, 'CONTAINED', [
       { kind: 'PRODUCTS', title: 'Mais novidades', display: 'RAIL', source: 'NEWEST', limit: 8, items: [], position: 0, isActive: true },
     ]),
+    faq(rows, 5),
   ];
 }
 

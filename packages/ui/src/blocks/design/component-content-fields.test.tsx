@@ -24,6 +24,7 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     sourceCategoryId: "",
     picks: [],
     limit: "",
+    faq: [],
     ...over,
   }
 }
@@ -131,6 +132,13 @@ describe("contentReady — a save the API would take", () => {
     expect(
       contentReady(values({ kind: "CONTACT", fields: [{ id: "e", label: "E-mail", type: "EMAIL", required: true, options: "" }] })),
     ).toBe(true)
+  })
+
+  it("holds a FAQ while a question it asks has no answer", () => {
+    expect(contentReady(values({ kind: "FAQ", faq: [{ id: "a", question: "Prazo?", answer: " " }] }))).toBe(false)
+    expect(contentReady(values({ kind: "FAQ", faq: [{ id: "a", question: "Prazo?", answer: "Três dias." }] }))).toBe(true)
+    // A row not written yet is dropped on the way out, not waited for.
+    expect(contentReady(values({ kind: "FAQ", faq: [{ id: "a", question: "", answer: "" }] }))).toBe(true)
   })
 
   it("takes every other kind as it is", () => {

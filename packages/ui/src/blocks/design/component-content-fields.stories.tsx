@@ -20,6 +20,7 @@ const empty: ComponentFormValues = {
   sourceCategoryId: "",
   picks: [],
   limit: "",
+  faq: [],
 }
 
 const meta = {
