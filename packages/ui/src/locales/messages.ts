@@ -653,6 +653,8 @@ export interface UiMessages {
     }
     /** Each layout's name, as the Layout tab and the bar offer it. */
     displays: Record<ComponentDisplay, string>
+    /** A block with no layout chosen whose look no layout repeats: a strip saved before it had a choice. */
+    displayAuto: string
     categoriesRailHint: string
     categoriesGridHint: string
     show: string

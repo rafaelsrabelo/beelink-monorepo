@@ -537,6 +537,7 @@ export const en: UiMessages = {
       STATIC: "Still",
       MARQUEE: "Scrolling",
     },
+    displayAuto: "Automatic: still where it fits, scrolling on a phone",
     categoriesRailHint: "One row that scrolls sideways — on a phone and on a computer.",
     categoriesGridHint: "Every category in view, in rows.",
     show: "Show in the shop",

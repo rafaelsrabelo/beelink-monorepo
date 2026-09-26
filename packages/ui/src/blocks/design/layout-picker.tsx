@@ -18,7 +18,8 @@ import { LayoutThumbnail } from "./layout-thumbnail"
 export interface LayoutPickerProps {
   /** The layouts the section's kind draws, in the order offered. */
   layouts: readonly ComponentDisplay[]
-  value: ComponentDisplay
+  /** Null where none is chosen and the block draws a look of its own: nothing is pressed. */
+  value: ComponentDisplay | null
   onChange: (value: ComponentDisplay) => void
   /** The button that opens it: the bar's icon, or the Layout tab's field. */
   trigger: ReactElement
@@ -41,7 +42,8 @@ export function LayoutPicker({ layouts, value, onChange, trigger, label, message
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger render={trigger} />
-      <PopoverContent align="end" className="w-auto p-2">
+      {/* Named: the popup is a dialog, and an unnamed one is entered without a word. */}
+      <PopoverContent align="end" aria-label={label} className="w-auto p-2">
         <div role="group" aria-label={label} className="grid grid-cols-2 gap-2">
           {layouts.map((layout) => (
             <button

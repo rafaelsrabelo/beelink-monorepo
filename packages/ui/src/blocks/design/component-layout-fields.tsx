@@ -82,7 +82,7 @@ export function ComponentLayoutFields({
         </FieldSet>
       ) : null}
 
-      {displays && value.display ? (
+      {displays ? (
         <FieldSet>
           <FieldLabel>{text.displayLabel}</FieldLabel>
           <LayoutPicker
@@ -94,12 +94,12 @@ export function ComponentLayoutFields({
               <Button
                 type="button"
                 variant="outline"
-                aria-label={`${text.displayLabel}: ${text.displays[value.display]}`}
+                aria-label={`${text.displayLabel}: ${value.display ? text.displays[value.display] : text.displayAuto}`}
                 className="h-auto w-full justify-between gap-3 p-2"
               >
                 <span className="flex items-center gap-3">
-                  <LayoutThumbnail display={value.display} />
-                  <span className="text-sm font-medium">{text.displays[value.display]}</span>
+                  {value.display ? <LayoutThumbnail display={value.display} /> : null}
+                  <span className="text-left text-sm font-medium">{value.display ? text.displays[value.display] : text.displayAuto}</span>
                 </span>
                 <ChevronDownIcon aria-hidden="true" className="size-4 opacity-60" />
               </Button>

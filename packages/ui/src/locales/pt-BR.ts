@@ -537,6 +537,7 @@ export const ptBR: UiMessages = {
       STATIC: "Fixa",
       MARQUEE: "Rolando",
     },
+    displayAuto: "Automática: parada onde cabe, rolando no celular",
     categoriesRailHint: "Uma linha só, que rola para o lado — no celular e no computador.",
     categoriesGridHint: "Todas as categorias à vista, em linhas.",
     show: "Mostrar na loja",

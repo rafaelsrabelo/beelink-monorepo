@@ -49,7 +49,8 @@ describe("LayoutPicker", () => {
     picker()
     await userEvent.click(screen.getByRole("button", { name: "Trocar layout" }))
 
-    await expectNoA11yViolations(await screen.findByRole("group", { name: "Trocar layout de Vantagens" }))
+    // The popup itself, named: an unnamed dialog is what the group alone let through.
+    await expectNoA11yViolations(await screen.findByRole("dialog", { name: "Trocar layout de Vantagens" }))
   })
 })
 

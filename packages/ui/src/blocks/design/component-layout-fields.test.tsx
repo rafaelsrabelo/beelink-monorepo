@@ -99,6 +99,16 @@ describe("ComponentLayoutFields", () => {
     expect(screen.queryByRole("group", { name: "Aparece em" })).not.toBeInTheDocument()
   })
 
+  // A strip saved before it had a choice draws a look no layout repeats: none is pressed, and it says so.
+  it("shows an unset strip as Automática, with no layout pressed", async () => {
+    const user = userEvent.setup()
+    renderFields("ANNOUNCEMENT", { display: null })
+
+    await user.click(screen.getByRole("button", { name: /^Formato: Automática/ }))
+    const picker = await screen.findByRole("group", { name: "Formato" })
+    expect(within(picker).queryByRole("button", { pressed: true })).not.toBeInTheDocument()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = renderFields("PRODUCTS", { display: "GRID" })
 

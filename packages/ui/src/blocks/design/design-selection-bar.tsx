@@ -139,7 +139,7 @@ export function DesignSelectionBar({
           <ArrowDownIcon aria-hidden="true" />
         </Button>
 
-        {layouts && layouts.length > 1 && layout && onLayout ? (
+        {layouts && layouts.length > 1 && onLayout ? (
           <LayoutPicker
             layouts={layouts}
             value={layout}
