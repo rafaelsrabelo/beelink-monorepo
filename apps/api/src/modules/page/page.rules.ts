@@ -172,7 +172,7 @@ export class PageRules {
   }
 
   /**
-   * A display only from the two its kind draws, and never taken back to null there.
+   * A layout only from its kind's own (`DISPLAYS_OF_KIND`), and never taken back to null there.
    *
    * A value on a kind that draws none would be stored for nobody; one its kind does not draw — a
    * banner as a rail, a showcase as a carousel — would be a choice the page cannot honour; and null

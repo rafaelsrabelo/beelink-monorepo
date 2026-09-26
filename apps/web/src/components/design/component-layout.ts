@@ -17,9 +17,11 @@ export interface HeldLayout {
 }
 
 /**
- * The format a block draws, where its kind has one: the kind's own when none was chosen. Each
- * branch is the storefront's own test — a banner is a carousel unless it says grid, the categories
- * a grid unless they say rail, a showcase a rail unless it says grid.
+ * The layout a block draws, where its kind has any: the one chosen, else the look the kind had before
+ * there was a choice — the storefront's own reading of an unset value.
+ *
+ * Null for a strip with none: it draws a way no option does, still where it fits and scrolling on a
+ * phone, so it is shown as none chosen, and choosing "Fixa" for it is a change Publicar sends.
  */
 export function displayOf(kind: ComponentKind, display: ComponentDisplay | null): ComponentDisplay | null {
   const own = layoutsOf(kind)
@@ -30,7 +32,7 @@ export function displayOf(kind: ComponentKind, display: ComponentDisplay | null)
   if (kind === "PRODUCTS") return "RAIL"
   if (kind === "BANNER") return "CAROUSEL"
   if (kind === "BENEFITS") return "INLINE"
-  return "STATIC"
+  return null
 }
 
 /** A block's layout as the page draws it — what the Layout tab shows — every null resolved. */

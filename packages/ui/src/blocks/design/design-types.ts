@@ -39,8 +39,8 @@ export const CONTACT_FIELD_TYPES = ["TEXT", "EMAIL", "PHONE", "TEXTAREA", "SELEC
 export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]
 
 /**
- * How a block lays out what it holds. The contract's `ComponentDisplay`, restated. A banner is a
- * carousel or a grid; a showcase and the categories are a rail or a grid; every other kind holds null.
+ * A block's layout. The contract's `ComponentDisplay`, restated; which kind draws which is
+ * `SECTION_TYPES` (lib/section-registry.ts), and every other kind holds null.
  */
 export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID", "RAIL", "BACKDROP", "SPLIT", "CHIPS", "INLINE", "CARDS", "STATIC", "MARQUEE"] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]

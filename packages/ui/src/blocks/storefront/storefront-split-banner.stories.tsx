@@ -27,3 +27,9 @@ export const ComBotao: Story = {}
 
 /** Um banner que não leva a lugar nenhum não tem botão. */
 export const SemDestino: Story = { args: { item: { id: "s", imageUrl: "https://picsum.photos/seed/split/1200/900", title: "Feito à mão" } } }
+
+/** Num terço da faixa: empilha, com o título menor. */
+export const EmUmTerco: Story = {
+  decorators: [(Story) => <div className="max-w-sm">{Story()}</div>],
+  args: { span: "THIRD" },
+}

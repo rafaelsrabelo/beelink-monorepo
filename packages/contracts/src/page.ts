@@ -273,7 +273,7 @@ export interface PublicComponent {
   body: string | null;
   /** Its slice of the band, on every kind. */
   span: ComponentSpan;
-  /** Read on `BANNER`, `PRODUCTS` and `CATEGORIES`. Null on every other kind. */
+  /** The layout, from the kind's own (`ComponentDisplay`); null where the kind has none, or had none when saved. */
   display: ComponentDisplay | null;
   /** A showcase's source, for the page to say where "ver tudo" leads. Null on every other kind. */
   source: ProductSource | null;
@@ -383,7 +383,7 @@ export interface CreateComponentPayload {
   subtitle?: string | null;
   body?: string | null;
   span?: ComponentSpan;
-  /** A banner's, a showcase's or the categories' choice, from the two its kind draws. Refused on any other kind. */
+  /** The layout, from the kind's own (`ComponentDisplay`). Refused on a kind with none, and null refused on a kind with some. */
   display?: ComponentDisplay | null;
   /** A showcase's. `CATEGORY` needs `sourceCategoryId`; `SELECTION` needs `items`. */
   source?: ProductSource;

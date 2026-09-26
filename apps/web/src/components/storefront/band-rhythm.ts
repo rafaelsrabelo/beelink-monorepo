@@ -1,12 +1,16 @@
 // Types
-import type { ComponentKind, PublicSection } from "@harness-monorepo/contracts"
+import type { PublicComponent, PublicSection } from "@harness-monorepo/contracts"
 
 /**
- * What paints edge to edge in a band with no margin: a picture, and the benefits strip, which
- * brings its own tint and padding. Every other kind is words, and keeps the page's side margin.
+ * What paints edge to edge in a band with no margin: a picture, and the benefits strip, which brings
+ * its own tint and padding. By the layout and not the kind: a banner "Dividida" is words beside a
+ * picture, and benefits as cards sit on the page — both keep the page's side margin and its spacing.
+ * Every other kind is words, and keeps them too.
  */
-export function reachesTheEdge(kind: ComponentKind): boolean {
-  return kind === "BANNER" || kind === "BENEFITS"
+export function reachesTheEdge(component: Pick<PublicComponent, "kind" | "display">): boolean {
+  if (component.kind === "BANNER") return component.display !== "SPLIT"
+  if (component.kind === "BENEFITS") return component.display !== "CARDS"
+  return false
 }
 
 export interface BandRhythm {
@@ -33,7 +37,7 @@ export function rhythmOf(sections: readonly PublicSection[]): BandRhythm[] {
   let previousIsSurface = true
 
   return sections.map((section) => {
-    const pictures = section.width === "FULL" && section.components.every((component) => reachesTheEdge(component.kind))
+    const pictures = section.width === "FULL" && section.components.every((component) => reachesTheEdge(component))
     const surface = section.background !== null || pictures
     const rhythm = { spaceBefore: !(previousIsSurface && surface), padded: section.background !== null && !pictures }
     previousIsSurface = surface

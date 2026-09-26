@@ -89,7 +89,7 @@ export function StorefrontComponent({
     }))
     // "Dividida": the first picture beside its words. The other slides wait, kept, for another layout.
     if (component.display === "SPLIT") {
-      return slides[0] ? <StorefrontSplitBanner item={slides[0]} {...link} messages={messages} /> : null
+      return slides[0] ? <StorefrontSplitBanner item={slides[0]} span={component.span} {...link} messages={messages} /> : null
     }
     // "Imagem ao fundo" is the first picture with its words over it; a carousel is all of them in turn.
     // One picture, or a grid, never gets here as a carousel: `StorefrontSections` draws those as cards.

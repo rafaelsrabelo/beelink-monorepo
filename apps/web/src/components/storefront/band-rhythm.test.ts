@@ -65,9 +65,15 @@ describe("rhythmOf — the page's one spacing", () => {
   })
 
   it("tells pictures, which reach the edge, from words, which keep the margin", () => {
-    expect(reachesTheEdge("BANNER")).toBe(true)
-    expect(reachesTheEdge("BENEFITS")).toBe(true)
-    expect(reachesTheEdge("PRODUCTS")).toBe(false)
-    expect(reachesTheEdge("HEADING")).toBe(false)
+    expect(reachesTheEdge({ kind: "BANNER", display: "CAROUSEL" })).toBe(true)
+    expect(reachesTheEdge({ kind: "BENEFITS", display: null })).toBe(true)
+    expect(reachesTheEdge({ kind: "PRODUCTS", display: "RAIL" })).toBe(false)
+    expect(reachesTheEdge({ kind: "HEADING", display: null })).toBe(false)
+  })
+
+  // Words beside a picture, and promises as cards, keep the page's margin and its spacing.
+  it("keeps a banner Dividida and benefits as cards off the edge", () => {
+    expect(reachesTheEdge({ kind: "BANNER", display: "SPLIT" })).toBe(false)
+    expect(reachesTheEdge({ kind: "BENEFITS", display: "CARDS" })).toBe(false)
   })
 })

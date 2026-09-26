@@ -179,7 +179,7 @@ export function StorefrontSections({
                   <StorefrontBandCell
                     key={component.id}
                     span={component.span}
-                    gutter={bleed && !reachesTheEdge(component.kind)}
+                    gutter={bleed && !reachesTheEdge(component)}
                     className={shownClassOf(shownOn(component.visibleOn, "PHONE"), shownOn(component.visibleOn, "DESKTOP"))}
                   >
                     {renderBlock ? renderBlock(component, body) : body}

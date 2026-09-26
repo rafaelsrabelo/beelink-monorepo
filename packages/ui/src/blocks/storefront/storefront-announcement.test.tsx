@@ -96,6 +96,14 @@ describe("StorefrontAnnouncement", () => {
     expect(screen.getAllByText("Frete grátis")).toHaveLength(1)
   })
 
+  it("has no accessibility violations still or scrolling", async () => {
+    for (const motion of ["STATIC", "MARQUEE"] as const) {
+      const { container, unmount } = render(<StorefrontAnnouncement messages={["Frete grátis", "Pix com desconto"]} motion={motion} />)
+      await expectNoA11yViolations(container)
+      unmount()
+    }
+  })
+
   it("scrolls on every width when it is Rolando", () => {
     const { container } = render(<StorefrontAnnouncement messages={["Frete grátis"]} motion="MARQUEE" />)
 

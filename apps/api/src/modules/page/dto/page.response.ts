@@ -41,7 +41,7 @@ export class PublicComponentResponse implements PublicComponent {
   @ApiProperty({ nullable: true, type: String, description: 'The paragraph, on a TEXT.' })
   body!: string | null;
   @ApiProperty({ enum: COMPONENT_SPANS, description: 'Its slice of the band.' }) span!: ComponentSpan;
-  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER, PRODUCTS and CATEGORIES. Null on every other kind.' })
+  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'The layout — BANNER: BACKDROP, SPLIT, CAROUSEL or GRID; PRODUCTS: RAIL or GRID; CATEGORIES: RAIL, GRID or CHIPS; BENEFITS: INLINE or CARDS; ANNOUNCEMENT: STATIC or MARQUEE. Null on every other kind, and on a BENEFITS band or strip saved before they had a choice, which draw as they always did.' })
   display!: ComponentDisplay | null;
   @ApiProperty({ enum: PRODUCT_SOURCES, nullable: true, description: 'A showcase’s source. Null on every other kind.' })
   source!: ProductSource | null;
@@ -79,7 +79,7 @@ export class ComponentResponse implements StoreComponent {
   @ApiProperty({ nullable: true, type: String }) subtitle!: string | null;
   @ApiProperty({ nullable: true, type: String }) body!: string | null;
   @ApiProperty({ enum: COMPONENT_SPANS, description: 'Its slice of the band.' }) span!: ComponentSpan;
-  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'Read on BANNER, PRODUCTS and CATEGORIES. Null on every other kind.' })
+  @ApiProperty({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'The layout — BANNER: BACKDROP, SPLIT, CAROUSEL or GRID; PRODUCTS: RAIL or GRID; CATEGORIES: RAIL, GRID or CHIPS; BENEFITS: INLINE or CARDS; ANNOUNCEMENT: STATIC or MARQUEE. Null on every other kind, and on a BENEFITS band or strip saved before they had a choice, which draw as they always did.' })
   display!: ComponentDisplay | null;
   @ApiProperty({ enum: PRODUCT_SOURCES, nullable: true, description: 'A showcase’s. Null on every other kind.' })
   source!: ProductSource | null;
