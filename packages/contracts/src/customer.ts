@@ -43,11 +43,14 @@ export interface UpdateCustomerProfilePayload {
 }
 
 /**
- * Where a customer stands with the shop. An account that never bought is a lead; one that bought is
- * a customer. Orders leave on WhatsApp and are not recorded yet, so today every one is a lead — the
- * stage is on the wire now so the panel and the CRM to come read it the day orders are kept.
+ * Where a customer stands with the shop, from their valid orders — a cancelled one counts for
+ * nothing. No order is a lead; the last one within the shop's `inactiveAfterDays` is a customer;
+ * longer ago is inactive. Computed when read, so changing the shop's number moves everyone at once.
  */
-export type CustomerStage = "LEAD" | "CUSTOMER";
+export type CustomerStage = "LEAD" | "CUSTOMER" | "INACTIVE";
+
+/** How the panel orders the customers: newest registered, latest order, most orders, most spent. */
+export type StoreCustomerSort = "RECENT" | "LAST_ORDER" | "MOST_ORDERS" | "TOP_SPENT";
 
 /** One of a shop's customers, as its owner sees them in the panel. Never on the shop window. */
 export interface StoreCustomer {
@@ -63,8 +66,79 @@ export interface StoreCustomer {
   /** Two letters, upper case. */
   state: string | null;
   stage: CustomerStage;
+  /** Valid orders — a cancelled one is not counted. */
+  ordersCount: number;
+  /** Whole cents, over the valid orders. */
+  totalSpentCents: number;
+  /** ISO-8601; null with no valid order. */
+  lastOrderAt: string | null;
+  /** Whole days since the last valid order; null with none. */
+  daysSinceLastOrder: number | null;
   /** When the account was opened at this shop. */
   createdAt: string;
+  /** Another record of the shop may be the same person (`CustomerDuplicate`); the record lists them. */
+  possibleDuplicate: boolean;
+}
+
+/**
+ * Why two of a shop's records may be one person. `PHONE`: one of them tried to save the other's phone
+ * — the phone is unique in a shop, so a refused save is the only trace of it. `NAME`: the names read
+ * the same, case and extra spaces aside. Two records with an account are never flagged: they cannot
+ * be merged.
+ */
+export type CustomerDuplicateReason = "PHONE" | "NAME";
+
+/** Another record of the shop that may be the same person, as the record offers to merge it. */
+export interface CustomerDuplicate {
+  id: string;
+  name: string;
+  /** Digits only, with the country code. */
+  phone: string | null;
+  /** The account's e-mail; null for a record the shopkeeper registered. */
+  email: string | null;
+  /** Whether it has an account: the one that has one is the one kept. */
+  hasAccount: boolean;
+  /** Valid orders — a cancelled one is not counted. */
+  ordersCount: number;
+  /** `PHONE` wins when both apply. */
+  reason: CustomerDuplicateReason;
+}
+
+/**
+ * One customer as their record in the panel reads them: the list's row, where they are, and the rest
+ * of their numbers — every one over the valid orders, a cancelled one counting for nothing.
+ */
+export interface StoreCustomerDetail extends StoreCustomer {
+  address: CustomerAddress;
+  /** ISO-8601; null with no valid order. */
+  firstOrderAt: string | null;
+  /** `totalSpentCents ÷ ordersCount`, rounded to the nearest whole cent; null with no valid order. */
+  averageTicketCents: number | null;
+  /** The shop's other records that may be this person, strongest reason first. */
+  duplicates: CustomerDuplicate[];
+}
+
+/**
+ * Two records of one person made one, by the shopkeeper — never on their own: anyone can type
+ * someone else's phone. The record with an account is kept; with neither, the one in the address.
+ * Every order moves to it, the books are read again from them, a missing phone or a missing address
+ * is taken from the other, and the other is deleted. Answers the kept record.
+ */
+export interface MergeStoreCustomerPayload {
+  otherId: string;
+}
+
+/**
+ * What the shopkeeper may change of a customer: the shop's own record — the same one the shopper
+ * sees at the shop. The e-mail is the account's and is not the shop's to change. An absent field is
+ * left as it is. The phone, when sent, is a phone: a customer known only by it would otherwise become
+ * unreachable, and one another customer of the shop has is refused with `CUSTOMER_PHONE_TAKEN`.
+ */
+export interface UpdateStoreCustomerPayload {
+  name?: string;
+  phone?: string;
+  /** A part sent as null or blank is cleared; a part left out is kept. */
+  address?: Partial<CustomerAddress>;
 }
 
 export interface StoreCustomerPage {
@@ -72,11 +146,27 @@ export interface StoreCustomerPage {
   total: number;
   page: number;
   pageSize: number;
+  /** How many match the search in each stage, whatever `stage` narrowed the page to. */
+  stageCounts: Record<CustomerStage, number>;
+}
+
+/**
+ * A customer the shopkeeper registers — someone who bought by WhatsApp and has no account. The phone
+ * is kept as a WhatsApp link wants it and identifies them in the shop: one already there is
+ * refused with `CUSTOMER_PHONE_TAKEN`, and the panel offers that customer instead.
+ */
+export interface CreateStoreCustomerPayload {
+  name: string;
+  phone: string;
+  address?: Partial<CustomerAddress>;
 }
 
 /** How the panel asks for a page of customers. `q` matches the name, the e-mail or the phone. */
 export interface StoreCustomerListQuery {
   q?: string;
+  stage?: CustomerStage;
+  /** Absent is `RECENT`. */
+  sort?: StoreCustomerSort;
   page?: number;
   pageSize?: number;
 }
@@ -113,6 +203,12 @@ export interface GoogleSignIn {
 /** What a shopper's door answers besides the account's own codes (`AuthErrorCode`). */
 export type CustomerErrorCode =
   | "CUSTOMER_PHONE_TAKEN"
+  /** The panel asked for a customer this shop does not have. */
+  | "CUSTOMER_NOT_FOUND"
+  /** A record merged with itself. */
+  | "CUSTOMER_MERGE_SELF"
+  /** Both records have an account: two people's sign-ins cannot become one record. */
+  | "CUSTOMER_MERGE_TWO_ACCOUNTS"
   /** Google sign-in is not set up on this deployment. */
   | "GOOGLE_SIGN_IN_UNAVAILABLE"
   /** The state is unknown, used or expired: the flow was not started here, or took too long. */

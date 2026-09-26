@@ -117,6 +117,7 @@ export function toStore(row: StoreRow, slugs: SlugsByEntity = NO_SLUGS): WireSto
   return {
     ...toPublicStore(row, slugs),
     ownerId: row.ownerId,
+    inactiveAfterDays: row.inactiveAfterDays,
     address: {
       street: row.addressStreet,
       number: row.addressNumber,

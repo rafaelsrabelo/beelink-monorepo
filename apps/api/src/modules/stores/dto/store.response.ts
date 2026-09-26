@@ -122,6 +122,9 @@ export class PublicStoreResponse implements PublicStore {
 export class StoreResponse extends PublicStoreResponse implements Store {
   @ApiProperty({ format: 'uuid' }) ownerId!: string;
 
+  @ApiProperty({ minimum: 7, maximum: 365, description: 'Days without a valid order before a customer reads as inactive.' })
+  inactiveAfterDays!: number;
+
   @ApiProperty({ type: StoreAddressResponse })
   address!: StoreAddressResponse;
 

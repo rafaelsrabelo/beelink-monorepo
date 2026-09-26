@@ -4,7 +4,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Types
-import type { CustomerProfile } from "@harness-monorepo/contracts"
+import type { CustomerProfile, Order } from "@harness-monorepo/contracts"
 
 // App
 import type { CartView } from "./cart-view"
@@ -50,7 +50,42 @@ export function orderMessageOf({ shopName, view, customer, locale, messages }: O
   ].join("\n")
 }
 
-/** `wa.me/<digits>?text=…`: the shop's number as it is stored, the message escaped whole. */
+export interface ShopOrderMessageInput {
+  shopName: string
+  order: Pick<Order, "number" | "status" | "customer" | "items" | "fulfillment" | "deliveryFeeCents" | "discountCents" | "totalCents" | "paymentMethod">
+  locale: string
+  messages: UiMessages
+}
+
+/**
+ * The order as the shop sends it back to its customer: a greeting by name, one line per item as
+ * the storefront's message writes them, how it leaves, the total, the payment and where it stands.
+ */
+export function shopOrderMessageOf({ shopName, order, locale, messages }: ShopOrderMessageInput): string {
+  const text = messages.orders.detail
+  const money = (cents: number) => formatCents(cents, locale, "BRL")
+  const lines = order.items.map((item) =>
+    format(text.whatsappLine, {
+      qty: String(item.quantity),
+      name: item.variantLabel ? `${item.productName} (${item.variantLabel})` : item.productName,
+      total: money(item.lineTotalCents),
+    }),
+  )
+
+  return [
+    format(text.whatsappGreeting, { name: order.customer.name, shop: shopName, number: String(order.number) }),
+    "",
+    ...lines,
+    "",
+    order.fulfillment === "DELIVERY" ? format(text.whatsappFee, { value: money(order.deliveryFeeCents) }) : text.whatsappPickup,
+    ...(order.discountCents > 0 ? [format(text.whatsappDiscount, { value: money(order.discountCents) })] : []),
+    format(text.whatsappTotal, { value: money(order.totalCents) }),
+    format(text.whatsappPayment, { value: messages.orders.payments[order.paymentMethod] }),
+    format(text.whatsappStatus, { value: messages.orders.statuses[order.status] }),
+  ].join("\n")
+}
+
+/** `wa.me/<digits>?text=…`: a number as it is stored — the shop's or a customer's — the message escaped whole. */
 export function whatsappOrderHref(digits: string, message: string): string {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
 }

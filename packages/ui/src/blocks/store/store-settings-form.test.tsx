@@ -68,6 +68,23 @@ describe("StoreSettingsForm", () => {
     expect(await screen.findByText("Escolha ao menos uma forma de pagamento")).toBeVisible()
   })
 
+  it("saves after how many days a customer turns inactive, and refuses a number outside a week to a year", async () => {
+    const { onSubmit } = renderForm()
+
+    await userEvent.click(screen.getByRole("tab", { name: "Clientes" }))
+    const days = screen.getByLabelText("Cliente vira inativo depois de")
+    await userEvent.clear(days)
+    await userEvent.type(days, "5")
+    await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(await screen.findByText("Um número de 7 a 365 dias")).toBeVisible()
+
+    await userEvent.clear(days)
+    await userEvent.type(days, "90")
+    await userEvent.click(screen.getByRole("button", { name: "Salvar alterações" }))
+    expect(onSubmit).toHaveBeenCalledWith({ ...sampleStoreSettingsValues, customers: { inactiveAfterDays: 90 } }, expect.anything())
+  })
+
   it("carries an edit made in one tab into the save", async () => {
     const { onSubmit } = renderForm()
 

@@ -204,6 +204,11 @@ export interface PublicStore {
 /** The shop as its owner edits it in the panel: the public shape plus what only the owner may see. */
 export interface Store extends PublicStore {
   ownerId: string;
+  /**
+   * After how many days without a valid order a customer is inactive: 7 to 365, 60 unless the
+   * shopkeeper changed it. Owner-only — how a shop sorts its customers is nobody else's business.
+   */
+  inactiveAfterDays: number;
   address: StoreAddress;
   /** Decimal degrees. Null until the address is complete enough for the API to geocode it. */
   latitude: number | null;
@@ -281,6 +286,8 @@ export interface UpdateStorePayload {
   layoutSettings?: StoreLayoutSettings;
   /** At least one: a checkout with no payment method cannot complete an order. */
   paymentMethods: PaymentMethod[];
+  /** 7 to 365. Absent keeps what is stored, so a client that does not know it cannot reset it. */
+  inactiveAfterDays?: number;
 }
 
 /** The `errorCode` values the store endpoints answer, beyond the HTTP-status fallbacks (`BAD_REQUEST`, …). */

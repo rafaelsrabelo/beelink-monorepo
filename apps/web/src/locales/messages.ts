@@ -4,6 +4,7 @@ import type {
   CatalogErrorCode,
   CustomerErrorCode,
   LeadErrorCode,
+  OrderErrorCode,
   StoreErrorCode,
   PageErrorCode,
 } from "@harness-monorepo/contracts"
@@ -191,13 +192,6 @@ export interface WebMessages {
         leadsAction: string
       }
     }
-    /** Screens that exist so the menu does not lie, and say plainly that nothing is here yet. */
-    soon: {
-      ordersTitle: string
-      ordersText: string
-      customersTitle: string
-      customersText: string
-    }
     list: {
       description: string
       create: string
@@ -224,6 +218,7 @@ export interface WebMessages {
     | CustomerErrorCode
     | StoreErrorCode
     | LeadErrorCode
+    | OrderErrorCode
     | HttpFallbackErrorCode
     | WebErrorCode
     | PanelPageErrorCode
