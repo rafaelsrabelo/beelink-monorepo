@@ -8,6 +8,9 @@ import type { FastifyRequest } from 'fastify';
 import { PAGE_REVISION_HEADER } from './pages.constants.js';
 import { pageError } from './page.rules.js';
 
+/** The largest value the `draftRevision` column holds. */
+const INT4_MAX = 2_147_483_647;
+
 /**
  * The draft revision the editor read, from `x-page-revision`, or undefined when it sent none — an
  * old tab, a script, a test — which is not checked. A header and not a body field: a delete has no
@@ -17,9 +20,11 @@ export const PageRevision = createParamDecorator((_data: unknown, context: Execu
   const raw = context.switchToHttp().getRequest<FastifyRequest>().headers[PAGE_REVISION_HEADER];
   if (raw === undefined) return undefined;
 
+  // Digits only, and within the column's int4: `1e3` and `0x10` are not revisions, and a value past
+  // the column would fail the raw cast as a 500 rather than be refused as what it is.
   const value = Array.isArray(raw) ? raw[0] : raw;
-  const revision = Number(value);
-  if (!value || !Number.isInteger(revision) || revision < 0) {
+  const revision = value && /^\d{1,10}$/.test(value) ? Number(value) : Number.NaN;
+  if (!(revision <= INT4_MAX)) {
     throw new BadRequestException(pageError('PAGE_REVISION_INVALID', 'The page revision is a whole number'));
   }
 
