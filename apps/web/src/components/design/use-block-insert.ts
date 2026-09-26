@@ -31,12 +31,13 @@ type Bands = readonly { id: string; components: readonly { id: string }[] }[]
  */
 export function useBlockInsert(
   slug: string,
+  pageId: string | undefined,
   draft: Pick<ReturnType<typeof useDesignDraft>, "rows" | "saved" | "patchComponent">,
   onCreated: (component: { id: string; kind: ComponentKind; sectionId: string }) => void,
   web: WebMessages,
 ) {
   const { rows, saved } = draft
-  const addSection = useCreateSection(slug)
+  const addSection = useCreateSection(slug, pageId)
   const addToBand = useCreateComponent(slug)
   const move = useMoveComponent(slug)
   const [insertAt, setInsertAt] = useState<InsertAt | null>(null)

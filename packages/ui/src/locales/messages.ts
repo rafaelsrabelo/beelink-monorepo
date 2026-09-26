@@ -677,6 +677,36 @@ export interface UiMessages {
     saveColors: string
     tabBlocks: string
     tabColors: string
+    tabPages: string
+    /** A shop's pages in design mode: the switcher in the bar and the Páginas tab. */
+    pages: {
+      /** The switcher's name for a screen reader: "Trocar de página — {page}". */
+      switchTo: string
+      heading: string
+      home: string
+      status: { DRAFT: string; PUBLISHED: string; ARCHIVED: string }
+      /** Beside a landing the shop's menu links to. */
+      inMenu: string
+      newLanding: string
+      /** "Arquivadas ({count})", collapsed under the rest. */
+      archived: string
+      /** A row's menu, named for its page: "Ações de {page}". */
+      actions: string
+      publish: string
+      unpublish: string
+      archive: string
+      restore: string
+      settings: string
+      view: string
+      /** The home's row, which no menu changes: it is the shop's own address. */
+      homeHint: string
+      empty: string
+      /** The bar's button and status on a landing that is not up. */
+      publishPage: string
+      notPublished: string
+      /** Why a row's action failed, said under the list. */
+      failed: string
+    }
     /** The full-screen editor's frame: its bar, its three columns and, on a narrow screen, its drawers. */
     frame: {
       /** "← Painel": back to the shop's home in the panel. */

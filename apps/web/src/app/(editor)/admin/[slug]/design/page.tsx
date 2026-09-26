@@ -1,9 +1,10 @@
 // Next
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
 // App
 import { DesignScreen } from "@/components/design/design-screen"
 import { figtree, shopFontStyle } from "@/components/storefront/shop-font"
+import { pagePreviewAt } from "@/lib/editor-data"
 import { getMessages } from "@/lib/locale"
 import { categoriesAt, shopAt } from "@/lib/storefront-data"
 
@@ -17,12 +18,23 @@ import { categoriesAt, shopAt } from "@/lib/storefront-data"
  *
  * So this page calls the same two functions the storefront calls. What appears on the left is, by
  * construction, the page the customer gets — and it costs no new endpoint and no duplicated rule.
+ *
+ * A landing is `?page=<id>`, read through the owner's preview: it may be a draft, which the public
+ * read never serves. An id that names no landing of this shop — gone, another shop's, the home's
+ * own — opens the home instead of an error, which is where the switcher would have gone anyway.
  */
-export default async function DesignPage({ params }: PageProps<"/admin/[slug]/design">) {
+export default async function DesignPage({ params, searchParams }: PageProps<"/admin/[slug]/design">) {
   const { slug } = await params
-  const [store, { ui, web }] = await Promise.all([shopAt(slug), getMessages()])
+  const asked = (await searchParams).page
+  const pageId = typeof asked === "string" && asked ? asked : null
+  const [store, { ui, web }, landing] = await Promise.all([
+    shopAt(slug),
+    getMessages(),
+    pageId ? pagePreviewAt(slug, pageId) : null,
+  ])
 
   if (!store) notFound()
+  if (pageId && landing?.page.kind !== "LANDING") redirect(`/admin/${slug}/design`)
 
   // The same call the shop window's home makes. The showcases' cards need none: they came resolved
   // inside `store`, so the preview's shelves are the ones the visitor gets.
@@ -33,8 +45,11 @@ export default async function DesignPage({ params }: PageProps<"/admin/[slug]/de
     // panel around it stays in its own.
     <div className={figtree.variable} style={shopFontStyle}>
       <DesignScreen
+        // A page of its own: every draft, selection and panel starts over when the page changes.
+        key={landing?.page.id ?? "home"}
         store={store}
         categories={categories}
+        page={landing}
         // From the server, never `new Date()` inside a component: the clock differs between the two
         // renders on the thirty-first of December and hydration says so out loud.
         year={new Date().getFullYear()}

@@ -33,3 +33,8 @@ export const Publicado: Story = {}
 export const Rascunho: Story = { args: { changes: 3 } }
 
 export const Publicando: Story = { args: { changes: 3, publishing: true } }
+
+/** Uma landing em rascunho: "Publicar página" coloca a página no ar, mesmo sem alterações. */
+export const LandingEmRascunho: Story = {
+  args: { pageName: "Black Friday", pagePublished: false, shopHref: null },
+}

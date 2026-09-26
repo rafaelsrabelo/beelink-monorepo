@@ -3,11 +3,11 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 // App
-import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
+import { forwardSignedIn, pageQueryOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { revalidateStore } from "@/lib/revalidate"
 
 /**
- * The shop's posters, hidden ones included.
+ * A page's bands, hidden ones included: the home's, or the page `?pageId=` names.
  *
  * There is no anonymous twin of this route, and that is deliberate: a visitor never asks for
  * banners on their own. They arrive already resolved on the shop itself, which the window fetches
@@ -23,7 +23,7 @@ export async function GET(
 
   const { slug } = await context.params
   const { status, payload } = await forwardSignedIn(request, {
-    path: `/stores/${encodeURIComponent(slug)}/sections`,
+    path: `/stores/${encodeURIComponent(slug)}/sections${pageQueryOf(request)}`,
     method: "GET",
   })
 
@@ -39,7 +39,7 @@ export async function POST(
 
   const { slug } = await context.params
   const { status, payload } = await forwardSignedIn(request, {
-    path: `/stores/${encodeURIComponent(slug)}/sections`,
+    path: `/stores/${encodeURIComponent(slug)}/sections${pageQueryOf(request)}`,
     method: "POST",
     body: (await readJsonBody(request)) ?? {},
   })

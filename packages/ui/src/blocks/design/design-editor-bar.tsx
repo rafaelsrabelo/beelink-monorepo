@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import type { MouseEvent } from "react"
+import type { MouseEvent, ReactNode } from "react"
 
 // Libs
 import { ArrowLeftIcon, ExternalLinkIcon, ListTreeIcon, RotateCcwIcon, SlidersHorizontalIcon } from "lucide-react"
@@ -25,15 +25,22 @@ export interface DesignEditorBarProps {
   onBack?: (event: MouseEvent<HTMLAnchorElement>) => void
   shopName: string
   pageName: string
+  /** Drawn in the page name's place: the way to another page. The name still titles the screen. */
+  pageSwitcher?: ReactNode
   device: PreviewDevice
   onDeviceChange: (device: PreviewDevice) => void
   /** How many writes Publish would send. Zero reads as published, and leaves nothing to discard. */
   changes: number
+  /**
+   * False on a landing that is not up: the status says so, and Publicar puts the page up — with
+   * nothing arranged to send, it is still the one thing left to do.
+   */
+  pagePublished?: boolean
   publishing: boolean
   onPublish: () => void
   onDiscard: () => void
-  /** The shop window, opened in a tab of its own so the editor stays where it is. */
-  shopHref: string
+  /** The page in the shop window, opened in a tab of its own. Null on a page nobody is served yet. */
+  shopHref: string | null
   /** Open the side columns as drawers; the buttons only exist where the columns do not fit. */
   onOpenStructure: () => void
   onOpenInspector: () => void
@@ -58,9 +65,11 @@ export function DesignEditorBar({
   onBack,
   shopName,
   pageName,
+  pageSwitcher,
   device,
   onDeviceChange,
   changes,
+  pagePublished = true,
   publishing,
   onPublish,
   onDiscard,
@@ -72,7 +81,8 @@ export function DesignEditorBar({
 }: DesignEditorBarProps) {
   const text = messages.design.frame
   const changed = changes > 0
-  const status = !changed ? text.published : changes === 1 ? text.draftOne : format(text.draft, { count: String(changes) })
+  const counted = changes === 1 ? text.draftOne : format(text.draft, { count: String(changes) })
+  const status = !pagePublished ? messages.design.pages.notPublished : changed ? counted : text.published
 
   return (
     <header
@@ -94,8 +104,9 @@ export function DesignEditorBar({
           <span className="sr-only">{messages.design.title}: </span>
           <span className="truncate">{shopName}</span>
           <span aria-hidden="true">/</span>
-          <span className="text-header-foreground truncate font-medium">{pageName}</span>
+          {pageSwitcher ? <span className="sr-only">{pageName}</span> : <span className="text-header-foreground truncate font-medium">{pageName}</span>}
         </h1>
+        {pageSwitcher ? <div className="hidden min-w-0 md:block">{pageSwitcher}</div> : null}
       </div>
 
       <div className="hidden sm:block">
@@ -114,22 +125,24 @@ export function DesignEditorBar({
 
         {/* Always there, so a draft is never unannounced: the dot on a phone, the words where they fit. */}
         <span role="status" className="text-header-foreground/80 flex shrink-0 items-center gap-1.5 px-1 text-sm">
-          <span aria-hidden="true" className={cn("size-2 rounded-full", changed ? "bg-header-pending" : "bg-header-foreground/40")} />
+          <span aria-hidden="true" className={cn("size-2 rounded-full", changed || !pagePublished ? "bg-header-pending" : "bg-header-foreground/40")} />
           <span className="sr-only lg:not-sr-only">{status}</span>
         </span>
 
-        <Link
-          href={shopHref}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(
-            "border-header-border hidden shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium outline-none focus-visible:ring-2 md:flex",
-            ON_DARK,
-          )}
-        >
-          {text.viewInShop}
-          <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
-        </Link>
+        {shopHref ? (
+          <Link
+            href={shopHref}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              "border-header-border hidden shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium outline-none focus-visible:ring-2 md:flex",
+              ON_DARK,
+            )}
+          >
+            {text.viewInShop}
+            <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
+          </Link>
+        ) : null}
 
         {changed ? (
           <Button type="button" variant="ghost" className={cn("shrink-0 px-2 sm:px-2.5", ON_DARK)} disabled={publishing} onClick={onDiscard}>
@@ -140,10 +153,10 @@ export function DesignEditorBar({
         <Button
           type="button"
           className="bg-header-foreground text-header hover:bg-header-foreground/90 h-9 shrink-0 px-3 font-semibold sm:px-4"
-          disabled={!changed || publishing}
+          disabled={(pagePublished && !changed) || publishing}
           onClick={onPublish}
         >
-          {publishing ? messages.design.publishing : messages.design.publish}
+          {publishing ? messages.design.publishing : pagePublished ? messages.design.publish : messages.design.pages.publishPage}
         </Button>
       </div>
     </header>

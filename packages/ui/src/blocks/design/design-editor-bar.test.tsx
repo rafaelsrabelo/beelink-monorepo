@@ -74,6 +74,24 @@ describe("DesignEditorBar", () => {
     expect(shop).toHaveAttribute("target", "_blank")
   })
 
+  // A landing still a draft: Publicar is how it goes up, with or without anything arranged to send.
+  it("says a landing is not up, and offers to put it up with nothing else to write", async () => {
+    const { props } = renderBar({ pagePublished: false, pageName: "Black Friday", shopHref: null })
+
+    expect(screen.getByRole("status")).toHaveTextContent("Página não publicada")
+    await userEvent.click(screen.getByRole("button", { name: "Publicar página" }))
+    expect(props.onPublish).toHaveBeenCalledTimes(1)
+    // A page nobody is served has no address to open.
+    expect(screen.queryByRole("link", { name: /Ver na loja/ })).not.toBeInTheDocument()
+  })
+
+  it("draws the way to another page where the page's name is, and still titles the screen with it", () => {
+    renderBar({ pageName: "Black Friday", pageSwitcher: <button type="button">Trocar</button> })
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Loja do Design/Black Friday")
+    expect(screen.getByRole("button", { name: "Trocar" })).toBeInTheDocument()
+  })
+
   it("switches the preview's device and opens the side columns as drawers", async () => {
     const { props } = renderBar()
 

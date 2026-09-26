@@ -119,6 +119,8 @@ export function arrangementOf(
   shelves: Shelves,
   /** Categories the shop window shows: with none, a categories block draws nothing. Unknown is some. */
   categoriesShown = Number.POSITIVE_INFINITY,
+  /** Whether this page may not lose its last product list: the home's rule, and no landing's. */
+  productsRequired = true,
 ): ArrangementBand[] {
   const savedSections = new Map(saved.map((section) => [section.id, section]))
   const savedComponents = new Map(
@@ -149,7 +151,7 @@ export function arrangementOf(
         span: component.span,
         isActive: component.isActive,
         visibleOn: component.visibleOn,
-        deletable: component.kind !== "PRODUCTS" || productLists > 1,
+        deletable: !productsRequired || component.kind !== "PRODUCTS" || productLists > 1,
         // A showcase's saved items are its pick, not its cards, so only a shelf the public read
         // resolved can say it is empty. A hidden one has none, and is not called empty for it.
         empty:

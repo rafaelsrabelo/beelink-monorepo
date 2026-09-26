@@ -306,6 +306,12 @@ describe("arrangementOf — what the panel lists", () => {
     const twice = [...saved, section("d", [component("d1", { kind: "PRODUCTS" })])]
     expect(arrangementOf(twice.map(toDraft), twice, NO_SHELVES)[1]!.components[1]).toMatchObject({ deletable: true })
   })
+
+  // A landing's shelves are the shopkeeper's to take off: only the home cannot be left without one.
+  it("lets a landing's last product list go", () => {
+    const bands = arrangementOf(draft, saved, NO_SHELVES, Number.POSITIVE_INFINITY, false)
+    expect(bands[1]!.components.map((row) => row.deletable)).toEqual([true, true])
+  })
 })
 
 describe("isEmptyComponent — what draws nothing", () => {

@@ -51,6 +51,15 @@ export function clientIpOf(request: NextRequest): string | null {
   return request.headers.get("x-forwarded-for")
 }
 
+/**
+ * The page a collection route acts on, carried to the API as the browser sent it: `?pageId=` or
+ * nothing, which the API reads as the shop's home. The id is the API's to check.
+ */
+export function pageQueryOf(request: NextRequest): string {
+  const pageId = request.nextUrl.searchParams.get("pageId")
+  return pageId ? `?pageId=${encodeURIComponent(pageId)}` : ""
+}
+
 export async function readJsonBody(request: NextRequest): Promise<unknown> {
   try {
     return await request.json()

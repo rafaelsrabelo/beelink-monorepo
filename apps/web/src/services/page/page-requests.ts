@@ -1,12 +1,16 @@
 // Types
 import type {
   AddComponentPayload,
+  CreateLandingPayload,
   CreateSectionPayload,
   MoveComponentPayload,
+  PageSlugAvailability,
   ReorderPayload,
   Section,
   StoreComponent,
+  StorePage,
   UpdateComponentPayload,
+  UpdatePagePayload,
   UpdateSectionPayload,
 } from "@harness-monorepo/contracts"
 
@@ -46,12 +50,15 @@ async function call<T>(path: string, init: RequestInit): Promise<T> {
 
 const sectionsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/sections`
 
-export function fetchSections(slug: string): Promise<Section[]> {
-  return call<Section[]>(sectionsPath(slug), { method: "GET" })
+/** A collection route, on one page: none named is the shop's home, as the API reads it. */
+const onPage = (path: string, pageId?: string) => (pageId ? `${path}?pageId=${encodeURIComponent(pageId)}` : path)
+
+export function fetchSections(slug: string, pageId?: string): Promise<Section[]> {
+  return call<Section[]>(onPage(sectionsPath(slug), pageId), { method: "GET" })
 }
 
-export function createSection(slug: string, payload: CreateSectionPayload): Promise<Section> {
-  return call<Section>(sectionsPath(slug), { method: "POST", body: JSON.stringify(payload) })
+export function createSection(slug: string, payload: CreateSectionPayload, pageId?: string): Promise<Section> {
+  return call<Section>(onPage(sectionsPath(slug), pageId), { method: "POST", body: JSON.stringify(payload) })
 }
 
 export function updateSection(slug: string, sectionId: string, payload: UpdateSectionPayload): Promise<Section> {
@@ -69,8 +76,8 @@ export function deleteSection(slug: string, sectionId: string): Promise<unknown>
  * The whole list, in the new order. The API refuses a partial one, which is what stops two bands
  * ending up on the same position and drawing a page that is neither order.
  */
-export function reorderSections(slug: string, payload: ReorderPayload): Promise<Section[]> {
-  return call<Section[]>(`${sectionsPath(slug)}/reorder`, { method: "PUT", body: JSON.stringify(payload) })
+export function reorderSections(slug: string, payload: ReorderPayload, pageId?: string): Promise<Section[]> {
+  return call<Section[]>(onPage(`${sectionsPath(slug)}/reorder`, pageId), { method: "PUT", body: JSON.stringify(payload) })
 }
 
 const componentsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/components`
@@ -96,8 +103,9 @@ export async function createSectionRow(
   slug: string,
   payload: CreateSectionPayload,
   alongside: number,
+  pageId?: string,
 ): Promise<Section> {
-  const section = await createSection(slug, payload)
+  const section = await createSection(slug, payload, pageId)
   await Promise.all(Array.from({ length: alongside }, () => createComponent(slug, section.id, payload.component)))
   return section
 }
@@ -151,4 +159,26 @@ export function duplicateSection(slug: string, sectionId: string): Promise<Secti
 /** A hidden copy of one block, right after it in its band. */
 export function duplicateComponent(slug: string, componentId: string): Promise<StoreComponent> {
   return call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/duplicate`, { method: "POST" })
+}
+
+const pagesPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/pages`
+
+/** The shop's home, then its landings, newest first — archived ones too. */
+export function fetchPages(slug: string): Promise<StorePage[]> {
+  return call<StorePage[]>(pagesPath(slug), { method: "GET" })
+}
+
+/** A landing, as a draft, with the bands its template opens with. */
+export function createPage(slug: string, payload: CreateLandingPayload): Promise<StorePage> {
+  return call<StorePage>(pagesPath(slug), { method: "POST", body: JSON.stringify(payload) })
+}
+
+export function updatePage(slug: string, pageId: string, payload: UpdatePagePayload): Promise<StorePage> {
+  return call<StorePage>(`${pagesPath(slug)}/${encodeURIComponent(pageId)}`, { method: "PATCH", body: JSON.stringify(payload) })
+}
+
+/** Whether an address is free, as the API would store it. `except` is the landing being renamed. */
+export function fetchPageSlugAvailability(slug: string, candidate: string, except?: string): Promise<PageSlugAvailability> {
+  const query = new URLSearchParams({ slug: candidate, ...(except ? { except } : {}) })
+  return call<PageSlugAvailability>(`${pagesPath(slug)}/availability?${query.toString()}`, { method: "GET" })
 }

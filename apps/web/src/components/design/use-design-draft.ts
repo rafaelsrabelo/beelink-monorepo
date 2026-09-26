@@ -42,10 +42,10 @@ import { reconcile } from "./design-draft-reconcile"
  * falls here: this knows what the draft is and how it reaches the server, and the screen knows
  * what is on the page.
  */
-export function useDesignDraft(slug: string) {
+export function useDesignDraft(slug: string, pageId?: string) {
   const router = useRouter()
-  const page = useSections(slug)
-  const reorder = useReorderSections(slug)
+  const page = useSections(slug, pageId)
+  const reorder = useReorderSections(slug, pageId)
   const reorderComponents = useReorderComponents(slug)
   const updateSection = useUpdateSection(slug)
   const updateComponent = useUpdateComponent(slug)
@@ -122,9 +122,9 @@ export function useDesignDraft(slug: string) {
   /**
    * Only what moved is written: an order per level where it changed, a patch per row whose
    * attributes changed. A write per row would touch `updatedAt` on everything the owner never
-   * opened.
+   * opened. `onPublished` runs once all of it has landed: a landing that is not up goes up then.
    */
-  function publish() {
+  function publish(onPublished?: () => void) {
     if (!page.data) return
 
     const changes = changesOf(rows, page.data)
@@ -142,6 +142,7 @@ export function useDesignDraft(slug: string) {
       .then(() => {
         setDirty(false)
         setSeeded(null)
+        onPublished?.()
         // The shop as served is the page's server read, the showcases' products in it: a showcase
         // shown again has none in the preview until that read is taken again.
         router.refresh()

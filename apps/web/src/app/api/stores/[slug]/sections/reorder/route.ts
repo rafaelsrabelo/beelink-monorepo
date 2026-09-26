@@ -3,10 +3,10 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 // App
-import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
+import { forwardSignedIn, pageQueryOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 import { revalidateStore } from "@/lib/revalidate"
 
-/** The whole list, in its new order — the order the landing page draws the posters in. */
+/** A page's whole list, in its new order — the home's, or the page `?pageId=` names. */
 export async function PUT(
   request: NextRequest,
   context: RouteContext<"/api/stores/[slug]/sections/reorder">,
@@ -16,7 +16,7 @@ export async function PUT(
 
   const { slug } = await context.params
   const { status, payload } = await forwardSignedIn(request, {
-    path: `/stores/${encodeURIComponent(slug)}/sections/reorder`,
+    path: `/stores/${encodeURIComponent(slug)}/sections/reorder${pageQueryOf(request)}`,
     method: "PUT",
     body: (await readJsonBody(request)) ?? {},
   })

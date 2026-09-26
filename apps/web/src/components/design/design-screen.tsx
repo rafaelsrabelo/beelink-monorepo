@@ -4,20 +4,20 @@
 import { useState } from "react"
 
 // Types
-import type { ComponentKind, PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
+import type { ComponentKind, PagePreview, PublicProductCategory, PublicStore, StoreColors } from "@harness-monorepo/contracts"
 
 // UI
 import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
-import { DesignEditorBar } from "@harness-monorepo/ui/blocks/design/design-editor-bar"
 import { DesignEditorFrame, usePreviewDevice } from "@harness-monorepo/ui/blocks/design/design-editor-frame"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import { AppLink } from "@/components/app-link"
 import { useStoreColorPresets, useUpdateStoreColors } from "@/services/stores/store-hooks"
 import type { PendingDelete } from "./design-delete-confirm"
 import { DesignInspector } from "./design-inspector"
-import { DesignPanel } from "./design-panel"
+import { DesignPagesTab } from "./design-pages-tab"
+import { DesignPanel, type DesignPanelTab } from "./design-panel"
+import { DesignScreenBar } from "./design-screen-bar"
 import { DesignScreenDialogs } from "./design-screen-dialogs"
 import { LivePreviewPane } from "./live-preview-pane"
 import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
@@ -41,6 +41,8 @@ export interface DesignScreenProps {
    */
   store: PublicStore
   categories: readonly PublicProductCategory[]
+  /** The landing being edited and its bands as a visitor would be served them. Absent on the home. */
+  page?: PagePreview | null
   year: number
   messages: UiMessages
   /** The app's own sentences — where an API `errorCode` becomes copy. */
@@ -57,19 +59,20 @@ const COLOUR_KEYS = ["background", "primary", "header", "footer"] as const satis
  * sits. What a component says, and what a band looks like, save on their own the moment the owner
  * hits Salvar in the panel: those are things they want to see land, not an order to hold back.
  */
-export function DesignScreen({ store, categories, year, messages, web }: DesignScreenProps) {
-  const text = messages.design
+export function DesignScreen({ store, categories, page = null, year, messages, web }: DesignScreenProps) {
   const slug = store.slug
+  const landing = page?.page ?? null
+  const pageId = landing?.id
 
-  const draft = useDesignDraft(slug)
+  const draft = useDesignDraft(slug, pageId)
   const { rows, saved } = draft
   const presets = useStoreColorPresets()
   const saveColors = useUpdateStoreColors(slug)
-  const shelves = shelvesOf(store.sections)
+  const shelves = shelvesOf(page?.sections ?? store.sections)
   const shop = useShopRefresh()
 
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
-  const [panelTab, setPanelTab] = useState<"blocks" | "colors">("blocks")
+  const [panelTab, setPanelTab] = useState<DesignPanelTab>("blocks")
   const [device, setDevice] = usePreviewDevice()
   const selection = useDesignSelection(rows)
   const { choose, target } = selection
@@ -83,7 +86,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
     if (component.kind === "PRODUCTS") shop.refresh(component.id)
     revealInPreview([component.id, component.sectionId])
   }
-  const adding = useBlockInsert(slug, draft, opened, web)
+  const adding = useBlockInsert(slug, pageId, draft, opened, web)
 
   /*
     The palette is its own draft, and it saves on its own — a colour is the kind of thing you want
@@ -93,15 +96,18 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
   const [palette, setPalette] = useState<StoreColors>(store.colors)
   const paletteChanged = COLOUR_KEYS.some((key) => palette[key] !== store.colors[key])
 
-  // What the gallery never offers: the strip a page has once, and what this kind of page cannot hold.
-  const unavailableKinds: ComponentKind[] =
-    store.type === "INSTITUTIONAL" ? ["PRODUCTS", "CATEGORIES"] : ["CONTACT"]
+  // What the gallery never offers: the strip a page has once, what this kind of shop cannot hold,
+  // and on a landing the strip at all — it is the home's, drawn on every page that uses the header.
+  const unavailableKinds: ComponentKind[] = [
+    ...(store.type === "INSTITUTIONAL" ? (["PRODUCTS", "CATEGORIES"] as const) : (["CONTACT"] as const)),
+    ...(landing ? (["ANNOUNCEMENT"] as const) : []),
+  ]
   const takenKinds = takenKindsOf(rows)
   const bandName = (id: string) =>
     bandLabelOf(saved.find((section) => section.id === id)?.name, rows.findIndex((row) => row.id === id) + 1, messages)
 
   const guard = useLeaveGuard(draft.changed)
-  const bands = arrangementOf(rows, saved, shelves, categories.length)
+  const bands = arrangementOf(rows, saved, shelves, categories.length, !landing)
   const bandAlone = target?.level === "band" && !target.blockId ? target.id : null
   const controls = useSelectionControls({
     slug,
@@ -136,21 +142,16 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
 
       <DesignEditorFrame
         bar={
-          <DesignEditorBar
-            backHref={`/admin/${slug}`}
-            onBack={guard.onLeave}
+          <DesignScreenBar
+            slug={slug}
             shopName={store.name}
-            pageName={text.frame.homePage}
+            page={landing}
+            draft={draft}
+            onLeave={guard.onLeave}
             device={device}
             onDeviceChange={setDevice}
-            changes={draft.changeCount}
-            publishing={draft.publishing}
-            onPublish={draft.publish}
-            onDiscard={draft.discard}
-            shopHref={`/${slug}`}
             onOpenStructure={() => selection.setStructureOpen(true)}
             onOpenInspector={() => selection.setInspectorOpen(true)}
-            linkComponent={AppLink}
             messages={messages}
           />
         }
@@ -182,6 +183,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             paletteChanged={paletteChanged}
             savingColours={saveColors.isPending}
             onSaveColours={() => saveColors.mutate(palette)}
+            pages={<DesignPagesTab slug={slug} currentId={pageId ?? null} onNavigate={guard.onLeave} messages={messages} web={web} />}
             messages={messages}
           />
         }
@@ -204,6 +206,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
             selectedId={edited?.componentId ?? null}
             selectedBandId={bandAlone}
             selectionBar={controls.bar}
+            {...(landing ? { landing: { homeSections: store.sections, usesChrome: landing.usesChrome } } : {})}
             messages={messages}
           />
         }

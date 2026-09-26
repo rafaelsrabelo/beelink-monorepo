@@ -118,3 +118,27 @@ describe("useDesignDraft — a clean draft follows the server", () => {
     expect(result.current.changeCount).toBe(0)
   })
 })
+
+// A landing is its own page: its bands are asked for by its id, and a draft one goes up after Publicar.
+describe("useDesignDraft — one page of the shop", () => {
+  it("reads the named page's bands, and runs what Publicar hands it once everything has landed", async () => {
+    const paths: string[] = []
+    vi.stubGlobal("fetch", (path: string, init: RequestInit) => {
+      paths.push(`${init.method ?? "GET"} ${path}`)
+      return Promise.resolve(new Response(JSON.stringify(init.method === "PATCH" ? hidden[0]!.components[0] : hidden), { status: 200 }))
+    })
+    const { result } = renderHook(() => useDesignDraft("loja", "page-1"), { wrapper })
+    await waitFor(() => expect(result.current.rows).toHaveLength(1))
+    expect(paths[0]).toBe("GET /api/stores/loja/sections?pageId=page-1")
+
+    const onPublished = vi.fn()
+    act(() => result.current.publish(onPublished))
+    // Nothing arranged to send: what comes after Publicar still runs.
+    await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(1))
+
+    act(() => result.current.patchComponent("c1", { columns: 4 }))
+    act(() => result.current.publish(onPublished))
+    await waitFor(() => expect(onPublished).toHaveBeenCalledTimes(2))
+    expect(paths.some((path) => path.startsWith("PATCH /api/stores/loja/components/c1"))).toBe(true)
+  })
+})

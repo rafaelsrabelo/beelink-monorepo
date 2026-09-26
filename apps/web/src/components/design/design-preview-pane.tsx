@@ -57,6 +57,11 @@ export interface DesignPreviewPaneProps {
   /** The room a row has left, pressed: a block beside the row's last one. Without it none is drawn. */
   onInsert?: (at: InsertAt) => void
   inserting?: boolean
+  /**
+   * On a landing: the home's saved bands, which its strip and a site's menu are read from, and
+   * whether the page asked for the shop's header and footer at all. Absent on the home.
+   */
+  landing?: { homeSections: readonly PublicSection[]; usesChrome: boolean }
   messages: UiMessages
 }
 
@@ -89,6 +94,7 @@ export function DesignPreviewPane({
   nodeOf = (componentId) => componentId,
   onInsert,
   inserting = false,
+  landing,
   messages,
 }: DesignPreviewPaneProps) {
   const routes = storefrontRoutes(store)
@@ -142,8 +148,11 @@ export function DesignPreviewPane({
             <StorefrontFrame
               store={store}
               colors={colors}
-              // The draft's bands, so a site's menu in the preview is the menu being arranged.
-              sections={sections}
+              // The draft's bands, so a site's menu in the preview is the menu being arranged — or,
+              // on a landing, the home's, which its strip and menu are drawn from.
+              sections={landing?.homeSections ?? sections}
+              chrome={landing?.usesChrome ?? true}
+              {...(landing ? { anchorBase: routes.home } : {})}
               categories={categories}
               year={year}
               searchSlot={null}
