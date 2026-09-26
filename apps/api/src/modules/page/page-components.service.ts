@@ -14,6 +14,7 @@ import { refuseOnLanding } from './page-scope.js';
 import { PageRules, pageError } from './page.rules.js';
 import { componentPatch, componentRow, placedAt } from './page-rows.js';
 import { ShowcaseRules } from './showcase.rules.js';
+import { FeaturedRules } from './featured.rules.js';
 import { openingItemsOf } from './page-seed.js';
 
 /**
@@ -30,6 +31,7 @@ export class PageComponentsService {
     private readonly stores: StoresService,
     private readonly rules: PageRules,
     private readonly showcases: ShowcaseRules,
+    private readonly featured: FeaturedRules,
   ) {}
 
   async createComponent(
@@ -47,7 +49,8 @@ export class PageComponentsService {
     this.rules.refuseVisibilityFor(dto.kind, dto.visibleOn);
     this.showcases.refuseOn(dto.kind, dto);
 
-    const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
+    const checked = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
+    const items = await this.featured.itemsFor(dto.kind, storeId, checked);
     const showcase = dto.kind === 'PRODUCTS' ? await this.showcases.forCreate(storeId, dto, items) : null;
     const { position, ...fields } = dto;
 
@@ -101,7 +104,8 @@ export class PageComponentsService {
     this.rules.refuseVisibilityFor(current.kind, dto.visibleOn);
     this.showcases.refuseOn(current.kind, dto);
 
-    const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);
+    const items =
+      dto.items === undefined ? undefined : await this.featured.itemsFor(current.kind, storeId, this.rules.checkedItems(current.kind, dto.items));
     const showcase =
       current.kind === 'PRODUCTS' ? await this.showcases.forUpdate(storeId, componentId, dto, items) : null;
 

@@ -16,6 +16,7 @@ import { pageFor, refuseOnLanding } from './page-scope.js';
 import { PageRules } from './page.rules.js';
 import { componentRow, copiedRow, placedAt } from './page-rows.js';
 import { ShowcaseRules } from './showcase.rules.js';
+import { FeaturedRules } from './featured.rules.js';
 import { openingItemsOf } from './page-seed.js';
 
 /**
@@ -29,6 +30,7 @@ export class PageService {
     private readonly stores: StoresService,
     private readonly rules: PageRules,
     private readonly showcases: ShowcaseRules,
+    private readonly featured: FeaturedRules,
   ) {}
 
   /** The panel's read of one page — the home unless another is named: hidden bands and components included. */
@@ -55,7 +57,8 @@ export class PageService {
     this.rules.refuseVisibilityFor(dto.component.kind, dto.component.visibleOn);
     this.showcases.refuseOn(dto.component.kind, dto.component);
     // A kind created bare opens with what it cannot be without — a form's first fields.
-    const items = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
+    const checked = this.rules.checkedItems(dto.component.kind, dto.component.items ?? openingItemsOf(dto.component.kind));
+    const items = await this.featured.itemsFor(dto.component.kind, storeId, checked);
     const showcase =
       dto.component.kind === 'PRODUCTS' ? await this.showcases.forCreate(storeId, dto.component, items) : null;
 

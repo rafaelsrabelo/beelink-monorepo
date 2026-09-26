@@ -43,6 +43,8 @@ export const sectionKeys = {
   list: (slug: string, pageId?: string) => [...sectionKeys.store(slug), pageId ?? "home"] as const,
   /** Under the shop's prefix, so every section write drops it with the lists. */
   draft: (slug: string, pageId: string) => [...sectionKeys.store(slug), "draft", pageId] as const,
+  versions: (slug: string, pageId: string) => [...sectionKeys.store(slug), "versions", pageId] as const,
+  problems: (slug: string, pageId: string) => [...sectionKeys.store(slug), "problems", pageId] as const,
 }
 
 /** One page's bands — the home unless another is named. */

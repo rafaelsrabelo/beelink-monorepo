@@ -239,7 +239,7 @@ describe('StoresService.create', () => {
     await service.create(OWNER, { ...createDto, type: 'INSTITUTIONAL', socialNetworks: {} } as CreateStoreDto);
 
     const bands = fakes.seed.mock.calls.map((call) => call[0].data);
-    expect(bands.map((band) => band.name)).toEqual(['Início', 'Serviços', 'Sobre', 'Como funciona', 'Contato']);
+    expect(bands.map((band) => band.name)).toEqual(['Início', 'Serviços', 'Sobre', 'Como funciona', 'Dúvidas', 'Contato']);
     expect(bands.flatMap((band) => band.components.create.map((c: { kind: string }) => c.kind))).not.toContain('PRODUCTS');
     expect(fakes.create.mock.calls[0]?.[0].data.whatsappPhone).toBeNull();
   });

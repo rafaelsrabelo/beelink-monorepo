@@ -14,10 +14,9 @@ function renderBar(overrides: Partial<DesignEditorBarProps> = {}) {
     pageName: "Página inicial",
     device: "DESKTOP",
     onDeviceChange: vi.fn(),
-    changes: 0,
+    unpublished: false,
     publishing: false,
     onPublish: vi.fn(),
-    onDiscard: vi.fn(),
     shopHref: "/loja",
     onOpenStructure: vi.fn(),
     onOpenInspector: vi.fn(),
@@ -37,25 +36,19 @@ describe("DesignEditorBar", () => {
     expect(screen.getByText("Página inicial")).toBeInTheDocument()
   })
 
-  it("reads as published with nothing to write, and offers neither publish nor discard", () => {
+  it("reads as published with nothing to publish, and offers no Publicar", () => {
     renderBar()
 
     expect(screen.getByRole("status")).toHaveTextContent("Publicado")
     expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled()
-    expect(screen.queryByRole("button", { name: "Descartar" })).not.toBeInTheDocument()
   })
 
-  it("counts what Publish would write, and says one alteration in the singular", async () => {
-    const { rerender, props } = renderBar({ changes: 3 })
+  // Not known yet is not "Publicado": a page with saved changes would read as live until the read lands.
+  it("says nothing while it is not known whether the draft differs", () => {
+    renderBar({ unpublished: undefined })
 
-    expect(screen.getByRole("status")).toHaveTextContent("Rascunho · 3 alterações")
-    await userEvent.click(screen.getByRole("button", { name: "Publicar" }))
-    expect(props.onPublish).toHaveBeenCalled()
-    await userEvent.click(screen.getByRole("button", { name: "Descartar" }))
-    expect(props.onDiscard).toHaveBeenCalled()
-
-    rerender(<DesignEditorBar {...props} changes={1} />)
-    expect(screen.getByRole("status")).toHaveTextContent("Rascunho · 1 alteração")
+    expect(screen.getByRole("status")).not.toHaveTextContent("Publicado")
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled()
   })
 
   it("lets the screen stop the way back, to ask first", async () => {
@@ -72,6 +65,13 @@ describe("DesignEditorBar", () => {
     const shop = screen.getByRole("link", { name: /Ver na loja/ })
     expect(shop).toHaveAttribute("href", "/loja")
     expect(shop).toHaveAttribute("target", "_blank")
+  })
+
+  it("says a change is being saved, first, and holds Publicar until it is", () => {
+    renderBar({ saving: true, unpublished: true })
+
+    expect(screen.getByRole("status")).toHaveTextContent("Salvando…")
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled()
   })
 
   // Saved on the server a moment ago, not yet in the shop: nothing to discard here, something to publish.
@@ -120,7 +120,7 @@ describe("DesignEditorBar", () => {
   })
 
   it("has no accessibility violations", async () => {
-    const { container } = renderBar({ changes: 2 })
+    const { container } = renderBar({ unpublished: true })
     await expectNoA11yViolations(container)
   })
 })

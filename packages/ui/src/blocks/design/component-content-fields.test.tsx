@@ -24,6 +24,11 @@ function values(over: Partial<ComponentFormValues> = {}): ComponentFormValues {
     sourceCategoryId: "",
     picks: [],
     limit: "",
+    faq: [],
+    countdownEnd: "",
+    buttonLabel: "",
+    imageUrl: "",
+    imageAlt: "",
     ...over,
   }
 }
@@ -131,6 +136,19 @@ describe("contentReady — a save the API would take", () => {
     expect(
       contentReady(values({ kind: "CONTACT", fields: [{ id: "e", label: "E-mail", type: "EMAIL", required: true, options: "" }] })),
     ).toBe(true)
+  })
+
+  it("holds a FAQ while a question it asks has no answer", () => {
+    expect(contentReady(values({ kind: "FAQ", faq: [{ id: "a", question: "Prazo?", answer: " " }] }))).toBe(false)
+    expect(contentReady(values({ kind: "FAQ", faq: [{ id: "a", question: "Prazo?", answer: "Três dias." }] }))).toBe(true)
+    // A row not written yet is dropped on the way out, not waited for.
+    expect(contentReady(values({ kind: "FAQ", faq: [{ id: "a", question: "", answer: "" }] }))).toBe(true)
+  })
+
+  it("waits for an image with text's button only once it has a picture to go with", () => {
+    const half = { target: "PRODUCT" as const, productId: "p1", buttonLabel: "" }
+    expect(contentReady(values({ kind: "IMAGE_TEXT", ...half }))).toBe(true)
+    expect(contentReady(values({ kind: "IMAGE_TEXT", imageUrl: "https://cdn.example/a.png", ...half }))).toBe(false)
   })
 
   it("takes every other kind as it is", () => {

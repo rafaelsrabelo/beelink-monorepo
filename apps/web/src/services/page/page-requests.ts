@@ -11,6 +11,7 @@ import type {
 } from "@harness-monorepo/contracts"
 
 // App
+import { draftWrite } from "./draft-write"
 import { call } from "./page-call"
 
 export { PageRequestError } from "./page-call"
@@ -25,18 +26,18 @@ export function fetchSections(slug: string, pageId?: string): Promise<Section[]>
 }
 
 export function createSection(slug: string, payload: CreateSectionPayload, pageId?: string): Promise<Section> {
-  return call<Section>(onPage(sectionsPath(slug), pageId), { method: "POST", body: JSON.stringify(payload) })
+  return draftWrite(slug, (revision) => call<Section>(onPage(sectionsPath(slug), pageId), { method: "POST", body: JSON.stringify(payload) }, revision))
 }
 
 export function updateSection(slug: string, sectionId: string, payload: UpdateSectionPayload): Promise<Section> {
-  return call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}`, {
+  return draftWrite(slug, (revision) => call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}`, {
     method: "PUT",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 export function deleteSection(slug: string, sectionId: string): Promise<unknown> {
-  return call<unknown>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}`, { method: "DELETE" })
+  return draftWrite(slug, (revision) => call<unknown>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}`, { method: "DELETE" }, revision))
 }
 
 /**
@@ -44,7 +45,7 @@ export function deleteSection(slug: string, sectionId: string): Promise<unknown>
  * ending up on the same position and drawing a page that is neither order.
  */
 export function reorderSections(slug: string, payload: ReorderPayload, pageId?: string): Promise<Section[]> {
-  return call<Section[]>(onPage(`${sectionsPath(slug)}/reorder`, pageId), { method: "PUT", body: JSON.stringify(payload) })
+  return draftWrite(slug, (revision) => call<Section[]>(onPage(`${sectionsPath(slug)}/reorder`, pageId), { method: "PUT", body: JSON.stringify(payload) }, revision))
 }
 
 const componentsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/components`
@@ -54,10 +55,10 @@ export function createComponent(
   sectionId: string,
   payload: AddComponentPayload,
 ): Promise<StoreComponent> {
-  return call<StoreComponent>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components`, {
+  return draftWrite(slug, (revision) => call<StoreComponent>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components`, {
     method: "POST",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 /**
@@ -82,14 +83,14 @@ export function updateComponent(
   componentId: string,
   payload: UpdateComponentPayload,
 ): Promise<StoreComponent> {
-  return call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, {
+  return draftWrite(slug, (revision) => call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 export function deleteComponent(slug: string, componentId: string): Promise<unknown> {
-  return call<unknown>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, { method: "DELETE" })
+  return draftWrite(slug, (revision) => call<unknown>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, { method: "DELETE" }, revision))
 }
 
 /**
@@ -97,10 +98,10 @@ export function deleteComponent(slug: string, componentId: string): Promise<unkn
  * left may be gone.
  */
 export function moveComponent(slug: string, componentId: string, payload: MoveComponentPayload): Promise<Section[]> {
-  return call<Section[]>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/section`, {
+  return draftWrite(slug, (revision) => call<Section[]>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/section`, {
     method: "PUT",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 /** One band's components, in the new order. The band itself does not move. */
@@ -109,10 +110,10 @@ export function reorderComponents(
   sectionId: string,
   payload: ReorderPayload,
 ): Promise<Section[]> {
-  return call<Section[]>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components/reorder`, {
+  return draftWrite(slug, (revision) => call<Section[]>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components/reorder`, {
     method: "PUT",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 /**
@@ -120,10 +121,10 @@ export function reorderComponents(
  * the shop, like anything else the owner arranged.
  */
 export function duplicateSection(slug: string, sectionId: string): Promise<Section> {
-  return call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/duplicate`, { method: "POST" })
+  return draftWrite(slug, (revision) => call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/duplicate`, { method: "POST" }, revision))
 }
 
 /** A hidden copy of one block, right after it in its band. */
 export function duplicateComponent(slug: string, componentId: string): Promise<StoreComponent> {
-  return call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/duplicate`, { method: "POST" })
+  return draftWrite(slug, (revision) => call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/duplicate`, { method: "POST" }, revision))
 }
