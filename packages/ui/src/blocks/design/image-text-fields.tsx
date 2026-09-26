@@ -32,7 +32,8 @@ export interface ImageTextFieldsProps {
 /**
  * An image with text's own fields: the picture, what it shows — asked, because the picture here is
  * content and not decoration, and left blank it is drawn as decoration — and the button beside the
- * words, which "Nenhum" leaves out.
+ * words, which "Nenhum" leaves out. Both are asked once there is a picture: the block keeps them
+ * with it, and a button typed with no picture would be one the save could not keep.
  */
 export function ImageTextFields({
   value,
@@ -76,7 +77,10 @@ export function ImageTextFields({
         </Field>
       ) : null}
 
-      <ButtonFields value={value} onChange={onChange} categories={categories} products={products} messages={messages} />
+      {/* The button sits beside the picture and goes with it: with no picture there is none to keep. */}
+      {value.imageUrl ? (
+        <ButtonFields value={value} onChange={onChange} categories={categories} products={products} messages={messages} />
+      ) : null}
     </>
   )
 }

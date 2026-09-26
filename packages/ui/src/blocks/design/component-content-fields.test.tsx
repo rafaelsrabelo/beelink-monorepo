@@ -145,6 +145,12 @@ describe("contentReady — a save the API would take", () => {
     expect(contentReady(values({ kind: "FAQ", faq: [{ id: "a", question: "", answer: "" }] }))).toBe(true)
   })
 
+  it("waits for an image with text's button only once it has a picture to go with", () => {
+    const half = { target: "PRODUCT" as const, productId: "p1", buttonLabel: "" }
+    expect(contentReady(values({ kind: "IMAGE_TEXT", ...half }))).toBe(true)
+    expect(contentReady(values({ kind: "IMAGE_TEXT", imageUrl: "https://cdn.example/a.png", ...half }))).toBe(false)
+  })
+
   it("takes every other kind as it is", () => {
     expect(contentReady(values({ kind: "HEADING" }))).toBe(true)
   })
