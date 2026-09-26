@@ -116,3 +116,28 @@ describe("component-form-values — a FAQ", () => {
     expect(toPayload(value, "item")).toMatchObject({ items: [{ id: "a", question: "Qual o prazo?", answer: "Três dias." }] })
   })
 })
+
+describe("component-form-values — a call to action", () => {
+  const cta = component({
+    kind: "CALL_TO_ACTION",
+    title: "Garanta o seu",
+    body: "Enquanto tem estoque.",
+    display: "BAND",
+    items: [{ id: "btn", label: "Comprar agora", target: "PRODUCT", productId: "p1" }],
+  })
+
+  it("opens on its button's words and destination, and sends the same button back", () => {
+    const value = toForm(cta)
+    expect(value).toMatchObject({ buttonLabel: "Comprar agora", target: "PRODUCT", productId: "p1", body: "Enquanto tem estoque." })
+
+    expect(toPayload(value, "btn")).toMatchObject({
+      body: "Enquanto tem estoque.",
+      items: [{ id: "btn", label: "Comprar agora", target: "PRODUCT", productId: "p1", categoryId: null, externalUrl: null }],
+    })
+  })
+
+  it("sends no button when it leads nowhere or says nothing", () => {
+    expect(toPayload({ ...toForm(cta), target: "NONE" }, "btn")).toMatchObject({ items: [] })
+    expect(toPayload({ ...toForm(cta), buttonLabel: "  " }, "btn")).toMatchObject({ items: [] })
+  })
+})

@@ -4,6 +4,7 @@ import type {
   ContactField,
   FaqItem,
   PublicBannerSlide,
+  PublicCallToActionButton,
   PublicComponent,
   PublicProductCard,
   PublicSection,
@@ -128,6 +129,12 @@ export function sampleSectionOf(entry: GalleryEntry, stock: GalleryStock, messag
     case "FAQ": {
       const items: FaqItem[] = text.faq.map((row, at) => ({ id: `${id}-${at}`, ...row }))
       return band([sample("FAQ", id, { title: text.faqTitle, display: "ACCORDION", items })])
+    }
+    case "CALL_TO_ACTION": {
+      const button: PublicCallToActionButton = { id: `${id}-botao`, label: text.callToAction.label, href: "#", external: false }
+      return band([
+        sample("CALL_TO_ACTION", id, { title: text.callToAction.title, body: text.callToAction.body, display: "BAND", items: [button] }),
+      ])
     }
     case "ANNOUNCEMENT":
       return null

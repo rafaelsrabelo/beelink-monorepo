@@ -100,6 +100,24 @@ export function faq(rows: SeededItem[], position: number): SeededBand {
   ]);
 }
 
+/**
+ * The page's last word: the product asked for once more, on a strip of the shop's colour, with the
+ * button that leads to it. Full width, which is where a strip reaches the edges.
+ */
+export function callToAction(productId: string, words: { title: string; body: string; label: string }, position: number): SeededBand {
+  return band(position, 'FULL', [
+    {
+      kind: 'CALL_TO_ACTION',
+      title: words.title,
+      body: words.body,
+      display: 'BAND',
+      items: [{ id: 'botao', label: words.label, target: 'PRODUCT', productId }],
+      position: 0,
+      isActive: true,
+    },
+  ]);
+}
+
 export function band(position: number, width: 'FULL' | 'CONTAINED', components: Component[]): SeededBand {
   return { section: { width, position, isActive: true }, components };
 }

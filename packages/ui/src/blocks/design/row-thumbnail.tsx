@@ -7,6 +7,7 @@ import {
   MailIcon,
   MegaphoneIcon,
   MessageCircleQuestionMarkIcon,
+  MousePointerClickIcon,
   TagsIcon,
   TypeIcon,
 } from "lucide-react"
@@ -30,6 +31,7 @@ const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
   PRODUCTS: LayoutGridIcon,
   CONTACT: MailIcon,
   FAQ: MessageCircleQuestionMarkIcon,
+  CALL_TO_ACTION: MousePointerClickIcon,
 }
 
 /** A block's thumbnail on its row or its card: a banner's first picture, or its kind's glyph. */

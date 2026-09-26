@@ -1,7 +1,7 @@
 /* ── a landing page: sections that hold components ────────────────────────── */
 
 import type { PublicProductCard } from "./catalog.js";
-import type { FaqItem } from "./page-items.js";
+import type { CallToActionButton, FaqItem, PublicCallToActionButton } from "./page-items.js";
 
 /**
  * What a component is.
@@ -46,7 +46,9 @@ export type ComponentKind =
    */
   | "CONTACT"
   /** Questions and their answers, drawn as an accordion whose answers are in the page even closed. */
-  | "FAQ";
+  | "FAQ"
+  /** The page's last word: a title, a line of text and one button that leads somewhere. */
+  | "CALL_TO_ACTION";
 
 /**
  * How wide a section sits on the page.
@@ -78,6 +80,8 @@ export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
  * - The benefits: `INLINE` (icon beside the words, in a tinted band) or `CARDS`.
  * - The strip: `STATIC` (still) or `MARQUEE` (scrolling).
  * - A FAQ: `ACCORDION`, its only one — named so a second is a value, not a migration of the rows.
+ * - A call to action: `BAND` (a strip of the shop's colour, edge to edge) or `CARD` (a tinted card
+ *   inside the page's margins).
  *
  * Null on every other kind — and on a benefits band or a strip saved before they had a choice, which
  * draw as they always did.
@@ -93,7 +97,9 @@ export type ComponentDisplay =
   | "CARDS"
   | "STATIC"
   | "MARQUEE"
-  | "ACCORDION";
+  | "ACCORDION"
+  | "BAND"
+  | "CARD";
 
 /**
  * Where a component shows: everywhere, only on a computer, or only on a phone — the shop window's
@@ -261,7 +267,14 @@ export interface ShowcaseProduct {
  * blob is invisible — sixteen of its twenty-one survived that way. An `items` nobody reads is a
  * blank band on the shop's front page, reported the same day.
  */
-export type ComponentItem = BannerSlide | BenefitRow | AnnouncementLink | ContactField | ShowcaseProduct | FaqItem;
+export type ComponentItem =
+  | BannerSlide
+  | BenefitRow
+  | AnnouncementLink
+  | ContactField
+  | ShowcaseProduct
+  | FaqItem
+  | CallToActionButton;
 /**
  * What a visitor is served in a component's `items`: a banner's slides with their addresses built, a
  * showcase's products as cards, and every other kind's items as the shopkeeper wrote them.
@@ -272,7 +285,8 @@ export type PublicComponentItem =
   | PublicAnnouncementLink
   | ContactField
   | PublicProductCard
-  | FaqItem;
+  | FaqItem
+  | PublicCallToActionButton;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {
@@ -280,7 +294,7 @@ export interface PublicComponent {
   kind: ComponentKind;
   title: string | null;
   subtitle: string | null;
-  /** The paragraph, on a `TEXT`. Null on every other kind. */
+  /** The paragraph, on a `TEXT`; a call to action's text. Null on every other kind. */
   body: string | null;
   /** Its slice of the band, on every kind. */
   span: ComponentSpan;
@@ -294,8 +308,8 @@ export interface PublicComponent {
    */
   sourceCategory: { slug: string; name: string; description: string | null } | null;
   /**
-   * A banner's slides, the benefits band's rows, the strip's one link, a form's fields or a FAQ's
-   * questions — or a showcase's products, already chosen by its source, cut at its limit, and on the
+   * A banner's slides, the benefits band's rows, the strip's one link, a form's fields, a FAQ's
+   * questions or a call to action's button, its address built — or a showcase's products, already chosen by its source, cut at its limit, and on the
    * shelf. Empty otherwise.
    */
   items: PublicComponentItem[];

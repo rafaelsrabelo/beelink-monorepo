@@ -68,14 +68,22 @@ describe('landingBands', () => {
     });
   });
 
-  it('ends a launch with the questions a first buyer asks, paying answered from the shop\'s own methods', () => {
-    const bands = landingBands('lancamento', subject());
-    const faq = bands.at(-1)!.components[0]!;
+  it('asks a launch the questions a first buyer asks, paying answered from the shop\'s own methods', () => {
+    const faq = landingBands('lancamento', subject()).flatMap((band) => band.components).find((row) => row.kind === 'FAQ')!;
 
     expect(faq).toMatchObject({ kind: 'FAQ', display: 'ACCORDION', title: 'Perguntas frequentes' });
     expect(faq.items).toContainEqual({ id: 'pagamento', question: 'Quais são as formas de pagamento?', answer: 'Aceitamos PIX e dinheiro.' });
-    const unpaid = landingBands('lancamento', subject({ promises: [] })).at(-1)!.components[0]!;
+    const unpaid = landingBands('lancamento', subject({ promises: [] })).flatMap((band) => band.components).find((row) => row.kind === 'FAQ')!;
     expect(unpaid.items).toContainEqual(expect.objectContaining({ id: 'pagamento', answer: 'Conte quais formas de pagamento a loja aceita.' }));
+  });
+
+  it('ends a launch and a flash sale by asking for the product once more, on a strip that reaches the edges', () => {
+    for (const id of ['lancamento', 'promocao-relampago'] as const) {
+      const last = landingBands(id, subject()).at(-1)!;
+
+      expect(last.section.width).toBe('FULL');
+      expect(last.components[0]).toMatchObject({ kind: 'CALL_TO_ACTION', display: 'BAND', items: [{ target: 'PRODUCT', productId: PRODUCT.id }] });
+    }
   });
 
   it('opens on the words alone when there is no picture: a banner with no slide draws nothing', () => {

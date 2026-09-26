@@ -2,13 +2,21 @@
 import type { ReactNode } from "react"
 
 // Types
-import type { BenefitRow, ContactField, FaqItem, PublicComponent, PublicProductCategory } from "@harness-monorepo/contracts"
+import type {
+  BenefitRow,
+  ContactField,
+  FaqItem,
+  PublicCallToActionButton,
+  PublicComponent,
+  PublicProductCategory,
+} from "@harness-monorepo/contracts"
 
 // UI
 import { BenefitIcon } from "@harness-monorepo/ui/blocks/design/benefit-icons"
 import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBenefits } from "@harness-monorepo/ui/blocks/storefront/storefront-benefits"
+import { StorefrontCallToAction } from "@harness-monorepo/ui/blocks/storefront/storefront-call-to-action"
 import { StorefrontContact } from "@harness-monorepo/ui/blocks/storefront/storefront-contact"
 import { StorefrontFaq } from "@harness-monorepo/ui/blocks/storefront/storefront-faq"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
@@ -145,6 +153,18 @@ export function StorefrontComponent({
         </p>
       )
     }
+
+    case "CALL_TO_ACTION":
+      return (
+        <StorefrontCallToAction
+          layout={component.display === "CARD" ? "CARD" : "BAND"}
+          title={component.title}
+          body={component.body}
+          button={(component.items as PublicCallToActionButton[])[0] ?? null}
+          bleed={bleed}
+          {...link}
+        />
+      )
 
     case "FAQ":
       return (

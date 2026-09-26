@@ -23,6 +23,7 @@ export const COMPONENT_KINDS = [
   "PRODUCTS",
   "CONTACT",
   "FAQ",
+  "CALL_TO_ACTION",
 ] as const
 export type ComponentKind = (typeof COMPONENT_KINDS)[number]
 
@@ -55,6 +56,8 @@ export const COMPONENT_DISPLAYS = [
   "STATIC",
   "MARQUEE",
   "ACCORDION",
+  "BAND",
+  "CARD",
 ] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
 

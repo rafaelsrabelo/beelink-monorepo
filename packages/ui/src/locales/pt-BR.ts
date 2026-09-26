@@ -373,6 +373,7 @@ export const ptBR: UiMessages = {
       PRODUCTS: "Vitrine de produtos",
       CONTACT: "Formulário de contato",
       FAQ: "Perguntas frequentes",
+      CALL_TO_ACTION: "Chamada final",
     },
     emptyAction: {
       ANNOUNCEMENT: "Escrever o aviso",
@@ -384,6 +385,7 @@ export const ptBR: UiMessages = {
       PRODUCTS: "Cadastrar produtos",
       CONTACT: "Escolher os campos",
       FAQ: "Escrever a primeira pergunta",
+      CALL_TO_ACTION: "Escrever a chamada",
     },
     showcaseOnPublish: "Os produtos aparecem ao publicar",
     categoriesHiddenAction: "Nenhuma categoria aparece na loja ainda",
@@ -459,6 +461,7 @@ export const ptBR: UiMessages = {
           { question: "Posso trocar?", answer: "Sim, em até 7 dias depois de receber." },
           { question: "Quais são as formas de pagamento?", answer: "PIX, cartão de crédito e de débito." },
         ],
+        callToAction: { title: "Pronto para escolher o seu?", body: "Frete grátis nas compras acima de R$ 199.", label: "Ver produtos" },
       },
       placement: {
         between: "Entra entre {before} e {after}.",
@@ -479,6 +482,7 @@ export const ptBR: UiMessages = {
         PRODUCTS: "Trilho ou grade, da fonte que você escolher",
         CONTACT: "Formulário que recebe contatos",
         FAQ: "Perguntas e respostas que abrem e fecham",
+        CALL_TO_ACTION: "Título, texto e um botão",
       },
       bannersAcross: "{count} banners lado a lado",
       bannersAcrossHints: {
@@ -546,6 +550,8 @@ export const ptBR: UiMessages = {
       STATIC: "Fixa",
       MARQUEE: "Rolando",
       ACCORDION: "Acordeão",
+      BAND: "Faixa",
+      CARD: "Cartão",
     },
     displayAuto: "Automática: parada onde cabe, rolando no celular",
     categoriesRailHint: "Uma linha só, que rola para o lado — no celular e no computador.",
@@ -759,6 +765,12 @@ export const ptBR: UiMessages = {
     benefitIcon: "Ícone",
     benefitTitle: "Título",
     benefitDetail: "Detalhe",
+    button: {
+      label: "Texto do botão",
+      placeholder: "Comprar agora",
+      labelMissing: "Escreva o texto do botão para salvar.",
+      targetMissing: "Escolha para onde o botão leva para salvar.",
+    },
     faq: {
       legend: "Perguntas",
       position: "Pergunta {position}",

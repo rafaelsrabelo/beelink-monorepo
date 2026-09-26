@@ -130,6 +130,24 @@ function Shape({ display }: { display: ComponentDisplay }) {
           ))}
         </span>
       )
+    // A strip of colour from edge to edge, the words and the button centred on it.
+    case "BAND":
+      return (
+        <span className="bg-primary/60 flex h-full w-full flex-col items-center justify-center gap-1">
+          <span className="bg-background/80 h-1 w-1/2 rounded-full" />
+          <span className="bg-background h-1.5 w-1/4 rounded-full" />
+        </span>
+      )
+    // One tinted card inside the margins.
+    case "CARD":
+      return (
+        <span className="flex h-full w-full items-center px-2">
+          <span className="bg-primary/20 flex h-full w-full flex-col items-center justify-center gap-1 rounded-md">
+            <span className={cn(LINE, "h-1 w-1/2")} />
+            <span className="bg-primary/70 h-1.5 w-1/4 rounded-full" />
+          </span>
+        </span>
+      )
     // A layout added without a drawing fails the build here instead of drawing an empty frame.
     default:
       return (display satisfies never) && null

@@ -2,6 +2,7 @@
 import type {
   AnnouncementLink,
   BannerSlide,
+  CallToActionButton,
   PublicComponent,
   PublicComponentItem,
   PublicProductCard,
@@ -11,7 +12,7 @@ import type {
 import type { ComponentShape, SectionShape } from './page-document.js';
 
 // App
-import { NO_SLUGS, toPublicLink, toPublicSlide, type SlugsByEntity } from './page-links.js';
+import { NO_SLUGS, toPublicButton, toPublicLink, toPublicSlide, type SlugsByEntity } from './page-links.js';
 import { itemsOf } from './page.mapper.js';
 
 /*
@@ -58,6 +59,8 @@ function publicItemsOf(row: ComponentShape, shopSlug: string, words: StorefrontR
       return (itemsOf(row.kind, row.items) as BannerSlide[]).map((slide) => toPublicSlide(slide, shopSlug, words, lookups.slugs));
     case 'ANNOUNCEMENT':
       return (itemsOf(row.kind, row.items) as AnnouncementLink[]).map((link) => toPublicLink(link, shopSlug, words, lookups.slugs));
+    case 'CALL_TO_ACTION':
+      return (itemsOf(row.kind, row.items) as CallToActionButton[]).map((button) => toPublicButton(button, shopSlug, words, lookups.slugs));
     case 'PRODUCTS':
       return lookups.shelves.get(row.id)?.products ?? [];
     default:

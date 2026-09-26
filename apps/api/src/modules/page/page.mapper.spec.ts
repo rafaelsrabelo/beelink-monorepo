@@ -72,3 +72,28 @@ describe('where a component shows', () => {
     expect(toPublicSection(sectionOf(row), 'loja', ROUTE_WORDS.PT_BR).components[0]?.visibleOn).toBe('PHONE');
   });
 });
+
+describe('a call to action\'s button', () => {
+  const PRODUCT = '0199e000-0000-7000-8000-000000000001';
+  const cta = componentRow({
+    kind: 'CALL_TO_ACTION',
+    title: 'Garanta o seu',
+    body: 'Enquanto tem no estoque.',
+    display: 'BAND',
+    items: [{ id: 'btn', label: 'Comprar agora', target: 'PRODUCT', productId: PRODUCT }],
+  });
+
+  it('is served with its address built from the product\'s slug, and no id', () => {
+    const slugs = { categories: new Map<string, string>(), products: new Map([[PRODUCT, 'whey']]) };
+    const [served] = toPublicSection(sectionOf(cta), 'loja', ROUTE_WORDS.PT_BR, { slugs, shelves: new Map() }).components;
+
+    expect(served).toMatchObject({ title: 'Garanta o seu', body: 'Enquanto tem no estoque.', display: 'BAND' });
+    expect(served?.items).toEqual([{ id: 'btn', label: 'Comprar agora', href: '/loja/produtos/whey', external: false }]);
+  });
+
+  it('leads nowhere when its product is gone, so the shop draws no button', () => {
+    const [served] = toPublicSection(sectionOf(cta), 'loja', ROUTE_WORDS.PT_BR).components;
+
+    expect(served?.items).toEqual([{ id: 'btn', label: 'Comprar agora', href: null, external: false }]);
+  });
+});

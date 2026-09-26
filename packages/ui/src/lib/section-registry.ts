@@ -36,6 +36,7 @@ export const SECTION_TYPES = {
   TEXT: { category: "CONTENT", recommended: false, layouts: null, rows: false },
   CONTACT: { category: "CONVERSION", recommended: true, layouts: null, rows: false },
   FAQ: { category: "TRUST", recommended: false, layouts: ["ACCORDION"], rows: false },
+  CALL_TO_ACTION: { category: "CONVERSION", recommended: false, layouts: ["BAND", "CARD"], rows: false },
   ANNOUNCEMENT: { category: "CHROME", recommended: false, layouts: ["STATIC", "MARQUEE"], rows: false },
 } as const satisfies Record<ComponentKind, SectionType>
 

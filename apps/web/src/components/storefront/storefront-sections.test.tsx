@@ -130,6 +130,24 @@ describe("StorefrontSections — a band is a grid", () => {
     expect(container.querySelectorAll("details")).toHaveLength(1)
   })
 
+  it("draws a call to action edge to edge in a full band, with its button, and none where it leads nowhere", () => {
+    const cta: PublicComponent = {
+      ...heading("cta", "FULL"),
+      kind: "CALL_TO_ACTION",
+      title: "Garanta o seu",
+      display: "BAND",
+      items: [{ id: "b", label: "Comprar agora", href: "/loja/produtos/whey", external: false }],
+    }
+    const { container } = draw([band([cta], "FULL")])
+
+    expect(screen.getByRole("link", { name: "Comprar agora" })).toHaveAttribute("href", "/loja/produtos/whey")
+    expect(container.querySelector("[data-span]")!.className).not.toContain("px-")
+
+    // As a card it sits inside the page's margins, as every block of words does.
+    draw([{ ...band([{ ...cta, id: "card", display: "CARD" }], "FULL"), id: "outra" }])
+    expect(container.ownerDocument.querySelectorAll("[data-span]")[1]!.className).toContain("px-")
+  })
+
   // A cached page, or a newer API, can serve a kind this build has never heard of. It used to fall
   // through to a shelf, which read its items as product cards.
   it("draws nothing for a kind this build does not know, and drops a band left with nothing", () => {

@@ -21,6 +21,7 @@ const empty: ComponentFormValues = {
   picks: [],
   limit: "",
   faq: [],
+  buttonLabel: "",
 }
 
 const meta = {

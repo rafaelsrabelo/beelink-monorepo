@@ -28,3 +28,25 @@ describe('FAQ items', () => {
     expect(parseComponentItems('FAQ', [{ id: 'a' }])).toEqual([]);
   });
 });
+
+describe('a call to action\'s button', () => {
+  const button = componentItemsFor('CALL_TO_ACTION');
+  const PRODUCT = '0199e000-0000-7000-8000-000000000001';
+
+  it('takes one button with its words and where it leads, or none', () => {
+    expect(button.safeParse([{ id: 'b', label: 'Comprar', target: 'PRODUCT', productId: PRODUCT }]).success).toBe(true);
+    expect(button.safeParse([{ id: 'b', label: 'Ver site', target: 'EXTERNAL', externalUrl: 'https://exemplo.com' }]).success).toBe(true);
+    expect(button.safeParse([]).success).toBe(true);
+  });
+
+  it('refuses a button that goes nowhere, says nothing, or claims what it does not carry', () => {
+    expect(button.safeParse([{ id: 'b', label: 'Comprar', target: 'NONE' }]).success).toBe(false);
+    expect(button.safeParse([{ id: 'b', label: ' ', target: 'PRODUCT', productId: PRODUCT }]).success).toBe(false);
+    expect(button.safeParse([{ id: 'b', label: 'Comprar', target: 'PRODUCT' }]).success).toBe(false);
+  });
+
+  it('refuses two buttons: a call to action asks one thing', () => {
+    const one = { label: 'Comprar', target: 'PRODUCT', productId: PRODUCT };
+    expect(button.safeParse([{ id: 'a', ...one }, { id: 'b', ...one }]).success).toBe(false);
+  });
+});

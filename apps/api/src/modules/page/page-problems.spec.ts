@@ -47,6 +47,13 @@ describe('problemsOf', () => {
     expect(problemsOf(sections, { slugs, shelves })).toEqual([]);
   });
 
+  it('names a call to action whose button leads to a product gone', () => {
+    const button = { id: 'btn', label: 'Comprar', target: 'PRODUCT', productId: PRODUCT };
+    const sections = [band('b1', [block('c1', 'CALL_TO_ACTION', [button])])];
+
+    expect(problemsOf(sections, NO_LOOKUPS)).toEqual([{ kind: 'LINK_TO_MISSING_PRODUCT', sectionId: 'b1', componentId: 'c1', itemId: 'btn' }]);
+  });
+
   it('looks only at what shows: a hidden band or block is served to nobody', () => {
     const sections = [band('b1', [block('c1', 'BANNER')], false), band('b2', [block('c2', 'PRODUCTS', [], false)])];
 

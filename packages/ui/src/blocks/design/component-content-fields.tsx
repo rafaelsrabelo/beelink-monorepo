@@ -9,6 +9,7 @@ import { AnnouncementFields } from "./announcement-fields"
 import { BannerFields } from "./banner-fields"
 import type { SlideTargetOption, SlideValue } from "./banner-slides-field"
 import { BenefitRowsField } from "./benefit-rows-field"
+import { ButtonFields } from "./button-fields"
 import type { BenefitValue } from "./benefit-rows-field"
 import { ComponentTextFields } from "./component-text-fields"
 import { contentReady, type ComponentFormValues } from "./component-form"
@@ -98,6 +99,10 @@ export function ComponentContentFields({
           newFieldId={newItemId}
           messages={messages}
         />
+      ) : null}
+
+      {value.kind === "CALL_TO_ACTION" ? (
+        <ButtonFields value={value} onChange={merge} categories={categories} products={products} messages={messages} />
       ) : null}
 
       {value.kind === "FAQ" ? (

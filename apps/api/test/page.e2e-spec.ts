@@ -171,6 +171,32 @@ describe('page — span and display', () => {
     expect(served).toMatchObject({ kind: 'FAQ', title: 'Dúvidas', display: 'ACCORDION', items });
   });
 
+  // A call to action opens as a strip of the shop's colour; its button is served with the address built.
+  it('creates a call to action as a band, takes one button, lets it be a card, and serves the button', async () => {
+    const created = await call('POST', '/api/stores/padaria-do-bairro/sections', {
+      component: { kind: 'CALL_TO_ACTION', title: 'Encomende já', body: 'Pão quentinho às 7h.' },
+    });
+    expect(created.statusCode, created.payload).toBe(201);
+    const cta = created.json<Section>().components[0]!;
+    expect(cta).toMatchObject({ kind: 'CALL_TO_ACTION', display: 'BAND', items: [] });
+
+    const button = { id: 'btn', label: 'Pedir no WhatsApp', target: 'EXTERNAL', externalUrl: 'https://wa.me/5511999998888' };
+    const patched = await call('PATCH', `/api/stores/padaria-do-bairro/components/${cta.id}`, { items: [button], display: 'CARD' });
+    expect(patched.statusCode, patched.payload).toBe(200);
+
+    const nowhere = await call('PATCH', `/api/stores/padaria-do-bairro/components/${cta.id}`, { items: [{ ...button, target: 'NONE' }] });
+    expect(nowhere.statusCode).toBe(400);
+
+    await publishPage(app, owner.accessToken, 'padaria-do-bairro');
+    const visitor = (await app.inject({ method: 'GET', url: '/api/stores/padaria-do-bairro/public' })).json<PublicStore>();
+    const served = visitor.sections.flatMap((section) => section.components).find((row) => row.id === cta.id);
+    expect(served).toMatchObject({
+      display: 'CARD',
+      body: 'Pão quentinho às 7h.',
+      items: [{ id: 'btn', label: 'Pedir no WhatsApp', href: 'https://wa.me/5511999998888', external: true }],
+    });
+  });
+
   // The panel's "+" between two bands, and between two blocks of one band.
   it('adds a band and a block where the "+" was pressed, and refuses a place that is not one', async () => {
     const before = (await call('GET', '/api/stores/padaria-do-bairro/sections')).json<Section[]>().map((row) => row.id);

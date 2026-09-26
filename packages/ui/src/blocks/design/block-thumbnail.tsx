@@ -107,6 +107,15 @@ function Shape({ kind, across }: { kind: ComponentKind; across: Across }) {
           ))}
         </span>
       )
+    // Words centred over a button, on a strip of colour.
+    case "CALL_TO_ACTION":
+      return (
+        <span className="bg-primary/15 flex h-full w-full flex-col items-center justify-center gap-1 rounded-sm">
+          <span className={cn(BAR, "h-2 w-1/2 bg-muted-foreground/70")} />
+          <span className={cn(BAR, "h-1 w-2/5")} />
+          <span className={cn(ACCENT, "h-2 w-1/4 rounded-full")} />
+        </span>
+      )
     // A kind added without a drawing fails the build here instead of drawing an empty card.
     default:
       return (kind satisfies never) && null

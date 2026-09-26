@@ -41,8 +41,11 @@ type PickRow = { id: string; productId: string };
 /** One question of a FAQ. Same reason as `PromiseRow`. */
 type FaqRow = { id: string; question: string; answer: string };
 
-/** What a seeded component may hold: a promises band's rows, a form's fields, a banner's pictures, a showcase's picks, a FAQ's questions. */
-export type SeededItem = PromiseRow | ContactFieldRow | SlideRow | PickRow | FaqRow;
+/** A call to action's button, pointing at a product. Same reason as `PromiseRow`. */
+type ButtonRow = { id: string; label: string; target: 'PRODUCT'; productId: string };
+
+/** What a seeded component may hold: promises, a form's fields, pictures, picks, questions or a button. */
+export type SeededItem = PromiseRow | ContactFieldRow | SlideRow | PickRow | FaqRow | ButtonRow;
 
 /** One band of the page a new shop or site opens with, ready for `storeSection.create`. */
 export interface SeededBand {
@@ -141,6 +144,7 @@ export function openingDisplayOf(kind: ComponentKind): ComponentDisplay | null {
   if (kind === 'BANNER') return 'CAROUSEL';
   if (kind === 'PRODUCTS' || kind === 'CATEGORIES') return 'RAIL';
   if (kind === 'FAQ') return 'ACCORDION';
+  if (kind === 'CALL_TO_ACTION') return 'BAND';
   return null;
 }
 

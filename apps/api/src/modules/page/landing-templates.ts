@@ -3,7 +3,7 @@ import type { LandingTemplateId } from '@harness-monorepo/contracts';
 import type { SeededBand, SeededItem } from './page-seed.js';
 
 // App
-import { band, clip, cover, faq, promises, spotlight, type Component } from './landing-template-parts.js';
+import { band, callToAction, clip, cover, faq, promises, spotlight, type Component } from './landing-template-parts.js';
 import { COMPONENT_BODY_MAX_LENGTH, COMPONENT_TITLE_MAX_LENGTH } from './page.constants.js';
 
 /** Every arrangement a landing may open with. The dialog offers exactly these, by this list. */
@@ -50,6 +50,7 @@ function launch(product: NonNullable<LandingSubject['product']>, rows: SeededIte
       { kind: 'PRODUCTS', title: 'Mais novidades', display: 'RAIL', source: 'NEWEST', limit: 8, items: [], position: 0, isActive: true },
     ]),
     faq(rows, 5),
+    callToAction(product.id, { title: 'Garanta o seu', body: 'Aproveite enquanto tem no estoque.', label: 'Comprar agora' }, 6),
   ];
 }
 
@@ -63,6 +64,7 @@ function flashSale(product: NonNullable<LandingSubject['product']>, rows: Seeded
       { kind: 'PRODUCTS', title: 'Mais ofertas', display: 'RAIL', source: 'ON_SALE', limit: 12, items: [], position: 0, isActive: true },
     ]),
     promises(rows, 'INLINE', 3),
+    callToAction(product.id, { title: 'A oferta acaba logo', body: 'Garanta o seu antes que acabe.', label: 'Aproveitar a oferta' }, 4),
   ];
 }
 

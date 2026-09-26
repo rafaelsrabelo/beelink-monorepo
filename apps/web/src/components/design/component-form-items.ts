@@ -1,5 +1,13 @@
 // Types
-import type { AnnouncementLink, BannerSlide, BenefitRow, ContactField, FaqItem, ShowcaseProduct } from "@harness-monorepo/contracts"
+import type {
+  AnnouncementLink,
+  BannerSlide,
+  BenefitRow,
+  CallToActionButton,
+  ContactField,
+  FaqItem,
+  ShowcaseProduct,
+} from "@harness-monorepo/contracts"
 
 // UI
 import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/component-content-fields"
@@ -12,7 +20,7 @@ import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/com
 type Link = Pick<ComponentFormValues, "target" | "categoryId" | "productId" | "externalUrl">
 
 /** A link's destination as the form holds it: all three kept, so changing one's mind loses nothing. */
-export function linkToForm(link: AnnouncementLink | undefined): Link {
+export function linkToForm(link: AnnouncementLink | CallToActionButton | undefined): Link {
   return {
     target: link?.target ?? "NONE",
     categoryId: link?.categoryId ?? "",
@@ -124,4 +132,14 @@ export function faqFromForm(rows: ComponentFormValues["faq"]): FaqItem[] {
   return rows
     .filter((row) => row.question.trim())
     .map((row) => ({ id: row.id, question: row.question.trim(), answer: row.answer.trim() }))
+}
+
+/**
+ * A block's one button, kept only when it leads somewhere and says something: a button to nowhere is
+ * no button, and the API refuses one with no words.
+ */
+export function buttonFromForm(value: Link & Pick<ComponentFormValues, "buttonLabel">, itemId: string): CallToActionButton[] {
+  const [link] = linkFromForm(value, itemId)
+  const label = value.buttonLabel.trim()
+  return link && link.target !== "NONE" && label ? [{ ...link, target: link.target, label }] : []
 }

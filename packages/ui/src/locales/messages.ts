@@ -590,6 +590,7 @@ export interface UiMessages {
         contact: { email: string; phone: string; message: string }
         faqTitle: string
         faq: { question: string; answer: string }[]
+        callToAction: { title: string; body: string; label: string }
       }
       /** Where the section goes, said under the title: `{before}`, `{after}` and `{band}` are names. */
       placement: {
@@ -923,6 +924,15 @@ export interface UiMessages {
     benefitIcon: string
     benefitTitle: string
     benefitDetail: string
+    /** A button's own words, where a block has one: a call to action's, an image with text's. */
+    button: {
+      label: string
+      placeholder: string
+      /** Said while the button leads somewhere and says nothing: Salvar waits for it. */
+      labelMissing: string
+      /** Said while the button claims a destination it does not name yet. */
+      targetMissing: string
+    }
     /** A FAQ's questions, as its owner writes them. */
     faq: {
       legend: string

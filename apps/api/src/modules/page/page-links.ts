@@ -2,9 +2,11 @@
 import type {
   AnnouncementLink,
   BannerSlide,
+  CallToActionButton,
   ComponentKind,
   PublicAnnouncementLink,
   PublicBannerSlide,
+  PublicCallToActionButton,
   StorefrontRouteWords,
 } from '@harness-monorepo/contracts';
 import type { SectionShape } from './page-document.js';
@@ -45,7 +47,8 @@ export function pointersOf(kind: ComponentKind, items: unknown): Pointer[] {
   switch (kind) {
     case 'BANNER':
     case 'ANNOUNCEMENT':
-      return itemsOf(kind, items) as (BannerSlide | AnnouncementLink)[];
+    case 'CALL_TO_ACTION':
+      return itemsOf(kind, items) as (BannerSlide | AnnouncementLink | CallToActionButton)[];
     default:
       return [];
   }
@@ -127,4 +130,15 @@ export function toPublicLink(
 ): PublicAnnouncementLink {
   const href = hrefOf(link, shopSlug, words, slugs);
   return { id: link.id, href, external: link.target === 'EXTERNAL' && !!href } satisfies PublicAnnouncementLink;
+}
+
+/** A button, with its address built the same way; a button whose target is gone has none. */
+export function toPublicButton(
+  button: CallToActionButton,
+  shopSlug: string,
+  words: StorefrontRouteWords,
+  slugs: SlugsByEntity,
+): PublicCallToActionButton {
+  const href = hrefOf(button, shopSlug, words, slugs);
+  return { id: button.id, label: button.label, href, external: button.target === 'EXTERNAL' && !!href } satisfies PublicCallToActionButton;
 }

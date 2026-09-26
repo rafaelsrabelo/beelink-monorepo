@@ -11,6 +11,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { useProductCategories, useProducts } from "@/services/catalog/catalog-hooks"
 import type { ImageUploadHandle } from "@/services/uploads/upload-hooks"
+import { readsCatalog } from "./design-kinds"
 import { emptyStateOf } from "./empty-state"
 import { EmptyStateNote } from "./empty-state-note"
 
@@ -47,9 +48,7 @@ export function BlockContent({
   shelfEmpty,
   messages,
 }: BlockContentProps) {
-  // A banner and the strip point at a category or a product; a showcase draws from one or picks them;
-  // the categories block counts them, to say why it draws nothing.
-  const points = ["BANNER", "ANNOUNCEMENT", "PRODUCTS", "CATEGORIES"].includes(component.kind)
+  const points = readsCatalog(component.kind)
   const categories = useProductCategories(points ? slug : "")
   // The admin list's own ceiling (PRODUCTS_PAGE_SIZE_MAX): asking for more answers this many anyway.
   const products = useProducts(points ? slug : "", { pageSize: 96 })

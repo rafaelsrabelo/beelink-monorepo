@@ -21,3 +21,12 @@ export function unavailableKindsOf(storeType: StoreType, landing: boolean): Comp
 export function resolvedOnServer(kind: ComponentKind): boolean {
   return kind === "PRODUCTS"
 }
+
+/**
+ * Whether a kind's fields read the shop's categories and products: a banner, the strip and a call to
+ * action point at one; a showcase draws from one or picks them; the categories block counts them, to
+ * say why it draws nothing.
+ */
+export function readsCatalog(kind: ComponentKind): boolean {
+  return kind === "BANNER" || kind === "ANNOUNCEMENT" || kind === "CALL_TO_ACTION" || kind === "PRODUCTS" || kind === "CATEGORIES"
+}

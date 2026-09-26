@@ -373,6 +373,7 @@ export const en: UiMessages = {
       PRODUCTS: "Product showcase",
       CONTACT: "Contact form",
       FAQ: "Frequently asked questions",
+      CALL_TO_ACTION: "Call to action",
     },
     emptyAction: {
       ANNOUNCEMENT: "Write the notice",
@@ -384,6 +385,7 @@ export const en: UiMessages = {
       PRODUCTS: "Add products",
       CONTACT: "Choose the fields",
       FAQ: "Write the first question",
+      CALL_TO_ACTION: "Write the call",
     },
     showcaseOnPublish: "Its products appear once you publish",
     categoriesHiddenAction: "No category shows in the shop yet",
@@ -459,6 +461,7 @@ export const en: UiMessages = {
           { question: "Can I exchange it?", answer: "Yes, within seven days of receiving it." },
           { question: "How can I pay?", answer: "PIX, credit card or debit card." },
         ],
+        callToAction: { title: "Ready to choose yours?", body: "Free delivery on orders over R$ 199.", label: "See products" },
       },
       placement: {
         between: "Goes between {before} and {after}.",
@@ -479,6 +482,7 @@ export const en: UiMessages = {
         PRODUCTS: "A rail or a grid, from the source you choose",
         CONTACT: "A form that receives enquiries",
         FAQ: "Questions and answers that open and close",
+        CALL_TO_ACTION: "A title, a line and a button",
       },
       bannersAcross: "{count} banners side by side",
       bannersAcrossHints: {
@@ -546,6 +550,8 @@ export const en: UiMessages = {
       STATIC: "Still",
       MARQUEE: "Scrolling",
       ACCORDION: "Accordion",
+      BAND: "Band",
+      CARD: "Card",
     },
     displayAuto: "Automatic: still where it fits, scrolling on a phone",
     categoriesRailHint: "One row that scrolls sideways — on a phone and on a computer.",
@@ -759,6 +765,12 @@ export const en: UiMessages = {
     benefitIcon: "Icon",
     benefitTitle: "Title",
     benefitDetail: "Detail",
+    button: {
+      label: "Button text",
+      placeholder: "Buy now",
+      labelMissing: "Write the button's text to save.",
+      targetMissing: "Choose where the button leads to save.",
+    },
     faq: {
       legend: "Questions",
       position: "Question {position}",

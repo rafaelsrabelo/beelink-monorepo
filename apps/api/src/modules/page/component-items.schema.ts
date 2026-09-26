@@ -6,6 +6,7 @@ import type {
   AnnouncementLink,
   BannerSlide,
   BenefitRow,
+  CallToActionButton,
   ComponentItem,
   ComponentKind,
   FaqItem,
@@ -13,7 +14,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { carriesWhatItNames, destination } from './component-destination.schema.js';
+import { carriesWhatItNames, componentLink, destination } from './component-destination.schema.js';
 import { contactForm } from './contact-fields.schema.js';
 import {
   COMPONENT_URL_MAX_LENGTH,
@@ -96,6 +97,11 @@ const faqItems = z
     message: 'Duas perguntas com o mesmo id',
   });
 
+/** A call to action's button: its words and where it leads. */
+const callToActionButton = z
+  .strictObject({ id: z.string().min(1).max(64), ...componentLink })
+  .refine(carriesWhatItNames, { message: 'A button must carry the destination its target names' }) satisfies z.ZodType<CallToActionButton>;
+
 /** What a component with no items of its own holds, and what an unknown kind falls back to. */
 const NOTHING = z.array(z.never()).length(0);
 
@@ -114,6 +120,8 @@ const ITEMS_OF = {
   PRODUCTS: showcaseSelection,
   /** The questions, in the order the page draws them. */
   FAQ: faqItems,
+  /** At most one: a call to action asks one thing. None is a block with no button. */
+  CALL_TO_ACTION: z.array(callToActionButton).max(1),
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
   HEADING: NOTHING,
   TEXT: NOTHING,

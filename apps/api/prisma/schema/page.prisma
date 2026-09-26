@@ -30,6 +30,8 @@ enum ComponentKind {
   CONTACT
   /// Questions and their answers, in `items`. Drawn as an accordion whose answers are in the page.
   FAQ
+  /// A title, a line of text and one button, in `items`, that leads somewhere.
+  CALL_TO_ACTION
 }
 
 /// How wide a section sits on the page. It belongs to the band and not to what is inside it, which
@@ -79,6 +81,10 @@ enum ComponentDisplay {
   MARQUEE
   /// A FAQ's only layout, named so a second one is a value and not a migration of the rows.
   ACCORDION
+  /// A strip of the shop's colour, edge to edge. A call to action's.
+  BAND
+  /// One tinted card inside the page's margins — not `CARDS`, the benefits' many. A call to action's.
+  CARD
 }
 
 /// Where a component shows. The shop window's `md` width is the line between a phone and a computer.

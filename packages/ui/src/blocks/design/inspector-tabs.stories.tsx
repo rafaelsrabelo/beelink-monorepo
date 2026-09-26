@@ -26,6 +26,7 @@ const empty: ComponentFormValues = {
   picks: [],
   limit: "",
   faq: [],
+  buttonLabel: "",
 }
 
 const plainBand: BandFormValues = { name: "", width: "CONTAINED", background: "" }

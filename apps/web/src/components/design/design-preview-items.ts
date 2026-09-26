@@ -1,5 +1,12 @@
 // Types
-import type { AnnouncementLink, BannerSlide, ComponentKind, PublicComponentItem, StoreComponent } from "@harness-monorepo/contracts"
+import type {
+  AnnouncementLink,
+  BannerSlide,
+  CallToActionButton,
+  ComponentKind,
+  PublicComponentItem,
+  StoreComponent,
+} from "@harness-monorepo/contracts"
 
 // App
 import type { Shelves } from "./design-draft-preview"
@@ -30,6 +37,9 @@ export function previewItemsOf(
       }))
     case "ANNOUNCEMENT":
       return ((was?.items ?? []) as AnnouncementLink[]).map((link) => ({ id: link.id, href: null, external: false }))
+    // An address the preview has no use for: its link is inert, and the button draws where it will be.
+    case "CALL_TO_ACTION":
+      return ((was?.items ?? []) as CallToActionButton[]).map((button) => ({ id: button.id, label: button.label, href: "#", external: false }))
     // What a showcase stores is the ids it picked, never the cards a visitor is served; the cards are
     // the public read's to resolve. A showcase saved since the page loaded keeps the cards it had
     // then until the next load.

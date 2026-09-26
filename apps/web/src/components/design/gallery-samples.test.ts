@@ -88,6 +88,13 @@ describe("sampleSectionOf — the band a card draws", () => {
     expect(faq?.items).toHaveLength(3)
   })
 
+  it("draws a call to action as the strip a new one opens as, its button drawn", () => {
+    const cta = sampleSectionOf({ kind: "CALL_TO_ACTION", across: 1, name: "", hint: "" }, empty, ptBR)?.components[0]
+
+    expect(cta).toMatchObject({ kind: "CALL_TO_ACTION", display: "BAND", title: "Pronto para escolher o seu?" })
+    expect(cta?.items).toEqual([expect.objectContaining({ label: "Ver produtos" })])
+  })
+
   it("tells a card that has a preview from one that keeps its wireframe", () => {
     expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, empty, ptBR)).toBe(false)
     expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, stock, ptBR)).toBe(true)
