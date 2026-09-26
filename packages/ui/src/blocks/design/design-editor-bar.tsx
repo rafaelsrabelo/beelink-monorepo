@@ -36,6 +36,8 @@ export interface DesignEditorBarProps {
    * nothing arranged to send, it is still the one thing left to do.
    */
   pagePublished?: boolean
+  /** Why the last Publicar did not land, said in the status's place until the next one. */
+  publishError?: string | null
   publishing: boolean
   onPublish: () => void
   onDiscard: () => void
@@ -70,6 +72,7 @@ export function DesignEditorBar({
   onDeviceChange,
   changes,
   pagePublished = true,
+  publishError = null,
   publishing,
   onPublish,
   onDiscard,
@@ -124,7 +127,13 @@ export function DesignEditorBar({
         </Button>
 
         {/* Always there, so a draft is never unannounced: the dot on a phone, the words where they fit. */}
-        <span role="status" className="text-header-foreground/80 flex shrink-0 items-center gap-1.5 px-1 text-sm">
+        {publishError ? (
+          <span role="alert" className="text-header-foreground flex min-w-0 items-center gap-1.5 px-1 text-sm">
+            <span aria-hidden="true" className="bg-destructive size-2 shrink-0 rounded-full" />
+            <span className="truncate">{publishError}</span>
+          </span>
+        ) : null}
+        <span role="status" className={cn("text-header-foreground/80 shrink-0 items-center gap-1.5 px-1 text-sm", publishError ? "hidden" : "flex")}>
           <span aria-hidden="true" className={cn("size-2 rounded-full", changed || !pagePublished ? "bg-header-pending" : "bg-header-foreground/40")} />
           <span className="sr-only lg:not-sr-only">{status}</span>
         </span>

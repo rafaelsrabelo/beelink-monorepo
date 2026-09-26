@@ -58,6 +58,8 @@ export function DesignPagesTab({ slug, currentId, onNavigate, messages, web }: D
       onSettings={openSettings}
       busy={update.isPending}
       error={update.error ? (pageErrorCopy(update.error, web) ?? messages.design.pages.failed) : null}
+      loadFailed={pages.isError}
+      onRetry={() => void pages.refetch()}
       linkComponent={AppLink}
       messages={messages}
     />

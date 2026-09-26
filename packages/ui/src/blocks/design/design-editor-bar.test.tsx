@@ -85,6 +85,12 @@ describe("DesignEditorBar", () => {
     expect(screen.queryByRole("link", { name: /Ver na loja/ })).not.toBeInTheDocument()
   })
 
+  it("says why Publicar did not land, in the status's place", () => {
+    renderBar({ pagePublished: false, publishError: "A página não foi publicada. Tente de novo." })
+
+    expect(screen.getByRole("alert")).toHaveTextContent("A página não foi publicada. Tente de novo.")
+  })
+
   it("draws the way to another page where the page's name is, and still titles the screen with it", () => {
     renderBar({ pageName: "Black Friday", pageSwitcher: <button type="button">Trocar</button> })
 

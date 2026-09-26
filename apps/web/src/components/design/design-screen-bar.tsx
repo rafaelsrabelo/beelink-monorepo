@@ -17,9 +17,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { AppLink } from "@/components/app-link"
+import type { WebMessages } from "@/locales"
 import { usePages, useUpdatePage } from "@/services/page/store-pages-hooks"
 import { useDesignPages } from "@/stores/design-pages"
 import { pageRowsOf, shopHrefOf } from "./design-pages"
+import { pageErrorCopy } from "./page-error-copy"
 import type { useDesignDraft } from "./use-design-draft"
 
 export interface DesignScreenBarProps {
@@ -35,6 +37,7 @@ export interface DesignScreenBarProps {
   onOpenStructure: () => void
   onOpenInspector: () => void
   messages: UiMessages
+  web: WebMessages
 }
 
 /**
@@ -54,6 +57,7 @@ export function DesignScreenBar({
   onOpenStructure,
   onOpenInspector,
   messages,
+  web,
 }: DesignScreenBarProps) {
   const router = useRouter()
   const openNew = useDesignPages((state) => state.openNew)
@@ -65,12 +69,14 @@ export function DesignScreenBar({
   const links = pageRowsOf(slug, pages.data ?? [], homeTitle).filter((row) => row.status !== "ARCHIVED")
   const currentId = page?.id ?? pages.data?.find((row) => row.kind === "HOME")?.id ?? ""
 
-  const publish = () =>
+  const publish = () => {
+    update.reset()
     draft.publish(
       page && !published
         ? () => update.mutate({ pageId: page.id, payload: { status: "PUBLISHED" } }, { onSuccess: () => router.refresh() })
         : undefined,
     )
+  }
 
   return (
     <DesignEditorBar
@@ -93,6 +99,7 @@ export function DesignScreenBar({
       onDeviceChange={onDeviceChange}
       changes={draft.changeCount}
       pagePublished={published}
+      publishError={update.error ? (pageErrorCopy(update.error, web) ?? messages.design.pages.publishFailed) : null}
       publishing={draft.publishing || update.isPending}
       onPublish={publish}
       onDiscard={draft.discard}

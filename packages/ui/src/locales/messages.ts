@@ -685,7 +685,7 @@ export interface UiMessages {
       heading: string
       home: string
       status: { DRAFT: string; PUBLISHED: string; ARCHIVED: string }
-      /** Beside a landing the shop's menu links to. */
+      /** Beside a landing the shop links to: from its footer, and from a site's menu. */
       inMenu: string
       newLanding: string
       /** "Arquivadas ({count})", collapsed under the rest. */
@@ -706,6 +706,11 @@ export interface UiMessages {
       notPublished: string
       /** Why a row's action failed, said under the list. */
       failed: string
+      /** The list itself could not be read, and the way to ask again. */
+      loadFailed: string
+      retry: string
+      /** Why the bar's Publicar did not put the page up, when the API gave no reason of its own. */
+      publishFailed: string
       /** The "Nova landing page" and "Configurações da página" dialogs. */
       form: {
         newTitle: string

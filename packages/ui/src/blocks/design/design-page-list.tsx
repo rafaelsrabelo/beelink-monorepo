@@ -33,6 +33,9 @@ export interface DesignPageListProps {
   busy?: boolean
   /** What the last change answered when it failed, in the owner's words. */
   error?: string | null
+  /** The list could not be read: said in place of the skeleton, with the way to ask again. */
+  loadFailed?: boolean
+  onRetry?: () => void
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -52,6 +55,8 @@ export function DesignPageList({
   onCreate,
   busy = false,
   error = null,
+  loadFailed = false,
+  onRetry,
   linkComponent,
   messages = defaultMessages,
 }: DesignPageListProps) {
@@ -92,7 +97,16 @@ export function DesignPageList({
         </p>
       ) : null}
 
-      {pages === null ? (
+      {pages === null && loadFailed ? (
+        <div role="alert" className="flex flex-col items-start gap-2">
+          <p className="text-destructive text-sm">{text.loadFailed}</p>
+          {onRetry ? (
+            <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+              {text.retry}
+            </Button>
+          ) : null}
+        </div>
+      ) : pages === null ? (
         <>
           <Skeleton className="h-14 w-full" />
           <Skeleton className="h-14 w-full" />
