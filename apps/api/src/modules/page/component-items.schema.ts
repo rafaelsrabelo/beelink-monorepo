@@ -9,7 +9,9 @@ import type {
   CallToActionButton,
   ComponentItem,
   ComponentKind,
+  CountdownEnd,
   FaqItem,
+  ImageTextMedia,
   ShowcaseProduct,
 } from '@harness-monorepo/contracts';
 
@@ -21,6 +23,7 @@ import {
   FAQ_ANSWER_MAX_LENGTH,
   FAQ_ITEMS_MAX,
   FAQ_QUESTION_MAX_LENGTH,
+  IMAGE_ALT_MAX_LENGTH,
   SHOWCASE_LIMIT_MAX,
 } from './page.constants.js';
 
@@ -102,6 +105,27 @@ const callToActionButton = z
   .strictObject({ id: z.string().min(1).max(64), ...componentLink })
   .refine(carriesWhatItNames, { message: 'A button must carry the destination its target names' }) satisfies z.ZodType<CallToActionButton>;
 
+/** An image with text's picture, what it shows, and the button beside the words if there is one. */
+const imageTextMedia = z.strictObject({
+  id: z.string().min(1).max(64),
+  imageUrl: z.url({ protocol: /^https?$/ }).max(COMPONENT_URL_MAX_LENGTH),
+  alt: z.string().trim().max(IMAGE_ALT_MAX_LENGTH).nullish(),
+  button: z
+    .strictObject(componentLink)
+    .refine(carriesWhatItNames, { message: 'A button must carry the destination its target names' })
+    .nullish(),
+}) satisfies z.ZodType<ImageTextMedia>;
+
+/**
+ * When a countdown ends, with its offset — a wall time without one would be read in the server's zone,
+ * which is not the shop's — and stored in UTC. A past one is not refused: saving a title of a
+ * countdown that has ended sends its end again, and a restore carries old ends.
+ */
+const countdownEnd = z.strictObject({
+  id: z.string().min(1).max(64),
+  endsAt: z.iso.datetime({ offset: true }).transform((value) => new Date(value).toISOString()),
+}) satisfies z.ZodType<CountdownEnd, unknown>;
+
 /** What a component with no items of its own holds, and what an unknown kind falls back to. */
 const NOTHING = z.array(z.never()).length(0);
 
@@ -122,6 +146,12 @@ const ITEMS_OF = {
   FAQ: faqItems,
   /** At most one: a call to action asks one thing. None is a block with no button. */
   CALL_TO_ACTION: z.array(callToActionButton).max(1),
+  /** At most one picture. None is the words alone. */
+  IMAGE_TEXT: z.array(imageTextMedia).max(1),
+  /** The one product, picked as a showcase picks: an id, read when the page is. None is not chosen yet. */
+  FEATURED_PRODUCT: z.array(showcaseProduct).max(1),
+  /** One end. None is a countdown not set yet, which the shop does not draw. */
+  COUNTDOWN: z.array(countdownEnd).max(1),
   // Nothing to hold. `.length(0)` and not `.max(0)` so the refusal names the count.
   HEADING: NOTHING,
   TEXT: NOTHING,

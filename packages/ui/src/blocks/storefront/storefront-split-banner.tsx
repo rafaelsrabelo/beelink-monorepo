@@ -9,15 +9,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { StorefrontSpan } from "./storefront-band-cell"
 import type { StorefrontHeroItem } from "./storefront-hero"
-import { SPAN_TITLE } from "./storefront-span-shape"
-
-/** Words beside the picture where the slice holds both: a whole band, or two thirds of a wide one. */
-const SIDE_BY_SIDE: Record<StorefrontSpan, string> = {
-  FULL: "shop-md:grid-cols-2 shop-md:gap-10",
-  TWO_THIRDS: "shop-lg:grid-cols-2",
-  HALF: "",
-  THIRD: "",
-}
+import { SIDE_BY_SIDE, SPAN_TITLE } from "./storefront-span-shape"
 
 export interface StorefrontSplitBannerProps {
   /** A banner's first picture, with its words and where it leads. */

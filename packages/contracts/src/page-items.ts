@@ -1,5 +1,6 @@
 /* ── the items of the section kinds a sales page added ──────────────────────── */
 
+import type { PublicProductCard } from "./catalog.js";
 import type { ComponentTarget } from "./page.js";
 
 /**
@@ -42,4 +43,43 @@ export interface PublicComponentLink {
 
 export interface PublicCallToActionButton extends PublicComponentLink {
   id: string;
+}
+
+/**
+ * An image with text's picture, and the button beside the words, if it has one. One item because the
+ * block holds one of each; the words are the block's own title and text.
+ */
+export interface ImageTextMedia {
+  id: string;
+  /** `""` never: a block with no picture holds no media and draws its words alone. */
+  imageUrl: string;
+  /** What the picture shows, for a screen reader. Absent is decorative. */
+  alt?: string | null;
+  button?: ComponentLink | null;
+}
+
+export interface PublicImageTextMedia {
+  id: string;
+  imageUrl: string;
+  alt: string | null;
+  /** Null when there is none, or when what it pointed at is gone. */
+  button: PublicComponentLink | null;
+}
+
+/**
+ * A featured product as a visitor is served it: the card, resolved when the page is read, so a price
+ * or a photo changed since Publicar shows at once. It is drawn while it is sold out, marked so, and
+ * not drawn at all once it is deleted, a draft or archived — the block then holds no item.
+ */
+export interface PublicFeaturedProduct extends PublicProductCard {
+  soldOut: boolean;
+}
+
+/**
+ * When a countdown ends: one instant, ISO-8601 in UTC. The digits count a duration, so they need no
+ * time zone; a date said to someone is said in the shop's.
+ */
+export interface CountdownEnd {
+  id: string;
+  endsAt: string;
 }

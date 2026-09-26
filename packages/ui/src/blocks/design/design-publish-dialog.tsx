@@ -11,9 +11,12 @@ import { Textarea } from "@harness-monorepo/ui/components/textarea"
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// Block
+import type { DesignPublishProblemKind } from "./design-types"
+
 /** One problem, already named by the screen: which block, in which band. */
 export interface DesignPublishProblem {
-  kind: "LINK_TO_MISSING_PRODUCT" | "LINK_TO_MISSING_CATEGORY" | "SHOWCASE_EMPTY" | "BANNER_WITHOUT_IMAGE"
+  kind: DesignPublishProblemKind
   blockName: string
   bandName: string
 }
