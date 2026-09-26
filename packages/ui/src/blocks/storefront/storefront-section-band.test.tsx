@@ -44,6 +44,21 @@ describe("StorefrontSectionBand", () => {
     expect(style).toContain("--shop-text")
   })
 
+  // Declared on the root, a mix keeps the page's colours inside the band: a card in the page's pale
+  // wash under a dark band's white words. Declared again here, it is mixed from the band's own.
+  it("declares again every wash, neutral and ink mixed from the page's background", () => {
+    render(
+      <StorefrontSectionBand primary={palette.primary} background={dark.header}>
+        <p>conteúdo</p>
+      </StorefrontSectionBand>,
+    )
+
+    const style = screen.getByText("conteúdo").parentElement!.parentElement!.getAttribute("style") ?? ""
+    for (const name of ["--shop-primary-tint", "--shop-fill", "--shop-line", "--shop-muted", "--shop-sale-ink"]) {
+      expect(style).toContain(name)
+    }
+  })
+
   it("contains its content inside the shop's measure unless told otherwise", () => {
     const { rerender } = render(
       <StorefrontSectionBand primary={palette.primary}>

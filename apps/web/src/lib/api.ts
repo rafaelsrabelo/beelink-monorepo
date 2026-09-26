@@ -1,8 +1,11 @@
 // Types
-import type { ApiErrorBody } from "@harness-monorepo/contracts"
+import type { ApiErrorBody, PageRevisionHeader } from "@harness-monorepo/contracts"
 
 // App
 import { serverEnv } from "./server-env"
+
+/** The header a draft write names the revision it read in; the API refuses a stale one with 409. */
+export const PAGE_REVISION_HEADER = "x-page-revision" satisfies PageRevisionHeader
 
 export interface ApiCall {
   path: string
@@ -16,6 +19,8 @@ export interface ApiCall {
   accessToken?: string
   /** The browser's address, so the API's per-IP rate limit sees people and not this server. */
   clientIp?: string | null
+  /** The page draft revision the editor read, carried to the API as it sent it (`x-page-revision`). */
+  pageRevision?: string | null
   /**
    * A body handed through untouched, for the one call that carries a file.
    *
@@ -27,10 +32,11 @@ export interface ApiCall {
 }
 
 /** Only the server talks to the API; everything the browser sends passes through a route handler. */
-export async function callApi({ path, method = "POST", body, accessToken, clientIp, rawBody }: ApiCall): Promise<Response> {
+export async function callApi({ path, method = "POST", body, accessToken, clientIp, pageRevision, rawBody }: ApiCall): Promise<Response> {
   const headers: Record<string, string> = {}
   if (accessToken) headers.authorization = `Bearer ${accessToken}`
   if (clientIp) headers["x-forwarded-for"] = clientIp
+  if (pageRevision) headers[PAGE_REVISION_HEADER] = pageRevision
 
   if (rawBody) {
     // The caller's own content-type, boundary and all. Writing one by hand produces a multipart

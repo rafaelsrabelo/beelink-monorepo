@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
-import { createSectionRow, moveComponent, PageRequestError } from "./page-requests"
+import { createSectionRow, fetchSections, moveComponent, PageRequestError, reorderSections } from "./page-requests"
 
 const band = { id: "s1", components: [{ id: "c1", kind: "BANNER" }] }
 
@@ -51,6 +51,17 @@ describe("createSectionRow", () => {
     expect(calls).toHaveLength(1)
   })
 
+  // The band goes on the page being edited; the blocks beside it follow their band, which knows its page.
+  it("writes the band on the page named, and the blocks beside it into that band", async () => {
+    const calls = answerInOrder()
+    const banner = { kind: "BANNER", span: "HALF" } as const
+
+    await createSectionRow("lessari", { component: banner }, 1, "0199f000-0000-7000-8000-000000000002")
+
+    expect(calls[0]).toMatch(/^POST \/api\/stores\/lessari\/sections\?pageId=0199f000-0000-7000-8000-000000000002 /)
+    expect(calls[1]).toMatch(/^POST \/api\/stores\/lessari\/sections\/s1\/components /)
+  })
+
   it("says so when a banner of the row is refused, after the band is written", async () => {
     const calls = answerInOrder(
       { status: 201, body: band },
@@ -81,5 +92,19 @@ describe("moveComponent", () => {
     await expect(moveComponent("lessari", "c1", { sectionId: "s2" })).rejects.toMatchObject({
       errorCode: "COMPONENT_NOT_MOVABLE",
     })
+  })
+})
+
+describe("a page's bands", () => {
+  it("asks for the home when no page is named, and for the page named otherwise", async () => {
+    const calls = answerInOrder({ status: 200, body: [] }, { status: 200, body: [] }, { status: 200, body: [] })
+
+    await fetchSections("lessari")
+    await fetchSections("lessari", "p1")
+    await reorderSections("lessari", { ids: ["a", "b"] }, "p1")
+
+    expect(calls[0]).toBe("GET /api/stores/lessari/sections ")
+    expect(calls[1]).toBe("GET /api/stores/lessari/sections?pageId=p1 ")
+    expect(calls[2]).toMatch(/^PUT \/api\/stores\/lessari\/sections\/reorder\?pageId=p1 /)
   })
 })
