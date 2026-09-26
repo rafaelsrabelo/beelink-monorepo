@@ -462,6 +462,8 @@ export interface UiMessages {
     seeAll: string
     /** The button of a banner whose words stand beside its picture. */
     learnMore: string
+    /** Its name for a screen reader, after the banner: two "Saiba mais" in a list of links say nothing. */
+    learnMoreAbout: string
     /**
      * `{section}`. The accessible name of a "see all" link, because a home with three of them
      * hands a screen reader the same two words three times (WCAG 2.4.4).
@@ -795,6 +797,8 @@ export interface UiMessages {
     carouselHint: string
     /** The same hint, for a banner whose pictures share the space. */
     gridHint: string
+    /** Under a banner laid out on its first picture alone: the others wait for another layout. */
+    firstOnlyHint: string
     /** One promise with no title yet. `{position}`. */
     benefitPosition: string
     addBenefit: string

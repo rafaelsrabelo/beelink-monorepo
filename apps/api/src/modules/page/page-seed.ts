@@ -111,7 +111,8 @@ export function openingItemsOf(kind: ComponentKind): SeededItem[] {
  * How a new component lays out what it holds. A banner opens as a carousel, which is what its second
  * slide has always turned it into; a showcase opens as a rail, which is what the landing page's
  * shelf has always been; the categories open as a rail too, which is what the shopkeeper asked of
- * them. No other kind reads the column.
+ * them. The benefits and the strip open with none on purpose: unset, each keeps the look it always
+ * had, which no layout of theirs repeats exactly. No other kind reads the column.
  */
 export function openingDisplayOf(kind: ComponentKind): ComponentDisplay | null {
   if (kind === 'BANNER') return 'CAROUSEL';

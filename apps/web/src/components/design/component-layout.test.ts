@@ -19,6 +19,20 @@ describe("component-layout — how a block sits, held and drawn", () => {
     expect(layoutOf(heading)).toEqual({ span: "FULL", display: null, columns: 0, align: "CENTER", visibleOn: "ALL" })
   })
 
+  // Unset benefits draw in a row, as "Em linha" does; an unset strip draws a way no layout repeats.
+  it("reads unset benefits as Em linha, and leaves an unset strip unset", () => {
+    expect(displayOf("BENEFITS", null)).toBe("INLINE")
+    expect(displayOf("ANNOUNCEMENT", null)).toBeNull()
+    expect(displayOf("ANNOUNCEMENT", "MARQUEE")).toBe("MARQUEE")
+  })
+
+  // Still where it fits and scrolling on a phone is not "Fixa": choosing Fixa is a change to publish.
+  it("counts Fixa on an unset strip as a change", () => {
+    const strip = { kind: "ANNOUNCEMENT" as const, span: "FULL" as const, display: null, columns: null, align: null, visibleOn: "ALL" as const }
+
+    expect(sameLayout(strip, { ...strip, display: "STATIC" })).toBe(false)
+  })
+
   it("compares as drawn, so choosing back what a null drew is the same layout", () => {
     expect(sameLayout(heading, { ...heading, align: "CENTER" })).toBe(true)
     expect(sameLayout(heading, { ...heading, align: "LEFT" })).toBe(false)

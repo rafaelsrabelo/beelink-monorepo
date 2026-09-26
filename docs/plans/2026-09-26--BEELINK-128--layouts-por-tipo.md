@@ -41,3 +41,18 @@ aparência, e o conteúdo (título, subtítulo, imagem, link, itens) continua no
   - vantagens: em linha;
   - barra de aviso: parada onde cabe e rolando no celular.
   "Fixa" nunca rola e "Rolando" rola em qualquer largura.
+
+## Depois da revisão
+
+*Acrescentado em 2026-09-26.*
+
+- **Barra de aviso sem layout:** é um estado próprio, e o editor não a mostra como "Fixa". Ela fica
+  parada onde cabe e rola no celular, e nenhum layout repete isso. Escolher Fixa agora é uma mudança
+  que o Publicar envia.
+- **Ponta a ponta:** quem vai de uma ponta à outra é decidido pelo layout, não pelo tipo. Um banner
+  "Dividida" e vantagens em "Cartões" ganham a margem e o espaçamento da página.
+- **"Dividida" pela fatia:** o banner empilha numa fatia menor que a faixa, com o título no tamanho
+  dela.
+- **Dica e link:** sob "Imagem ao fundo" e "Dividida", a dica diz que só a primeira imagem aparece. O
+  botão se chama "Saiba mais sobre {título}".
+- **"Rolando":** cobre janelas de até 4K.

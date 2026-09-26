@@ -14,7 +14,15 @@ describe("StorefrontSplitBanner", () => {
 
     expect(screen.getByRole("heading", { name: "Nova coleção" })).toBeInTheDocument()
     expect(screen.getByText("Chegou o inverno")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Saiba mais" })).toHaveAttribute("href", "/loja/inverno")
+    expect(screen.getByRole("link", { name: "Saiba mais sobre Nova coleção" })).toHaveAttribute("href", "/loja/inverno")
+  })
+
+  // A third of a band has no room for two columns and a 36px title.
+  it("stacks, and titles smaller, in a slice narrower than the band", () => {
+    const { container } = render(<StorefrontSplitBanner item={item} span="THIRD" />)
+
+    expect(container.firstElementChild?.className).not.toContain("grid-cols-2")
+    expect(screen.getByRole("heading", { name: "Nova coleção" })).toHaveClass("text-lg")
   })
 
   it("offers no button where the banner leads nowhere", () => {

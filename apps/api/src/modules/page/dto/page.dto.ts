@@ -92,7 +92,7 @@ export class ComponentDto implements CreateComponentPayload {
   @IsIn(COMPONENT_SPANS, { context: { errorCode: 'COMPONENT_SPAN_INVALID' satisfies PageErrorCode } })
   span?: ComponentSpan;
 
-  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'CAROUSEL or GRID on a BANNER, RAIL or GRID on PRODUCTS and CATEGORIES. Null on every other kind.' })
+  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'The layout, from its kind\'s own — BANNER: BACKDROP, SPLIT, CAROUSEL or GRID; PRODUCTS: RAIL or GRID; CATEGORIES: RAIL, GRID or CHIPS; BENEFITS: INLINE or CARDS; ANNOUNCEMENT: STATIC or MARQUEE. Null only on the other kinds; refused on these.' })
   @IsOptional()
   @IsIn(COMPONENT_DISPLAYS, { context: { errorCode: 'COMPONENT_DISPLAY_INVALID' satisfies PageErrorCode } })
   display?: ComponentDisplay | null;

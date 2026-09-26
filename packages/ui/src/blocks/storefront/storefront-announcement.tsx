@@ -36,8 +36,8 @@ const PIXELS_PER_CHARACTER = 6
 const GAP_PIXELS = 56
 /** The strip runs the width of the window; below the tablet breakpoint this is the widest phone. */
 const WIDEST_PHONE = 640
-/** A marquee asked for on every width has to cover the widest window, not the widest phone. */
-const WIDEST_WINDOW = 1920
+/** A marquee asked for on every width has to cover the widest window, not the widest phone: a 4K one. */
+const WIDEST_WINDOW = 3840
 
 /**
  * The strip above the header, on every page of the shop.
