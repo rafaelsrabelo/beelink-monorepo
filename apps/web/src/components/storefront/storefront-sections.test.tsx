@@ -305,6 +305,13 @@ describe("StorefrontSections — the categories are a rail or a grid", () => {
     expect(container.querySelector("ul")!.className).toContain("grid")
     expect(screen.queryByRole("group")).not.toBeInTheDocument()
   })
+
+  it("draws the categories as chips when told to", () => {
+    drawWith(categoriesBlock({ display: "CHIPS" }))
+
+    expect(screen.getByRole("link", { name: "Blusas" })).toBeInTheDocument()
+    expect(screen.getByRole("list", { name: "Categorias" })).toBeInTheDocument()
+  })
 })
 
 /**
@@ -396,5 +403,38 @@ describe("StorefrontSections — design mode's room beside a block", () => {
 
     const grid = container.querySelector("[data-span]")!.parentElement!
     expect(grid.lastElementChild).toHaveTextContent("Adicionar ao lado")
+  })
+})
+
+// I4: the same content, another look — and back, with nothing lost.
+describe("StorefrontSections — a block's layout, switched without losing its content", () => {
+  it("draws a banner's first picture with its words over it, beside it, or all of them in turn", () => {
+    const slides = banner("capa", "BACKDROP", 2)
+
+    const { unmount } = draw([band([slides])])
+    expect(screen.getByText("capa 1")).toBeInTheDocument()
+    expect(screen.queryByText("capa 2")).not.toBeInTheDocument()
+    unmount()
+
+    const split = draw([band([{ ...slides, display: "SPLIT" }])])
+    expect(screen.getByRole("heading", { name: "capa 1" })).toBeInTheDocument()
+    split.unmount()
+
+    // Back to a carousel: the second picture was kept all along.
+    draw([band([{ ...slides, display: "CAROUSEL" }])])
+    expect(screen.getAllByText("capa 2").length).toBeGreaterThan(0)
+  })
+
+  it("draws the benefits as cards when told to", () => {
+    const benefits: PublicComponent = {
+      ...poster("promessas", "FULL"),
+      kind: "BENEFITS",
+      display: "CARDS",
+      items: [{ id: "b1", icon: "truck", title: "Frete grátis" }],
+    }
+
+    draw([band([benefits])])
+
+    expect(screen.getByText("Frete grátis").closest("li")).toHaveClass("rounded-2xl")
   })
 })

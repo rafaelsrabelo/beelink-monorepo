@@ -1,4 +1,4 @@
-import type { Across, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
+import type { Across, ComponentDisplay, ComponentKind, ContactFieldType, ProductSource } from "../blocks/design/design-types"
 import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
@@ -460,6 +460,8 @@ export interface UiMessages {
     featuredEyebrow: string
     categoriesEyebrow: string
     seeAll: string
+    /** The button of a banner whose words stand beside its picture. */
+    learnMore: string
     /**
      * `{section}`. The accessible name of a "see all" link, because a home with three of them
      * hands a screen reader the same two words three times (WCAG 2.4.4).
@@ -647,9 +649,8 @@ export interface UiMessages {
       onlyDesktop: string
       onlyPhone: string
     }
-    displayCarousel: string
-    displayGrid: string
-    displayRail: string
+    /** Each layout's name, as the Layout tab and the bar offer it. */
+    displays: Record<ComponentDisplay, string>
     categoriesRailHint: string
     categoriesGridHint: string
     show: string

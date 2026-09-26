@@ -839,7 +839,7 @@ describe('PageService — a showcase has a source', () => {
   });
 });
 
-describe('PageService — each kind draws its own two displays', () => {
+describe('PageService — each kind draws its own layouts', () => {
   it('lets a showcase be a rail or a grid, and nothing else', async () => {
     const grid = build({ kind: 'PRODUCTS' });
     await expect(grid.components.updateComponent('lessari', 'user-1', COMPONENT, { display: 'GRID' })).resolves.toBeDefined();
@@ -860,6 +860,30 @@ describe('PageService — each kind draws its own two displays', () => {
     await expect(components.updateComponent('lessari', 'user-1', COMPONENT, { display: 'CAROUSEL' })).rejects.toMatchObject({
       response: { errorCode: 'COMPONENT_DISPLAY_INVALID' },
     });
+  });
+
+  // The same content, another look: each kind takes its own, and nobody else's.
+  it('takes the layouts each kind draws, and refuses the others', async () => {
+    const own = [
+      ['BANNER', 'BACKDROP'],
+      ['BANNER', 'SPLIT'],
+      ['CATEGORIES', 'CHIPS'],
+      ['BENEFITS', 'INLINE'],
+      ['BENEFITS', 'CARDS'],
+      ['ANNOUNCEMENT', 'STATIC'],
+      ['ANNOUNCEMENT', 'MARQUEE'],
+    ] as const;
+    for (const [kind, display] of own) {
+      const { components } = build({ kind });
+      await expect(components.updateComponent('lessari', 'user-1', COMPONENT, { display }), `${kind} ${display}`).resolves.toBeDefined();
+    }
+
+    for (const [kind, display] of [['BENEFITS', 'GRID'], ['ANNOUNCEMENT', 'SPLIT'], ['PRODUCTS', 'CHIPS'], ['HEADING', 'CARDS']] as const) {
+      const { components } = build({ kind });
+      await expect(components.updateComponent('lessari', 'user-1', COMPONENT, { display }), `${kind} ${display}`).rejects.toMatchObject({
+        response: { errorCode: 'COMPONENT_DISPLAY_INVALID' },
+      });
+    }
   });
 
   it('never lets a banner be a rail', async () => {

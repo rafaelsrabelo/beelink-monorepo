@@ -4,6 +4,7 @@ import type { ComponentDisplay, ComponentKind, ComponentSpan, DeviceVisibility, 
 // UI
 import type { ComponentLayoutValues } from "@harness-monorepo/ui/blocks/design/component-layout-fields"
 import { defaultAlignOf } from "@harness-monorepo/ui/blocks/design/text-align"
+import { layoutsOf } from "@harness-monorepo/ui/lib/section-registry"
 
 /** The layout fields a block holds on the wire, or in the draft. */
 export interface HeldLayout {
@@ -21,11 +22,15 @@ export interface HeldLayout {
  * a grid unless they say rail, a showcase a rail unless it says grid.
  */
 export function displayOf(kind: ComponentKind, display: ComponentDisplay | null): ComponentDisplay | null {
-  if (kind === "CATEGORIES") return display === "RAIL" ? "RAIL" : "GRID"
-  if (kind === "PRODUCTS") return display === "GRID" ? "GRID" : "RAIL"
-  if (kind === "BANNER") return display === "GRID" ? "GRID" : "CAROUSEL"
-
-  return null
+  const own = layoutsOf(kind)
+  if (!own) return null
+  if (display && own.includes(display)) return display
+  // Unset, each kind's habit: the look it had before there was a choice.
+  if (kind === "CATEGORIES") return "GRID"
+  if (kind === "PRODUCTS") return "RAIL"
+  if (kind === "BANNER") return "CAROUSEL"
+  if (kind === "BENEFITS") return "INLINE"
+  return "STATIC"
 }
 
 /** A block's layout as the page draws it — what the Layout tab shows — every null resolved. */

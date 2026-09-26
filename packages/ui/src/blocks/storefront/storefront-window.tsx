@@ -33,6 +33,8 @@ export interface StorefrontAnnouncement {
   /** Already resolved by the API. Null goes nowhere; the strip is then a poster, not a link. */
   href?: string | null
   external?: boolean
+  /** "Fixa" or "Rolando", the strip's layout. Unset draws as it always did. */
+  motion?: "STATIC" | "MARQUEE"
 }
 
 // Where they are declared now; re-exported because screens import them from here.
@@ -176,6 +178,7 @@ export function StorefrontWindow({
           background={announcement.background ?? null}
           href={announcement.href ?? null}
           external={announcement.external ?? false}
+          {...(announcement.motion ? { motion: announcement.motion } : {})}
           linkComponent={Link}
         />
       ) : null}

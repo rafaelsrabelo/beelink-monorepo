@@ -85,6 +85,8 @@ export interface StorefrontSectionsProps {
 function cardsOf(component: PublicComponent): StorefrontShowcaseItem[] | null {
   if (component.kind !== "BANNER") return null
 
+  // The first picture over its words, or beside them, is a layout of its own and never a card.
+  if (component.display === "BACKDROP" || component.display === "SPLIT") return null
   const slides = component.items as PublicBannerSlide[]
   if (slides.length !== 1 && !(component.display === "GRID" && slides.length > 1)) return null
 
@@ -216,7 +218,14 @@ export function StorefrontSections({
  */
 export function announcementOf(
   sections: readonly PublicSection[] = [],
-): { left: string; right?: string; background: string | null; href: string | null; external: boolean } | null {
+): {
+  left: string
+  right?: string
+  background: string | null
+  href: string | null
+  external: boolean
+  motion?: "STATIC" | "MARQUEE"
+} | null {
   const band = sections.find((section) => section.components.some((component) => component.kind === "ANNOUNCEMENT"))
   const strip = band?.components.find((component) => component.kind === "ANNOUNCEMENT")
 
@@ -232,5 +241,6 @@ export function announcementOf(
     background: band.background,
     href: link?.href ?? null,
     external: link?.external ?? false,
+    ...(strip.display === "STATIC" || strip.display === "MARQUEE" ? { motion: strip.display } : {}),
   }
 }

@@ -87,4 +87,18 @@ describe("StorefrontAnnouncement", () => {
 
     await expectNoA11yViolations(container)
   })
+
+  // The same messages, another motion: "Fixa" never moves and wraps; "Rolando" moves on every width.
+  it("holds the messages still and lets them wrap when it is Fixa", () => {
+    const { container } = render(<StorefrontAnnouncement messages={["Frete grátis", "Pix com desconto"]} motion="STATIC" />)
+
+    expect(container.querySelector(".animate-marquee")).toBeNull()
+    expect(screen.getAllByText("Frete grátis")).toHaveLength(1)
+  })
+
+  it("scrolls on every width when it is Rolando", () => {
+    const { container } = render(<StorefrontAnnouncement messages={["Frete grátis"]} motion="MARQUEE" />)
+
+    expect(container.querySelector(".animate-marquee")?.className).not.toContain("shop-sm:animate-none")
+  })
 })

@@ -3,6 +3,7 @@ import type { PublicComponent, PublicProductCategory } from "@harness-monorepo/c
 
 // UI
 import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
+import { StorefrontCategoryChips } from "@harness-monorepo/ui/blocks/storefront/storefront-category-chips"
 import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
 import { StorefrontCategoryRail } from "@harness-monorepo/ui/blocks/storefront/storefront-category-rail"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
@@ -53,7 +54,15 @@ export function StorefrontCategoriesBlock({
   return (
     <div className="flex flex-col gap-4">
       {component.title ? <StorefrontHeading title={component.title} subtitle={component.subtitle} /> : null}
-      {component.display === "RAIL" ? (
+      {component.display === "CHIPS" ? (
+        <StorefrontCategoryChips
+          categories={shared.categories}
+          href={shared.href}
+          {...(component.title ? { label: component.title } : {})}
+          {...(linkComponent ? { linkComponent } : {})}
+          messages={messages}
+        />
+      ) : component.display === "RAIL" ? (
         <StorefrontCategoryRail {...shared} {...(component.title ? { label: component.title } : {})} />
       ) : (
         <StorefrontCategoryGrid {...shared} {...(columns ? { columns } : {})} />

@@ -65,12 +65,30 @@ export type SectionWidth = "FULL" | "CONTAINED";
 export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
 
 /**
- * How a component with several things in it lays them out. Read on `BANNER`, `PRODUCTS` and
- * `CATEGORIES`, each with its own two, and null on every other kind: a banner's pictures take turns
- * (`CAROUSEL`) or share the space (`GRID`); a showcase's products and the shop's categories scroll on
- * one row (`RAIL`) or wrap into rows (`GRID`).
+ * A component's layout: the same content, another look. Each kind draws its own, and the API refuses
+ * one that is not its kind's; switching keeps every field, so switching back loses nothing.
+ *
+ * - A banner: `BACKDROP` (its first picture, the words over it), `SPLIT` (the words beside the
+ *   picture), `CAROUSEL` (the pictures in turn) or `GRID` (the pictures side by side).
+ * - A showcase: `RAIL` (one row that scrolls) or `GRID` (rows).
+ * - The categories: `RAIL` or `GRID` of cards with photos, or `CHIPS` (their names, as pills).
+ * - The benefits: `INLINE` (icon beside the words, in a tinted band) or `CARDS`.
+ * - The strip: `STATIC` (still) or `MARQUEE` (scrolling).
+ *
+ * Null on every other kind — and on a benefits band or a strip saved before they had a choice, which
+ * draw as they always did.
  */
-export type ComponentDisplay = "CAROUSEL" | "GRID" | "RAIL";
+export type ComponentDisplay =
+  | "CAROUSEL"
+  | "GRID"
+  | "RAIL"
+  | "BACKDROP"
+  | "SPLIT"
+  | "CHIPS"
+  | "INLINE"
+  | "CARDS"
+  | "STATIC"
+  | "MARQUEE";
 
 /**
  * Where a component shows: everywhere, only on a computer, or only on a phone — the shop window's

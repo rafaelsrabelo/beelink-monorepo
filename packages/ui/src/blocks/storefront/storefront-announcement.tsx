@@ -17,6 +17,11 @@ export interface StorefrontAnnouncementProps {
   href?: string | null
   external?: boolean
   linkComponent?: LinkComponent
+  /**
+   * `MARQUEE` scrolls on every width, `STATIC` never does and lets the messages wrap. Unset is how the
+   * strip always drew: still where it fits, scrolling on a phone where it cannot.
+   */
+  motion?: "STATIC" | "MARQUEE"
   className?: string
 }
 
@@ -31,6 +36,8 @@ const PIXELS_PER_CHARACTER = 6
 const GAP_PIXELS = 56
 /** The strip runs the width of the window; below the tablet breakpoint this is the widest phone. */
 const WIDEST_PHONE = 640
+/** A marquee asked for on every width has to cover the widest window, not the widest phone. */
+const WIDEST_WINDOW = 1920
 
 /**
  * The strip above the header, on every page of the shop.
@@ -57,6 +64,7 @@ export function StorefrontAnnouncement({
   href,
   external = false,
   linkComponent: Link = AnchorLink,
+  motion,
   className,
 }: StorefrontAnnouncementProps) {
   const said = messages.map((message) => message.trim()).filter(Boolean)
@@ -64,27 +72,33 @@ export function StorefrontAnnouncement({
 
   const copyWidth = said.reduce((width, message) => width + message.length * PIXELS_PER_CHARACTER + GAP_PIXELS, 0)
   // Even, and wide enough that half the track covers the widest phone it may scroll on.
-  const copies = 2 * Math.max(2, Math.ceil(WIDEST_PHONE / copyWidth))
+  const copies = motion === "STATIC" ? 1 : 2 * Math.max(2, Math.ceil((motion === "MARQUEE" ? WIDEST_WINDOW : WIDEST_PHONE) / copyWidth))
   const duration = Math.round(((copies / 2) * copyWidth) / PIXELS_PER_SECOND)
 
   const painted: CSSProperties = background
     ? { backgroundColor: background, color: readableOn(background) }
     : { backgroundColor: "var(--shop-text)", color: "var(--shop-on-text)" }
 
-  const track = (
+  const track = motion === "STATIC" ? (
+    <p className="flex min-h-8 w-full flex-wrap items-center justify-center gap-x-14 gap-y-1 px-4 py-1.5 text-center">
+      {said.map((message, index) => (
+        <span key={index}>{message}</span>
+      ))}
+    </p>
+  ) : (
     <div className="flex h-8 w-full items-center overflow-hidden">
       <div
         className={cn(
           "animate-marquee flex w-max shrink-0 items-center gap-14 whitespace-nowrap",
           "motion-reduce:w-full motion-reduce:animate-none motion-reduce:justify-center",
-          "shop-sm:w-full shop-sm:animate-none shop-sm:justify-center",
+          motion !== "MARQUEE" && "shop-sm:w-full shop-sm:animate-none shop-sm:justify-center",
         )}
         style={{ "--marquee-duration": `${duration}s` } as CSSProperties}
       >
         {Array.from({ length: copies }, (_, at) => (
           <p
             key={at}
-            className={cn("flex items-center gap-14", at > 0 && "motion-reduce:hidden shop-sm:hidden")}
+            className={cn("flex items-center gap-14", at > 0 && "motion-reduce:hidden", at > 0 && motion !== "MARQUEE" && "shop-sm:hidden")}
             {...(at > 0 ? { "aria-hidden": true } : {})}
           >
             {said.map((message, index) => (

@@ -28,14 +28,14 @@ export interface SectionType {
  * the build when a kind is added and left out.
  */
 export const SECTION_TYPES = {
-  BANNER: { category: "COVER", recommended: true, layouts: ["CAROUSEL", "GRID"], rows: true },
+  BANNER: { category: "COVER", recommended: true, layouts: ["BACKDROP", "SPLIT", "CAROUSEL", "GRID"], rows: true },
   PRODUCTS: { category: "SELLING", recommended: true, layouts: ["RAIL", "GRID"], rows: false },
-  CATEGORIES: { category: "SELLING", recommended: true, layouts: ["RAIL", "GRID"], rows: false },
-  BENEFITS: { category: "TRUST", recommended: true, layouts: null, rows: false },
+  CATEGORIES: { category: "SELLING", recommended: true, layouts: ["RAIL", "GRID", "CHIPS"], rows: false },
+  BENEFITS: { category: "TRUST", recommended: true, layouts: ["INLINE", "CARDS"], rows: false },
   HEADING: { category: "CONTENT", recommended: false, layouts: null, rows: false },
   TEXT: { category: "CONTENT", recommended: false, layouts: null, rows: false },
   CONTACT: { category: "CONVERSION", recommended: true, layouts: null, rows: false },
-  ANNOUNCEMENT: { category: "CHROME", recommended: false, layouts: null, rows: false },
+  ANNOUNCEMENT: { category: "CHROME", recommended: false, layouts: ["STATIC", "MARQUEE"], rows: false },
 } as const satisfies Record<ComponentKind, SectionType>
 
 /** The formats a kind draws, where it has any. */

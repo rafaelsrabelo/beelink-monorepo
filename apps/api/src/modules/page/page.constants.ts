@@ -17,8 +17,19 @@ export const COMPONENT_SPANS = ['FULL', 'HALF', 'THIRD', 'TWO_THIRDS'] as const 
 /** Everywhere, only on a computer, only on a phone. */
 export const DEVICE_VISIBILITIES = ['ALL', 'DESKTOP', 'PHONE'] as const satisfies readonly DeviceVisibility[];
 
-/** One at a time, side by side, or on one row that scrolls. */
-export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID', 'RAIL'] as const satisfies readonly ComponentDisplay[];
+/** Every layout any kind draws; `DISPLAYS_OF_KIND` says which are whose. */
+export const COMPONENT_DISPLAYS = [
+  'CAROUSEL',
+  'GRID',
+  'RAIL',
+  'BACKDROP',
+  'SPLIT',
+  'CHIPS',
+  'INLINE',
+  'CARDS',
+  'STATIC',
+  'MARQUEE',
+] as const satisfies readonly ComponentDisplay[];
 
 /**
  * The displays each kind draws. A kind absent from this table holds null, and a write that sends
@@ -26,9 +37,11 @@ export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID', 'RAIL'] as const satisfie
  * banner is not a rail, and a showcase is not a carousel.
  */
 export const DISPLAYS_OF_KIND: Partial<Record<ComponentKind, readonly ComponentDisplay[]>> = {
-  BANNER: ['CAROUSEL', 'GRID'],
+  BANNER: ['BACKDROP', 'SPLIT', 'CAROUSEL', 'GRID'],
   PRODUCTS: ['RAIL', 'GRID'],
-  CATEGORIES: ['RAIL', 'GRID'],
+  CATEGORIES: ['RAIL', 'GRID', 'CHIPS'],
+  BENEFITS: ['INLINE', 'CARDS'],
+  ANNOUNCEMENT: ['STATIC', 'MARQUEE'],
 };
 
 /** Which products a showcase draws. No best sellers: nothing records a sale yet. */

@@ -92,11 +92,7 @@ export function DesignSelectionBar({
   messages = defaultMessages,
 }: DesignSelectionBarProps) {
   const text = messages.design.bar
-  const names: Record<ComponentDisplay, string> = {
-    CAROUSEL: messages.design.displayCarousel,
-    GRID: messages.design.displayGrid,
-    RAIL: messages.design.displayRail,
-  }
+  const names = messages.design.displays
   const bar = useRef<HTMLDivElement>(null)
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

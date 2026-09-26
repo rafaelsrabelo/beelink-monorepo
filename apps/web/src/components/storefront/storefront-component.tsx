@@ -17,6 +17,7 @@ import type { LinkComponent } from "@harness-monorepo/ui/blocks/auth/auth-link"
 import { StorefrontBenefits } from "@harness-monorepo/ui/blocks/storefront/storefront-benefits"
 import { StorefrontContact } from "@harness-monorepo/ui/blocks/storefront/storefront-contact"
 import { StorefrontHero } from "@harness-monorepo/ui/blocks/storefront/storefront-hero"
+import { StorefrontSplitBanner } from "@harness-monorepo/ui/blocks/storefront/storefront-split-banner"
 import { StorefrontHeading } from "@harness-monorepo/ui/blocks/storefront/storefront-heading"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { cn } from "@harness-monorepo/ui/lib/utils"
@@ -78,18 +79,23 @@ export function StorefrontComponent({
   const link = linkComponent ? { linkComponent } : {}
 
   if (component.kind === "BANNER") {
-    // Several pictures shown as a carousel, sized to the slice its span gives it. One picture, or a
-    // grid, never gets here: `StorefrontSections` draws those as cards.
+    const slides = (component.items as PublicBannerSlide[]).map((slide) => ({
+      id: slide.id,
+      imageUrl: slide.imageUrl,
+      title: slide.title,
+      subtitle: slide.subtitle,
+      href: slide.href,
+      external: slide.external,
+    }))
+    // "Dividida": the first picture beside its words. The other slides wait, kept, for another layout.
+    if (component.display === "SPLIT") {
+      return slides[0] ? <StorefrontSplitBanner item={slides[0]} {...link} messages={messages} /> : null
+    }
+    // "Imagem ao fundo" is the first picture with its words over it; a carousel is all of them in turn.
+    // One picture, or a grid, never gets here as a carousel: `StorefrontSections` draws those as cards.
     return (
       <StorefrontHero
-        items={(component.items as PublicBannerSlide[]).map((slide) => ({
-          id: slide.id,
-          imageUrl: slide.imageUrl,
-          title: slide.title,
-          subtitle: slide.subtitle,
-          href: slide.href,
-          external: slide.external,
-        }))}
+        items={component.display === "BACKDROP" ? slides.slice(0, 1) : slides}
         bleed={bleed}
         span={component.span}
         {...link}
@@ -113,6 +119,7 @@ export function StorefrontComponent({
   if (component.kind === "BENEFITS") {
     return (
       <StorefrontBenefits
+        layout={component.display === "CARDS" ? "CARDS" : "INLINE"}
         items={(component.items as BenefitRow[]).map((row) => ({
           id: row.id,
           title: row.title,

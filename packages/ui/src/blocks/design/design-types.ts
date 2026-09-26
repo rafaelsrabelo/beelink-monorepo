@@ -42,7 +42,7 @@ export type ContactFieldType = (typeof CONTACT_FIELD_TYPES)[number]
  * How a block lays out what it holds. The contract's `ComponentDisplay`, restated. A banner is a
  * carousel or a grid; a showcase and the categories are a rail or a grid; every other kind holds null.
  */
-export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID", "RAIL"] as const
+export const COMPONENT_DISPLAYS = ["CAROUSEL", "GRID", "RAIL", "BACKDROP", "SPLIT", "CHIPS", "INLINE", "CARDS", "STATIC", "MARQUEE"] as const
 export type ComponentDisplay = (typeof COMPONENT_DISPLAYS)[number]
 
 /** Where a block shows. The contract's `DeviceVisibility`, restated: the shop's `md` width, 768px, divides the two. */

@@ -68,6 +68,13 @@ enum ComponentDisplay {
   CAROUSEL
   GRID
   RAIL
+  BACKDROP
+  SPLIT
+  CHIPS
+  INLINE
+  CARDS
+  STATIC
+  MARQUEE
 }
 
 /// Where a component shows. The shop window's `md` width is the line between a phone and a computer.

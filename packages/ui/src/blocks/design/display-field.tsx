@@ -1,7 +1,19 @@
 "use client"
 
 // Libs
-import { GalleryHorizontalEndIcon, GalleryHorizontalIcon, LayoutGridIcon, type LucideIcon } from "lucide-react"
+import {
+  CreditCardIcon,
+  GalleryHorizontalEndIcon,
+  GalleryHorizontalIcon,
+  ImageIcon,
+  LayoutGridIcon,
+  MoveHorizontalIcon,
+  PanelLeftIcon,
+  PauseIcon,
+  RowsIcon,
+  TagsIcon,
+  type LucideIcon,
+} from "lucide-react"
 
 // UI
 import { FieldLabel, FieldSet } from "@harness-monorepo/ui/components/field"
@@ -27,6 +39,13 @@ const ICONS: Record<ComponentDisplay, LucideIcon> = {
   CAROUSEL: GalleryHorizontalIcon,
   GRID: LayoutGridIcon,
   RAIL: GalleryHorizontalEndIcon,
+  BACKDROP: ImageIcon,
+  SPLIT: PanelLeftIcon,
+  CHIPS: TagsIcon,
+  INLINE: RowsIcon,
+  CARDS: CreditCardIcon,
+  STATIC: PauseIcon,
+  MARQUEE: MoveHorizontalIcon,
 }
 
 /**
@@ -48,11 +67,7 @@ export function DisplayField({
   messages = defaultMessages,
 }: DisplayFieldProps) {
   const text = messages.design
-  const labels: Record<ComponentDisplay, string> = {
-    CAROUSEL: text.displayCarousel,
-    GRID: text.displayGrid,
-    RAIL: text.displayRail,
-  }
+  const labels = text.displays
 
   return (
     <FieldSet>
@@ -61,6 +76,8 @@ export function DisplayField({
         multiple={false}
         aria-label={text.displayLabel}
         variant="outline"
+        // Wrapped: a banner's four layouts do not fit the panel's column side by side.
+        className="flex-wrap"
         disabled={disabled}
         value={[value]}
         onValueChange={(next: string[]) => {
