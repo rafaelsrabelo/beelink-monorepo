@@ -43,3 +43,7 @@ export const Carregando: Story = {
 export const Recusada: Story = {
   args: { error: "Não foi possível mudar a página. Tente de novo." },
 }
+
+export const NaoCarregou: Story = {
+  args: { pages: null, loadFailed: true, onRetry: fn() },
+}

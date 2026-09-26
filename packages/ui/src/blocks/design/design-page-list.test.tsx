@@ -24,7 +24,7 @@ describe("DesignPageList", () => {
     const current = screen.getByRole("link", { name: /Lançamento Whey/ })
     expect(current).toHaveAttribute("aria-current", "page")
     expect(current).toHaveTextContent("/lp/lancamento-whey")
-    expect(current).toHaveTextContent("No menu")
+    expect(current).toHaveTextContent("Com link na loja")
     expect(screen.getByRole("link", { name: /Black Friday/ })).toHaveTextContent("Rascunho")
   })
 
@@ -63,6 +63,15 @@ describe("DesignPageList", () => {
     expect(screen.getByText(/Nenhuma landing page ainda/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Nova landing page" }))
     expect(onCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it("says the list could not be read in the skeleton's place, and asks again when told to", async () => {
+    const onRetry = vi.fn()
+    renderList({ pages: null, loadFailed: true, onRetry })
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar as páginas.")
+    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+    expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
   it("says why a change was refused", () => {

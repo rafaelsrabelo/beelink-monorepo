@@ -153,6 +153,7 @@ export function DesignScreen({ store, categories, page = null, year, messages, w
             onOpenStructure={() => selection.setStructureOpen(true)}
             onOpenInspector={() => selection.setInspectorOpen(true)}
             messages={messages}
+            web={web}
           />
         }
         structure={
