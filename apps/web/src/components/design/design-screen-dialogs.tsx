@@ -17,7 +17,7 @@ import { DesignDeleteConfirm, type PendingDelete } from "./design-delete-confirm
 import type { Shelves } from "./design-draft-preview"
 import { placementOf } from "./gallery-placement"
 import { GalleryPreview } from "./gallery-preview"
-import { stockOf } from "./gallery-samples"
+import { previewable, stockOf } from "./gallery-samples"
 import type { useBlockInsert } from "./use-block-insert"
 import type { useDesignDraft } from "./use-design-draft"
 import type { useLeaveGuard } from "./use-leave-guard"
@@ -89,16 +89,20 @@ export function DesignScreenDialogs({
         onAdd={adding.insert}
         offerRows={shownAt?.level === "band"}
         {...(placement ? { placement } : {})}
-        renderPreview={(entry) => (
-          <GalleryPreview
-            entry={entry}
-            store={gallery.store}
-            categories={gallery.categories}
-            stock={stock}
-            colors={gallery.colors}
-            messages={messages}
-          />
-        )}
+        // Null where the shop has nothing to draw it with, so the card keeps its wireframe: an element that
+        // renders nothing would still be a preview, and an empty one.
+        renderPreview={(entry) =>
+          previewable(entry, stock, messages) ? (
+            <GalleryPreview
+              entry={entry}
+              store={gallery.store}
+              categories={gallery.categories}
+              stock={stock}
+              colors={gallery.colors}
+              messages={messages}
+            />
+          ) : null
+        }
         pending={adding.inserting}
         messages={messages}
       />

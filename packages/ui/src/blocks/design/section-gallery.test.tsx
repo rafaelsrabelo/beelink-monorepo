@@ -132,6 +132,13 @@ describe("SectionGallery — the search and the place", () => {
     await expectNoA11yViolations(screen.getByRole("dialog"))
   })
 
+  // No preview to draw — a shop with no picture yet — and the card keeps its wireframe, never an empty box.
+  it("keeps a card's wireframe where the screen has no preview for it", () => {
+    gallery({ renderPreview: () => null })
+
+    for (const card of cards()) expect(card.querySelector("[inert]")).not.toBeEmptyDOMElement()
+  })
+
   it("speaks the panel's language", () => {
     gallery({ messages: en })
 

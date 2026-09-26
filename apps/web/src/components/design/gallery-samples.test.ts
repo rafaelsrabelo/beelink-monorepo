@@ -9,7 +9,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
 import type { Shelves } from "./design-draft-preview"
-import { sampleSectionOf, stockOf, type GalleryStock } from "./gallery-samples"
+import { previewable, sampleSectionOf, stockOf, type GalleryStock } from "./gallery-samples"
 
 function product(id: string, imageUrl: string | null): PublicProductCard {
   return { id, slug: id, name: `Produto ${id}`, priceCents: 1990, compareAtPriceCents: null, imageUrl, categorySlug: null } as PublicProductCard
@@ -53,9 +53,11 @@ describe("sampleSectionOf — the band a card draws", () => {
     ])
   })
 
-  it("fills a showcase with the shop's products", () => {
+  // What is chosen is what arrives: a new showcase opens as a rail, in a contained band.
+  it("fills a showcase with the shop's products, laid out as a new one opens", () => {
     const band = sampleSectionOf({ kind: "PRODUCTS", across: 1, name: "", hint: "" }, stock, ptBR)
 
+    expect(band).toMatchObject({ width: "CONTAINED", components: [{ display: "RAIL" }] })
     expect(band?.components[0]?.items).toHaveLength(3)
   })
 
@@ -70,6 +72,18 @@ describe("sampleSectionOf — the band a card draws", () => {
     expect(sampleSectionOf({ kind: "HEADING", across: 1, name: "", hint: "" }, empty, ptBR)?.components[0]).toMatchObject({
       title: "Novidades da semana",
     })
-    expect(sampleSectionOf({ kind: "CONTACT", across: 1, name: "", hint: "" }, empty, ptBR)?.components[0]?.items).toHaveLength(3)
+  })
+
+  // The form's own first question is the name; the sample asks what a new form asks after it.
+  it("draws the contact form a new one opens with, never asking the name twice", () => {
+    const fields = sampleSectionOf({ kind: "CONTACT", across: 1, name: "", hint: "" }, empty, ptBR)?.components[0]?.items as { type: string }[]
+
+    expect(fields.map((field) => field.type)).toEqual(["EMAIL", "PHONE", "TEXTAREA"])
+  })
+
+  it("tells a card that has a preview from one that keeps its wireframe", () => {
+    expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, empty, ptBR)).toBe(false)
+    expect(previewable({ kind: "BANNER", across: 1, name: "", hint: "" }, stock, ptBR)).toBe(true)
+    expect(previewable({ kind: "ANNOUNCEMENT", across: 1, name: "", hint: "" }, empty, ptBR)).toBe(true)
   })
 })
