@@ -70,6 +70,13 @@ enum ComponentDisplay {
   RAIL
 }
 
+/// Where a component shows. The shop window's `md` width is the line between a phone and a computer.
+enum DeviceVisibility {
+  ALL
+  DESKTOP
+  PHONE
+}
+
 /// Which products a showcase draws.
 ///
 /// There is no best sellers: nothing records a sale yet, and a source named for sales would draw
@@ -175,6 +182,9 @@ model StoreComponent {
 
   /// Read on HEADING and TEXT. Null keeps the kind's own habit.
   align TextAlign?
+
+  /// Where it shows. A band shows wherever one of its components does, so it has no column of its own.
+  visibleOn DeviceVisibility @default(ALL)
 
   /// A banner's slides, or a benefits band's rows. Empty on every other kind.
   ///

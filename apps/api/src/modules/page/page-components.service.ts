@@ -43,6 +43,7 @@ export class PageComponentsService {
     await this.rules.ownedSection(storeId, sectionId);
     await this.rules.refuseSecond(storeId, dto.kind);
     this.rules.refuseDisplayFor(dto.kind, dto.display);
+    this.rules.refuseVisibilityFor(dto.kind, dto.visibleOn);
     this.showcases.refuseOn(dto.kind, dto);
 
     const items = this.rules.checkedItems(dto.kind, dto.items ?? openingItemsOf(dto.kind));
@@ -94,6 +95,7 @@ export class PageComponentsService {
     }
 
     this.rules.refuseDisplayFor(current.kind, dto.display);
+    this.rules.refuseVisibilityFor(current.kind, dto.visibleOn);
     this.showcases.refuseOn(current.kind, dto);
 
     const items = dto.items === undefined ? undefined : this.rules.checkedItems(current.kind, dto.items);

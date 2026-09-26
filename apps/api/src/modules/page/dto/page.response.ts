@@ -7,6 +7,7 @@ import type {
   ComponentItem,
   ComponentKind,
   ComponentSpan,
+  DeviceVisibility,
   ProductSource,
   PublicComponent,
   PublicComponentItem,
@@ -20,6 +21,7 @@ import type {
 // App
 import {
   COMPONENT_DISPLAYS,
+  DEVICE_VISIBILITIES,
   COMPONENT_KINDS,
   COMPONENT_SPANS,
   PRODUCT_SOURCES,
@@ -55,6 +57,9 @@ export class PublicComponentResponse implements PublicComponent {
   columns!: number | null;
   @ApiProperty({ enum: TEXT_ALIGNS, nullable: true, description: 'Null is the kind’s own habit.' })
   align!: TextAlign | null;
+  // Always sent; optional on the contract only for a page cached before it existed.
+  @ApiProperty({ enum: DEVICE_VISIBILITIES, description: 'Where it shows. A band shows wherever one of its components does.' })
+  visibleOn?: DeviceVisibility;
 }
 
 export class PublicSectionResponse implements PublicSection {
@@ -88,6 +93,7 @@ export class ComponentResponse implements StoreComponent {
   items!: ComponentItem[];
   @ApiProperty({ nullable: true, type: Number }) columns!: number | null;
   @ApiProperty({ enum: TEXT_ALIGNS, nullable: true }) align!: TextAlign | null;
+  @ApiProperty({ enum: DEVICE_VISIBILITIES }) visibleOn!: DeviceVisibility;
   @ApiProperty({ description: 'Its place inside its band.' }) position!: number;
   @ApiProperty() isActive!: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;

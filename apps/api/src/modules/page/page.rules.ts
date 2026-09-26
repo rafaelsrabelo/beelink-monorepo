@@ -5,6 +5,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type {
   ComponentDisplay,
   ComponentKind,
+  DeviceVisibility,
   PageErrorCode,
 } from '@harness-monorepo/contracts';
 
@@ -74,6 +75,17 @@ export class PageRules {
       throw new ConflictException(
         pageError('COMPONENT_KIND_SINGLETON', 'Esta loja já tem um componente deste tipo.'),
       );
+    }
+  }
+
+  /**
+   * The strip shows everywhere: it is drawn above the header by the window, and a phone-only strip
+   * would be a shop whose top reads differently by the size of the screen for no one's choice.
+   */
+  refuseVisibilityFor(kind: ComponentKind, visibleOn: DeviceVisibility | undefined): void {
+    if (visibleOn === undefined || visibleOn === 'ALL') return
+    if ((UNMOVABLE_COMPONENT_KINDS as readonly ComponentKind[]).includes(kind)) {
+      throw new BadRequestException(pageError('COMPONENT_VISIBILITY_INVALID', 'A barra de aviso aparece em todo lugar.'))
     }
   }
 

@@ -73,6 +73,15 @@ export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
 export type ComponentDisplay = "CAROUSEL" | "GRID" | "RAIL";
 
 /**
+ * Where a component shows: everywhere, only on a computer, or only on a phone — the shop window's
+ * `md` width, 768px, is the line between the two. Hiding it everywhere is `isActive`, not this.
+ *
+ * A component's and not a band's: a band shows wherever one of its components does, so there is
+ * one place to say it and no band and block to disagree.
+ */
+export type DeviceVisibility = "ALL" | "DESKTOP" | "PHONE";
+
+/**
  * Which products a showcase draws: all of them, one category (and its subcategories), a hand-picked
  * list, the newest, or the ones on sale.
  *
@@ -264,6 +273,8 @@ export interface PublicComponent {
   /** How many across a grid draws. Read on `CATEGORIES` and `PRODUCTS`. */
   columns: number | null;
   align: TextAlign | null;
+  /** Absent on a page cached before it existed, which shows everywhere. */
+  visibleOn?: DeviceVisibility;
 }
 
 /** A component as its owner edits it. Slugs on the wire; the uuids stay in the database. */
@@ -285,6 +296,7 @@ export interface StoreComponent {
   items: ComponentItem[];
   columns: number | null;
   align: TextAlign | null;
+  visibleOn: DeviceVisibility;
   /** Its place inside its section. The section's own place is the section's. */
   position: number;
   isActive: boolean;
@@ -363,6 +375,7 @@ export interface CreateComponentPayload {
   items?: ComponentItem[];
   columns?: number | null;
   align?: TextAlign | null;
+  visibleOn?: DeviceVisibility;
   isActive?: boolean;
 }
 
@@ -412,6 +425,8 @@ export type PageErrorCode =
   | "COMPONENT_SPAN_INVALID"
   /** A `display` that is not one of the two, or one sent to a kind that does not read it. */
   | "COMPONENT_DISPLAY_INVALID"
+  /** A `visibleOn` that is not one of the three, or one sent to the strip, which shows everywhere. */
+  | "COMPONENT_VISIBILITY_INVALID"
   /** A `source` that is not one of the five, or a showcase's field sent to a kind that is not one. */
   | "SHOWCASE_SOURCE_INVALID"
   /** A `CATEGORY` showcase with no category, or with one that is not this shop's. */

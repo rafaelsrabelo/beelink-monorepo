@@ -5,6 +5,7 @@ import type {
   ComponentSpan,
   ComponentTarget,
   ContactFieldType,
+  DeviceVisibility,
   ProductSource,
   SectionWidth,
   TextAlign,
@@ -12,6 +13,9 @@ import type {
 
 /** A component's slice of its band. */
 export const COMPONENT_SPANS = ['FULL', 'HALF', 'THIRD', 'TWO_THIRDS'] as const satisfies readonly ComponentSpan[];
+
+/** Everywhere, only on a computer, only on a phone. */
+export const DEVICE_VISIBILITIES = ['ALL', 'DESKTOP', 'PHONE'] as const satisfies readonly DeviceVisibility[];
 
 /** One at a time, side by side, or on one row that scrolls. */
 export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID', 'RAIL'] as const satisfies readonly ComponentDisplay[];

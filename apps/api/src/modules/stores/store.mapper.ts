@@ -8,14 +8,16 @@ import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/mode
 
 // App
 import {
+  sectionInclude,
+  type SectionRow,
+} from '../page/page.mapper.js';
+import {
   NO_SHELVES,
   NO_SLUGS,
-  sectionInclude,
   toPublicSection,
-  type SectionRow,
   type ShelvesByComponent,
   type SlugsByEntity,
-} from '../page/page.mapper.js';
+} from '../page/page-public.mapper.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { parseLayoutSettings } from './store-layout-settings.schema.js';
 

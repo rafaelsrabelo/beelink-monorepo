@@ -3,7 +3,8 @@ import type { StoreComponentModel } from '../../generated/prisma/models.js';
 
 // App
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
-import { toComponent, toPublicSection, type SectionRow } from './page.mapper.js';
+import { toComponent, type SectionRow } from './page.mapper.js';
+import { toPublicSection } from './page-public.mapper.js';
 
 const WRITTEN = new Date('2026-09-23T00:00:00.000Z');
 
@@ -23,6 +24,7 @@ function componentRow(over: Partial<StoreComponentModel> = {}): StoreComponentMo
     limit: null,
     columns: null,
     align: null,
+    visibleOn: 'ALL',
     items: [],
     position: 0,
     isActive: true,
@@ -57,5 +59,15 @@ describe('page mapper — span and display on every component', () => {
 
     const [publicBanner] = toPublicSection(sectionOf(banner), 'lessari', ROUTE_WORDS.PT_BR).components;
     expect(publicBanner).toMatchObject({ span: 'TWO_THIRDS', display: 'GRID' });
+  });
+});
+
+describe('where a component shows', () => {
+  // The storefront hides by screen size, so both reads carry it: the public one is not filtered by device.
+  it('carries visibleOn to the owner and to the shop window alike', () => {
+    const row = componentRow({ visibleOn: 'PHONE' });
+
+    expect(toComponent(row).visibleOn).toBe('PHONE');
+    expect(toPublicSection(sectionOf(row), 'loja', ROUTE_WORDS.PT_BR).components[0]?.visibleOn).toBe('PHONE');
   });
 });

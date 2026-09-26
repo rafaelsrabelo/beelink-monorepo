@@ -21,13 +21,14 @@ import { Type } from 'class-transformer';
 
 // Types
 import type {
+  AddComponentPayload,
   ComponentDisplay,
   ComponentItem,
   ComponentKind,
   ComponentSpan,
-  AddComponentPayload,
   CreateComponentPayload,
   CreateSectionPayload,
+  DeviceVisibility,
   PageErrorCode,
   ProductSource,
   SectionWidth,
@@ -41,6 +42,7 @@ import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import {
   COMPONENT_BODY_MAX_LENGTH,
   COMPONENT_DISPLAYS,
+  DEVICE_VISIBILITIES,
   COMPONENT_KINDS,
   COMPONENT_MAX_COLUMNS,
   COMPONENT_MIN_COLUMNS,
@@ -129,6 +131,12 @@ export class ComponentDto implements CreateComponentPayload {
   @IsOptional()
   @IsIn(TEXT_ALIGNS)
   align?: TextAlign | null;
+
+  // Not `IsOptional`: that would let a null through, and a component always shows somewhere.
+  @ApiPropertyOptional({ enum: DEVICE_VISIBILITIES, description: 'Where it shows. The strip shows everywhere.' })
+  @ValidateIf((dto: ComponentDto) => dto.visibleOn !== undefined)
+  @IsIn(DEVICE_VISIBILITIES, { context: { errorCode: 'COMPONENT_VISIBILITY_INVALID' satisfies PageErrorCode } })
+  visibleOn?: DeviceVisibility;
 
   @ApiPropertyOptional()
   @ValidateIf((dto: ComponentDto) => dto.isActive !== undefined)

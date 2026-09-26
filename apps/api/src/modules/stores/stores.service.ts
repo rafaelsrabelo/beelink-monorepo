@@ -12,13 +12,15 @@ import { openingPageOf, refuseShopWithoutWhatsapp } from './store-opening.js';
 import { StoreGeocoder } from './store-geocoder.service.js';
 import type { StoreColorsDto } from './dto/store-fields.dto.js';
 import {
+  type SectionRow,
+} from '../page/page.mapper.js';
+import {
   NO_SHELVES,
   NO_SLUGS,
   slideTargetsOf,
-  type SectionRow,
   type ShelvesByComponent,
   type SlugsByEntity,
-} from '../page/page.mapper.js';
+} from '../page/page-public.mapper.js';
 import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
 import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery } from '../catalog/showcase.query.js';
 import { RESERVED_SLUGS } from './stores.constants.js';
