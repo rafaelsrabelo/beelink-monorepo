@@ -7,6 +7,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { refreshBooks } from '../customers/customer-books.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { totalsOf, variantLabelOf } from './order-totals.js';
@@ -82,7 +83,7 @@ export class OrdersService {
         include: ORDER_INCLUDE,
       });
 
-      await this.refreshBooks(tx, customerId);
+      await refreshBooks(tx, customerId);
       return toOrder(order);
     });
   }
@@ -164,7 +165,7 @@ export class OrdersService {
         include: ORDER_INCLUDE,
       });
       if (status === 'CANCELLED') {
-        await this.refreshBooks(tx, current.customerId);
+        await refreshBooks(tx, current.customerId);
         // Only what placing it took: an order from before orders counted stock gives nothing back.
         if (current.stockTaken) await returnStock(tx, current.id);
       }
@@ -248,27 +249,6 @@ export class OrdersService {
       select: { id: true },
     });
     return customer.id;
-  }
-
-  /** The customer's books, read again from the orders that count — every one not cancelled. */
-  private async refreshBooks(tx: Tx, customerId: string): Promise<void> {
-    const books = await tx.order.aggregate({
-      where: { customerId, status: { not: 'CANCELLED' } },
-      _count: { _all: true },
-      _sum: { totalCents: true },
-      _min: { placedAt: true },
-      _max: { placedAt: true },
-    });
-
-    await tx.customer.update({
-      where: { id: customerId },
-      data: {
-        ordersCount: books._count._all,
-        totalSpentCents: BigInt(books._sum.totalCents ?? 0),
-        firstOrderAt: books._min.placedAt,
-        lastOrderAt: books._max.placedAt,
-      },
-    });
   }
 
   private notFound(number: number): NotFoundException {

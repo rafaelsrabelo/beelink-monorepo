@@ -1,8 +1,11 @@
 // Block
 import type { CustomerOrderItem } from "./customer-orders"
-import type { CustomerListItem, CustomerRecordView } from "./customer-types"
+import type { CustomerDuplicateView, CustomerListItem, CustomerRecordView } from "./customer-types"
 
-/** A lead with an unconfirmed e-mail, a customer, and one who stopped buying and left no phone. */
+/**
+ * A lead with an unconfirmed e-mail — flagged: the shop registered her from a WhatsApp sale before she
+ * opened an account — a customer, and one who stopped buying and left no phone.
+ */
 export const customers: CustomerListItem[] = [
   {
     id: "c1",
@@ -17,6 +20,7 @@ export const customers: CustomerListItem[] = [
     totalSpentCents: 0,
     lastOrderAt: null,
     daysSinceLastOrder: null,
+    possibleDuplicate: true,
   },
   {
     id: "c2",
@@ -31,6 +35,7 @@ export const customers: CustomerListItem[] = [
     totalSpentCents: 36870,
     lastOrderAt: "2026-09-20T14:30:00.000Z",
     daysSinceLastOrder: 5,
+    possibleDuplicate: false,
   },
   {
     id: "c3",
@@ -45,6 +50,7 @@ export const customers: CustomerListItem[] = [
     totalSpentCents: 8990,
     lastOrderAt: "2026-07-13T10:00:00.000Z",
     daysSinceLastOrder: 74,
+    possibleDuplicate: false,
   },
 ]
 
@@ -71,4 +77,10 @@ export const customerOrders: CustomerOrderItem[] = [
   { number: 9, status: "CANCELLED", paymentMethod: "MONEY", totalCents: 5990, itemsCount: 1, placedAt: "2026-08-30T12:00:00.000Z" },
   { number: 6, status: "DELIVERED", paymentMethod: "CREDIT_CARD", totalCents: 8990, itemsCount: 1, placedAt: "2026-08-02T12:00:00.000Z" },
   { number: 3, status: "DELIVERED", paymentMethod: "PIX", totalCents: 9900, itemsCount: 3, placedAt: "2026-07-13T12:00:00.000Z" },
+]
+
+/** Bia's other records: the one the shop registered with the phone she tried to save, and a namesake. */
+export const customerDuplicates: CustomerDuplicateView[] = [
+  { id: "c9", name: "Bia (WhatsApp)", phone: "5511944443333", email: null, hasAccount: false, ordersCount: 2, reason: "PHONE" },
+  { id: "c8", name: "bia souza", phone: null, email: null, hasAccount: false, ordersCount: 0, reason: "NAME" },
 ]

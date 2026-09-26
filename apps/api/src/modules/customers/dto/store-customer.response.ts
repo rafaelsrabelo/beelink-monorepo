@@ -2,7 +2,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 // Types
-import type { CustomerStage, StoreCustomer, StoreCustomerDetail, StoreCustomerPage } from '@harness-monorepo/contracts';
+import type {
+  CustomerDuplicate,
+  CustomerDuplicateReason,
+  CustomerStage,
+  StoreCustomer,
+  StoreCustomerDetail,
+  StoreCustomerPage,
+} from '@harness-monorepo/contracts';
 
 // App
 import { CUSTOMER_STAGES } from '../customers.constants.js';
@@ -25,6 +32,25 @@ export class StoreCustomerResponse implements StoreCustomer {
   @ApiProperty({ nullable: true, type: Number, description: 'Whole days since the last valid order.' })
   daysSinceLastOrder!: number | null;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
+  @ApiProperty({ description: 'Another record of the shop may be the same person; the record lists them.' })
+  possibleDuplicate!: boolean;
+}
+
+const DUPLICATE_REASONS = Object.keys({ PHONE: true, NAME: true } satisfies Record<CustomerDuplicateReason, true>);
+
+export class CustomerDuplicateResponse implements CustomerDuplicate {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ nullable: true, type: String, example: '5511999998888' }) phone!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: 'The account\'s e-mail; null for a record the shopkeeper registered.' })
+  email!: string | null;
+  @ApiProperty({ description: 'The record with an account is the one kept.' }) hasAccount!: boolean;
+  @ApiProperty({ description: 'Valid orders; a cancelled one is not counted.' }) ordersCount!: number;
+  @ApiProperty({
+    enum: DUPLICATE_REASONS,
+    description: 'PHONE: one tried to save the other\'s phone. NAME: the names read the same, case, accents and spaces aside.',
+  })
+  reason!: CustomerDuplicateReason;
 }
 
 export class StoreCustomerDetailResponse extends StoreCustomerResponse implements StoreCustomerDetail {
@@ -37,6 +63,8 @@ export class StoreCustomerDetailResponse extends StoreCustomerResponse implement
     description: 'totalSpentCents ÷ ordersCount, to the nearest whole cent; null with no valid order.',
   })
   averageTicketCents!: number | null;
+  @ApiProperty({ type: [CustomerDuplicateResponse], description: 'At most 20; two records with an account are never listed.' })
+  duplicates!: CustomerDuplicateResponse[];
 }
 
 export class CustomerStageCountsResponse implements Record<CustomerStage, number> {

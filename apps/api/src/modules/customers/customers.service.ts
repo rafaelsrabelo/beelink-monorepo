@@ -107,7 +107,8 @@ export class CustomersService {
         where: { id: record.id },
         data: {
           ...(dto.name !== undefined ? { name: dto.name } : {}),
-          ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
+          // A phone that sticks settles any claim; clearing it leaves one standing.
+          ...(dto.phone !== undefined ? { phone: dto.phone, ...(dto.phone !== null ? { claimedPhone: null } : {}) } : {}),
           ...dto.address,
         },
       });
@@ -115,6 +116,9 @@ export class CustomersService {
     } catch (error) {
       // The phone identifies a customer within a shop. Two records of one shop cannot share it.
       if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+        // Most likely the shopkeeper registered this person before they had an account. Remembered,
+        // so the panel can flag the pair — never merged from here: anyone can type another's phone.
+        if (dto.phone) await this.prisma.customer.update({ where: { id: record.id }, data: { claimedPhone: dto.phone } });
         throw new ConflictException({ errorCode: 'CUSTOMER_PHONE_TAKEN', message: 'That phone belongs to another customer of this shop' });
       }
       throw error;

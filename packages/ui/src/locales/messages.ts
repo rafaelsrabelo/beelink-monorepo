@@ -294,6 +294,11 @@ export interface UiMessages {
     accountState: string
     accountSave: string
     accountSaved: string
+    /**
+     * The phone refused because the shop already has it on another record — most likely one the
+     * shopkeeper made from a WhatsApp sale. Says to talk to the shop, who can merge the two.
+     */
+    accountPhoneTaken: string
     /** The product page (5b). `{name}` — the shop, over the title. */
     visitShop: string
     /** The buy column's landmark name. */
@@ -766,6 +771,8 @@ export interface UiMessages {
     inactiveFor: string
     /** Beside an e-mail its owner never confirmed. */
     unverified: string
+    /** Beside the stage: another record of the shop may be the same person. */
+    possibleDuplicate: string
     /** The accessible name of a row's link: "Abrir a ficha de {name}". */
     open: string
     /** A card's line: "{count} pedidos", its singular, and none. */
@@ -840,6 +847,31 @@ export interface UiMessages {
       historyEmptyHint: string
       /** The accessible name of a history row's link: "Abrir o pedido #{number}". */
       openOrder: string
+      /** The shop's other records that may be this person, and the way to make the two one. */
+      duplicates: {
+        title: string
+        lead: string
+        /** Why each is listed: the refused phone, or the name. */
+        reasons: { PHONE: string; NAME: string }
+        /** In place of the e-mail, for a record the shop registered. */
+        noAccount: string
+        /** The button, and its accessible name: "Juntar com {name}". */
+        merge: string
+        mergeLabel: string
+        /** The dialog's title: "Juntar com {name}?". */
+        confirmTitle: string
+        /** This record is kept and `{name}`'s goes. */
+        confirmHere: string
+        /** `{name}` has the account: it is kept, and this record goes. */
+        confirmThere: string
+        /** What else moves, and that it is for good. */
+        confirmFill: string
+        confirm: string
+        merging: string
+        cancel: string
+        /** Said on the record kept, once the two are one. */
+        merged: string
+      }
     }
   }
   /** The panel's orders: the list, and later the order and its form. */
