@@ -99,6 +99,8 @@ export interface OrderListQuery {
   status?: OrderStatus;
   /** An order number, a customer's name, or digits of their phone. */
   q?: string;
+  /** One customer's orders only — their record's history. Another shop's customer finds none. */
+  customerId?: string;
   page?: number;
   pageSize?: number;
 }
@@ -148,4 +150,17 @@ export type OrderErrorCode =
   /** A line or the order past R$ 1.000.000,00 — a typo with too many zeros, not a sale. */
   | "ORDER_TOTAL_TOO_LARGE"
   | "ORDER_CANCELLED"
-  | "ORDER_STATUS_UNCHANGED";
+  | "ORDER_STATUS_UNCHANGED"
+  /** A counted combination with fewer left than the order asks for. Its `details` are `OrderStockDetails`. */
+  | "ORDER_STOCK_INSUFFICIENT";
+
+/** One line the stock cannot cover: the combination, and how many the shop has of it. */
+export interface OrderStockShortage {
+  variantId: string;
+  available: number;
+}
+
+/** The `details` of `ORDER_STOCK_INSUFFICIENT`: every line short, not only the first. */
+export interface OrderStockDetails {
+  shortages: OrderStockShortage[];
+}

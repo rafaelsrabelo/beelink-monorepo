@@ -21,6 +21,8 @@ export interface OrderDetailProps {
   backHref: string
   addressLine: string | null
   whatsappHref: string | null
+  /** The customer's record, which their name leads to. */
+  customerHref?: string
   onStatusChange: (status: OrderStatusValue) => void
   statusPending?: boolean
   /** Why the last status change did not go through, in words. */
@@ -37,6 +39,7 @@ export function OrderDetail({
   backHref,
   addressLine,
   whatsappHref,
+  customerHref,
   onStatusChange,
   statusPending = false,
   statusError,
@@ -83,7 +86,14 @@ export function OrderDetail({
       <div className="grid items-start gap-6 @4xl/main:grid-cols-[minmax(0,1fr)_20rem]">
         <OrderItems order={order} money={money} messages={messages} />
         <div className="flex flex-col gap-6">
-          <OrderFacts order={order} addressLine={addressLine} whatsappHref={whatsappHref} messages={messages} />
+          <OrderFacts
+            order={order}
+            addressLine={addressLine}
+            whatsappHref={whatsappHref}
+            customerHref={customerHref}
+            linkComponent={Link}
+            messages={messages}
+          />
           <OrderHistory events={order.events} when={when} messages={messages} />
         </div>
       </div>

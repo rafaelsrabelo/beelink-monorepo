@@ -17,7 +17,9 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { customerDraftIssuesOf, type CustomerDraftIssues } from "@harness-monorepo/ui/lib/customer-draft"
 import type { OrderCustomerDraft, OrderCustomerOption } from "@harness-monorepo/ui/lib/order-form"
+import { CustomerAddressInputs } from "../customers/customer-address-inputs"
 
 export interface OrderCustomerCreateProps {
   /** What the search box held, split by the screen into a name or a phone. */
@@ -31,32 +33,6 @@ export interface OrderCustomerCreateProps {
   existing?: OrderCustomerOption | null
   onUseExisting?: (customer: OrderCustomerOption) => void
   messages?: UiMessages
-}
-
-type Issues = Partial<Record<"name" | "phone" | "zipCode" | "state", string>>
-
-const ADDRESS_FIELDS = ["zipCode", "street", "number", "complement", "neighborhood", "city", "state"] as const
-
-/** Three rows of eight: CEP and street, number with complement and neighbourhood, city and UF. */
-const SPAN: Record<(typeof ADDRESS_FIELDS)[number], string> = {
-  zipCode: "sm:col-span-3",
-  street: "sm:col-span-5",
-  number: "sm:col-span-2",
-  complement: "sm:col-span-3",
-  neighborhood: "sm:col-span-3",
-  city: "sm:col-span-6",
-  state: "sm:col-span-2",
-}
-
-function issuesOf(draft: OrderCustomerDraft, text: UiMessages["orders"]["form"]): Issues {
-  const digits = draft.phone.replace(/\D/g, "")
-  const issues: Issues = {}
-  if (draft.name.trim().length < 2) issues.name = text.customerNameInvalid
-  // Ten digits is a landline with its area code; fifteen is the longest number a phone can have.
-  if (digits.length < 10 || digits.length > 15) issues.phone = text.customerPhoneInvalid
-  if (draft.address.zipCode.trim() && !/^\d{5}-?\d{3}$/.test(draft.address.zipCode.trim())) issues.zipCode = text.zipCodeInvalid
-  if (draft.address.state.trim() && !/^[a-z]{2}$/i.test(draft.address.state.trim())) issues.state = text.stateInvalid
-  return issues
 }
 
 /**
@@ -81,10 +57,10 @@ export function OrderCustomerCreate({
     address: { zipCode: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" },
   })
   const [addressOpen, setAddressOpen] = useState(false)
-  const [issues, setIssues] = useState<Issues>({})
+  const [issues, setIssues] = useState<CustomerDraftIssues>({})
 
   function submit() {
-    const found = issuesOf(draft, text)
+    const found = customerDraftIssuesOf(draft, text)
     setIssues(found)
     // A refusal inside a folded address would block the save with nothing on screen to say why.
     if (found.zipCode || found.state) setAddressOpen(true)
@@ -141,26 +117,15 @@ export function OrderCustomerCreate({
         {text.customerAddress}
       </Button>
 
-      <div id={`${id}-address`} hidden={!addressOpen} className="grid gap-4 sm:grid-cols-8">
-        {ADDRESS_FIELDS.map((field) => (
-          <Field
-            key={field}
-            data-invalid={field === "zipCode" || field === "state" ? (issues[field] ? true : undefined) : undefined}
-            className={SPAN[field]}
-          >
-            <FieldLabel htmlFor={`${id}-${field}`}>{text[field]}</FieldLabel>
-            <Input
-              id={`${id}-${field}`}
-              autoComplete="off"
-              maxLength={field === "state" ? 2 : field === "zipCode" ? 9 : 160}
-              inputMode={field === "zipCode" ? "numeric" : undefined}
-              value={draft.address[field]}
-              onChange={(event) => setDraft({ ...draft, address: { ...draft.address, [field]: event.target.value } })}
-            />
-            {field === "zipCode" || field === "state" ? <FieldError>{issues[field]}</FieldError> : null}
-          </Field>
-        ))}
-      </div>
+      <CustomerAddressInputs
+        id={`${id}-address`}
+        hidden={!addressOpen}
+        idPrefix={id}
+        value={draft.address}
+        onChange={(address) => setDraft({ ...draft, address })}
+        issues={issues}
+        messages={messages}
+      />
 
       {error ? (
         <div role="alert" className="flex flex-wrap items-center gap-3 text-sm">

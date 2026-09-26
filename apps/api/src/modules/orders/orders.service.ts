@@ -7,10 +7,12 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { refreshBooks } from '../customers/customer-books.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { totalsOf, variantLabelOf } from './order-totals.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
+import { returnStock, takeStock } from './order-stock.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
 
 type Tx = Prisma.TransactionClient;
@@ -20,7 +22,7 @@ type Tx = Prisma.TransactionClient;
  *
  * Every write runs in one transaction that first bumps the shop's order counter, which holds the
  * shop's row until the commit: two orders placed at once wait for each other, get consecutive
- * numbers, and see each other's effect on a customer's books.
+ * numbers, and see each other's effect on a customer's books and on the stock.
  */
 @Injectable()
 export class OrdersService {
@@ -56,6 +58,8 @@ export class OrdersService {
 
     return this.prisma.$transaction(async (tx) => {
       const number = await this.nextNumber(tx, storeId);
+      // Before the order is written: a line the stock cannot cover refuses the whole order.
+      await takeStock(tx, lines);
       const customerId = await this.customerOf(tx, storeId, dto.customer);
 
       const order = await tx.order.create({
@@ -70,6 +74,7 @@ export class OrdersService {
           ...totals,
           note: dto.note?.length ? dto.note : null,
           placedAt,
+          stockTaken: true,
           items: {
             create: lines.map((line, position) => ({ ...line, lineTotalCents: line.unitPriceCents * line.quantity, position })),
           },
@@ -78,7 +83,7 @@ export class OrdersService {
         include: ORDER_INCLUDE,
       });
 
-      await this.refreshBooks(tx, customerId);
+      await refreshBooks(tx, customerId);
       return toOrder(order);
     });
   }
@@ -96,6 +101,7 @@ export class OrdersService {
     const where: Prisma.OrderWhereInput = {
       storeId,
       ...(query.status ? { status: query.status } : {}),
+      ...(query.customerId ? { customerId: query.customerId } : {}),
       ...(term
         ? {
             OR: [
@@ -141,7 +147,10 @@ export class OrdersService {
       // The same row lock as a new order takes, so a status change and a placement never interleave.
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
 
-      const current = await tx.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true, status: true, customerId: true } });
+      const current = await tx.order.findUnique({
+        where: { storeId_number: { storeId, number } },
+        select: { id: true, status: true, customerId: true, stockTaken: true },
+      });
       if (!current) throw this.notFound(number);
       if (current.status === 'CANCELLED') {
         throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change status'));
@@ -155,7 +164,11 @@ export class OrdersService {
         data: { status, events: { create: { status, actor: 'SHOPKEEPER', userId } } },
         include: ORDER_INCLUDE,
       });
-      if (status === 'CANCELLED') await this.refreshBooks(tx, current.customerId);
+      if (status === 'CANCELLED') {
+        await refreshBooks(tx, current.customerId);
+        // Only what placing it took: an order from before orders counted stock gives nothing back.
+        if (current.stockTaken) await returnStock(tx, current.id);
+      }
       return toOrder(order);
     });
   }
@@ -236,27 +249,6 @@ export class OrdersService {
       select: { id: true },
     });
     return customer.id;
-  }
-
-  /** The customer's books, read again from the orders that count — every one not cancelled. */
-  private async refreshBooks(tx: Tx, customerId: string): Promise<void> {
-    const books = await tx.order.aggregate({
-      where: { customerId, status: { not: 'CANCELLED' } },
-      _count: { _all: true },
-      _sum: { totalCents: true },
-      _min: { placedAt: true },
-      _max: { placedAt: true },
-    });
-
-    await tx.customer.update({
-      where: { id: customerId },
-      data: {
-        ordersCount: books._count._all,
-        totalSpentCents: BigInt(books._sum.totalCents ?? 0),
-        firstOrderAt: books._min.placedAt,
-        lastOrderAt: books._max.placedAt,
-      },
-    });
   }
 
   private notFound(number: number): NotFoundException {
