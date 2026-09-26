@@ -163,3 +163,17 @@ Trocar layout.
 - Dicas (tooltip) com o atalho: o `title` e o `aria-keyshortcuts` dizem; um Tooltip por botão fica
   para quando a barra tiver Duplicar (PR 3).
 - O primitivo de Toolbar do Base UI: o foco com ← → foi escrito na barra, que é a única que precisa.
+
+## PR 1 — depois da revisão
+
+*Acrescentado em 2026-09-25, com as correções da revisão em três frentes.*
+
+- O que foi digitado segue cada metade pela identidade dela. O bloco continua o mesmo quando muda de
+  faixa ("Pôr ao lado de…"), e o estilo da faixa continua o mesmo quando ela ganha ou perde um bloco.
+- O Salvar espera cada gravação (`mutateAsync`), em vez de encadear pelos callbacks, que param se o
+  painel fecha no meio. Ele grava o bloco só se o Conteúdo mudou, e fecha só se o painel aberto ainda
+  é o dele.
+- Um rascunho limpo acompanha qualquer resposta do servidor, layout incluído.
+- **Fica em aberto:** com o rascunho sujo, uma publicação de outra aba num bloco que não foi mexido
+  aqui ainda pode ser desfeita no Publicar. Resolver isso pede uma fusão em três vias com a base do
+  rascunho.

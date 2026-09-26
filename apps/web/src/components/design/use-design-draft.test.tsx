@@ -97,3 +97,22 @@ describe("useDesignDraft — the Layout tab's changes wait for Publicar", () => 
     })
   })
 })
+
+// Another tab published an alignment while this one sat untouched: nothing here to publish, nothing to undo.
+describe("useDesignDraft — a clean draft follows the server", () => {
+  it("takes another tab's published layout instead of offering to put the old one back", async () => {
+    let served: Section[] = hidden
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response(JSON.stringify(served), { status: 200 })))
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { result } = renderHook(() => useDesignDraft("loja"), {
+      wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+    })
+    await waitFor(() => expect(result.current.rows).toHaveLength(1))
+
+    served = [{ ...hidden[0]!, components: [{ ...hidden[0]!.components[0]!, align: "LEFT" }] }]
+    await act(() => client.invalidateQueries())
+
+    await waitFor(() => expect(result.current.rows[0]?.components[0]?.align).toBe("LEFT"))
+    expect(result.current.changeCount).toBe(0)
+  })
+})

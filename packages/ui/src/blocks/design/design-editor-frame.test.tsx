@@ -54,7 +54,7 @@ describe("DesignEditorFrame", () => {
 
     expect(screen.getByRole("complementary", { name: "Estrutura da página" })).toHaveTextContent("a lista de faixas")
     expect(screen.getByRole("main", { name: "Prévia da loja" })).toHaveTextContent("a loja")
-    expect(screen.getByRole("complementary", { name: "Editar bloco" })).toHaveTextContent("os campos do bloco")
+    expect(screen.getByRole("complementary", { name: "Painel de edição" })).toHaveTextContent("os campos do bloco")
   })
 
   it("keeps the side columns in drawers on a narrow screen, each drawn once", () => {
