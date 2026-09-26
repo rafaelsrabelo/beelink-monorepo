@@ -33,7 +33,11 @@ export function SectionGalleryCard({ entry, preview, onAdd, pending = false, mes
 
   return (
     <li className="bg-card flex flex-col gap-2 rounded-lg border p-2">
-      <div aria-hidden="true" className="bg-muted/40 pointer-events-none overflow-hidden rounded-md">
+      {/*
+        Inert and not only hidden: a preview is the shop's own renderer, and a contact form in it has
+        fields a keyboard would otherwise tab into — invisible to a screen reader, out of the mouse's reach.
+      */}
+      <div aria-hidden="true" inert className="bg-muted/40 pointer-events-none overflow-hidden rounded-md">
         {preview ?? <BlockThumbnail kind={entry.kind} across={entry.across} />}
       </div>
       <div className="flex items-start justify-between gap-2">

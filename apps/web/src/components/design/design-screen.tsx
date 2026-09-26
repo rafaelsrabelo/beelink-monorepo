@@ -128,6 +128,7 @@ export function DesignScreen({ store, categories, year, messages, web }: DesignS
         adding={adding}
         takenKinds={takenKinds}
         unavailableKinds={unavailableKinds}
+        shelves={shelves}
         messages={messages}
         web={web}
       />

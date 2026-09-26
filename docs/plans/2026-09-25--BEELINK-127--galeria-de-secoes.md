@@ -47,3 +47,19 @@ desenhos de arame) vira um diálogo largo:
 
 - Os tipos novos (I7): o registro nasce pronto para recebê-los.
 - Layouts por tipo que mantêm o conteúdo (I4).
+
+## Depois da revisão
+
+*Acrescentado em 2026-09-26.*
+
+- **PR 1:**
+  - a prévia do cartão é `inert`, então um formulário nela não vira parada de Tab;
+  - a frase de onde a seção entra chama a faixa pela posição quando a seção entra dentro dela, e chama uma vitrine sem título pela categoria;
+  - o diálogo guarda o último "+" enquanto some;
+  - apertar a categoria já escolhida sai da busca;
+  - as colunas da grade seguem a largura da área, não a da janela.
+- **PR 2:**
+  - o cartão sem prévia volta ao desenho de arame;
+  - a prévia do formulário tem os campos com que ele nasce;
+  - as prévias têm o layout e a largura com que a seção entra;
+  - as prévias usam a fonte da loja.
