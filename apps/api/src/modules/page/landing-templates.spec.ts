@@ -60,7 +60,12 @@ describe('landingBands', () => {
       display: 'SPLIT',
       items: [{ imageUrl: PRODUCT.imageUrl, title: PRODUCT.name, target: 'PRODUCT', productId: PRODUCT.id }],
     });
-    expect(spotlight!.components[0]).toMatchObject({ kind: 'PRODUCTS', source: 'SELECTION', items: [{ productId: PRODUCT.id }] });
+    expect(spotlight!.components[0]).toMatchObject({
+      kind: 'PRODUCTS',
+      title: 'Compre agora',
+      source: 'SELECTION',
+      items: [{ productId: PRODUCT.id }],
+    });
   });
 
   it('opens on the words alone when there is no picture: a banner with no slide draws nothing', () => {
