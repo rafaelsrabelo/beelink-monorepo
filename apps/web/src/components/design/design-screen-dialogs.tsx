@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react"
 
 // Types
-import type { ComponentKind, PublicProductCategory, PublicStore } from "@harness-monorepo/contracts"
+import type { ComponentKind, PublicProductCategory, PublicStore, StorePage } from "@harness-monorepo/contracts"
 import type { InsertAt } from "@harness-monorepo/ui/blocks/design/band-arrangement"
 
 // UI
@@ -19,6 +19,7 @@ import { placementOf } from "./gallery-placement"
 import { GalleryPreview } from "./gallery-preview"
 import { DraftConflict } from "./draft-conflict"
 import { NewLanding } from "./new-landing"
+import { PublishPage } from "./publish-page"
 import { PageSettings } from "./page-settings"
 import { previewable, stockOf } from "./gallery-samples"
 import type { useBlockInsert } from "./use-block-insert"
@@ -45,8 +46,8 @@ export interface DesignScreenDialogsProps {
     categories: readonly PublicProductCategory[]
     colors: PublicStore["colors"]
   }
-  /** The landing being edited, whose settings reload the screen's read. Absent on the home. */
-  pageId?: string
+  /** The page being edited: Publicar freezes it, and its settings reload the screen's read. */
+  page: StorePage
   messages: UiMessages
   web: WebMessages
 }
@@ -65,7 +66,7 @@ export function DesignScreenDialogs({
   unavailableKinds,
   shelves,
   gallery,
-  pageId,
+  page,
   messages,
   web,
 }: DesignScreenDialogsProps) {
@@ -86,7 +87,8 @@ export function DesignScreenDialogs({
 
       <DesignDeleteConfirm pending={pendingDelete} draft={draft} onDone={onDeleteDone} messages={messages} web={web} />
       <NewLanding slug={gallery.store.slug} site={gallery.store.type === "INSTITUTIONAL"} go={guard.go} messages={messages} web={web} />
-      <PageSettings slug={gallery.store.slug} currentPageId={pageId ?? null} messages={messages} web={web} />
+      <PageSettings slug={gallery.store.slug} currentPageId={page.id} messages={messages} web={web} />
+      <PublishPage slug={gallery.store.slug} page={page} draft={draft} messages={messages} web={web} />
 
       {/*
         The one gallery every "+" opens, already knowing where the block goes. Adding is a saved

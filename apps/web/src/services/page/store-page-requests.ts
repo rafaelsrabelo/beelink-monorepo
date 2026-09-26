@@ -2,7 +2,9 @@
 import type {
   CreateLandingPayload,
   PageDraft,
+  PageProblem,
   PageSlugAvailability,
+  PageVersionSummary,
   PublishPagePayload,
   PublishPageResult,
   StorePage,
@@ -52,5 +54,26 @@ export function publishPage(slug: string, pageId: string, payload: PublishPagePa
     (revision) =>
       call<PublishPageResult>(`${pagesPath(slug)}/${encodeURIComponent(pageId)}/publish`, { method: "POST", body: JSON.stringify(payload) }, revision),
     { advance: false },
+  )
+}
+
+/** A page's versions, newest first; the newest is live while the page is up. */
+export function fetchPageVersions(slug: string, pageId: string): Promise<PageVersionSummary[]> {
+  return call<PageVersionSummary[]>(`${pagesPath(slug)}/${encodeURIComponent(pageId)}/versions`, { method: "GET" })
+}
+
+/** What Publicar would serve that the owner may not mean to. */
+export function fetchPageProblems(slug: string, pageId: string): Promise<PageProblem[]> {
+  return call<PageProblem[]>(`${pagesPath(slug)}/${encodeURIComponent(pageId)}/problems`, { method: "GET" })
+}
+
+/** A version copied into the draft — a write to it like any other, queued and naming its revision. */
+export function restoreVersion(slug: string, pageId: string, versionId: string): Promise<PageDraft> {
+  return draftWrite(slug, (revision) =>
+    call<PageDraft>(
+      `${pagesPath(slug)}/${encodeURIComponent(pageId)}/versions/${encodeURIComponent(versionId)}/restore`,
+      { method: "POST" },
+      revision,
+    ),
   )
 }

@@ -677,6 +677,40 @@ export interface UiMessages {
     saveColors: string
     tabBlocks: string
     tabColors: string
+    /** Publicar's dialog: what the draft would serve that the owner may not mean, and a note. */
+    publishDialog: {
+      /** "Publicar {page}". */
+      title: string
+      intro: string
+      checking: string
+      none: string
+      /** Each problem, with `{block}` and `{band}` for where it is. */
+      problems: Record<"LINK_TO_MISSING_PRODUCT" | "LINK_TO_MISSING_CATEGORY" | "SHOWCASE_EMPTY" | "BANNER_WITHOUT_IMAGE", string>
+      note: string
+      notePlaceholder: string
+      publish: string
+      publishAnyway: string
+      publishing: string
+      cancel: string
+    }
+    /** A page's versions, in the Páginas tab. */
+    history: {
+      heading: string
+      empty: string
+      /** "Versão {number}". */
+      version: string
+      live: string
+      /** "{when} · {author}". */
+      by: string
+      restore: string
+      /** "Restaurar a versão {number}?" */
+      restoreTitle: string
+      restoreBody: string
+      restoreConfirm: string
+      cancel: string
+      restoring: string
+      failed: string
+    }
     tabPages: string
     /** A shop's pages in design mode: the switcher in the bar and the Páginas tab. */
     pages: {
