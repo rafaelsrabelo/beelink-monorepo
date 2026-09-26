@@ -135,7 +135,12 @@ export function useSelectionControls(input: SelectionControlsInput) {
   const duplicate = (of: SelectionTarget) => {
     const facts = factsOf(of)
     if (!facts?.copiable || duplicating) return
-    const done = () => say(format(text.duplicated, { name: facts.name }))
+    // The focus follows to the copy, in the part of the editor the owner pressed in.
+    const region = document.activeElement ? regionOf(document.activeElement) : null
+    const done = (key: string) => {
+      say(format(text.duplicated, { name: facts.name }))
+      focusNode(region, key)
+    }
     const refused = (error: unknown) => say(pageErrorCopy(error, input.web) ?? "")
 
     if (of.level === "block") {
@@ -143,7 +148,7 @@ export function useSelectionControls(input: SelectionControlsInput) {
         onSuccess: (copy) => {
           draft.edit((current) => withBlockCopy(current, copy, of.id))
           choose({ level: "block", id: copy.id }, { openDrawer: false, takeFocus: false })
-          done()
+          done(copy.id)
         },
         onError: refused,
       })
@@ -155,7 +160,7 @@ export function useSelectionControls(input: SelectionControlsInput) {
         draft.edit((current) => withBandCopy(current, saved, copy, of.id))
         const twin = of.blockId ? copy.components[0] : undefined
         choose(twin ? { level: "block", id: twin.id } : { level: "band", id: copy.id }, { openDrawer: false, takeFocus: false })
-        done()
+        done(copy.id)
       },
       onError: refused,
     })
