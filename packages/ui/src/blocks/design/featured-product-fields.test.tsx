@@ -39,6 +39,12 @@ describe("FeaturedProductFields", () => {
     expect(screen.getByText("Produto não encontrado")).toBeInTheDocument()
   })
 
+  it("waits for the list before calling a pick unknown", () => {
+    render(<FeaturedProductFields value={[{ id: "pick", productId: "p9" }]} onChange={vi.fn()} products={[]} newItemId={() => "novo"} optionsState="loading" />)
+
+    expect(screen.queryByText("Produto não encontrado")).not.toBeInTheDocument()
+  })
+
   it("hands what is typed to the screen, which asks the API", async () => {
     const onQueryChange = vi.fn()
     render(<FeaturedProductFields value={[]} onChange={vi.fn()} products={products} newItemId={() => "novo"} onQueryChange={onQueryChange} />)

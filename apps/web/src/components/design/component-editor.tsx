@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react"
 
 // Types
-import type { Section, StoreComponent } from "@harness-monorepo/contracts"
+import type { PublicComponentItem, Section, StoreComponent } from "@harness-monorepo/contracts"
 
 // UI
 import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
@@ -43,7 +43,8 @@ export interface ComponentEditorProps {
   /** What the page is painted, so turning a band's colour on starts somewhere visible. */
   pageBackground: string
   categoriesShown: number
-  shelfEmpty: boolean
+  /** What the public read resolved for this block — a showcase's cards, a featured product's — when it did. */
+  shelf?: readonly PublicComponentItem[]
   onClose: () => void
   /** Whether the heading takes the focus on the way in: not when the editor's keys chose. */
   takeFocus?: boolean
@@ -77,7 +78,7 @@ export function ComponentEditor({
   onTabChange,
   pageBackground,
   categoriesShown,
-  shelfEmpty,
+  shelf,
   onClose,
   takeFocus = true,
   nodeId,
@@ -189,7 +190,7 @@ export function ComponentEditor({
                   display={layout?.display ?? null}
                   image={image}
                   categoriesShown={categoriesShown}
-                  shelfEmpty={shelfEmpty}
+                  {...(shelf ? { shelf } : {})}
                   messages={messages}
                 />
               ),

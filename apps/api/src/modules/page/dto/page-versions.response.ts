@@ -43,12 +43,14 @@ export class PublishPageResultResponse implements PublishPageResult {
   @ApiProperty({ type: PageVersionSummaryResponse }) version!: PageVersionSummaryResponse;
 }
 
-const PAGE_PROBLEM_KINDS = [
-  'LINK_TO_MISSING_PRODUCT',
-  'LINK_TO_MISSING_CATEGORY',
-  'SHOWCASE_EMPTY',
-  'BANNER_WITHOUT_IMAGE',
-] as const satisfies readonly PageProblemKind[];
+/** Every kind, once: a record keyed by the contract's union fails the build when one is added and left out. */
+const PAGE_PROBLEM_KINDS = Object.keys({
+  LINK_TO_MISSING_PRODUCT: true,
+  LINK_TO_MISSING_CATEGORY: true,
+  SHOWCASE_EMPTY: true,
+  BANNER_WITHOUT_IMAGE: true,
+  FEATURED_PRODUCT_UNAVAILABLE: true,
+} satisfies Record<PageProblemKind, true>) as PageProblemKind[];
 
 export class PageProblemResponse implements PageProblem {
   @ApiProperty({ enum: PAGE_PROBLEM_KINDS }) kind!: PageProblemKind;
