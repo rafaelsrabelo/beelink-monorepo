@@ -3,7 +3,8 @@ import type { LandingTemplateId } from '@harness-monorepo/contracts';
 import type { SeededBand, SeededItem } from './page-seed.js';
 
 // App
-import { COMPONENT_BODY_MAX_LENGTH, COMPONENT_SUBTITLE_MAX_LENGTH, COMPONENT_TITLE_MAX_LENGTH } from './page.constants.js';
+import { band, clip, cover, promises, spotlight, type Component } from './landing-template-parts.js';
+import { COMPONENT_BODY_MAX_LENGTH, COMPONENT_TITLE_MAX_LENGTH } from './page.constants.js';
 
 /** Every arrangement a landing may open with. The dialog offers exactly these, by this list. */
 export const LANDING_TEMPLATE_IDS = [
@@ -28,68 +29,6 @@ export interface LandingSubject {
   category: { id: string; name: string; description: string | null; imageUrl: string | null } | null;
   /** The shop's promises, from its payment methods: a benefits band's rows. */
   promises: SeededItem[];
-}
-
-type Component = SeededBand['components'][number];
-
-/** Cut to the column's length by code point, so a long product name is not a refused write. */
-function clip(text: string, max: number): string {
-  const points = [...text];
-  return points.length > max ? points.slice(0, max).join('').trimEnd() : text;
-}
-
-/**
- * The cover: the picture with its words over it or beside it, pointing at what the page is about.
- * Without a picture it is the words alone — a banner with no slide draws nothing.
- */
-function cover(
-  imageUrl: string | null,
-  words: { title: string; subtitle: string | null },
-  target: { productId: string } | { categoryId: string },
-  display: 'BACKDROP' | 'SPLIT',
-): Component {
-  const title = clip(words.title, COMPONENT_TITLE_MAX_LENGTH);
-  const subtitle = words.subtitle ? clip(words.subtitle, COMPONENT_SUBTITLE_MAX_LENGTH) : null;
-
-  if (!imageUrl) return { kind: 'HEADING', title, subtitle, items: [], position: 0, isActive: true };
-
-  const slide = {
-    id: 'capa',
-    imageUrl,
-    title,
-    ...(subtitle ? { subtitle } : {}),
-    ...('productId' in target ? { target: 'PRODUCT' as const, productId: target.productId } : { target: 'CATEGORY' as const, categoryId: target.categoryId }),
-  };
-
-  return { kind: 'BANNER', display, items: [slide], position: 0, isActive: true };
-}
-
-/**
- * The product itself, on a shelf of one: its price and its button, which a banner does not draw.
- * Titled, because an untitled pick is drawn as "Destaques" — a word for a shelf of several.
- */
-function spotlight(productId: string, title: string): Component {
-  return {
-    kind: 'PRODUCTS',
-    title,
-    display: 'GRID',
-    source: 'SELECTION',
-    items: [{ id: 'destaque', productId }],
-    position: 0,
-    isActive: true,
-  };
-}
-
-/** The shop's promises, hidden rather than left out when it makes none — the shopkeeper fills them in where they are. */
-function promises(rows: SeededItem[], display: 'INLINE' | 'CARDS', position: number): SeededBand {
-  return {
-    section: { width: 'FULL', position, isActive: rows.length > 0 },
-    components: [{ kind: 'BENEFITS', display, items: rows, position: 0, isActive: true }],
-  };
-}
-
-function band(position: number, width: 'FULL' | 'CONTAINED', components: Component[]): SeededBand {
-  return { section: { width, position, isActive: true }, components };
 }
 
 function launch(product: NonNullable<LandingSubject['product']>, rows: SeededItem[]): SeededBand[] {

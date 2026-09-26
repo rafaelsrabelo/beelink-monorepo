@@ -4,7 +4,8 @@ import type { SectionShape } from './page-document.js';
 
 // App
 import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery } from '../catalog/showcase.query.js';
-import { NO_SHELVES, NO_SLUGS, slideTargetsOf, type ShelvesByComponent, type SlugsByEntity } from './page-public.mapper.js';
+import { NO_SLUGS, slideTargetsOf, type SlugsByEntity } from './page-links.js';
+import { NO_SHELVES, type PageLookups, type ShelvesByComponent } from './page-public.mapper.js';
 
 /*
   What a page's public read resolves besides its rows: the showcases' products and the slugs the
@@ -12,12 +13,8 @@ import { NO_SHELVES, NO_SLUGS, slideTargetsOf, type ShelvesByComponent, type Slu
   and a landing page are read the same way, by two services.
 */
 
-/** Both lookups for a page's bands, in parallel. */
-export async function lookupsOf(
-  db: PrismaService,
-  storeId: string,
-  sections: readonly SectionShape[],
-): Promise<{ slugs: SlugsByEntity; shelves: ShelvesByComponent }> {
+/** Every lookup for a page's bands, in parallel. */
+export async function lookupsOf(db: PrismaService, storeId: string, sections: readonly SectionShape[]): Promise<PageLookups> {
   const [slugs, shelves] = await Promise.all([slideSlugs(db, sections), shelvesOf(db, storeId, sections)]);
   return { slugs, shelves };
 }

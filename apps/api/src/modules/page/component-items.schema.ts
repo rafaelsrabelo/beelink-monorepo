@@ -2,26 +2,12 @@
 import { z } from 'zod';
 
 // Types
-import type {
-  AnnouncementLink,
-  BannerSlide,
-  BenefitRow,
-  ComponentItem,
-  ComponentKind,
-  ContactField,
-  ShowcaseProduct,
-} from '@harness-monorepo/contracts';
+import type { AnnouncementLink, BannerSlide, BenefitRow, ComponentItem, ComponentKind, ShowcaseProduct } from '@harness-monorepo/contracts';
 
 // App
-import {
-  COMPONENT_URL_MAX_LENGTH,
-  CONTACT_FIELDS_MAX,
-  CONTACT_FIELD_LABEL_MAX_LENGTH,
-  CONTACT_FIELD_TYPES,
-  CONTACT_OPTIONS_MAX,
-  SHOWCASE_LIMIT_MAX,
-  CONTACT_OPTION_MAX_LENGTH,
-} from './page.constants.js';
+import { carriesWhatItNames, destination } from './component-destination.schema.js';
+import { contactForm } from './contact-fields.schema.js';
+import { COMPONENT_URL_MAX_LENGTH, SHOWCASE_LIMIT_MAX } from './page.constants.js';
 
 /**
  * What a component's `items` may hold, decided by its `kind`.
@@ -36,32 +22,6 @@ import {
  * content**. A key nobody reads in `layoutSettings` is invisible, which is how sixteen of its
  * twenty-one survived unread. A slide nobody draws is a blank band on the shop's front page.
  */
-
-/**
- * A destination, as an id. Shared by a slide and by the strip's link.
- *
- * Exactly one of the three, refined rather than left to a CHECK — `items` is JSON, so the
- * database cannot hold the rule the way it held it for the four columns this model dropped. The
- * refinement is where it lives instead, and it says the same thing: a thing that claims CATEGORY
- * has a category.
- */
-const destination = {
-  target: z.enum(['CATEGORY', 'PRODUCT', 'EXTERNAL', 'NONE']),
-  categoryId: z.uuid().nullish(),
-  productId: z.uuid().nullish(),
-  externalUrl: z.url({ protocol: /^https?$/ }).max(COMPONENT_URL_MAX_LENGTH).nullish(),
-};
-
-const carriesWhatItNames = (row: {
-  target: string;
-  categoryId?: string | null;
-  productId?: string | null;
-  externalUrl?: string | null;
-}) =>
-  (row.target === 'CATEGORY' && !!row.categoryId) ||
-  (row.target === 'PRODUCT' && !!row.productId) ||
-  (row.target === 'EXTERNAL' && !!row.externalUrl) ||
-  row.target === 'NONE';
 
 /** One picture of a banner, with its destination as an id. */
 const bannerSlide = z
@@ -91,39 +51,6 @@ const benefitRow = z.strictObject({
   title: z.string().min(1).max(60),
   detail: z.string().max(120).nullish(),
 }) satisfies z.ZodType<BenefitRow>;
-
-/** One field of a contact form. A select carries its choices; nothing else may. */
-const contactField = z
-  .strictObject({
-    id: z.string().min(1).max(64),
-    label: z.string().min(1).max(CONTACT_FIELD_LABEL_MAX_LENGTH),
-    type: z.enum(CONTACT_FIELD_TYPES),
-    required: z.boolean(),
-    options: z.array(z.string().min(1).max(CONTACT_OPTION_MAX_LENGTH)).min(1).max(CONTACT_OPTIONS_MAX).nullish(),
-  })
-  .refine((row) => (row.type === 'SELECT') === !!row.options?.length, {
-    message: 'Uma lista de opções precisa das opções; os outros tipos não as têm',
-  }) satisfies z.ZodType<ContactField>;
-
-/** A field a visitor can be answered through: an e-mail or a phone they had to give. */
-export function reachesBack(field: Pick<ContactField, 'type' | 'required'>): boolean {
-  return field.required && (field.type === 'EMAIL' || field.type === 'PHONE');
-}
-
-/**
- * The whole form. Two rules the fields cannot state one at a time: ids are unique, because an
- * answer is keyed by them; and at least one field reaches back, because a lead nobody can answer
- * is not a lead. Stated here and not in the panel — the panel mirrors it, this is the lock.
- */
-const contactForm = z
-  .array(contactField)
-  .max(CONTACT_FIELDS_MAX)
-  .refine((fields) => new Set(fields.map((field) => field.id)).size === fields.length, {
-    message: 'Dois campos com o mesmo id',
-  })
-  .refine((fields) => fields.some(reachesBack), {
-    message: 'O formulário precisa de um campo obrigatório de e-mail ou telefone',
-  });
 
 /**
  * One product of a hand-picked showcase, by id: the price and the picture are read when the page is.

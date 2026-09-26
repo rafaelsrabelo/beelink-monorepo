@@ -1,20 +1,17 @@
 // Types
-import type { AnnouncementLink, BannerSlide, PageProblem } from '@harness-monorepo/contracts';
+import type { PageProblem } from '@harness-monorepo/contracts';
 import type { SectionShape } from './page-document.js';
-import type { ShelvesByComponent, SlugsByEntity } from './page-public.mapper.js';
+import type { PageLookups } from './page-public.mapper.js';
 
 // App
-import { itemsOf } from './page.mapper.js';
-
-/** A slide or a link, as far as where it points goes. */
-type Pointer = Pick<BannerSlide | AnnouncementLink, 'id' | 'target' | 'productId' | 'categoryId'>;
+import { pointersOf } from './page-links.js';
 
 /**
  * What Publicar would serve that the owner may not mean to, found with the lookups the shop itself
  * would run — so "vitrine sem produtos" means exactly what a visitor would see. Only what shows is
  * looked at: a hidden band or block is served to nobody. None of it stops a publish.
  */
-export function problemsOf(sections: readonly SectionShape[], resolved: { slugs: SlugsByEntity; shelves: ShelvesByComponent }): PageProblem[] {
+export function problemsOf(sections: readonly SectionShape[], resolved: PageLookups): PageProblem[] {
   const problems: PageProblem[] = [];
 
   for (const section of sections) {
@@ -28,8 +25,7 @@ export function problemsOf(sections: readonly SectionShape[], resolved: { slugs:
         problems.push({ kind: 'SHOWCASE_EMPTY', ...where, itemId: null });
       }
 
-      if (component.kind !== 'BANNER' && component.kind !== 'ANNOUNCEMENT') continue;
-      const pointers = itemsOf(component.kind, component.items) as Pointer[];
+      const pointers = pointersOf(component.kind, component.items);
 
       if (component.kind === 'BANNER' && pointers.length === 0) {
         problems.push({ kind: 'BANNER_WITHOUT_IMAGE', ...where, itemId: null });

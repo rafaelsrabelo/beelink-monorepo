@@ -44,6 +44,16 @@ export const DISPLAYS_OF_KIND: Partial<Record<ComponentKind, readonly ComponentD
   ANNOUNCEMENT: ['STATIC', 'MARQUEE'],
 };
 
+/**
+ * `DISPLAYS_OF_KIND` in words, for Swagger: "BANNER: BACKDROP, SPLIT, CAROUSEL or GRID; …". Built
+ * from the table so a kind's new layout reaches the docs without anyone editing a sentence.
+ */
+export function displaysInWords(): string {
+  return Object.entries(DISPLAYS_OF_KIND)
+    .map(([kind, displays]) => `${kind}: ${displays.length > 1 ? `${displays.slice(0, -1).join(', ')} or ${displays.at(-1)}` : displays.join('')}`)
+    .join('; ');
+}
+
 /** Which products a showcase draws. No best sellers: nothing records a sale yet. */
 export const PRODUCT_SOURCES = ['ALL', 'CATEGORY', 'SELECTION', 'NEWEST', 'ON_SALE'] as const satisfies readonly ProductSource[];
 

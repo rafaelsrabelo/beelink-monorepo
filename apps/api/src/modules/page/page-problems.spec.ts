@@ -2,7 +2,7 @@
 import type { ComponentShape, SectionShape } from './page-document.js';
 
 // App
-import { NO_SHELVES, NO_SLUGS } from './page-public.mapper.js';
+import { NO_LOOKUPS } from './page-public.mapper.js';
 import { problemsOf } from './page-problems.js';
 
 const PRODUCT = '0199e000-0000-7000-8000-000000000001';
@@ -31,7 +31,7 @@ describe('problemsOf', () => {
       ]),
     ];
 
-    expect(problemsOf(sections, { slugs: NO_SLUGS, shelves: NO_SHELVES })).toEqual([
+    expect(problemsOf(sections, NO_LOOKUPS)).toEqual([
       { kind: 'BANNER_WITHOUT_IMAGE', sectionId: 'b1', componentId: 'c1', itemId: null },
       { kind: 'LINK_TO_MISSING_PRODUCT', sectionId: 'b1', componentId: 'c2', itemId: 's1' },
       { kind: 'LINK_TO_MISSING_CATEGORY', sectionId: 'b1', componentId: 'c2', itemId: 's2' },
@@ -50,6 +50,6 @@ describe('problemsOf', () => {
   it('looks only at what shows: a hidden band or block is served to nobody', () => {
     const sections = [band('b1', [block('c1', 'BANNER')], false), band('b2', [block('c2', 'PRODUCTS', [], false)])];
 
-    expect(problemsOf(sections, { slugs: NO_SLUGS, shelves: NO_SHELVES })).toEqual([]);
+    expect(problemsOf(sections, NO_LOOKUPS)).toEqual([]);
   });
 });
