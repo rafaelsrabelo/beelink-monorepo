@@ -45,15 +45,16 @@ export function cover(
 }
 
 /**
- * The product itself, on a shelf of one: its price and its button, which a banner does not draw.
- * Titled, because an untitled pick is drawn as "Destaques" — a word for a shelf of several.
+ * The product itself, large: its photo, its price and stock read when the page is, and the way to buy
+ * it — which a banner does not draw. It used to be a showcase of one; a featured product says the
+ * same thing at the size the page is about.
  */
-export function spotlight(productId: string, title: string): Component {
+export function spotlight(productId: string, words: { title: string; subtitle?: string }): Component {
   return {
-    kind: 'PRODUCTS',
-    title,
-    display: 'GRID',
-    source: 'SELECTION',
+    kind: 'FEATURED_PRODUCT',
+    title: words.title,
+    subtitle: words.subtitle ?? null,
+    display: 'IMAGE_LEFT',
     items: [{ id: 'destaque', productId }],
     position: 0,
     isActive: true,
@@ -94,6 +95,24 @@ export function faq(rows: SeededItem[], position: number): SeededBand {
           answer: methods.length ? `Aceitamos ${listed(methods)}.` : 'Conte quais formas de pagamento a loja aceita.',
         },
       ],
+      position: 0,
+      isActive: true,
+    },
+  ]);
+}
+
+/**
+ * The page's last word: the product asked for once more, on a strip of the shop's colour, with the
+ * button that leads to it. Full width, which is where a strip reaches the edges.
+ */
+export function callToAction(productId: string, words: { title: string; body: string; label: string }, position: number): SeededBand {
+  return band(position, 'FULL', [
+    {
+      kind: 'CALL_TO_ACTION',
+      title: words.title,
+      body: words.body,
+      display: 'BAND',
+      items: [{ id: 'botao', label: words.label, target: 'PRODUCT', productId }],
       position: 0,
       isActive: true,
     },

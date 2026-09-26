@@ -30,6 +30,12 @@ export const COMPONENT_DISPLAYS = [
   'STATIC',
   'MARQUEE',
   'ACCORDION',
+  'BAND',
+  'CARD',
+  'IMAGE_LEFT',
+  'IMAGE_RIGHT',
+  'IMAGE_LARGE',
+  'BLOCK',
 ] as const satisfies readonly ComponentDisplay[];
 
 /**
@@ -44,6 +50,10 @@ export const DISPLAYS_OF_KIND: Partial<Record<ComponentKind, readonly ComponentD
   BENEFITS: ['INLINE', 'CARDS'],
   ANNOUNCEMENT: ['STATIC', 'MARQUEE'],
   FAQ: ['ACCORDION'],
+  CALL_TO_ACTION: ['BAND', 'CARD'],
+  IMAGE_TEXT: ['IMAGE_LEFT', 'IMAGE_RIGHT'],
+  FEATURED_PRODUCT: ['IMAGE_LEFT', 'IMAGE_LARGE'],
+  COUNTDOWN: ['BAND', 'BLOCK'],
 };
 
 /**
@@ -78,6 +88,10 @@ export const COMPONENT_KINDS = [
   'PRODUCTS',
   'CONTACT',
   'FAQ',
+  'CALL_TO_ACTION',
+  'IMAGE_TEXT',
+  'FEATURED_PRODUCT',
+  'COUNTDOWN',
 ] as const satisfies readonly ComponentKind[];
 
 /**
@@ -103,6 +117,12 @@ export const CONTACT_OPTION_MAX_LENGTH = 60;
 export const FAQ_ITEMS_MAX = 20;
 export const FAQ_QUESTION_MAX_LENGTH = 160;
 export const FAQ_ANSWER_MAX_LENGTH = 1000;
+
+/** What a button says: a few words, as on the shop's own buttons. */
+export const BUTTON_LABEL_MAX_LENGTH = 40;
+
+/** What a picture shows, said in a line: a description, not a caption. */
+export const IMAGE_ALT_MAX_LENGTH = 160;
 
 /** Where a heading or a paragraph sits. Null on the wire is "as the kind always drew it". */
 export const TEXT_ALIGNS = ['LEFT', 'CENTER', 'RIGHT'] as const satisfies readonly TextAlign[];

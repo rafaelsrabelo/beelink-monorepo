@@ -12,7 +12,14 @@ const PRODUCT = { id: '0199e000-0000-7000-8000-000000000001', name: 'Whey Baunil
 const CATEGORY = { id: '0199d000-0000-7000-8000-000000000001', name: 'Proteínas', description: 'Para depois do treino', imageUrl: null };
 
 function subject(over: Partial<LandingSubject> = {}): LandingSubject {
-  return { title: 'Minha página', product: PRODUCT, category: CATEGORY, promises: promisesOf(['PIX', 'MONEY']), ...over };
+  return {
+    title: 'Minha página',
+    product: PRODUCT,
+    category: CATEGORY,
+    promises: promisesOf(['PIX', 'MONEY']),
+    saleEndsAt: '2026-09-30T02:00:00.000Z',
+    ...over,
+  };
 }
 
 /** Every variation a template meets: with and without a picture, a category, and something to promise. */
@@ -52,7 +59,7 @@ describe('landingBands', () => {
     for (const id of LANDING_TEMPLATE_IDS) expect(kindsOf(id, subject())).not.toContain('ANNOUNCEMENT');
   });
 
-  it('opens a launch on the product’s picture, pointing at the product, with the product on a shelf below', () => {
+  it('opens a launch on the product’s picture, pointing at the product, with the product featured below', () => {
     const [cover, , spotlight] = landingBands('lancamento', subject());
 
     expect(cover!.components[0]).toMatchObject({
@@ -61,21 +68,36 @@ describe('landingBands', () => {
       items: [{ imageUrl: PRODUCT.imageUrl, title: PRODUCT.name, target: 'PRODUCT', productId: PRODUCT.id }],
     });
     expect(spotlight!.components[0]).toMatchObject({
-      kind: 'PRODUCTS',
+      kind: 'FEATURED_PRODUCT',
       title: 'Compre agora',
-      source: 'SELECTION',
+      display: 'IMAGE_LEFT',
       items: [{ productId: PRODUCT.id }],
     });
   });
 
-  it('ends a launch with the questions a first buyer asks, paying answered from the shop\'s own methods', () => {
-    const bands = landingBands('lancamento', subject());
-    const faq = bands.at(-1)!.components[0]!;
+  it('asks a launch the questions a first buyer asks, paying answered from the shop\'s own methods', () => {
+    const faq = landingBands('lancamento', subject()).flatMap((band) => band.components).find((row) => row.kind === 'FAQ')!;
 
     expect(faq).toMatchObject({ kind: 'FAQ', display: 'ACCORDION', title: 'Perguntas frequentes' });
     expect(faq.items).toContainEqual({ id: 'pagamento', question: 'Quais são as formas de pagamento?', answer: 'Aceitamos PIX e dinheiro.' });
-    const unpaid = landingBands('lancamento', subject({ promises: [] })).at(-1)!.components[0]!;
+    const unpaid = landingBands('lancamento', subject({ promises: [] })).flatMap((band) => band.components).find((row) => row.kind === 'FAQ')!;
     expect(unpaid.items).toContainEqual(expect.objectContaining({ id: 'pagamento', answer: 'Conte quais formas de pagamento a loja aceita.' }));
+  });
+
+  it('ends a launch and a flash sale by asking for the product once more, on a strip that reaches the edges', () => {
+    for (const id of ['lancamento', 'promocao-relampago'] as const) {
+      const last = landingBands(id, subject()).at(-1)!;
+
+      expect(last.section.width).toBe('FULL');
+      expect(last.components[0]).toMatchObject({ kind: 'CALL_TO_ACTION', display: 'BAND', items: [{ target: 'PRODUCT', productId: PRODUCT.id }] });
+    }
+  });
+
+  it('counts a flash sale down to the end it was made with, on a strip under the cover', () => {
+    const [, countdown] = landingBands('promocao-relampago', subject());
+
+    expect(countdown!.section.width).toBe('FULL');
+    expect(countdown!.components[0]).toMatchObject({ kind: 'COUNTDOWN', display: 'BAND', items: [{ endsAt: '2026-09-30T02:00:00.000Z' }] });
   });
 
   it('opens on the words alone when there is no picture: a banner with no slide draws nothing', () => {
@@ -90,7 +112,7 @@ describe('landingBands', () => {
 
     expect(withCategory).toContainEqual(expect.objectContaining({ kind: 'PRODUCTS', source: 'CATEGORY', sourceCategoryId: CATEGORY.id }));
     expect(withCategory[0]).toMatchObject({ kind: 'BANNER', items: [{ target: 'CATEGORY', categoryId: CATEGORY.id, imageUrl: PRODUCT.imageUrl }] });
-    expect(without).toContainEqual(expect.objectContaining({ kind: 'PRODUCTS', source: 'SELECTION' }));
+    expect(without).toContainEqual(expect.objectContaining({ kind: 'FEATURED_PRODUCT', items: [{ id: 'destaque', productId: PRODUCT.id }] }));
     expect(without).not.toContainEqual(expect.objectContaining({ source: 'CATEGORY' }));
   });
 

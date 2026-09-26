@@ -2,9 +2,13 @@
 import type {
   BenefitRow,
   ContactField,
+  CountdownEnd,
   FaqItem,
   PublicBannerSlide,
+  PublicCallToActionButton,
   PublicComponent,
+  PublicFeaturedProduct,
+  PublicImageTextMedia,
   PublicProductCard,
   PublicSection,
   PublicStore,
@@ -19,6 +23,8 @@ import type { Shelves } from "./design-draft-preview"
 export interface GalleryStock {
   images: string[]
   products: PublicProductCard[]
+  /** When the gallery opened: a sample countdown counts to a moment after it. */
+  now: number
   hasCategories: boolean
 }
 
@@ -27,7 +33,7 @@ export interface GalleryStock {
  * and the products its showcases draw. A preview of the shop's own is the point of the gallery —
  * a stock photo would show what the section looks like in someone else's shop.
  */
-export function stockOf(store: PublicStore, shelves: Shelves, categoriesShown: number): GalleryStock {
+export function stockOf(store: PublicStore, shelves: Shelves, categoriesShown: number, now: number): GalleryStock {
   const seen = new Set<string>()
   const products = [...shelves.values()]
     .flatMap((shelf) => shelf.items as PublicProductCard[])
@@ -39,7 +45,7 @@ export function stockOf(store: PublicStore, shelves: Shelves, categoriesShown: n
     .flatMap((component) => (component.items as PublicBannerSlide[]).map((slide) => slide.imageUrl))
   const images = [...slides, ...products.flatMap((product) => (product.imageUrl ? [product.imageUrl] : []))]
 
-  return { images, products, hasCategories: categoriesShown > 0 }
+  return { images, products, hasCategories: categoriesShown > 0, now }
 }
 
 const SPAN = { 1: "FULL", 2: "HALF", 3: "THIRD" } as const
@@ -128,6 +134,28 @@ export function sampleSectionOf(entry: GalleryEntry, stock: GalleryStock, messag
     case "FAQ": {
       const items: FaqItem[] = text.faq.map((row, at) => ({ id: `${id}-${at}`, ...row }))
       return band([sample("FAQ", id, { title: text.faqTitle, display: "ACCORDION", items })])
+    }
+    case "CALL_TO_ACTION": {
+      const button: PublicCallToActionButton = { id: `${id}-botao`, label: text.callToAction.label, href: "#", external: false }
+      return band([
+        sample("CALL_TO_ACTION", id, { title: text.callToAction.title, body: text.callToAction.body, display: "BAND", items: [button] }),
+      ])
+    }
+    case "IMAGE_TEXT": {
+      // The shop's own picture where it has one; the words alone otherwise, which is how it draws without one.
+      const media: PublicImageTextMedia[] = stock.images[0] ? [{ id: `${id}-imagem`, imageUrl: stock.images[0], alt: null, button: null }] : []
+      return band([sample("IMAGE_TEXT", id, { title: text.imageText.title, body: text.imageText.body, display: "IMAGE_LEFT", items: media })])
+    }
+    case "FEATURED_PRODUCT": {
+      const [product] = stock.products
+      if (!product) return null
+      const card: PublicFeaturedProduct = { ...product, soldOut: false }
+      return band([sample("FEATURED_PRODUCT", id, { title: text.featuredTitle, display: "IMAGE_LEFT", items: [card] })])
+    }
+    case "COUNTDOWN": {
+      // Two days and a few hours out: every unit has a digit to show.
+      const end: CountdownEnd = { id: `${id}-fim`, endsAt: new Date(stock.now + (53 * 60 + 17) * 60 * 1000).toISOString() }
+      return band([sample("COUNTDOWN", id, { title: text.countdownTitle, display: "BAND", items: [end] })])
     }
     case "ANNOUNCEMENT":
       return null

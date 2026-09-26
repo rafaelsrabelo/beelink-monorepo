@@ -3,7 +3,7 @@ import type { LandingTemplateId } from '@harness-monorepo/contracts';
 import type { SeededBand, SeededItem } from './page-seed.js';
 
 // App
-import { band, clip, cover, faq, promises, spotlight, type Component } from './landing-template-parts.js';
+import { band, callToAction, clip, cover, faq, promises, spotlight, type Component } from './landing-template-parts.js';
 import { COMPONENT_BODY_MAX_LENGTH, COMPONENT_TITLE_MAX_LENGTH } from './page.constants.js';
 
 /** Every arrangement a landing may open with. The dialog offers exactly these, by this list. */
@@ -29,6 +29,8 @@ export interface LandingSubject {
   category: { id: string; name: string; description: string | null; imageUrl: string | null } | null;
   /** The shop's promises, from its payment methods: a benefits band's rows. */
   promises: SeededItem[];
+  /** When a flash sale's countdown ends: set at creation, the owner's to change. */
+  saleEndsAt: string;
 }
 
 function launch(product: NonNullable<LandingSubject['product']>, rows: SeededItem[]): SeededBand[] {
@@ -44,25 +46,30 @@ function launch(product: NonNullable<LandingSubject['product']>, rows: SeededIte
       { kind: 'HEADING', title: 'Por que você vai gostar', items: [], position: 0, isActive: true },
       { kind: 'TEXT', body: description, align: 'CENTER', items: [], position: 1, isActive: true },
     ]),
-    band(2, 'CONTAINED', [spotlight(product.id, 'Compre agora')]),
+    band(2, 'CONTAINED', [spotlight(product.id, { title: 'Compre agora' })]),
     promises(rows, 'CARDS', 3),
     band(4, 'CONTAINED', [
       { kind: 'PRODUCTS', title: 'Mais novidades', display: 'RAIL', source: 'NEWEST', limit: 8, items: [], position: 0, isActive: true },
     ]),
     faq(rows, 5),
+    callToAction(product.id, { title: 'Garanta o seu', body: 'Aproveite enquanto tem no estoque.', label: 'Comprar agora' }, 6),
   ];
 }
 
-function flashSale(product: NonNullable<LandingSubject['product']>, rows: SeededItem[]): SeededBand[] {
+function flashSale(product: NonNullable<LandingSubject['product']>, rows: SeededItem[], saleEndsAt: string): SeededBand[] {
   return [
     band(0, 'FULL', [
       cover(product.imageUrl, { title: `${product.name} em oferta`, subtitle: 'Só por pouco tempo' }, { productId: product.id }, 'BACKDROP'),
     ]),
-    band(1, 'CONTAINED', [spotlight(product.id, 'Oferta relâmpago · Estoque limitado')]),
-    band(2, 'CONTAINED', [
+    band(1, 'FULL', [
+      { kind: 'COUNTDOWN', title: 'A oferta termina em', display: 'BAND', items: [{ id: 'fim', endsAt: saleEndsAt }], position: 0, isActive: true },
+    ]),
+    band(2, 'CONTAINED', [spotlight(product.id, { title: 'Oferta relâmpago', subtitle: 'Estoque limitado' })]),
+    band(3, 'CONTAINED', [
       { kind: 'PRODUCTS', title: 'Mais ofertas', display: 'RAIL', source: 'ON_SALE', limit: 12, items: [], position: 0, isActive: true },
     ]),
-    promises(rows, 'INLINE', 3),
+    promises(rows, 'INLINE', 4),
+    callToAction(product.id, { title: 'A oferta acaba logo', body: 'Garanta o seu antes que acabe.', label: 'Aproveitar a oferta' }, 5),
   ];
 }
 
@@ -88,7 +95,7 @@ function collection(
     return [
       band(0, 'FULL', [cover(product.imageUrl, { title: product.name, subtitle: null }, { productId: product.id }, 'BACKDROP')]),
       band(1, 'CONTAINED', [intro]),
-      band(2, 'CONTAINED', [spotlight(product.id, 'Compre agora')]),
+      band(2, 'CONTAINED', [spotlight(product.id, { title: 'Compre agora' })]),
       band(3, 'CONTAINED', [
         { kind: 'PRODUCTS', title: 'Novidades', display: 'RAIL', source: 'NEWEST', limit: 8, items: [], position: 0, isActive: true },
       ]),
@@ -140,7 +147,7 @@ export function landingBands(id: LandingTemplateId, subject: LandingSubject): Se
   }
 
   if (id === 'lancamento') return launch(product, subject.promises);
-  if (id === 'promocao-relampago') return flashSale(product, subject.promises);
+  if (id === 'promocao-relampago') return flashSale(product, subject.promises, subject.saleEndsAt);
   return collection(product, subject.category, subject.promises);
 }
 

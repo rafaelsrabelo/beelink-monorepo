@@ -116,3 +116,83 @@ describe("component-form-values — a FAQ", () => {
     expect(toPayload(value, "item")).toMatchObject({ items: [{ id: "a", question: "Qual o prazo?", answer: "Três dias." }] })
   })
 })
+
+describe("component-form-values — a call to action", () => {
+  const cta = component({
+    kind: "CALL_TO_ACTION",
+    title: "Garanta o seu",
+    body: "Enquanto tem estoque.",
+    display: "BAND",
+    items: [{ id: "btn", label: "Comprar agora", target: "PRODUCT", productId: "p1" }],
+  })
+
+  it("opens on its button's words and destination, and sends the same button back", () => {
+    const value = toForm(cta)
+    expect(value).toMatchObject({ buttonLabel: "Comprar agora", target: "PRODUCT", productId: "p1", body: "Enquanto tem estoque." })
+
+    expect(toPayload(value, "btn")).toMatchObject({
+      body: "Enquanto tem estoque.",
+      items: [{ id: "btn", label: "Comprar agora", target: "PRODUCT", productId: "p1", categoryId: null, externalUrl: null }],
+    })
+  })
+
+  it("sends no button when it leads nowhere or says nothing", () => {
+    expect(toPayload({ ...toForm(cta), target: "NONE" }, "btn")).toMatchObject({ items: [] })
+    expect(toPayload({ ...toForm(cta), buttonLabel: "  " }, "btn")).toMatchObject({ items: [] })
+  })
+})
+
+describe("component-form-values — an image with text", () => {
+  const block = component({
+    kind: "IMAGE_TEXT",
+    title: "Feito à mão",
+    display: "IMAGE_LEFT",
+    items: [{ id: "m", imageUrl: "/a.jpg", alt: "Uma bolsa", button: { label: "Ver", target: "CATEGORY", categoryId: "c1" } }],
+  })
+
+  it("opens on its picture, what it shows and its button, and sends them back as one item", () => {
+    const value = toForm(block)
+    expect(value).toMatchObject({ imageUrl: "/a.jpg", imageAlt: "Uma bolsa", target: "CATEGORY", categoryId: "c1", buttonLabel: "Ver" })
+
+    expect(toPayload(value, "m")).toMatchObject({
+      items: [{ id: "m", imageUrl: "/a.jpg", alt: "Uma bolsa", button: { label: "Ver", target: "CATEGORY", categoryId: "c1" } }],
+    })
+  })
+
+  it("sends no picture as no item, and a picture with no button as one with none", () => {
+    expect(toPayload({ ...toForm(block), imageUrl: " " }, "m")).toMatchObject({ items: [] })
+    expect(toPayload({ ...toForm(block), target: "NONE", imageAlt: "" }, "m")).toMatchObject({
+      items: [{ id: "m", imageUrl: "/a.jpg", alt: null, button: null }],
+    })
+  })
+})
+
+describe("component-form-values — a featured product", () => {
+  const block = component({ kind: "FEATURED_PRODUCT", display: "IMAGE_LEFT", items: [{ id: "pick", productId: "p1" }] })
+
+  it("opens on its pick and sends one product back", () => {
+    const value = toForm(block)
+    expect(value.picks).toEqual([{ id: "pick", productId: "p1" }])
+
+    expect(toPayload({ ...value, picks: [{ id: "pick", productId: "p2" }, { id: "x", productId: "p3" }] }, "item")).toMatchObject({
+      items: [{ id: "pick", productId: "p2" }],
+    })
+  })
+})
+
+describe("component-form-values — a countdown", () => {
+  const block = component({ kind: "COUNTDOWN", display: "BAND", items: [{ id: "fim", endsAt: "2026-10-01T02:59:00.000Z" }] })
+
+  it("opens on its end on the shop's clock, and sends the instant back", () => {
+    const value = toForm(block)
+    expect(value.countdownEnd).toBe("2026-09-30T23:59")
+
+    expect(toPayload({ ...value, countdownEnd: "2026-10-05T18:00" }, "fim")).toMatchObject({
+      items: [{ id: "fim", endsAt: "2026-10-05T21:00:00.000Z" }],
+    })
+  })
+
+  it("sends no end for a field left empty", () => {
+    expect(toPayload({ ...toForm(block), countdownEnd: "" }, "fim")).toMatchObject({ items: [] })
+  })
+})

@@ -41,6 +41,8 @@ export interface StorefrontSectionsProps {
   showBadge: boolean
   /** "Adicionar ao carrinho" on each card of a showcase. */
   quickAdd?: boolean
+  /** Whether a cart can be reached from this page: a landing without the shop's header cannot. */
+  cartReachable?: boolean
   linkComponent?: LinkComponent
   /**
    * Wraps each drawn component. Design mode uses it to put a grip on one; the shop passes nothing.
@@ -84,6 +86,7 @@ export function StorefrontSections({
   showPrice,
   showBadge,
   quickAdd = false,
+  cartReachable = true,
   linkComponent,
   renderBlock,
   renderSection,
@@ -132,6 +135,8 @@ export function StorefrontSections({
                     showPrice={showPrice}
                     showBadge={showBadge}
                     quickAdd={quickAdd}
+                    cartReachable={cartReachable}
+                    editing={renderBlock !== undefined}
                     {...link}
                     contact={contact}
                     bleed={bleed}

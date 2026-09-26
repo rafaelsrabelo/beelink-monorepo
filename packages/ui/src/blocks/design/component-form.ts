@@ -1,4 +1,5 @@
 // Block
+import { buttonMissing } from "./button-fields"
 import { reachesBack } from "./contact-fields-field"
 import type { ContactFieldValue } from "./contact-fields-field"
 import type { SlideValue } from "./banner-slides-field"
@@ -27,11 +28,19 @@ export interface ComponentFormValues {
   title: string
   subtitle: string
   body: string
-  /** Where the strip leads — the same destination a slide holds, held once for the whole strip. */
+  /**
+   * Where the strip or a block's one button leads — the same destination a slide holds, held once for
+   * the whole block.
+   */
   target: Target
   categoryId: string
   productId: string
   externalUrl: string
+  /** What a block's one button says. */
+  buttonLabel: string
+  /** An image with text's picture, and what it shows; `""` is none, and no description is decorative. */
+  imageUrl: string
+  imageAlt: string
   slides: SlideValue[]
   benefits: BenefitValue[]
   /** A contact form's questions. */
@@ -44,16 +53,22 @@ export interface ComponentFormValues {
   limit: string
   /** A FAQ's questions, in order. */
   faq: FaqValue[]
+  /** When a countdown ends, on the shop's clock as a `datetime-local` holds it; `""` is none. */
+  countdownEnd: string
 }
 
 /**
  * Whether what the fields hold is a save the API would take: a contact form someone can answer, a
- * showcase whose source has what it needs, a FAQ whose every question has its answer. Asked here so Salvar says so, rather than a 400.
+ * showcase whose source has what it needs, a FAQ whose every question has its answer, a button that
+ * says something and names where it leads. Asked here so Salvar says so, rather than a 400.
  */
 export function contentReady(value: ComponentFormValues): boolean {
   if (value.kind === "CONTACT") return reachesBack(value.fields)
   if (value.kind === "PRODUCTS") return showcaseReady(value)
   if (value.kind === "FAQ") return !value.faq.some(unanswered)
+  if (value.kind === "CALL_TO_ACTION") return buttonMissing(value) === null
+  // An image with text's button goes with its picture: with none, there is no button to wait for.
+  if (value.kind === "IMAGE_TEXT") return !value.imageUrl || buttonMissing(value) === null
 
   return true
 }

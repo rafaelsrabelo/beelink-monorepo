@@ -2,7 +2,7 @@
 import { z } from 'zod';
 
 // App
-import { COMPONENT_URL_MAX_LENGTH } from './page.constants.js';
+import { BUTTON_LABEL_MAX_LENGTH, COMPONENT_URL_MAX_LENGTH } from './page.constants.js';
 
 /**
  * A destination, as an id. Shared by a slide and by the strip's link.
@@ -29,3 +29,13 @@ export const carriesWhatItNames = (row: {
   (row.target === 'PRODUCT' && !!row.productId) ||
   (row.target === 'EXTERNAL' && !!row.externalUrl) ||
   row.target === 'NONE';
+
+/**
+ * A button: its words, and a destination that goes somewhere. `NONE` is refused rather than stored —
+ * a button that leads nowhere is no button, and the block holds none instead.
+ */
+export const componentLink = {
+  label: z.string().trim().min(1).max(BUTTON_LABEL_MAX_LENGTH),
+  ...destination,
+  target: z.enum(['CATEGORY', 'PRODUCT', 'EXTERNAL']),
+};

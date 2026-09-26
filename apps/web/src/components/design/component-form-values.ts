@@ -3,8 +3,11 @@ import type {
   AnnouncementLink,
   BannerSlide,
   BenefitRow,
+  CallToActionButton,
   ContactField,
+  CountdownEnd,
   FaqItem,
+  ImageTextMedia,
   ShowcaseProduct,
   StoreComponent,
   UpdateComponentPayload,
@@ -17,12 +20,16 @@ import type { ComponentFormValues } from "@harness-monorepo/ui/blocks/design/com
 import {
   benefitsFromForm,
   benefitsToForm,
+  buttonFromForm,
+  countdownFromForm,
+  countdownToForm,
   faqFromForm,
   faqToForm,
   fieldsFromForm,
   fieldsToForm,
   linkFromForm,
   linkToForm,
+  mediaFromForm,
   picksToForm,
   slidesFromForm,
   slidesToForm,
@@ -37,27 +44,36 @@ import {
 /** The wire's nulls become the form's empty strings, which is the only shape an input can hold. */
 export function toForm(component: StoreComponent): ComponentFormValues {
   const items = (kind: StoreComponent["kind"]) => (component.kind === kind ? component.items : [])
+  const media = items("IMAGE_TEXT")[0] as ImageTextMedia | undefined
+  const button = (items("CALL_TO_ACTION")[0] as CallToActionButton | undefined) ?? media?.button ?? undefined
 
   return {
     kind: component.kind,
     title: component.title ?? "",
     subtitle: component.subtitle ?? "",
     body: component.body ?? "",
-    ...linkToForm(items("ANNOUNCEMENT")[0] as AnnouncementLink | undefined),
+    ...linkToForm((items("ANNOUNCEMENT")[0] as AnnouncementLink | undefined) ?? button),
+    buttonLabel: button?.label ?? "",
+    imageUrl: media?.imageUrl ?? "",
+    imageAlt: media?.alt ?? "",
     slides: slidesToForm(items("BANNER") as BannerSlide[]),
     benefits: benefitsToForm(items("BENEFITS") as BenefitRow[]),
     fields: fieldsToForm(items("CONTACT") as ContactField[]),
     source: component.source ?? "ALL",
     sourceCategoryId: component.sourceCategoryId ?? "",
-    picks: picksToForm(items("PRODUCTS") as ShowcaseProduct[]),
+    // A featured product's pick is a showcase's, one long.
+    picks: picksToForm((component.kind === "FEATURED_PRODUCT" ? items("FEATURED_PRODUCT") : items("PRODUCTS")) as ShowcaseProduct[]),
     limit: component.limit === null ? "" : String(component.limit),
     faq: faqToForm(items("FAQ") as FaqItem[]),
+    countdownEnd: countdownToForm(items("COUNTDOWN") as CountdownEnd[]),
   }
 }
 
 /**
  * And back. An empty string is "no value", which on the wire is null. `itemId` is the id of a kind's
- * single item — the strip's link — minted once by the editor, so a re-pointed link is the same link.
+ * single item — the strip's link, a call to action's button, an image with text's picture — minted
+ * once by the editor, so a
+ * re-pointed link is the same link.
  */
 export function toPayload(value: ComponentFormValues, itemId: string): UpdateComponentPayload {
   return {
@@ -83,6 +99,14 @@ function itemsOf(value: ComponentFormValues, itemId: string): UpdateComponentPay
       return { items: fieldsFromForm(value.fields) }
     case "FAQ":
       return { items: faqFromForm(value.faq) }
+    case "CALL_TO_ACTION":
+      return { items: buttonFromForm(value, itemId) }
+    case "IMAGE_TEXT":
+      return { items: mediaFromForm(value, itemId) }
+    case "FEATURED_PRODUCT":
+      return { items: value.picks.slice(0, 1) }
+    case "COUNTDOWN":
+      return { items: countdownFromForm(value.countdownEnd, itemId) }
     default:
       return {}
   }

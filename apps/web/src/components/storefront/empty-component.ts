@@ -28,12 +28,19 @@ export interface ComponentContent {
 export function isEmptyComponent({ kind, title, subtitle, body, items }: ComponentContent): boolean {
   // A kind this build does not know — a cached page, or a newer API's — has nothing that draws it.
   if (!isKnownKind(kind)) return true
-  // A showcase's items are the cards its source resolved to, which only the public read knows.
-  if (kind === "BANNER" || kind === "BENEFITS" || kind === "PRODUCTS" || kind === "FAQ") return items.length === 0
+  // A showcase's and a featured product's items are the cards the public read resolved.
+  // A countdown's one item is its end: with none it has nothing to count.
+  if (kind === "BANNER" || kind === "BENEFITS" || kind === "PRODUCTS" || kind === "FEATURED_PRODUCT" || kind === "FAQ" || kind === "COUNTDOWN") {
+    return items.length === 0
+  }
   // `StorefrontHeading` draws a line under a title that is not there; the strip is its title alone.
   if (kind === "HEADING") return !title?.trim() && !subtitle?.trim()
   if (kind === "ANNOUNCEMENT") return !title?.trim()
   if (kind === "TEXT") return !body?.trim()
+  // A button alone is not a call: `StorefrontCallToAction` draws nothing without words.
+  if (kind === "CALL_TO_ACTION") return !title?.trim() && !body?.trim()
+  // With no picture it draws its words alone; with neither, nothing.
+  if (kind === "IMAGE_TEXT") return items.length === 0 && !title?.trim() && !body?.trim()
 
   return false
 }

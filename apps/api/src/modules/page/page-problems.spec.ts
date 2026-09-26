@@ -44,7 +44,46 @@ describe('problemsOf', () => {
     const slugs = { categories: new Map(), products: new Map([[PRODUCT, 'whey']]) };
     const shelves = new Map([['c3', { products: [{ id: PRODUCT }], category: null }]]) as never;
 
-    expect(problemsOf(sections, { slugs, shelves })).toEqual([]);
+    expect(problemsOf(sections, { slugs, shelves, featured: new Map() })).toEqual([]);
+  });
+
+  it('names a call to action whose button leads to a product gone', () => {
+    const button = { id: 'btn', label: 'Comprar', target: 'PRODUCT', productId: PRODUCT };
+    const sections = [band('b1', [block('c1', 'CALL_TO_ACTION', [button])])];
+
+    expect(problemsOf(sections, NO_LOOKUPS)).toEqual([{ kind: 'LINK_TO_MISSING_PRODUCT', sectionId: 'b1', componentId: 'c1', itemId: 'btn' }]);
+  });
+
+  it('names an image with text whose button leads to a product gone, by its picture', () => {
+    const media = { id: 'm', imageUrl: 'https://cdn.example/a.png', button: { label: 'Ver', target: 'PRODUCT', productId: PRODUCT } };
+    const sections = [band('b1', [block('c1', 'IMAGE_TEXT', [media])])];
+
+    expect(problemsOf(sections, NO_LOOKUPS)).toEqual([{ kind: 'LINK_TO_MISSING_PRODUCT', sectionId: 'b1', componentId: 'c1', itemId: 'm' }]);
+  });
+
+  it('names a featured product the shop cannot draw, and not one it can', () => {
+    const pick = [{ id: 'p', productId: PRODUCT }];
+    const sections = [band('b1', [block('c1', 'FEATURED_PRODUCT', pick), block('c2', 'FEATURED_PRODUCT', pick), block('c3', 'FEATURED_PRODUCT')])];
+    const featured = new Map([['c2', { id: PRODUCT, soldOut: true }]]) as never;
+
+    expect(problemsOf(sections, { ...NO_LOOKUPS, featured })).toEqual([
+      { kind: 'FEATURED_PRODUCT_UNAVAILABLE', sectionId: 'b1', componentId: 'c1', itemId: null },
+      { kind: 'FEATURED_PRODUCT_UNAVAILABLE', sectionId: 'b1', componentId: 'c3', itemId: null },
+    ]);
+  });
+
+  it('names a countdown with no end or one already past, and not one still counting', () => {
+    const now = Date.parse('2026-09-30T00:00:00.000Z');
+    const sections = [
+      band('b1', [
+        block('c1', 'COUNTDOWN'),
+        block('c2', 'COUNTDOWN', [{ id: 'fim', endsAt: '2026-09-29T00:00:00.000Z' }]),
+        block('c3', 'COUNTDOWN', [{ id: 'fim', endsAt: '2026-10-01T00:00:00.000Z' }]),
+      ]),
+    ];
+
+    expect(problemsOf(sections, { ...NO_LOOKUPS, now }).map((problem) => problem.componentId)).toEqual(['c1', 'c2']);
+    expect(problemsOf(sections, { ...NO_LOOKUPS, now })[0]).toMatchObject({ kind: 'COUNTDOWN_ENDED' });
   });
 
   it('looks only at what shows: a hidden band or block is served to nobody', () => {
