@@ -6,7 +6,7 @@ import type { NextRequest } from "next/server"
 import type { ApiErrorBody } from "@harness-monorepo/contracts"
 
 // App
-import { callApi } from "./api"
+import { callApi, PAGE_REVISION_HEADER } from "./api"
 import { ACCESS_COOKIE } from "./session-cookies"
 
 function errorBody(statusCode: number, errorCode: string, message: string): ApiErrorBody {
@@ -49,6 +49,15 @@ export function refuseCrossOrigin(request: NextRequest): NextResponse | null {
 /** Next fills x-forwarded-for from the socket when the header is absent; NextRequest.ip is gone. */
 export function clientIpOf(request: NextRequest): string | null {
   return request.headers.get("x-forwarded-for")
+}
+
+/**
+ * The page a collection route acts on, carried to the API as the browser sent it: `?pageId=` or
+ * nothing, which the API reads as the shop's home. The id is the API's to check.
+ */
+export function pageQueryOf(request: NextRequest): string {
+  const pageId = request.nextUrl.searchParams.get("pageId")
+  return pageId ? `?pageId=${encodeURIComponent(pageId)}` : ""
 }
 
 export async function readJsonBody(request: NextRequest): Promise<unknown> {
@@ -121,6 +130,9 @@ export async function forwardSignedIn(request: NextRequest, call: SignedInCall):
     rawBody: call.rawBody,
     accessToken,
     clientIp: clientIpOf(request),
+    // Every draft write forwards the revision the editor read, from one place: a handler that
+    // dropped it would let a stale tab write over another's changes unasked.
+    pageRevision: request.headers.get(PAGE_REVISION_HEADER),
   })
 
   const payload: unknown = await response.json().catch(() => null)

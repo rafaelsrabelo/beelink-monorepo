@@ -10,67 +10,42 @@ import type {
   UpdateSectionPayload,
 } from "@harness-monorepo/contracts"
 
-/**
- * What a failed call carries: the API's stable code, never a sentence. The screen turns the code
- * into copy in the reader's language (apps/web/AGENTS.md).
- */
-export class PageRequestError extends Error {
-  constructor(readonly errorCode: string) {
-    super(errorCode)
-    this.name = "PageRequestError"
-  }
-}
+// App
+import { draftWrite } from "./draft-write"
+import { call } from "./page-call"
 
-/**
- * Declared on every call, a bodyless read included: `refuseCrossOrigin` answers 415 to a request
- * that does not say it speaks JSON, which is what makes a form posted from another site unable to
- * reach these handlers at all.
- */
-const JSON_HEADERS: Record<string, string> = { "content-type": "application/json" }
-
-function errorCodeOf(payload: unknown): string {
-  return typeof payload === "object" && payload !== null && "errorCode" in payload
-    ? String((payload as { errorCode: unknown }).errorCode)
-    : "UNKNOWN"
-}
-
-/** Every path here is this app's own route handler; the API's address is server-only. */
-async function call<T>(path: string, init: RequestInit): Promise<T> {
-  const response = await fetch(path, { headers: JSON_HEADERS, ...init })
-  const payload: unknown = await response.json().catch(() => null)
-
-  if (!response.ok) throw new PageRequestError(errorCodeOf(payload))
-
-  return payload as T
-}
+export { PageRequestError } from "./page-call"
 
 const sectionsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/sections`
 
-export function fetchSections(slug: string): Promise<Section[]> {
-  return call<Section[]>(sectionsPath(slug), { method: "GET" })
+/** A collection route, on one page: none named is the shop's home, as the API reads it. */
+const onPage = (path: string, pageId?: string) => (pageId ? `${path}?pageId=${encodeURIComponent(pageId)}` : path)
+
+export function fetchSections(slug: string, pageId?: string): Promise<Section[]> {
+  return call<Section[]>(onPage(sectionsPath(slug), pageId), { method: "GET" })
 }
 
-export function createSection(slug: string, payload: CreateSectionPayload): Promise<Section> {
-  return call<Section>(sectionsPath(slug), { method: "POST", body: JSON.stringify(payload) })
+export function createSection(slug: string, payload: CreateSectionPayload, pageId?: string): Promise<Section> {
+  return draftWrite(slug, (revision) => call<Section>(onPage(sectionsPath(slug), pageId), { method: "POST", body: JSON.stringify(payload) }, revision))
 }
 
 export function updateSection(slug: string, sectionId: string, payload: UpdateSectionPayload): Promise<Section> {
-  return call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}`, {
+  return draftWrite(slug, (revision) => call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}`, {
     method: "PUT",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 export function deleteSection(slug: string, sectionId: string): Promise<unknown> {
-  return call<unknown>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}`, { method: "DELETE" })
+  return draftWrite(slug, (revision) => call<unknown>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}`, { method: "DELETE" }, revision))
 }
 
 /**
  * The whole list, in the new order. The API refuses a partial one, which is what stops two bands
  * ending up on the same position and drawing a page that is neither order.
  */
-export function reorderSections(slug: string, payload: ReorderPayload): Promise<Section[]> {
-  return call<Section[]>(`${sectionsPath(slug)}/reorder`, { method: "PUT", body: JSON.stringify(payload) })
+export function reorderSections(slug: string, payload: ReorderPayload, pageId?: string): Promise<Section[]> {
+  return draftWrite(slug, (revision) => call<Section[]>(onPage(`${sectionsPath(slug)}/reorder`, pageId), { method: "PUT", body: JSON.stringify(payload) }, revision))
 }
 
 const componentsPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/components`
@@ -80,10 +55,10 @@ export function createComponent(
   sectionId: string,
   payload: AddComponentPayload,
 ): Promise<StoreComponent> {
-  return call<StoreComponent>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components`, {
+  return draftWrite(slug, (revision) => call<StoreComponent>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components`, {
     method: "POST",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 /**
@@ -96,8 +71,9 @@ export async function createSectionRow(
   slug: string,
   payload: CreateSectionPayload,
   alongside: number,
+  pageId?: string,
 ): Promise<Section> {
-  const section = await createSection(slug, payload)
+  const section = await createSection(slug, payload, pageId)
   await Promise.all(Array.from({ length: alongside }, () => createComponent(slug, section.id, payload.component)))
   return section
 }
@@ -107,14 +83,14 @@ export function updateComponent(
   componentId: string,
   payload: UpdateComponentPayload,
 ): Promise<StoreComponent> {
-  return call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, {
+  return draftWrite(slug, (revision) => call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 export function deleteComponent(slug: string, componentId: string): Promise<unknown> {
-  return call<unknown>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, { method: "DELETE" })
+  return draftWrite(slug, (revision) => call<unknown>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}`, { method: "DELETE" }, revision))
 }
 
 /**
@@ -122,10 +98,10 @@ export function deleteComponent(slug: string, componentId: string): Promise<unkn
  * left may be gone.
  */
 export function moveComponent(slug: string, componentId: string, payload: MoveComponentPayload): Promise<Section[]> {
-  return call<Section[]>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/section`, {
+  return draftWrite(slug, (revision) => call<Section[]>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/section`, {
     method: "PUT",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 /** One band's components, in the new order. The band itself does not move. */
@@ -134,10 +110,10 @@ export function reorderComponents(
   sectionId: string,
   payload: ReorderPayload,
 ): Promise<Section[]> {
-  return call<Section[]>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components/reorder`, {
+  return draftWrite(slug, (revision) => call<Section[]>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/components/reorder`, {
     method: "PUT",
     body: JSON.stringify(payload),
-  })
+  }, revision))
 }
 
 /**
@@ -145,10 +121,10 @@ export function reorderComponents(
  * the shop, like anything else the owner arranged.
  */
 export function duplicateSection(slug: string, sectionId: string): Promise<Section> {
-  return call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/duplicate`, { method: "POST" })
+  return draftWrite(slug, (revision) => call<Section>(`${sectionsPath(slug)}/${encodeURIComponent(sectionId)}/duplicate`, { method: "POST" }, revision))
 }
 
 /** A hidden copy of one block, right after it in its band. */
 export function duplicateComponent(slug: string, componentId: string): Promise<StoreComponent> {
-  return call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/duplicate`, { method: "POST" })
+  return draftWrite(slug, (revision) => call<StoreComponent>(`${componentsPath(slug)}/${encodeURIComponent(componentId)}/duplicate`, { method: "POST" }, revision))
 }

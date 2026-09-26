@@ -177,7 +177,7 @@ describe("useSelectionControls — the keys", () => {
       sectionId: "a",
       band: toBandForm(saved[0]!),
       bandOpened: toBandForm(saved[0]!),
-      component: { id: banner.id, value: { ...toForm(banner), title: "Digitado" }, linkId: "l1" },
+      component: { id: banner.id, value: { ...toForm(banner), title: "Digitado" }, itemId: "l1" },
     })
     render(<Harness selection={{ level: "block", id: "a1" }} choose={choose} />)
 
@@ -290,7 +290,7 @@ describe("useSelectionControls — Duplicar, guarded", () => {
       sectionId: "b",
       band: toBandForm(saved[1]!),
       bandOpened: toBandForm(saved[1]!),
-      component: { id: b1.id, value: { ...toForm(b1), title: "Digitado" }, linkId: "l1" },
+      component: { id: b1.id, value: { ...toForm(b1), title: "Digitado" }, itemId: "l1" },
     })
     render(<Harness selection={{ level: "block", id: "b1" }} />)
 

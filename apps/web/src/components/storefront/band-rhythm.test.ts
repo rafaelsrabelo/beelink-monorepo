@@ -69,6 +69,9 @@ describe("rhythmOf — the page's one spacing", () => {
     expect(reachesTheEdge({ kind: "BENEFITS", display: null })).toBe(true)
     expect(reachesTheEdge({ kind: "PRODUCTS", display: "RAIL" })).toBe(false)
     expect(reachesTheEdge({ kind: "HEADING", display: null })).toBe(false)
+    // A call to action's strip is a surface of its own colour; its card sits inside the margins.
+    expect(reachesTheEdge({ kind: "CALL_TO_ACTION", display: "BAND" })).toBe(true)
+    expect(reachesTheEdge({ kind: "CALL_TO_ACTION", display: "CARD" })).toBe(false)
   })
 
   // Words beside a picture, and promises as cards, keep the page's margin and its spacing.

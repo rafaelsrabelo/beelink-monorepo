@@ -30,7 +30,7 @@ afterEach(() => {
 })
 
 describe("PUT /api/stores/[slug]/components/[componentId]/section", () => {
-  it("moves the component and drops what the storefront had cached for the shop", async () => {
+  it("moves the component, and leaves the storefront's cache alone: a draft is served to nobody", async () => {
     const fetchSpy = vi.fn(async () => Response.json([], { status: 200 }))
     vi.stubGlobal("fetch", fetchSpy)
     const body = { sectionId: "0199b000-0000-7000-8000-000000000001", position: 1, span: "HALF" }
@@ -42,7 +42,7 @@ describe("PUT /api/stores/[slug]/components/[componentId]/section", () => {
       `http://api.test/api/stores/${SLUG}/components/${COMPONENT}/section`,
       expect.objectContaining({ method: "PUT", body: JSON.stringify(body) }),
     )
-    expect(revalidateStore).toHaveBeenCalledWith(SLUG)
+    expect(revalidateStore).not.toHaveBeenCalled()
   })
 
   it("passes a refused move through as it was written, and leaves the cache alone", async () => {

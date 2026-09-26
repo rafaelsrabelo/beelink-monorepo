@@ -80,5 +80,12 @@ export function EmptyStateNote({ state, slug, messages }: EmptyStateNoteProps) {
     case "sourceEmpty":
       // The fix is the source field right below it, in this same sheet.
       return <EmptyStateNotice title={text.sourceEmpty.title} body={text.sourceEmpty.body} messages={messages} />
+    case "featuredUnavailable":
+      // The fix is the product search right below it.
+      return <EmptyStateNotice title={text.featuredUnavailable.title} body={text.featuredUnavailable.body} messages={messages} />
+    case "countdownUnset":
+      return <EmptyStateNotice title={text.countdownUnset.title} body={text.countdownUnset.body} messages={messages} />
+    case "countdownEnded":
+      return <EmptyStateNotice title={text.countdownEnded.title} body={text.countdownEnded.body} messages={messages} />
   }
 }

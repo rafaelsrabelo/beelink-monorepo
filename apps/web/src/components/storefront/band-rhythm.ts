@@ -2,14 +2,17 @@
 import type { PublicComponent, PublicSection } from "@harness-monorepo/contracts"
 
 /**
- * What paints edge to edge in a band with no margin: a picture, and the benefits strip, which brings
- * its own tint and padding. By the layout and not the kind: a banner "Dividida" is words beside a
+ * What paints edge to edge in a band with no margin: a picture, and the benefits strip and a call to
+ * action's, which bring their own colour and padding. By the layout and not the kind: a banner "Dividida" is words beside a
  * picture, and benefits as cards sit on the page — both keep the page's side margin and its spacing.
  * Every other kind is words, and keeps them too.
  */
 export function reachesTheEdge(component: Pick<PublicComponent, "kind" | "display">): boolean {
   if (component.kind === "BANNER") return component.display !== "SPLIT"
   if (component.kind === "BENEFITS") return component.display !== "CARDS"
+  // A call to action's strip is a surface of the shop's colour; as a card it sits inside the margins.
+  if (component.kind === "CALL_TO_ACTION") return component.display !== "CARD"
+  if (component.kind === "COUNTDOWN") return component.display !== "BLOCK"
   return false
 }
 

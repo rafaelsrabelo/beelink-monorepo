@@ -41,6 +41,12 @@ describe("StorefrontWindow", () => {
     expect(colors.primary).toMatch(/^#[0-9A-Fa-f]{6}$/)
   })
 
+  it("hands the header its “Entregar em”, inside the banner", () => {
+    renderWindow({ deliverTo: <span>Entregar em</span> })
+
+    expect(within(screen.getByRole("banner")).getByText("Entregar em")).toBeInTheDocument()
+  })
+
   /** A landing page that is its own poster: the page and the shop's colours, nothing around it. */
   it("draws the page alone when the chrome is off: no strip, no header, no footer", () => {
     const { container } = renderWindow({
