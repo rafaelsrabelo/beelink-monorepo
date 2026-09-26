@@ -55,6 +55,7 @@ import {
   SECTION_WIDTHS,
   SHOWCASE_LIMIT_MAX,
   TEXT_ALIGNS,
+  displaysInWords,
 } from '../page.constants.js';
 
 /**
@@ -92,7 +93,7 @@ export class ComponentDto implements CreateComponentPayload {
   @IsIn(COMPONENT_SPANS, { context: { errorCode: 'COMPONENT_SPAN_INVALID' satisfies PageErrorCode } })
   span?: ComponentSpan;
 
-  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: 'CAROUSEL or GRID on a BANNER, RAIL or GRID on PRODUCTS and CATEGORIES. Null on every other kind.' })
+  @ApiPropertyOptional({ enum: COMPONENT_DISPLAYS, nullable: true, description: `The layout, from its kind's own — ${displaysInWords()}. Null only on the other kinds; refused on these.` })
   @IsOptional()
   @IsIn(COMPONENT_DISPLAYS, { context: { errorCode: 'COMPONENT_DISPLAY_INVALID' satisfies PageErrorCode } })
   display?: ComponentDisplay | null;

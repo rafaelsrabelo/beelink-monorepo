@@ -1,5 +1,5 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -94,14 +94,16 @@ describe("DesignSelectionBar", () => {
     expect(screen.getByRole("button", { name: "Mostrar Banner 1" })).toBeInTheDocument()
   })
 
-  it("switches the block's format from a menu of the ones its kind draws", async () => {
+  it("switches the block's layout from the drawings of the ones its kind draws", async () => {
     const onLayout = vi.fn()
-    bar({ layouts: ["CAROUSEL", "GRID"], layout: "CAROUSEL", onLayout })
+    bar({ layouts: ["BACKDROP", "SPLIT", "CAROUSEL", "GRID"], layout: "CAROUSEL", onLayout })
 
     await userEvent.click(screen.getByRole("button", { name: "Trocar layout de Banner 1" }))
-    await userEvent.click(await screen.findByRole("menuitemradio", { name: "Grade" }))
+    const picker = await screen.findByRole("group", { name: "Trocar layout de Banner 1" })
+    expect(within(picker).getByRole("button", { name: "Carrossel" })).toHaveAttribute("aria-pressed", "true")
+    await userEvent.click(within(picker).getByRole("button", { name: "Dividida" }))
 
-    expect(onLayout).toHaveBeenCalledWith("GRID")
+    expect(onLayout).toHaveBeenCalledWith("SPLIT")
   })
 
   it("offers no layout where the kind draws one only", () => {
@@ -123,17 +125,17 @@ describe("DesignSelectionBar", () => {
     expect(screen.getByRole("button", { name: "Descer Banner 1" })).toHaveFocus()
   })
 
-  // The menu is a portal whose keys still bubble through the bar: its ← → stay in the menu.
-  it("leaves the open layout menu's arrows to the menu", async () => {
+  // The picker is a portal whose keys still bubble through the bar: its ← → are not the bar's.
+  it("leaves the open layout picker's arrows to the picker", async () => {
     bar({ layouts: ["CAROUSEL", "GRID"], layout: "CAROUSEL", onLayout: vi.fn() })
 
     await userEvent.click(screen.getByRole("button", { name: "Trocar layout de Banner 1" }))
-    const item = await screen.findByRole("menuitemradio", { name: "Grade" })
+    const item = await screen.findByRole("button", { name: "Grade" })
     item.focus()
     await userEvent.keyboard("{ArrowRight}")
 
     expect(screen.getByRole("button", { name: "Subir Banner 1" })).not.toHaveFocus()
-    expect(screen.getByRole("menu")).toBeInTheDocument()
+    expect(item).toHaveFocus()
   })
 
   it("marks itself as the editor's stop, so its keys walk from it", () => {

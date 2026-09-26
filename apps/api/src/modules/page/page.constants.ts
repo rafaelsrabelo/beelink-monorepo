@@ -17,8 +17,26 @@ export const COMPONENT_SPANS = ['FULL', 'HALF', 'THIRD', 'TWO_THIRDS'] as const 
 /** Everywhere, only on a computer, only on a phone. */
 export const DEVICE_VISIBILITIES = ['ALL', 'DESKTOP', 'PHONE'] as const satisfies readonly DeviceVisibility[];
 
-/** One at a time, side by side, or on one row that scrolls. */
-export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID', 'RAIL'] as const satisfies readonly ComponentDisplay[];
+/** Every layout any kind draws; `DISPLAYS_OF_KIND` says which are whose. */
+export const COMPONENT_DISPLAYS = [
+  'CAROUSEL',
+  'GRID',
+  'RAIL',
+  'BACKDROP',
+  'SPLIT',
+  'CHIPS',
+  'INLINE',
+  'CARDS',
+  'STATIC',
+  'MARQUEE',
+  'ACCORDION',
+  'BAND',
+  'CARD',
+  'IMAGE_LEFT',
+  'IMAGE_RIGHT',
+  'IMAGE_LARGE',
+  'BLOCK',
+] as const satisfies readonly ComponentDisplay[];
 
 /**
  * The displays each kind draws. A kind absent from this table holds null, and a write that sends
@@ -26,10 +44,27 @@ export const COMPONENT_DISPLAYS = ['CAROUSEL', 'GRID', 'RAIL'] as const satisfie
  * banner is not a rail, and a showcase is not a carousel.
  */
 export const DISPLAYS_OF_KIND: Partial<Record<ComponentKind, readonly ComponentDisplay[]>> = {
-  BANNER: ['CAROUSEL', 'GRID'],
+  BANNER: ['BACKDROP', 'SPLIT', 'CAROUSEL', 'GRID'],
   PRODUCTS: ['RAIL', 'GRID'],
-  CATEGORIES: ['RAIL', 'GRID'],
+  CATEGORIES: ['RAIL', 'GRID', 'CHIPS'],
+  BENEFITS: ['INLINE', 'CARDS'],
+  ANNOUNCEMENT: ['STATIC', 'MARQUEE'],
+  FAQ: ['ACCORDION'],
+  CALL_TO_ACTION: ['BAND', 'CARD'],
+  IMAGE_TEXT: ['IMAGE_LEFT', 'IMAGE_RIGHT'],
+  FEATURED_PRODUCT: ['IMAGE_LEFT', 'IMAGE_LARGE'],
+  COUNTDOWN: ['BAND', 'BLOCK'],
 };
+
+/**
+ * `DISPLAYS_OF_KIND` in words, for Swagger: "BANNER: BACKDROP, SPLIT, CAROUSEL or GRID; …". Built
+ * from the table so a kind's new layout reaches the docs without anyone editing a sentence.
+ */
+export function displaysInWords(): string {
+  return Object.entries(DISPLAYS_OF_KIND)
+    .map(([kind, displays]) => `${kind}: ${displays.length > 1 ? `${displays.slice(0, -1).join(', ')} or ${displays.at(-1)}` : displays.join('')}`)
+    .join('; ');
+}
 
 /** Which products a showcase draws. No best sellers: nothing records a sale yet. */
 export const PRODUCT_SOURCES = ['ALL', 'CATEGORY', 'SELECTION', 'NEWEST', 'ON_SALE'] as const satisfies readonly ProductSource[];
@@ -52,6 +87,11 @@ export const COMPONENT_KINDS = [
   'CATEGORIES',
   'PRODUCTS',
   'CONTACT',
+  'FAQ',
+  'CALL_TO_ACTION',
+  'IMAGE_TEXT',
+  'FEATURED_PRODUCT',
+  'COUNTDOWN',
 ] as const satisfies readonly ComponentKind[];
 
 /**
@@ -72,6 +112,17 @@ export const CONTACT_FIELDS_MAX = 12;
 export const CONTACT_FIELD_LABEL_MAX_LENGTH = 60;
 export const CONTACT_OPTIONS_MAX = 20;
 export const CONTACT_OPTION_MAX_LENGTH = 60;
+
+/** A FAQ longer than this is a help centre; a question is a line, and an answer a short paragraph. */
+export const FAQ_ITEMS_MAX = 20;
+export const FAQ_QUESTION_MAX_LENGTH = 160;
+export const FAQ_ANSWER_MAX_LENGTH = 1000;
+
+/** What a button says: a few words, as on the shop's own buttons. */
+export const BUTTON_LABEL_MAX_LENGTH = 40;
+
+/** What a picture shows, said in a line: a description, not a caption. */
+export const IMAGE_ALT_MAX_LENGTH = 160;
 
 /** Where a heading or a paragraph sits. Null on the wire is "as the kind always drew it". */
 export const TEXT_ALIGNS = ['LEFT', 'CENTER', 'RIGHT'] as const satisfies readonly TextAlign[];
