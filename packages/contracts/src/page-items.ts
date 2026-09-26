@@ -74,3 +74,12 @@ export interface PublicImageTextMedia {
 export interface PublicFeaturedProduct extends PublicProductCard {
   soldOut: boolean;
 }
+
+/**
+ * When a countdown ends: one instant, ISO-8601 in UTC. The digits count a duration, so they need no
+ * time zone; a date said to someone is said in the shop's.
+ */
+export interface CountdownEnd {
+  id: string;
+  endsAt: string;
+}

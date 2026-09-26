@@ -138,3 +138,14 @@ describe('a featured product', () => {
     expect(toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR).components[0]?.items).toEqual([]);
   });
 });
+
+describe('a countdown', () => {
+  const END = Date.parse('2026-09-30T02:59:00.000Z');
+  const block = componentRow({ kind: 'COUNTDOWN', display: 'BAND', items: [{ id: 'fim', endsAt: '2026-09-30T02:59:00.000Z' }] });
+  const lookups = (now: number) => ({ slugs: { categories: new Map(), products: new Map() }, shelves: new Map(), featured: new Map(), now });
+
+  it('is served while there is time left, and left out from its end', () => {
+    expect(toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR, lookups(END - 1)).components).toHaveLength(1);
+    expect(toPublicSection(sectionOf(block), 'loja', ROUTE_WORDS.PT_BR, lookups(END)).components).toHaveLength(0);
+  });
+});

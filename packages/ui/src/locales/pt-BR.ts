@@ -165,6 +165,9 @@ export const ptBR: UiMessages = {
     seeOptions: "Ver opções",
     buyNow: "Comprar agora",
     seeProduct: "Ver produto",
+    countdownUnits: { days: "dias", hours: "horas", minutes: "min", seconds: "seg" },
+    countdownEnds: "Termina em {date}, às {time}",
+    countdownEnded: "Encerrada",
     viewCart: "Ver carrinho",
     addedShort: "Adicionado",
     inStock: "Em estoque",
@@ -377,6 +380,7 @@ export const ptBR: UiMessages = {
       CALL_TO_ACTION: "Chamada final",
       IMAGE_TEXT: "Imagem e texto",
       FEATURED_PRODUCT: "Produto em destaque",
+      COUNTDOWN: "Contagem regressiva",
     },
     emptyAction: {
       ANNOUNCEMENT: "Escrever o aviso",
@@ -391,6 +395,7 @@ export const ptBR: UiMessages = {
       CALL_TO_ACTION: "Escrever a chamada",
       IMAGE_TEXT: "Escolher a imagem",
       FEATURED_PRODUCT: "Escolher o produto",
+      COUNTDOWN: "Escolher quando termina",
     },
     showcaseOnPublish: "Os produtos aparecem ao publicar",
     categoriesHiddenAction: "Nenhuma categoria aparece na loja ainda",
@@ -429,6 +434,14 @@ export const ptBR: UiMessages = {
       sourceEmpty: {
         title: "Esta fonte não traz nenhum produto agora",
         body: "A vitrine não aparece na loja enquanto a fonte estiver vazia. Escolha outra fonte aqui embaixo.",
+      },
+      countdownEnded: {
+        title: "Esta contagem já terminou",
+        body: "Ela não aparece mais na loja. Escolha uma nova data aqui embaixo ou esconda o bloco.",
+      },
+      countdownUnset: {
+        title: "Falta a data de término",
+        body: "A contagem só aparece na loja depois que você escolher quando ela termina.",
       },
       featuredUnavailable: {
         title: "Este produto não está à venda",
@@ -473,6 +486,7 @@ export const ptBR: UiMessages = {
         callToAction: { title: "Pronto para escolher o seu?", body: "Frete grátis nas compras acima de R$ 199.", label: "Ver produtos" },
         imageText: { title: "Feito com cuidado", body: "Conte de onde vêm as peças e quem está por trás de cada uma." },
         featuredTitle: "Destaque da semana",
+        countdownTitle: "A oferta termina em",
       },
       placement: {
         between: "Entra entre {before} e {after}.",
@@ -496,6 +510,7 @@ export const ptBR: UiMessages = {
         CALL_TO_ACTION: "Título, texto e um botão",
         IMAGE_TEXT: "Uma imagem ao lado de título e texto",
         FEATURED_PRODUCT: "Um produto grande, com preço e botão de comprar",
+        COUNTDOWN: "Dias, horas e minutos até a oferta acabar",
       },
       bannersAcross: "{count} banners lado a lado",
       bannersAcrossHints: {
@@ -568,6 +583,7 @@ export const ptBR: UiMessages = {
       IMAGE_LEFT: "Imagem à esquerda",
       IMAGE_RIGHT: "Imagem à direita",
       IMAGE_LARGE: "Imagem grande",
+      BLOCK: "Bloco",
     },
     displayAuto: "Automática: parada onde cabe, rolando no celular",
     categoriesRailHint: "Uma linha só, que rola para o lado — no celular e no computador.",
@@ -600,6 +616,7 @@ export const ptBR: UiMessages = {
         SHOWCASE_EMPTY: "{block}, em {band}: a vitrine não tem produtos para mostrar.",
         BANNER_WITHOUT_IMAGE: "{block}, em {band}: o banner não tem imagem.",
         FEATURED_PRODUCT_UNAVAILABLE: "{block}, em {band}: o produto em destaque não está à venda.",
+        COUNTDOWN_ENDED: "{block}, em {band}: a contagem já terminou ou não tem data, e não aparece na loja.",
       },
       note: "Nota para o histórico (opcional)",
       notePlaceholder: "Ex.: preços da Black Friday",
@@ -782,6 +799,10 @@ export const ptBR: UiMessages = {
     benefitIcon: "Ícone",
     benefitTitle: "Título",
     benefitDetail: "Detalhe",
+    countdown: {
+      ends: "Termina em (horário de Brasília)",
+      help: "Quando chegar a zero, a contagem some da loja.",
+    },
     featured: {
       chosen: "Produto:",
       none: "nenhum escolhido",

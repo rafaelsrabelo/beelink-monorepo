@@ -195,3 +195,15 @@ continuam como estão.
   espaçamento.
 - **A promoção relâmpago** nasce com uma data que expira sozinha. É o comportamento do ticket; o aviso
   de Publicar e a nota no painel deixam isso visível.
+
+## Durante a implementação
+
+*Acrescentado em 2026-09-26, ao terminar os seis PRs.*
+
+- **A contagem não usa `suppressHydrationWarning`.**
+  - O primeiro render, no servidor e no navegador, desenha a data de término à vista e traços no lugar dos dígitos. Os dígitos começam quando o script roda.
+  - Assim os dois renders são iguais, e quem não tem script ainda lê quando a oferta acaba.
+- **O `showStock` do produto em destaque ficou de fora.** "Esgotado" sempre aparece, porque explica por que não há botão, e o bloco não mostra a quantidade em estoque.
+- **`readsCatalog`** em `design-kinds.ts` diz quais tipos carregam categorias e produtos no painel. A chamada final apareceu sem produtos para escolher na primeira conferência no navegador.
+- **O aviso "não está à venda"** do produto em destaque só aparece quando há um produto salvo que não resolve. Antes de escolher, o bloco mostra o convite para escolher.
+- **A galeria recebe o relógio uma vez, ao abrir o editor.** A amostra da contagem conta a partir dele, e o render continua puro.

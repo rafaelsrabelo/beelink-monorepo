@@ -36,6 +36,8 @@ enum ComponentKind {
   IMAGE_TEXT
   /// One product, large, resolved when the page is read; its pick is its `items`.
   FEATURED_PRODUCT
+  /// The time left until an instant, its `items`. Left out of the shop once it has passed.
+  COUNTDOWN
 }
 
 /// How wide a section sits on the page. It belongs to the band and not to what is inside it, which
@@ -94,6 +96,8 @@ enum ComponentDisplay {
   IMAGE_RIGHT
   /// The picture wide and the words under it. A featured product's.
   IMAGE_LARGE
+  /// A box that fits a slice of the band. A countdown's.
+  BLOCK
 }
 
 /// Where a component shows. The shop window's `md` width is the line between a phone and a computer.

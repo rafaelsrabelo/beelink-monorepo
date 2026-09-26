@@ -14,6 +14,7 @@ import type { BenefitValue } from "./benefit-rows-field"
 import { ComponentTextFields } from "./component-text-fields"
 import { contentReady, type ComponentFormValues } from "./component-form"
 import { ContactFieldsField } from "./contact-fields-field"
+import { CountdownFields } from "./countdown-fields"
 import type { ContactFieldValue } from "./contact-fields-field"
 import type { ComponentDisplay } from "./design-types"
 import { FeaturedProductFields } from "./featured-product-fields"
@@ -132,6 +133,10 @@ export function ComponentContentFields({
           {...(onProductQuery ? { onQueryChange: onProductQuery } : {})}
           messages={messages}
         />
+      ) : null}
+
+      {value.kind === "COUNTDOWN" ? (
+        <CountdownFields value={value.countdownEnd} onChange={(countdownEnd) => merge({ countdownEnd })} messages={messages} />
       ) : null}
 
       {value.kind === "FAQ" ? (

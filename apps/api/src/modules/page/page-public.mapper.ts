@@ -14,6 +14,7 @@ import type {
 import type { ComponentShape, SectionShape } from './page-document.js';
 
 // App
+import { hasEnded } from './page-countdown.js';
 import { NO_SLUGS, toPublicButton, toPublicLink, toPublicMedia, toPublicSlide, type SlugsByEntity } from './page-links.js';
 import { itemsOf } from './page.mapper.js';
 
@@ -51,6 +52,8 @@ export interface PageLookups {
   shelves: ShelvesByComponent;
   /** Each featured product's card, by component id; absent where the product is not on sale. */
   featured: ReadonlyMap<string, PublicFeaturedProduct>;
+  /** The moment the page is read, for a countdown to be left out once it has ended. Now, unless a test fixes it. */
+  now?: number;
 }
 
 /** Nothing looked up: slides are pictures, showcases are empty and no product is featured — never a guess. */
@@ -116,8 +119,10 @@ export function toPublicSection(
     name: row.name,
     width: row.width,
     background: row.background,
+    // A countdown that has ended is not served: nothing is left to count, and a stranger's page
+    // saying "00:00:00" for a sale that is over is worse than no countdown.
     components: row.components
-      .filter((component) => component.isActive)
+      .filter((component) => component.isActive && !hasEnded(component, lookups.now ?? Date.now()))
       .map((component) => toPublicComponent(component, shopSlug, words, lookups)),
   } satisfies PublicSection;
 }

@@ -83,5 +83,9 @@ export function EmptyStateNote({ state, slug, messages }: EmptyStateNoteProps) {
     case "featuredUnavailable":
       // The fix is the product search right below it.
       return <EmptyStateNotice title={text.featuredUnavailable.title} body={text.featuredUnavailable.body} messages={messages} />
+    case "countdownUnset":
+      return <EmptyStateNotice title={text.countdownUnset.title} body={text.countdownUnset.body} messages={messages} />
+    case "countdownEnded":
+      return <EmptyStateNotice title={text.countdownEnded.title} body={text.countdownEnded.body} messages={messages} />
   }
 }

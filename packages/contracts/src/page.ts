@@ -3,6 +3,7 @@
 import type { PublicProductCard } from "./catalog.js";
 import type {
   CallToActionButton,
+  CountdownEnd,
   FaqItem,
   ImageTextMedia,
   PublicCallToActionButton,
@@ -62,7 +63,12 @@ export type ComponentKind =
    * One product of the catalogue, large: its photo, its price and stock read when the page is, and
    * the way to buy it. Its `items` hold the pick, a `ShowcaseProduct`, as a hand-picked showcase's do.
    */
-  | "FEATURED_PRODUCT";
+  | "FEATURED_PRODUCT"
+  /**
+   * The time left until an instant, in its `items`. Once it has passed the shop leaves it out — the
+   * read drops it, and a page left open hides it at zero.
+   */
+  | "COUNTDOWN";
 
 /**
  * How wide a section sits on the page.
@@ -99,6 +105,7 @@ export type ComponentSpan = "FULL" | "HALF" | "THIRD" | "TWO_THIRDS";
  * - An image with text: `IMAGE_LEFT` or `IMAGE_RIGHT`, stacked on a phone with the picture first.
  * - A featured product: `IMAGE_LEFT` (the photo beside the words) or `IMAGE_LARGE` (the photo wide,
  *   the words under it).
+ * - A countdown: `BAND` (a strip of the shop's colour) or `BLOCK` (a box that fits a slice).
  *
  * Null on every other kind — and on a benefits band or a strip saved before they had a choice, which
  * draw as they always did.
@@ -119,7 +126,8 @@ export type ComponentDisplay =
   | "CARD"
   | "IMAGE_LEFT"
   | "IMAGE_RIGHT"
-  | "IMAGE_LARGE";
+  | "IMAGE_LARGE"
+  | "BLOCK";
 
 /**
  * Where a component shows: everywhere, only on a computer, or only on a phone — the shop window's
@@ -295,7 +303,8 @@ export type ComponentItem =
   | ShowcaseProduct
   | FaqItem
   | CallToActionButton
-  | ImageTextMedia;
+  | ImageTextMedia
+  | CountdownEnd;
 /**
  * What a visitor is served in a component's `items`: a banner's slides with their addresses built, a
  * showcase's products as cards, and every other kind's items as the shopkeeper wrote them.
@@ -309,7 +318,8 @@ export type PublicComponentItem =
   | FaqItem
   | PublicCallToActionButton
   | PublicImageTextMedia
-  | PublicFeaturedProduct;
+  | PublicFeaturedProduct
+  | CountdownEnd;
 
 /** A component as a visitor is served it: already resolved, so the storefront joins nothing. */
 export interface PublicComponent {

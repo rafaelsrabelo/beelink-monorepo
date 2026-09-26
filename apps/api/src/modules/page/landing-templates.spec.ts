@@ -12,7 +12,14 @@ const PRODUCT = { id: '0199e000-0000-7000-8000-000000000001', name: 'Whey Baunil
 const CATEGORY = { id: '0199d000-0000-7000-8000-000000000001', name: 'Proteínas', description: 'Para depois do treino', imageUrl: null };
 
 function subject(over: Partial<LandingSubject> = {}): LandingSubject {
-  return { title: 'Minha página', product: PRODUCT, category: CATEGORY, promises: promisesOf(['PIX', 'MONEY']), ...over };
+  return {
+    title: 'Minha página',
+    product: PRODUCT,
+    category: CATEGORY,
+    promises: promisesOf(['PIX', 'MONEY']),
+    saleEndsAt: '2026-09-30T02:00:00.000Z',
+    ...over,
+  };
 }
 
 /** Every variation a template meets: with and without a picture, a category, and something to promise. */
@@ -84,6 +91,13 @@ describe('landingBands', () => {
       expect(last.section.width).toBe('FULL');
       expect(last.components[0]).toMatchObject({ kind: 'CALL_TO_ACTION', display: 'BAND', items: [{ target: 'PRODUCT', productId: PRODUCT.id }] });
     }
+  });
+
+  it('counts a flash sale down to the end it was made with, on a strip under the cover', () => {
+    const [, countdown] = landingBands('promocao-relampago', subject());
+
+    expect(countdown!.section.width).toBe('FULL');
+    expect(countdown!.components[0]).toMatchObject({ kind: 'COUNTDOWN', display: 'BAND', items: [{ endsAt: '2026-09-30T02:00:00.000Z' }] });
   });
 
   it('opens on the words alone when there is no picture: a banner with no slide draws nothing', () => {

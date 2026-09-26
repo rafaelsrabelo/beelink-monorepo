@@ -10,6 +10,7 @@ import {
   MessageCircleQuestionMarkIcon,
   MousePointerClickIcon,
   StarIcon,
+  TimerIcon,
   TagsIcon,
   TypeIcon,
 } from "lucide-react"
@@ -36,6 +37,7 @@ const KIND_ICON: Record<ComponentKind, typeof LayoutGridIcon> = {
   CALL_TO_ACTION: MousePointerClickIcon,
   IMAGE_TEXT: LayoutPanelLeftIcon,
   FEATURED_PRODUCT: StarIcon,
+  COUNTDOWN: TimerIcon,
 }
 
 /** A block's thumbnail on its row or its card: a banner's first picture, or its kind's glyph. */

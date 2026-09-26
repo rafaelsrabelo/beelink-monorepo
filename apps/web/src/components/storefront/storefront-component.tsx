@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import type {
   BenefitRow,
   ContactField,
+  CountdownEnd,
   FaqItem,
   PublicCallToActionButton,
   PublicComponent,
@@ -29,6 +30,7 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { ContactFormLive } from "./contact-form-live"
 import { StorefrontBannerBlock } from "./storefront-banner-block"
+import { StorefrontCountdownLive } from "./storefront-countdown-live"
 import { StorefrontFeaturedBlock } from "./storefront-featured-block"
 import { StorefrontCategoriesBlock } from "./storefront-categories-block"
 import type { ContactCopy } from "./storefront-contact-copy"
@@ -198,6 +200,22 @@ export function StorefrontComponent({
           messages={messages}
         />
       )
+
+    case "COUNTDOWN": {
+      const [end] = component.items as CountdownEnd[]
+      if (!end) return null
+      return (
+        <StorefrontCountdownLive
+          layout={component.display === "BLOCK" ? "BLOCK" : "BAND"}
+          title={component.title}
+          subtitle={component.subtitle}
+          endsAt={end.endsAt}
+          bleed={bleed}
+          editing={editing}
+          messages={messages}
+        />
+      )
+    }
 
     case "FAQ":
       return (
