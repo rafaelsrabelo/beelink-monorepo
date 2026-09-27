@@ -21,13 +21,14 @@ describe("useDeliveryTo", () => {
   it("reads nobody before a customer is chosen, nor on a pick-up", () => {
     expect(renderHook(() => useDeliveryTo("loja", null, "DELIVERY")).result.current).toBeUndefined()
     expect(renderHook(() => useDeliveryTo("loja", bia, "PICKUP")).result.current).toBeUndefined()
-    expect(mocks.customer).toHaveBeenCalledWith("loja", null)
-    expect(mocks.customer).not.toHaveBeenCalledWith("loja", "c1")
+    expect(mocks.customer).toHaveBeenCalledWith("loja", null, { fresh: true })
+    expect(mocks.customer).not.toHaveBeenCalledWith("loja", "c1", expect.anything())
   })
 
   it("holds while the record is on its way, then says where the delivery goes", () => {
     const { result, rerender } = renderHook(() => useDeliveryTo("loja", bia, "DELIVERY"))
-    expect(mocks.customer).toHaveBeenCalledWith("loja", "c1")
+    // Read fresh: the record may have just changed in another tab, where the warning sent the shopkeeper.
+    expect(mocks.customer).toHaveBeenCalledWith("loja", "c1", { fresh: true })
     expect(result.current).toEqual({ loading: true })
 
     mocks.customer.mockReturnValue({ data: { ...bia, address: paulista }, isError: false })
@@ -46,5 +47,10 @@ describe("useDeliveryTo", () => {
   it("claims nothing when the record cannot be read, leaving the rule to the API", () => {
     mocks.customer.mockReturnValue({ data: undefined, isError: true })
     expect(renderHook(() => useDeliveryTo("loja", bia, "DELIVERY")).result.current).toBeUndefined()
+  })
+
+  it("keeps what it read through a refetch that failed", () => {
+    mocks.customer.mockReturnValue({ data: { ...bia, address: paulista }, isError: true })
+    expect(renderHook(() => useDeliveryTo("loja", bia, "DELIVERY")).result.current).toMatchObject({ loading: false, line: expect.stringContaining("Av. Paulista") })
   })
 })

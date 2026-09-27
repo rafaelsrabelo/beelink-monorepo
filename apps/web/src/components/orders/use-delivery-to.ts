@@ -14,9 +14,11 @@ import { useStoreCustomer } from "@/services/customers/customer-hooks"
  */
 export function useDeliveryTo(slug: string, customer: OrderCustomerOption | null, fulfillment: OrderFulfillmentValue): OrderDeliveryTo | undefined {
   const delivering = customer !== null && fulfillment === "DELIVERY"
-  const record = useStoreCustomer(slug, delivering ? customer.id : null)
+  // Fresh: the shopkeeper told to fill in the address may have just done it in another tab.
+  const record = useStoreCustomer(slug, delivering ? customer.id : null, { fresh: true })
 
-  if (!delivering || record.isError) return undefined
-  if (!record.data) return { loading: true }
-  return { loading: false, line: isDeliverable(record.data.address) ? addressLineOf(record.data.address) : null }
+  if (!delivering) return undefined
+  // What was read stands through a refetch that failed; only a record never read is nothing to say.
+  if (record.data) return { loading: false, line: isDeliverable(record.data.address) ? addressLineOf(record.data.address) : null }
+  return record.isError ? undefined : { loading: true }
 }

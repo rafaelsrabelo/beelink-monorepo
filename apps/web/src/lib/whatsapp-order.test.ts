@@ -77,7 +77,7 @@ describe("shopOrderMessageOf", () => {
   const order = {
     number: 12,
     status: "PREPARING" as const,
-    customer: { id: "c1", name: "Bia", phone: "5511988887777", address: { zipCode: null, street: null, number: null, complement: null, neighborhood: null, city: null, state: null } },
+    customer: { id: "c1", name: "Bia", phone: "5511988887777" },
     items: [
       { id: "i1", productId: null, variantId: null, productName: "Camiseta", variantLabel: "Tamanho: M", sku: null, unitPriceCents: 4990, quantity: 2, lineTotalCents: 9980 },
     ],

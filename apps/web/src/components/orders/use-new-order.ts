@@ -21,8 +21,9 @@ import { ORDER_QUANTITY_MAX, orderTotalsOf, overStock } from "@harness-monorepo/
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { catalogKeys, useProduct, useProducts } from "@/services/catalog/catalog-hooks"
 import { fetchProduct } from "@/services/catalog/catalog-requests"
+import { customerKeys } from "@/services/customers/customer-hooks"
 import { useCreateOrder } from "@/services/orders/order-hooks"
-import { shortagesOf } from "@/services/orders/order-requests"
+import { OrderRequestError, shortagesOf } from "@/services/orders/order-requests"
 import { moneyOf, orderPayloadOf, productOptionOf, variantOptionsOf } from "./new-order-mapping"
 import { useDeliveryTo } from "./use-delivery-to"
 
@@ -126,6 +127,10 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
       onError: (error) => {
         const left = new Map(shortagesOf(error).map((shortage) => [shortage.variantId, shortage.available]))
         if (left.size) setLines((current) => current.map((line) => (left.has(line.variantId) ? { ...line, available: left.get(line.variantId)! } : line)))
+        // The record lost its address since it was read: read it again, so "Entregar em" stops saying otherwise.
+        if (error instanceof OrderRequestError && error.errorCode === "ORDER_DELIVERY_ADDRESS_MISSING") {
+          void queryClient.invalidateQueries({ queryKey: customerKeys.detail(slug, customer.id) })
+        }
       },
     })
     return true

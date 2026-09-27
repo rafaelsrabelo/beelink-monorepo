@@ -75,3 +75,22 @@ mesmo já pode receber o endereço no próprio formulário de cadastro (H3).
 - O checkout gravar o pedido (H9, BEELINK-121, o próximo ticket). Ele usa a mesma regra.
 - A frase "no order history a customer signs in to see" em `docs/product/README.md` sai quando o
   cliente puder ver os pedidos (J4). Aqui, a seção Orders ganha a linha sobre o endereço.
+
+## Adendo — revisão independente (27/09/2026)
+
+Três leituras: API, painel e consumidores do contrato. Cada achado passou por um verificador que
+tentou refutá-lo. Cinco achados confirmados, que são três problemas, todos corrigidos:
+
+1. **O Swagger de `POST /orders` não listava `ORDER_DELIVERY_ADDRESS_MISSING`.** O H9, o próximo
+   ticket, lê as recusas dali. Agora lista.
+2. **O formulário recusava com base numa ficha de até um minuto atrás.** O aviso manda cadastrar o
+   endereço na ficha do cliente. Quem faz isso em outra aba e volta via o formulário ainda recusar,
+   porque a consulta do cliente valia por 60 s. Para essa leitura, `useStoreCustomer` ganhou
+   `{ fresh: true }`: ela lê de novo sempre que é pedida e quando a aba volta. Além disso, uma
+   releitura que falha não apaga mais o que já tinha sido lido.
+3. **Uma recusa da API deixava "Entregar em" com o endereço antigo.** Numa
+   `ORDER_DELIVERY_ADDRESS_MISSING`, a ficha do cliente é lida de novo, e o aviso toma o lugar da
+   linha.
+
+Dois achados foram refutados. Um deles tinha razão num detalhe: o teste da mensagem do painel
+ainda montava `customer.address`. A fixture foi limpa.
