@@ -76,3 +76,22 @@ cliente não cancela um pedido aceito.
 
 - As telas: J4 (BEELINK-143) e J5 (BEELINK-144).
 - Rastreio e previsão (J7).
+
+## Adendo — revisão independente (27/09/2026)
+
+Duas leituras: API e privacidade, e contrato e consumidores. Cada achado passou por um verificador
+que tentou refutá-lo. Quatro confirmados, que são três problemas, todos corrigidos:
+
+1. **Cancelar um pedido já cancelado respondia "a loja já aceitou"** (`ORDER_NOT_CANCELLABLE`). Isso
+   acontecia quando a loja tinha recusado o pedido ou quando o botão era apertado duas vezes. Agora
+   a resposta é `ORDER_CANCELLED`, como no painel. `ORDER_NOT_CANCELLABLE` fica para o aceito em
+   diante.
+2. **Um e2e quebraria em 1º de janeiro de 2027.** Ele esperava os anos `[2026, 2025]`, mas um dos
+   pedidos é feito agora. O ano atual passou a ser lido no fuso de Brasília, como a API faz.
+3. **Nenhum teste provava que as contagens seguem a busca e o período.** A única busca testada
+   achava todos os pedidos. Agora há um teste com uma busca que filtra ("whey") e outro com um
+   período em que a aba escolhida vem vazia e as contagens não.
+
+Quatro achados foram refutados. Um deles fica anotado para o J6: `CustomerOrderItem` não traz o
+`variantId`, e o "Comprar de novo" vai precisar dele para devolver as mesmas combinações ao carrinho.
+O J6 acrescenta o campo.

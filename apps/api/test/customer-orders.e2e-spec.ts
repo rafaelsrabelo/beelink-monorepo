@@ -281,13 +281,19 @@ describe("a shopper's order from the cart", () => {
       const delivered = await orders('?situation=DELIVERED');
       expect(delivered.orders.map((order) => order.number)).toEqual([1]);
       expect(delivered.counts).toEqual({ ALL: 3, ACTIVE: 2, DELIVERED: 1, CANCELLED: 0 });
-      expect(delivered.years).toEqual([2026, 2025]);
+      // The order placed now is this year's in Brasília, whichever year the suite runs in.
+      const thisYear = Number(new Intl.DateTimeFormat('en', { timeZone: 'America/Sao_Paulo', year: 'numeric' }).format(new Date()));
+      expect(delivered.years).toEqual([...new Set([thisYear, 2026, 2025])]);
 
       expect((await orders('?period=2025')).orders.map((order) => order.number)).toEqual([1]);
       expect((await orders('?period=3m')).orders.map((order) => order.number)).toEqual([3]);
       expect((await orders('?q=whey')).orders.map((order) => order.number)).toEqual([3]);
       expect((await orders('?q=%232')).orders.map((order) => order.number)).toEqual([2]);
-      expect((await orders('?q=creat')).counts).toEqual({ ALL: 3, ACTIVE: 2, DELIVERED: 1, CANCELLED: 0 });
+      // Every tab counts under the search and the period — and never under the tab chosen.
+      expect((await orders('?q=whey&situation=DELIVERED')).counts).toEqual({ ALL: 1, ACTIVE: 1, DELIVERED: 0, CANCELLED: 0 });
+      const in2025 = await orders('?period=2025&situation=ACTIVE');
+      expect(in2025.orders).toEqual([]);
+      expect(in2025.counts).toEqual({ ALL: 1, ACTIVE: 0, DELIVERED: 1, CANCELLED: 0 });
       expect((await orders('?pageSize=1&page=2')).orders.map((order) => order.number)).toEqual([2]);
       expect((await call('GET', '/api/stores/lessari/customer/orders?period=ontem', shopper)).statusCode).toBe(400);
     });
@@ -323,10 +329,11 @@ describe("a shopper's order from the cart", () => {
       ]);
       expect(await prisma.customer.findUniqueOrThrow({ where: { id: await recordOf(shopper) } })).toMatchObject({ ordersCount: 1 });
 
-      for (const number of [1, 2]) {
+      // Accepted by the shop: the shop's to cancel. Already cancelled: said as cancelled, not as accepted.
+      for (const [number, errorCode] of [[2, 'ORDER_NOT_CANCELLABLE'], [1, 'ORDER_CANCELLED']] as const) {
         const refused = await call('POST', `/api/stores/lessari/customer/orders/${number}/cancel`, shopper);
-        expect(refused.statusCode, String(number)).toBe(409);
-        expect(refused.json(), String(number)).toMatchObject({ errorCode: 'ORDER_NOT_CANCELLABLE' });
+        expect(refused.statusCode, errorCode).toBe(409);
+        expect(refused.json(), errorCode).toMatchObject({ errorCode });
       }
 
       await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'CANCELLED' });

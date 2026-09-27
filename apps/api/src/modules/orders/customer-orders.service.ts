@@ -124,6 +124,10 @@ export class CustomerOrdersService {
         select: { id: true, status: true, customerId: true, stockTaken: true },
       });
       if (!current) throw notFound(number);
+      // Already cancelled — by the shop, or by a second press — is said as such, not as "accepted".
+      if (current.status === 'CANCELLED') {
+        throw new ConflictException(orderError('ORDER_CANCELLED', 'The order is already cancelled'));
+      }
       if (current.status !== 'RECEIVED') {
         throw new ConflictException(orderError('ORDER_NOT_CANCELLABLE', "Only an order the shop has not accepted is the customer's to cancel"));
       }

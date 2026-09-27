@@ -70,7 +70,7 @@ export class CustomerOrdersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancel an order the shop has not accepted yet; its stock goes back' })
   @ApiOkResponse({ type: CustomerOrderResponse })
-  @ApiConflictResponse({ description: 'ORDER_NOT_CANCELLABLE — accepted or further along: the shop cancels it now' })
+  @ApiConflictResponse({ description: 'ORDER_NOT_CANCELLABLE — accepted or further along: the shop cancels it now · ORDER_CANCELLED — already cancelled' })
   cancel(
     @Param('storeSlug') storeSlug: string,
     @CurrentCustomer() customer: AuthenticatedCustomer,
