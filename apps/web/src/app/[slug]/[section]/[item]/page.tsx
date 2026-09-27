@@ -6,7 +6,7 @@ import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 
 // Types
-import type { PublicProductDetail } from "@harness-monorepo/contracts"
+import type { PublicProductDetail, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
@@ -18,6 +18,7 @@ import { specRowsOf } from "@harness-monorepo/ui/lib/product-specs"
 import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 
 // App
+import { AccountTabPage, accountTabMetadata, isAccountSegment } from "@/components/storefront/account/account-tab-page"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
 import { StorefrontRelated } from "@/components/storefront/storefront-related"
@@ -40,11 +41,7 @@ import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
  * resolving: a product belongs to a category but never nests under one, because a product moved
  * between categories would otherwise change address and break every link already shared.
  */
-async function load(slug: string, section: string, productSlug: string) {
-  const store = await shopAt(slug)
-
-  if (!store) return null
-
+async function load(store: PublicStore, slug: string, section: string, productSlug: string) {
   // Only the products word reaches a product. `sectionOf` is asked rather than the word compared
   // here, so the one place that knows what a segment means stays the one place.
   if (sectionOf(section, store.routeWords).kind !== "catalog") return null
@@ -59,7 +56,11 @@ async function load(slug: string, section: string, productSlug: string) {
 export async function generateMetadata({ params, searchParams }: PageProps<"/[slug]/[section]/[item]">): Promise<Metadata> {
   const { slug, section, item } = await params
   const { variant } = await searchParams
-  const loaded = await load(slug, section, item)
+  // The shopper's area shares these three segments: `/loja/conta/perfil` is a tab, not a product.
+  const shop = await shopAt(slug)
+  if (!shop) return {}
+  if (isAccountSegment(section, shop.routeWords)) return accountTabMetadata(slug, section, item)
+  const loaded = await load(shop, slug, section, item)
 
   if (!loaded) return {}
 
@@ -105,8 +106,12 @@ function descriptionOf(markdown: string | null): string | undefined {
 export default async function ProductPage({ params, searchParams }: PageProps<"/[slug]/[section]/[item]">) {
   const { slug, section, item } = await params
   // Read here and not in the browser, so a shared link opens on its combination with no flash.
-  const { variant } = await searchParams
-  const loaded = await load(slug, section, item)
+  const query = await searchParams
+  const { variant } = query
+  const shop = await shopAt(slug)
+  if (!shop) notFound()
+  if (isAccountSegment(section, shop.routeWords)) return <AccountTabPage slug={slug} section={section} item={item} query={query} />
+  const loaded = await load(shop, slug, section, item)
 
   if (!loaded) notFound()
 

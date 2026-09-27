@@ -106,6 +106,7 @@ describe('toPublicStore', () => {
       cart: 'carrinho',
       signIn: 'entrar',
       account: 'conta',
+      accountTabs: { orders: 'pedidos', favorites: 'favoritos', reviews: 'avaliacoes', profile: 'perfil', messages: 'conversas' },
     });
   });
 
@@ -119,6 +120,7 @@ describe('toPublicStore', () => {
       cart: 'cart',
       signIn: 'login',
       account: 'account',
+      accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', profile: 'profile', messages: 'messages' },
     });
   });
 

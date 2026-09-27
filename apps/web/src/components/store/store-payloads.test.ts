@@ -12,7 +12,7 @@ const STORE: Store = {
   ownerId: "01931f2e-0000-7000-8000-000000000009",
   inactiveAfterDays: 45,
   slug: "doces-da-ana",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } },
   name: "Doces da Ana",
   description: null,
   type: "ECOMMERCE",

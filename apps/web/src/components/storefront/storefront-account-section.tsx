@@ -12,7 +12,7 @@ import type { SectionQuery } from "@/lib/storefront-section"
 
 export interface StorefrontAccountSectionProps {
   slug: string
-  /** This page's address, to come back to after a save. */
+  /** The profile tab's address, to come back to after a save. */
   accountHref: string
   profile: CustomerProfile
   query: SectionQuery
@@ -30,17 +30,16 @@ function errorOf(code: string, errors: WebMessages["errors"], messages: UiMessag
   return errors[code as keyof WebMessages["errors"]] ?? errors.UNKNOWN
 }
 
-/** The shopper's page at a shop, and what the last save came back with (`salvo`, `erro`). */
+/** The profile tab of the shopper's area, and what the last save came back with (`salvo`, `erro`). */
 export function StorefrontAccountSection({ slug, accountHref, profile, query, errors, messages }: StorefrontAccountSectionProps) {
   const code = paramOf(query.erro)
   const back = paramOf(query[BACK_KEY]) ? safeBackOf(slug, paramOf(query[BACK_KEY])) : null
 
   return (
-    <div className="py-4">
+    <div>
       <StorefrontAccountForm
         profile={profile}
         action={`/${slug}/api/customer/perfil`}
-        signOutAction={`/${slug}/api/customer/sair`}
         // Reached from the cart's "Alterar dados", a save goes back to the cart; otherwise, here. A
         // refusal always comes back here, still on its way to the cart: the cart has no form to say it on.
         hidden={{

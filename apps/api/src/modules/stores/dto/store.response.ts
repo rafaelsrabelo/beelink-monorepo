@@ -70,6 +70,14 @@ export class StoreCategoryResponse implements StoreCategory {
  * not an inline object literal because Swagger would otherwise document it as `{}`, and the web
  * builds every storefront link out of these strings.
  */
+export class StorefrontAccountTabsResponse {
+  @ApiProperty({ example: 'pedidos' }) orders!: string;
+  @ApiProperty({ example: 'favoritos' }) favorites!: string;
+  @ApiProperty({ example: 'avaliacoes' }) reviews!: string;
+  @ApiProperty({ example: 'perfil' }) profile!: string;
+  @ApiProperty({ example: 'conversas' }) messages!: string;
+}
+
 export class StorefrontRouteWordsResponse implements StorefrontRouteWords {
   @ApiProperty({ example: 'produtos' }) products!: string;
   @ApiProperty({ example: 'categorias' }) categories!: string;
@@ -78,6 +86,8 @@ export class StorefrontRouteWordsResponse implements StorefrontRouteWords {
   @ApiProperty({ example: 'entrar', description: 'Sign-in, and with ?modo=criar or ?modo=senha, sign-up and a new password.' })
   signIn!: string;
   @ApiProperty({ example: 'conta' }) account!: string;
+  @ApiProperty({ type: StorefrontAccountTabsResponse, description: "The account's tabs, each a third segment under it." })
+  accountTabs!: StorefrontAccountTabsResponse;
 }
 
 /**

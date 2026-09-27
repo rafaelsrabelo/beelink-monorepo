@@ -367,6 +367,16 @@ export interface UiMessages {
     fullDescription: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
+    /** The shopper's area (J3): its menu, in the design's order, and the way back to it on a phone. */
+    accountOverview: string
+    accountOrders: string
+    accountFavorites: string
+    accountReviews: string
+    accountProfile: string
+    accountMessages: string
+    accountBack: string
+    /** Under a shortcut of the overview. */
+    accountProfileHint: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string

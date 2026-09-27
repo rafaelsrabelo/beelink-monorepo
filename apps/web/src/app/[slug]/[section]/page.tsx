@@ -13,7 +13,7 @@ import { StorefrontListingSkeleton } from "@harness-monorepo/ui/blocks/storefron
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live"
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
-import { StorefrontAccountSection } from "@/components/storefront/storefront-account-section"
+import { StorefrontAccountArea } from "@/components/storefront/account/storefront-account-area"
 import { StorefrontSectionBand } from "@/components/storefront/storefront-section-band"
 import { StorefrontSignInSection } from "@/components/storefront/storefront-sign-in-section"
 import { getMessages } from "@/lib/locale"
@@ -95,7 +95,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       year={new Date().getFullYear()}
       shopper={shopper}
       body={catalogue ? { layout: "flush", surface: "canvas" } : undefined}
-      pageHeader={<StorefrontSectionBand place={place} routes={routes} {...(catalogue ? { catalogue } : {})} locale={locale} />}
+      // The shopper's area draws its own front (6c): the greeting is its heading, and there is no band.
+      pageHeader={place.section.kind === "account" ? undefined : <StorefrontSectionBand place={place} routes={routes} {...(catalogue ? { catalogue } : {})} locale={locale} />}
       messages={ui}
     >
       {catalogue ? (
@@ -105,7 +106,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
       ) : place.section.kind === "account" && shopper ? (
-        <StorefrontAccountSection slug={store.slug} accountHref={routes.account()} profile={shopper} query={query} errors={(await getMessages()).web.errors} messages={ui} />
+        <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={null} messages={ui} />
       ) : place.section.kind === "signIn" ? (
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (
@@ -122,7 +123,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           identityHrefs={{
             signInHref: routes.signIn({ back: routes.cart() }),
             signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
-            editHref: `${routes.account()}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
+            editHref: `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
           }}
           locale={locale}
           messages={ui}

@@ -2,11 +2,11 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { listingFiltersOf, safeBackOf, sectionOf, signInModeOf, storefrontRoutes, toggledOption } from "./storefront-routes"
+import { listingFiltersOf, safeBackOf, sectionOf, signInModeOf, storefrontRoutes, toggledOption, accountTabOf } from "./storefront-routes"
 
 const routes = storefrontRoutes({
   slug: "mutante",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } },
 })
 
 describe("listingFiltersOf", () => {
@@ -82,7 +82,7 @@ describe("a landing page's address", () => {
   it("is under lp, whatever words the shop speaks", () => {
     const english = storefrontRoutes({
       slug: "mutante",
-      routeWords: { products: "products", categories: "categories", search: "search", cart: "cart", signIn: "login", account: "account" },
+      routeWords: { products: "products", categories: "categories", search: "search", cart: "cart", signIn: "login", account: "account", accountTabs: { orders: "orders", favorites: "favorites", reviews: "reviews", profile: "profile", messages: "messages" } },
     })
 
     expect(routes.landing("lancamento")).toBe("/mutante/lp/lancamento")
@@ -92,7 +92,7 @@ describe("a landing page's address", () => {
 
 describe("the sign-in page's addresses", () => {
   it("is a route word of its own, with its faces and its way back in the address", () => {
-    const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" } }
+    const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } } }
     const shopRoutes = storefrontRoutes(shop)
 
     expect(sectionOf("entrar", shop.routeWords)).toEqual({ kind: "signIn" })
@@ -117,3 +117,20 @@ describe("the sign-in page's addresses", () => {
   })
 })
 
+
+describe("the shopper's area", () => {
+  const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } } }
+
+  it("addresses each tab under the account, in the shop's words", () => {
+    expect(storefrontRoutes(shop).account()).toBe("/loja/conta")
+    expect(storefrontRoutes(shop).accountTab("profile")).toBe("/loja/conta/perfil")
+    expect(storefrontRoutes({ ...shop, routeWords: { ...shop.routeWords, account: "account", accountTabs: { ...shop.routeWords.accountTabs, profile: "profile" } } }).accountTab("profile")).toBe("/loja/account/profile")
+  })
+
+  it("reads a third segment back into its tab, and nothing else into one", () => {
+    expect(accountTabOf("perfil", shop.routeWords)).toBe("profile")
+    expect(accountTabOf("pedidos", shop.routeWords)).toBe("orders")
+    expect(accountTabOf("profile", shop.routeWords)).toBeNull()
+    expect(accountTabOf("", shop.routeWords)).toBeNull()
+  })
+})

@@ -7,8 +7,24 @@ import type { ProductOrigin, ProductStatus, ProductStockFilter, RouteVocabulary,
  * literal "produtos", and changing a shop's vocabulary changes every link it renders at once.
  */
 export const ROUTE_WORDS = {
-  PT_BR: { products: 'produtos', categories: 'categorias', search: 'busca', cart: 'carrinho', signIn: 'entrar', account: 'conta' },
-  EN: { products: 'products', categories: 'categories', search: 'search', cart: 'cart', signIn: 'login', account: 'account' },
+  PT_BR: {
+    products: 'produtos',
+    categories: 'categorias',
+    search: 'busca',
+    cart: 'carrinho',
+    signIn: 'entrar',
+    account: 'conta',
+    accountTabs: { orders: 'pedidos', favorites: 'favoritos', reviews: 'avaliacoes', profile: 'perfil', messages: 'conversas' },
+  },
+  EN: {
+    products: 'products',
+    categories: 'categories',
+    search: 'search',
+    cart: 'cart',
+    signIn: 'login',
+    account: 'account',
+    accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', profile: 'profile', messages: 'messages' },
+  },
 } as const satisfies Record<RouteVocabulary, StorefrontRouteWords>;
 
 /**

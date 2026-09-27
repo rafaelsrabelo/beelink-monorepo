@@ -39,7 +39,15 @@ export interface StorefrontRouteWords {
   signIn: string;
   /** The shopper's own page at this shop: `/<shop>/conta`. */
   account: string;
+  /**
+   * That page's tabs, each a third segment under `account`: `/<shop>/conta/perfil`. Every tab the
+   * area will have is spelled now, so an address never changes on the day its tab arrives.
+   */
+  accountTabs: Record<StorefrontAccountTab, string>;
 }
+
+/** The tabs of the shopper's page, in the order its menu lists them. */
+export type StorefrontAccountTab = "orders" | "favorites" | "reviews" | "profile" | "messages";
 
 /**
  * The shopkeeper's own taxonomy of what they sell — the second URL segment, `/lessari/blusas`.

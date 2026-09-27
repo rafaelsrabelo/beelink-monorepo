@@ -1,5 +1,5 @@
 // Types
-import type { StorefrontRouteWords, StorefrontSort } from "@harness-monorepo/contracts"
+import type { StorefrontAccountTab, StorefrontRouteWords, StorefrontSort } from "@harness-monorepo/contracts"
 
 /**
  * The key a search term travels under on the shop's own URL.
@@ -227,8 +227,11 @@ export function storefrontRoutes(shop: StorefrontShop) {
     signIn: ({ mode, back }: { mode?: SignInMode; back?: string } = {}) =>
       withQuery(`${home}/${routeWords.signIn}`, { [MODE_KEY]: mode === "entrar" ? undefined : mode, [BACK_KEY]: back }),
 
-    /** The shopper's own page at this shop: their name, phone and address as the shop keeps them. */
+    /** The shopper's own area at this shop: its overview, with the menu of its tabs. */
     account: () => `${home}/${routeWords.account}`,
+
+    /** One tab of that area: `/<shop>/conta/perfil`. */
+    accountTab: (tab: StorefrontAccountTab) => `${home}/${routeWords.account}/${routeWords.accountTabs[tab]}`,
 
     /** One product. It never nests under a category: a product in two would have two addresses. */
     product: (productSlug: string) => `${home}/${routeWords.products}/${productSlug}`,
@@ -265,6 +268,12 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (segment === routeWords.account) return { kind: "account" }
 
   return { kind: "category", slug: segment }
+}
+
+/** Which tab of the shopper's area a third segment under `account` names; null when it names none. */
+export function accountTabOf(segment: string, routeWords: StorefrontRouteWords): StorefrontAccountTab | null {
+  const tabs = Object.keys(routeWords.accountTabs) as StorefrontAccountTab[]
+  return tabs.find((tab) => routeWords.accountTabs[tab] === segment) ?? null
 }
 
 /**
