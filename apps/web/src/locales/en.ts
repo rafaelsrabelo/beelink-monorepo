@@ -159,6 +159,7 @@ export const en: WebMessages = {
     CUSTOMER_MERGE_TWO_ACCOUNTS: "Both records have an account at the shop, and two accounts cannot be merged.",
     ORDER_NOT_FOUND: "That order does not exist at this shop.",
     ORDER_CUSTOMER_NOT_FOUND: "That customer is no longer this shop's. Choose another.",
+    ORDER_DELIVERY_ADDRESS_MISSING: "This customer has no delivery address (street and city). Add it to their record or choose pick-up.",
     ORDER_VARIANT_INVALID: "One of the products is no longer for sale. Remove it and choose again.",
     ORDER_ITEM_DUPLICATE: "The same product is on two lines. Put the quantities on one.",
     ORDER_PAYMENT_NOT_ACCEPTED: "The shop no longer takes that payment. Choose another.",

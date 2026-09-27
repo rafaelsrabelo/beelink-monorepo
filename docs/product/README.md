@@ -77,7 +77,7 @@ An **order** is the product's core record, and it is a fact about the past.
 - It holds **lines**: what was bought, how many, and the name and unit price **as they were at the moment of purchase**. A price change or a deleted product never rewrites an order that already happened.
 - It records its own totals: the subtotal, the delivery fee, any discount, and the total. Every one of them is a number, not a sentence.
 - It has a **status** the shopkeeper moves it through — received, accepted, being prepared, out for delivery, delivered, or cancelled — and the customer can follow it.
-- It says how it is being handed over (delivery or pick-up) and how it will be paid.
+- It says how it is being handed over (delivery or pick-up) and how it will be paid. A delivery keeps **where it went and who received it, as they were at the moment of purchase**: a customer who moves or changes their name never rewrites an old order, and an order from before the product kept it says it was not recorded rather than borrowing today's address. A delivery with nowhere to go — no street and city — is refused.
 - The customer's own note to the shop is the customer's; it is never used to carry the product's own data.
 
 **Money is exact.** Every amount in the product is a whole number of cents. There is one representation, everywhere, and a total shown to a customer matches the total the shopkeeper sees to the cent.

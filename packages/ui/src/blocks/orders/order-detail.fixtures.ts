@@ -4,12 +4,18 @@ import type { OrderDetailView } from "./order-types"
 export const order: OrderDetailView = {
   number: 12,
   status: "ACCEPTED",
-  customer: {
-    name: "Bia Souza",
-    phone: "5511988887777",
-    address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: "Bela Vista", city: "São Paulo", state: "SP" },
-  },
+  customer: { name: "Bia Souza", phone: "5511988887777" },
   fulfillment: "DELIVERY",
+  deliveryAddress: {
+    recipientName: "Bia Souza",
+    zipCode: "01310-930",
+    street: "Av. Paulista",
+    number: "1000",
+    complement: null,
+    neighborhood: "Bela Vista",
+    city: "São Paulo",
+    state: "SP",
+  },
   paymentMethod: "PIX",
   items: [
     { id: "i1", productName: "Whey Protein", variantLabel: "Sabor: Baunilha · Peso: 900 g", sku: "WHEY-BAU-900", unitPriceCents: 12990, quantity: 2, lineTotalCents: 25980 },

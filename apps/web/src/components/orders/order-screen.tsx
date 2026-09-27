@@ -66,7 +66,7 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
       <OrderDetail
         order={current}
         backHref={listHref}
-        addressLine={addressLineOf(current.customer.address)}
+        deliveryLine={current.deliveryAddress ? addressLineOf(current.deliveryAddress) : null}
         whatsappHref={whatsappHref}
         customerHref={`/admin/${slug}/customers/${current.customer.id}`}
         onStatusChange={(next) => status.mutate(next)}

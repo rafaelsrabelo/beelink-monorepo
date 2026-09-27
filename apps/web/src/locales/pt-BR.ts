@@ -159,6 +159,7 @@ export const ptBR: WebMessages = {
     CUSTOMER_MERGE_TWO_ACCOUNTS: "Os dois cadastros têm conta na loja, e duas contas não se juntam.",
     ORDER_NOT_FOUND: "Esse pedido não existe nesta loja.",
     ORDER_CUSTOMER_NOT_FOUND: "Esse cliente não é mais desta loja. Escolha outro.",
+    ORDER_DELIVERY_ADDRESS_MISSING: "Este cliente não tem endereço de entrega (rua e cidade). Cadastre na ficha dele ou marque Retirada.",
     ORDER_VARIANT_INVALID: "Um dos produtos saiu de venda. Remova-o e escolha de novo.",
     ORDER_ITEM_DUPLICATE: "O mesmo produto aparece em duas linhas. Junte as quantidades numa só.",
     ORDER_PAYMENT_NOT_ACCEPTED: "A loja não aceita mais essa forma de pagamento. Escolha outra.",

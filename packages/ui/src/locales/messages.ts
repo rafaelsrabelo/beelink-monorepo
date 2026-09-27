@@ -1255,6 +1255,10 @@ export interface UiMessages {
       overStock: string
       missingPayment: string
       placedAtInvalid: string
+      /** Before where a delivery goes, in one line: "Entregar em: Av. Paulista, 1000 — …". */
+      deliverTo: string
+      /** The chosen customer has no street and city, so there is nowhere to deliver. */
+      deliveryAddressMissing: string
       save: string
       saving: string
     }
@@ -1264,7 +1268,11 @@ export interface UiMessages {
       placedAt: string
       customer: string
       noPhone: string
-      noAddress: string
+      deliverTo: string
+      /** A delivery placed before orders kept where they went. */
+      deliveryNotRecorded: string
+      /** Who receives it, when not the customer: "Recebe: {name}". */
+      recipient: string
       items: string
       subtotal: string
       fee: string

@@ -40,17 +40,23 @@ export interface OrderDetailView {
     name: string
     /** Digits, with the country code. */
     phone: string | null
-    address: {
-      zipCode: string | null
-      street: string | null
-      number: string | null
-      complement: string | null
-      neighborhood: string | null
-      city: string | null
-      state: string | null
-    }
   }
   fulfillment: OrderFulfillmentValue
+  /**
+   * Where it went, as it was when placed. Null on a pick-up, and on a delivery placed before orders
+   * kept it — never the customer's address of today.
+   */
+  deliveryAddress: {
+    /** Who receives it: the customer's name as it was. */
+    recipientName: string
+    zipCode: string | null
+    street: string
+    number: string | null
+    complement: string | null
+    neighborhood: string | null
+    city: string
+    state: string | null
+  } | null
   paymentMethod: OrderPaymentValue
   items: readonly OrderDetailItem[]
   subtotalCents: number
