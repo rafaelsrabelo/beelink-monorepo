@@ -166,6 +166,7 @@ export const en: WebMessages = {
     ORDER_PLACED_IN_FUTURE: "The order date cannot be after today.",
     ORDER_DISCOUNT_TOO_LARGE: "The discount is more than the order.",
     ORDER_TOTAL_TOO_LARGE: "The order is over R$ 1,000,000.00.",
+    ORDER_NOT_CANCELLABLE: "The shop already accepted this order. To cancel it, talk to the shop.",
     ORDER_CANCELLED: "That order was cancelled and no longer changes.",
     ORDER_STATUS_UNCHANGED: "The order is already at that status.",
     ORDER_STOCK_INSUFFICIENT: "There is not enough stock for everything. Change the marked quantities.",

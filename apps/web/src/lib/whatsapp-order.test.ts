@@ -10,8 +10,8 @@ import { orderMessageOf, shopOrderMessageOf, whatsappOrderHref } from "./whatsap
 const placed = {
   number: 12,
   items: [
-    { productId: "p1", productName: "Camiseta preta", variantLabel: null, unitPriceCents: 4990, quantity: 2, lineTotalCents: 9980 },
-    { productId: "p2", productName: "Whey", variantLabel: "Peso: 900g · Sabor: Chocolate", unitPriceCents: 14990, quantity: 1, lineTotalCents: 14990 },
+    { productId: "p1", productName: "Camiseta preta", variantLabel: null, imageUrl: null, unitPriceCents: 4990, quantity: 2, lineTotalCents: 9980 },
+    { productId: "p2", productName: "Whey", variantLabel: "Peso: 900g · Sabor: Chocolate", imageUrl: null, unitPriceCents: 14990, quantity: 1, lineTotalCents: 14990 },
   ],
   totalCents: 24970,
   fulfillment: "DELIVERY" as const,

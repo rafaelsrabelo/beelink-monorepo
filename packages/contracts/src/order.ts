@@ -171,10 +171,25 @@ export interface CustomerOrderItem {
   productId: string | null;
   productName: string;
   variantLabel: string | null;
+  /** The combination's photo, else the product's first — while the product exists. */
+  imageUrl: string | null;
   unitPriceCents: number;
   quantity: number;
   lineTotalCents: number;
 }
+
+/** Who placed an order, as its customer is told: they did, from the cart, or the shop registered it. */
+export type OrderPlacedBy = "CUSTOMER" | "SHOP";
+
+/** A status the order had, and when — never who set it. */
+export interface CustomerOrderEvent {
+  status: OrderStatus;
+  /** ISO-8601. */
+  at: string;
+}
+
+/** The customer's tabs: in progress (received to out for delivery), delivered, cancelled. */
+export type CustomerOrderSituation = "ACTIVE" | "DELIVERED" | "CANCELLED";
 
 /**
  * An order as its customer reads it. Never the shop's note on it, never who moved it along, never
@@ -184,6 +199,9 @@ export interface CustomerOrder {
   /** Sequential within the shop: what the customer says to the shop. */
   number: number;
   status: OrderStatus;
+  placedBy: OrderPlacedBy;
+  /** Who cancelled it — "pela loja ou por você" — on a cancelled order; null on any other. */
+  cancelledBy: OrderPlacedBy | null;
   fulfillment: OrderFulfillment;
   deliveryAddress: OrderDeliveryAddress | null;
   paymentMethod: PaymentMethod;
@@ -194,8 +212,57 @@ export interface CustomerOrder {
   totalCents: number;
   /** ISO-8601. */
   placedAt: string;
+  /** Oldest first: the order's timeline. */
+  events: CustomerOrderEvent[];
 }
 
+/** An order as the customer's list shows it: the first lines, with their photos, and how many more. */
+export interface CustomerOrderSummary {
+  number: number;
+  status: OrderStatus;
+  placedBy: OrderPlacedBy;
+  cancelledBy: OrderPlacedBy | null;
+  /** When it reached the status it is in: "Entregue em …", "Cancelado em …". ISO-8601. */
+  statusAt: string;
+  fulfillment: OrderFulfillment;
+  /** Who a delivery goes to; null on a pick-up and on a delivery that recorded none. */
+  recipientName: string | null;
+  paymentMethod: PaymentMethod;
+  totalCents: number;
+  /** Units across every line. */
+  itemsCount: number;
+  /** The first lines, as many as the card shows. */
+  items: CustomerOrderItem[];
+  /** Lines past those: "+ N itens". */
+  moreItems: number;
+  /** ISO-8601. */
+  placedAt: string;
+}
+
+/** How the customer asks for a page of their orders. Absent means all. */
+export interface CustomerOrderListQuery {
+  situation?: CustomerOrderSituation;
+  /** `3m` for the last three months, or a year (`2025`), in the shop's calendar (Brasília). */
+  period?: string;
+  /** An order number, or part of a product's name. */
+  q?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * One page of the customer's orders at a shop, most recently placed first. The counts follow the
+ * period and the search, not the tab, so the other tabs keep saying how many they hold.
+ */
+export interface CustomerOrderPage {
+  orders: CustomerOrderSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+  counts: Record<"ALL" | CustomerOrderSituation, number>;
+  /** The years this customer placed orders in at the shop, most recent first: the period's choices. */
+  years: number[];
+}
 /**
  * The error codes the order routes answer, beyond the store's own (`STORE_NOT_FOUND`,
  * `STORE_FORBIDDEN`) and the HTTP-status fallbacks.
@@ -214,6 +281,8 @@ export type OrderErrorCode =
   /** A line or the order past R$ 1.000.000,00 — a typo with too many zeros, not a sale. */
   | "ORDER_TOTAL_TOO_LARGE"
   | "ORDER_CANCELLED"
+  /** The customer cancels only while the order is received; once the shop accepted it, the shop does. */
+  | "ORDER_NOT_CANCELLABLE"
   | "ORDER_STATUS_UNCHANGED"
   /** A counted combination with fewer left than the order asks for. Its `details` are `OrderStockDetails`. */
   | "ORDER_STOCK_INSUFFICIENT";

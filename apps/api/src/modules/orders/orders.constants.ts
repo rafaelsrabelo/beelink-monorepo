@@ -1,5 +1,5 @@
 // Types
-import type { OrderErrorCode, OrderFulfillment, OrderStatus } from '@harness-monorepo/contracts';
+import type { CustomerOrderSituation, OrderErrorCode, OrderFulfillment, OrderStatus } from '@harness-monorepo/contracts';
 
 export const ORDER_STATUSES = [
   'RECEIVED',
@@ -13,6 +13,16 @@ export const ORDER_STATUSES = [
 export const ORDER_FULFILLMENTS = ['DELIVERY', 'PICKUP'] as const satisfies readonly OrderFulfillment[];
 
 export const ORDERS_PAGE_SIZE = 20;
+/** The customer's list is cards, not rows: fewer to a page. */
+export const CUSTOMER_ORDERS_PAGE_SIZE = 10;
+export const CUSTOMER_ORDERS_PAGE_SIZE_MAX = 50;
+
+/** The customer's tabs, and the statuses each one holds. */
+export const CUSTOMER_ORDER_SITUATIONS = {
+  ACTIVE: ['RECEIVED', 'ACCEPTED', 'PREPARING', 'OUT_FOR_DELIVERY'],
+  DELIVERED: ['DELIVERED'],
+  CANCELLED: ['CANCELLED'],
+} as const satisfies Record<CustomerOrderSituation, readonly OrderStatus[]>;
 export const ORDERS_PAGE_SIZE_MAX = 100;
 /** Far past any shop's history; past it, an offset that would only strain the database. */
 export const ORDERS_PAGE_MAX = 10_000;

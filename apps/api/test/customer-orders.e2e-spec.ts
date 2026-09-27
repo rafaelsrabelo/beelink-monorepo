@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { ApiErrorBody, AuthSession, CustomerOrder, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, CustomerOrder, CustomerOrderPage, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -108,7 +108,22 @@ describe("a shopper's order from the cart", () => {
     ]);
     // The shopper's read of it: never the shop's note, who moved it, nor the shop's books.
     expect(Object.keys(order).sort()).toEqual(
-      ['deliveryAddress', 'deliveryFeeCents', 'discountCents', 'fulfillment', 'items', 'number', 'paymentMethod', 'placedAt', 'status', 'subtotalCents', 'totalCents'].sort(),
+      [
+        'cancelledBy',
+        'deliveryAddress',
+        'deliveryFeeCents',
+        'discountCents',
+        'events',
+        'fulfillment',
+        'items',
+        'number',
+        'paymentMethod',
+        'placedAt',
+        'placedBy',
+        'status',
+        'subtotalCents',
+        'totalCents',
+      ].sort(),
     );
 
     const panel = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
@@ -211,5 +226,131 @@ describe("a shopper's order from the cart", () => {
     expect(stranger.json()).toMatchObject({ errorCode: 'AUTH_UNAUTHENTICATED' });
     expect((await call('POST', '/api/stores/nenhuma/customer/orders', shopper, body)).statusCode).toBe(404);
     expect(await prisma.order.count()).toBe(0);
+  });
+
+  describe("reading and cancelling the shopper's own orders", () => {
+    const orders = (query = '', session = shopper) => call('GET', `/api/stores/lessari/customer/orders${query}`, session).then((response) => response.json<CustomerOrderPage>());
+
+    /** The shopper's record at the shop, which the panel registers orders against too. */
+    async function recordOf(session: AuthSession): Promise<string> {
+      return (await prisma.customer.findFirstOrThrow({ where: { userId: session.user.id } })).id;
+    }
+
+    /** An order the shopkeeper registers for this shopper in the panel — accepted at once. */
+    async function registered(payload: object = {}) {
+      const response = await call('POST', '/api/stores/lessari/orders', owner, {
+        customer: { id: await recordOf(shopper) },
+        items: [{ variantId: grape, quantity: 1 }],
+        fulfillment: 'PICKUP',
+        paymentMethod: 'MONEY',
+        note: 'Cliente chato, conferir o troco',
+        ...payload,
+      });
+      return response.json<Order>();
+    }
+
+    it("lists the shopper's orders, theirs and the ones the shop registered for them, most recent first — and nobody else's", async () => {
+      await prisma.productImage.create({ data: { productId: (await prisma.productVariant.findUniqueOrThrow({ where: { id: whey } })).productId, url: 'https://img.test/whey.jpg' } });
+      await registered({ placedAt: '2026-01-10T12:00:00.000Z' });
+      await place();
+      const other = await shopperOf('lessari', 'Outra Pessoa');
+      await place({ fulfillment: 'PICKUP' }, other);
+
+      const page = await orders();
+      expect(page.orders.map((order) => order.number)).toEqual([2, 1]);
+      expect(page.orders[0]).toMatchObject({
+        status: 'RECEIVED',
+        placedBy: 'CUSTOMER',
+        cancelledBy: null,
+        recipientName: 'Bia Cliente',
+        itemsCount: 3,
+        moreItems: 0,
+        items: [expect.objectContaining({ productName: 'Whey', imageUrl: 'https://img.test/whey.jpg' }), expect.objectContaining({ productName: 'Creatina', imageUrl: null })],
+      });
+      expect(page.orders[1]).toMatchObject({ number: 1, status: 'ACCEPTED', placedBy: 'SHOP', fulfillment: 'PICKUP', recipientName: null });
+      expect(page).toMatchObject({ total: 2, counts: { ALL: 2, ACTIVE: 2, DELIVERED: 0, CANCELLED: 0 } });
+      expect((await orders('', other)).orders.map((order) => order.number)).toEqual([3]);
+    });
+
+    it('filters by tab, period and search, counting every tab under the period and the search', async () => {
+      await registered({ placedAt: '2025-06-10T12:00:00.000Z' });
+      await registered({ placedAt: '2026-01-10T12:00:00.000Z' });
+      await place();
+      await call('PATCH', '/api/stores/lessari/orders/1/status', owner, { status: 'DELIVERED' });
+
+      const delivered = await orders('?situation=DELIVERED');
+      expect(delivered.orders.map((order) => order.number)).toEqual([1]);
+      expect(delivered.counts).toEqual({ ALL: 3, ACTIVE: 2, DELIVERED: 1, CANCELLED: 0 });
+      expect(delivered.years).toEqual([2026, 2025]);
+
+      expect((await orders('?period=2025')).orders.map((order) => order.number)).toEqual([1]);
+      expect((await orders('?period=3m')).orders.map((order) => order.number)).toEqual([3]);
+      expect((await orders('?q=whey')).orders.map((order) => order.number)).toEqual([3]);
+      expect((await orders('?q=%232')).orders.map((order) => order.number)).toEqual([2]);
+      expect((await orders('?q=creat')).counts).toEqual({ ALL: 3, ACTIVE: 2, DELIVERED: 1, CANCELLED: 0 });
+      expect((await orders('?pageSize=1&page=2')).orders.map((order) => order.number)).toEqual([2]);
+      expect((await call('GET', '/api/stores/lessari/customer/orders?period=ontem', shopper)).statusCode).toBe(400);
+    });
+
+    it("opens one order with its lines, totals, address and timeline — never the shop's note or who moved it", async () => {
+      await registered();
+      await call('PATCH', '/api/stores/lessari/orders/1/status', owner, { status: 'PREPARING' });
+
+      const response = await call('GET', '/api/stores/lessari/customer/orders/1', shopper);
+      expect(response.statusCode).toBe(200);
+      const order = response.json<CustomerOrder>();
+      expect(order).toMatchObject({ number: 1, status: 'PREPARING', placedBy: 'SHOP', paymentMethod: 'MONEY', totalCents: 5990 });
+      expect(order.events.map((event) => event.status)).toEqual(['ACCEPTED', 'PREPARING']);
+      expect(order.events.every((event) => Object.keys(event).sort().join() === 'at,status')).toBe(true);
+      expect(JSON.stringify(order)).not.toContain('troco');
+      expect(order).not.toHaveProperty('note');
+      expect(order).not.toHaveProperty('customer');
+    });
+
+    it('cancels an order the shop has not accepted, giving its stock back; after that only the shop cancels', async () => {
+      await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 5 } });
+      await place();
+      await registered();
+
+      const cancelled = await call('POST', '/api/stores/lessari/customer/orders/1/cancel', shopper);
+      expect(cancelled.statusCode).toBe(200);
+      expect(cancelled.json<CustomerOrder>()).toMatchObject({ status: 'CANCELLED', cancelledBy: 'CUSTOMER' });
+      expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: whey } })).stockQuantity).toBe(5);
+      const panel = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
+      expect(panel.events.map((event) => [event.status, event.actor])).toEqual([
+        ['RECEIVED', 'CUSTOMER'],
+        ['CANCELLED', 'CUSTOMER'],
+      ]);
+      expect(await prisma.customer.findUniqueOrThrow({ where: { id: await recordOf(shopper) } })).toMatchObject({ ordersCount: 1 });
+
+      for (const number of [1, 2]) {
+        const refused = await call('POST', `/api/stores/lessari/customer/orders/${number}/cancel`, shopper);
+        expect(refused.statusCode, String(number)).toBe(409);
+        expect(refused.json(), String(number)).toMatchObject({ errorCode: 'ORDER_NOT_CANCELLABLE' });
+      }
+
+      await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'CANCELLED' });
+      expect((await call('GET', '/api/stores/lessari/customer/orders/2', shopper)).json<CustomerOrder>()).toMatchObject({ cancelledBy: 'SHOP' });
+      expect((await orders()).counts).toMatchObject({ CANCELLED: 2, ACTIVE: 0 });
+    });
+
+    it("answers another customer's order, another shop's and a number that is none as not found", async () => {
+      const other = await shopperOf('lessari', 'Outra Pessoa');
+      await place({ fulfillment: 'PICKUP' }, other);
+      const elsewhere = await shopperOf('outra', 'Eva Nunes');
+
+      for (const [url, session] of [
+        ['/api/stores/lessari/customer/orders/1', shopper],
+        ['/api/stores/lessari/customer/orders/1/cancel', shopper],
+        ['/api/stores/lessari/customer/orders/abc', shopper],
+      ] as const) {
+        const response = await call(url.endsWith('cancel') ? 'POST' : 'GET', url, session);
+        expect(response.statusCode, url).toBe(404);
+        expect(response.json(), url).toMatchObject({ errorCode: 'ORDER_NOT_FOUND' });
+      }
+      expect((await call('GET', '/api/stores/lessari/customer/orders', elsewhere)).statusCode).toBe(401);
+      expect((await call('GET', '/api/stores/lessari/customer/orders', owner)).statusCode).toBe(401);
+      expect((await prisma.order.findFirstOrThrow()).status).toBe('RECEIVED');
+    });
   });
 });
