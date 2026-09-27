@@ -3,22 +3,29 @@
 // React
 import { useEffect, useMemo, useState } from "react"
 
+// Next
+import { useRouter } from "next/navigation"
+
 // Types
-import type { CustomerProfile, PublicProductDetail } from "@harness-monorepo/contracts"
+import type { CustomerProfile, PaymentMethod, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontCart } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
-import { StorefrontCheckout } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout"
+import { StorefrontCheckout, type StorefrontCheckoutChoice } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout"
 import { StorefrontOrderSent } from "@harness-monorepo/ui/blocks/storefront/storefront-order-sent"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { useCart } from "./cart-provider"
-import { cartViewOf, rowKeyOf } from "@/lib/cart-view"
-import { addressLineOf, isReachable } from "@/lib/customer-address"
+import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
+import { checkoutRefusalOf, rereadsTheCart } from "@/lib/checkout-refusal"
+import { addressLineOf, isDeliverable, isReachable } from "@/lib/customer-address"
 import { orderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
+import { usePlaceShopperOrder } from "@/services/storefront/storefront-hooks"
+import { ShopperOrderError } from "@/services/storefront/storefront-requests"
 
 export interface StorefrontCartLiveProps {
+  slug: string
   /** The products the cart named when the page was served, priced by the catalogue. */
   products: readonly PublicProductDetail[]
   /** Each product's page, by id: the addresses are the shop's words, built on the server. */
@@ -29,6 +36,8 @@ export interface StorefrontCartLiveProps {
   shopName: string
   /** The shop's WhatsApp as `wa.me` wants it, digits only; null when it has none. */
   whatsapp: string | null
+  /** The methods the shop takes, in its own order. */
+  paymentMethods: readonly PaymentMethod[]
   /** The signed-in shopper's record at this shop; null for a visitor, who is asked to sign in to order. */
   shopper: CustomerProfile | null
   /** Sign in, sign up and change details — each coming back to this cart. */
@@ -39,27 +48,52 @@ export interface StorefrontCartLiveProps {
 
 /**
  * The cart page, following the cart as it changes. Quantities and removals go to the store — which
- * writes the cookie — and the totals are recomputed from the prices the page was served with, so
- * nothing is asked of the server until the next page.
+ * writes the cookie — and the totals are recomputed from the prices the page was served with.
+ *
+ * Placing the order asks the API first: the order exists — numbered, priced by the API, in the
+ * shop's panel — before the shop's WhatsApp opens with that number. The cart is emptied only then.
  */
 export function StorefrontCartLive({
+  slug,
   products,
   hrefs,
   continueHref,
   goneOnArrival,
   shopName,
   whatsapp,
+  paymentMethods,
   shopper,
   identityHrefs,
   locale,
   messages,
 }: StorefrontCartLiveProps) {
+  const text = messages.storefront
+  const router = useRouter()
   const lines = useCart((cart) => cart.lines)
   const setQty = useCart((cart) => cart.setQty)
   const remove = useCart((cart) => cart.remove)
   const clear = useCart((cart) => cart.clear)
-  // The link that was opened, once the order has gone: the cart it came from is emptied.
-  const [sent, setSent] = useState<string | null>(null)
+  const placing = usePlaceShopperOrder(slug)
+  const deliveryLine = shopper && isDeliverable(shopper.address) ? addressLineOf(shopper.address) : null
+  const [picked, setChoice] = useState<StorefrontCheckoutChoice>(() => ({
+    fulfillment: deliveryLine ? "DELIVERY" : "PICKUP",
+    paymentMethod: paymentMethods.length === 1 ? paymentMethods[0]! : null,
+  }))
+  // What was picked, held to what the page says now: an address gone since, or a payment the shop
+  // stopped taking, is never what gets sent.
+  const choice: StorefrontCheckoutChoice = {
+    fulfillment: deliveryLine ? picked.fulfillment : "PICKUP",
+    paymentMethod:
+      picked.paymentMethod && paymentMethods.includes(picked.paymentMethod)
+        ? picked.paymentMethod
+        : paymentMethods.length === 1
+          ? paymentMethods[0]!
+          : null,
+  }
+  // What was asked of the shopper before anything was sent: a payment to choose.
+  const [asked, setAsked] = useState<string | null>(null)
+  // The order once placed, and the WhatsApp link opened with its number.
+  const [sent, setSent] = useState<{ number: number; href: string | null } | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
 
@@ -68,7 +102,42 @@ export function StorefrontCartLive({
     for (const line of view.gone) remove(line.productId, line.variantId)
   }, [view.gone, remove])
 
-  if (sent) return <StorefrontOrderSent href={sent} continueHref={continueHref} messages={messages} />
+  if (sent) return <StorefrontOrderSent number={sent.number} href={sent.href} continueHref={continueHref} messages={messages} />
+
+  function place() {
+    if (!shopper) return
+    if (!choice.paymentMethod) {
+      setAsked(text.checkoutChoosePayment)
+      return
+    }
+    setAsked(null)
+
+    // Opened in the press itself: a browser blocks a tab opened after the request's wait.
+    const tab = whatsapp ? window.open("", "_blank") : null
+    if (tab) tab.opener = null
+
+    placing.mutate(
+      { items: orderItemsOf(view.rows), fulfillment: choice.fulfillment, paymentMethod: choice.paymentMethod },
+      {
+        onSuccess: (order) => {
+          const href = whatsapp ? whatsappOrderHref(whatsapp, orderMessageOf({ shopName, order, customer: shopper, locale, messages })) : null
+          // A refused tab leaves the link on the next screen, where opening it is the shopper's own click.
+          if (tab && href) tab.location.href = href
+          setSent({ number: order.number, href })
+          clear()
+        },
+        onError: (error) => {
+          tab?.close()
+          // The session, the shopper's record or the shop's payments moved: the page reads them again.
+          if (error instanceof ShopperOrderError && rereadsTheCart(error.errorCode)) router.refresh()
+        },
+      },
+    )
+  }
+
+  const refusal = placing.error
+    ? checkoutRefusalOf(placing.error instanceof ShopperOrderError ? placing.error : { errorCode: "UNKNOWN" }, view.rows, text)
+    : null
 
   return (
     <StorefrontCart
@@ -80,32 +149,42 @@ export function StorefrontCartLive({
       notice={goneOnArrival ? messages.storefront.cartGone : null}
       checkout={
         <StorefrontCheckout
-          href={whatsapp ? whatsappOrderHref(whatsapp, orderMessageOf({ shopName, view, customer: shopper, locale, messages })) : null}
+          channel={whatsapp ? "whatsapp" : "shop"}
           customer={
             shopper
               ? {
-                  lines: [shopper.name, shopper.phone, addressLineOf(shopper.address)].filter((line): line is string => Boolean(line)),
+                  lines: [shopper.name, shopper.phone].filter((line): line is string => Boolean(line)),
                   complete: isReachable(shopper),
                   editHref: identityHrefs.editHref,
+                  deliveryLine,
                 }
               : null
           }
           signIn={identityHrefs}
-          disabled={view.count === 0}
-          onSend={(href) => {
-            setSent(href)
-            clear()
+          paymentMethods={paymentMethods}
+          choice={choice}
+          onChoiceChange={(next) => {
+            setChoice(next)
+            setAsked(null)
+            placing.reset()
           }}
+          onPlace={place}
+          pending={placing.isPending}
+          error={asked ?? refusal}
+          disabled={view.count === 0}
           messages={messages}
         />
       }
+      // A changed cart is a new order to try: the refusal of the last one no longer describes it.
       onQtyChange={(key, qty) => {
         const row = byKey.get(key)
         if (row) setQty(row.productId, row.variantId, qty)
+        placing.reset()
       }}
       onRemove={(key) => {
         const row = byKey.get(key)
         if (row) remove(row.productId, row.variantId)
+        placing.reset()
       }}
       messages={messages}
     />

@@ -28,6 +28,8 @@ function NewOrder({ initialLines }: { initialLines: OrderFormLine[] }) {
     placedOn: "2026-09-25",
   })
   const totals = orderTotalsOf(lines, details.fulfillment, details.fulfillment === "DELIVERY" ? 1000 : 0, 0)
+  // A customer from the search has an address; one registered here, with none typed, has nowhere.
+  const deliveryTo = selected ? { loading: false as const, line: selected.id === "new" ? null : "Av. Paulista, 1000 — Bela Vista — São Paulo/SP" } : undefined
 
   return (
     <form className="@container/main grid max-w-5xl gap-6 lg:grid-cols-[1fr_20rem]" onSubmit={(event) => event.preventDefault()}>
@@ -60,7 +62,13 @@ function NewOrder({ initialLines }: { initialLines: OrderFormLine[] }) {
           onRemove={(id) => setLines(lines.filter((line) => line.variantId !== id))}
           money={money}
         />
-        <OrderDetailsFields value={details} onChange={setDetails} paymentMethods={["PIX", "MONEY", "CREDIT_CARD"]} today="2026-09-25" />
+        <OrderDetailsFields
+          value={details}
+          onChange={setDetails}
+          paymentMethods={["PIX", "MONEY", "CREDIT_CARD"]}
+          today="2026-09-25"
+          deliveryTo={deliveryTo}
+        />
       </div>
       <div>
         <OrderSummary totals={totals} money={money} />
@@ -83,6 +91,19 @@ export const ComItens: Story = {}
 export const Vazio: Story = { args: { initialLines: [] } }
 
 export const NoCelular: Story = { globals: { viewport: { value: "mobile1", isRotated: false } } }
+
+/** The chosen customer's record has no street and city: the form says so before the API refuses. */
+export const EntregaSemEndereco: Story = {
+  render: () => (
+    <OrderDetailsFields
+      value={{ fulfillment: "DELIVERY", deliveryFee: "", paymentMethod: "PIX", discount: "", note: "", placedOn: "2026-09-25" }}
+      onChange={() => {}}
+      paymentMethods={["PIX", "MONEY"]}
+      today="2026-09-25"
+      deliveryTo={{ loading: false, line: null }}
+    />
+  ),
+}
 
 export const DescontoAlto: Story = {
   render: () => <OrderSummary totals="DISCOUNT_TOO_LARGE" money={money} />,

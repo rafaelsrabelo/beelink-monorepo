@@ -1,24 +1,18 @@
 // Types
-import type { Order, OrderCustomer, OrderCustomerDetail, OrderSummary } from '@harness-monorepo/contracts';
+import type { Order, OrderCustomer, OrderSummary } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
+
+// App
+import { toDeliveryAddress } from './order-delivery.js';
 
 const customerSelect = { id: true, name: true, phone: true } as const;
 
-/** An opened order names where the customer is: the shop's record as it is now. */
-const customerDetailSelect = {
-  ...customerSelect,
-  zipCode: true,
-  street: true,
-  number: true,
-  complement: true,
-  neighborhood: true,
-  city: true,
-  state: true,
-} as const;
-
-/** What a full order is read with. */
+/**
+ * What a full order is read with. Not the customer's address: an order says where it went, from its
+ * own columns, and the record's address of today is not that.
+ */
 export const ORDER_INCLUDE = {
-  customer: { select: customerDetailSelect },
+  customer: { select: customerSelect },
   items: { orderBy: { position: 'asc' } },
   events: { orderBy: { createdAt: 'asc' } },
 } as const satisfies Prisma.OrderInclude;
@@ -36,18 +30,14 @@ function toCustomer(customer: { id: string; name: string; phone: string | null }
   return { id: customer.id, name: customer.name, phone: customer.phone };
 }
 
-function toCustomerDetail(customer: OrderRow['customer']): OrderCustomerDetail {
-  const { zipCode, street, number, complement, neighborhood, city, state } = customer;
-  return { ...toCustomer(customer), address: { zipCode, street, number, complement, neighborhood, city, state } };
-}
-
 export function toOrder(row: OrderRow): Order {
   return {
     id: row.id,
     number: row.number,
     status: row.status,
-    customer: toCustomerDetail(row.customer),
+    customer: toCustomer(row.customer),
     fulfillment: row.fulfillment,
+    deliveryAddress: toDeliveryAddress(row),
     paymentMethod: row.paymentMethod,
     items: row.items.map((item) => ({
       id: item.id,

@@ -6,6 +6,7 @@ import { useId } from "react"
 // UI
 import { Field, FieldError, FieldLabel, FieldLegend, FieldSet } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
+import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { Textarea } from "@harness-monorepo/ui/components/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@harness-monorepo/ui/components/toggle-group"
 
@@ -14,7 +15,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { ORDER_NOTE_MAX_LENGTH, type OrderDetailsIssues, type OrderDetailsValues } from "@harness-monorepo/ui/lib/order-form"
+import { ORDER_NOTE_MAX_LENGTH, type OrderDeliveryTo, type OrderDetailsIssues, type OrderDetailsValues } from "@harness-monorepo/ui/lib/order-form"
 import type { OrderFulfillmentValue, OrderPaymentValue } from "./order-types"
 
 export interface OrderDetailsFieldsProps {
@@ -24,6 +25,8 @@ export interface OrderDetailsFieldsProps {
   paymentMethods: readonly OrderPaymentValue[]
   /** `yyyy-mm-dd` in the shopkeeper's calendar: the latest an order can be dated. */
   today: string
+  /** Where a delivery would go, once a customer is chosen; absent before, and on a pick-up. */
+  deliveryTo?: OrderDeliveryTo
   issues?: OrderDetailsIssues
   messages?: UiMessages
 }
@@ -34,7 +37,7 @@ const FULFILLMENTS = ["DELIVERY", "PICKUP"] as const satisfies readonly OrderFul
 const PRESSED = "aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
 
 /** How the order leaves and is paid for, what was taken off, what was said, and when it was closed. */
-export function OrderDetailsFields({ value, onChange, paymentMethods, today, issues = {}, messages = defaultMessages }: OrderDetailsFieldsProps) {
+export function OrderDetailsFields({ value, onChange, paymentMethods, today, deliveryTo, issues = {}, messages = defaultMessages }: OrderDetailsFieldsProps) {
   const text = messages.orders.form
   const labels = messages.orders
   const id = useId()
@@ -59,6 +62,20 @@ export function OrderDetailsFields({ value, onChange, paymentMethods, today, iss
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        {/* Said as it changes — a customer chosen, "Entrega" pressed — away from where the focus is. */}
+        <div aria-live="polite" className="text-sm">
+          {value.fulfillment !== "DELIVERY" || !deliveryTo ? null : deliveryTo.loading ? (
+            <Skeleton className="h-5 w-64" />
+          ) : issues.fulfillment ? (
+            <FieldError>{issues.fulfillment}</FieldError>
+          ) : deliveryTo.line ? (
+            <p className="break-words">
+              <span className="text-muted-foreground">{text.deliverTo}</span> {deliveryTo.line}
+            </p>
+          ) : (
+            <p className="text-muted-foreground">{text.deliveryAddressMissing}</p>
+          )}
+        </div>
       </FieldSet>
 
       {value.fulfillment === "DELIVERY" ? (

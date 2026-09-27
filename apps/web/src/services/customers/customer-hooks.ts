@@ -33,13 +33,26 @@ export function useStoreCustomers(
   })
 }
 
-export function useStoreCustomer(slug: string, customerId: string | null): UseQueryResult<StoreCustomerDetail, Error> {
+export interface StoreCustomerReadOptions {
+  /**
+   * Read again whenever it is asked for or the tab comes back, rather than trusting a copy up to a
+   * minute old: for a form that decides by the record — the record may have just changed in another tab.
+   */
+  fresh?: boolean
+}
+
+export function useStoreCustomer(
+  slug: string,
+  customerId: string | null,
+  { fresh = false }: StoreCustomerReadOptions = {},
+): UseQueryResult<StoreCustomerDetail, Error> {
   return useQuery({
     queryKey: customerKeys.detail(slug, customerId ?? ""),
     queryFn: () => fetchStoreCustomer(slug, customerId ?? ""),
     enabled: slug !== "" && Boolean(customerId),
     // A customer who is not the shop's does not become one on a second try.
     retry: false,
+    ...(fresh ? { staleTime: 0, refetchOnWindowFocus: "always" as const } : {}),
   })
 }
 

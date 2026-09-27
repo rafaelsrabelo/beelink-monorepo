@@ -19,7 +19,8 @@ export interface OrderDetailProps {
   order: OrderDetailView
   /** Where the list is, for the way back. */
   backHref: string
-  addressLine: string | null
+  /** The order's delivery address in one line; null on a pick-up and on a delivery that recorded none. */
+  deliveryLine: string | null
   whatsappHref: string | null
   /** The customer's record, which their name leads to. */
   customerHref?: string
@@ -37,7 +38,7 @@ export interface OrderDetailProps {
 export function OrderDetail({
   order,
   backHref,
-  addressLine,
+  deliveryLine,
   whatsappHref,
   customerHref,
   onStatusChange,
@@ -88,7 +89,7 @@ export function OrderDetail({
         <div className="flex flex-col gap-6">
           <OrderFacts
             order={order}
-            addressLine={addressLine}
+            deliveryLine={deliveryLine}
             whatsappHref={whatsappHref}
             customerHref={customerHref}
             linkComponent={Link}

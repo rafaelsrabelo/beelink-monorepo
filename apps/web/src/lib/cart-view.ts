@@ -7,7 +7,10 @@ import type { CartLine } from "./cart-cookie"
 /** One line of the cart as a shopper reads it: the cookie's ids, resolved against the catalogue. */
 export interface CartRow {
   productId: string
+  /** The cookie's: null on a line of a product with a single combination, saved before it had options. */
   variantId: string | null
+  /** The combination an order names: the line's, or the product's only one. */
+  orderVariantId: string
   name: string
   slug: string
   /** "Sabor: Chocolate · Peso: 900 g"; null for a product without options. */
@@ -63,6 +66,7 @@ export function cartViewOf(lines: readonly CartLine[], products: readonly Public
     rows.push({
       productId: line.productId,
       variantId: line.variantId,
+      orderVariantId: variant.id,
       name: product.name,
       slug: product.slug,
       variantLabel: label || null,
@@ -83,6 +87,19 @@ export function cartViewOf(lines: readonly CartLine[], products: readonly Public
     subtotalCents: orderable.reduce((sum, row) => sum + row.lineTotalCents, 0),
     count: orderable.reduce((sum, row) => sum + row.qty, 0),
   }
+}
+
+/**
+ * The lines an order is placed with: what can be ordered now, one line per combination — two cookie
+ * lines naming the same one, as a line saved before a product had options can, are added up rather
+ * than sent twice, which the API would refuse.
+ */
+export function orderItemsOf(rows: readonly CartRow[]): { variantId: string; quantity: number }[] {
+  const quantities = new Map<string, number>()
+  for (const row of rows) {
+    if (row.available) quantities.set(row.orderVariantId, (quantities.get(row.orderVariantId) ?? 0) + row.qty)
+  }
+  return [...quantities].map(([variantId, quantity]) => ({ variantId, quantity }))
 }
 
 /** The key a row is known by, in the page and in its controls. */

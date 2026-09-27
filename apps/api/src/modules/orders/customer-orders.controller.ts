@@ -1,0 +1,99 @@
+// Nest
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { RouteConfig } from '@nestjs/platform-fastify';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+
+// Types
+import type { CustomerOrder, CustomerOrderPage } from '@harness-monorepo/contracts';
+
+// App
+import { env } from '../../shared/config/env.js';
+import { Public } from '../auth/auth.decorators.js';
+import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
+import { CurrentCustomer } from '../customers/customer.decorators.js';
+import { CustomerOrdersService } from './customer-orders.service.js';
+import { CustomerOrderPageResponse, CustomerOrderResponse, ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
+import { OrderNumberPipe } from './order-number.pipe.js';
+
+/** Keyed by address: a valid account does not get to fill a shop's panel from a script. */
+const rateLimit = { max: env.CUSTOMER_ORDER_RATE_LIMIT_MAX, timeWindow: env.CUSTOMER_ORDER_RATE_LIMIT_WINDOW };
+
+/**
+ * A shopper's orders at a shop — their own, including those the shop registered for them. `@Public()`
+ * to the global guard, which refuses a shopper's token by design, and closed by `CustomerAuthGuard`,
+ * which refuses a shopkeeper's.
+ */
+@ApiTags('customers')
+@ApiBearerAuth()
+@ApiNotFoundResponse({ description: "STORE_NOT_FOUND · ORDER_NOT_FOUND — another customer's order is not found, never forbidden" })
+@ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, a shopkeeper's, or another shop's" })
+@Public()
+@UseGuards(CustomerAuthGuard)
+@Controller('stores/:storeSlug/customer/orders')
+export class CustomerOrdersController {
+  constructor(private readonly orders: CustomerOrdersService) {}
+
+  @Get()
+  @ApiOperation({ summary: "The shopper's orders at this shop, most recent first, with the count of each tab" })
+  @ApiOkResponse({ type: CustomerOrderPageResponse })
+  list(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @Query() query: ListCustomerOrdersDto,
+  ): Promise<CustomerOrderPage> {
+    return this.orders.list(storeSlug, customer.userId, query);
+  }
+
+  @Get(':number')
+  @ApiOperation({ summary: "One of the shopper's orders: its lines, totals, address, payment and timeline" })
+  @ApiOkResponse({ type: CustomerOrderResponse })
+  get(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @Param('number', OrderNumberPipe) number: number,
+  ): Promise<CustomerOrder> {
+    return this.orders.get(storeSlug, customer.userId, number);
+  }
+
+  @Post(':number/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancel an order the shop has not accepted yet; its stock goes back' })
+  @ApiOkResponse({ type: CustomerOrderResponse })
+  @ApiConflictResponse({ description: 'ORDER_NOT_CANCELLABLE — accepted or further along: the shop cancels it now · ORDER_CANCELLED — already cancelled' })
+  cancel(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @Param('number', OrderNumberPipe) number: number,
+  ): Promise<CustomerOrder> {
+    return this.orders.cancel(storeSlug, customer.userId, number);
+  }
+
+  @Post()
+  @RouteConfig({ rateLimit })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Place the cart as the shopper's order; it starts received, numbered and priced here" })
+  @ApiCreatedResponse({ type: CustomerOrderResponse })
+  @ApiBadRequestResponse({
+    description: 'ORDER_DELIVERY_ADDRESS_MISSING · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_TOTAL_TOO_LARGE',
+  })
+  @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT — `details` is `OrderStockDetails`' })
+  @ApiTooManyRequestsResponse({ description: 'Too many orders from this address' })
+  place(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @Body() dto: PlaceCustomerOrderDto,
+  ): Promise<CustomerOrder> {
+    return this.orders.place(storeSlug, customer.userId, dto);
+  }
+}

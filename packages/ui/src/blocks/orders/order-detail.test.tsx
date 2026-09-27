@@ -13,7 +13,7 @@ import { order } from "./order-detail.fixtures"
 import { nextStatusOf, otherStatusesOf } from "./order-status-actions"
 import type { OrderDetailView, OrderStatusValue } from "./order-types"
 
-const props = { backHref: "/admin/loja/orders", addressLine: "Av. Paulista, 1000 — São Paulo/SP", whatsappHref: "https://wa.me/5511988887777?text=Oi", onStatusChange: () => {} }
+const props = { backHref: "/admin/loja/orders", deliveryLine: "Av. Paulista, 1000 — São Paulo/SP", whatsappHref: "https://wa.me/5511988887777?text=Oi", onStatusChange: () => {} }
 
 describe("the order's next step", () => {
   it("walks a delivery through every step, and a pick-up past 'out for delivery'", () => {
@@ -52,6 +52,28 @@ describe("OrderDetail", () => {
     expect(within(facts).getByText("Pix")).toBeInTheDocument()
     expect(within(facts).getByText("Entregar depois das 18h")).toBeInTheDocument()
     expect(within(facts).getByRole("link", { name: "Chamar no WhatsApp" })).toHaveAttribute("href", props.whatsappHref)
+  })
+
+  it("says where a delivery goes, who receives it when not the customer, and nothing on a pick-up", () => {
+    const renamed: OrderDetailView = { ...order, customer: { ...order.customer, name: "Bia Lima" } }
+    const { rerender } = render(<OrderDetail order={renamed} {...props} />)
+
+    const facts = screen.getByRole("region", { name: "Cliente" })
+    expect(within(facts).getByText("Entregar em")).toBeInTheDocument()
+    expect(within(facts).getByText("Recebe: Bia Souza")).toBeInTheDocument()
+
+    rerender(<OrderDetail order={order} {...props} />)
+    expect(within(facts).queryByText(/^Recebe:/)).not.toBeInTheDocument()
+
+    rerender(<OrderDetail order={{ ...order, fulfillment: "PICKUP", deliveryAddress: null }} {...props} deliveryLine={null} />)
+    expect(within(facts).queryByText("Entregar em")).not.toBeInTheDocument()
+  })
+
+  it("reads a delivery that recorded no address as not recorded, never as the customer's of today", () => {
+    render(<OrderDetail order={{ ...order, deliveryAddress: null }} {...props} deliveryLine={null} />)
+
+    const facts = screen.getByRole("region", { name: "Cliente" })
+    expect(within(facts).getByText("Endereço não registrado")).toBeInTheDocument()
   })
 
   it("leads the customer's name to their record when it is given one, and leaves it text otherwise", () => {

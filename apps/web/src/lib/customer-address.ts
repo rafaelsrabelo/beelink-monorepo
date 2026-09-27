@@ -13,7 +13,12 @@ export function addressLineOf(address: CustomerAddress): string | null {
   return parts.length ? parts.join(" — ") : null
 }
 
+/** Whether there is somewhere to deliver: a street and a city — the rule the API places an order by. */
+export function isDeliverable(address: Pick<CustomerAddress, "street" | "city">): boolean {
+  return Boolean(address.street?.trim() && address.city?.trim())
+}
+
 /** Whether the shop can reach the shopper and deliver: a phone, and a street with a city. */
 export function isReachable(profile: Pick<CustomerProfile, "phone" | "address">): boolean {
-  return Boolean(profile.phone && profile.address.street && profile.address.city)
+  return Boolean(profile.phone) && isDeliverable(profile.address)
 }

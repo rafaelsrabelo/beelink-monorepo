@@ -207,6 +207,25 @@ describe("the new order's details and summary", () => {
     expect(screen.queryByLabelText("Taxa de entrega (R$)")).not.toBeInTheDocument()
   })
 
+  it("says where a delivery goes, warns when the customer has nowhere, and says nothing on a pick-up", () => {
+    const fields = (props: Partial<Parameters<typeof OrderDetailsFields>[0]>) => (
+      <OrderDetailsFields value={details} onChange={noop} paymentMethods={["PIX"]} today="2026-09-25" {...props} />
+    )
+    const { rerender } = render(fields({ deliveryTo: { loading: false, line: "Av. Paulista, 1000 — São Paulo/SP" } }))
+    expect(screen.getByText("Entregar em:")).toBeInTheDocument()
+    expect(screen.getByText(/Av\. Paulista, 1000/)).toBeInTheDocument()
+
+    rerender(fields({ deliveryTo: { loading: false, line: null } }))
+    expect(screen.getByText(/não tem endereço de entrega/)).toBeInTheDocument()
+
+    // Once a save was tried, the same sentence is the field's refusal, said once.
+    rerender(fields({ deliveryTo: { loading: false, line: null }, issues: { fulfillment: "Este cliente não tem endereço de entrega (rua e cidade). Cadastre na ficha dele ou marque Retirada." } }))
+    expect(screen.getAllByText(/não tem endereço de entrega/)).toHaveLength(1)
+
+    rerender(fields({ value: { ...details, fulfillment: "PICKUP" }, deliveryTo: { loading: false, line: null } }))
+    expect(screen.queryByText(/não tem endereço de entrega/)).not.toBeInTheDocument()
+  })
+
   it("adds the order up, and says so instead when the discount passes it", () => {
     const { rerender } = render(
       <OrderSummary totals={{ subtotalCents: 28470, deliveryFeeCents: 1000, discountCents: 500, totalCents: 28970 }} money={money} />,
@@ -223,7 +242,13 @@ describe("the new order's details and summary", () => {
       <form>
         {customerSection()}
         <OrderLines lines={lines} onQuantityChange={noop} onRemove={noop} money={money} />
-        <OrderDetailsFields value={details} onChange={noop} paymentMethods={["PIX", "MONEY"]} today="2026-09-25" />
+        <OrderDetailsFields
+          value={details}
+          onChange={noop}
+          paymentMethods={["PIX", "MONEY"]}
+          today="2026-09-25"
+          deliveryTo={{ loading: false, line: "Av. Paulista, 1000 — São Paulo/SP" }}
+        />
         <OrderSummary totals={{ subtotalCents: 28470, deliveryFeeCents: 0, discountCents: 0, totalCents: 28470 }} money={money} />
       </form>,
     )

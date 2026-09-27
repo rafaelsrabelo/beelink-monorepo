@@ -83,7 +83,13 @@ export interface OrderDetailsValues {
   placedOn: string
 }
 
-export type OrderDetailsIssues = Partial<Record<"deliveryFee" | "discount" | "paymentMethod" | "placedOn", string>>
+export type OrderDetailsIssues = Partial<Record<"fulfillment" | "deliveryFee" | "discount" | "paymentMethod" | "placedOn", string>>
+
+/**
+ * Where a delivery would go, as the screen reads the chosen customer's record: the address in one
+ * line, or null when the record has nowhere to deliver.
+ */
+export type OrderDeliveryTo = { loading: true } | { loading: false; line: string | null }
 
 /** The same limits the API holds a line and a note to. */
 export const ORDER_QUANTITY_MAX = 999

@@ -10,7 +10,7 @@ const meta = {
   component: StorefrontOrderSent,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={shopPaletteStyle(sampleColorPresets[2]!.colors)}>{Story()}</div>],
-  args: { href: "#", continueHref: "#" },
+  args: { number: 12, href: "#", continueHref: "#" },
 } satisfies Meta<typeof StorefrontOrderSent>
 
 export default meta
@@ -18,3 +18,6 @@ type Story = StoryObj<typeof meta>
 
 /** O carrinho depois de o pedido ir para o WhatsApp. */
 export const Padrao: Story = {}
+
+/** Numa loja sem WhatsApp: o pedido está feito, e a loja confirma. */
+export const SemWhatsApp: Story = { args: { href: null } }

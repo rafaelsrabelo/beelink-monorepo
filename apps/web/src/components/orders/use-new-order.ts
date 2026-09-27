@@ -21,9 +21,11 @@ import { ORDER_QUANTITY_MAX, orderTotalsOf, overStock } from "@harness-monorepo/
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { catalogKeys, useProduct, useProducts } from "@/services/catalog/catalog-hooks"
 import { fetchProduct } from "@/services/catalog/catalog-requests"
+import { customerKeys } from "@/services/customers/customer-hooks"
 import { useCreateOrder } from "@/services/orders/order-hooks"
-import { shortagesOf } from "@/services/orders/order-requests"
+import { OrderRequestError, shortagesOf } from "@/services/orders/order-requests"
 import { moneyOf, orderPayloadOf, productOptionOf, variantOptionsOf } from "./new-order-mapping"
+import { useDeliveryTo } from "./use-delivery-to"
 
 const SEARCH_DEBOUNCE_MS = 300
 const SEARCH_PAGE_SIZE = 8
@@ -63,6 +65,7 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   const products = useProducts(slug, { ...(search ? { search } : {}), pageSize: SEARCH_PAGE_SIZE })
   const detail = useProduct(slug, chosen?.id ?? "", { enabled: Boolean(chosen) })
   const save = useCreateOrder(slug)
+  const deliveryTo = useDeliveryTo(slug, customer, details.fulfillment)
 
   const lineName = (productName: string, label: string | null) => (label ? `${productName} (${label})` : productName)
 
@@ -106,6 +109,8 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   if (!details.paymentMethod) issues.paymentMethod = text.missingPayment
   if (today && placedOn > today) issues.placedOn = text.placedAtInvalid
   if (!customer) issues.customer = text.missingCustomer
+  // The API refuses a delivery with nowhere to go; said here first, next to "Entrega" and "Retirada".
+  if (deliveryTo && !deliveryTo.loading && deliveryTo.line === null) issues.fulfillment = text.deliveryAddressMissing
   if (!lines.length) issues.lines = text.missingItems
   else if (lines.some(overStock)) issues.lines = text.overStock
 
@@ -122,6 +127,10 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
       onError: (error) => {
         const left = new Map(shortagesOf(error).map((shortage) => [shortage.variantId, shortage.available]))
         if (left.size) setLines((current) => current.map((line) => (left.has(line.variantId) ? { ...line, available: left.get(line.variantId)! } : line)))
+        // The record lost its address since it was read: read it again, so "Entregar em" stops saying otherwise.
+        if (error instanceof OrderRequestError && error.errorCode === "ORDER_DELIVERY_ADDRESS_MISSING") {
+          void queryClient.invalidateQueries({ queryKey: customerKeys.detail(slug, customer.id) })
+        }
       },
     })
     return true
@@ -151,7 +160,7 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
         setLines((current) => current.filter((line) => line.variantId !== variantId))
       },
     },
-    details: { value: { ...details, placedOn }, onChange: setDetails, today },
+    details: { value: { ...details, placedOn }, onChange: setDetails, today, deliveryTo },
     productError: detail.error ?? products.error,
     totals,
     /** Shown once a save was tried: a form that opens covered in red asks nothing of anyone. */

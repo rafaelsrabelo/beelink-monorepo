@@ -15,7 +15,8 @@ enum OrderFulfillment {
   PICKUP
 }
 
-/// Who set a status. Only the shopkeeper does today; the courier app and the checkout come later.
+/// Who set a status: the shopkeeper, or the customer placing the order from the cart. The courier
+/// app comes later.
 enum OrderActor {
   SHOPKEEPER
   CUSTOMER
@@ -47,6 +48,19 @@ model Order {
   deliveryFeeCents Int @default(0)
   discountCents    Int @default(0)
   totalCents       Int
+
+  /// Where a delivery goes, photographed from the customer's record when the order is placed: the
+  /// customer moving, or renaming themselves, never rewrites where an order went. Null on a pick-up,
+  /// and on a delivery placed before orders kept it — which reads "not recorded", never today's
+  /// address. `deliveryName` is who receives it.
+  deliveryName         String?
+  deliveryZipCode      String?
+  deliveryStreet       String?
+  deliveryNumber       String?
+  deliveryComplement   String?
+  deliveryNeighborhood String?
+  deliveryCity         String?
+  deliveryState        String?
 
   /// The shopkeeper's note on the order.
   note     String?  @db.VarChar(500)

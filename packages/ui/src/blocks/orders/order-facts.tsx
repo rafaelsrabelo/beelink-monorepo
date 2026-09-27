@@ -14,9 +14,9 @@ import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { OrderDetailView } from "./order-types"
 
 export interface OrderFactsProps {
-  order: Pick<OrderDetailView, "customer" | "fulfillment" | "paymentMethod" | "note">
-  /** The customer's address in one line, as the screen writes addresses; null when there is none. */
-  addressLine: string | null
+  order: Pick<OrderDetailView, "customer" | "fulfillment" | "deliveryAddress" | "paymentMethod" | "note">
+  /** The order's delivery address in one line, as the screen writes addresses; null when it has none. */
+  deliveryLine: string | null
   /** The conversation with the order already typed; null when the customer has no phone. */
   whatsappHref: string | null
   /** The customer's record; absent, the name is only text. */
@@ -35,12 +35,14 @@ function Fact({ label, children, className }: { label: string; children: React.R
 }
 
 /**
- * Who bought — the name leading to their record — where they are, how it leaves and how it was
- * paid, and a way to talk to them.
+ * Who bought — the name leading to their record — how it leaves and where to, how it was paid, and
+ * a way to talk to them. The address is the order's own, as it was when placed: the customer's of
+ * today may be somewhere else.
  */
-export function OrderFacts({ order, addressLine, whatsappHref, customerHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: OrderFactsProps) {
+export function OrderFacts({ order, deliveryLine, whatsappHref, customerHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: OrderFactsProps) {
   const text = messages.orders.detail
   const labels = messages.orders
+  const recipient = order.deliveryAddress?.recipientName
 
   return (
     <section aria-labelledby="order-facts-title" className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
@@ -60,7 +62,6 @@ export function OrderFacts({ order, addressLine, whatsappHref, customerHref, lin
           <span className="font-medium">{order.customer.name}</span>
         )}
         <span className="text-muted-foreground text-sm tabular-nums">{order.customer.phone ?? text.noPhone}</span>
-        <span className="text-muted-foreground text-sm">{addressLine ?? text.noAddress}</span>
       </div>
       {whatsappHref ? (
         <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: "outline" }), "self-start")}>
@@ -70,6 +71,18 @@ export function OrderFacts({ order, addressLine, whatsappHref, customerHref, lin
       ) : null}
       <dl className="grid gap-3 border-t pt-4">
         <Fact label={text.fulfillment}>{labels.fulfillments[order.fulfillment]}</Fact>
+        {order.fulfillment === "DELIVERY" ? (
+          <Fact label={text.deliverTo} className="flex flex-col gap-0.5 break-words">
+            {deliveryLine ? (
+              <>
+                {recipient && recipient !== order.customer.name ? <span>{format(text.recipient, { name: recipient })}</span> : null}
+                <span>{deliveryLine}</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">{text.deliveryNotRecorded}</span>
+            )}
+          </Fact>
+        ) : null}
         <Fact label={text.payment}>{labels.payments[order.paymentMethod]}</Fact>
         {/* Typed in a textarea: its line breaks are the shopkeeper's, and a pasted link must not run out of the card. */}
         {order.note ? (
