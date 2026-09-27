@@ -7,37 +7,29 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { refreshBooks } from '../customers/customer-books.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, UpdateOrderStatusDto } from './dto/order.dto.js';
-import { totalsOf, variantLabelOf } from './order-totals.js';
+import { OrderPlacement } from './order-placement.js';
+import { settleCancellation } from './order-cancellation.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
-import { deliveryOf } from './order-delivery.js';
-import { returnStock, takeStock } from './order-stock.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
 
 type Tx = Prisma.TransactionClient;
 
 /**
- * A shop's orders, as its owner registers and moves them.
- *
- * Every write runs in one transaction that first bumps the shop's order counter, which holds the
- * shop's row until the commit: two orders placed at once wait for each other, get consecutive
- * numbers, and see each other's effect on a customer's books and on the stock.
+ * A shop's orders, as its owner registers and moves them. Placing one is `OrderPlacement`'s, which
+ * the cart shares; a status change takes the same lock of the shop's row, so the two never interleave.
  */
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
+    private readonly placement: OrderPlacement,
   ) {}
 
   async create(storeSlug: string, userId: string, dto: CreateOrderDto): Promise<Order> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const store = await this.prisma.store.findUniqueOrThrow({ where: { id: storeId }, select: { paymentMethods: true } });
-    if (!store.paymentMethods.includes(dto.paymentMethod)) {
-      throw new BadRequestException(orderError('ORDER_PAYMENT_NOT_ACCEPTED', 'The shop does not take that payment'));
-    }
 
     const placedAt = dto.placedAt ? new Date(dto.placedAt) : new Date();
     // ISO-shaped is not a date: "2026-02-30" passes the shape and parses to nothing.
@@ -48,47 +40,23 @@ export class OrdersService {
       throw new BadRequestException(orderError('ORDER_PLACED_IN_FUTURE', 'An order cannot be placed in the future'));
     }
 
-    const lines = await this.linesOf(storeId, dto);
-    const totals = totalsOf(lines, dto.fulfillment, dto.deliveryFeeCents ?? 0, dto.discountCents ?? 0);
-    if (totals === 'DISCOUNT_TOO_LARGE') {
-      throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount is larger than the order'));
-    }
-    if (totals === 'TOTAL_TOO_LARGE') {
-      throw new BadRequestException(orderError('ORDER_TOTAL_TOO_LARGE', 'A line or the order is past what one order may be'));
-    }
-
-    return this.prisma.$transaction(async (tx) => {
-      const number = await this.nextNumber(tx, storeId);
-      // Before the order is written: a line the stock cannot cover refuses the whole order.
-      await takeStock(tx, lines);
-      const customerId = await this.customerOf(tx, storeId, dto.customer);
-      const delivery = await deliveryOf(tx, customerId, dto.fulfillment);
-
-      const order = await tx.order.create({
-        data: {
-          storeId,
-          number,
-          customerId,
-          // Registered by the shopkeeper, who already agreed the sale: accepted, not received.
-          status: 'ACCEPTED',
-          fulfillment: dto.fulfillment,
-          paymentMethod: dto.paymentMethod,
-          ...delivery,
-          ...totals,
-          note: dto.note?.length ? dto.note : null,
-          placedAt,
-          stockTaken: true,
-          items: {
-            create: lines.map((line, position) => ({ ...line, lineTotalCents: line.unitPriceCents * line.quantity, position })),
-          },
-          events: { create: { status: 'ACCEPTED', actor: 'SHOPKEEPER', userId } },
-        },
-        include: ORDER_INCLUDE,
-      });
-
-      await refreshBooks(tx, customerId);
-      return toOrder(order);
+    const order = await this.placement.place({
+      storeId,
+      items: dto.items,
+      fulfillment: dto.fulfillment,
+      paymentMethod: dto.paymentMethod,
+      deliveryFeeCents: dto.deliveryFeeCents ?? 0,
+      discountCents: dto.discountCents ?? 0,
+      note: dto.note?.length ? dto.note : null,
+      placedAt,
+      // Registered by the shopkeeper, who already agreed the sale: accepted, not received.
+      status: 'ACCEPTED',
+      actor: 'SHOPKEEPER',
+      userId,
+      onSaleOnly: false,
+      customerOf: (tx) => this.customerOf(tx, storeId, dto.customer),
     });
+    return toOrder(order);
   }
 
   async list(storeSlug: string, userId: string, query: ListOrdersDto = {}): Promise<OrderPage> {
@@ -167,66 +135,8 @@ export class OrdersService {
         data: { status, events: { create: { status, actor: 'SHOPKEEPER', userId } } },
         include: ORDER_INCLUDE,
       });
-      if (status === 'CANCELLED') {
-        await refreshBooks(tx, current.customerId);
-        // Only what placing it took: an order from before orders counted stock gives nothing back.
-        if (current.stockTaken) await returnStock(tx, current.id);
-      }
+      if (status === 'CANCELLED') await settleCancellation(tx, current);
       return toOrder(order);
-    });
-  }
-
-  /**
-   * The shop's next order number, taken under the lock of the shop's row until the commit. Raw SQL
-   * so the shop's `updatedAt` stays the shopkeeper's: an order is not an edit of the shop.
-   */
-  private async nextNumber(tx: Tx, storeId: string): Promise<number> {
-    const [row] = await tx.$queryRaw<{ orderSequence: number }[]>`
-      UPDATE "stores" SET "orderSequence" = "orderSequence" + 1 WHERE "id" = ${storeId}::uuid RETURNING "orderSequence"`;
-    return row!.orderSequence;
-  }
-
-  /** The lines as they will be photographed: each variant read from this shop, and priced by it. */
-  private async linesOf(storeId: string, dto: CreateOrderDto) {
-    const ids = dto.items.map((item) => item.variantId);
-    if (new Set(ids).size !== ids.length) {
-      throw new BadRequestException(orderError('ORDER_ITEM_DUPLICATE', 'A variant appears on two lines'));
-    }
-
-    const variants = await this.prisma.productVariant.findMany({
-      // Another shop's, a combination that stopped existing and one not sold are all the same refusal.
-      where: { id: { in: ids }, storeId, archivedAt: null, isActive: true },
-      select: {
-        id: true,
-        productId: true,
-        priceCents: true,
-        sku: true,
-        product: { select: { name: true } },
-        values: { select: { option: { select: { name: true, position: true } }, value: { select: { name: true } } } },
-      },
-    });
-    if (variants.length !== ids.length) {
-      throw new BadRequestException(orderError('ORDER_VARIANT_INVALID', 'A variant is not one this shop sells'));
-    }
-
-    const byId = new Map(variants.map((variant) => [variant.id, variant]));
-    return dto.items.map((item) => {
-      const variant = byId.get(item.variantId)!;
-      return {
-        productId: variant.productId,
-        variantId: variant.id,
-        productName: variant.product.name,
-        variantLabel: variantLabelOf(
-          variant.values.map((chosen) => ({
-            optionName: chosen.option.name,
-            optionPosition: chosen.option.position,
-            valueName: chosen.value.name,
-          })),
-        ),
-        sku: variant.sku,
-        unitPriceCents: variant.priceCents,
-        quantity: item.quantity,
-      };
     });
   }
 

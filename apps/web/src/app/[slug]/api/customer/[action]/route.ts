@@ -8,12 +8,11 @@ import type { AuthSession } from "@harness-monorepo/contracts"
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, refuseForeignOrigin } from "@/lib/bff"
 import {
-  CUSTOMER_ACCESS_COOKIE,
   CUSTOMER_REFRESH_COOKIE,
   clearCustomerSessionCookies,
   setCustomerSessionCookies,
 } from "@/lib/customer-session-cookies"
-import { refreshCustomerSession } from "@/lib/refresh-customer-session"
+import { callAsShopper } from "@/lib/shopper-call"
 import { BACK_KEY, MODE_KEY, safeBackOf } from "@/lib/storefront-routes"
 
 /**
@@ -92,23 +91,15 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
         phone: field("phone"),
         address: Object.fromEntries(["zipCode", "street", "number", "complement", "neighborhood", "city", "state"].map((key) => [key, field(key)])),
       }
-      const save = (accessToken: string) => callApi({ path: `${shop}/me`, method: "PATCH", body, accessToken, clientIp }).catch(() => null)
-
-      // The proxy renews a session whose access cookie is gone before this runs; a token that ran
-      // out in between is renewed here — once — and the new pair stored on this answer.
-      let renewed: AuthSession | null = null
-      let response = await save(request.cookies.get(CUSTOMER_ACCESS_COOKIE)?.value ?? "")
-      if (response?.status === 401) {
-        const refreshToken = request.cookies.get(CUSTOMER_REFRESH_COOKIE)?.value
-        const outcome = refreshToken ? await refreshCustomerSession(slug, refreshToken, clientIp) : { status: "rejected" as const }
-        if (outcome.status !== "renewed") {
-          const signedOut = NextResponse.redirect(new URL(`/${slug}`, request.url), 303)
-          clearCustomerSessionCookies(signedOut.cookies, slug)
-          return signedOut
-        }
-        renewed = outcome.session
-        response = await save(renewed.accessToken)
+      const saved = await callAsShopper(request, slug, (accessToken) =>
+        callApi({ path: `${shop}/me`, method: "PATCH", body, accessToken, clientIp }).catch(() => null),
+      )
+      if (saved.status === "signedOut") {
+        const signedOut = NextResponse.redirect(new URL(`/${slug}`, request.url), 303)
+        clearCustomerSessionCookies(signedOut.cookies, slug)
+        return signedOut
       }
+      const { response, renewed } = saved
 
       // A refusal goes back to the form (`formulario`), wherever a save would have gone: a phone the
       // shop already has is said there, and nowhere else.

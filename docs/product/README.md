@@ -76,7 +76,7 @@ An **order** is the product's core record, and it is a fact about the past.
 - It belongs to a store and to a customer, and it carries a **number that is sequential within its store** — something a shopkeeper can say out loud on the phone.
 - It holds **lines**: what was bought, how many, and the name and unit price **as they were at the moment of purchase**. A price change or a deleted product never rewrites an order that already happened.
 - It records its own totals: the subtotal, the delivery fee, any discount, and the total. Every one of them is a number, not a sentence.
-- It has a **status** the shopkeeper moves it through — received, accepted, being prepared, out for delivery, delivered, or cancelled — and the customer can follow it.
+- It has a **status** the shopkeeper moves it through — received, accepted, being prepared, out for delivery, delivered, or cancelled — and the customer can follow it. A signed-in customer sees their own orders at the shop — the ones they placed and the ones the shop registered for them — with the lines, the totals, where it goes and each status with its time; never the shop's note on it. They may cancel one while it is still **received**; once the shop accepted it, only the shop cancels.
 - It says how it is being handed over (delivery or pick-up) and how it will be paid. A delivery keeps **where it went and who received it, as they were at the moment of purchase**: a customer who moves or changes their name never rewrites an old order, and an order from before the product kept it says it was not recorded rather than borrowing today's address. A delivery with nowhere to go — no street and city — is refused.
 - The customer's own note to the shop is the customer's; it is never used to carry the product's own data.
 
@@ -96,7 +96,9 @@ A **coupon** is a code a customer types. A code is unique **within its store**, 
 
 ## Checkout and the handoff to WhatsApp
 
-Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp**. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil.
+Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp**. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil. It names the order by its number, and its lines and total are the ones the product recorded, not the ones the page computed.
+
+An order placed at checkout starts **received**: the shopkeeper accepts it, or cancels it. A shop with no WhatsApp still takes orders — the customer is told the shop will confirm.
 
 **The product does not take payment.** The payment method on an order is a label saying how the two of them settled it. Nothing is charged, held or refunded by bee-link.
 
@@ -104,5 +106,5 @@ Checkout collects who the customer is, where the order goes, how it will be paid
 
 - It does not process payments.
 - It does not send WhatsApp messages on the shopkeeper's behalf — it opens the conversation.
-- It has no customer accounts, no order history a customer signs in to see, and no cross-store identity.
+- It has no cross-store identity: a customer's account belongs to the shop they signed up at.
 - It is not a marketplace: there is no page that lists every store, and no store discovers another's customers.

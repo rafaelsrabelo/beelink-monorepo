@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import type { PublicProductDetail } from "@harness-monorepo/contracts"
 
 // App
-import { cartViewOf } from "./cart-view"
+import { cartViewOf, orderItemsOf, type CartRow } from "./cart-view"
 
 const whey = {
   id: "p-whey",
@@ -71,5 +71,29 @@ describe("cartViewOf", () => {
 
     expect(view.rows).toEqual([])
     expect(view.gone).toHaveLength(3)
+  })
+})
+
+describe("orderItemsOf", () => {
+  const row = (over: Partial<CartRow>): CartRow => ({
+    productId: "p",
+    variantId: null,
+    orderVariantId: "v1",
+    name: "Blusa",
+    slug: "blusa",
+    variantLabel: null,
+    imageUrl: null,
+    unitPriceCents: 5990,
+    compareAtPriceCents: null,
+    qty: 1,
+    lineTotalCents: 5990,
+    available: true,
+    ...over,
+  })
+
+  it("names each combination once, adding up two lines that point at it, and leaves a sold-out line out", () => {
+    const rows = [row({ qty: 2 }), row({ variantId: "v1", qty: 1 }), row({ orderVariantId: "v2", qty: 3, available: false })]
+
+    expect(orderItemsOf(rows)).toEqual([{ variantId: "v1", quantity: 3 }])
   })
 })

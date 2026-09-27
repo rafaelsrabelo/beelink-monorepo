@@ -18,5 +18,7 @@ import { StoreCustomersService } from './store-customers.service.js';
   imports: [AuthModule, StoresModule],
   controllers: [CustomersController, StoreCustomersController, CustomerGoogleController],
   providers: [CustomersService, StoreCustomersService, CustomerAuthGuard, CustomerGoogleService, GoogleOAuthClient],
+  // The shopper's record and door, for the shopper's own orders.
+  exports: [CustomersService, CustomerAuthGuard],
 })
 export class CustomersModule {}

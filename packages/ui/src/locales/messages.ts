@@ -246,8 +246,39 @@ export interface UiMessages {
     finishOnWhatsApp: string
     soldBy: string
     payment: string
-    /** Closing the order on the shop's WhatsApp (F4). */
+    /** Placing the order, then opening the shop's WhatsApp with its number (F4, H9). */
     checkoutWhatsApp: string
+    /** Placing the order at a shop with no WhatsApp on file: it is placed all the same (H9). */
+    checkoutPlace: string
+    checkoutPlacing: string
+    /** How the order is handed over, and the payment — the shop's methods. */
+    checkoutFulfillment: string
+    checkoutDelivery: string
+    /** `{address}`: the shopper's address on file, where a delivery goes. */
+    checkoutDeliverTo: string
+    checkoutPickup: string
+    /** No street and city on file: delivery is off, and where to add them. */
+    checkoutNoAddress: string
+    /** Until the product computes a fee, the shop tells it. */
+    checkoutFeeLater: string
+    checkoutPayment: string
+    checkoutChoosePayment: string
+    /**
+     * The refusals a shopper can meet placing the order, as the screen picks them. `{items}` names the
+     * lines — "Moletom cinza: só restam 1" — and the `…Any` sentences stand in when none can be named.
+     */
+    checkoutStockShort: string
+    checkoutStockShortAny: string
+    /** `{name}` `{left}`; `{name}`. */
+    checkoutStockLeft: string
+    checkoutStockNone: string
+    checkoutProductGone: string
+    checkoutProductGoneAny: string
+    checkoutPaymentGone: string
+    checkoutAddressGone: string
+    checkoutSignedOut: string
+    checkoutTooMany: string
+    checkoutFailed: string
     /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
     checkoutSignInPrompt: string
     checkoutSignIn: string
@@ -257,12 +288,12 @@ export interface UiMessages {
     checkoutEdit: string
     /** A shopper with no phone on file: the shop has no way to reach them but the WhatsApp itself. */
     checkoutPhoneMissing: string
-    /** A shop with no WhatsApp on file: no button, and why. */
-    checkoutNoWhatsApp: string
+    /** The cart once the order is placed: `{number}`, then what happens next — on WhatsApp, or at the shop. */
     checkoutSent: string
     checkoutSentHint: string
+    checkoutSentShopHint: string
     checkoutRetry: string
-    /** The message itself. `{shop}`; `{qty}` `{name}` `{total}`; `{total}`; `{name}`. */
+    /** The message itself. `{number}` `{shop}`; `{qty}` `{name}` `{total}`; `{total}`; `{name}`. */
     orderGreeting: string
     orderLine: string
     orderTotal: string
@@ -270,6 +301,9 @@ export interface UiMessages {
     /** `{phone}`, `{address}` — the shopper's lines under the order. */
     orderPhone: string
     orderAddress: string
+    orderPickup: string
+    /** `{method}`. */
+    orderPayment: string
     /** The shop's sign-in page (G2): its three faces, and what each one says. */
     signInTitle: string
     signUpTitle: string

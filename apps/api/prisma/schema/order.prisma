@@ -15,7 +15,8 @@ enum OrderFulfillment {
   PICKUP
 }
 
-/// Who set a status. Only the shopkeeper does today; the courier app and the checkout come later.
+/// Who set a status: the shopkeeper, or the customer placing the order from the cart. The courier
+/// app comes later.
 enum OrderActor {
   SHOPKEEPER
   CUSTOMER
