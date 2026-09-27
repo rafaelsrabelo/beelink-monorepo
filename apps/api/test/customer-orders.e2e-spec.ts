@@ -1,0 +1,196 @@
+// Nest
+import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+
+// Types
+import type { ApiErrorBody, AuthSession, CustomerOrder, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
+
+// App
+import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
+import { createTestApp } from './support/create-test-app.js';
+import { clearInbox } from './support/mailpit.js';
+import { resetDatabase } from './support/reset-database.js';
+
+function shopBody(slug: string) {
+  return { name: slug, slug, type: 'ECOMMERCE', socialNetworks: { whatsapp: '(11) 99999-8888' }, address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' } };
+}
+
+const paulista = { zipCode: '01310-930', street: 'Av. Paulista', number: '1000', complement: 'apto 12', neighborhood: 'Bela Vista', city: 'São Paulo', state: 'SP' };
+
+describe("a shopper's order from the cart", () => {
+  let app: NestFastifyApplication;
+  let prisma: PrismaService;
+  let owner: AuthSession;
+  let shopper: AuthSession;
+  let whey: string;
+  let grape: string;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+    prisma = app.get(PrismaService);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  beforeEach(async () => {
+    await resetDatabase(prisma);
+    await clearInbox();
+    owner = await signUpAndSignIn(app, newEmail('dona'));
+    for (const slug of ['lessari', 'outra']) await call('POST', '/api/stores', owner, shopBody(slug));
+    whey = await variantOf(await addProduct('Whey', 8990));
+    grape = await flavoured(await addProduct('Creatina', 5990), 'Sabor', 'Uva');
+    shopper = await shopperOf('lessari', 'Bia Cliente');
+    await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777', address: paulista });
+  });
+
+  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, session?: AuthSession, payload?: object) {
+    return app.inject({ method, url, headers: session ? { authorization: `Bearer ${session.accessToken}` } : {}, ...(payload ? { payload } : {}) });
+  }
+
+  async function addProduct(name: string, priceCents: number, shop = 'lessari'): Promise<Product> {
+    const response = await call('POST', `/api/stores/${shop}/products`, owner, { name, priceCents });
+    if (response.statusCode !== 201) throw new Error(`POST products answered ${response.statusCode}: ${response.payload}`);
+    return response.json<Product>();
+  }
+
+  async function variantOf(product: Product): Promise<string> {
+    return (await prisma.productVariant.findFirstOrThrow({ where: { productId: product.id } })).id;
+  }
+
+  async function flavoured(product: Product, optionName: string, valueName: string): Promise<string> {
+    const option = await prisma.productOption.create({
+      data: { productId: product.id, name: optionName, values: { create: [{ name: valueName }] } },
+      include: { values: true },
+    });
+    const variant = await variantOf(product);
+    await prisma.productVariantValue.create({ data: { variantId: variant, optionId: option.id, valueId: option.values[0]!.id } });
+    return variant;
+  }
+
+  /** A shopper signed up, confirmed and signed in at one shop. */
+  async function shopperOf(slug: string, name: string): Promise<AuthSession> {
+    const email = newEmail('cliente');
+    await call('POST', `/api/stores/${slug}/customer/register`, undefined, { name, email, password: PASSWORD });
+    await verifyEmailOf(app, email);
+    return (await call('POST', `/api/stores/${slug}/customer/login`, undefined, { email, password: PASSWORD })).json<AuthSession>();
+  }
+
+  function place(payload: object = {}, session: AuthSession = shopper, shop = 'lessari') {
+    return call('POST', `/api/stores/${shop}/customer/orders`, session, {
+      items: [{ variantId: whey, quantity: 2 }, { variantId: grape, quantity: 1 }],
+      fulfillment: 'DELIVERY',
+      paymentMethod: 'PIX',
+      ...payload,
+    });
+  }
+
+  it("places the cart as a received order of the shopper's record, priced by the API, going to their address", async () => {
+    const response = await place();
+
+    expect(response.statusCode).toBe(201);
+    const order = response.json<CustomerOrder>();
+    expect(order).toMatchObject({
+      number: 1,
+      status: 'RECEIVED',
+      fulfillment: 'DELIVERY',
+      paymentMethod: 'PIX',
+      deliveryAddress: { recipientName: 'Bia Cliente', ...paulista },
+      subtotalCents: 23970,
+      deliveryFeeCents: 0,
+      discountCents: 0,
+      totalCents: 23970,
+    });
+    expect(order.items).toEqual([
+      expect.objectContaining({ productName: 'Whey', variantLabel: null, unitPriceCents: 8990, quantity: 2, lineTotalCents: 17980 }),
+      expect.objectContaining({ productName: 'Creatina', variantLabel: 'Sabor: Uva', unitPriceCents: 5990, quantity: 1 }),
+    ]);
+    // The shopper's read of it: never the shop's note, who moved it, nor the shop's books.
+    expect(Object.keys(order).sort()).toEqual(
+      ['deliveryAddress', 'deliveryFeeCents', 'discountCents', 'fulfillment', 'items', 'number', 'paymentMethod', 'placedAt', 'status', 'subtotalCents', 'totalCents'].sort(),
+    );
+
+    const panel = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
+    expect(panel).toMatchObject({ status: 'RECEIVED', customer: { name: 'Bia Cliente', phone: '5511988887777' }, note: null });
+    expect(panel.events).toEqual([expect.objectContaining({ status: 'RECEIVED', actor: 'CUSTOMER' })]);
+    const record = await prisma.customer.findUniqueOrThrow({ where: { id: panel.customer.id } });
+    expect(record).toMatchObject({ ordersCount: 1, totalSpentCents: 23970n });
+    expect(record.userId).not.toBeNull();
+  });
+
+  it('shares the numbering and the stock with the orders the panel registers, and the shop accepts it there', async () => {
+    await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 5 } });
+    await call('POST', '/api/stores/lessari/orders', owner, {
+      customer: { name: 'Caio Lima', phone: '11977776666' },
+      items: [{ variantId: whey, quantity: 1 }],
+      fulfillment: 'PICKUP',
+      paymentMethod: 'MONEY',
+    });
+
+    const order = (await place()).json<CustomerOrder>();
+    expect(order.number).toBe(2);
+    expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: whey } })).stockQuantity).toBe(2);
+
+    const accepted = await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'ACCEPTED' });
+    expect(accepted.json<Order>().events.map((event) => [event.status, event.actor])).toEqual([
+      ['RECEIVED', 'CUSTOMER'],
+      ['ACCEPTED', 'SHOPKEEPER'],
+    ]);
+  });
+
+  it('takes a pick-up without an address, and keeps none on it', async () => {
+    const nowhere = await shopperOf('lessari', 'Dani Rocha');
+
+    const response = await place({ fulfillment: 'PICKUP' }, nowhere);
+    expect(response.statusCode).toBe(201);
+    expect(response.json<CustomerOrder>()).toMatchObject({ fulfillment: 'PICKUP', deliveryAddress: null });
+  });
+
+  it('refuses what it cannot place, saving nothing — the same refusals as the panel', async () => {
+    const nowhere = await shopperOf('lessari', 'Dani Rocha');
+    const outraWhey = await variantOf(await addProduct('Whey', 8990, 'outra'));
+    await prisma.store.update({ where: { slug: 'lessari' }, data: { paymentMethods: ['PIX'] } });
+    const cases: [AuthSession, object, string][] = [
+      [nowhere, {}, 'ORDER_DELIVERY_ADDRESS_MISSING'],
+      [shopper, { paymentMethod: 'MONEY' }, 'ORDER_PAYMENT_NOT_ACCEPTED'],
+      [shopper, { items: [{ variantId: outraWhey, quantity: 1 }] }, 'ORDER_VARIANT_INVALID'],
+      [shopper, { items: [{ variantId: whey, quantity: 1 }, { variantId: whey, quantity: 1 }] }, 'ORDER_ITEM_DUPLICATE'],
+      // The price is the API's, the customer the session's: a body that says either is refused whole.
+      [shopper, { items: [{ variantId: whey, quantity: 1, unitPriceCents: 1 }] }, 'BAD_REQUEST'],
+      [shopper, { customer: { name: 'Outra Pessoa', phone: '11911112222' } }, 'BAD_REQUEST'],
+      [shopper, { discountCents: 500 }, 'BAD_REQUEST'],
+    ];
+
+    for (const [session, payload, errorCode] of cases) {
+      const response = await place(payload, session);
+      expect(response.statusCode, errorCode).toBe(400);
+      expect(response.json(), errorCode).toMatchObject({ errorCode });
+    }
+    expect(await prisma.order.count()).toBe(0);
+  });
+
+  it('refuses to sell past what is left, naming every short line', async () => {
+    await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 1 } });
+
+    const refused = await place();
+    expect(refused.statusCode).toBe(409);
+    const body = refused.json<ApiErrorBody>();
+    expect(body.errorCode).toBe('ORDER_STOCK_INSUFFICIENT');
+    expect((body.details as OrderStockDetails).shortages).toEqual([{ variantId: whey, available: 1 }]);
+    expect(await prisma.order.count()).toBe(0);
+  });
+
+  it("is the signed-in shopper's alone: no token, a shopkeeper's token and another shop's shopper are all refused", async () => {
+    const elsewhere = await shopperOf('outra', 'Eva Nunes');
+
+    const body = { items: [{ variantId: whey, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' };
+    expect((await call('POST', '/api/stores/lessari/customer/orders', undefined, body)).statusCode).toBe(401);
+    expect((await place({}, owner)).statusCode).toBe(401);
+    const stranger = await place({}, elsewhere);
+    expect(stranger.statusCode).toBe(401);
+    expect(stranger.json()).toMatchObject({ errorCode: 'AUTH_UNAUTHENTICATED' });
+    expect((await call('POST', '/api/stores/nenhuma/customer/orders', shopper, body)).statusCode).toBe(404);
+    expect(await prisma.order.count()).toBe(0);
+  });
+});

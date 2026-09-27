@@ -97,6 +97,16 @@ export class CustomersService {
     return toCustomerProfile(await this.recordOf(storeId, user), user.email);
   }
 
+  /**
+   * The shop and the signed-in shopper's record in it — made on first use, as `me` makes it — for
+   * what a shopper does at a shop beyond their details: placing an order.
+   */
+  async shopperAt(storeSlug: string, userId: string): Promise<{ storeId: string; customerId: string }> {
+    const { storeId } = await this.scopeOf(storeSlug);
+    const user = await this.accountAt(storeId, userId);
+    return { storeId, customerId: (await this.recordOf(storeId, user)).id };
+  }
+
   async update(storeSlug: string, userId: string, dto: UpdateCustomerProfileDto): Promise<CustomerProfile> {
     const { storeId } = await this.scopeOf(storeSlug);
     const user = await this.accountAt(storeId, userId);

@@ -151,6 +151,51 @@ export interface UpdateOrderStatusPayload {
   status: OrderStatus;
 }
 
+/* ── the customer's side: an order placed from the shop's cart ──────────────── */
+
+/**
+ * The cart as its signed-in customer places it: the lines, how it leaves and how it is paid. The
+ * prices, the totals and the address are the API's — a delivery goes where the customer's record
+ * says (`ORDER_DELIVERY_ADDRESS_MISSING` when it says nowhere). It starts `RECEIVED`: the shop
+ * still has to accept it.
+ */
+export interface PlaceCustomerOrderPayload {
+  items: CreateOrderItemInput[];
+  fulfillment: OrderFulfillment;
+  paymentMethod: PaymentMethod;
+}
+
+/** One line as its customer reads it: what was bought, at the price of that moment. */
+export interface CustomerOrderItem {
+  /** Null once the product was deleted; the line still reads. */
+  productId: string | null;
+  productName: string;
+  variantLabel: string | null;
+  unitPriceCents: number;
+  quantity: number;
+  lineTotalCents: number;
+}
+
+/**
+ * An order as its customer reads it. Never the shop's note on it, never who moved it along, never
+ * what the shop's books say about the customer.
+ */
+export interface CustomerOrder {
+  /** Sequential within the shop: what the customer says to the shop. */
+  number: number;
+  status: OrderStatus;
+  fulfillment: OrderFulfillment;
+  deliveryAddress: OrderDeliveryAddress | null;
+  paymentMethod: PaymentMethod;
+  items: CustomerOrderItem[];
+  subtotalCents: number;
+  deliveryFeeCents: number;
+  discountCents: number;
+  totalCents: number;
+  /** ISO-8601. */
+  placedAt: string;
+}
+
 /**
  * The error codes the order routes answer, beyond the store's own (`STORE_NOT_FOUND`,
  * `STORE_FORBIDDEN`) and the HTTP-status fallbacks.

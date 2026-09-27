@@ -24,6 +24,8 @@ export default defineConfig({
       // Same reason: one app instance serves a whole file from one address, so every shop write in
       // it shares a bucket that one real shopkeeper would never fill.
       STORE_WRITE_RATE_LIMIT_MAX: '1000',
+      // And the cart's orders: a suite places more of them from one address than any shopper would.
+      CUSTOMER_ORDER_RATE_LIMIT_MAX: '1000',
       // Google's door switched on; its suite stands a fake Google in for the real one.
       GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com',
       GOOGLE_CLIENT_SECRET: 'test-secret',
