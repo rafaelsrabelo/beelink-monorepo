@@ -12,6 +12,7 @@ import { StoresService } from '../stores/stores.service.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { totalsOf, variantLabelOf } from './order-totals.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
+import { deliveryOf } from './order-delivery.js';
 import { returnStock, takeStock } from './order-stock.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
 
@@ -61,6 +62,7 @@ export class OrdersService {
       // Before the order is written: a line the stock cannot cover refuses the whole order.
       await takeStock(tx, lines);
       const customerId = await this.customerOf(tx, storeId, dto.customer);
+      const delivery = await deliveryOf(tx, customerId, dto.fulfillment);
 
       const order = await tx.order.create({
         data: {
@@ -71,6 +73,7 @@ export class OrdersService {
           status: 'ACCEPTED',
           fulfillment: dto.fulfillment,
           paymentMethod: dto.paymentMethod,
+          ...delivery,
           ...totals,
           note: dto.note?.length ? dto.note : null,
           placedAt,

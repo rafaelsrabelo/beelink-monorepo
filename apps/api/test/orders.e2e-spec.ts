@@ -35,7 +35,10 @@ describe("a shop's orders", () => {
     await resetDatabase(prisma);
     await clearInbox();
     owner = await signUpAndSignIn(app, newEmail('dona'));
-    for (const slug of ['lessari', 'outra']) await call('POST', '/api/stores', owner, shopBody(slug));
+    for (const slug of ['lessari', 'outra']) {
+      await call('POST', '/api/stores', owner, shopBody(slug));
+      await register(bia, slug);
+    }
     whey = await variantOf(await addProduct('Whey', 8990));
     grape = await flavoured(await addProduct('Creatina', 5990), 'Sabor', 'Uva');
   });
@@ -66,6 +69,22 @@ describe("a shop's orders", () => {
   }
 
   const bia = { name: 'Bia Souza', phone: '(11) 98888-7777' };
+  const paulista = {
+    zipCode: '01310-930',
+    street: 'Av. Paulista',
+    number: '1000',
+    complement: 'apto 12',
+    neighborhood: 'Bela Vista',
+    city: 'São Paulo',
+    state: 'SP',
+  };
+
+  /** A customer the shop already has, with somewhere to deliver unless told otherwise. */
+  async function register(customer: { name: string; phone: string }, shop = 'lessari', address: object = paulista): Promise<string> {
+    const response = await call('POST', `/api/stores/${shop}/customers`, owner, { ...customer, address });
+    if (response.statusCode !== 201) throw new Error(`POST customers answered ${response.statusCode}: ${response.payload}`);
+    return response.json<{ id: string }>().id;
+  }
 
   function place(payload: object = {}, shop = 'lessari') {
     return call('POST', `/api/stores/${shop}/orders`, owner, {
@@ -87,7 +106,8 @@ describe("a shop's orders", () => {
     expect(order).toMatchObject({
       number: 1,
       status: 'ACCEPTED',
-      customer: { name: 'Bia Souza', phone: '5511988887777', address: { city: null } },
+      customer: { name: 'Bia Souza', phone: '5511988887777' },
+      deliveryAddress: { recipientName: 'Bia Souza', street: 'Av. Paulista', city: 'São Paulo' },
       subtotalCents: 23970,
       deliveryFeeCents: 1000,
       discountCents: 500,
@@ -201,6 +221,69 @@ describe("a shop's orders", () => {
     });
   });
 
+  describe('where a delivery goes', () => {
+    it("photographs the customer's address and name, which their moving or renaming never rewrites", async () => {
+      const order = (await place()).json<Order>();
+      expect(order.deliveryAddress).toEqual({ recipientName: 'Bia Souza', ...paulista });
+
+      const moved = await call('PATCH', `/api/stores/lessari/customers/${order.customer.id}`, owner, {
+        name: 'Bia Lima',
+        address: { zipCode: '11010-000', street: 'Rua Nova', number: '5', complement: null, neighborhood: 'Centro', city: 'Santos' },
+      });
+      expect(moved.statusCode).toBe(200);
+
+      const read = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
+      expect(read.customer.name).toBe('Bia Lima');
+      expect(read.deliveryAddress).toEqual({ recipientName: 'Bia Souza', ...paulista });
+    });
+
+    it('keeps no address on a pick-up, even for a customer who has one', async () => {
+      const order = (await place({ fulfillment: 'PICKUP' })).json<Order>();
+      expect(order.deliveryAddress).toBeNull();
+      expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ deliveryName: null, deliveryStreet: null, deliveryCity: null });
+    });
+
+    it('refuses a delivery with nowhere to go, and saves nothing: no order, no number, no stock, no customer', async () => {
+      await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 5 } });
+      const noCity = await register({ name: 'Dani Rocha', phone: '11955554444' }, 'lessari', { street: 'Rua A', number: '1' });
+
+      const refusals = [
+        await place({ customer: { name: 'Caio Lima', phone: '11977776666' } }),
+        await place({ customer: { id: noCity } }),
+      ];
+      for (const refused of refusals) {
+        expect(refused.statusCode).toBe(400);
+        expect(refused.json()).toMatchObject({ errorCode: 'ORDER_DELIVERY_ADDRESS_MISSING' });
+      }
+      expect(await prisma.order.count()).toBe(0);
+      expect(await prisma.customer.count({ where: { phone: '5511977776666' } })).toBe(0);
+      expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: whey } })).stockQuantity).toBe(5);
+
+      // The same customers, picking it up, are served; and the refused ones spent no number.
+      expect((await place({ customer: { id: noCity }, fulfillment: 'PICKUP' })).json<Order>().number).toBe(1);
+    });
+
+    it("reads a delivery placed before orders kept it as not recorded, never as the customer's address of today", async () => {
+      const order = (await place()).json<Order>();
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          deliveryName: null,
+          deliveryZipCode: null,
+          deliveryStreet: null,
+          deliveryNumber: null,
+          deliveryComplement: null,
+          deliveryNeighborhood: null,
+          deliveryCity: null,
+          deliveryState: null,
+        },
+      });
+
+      const read = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
+      expect(read).toMatchObject({ fulfillment: 'DELIVERY', deliveryAddress: null });
+    });
+  });
+
   it("is the owner's alone: another of their shops, a stranger and a shopper's token all get nothing", async () => {
     await place();
 
@@ -247,7 +330,7 @@ describe("a shop's orders", () => {
       const again = (await place({ customer: { name: 'Outro Nome', phone } })).json<Order>();
       expect(again.customer, phone).toEqual(first.customer);
     }
-    expect(await prisma.customer.count()).toBe(1);
+    expect(await prisma.customer.count({ where: { store: { slug: 'lessari' } } })).toBe(1);
   });
 
   it('takes an id in capitals, and names what an out-of-range number cannot be', async () => {
@@ -288,6 +371,7 @@ describe("a shop's orders", () => {
   });
 
   it('lists the most recent first, and finds by status, number, name and phone', async () => {
+    await register({ name: 'Caio Lima', phone: '11977776666' });
     await place({ placedAt: '2026-09-01T12:00:00.000Z' });
     await place({ customer: { name: 'Caio Lima', phone: '11977776666' } });
     await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'DELIVERED' });
@@ -323,6 +407,8 @@ describe("a shop's orders", () => {
     }
 
     beforeEach(async () => {
+      await register({ name: 'Caio Lima', phone: '11977776666' });
+      await register({ name: 'Eva Nunes', phone: '11966665555' });
       await place({ placedAt: daysAgo(59) });
       await place({ customer: { name: 'Caio Lima', phone: '11977776666' }, placedAt: daysAgo(61) });
       await place({ customer: { name: 'Eva Nunes', phone: '11966665555' } });

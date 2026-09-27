@@ -48,6 +48,19 @@ model Order {
   discountCents    Int @default(0)
   totalCents       Int
 
+  /// Where a delivery goes, photographed from the customer's record when the order is placed: the
+  /// customer moving, or renaming themselves, never rewrites where an order went. Null on a pick-up,
+  /// and on a delivery placed before orders kept it — which reads "not recorded", never today's
+  /// address. `deliveryName` is who receives it.
+  deliveryName         String?
+  deliveryZipCode      String?
+  deliveryStreet       String?
+  deliveryNumber       String?
+  deliveryComplement   String?
+  deliveryNeighborhood String?
+  deliveryCity         String?
+  deliveryState        String?
+
   /// The shopkeeper's note on the order.
   note     String?  @db.VarChar(500)
   /// When it was sold — which may be before it was registered, never after now.

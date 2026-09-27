@@ -6,7 +6,7 @@ import type {
   Order,
   OrderActor,
   OrderCustomer,
-  OrderCustomerDetail,
+  OrderDeliveryAddress,
   OrderEvent,
   OrderFulfillment,
   OrderItem,
@@ -17,7 +17,6 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
-import { CustomerAddressResponse } from '../../customers/dto/customer.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import { ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
 
@@ -33,8 +32,15 @@ export class OrderCustomerResponse implements OrderCustomer {
   @ApiProperty({ nullable: true, type: String, description: 'Digits only.' }) phone!: string | null;
 }
 
-export class OrderCustomerDetailResponse extends OrderCustomerResponse implements OrderCustomerDetail {
-  @ApiProperty({ type: CustomerAddressResponse, description: "The shop's record as it is now." }) address!: CustomerAddressResponse;
+export class OrderDeliveryAddressResponse implements OrderDeliveryAddress {
+  @ApiProperty({ description: "Who receives it: the customer's name when the order was placed." }) recipientName!: string;
+  @ApiProperty({ nullable: true, type: String }) zipCode!: string | null;
+  @ApiProperty() street!: string;
+  @ApiProperty({ nullable: true, type: String }) number!: string | null;
+  @ApiProperty({ nullable: true, type: String }) complement!: string | null;
+  @ApiProperty({ nullable: true, type: String }) neighborhood!: string | null;
+  @ApiProperty() city!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Two letters, upper case.' }) state!: string | null;
 }
 
 export class OrderItemResponse implements OrderItem {
@@ -60,8 +66,14 @@ export class OrderResponse implements Order {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ description: 'Sequential within the shop.' }) number!: number;
   @ApiProperty({ enum: ORDER_STATUSES }) status!: OrderStatus;
-  @ApiProperty({ type: OrderCustomerDetailResponse }) customer!: OrderCustomerDetailResponse;
+  @ApiProperty({ type: OrderCustomerResponse }) customer!: OrderCustomerResponse;
   @ApiProperty({ enum: ORDER_FULFILLMENTS }) fulfillment!: OrderFulfillment;
+  @ApiProperty({
+    type: OrderDeliveryAddressResponse,
+    nullable: true,
+    description: 'As it was when the order was placed. Null on a pick-up, and on a delivery placed before orders kept it.',
+  })
+  deliveryAddress!: OrderDeliveryAddressResponse | null;
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
   @ApiProperty({ type: [OrderItemResponse] }) items!: OrderItemResponse[];
   @ApiProperty() subtotalCents!: number;

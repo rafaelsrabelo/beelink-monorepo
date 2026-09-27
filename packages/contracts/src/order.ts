@@ -46,9 +46,16 @@ export interface OrderCustomer {
   phone: string | null;
 }
 
-/** The customer on an opened order, with where they are: the shop's record as it is now. */
-export interface OrderCustomerDetail extends OrderCustomer {
-  address: CustomerAddress;
+/**
+ * Where a delivery goes, photographed from the customer's record when the order was placed: the
+ * customer moving, or changing their name, never rewrites where an order went. It always has a
+ * street and a city — a delivery without them is refused — and whatever else the record held.
+ */
+export interface OrderDeliveryAddress extends CustomerAddress {
+  /** Who receives it: the customer's name as it was. */
+  recipientName: string;
+  street: string;
+  city: string;
 }
 
 /** An order as its shop reads it. Every amount is whole cents, computed by the API. */
@@ -57,8 +64,13 @@ export interface Order {
   /** Sequential within the shop. */
   number: number;
   status: OrderStatus;
-  customer: OrderCustomerDetail;
+  customer: OrderCustomer;
   fulfillment: OrderFulfillment;
+  /**
+   * Null on a pick-up, and on a delivery placed before orders kept it: that one reads "not recorded",
+   * never the customer's address of today, which is not where it went.
+   */
+  deliveryAddress: OrderDeliveryAddress | null;
   paymentMethod: PaymentMethod;
   items: OrderItem[];
   subtotalCents: number;
@@ -121,6 +133,10 @@ export interface CreateOrderItemInput {
 export interface CreateOrderPayload {
   customer: OrderCustomerInput;
   items: CreateOrderItemInput[];
+  /**
+   * A delivery goes where the customer's record says, and the order keeps that address as it was;
+   * a customer with no street and city is refused with `ORDER_DELIVERY_ADDRESS_MISSING`.
+   */
   fulfillment: OrderFulfillment;
   /** Ignored, as zero, on a pick-up. */
   deliveryFeeCents?: number;
@@ -142,6 +158,8 @@ export interface UpdateOrderStatusPayload {
 export type OrderErrorCode =
   | "ORDER_NOT_FOUND"
   | "ORDER_CUSTOMER_NOT_FOUND"
+  /** A delivery for a customer whose record has no street and city: nowhere to send it. */
+  | "ORDER_DELIVERY_ADDRESS_MISSING"
   | "ORDER_VARIANT_INVALID"
   | "ORDER_ITEM_DUPLICATE"
   | "ORDER_PAYMENT_NOT_ACCEPTED"
