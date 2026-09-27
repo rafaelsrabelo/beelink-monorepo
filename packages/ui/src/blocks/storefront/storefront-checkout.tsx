@@ -7,6 +7,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { WhatsAppIcon } from "../store/store-brand-icons"
+import type { PaymentMethod } from "../store/store-types"
+import { StorefrontCheckoutChoices, type StorefrontCheckoutChoice } from "./storefront-checkout-choices"
+
+export type { CheckoutFulfillment, StorefrontCheckoutChoice } from "./storefront-checkout-choices"
 
 export interface StorefrontCheckoutCustomer {
   /** Name, phone and address, a line each — only the ones on file. */
@@ -15,19 +19,32 @@ export interface StorefrontCheckoutCustomer {
   complete: boolean
   /** Where to change them, coming back here after. */
   editHref: string
+  /** Their address in one line, where a delivery goes; null when they have none. */
+  deliveryLine: string | null
 }
 
 export interface StorefrontCheckoutProps {
-  /** The order's `wa.me` link, or null when the shop has no WhatsApp: no button, and a sentence why. */
-  href: string | null
+  /**
+   * Where the conversation goes once the order is placed: the shop's WhatsApp, opened with the
+   * order's number, or nowhere — a shop without WhatsApp still takes the order, and confirms it.
+   */
+  channel: "whatsapp" | "shop"
   /** Who is ordering, as the shop keeps them. Null: nobody is signed in. */
   customer: StorefrontCheckoutCustomer | null
   /** Where a visitor signs in or signs up to order. The cart is a cookie, so it waits for them. */
   signIn: { signInHref: string; signUpHref: string }
+  /** The methods the shop takes. */
+  paymentMethods: readonly PaymentMethod[]
+  choice: StorefrontCheckoutChoice
+  onChoiceChange: (choice: StorefrontCheckoutChoice) => void
+  /** Places the order; the page opens WhatsApp itself once the order has its number. */
+  onPlace: () => void
+  /** The order is on its way to the shop: nothing is pressed twice. */
+  pending?: boolean
+  /** Why the order was not placed, already in words. */
+  error?: string | null
   /** Nothing in the cart can be ordered now: the button stays, and does nothing until it can. */
   disabled?: boolean
-  /** Told as the link opens, with the link: the page empties the cart and keeps it for a retry. */
-  onSend?: (href: string) => void
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -37,13 +54,25 @@ const PRIMARY = "flex h-12 items-center justify-center gap-2 rounded-xl bg-shop-
 /**
  * The way out of the cart, under the subtotal. Anyone can fill a cart and see the total; placing
  * the order asks who is placing it (docs/product/README.md: "buying requires a verified identity;
- * reaching the checkout does not"). A signed-in shopper sees their details as the shop keeps them
- * and sends the order to the shop's WhatsApp, where it ends — there is no payment here.
+ * reaching the checkout does not"). A signed-in shopper sees their details as the shop keeps them,
+ * chooses how to receive and pay, and places the order — which exists from then on, whether the
+ * conversation goes on in the shop's WhatsApp or not. There is no payment here.
  */
-export function StorefrontCheckout({ href, customer, signIn, disabled = false, onSend, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontCheckoutProps) {
+export function StorefrontCheckout({
+  channel,
+  customer,
+  signIn,
+  paymentMethods,
+  choice,
+  onChoiceChange,
+  onPlace,
+  pending = false,
+  error,
+  disabled = false,
+  linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
+}: StorefrontCheckoutProps) {
   const text = messages.storefront
-
-  if (!href) return <p className="text-sm text-shop-muted">{text.checkoutNoWhatsApp}</p>
 
   if (!customer) {
     return (
@@ -59,8 +88,10 @@ export function StorefrontCheckout({ href, customer, signIn, disabled = false, o
     )
   }
 
+  const label = pending ? text.checkoutPlacing : channel === "whatsapp" ? text.checkoutWhatsApp : text.checkoutPlace
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1 rounded-[10px] border border-shop-line bg-shop-fill px-4 py-3 text-sm">
         <p className="text-xs text-shop-muted">{text.checkoutFor}</p>
         {customer.lines.map((line) => (
@@ -71,17 +102,34 @@ export function StorefrontCheckout({ href, customer, signIn, disabled = false, o
           {text.checkoutEdit}
         </Link>
       </div>
-      {disabled ? (
-        <button type="button" disabled className={`${PRIMARY} opacity-50`}>
-          <WhatsAppIcon className="size-5" />
-          {text.checkoutWhatsApp}
-        </button>
-      ) : (
-        <a href={href} target="_blank" rel="noreferrer" onClick={() => onSend?.(href)} className={`${PRIMARY} transition-opacity hover:opacity-90`}>
-          <WhatsAppIcon className="size-5" />
-          {text.checkoutWhatsApp}
-        </a>
-      )}
+
+      <StorefrontCheckoutChoices
+        value={choice}
+        onChange={onChoiceChange}
+        deliveryLine={customer.deliveryLine}
+        editHref={customer.editHref}
+        paymentMethods={paymentMethods}
+        disabled={pending}
+        linkComponent={Link}
+        messages={messages}
+      />
+
+      {error ? (
+        <p role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
+          {error}
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={onPlace}
+        disabled={disabled || pending}
+        aria-busy={pending || undefined}
+        className={`${PRIMARY} transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50`}
+      >
+        {channel === "whatsapp" ? <WhatsAppIcon className="size-5" /> : null}
+        {label}
+      </button>
     </div>
   )
 }

@@ -4,49 +4,48 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Types
-import type { CustomerProfile, Order } from "@harness-monorepo/contracts"
+import type { CustomerOrder, CustomerProfile, Order } from "@harness-monorepo/contracts"
 
 // App
-import type { CartView } from "./cart-view"
 import { addressLineOf } from "./customer-address"
 
 export interface OrderMessageInput {
   shopName: string
-  view: Pick<CartView, "rows" | "subtotalCents">
-  /** Who is ordering, as the shop keeps them: their name, phone and address go under the total. */
-  customer?: Pick<CustomerProfile, "name" | "phone" | "address"> | null
+  /** The order as the API placed it: its number, and the lines and total the shop sees in its panel. */
+  order: Pick<CustomerOrder, "number" | "items" | "totalCents" | "fulfillment" | "deliveryAddress" | "paymentMethod">
+  /** Who placed it, as the shop keeps them: their name and phone go under the total. */
+  customer: Pick<CustomerProfile, "name" | "phone">
   locale: string
   messages: UiMessages
 }
 
 /**
- * The order as the shop reads it on WhatsApp: a greeting, one line per thing that can be ordered —
- * quantity, name, combination, the line's total — the total, and who is ordering. A
- * sold-out line is left out: the cart already said it would not be ordered.
+ * The order as the shop reads it on WhatsApp once it is placed: its number — the same the panel
+ * shows — one line per item as the API priced it, the total, where it goes or that it is picked
+ * up, the payment, and who ordered.
  */
-export function orderMessageOf({ shopName, view, customer, locale, messages }: OrderMessageInput): string {
+export function orderMessageOf({ shopName, order, customer, locale, messages }: OrderMessageInput): string {
   const text = messages.storefront
   const money = (cents: number) => formatCents(cents, locale, "BRL")
-  const lines = view.rows
-    .filter((row) => row.available)
-    .map((row) =>
-      format(text.orderLine, {
-        qty: String(row.qty),
-        name: row.variantLabel ? `${row.name} (${row.variantLabel})` : row.name,
-        total: money(row.lineTotalCents),
-      }),
-    )
-  const address = customer ? addressLineOf(customer.address) : null
+  const lines = order.items.map((item) =>
+    format(text.orderLine, {
+      qty: String(item.quantity),
+      name: item.variantLabel ? `${item.productName} (${item.variantLabel})` : item.productName,
+      total: money(item.lineTotalCents),
+    }),
+  )
+  const address = order.deliveryAddress ? addressLineOf(order.deliveryAddress) : null
 
   return [
-    format(text.orderGreeting, { shop: shopName }),
+    format(text.orderGreeting, { number: String(order.number), shop: shopName }),
     "",
     ...lines,
     "",
-    format(text.orderTotal, { total: money(view.subtotalCents) }),
-    ...(customer ? [format(text.orderCustomer, { name: customer.name })] : []),
-    ...(customer?.phone ? [format(text.orderPhone, { phone: customer.phone })] : []),
-    ...(address ? [format(text.orderAddress, { address })] : []),
+    format(text.orderTotal, { total: money(order.totalCents) }),
+    order.fulfillment === "PICKUP" ? text.orderPickup : format(text.orderAddress, { address: address ?? "" }),
+    format(text.orderPayment, { method: messages.orders.payments[order.paymentMethod] }),
+    format(text.orderCustomer, { name: customer.name }),
+    ...(customer.phone ? [format(text.orderPhone, { phone: customer.phone })] : []),
   ].join("\n")
 }
 

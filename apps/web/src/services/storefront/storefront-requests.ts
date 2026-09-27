@@ -1,5 +1,5 @@
 // Types
-import type { CreateRestockRequestPayload, PublicProductCard } from "@harness-monorepo/contracts"
+import type { CreateRestockRequestPayload, CustomerOrder, PlaceCustomerOrderPayload, PublicProductCard } from "@harness-monorepo/contracts"
 
 export interface StorefrontSearchResult {
   products: PublicProductCard[]
@@ -52,5 +52,32 @@ export class RestockRequestError extends Error {
   constructor(readonly errorCode: string) {
     super(errorCode)
     this.name = "RestockRequestError"
+  }
+}
+
+/**
+ * The signed-in shopper's cart, placed as an order. To the shop's own handler (`/<slug>/api/orders`),
+ * where the shopper's cookies reach — never the API, and never a token in page code.
+ */
+export async function placeShopperOrder(slug: string, payload: PlaceCustomerOrderPayload): Promise<CustomerOrder> {
+  const response = await fetch(`/${encodeURIComponent(slug)}/api/orders`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify(payload),
+  })
+  const answer: unknown = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const code = typeof answer === "object" && answer !== null && "errorCode" in answer ? String(answer.errorCode) : null
+    throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"))
+  }
+  return answer as CustomerOrder
+}
+
+/** What a refused order carries: the API's stable code, never a sentence. */
+export class ShopperOrderError extends Error {
+  constructor(readonly errorCode: string) {
+    super(errorCode)
+    this.name = "ShopperOrderError"
   }
 }

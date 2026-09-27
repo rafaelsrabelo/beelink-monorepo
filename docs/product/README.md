@@ -96,7 +96,9 @@ A **coupon** is a code a customer types. A code is unique **within its store**, 
 
 ## Checkout and the handoff to WhatsApp
 
-Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp**. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil.
+Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp**. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil. It names the order by its number, and its lines and total are the ones the product recorded, not the ones the page computed.
+
+An order placed at checkout starts **received**: the shopkeeper accepts it, or cancels it. A shop with no WhatsApp still takes orders — the customer is told the shop will confirm.
 
 **The product does not take payment.** The payment method on an order is a label saying how the two of them settled it. Nothing is charged, held or refunded by bee-link.
 

@@ -110,12 +110,14 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (
         <StorefrontCartLive
+          slug={store.slug}
           products={cart.products}
           hrefs={Object.fromEntries(cart.products.map((product) => [product.id, routes.product(product.slug)]))}
           continueHref={routes.catalog()}
           goneOnArrival={cart.gone > 0}
           shopName={store.name}
           whatsapp={store.socialNetworks.whatsapp?.replace(/\D/g, "") || null}
+          paymentMethods={store.paymentMethods}
           shopper={shopper}
           identityHrefs={{
             signInHref: routes.signIn({ back: routes.cart() }),
