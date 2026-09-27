@@ -263,9 +263,17 @@ export interface UiMessages {
     checkoutFeeLater: string
     checkoutPayment: string
     checkoutChoosePayment: string
-    /** The refusals a shopper can meet placing the order, as the screen picks them. */
+    /**
+     * The refusals a shopper can meet placing the order, as the screen picks them. `{items}` names the
+     * lines — "Moletom cinza: só restam 1" — and the `…Any` sentences stand in when none can be named.
+     */
     checkoutStockShort: string
+    checkoutStockShortAny: string
+    /** `{name}` `{left}`; `{name}`. */
+    checkoutStockLeft: string
+    checkoutStockNone: string
     checkoutProductGone: string
+    checkoutProductGoneAny: string
     checkoutPaymentGone: string
     checkoutAddressGone: string
     checkoutSignedOut: string

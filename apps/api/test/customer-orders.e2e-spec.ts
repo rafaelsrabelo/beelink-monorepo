@@ -170,6 +170,25 @@ describe("a shopper's order from the cart", () => {
     expect(await prisma.order.count()).toBe(0);
   });
 
+  it('refuses a product the shop put back in draft, naming the line — which the panel may still register', async () => {
+    const draft = await addProduct('Rascunho', 1000);
+    const draftVariant = await variantOf(draft);
+    await prisma.product.update({ where: { id: draft.id }, data: { status: 'DRAFT' } });
+
+    const refused = await place({ items: [{ variantId: whey, quantity: 1 }, { variantId: draftVariant, quantity: 1 }] });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json()).toMatchObject({ errorCode: 'ORDER_VARIANT_INVALID', details: { variantIds: [draftVariant] } });
+    expect(await prisma.order.count()).toBe(0);
+
+    const panel = await call('POST', '/api/stores/lessari/orders', owner, {
+      customer: { name: 'Caio Lima', phone: '11977776666' },
+      items: [{ variantId: draftVariant, quantity: 1 }],
+      fulfillment: 'PICKUP',
+      paymentMethod: 'PIX',
+    });
+    expect(panel.statusCode).toBe(201);
+  });
+
   it('refuses to sell past what is left, naming every short line', async () => {
     await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 1 } });
 

@@ -2,7 +2,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 // Types
-import type { CreateOrderItemInput, OrderActor, OrderFulfillment, OrderStatus, PaymentMethod } from '@harness-monorepo/contracts';
+import type {
+  CreateOrderItemInput,
+  OrderActor,
+  OrderFulfillment,
+  OrderStatus,
+  OrderVariantInvalidDetails,
+  PaymentMethod,
+} from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -31,6 +38,11 @@ export interface Placement {
   actor: Extract<OrderActor, 'SHOPKEEPER' | 'CUSTOMER'>;
   /** The account behind it. */
   userId: string;
+  /**
+   * Only what the shop window sells: a product put back in draft is off sale to a shopper. The
+   * shopkeeper may still register a sale of one of their own drafts.
+   */
+  onSaleOnly: boolean;
   /** Who it is for, inside the transaction: a customer registered with the order goes back with a refusal. */
   customerOf: (tx: Tx) => Promise<string>;
 }
@@ -56,7 +68,7 @@ export class OrderPlacement {
       throw new BadRequestException(orderError('ORDER_PAYMENT_NOT_ACCEPTED', 'The shop does not take that payment'));
     }
 
-    const lines = await this.linesOf(storeId, placement.items);
+    const lines = await this.linesOf(storeId, placement.items, placement.onSaleOnly);
     const totals = totalsOf(lines, placement.fulfillment, placement.deliveryFeeCents, placement.discountCents);
     if (totals === 'DISCOUNT_TOO_LARGE') {
       throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount is larger than the order'));
@@ -109,7 +121,7 @@ export class OrderPlacement {
   }
 
   /** The lines as they will be photographed: each variant read from this shop, and priced by it. */
-  private async linesOf(storeId: string, items: readonly CreateOrderItemInput[]) {
+  private async linesOf(storeId: string, items: readonly CreateOrderItemInput[], onSaleOnly: boolean) {
     const ids = items.map((item) => item.variantId);
     if (new Set(ids).size !== ids.length) {
       throw new BadRequestException(orderError('ORDER_ITEM_DUPLICATE', 'A variant appears on two lines'));
@@ -117,7 +129,7 @@ export class OrderPlacement {
 
     const variants = await this.prisma.productVariant.findMany({
       // Another shop's, a combination that stopped existing and one not sold are all the same refusal.
-      where: { id: { in: ids }, storeId, archivedAt: null, isActive: true },
+      where: { id: { in: ids }, storeId, archivedAt: null, isActive: true, ...(onSaleOnly ? { product: { status: 'ACTIVE' } } : {}) },
       select: {
         id: true,
         productId: true,
@@ -128,7 +140,12 @@ export class OrderPlacement {
       },
     });
     if (variants.length !== ids.length) {
-      throw new BadRequestException(orderError('ORDER_VARIANT_INVALID', 'A variant is not one this shop sells'));
+      const found = new Set(variants.map((variant) => variant.id));
+      // Every line that cannot be sold, so a cart can say which of its products left the shop.
+      throw new BadRequestException({
+        ...orderError('ORDER_VARIANT_INVALID', 'A variant is not one this shop sells'),
+        details: { variantIds: ids.filter((id) => !found.has(id)) } satisfies OrderVariantInvalidDetails,
+      });
     }
 
     const byId = new Map(variants.map((variant) => [variant.id, variant]));

@@ -38,6 +38,7 @@ export class CustomerOrdersService {
       status: 'RECEIVED',
       actor: 'CUSTOMER',
       userId,
+      onSaleOnly: true,
       customerOf: async () => customerId,
     });
     return toCustomerOrder(order);

@@ -69,14 +69,18 @@ export async function placeShopperOrder(slug: string, payload: PlaceCustomerOrde
 
   if (!response.ok) {
     const code = typeof answer === "object" && answer !== null && "errorCode" in answer ? String(answer.errorCode) : null
-    throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"))
+    const details = typeof answer === "object" && answer !== null && "details" in answer ? answer.details : undefined
+    throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"), details)
   }
   return answer as CustomerOrder
 }
 
-/** What a refused order carries: the API's stable code, never a sentence. */
+/** What a refused order carries: the API's stable code, never a sentence, and the lines it named. */
 export class ShopperOrderError extends Error {
-  constructor(readonly errorCode: string) {
+  constructor(
+    readonly errorCode: string,
+    readonly details?: unknown,
+  ) {
     super(errorCode)
     this.name = "ShopperOrderError"
   }

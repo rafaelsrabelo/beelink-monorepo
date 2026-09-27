@@ -13,7 +13,7 @@ import { StorefrontCheckoutChoices, type StorefrontCheckoutChoice } from "./stor
 export type { CheckoutFulfillment, StorefrontCheckoutChoice } from "./storefront-checkout-choices"
 
 export interface StorefrontCheckoutCustomer {
-  /** Name, phone and address, a line each — only the ones on file. */
+  /** Name and phone, a line each — only the ones on file; the address is `deliveryLine`. */
   lines: readonly string[]
   /** Whether the shop has a phone and an address for them; without, a hint says so. */
   complete: boolean
@@ -73,10 +73,17 @@ export function StorefrontCheckout({
   messages = defaultMessages,
 }: StorefrontCheckoutProps) {
   const text = messages.storefront
+  const alert = error ? (
+    <p role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
+      {error}
+    </p>
+  ) : null
 
   if (!customer) {
     return (
       <div className="flex flex-col gap-3">
+        {/* A session that ended while ordering lands here, and says so rather than only asking again. */}
+        {alert}
         <p className="text-sm text-shop-muted">{text.checkoutSignInPrompt}</p>
         <Link href={signIn.signInHref} className={PRIMARY}>
           {text.checkoutSignIn}
@@ -114,11 +121,7 @@ export function StorefrontCheckout({
         messages={messages}
       />
 
-      {error ? (
-        <p role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
-          {error}
-        </p>
-      ) : null}
+      {alert}
 
       <button
         type="button"

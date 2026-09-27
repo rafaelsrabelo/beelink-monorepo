@@ -54,6 +54,7 @@ export class OrdersService {
       status: 'ACCEPTED',
       actor: 'SHOPKEEPER',
       userId,
+      onSaleOnly: false,
       customerOf: (tx) => this.customerOf(tx, storeId, dto.customer),
     });
     return toOrder(order);

@@ -48,9 +48,9 @@ function cookieLines() {
   )
 }
 
-function renderCart(goneOnArrival = false, shopper: CustomerProfile | null = bia, props: Partial<StorefrontCartLiveProps> = {}) {
-  return render(
-    <QueryClientProvider client={new QueryClient()}>
+function cartTree(client: QueryClient, goneOnArrival: boolean, shopper: CustomerProfile | null, props: Partial<StorefrontCartLiveProps>) {
+  return (
+    <QueryClientProvider client={client}>
       <CartProvider
         slug="loja"
         lines={[
@@ -74,8 +74,15 @@ function renderCart(goneOnArrival = false, shopper: CustomerProfile | null = bia
           {...props}
         />
       </CartProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
+}
+
+/** The cart page, and a way to draw it again as a refresh would — the same page, new props. */
+function renderCart(goneOnArrival = false, shopper: CustomerProfile | null = bia, props: Partial<StorefrontCartLiveProps> = {}) {
+  const client = new QueryClient()
+  const view = render(cartTree(client, goneOnArrival, shopper, props))
+  return { ...view, redraw: (next: CustomerProfile | null) => view.rerender(cartTree(client, goneOnArrival, next, props)) }
 }
 
 const placed = {
@@ -154,18 +161,46 @@ describe("StorefrontCartLive", () => {
     expect(cookieLines()).toEqual([])
   })
 
-  it("says why a refused order was not placed, closes the tab, keeps the cart and reads the shelf again", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 409, errorCode: "ORDER_STOCK_INSUFFICIENT", message: "x" }, { status: 409 })))
+  it("names the line the stock cannot cover and how many are left, closes the tab and keeps the cart to fix", async () => {
+    const details = { shortages: [{ variantId: blusa.variants[0]!.id, available: 1 }] }
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 409, errorCode: "ORDER_STOCK_INSUFFICIENT", message: "x", details }, { status: 409 })))
     const tab = openedTab()
     renderCart()
 
     fireEvent.click(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" }))
 
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Algum produto acabou enquanto você comprava"))
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Não há estoque para tudo — Blusa: só restam 1."))
     expect(tab.close).toHaveBeenCalled()
-    expect(mocks.refresh).toHaveBeenCalled()
+    // The catalogue the cart reads is cached: a refresh would draw the same cart, so none is asked.
+    expect(mocks.refresh).not.toHaveBeenCalled()
     // The cart is still there to fix: nothing was placed.
     expect(screen.getByText(/Subtotal \(2 itens\)/)).toBeInTheDocument()
+  })
+
+  it("changing the cart clears the refusal, which no longer describes it", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 409, errorCode: "ORDER_STOCK_INSUFFICIENT", message: "x" }, { status: 409 })))
+    openedTab()
+    renderCart()
+
+    fireEvent.click(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" }))
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument())
+    fireEvent.click(screen.getByRole("button", { name: "Diminuir a quantidade de Blusa" }))
+
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull())
+  })
+
+  it("says the session ended, reads the page again and keeps saying so once it asks to sign in", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 401, errorCode: "AUTH_UNAUTHENTICATED", message: "x" }, { status: 401 })))
+    openedTab()
+    const view = renderCart()
+
+    fireEvent.click(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" }))
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled())
+
+    // The refreshed page has nobody signed in: the same cart, now asking to sign in, and saying why.
+    view.redraw(null)
+    expect(screen.getByRole("alert")).toHaveTextContent("Sua sessão terminou.")
+    expect(screen.getByRole("link", { name: "Entrar para fazer o pedido" })).toBeInTheDocument()
   })
 
   it("asks for the payment when the shop takes several, and sends nothing until one is chosen", () => {
@@ -192,6 +227,14 @@ describe("StorefrontCartLive", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("A loja recebeu o seu pedido e vai confirmar."))
     expect(open).not.toHaveBeenCalled()
     expect(screen.queryByRole("link", { name: /Tente de novo/ })).toBeNull()
+  })
+
+  it("never keeps a delivery chosen once the address is gone from the page", () => {
+    const view = renderCart()
+    expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeChecked()
+
+    view.redraw({ ...bia, address: { ...bia.address, street: null } })
+    expect(screen.getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
   })
 
   it("offers delivery only to a shopper with an address, starting on pick-up otherwise", () => {

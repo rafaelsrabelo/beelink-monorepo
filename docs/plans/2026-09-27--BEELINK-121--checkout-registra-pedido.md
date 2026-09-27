@@ -75,3 +75,32 @@ com uma conta válida não enche o painel de uma loja.
 - A observação do cliente no pedido: o campo `note` é do lojista e o J2 garante que o cliente não o
   vê. Uma observação do cliente pede uma coluna própria.
 - Ver o pedido na Minha conta (J4 e J5).
+
+## Adendo — revisão independente (27/09/2026)
+
+Três leituras: API e segurança, fluxo do checkout, escopo e contrato. Cada achado passou por um
+verificador que tentou refutá-lo. Sete confirmados, todos corrigidos:
+
+1. **O carrinho aceitava um produto que a loja voltou para rascunho.** O caminho de gravar é o
+   mesmo do painel, onde registrar a venda de um rascunho próprio faz sentido. `Placement` ganhou
+   `onSaleOnly`. No carrinho, um produto fora da vitrine cai em `ORDER_VARIANT_INVALID`. O painel
+   continua como era.
+2. **Uma recusa de estoque deixava o cliente sem saída.** O `router.refresh()` não relê o catálogo,
+   que fica em cache por 60 s. E uma falta parcial (2 no carrinho, 1 na loja) nunca aparece como
+   esgotada. Agora a recusa nomeia cada linha, como em "Moletom cinza: só restam 1". Um produto que
+   saiu de venda também é nomeado: `ORDER_VARIANT_INVALID` passou a trazer
+   `details.variantIds` (`OrderVariantInvalidDetails`). Mexer no carrinho limpa a recusa. O refresh
+   fica só para o que ele de fato relê: a sessão, o cadastro do cliente e as formas de pagamento da
+   loja.
+3. **A escolha era semeada uma vez só.** Um endereço apagado depois, ou uma forma de pagamento que a
+   loja deixou de aceitar, podia ser enviado. A escolha agora é conferida contra a página a cada
+   desenho.
+4. **"Sua sessão terminou" nunca aparecia.** Depois do refresh a página vira a de visitante, e ela
+   descartava o erro. Agora o aviso fica acima do "Entrar para fazer o pedido".
+5. **A recusa de forma de pagamento não relia as formas da loja.** Agora relê.
+6. e 7. Dois comentários desatualizados: `OrderActor`, que ainda dizia que o checkout vinha depois,
+   e as linhas do cliente no checkout, que ainda citavam o endereço.
+
+Seis achados foram refutados. Um deles tinha razão num detalhe, que não é defeito: a Decisão 7 fala
+em limite "por minuto", mas o código usa 10 pedidos em 10 minutos. Vale o código: uma pessoa não faz
+dez pedidos em dez minutos.

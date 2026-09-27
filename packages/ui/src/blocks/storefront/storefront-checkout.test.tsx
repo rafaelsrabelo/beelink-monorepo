@@ -67,10 +67,13 @@ describe("StorefrontCheckout", () => {
     expect(screen.getByRole("radio", { name: /Retirar na loja/ })).toBeDisabled()
   })
 
-  it("says why an order was refused", () => {
-    render(checkout({ error: "Algum produto acabou enquanto você comprava." }))
-
+  it("says why an order was refused — to a shopper whose session ended too, over the way back in", () => {
+    const { rerender } = render(checkout({ error: "Algum produto acabou enquanto você comprava." }))
     expect(screen.getByRole("alert")).toHaveTextContent("Algum produto acabou enquanto você comprava.")
+
+    rerender(checkout({ customer: null, error: "Sua sessão terminou. Entre de novo para fazer o pedido." }))
+    expect(screen.getByRole("alert")).toHaveTextContent("Sua sessão terminou.")
+    expect(screen.getByRole("link", { name: "Entrar para fazer o pedido" })).toBeInTheDocument()
   })
 
   it("has no accessibility violations, signed in or not", async () => {

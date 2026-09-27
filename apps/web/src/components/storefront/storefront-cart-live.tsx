@@ -75,10 +75,21 @@ export function StorefrontCartLive({
   const clear = useCart((cart) => cart.clear)
   const placing = usePlaceShopperOrder(slug)
   const deliveryLine = shopper && isDeliverable(shopper.address) ? addressLineOf(shopper.address) : null
-  const [choice, setChoice] = useState<StorefrontCheckoutChoice>(() => ({
+  const [picked, setChoice] = useState<StorefrontCheckoutChoice>(() => ({
     fulfillment: deliveryLine ? "DELIVERY" : "PICKUP",
     paymentMethod: paymentMethods.length === 1 ? paymentMethods[0]! : null,
   }))
+  // What was picked, held to what the page says now: an address gone since, or a payment the shop
+  // stopped taking, is never what gets sent.
+  const choice: StorefrontCheckoutChoice = {
+    fulfillment: deliveryLine ? picked.fulfillment : "PICKUP",
+    paymentMethod:
+      picked.paymentMethod && paymentMethods.includes(picked.paymentMethod)
+        ? picked.paymentMethod
+        : paymentMethods.length === 1
+          ? paymentMethods[0]!
+          : null,
+  }
   // What was asked of the shopper before anything was sent: a payment to choose.
   const [asked, setAsked] = useState<string | null>(null)
   // The order once placed, and the WhatsApp link opened with its number.
@@ -117,14 +128,16 @@ export function StorefrontCartLive({
         },
         onError: (error) => {
           tab?.close()
-          // The shelf or the session moved: the page reads the products and the shopper again.
+          // The session, the shopper's record or the shop's payments moved: the page reads them again.
           if (error instanceof ShopperOrderError && rereadsTheCart(error.errorCode)) router.refresh()
         },
       },
     )
   }
 
-  const refusal = placing.error ? checkoutRefusalOf(placing.error instanceof ShopperOrderError ? placing.error.errorCode : "UNKNOWN", text) : null
+  const refusal = placing.error
+    ? checkoutRefusalOf(placing.error instanceof ShopperOrderError ? placing.error : { errorCode: "UNKNOWN" }, view.rows, text)
+    : null
 
   return (
     <StorefrontCart
@@ -162,13 +175,16 @@ export function StorefrontCartLive({
           messages={messages}
         />
       }
+      // A changed cart is a new order to try: the refusal of the last one no longer describes it.
       onQtyChange={(key, qty) => {
         const row = byKey.get(key)
         if (row) setQty(row.productId, row.variantId, qty)
+        placing.reset()
       }}
       onRemove={(key) => {
         const row = byKey.get(key)
         if (row) remove(row.productId, row.variantId)
+        placing.reset()
       }}
       messages={messages}
     />

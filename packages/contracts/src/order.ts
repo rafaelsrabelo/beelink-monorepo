@@ -10,7 +10,7 @@ export type OrderStatus = "RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIV
 /** How the order is handed over. */
 export type OrderFulfillment = "DELIVERY" | "PICKUP";
 
-/** Who set a status: the shopkeeper today, the customer's checkout and the courier later. */
+/** Who set a status: the shopkeeper, or the customer placing it from the cart; the courier later. */
 export type OrderActor = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM";
 
 /**
@@ -205,6 +205,7 @@ export type OrderErrorCode =
   | "ORDER_CUSTOMER_NOT_FOUND"
   /** A delivery for a customer whose record has no street and city: nowhere to send it. */
   | "ORDER_DELIVERY_ADDRESS_MISSING"
+  /** A line the shop does not sell — another shop's, switched off, or off sale. Its `details` are `OrderVariantInvalidDetails`. */
   | "ORDER_VARIANT_INVALID"
   | "ORDER_ITEM_DUPLICATE"
   | "ORDER_PAYMENT_NOT_ACCEPTED"
@@ -226,4 +227,9 @@ export interface OrderStockShortage {
 /** The `details` of `ORDER_STOCK_INSUFFICIENT`: every line short, not only the first. */
 export interface OrderStockDetails {
   shortages: OrderStockShortage[];
+}
+
+/** The `details` of `ORDER_VARIANT_INVALID`: every line the shop does not sell, so a cart can name them. */
+export interface OrderVariantInvalidDetails {
+  variantIds: string[];
 }
