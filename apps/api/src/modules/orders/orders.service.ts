@@ -7,11 +7,10 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { refreshBooks } from '../customers/customer-books.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { OrderPlacement } from './order-placement.js';
-import { returnStock } from './order-stock.js';
+import { settleCancellation } from './order-cancellation.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
 
@@ -136,11 +135,7 @@ export class OrdersService {
         data: { status, events: { create: { status, actor: 'SHOPKEEPER', userId } } },
         include: ORDER_INCLUDE,
       });
-      if (status === 'CANCELLED') {
-        await refreshBooks(tx, current.customerId);
-        // Only what placing it took: an order from before orders counted stock gives nothing back.
-        if (current.stockTaken) await returnStock(tx, current.id);
-      }
+      if (status === 'CANCELLED') await settleCancellation(tx, current);
       return toOrder(order);
     });
   }

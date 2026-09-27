@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrder, Order, OrderCustomer, OrderSummary } from '@harness-monorepo/contracts';
+import type { Order, OrderCustomer, OrderSummary } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -59,30 +59,6 @@ export function toOrder(row: OrderRow): Order {
     events: row.events.map((event) => ({ status: event.status, actor: event.actor, at: event.createdAt.toISOString() })),
     createdAt: row.createdAt.toISOString(),
   } satisfies Order;
-}
-
-/** The order as its customer reads it: not the shop's note, not who moved it, not the shop's books. */
-export function toCustomerOrder(row: OrderRow): CustomerOrder {
-  return {
-    number: row.number,
-    status: row.status,
-    fulfillment: row.fulfillment,
-    deliveryAddress: toDeliveryAddress(row),
-    paymentMethod: row.paymentMethod,
-    items: row.items.map((item) => ({
-      productId: item.productId,
-      productName: item.productName,
-      variantLabel: item.variantLabel,
-      unitPriceCents: item.unitPriceCents,
-      quantity: item.quantity,
-      lineTotalCents: item.lineTotalCents,
-    })),
-    subtotalCents: row.subtotalCents,
-    deliveryFeeCents: row.deliveryFeeCents,
-    discountCents: row.discountCents,
-    totalCents: row.totalCents,
-    placedAt: row.placedAt.toISOString(),
-  } satisfies CustomerOrder;
 }
 
 export function toOrderSummary(row: OrderSummaryRow): OrderSummary {

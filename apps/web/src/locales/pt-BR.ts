@@ -167,6 +167,7 @@ export const ptBR: WebMessages = {
     ORDER_DISCOUNT_TOO_LARGE: "O desconto passa do valor do pedido.",
     ORDER_TOTAL_TOO_LARGE: "O pedido passa de R$ 1.000.000,00.",
     ORDER_CANCELLED: "Esse pedido foi cancelado e não muda mais.",
+    ORDER_NOT_CANCELLABLE: "A loja já aceitou esse pedido. Para cancelar, fale com a loja.",
     ORDER_STATUS_UNCHANGED: "O pedido já está nesse status.",
     ORDER_STOCK_INSUFFICIENT: "Não há estoque para tudo. Ajuste as quantidades marcadas.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Entrar com Google não está disponível agora. Entre com e-mail e senha.",
