@@ -43,7 +43,7 @@ export function StorefrontAccountForm({ profile, action, signOutAction, hidden =
   )
 
   return (
-    <section className="mx-auto flex w-full max-w-xl flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
+    <section className="flex w-full max-w-xl flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
       <p className="text-sm text-shop-muted">{text.accountLead}</p>
 
       {error ? (

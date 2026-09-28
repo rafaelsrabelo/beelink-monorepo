@@ -33,7 +33,11 @@ export function StorefrontAccountShell({ menu, page, children, linkComponent: Li
 
   return (
     <div className="flex flex-col gap-6 py-4 text-shop-on-background shop-lg:flex-row shop-lg:gap-8 shop-lg:py-7">
-      <aside className={tab ? "hidden w-[248px] shrink-0 shop-lg:block" : "w-full shrink-0 shop-lg:w-[248px]"}>{menu}</aside>
+      <aside className={tab ? "hidden w-[248px] shrink-0 shop-lg:block" : "flex w-full shrink-0 flex-col gap-4 shop-lg:w-[248px]"}>
+        {/* On a phone the menu is the front itself, and the front's own heading is out of sight with the overview. */}
+        {tab ? null : <h1 className="text-2xl font-extrabold shop-lg:hidden">{text.account}</h1>}
+        {menu}
+      </aside>
 
       <div className={tab ? "flex min-w-0 flex-1 flex-col gap-5" : "hidden min-w-0 flex-1 shop-lg:block"}>
         {tab ? (

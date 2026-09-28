@@ -11,11 +11,11 @@ import { StorefrontAccountSkeleton } from "@harness-monorepo/ui/blocks/storefron
 // App
 import { StorefrontAccountSection } from "@/components/storefront/storefront-account-section"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
-import { DELIVERED_ACCOUNT_TABS, accountTabTitleOf } from "@/lib/account-menu"
+import { accountTabTitleOf, deliveredAccountTabOf } from "@/lib/account-menu"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
-import { accountTabOf, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
+import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { StorefrontAccountArea } from "./storefront-account-area"
 
@@ -28,8 +28,8 @@ async function load(slug: string, section: string, item: string) {
   const store = await shopAt(slug)
   if (!store || sectionOf(section, store.routeWords).kind !== "account") return null
 
-  const tab = accountTabOf(item, store.routeWords)
-  if (!tab || !DELIVERED_ACCOUNT_TABS.includes(tab)) return null
+  const tab = deliveredAccountTabOf(item, store.routeWords)
+  if (!tab) return null
 
   return { store, tab }
 }

@@ -230,8 +230,15 @@ export function storefrontRoutes(shop: StorefrontShop) {
     /** The shopper's own area at this shop: its overview, with the menu of its tabs. */
     account: () => `${home}/${routeWords.account}`,
 
-    /** One tab of that area: `/<shop>/conta/perfil`. */
-    accountTab: (tab: StorefrontAccountTab) => `${home}/${routeWords.account}/${routeWords.accountTabs[tab]}`,
+    /**
+     * One tab of that area: `/<shop>/conta/perfil`. A shop read before the API spelled its tabs — the
+     * web's cache keeps a shop for a minute — leads to the area's front rather than to `/undefined`,
+     * so a cart drawn in that minute still stands.
+     */
+    accountTab: (tab: StorefrontAccountTab) => {
+      const word = routeWords.accountTabs?.[tab]
+      return word ? `${home}/${routeWords.account}/${word}` : `${home}/${routeWords.account}`
+    },
 
     /** One product. It never nests under a category: a product in two would have two addresses. */
     product: (productSlug: string) => `${home}/${routeWords.products}/${productSlug}`,
@@ -272,7 +279,7 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
 
 /** Which tab of the shopper's area a third segment under `account` names; null when it names none. */
 export function accountTabOf(segment: string, routeWords: StorefrontRouteWords): StorefrontAccountTab | null {
-  const tabs = Object.keys(routeWords.accountTabs) as StorefrontAccountTab[]
+  const tabs = Object.keys(routeWords.accountTabs ?? {}) as StorefrontAccountTab[]
   return tabs.find((tab) => routeWords.accountTabs[tab] === segment) ?? null
 }
 

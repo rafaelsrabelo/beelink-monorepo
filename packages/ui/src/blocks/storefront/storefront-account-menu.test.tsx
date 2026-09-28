@@ -34,6 +34,16 @@ describe("StorefrontAccountMenu", () => {
     expect(within(nav).getByRole("link", { name: "Visão geral" })).not.toHaveAttribute("aria-current")
   })
 
+  it("draws the rule after the account's pages, with the conversation and 'Sair' below it, as 6c does", () => {
+    const { container } = render(
+      <StorefrontAccountMenu shopper={{ name: "Bia", contact: null }} items={[...items, { key: "messages", href: "/loja/conta/conversas" }]} current={null} signOutAction="#" />,
+    )
+
+    const rule = container.querySelector('[role="separator"]')
+    expect(rule?.previousElementSibling).toHaveTextContent("Perfil e endereços")
+    expect(rule?.nextElementSibling).toHaveTextContent("Falar com a loja")
+  })
+
   it("signs out through a form of its own, under the pages", () => {
     render(<StorefrontAccountMenu shopper={{ name: "Bia", contact: null }} items={items} current={null} signOutAction="/loja/api/customer/sair" />)
 

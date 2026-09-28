@@ -67,6 +67,31 @@ export function StorefrontAccountMenu({ shopper, items, current, signOutAction, 
     messages: text.accountMessages,
   }
 
+  // 6c's rule: the account's own pages above it, the conversation with the shop and "Sair" below.
+  const above = items.filter((item) => item.key !== "messages")
+  const below = items.filter((item) => item.key === "messages")
+  const entry = ({ key, href, count }: StorefrontAccountMenuItem) => {
+    const Icon = ICONS[key]
+    const active = key === current
+    return (
+      <Link key={key} href={href} aria-current={active ? "page" : undefined} className={cn(ITEM, active && "bg-shop-primary-tint font-bold")}>
+        <Icon aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={1.8} />
+        <span className="min-w-0 flex-1 truncate">{labels[key]}</span>
+        {count ? (
+          // Orders in progress ask for the shopper's eye; the other counts only say how many.
+          <span
+            className={cn(
+              "shrink-0 tabular-nums",
+              key === "orders" ? "flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-shop-primary px-1.5 text-xs font-bold text-shop-on-primary" : "text-[13px] text-shop-muted",
+            )}
+          >
+            {count}
+          </span>
+        ) : null}
+      </Link>
+    )
+  }
+
   return (
     <nav aria-label={text.account} className="flex flex-col gap-1">
       <div className="flex items-center gap-3 px-1 pb-4">
@@ -79,29 +104,11 @@ export function StorefrontAccountMenu({ shopper, items, current, signOutAction, 
         </div>
       </div>
 
-      {items.map(({ key, href, count }) => {
-        const Icon = ICONS[key]
-        const active = key === current
-        return (
-          <Link key={key} href={href} aria-current={active ? "page" : undefined} className={cn(ITEM, active && "bg-shop-primary-tint font-bold")}>
-            <Icon aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={1.8} />
-            <span className="min-w-0 flex-1 truncate">{labels[key]}</span>
-            {count ? (
-              // Orders in progress ask for the shopper's eye; the other counts only say how many.
-              <span
-                className={cn(
-                  "shrink-0 tabular-nums",
-                  key === "orders" ? "flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-shop-primary px-1.5 text-xs font-bold text-shop-on-primary" : "text-[13px] text-shop-muted",
-                )}
-              >
-                {count}
-              </span>
-            ) : null}
-          </Link>
-        )
-      })}
+      {above.map(entry)}
 
       <div role="separator" className="my-2 h-px bg-shop-line" />
+
+      {below.map(entry)}
 
       <form action={signOutAction} method="post" className="contents">
         <button type="submit" className={cn(ITEM, "w-full text-left")}>

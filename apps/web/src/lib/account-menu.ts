@@ -1,17 +1,23 @@
 // Types
-import type { CustomerProfile, StorefrontAccountTab } from "@harness-monorepo/contracts"
+import type { CustomerProfile, StorefrontAccountTab, StorefrontRouteWords } from "@harness-monorepo/contracts"
 import type { StorefrontAccountMenuItem } from "@harness-monorepo/ui/blocks/storefront/storefront-account-menu"
 import type { StorefrontAccountShortcut } from "@harness-monorepo/ui/blocks/storefront/storefront-account-overview"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import type { StorefrontRoutes } from "./storefront-routes"
+import { accountTabOf, type StorefrontRoutes } from "./storefront-routes"
 
 /**
  * The tabs that exist. Each ticket of the area appends its own: a tab listed here before its page
  * is built would be a menu entry that opens nothing.
  */
 export const DELIVERED_ACCOUNT_TABS: readonly StorefrontAccountTab[] = ["profile"]
+
+/** The tab a third segment under the account opens, or null: a word of a tab not delivered opens nothing. */
+export function deliveredAccountTabOf(segment: string, routeWords: StorefrontRouteWords): StorefrontAccountTab | null {
+  const tab = accountTabOf(segment, routeWords)
+  return tab && DELIVERED_ACCOUNT_TABS.includes(tab) ? tab : null
+}
 
 /** The area's menu: the overview, then each delivered tab in the design's order. */
 export function accountMenuOf(routes: StorefrontRoutes): StorefrontAccountMenuItem[] {

@@ -53,3 +53,25 @@ O ticket pede as duas coisas: que "Devoluções e pedidos" leve a Meus pedidos e
 entregue fique fora do menu. Não dá para cumprir as duas no J3, porque a lista é o J4, o próximo
 ticket. Fica a regra do menu. O J3 deixa a rota, a palavra e o item de menu prontos, desligados, e o
 J4 liga o item, com a contagem de em andamento que vem do J2, e o link do cabeçalho.
+
+## Adendo — revisão independente (28/09/2026)
+
+Três leituras foram pedidas: rotas e sessão, interface e acessibilidade, escopo e contrato. A
+terceira e todos os verificadores caíram no limite semanal da conta, então os seis achados das duas
+leituras chegaram sem verificação e foram julgados aqui. A checagem de escopo e contrato (fixtures,
+Swagger, spec do mapper, docs) tinha sido feita à mão antes do commit. Quatro achados confirmados,
+mais uma lacuna de teste, todos corrigidos:
+
+1. **A loja em cache derrubava o carrinho, não só a área.** Depois de a API passar a mandar
+   `accountTabs`, o cache da loja no web guarda a forma antiga por até um minuto, e "Alterar dados"
+   do carrinho lia `accountTabs.profile` de `undefined`. `accountTab` agora cai para a raiz da área
+   quando a loja lida ainda não soletra as abas.
+2. **No celular a raiz da conta não tinha título.** O menu é a página, e o "Olá, Nome" fica escondido
+   com a visão geral. A raiz ganhou um `h1` "Minha conta" só no celular.
+3. **O cartão do G3 flutuava centralizado na coluna da aba.** Agora fica sob o título, como no 6h.
+4. **A régua do menu vinha depois de todos os itens.** No 6c ela separa as páginas da conta de
+   "Falar com a loja" e "Sair". Quando o K3 ligar a conversa, ela já cai abaixo da régua.
+5. **O 404 de uma aba não entregue não tinha teste.** A regra virou `deliveredAccountTabOf`, com
+   teste, e a página a usa.
+
+Dois achados eram o mesmo (o do cache).

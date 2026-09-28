@@ -42,6 +42,8 @@ describe("StorefrontAccountShell", () => {
     )
 
     expect(screen.getByRole("heading", { level: 1, name: "Olá, Bia" })).toBeInTheDocument()
+    // The phone's front, where the overview is out of sight, has a heading of its own.
+    expect(screen.getByRole("heading", { level: 1, name: "Minha conta" })).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Minha conta" })).toBeNull()
     // The overview's card, apart from the menu's entry of the same name.
     expect(within(screen.getByRole("list")).getByRole("link", { name: /Perfil e endereços/ })).toHaveAttribute("href", "/loja/conta/perfil")
