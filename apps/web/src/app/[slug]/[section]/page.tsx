@@ -18,6 +18,7 @@ import { StorefrontSectionBand } from "@/components/storefront/storefront-sectio
 import { StorefrontSignInSection } from "@/components/storefront/storefront-sign-in-section"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
+import { customerOrdersAt } from "@/lib/customer-orders"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
 import { BACK_KEY, storefrontRoutes } from "@/lib/storefront-routes"
@@ -77,6 +78,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
   const cart = place.section.kind === "cart" ? await cartAt(store.slug) : null
   const shopper = await shopperAt(store.slug)
+  // The menu's pill: how many orders are in progress, read only on the area's own front.
+  const activeOrders = place.section.kind === "account" && shopper ? (await customerOrdersAt(store.slug, { situation: "ACTIVE", pageSize: 1 }))?.counts.ACTIVE : undefined
 
   // The shopper's own page is theirs alone: a visitor is sent to sign in, and brought back here.
   if (place.section.kind === "account" && !shopper) redirect(routes.signIn({ back: routes.account() }) as Parameters<typeof redirect>[0])
@@ -106,7 +109,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
       ) : place.section.kind === "account" && shopper ? (
-        <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={null} messages={ui} />
+        <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={null} activeOrders={activeOrders} messages={ui} />
       ) : place.section.kind === "signIn" ? (
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (

@@ -11,7 +11,7 @@ import { accountTabOf, type StorefrontRoutes } from "./storefront-routes"
  * The tabs that exist. Each ticket of the area appends its own: a tab listed here before its page
  * is built would be a menu entry that opens nothing.
  */
-export const DELIVERED_ACCOUNT_TABS: readonly StorefrontAccountTab[] = ["profile"]
+export const DELIVERED_ACCOUNT_TABS: readonly StorefrontAccountTab[] = ["orders", "profile"]
 
 /** The tab a third segment under the account opens, or null: a word of a tab not delivered opens nothing. */
 export function deliveredAccountTabOf(segment: string, routeWords: StorefrontRouteWords): StorefrontAccountTab | null {
@@ -19,14 +19,14 @@ export function deliveredAccountTabOf(segment: string, routeWords: StorefrontRou
   return tab && DELIVERED_ACCOUNT_TABS.includes(tab) ? tab : null
 }
 
-/** The area's menu: the overview, then each delivered tab in the design's order. */
-export function accountMenuOf(routes: StorefrontRoutes): StorefrontAccountMenuItem[] {
-  return [{ key: "overview", href: routes.account() }, ...DELIVERED_ACCOUNT_TABS.map((tab) => ({ key: tab, href: routes.accountTab(tab) }))]
+/** The area's menu: the overview, then each delivered tab in the design's order, with its count when it has one. */
+export function accountMenuOf(routes: StorefrontRoutes, counts: Partial<Record<StorefrontAccountTab, number>> = {}): StorefrontAccountMenuItem[] {
+  return [{ key: "overview", href: routes.account() }, ...DELIVERED_ACCOUNT_TABS.map((tab) => ({ key: tab, href: routes.accountTab(tab), count: counts[tab] ?? null }))]
 }
 
 /** The overview's cards: one per delivered tab, with what it holds in a line. */
 export function accountShortcutsOf(routes: StorefrontRoutes, text: UiMessages["storefront"]): StorefrontAccountShortcut[] {
-  const hints: Partial<Record<StorefrontAccountTab, string>> = { profile: text.accountProfileHint }
+  const hints: Partial<Record<StorefrontAccountTab, string>> = { orders: text.accountOrdersHint, profile: text.accountProfileHint }
   return DELIVERED_ACCOUNT_TABS.map((tab) => ({ key: tab, href: routes.accountTab(tab), hint: hints[tab] ?? null }))
 }
 

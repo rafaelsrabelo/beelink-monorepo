@@ -23,11 +23,15 @@ const routes = storefrontRoutes({
 
 describe("the account's menu", () => {
   it("lists the overview and only the tabs delivered, each at its own address", () => {
-    expect(accountMenuOf(routes)).toEqual([
+    expect(accountMenuOf(routes, { orders: 2 })).toEqual([
       { key: "overview", href: "/loja/conta" },
-      { key: "profile", href: "/loja/conta/perfil" },
+      { key: "orders", href: "/loja/conta/pedidos", count: 2 },
+      { key: "profile", href: "/loja/conta/perfil", count: null },
     ])
-    expect(accountShortcutsOf(routes, ptBR.storefront)).toEqual([{ key: "profile", href: "/loja/conta/perfil", hint: "Seus dados e o endereço de entrega" }])
+    expect(accountShortcutsOf(routes, ptBR.storefront)).toEqual([
+      { key: "orders", href: "/loja/conta/pedidos", hint: "Acompanhe, cancele ou confira o que comprou" },
+      { key: "profile", href: "/loja/conta/perfil", hint: "Seus dados e o endereço de entrega" },
+    ])
     expect(accountTabTitleOf("profile", ptBR.storefront)).toBe("Perfil e endereços")
   })
 
@@ -44,8 +48,9 @@ describe("the account's menu", () => {
       accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" },
     }
     expect(deliveredAccountTabOf("perfil", routeWords)).toBe("profile")
+    expect(deliveredAccountTabOf("pedidos", routeWords)).toBe("orders")
     // Spelled and routed already, delivered by its own ticket: until then, a 404.
-    expect(deliveredAccountTabOf("pedidos", routeWords)).toBeNull()
+    expect(deliveredAccountTabOf("favoritos", routeWords)).toBeNull()
     expect(deliveredAccountTabOf("qualquer", routeWords)).toBeNull()
   })
 

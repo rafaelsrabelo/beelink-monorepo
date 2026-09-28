@@ -204,6 +204,7 @@ export function StorefrontFrame({
             cartSlot: <StorefrontCartLinkLive href={routes.cart()} messages={messages} />,
             accountHref: shopper ? routes.account() : routes.signIn(),
             accountName: shopper?.name ?? null,
+            ordersHref: shopper ? routes.accountTab("orders") : undefined,
           })}
       {...(linkComponent ? { linkComponent } : {})}
       categories={

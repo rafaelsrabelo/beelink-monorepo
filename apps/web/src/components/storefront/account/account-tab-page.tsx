@@ -7,16 +7,19 @@ import type { Metadata } from "next"
 
 // UI
 import { StorefrontAccountSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-account-skeleton"
+import { StorefrontOrdersSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-orders-skeleton"
 
 // App
 import { StorefrontAccountSection } from "@/components/storefront/storefront-account-section"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { accountTabTitleOf, deliveredAccountTabOf } from "@/lib/account-menu"
+import { customerOrdersAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
+import { OrdersTab } from "./orders-tab"
 import { StorefrontAccountArea } from "./storefront-account-area"
 
 /**
@@ -69,7 +72,11 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
   // Theirs alone: a visitor signs in and comes back to this very tab.
   if (!shopper) redirect(routes.signIn({ back: routes.accountTab(tab) }) as Parameters<typeof redirect>[0])
 
-  const [{ ui, web }, { categories, onSale }] = await Promise.all([getMessages(), navigationAt(slug)])
+  const [{ ui, web }, { categories, onSale }, inProgress] = await Promise.all([
+    getMessages(),
+    navigationAt(slug),
+    customerOrdersAt(slug, { situation: "ACTIVE", pageSize: 1 }),
+  ])
 
   return (
     <StorefrontFrame
@@ -83,12 +90,16 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
       shopper={shopper}
       messages={ui}
     >
-      <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={tab} messages={ui}>
-        <Suspense fallback={<StorefrontAccountSkeleton />}>
-          {tab === "profile" ? (
+      <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={tab} activeOrders={inProgress?.counts.ACTIVE} messages={ui}>
+        {tab === "orders" ? (
+          <Suspense fallback={<StorefrontOrdersSkeleton />}>
+            <OrdersTab slug={store.slug} routes={routes} query={query} locale="pt-BR" messages={ui} />
+          </Suspense>
+        ) : (
+          <Suspense fallback={<StorefrontAccountSkeleton />}>
             <StorefrontAccountSection slug={store.slug} accountHref={routes.accountTab("profile")} profile={shopper} query={query} errors={web.errors} messages={ui} />
-          ) : null}
-        </Suspense>
+          </Suspense>
+        )}
       </StorefrontAccountArea>
     </StorefrontFrame>
   )

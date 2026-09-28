@@ -17,7 +17,7 @@ export const CUSTOMER_ORDER_CARD_ITEMS = 3;
 /** A line, with the photo it has today: the combination's own, else the product's first. */
 const itemInclude = {
   variant: { select: { imageUrl: true } },
-  product: { select: { images: { orderBy: [{ position: 'asc' }, { id: 'asc' }], take: 1, select: { url: true } } } },
+  product: { select: { slug: true, images: { orderBy: [{ position: 'asc' }, { id: 'asc' }], take: 1, select: { url: true } } } },
 } as const satisfies Prisma.OrderItemInclude;
 
 /**
@@ -36,6 +36,7 @@ type EventRow = CustomerOrderRow['events'][number];
 function toItem(item: CustomerOrderRow['items'][number]): CustomerOrderItem {
   return {
     productId: item.productId,
+    productSlug: item.product?.slug ?? null,
     productName: item.productName,
     variantLabel: item.variantLabel,
     imageUrl: item.variant?.imageUrl ?? item.product?.images[0]?.url ?? null,

@@ -32,7 +32,7 @@ export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
     "searchAction" | "searchValue" | "searchHidden" | "searchScopes" | "searchScope" | "searchSlot"
-    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories" | "deliverTo"
+    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "ordersHref" | "menu" | "cta" | "categories" | "deliverTo"
   > {
   name: string
   description?: string | null
@@ -141,6 +141,7 @@ export function StorefrontWindow({
   cartSlot,
   accountHref,
   accountName,
+  ordersHref,
   menu = [],
   cta = null,
   categories,

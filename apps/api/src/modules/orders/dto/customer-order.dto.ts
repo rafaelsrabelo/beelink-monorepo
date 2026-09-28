@@ -59,6 +59,7 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
 export class CustomerOrderItemResponse implements CustomerOrderItem {
   @ApiProperty({ format: 'uuid', nullable: true, type: String, description: 'Null once the product was deleted.' })
   productId!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: 'The product\'s slug while it exists.' }) productSlug!: string | null;
   @ApiProperty() productName!: string;
   @ApiProperty({ nullable: true, type: String, example: 'Sabor: Uva · Peso: 300 g' }) variantLabel!: string | null;
   @ApiProperty({ nullable: true, type: String, description: "The combination's photo, else the product's first; null once the product is gone." })

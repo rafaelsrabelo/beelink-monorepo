@@ -377,6 +377,59 @@ export interface UiMessages {
     accountBack: string
     /** Under a shortcut of the overview. */
     accountProfileHint: string
+    /** Meus pedidos (J4): the list's toolbar, tabs, cards, the cancel and its refusals, and the empty states. */
+    accountOrdersHint: string
+    ordersLinkTop: string
+    ordersFilterLabel: string
+    ordersSearchLabel: string
+    ordersSearchPlaceholder: string
+    ordersFilter: string
+    ordersPeriod: string
+    ordersAllTime: string
+    ordersLastMonths: string
+    ordersTabAll: string
+    ordersTabActive: string
+    ordersTabDelivered: string
+    ordersTabCancelled: string
+    orderPlacedOn: string
+    orderTotalLabel: string
+    orderShipTo: string
+    orderPickupLabel: string
+    /** `{number}`. */
+    orderNumber: string
+    orderStatusReceived: string
+    orderStatusAccepted: string
+    orderStatusPreparing: string
+    orderStatusOut: string
+    /** `{date}`. */
+    orderStatusDelivered: string
+    orderStatusCancelled: string
+    orderCancelledByShop: string
+    orderCancelledByYou: string
+    /** `{date}`. */
+    orderPlacedByYou: string
+    orderPlacedByShop: string
+    orderReceivedHint: string
+    /** `{qty}`; `{count}`. */
+    orderQty: string
+    orderMoreItem: string
+    orderMoreItems: string
+    orderCancel: string
+    /** `{number}`. */
+    orderCancelTitle: string
+    orderCancelBody: string
+    orderCancelKeep: string
+    /** The dialog's X: closing it keeps the order, but it reads as a close. */
+    orderCancelClose: string
+    orderCancelConfirm: string
+    orderCancelling: string
+    orderCancelRefusedAccepted: string
+    orderCancelRefusedDone: string
+    orderCancelFailed: string
+    ordersEmpty: string
+    ordersEmptyCta: string
+    ordersNoResults: string
+    ordersClear: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string

@@ -21,6 +21,8 @@ export interface StorefrontAccountAreaProps {
   shopper: CustomerProfile
   /** Null on the area's front, which draws the overview; a tab draws `children` under its title. */
   tab: StorefrontAccountTab | null
+  /** How many orders are in progress, for the menu's pill; absent, none is drawn. */
+  activeOrders?: number
   children?: ReactNode
   messages: UiMessages
 }
@@ -29,12 +31,12 @@ export interface StorefrontAccountAreaProps {
  * The shopper's area at a shop: its menu, and the front or one tab of it. The menu lists only the
  * tabs delivered; the front's cards follow the same list.
  */
-export function StorefrontAccountArea({ slug, routes, shopper, tab, children, messages }: StorefrontAccountAreaProps) {
+export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders, children, messages }: StorefrontAccountAreaProps) {
   const text = messages.storefront
   const menu = (
     <StorefrontAccountMenu
       shopper={{ name: shopper.name, contact: accountContactOf(shopper) }}
-      items={accountMenuOf(routes)}
+      items={accountMenuOf(routes, { orders: activeOrders })}
       current={tab ?? "overview"}
       signOutAction={`/${slug}/api/customer/sair`}
       linkComponent={AppLink}

@@ -265,7 +265,10 @@ describe("a shopper's order from the cart", () => {
         recipientName: 'Bia Cliente',
         itemsCount: 3,
         moreItems: 0,
-        items: [expect.objectContaining({ productName: 'Whey', imageUrl: 'https://img.test/whey.jpg' }), expect.objectContaining({ productName: 'Creatina', imageUrl: null })],
+        items: [
+          expect.objectContaining({ productName: 'Whey', productSlug: expect.any(String), imageUrl: 'https://img.test/whey.jpg' }),
+          expect.objectContaining({ productName: 'Creatina', imageUrl: null }),
+        ],
       });
       expect(page.orders[1]).toMatchObject({ number: 1, status: 'ACCEPTED', placedBy: 'SHOP', fulfillment: 'PICKUP', recipientName: null });
       expect(page).toMatchObject({ total: 2, counts: { ALL: 2, ACTIVE: 2, DELIVERED: 0, CANCELLED: 0 } });

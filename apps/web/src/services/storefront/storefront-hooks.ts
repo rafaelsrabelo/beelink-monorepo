@@ -7,7 +7,7 @@ import { useMutation, useQuery, type UseMutationResult } from "@tanstack/react-q
 import type { CreateRestockRequestPayload, CustomerOrder, PlaceCustomerOrderPayload, PublicProductCard } from "@harness-monorepo/contracts"
 
 // App
-import { placeShopperOrder, searchStorefront, sendRestockRequest } from "./storefront-requests"
+import { cancelShopperOrder, placeShopperOrder, searchStorefront, sendRestockRequest } from "./storefront-requests"
 
 /** Below this a shop answers with most of itself, and every keystroke would be a request. */
 const MIN_QUERY_LENGTH = 2
@@ -73,4 +73,9 @@ export function useRestockRequest(slug: string): UseMutationResult<void, Error, 
  */
 export function usePlaceShopperOrder(slug: string): UseMutationResult<CustomerOrder, Error, PlaceCustomerOrderPayload> {
   return useMutation({ mutationFn: (payload: PlaceCustomerOrderPayload) => placeShopperOrder(slug, payload) })
+}
+
+/** The shopper's cancel. The list is server-drawn, so the page is read again once it settles. */
+export function useCancelShopperOrder(slug: string): UseMutationResult<CustomerOrder, Error, number> {
+  return useMutation({ mutationFn: (number: number) => cancelShopperOrder(slug, number) })
 }
