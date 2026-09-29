@@ -1,5 +1,5 @@
 import type { ConversationAuthor } from "./conversation.js";
-import type { OrderStatus } from "./order.js";
+import type { OrderPlacedBy, OrderStatus } from "./order.js";
 
 /* ── the real-time channel: it only says what changed; the REST says how (BEELINK-161) ── */
 
@@ -8,7 +8,8 @@ import type { OrderStatus } from "./order.js";
  * which comes from the REST with the checks it always has.
  */
 export type RealtimeEvent =
-  | { type: "order.created"; orderNumber: number }
+  /** Who placed it: the panel tells only of what came from outside (BEELINK-163). */
+  | { type: "order.created"; orderNumber: number; placedBy: OrderPlacedBy }
   | { type: "order.status"; orderNumber: number; status: OrderStatus }
   | { type: "conversation.message"; orderNumber: number; author: ConversationAuthor }
   | { type: "conversation.read"; orderNumber: number; reader: ConversationAuthor }

@@ -59,7 +59,7 @@ export class CustomerOrdersService {
       onSaleOnly: true,
       customerOf: async () => customerId,
     });
-    this.realtime.publish({ storeId, customerId }, { type: 'order.created', orderNumber: placed.number });
+    this.realtime.publish({ storeId, customerId }, { type: 'order.created', orderNumber: placed.number, placedBy: 'CUSTOMER' });
     return this.read(storeId, customerId, placed.number);
   }
 
