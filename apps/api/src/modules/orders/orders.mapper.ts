@@ -4,6 +4,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { toDeliveryAddress } from './order-delivery.js';
+import { toOrderDelivery } from './order-tracking.js';
 
 const customerSelect = { id: true, name: true, phone: true } as const;
 
@@ -15,6 +16,7 @@ export const ORDER_INCLUDE = {
   customer: { select: customerSelect },
   items: { orderBy: { position: 'asc' } },
   events: { orderBy: { createdAt: 'asc' } },
+  delivery: true,
 } as const satisfies Prisma.OrderInclude;
 
 /** What a row of the list is read with: the units, not the lines. */
@@ -57,6 +59,7 @@ export function toOrder(row: OrderRow): Order {
     note: row.note,
     placedAt: row.placedAt.toISOString(),
     events: row.events.map((event) => ({ status: event.status, actor: event.actor, at: event.createdAt.toISOString() })),
+    delivery: row.delivery ? toOrderDelivery(row.delivery) : null,
     createdAt: row.createdAt.toISOString(),
   } satisfies Order;
 }

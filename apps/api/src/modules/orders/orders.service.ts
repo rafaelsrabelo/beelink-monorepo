@@ -8,7 +8,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
-import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, UpdateOrderStatusDto } from './dto/order.dto.js';
+import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { OrderPlacement } from './order-placement.js';
 import { settleCancellation } from './order-cancellation.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
@@ -138,6 +138,52 @@ export class OrdersService {
       if (status === 'CANCELLED') await settleCancellation(tx, current);
       return toOrder(order);
     });
+  }
+
+  /**
+   * What the shopkeeper tells of a delivery: who brings it, its tracking and the window it should
+   * arrive in, the whole record replaced. A pick-up has none, and a window is both days or neither,
+   * never ending before it starts. A cancelled order still takes it: the record is the shop's own.
+   */
+  async setDelivery(storeSlug: string, userId: string, number: number, dto: OrderDeliveryDto): Promise<Order> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const current = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true, fulfillment: true } });
+    if (!current) throw this.notFound(number);
+    if (current.fulfillment === 'PICKUP') {
+      throw new BadRequestException(orderError('ORDER_DELIVERY_FOR_PICKUP', 'A pick-up is handed over at the shop'));
+    }
+    const from = dto.estimateFrom ?? null;
+    const to = dto.estimateTo ?? null;
+    // `YYYY-MM-DD` strings compare as the days they name.
+    if ((from === null) !== (to === null) || (from !== null && to !== null && to < from)) {
+      throw new BadRequestException(orderError('ORDER_DELIVERY_WINDOW_INVALID', 'The window needs both days, and cannot end before it starts'));
+    }
+
+    const record = {
+      kind: dto.kind,
+      carrier: dto.carrier ?? null,
+      service: dto.service ?? null,
+      trackingCode: dto.trackingCode ?? null,
+      trackingUrl: dto.trackingUrl ?? null,
+      estimateFrom: from ? new Date(`${from}T00:00:00.000Z`) : null,
+      estimateTo: to ? new Date(`${to}T00:00:00.000Z`) : null,
+    };
+    const order = await this.prisma.order.update({
+      where: { id: current.id },
+      data: { delivery: { upsert: { create: record, update: record } } },
+      include: ORDER_INCLUDE,
+    });
+    return toOrder(order);
+  }
+
+  /** The delivery told wrong, taken back: the order reads as one nobody told yet. */
+  async clearDelivery(storeSlug: string, userId: string, number: number): Promise<Order> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const current = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true } });
+    if (!current) throw this.notFound(number);
+
+    await this.prisma.orderDelivery.deleteMany({ where: { orderId: current.id } });
+    return toOrder(await this.prisma.order.findUniqueOrThrow({ where: { id: current.id }, include: ORDER_INCLUDE }));
   }
 
   /**

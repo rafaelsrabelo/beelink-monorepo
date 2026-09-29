@@ -58,6 +58,39 @@ export interface OrderDeliveryAddress extends CustomerAddress {
   city: string;
 }
 
+/** Who brings a delivery: the shop itself, or a carrier. */
+export type OrderDeliveryKind = "OWN" | "CARRIER";
+
+/**
+ * How a delivery goes, as the shopkeeper told it: who brings it, its tracking, and the window it
+ * should arrive in — a window, never a single day, since one day is a promise nobody can keep.
+ */
+export interface OrderDelivery {
+  kind: OrderDeliveryKind;
+  /** "Correios", "Loggi" — the shopkeeper's words. */
+  carrier: string | null;
+  /** "SEDEX", "PAC". */
+  service: string | null;
+  trackingCode: string | null;
+  /** The shopkeeper's link, else the carrier's own page for a code it knows (the Correios'); null with neither. */
+  trackingUrl: string | null;
+  /** Days of the shop's calendar, `YYYY-MM-DD`: both or neither, and never ending before it starts. */
+  estimateFrom: string | null;
+  estimateTo: string | null;
+}
+
+/** What the shopkeeper tells of a delivery: the whole record, replacing the one before. */
+export interface OrderDeliveryPayload {
+  kind: OrderDeliveryKind;
+  carrier?: string | null;
+  service?: string | null;
+  trackingCode?: string | null;
+  /** An `https` address; empty, the Correios' own page stands in for a Correios code. */
+  trackingUrl?: string | null;
+  estimateFrom?: string | null;
+  estimateTo?: string | null;
+}
+
 /** An order as its shop reads it. Every amount is whole cents, computed by the API. */
 export interface Order {
   id: string;
@@ -82,6 +115,8 @@ export interface Order {
   placedAt: string;
   /** Oldest first; the first is how the order started. */
   events: OrderEvent[];
+  /** Null on a pick-up, and on a delivery nobody told yet. */
+  delivery: OrderDelivery | null;
   createdAt: string;
 }
 
@@ -216,6 +251,8 @@ export interface CustomerOrder {
   placedAt: string;
   /** Oldest first: the order's timeline. */
   events: CustomerOrderEvent[];
+  /** Who brings it and when it should arrive, once the shop told; null on a pick-up. */
+  delivery: OrderDelivery | null;
 }
 
 /** An order as the customer's list shows it: the first lines, with their photos, and how many more. */
@@ -239,6 +276,8 @@ export interface CustomerOrderSummary {
   moreItems: number;
   /** ISO-8601. */
   placedAt: string;
+  /** The window it should arrive in, once the shop told one: `YYYY-MM-DD` days. */
+  estimate: { from: string; to: string } | null;
 }
 
 /** How the customer asks for a page of their orders. Absent means all. */
@@ -320,6 +359,10 @@ export type OrderErrorCode =
   /** The customer cancels only while the order is received; once the shop accepted it, the shop does. */
   | "ORDER_NOT_CANCELLABLE"
   | "ORDER_STATUS_UNCHANGED"
+  /** A pick-up is handed over at the shop: it has no delivery to tell. */
+  | "ORDER_DELIVERY_FOR_PICKUP"
+  /** The arrival window needs both days, and cannot end before it starts. */
+  | "ORDER_DELIVERY_WINDOW_INVALID"
   /** A counted combination with fewer left than the order asks for. Its `details` are `OrderStockDetails`. */
   | "ORDER_STOCK_INSUFFICIENT";
 

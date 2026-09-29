@@ -75,6 +75,8 @@ model Order {
 
   items  OrderItem[]
   events OrderEvent[]
+  /// Who delivers it and when it should arrive — a delivery's alone, never a pick-up's.
+  delivery OrderDelivery?
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])
@@ -126,4 +128,35 @@ model OrderEvent {
 
   @@index([orderId, createdAt])
   @@map("order_events")
+}
+
+/// Who brings a delivery: the shop itself, or a carrier.
+enum OrderDeliveryKind {
+  OWN
+  CARRIER
+}
+
+/// How a delivery goes, as the shopkeeper tells it: who brings it, its tracking and the window it
+/// should arrive in. A record of its own, beside the order, because the courier app and the carriers
+/// will write it without touching the order (BEELINK-146).
+model OrderDelivery {
+  id      String @id @default(uuid(7)) @db.Uuid
+  orderId String @unique @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  kind         OrderDeliveryKind
+  /// "Correios", "Loggi" — the shopkeeper's words.
+  carrier      String? @db.VarChar(60)
+  /// "SEDEX", "PAC".
+  service      String? @db.VarChar(60)
+  trackingCode String? @db.VarChar(60)
+  trackingUrl  String? @db.VarChar(500)
+  /// The window it should arrive in, as days of the shop's calendar: both or neither.
+  estimateFrom DateTime? @db.Date
+  estimateTo   DateTime? @db.Date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("order_deliveries")
 }
