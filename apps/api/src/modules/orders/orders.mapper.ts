@@ -4,7 +4,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { toDeliveryAddress } from './order-delivery.js';
-import { toOrderDelivery } from './order-tracking.js';
+import { toShopDelivery } from './order-tracking.js';
 
 const customerSelect = { id: true, name: true, phone: true } as const;
 
@@ -59,7 +59,7 @@ export function toOrder(row: OrderRow): Order {
     note: row.note,
     placedAt: row.placedAt.toISOString(),
     events: row.events.map((event) => ({ status: event.status, actor: event.actor, at: event.createdAt.toISOString() })),
-    delivery: row.delivery ? toOrderDelivery(row.delivery) : null,
+    delivery: row.delivery ? toShopDelivery(row.delivery) : null,
     createdAt: row.createdAt.toISOString(),
   } satisfies Order;
 }

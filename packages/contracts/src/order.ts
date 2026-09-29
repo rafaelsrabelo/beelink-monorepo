@@ -72,7 +72,10 @@ export interface OrderDelivery {
   /** "SEDEX", "PAC". */
   service: string | null;
   trackingCode: string | null;
-  /** The shopkeeper's link, else the carrier's own page for a code it knows (the Correios'); null with neither. */
+  /**
+   * The shopkeeper's link, as typed. On the customer's order the Correios' own page stands in for a
+   * Correios code given with no link; the shop's order never carries a link nobody typed.
+   */
   trackingUrl: string | null;
   /** Days of the shop's calendar, `YYYY-MM-DD`: both or neither, and never ending before it starts. */
   estimateFrom: string | null;
@@ -363,6 +366,8 @@ export type OrderErrorCode =
   | "ORDER_DELIVERY_FOR_PICKUP"
   /** The arrival window needs both days, and cannot end before it starts. */
   | "ORDER_DELIVERY_WINDOW_INVALID"
+  /** A tracking link opens in the customer's browser: `https` only. */
+  | "ORDER_DELIVERY_LINK_INVALID"
   /** A counted combination with fewer left than the order asks for. Its `details` are `OrderStockDetails`. */
   | "ORDER_STOCK_INSUFFICIENT";
 

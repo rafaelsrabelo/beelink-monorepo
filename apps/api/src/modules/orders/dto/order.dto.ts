@@ -34,6 +34,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import { blankToNull, normaliseWhatsapp, trim } from '../../stores/dto/store-fields.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
@@ -191,7 +192,7 @@ export class ListOrdersDto implements OrderListQuery {
   pageSize?: number;
 }
 
-/** A day of the calendar, `YYYY-MM-DD`: a window is days, never hours. */
+/** A day of the calendar, `YYYY-MM-DD`: a window is days, never hours. Lengths below count as the columns do, in code points. */
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -208,29 +209,29 @@ export class OrderDeliveryDto implements OrderDeliveryPayload {
   @IsOptional()
   @blankToNull
   @IsString()
-  @MaxLength(60)
+  @MaxCodePoints(60)
   carrier?: string | null;
 
   @ApiPropertyOptional({ nullable: true, maxLength: 60, example: 'SEDEX' })
   @IsOptional()
   @blankToNull
   @IsString()
-  @MaxLength(60)
+  @MaxCodePoints(60)
   service?: string | null;
 
   @ApiPropertyOptional({ nullable: true, maxLength: 60, example: 'AB123456789BR' })
   @IsOptional()
   @blankToNull
   @IsString()
-  @MaxLength(60)
+  @MaxCodePoints(60)
   trackingCode?: string | null;
 
   // Opened by the customer's browser: anything but https is a link somebody else chose.
   @ApiPropertyOptional({ nullable: true, maxLength: 500, description: 'https only; empty, a Correios code leads to their page.' })
   @IsOptional()
   @blankToNull
-  @IsUrl({ protocols: ['https'], require_protocol: true })
-  @MaxLength(500)
+  @IsUrl({ protocols: ['https'], require_protocol: true }, { context: { errorCode: 'ORDER_DELIVERY_LINK_INVALID' } })
+  @MaxCodePoints(500)
   trackingUrl?: string | null;
 
   @ApiPropertyOptional({ nullable: true, format: 'date', example: '2026-09-25' })

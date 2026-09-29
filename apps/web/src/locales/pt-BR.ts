@@ -171,6 +171,7 @@ export const ptBR: WebMessages = {
     ORDER_STATUS_UNCHANGED: "O pedido já está nesse status.",
     ORDER_DELIVERY_FOR_PICKUP: "Um pedido de retirada não tem entrega.",
     ORDER_DELIVERY_WINDOW_INVALID: "A previsão precisa das duas datas, e a segunda não pode vir antes da primeira.",
+    ORDER_DELIVERY_LINK_INVALID: "O link de rastreio precisa começar com https://.",
     ORDER_STOCK_INSUFFICIENT: "Não há estoque para tudo. Ajuste as quantidades marcadas.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Entrar com Google não está disponível agora. Entre com e-mail e senha.",
     GOOGLE_STATE_INVALID: "O login com Google expirou ou já foi usado. Tente de novo.",

@@ -77,14 +77,13 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
         delivery={
           current.fulfillment === "DELIVERY" ? (
             <OrderDeliveryCard
-              // Starts over from what the API answered, once a save or a removal lands.
-              key={JSON.stringify(current.delivery)}
               delivery={current.delivery}
               onSave={(next) => delivery.mutate(next)}
               onClear={() => delivery.mutate(null)}
               pending={delivery.isPending}
               error={delivery.error ? pageErrorCopy(delivery.error, web) : null}
-              saved={delivery.isSuccess}
+              // A save, not a removal: "Entrega salva." over an emptied form would say the opposite.
+              saved={delivery.isSuccess && delivery.variables !== null}
               needed={current.status === "OUT_FOR_DELIVERY" && !current.delivery}
               messages={messages}
             />

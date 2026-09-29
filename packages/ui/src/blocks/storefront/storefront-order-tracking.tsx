@@ -28,17 +28,18 @@ export function StorefrontOrderTracking({ by, code, href, hrefLabel, messages = 
   const codeId = useId()
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-shop-line bg-shop-background px-4 py-3 text-shop-on-background">
+    <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-shop-line bg-shop-background px-4 py-3 text-shop-on-background">
       <p className="text-xs font-bold tracking-[0.04em] text-shop-muted uppercase">{by}</p>
       {code ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="flex flex-col">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <p className="flex min-w-0 flex-col">
             <span className="sr-only">{text.orderTrackingCode}</span>
-            <span id={codeId} className="text-[17px] font-extrabold tracking-[0.04em]">
+            {/* A code runs up to 60 characters: on a phone it breaks rather than push the page sideways. */}
+            <span id={codeId} className="text-[17px] font-extrabold tracking-[0.04em] break-all">
               {code}
             </span>
           </p>
-          <StorefrontCopyButton value={code} label={text.orderTrackingCopy} doneLabel={text.orderTrackingCopied} describedBy={codeId} />
+          <StorefrontCopyButton value={code} label={text.orderTrackingCopy} doneLabel={text.orderTrackingCopied} selectedLabel={text.orderTrackingSelected} targetId={codeId} />
         </div>
       ) : null}
       {href ? (

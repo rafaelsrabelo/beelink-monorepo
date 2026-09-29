@@ -10,7 +10,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { toDeliveryAddress } from './order-delivery.js';
-import { toOrderDelivery } from './order-tracking.js';
+import { toCustomerDelivery } from './order-tracking.js';
 
 /** How many lines a card of the customer's list shows; the rest are "+ N itens". */
 export const CUSTOMER_ORDER_CARD_ITEMS = 3;
@@ -53,7 +53,7 @@ function toItem(item: CustomerOrderRow['items'][number]): CustomerOrderItem {
 
 /** The window a delivery should arrive in, for the list's card: only once the shop told both days. */
 function estimateOf(delivery: CustomerOrderRow['delivery']): CustomerOrderSummary['estimate'] {
-  const told = delivery ? toOrderDelivery(delivery) : null;
+  const told = delivery ? toCustomerDelivery(delivery) : null;
   return told?.estimateFrom && told.estimateTo ? { from: told.estimateFrom, to: told.estimateTo } : null;
 }
 
@@ -83,7 +83,7 @@ export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
     totalCents: row.totalCents,
     placedAt: row.placedAt.toISOString(),
     events: row.events.map((event) => ({ status: event.status, at: event.createdAt.toISOString() })),
-    delivery: row.delivery ? toOrderDelivery(row.delivery) : null,
+    delivery: row.delivery ? toCustomerDelivery(row.delivery) : null,
   } satisfies CustomerOrder;
 }
 

@@ -32,6 +32,18 @@ describe("StorefrontOrderTracking", () => {
     expect(link).toHaveAttribute("rel", "noopener noreferrer")
   })
 
+  /** No clipboard, or one that refuses: the code is selected for the shopper to copy by hand, and the button says so. */
+  it("selects the code when the clipboard refuses, and says so", async () => {
+    const user = userEvent.setup()
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn(async () => Promise.reject(new Error("denied"))) }, configurable: true })
+    render(<StorefrontOrderTracking by="Correios · SEDEX" code="AB123456789BR" href={null} hrefLabel="Ver no site da transportadora" />)
+
+    await user.click(screen.getByRole("button", { name: "Copiar" }))
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Código selecionado" })).toBeInTheDocument())
+    expect(window.getSelection()?.toString()).toBe("AB123456789BR")
+  })
+
   it("draws no code and no link it was not given", () => {
     render(<StorefrontOrderTracking by="Entrega da própria loja" code={null} href={null} hrefLabel="Acompanhar a entrega" />)
 

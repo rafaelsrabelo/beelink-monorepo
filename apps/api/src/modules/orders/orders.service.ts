@@ -168,12 +168,10 @@ export class OrdersService {
       estimateFrom: from ? new Date(`${from}T00:00:00.000Z`) : null,
       estimateTo: to ? new Date(`${to}T00:00:00.000Z`) : null,
     };
-    const order = await this.prisma.order.update({
-      where: { id: current.id },
-      data: { delivery: { upsert: { create: record, update: record } } },
-      include: ORDER_INCLUDE,
-    });
-    return toOrder(order);
+    // Top-level, on the unique order id: Postgres's own INSERT … ON CONFLICT. Nested under the order,
+    // Prisma reads then writes, and two first saves at once would both insert.
+    await this.prisma.orderDelivery.upsert({ where: { orderId: current.id }, create: { orderId: current.id, ...record }, update: record });
+    return toOrder(await this.prisma.order.findUniqueOrThrow({ where: { id: current.id }, include: ORDER_INCLUDE }));
   }
 
   /** The delivery told wrong, taken back: the order reads as one nobody told yet. */

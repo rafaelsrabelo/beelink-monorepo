@@ -171,6 +171,7 @@ export const en: WebMessages = {
     ORDER_STATUS_UNCHANGED: "The order is already at that status.",
     ORDER_DELIVERY_FOR_PICKUP: "A pick-up order has no delivery.",
     ORDER_DELIVERY_WINDOW_INVALID: "The window needs both days, and the second cannot come before the first.",
+    ORDER_DELIVERY_LINK_INVALID: "The tracking link must start with https://.",
     ORDER_STOCK_INSUFFICIENT: "There is not enough stock for everything. Change the marked quantities.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Signing in with Google is not available right now. Use your e-mail and password.",
     GOOGLE_STATE_INVALID: "The Google sign-in expired or was already used. Try again.",

@@ -54,3 +54,44 @@ nem sempre tem código.
 
 - Integração com transportadoras (Melhor Envio) e eventos de rastreio automáticos.
 - O app do entregador.
+
+## Adendo — revisão independente (2026-09-29)
+
+Dois revisores leram a entrega: um a API e a migração, outro o painel e a loja. Correções:
+
+1. **O link dos Correios virava o link do lojista.** A leitura do lojista devolvia a página dos
+   Correios quando o código tinha o formato deles. O formulário a mostrava como se fosse digitada e,
+   ao salvar de novo, gravava como do lojista. Agora o lojista lê só o que digitou, e a página dos
+   Correios aparece apenas na leitura do cliente.
+2. **Texto com emoji estourava a coluna.** O validador contava um emoji com seletor de variação como
+   um caractere, e o Postgres como dois; o excesso virava erro 500. As medidas agora contam como a
+   coluna conta (`MaxCodePoints`).
+3. **Duas primeiras gravações ao mesmo tempo podiam dar 500.** O `upsert` aninhado no pedido lê e
+   depois grava. Agora é o `upsert` direto na entrega, pelo `orderId` único, que o Postgres resolve
+   com `ON CONFLICT`. Um e2e manda três ao mesmo tempo e fica uma entrega.
+4. **Um link `http://` caía num erro genérico que fala de abas.** A recusa agora tem código próprio
+   (`ORDER_DELIVERY_LINK_INVALID`): "O link de rastreio precisa começar com https://.". A dica do
+   campo também diz isso, e está ligada ao campo.
+5. **O cartão do painel remontava a cada gravação.** O foco caía no começo da página e "Entrega
+   salva." nascia pronto, sem ser anunciado. Agora o rascunho recomeça no lugar quando a entrega
+   salva muda. Os botões continuam focáveis enquanto salvam, e depois de "Remover" o foco vai ao
+   título do cartão.
+6. **"Entrega salva." aparecia depois de "Remover"** e ficava durante a edição. Agora só depois de
+   salvar, e some quando o formulário muda.
+7. **O botão Copiar falhava em silêncio.** Sem acesso à área de transferência, ou com ele recusado,
+   o código fica selecionado para copiar à mão, e o botão diz "Código selecionado". Depois de alguns
+   segundos ele volta a "Copiar".
+8. **O cartão do painel não tinha o visual dos vizinhos**, e **um código longo empurrava a página
+   para o lado no celular.** Os dois foram corrigidos.
+
+### Aceito como está
+
+A previsão usa a abreviação do português, com ponto: "Chega entre qui., 1 e sex., 2 de out.". O
+ticket escreveu "qui 25" de modo informal, e cortar o ponto seria reescrever o que o idioma da loja
+já sabe escrever.
+
+### Dados de teste
+
+O cliente de teste da loja-do-design ganhou rua, número, bairro, cidade e UF no `harness_wt`, para
+fazer um pedido de entrega (o nº 18). Então a Visão geral dele não mostra mais "Falta a rua e a
+cidade". O pedido nº 18 foi marcado "Saiu para entrega" e recebeu uma entrega pelos Correios.

@@ -508,6 +508,8 @@ export interface UiMessages {
     orderTrackingCode: string
     orderTrackingCopy: string
     orderTrackingCopied: string
+    /** The clipboard refused: the code is selected instead, for the shopper to copy by hand. */
+    orderTrackingSelected: string
     orderTrackingCarrierLink: string
     orderTrackingOwnLink: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */

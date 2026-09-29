@@ -339,12 +339,12 @@ describe("a shopper's order from the cart", () => {
 
       const set = await put(told);
       expect(set.statusCode).toBe(200);
-      // No link given: a Correios code leads to their own page.
-      const delivery = { ...told, trackingUrl: 'https://rastreamento.correios.com.br/app/index.php' };
-      expect(set.json<Order>().delivery).toEqual(delivery);
+      // The shop reads what it typed — no link — so its form never saves one it did not type.
+      expect(set.json<Order>().delivery).toEqual({ ...told, trackingUrl: null });
 
+      // The shopper, with no link given, is led to the Correios' own page for a code of theirs.
       const mine = await call('GET', '/api/stores/lessari/customer/orders/1', shopper);
-      expect(mine.json<CustomerOrder>().delivery).toEqual(delivery);
+      expect(mine.json<CustomerOrder>().delivery).toEqual({ ...told, trackingUrl: 'https://rastreamento.correios.com.br/app/index.php' });
       expect((await orders()).orders[0]).toMatchObject({ estimate: { from: '2026-09-25', to: '2026-09-26' } });
 
       // Replaced whole: the shop's own link wins, and a field left out is cleared.
@@ -356,6 +356,14 @@ describe("a shopper's order from the cart", () => {
       expect(cleared.json<Order>().delivery).toBeNull();
     });
 
+    it('keeps one delivery per order when two first saves arrive at once', async () => {
+      await place();
+      const saves = await Promise.all([1, 2, 3].map((n) => call('PUT', '/api/stores/lessari/orders/1/delivery', owner, { kind: 'OWN', trackingCode: `C${n}` })));
+
+      expect(saves.map((save) => save.statusCode)).toEqual([200, 200, 200]);
+      expect(await prisma.orderDelivery.count()).toBe(1);
+    });
+
     it('refuses a window that is half or backwards, a link that is not https, a pick-up, and anyone but the shop', async () => {
       await place();
       await registered();
@@ -364,7 +372,9 @@ describe("a shopper's order from the cart", () => {
       expect((await put({ kind: 'OWN', estimateFrom: '2026-09-25' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_WINDOW_INVALID' });
       expect((await put({ kind: 'OWN', estimateFrom: '2026-09-26', estimateTo: '2026-09-25' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_WINDOW_INVALID' });
       expect((await put({ kind: 'OWN', estimateFrom: '2026-02-30', estimateTo: '2026-03-01' })).statusCode).toBe(400);
-      expect((await put({ kind: 'OWN', trackingUrl: 'http://entregas.lessari.com/1' })).statusCode).toBe(400);
+      expect((await put({ kind: 'OWN', trackingUrl: 'http://entregas.lessari.com/1' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_LINK_INVALID' });
+      // Counted as the column counts: an emoji with its variation selector is two.
+      expect((await put({ kind: 'CARRIER', carrier: '❤️'.repeat(31) })).statusCode).toBe(400);
       expect((await put({ kind: 'BICICLETA' })).statusCode).toBe(400);
       // Order 2 is the shop's pick-up.
       expect((await put({ kind: 'OWN' }, owner, 2)).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_FOR_PICKUP' });
