@@ -125,6 +125,13 @@ export class AuthService {
 
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
 
+    // The link reached this inbox, which is everything verifying the e-mail proves. Without this, an
+    // account whose confirmation was lost sets a password and is refused at sign-in with it.
+    await this.prisma.user.updateMany({
+      where: { id: userId, emailVerifiedAt: null },
+      data: { emailVerifiedAt: new Date() },
+    });
+
     // Whoever knew the old password — including whoever prompted the reset — loses every session.
     await this.sessions.revokeAllForUser(userId);
   }
