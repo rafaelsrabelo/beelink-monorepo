@@ -316,6 +316,21 @@ describe("a shopper's order from the cart", () => {
       expect(order).not.toHaveProperty('customer');
     });
 
+    /** The storefront opens a product's page only while it is on sale: a slug past that is a link to a 404. */
+    it('leads a line to its product only while the product is on sale, and keeps its photo either way', async () => {
+      const product = (await prisma.productVariant.findUniqueOrThrow({ where: { id: whey } })).productId;
+      await prisma.productImage.create({ data: { productId: product, url: 'https://img.test/whey.jpg' } });
+      await place();
+
+      const onSale = (await orders()).orders[0]!.items[0]!;
+      expect(onSale).toMatchObject({ productName: 'Whey', productSlug: expect.any(String) });
+
+      await prisma.product.update({ where: { id: product }, data: { status: 'DRAFT' } });
+      const offSale = { productName: 'Whey', productSlug: null, imageUrl: 'https://img.test/whey.jpg' };
+      expect((await orders()).orders[0]!.items[0]).toMatchObject(offSale);
+      expect((await call('GET', '/api/stores/lessari/customer/orders/1', shopper)).json<CustomerOrder>().items[0]).toMatchObject(offSale);
+    });
+
     it('cancels an order the shop has not accepted, giving its stock back; after that only the shop cancels', async () => {
       await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 5 } });
       await place();

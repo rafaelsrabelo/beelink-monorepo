@@ -169,7 +169,7 @@ export interface PlaceCustomerOrderPayload {
 export interface CustomerOrderItem {
   /** Null once the product was deleted; the line still reads. */
   productId: string | null;
-  /** The product's slug while it exists, for the line to lead to its page. */
+  /** The product's slug while it is on sale, for the line to lead to its page; null once it is off sale or gone. */
   productSlug: string | null;
   productName: string;
   variantLabel: string | null;
