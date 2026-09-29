@@ -10,7 +10,7 @@ import type { User } from "@harness-monorepo/contracts"
 
 // App
 import { callApi } from "./api"
-import { ACCESS_COOKIE } from "./session-cookies"
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "./session-cookies"
 
 /**
  * The server's view of who is signed in. Memoised per request, so a layout and its page asking the
@@ -37,6 +37,11 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
  */
 export const requireUser = cache(async (): Promise<User> => {
   const user = await getCurrentUser()
-  if (!user) redirect("/api/session/expired")
-  return user
+  if (user) return user
+
+  // No access cookie beside a refresh cookie is a renewal the proxy could not make — the API did not
+  // answer. An outage is not a sign-out: the page fails, and the cookies stay for the next try.
+  const jar = await cookies()
+  if (!jar.has(ACCESS_COOKIE) && jar.has(REFRESH_COOKIE)) throw new Error("The session could not be renewed: the API did not answer")
+  redirect("/api/session/expired")
 })
