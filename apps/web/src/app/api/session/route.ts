@@ -7,7 +7,7 @@ import type { ApiErrorBody, AuthSession } from "@harness-monorepo/contracts"
 
 // App
 import { callApi } from "@/lib/api"
-import { clientIpOf, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
+import { clientIpOf, readJsonBody, refuseCrossOrigin, refuseForeignOrigin } from "@/lib/bff"
 import { REFRESH_COOKIE, clearSessionCookies, setSessionCookies } from "@/lib/session-cookies"
 
 /** Signs in. The tokens stop here: the browser gets cookies it cannot read, and the user. */
@@ -35,13 +35,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 /** Signs out. The cookies go whatever the API says, so a stale session cannot strand anyone. */
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  const origin = request.headers.get("origin")
-  if (origin !== null && origin !== request.nextUrl.origin) {
-    return NextResponse.json(
-      { statusCode: 403, errorCode: "FORBIDDEN", message: "Cross-origin request refused" },
-      { status: 403 },
-    )
-  }
+  // The origin alone: signing out sends no body, so there is no JSON to ask for.
+  const refused = refuseForeignOrigin(request)
+  if (refused) return refused
 
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value
 
