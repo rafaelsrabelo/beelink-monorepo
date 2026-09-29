@@ -92,6 +92,27 @@ export interface CustomerProfile {
    * by the link `POST /customer/me/password/link` sends (BEELINK-150).
    */
   hasPassword: boolean;
+  /** Which notices by e-mail the shopper takes from this shop (BEELINK-151). */
+  notifications: CustomerNotifications;
+}
+
+/** A shopper's notices by e-mail at one shop (BEELINK-151). */
+export interface CustomerNotifications {
+  /** Their orders' progress — accepted, on its way or ready, delivered, cancelled. On by default. */
+  orders: boolean;
+  /** A favourite that got cheaper or came back in stock. On by default: the shopper chose the favourite. */
+  favorites: boolean;
+  /** The shop's offers and news. Off until the shopper says yes. */
+  offers: boolean;
+  /** ISO-8601: when the shopper last chose about offers, either way — the consent's date; null while they never did. */
+  offersChosenAt: string | null;
+}
+
+/** The shopper's notices, all three, as the "Avisos" form sends them. */
+export interface UpdateCustomerNotificationsPayload {
+  orders: boolean;
+  favorites: boolean;
+  offers: boolean;
 }
 
 /**

@@ -40,6 +40,7 @@ const bia: CustomerProfile = {
   address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: null, city: "São Paulo", state: "SP" },
   addresses: [],
   hasPassword: true,
+  notifications: { orders: true, favorites: true, offers: false, offersChosenAt: null },
 }
 bia.addresses = [{ id: "a1", label: "Casa", recipientName: null, ...bia.address, isDefault: true }]
 const work = { id: "a2", label: "Trabalho", recipientName: "Recepção", ...bia.address, street: "Av. Faria Lima", number: "3477", isDefault: false }

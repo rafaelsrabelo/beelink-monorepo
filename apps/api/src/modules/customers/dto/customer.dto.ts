@@ -11,6 +11,7 @@ import type { CustomerAddress, UpdateCustomerProfilePayload } from '@harness-mon
 // App
 import { IsBirthDate } from '../../../shared/http/birth-date.js';
 import { CustomerSavedAddressResponse } from './customer-address.dto.js';
+import { CustomerNotificationsResponse } from './customer-notifications.dto.js';
 import { IsCpf, cpfDigitsOf } from '../../../shared/http/cpf.js';
 import { normaliseWhatsapp } from '../../stores/dto/store-fields.dto.js';
 
@@ -100,4 +101,5 @@ export class CustomerProfileResponse {
   @ApiProperty({ type: CustomerAddressResponse, description: "The default address's parts; every part null while there is none." }) address!: CustomerAddressResponse;
   @ApiProperty({ type: [CustomerSavedAddressResponse], description: 'Every saved address, the default first, then the newest.' }) addresses!: CustomerSavedAddressResponse[];
   @ApiProperty({ description: 'Whether the account has a password; one opened through Google has none until it creates one.' }) hasPassword!: boolean;
+  @ApiProperty({ type: CustomerNotificationsResponse }) notifications!: CustomerNotificationsResponse;
 }

@@ -45,6 +45,8 @@ export type WebErrorCode =
   | "CUSTOMER_FIELDS_INVALID"
   /** A saved address the API refused as a whole: a 400 from the addresses' save. */
   | "CUSTOMER_ADDRESS_FIELDS_INVALID"
+  /** A form of the shopper's area sent after their session had ended elsewhere: nothing was done. */
+  | "CUSTOMER_SESSION_ENDED"
   /** The new password from an e-mailed link, typed differently the second time. */
   | "CUSTOMER_PASSWORD_MISMATCH"
   /** The new password from an e-mailed link, refused by the API for its length. */

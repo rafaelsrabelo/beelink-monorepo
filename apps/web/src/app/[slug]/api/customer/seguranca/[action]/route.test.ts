@@ -80,8 +80,8 @@ describe("the shopper's own access to their account", () => {
     const landing = locationOf(response)
 
     expect(landing.pathname).toBe("/loja/entrar")
-    expect(landing.searchParams.get("erro")).toBe("AUTH_UNAUTHENTICATED")
-    expect(landing.searchParams.get("voltar")).toBe("/loja/conta/perfil")
+    expect(landing.searchParams.get("erro")).toBe("CUSTOMER_SESSION_ENDED")
+    expect(landing.searchParams.get("voltar")).toBe("/loja/conta/perfil#seguranca")
     expect(landing.searchParams.has("saiu")).toBe(false)
     expect(response.cookies.get("bl_shopper_access")?.value).toBe("")
   })

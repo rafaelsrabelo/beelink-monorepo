@@ -2,7 +2,7 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 
 // Types
-import type { AuthSession, CustomerProfile } from '@harness-monorepo/contracts';
+import type { AuthSession, CustomerNotifications, CustomerProfile } from '@harness-monorepo/contracts';
 import type { CustomerAddressModel, CustomerModel, UserModel } from '../../generated/prisma/models.js';
 
 // App
@@ -16,8 +16,18 @@ import { SessionService } from '../auth/session.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { SAVED_ADDRESS_ORDER, addressPartsOf, toSavedAddress } from './customer-addresses.js';
 import type { CustomerRegisterDto } from './dto/customer-link.dto.js';
+import type { UpdateCustomerNotificationsDto } from './dto/customer-notifications.dto.js';
 import type { UpdateCustomerProfileDto } from './dto/customer.dto.js';
 import { shopReturnOf } from './shop-return.js';
+
+function toNotifications(customer: Pick<CustomerModel, 'notifyOrders' | 'notifyFavorites' | 'notifyOffers' | 'notifyOffersAt'>): CustomerNotifications {
+  return {
+    orders: customer.notifyOrders,
+    favorites: customer.notifyFavorites,
+    offers: customer.notifyOffers,
+    offersChosenAt: customer.notifyOffersAt?.toISOString() ?? null,
+  } satisfies CustomerNotifications;
+}
 
 /** The record, its account — e-mail, and whether it has a password — and its addresses as `SAVED_ADDRESS_ORDER` reads them: the default first. */
 function toCustomerProfile(customer: CustomerModel, user: Pick<UserModel, 'email' | 'passwordHash'>, addresses: CustomerAddressModel[]): CustomerProfile {
@@ -31,6 +41,7 @@ function toCustomerProfile(customer: CustomerModel, user: Pick<UserModel, 'email
     address: addressPartsOf(addresses.find((address) => address.isDefault)),
     addresses: addresses.map(toSavedAddress),
     hasPassword: user.passwordHash !== null,
+    notifications: toNotifications(customer),
   } satisfies CustomerProfile;
 }
 
@@ -138,6 +149,25 @@ export class CustomersService {
       }
       throw error;
     }
+  }
+
+  /**
+   * The shopper's notices by e-mail (BEELINK-151), all three at once. Saying yes or no to offers
+   * keeps when it was said — the consent's date — and saving it again unchanged does not move it.
+   */
+  async updateNotifications(storeSlug: string, userId: string, dto: UpdateCustomerNotificationsDto): Promise<CustomerNotifications> {
+    const { storeId } = await this.scopeOf(storeSlug);
+    const record = await this.recordOf(storeId, await this.accountAt(storeId, userId));
+    const updated = await this.prisma.customer.update({
+      where: { id: record.id },
+      data: {
+        notifyOrders: dto.orders,
+        notifyFavorites: dto.favorites,
+        notifyOffers: dto.offers,
+        ...(dto.offers !== record.notifyOffers ? { notifyOffersAt: new Date() } : {}),
+      },
+    });
+    return toNotifications(updated);
   }
 
   /** The shopper's new password, given the current one; this session stays, the others end (BEELINK-150). */

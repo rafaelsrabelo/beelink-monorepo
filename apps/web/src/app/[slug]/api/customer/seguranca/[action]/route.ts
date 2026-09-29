@@ -59,8 +59,8 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     // This session ended elsewhere — a password changed on another device — before the form was
     // sent: nothing here was done, which the sign-in says, bringing the shopper back to the form.
     const signIn = new URL(safeBackOf(slug, field("entrada")), publicOriginOf(request))
-    signIn.searchParams.set(BACK_KEY, safeBackOf(slug, field("retorno")).split("#")[0] ?? `/${slug}`)
-    signIn.searchParams.set("erro", "AUTH_UNAUTHENTICATED")
+    signIn.searchParams.set(BACK_KEY, safeBackOf(slug, field("retorno")))
+    signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
     return signedOut(signIn, slug)
   }
   const { response, renewed } = answered
