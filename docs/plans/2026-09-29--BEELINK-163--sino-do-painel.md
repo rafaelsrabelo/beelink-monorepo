@@ -68,3 +68,32 @@ abre outro.
 - Som, notificação do sistema operacional, e-mail.
 - Marcar notificações como vistas sem abrir: o número é o que falta fazer (ler e aceitar), não o que
   falta ver.
+
+## Adendo — revisão independente (2026-09-29)
+
+Um revisor. Corrigido:
+
+1. **O menu ficava aberto depois de escolher uma notificação.** O cabeçalho do painel continua entre
+   as páginas, então o menu cobria o pedido que tinha acabado de abrir. Agora ele fecha ao escolher.
+2. **O "(N)" ficava no título ao sair do painel da loja.** O dashboard divide o título com o painel,
+   e ninguém reescrevia. Agora o prefixo sai quando o sino some. Ele também é refeito ao trocar de
+   idioma, e o comentário que dizia o contrário foi corrigido.
+3. **Trocar de loja mostrava, por um instante, os pedidos da loja anterior** com o endereço da nova.
+   Agora o sino é refeito por loja.
+4. **Sem o canal, só as conversas eram relidas.** Agora os pedidos novos também, a cada 30 s.
+5. **O idioma do painel** vale para as datas e o dinheiro do menu.
+6. **Uma resposta da loja aparecia como se fosse do cliente,** quando é a última linha de uma
+   conversa com não lidas. Agora aparece só o nome do cliente.
+
+Fica registrado: **a metade das mensagens só baixa com o K5.** Nada no painel lê uma conversa ainda,
+então uma mensagem de cliente fica contada até o K5 trazer a conversa, que marca como lida ao abrir.
+O K5 é o próximo ticket. Nem o K3 nem este deveriam ir para produção antes dele.
+
+Conferido em :3100, no painel da loja-do-design:
+- o sino mostrou 3, com o título "(3) bee-link";
+- o menu listou as mensagens dos pedidos 18 e 20 e o pedido novo nº 23;
+- uma mensagem de cliente no nº 19, pela API, levou o sino a 4 na hora, com o toast "Mensagem no
+  pedido nº 19";
+- o "Ver" do toast abriu o pedido nº 19, com o "(N)" mantido no título.
+
+Dados de teste no `harness_wt`: duas mensagens da cliente no pedido nº 19.

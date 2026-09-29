@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import { useState } from "react"
+
 // Libs
 import { MessageCircleIcon, ShoppingBagIcon } from "lucide-react"
 
@@ -44,9 +47,12 @@ export interface AdminNotificationsProps {
  */
 export function AdminNotifications({ unread, items, pending = false, ordersHref = null, linkComponent: Link = AnchorLink, messages = defaultMessages }: AdminNotificationsProps) {
   const text = messages.shell
+  // Closed on a pick too: the panel keeps its header across pages, and the menu would stay over the order it opened.
+  const [open, setOpen] = useState(false)
+  const close = () => setOpen(false)
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger render={<AdminBell unread={unread} messages={messages} />} />
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)] gap-0 p-0">
         <PopoverTitle className="border-b px-3 py-2.5 text-sm font-semibold">{text.notificationsTitle}</PopoverTitle>
@@ -68,7 +74,7 @@ export function AdminNotifications({ unread, items, pending = false, ordersHref 
           <ul className="max-h-96 overflow-y-auto py-1">
             {items.map((item) => (
               <li key={item.id}>
-                <Link href={item.href} className="hover:bg-muted focus-visible:bg-muted flex gap-2.5 px-3 py-2 outline-none">
+                <Link href={item.href} onClick={close} className="hover:bg-muted focus-visible:bg-muted flex gap-2.5 px-3 py-2 outline-none">
                   <span className="bg-muted text-foreground grid size-7 shrink-0 place-items-center rounded-full">
                     {item.kind === "order" ? <ShoppingBagIcon aria-hidden="true" className="size-3.5" /> : <MessageCircleIcon aria-hidden="true" className="size-3.5" />}
                   </span>
@@ -83,7 +89,7 @@ export function AdminNotifications({ unread, items, pending = false, ordersHref 
           </ul>
         )}
         {ordersHref ? (
-          <Link href={ordersHref} className="hover:bg-muted border-t px-3 py-2.5 text-center text-sm font-medium">
+          <Link href={ordersHref} onClick={close} className="hover:bg-muted border-t px-3 py-2.5 text-center text-sm font-medium">
             {text.notificationsSeeOrders}
           </Link>
         ) : null}

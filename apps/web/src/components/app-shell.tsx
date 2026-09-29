@@ -135,7 +135,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
           linkComponent={AppLink}
           messages={ui}
           search={<AdminSearch messages={ui} />}
-          bell={shopSlug ? <PanelNotifications slug={shopSlug} messages={ui} /> : <AdminBell messages={ui} />}
+          bell={shopSlug ? <PanelNotifications key={shopSlug} slug={shopSlug} locale={locale} messages={ui} /> : <AdminBell messages={ui} />}
           storeMenu={
             <AdminStoreMenu
               current={workspaces.find((workspace) => workspace.slug === shopSlug) ?? null}

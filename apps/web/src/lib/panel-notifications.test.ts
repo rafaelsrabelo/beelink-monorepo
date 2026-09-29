@@ -41,6 +41,11 @@ describe("the panel's bell", () => {
     expect(items[0]).toMatchObject({ kind: "message", href: "/admin/loja/orders/18" })
   })
 
+  it("never shows the shop's own reply as the customer's words", () => {
+    const replied = { ...unread, conversations: [{ ...unread.conversations[0], lastMessage: { author: "SHOP", body: "Sai amanhã", createdAt: "2026-09-29T13:55:00.000Z" } }] } as unknown as ShopConversationPage
+    expect(notificationsOf(undefined, replied, { slug: "loja", locale: "pt-BR", messages: ptBR })[0]?.detail).toBe("Carla")
+  })
+
   it("toasts only what came from outside", () => {
     expect(toastOf({ type: "order.created", orderNumber: 21, placedBy: "CUSTOMER" }, ptBR)).toBe("Novo pedido nº 21")
     expect(toastOf({ type: "order.created", orderNumber: 22, placedBy: "SHOP" }, ptBR)).toBeNull()

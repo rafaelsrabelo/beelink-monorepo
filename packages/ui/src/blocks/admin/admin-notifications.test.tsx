@@ -1,5 +1,5 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
@@ -21,6 +21,14 @@ describe("AdminNotifications", () => {
     expect(await screen.findByRole("link", { name: /Novo pedido nº 21/ })).toHaveAttribute("href", "/admin/loja/orders/21")
     expect(screen.getByRole("link", { name: /Mensagem no pedido nº 18/ })).toHaveAttribute("href", "/admin/loja/orders/18")
     expect(screen.getByRole("link", { name: "Ver pedidos novos" })).toHaveAttribute("href", "/admin/loja/orders?status=RECEIVED")
+  })
+
+  it("closes once an item is picked, the panel's header staying across pages", async () => {
+    render(<AdminNotifications unread={1} items={items} linkComponent={({ href, ...props }) => <a href={href} {...props} onClickCapture={(event) => event.preventDefault()} />} />)
+    await userEvent.click(screen.getByRole("button"))
+    await userEvent.click(await screen.findByRole("link", { name: /Novo pedido nº 21/ }))
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
   })
 
   it("says there is nothing new", async () => {

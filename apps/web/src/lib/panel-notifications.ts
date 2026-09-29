@@ -54,7 +54,11 @@ export function notificationsOf(received: OrderPage | undefined, unread: ShopCon
       id: `message-${row.order.number}`,
       kind: "message" as const,
       title: format(text.notificationNewMessage, { number: String(row.order.number) }),
-      detail: format(text.notificationMessageDetail, { customer: row.customer.name, body: row.lastMessage.body.replace(/\s+/g, " ").trim() }),
+      // The last line may be the shop's own reply, with the customer's still unread: then only who.
+      detail:
+        row.lastMessage.author === "CUSTOMER"
+          ? format(text.notificationMessageDetail, { customer: row.customer.name, body: row.lastMessage.body.replace(/\s+/g, " ").trim() })
+          : row.customer.name,
       when: momentOf(row.lastMessage.createdAt, locale),
       href: panelOrderHrefOf(slug, row.order.number),
     },
