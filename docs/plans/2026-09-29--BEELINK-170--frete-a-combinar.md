@@ -49,3 +49,18 @@ O checkout já avisa que "a loja informa a taxa de entrega ao confirmar o pedido
 - **Rebase sobre a `main` com J8 a J12, K7, #143, #145 e #146.** Entrou sem conflito, e o type-check dos quatro workspaces passou sem ajuste. Os e-mails de status do J12 não mostram total, então não precisam de "+ frete".
 - **A migração foi renomeada para `20260930120000_delivery_fee_to_agree`.** O nome antigo, `20260929235000`, ordenava antes das migrações do J8, J9 e J12, que já estão na `main` e em bancos onde foram aplicadas. Ela só tinha rodado numa cópia descartada (`harness_l4`), então renomear não afeta nenhum banco.
 - **O checkout passa a dizer "Frete a combinar com a loja".** O ticket lista o checkout junto das outras telas. Ele já avisava que a loja informa a taxa, e agora usa a mesma frase das outras telas. O checkout não mostra total, só o subtotal, então não há "+ frete" para escrever ali.
+
+## Depois da revisão (29/09, noite)
+
+Uma revisão em quatro frentes, com verificação adversarial, confirmou oito pontos. Todos foram corrigidos:
+
+- **Lançar o frete recusa um total negativo.** Um pedido registrado pode ter desconto maior que os produtos enquanto o frete cobre a diferença. Baixar o frete depois gravava um total abaixo de zero e mexia na conta do cliente no CRM. Agora a rota responde `ORDER_DISCOUNT_TOO_LARGE`, como a criação do pedido já respondia. A checagem do total ficou num lugar só, `totalRefusalOf`, usado pelos dois caminhos.
+- **Um pedido cancelado que nunca combinou frete não diz "A combinar".** A página do pedido, o comprovante, o pedido no painel e a mensagem de WhatsApp tiram a linha da entrega, e o total não diz "+ frete". A regra ficou num helper só, `feeLineOf`, ao lado do `feeToAgree`. Um cancelado que já tinha frete lançado continua mostrando o valor.
+- **O card de Meus pedidos diz "+ frete a combinar".** O ticket lista Meus pedidos entre as telas que dizem que o frete é a combinar, e o card não tem linha de entrega onde dizer isso.
+- **Uma recusa ao salvar o frete relê o pedido.** O pedido pode ter sido cancelado em outra aba, e o card de frete sai junto.
+- **Um frete acima do teto responde `ORDER_TOTAL_TOO_LARGE`, e não um erro de validação genérico.** A tela mostra "O pedido passa de R$ 1.000.000,00."
+- O card de frete usa o `reaisFrom` de `lib/money`, e não uma cópia dele.
+- `docs/product/README.md` diz que o frete de uma entrega pode ainda não estar combinado, e que isso nunca é zero.
+- O tipo `SetOrderDeliveryFeePayload` saiu de baixo do comentário do `OrderErrorCode`.
+
+A revisão levantou mais um ponto, refutado na verificação: "-12,50" vira 1250 no campo. É o comportamento documentado do `centsFrom`, anterior a este ticket e igual em todo campo de dinheiro.
