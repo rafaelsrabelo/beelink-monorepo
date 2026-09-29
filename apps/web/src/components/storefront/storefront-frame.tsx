@@ -18,7 +18,9 @@ import { StorefrontCartLinkLive } from "./storefront-cart-link-live"
 import { StorefrontDeliverToLive } from "./storefront-deliver-to-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
+import { headerAccountMenuOf } from "@/lib/account-menu"
 import { storefrontRoutes } from "@/lib/storefront-routes"
+import { ShopperConversationsLive } from "./conversations/shopper-conversations-live"
 
 export interface StorefrontFrameProps {
   store: PublicStore
@@ -204,7 +206,9 @@ export function StorefrontFrame({
             cartSlot: <StorefrontCartLinkLive href={routes.cart()} messages={messages} />,
             accountHref: shopper ? routes.account() : routes.signIn(),
             accountName: shopper?.name ?? null,
-            ordersHref: shopper ? routes.accountTab("orders") : undefined,
+            // Signed in, the account opens its pages as a menu (J21) instead of leading to one.
+            accountMenu: shopper ? headerAccountMenuOf(routes, store.slug) : undefined,
+            conversationsSlot: shopper ? <ShopperConversationsLive slug={store.slug} routeWords={store.routeWords} messages={messages} /> : undefined,
           })}
       {...(linkComponent ? { linkComponent } : {})}
       categories={

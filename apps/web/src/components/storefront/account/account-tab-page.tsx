@@ -18,8 +18,9 @@ import { customerOrdersAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
-import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
+import { conversationOrderOf, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
+import { AccountConversations } from "../conversations/account-conversations"
 import { OrdersTab } from "./orders-tab"
 import { OrdersToolbar } from "./orders-toolbar"
 import { StorefrontAccountArea } from "./storefront-account-area"
@@ -111,6 +112,8 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
           <Suspense fallback={<StorefrontOrdersSkeleton />}>
             <OrdersTab slug={store.slug} routes={routes} query={query} locale="pt-BR" messages={ui} />
           </Suspense>
+        ) : tab === "messages" ? (
+          <AccountConversations key={conversationOrderOf(query) ?? "list"} slug={store.slug} routeWords={store.routeWords} initialOrder={conversationOrderOf(query)} messages={ui} />
         ) : (
           <Suspense fallback={<StorefrontAccountSkeleton />}>
             <StorefrontAccountSection slug={store.slug} accountHref={routes.accountTab("profile")} profile={shopper} query={query} errors={web.errors} messages={ui} />
