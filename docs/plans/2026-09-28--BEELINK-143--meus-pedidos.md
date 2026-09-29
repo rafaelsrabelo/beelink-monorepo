@@ -75,3 +75,81 @@ do cliente. Quando pesar, a API ganha uma rota só de contagens.
 - A página do pedido, com etapas e comprovante (J5).
 - Rastreio e previsão (J7).
 - Comprar de novo (J6), Avaliar produto (J18), Falar com a loja (K3).
+
+## Adendo — revisão independente e a Visão geral nova (2026-09-28)
+
+A revisão independente do J4 confirmou sete problemas, todos corrigidos nesta branch. No mesmo
+passo a Visão geral foi refeita, a pedido: a frente da área é um informativo do cliente, não um
+índice das abas.
+
+### O que a revisão encontrou e como ficou
+
+1. **O link "Acompanhar / Meus pedidos" do cabeçalho nunca aparecia.** `StorefrontWindow` recebia
+   `ordersHref` e não o passava ao cabeçalho. Agora passa, com teste.
+2. **Uma recusa do cancelar sumia sem ser lida.** A página era relida logo depois da resposta, e o
+   cartão, redesenhado sem o botão, levava o diálogo junto. Agora a recusa fica no diálogo até o
+   cliente fechar, e só então a página é relida. Um cancelamento que deu certo fecha o diálogo, deixa
+   o botão travado até a releitura e move o foco (ver "O retorno do cancelar").
+3. **Sessão encerrada no cancelar mostrava a frase do checkout.** Agora: "Sua sessão terminou. Entre
+   de novo para cancelar o pedido." (`lib/order-cancel-refusal.ts`, com teste).
+4. **Uma falha ao ler a lista aparecia como "Nenhum pedido com esses filtros".** Agora é o estado
+   indisponível: "Não foi possível carregar seus pedidos agora." e "Tentar de novo", no mesmo
+   endereço.
+5. **A busca e o período ficavam embaixo do título; o 6d os põe ao lado.** A moldura da área ganhou
+   `tools` no cabeçalho da aba. A barra lê a mesma página que a lista: `customerOrdersAt` passou a
+   usar o `cache()` do React, por requisição, com a consulta em texto (o `cache` compara argumentos
+   por identidade). Lista, barra, contagem do menu e Visão geral fazem uma leitura por endereço.
+6. **Faltavam testes** do link do cabeçalho (com axe) e dos esqueletos (aria-hidden e axe).
+7. **O nome de um produto em rascunho levava a um 404.** A API manda `productSlug` só com o produto
+   à venda (`ACTIVE`), e a foto continua. Há um e2e novo.
+
+Também: a busca é cortada em 120 caracteres e a página em 10.000, os limites da API, que recusaria a
+leitura inteira. O corte é por caractere, para não partir um emoji.
+
+### O retorno do cancelar
+
+Na aba Em andamento o pedido cancelado sai da lista: o cartão some, e sem mais nada o cliente não
+saberia que deu certo. Acima da lista há agora uma linha, "Pedido nº N cancelado.", que recebe o foco
+e fica depois da releitura, porque é um componente de cliente que a releitura preserva. Na aba Todos
+o cartão fica e diz "Cancelado". A vitrine não usa avisos flutuantes (toast): o Toaster montado na
+raiz segue o visual do painel, não o da loja.
+
+### A Visão geral (6c)
+
+- Sem os cartões por aba: o menu já está ao lado, e no celular logo abaixo.
+- "Olá, {nome}", depois o pedido em andamento mais recente: nº e total; onde está, nas palavras do
+  cartão da lista; para onde vai (quem recebe e o endereço curto, ou a retirada); "A loja confirma o
+  pedido e o prazo." enquanto Recebido; as etapas; e "Acompanhar pedido". Com mais de um:
+  "Você tem mais N pedidos em andamento".
+- Sem pedido em andamento: como terminou o último ("Entregue em …" ou "Cancelado em …, por você ou
+  pela loja") e "Ver meus pedidos". Sem pedido nenhum: "Você ainda não fez pedidos nesta loja." e
+  "Ir às compras". Se a leitura falhar, o estado indisponível, nunca "nenhum pedido".
+- "Seus dados": telefone, e-mail e endereço de entrega, com cada falta dita. Um endereço que não dá
+  para entregar, como só o CEP, diz "Falta a rua e a cidade para a loja entregar.", pela mesma regra
+  do checkout (`isDeliverable`). O CEP guardado só com dígitos é escrito com hífen.
+- O pedido vem por streaming, com esqueleto próprio; a saudação e os dados aparecem na hora.
+- As avaliações a fazer (J18) e os favoritos (J15) entram na Visão geral com os seus tickets, como
+  no 6c.
+
+### As etapas
+
+Uma por status: Pedido feito → Loja confirmou → Em preparo → Saiu para entrega → Entregue. Na
+retirada não há "Saiu para entrega", e a última é "Retirado na loja". O painel não impõe ordem de
+status, então as etapas não supõem uma: a que está atrás do status atual está feita, com o horário
+quando houve o evento, e a que está à frente espera. Uma retirada marcada "Saiu para entrega" fica
+entre o preparo e a retirada. "Pedido feito" tem o horário da colocação, também num pedido lançado
+pela loja, que já nasce Aceito. Um pedido cancelado não tem etapas: o J5 diz quando e por quem.
+
+"Acompanhar pedido" leva, por ora, à lista filtrada em Em andamento. O J5 troca pelo endereço do
+pedido.
+
+### Muda a decisão do J3 sobre o celular
+
+O J3 fez da raiz da área, no celular, o próprio menu, com a Visão geral escondida. Agora a Visão
+geral vem primeiro e o menu embaixo; no computador o menu segue à esquerda. No código o menu continua
+antes, como uma barra lateral, e a ordem no celular é só visual.
+
+### Dados de teste
+
+Para conferir no navegador, os pedidos nº 14 e nº 15 foram criados e cancelados na loja-do-design
+(banco `harness_wt`), com o cliente de teste do H9. O nº 13, que já existia, ficou intacto.
