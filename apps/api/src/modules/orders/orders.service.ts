@@ -8,7 +8,9 @@ import type { Prisma } from '../../generated/prisma/client.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
+import type { SetOrderDeliveryFeeDto } from './dto/order-delivery-fee.dto.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
+import { agreeDeliveryFee } from './order-delivery-fee.js';
 import { OrderPlacement } from './order-placement.js';
 import { settleCancellation } from './order-cancellation.js';
 import { oweStatusEmail } from './order-status-email.js';
@@ -228,6 +230,12 @@ export class OrdersService {
       select: { id: true },
     });
     return customer.id;
+  }
+
+  /** The fee the shop agreed for a delivery; see `agreeDeliveryFee`. */
+  async setDeliveryFee(storeSlug: string, userId: string, number: number, { deliveryFeeCents }: SetOrderDeliveryFeeDto): Promise<Order> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    return toOrder(await agreeDeliveryFee(this.prisma, storeId, number, deliveryFeeCents));
   }
 
   private notFound(number: number): NotFoundException {

@@ -99,7 +99,8 @@ describe("a shopper's order from the cart", () => {
       paymentMethod: 'PIX',
       deliveryAddress: { recipientName: 'Bia Cliente', ...paulista },
       subtotalCents: 23970,
-      deliveryFeeCents: 0,
+      // Not agreed yet — "a combinar" — never a free delivery (BEELINK-170). The total is the goods'.
+      deliveryFeeCents: null,
       discountCents: 0,
       totalCents: 23970,
     });
@@ -134,6 +135,20 @@ describe("a shopper's order from the cart", () => {
     const record = await prisma.customer.findUniqueOrThrow({ where: { id: panel.customer.id } });
     expect(record).toMatchObject({ ordersCount: 1, totalSpentCents: 23970n });
     expect(record.userId).not.toBeNull();
+  });
+
+  it('shows the shopper the fee once the shop agrees it, and the total that follows', async () => {
+    await place();
+
+    const agreed = await call('PUT', '/api/stores/lessari/orders/1/delivery-fee', owner, { deliveryFeeCents: 1200 });
+    expect(agreed.statusCode).toBe(200);
+
+    const mine = (await call('GET', '/api/stores/lessari/customer/orders/1', shopper)).json<CustomerOrder>();
+    expect(mine).toMatchObject({ subtotalCents: 23970, deliveryFeeCents: 1200, totalCents: 25170 });
+    const [row] = (await call('GET', '/api/stores/lessari/customer/orders', shopper)).json<CustomerOrderPage>().orders;
+    expect(row).toMatchObject({ deliveryFeeCents: 1200, totalCents: 25170 });
+    const record = await prisma.customer.findFirstOrThrow({ where: { userId: { not: null } } });
+    expect(record.totalSpentCents).toBe(25170n);
   });
 
   it('shares the numbering and the stock with the orders the panel registers, and the shop accepts it there', async () => {

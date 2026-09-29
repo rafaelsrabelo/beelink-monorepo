@@ -44,8 +44,10 @@ model Order {
   paymentMethod PaymentMethod
 
   subtotalCents    Int
-  /// Zero on a pick-up. Typed by the shopkeeper until the delivery module computes it.
-  deliveryFeeCents Int @default(0)
+  /// Zero on a pick-up. Null on a delivery whose fee is not agreed yet — "a combinar", never a free
+  /// delivery, which is zero (BEELINK-170); a CHECK keeps null to deliveries. Typed by the
+  /// shopkeeper until the delivery module computes it.
+  deliveryFeeCents Int? @default(0)
   discountCents    Int @default(0)
   totalCents       Int
 

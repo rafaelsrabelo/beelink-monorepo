@@ -39,8 +39,9 @@ export class CustomerOrdersService {
 
   /**
    * The cart as an order of the shopper's record at this shop: priced, checked against the stock and
-   * the shop's payments, and waiting for the shop — `RECEIVED`, the shopper's own word on it. The fee
-   * is the shop's to tell, until the product computes one.
+   * the shop's payments, and waiting for the shop — `RECEIVED`, the shopper's own word on it. A
+   * delivery's fee is the shop's to tell: not agreed (null), never a free delivery, until the product
+   * computes one.
    */
   async place(storeSlug: string, userId: string, dto: PlaceCustomerOrderDto): Promise<CustomerOrder> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
@@ -51,7 +52,7 @@ export class CustomerOrdersService {
       fulfillment: dto.fulfillment,
       addressId: dto.addressId?.toLowerCase() ?? null,
       paymentMethod: dto.paymentMethod,
-      deliveryFeeCents: 0,
+      deliveryFeeCents: null,
       discountCents: 0,
       note: null,
       placedAt: new Date(),

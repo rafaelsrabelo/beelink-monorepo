@@ -167,6 +167,34 @@ describe("a shop's orders", () => {
     expect(again.json()).toMatchObject({ errorCode: 'ORDER_CANCELLED' });
   });
 
+  /** BEELINK-170: a delivery's fee, told when agreed; the total and the customer's books follow. */
+  it('takes the fee a delivery agreed, and refuses one for a pick-up, a cancelled order or past the cap', async () => {
+    const order = (await place()).json<Order>();
+
+    const agreed = await call('PUT', '/api/stores/lessari/orders/1/delivery-fee', owner, { deliveryFeeCents: 1500 });
+    expect(agreed.statusCode).toBe(200);
+    expect(agreed.json<Order>()).toMatchObject({ subtotalCents: 23970, deliveryFeeCents: 1500, discountCents: 500, totalCents: 24970 });
+    expect(await prisma.customer.findUniqueOrThrow({ where: { id: order.customer.id } })).toMatchObject({ totalSpentCents: 24970n });
+    // Zero is a free delivery, told as such.
+    expect((await call('PUT', '/api/stores/lessari/orders/1/delivery-fee', owner, { deliveryFeeCents: 0 })).json<Order>()).toMatchObject({ deliveryFeeCents: 0, totalCents: 23470 });
+
+    const pickup = (await place({ fulfillment: 'PICKUP' })).json<Order>();
+    const refusedPickup = await call('PUT', `/api/stores/lessari/orders/${pickup.number}/delivery-fee`, owner, { deliveryFeeCents: 800 });
+    expect(refusedPickup.statusCode).toBe(400);
+    expect(refusedPickup.json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_FOR_PICKUP' });
+
+    await call('PATCH', '/api/stores/lessari/orders/1/status', owner, { status: 'CANCELLED' });
+    expect((await call('PUT', '/api/stores/lessari/orders/1/delivery-fee', owner, { deliveryFeeCents: 900 })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_CANCELLED' });
+
+    const other = (await place()).json<Order>();
+    const tooLarge = await call('PUT', `/api/stores/lessari/orders/${other.number}/delivery-fee`, owner, { deliveryFeeCents: 100_000_000 });
+    expect(tooLarge.json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_TOTAL_TOO_LARGE' });
+    for (const bad of [-1, 12.5, '900', null]) {
+      expect((await call('PUT', `/api/stores/lessari/orders/${other.number}/delivery-fee`, owner, { deliveryFeeCents: bad })).statusCode).toBe(400);
+    }
+    expect((await call('PUT', '/api/stores/lessari/orders/99/delivery-fee', owner, { deliveryFeeCents: 900 })).statusCode).toBe(404);
+  });
+
   describe('the stock', () => {
     /** Counts a combination's stock, as the variations editor would. */
     async function counted(variantId: string, stockQuantity: number | null) {
