@@ -43,6 +43,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 function mount(ticket: () => Promise<string>, enabled = true) {
@@ -72,13 +73,14 @@ describe("useRealtimeChannel", () => {
     act(() => fake.handlers.get("connect")!())
     expect(onReconnect).not.toHaveBeenCalled()
 
-    act(() => fake.handlers.get("disconnect")!())
+    act(() => fake.handlers.get("disconnect")!("transport close"))
     act(() => fake.handlers.get("connect")!())
     expect(onReconnect).toHaveBeenCalledOnce()
   })
 
-  it("asks again after a refused ticket, waiting longer each time, and stops once the session ended", async () => {
+  it("asks again after a refused ticket, waiting longer each time", () => {
     vi.useFakeTimers()
+    vi.spyOn(Math, "random").mockReturnValue(0.5)
     mount(async () => "t")
 
     act(() => fake.handlers.get("connect_error")!(new Error("REALTIME_TICKET_INVALID")))
@@ -91,8 +93,25 @@ describe("useRealtimeChannel", () => {
     expect(fake.connect).toHaveBeenCalledTimes(2)
   })
 
-  it("stops asking once the ticket is refused for a session that ended", async () => {
+  /** A shop that is not the session's, or no shop at all, answers the same however often it is asked. */
+  it("stops asking for a shop that is not the session's", async () => {
     vi.useFakeTimers()
+    mount(async () => {
+      throw new RealtimeTicketError(403)
+    })
+
+    const answer = vi.fn()
+    fake.options!.auth(answer)
+    await vi.waitFor(() => expect(answer).toHaveBeenCalledWith({}))
+    act(() => fake.handlers.get("connect_error")!(new Error("REALTIME_TICKET_INVALID")))
+    vi.advanceTimersByTime(120_000)
+    expect(fake.connect).not.toHaveBeenCalled()
+  })
+
+  /** On the panel a 401 is as often the access cookie lapsing, renewed by the next page opened, as a session that ended. */
+  it("waits the longest after a 401, and asks again", async () => {
+    vi.useFakeTimers()
+    vi.spyOn(Math, "random").mockReturnValue(0.5)
     mount(async () => {
       throw new RealtimeTicketError(401)
     })
@@ -101,8 +120,39 @@ describe("useRealtimeChannel", () => {
     fake.options!.auth(answer)
     await vi.waitFor(() => expect(answer).toHaveBeenCalledWith({}))
     act(() => fake.handlers.get("connect_error")!(new Error("REALTIME_TICKET_INVALID")))
+    vi.advanceTimersByTime(29_999)
+    expect(fake.connect).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(fake.connect).toHaveBeenCalledOnce()
+  })
+
+  /** Closed by the API — its session ended — Socket.IO does not come back on its own; a dropped line it does. */
+  it("asks again when the API closed the socket, and leaves a dropped one to Socket.IO", () => {
+    vi.useFakeTimers()
+    vi.spyOn(Math, "random").mockReturnValue(0.5)
+    mount(async () => "t")
+
+    act(() => fake.handlers.get("disconnect")!("transport close"))
     vi.advanceTimersByTime(60_000)
     expect(fake.connect).not.toHaveBeenCalled()
+
+    act(() => fake.handlers.get("disconnect")!("io server disconnect"))
+    vi.advanceTimersByTime(2_000)
+    expect(fake.connect).toHaveBeenCalledOnce()
+  })
+
+  it("drops a ticket that arrives after a newer attempt began", async () => {
+    const pending: ((value: string) => void)[] = []
+    mount(() => new Promise<string>((resolve) => pending.push(resolve)))
+
+    const first = vi.fn()
+    const second = vi.fn()
+    fake.options!.auth(first)
+    fake.options!.auth(second)
+    pending[0]?.("old")
+    pending[1]?.("new")
+    await vi.waitFor(() => expect(second).toHaveBeenCalledWith({ ticket: "new" }))
+    expect(first).not.toHaveBeenCalled()
   })
 
   it("opens nothing while off, and closes the socket when the page leaves", () => {

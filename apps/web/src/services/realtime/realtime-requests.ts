@@ -1,7 +1,10 @@
 // Types
 import type { RealtimeTicket } from "@harness-monorepo/contracts"
 
-/** A ticket the web's server refused to ask for; 401 is a session that ended, and the channel stops asking. */
+/**
+ * A ticket the web's server would not ask for, with its answer's status: 403 or 404 is a shop that
+ * is not the session's, and the channel stops asking; 401 may be only a lapsed cookie.
+ */
 export class RealtimeTicketError extends Error {
   constructor(readonly status: number) {
     super(`The ticket was refused: ${status}`)
@@ -9,8 +12,16 @@ export class RealtimeTicketError extends Error {
   }
 }
 
+/** Past this, the attempt is given up and asked again later: a hung answer would hold the socket half-open. */
+const TICKET_TIMEOUT_MS = 10_000
+
 async function ticketFrom(path: string): Promise<string> {
-  const response = await fetch(path, { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: "{}" })
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: "{}",
+    signal: AbortSignal.timeout(TICKET_TIMEOUT_MS),
+  })
   if (!response.ok) throw new RealtimeTicketError(response.status)
   return ((await response.json()) as RealtimeTicket).ticket
 }
