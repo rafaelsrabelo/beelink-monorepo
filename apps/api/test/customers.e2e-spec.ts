@@ -93,6 +93,35 @@ describe("a shopper's door into a shop", () => {
     expect(updated.json<CustomerProfile>()).toMatchObject({ phone: '5511988887777', address: { city: 'São Paulo', state: 'SP' } });
   });
 
+  it('keeps the CPF and the birth date the shopper gives, refuses ones that cannot be, and clears them when blank', async () => {
+    const session = await shopperAt('lessari');
+    const patch = (payload: object) =>
+      app.inject({ method: 'PATCH', url: '/api/stores/lessari/customer/me', headers: { authorization: `Bearer ${session.accessToken}` }, payload });
+
+    expect((await me('lessari', session.accessToken)).json<CustomerProfile>()).toMatchObject({ cpf: null, birthDate: null });
+
+    const saved = await patch({ cpf: '529.982.247-25', birthDate: '1990-05-17' });
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json<CustomerProfile>()).toMatchObject({ cpf: '52998224725', birthDate: '1990-05-17' });
+
+    // Each refused with its own code, so the form can say which; nothing of the request is kept.
+    for (const [payload, errorCode] of [
+      [{ cpf: '529.982.247-24' }, 'CUSTOMER_CPF_INVALID'],
+      [{ cpf: '111.111.111-11' }, 'CUSTOMER_CPF_INVALID'],
+      [{ cpf: '5299822472x' }, 'CUSTOMER_CPF_INVALID'],
+      [{ birthDate: '2999-01-01' }, 'CUSTOMER_BIRTH_DATE_INVALID'],
+      [{ birthDate: '1990-02-31' }, 'CUSTOMER_BIRTH_DATE_INVALID'],
+      [{ birthDate: '17/05/1990' }, 'CUSTOMER_BIRTH_DATE_INVALID'],
+    ] as const) {
+      const refused = await patch({ name: 'Outra Pessoa', ...payload });
+      expect(refused.statusCode, JSON.stringify(payload)).toBe(400);
+      expect(refused.json(), JSON.stringify(payload)).toMatchObject({ errorCode });
+    }
+    expect((await me('lessari', session.accessToken)).json<CustomerProfile>()).toMatchObject({ name: 'Bia Cliente', cpf: '52998224725', birthDate: '1990-05-17' });
+
+    expect((await patch({ cpf: '', birthDate: '' })).json<CustomerProfile>()).toMatchObject({ cpf: null, birthDate: null });
+  });
+
   it("keeps an account to the shop it was opened at: anywhere else, its password is an unknown e-mail's", async () => {
     const email = newEmail('cliente');
     await shopperAt('lessari', email);

@@ -5,6 +5,7 @@ import type { CustomerModel } from '../../generated/prisma/models.js';
 // App
 import { averageTicketOf } from './customer-books.js';
 import { daysSince, stageOf } from './customer-stage.js';
+import { dayOf } from '../../shared/http/birth-date.js';
 
 /** What a customer is read with: the account, for its e-mail and whether it was confirmed. */
 export const WITH_ACCOUNT = { user: { select: { email: true, emailVerifiedAt: true } } } as const;
@@ -37,6 +38,8 @@ export function toStoreCustomerDetail(row: CustomerRow, inactiveAfterDays: numbe
   return {
     ...toStoreCustomer(row, inactiveAfterDays, now, duplicates.length > 0),
     address: { zipCode, street, number, complement, neighborhood, city, state },
+    cpf: row.cpf,
+    birthDate: dayOf(row.birthDate),
     firstOrderAt: row.firstOrderAt?.toISOString() ?? null,
     averageTicketCents: averageTicketOf(row.totalSpentCents, row.ordersCount),
     duplicates,

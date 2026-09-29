@@ -19,6 +19,11 @@ model Customer {
   /// the unique index leaves of one person with two records. The panel flags the pair and the
   /// shopkeeper merges them; nothing is merged from it on its own. Cleared once a phone is saved.
   claimedPhone String?
+  /// The eleven digits, checked when saved; given by the shopper for the shop's invoice. Not unique:
+  /// a refusal would tell a stranger the number is a customer here.
+  cpf          String?   @db.Char(11)
+  /// A day, no time: when the shopper was born, if they said.
+  birthDate    DateTime? @db.Date
   zipCode      String?
   street       String?
   number       String?

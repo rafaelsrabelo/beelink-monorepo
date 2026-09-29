@@ -31,6 +31,10 @@ export interface CustomerProfile {
   email: string;
   /** Digits only, with the country code. */
   phone: string | null;
+  /** The eleven digits, for the shop's invoice; null while the shopper has not given it. */
+  cpf: string | null;
+  /** `YYYY-MM-DD`, a date with no time; null while the shopper has not given it. */
+  birthDate: string | null;
   address: CustomerAddress;
 }
 
@@ -39,6 +43,10 @@ export interface UpdateCustomerProfilePayload {
   name?: string;
   /** Null clears it. */
   phone?: string | null;
+  /** As a person writes it, points and dash or not; its check digits must hold. Null clears it. */
+  cpf?: string | null;
+  /** `YYYY-MM-DD`: a day that exists, not in the future, not before 1900. Null clears it. */
+  birthDate?: string | null;
   address?: Partial<CustomerAddress>;
 }
 
@@ -110,6 +118,9 @@ export interface CustomerDuplicate {
  */
 export interface StoreCustomerDetail extends StoreCustomer {
   address: CustomerAddress;
+  /** What the shopper gave for the invoice, as `CustomerProfile` has them; the shop only reads them. */
+  cpf: string | null;
+  birthDate: string | null;
   /** ISO-8601; null with no valid order. */
   firstOrderAt: string | null;
   /** `totalSpentCents ÷ ordersCount`, rounded to the nearest whole cent; null with no valid order. */
@@ -203,6 +214,10 @@ export interface GoogleSignIn {
 /** What a shopper's door answers besides the account's own codes (`AuthErrorCode`). */
 export type CustomerErrorCode =
   | "CUSTOMER_PHONE_TAKEN"
+  /** Not eleven digits, all one digit, or check digits that do not hold. */
+  | "CUSTOMER_CPF_INVALID"
+  /** A day that does not exist, one in the future, or one before 1900. */
+  | "CUSTOMER_BIRTH_DATE_INVALID"
   /** The panel asked for a customer this shop does not have. */
   | "CUSTOMER_NOT_FOUND"
   /** A record merged with itself. */

@@ -55,6 +55,9 @@ export class CustomerDuplicateResponse implements CustomerDuplicate {
 
 export class StoreCustomerDetailResponse extends StoreCustomerResponse implements StoreCustomerDetail {
   @ApiProperty({ type: CustomerAddressResponse }) address!: CustomerAddressResponse;
+  @ApiProperty({ nullable: true, type: String, description: "The eleven digits the shopper gave, for the invoice; read only to the shop." })
+  cpf!: string | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date' }) birthDate!: string | null;
   @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'The first valid order.' })
   firstOrderAt!: string | null;
   @ApiProperty({

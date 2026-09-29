@@ -6,6 +6,7 @@ import type { AuthSession, CustomerProfile } from '@harness-monorepo/contracts';
 import type { CustomerModel, UserModel } from '../../generated/prisma/models.js';
 
 // App
+import { dayOf } from '../../shared/http/birth-date.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { AccountScope } from '../auth/account-scope.js';
 import { AuthService } from '../auth/auth.service.js';
@@ -20,6 +21,8 @@ function toCustomerProfile(customer: CustomerModel, email: string): CustomerProf
     name: customer.name,
     email,
     phone: customer.phone,
+    cpf: customer.cpf,
+    birthDate: dayOf(customer.birthDate),
     address: {
       zipCode: customer.zipCode,
       street: customer.street,
@@ -119,6 +122,9 @@ export class CustomersService {
           ...(dto.name !== undefined ? { name: dto.name } : {}),
           // A phone that sticks settles any claim; clearing it leaves one standing.
           ...(dto.phone !== undefined ? { phone: dto.phone, ...(dto.phone !== null ? { claimedPhone: null } : {}) } : {}),
+          ...(dto.cpf !== undefined ? { cpf: dto.cpf } : {}),
+          // Midnight UTC is the day itself in a `DATE` column; see `dayOf`.
+          ...(dto.birthDate !== undefined ? { birthDate: dto.birthDate === null ? null : new Date(`${dto.birthDate}T00:00:00.000Z`) } : {}),
           ...dto.address,
         },
       });

@@ -31,10 +31,10 @@ export function keptOf<T extends Pick<CustomerModel, 'userId'>>(here: T, other: 
 }
 
 /**
- * The other record's orders moved to the kept one, which fills a phone or an address it lacks and
- * reads its books again; then the other is gone. Under the shop's row lock, the one an order takes,
- * so an order placed meanwhile is either moved with the rest or refused as for a customer no longer
- * there — never left pointing at a deleted row.
+ * The other record's orders moved to the kept one, which fills a phone, a CPF, a birth date or an
+ * address it lacks and reads its books again; then the other is gone. Under the shop's row lock,
+ * the one an order takes, so an order placed meanwhile is either moved with the rest or refused as
+ * for a customer no longer there — never left pointing at a deleted row.
  *
  * An address is taken whole or not at all: half of one and half of another is nobody's address.
  */
@@ -47,6 +47,9 @@ export async function mergeInto(tx: Tx, kept: CustomerModel, gone: CustomerModel
     where: { id: kept.id },
     data: {
       ...(kept.phone === null ? { phone: gone.phone } : {}),
+      // What only a shopper gives, taken as the phone is: from the other record when this one lacks it.
+      ...(kept.cpf === null ? { cpf: gone.cpf } : {}),
+      ...(kept.birthDate === null ? { birthDate: gone.birthDate } : {}),
       ...(hasAddress(kept) ? {} : addressOf(gone)),
       // The claim is settled once the record it pointed at is this one; one pointing elsewhere stays.
       ...(kept.claimedPhone !== null && kept.claimedPhone === gone.phone ? { claimedPhone: null } : {}),

@@ -167,7 +167,8 @@ describe("a customer's record in the panel", () => {
   it("refuses what is not the shop's to change, and a name or a phone it cannot store", async () => {
     const { id } = await register({ name: 'Rita', phone: '11966665555' });
 
-    for (const payload of [{ email: 'rita@exemplo.com' }, { name: 'R' }, { name: null }, { phone: null }, { phone: '' }, { phone: '1234' }, { address: { state: 'São Paulo' } }]) {
+    // The CPF and the birth date are the shopper's to give: the shop reads them, never writes them.
+    for (const payload of [{ email: 'rita@exemplo.com' }, { cpf: '52998224725' }, { birthDate: '1990-05-17' }, { name: 'R' }, { name: null }, { phone: null }, { phone: '' }, { phone: '1234' }, { address: { state: 'São Paulo' } }]) {
       expect((await edit(id, payload)).statusCode, JSON.stringify(payload)).toBe(400);
     }
     expect((await record(id)).json<StoreCustomerDetail>()).toMatchObject({ name: 'Rita', phone: '5511966665555' });
@@ -180,9 +181,11 @@ describe("a customer's record in the panel", () => {
     const shopper = (await call('POST', '/api/stores/lessari/customer/login', undefined, { email, password: PASSWORD })).json<AuthSession>();
     const me = (await call('GET', '/api/stores/lessari/customer/me', shopper)).json<CustomerProfile>();
 
+    await call('PATCH', '/api/stores/lessari/customer/me', shopper, { cpf: '529.982.247-25', birthDate: '1990-05-17' });
     const saved = (await edit(me.id, { name: 'Bia Souza', phone: '11988887777' })).json<StoreCustomerDetail>();
 
-    expect(saved).toMatchObject({ email, emailVerified: true, name: 'Bia Souza' });
+    // What the shopper gave for the invoice, read in the record; the shop's own save leaves it be.
+    expect(saved).toMatchObject({ email, emailVerified: true, name: 'Bia Souza', cpf: '52998224725', birthDate: '1990-05-17' });
     expect((await call('GET', '/api/stores/lessari/customer/me', shopper)).json<CustomerProfile>()).toMatchObject({
       email,
       name: 'Bia Souza',
