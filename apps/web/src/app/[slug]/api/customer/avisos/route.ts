@@ -30,17 +30,24 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     const value = form?.get(name)
     return typeof value === "string" ? value : ""
   }
-  const body = { orders: form?.has("orders") ?? false, favorites: form?.has("favorites") ?? false, offers: form?.has("offers") ?? false } satisfies UpdateCustomerNotificationsPayload
   const back = safeBackOf(slug, field("retorno"))
+  // A body that is not a form carries no box at all: read as three noes, it would turn every notice off.
+  if (!form) {
+    const refusal = new URL(back, request.url)
+    refusal.searchParams.set(NOTICES_ERROR_KEY, "UNKNOWN")
+    return NextResponse.redirect(refusal, 303)
+  }
+  const body = { orders: form.has("orders"), favorites: form.has("favorites"), offers: form.has("offers") } satisfies UpdateCustomerNotificationsPayload
 
   const answered = await callAsShopper(request, slug, (accessToken) =>
     callApi({ path: `/stores/${encodeURIComponent(slug)}/customer/me/notifications`, method: "PUT", body, accessToken, clientIp: clientIpOf(request) }).catch(() => null),
   )
   if (answered.status === "signedOut") {
-    // The session ended elsewhere meanwhile: nothing was saved, which the sign-in says.
+    // The session ended elsewhere meanwhile: nothing was saved, which the sign-in says, and it brings
+    // the shopper back to the notices themselves to save them again.
     const signIn = new URL(safeBackOf(slug, field("entrada")), request.url)
-    signIn.searchParams.set(BACK_KEY, back.split("#")[0] ?? `/${slug}`)
-    signIn.searchParams.set("erro", "AUTH_UNAUTHENTICATED")
+    signIn.searchParams.set(BACK_KEY, back)
+    signIn.searchParams.set("erro", "CUSTOMER_SESSION_ENDED")
     const signedOut = NextResponse.redirect(signIn, 303)
     clearCustomerSessionCookies(signedOut.cookies, slug)
     return signedOut

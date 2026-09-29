@@ -78,8 +78,10 @@ describe("a customer hears by e-mail when their order moves", () => {
     const accepted = await waitForMessage(email, 10_000, 'confirmado');
     expect(accepted.Subject).toBe(`lessari — pedido nº ${number} confirmado`);
     expect(accepted.From).toMatchObject({ Name: 'lessari' });
-    expect(accepted.Text).toContain(`Seu pedido nº ${number} na loja lessari foi confirmado pela loja.`);
+    expect(accepted.Text).toContain(`Seu pedido nº ${number} em lessari foi confirmado.`);
     expect(accepted.Text).toContain(`http://localhost:3000/lessari/conta/pedidos/${number}`);
+    // The way to stop these, straight to the box that does it.
+    expect(accepted.Text).toContain('http://localhost:3000/lessari/conta/perfil#avisos');
 
     await move(number, 'PREPARING');
     await move(number, 'OUT_FOR_DELIVERY');
@@ -118,6 +120,37 @@ describe("a customer hears by e-mail when their order moves", () => {
     const number = await placeFromCart();
     await move(number, 'ACCEPTED');
     expect(await owed()).toEqual([]);
+  });
+
+  it('owes nothing to an account that never confirmed its e-mail: anyone can type someone else’s', async () => {
+    const stranger = newEmail('nunca-confirmou');
+    await call('POST', '/api/stores/lessari/customer/register', undefined, { name: 'Outra', email: stranger, password: PASSWORD });
+    const record = await prisma.customer.findFirstOrThrow({ where: { user: { email: stranger } } });
+
+    const sale = (await call('POST', '/api/stores/lessari/orders', owner, { customer: { id: record.id }, items: [{ variantId: whey, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' })).json<Order>();
+    await move(sale.number, 'DELIVERED');
+
+    expect(await owed()).toEqual([]);
+  });
+
+  it('drops a notice gone stale: a later move of the same order already told', async () => {
+    const send = vi.spyOn(app.get(MailService), 'sendOrderStatus').mockResolvedValueOnce(false);
+    const number = await placeFromCart();
+    await move(number, 'ACCEPTED');
+    await vi.waitFor(async () => expect((await owed())[0]).toMatchObject({ attempts: 1, sentAt: null }));
+
+    await move(number, 'CANCELLED');
+    await waitForMessage(email, 10_000, 'cancelado');
+    // The failed "confirmado", due again, is marked done without going out after the cancel.
+    await prisma.orderStatusEmail.updateMany({ where: { status: 'ACCEPTED' }, data: { nextAttemptAt: new Date(Date.now() - 1000) } });
+    send.mockClear();
+    await app.get(OrderStatusMailer).flush();
+
+    expect(send).not.toHaveBeenCalled();
+    expect((await owed()).map(({ status, sentAt }) => [status, sentAt !== null])).toEqual([
+      ['ACCEPTED', true],
+      ['CANCELLED', true],
+    ]);
   });
 
   it("tells a sale the shop registers for a customer with an account: it is born accepted", async () => {

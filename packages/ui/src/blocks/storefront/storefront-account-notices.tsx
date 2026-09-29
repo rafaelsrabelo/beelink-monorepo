@@ -81,27 +81,29 @@ export function StorefrontAccountNotices({
           <legend className="mb-1 text-sm text-shop-muted">{format(text.noticesLead, { email })}</legend>
           {options.map((option) => {
             const id = `${headingId}-${option.name}`
+            // The whole card ticks the box; the title alone names it, the rest describes it.
             return (
-              <div key={option.name} className="flex items-start gap-3 rounded-[10px] border border-shop-line px-3 py-2.5">
+              <label key={option.name} htmlFor={id} className="flex cursor-pointer items-start gap-3 rounded-[10px] border border-shop-line px-3 py-2.5 has-checked:border-shop-primary">
                 <input
                   id={id}
                   type="checkbox"
                   name={option.name}
                   value="1"
                   defaultChecked={notices[option.name]}
+                  aria-labelledby={`${id}-label`}
                   aria-describedby={`${id}-hint`}
                   className="mt-1 size-4 shrink-0 accent-shop-primary"
                 />
                 <span className="flex flex-col gap-0.5">
-                  <label htmlFor={id} className="text-sm font-semibold">
+                  <span id={`${id}-label`} className="text-sm font-semibold">
                     {option.label}
-                  </label>
+                  </span>
                   <span id={`${id}-hint`} className="text-xs text-shop-muted">
                     {option.hint}
                     {option.name === "offers" && notices.offers && offersSince ? ` ${format(text.noticesOffersSince, { date: offersSince })}` : null}
                   </span>
                 </span>
-              </div>
+              </label>
             )
           })}
         </fieldset>

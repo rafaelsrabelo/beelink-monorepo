@@ -84,3 +84,28 @@
   - os avisos da `cliente-j11` foram salvos pelo BFF, com as ofertas e a data;
   - o pedido nº 25 da loja-do-design, aceito pela dona, mandou "Loja do Design — pedido nº 25
     confirmado", de "Loja do Design", com o link para `/loja-do-design/conta/pedidos/25`.
+
+## Adendo da revisão (29/09)
+
+Dois revisores leram o ramo: um olhou correção, o outro regras e acessibilidade. O que entrou:
+
+- **Só recebe quem confirmou o e-mail da conta.** "Ter conta" era só ter `userId`, e uma conta existe
+  antes da confirmação. Qualquer um pode digitar o e-mail de outra pessoa no cadastro. O despachante
+  confere de novo na hora de enviar.
+- **A reserva tem um prazo próprio, de 10 minutos, separado do intervalo das novas tentativas.** Com a
+  reserva de 60 segundos, um envio mais lento que isso ia duas vezes.
+  - Uma falha devolve a linha antes do prazo, com 1, 2, 4 ou 8 minutos de espera.
+  - O SMTP ganhou timeouts bem menores que a reserva.
+  - Uma varredura não começa enquanto outra roda no mesmo processo.
+  - Depois da quinta falha, o e-mail é abandonado, com um aviso no log.
+- **Um aviso velho não chega depois de um novo.** Se uma mudança posterior do mesmo pedido já foi
+  avisada, a linha antiga é dada por encerrada sem envio.
+- **Índices:** um por pedido, para a cascata, e um parcial com o que ainda está devido. Isso deixa de
+  fora o enviado e o abandonado.
+- **O e-mail leva ao lugar exato de desligar o aviso** (`/conta/perfil#avisos`), num rodapé depois do
+  botão, e diz "desmarque e salve". A frase ficou "Seu pedido nº 25 em Loja do Design foi
+  confirmado."
+- **Uma sessão que terminou antes de salvar leva a Entrar** com "Sua sessão já tinha terminado, e nada
+  foi feito" e a volta para a própria seção. O mesmo vale para a Segurança (J11).
+- **O cartão inteiro de cada aviso marca a caixa,** e o nome acessível continua sendo o título.
+- **Um POST que não é formulário não desliga todos os avisos:** volta com erro, sem salvar.

@@ -21,7 +21,10 @@ CREATE TABLE "order_status_emails" (
 );
 
 -- CreateIndex
-CREATE INDEX "order_status_emails_sentAt_nextAttemptAt_idx" ON "order_status_emails"("sentAt", "nextAttemptAt");
+CREATE INDEX "order_status_emails_orderId_idx" ON "order_status_emails"("orderId");
+
+-- CreateIndex: what is still owed and may be tried again — nothing sent or given up.
+CREATE INDEX "order_status_emails_owed_idx" ON "order_status_emails"("nextAttemptAt") WHERE ("sentAt" IS NULL) AND (attempts < 5);
 
 -- AddForeignKey
 ALTER TABLE "order_status_emails" ADD CONSTRAINT "order_status_emails_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;

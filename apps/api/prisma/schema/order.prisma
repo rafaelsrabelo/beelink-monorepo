@@ -180,7 +180,9 @@ model OrderStatusEmail {
   sentAt        DateTime?
   createdAt     DateTime    @default(now())
 
-  /// The dispatcher's reading: what is still owed, oldest first.
-  @@index([sentAt, nextAttemptAt])
+  /// The order's own, for its cascade.
+  @@index([orderId])
+  /// The dispatcher's reading: what is still owed and may be tried again — nothing sent or given up.
+  @@index([nextAttemptAt], where: raw("(\"sentAt\" IS NULL) AND (attempts < 5)"), map: "order_status_emails_owed_idx")
   @@map("order_status_emails")
 }

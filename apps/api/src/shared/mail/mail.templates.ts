@@ -17,11 +17,12 @@ export function escapeHtml(value: string): string {
 }
 
 /**
- * `brand`, already escaped, heads the card: whose e-mail this is, when it is a shop's. The colours
- * are literals, not the design system's tokens: a mail client reads no CSS variables and no
- * stylesheet, only inline styles.
+ * `brand`, already escaped, heads the card: whose e-mail this is, when it is a shop's. `footer`,
+ * already HTML, closes it, after the button — the fine print is read last. The colours are literals,
+ * not the design system's tokens: a mail client reads no CSS variables and no stylesheet, only
+ * inline styles.
  */
-function layout(title: string, body: string, actionLabel: string, actionUrl: string, brand?: string): string {
+function layout(title: string, body: string, actionLabel: string, actionUrl: string, brand?: string, footer?: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
   <body style="margin:0;padding:24px;background:#f4f4f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#18181b">
@@ -34,6 +35,7 @@ function layout(title: string, body: string, actionLabel: string, actionUrl: str
           <a href="${actionUrl}" style="display:inline-block;background:#18181b;color:#fafafa;text-decoration:none;padding:12px 20px;border-radius:8px">${actionLabel}</a>
         </p>
         <p style="margin:0;font-size:13px;color:#71717a">Se o botão não funcionar, copie e cole este endereço no navegador:<br />${actionUrl}</p>
+        ${footer ? `<p style="margin:16px 0 0;font-size:13px;color:#71717a">${footer}</p>` : ''}
       </td></tr>
     </table>
   </body>
@@ -94,7 +96,7 @@ export interface OrderStatusContent {
 function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean): { subject: string; said: string } {
   switch (status) {
     case 'ACCEPTED':
-      return { subject: 'confirmado', said: 'foi confirmado pela loja' };
+      return { subject: 'confirmado', said: 'foi confirmado' };
     case 'OUT_FOR_DELIVERY':
       return pickup ? { subject: 'pronto para retirar', said: 'está pronto para retirar' } : { subject: 'saiu para entrega', said: 'saiu para entrega' };
     case 'DELIVERED':
@@ -104,21 +106,25 @@ function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean): { subject: s
   }
 }
 
-/** A customer's order moved: the shop's name on it, and the way to the order at the shop. */
-export function orderStatusChanged({ name, shopName, number, status, pickup }: OrderStatusContent, url: string): MailContent {
+/**
+ * A customer's order moved: the shop's name on it, the way to the order at the shop, and — last —
+ * the way to stop these notices, straight to the box that turns them off (`settingsUrl`).
+ */
+export function orderStatusChanged({ name, shopName, number, status, pickup }: OrderStatusContent, url: string, settingsUrl: string): MailContent {
   const greeting = `Olá, ${name}!`;
   const { subject, said } = orderMoveOf(status, pickup);
-  const line = `Seu pedido nº ${number} na loja ${shopName} ${said}.`;
+  const line = `Seu pedido nº ${number} em ${shopName} ${said}.`;
+  const why = 'Você recebe este aviso porque tem conta na loja. Para não receber mais, desmarque "Andamento dos pedidos" e salve';
   return {
     subject: `${shopName} — pedido nº ${number} ${subject}`,
-    text: `${greeting}\n\n${line}\n\nVeja o pedido:\n${url}\n\nVocê recebe este aviso porque tem conta na loja. Para não receber mais, desligue "Andamento dos pedidos" em Perfil e endereços.`,
+    text: `${greeting}\n\n${line}\n\nVeja o pedido:\n${url}\n\n${why}:\n${settingsUrl}`,
     html: layout(
       escapeHtml(greeting),
-      `<p style="margin:0">${escapeHtml(line)}</p>
-       <p style="margin:12px 0 0;font-size:13px;color:#71717a">Você recebe este aviso porque tem conta na loja. Para não receber mais, desligue "Andamento dos pedidos" em Perfil e endereços.</p>`,
+      `<p style="margin:0">${escapeHtml(line)}</p>`,
       'Ver pedido',
       url,
       escapeHtml(shopName),
+      `${escapeHtml(why)}: <a href="${settingsUrl}" style="color:#52525b">avisos da sua conta</a>.`,
     ),
   };
 }

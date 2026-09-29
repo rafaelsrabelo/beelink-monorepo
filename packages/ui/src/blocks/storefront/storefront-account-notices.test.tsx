@@ -1,5 +1,6 @@
 // Libs
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
 // Block
@@ -30,6 +31,13 @@ describe("StorefrontAccountNotices", () => {
     expect(screen.getByRole("checkbox", { name: "Favoritos" })).toHaveAccessibleDescription("Quando um favorito baixa de preço ou volta ao estoque.")
     expect(container.querySelector("form")).toHaveAttribute("action", "/loja/api/customer/avisos")
     expect(screen.getByRole("button", { name: "Salvar avisos" })).toBeInTheDocument()
+  })
+
+  it("ticks a box from anywhere on its card", async () => {
+    render(notices())
+
+    await userEvent.click(screen.getByText("Promoções e lançamentos desta loja."))
+    expect(screen.getByRole("checkbox", { name: "Ofertas e novidades" })).toBeChecked()
   })
 
   it("says when the shopper said yes to offers", () => {

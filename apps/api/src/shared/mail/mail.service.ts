@@ -35,7 +35,11 @@ export function addressOf(from: string): string {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private readonly transporter: Transporter = createTransport(env.SMTP_URL);
+  /**
+   * The timeouts are well under the order outbox's lease (`OrderStatusMailer`): a send that hangs
+   * gives up long before another sweep may claim the same e-mail and send it again.
+   */
+  private readonly transporter: Transporter = createTransport({ url: env.SMTP_URL, connectionTimeout: 30_000, greetingTimeout: 30_000, socketTimeout: 60_000 });
 
   /**
    * A shopper's links open their shop's own pages, bringing them back where they were going, and the
@@ -56,8 +60,8 @@ export class MailService {
    * A customer's order moved (BEELINK-151), from the shop by name, with the way to the order at the
    * shop. Answers whether it went: the outbox that asks tries again when it did not.
    */
-  async sendOrderStatus(to: string, content: OrderStatusContent, url: string): Promise<boolean> {
-    return this.send(to, orderStatusChanged(content, url), content.shopName);
+  async sendOrderStatus(to: string, content: OrderStatusContent, url: string, settingsUrl: string): Promise<boolean> {
+    return this.send(to, orderStatusChanged(content, url, settingsUrl), content.shopName);
   }
 
   /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */

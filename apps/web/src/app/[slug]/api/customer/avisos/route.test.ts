@@ -42,8 +42,23 @@ describe("the shopper's notices by e-mail", () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "AUTH_UNAUTHENTICATED" }, { status: 401 })))
     const signedOut = locationOf(await post(here, { cookie: "bl_shopper_access=old" }))
     expect(signedOut.pathname).toBe("/loja/entrar")
-    expect(signedOut.searchParams.get("voltar")).toBe("/loja/conta/perfil")
-    expect(signedOut.searchParams.get("erro")).toBe("AUTH_UNAUTHENTICATED")
+    expect(signedOut.searchParams.get("voltar")).toBe("/loja/conta/perfil#avisos")
+    expect(signedOut.searchParams.get("erro")).toBe("CUSTOMER_SESSION_ENDED")
+  })
+
+  it("saves nothing from a body that is not a form", async () => {
+    const fetched = vi.fn(async () => Response.json({}))
+    vi.stubGlobal("fetch", fetched)
+    const request = new NextRequest("http://localhost:3000/loja/api/customer/avisos", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "http://localhost:3000", cookie: "bl_shopper_access=a" },
+      body: JSON.stringify({ orders: false }),
+    })
+
+    const landing = locationOf(await POST(request, { params: Promise.resolve({ slug: "loja" }) }))
+
+    expect(fetched).not.toHaveBeenCalled()
+    expect(landing.searchParams.get("erro-avisos")).toBe("UNKNOWN")
   })
 
   it("answers only this shop's own form", async () => {

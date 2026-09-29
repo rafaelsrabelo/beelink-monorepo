@@ -64,22 +64,26 @@ describe("a shop's account e-mails", () => {
 describe("an order's move, told to its customer", () => {
   const base = { name: 'Bia', shopName: 'Mutante & Cia', number: 12, pickup: false };
   const url = 'http://localhost:3000/mutante/conta/pedidos/12';
+  const settings = 'http://localhost:3000/mutante/conta/perfil#avisos';
 
   it('names the move in the subject and the words, as the shop window reads a delivery or a pick-up', () => {
-    expect(orderStatusChanged({ ...base, status: 'ACCEPTED' }, url).subject).toBe('Mutante & Cia — pedido nº 12 confirmado');
-    expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY' }, url).text).toContain('saiu para entrega');
-    expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', pickup: true }, url).subject).toBe('Mutante & Cia — pedido nº 12 pronto para retirar');
-    expect(orderStatusChanged({ ...base, status: 'DELIVERED', pickup: true }, url).text).toContain('foi retirado na loja');
-    expect(orderStatusChanged({ ...base, status: 'CANCELLED' }, url).subject).toBe('Mutante & Cia — pedido nº 12 cancelado');
+    expect(orderStatusChanged({ ...base, status: 'ACCEPTED' }, url, settings).subject).toBe('Mutante & Cia — pedido nº 12 confirmado');
+    expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY' }, url, settings).text).toContain('saiu para entrega');
+    expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', pickup: true }, url, settings).subject).toBe('Mutante & Cia — pedido nº 12 pronto para retirar');
+    expect(orderStatusChanged({ ...base, status: 'DELIVERED', pickup: true }, url, settings).text).toContain('foi retirado na loja');
+    expect(orderStatusChanged({ ...base, status: 'CANCELLED' }, url, settings).subject).toBe('Mutante & Cia — pedido nº 12 cancelado');
   });
 
-  it("leads to the order at the shop, escapes the names, and says how to stop it", () => {
-    const mail = orderStatusChanged({ ...base, name: 'Bia <b>', status: 'DELIVERED' }, url);
+  it("leads to the order at the shop, escapes the names, and — last — how to stop it, with its own link", () => {
+    const mail = orderStatusChanged({ ...base, name: 'Bia <b>', status: 'ACCEPTED' }, url, settings);
 
+    expect(mail.text).toContain('Seu pedido nº 12 em Mutante & Cia foi confirmado.');
     expect(mail.html).toContain(`href="${url}"`);
     expect(mail.html).toContain('Olá, Bia &lt;b&gt;!');
-    expect(mail.html).toContain('loja Mutante &amp; Cia foi entregue.');
-    expect(mail.text).toContain('desligue "Andamento dos pedidos"');
+    expect(mail.html).toContain('em Mutante &amp; Cia foi confirmado.');
+    expect(mail.text).toMatch(/desmarque "Andamento dos pedidos" e salve:\n.*perfil#avisos$/);
+    // The fine print after the button, never before it.
+    expect(mail.html.indexOf(`href="${settings}"`)).toBeGreaterThan(mail.html.indexOf('Ver pedido'));
   });
 });
 
