@@ -48,6 +48,24 @@ describe("the shop's sign-in form", () => {
     expect(response.cookies.get("bl_access")).toBeUndefined()
   })
 
+  it("behind the proxy, takes the shop's own form and returns to the site the shopper is on", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(SESSION, { status: 200 })))
+
+    const request = new NextRequest("https://0.0.0.0:3000/loja/api/customer/entrar", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        origin: "https://link.beecoders.net",
+        "x-forwarded-host": "link.beecoders.net",
+      },
+      body: new URLSearchParams(form).toString(),
+    })
+    const response = await POST(request, { params: Promise.resolve({ slug: "loja", action: "entrar" }) })
+
+    expect(response.status).toBe(303)
+    expect(response.headers.get("location")).toBe("https://link.beecoders.net/loja/carrinho")
+  })
+
   it("comes back to the sign-in page with the refusal, the address kept", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 401, errorCode: "AUTH_INVALID_CREDENTIALS", message: "x" }, { status: 401 })))
 

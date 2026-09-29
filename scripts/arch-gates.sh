@@ -118,6 +118,12 @@ gate "web/no-web-storage" \
   "apps/web/src packages/ui/src" \
   "(localStorage|sessionStorage)"
 
+gate "web/no-bind-address-origin" \
+  "A route handler's request.url and nextUrl are the server's bind address behind Traefik (https://0.0.0.0:3000), not the site's — build on publicOriginOf() from src/lib/bff.ts (apps/web/AGENTS.md)." \
+  "apps/web/src/app" \
+  "(request|req)\.url([^A-Za-z_]|$)|nextUrl\.(origin|href|host|hostname)([^A-Za-z_]|$)" \
+  --exclude='*.test.ts'
+
 echo ""
 if [ -n "$failed" ]; then
   echo "── arch-gates: FAILED →${failed}"

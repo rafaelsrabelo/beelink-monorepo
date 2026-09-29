@@ -14,6 +14,21 @@ function errorBody(statusCode: number, errorCode: string, message: string): ApiE
 }
 
 /**
+ * The origin the browser addressed — never `request.url`'s. Next builds that one from the address
+ * the server binds, `0.0.0.0:3000` in the image so Traefik can reach it, and in production it reads
+ * `https://0.0.0.0:3000`: an origin check against it refuses every visitor, and a redirect built on
+ * it leaves the site. The host is the one the proxy was asked for, taken as Next's own Server
+ * Actions take it for their CSRF check; Next fills `x-forwarded-host` from `host` when no proxy did.
+ * Traefik overwrites the X-Forwarded-* a client sends, and a page on another site cannot set either.
+ */
+export function publicOriginOf(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()
+  const host = forwarded || request.headers.get("host") || request.nextUrl.host
+
+  return `${request.nextUrl.protocol}//${host}`
+}
+
+/**
  * Route handlers get none of the origin checking Server Actions have built in, and these ones hold
  * session cookies. A form posted from another site would otherwise reach them with the cookies
  * attached, so a cross-origin request is refused before anything else happens.
@@ -21,7 +36,7 @@ function errorBody(statusCode: number, errorCode: string, message: string): ApiE
 export function refuseForeignOrigin(request: NextRequest): NextResponse | null {
   const origin = request.headers.get("origin")
 
-  if (origin !== null && origin !== request.nextUrl.origin) {
+  if (origin !== null && origin !== publicOriginOf(request)) {
     return NextResponse.json(errorBody(403, "FORBIDDEN", "Cross-origin request refused"), { status: 403 })
   }
 

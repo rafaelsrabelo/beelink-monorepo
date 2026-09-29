@@ -6,7 +6,7 @@ import type { GoogleAuthorization } from "@harness-monorepo/contracts"
 
 // App
 import { callApi, isApiErrorBody } from "@/lib/api"
-import { clientIpOf } from "@/lib/bff"
+import { clientIpOf, publicOriginOf } from "@/lib/bff"
 import { setGoogleStateCookie } from "@/lib/customer-session-cookies"
 import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
 
@@ -22,7 +22,7 @@ import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
 export async function GET(request: NextRequest, { params }: RouteContext<"/api/storefront/[slug]/customer/google">) {
   const { slug } = await params
   // The segment arrives decoded, so `%2Fevil.example` is a "slug" whose home is another site.
-  if (!/^[a-z0-9-]+$/.test(slug)) return NextResponse.redirect(new URL("/", request.url), 303)
+  if (!/^[a-z0-9-]+$/.test(slug)) return NextResponse.redirect(new URL("/", publicOriginOf(request)), 303)
 
   const query = request.nextUrl.searchParams
   const back = safeBackOf(slug, query.get(BACK_KEY) ?? undefined)
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/api/s
 
   if (!response?.ok) {
     const body: unknown = await response?.json().catch(() => null)
-    const page = new URL(signIn, request.url)
+    const page = new URL(signIn, publicOriginOf(request))
     page.searchParams.set(BACK_KEY, back)
     page.searchParams.set("erro", isApiErrorBody(body) ? String(body.errorCode) : response?.status === 429 ? "RATE_LIMITED" : "UNKNOWN")
     return NextResponse.redirect(page, 303)
