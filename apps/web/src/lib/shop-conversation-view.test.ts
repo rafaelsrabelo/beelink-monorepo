@@ -28,7 +28,7 @@ describe("the conversations' tab", () => {
       total: 1,
       page: 1,
       pageSize: 20,
-      conversations: [{ order: { number: 18, status: "PREPARING", open: true }, customer: { id: "c", name: "Carla" }, lastMessage: { author: "SHOP", body: "Sai\namanhã", createdAt: at }, unread: 0 }],
+      conversations: [{ order: { number: 18, status: "PREPARING", fulfillment: "DELIVERY", open: true }, customer: { id: "c", name: "Carla" }, lastMessage: { kind: "MESSAGE", author: "SHOP", body: "Sai\namanhã", createdAt: at }, unread: 0 }],
     } as unknown as ShopConversationPage
 
     const [row] = shopConversationRowsOf(page, { filter: "UNREAD", q: "", order: null, page: 1 }, "loja", context)
@@ -38,12 +38,12 @@ describe("the conversations' tab", () => {
 
   it("says sent or read under the shop's last message, and whether it can be answered", () => {
     const conversation = {
-      order: { number: 18, status: "PREPARING", open: true },
+      order: { number: 18, status: "PREPARING", fulfillment: "DELIVERY", open: true },
       customer: { id: "c", name: "Carla" },
       unread: 0,
       messages: [
-        { id: "1", author: "CUSTOMER", body: "Oi", createdAt: at, readAt: at },
-        { id: "2", author: "SHOP", body: "Olá", createdAt: at, readAt: at },
+        { kind: "MESSAGE", id: "1", author: "CUSTOMER", body: "Oi", createdAt: at, readAt: at },
+        { kind: "MESSAGE", id: "2", author: "SHOP", body: "Olá", createdAt: at, readAt: at },
       ],
     } as ShopConversation
 
@@ -55,5 +55,24 @@ describe("the conversations' tab", () => {
     expect(shopConversationStateOf({ ...conversation, order: { ...conversation.order, open: false } })).toBe("closed")
     expect(shopConversationStateOf({ ...conversation, messages: [] })).toBe("empty")
     expect(shopConversationStateOf({ ...conversation, messages: [], order: { ...conversation.order, open: false } })).toBe("none")
+  })
+
+  /** BEELINK-236: what the customer was told, in the shop's words; a conversation of notices alone takes the shop's first message. */
+  it("draws the order's moves as notices, and a conversation of notices alone can be written in", () => {
+    const conversation = {
+      order: { number: 18, status: "ACCEPTED", fulfillment: "DELIVERY", open: true },
+      customer: { id: "c", name: "Carla" },
+      unread: 0,
+      messages: [
+        { kind: "STATUS", id: "1", status: "RECEIVED", createdAt: at, readAt: at },
+        { kind: "STATUS", id: "2", status: "ACCEPTED", createdAt: at, readAt: null },
+      ],
+    } as ShopConversation
+
+    expect(shopConversationLinesOf(conversation, context).map((line) => [line.notice, line.mine, line.body])).toEqual([
+      [true, false, "Pedido recebido"],
+      [true, false, "Pedido aceito"],
+    ])
+    expect(shopConversationStateOf(conversation)).toBe("open")
   })
 })

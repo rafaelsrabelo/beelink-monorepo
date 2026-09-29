@@ -43,7 +43,18 @@ describe("the panel's conversations", () => {
     expect(screen.queryByText("resposta")).toBeNull()
 
     rerender(<ConversationThread customer="Carla" order="Pedido nº 18" lines={[]} state="empty" reply={<p>resposta</p>} />)
-    expect(screen.getByText(/ainda não escreveu/)).toBeInTheDocument()
+    expect(screen.getByText(/não tem conta na loja/)).toBeInTheDocument()
+  })
+
+  /** BEELINK-236: what the customer was told of the order's move, belonging to neither side. */
+  it("draws a status notice in the middle, as neither side's message", () => {
+    const notice: ConversationLine = { id: "n", mine: false, notice: true, body: "Pedido aceito", when: "10:05" }
+    render(<ConversationThread customer="Carla" order="Pedido nº 18" lines={[notice, ...lines]} state="open" reply={<p>resposta</p>} />)
+
+    const item = screen.getAllByRole("listitem")[0]!
+    expect(item).toHaveTextContent("Pedido aceito10:05")
+    expect(item).not.toHaveTextContent("Cliente:")
+    expect(item).toHaveClass("self-center")
   })
 
   it("answers on Enter, keeps the line on Shift+Enter, and says why an answer failed", async () => {

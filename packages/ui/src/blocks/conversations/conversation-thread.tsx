@@ -21,6 +21,8 @@ export interface ConversationLine {
   id: string
   /** Written by the shop; the customer's are drawn on the other side. */
   mine: boolean
+  /** What the customer was told of the order moving (BEELINK-236): drawn in the middle, belonging to neither side. */
+  notice?: boolean
   body: string
   when: string
   /** "Enviada" or "Lida", under the shop's last message only. */
@@ -101,7 +103,13 @@ export function ConversationThread({ customer, order, orderHref, customerHref, b
         // A log: what arrives is read out; focusable, so a keyboard scrolls the history.
         <div ref={scroller} role="log" tabIndex={0} aria-label={text.title} className="focus-visible:ring-ring min-h-0 flex-1 overflow-y-auto rounded-md outline-none focus-visible:ring-2">
           <ol className="flex flex-col gap-2 py-1">
-            {lines.map((line) => (
+            {lines.map((line) =>
+              line.notice ? (
+                <li key={line.id} className="flex flex-col items-center gap-0.5 self-center py-1 text-center">
+                  <p className="bg-muted rounded-full px-3 py-1 text-xs font-medium">{line.body}</p>
+                  <span className="text-muted-foreground text-[11px]">{line.when}</span>
+                </li>
+              ) : (
               <li key={line.id} className={cn("flex max-w-[85%] flex-col gap-1", line.mine ? "items-end self-end" : "items-start self-start")}>
                 <p className={cn("rounded-2xl px-3.5 py-2 text-sm break-words whitespace-pre-wrap", line.mine ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted rounded-bl-md")}>
                   <span className="sr-only">{line.mine ? text.fromShop : text.fromCustomer}: </span>
@@ -112,7 +120,8 @@ export function ConversationThread({ customer, order, orderHref, customerHref, b
                   {line.seen ? ` · ${line.seen}` : null}
                 </span>
               </li>
-            ))}
+              ),
+            )}
           </ol>
         </div>
       )}

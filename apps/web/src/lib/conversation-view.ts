@@ -9,6 +9,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { momentOf } from "./order-card-view"
+import { statusNoticeKeyOf } from "./status-notice"
 import type { StorefrontRoutes } from "./storefront-routes"
 
 // One limit for both sides of a conversation: the shopper's here, the shop's in the panel.
@@ -24,11 +25,16 @@ export function conversationRowsOf(summaries: readonly CustomerConversationSumma
   const text = messages.storefront
   return summaries.map(({ order, lastMessage, unread }) => {
     // One line in a list: a message's own line breaks would only be cut.
-    const body = lastMessage.body.replace(/\s+/g, " ").trim()
+    const body = lastMessage.kind === "MESSAGE" ? lastMessage.body.replace(/\s+/g, " ").trim() : ""
     return {
       number: order.number,
       title: format(text.orderNumber, { number: String(order.number) }),
-      preview: lastMessage.author === "CUSTOMER" ? format(text.conversationYouSaid, { body }) : body,
+      preview:
+        lastMessage.kind === "STATUS"
+          ? text.conversationNotices[statusNoticeKeyOf(lastMessage.status, order.fulfillment)]
+          : lastMessage.author === "CUSTOMER"
+            ? format(text.conversationYouSaid, { body })
+            : body,
       when: momentOf(lastMessage.createdAt, locale),
       unread,
       closed: !order.open,
@@ -37,20 +43,30 @@ export function conversationRowsOf(summaries: readonly CustomerConversationSumma
   })
 }
 
-/** Every message, oldest first; the shopper's last one says whether the shop has read it. */
+/** Every message and notice, oldest first; the shopper's last message says whether the shop has read it. */
 export function conversationLinesOf(conversation: CustomerConversation, { locale, messages }: ConversationContext): StorefrontConversationLine[] {
   const text = messages.storefront
-  const lastMine = conversation.messages.findLastIndex((message) => message.author === "CUSTOMER")
-  return conversation.messages.map((message, index) => ({
-    id: message.id,
-    mine: message.author === "CUSTOMER",
-    body: message.body,
-    when: momentOf(message.createdAt, locale),
-    seen: index === lastMine ? (message.readAt ? text.conversationRead : text.conversationSent) : null,
-  }))
+  const lastMine = conversation.messages.findLastIndex((message) => message.kind === "MESSAGE" && message.author === "CUSTOMER")
+  return conversation.messages.map((message, index) =>
+    message.kind === "STATUS"
+      ? {
+          id: message.id,
+          mine: false,
+          notice: true,
+          body: text.conversationNotices[statusNoticeKeyOf(message.status, conversation.order.fulfillment)],
+          when: momentOf(message.createdAt, locale),
+        }
+      : {
+          id: message.id,
+          mine: message.author === "CUSTOMER",
+          body: message.body,
+          when: momentOf(message.createdAt, locale),
+          seen: index === lastMine ? (message.readAt ? text.conversationRead : text.conversationSent) : null,
+        },
+  )
 }
 
-/** What the header's balloon counts: the shop's messages not read yet, across every conversation. */
+/** What the header's balloon counts: the shop's messages and the order's moves not read yet, across every conversation. */
 export function unreadOf(summaries: readonly CustomerConversationSummary[] | undefined): number {
   return (summaries ?? []).reduce((total, summary) => total + summary.unread, 0)
 }
