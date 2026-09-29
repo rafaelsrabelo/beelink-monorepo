@@ -20,12 +20,13 @@ import type { AuthSession, CustomerProfile } from '@harness-monorepo/contracts';
 // App
 import { env } from '../../shared/config/env.js';
 import { Public } from '../auth/auth.decorators.js';
-import { EmailDto, LoginDto, LogoutDto, RefreshDto, RegisterDto } from '../auth/dto/auth.dto.js';
+import { LoginDto, LogoutDto, RefreshDto } from '../auth/dto/auth.dto.js';
 import { AuthSessionResponse } from '../auth/dto/auth.response.js';
 import { SessionService } from '../auth/session.service.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from './customer-auth.guard.js';
 import { CurrentCustomer } from './customer.decorators.js';
 import { CustomersService } from './customers.service.js';
+import { CustomerEmailDto, CustomerRegisterDto } from './dto/customer-link.dto.js';
 import { CustomerProfileResponse, UpdateCustomerProfileDto } from './dto/customer.dto.js';
 
 /** Keyed by IP, as the panel's door is: the same accounts, the same guessing to slow down. */
@@ -51,7 +52,7 @@ export class CustomersController {
   @ApiOperation({ summary: 'Open an account from this shop and send the verification e-mail — 202 for any address' })
   @ApiAcceptedResponse({ description: 'Answered alike whether the address is new or already has an account' })
   @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
-  async register(@Param('storeSlug') storeSlug: string, @Body() dto: RegisterDto): Promise<void> {
+  async register(@Param('storeSlug') storeSlug: string, @Body() dto: CustomerRegisterDto): Promise<void> {
     await this.customers.register(storeSlug, dto);
   }
 
@@ -59,16 +60,16 @@ export class CustomersController {
   @HttpCode(HttpStatus.ACCEPTED)
   @RouteConfig({ rateLimit })
   @ApiOperation({ summary: 'Send the verification e-mail again, back to this shop — 202 for any address' })
-  async resendVerification(@Param('storeSlug') storeSlug: string, @Body() { email }: EmailDto): Promise<void> {
-    await this.customers.resendVerification(storeSlug, email);
+  async resendVerification(@Param('storeSlug') storeSlug: string, @Body() { email, returnTo }: CustomerEmailDto): Promise<void> {
+    await this.customers.resendVerification(storeSlug, email, returnTo);
   }
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.ACCEPTED)
   @RouteConfig({ rateLimit })
   @ApiOperation({ summary: "E-mail a link to replace the password of this shop's account — 202 for any address" })
-  async forgotPassword(@Param('storeSlug') storeSlug: string, @Body() { email }: EmailDto): Promise<void> {
-    await this.customers.forgotPassword(storeSlug, email);
+  async forgotPassword(@Param('storeSlug') storeSlug: string, @Body() { email, returnTo }: CustomerEmailDto): Promise<void> {
+    await this.customers.forgotPassword(storeSlug, email, returnTo);
   }
 
   @Post('login')

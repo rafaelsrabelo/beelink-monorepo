@@ -1,4 +1,4 @@
-import type { AuthSession } from "./auth.js";
+import type { AuthSession, EmailPayload, RegisterPayload } from "./auth.js";
 
 /**
  * A shopper's own door into a shop (docs/product/README.md, "Accounts" and "Customers").
@@ -56,6 +56,20 @@ export interface SaveCustomerAddressPayload {
   /** Two letters; upper-cased when kept. */
   state: string;
   isDefault?: boolean;
+}
+
+/**
+ * Signing up at a shop: the panel's own payload, and where the confirmation link brings the shopper
+ * back once they confirm — a path inside the shop, where they were going; anything else is the
+ * shop's front.
+ */
+export interface CustomerRegisterPayload extends RegisterPayload {
+  returnTo?: string;
+}
+
+/** Asking a shop for a new link, confirmation or password: the e-mail, and where the link brings the shopper back. */
+export interface CustomerEmailPayload extends EmailPayload {
+  returnTo?: string;
 }
 
 /** What a signed-in shopper sees of themselves at one shop: that shop's record, and the account's e-mail. */

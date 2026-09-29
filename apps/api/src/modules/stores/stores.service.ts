@@ -2,7 +2,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { PublicStore, Store, StoreAddress, StoreErrorCode } from '@harness-monorepo/contracts';
+import type { PublicStore, RouteVocabulary, Store, StoreAddress, StoreErrorCode } from '@harness-monorepo/contracts';
 import type { CreateStoreDto, UpdateStoreDto } from './dto/store.dto.js';
 import type { StoreRow } from './store.mapper.js';
 
@@ -232,6 +232,15 @@ export class StoresService {
    * they are served is the one the shopkeeper published. It selects the id alone for the same
    * reason `ownedStoreId` selects two columns — this runs on every storefront read.
    */
+  /** A shop by its slug, as its accounts' e-mails name it and spell its links; 404 when there is none. */
+  async publicStoreNaming(slug: string): Promise<{ id: string; name: string; routeVocabulary: RouteVocabulary }> {
+    const row = await this.prisma.store.findUnique({ where: { slug }, select: { id: true, name: true, routeVocabulary: true } });
+
+    if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
+
+    return row;
+  }
+
   async publicStoreId(slug: string): Promise<string> {
     const row = await this.prisma.store.findUnique({ where: { slug }, select: { id: true } });
 

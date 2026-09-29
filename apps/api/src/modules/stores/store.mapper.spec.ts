@@ -105,6 +105,8 @@ describe('toPublicStore', () => {
       search: 'busca',
       cart: 'carrinho',
       signIn: 'entrar',
+      verifyEmail: 'confirmar-email',
+      resetPassword: 'nova-senha',
       account: 'conta',
       accountTabs: { orders: 'pedidos', favorites: 'favoritos', reviews: 'avaliacoes', profile: 'perfil', messages: 'conversas' },
     });
@@ -119,6 +121,8 @@ describe('toPublicStore', () => {
       search: 'search',
       cart: 'cart',
       signIn: 'login',
+      verifyEmail: 'verify-email',
+      resetPassword: 'reset-password',
       account: 'account',
       accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', profile: 'profile', messages: 'messages' },
     });

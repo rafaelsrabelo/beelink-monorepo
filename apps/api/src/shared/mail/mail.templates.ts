@@ -6,11 +6,9 @@ export interface MailContent {
 }
 
 /**
- * Text from a stranger, made safe to sit inside HTML.
- *
- * The two templates before this one interpolate raw, and could: they only ever carried the
- * account holder's own name. A lead is what a visitor typed, and `<script>` in a message field
- * is a message field the owner's mail client must not run.
+ * Text from a stranger, made safe to sit inside HTML. A lead is what a visitor typed, a shopper's
+ * name is what anyone signing up at a shop typed, a shop's name what its owner did: `<script>` in
+ * any of them is text the reader's mail client must not run.
  */
 export function escapeHtml(value: string): string {
   const escaped: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -18,12 +16,14 @@ export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => escaped[char] ?? char);
 }
 
-function layout(title: string, body: string, actionLabel: string, actionUrl: string): string {
+/** `brand`, already escaped, heads the card: whose e-mail this is, when it is a shop's. */
+function layout(title: string, body: string, actionLabel: string, actionUrl: string, brand?: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
   <body style="margin:0;padding:24px;background:#f4f4f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#18181b">
     <table role="presentation" style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px">
       <tr><td>
+        ${brand ? `<p style="margin:0 0 16px;font-size:14px;font-weight:700;color:#52525b">${brand}</p>` : ''}
         <h1 style="margin:0 0 16px;font-size:20px">${title}</h1>
         ${body}
         <p style="margin:24px 0">
@@ -36,32 +36,40 @@ function layout(title: string, body: string, actionLabel: string, actionUrl: str
 </html>`;
 }
 
-export function emailVerification(name: string, url: string, hours: number): MailContent {
+/**
+ * A shop's account e-mails name the shop — in the subject, atop the card and in the words — and a
+ * shopkeeper's name nobody (BEELINK-149). The names are what someone typed: escaped for the HTML.
+ */
+export function emailVerification(name: string, url: string, hours: number, shopName?: string): MailContent {
   const greeting = `Olá, ${name}!`;
+  const account = shopName ? `sua conta na ${shopName}` : 'sua conta';
   return {
-    subject: 'Confirme seu e-mail',
-    text: `${greeting}\n\nConfirme seu e-mail para ativar sua conta:\n${url}\n\nO link vale por ${hours} horas e só pode ser usado uma vez.\nSe não foi você quem criou a conta, ignore esta mensagem.`,
+    subject: shopName ? `${shopName} — confirme seu e-mail` : 'Confirme seu e-mail',
+    text: `${greeting}\n\nConfirme seu e-mail para ativar ${account}:\n${url}\n\nO link vale por ${hours} horas e só pode ser usado uma vez.\nSe não foi você quem criou a conta, ignore esta mensagem.`,
     html: layout(
-      greeting,
-      `<p style="margin:0">Confirme seu e-mail para ativar sua conta. O link vale por ${hours} horas e só pode ser usado uma vez.</p>
+      escapeHtml(greeting),
+      `<p style="margin:0">Confirme seu e-mail para ativar ${escapeHtml(account)}. O link vale por ${hours} horas e só pode ser usado uma vez.</p>
        <p style="margin:12px 0 0;font-size:13px;color:#71717a">Se não foi você quem criou a conta, ignore esta mensagem.</p>`,
       'Confirmar e-mail',
       url,
+      shopName ? escapeHtml(shopName) : undefined,
     ),
   };
 }
 
-export function passwordReset(name: string, url: string, minutes: number): MailContent {
+export function passwordReset(name: string, url: string, minutes: number, shopName?: string): MailContent {
   const greeting = `Olá, ${name}!`;
+  const account = shopName ? `sua conta na ${shopName}` : 'sua conta';
   return {
-    subject: 'Redefinir sua senha',
-    text: `${greeting}\n\nUse este link para criar uma nova senha:\n${url}\n\nO link vale por ${minutes} minutos e só pode ser usado uma vez.\nSe não foi você quem pediu, ignore esta mensagem: sua senha continua a mesma.`,
+    subject: shopName ? `${shopName} — crie uma nova senha` : 'Redefinir sua senha',
+    text: `${greeting}\n\nUse este link para criar uma nova senha para ${account}:\n${url}\n\nO link vale por ${minutes} minutos e só pode ser usado uma vez.\nSe não foi você quem pediu, ignore esta mensagem: sua senha continua a mesma.`,
     html: layout(
-      greeting,
-      `<p style="margin:0">Use o botão abaixo para criar uma nova senha. O link vale por ${minutes} minutos e só pode ser usado uma vez.</p>
+      escapeHtml(greeting),
+      `<p style="margin:0">Use o botão abaixo para criar uma nova senha para ${escapeHtml(account)}. O link vale por ${minutes} minutos e só pode ser usado uma vez.</p>
        <p style="margin:12px 0 0;font-size:13px;color:#71717a">Se não foi você quem pediu, ignore esta mensagem: sua senha continua a mesma.</p>`,
       'Criar nova senha',
       url,
+      shopName ? escapeHtml(shopName) : undefined,
     ),
   };
 }

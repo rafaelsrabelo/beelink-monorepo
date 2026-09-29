@@ -9,6 +9,7 @@ import type { Transporter } from 'nodemailer';
 import type { Lead } from '@harness-monorepo/contracts';
 
 // App
+import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
 import { emailVerification, leadReceived, passwordReset } from './mail.templates.js';
@@ -21,25 +22,34 @@ export interface LeadReceivedMail {
   lead: Lead;
 }
 
+/** A link to one of the shop's pages, with its token and where to go back to once done. */
+function shopLinkOf(path: string, token: string, returnTo: string): string {
+  return `${env.WEB_URL}${path}?token=${encodeURIComponent(token)}&voltar=${encodeURIComponent(returnTo)}`;
+}
+
+/** The address alone out of `Name <address>`, or the whole value when it is just an address. */
+export function addressOf(from: string): string {
+  return /<([^<>]+)>\s*$/.exec(from)?.[1]?.trim() ?? from.trim();
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly transporter: Transporter = createTransport(env.SMTP_URL);
 
   /**
-   * `continuePath` is where the web sends the person once verified — or once the new password is
-   * set: a shopper goes back to the shop their account belongs to, not to the panel's front door.
+   * A shopper's links open their shop's own pages, bringing them back where they were going, and the
+   * e-mail comes from the shop by name (BEELINK-149): a shop's customer never lands on the panel.
+   * A shopkeeper's open the panel's.
    */
-  async sendEmailVerification(to: string, name: string, token: string, continuePath?: string): Promise<void> {
-    const back = continuePath ? `&voltar=${encodeURIComponent(continuePath)}` : '';
-    const url = `${env.WEB_URL}/verify-email?token=${encodeURIComponent(token)}${back}`;
-    await this.send(to, emailVerification(name, url, EMAIL_VERIFICATION_TTL_HOURS));
+  async sendEmailVerification(to: string, name: string, token: string, shop?: AccountShop): Promise<void> {
+    const url = shop ? shopLinkOf(shop.verifyPath, token, shop.returnTo) : `${env.WEB_URL}/verify-email?token=${encodeURIComponent(token)}`;
+    await this.send(to, emailVerification(name, url, EMAIL_VERIFICATION_TTL_HOURS, shop?.name), shop?.name);
   }
 
-  async sendPasswordReset(to: string, name: string, token: string, continuePath?: string): Promise<void> {
-    const back = continuePath ? `&voltar=${encodeURIComponent(continuePath)}` : '';
-    const url = `${env.WEB_URL}/reset-password?token=${encodeURIComponent(token)}${back}`;
-    await this.send(to, passwordReset(name, url, PASSWORD_RESET_TTL_MINUTES));
+  async sendPasswordReset(to: string, name: string, token: string, shop?: AccountShop): Promise<void> {
+    const url = shop ? shopLinkOf(shop.resetPath, token, shop.returnTo) : `${env.WEB_URL}/reset-password?token=${encodeURIComponent(token)}`;
+    await this.send(to, passwordReset(name, url, PASSWORD_RESET_TTL_MINUTES, shop?.name), shop?.name);
   }
 
   /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */
@@ -59,9 +69,11 @@ export class MailService {
    * A failed send never fails the request: the caller has already answered 202 or created the
    * account, and every one of these e-mails can be asked for again. The link is never logged.
    */
-  private async send(to: string, { subject, text, html }: { subject: string; text: string; html: string }): Promise<void> {
+  private async send(to: string, { subject, text, html }: { subject: string; text: string; html: string }, senderName?: string): Promise<void> {
+    // A shop's e-mail goes out under the shop's name, from the product's own address.
+    const from = senderName ? { name: senderName, address: addressOf(env.MAIL_FROM) } : env.MAIL_FROM;
     try {
-      await this.transporter.sendMail({ from: env.MAIL_FROM, to, subject, text, html });
+      await this.transporter.sendMail({ from, to, subject, text, html });
     } catch (error) {
       this.logger.error({ err: error, subject }, 'Could not send e-mail');
     }

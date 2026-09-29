@@ -12,7 +12,7 @@ import { EmailTokenPurpose } from '../../generated/prisma/enums.js';
 import type { UserModel } from '../../generated/prisma/models.js';
 import { MailService } from '../../shared/mail/mail.service.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { PANEL_ACCOUNTS, type AccountScope } from './account-scope.js';
+import { PANEL_ACCOUNTS, type AccountScope, type AccountShop } from './account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from './auth.constants.js';
 import { createOpaqueToken } from './auth.tokens.js';
 import type { LoginDto, RegisterDto } from './dto/auth.dto.js';
@@ -43,7 +43,7 @@ export class AuthService {
 
     try {
       const user = await this.prisma.user.create({ data: { name, email, passwordHash, storeId: scope.storeId } });
-      await this.sendVerification(user.id, user.email, user.name, scope.continuePath);
+      await this.sendVerification(user.id, user.email, user.name, scope.shop);
       return toUser(user);
     } catch (error) {
       // P2002: the e-mail is unique within the scope. Catching it, rather than checking first,
@@ -69,7 +69,7 @@ export class AuthService {
     const user = await this.accountOf(email, scope);
     if (!user || user.emailVerifiedAt) return;
 
-    await this.sendVerification(user.id, user.email, user.name, scope.continuePath);
+    await this.sendVerification(user.id, user.email, user.name, scope.shop);
   }
 
   /** The panel's sign-in: bee-link's accounts only, so a shop's account never opens the panel. */
@@ -116,7 +116,7 @@ export class AuthService {
       EmailTokenPurpose.RESET_PASSWORD,
       PASSWORD_RESET_TTL_MINUTES * MINUTE_MS,
     );
-    await this.mail.sendPasswordReset(user.email, user.name, token, scope.continuePath);
+    await this.mail.sendPasswordReset(user.email, user.name, token, scope.shop);
   }
 
   async resetPassword(token: string, password: string): Promise<void> {
@@ -133,12 +133,12 @@ export class AuthService {
     return this.prisma.user.findFirst({ where: { email, storeId } });
   }
 
-  private async sendVerification(userId: string, email: string, name: string, continuePath?: string): Promise<void> {
+  private async sendVerification(userId: string, email: string, name: string, shop?: AccountShop): Promise<void> {
     const token = await this.emailTokens.issue(
       userId,
       EmailTokenPurpose.VERIFY_EMAIL,
       EMAIL_VERIFICATION_TTL_HOURS * HOUR_MS,
     );
-    await this.mail.sendEmailVerification(email, name, token, continuePath);
+    await this.mail.sendEmailVerification(email, name, token, shop);
   }
 }
