@@ -14,6 +14,7 @@ import { settleCancellation } from './order-cancellation.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
 import { isOpen } from '../conversations/conversations.constants.js';
+import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 
 type Tx = Prisma.TransactionClient;
@@ -140,6 +141,8 @@ export class OrdersService {
         include: ORDER_INCLUDE,
       });
       if (status === 'CANCELLED') await settleCancellation(tx, current);
+      // Told to the customer in the conversation, before a move that closes it: the last line is why.
+      await noteOrderStatus(tx, { order: current, status, at: new Date(), seen: false });
       const conversation = await tx.orderConversation.count({ where: { orderId: current.id } });
       return { order, customerId: current.customerId, closes: conversation > 0 && isOpen(current.status) && !isOpen(status) };
     });

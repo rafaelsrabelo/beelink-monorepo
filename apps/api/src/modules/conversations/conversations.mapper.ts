@@ -5,6 +5,7 @@ import type {
   ConversationOrder,
   CustomerConversation,
   CustomerConversationSummary,
+  OrderFulfillment,
   OrderStatus,
   ShopConversation,
   ShopConversationSummary,
@@ -12,32 +13,40 @@ import type {
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
-import { isOpen } from './conversations.constants.js';
+import { isOpen, UNREAD_AUTHORS, type ConversationReader } from './conversations.constants.js';
 
 type MessageRow = Prisma.OrderMessageGetPayload<object>;
 
-/** A message as both sides read it: never the account that wrote it. */
+/** The head a conversation is read with: enough of the order to word it. */
+interface OrderHeadRow {
+  number: number;
+  status: OrderStatus;
+  fulfillment: OrderFulfillment;
+}
+
+/** A message as both sides read it: never the account that wrote it. A notice is its status alone. */
 export function toMessage(row: MessageRow): ConversationMessage {
-  return { id: row.id, author: row.author, body: row.body, createdAt: row.createdAt.toISOString(), readAt: row.readAt?.toISOString() ?? null };
+  const readAt = row.readAt?.toISOString() ?? null;
+  const createdAt = row.createdAt.toISOString();
+  // The CHECK on the table holds a notice's status; the fallback only keeps the type honest.
+  if (row.author === 'SYSTEM') return { kind: 'STATUS', id: row.id, status: row.status ?? 'RECEIVED', createdAt, readAt };
+  return { kind: 'MESSAGE', id: row.id, author: row.author, body: row.body, createdAt, readAt };
 }
 
-export function toOrderHead(order: { number: number; status: OrderStatus }): ConversationOrder {
-  return { number: order.number, status: order.status, open: isOpen(order.status) };
+export function toOrderHead(order: OrderHeadRow): ConversationOrder {
+  return { number: order.number, status: order.status, fulfillment: order.fulfillment, open: isOpen(order.status) };
 }
 
-/** Unread, from where the reader sits: the other side's messages they have not read. */
-function unreadOf(messages: readonly MessageRow[], reader: 'CUSTOMER' | 'SHOP'): number {
-  return messages.filter((message) => message.author !== reader && message.readAt === null).length;
+/** Unread, from where the reader sits: what is theirs to read and they have not. */
+function unreadOf(messages: readonly MessageRow[], reader: ConversationReader): number {
+  return messages.filter((message) => UNREAD_AUTHORS[reader].includes(message.author) && message.readAt === null).length;
 }
 
-export function toCustomerConversation(order: { number: number; status: OrderStatus }, messages: readonly MessageRow[]): CustomerConversation {
+export function toCustomerConversation(order: OrderHeadRow, messages: readonly MessageRow[]): CustomerConversation {
   return { order: toOrderHead(order), messages: messages.map(toMessage), unread: unreadOf(messages, 'CUSTOMER') };
 }
 
-export function toShopConversation(
-  order: { number: number; status: OrderStatus; customer: { id: string; name: string } },
-  messages: readonly MessageRow[],
-): ShopConversation {
+export function toShopConversation(order: OrderHeadRow & { customer: { id: string; name: string } }, messages: readonly MessageRow[]): ShopConversation {
   return {
     order: toOrderHead(order),
     customer: { id: order.customer.id, name: order.customer.name },
@@ -50,7 +59,7 @@ export function toShopConversation(
 export const summarySelect = {
   id: true,
   lastMessageAt: true,
-  order: { select: { number: true, status: true, customer: { select: { id: true, name: true } } } },
+  order: { select: { number: true, status: true, fulfillment: true, customer: { select: { id: true, name: true } } } },
 } as const satisfies Prisma.OrderConversationSelect;
 
 export type SummaryRow = Prisma.OrderConversationGetPayload<{ select: typeof summarySelect }>;
@@ -58,13 +67,16 @@ export type SummaryRow = Prisma.OrderConversationGetPayload<{ select: typeof sum
 /** A conversation's last message, as the list query reads it. */
 export interface LastMessageRow {
   conversationId: string;
-  author: 'CUSTOMER' | 'SHOP';
+  author: 'CUSTOMER' | 'SHOP' | 'SYSTEM';
   body: string;
+  status: OrderStatus | null;
   createdAt: Date;
 }
 
 function toLastMessage(row: LastMessageRow): ConversationLastMessage {
-  return { author: row.author, body: row.body, createdAt: row.createdAt.toISOString() };
+  const createdAt = row.createdAt.toISOString();
+  if (row.author === 'SYSTEM') return { kind: 'STATUS', status: row.status ?? 'RECEIVED', createdAt };
+  return { kind: 'MESSAGE', author: row.author, body: row.body, createdAt };
 }
 
 export function toCustomerSummary(row: SummaryRow, last: LastMessageRow, unread: number): CustomerConversationSummary {
