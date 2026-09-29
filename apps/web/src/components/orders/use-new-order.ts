@@ -87,7 +87,7 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     setChosen(product)
     // Read fresh: the price on the line is the one the API is about to charge, not a cached one.
     const read = await queryClient
-      .fetchQuery({ queryKey: catalogKeys.product(slug, product.id), queryFn: () => fetchProduct(slug, product.id), staleTime: 0 })
+      .fetchQuery({ queryKey: catalogKeys.product(slug, product.id), queryFn: () => fetchProduct(slug, product.id), staleTime: 0, retry: false })
       .catch(() => null)
     if (choosing.current !== product.id) return
     const variants = read ? variantOptionsOf(read) : []

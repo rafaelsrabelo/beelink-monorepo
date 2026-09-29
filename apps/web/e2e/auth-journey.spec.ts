@@ -69,7 +69,8 @@ test.describe("a person's first day", () => {
       await expect(page).toHaveURL(/\/login$/)
 
       await page.goto("/dashboard")
-      await expect(page).toHaveURL(/\/login$/)
+      // Signed out, and asked to sign in again to come back to the page (BEELINK-169).
+      await expect(page).toHaveURL(/\/login\?voltar=%2Fdashboard$/)
     })
   })
 
@@ -121,7 +122,7 @@ test.describe("a person's first day", () => {
       await context.addCookies(signedInCookies)
       await page.goto("/dashboard")
 
-      await expect(page).toHaveURL(/\/login$/)
+      await expect(page).toHaveURL(/\/login(\?|$)/)
     })
 
     await test.step("the new password works", async () => {

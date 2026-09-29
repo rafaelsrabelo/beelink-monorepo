@@ -13,4 +13,12 @@ describe("GET /api/session/expired", () => {
     expect(response.cookies.get("bl_access")?.value).toBe("")
     expect(response.cookies.get("bl_refresh")?.value).toBe("")
   })
+
+  it("keeps the page to come back to, and only a page of the panel", () => {
+    const back = GET(new NextRequest("http://localhost:3000/api/session/expired?voltar=%2Fadmin%2Floja%2Forders"))
+    expect(back.headers.get("location")).toBe("http://localhost:3000/login?voltar=%2Fadmin%2Floja%2Forders")
+
+    const elsewhere = GET(new NextRequest("http://localhost:3000/api/session/expired?voltar=https%3A%2F%2Fevil.example"))
+    expect(elsewhere.headers.get("location")).toBe("http://localhost:3000/login")
+  })
 })

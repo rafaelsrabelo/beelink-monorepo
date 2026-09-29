@@ -2,6 +2,9 @@
 import type { AuthSession } from "@harness-monorepo/contracts"
 import type { NextResponse } from "next/server"
 
+// App
+import { accessCookieExpiryOf } from "./session-cookies"
+
 /**
  * A shopper's session, apart from a shopkeeper's. Two names and not the panel's `bl_access`: one
  * person may be both, in one browser, and the two sessions must never stand in for each other — the
@@ -27,7 +30,7 @@ const base = {
 
 export function setCustomerSessionCookies(jar: CookieJar, slug: string, session: AuthSession): void {
   const path = `/${slug}`
-  jar.set(CUSTOMER_ACCESS_COOKIE, session.accessToken, { ...base, path, expires: new Date(session.accessTokenExpiresAt) })
+  jar.set(CUSTOMER_ACCESS_COOKIE, session.accessToken, { ...base, path, expires: accessCookieExpiryOf(session) })
   jar.set(CUSTOMER_REFRESH_COOKIE, session.refreshToken, { ...base, path, expires: new Date(session.refreshTokenExpiresAt) })
 }
 
