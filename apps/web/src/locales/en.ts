@@ -155,6 +155,8 @@ export const en: WebMessages = {
     CUSTOMER_SIGN_UP_INVALID: "Check the fields: a name of 2 letters or more, and a password of 8 characters or more.",
     CUSTOMER_FIELDS_INVALID: "Check the fields: the mobile with its area code, an 8-digit ZIP code and a 2-letter state.",
     CUSTOMER_PHONE_TAKEN: "That mobile is already on another customer's record at this shop.",
+    CUSTOMER_CPF_INVALID: "That CPF does not add up. Check the numbers and save again.",
+    CUSTOMER_BIRTH_DATE_INVALID: "That date of birth does not add up. Check the day, the month and the year and save again.",
     CUSTOMER_NOT_FOUND: "That customer is not this shop's. Search for or register the customer.",
     CUSTOMER_MERGE_SELF: "Choose another record to merge with this one.",
     CUSTOMER_MERGE_TWO_ACCOUNTS: "Both records have an account at the shop, and two accounts cannot be merged.",

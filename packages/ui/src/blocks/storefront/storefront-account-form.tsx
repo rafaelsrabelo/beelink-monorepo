@@ -2,11 +2,16 @@
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
-/** What the page draws of a shopper — the web's `CustomerProfile` fits it as it is. */
+/** What the page draws of a shopper: the web's `CustomerProfile`, with the phone and the CPF already written as a person writes them. */
 export interface StorefrontAccountProfile {
   name: string
   email: string
+  /** "(11) 98888-7777", or null. */
   phone: string | null
+  /** "529.982.247-25", or null. */
+  cpf: string | null
+  /** `YYYY-MM-DD`, as a date field takes it, or null. */
+  birthDate: string | null
   address: Record<"zipCode" | "street" | "number" | "complement" | "neighborhood" | "city" | "state", string | null>
 }
 
@@ -28,16 +33,19 @@ const INPUT = "h-11 w-full rounded-[10px] border border-shop-line-strong bg-shop
 const LABEL = "flex flex-col gap-1 text-sm font-medium"
 
 /**
- * The shopper's page at a shop: their name, phone and delivery address as this shop keeps them, and
- * a way to sign out. A plain form, like the sign-in: it posts and comes back, with no script needed.
- * The e-mail is the account's and is shown, not edited — it is not the shop's to change.
+ * The shopper's page at a shop: their name, phone, CPF, birth date and delivery address as this shop
+ * keeps them, and a way to sign out. A plain form, like the sign-in: it posts and comes back, with no
+ * script needed. The e-mail is the account's and is shown, not edited — it is not the shop's to change.
  */
 export function StorefrontAccountForm({ profile, action, signOutAction, hidden = {}, error, saved = false, messages = defaultMessages }: StorefrontAccountFormProps) {
   const text = messages.storefront
   const { address } = profile
-  const field = (name: string, label: string, value: string | null, extra: Record<string, string | number | boolean> = {}) => (
+  const field = (name: string, label: string, value: string | null, extra: Record<string, string | number | boolean> = {}, hint?: string) => (
     <label className={LABEL}>
-      {label}
+      <span>
+        {label}
+        {hint ? <span className="font-normal text-shop-muted"> · {hint}</span> : null}
+      </span>
       <input name={name} defaultValue={value ?? ""} className={INPUT} {...extra} />
     </label>
   )
@@ -61,14 +69,18 @@ export function StorefrontAccountForm({ profile, action, signOutAction, hidden =
         {Object.entries(hidden).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
         ))}
-        <fieldset className="flex flex-col gap-4">
+        <fieldset className="grid gap-4 shop-md:grid-cols-2">
           <legend className="mb-2 text-base font-bold">{text.accountDetails}</legend>
-          {field("name", text.signInName, profile.name, { required: true, minLength: 2, maxLength: 120, autoComplete: "name" })}
+          {field("name", text.accountFullName, profile.name, { required: true, minLength: 2, maxLength: 120, autoComplete: "name" })}
+          {field("phone", text.accountPhone, profile.phone, { type: "tel", inputMode: "tel", autoComplete: "tel" })}
+          {/* The account's login: shown, never a field — changing it is not the shop's to offer. */}
           <p className="flex flex-col gap-1 text-sm">
             <span className="font-medium">{text.signInEmail}</span>
-            <span className="text-shop-muted">{profile.email}</span>
+            <span className="break-all">{profile.email}</span>
+            <span className="text-xs text-shop-muted">{text.accountEmailFixed}</span>
           </p>
-          {field("phone", text.accountPhone, profile.phone, { type: "tel", inputMode: "tel", autoComplete: "tel" })}
+          {field("cpf", text.accountCpf, profile.cpf, { inputMode: "numeric", autoComplete: "off", maxLength: 14, placeholder: "000.000.000-00" }, text.accountCpfHint)}
+          {field("birthDate", text.accountBirthDate, profile.birthDate, { type: "date", min: "1900-01-01", autoComplete: "bday" }, text.accountBirthDateHint)}
         </fieldset>
 
         <fieldset className="grid grid-cols-6 gap-4">

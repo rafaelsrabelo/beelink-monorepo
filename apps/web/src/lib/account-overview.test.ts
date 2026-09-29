@@ -109,14 +109,14 @@ describe("the account's front", () => {
   it("writes the shopper's details as the checkout will use them, and null for what is not on file", () => {
     const nothing = { zipCode: null, street: null, number: null, complement: null, neighborhood: null, city: null, state: null }
 
-    expect(accountDetailsViewOf({ id: "c1", name: "Bia", email: "bia@exemplo.com", phone: "5585999994321", address: { ...nothing, street: "Rua A", number: "10", city: "Fortaleza", state: "CE" } })).toEqual({
+    expect(accountDetailsViewOf({ id: "c1", name: "Bia", email: "bia@exemplo.com", cpf: null, birthDate: null, phone: "5585999994321", address: { ...nothing, street: "Rua A", number: "10", city: "Fortaleza", state: "CE" } })).toEqual({
       phone: "(85) 99999-4321",
       email: "bia@exemplo.com",
       address: "Rua A, 10 — Fortaleza/CE",
       addressIncomplete: false,
     })
-    expect(accountDetailsViewOf({ id: "c1", name: "Bia", email: "bia@exemplo.com", phone: null, address: nothing })).toEqual({ phone: null, email: "bia@exemplo.com", address: null, addressIncomplete: false })
+    expect(accountDetailsViewOf({ id: "c1", name: "Bia", email: "bia@exemplo.com", cpf: null, birthDate: null, phone: null, address: nothing })).toEqual({ phone: null, email: "bia@exemplo.com", address: null, addressIncomplete: false })
     // A CEP alone is on file, and still nowhere to deliver.
-    expect(accountDetailsViewOf({ id: "c1", name: "Bia", email: "bia@exemplo.com", phone: null, address: { ...nothing, zipCode: "60323231" } })).toMatchObject({ address: "CEP 60323-231", addressIncomplete: true })
+    expect(accountDetailsViewOf({ id: "c1", name: "Bia", email: "bia@exemplo.com", cpf: null, birthDate: null, phone: null, address: { ...nothing, zipCode: "60323231" } })).toMatchObject({ address: "CEP 60323-231", addressIncomplete: true })
   })
 })

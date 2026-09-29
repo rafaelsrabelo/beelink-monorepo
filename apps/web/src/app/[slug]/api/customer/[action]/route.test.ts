@@ -128,13 +128,13 @@ describe("the shop's sign-in form", () => {
     const fetched = vi.fn(async () => Response.json({ id: "c1" }, { status: 200 }))
     vi.stubGlobal("fetch", fetched)
 
-    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", city: "São Paulo", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })
+    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17", city: "São Paulo", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })
     const [url, init] = (fetched.mock.calls[0] ?? []) as unknown as [string, RequestInit]
 
     expect(url).toContain("/stores/loja/customer/me")
     expect(init.method).toBe("PATCH")
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer a")
-    expect(JSON.parse(String(init.body))).toMatchObject({ name: "Bia", phone: "(11) 98888-7777", address: { city: "São Paulo", street: "" } })
+    expect(JSON.parse(String(init.body))).toMatchObject({ name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17", address: { city: "São Paulo", street: "" } })
     expect(response.headers.get("location")).toBe("http://localhost:3000/loja/conta?salvo=1")
   })
 
@@ -159,6 +159,16 @@ describe("the shop's sign-in form", () => {
     const location = new URL((await post("perfil", { phone: "12", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })).headers.get("location") ?? "")
 
     expect(location.searchParams.get("erro")).toBe("CUSTOMER_FIELDS_INVALID")
+  })
+
+  it("says a refused CPF or birth date by its own name, not as the fields at large", async () => {
+    for (const errorCode of ["CUSTOMER_CPF_INVALID", "CUSTOMER_BIRTH_DATE_INVALID"]) {
+      vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode }, { status: 400 })))
+
+      const location = new URL((await post("perfil", { cpf: "529.982.247-24", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })).headers.get("location") ?? "")
+
+      expect(location.searchParams.get("erro")).toBe(errorCode)
+    }
   })
 
   it("brings a refusal back to the form, still on its way to the cart, and a save to the cart", async () => {

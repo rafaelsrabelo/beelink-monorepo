@@ -44,6 +44,8 @@ const caio: StoreCustomerDetail = {
   email: null,
   emailVerified: false,
   phone: "5511955554444",
+  cpf: null,
+  birthDate: null,
   city: "Campinas",
   state: "SP",
   stage: "CUSTOMER",

@@ -11,6 +11,8 @@ const profile = {
   name: "Bia Cliente",
   email: "bia@exemplo.com",
   phone: "11988887777",
+  cpf: "529.982.247-25",
+  birthDate: "1990-05-17",
   address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: "Bela Vista", city: "São Paulo", state: "SP" },
 }
 
@@ -19,12 +21,23 @@ describe("StorefrontAccountForm", () => {
     const { container } = render(<StorefrontAccountForm profile={profile} action="/api/x/perfil" signOutAction="/api/x/sair" />)
 
     expect(container.querySelector("form")).toHaveAttribute("action", "/api/x/perfil")
-    expect(screen.getByLabelText("Nome")).toHaveValue("Bia Cliente")
-    expect(screen.getByLabelText("Celular (WhatsApp)")).toHaveValue("11988887777")
+    expect(screen.getByLabelText("Nome completo")).toHaveValue("Bia Cliente")
+    expect(screen.getByLabelText("Celular")).toHaveValue("11988887777")
+    expect(screen.getByLabelText(/^CPF/)).toHaveValue("529.982.247-25")
+    expect(screen.getByLabelText(/^Data de nascimento/)).toHaveValue("1990-05-17")
     expect(screen.getByLabelText("Rua")).toHaveValue("Av. Paulista")
     expect(screen.getByLabelText("Complemento")).toHaveValue("")
     expect(screen.queryByLabelText("E-mail")).toBeNull()
     expect(screen.getByText("bia@exemplo.com")).toBeInTheDocument()
+  })
+
+  /** Both are optional: a shopper who never gave them sees empty fields that say so, and a date field. */
+  it("leaves the CPF and the birth date empty, marked optional", () => {
+    render(<StorefrontAccountForm profile={{ ...profile, cpf: null, birthDate: null }} action="#" />)
+
+    expect(screen.getByLabelText("CPF · Opcional · para a nota fiscal")).toHaveValue("")
+    expect(screen.getByLabelText("Data de nascimento · Opcional")).toHaveAttribute("type", "date")
+    expect(screen.getByLabelText("Data de nascimento · Opcional")).toHaveValue("")
   })
 
   it("signs out through a form of its own", () => {

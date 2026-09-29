@@ -38,6 +38,8 @@ const meta = {
   args: {
     customer: { ...customerRecord, email: "caio@exemplo.com", emailVerified: true },
     addressLine: "Rua Barão de Jaguara, 1000, apto 12 — Centro — Campinas/SP — CEP 13015-904",
+    cpfLine: "529.982.247-25",
+    birthDateLine: "17/05/1990",
     editing: false,
     onEdit: () => {},
     onCancel: () => {},
@@ -57,14 +59,16 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Nome, e-mail confirmado, celular e endereço; "Editar dados" abre o formulário no mesmo cartão. */
+/** Nome, e-mail confirmado, celular, CPF, nascimento e endereço; "Editar dados" abre o formulário no mesmo cartão. */
 export const Padrao: Story = {}
 
-/** Cadastrado pela loja: sem e-mail, sem celular e sem endereço. */
+/** Cadastrado pela loja: sem e-mail, sem celular, sem CPF, sem nascimento e sem endereço. */
 export const CadastradoPelaLoja: Story = {
   args: {
     customer: { ...customerRecord, email: null, emailVerified: false, phone: null },
     addressLine: null,
+    cpfLine: null,
+    birthDateLine: null,
   },
 }
 

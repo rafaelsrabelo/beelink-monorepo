@@ -15,6 +15,13 @@ import {
 import { callAsShopper } from "@/lib/shopper-call"
 import { BACK_KEY, MODE_KEY, safeBackOf } from "@/lib/storefront-routes"
 
+/** The profile refusals a field names for itself; any other 400 is "check the fields". */
+const OWN_FIELD_REFUSALS: ReadonlySet<string> = new Set(["CUSTOMER_CPF_INVALID", "CUSTOMER_BIRTH_DATE_INVALID"])
+
+function profileRefusalOf(status: number, code: string): string {
+  return status === 400 && !OWN_FIELD_REFUSALS.has(code) ? "CUSTOMER_FIELDS_INVALID" : code
+}
+
 /**
  * Under the shop's own path, not `/api`: the shopper's session cookies live on `/<slug>`, and a
  * handler anywhere else would never receive them (`customer-session-cookies.ts`).
@@ -89,6 +96,8 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       const body = {
         name: field("name").trim(),
         phone: field("phone"),
+        cpf: field("cpf"),
+        birthDate: field("birthDate"),
         address: Object.fromEntries(["zipCode", "street", "number", "complement", "neighborhood", "city", "state"].map((key) => [key, field(key)])),
       }
       const saved = await callAsShopper(request, slug, (accessToken) =>
@@ -105,7 +114,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       // shop already has is said there, and nowhere else.
       const landing = response?.ok ? page : new URL(safeBackOf(slug, field("formulario") || field("retorno")), request.url)
       if (response?.ok) landing.searchParams.set("salvo", "1")
-      else landing.searchParams.set("erro", response?.status === 400 ? "CUSTOMER_FIELDS_INVALID" : response ? await codeOf(response) : "UNKNOWN")
+      else landing.searchParams.set("erro", response ? profileRefusalOf(response.status, await codeOf(response)) : "UNKNOWN")
 
       const answer = NextResponse.redirect(landing, 303)
       if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)

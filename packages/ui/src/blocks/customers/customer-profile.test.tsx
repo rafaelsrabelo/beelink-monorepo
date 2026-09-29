@@ -17,6 +17,8 @@ import { customerRecord } from "./customers.fixtures"
 const props: CustomerProfileProps = {
   customer: { ...customerRecord, email: "caio@exemplo.com", emailVerified: true },
   addressLine: "Rua Barão de Jaguara, 1000, apto 12 — Centro — Campinas/SP — CEP 13015-904",
+  cpfLine: "529.982.247-25",
+  birthDateLine: "17/05/1990",
   editing: false,
   onEdit: () => {},
   onCancel: () => {},
@@ -48,12 +50,14 @@ function fact(label: string) {
 }
 
 describe("CustomerProfile", () => {
-  it("shows the name, the e-mail and that it was confirmed, the phone and the address", () => {
+  it("shows the name, the e-mail and that it was confirmed, the phone, the CPF, the birth date and the address", () => {
     render(<CustomerProfile {...props} />)
 
     expect(fact("Nome")).toHaveTextContent("Caio Lima")
     expect(fact("E-mail")).toHaveTextContent("caio@exemplo.com · confirmado")
     expect(fact("Celular")).toHaveTextContent("5511955554444")
+    expect(fact("CPF")).toHaveTextContent("529.982.247-25")
+    expect(fact("Nascimento")).toHaveTextContent("17/05/1990")
     expect(fact("Endereço")).toHaveTextContent("Rua Barão de Jaguara, 1000, apto 12 — Centro — Campinas/SP — CEP 13015-904")
   })
 
@@ -61,9 +65,11 @@ describe("CustomerProfile", () => {
     const { rerender } = render(<CustomerProfile {...props} customer={{ ...props.customer, emailVerified: false }} />)
     expect(fact("E-mail")).toHaveTextContent("caio@exemplo.com · não confirmado")
 
-    rerender(<CustomerProfile {...props} customer={{ ...customerRecord, email: null, phone: null }} addressLine={null} />)
+    rerender(<CustomerProfile {...props} customer={{ ...customerRecord, email: null, phone: null }} addressLine={null} cpfLine={null} birthDateLine={null} />)
     expect(fact("E-mail")).toHaveTextContent("Sem e-mail: cadastrado pela loja, sem conta.")
     expect(fact("Celular")).toHaveTextContent("Sem celular")
+    expect(fact("CPF")).toHaveTextContent("Não informado")
+    expect(fact("Nascimento")).toHaveTextContent("Não informada")
     expect(fact("Endereço")).toHaveTextContent("Sem endereço cadastrado")
   })
 

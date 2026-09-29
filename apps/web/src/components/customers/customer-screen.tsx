@@ -11,7 +11,7 @@ import { CustomerProfile } from "@harness-monorepo/ui/blocks/customers/customer-
 import { CustomerRecordHeader } from "@harness-monorepo/ui/blocks/customers/customer-record-header"
 import { CustomerStats } from "@harness-monorepo/ui/blocks/customers/customer-stats"
 import { Button } from "@harness-monorepo/ui/components/button"
-import { format } from "@harness-monorepo/ui/locales/index"
+import { defaultLocale, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -19,6 +19,7 @@ import type { WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { addressLineOf } from "@/lib/customer-address"
+import { birthDateLineOf, cpfLineOf } from "@/lib/customer-identity"
 import { customerWhatsappHref } from "@/lib/whatsapp-customer"
 import { useStore } from "@/services/stores/store-hooks"
 import { CustomerScreenSkeleton } from "./customer-screen-skeleton"
@@ -113,7 +114,14 @@ export function CustomerScreen({ slug, customerId, messages, web }: CustomerScre
       {/* The details come first to be read, and sit in the side column where there is one. */}
       <div className="grid items-start gap-6 @4xl/main:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="@4xl/main:col-start-2 @4xl/main:row-start-1">
-          <CustomerProfile customer={customer} addressLine={addressLineOf(customer.address)} {...view.profile} messages={messages} />
+          <CustomerProfile
+            customer={customer}
+            addressLine={addressLineOf(customer.address)}
+            cpfLine={cpfLineOf(customer.cpf)}
+            birthDateLine={birthDateLineOf(customer.birthDate, defaultLocale)}
+            {...view.profile}
+            messages={messages}
+          />
         </div>
         <div ref={historyTop} className="flex min-w-0 scroll-mt-4 flex-col gap-3 @4xl/main:col-start-1 @4xl/main:row-start-1">
           {view.history.error ? (

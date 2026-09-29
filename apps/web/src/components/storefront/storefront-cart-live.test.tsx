@@ -34,6 +34,8 @@ const bia: CustomerProfile = {
   id: "c1",
   name: "Bia Cliente",
   email: "bia@exemplo.com",
+  cpf: null,
+  birthDate: null,
   phone: "11988887777",
   address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: null, city: "São Paulo", state: "SP" },
 }

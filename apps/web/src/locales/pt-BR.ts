@@ -155,6 +155,8 @@ export const ptBR: WebMessages = {
     CUSTOMER_SIGN_UP_INVALID: "Confira os campos: o nome com 2 letras ou mais, e a senha com 8 caracteres ou mais.",
     CUSTOMER_FIELDS_INVALID: "Confira os campos: o celular com DDD, o CEP com 8 números e o estado com 2 letras.",
     CUSTOMER_PHONE_TAKEN: "Esse celular já está no cadastro de outro cliente desta loja.",
+    CUSTOMER_CPF_INVALID: "Esse CPF não confere. Confira os números e salve de novo.",
+    CUSTOMER_BIRTH_DATE_INVALID: "Essa data de nascimento não confere. Confira o dia, o mês e o ano e salve de novo.",
     CUSTOMER_NOT_FOUND: "Esse cliente não é desta loja. Busque ou cadastre o cliente.",
     CUSTOMER_MERGE_SELF: "Escolha outro cadastro para juntar com este.",
     CUSTOMER_MERGE_TWO_ACCOUNTS: "Os dois cadastros têm conta na loja, e duas contas não se juntam.",

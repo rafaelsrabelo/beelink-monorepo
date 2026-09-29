@@ -24,6 +24,10 @@ export interface CustomerProfileProps {
   customer: Pick<CustomerRecordView, "name" | "email" | "emailVerified" | "phone" | "address">
   /** The address on one line, as the screen writes addresses; null when there is none. */
   addressLine: string | null
+  /** The CPF as a person writes it, "529.982.247-25"; null when the customer never gave it. */
+  cpfLine: string | null
+  /** The birth date in the panel's language; null when the customer never gave it. */
+  birthDateLine: string | null
   editing: boolean
   onEdit: () => void
   onCancel: () => void
@@ -49,13 +53,17 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 
 /**
  * Who the customer is to the shop: the name, the account's e-mail and whether it was confirmed, the
- * phone and the address — and, in the same card, the form that corrects them. Opening the form puts
- * the focus on the name; closing it puts it back on "Editar dados". A save is said once, politely,
- * in a status the card always holds, so it is heard when its words arrive.
+ * phone, the CPF, the birth date and the address — and, in the same card, the form that corrects
+ * them. The CPF and the birth date are only read here: the customer gives them in their own area,
+ * and the form leaves them out. Opening the form puts the focus on the name; closing it puts it back
+ * on "Editar dados". A save is said once, politely, in a status the card always holds, so it is
+ * heard when its words arrive.
  */
 export function CustomerProfile({
   customer,
   addressLine,
+  cpfLine,
+  birthDateLine,
   editing,
   onEdit,
   onCancel,
@@ -101,6 +109,12 @@ export function CustomerProfile({
               </Fact>
               <Fact label={text.phone}>
                 <span className={customer.phone ? "tabular-nums" : "text-muted-foreground"}>{customer.phone ?? text.noPhone}</span>
+              </Fact>
+              <Fact label={text.cpf}>
+                <span className={cpfLine ? "tabular-nums" : "text-muted-foreground"}>{cpfLine ?? text.noCpf}</span>
+              </Fact>
+              <Fact label={text.birthDate}>
+                <span className={birthDateLine ? "tabular-nums" : "text-muted-foreground"}>{birthDateLine ?? text.noBirthDate}</span>
               </Fact>
               <Fact label={text.address}>
                 <span className={addressLine ? undefined : "text-muted-foreground"}>{addressLine ?? text.noAddress}</span>

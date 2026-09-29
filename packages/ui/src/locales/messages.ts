@@ -337,6 +337,13 @@ export interface UiMessages {
     accountDetails: string
     accountAddress: string
     accountPhone: string
+    /** The profile's own fields (BEELINK-147): the e-mail shown, the CPF and the birth date. Their refusals are the web's `errors`. */
+    accountFullName: string
+    accountEmailFixed: string
+    accountCpf: string
+    accountCpfHint: string
+    accountBirthDate: string
+    accountBirthDateHint: string
     accountZipCode: string
     accountStreet: string
     accountNumber: string
@@ -1332,6 +1339,10 @@ export interface UiMessages {
       noPhone: string
       address: string
       noAddress: string
+      cpf: string
+      noCpf: string
+      birthDate: string
+      noBirthDate: string
       edit: string
       save: string
       saving: string
