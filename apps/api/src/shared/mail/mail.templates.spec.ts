@@ -1,5 +1,5 @@
 // App
-import { emailVerification, escapeHtml, leadReceived, passwordReset } from './mail.templates.js';
+import { emailVerification, escapeHtml, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
 
 describe('leadReceived — a stranger’s words in the owner’s inbox', () => {
   const content = {
@@ -58,6 +58,28 @@ describe("a shop's account e-mails", () => {
 
     expect(verify.subject).toBe('Confirme seu e-mail');
     expect(verify.text).toContain('para ativar sua conta:');
+  });
+});
+
+describe("an order's move, told to its customer", () => {
+  const base = { name: 'Bia', shopName: 'Mutante & Cia', number: 12, pickup: false };
+  const url = 'http://localhost:3000/mutante/conta/pedidos/12';
+
+  it('names the move in the subject and the words, as the shop window reads a delivery or a pick-up', () => {
+    expect(orderStatusChanged({ ...base, status: 'ACCEPTED' }, url).subject).toBe('Mutante & Cia — pedido nº 12 confirmado');
+    expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY' }, url).text).toContain('saiu para entrega');
+    expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', pickup: true }, url).subject).toBe('Mutante & Cia — pedido nº 12 pronto para retirar');
+    expect(orderStatusChanged({ ...base, status: 'DELIVERED', pickup: true }, url).text).toContain('foi retirado na loja');
+    expect(orderStatusChanged({ ...base, status: 'CANCELLED' }, url).subject).toBe('Mutante & Cia — pedido nº 12 cancelado');
+  });
+
+  it("leads to the order at the shop, escapes the names, and says how to stop it", () => {
+    const mail = orderStatusChanged({ ...base, name: 'Bia <b>', status: 'DELIVERED' }, url);
+
+    expect(mail.html).toContain(`href="${url}"`);
+    expect(mail.html).toContain('Olá, Bia &lt;b&gt;!');
+    expect(mail.html).toContain('loja Mutante &amp; Cia foi entregue.');
+    expect(mail.text).toContain('desligue "Andamento dos pedidos"');
   });
 });
 

@@ -11,6 +11,8 @@ import { StoresService } from '../stores/stores.service.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { OrderPlacement } from './order-placement.js';
 import { settleCancellation } from './order-cancellation.js';
+import { oweStatusEmail } from './order-status-email.js';
+import { OrderStatusMailer } from './order-status-mailer.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
 import { isOpen } from '../conversations/conversations.constants.js';
@@ -30,6 +32,7 @@ export class OrdersService {
     private readonly stores: StoresService,
     private readonly placement: OrderPlacement,
     private readonly realtime: RealtimePublisher,
+    private readonly mailer: OrderStatusMailer,
   ) {}
 
   async create(storeSlug: string, userId: string, dto: CreateOrderDto): Promise<Order> {
@@ -145,9 +148,11 @@ export class OrdersService {
       if (status === 'CANCELLED') await settleCancellation(tx, current);
       // Told to the customer in the conversation, before a move that closes it: the last line is why.
       await noteOrderStatus(tx, { order: current, status, at: new Date(), seen: false });
+      const owed = await oweStatusEmail(tx, { order: current, status, byCustomer: false });
       const conversation = await tx.orderConversation.count({ where: { orderId: current.id } });
-      return { order, customerId: current.customerId, closes: conversation > 0 && isOpen(current.status) && !isOpen(status) };
+      return { order, owed, customerId: current.customerId, closes: conversation > 0 && isOpen(current.status) && !isOpen(status) };
     });
+    if (moved.owed) this.mailer.dispatch();
 
     // Told once the change is committed: both sides read the order again, and a conversation it
     // closes stops taking messages.

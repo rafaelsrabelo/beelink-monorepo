@@ -24,6 +24,14 @@ model Customer {
   cpf          String?   @db.Char(11)
   /// A day, no time: when the shopper was born, if they said.
   birthDate    DateTime? @db.Date
+  /// The shopper's notices by e-mail (BEELINK-151): their orders' progress, on until they turn it off.
+  notifyOrders    Boolean   @default(true)
+  /// A favourite that got cheaper or came back in stock (sent by J16): on, since the shopper chose the favourite.
+  notifyFavorites Boolean   @default(true)
+  /// The shop's offers and news: off until the shopper says yes. `notifyOffersAt` is when they last
+  /// chose either way — the consent's date, kept.
+  notifyOffers    Boolean   @default(false)
+  notifyOffersAt  DateTime?
   /// The shop's books on this customer, kept by the transaction that places or cancels an order so
   /// the list can filter and sort by them without reading the orders. Cancelled ones do not count.
   ordersCount     Int       @default(0)

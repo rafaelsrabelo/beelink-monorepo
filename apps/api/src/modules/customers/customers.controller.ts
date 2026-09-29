@@ -16,7 +16,7 @@ import {
 } from '@nestjs/swagger';
 
 // Types
-import type { AuthSession, CustomerProfile } from '@harness-monorepo/contracts';
+import type { AuthSession, CustomerNotifications, CustomerProfile } from '@harness-monorepo/contracts';
 
 // App
 import { env } from '../../shared/config/env.js';
@@ -28,6 +28,7 @@ import { CustomerAuthGuard, type AuthenticatedCustomer } from './customer-auth.g
 import { CurrentCustomer } from './customer.decorators.js';
 import { CustomersService } from './customers.service.js';
 import { CustomerEmailDto, CustomerRegisterDto } from './dto/customer-link.dto.js';
+import { CustomerNotificationsResponse, UpdateCustomerNotificationsDto } from './dto/customer-notifications.dto.js';
 import { ChangeCustomerPasswordDto, CustomerPasswordLinkDto } from './dto/customer-password.dto.js';
 import { CustomerProfileResponse, UpdateCustomerProfileDto } from './dto/customer.dto.js';
 
@@ -113,6 +114,19 @@ export class CustomersController {
   @ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, a shopkeeper's, or another shop's" })
   me(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer): Promise<CustomerProfile> {
     return this.customers.me(storeSlug, customer.userId);
+  }
+
+  @Put('me/notifications')
+  @UseGuards(CustomerAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "The shopper's notices by e-mail at this shop, all three at once" })
+  @ApiOkResponse({ type: CustomerNotificationsResponse })
+  updateNotifications(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @Body() dto: UpdateCustomerNotificationsDto,
+  ): Promise<CustomerNotifications> {
+    return this.customers.updateNotifications(storeSlug, customer.userId, dto);
   }
 
   @Put('me/password')

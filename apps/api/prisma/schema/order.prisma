@@ -79,6 +79,8 @@ model Order {
   delivery OrderDelivery?
   /// The customer's conversation with the shop about it, once they wrote (BEELINK-160).
   conversation OrderConversation?
+  /// The e-mails its moves owe the customer (BEELINK-151).
+  statusEmails OrderStatusEmail[]
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])
@@ -161,4 +163,24 @@ model OrderDelivery {
   updatedAt DateTime @updatedAt
 
   @@map("order_deliveries")
+}
+
+/// An e-mail an order's move owes its customer (BEELINK-151): written by the transaction that moves the
+/// order, sent after it commits, apart from it — so a move never fails, nor waits, for the mail. A row
+/// is claimed by pushing `nextAttemptAt` ahead (`FOR UPDATE SKIP LOCKED`), so two processes never send
+/// it twice, and tried again until `sentAt` or the last attempt.
+model OrderStatusEmail {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  orderId       String      @db.Uuid
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// The status the order moved to: what the e-mail says, whatever the order is by the time it goes.
+  status        OrderStatus
+  attempts      Int         @default(0)
+  nextAttemptAt DateTime    @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime    @default(now())
+
+  /// The dispatcher's reading: what is still owed, oldest first.
+  @@index([sentAt, nextAttemptAt])
+  @@map("order_status_emails")
 }

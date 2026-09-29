@@ -78,6 +78,51 @@ export function passwordReset(name: string, url: string, minutes: number, shopNa
   };
 }
 
+/** The order moves a customer hears of by e-mail (BEELINK-151). */
+export type NotifiedOrderStatus = 'ACCEPTED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+
+export interface OrderStatusContent {
+  name: string;
+  shopName: string;
+  number: number;
+  status: NotifiedOrderStatus;
+  /** A pick-up reads its moves as the shop window does: ready at the shop, picked up. */
+  pickup: boolean;
+}
+
+/** How each move reads — in the subject, after the order's number, and in the words. */
+function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean): { subject: string; said: string } {
+  switch (status) {
+    case 'ACCEPTED':
+      return { subject: 'confirmado', said: 'foi confirmado pela loja' };
+    case 'OUT_FOR_DELIVERY':
+      return pickup ? { subject: 'pronto para retirar', said: 'está pronto para retirar' } : { subject: 'saiu para entrega', said: 'saiu para entrega' };
+    case 'DELIVERED':
+      return pickup ? { subject: 'retirado', said: 'foi retirado na loja' } : { subject: 'entregue', said: 'foi entregue' };
+    case 'CANCELLED':
+      return { subject: 'cancelado', said: 'foi cancelado' };
+  }
+}
+
+/** A customer's order moved: the shop's name on it, and the way to the order at the shop. */
+export function orderStatusChanged({ name, shopName, number, status, pickup }: OrderStatusContent, url: string): MailContent {
+  const greeting = `Olá, ${name}!`;
+  const { subject, said } = orderMoveOf(status, pickup);
+  const line = `Seu pedido nº ${number} na loja ${shopName} ${said}.`;
+  return {
+    subject: `${shopName} — pedido nº ${number} ${subject}`,
+    text: `${greeting}\n\n${line}\n\nVeja o pedido:\n${url}\n\nVocê recebe este aviso porque tem conta na loja. Para não receber mais, desligue "Andamento dos pedidos" em Perfil e endereços.`,
+    html: layout(
+      escapeHtml(greeting),
+      `<p style="margin:0">${escapeHtml(line)}</p>
+       <p style="margin:12px 0 0;font-size:13px;color:#71717a">Você recebe este aviso porque tem conta na loja. Para não receber mais, desligue "Andamento dos pedidos" em Perfil e endereços.</p>`,
+      'Ver pedido',
+      url,
+      escapeHtml(shopName),
+    ),
+  };
+}
+
 /** What the owner is told about a lead. Values are the visitor's; every one is escaped for HTML. */
 export interface LeadReceivedContent {
   ownerName: string;

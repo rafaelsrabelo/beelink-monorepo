@@ -17,6 +17,8 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { deliveryOf } from './order-delivery.js';
+import { oweStatusEmail } from './order-status-email.js';
+import { OrderStatusMailer } from './order-status-mailer.js';
 import { takeStock } from './order-stock.js';
 import { totalsOf, variantLabelOf } from './order-totals.js';
 import { orderError } from './orders.constants.js';
@@ -62,7 +64,10 @@ export type PlacedOrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCL
  */
 @Injectable()
 export class OrderPlacement {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailer: OrderStatusMailer,
+  ) {}
 
   async place(placement: Placement): Promise<PlacedOrderRow> {
     const { storeId, status, actor, userId } = placement;
@@ -80,7 +85,7 @@ export class OrderPlacement {
       throw new BadRequestException(orderError('ORDER_TOTAL_TOO_LARGE', 'A line or the order is past what one order may be'));
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const placed = await this.prisma.$transaction(async (tx) => {
       const number = await this.nextNumber(tx, storeId);
       // Before the order is written: a line the stock cannot cover refuses the whole order.
       await takeStock(tx, lines);
@@ -112,8 +117,12 @@ export class OrderPlacement {
       // The conversation is born with the order, its first status the first line. Told now, whatever
       // day the shopkeeper dated the sale; not news to a customer who placed it themselves.
       await noteOrderStatus(tx, { order: { id: order.id, customerId }, status, at: new Date(), seen: actor === 'CUSTOMER' });
-      return order;
+      // A sale the shopkeeper registers is born accepted, which the customer hears of like any move.
+      const owed = await oweStatusEmail(tx, { order: { id: order.id, customerId }, status, byCustomer: actor === 'CUSTOMER' });
+      return { order, owed };
     });
+    if (placed.owed) this.mailer.dispatch();
+    return placed.order;
   }
 
   /**

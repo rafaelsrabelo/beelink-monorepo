@@ -12,7 +12,7 @@ import type { Lead } from '@harness-monorepo/contracts';
 import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
-import { emailVerification, leadReceived, passwordReset } from './mail.templates.js';
+import { emailVerification, leadReceived, orderStatusChanged, passwordReset, type OrderStatusContent } from './mail.templates.js';
 
 /** What a lead's e-mail needs beyond the lead: who to greet, and which site's panel to point at. */
 export interface LeadReceivedMail {
@@ -52,6 +52,14 @@ export class MailService {
     await this.send(to, passwordReset(name, url, PASSWORD_RESET_TTL_MINUTES, shop?.name), shop?.name);
   }
 
+  /**
+   * A customer's order moved (BEELINK-151), from the shop by name, with the way to the order at the
+   * shop. Answers whether it went: the outbox that asks tries again when it did not.
+   */
+  async sendOrderStatus(to: string, content: OrderStatusContent, url: string): Promise<boolean> {
+    return this.send(to, orderStatusChanged(content, url), content.shopName);
+  }
+
   /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */
   async sendLeadReceived(to: string, { ownerName, siteName, siteSlug, lead }: LeadReceivedMail): Promise<void> {
     const url = `${env.WEB_URL}/admin/${siteSlug}/leads`;
@@ -67,15 +75,18 @@ export class MailService {
 
   /**
    * A failed send never fails the request: the caller has already answered 202 or created the
-   * account, and every one of these e-mails can be asked for again. The link is never logged.
+   * account, and every one of these e-mails can be asked for again — an order's, by its outbox, which
+   * reads the answer. The link is never logged.
    */
-  private async send(to: string, { subject, text, html }: { subject: string; text: string; html: string }, senderName?: string): Promise<void> {
+  private async send(to: string, { subject, text, html }: { subject: string; text: string; html: string }, senderName?: string): Promise<boolean> {
     // A shop's e-mail goes out under the shop's name, from the product's own address.
     const from = senderName ? { name: senderName, address: addressOf(env.MAIL_FROM) } : env.MAIL_FROM;
     try {
       await this.transporter.sendMail({ from, to, subject, text, html });
+      return true;
     } catch (error) {
       this.logger.error({ err: error, subject }, 'Could not send e-mail');
+      return false;
     }
   }
 }
