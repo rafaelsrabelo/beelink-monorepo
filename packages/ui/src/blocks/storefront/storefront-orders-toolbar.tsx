@@ -22,11 +22,12 @@ export function StorefrontOrdersToolbar({ action, names, value, periods, hidden 
   const text = messages.storefront
 
   return (
-    <form action={action} method="get" role="search" className="flex flex-wrap items-center gap-2">
+    // One row beside the title from `shop-md`: sized by its content there, a wrapping row would fold short.
+    <form action={action} method="get" role="search" className="flex flex-wrap items-center gap-2 shop-md:flex-nowrap">
       {Object.entries(hidden).map(([name, hiddenValue]) => (
         <input key={name} type="hidden" name={name} value={hiddenValue} />
       ))}
-      <label className="flex min-w-0 flex-1 basis-56 flex-col gap-1 text-xs font-medium">
+      <label className="flex min-w-0 flex-1 basis-56 flex-col gap-1 text-xs font-medium shop-md:w-60 shop-md:flex-none shop-md:basis-auto">
         <span className="sr-only">{text.ordersSearchLabel}</span>
         <input type="search" name={names.search} defaultValue={value.search} placeholder={text.ordersSearchPlaceholder} className={FIELD} />
       </label>

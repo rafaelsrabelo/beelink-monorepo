@@ -1,11 +1,7 @@
-/** The list while it loads: the toolbar, the tabs and two cards, as grey shapes. */
+/** The list while it loads: the tabs and two cards, as grey shapes. The toolbar has its own, in the header. */
 export function StorefrontOrdersSkeleton() {
   return (
     <div aria-hidden="true" className="flex animate-pulse flex-col gap-4">
-      <div className="flex gap-2">
-        <div className="h-11 flex-1 rounded-[10px] bg-shop-fill" />
-        <div className="h-11 w-40 rounded-[10px] bg-shop-fill" />
-      </div>
       <div className="flex gap-2">
         {[0, 1, 2, 3].map((tab) => (
           <div key={tab} className="h-9 w-28 rounded-full bg-shop-fill" />

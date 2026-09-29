@@ -17,17 +17,20 @@ export interface OrderCardContext {
 }
 
 /** "21 de set. de 2026", as the card's header writes a day. */
-function dayOf(iso: string, locale: string): string {
+export function dayOf(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "America/Sao_Paulo" }).format(new Date(iso))
 }
 
 /** "21 de set., 14:02", as the status lines write a moment. */
-function momentOf(iso: string, locale: string): string {
+export function momentOf(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }).format(new Date(iso))
 }
 
 /** Where the order stands, in the shopper's words, and what to say under it. */
-export function orderStatusLineOf(order: CustomerOrderSummary, { locale, messages }: Pick<OrderCardContext, "locale" | "messages">): Pick<StorefrontOrderCardProps, "headline" | "detail" | "tone"> {
+export function orderStatusLineOf(
+  order: Pick<CustomerOrderSummary, "status" | "placedBy" | "cancelledBy" | "placedAt" | "statusAt">,
+  { locale, messages }: Pick<OrderCardContext, "locale" | "messages">,
+): Pick<StorefrontOrderCardProps, "headline" | "detail" | "tone"> {
   const text = messages.storefront
   const placed = format(order.placedBy === "CUSTOMER" ? text.orderPlacedByYou : text.orderPlacedByShop, { date: momentOf(order.placedAt, locale) })
 

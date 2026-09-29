@@ -23,8 +23,6 @@ export type StorefrontColors = ShopColors
 // Declared beside their blocks now; re-exported because screens import them from here.
 export type { StorefrontFooterColumn, StorefrontLink, StorefrontNetwork } from "./storefront-footer"
 export type { StorefrontAnnouncementStrip } from "./storefront-announcement"
-
-// Where they are declared now; re-exported because screens import them from here.
 export type { StorefrontMenuItem } from "./storefront-masthead"
 export type { StorefrontBanner } from "./storefront-cover"
 
@@ -195,6 +193,7 @@ export function StorefrontWindow({
           {...(cartCount !== undefined ? { cartCount } : {})}
           cartSlot={cartSlot}
           {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
+          {...(ordersHref ? { ordersHref } : {})}
           menu={menu}
           cta={cta}
           categories={categories}

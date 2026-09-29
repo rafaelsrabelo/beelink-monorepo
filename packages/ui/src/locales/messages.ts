@@ -375,10 +375,33 @@ export interface UiMessages {
     accountProfile: string
     accountMessages: string
     accountBack: string
-    /** Under a shortcut of the overview. */
-    accountProfileHint: string
+    /** The front (6c): the order on its way, the last one when none is, and the shopper's details. */
+    accountInProgress: string
+    accountInProgressEyebrow: string
+    accountTrackOrder: string
+    accountShipTo: string
+    accountMoreInProgress: string
+    accountMoreInProgressMany: string
+    accountLastOrder: string
+    accountSeeOrders: string
+    accountDetailsEdit: string
+    accountDetailsPhone: string
+    accountDetailsEmail: string
+    accountDetailsNoPhone: string
+    accountDetailsNoAddress: string
+    accountDetailsAddressIncomplete: string
+    /** An order's steps (6c, 6f): one per status the shopper follows, the pick-up's last in its own words. */
+    orderSteps: string
+    orderStepPlaced: string
+    orderStepAccepted: string
+    orderStepPreparing: string
+    orderStepOut: string
+    orderStepDelivered: string
+    orderStepPickedUp: string
+    /** Read after a step's name by a screen reader; the marks say it to the eye. */
+    orderStepDone: string
+    orderStepTodo: string
     /** Meus pedidos (J4): the list's toolbar, tabs, cards, the cancel and its refusals, and the empty states. */
-    accountOrdersHint: string
     ordersLinkTop: string
     ordersFilterLabel: string
     ordersSearchLabel: string
@@ -426,10 +449,17 @@ export interface UiMessages {
     orderCancelRefusedAccepted: string
     orderCancelRefusedDone: string
     orderCancelFailed: string
+    /** The session ended between the page and the cancel. */
+    orderCancelSignedOut: string
+    /** Over the list once a cancel lands: the order may leave the tab shown, so it is said. */
+    orderCancelledNotice: string
     ordersEmpty: string
     ordersEmptyCta: string
     ordersNoResults: string
     ordersClear: string
+    /** The list could not be read: never shown as an empty list, which would say there are none. */
+    ordersUnavailable: string
+    ordersRetry: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string

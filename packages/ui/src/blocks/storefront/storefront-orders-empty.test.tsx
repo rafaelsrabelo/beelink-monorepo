@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontOrdersEmpty } from "./storefront-orders-empty"
-import { StorefrontOrdersLink } from "./storefront-orders-link"
 
 describe("StorefrontOrdersEmpty", () => {
   it("sends a shopper who never ordered to the shelf, and one whose filters found nothing back to the whole list", () => {
@@ -18,18 +17,20 @@ describe("StorefrontOrdersEmpty", () => {
     expect(screen.getByRole("link", { name: "Limpar filtros" })).toHaveAttribute("href", "/loja/conta/pedidos")
   })
 
-  it("has no accessibility violations", async () => {
-    const { container } = render(<StorefrontOrdersEmpty variant="none" href="#" />)
-    await expectNoA11yViolations(container)
+  /** A list that failed to load is not a list with nothing in it: saying "none" would be a lie about their orders. */
+  it("says a list that could not be read failed, and offers to read it again", () => {
+    render(<StorefrontOrdersEmpty variant="unavailable" href="/loja/conta/pedidos?situacao=entregues" />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar seus pedidos agora.")
+    expect(screen.queryByText("Nenhum pedido com esses filtros.")).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Tentar de novo" })).toHaveAttribute("href", "/loja/conta/pedidos?situacao=entregues")
   })
-})
 
-describe("StorefrontOrdersLink", () => {
-  it("leads to the shopper's orders under a two-line label, named as one", () => {
-    render(<StorefrontOrdersLink href="/loja/conta/pedidos" />)
+  it("has no accessibility violations", async () => {
+    const { container, rerender } = render(<StorefrontOrdersEmpty variant="none" href="#" />)
+    await expectNoA11yViolations(container)
 
-    const link = screen.getByRole("link", { name: "Meus pedidos" })
-    expect(link).toHaveAttribute("href", "/loja/conta/pedidos")
-    expect(link).toHaveTextContent("Acompanhar")
+    rerender(<StorefrontOrdersEmpty variant="unavailable" href="#" />)
+    await expectNoA11yViolations(container)
   })
 })

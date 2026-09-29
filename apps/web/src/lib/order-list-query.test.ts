@@ -2,13 +2,22 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { isFiltered, orderListApiQueryOf, orderListEntriesOf, orderListQueryOf } from "./order-list-query"
+import { isFiltered, ORDER_PAGE_MAX, ORDER_SEARCH_MAX, orderListApiQueryOf, orderListEntriesOf, orderListQueryOf } from "./order-list-query"
 
 describe("the orders list's address", () => {
   it("reads the tab, the period, the search and the page from the address, in the shop's words", () => {
     expect(orderListQueryOf({ situacao: "em-andamento", periodo: "2025", q: " whey ", pagina: "3" })).toEqual({ situation: "ACTIVE", period: "2025", search: "whey", page: 3 })
     // A word it does not know is the whole list, never an error.
     expect(orderListQueryOf({ situacao: "outra", periodo: "ontem", pagina: "abc" })).toEqual({ situation: undefined, period: undefined, search: "", page: 1 })
+  })
+
+  /** The API refuses the whole read past its limits; a pasted address is cut to them instead of failing the list. */
+  it("cuts a search and a page past the API's limits, by character", () => {
+    const long = orderListQueryOf({ q: "🍇".repeat(ORDER_SEARCH_MAX + 5), pagina: "999999" })
+
+    expect(Array.from(long.search)).toHaveLength(ORDER_SEARCH_MAX)
+    expect(long.search).toBe("🍇".repeat(ORDER_SEARCH_MAX))
+    expect(long.page).toBe(ORDER_PAGE_MAX)
   })
 
   it("asks the API only for what narrows the list", () => {

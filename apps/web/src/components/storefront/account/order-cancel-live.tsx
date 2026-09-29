@@ -10,8 +10,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { StorefrontOrderCancel } from "@harness-monorepo/ui/blocks/storefront/storefront-order-cancel"
 
 // App
+import { orderCancelRefusalOf } from "@/lib/order-cancel-refusal"
 import { useCancelShopperOrder } from "@/services/storefront/storefront-hooks"
 import { ShopperOrderError } from "@/services/storefront/storefront-requests"
+import { useOrderCancelNotice } from "./order-cancel-notice"
 
 export interface OrderCancelLiveProps {
   slug: string
@@ -19,33 +21,38 @@ export interface OrderCancelLiveProps {
   messages: UiMessages
 }
 
-/** Why a cancel was refused, in the shopper's words. */
-function refusalOf(error: unknown, text: UiMessages["storefront"]): string {
-  const code = error instanceof ShopperOrderError ? error.errorCode : "UNKNOWN"
-  switch (code) {
-    case "ORDER_NOT_CANCELLABLE":
-      return text.orderCancelRefusedAccepted
-    case "ORDER_CANCELLED":
-      return text.orderCancelRefusedDone
-    case "AUTH_UNAUTHENTICATED":
-      return text.checkoutSignedOut
-    default:
-      return text.orderCancelFailed
-  }
-}
-
-/** The card's cancel, wired to the shop's handler: once it lands, the page is read again and the card says "Cancelado". */
+/**
+ * The card's cancel, wired to the shop's handler. A cancel that lands is said over the list, takes
+ * focus there and reads the page again, and the card says "Cancelado" — or leaves a tab of orders on
+ * their way. A refusal stays in the dialog until the shopper has read it: the order moved under
+ * them, or their session ended, so the page is read again once they close it.
+ */
 export function OrderCancelLive({ slug, number, messages }: OrderCancelLiveProps) {
   const router = useRouter()
   const cancel = useCancelShopperOrder(slug)
+  const notice = useOrderCancelNotice()
+  const refusal = cancel.isError ? orderCancelRefusalOf(cancel.error instanceof ShopperOrderError ? cancel.error.errorCode : null, messages.storefront) : null
 
   return (
     <StorefrontOrderCancel
       number={number}
       pending={cancel.isPending}
-      error={cancel.error ? refusalOf(cancel.error, messages.storefront) : null}
-      // Refused as already moved by the shop: the list is stale either way, so it is read again too.
-      onConfirm={() => cancel.mutate(number, { onSettled: () => router.refresh() })}
+      done={cancel.isSuccess}
+      error={refusal}
+      onClose={() => {
+        if (!cancel.isError) return
+        cancel.reset()
+        router.refresh()
+      }}
+      landingFocus={notice?.target}
+      onConfirm={() =>
+        cancel.mutate(number, {
+          onSuccess: () => {
+            notice?.announce(number)
+            router.refresh()
+          },
+        })
+      }
       messages={messages}
     />
   )

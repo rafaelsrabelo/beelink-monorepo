@@ -1,7 +1,6 @@
 // Types
 import type { CustomerProfile, StorefrontAccountTab, StorefrontRouteWords } from "@harness-monorepo/contracts"
 import type { StorefrontAccountMenuItem } from "@harness-monorepo/ui/blocks/storefront/storefront-account-menu"
-import type { StorefrontAccountShortcut } from "@harness-monorepo/ui/blocks/storefront/storefront-account-overview"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -24,12 +23,6 @@ export function accountMenuOf(routes: StorefrontRoutes, counts: Partial<Record<S
   return [{ key: "overview", href: routes.account() }, ...DELIVERED_ACCOUNT_TABS.map((tab) => ({ key: tab, href: routes.accountTab(tab), count: counts[tab] ?? null }))]
 }
 
-/** The overview's cards: one per delivered tab, with what it holds in a line. */
-export function accountShortcutsOf(routes: StorefrontRoutes, text: UiMessages["storefront"]): StorefrontAccountShortcut[] {
-  const hints: Partial<Record<StorefrontAccountTab, string>> = { orders: text.accountOrdersHint, profile: text.accountProfileHint }
-  return DELIVERED_ACCOUNT_TABS.map((tab) => ({ key: tab, href: routes.accountTab(tab), hint: hints[tab] ?? null }))
-}
-
 /** The menu's title for a tab, in the shopper's words. */
 export function accountTabTitleOf(tab: StorefrontAccountTab, text: UiMessages["storefront"]): string {
   const titles: Record<StorefrontAccountTab, string> = {
@@ -42,15 +35,14 @@ export function accountTabTitleOf(tab: StorefrontAccountTab, text: UiMessages["s
   return titles[tab]
 }
 
-/**
- * The line under the shopper's name in the menu: their phone as a person writes it — the record
- * keeps "5585999994321" — else the account's e-mail.
- */
+/** A phone as a person writes it — the record keeps "5585999994321" — or null when none is on file. */
+export function phoneLineOf(phone: string | null): string | null {
+  if (!phone) return null
+  const local = phone.startsWith("55") && (phone.length === 12 || phone.length === 13) ? phone.slice(2) : phone
+  return local.length === 10 || local.length === 11 ? `(${local.slice(0, 2)}) ${local.slice(2, -4)}-${local.slice(-4)}` : phone
+}
+
+/** The line under the shopper's name in the menu: their phone, else the account's e-mail. */
 export function accountContactOf(shopper: Pick<CustomerProfile, "phone" | "email">): string {
-  const digits = shopper.phone ?? ""
-  const local = digits.startsWith("55") && (digits.length === 12 || digits.length === 13) ? digits.slice(2) : digits
-  if (local.length === 10 || local.length === 11) {
-    return `(${local.slice(0, 2)}) ${local.slice(2, -4)}-${local.slice(-4)}`
-  }
-  return shopper.phone ?? shopper.email
+  return phoneLineOf(shopper.phone) ?? shopper.email
 }

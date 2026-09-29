@@ -77,7 +77,12 @@ export function StorefrontOrderCard({
   const text = messages.storefront
 
   return (
-    <article aria-label={format(text.orderNumber, { number: String(number) })} className="overflow-hidden rounded-2xl border border-shop-line bg-shop-background text-shop-on-background">
+    // Focusable from script alone: a cancel that lands hands focus here, as the redraw takes its button away.
+    <article
+      tabIndex={-1}
+      aria-label={format(text.orderNumber, { number: String(number) })}
+      className="overflow-hidden rounded-2xl border border-shop-line bg-shop-background text-shop-on-background outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-shop-primary-ink"
+    >
       <header className="grid gap-3 border-b border-shop-line bg-shop-fill px-5 py-3.5 shop-md:grid-cols-[1fr_1fr_1fr_auto] shop-md:items-center shop-md:gap-6">
         <Fact label={text.orderPlacedOn}>{placedOn}</Fact>
         <Fact label={text.orderTotalLabel}>{total}</Fact>

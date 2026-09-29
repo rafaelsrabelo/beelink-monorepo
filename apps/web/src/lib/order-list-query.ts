@@ -19,6 +19,13 @@ const SITUATION_WORDS: Record<string, CustomerOrderSituation> = {
 
 export const SITUATION_WORD_OF: Record<CustomerOrderSituation, string> = { ACTIVE: "em-andamento", DELIVERED: "entregues", CANCELLED: "cancelados" }
 
+/**
+ * The API's own limits on the list (`ListCustomerOrdersDto`): past either it refuses the whole read,
+ * so an address pasted with a long search or a far page is cut to them rather than told "no orders".
+ */
+export const ORDER_SEARCH_MAX = 120
+export const ORDER_PAGE_MAX = 10_000
+
 /** The list's query as the address carries it: an unknown situation or period is the whole list. */
 export interface OrderListQuery {
   situation: CustomerOrderSituation | undefined
@@ -35,8 +42,9 @@ export function orderListQueryOf(query: SectionQuery): OrderListQuery {
   return {
     situation: situationWord ? SITUATION_WORDS[situationWord] : undefined,
     period: period && /^(3m|20\d{2})$/.test(period) ? period : undefined,
-    search: paramOf(query[ORDER_LIST_KEYS.search]) ?? "",
-    page: pageOf(query[ORDER_LIST_KEYS.page]),
+    // By character, not code unit: a cut through an emoji would leave half of it.
+    search: Array.from((paramOf(query[ORDER_LIST_KEYS.search]) ?? "").trim()).slice(0, ORDER_SEARCH_MAX).join(""),
+    page: Math.min(pageOf(query[ORDER_LIST_KEYS.page]), ORDER_PAGE_MAX),
   }
 }
 

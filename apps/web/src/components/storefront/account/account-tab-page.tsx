@@ -8,6 +8,7 @@ import type { Metadata } from "next"
 // UI
 import { StorefrontAccountSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-account-skeleton"
 import { StorefrontOrdersSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-orders-skeleton"
+import { StorefrontOrdersToolbarSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-orders-toolbar-skeleton"
 
 // App
 import { StorefrontAccountSection } from "@/components/storefront/storefront-account-section"
@@ -20,6 +21,7 @@ import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { OrdersTab } from "./orders-tab"
+import { OrdersToolbar } from "./orders-toolbar"
 import { StorefrontAccountArea } from "./storefront-account-area"
 
 /**
@@ -90,7 +92,21 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
       shopper={shopper}
       messages={ui}
     >
-      <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={tab} activeOrders={inProgress?.counts.ACTIVE} messages={ui}>
+      <StorefrontAccountArea
+        slug={store.slug}
+        routes={routes}
+        shopper={shopper}
+        tab={tab}
+        activeOrders={inProgress?.counts.ACTIVE}
+        tools={
+          tab === "orders" ? (
+            <Suspense fallback={<StorefrontOrdersToolbarSkeleton />}>
+              <OrdersToolbar slug={store.slug} routes={routes} query={query} messages={ui} />
+            </Suspense>
+          ) : undefined
+        }
+        messages={ui}
+      >
         {tab === "orders" ? (
           <Suspense fallback={<StorefrontOrdersSkeleton />}>
             <OrdersTab slug={store.slug} routes={routes} query={query} locale="pt-BR" messages={ui} />

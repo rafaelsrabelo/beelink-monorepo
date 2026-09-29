@@ -1,13 +1,18 @@
+import type { ReactNode } from "react"
+
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
 
 import { sampleColorPresets } from "../store/store.fixtures"
+import { StorefrontAccountMenu } from "./storefront-account-menu"
+import { StorefrontAccountShell } from "./storefront-account-shell"
 import { StorefrontOrderCard, type StorefrontOrderCardProps } from "./storefront-order-card"
 import { StorefrontOrderTabs } from "./storefront-order-tabs"
 import { StorefrontOrdersEmpty } from "./storefront-orders-empty"
 import { StorefrontOrdersSkeleton } from "./storefront-orders-skeleton"
 import { StorefrontOrdersToolbar } from "./storefront-orders-toolbar"
+import { StorefrontOrdersToolbarSkeleton } from "./storefront-orders-toolbar-skeleton"
 
 const items = [
   { name: "Pré-Treino Haze Hardcore 300g", href: "#", imageUrl: null, meta: "Sabor: Frutas vermelhas · Qtd. 1" },
@@ -71,30 +76,46 @@ const periods = [
   { value: "2025", label: "2025" },
 ]
 
-/** The list as the tab draws it: the toolbar, the tabs and a card per order. */
-function OrdersList({ cards }: { cards: readonly StorefrontOrderCardProps[] }) {
+const menu = (
+  <StorefrontAccountMenu
+    shopper={{ name: "Rafael Souza", contact: "(85) 99999-4321" }}
+    items={[
+      { key: "overview", href: "#" },
+      { key: "orders", href: "#", count: 2 },
+      { key: "profile", href: "#" },
+    ]}
+    current="orders"
+    signOutAction="#"
+  />
+)
+
+const toolbar = <StorefrontOrdersToolbar action="#" names={{ search: "q", period: "periodo" }} value={{ search: "", period: "" }} periods={periods} />
+
+/** The tab as the area draws it (6d): the title with the search and the period beside it, then the tabs and a card per order. */
+function OrdersTab({ cards, tools = toolbar }: { cards: readonly StorefrontOrderCardProps[]; tools?: ReactNode }) {
   return (
-    <div className="flex flex-col gap-5">
-      <StorefrontOrdersToolbar action="#" names={{ search: "q", period: "periodo" }} value={{ search: "", period: "" }} periods={periods} />
-      <StorefrontOrderTabs tabs={tabs} />
-      <ul className="flex flex-col gap-4">
-        {cards.map((card) => (
-          <li key={card.number}>
-            <StorefrontOrderCard {...card} />
-          </li>
-        ))}
-      </ul>
-    </div>
+    <StorefrontAccountShell menu={menu} page={{ kind: "tab", title: "Meus pedidos", backHref: "#", tools }}>
+      <div className="flex flex-col gap-5">
+        <StorefrontOrderTabs tabs={tabs} />
+        <ul className="flex flex-col gap-4">
+          {cards.map((card) => (
+            <li key={card.number}>
+              <StorefrontOrderCard {...card} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </StorefrontAccountShell>
   )
 }
 
 const meta = {
   title: "Blocos/Vitrine/Meus pedidos",
-  component: OrdersList,
-  parameters: { layout: "padded" },
-  decorators: [(Story) => <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), maxWidth: 880 }}>{Story()}</div>],
+  component: OrdersTab,
+  parameters: { layout: "fullscreen" },
+  decorators: [(Story) => <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), padding: "0 32px" }}>{Story()}</div>],
   args: { cards: [received, delivered, cancelled] },
-} satisfies Meta<typeof OrdersList>
+} satisfies Meta<typeof OrdersTab>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -108,8 +129,17 @@ export const SemPedidos: Story = { render: () => <StorefrontOrdersEmpty variant=
 /** Os filtros não acharam nada: a frase e o caminho para limpar. */
 export const SemResultados: Story = { render: () => <StorefrontOrdersEmpty variant="filtered" href="#" /> }
 
-/** A lista a caminho. */
-export const Esqueleto: Story = { render: () => <StorefrontOrdersSkeleton /> }
+/** A leitura falhou: nunca "nenhum pedido", e sim o erro e o tentar de novo. */
+export const Indisponivel: Story = { render: () => <StorefrontOrdersEmpty variant="unavailable" href="#" /> }
 
-/** No celular os fatos do cartão empilham. */
+/** A lista a caminho: a busca e os cartões em cinza, cada um no seu lugar. */
+export const Esqueleto: Story = {
+  render: () => (
+    <StorefrontAccountShell menu={menu} page={{ kind: "tab", title: "Meus pedidos", backHref: "#", tools: <StorefrontOrdersToolbarSkeleton /> }}>
+      <StorefrontOrdersSkeleton />
+    </StorefrontAccountShell>
+  ),
+}
+
+/** No celular a busca desce para baixo do título e os fatos do cartão empilham. */
 export const Celular: Story = { globals: { viewport: { value: "mobile1", isRotated: false } } }
