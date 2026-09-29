@@ -29,7 +29,7 @@ describe("proxy", () => {
     const response = await proxy(request("/dashboard"))
 
     expect(response.status).toBe(307)
-    expect(response.headers.get("location")).toBe("http://localhost:3000/login")
+    expect(response.headers.get("location")).toBe("http://localhost:3000/login?voltar=%2Fdashboard")
   })
 
   it("leaves the signed-out screens alone", async () => {
@@ -72,7 +72,7 @@ describe("proxy", () => {
 
     const response = await proxy(request("/dashboard", "bl_refresh=stolen"))
 
-    expect(response.headers.get("location")).toBe("http://localhost:3000/login")
+    expect(response.headers.get("location")).toBe("http://localhost:3000/login?voltar=%2Fdashboard")
     expect(response.cookies.get("bl_access")?.value).toBe("")
     expect(response.cookies.get("bl_refresh")?.value).toBe("")
   })
@@ -107,13 +107,62 @@ function selects(pathname: string, cookies: readonly string[] = []): boolean {
   return config.matcher.some((entry) => {
     if (typeof entry === "string") return new RegExp(`^${entry.replace("/:path*", "(?:/.*)?")}$`).test(pathname)
 
-    // The shop window's entry: a first segment that is neither Next's nor the API's, and the
-    // shopper's cookies present and absent as the conditions say.
+    const cookiesMatch = entry.has.every((rule) => cookies.includes(rule.key)) && entry.missing.every((rule) => !cookies.includes(rule.key))
+
+    // The panel's handlers: under /api, save the groups that write their own cookies or a shop's.
+    if (entry.source.startsWith("/api/")) return /^\/api\/(?!session|auth|customer|storefront)[^/]+(?:\/.*)?$/.test(pathname) && cookiesMatch
+
+    // The shop window's entry: a first segment that is neither Next's nor the API's.
     const segment = pathname.split("/")[1] ?? ""
     const shaped = /^[^/.]+$/.test(segment) && !/^(_next|api)/.test(segment)
-    return shaped && entry.has.every((rule) => cookies.includes(rule.key)) && entry.missing.every((rule) => !cookies.includes(rule.key))
+    return shaped && cookiesMatch
   })
 }
+
+describe("the panel's route handlers, a quarter of an hour into an open tab (BEELINK-169)", () => {
+  it("renews the pair on the way, for the handler and for the browser, and never redirects", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(SESSION, { status: 200 })))
+
+    const response = await proxy(request("/api/stores/loja/orders", "bl_refresh=old-refresh"))
+
+    expect(response.headers.get("location")).toBeNull()
+    expect(response.cookies.get("bl_access")?.value).toBe("new-access")
+    expect(response.cookies.get("bl_refresh")?.value).toBe("new-refresh")
+    // The handler of this same request reads the new token.
+    expect(response.headers.get("x-middleware-request-cookie")).toContain("bl_access=new-access")
+  })
+
+  it("clears a refused session and lets the handler answer 401, rather than redirect a JSON call", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 401 }, { status: 401 })))
+
+    const response = await proxy(request("/api/stores/loja/orders", "bl_refresh=spent"))
+
+    expect(response.headers.get("location")).toBeNull()
+    expect(response.cookies.get("bl_refresh")?.value).toBe("")
+  })
+
+  it("is handed only the panel's handlers with a lapsed access cookie", () => {
+    expect(selects("/api/stores/loja/orders", ["bl_refresh"])).toBe(true)
+    expect(selects("/api/uploads", ["bl_refresh"])).toBe(true)
+    expect(selects("/api/stores/loja/orders", ["bl_refresh", "bl_access"])).toBe(false)
+    expect(selects("/api/stores/loja/orders")).toBe(false)
+    for (const own of ["/api/session", "/api/session/expired", "/api/auth/login", "/api/customer/google/callback", "/api/storefront/loja/search"]) {
+      expect(selects(own, ["bl_refresh"])).toBe(false)
+    }
+  })
+})
+
+describe("the way back after signing in", () => {
+  it("sends a signed-out visitor to sign in and back to the page they were on", async () => {
+    const response = await proxy(request("/admin/loja/orders?status=RECEIVED"))
+    expect(response.headers.get("location")).toBe("http://localhost:3000/login?voltar=%2Fadmin%2Floja%2Forders%3Fstatus%3DRECEIVED")
+  })
+
+  it("sends a signed-in visitor of the sign-in screen back there, and never to another site", async () => {
+    expect((await proxy(request("/login?voltar=%2Fadmin%2Floja%2Forders", "bl_access=token"))).headers.get("location")).toBe("http://localhost:3000/admin/loja/orders")
+    expect((await proxy(request("/login?voltar=https%3A%2F%2Fevil.example", "bl_access=token"))).headers.get("location")).toBe("http://localhost:3000/admin")
+  })
+})
 
 describe("a shopper on a shop's pages", () => {
   it("renews an expired session in place, and never redirects", async () => {

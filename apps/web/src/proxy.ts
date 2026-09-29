@@ -5,6 +5,7 @@ import type { NextRequest } from "next/server"
 // App
 import { CUSTOMER_ACCESS_COOKIE, CUSTOMER_REFRESH_COOKIE, clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { refreshCustomerSession } from "@/lib/refresh-customer-session"
+import { isPanelPage, panelReturnOf, RETURN_KEY, signInHrefOf } from "@/lib/panel-return"
 import { refreshSession } from "@/lib/refresh-session"
 import { ACCESS_COOKIE, REFRESH_COOKIE, clearSessionCookies, setSessionCookies } from "@/lib/session-cookies"
 
@@ -28,10 +29,45 @@ function isShopperLink({ nextUrl }: NextRequest): boolean {
 }
 
 /** The panel's own paths; everything else the matcher hands over is a shop window. */
-const PANEL_PATHS = ["/dashboard", "/admin", "/create-store"]
-
 function isPanelPath(pathname: string): boolean {
-  return isAuthPath(pathname) || PANEL_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+  return isAuthPath(pathname) || isPanelPage(pathname)
+}
+
+/** Where a signed-out visitor of a panel page goes: the sign-in, and back to this very page after. */
+function signInFrom(request: NextRequest): URL {
+  return new URL(signInHrefOf(request.nextUrl.pathname + request.nextUrl.search), request.url)
+}
+
+/** Where a signed-in visitor of the sign-in screen goes: the page it was asked to go back to, or the panel. */
+function panelFrom(request: NextRequest): URL {
+  return new URL(panelReturnOf(request.nextUrl.searchParams.get(RETURN_KEY)) ?? "/admin", request.url)
+}
+
+/**
+ * The panel's route handlers, with a session whose access cookie ran out a quarter of an hour into
+ * an open tab (BEELINK-169). The matcher hands one over only with the refresh cookie there and the
+ * access cookie gone. It never redirects — a handler answers JSON — and a refused refresh clears
+ * the cookies, so the handler answers 401 and the page sends the person to sign in.
+ */
+async function keepPanelSignedIn(request: NextRequest): Promise<NextResponse> {
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value
+  if (!refreshToken || request.cookies.has(ACCESS_COOKIE)) return NextResponse.next()
+
+  const outcome = await refreshSession(refreshToken, request.headers.get("x-forwarded-for"))
+  if (outcome.status === "unavailable") return NextResponse.next()
+
+  if (outcome.status === "rejected") {
+    const answer = NextResponse.next()
+    clearSessionCookies(answer.cookies)
+    return answer
+  }
+
+  // Upstream too, so the handler of this very request calls the API with the new token.
+  request.cookies.set(ACCESS_COOKIE, outcome.session.accessToken)
+  request.cookies.set(REFRESH_COOKIE, outcome.session.refreshToken)
+  const answer = NextResponse.next({ request: { headers: request.headers } })
+  setSessionCookies(answer.cookies, outcome.session)
+  return answer
 }
 
 /**
@@ -73,6 +109,7 @@ async function keepShopperSignedIn(request: NextRequest): Promise<NextResponse> 
  */
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
+  if (pathname.startsWith("/api/")) return keepPanelSignedIn(request)
   if (!isPanelPath(pathname)) return keepShopperSignedIn(request)
   if (isShopperLink(request)) return NextResponse.next()
 
@@ -88,9 +125,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     if (outcome.status === "unavailable") return NextResponse.next()
 
     if (outcome.status === "rejected") {
-      const answer = onAuthPath
-        ? NextResponse.next()
-        : NextResponse.redirect(new URL("/login", request.url))
+      const answer = onAuthPath ? NextResponse.next() : NextResponse.redirect(signInFrom(request))
       clearSessionCookies(answer.cookies)
       return answer
     }
@@ -102,21 +137,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     request.cookies.set(ACCESS_COOKIE, session.accessToken)
     request.cookies.set(REFRESH_COOKIE, session.refreshToken)
 
-    const answer = onAuthPath
-      ? NextResponse.redirect(new URL("/admin", request.url))
-      : NextResponse.next({ request: { headers: request.headers } })
+    const answer = onAuthPath ? NextResponse.redirect(panelFrom(request)) : NextResponse.next({ request: { headers: request.headers } })
     setSessionCookies(answer.cookies, session)
 
     return answer
   }
 
-  if (!hasAccess && !onAuthPath) {
-    return NextResponse.redirect(new URL("/login", request.url))
-  }
-
-  if (hasAccess && onAuthPath) {
-    return NextResponse.redirect(new URL("/admin", request.url))
-  }
+  if (!hasAccess && !onAuthPath) return NextResponse.redirect(signInFrom(request))
+  if (hasAccess && onAuthPath) return NextResponse.redirect(panelFrom(request))
 
   return NextResponse.next()
 }
@@ -127,7 +155,9 @@ export const config = {
   // cookie, go to /login — would answer a crawler with a 302 for the whole public site. The
   // template this repo grew from matches the inverse, excluding a handful of paths and guarding
   // everything else; copying that matcher back in is the one edit that breaks bee-link silently.
-  // The route handlers under /api are absent for a second reason: they write their own cookies.
+  // The route handlers under /api come in only to renew a panel session whose access cookie ran
+  // out, and never those that write their own cookies (session, auth) or a shop's (customer,
+  // storefront).
   matcher: [
     "/dashboard",
     "/dashboard/:path*",
@@ -141,6 +171,11 @@ export const config = {
     "/verify-email",
     "/forgot-password",
     "/reset-password",
+    {
+      source: "/api/:group((?!session|auth|customer|storefront)[^/]+)/:path*",
+      has: [{ type: "cookie", key: "bl_refresh" }],
+      missing: [{ type: "cookie", key: "bl_access" }],
+    },
     // A shop window, but only for a signed-in shopper whose short-lived token has run out: the
     // conditions below keep every anonymous request — and every crawler — out of the proxy.
     {

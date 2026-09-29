@@ -25,10 +25,21 @@ const base = {
   path: "/",
 } as const
 
+/**
+ * The access cookie leaves the browser a minute before its token leaves the API. A request without
+ * it is what sends the proxy to renew the pair; one sent with a token the API already refuses — a
+ * clock a little off on either side — would fail instead.
+ */
+export const ACCESS_COOKIE_MARGIN_MS = 60_000
+
+export function accessCookieExpiryOf(session: Pick<AuthSession, "accessTokenExpiresAt">): Date {
+  return new Date(new Date(session.accessTokenExpiresAt).getTime() - ACCESS_COOKIE_MARGIN_MS)
+}
+
 export function setSessionCookies(jar: CookieJar, session: AuthSession): void {
   jar.set(ACCESS_COOKIE, session.accessToken, {
     ...base,
-    expires: new Date(session.accessTokenExpiresAt),
+    expires: accessCookieExpiryOf(session),
   })
   jar.set(REFRESH_COOKIE, session.refreshToken, {
     ...base,
