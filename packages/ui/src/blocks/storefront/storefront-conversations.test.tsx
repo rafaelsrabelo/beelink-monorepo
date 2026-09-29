@@ -29,17 +29,19 @@ describe("the header's conversations link", () => {
     const onOpen = vi.fn()
     const { rerender } = render(<StorefrontConversationsLink href="/loja/conta/conversas" unread={3} onOpen={onOpen} />)
 
-    const link = screen.getByRole("link", { name: "Conversas, 3 mensagens não lidas" })
+    const link = screen.getByRole("link", { name: "Chat, 3 mensagens não lidas" })
     expect(link).toHaveAttribute("href", "/loja/conta/conversas")
+    // The word beside the balloon, as the cart's, and the name starts with it.
+    expect(link).toHaveTextContent("Chat")
     fireEvent.click(link)
     expect(onOpen).toHaveBeenCalledOnce()
     fireEvent.click(link, { ctrlKey: true })
     expect(onOpen).toHaveBeenCalledOnce()
 
     rerender(<StorefrontConversationsLink href="/loja/conta/conversas" unread={1} />)
-    expect(screen.getByRole("link", { name: "Conversas, 1 mensagem não lida" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Chat, 1 mensagem não lida" })).toBeInTheDocument()
     rerender(<StorefrontConversationsLink href="/loja/conta/conversas" />)
-    expect(screen.getByRole("link", { name: "Conversas" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Chat" })).toBeInTheDocument()
   })
 })
 

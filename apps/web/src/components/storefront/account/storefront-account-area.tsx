@@ -14,7 +14,7 @@ import { StorefrontOrderNowSkeleton } from "@harness-monorepo/ui/blocks/storefro
 
 // App
 import { AppLink } from "@/components/app-link"
-import { accountContactOf, accountMenuOf, accountTabTitleOf } from "@/lib/account-menu"
+import { accountContactOf, accountMenuOf, accountTabTitleOf, customerSignOutActionOf } from "@/lib/account-menu"
 import { accountDetailsViewOf } from "@/lib/account-overview"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { AccountOrdersNow } from "./account-orders-now"
@@ -45,7 +45,7 @@ export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders
       shopper={{ name: shopper.name, contact: accountContactOf(shopper) }}
       items={accountMenuOf(routes, { orders: activeOrders })}
       current={tab ?? "overview"}
-      signOutAction={`/${slug}/api/customer/sair`}
+      signOutAction={customerSignOutActionOf(slug)}
       linkComponent={AppLink}
       messages={messages}
     />

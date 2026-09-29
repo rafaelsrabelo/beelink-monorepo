@@ -374,6 +374,9 @@ export interface UiMessages {
     accountReviews: string
     accountProfile: string
     accountMessages: string
+    /** The header's account menu (J21): its heading's link to the front, and the profile in the shopper's words. */
+    accountMenuOverview: string
+    accountMenuProfile: string
     accountBack: string
     /** The front (6c): the order on its way, the last one when none is, and the shopper's details. */
     accountInProgress: string
@@ -402,7 +405,6 @@ export interface UiMessages {
     orderStepDone: string
     orderStepTodo: string
     /** Meus pedidos (J4): the list's toolbar, tabs, cards, the cancel and its refusals, and the empty states. */
-    ordersLinkTop: string
     ordersFilterLabel: string
     ordersSearchLabel: string
     ordersSearchPlaceholder: string
@@ -514,6 +516,8 @@ export interface UiMessages {
     orderTrackingOwnLink: string
     /** The order's conversation in the shop window (K3): the header's icon, the list, one conversation. */
     conversationsTitle: string
+    /** The word beside the header's balloon, as the cart's; the link's names below start with it. */
+    conversationsLabel: string
     conversationsLink: string
     conversationsLinkWithOne: string
     conversationsLinkWithCount: string

@@ -21,15 +21,16 @@ export interface StorefrontConversationsLinkProps {
 }
 
 /**
- * The header's conversations, beside the account: a balloon with the unread count, drawn as the
- * cart's. The count lives in the link's name, and the badge is for the eye.
+ * The header's conversations, beside the account: a balloon with the unread count and "Chat" beside
+ * it from `shop-lg`, drawn as the cart's. The count lives in the link's name, and the badge is for
+ * the eye.
  */
 export function StorefrontConversationsLink({ href, unread = 0, onOpen, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontConversationsLinkProps) {
   const text = messages.storefront
   const label = unread === 0 ? text.conversationsLink : unread === 1 ? text.conversationsLinkWithOne : format(text.conversationsLinkWithCount, { count: String(unread) })
 
   return (
-    <Link href={href} aria-label={label} onClick={(event) => openInPlace(event, onOpen)} className="flex shrink-0 items-center">
+    <Link href={href} aria-label={label} onClick={(event) => openInPlace(event, onOpen)} className="flex shrink-0 items-center gap-1.5 text-sm font-bold">
       <span className="relative flex">
         <MessageCircleIcon aria-hidden="true" className="size-7" strokeWidth={1.8} />
         {unread > 0 ? (
@@ -43,6 +44,7 @@ export function StorefrontConversationsLink({ href, unread = 0, onOpen, linkComp
           </span>
         ) : null}
       </span>
+      <span className="hidden shop-lg:inline">{text.conversationsLabel}</span>
     </Link>
   )
 }
