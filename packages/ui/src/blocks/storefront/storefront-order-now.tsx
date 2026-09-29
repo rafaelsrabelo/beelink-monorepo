@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Libs
 import { ChevronRightIcon } from "lucide-react"
 
@@ -22,6 +25,8 @@ export interface StorefrontOrderNowProps {
   href: string
   /** The other orders on their way, past this one, and where they are listed. */
   more?: { label: string; href: string } | null
+  /** What else the shopper can do with it, beside following it: talking to the shop (K3). */
+  actions?: ReactNode
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -30,7 +35,7 @@ export interface StorefrontOrderNowProps {
  * The order on its way, at the head of the area's front (6c): where it stands, where it goes, the
  * steps it has taken and the ones to come, and the way to follow it.
  */
-export function StorefrontOrderNow({ eyebrow, headline, destination, note, steps, href, more, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontOrderNowProps) {
+export function StorefrontOrderNow({ eyebrow, headline, destination, note, steps, href, more, actions, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontOrderNowProps) {
   const text = messages.storefront
 
   return (
@@ -44,12 +49,15 @@ export function StorefrontOrderNow({ eyebrow, headline, destination, note, steps
           {destination ? <p className="text-sm text-shop-muted">{destination}</p> : null}
           {note ? <p className="text-sm text-shop-muted">{note}</p> : null}
         </div>
-        <Link
-          href={href}
-          className="flex h-11 shrink-0 items-center justify-center rounded-full bg-shop-primary px-5 text-sm font-bold text-shop-on-primary hover:opacity-90 shop-md:ml-auto"
-        >
-          {text.accountTrackOrder}
-        </Link>
+        <div className="flex flex-col gap-2 shop-sm:flex-row shop-md:ml-auto">
+          <Link
+            href={href}
+            className="flex h-11 shrink-0 items-center justify-center rounded-full bg-shop-primary px-5 text-sm font-bold text-shop-on-primary hover:opacity-90"
+          >
+            {text.accountTrackOrder}
+          </Link>
+          {actions}
+        </div>
       </div>
 
       <StorefrontOrderSteps steps={steps} messages={messages} />

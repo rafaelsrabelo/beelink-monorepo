@@ -28,6 +28,9 @@ export async function callAsShopper(
 
   const refreshToken = request.cookies.get(CUSTOMER_REFRESH_COOKIE)?.value
   const outcome = refreshToken ? await refreshCustomerSession(slug, refreshToken, clientIpOf(request)) : { status: "rejected" as const }
+  // An API that could not answer the renewal ended nobody's session: the caller answers it could not
+  // reach the shop, and the cookies stay for the next try.
+  if (outcome.status === "unavailable") return { status: "answered", response: null, renewed: null }
   if (outcome.status !== "renewed") return { status: "signedOut" }
 
   return { status: "answered", response: await call(outcome.session.accessToken), renewed: outcome.session }

@@ -1,0 +1,31 @@
+# The build context is the repository root, because both images install from the one lockfile.
+# Everything below is either rebuilt inside the image or must never reach it.
+
+# Installed and built inside the image, for its platform — a macOS node_modules carries the wrong
+# native binaries (argon2, sharp, Prisma's engines) for a Linux container.
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+apps/api/src/generated
+
+# A developer's local secrets. apps/api reads `.env` with dotenv at boot, so a copied file would
+# quietly override what the stack passes in.
+**/.env
+**/.env.*
+
+.git
+.github
+.husky
+.changeset
+.claude
+.playwright-mcp
+docs
+assets
+**/coverage
+**/storybook-static
+**/playwright-report
+**/test-results
+**/blob-report
+*.png

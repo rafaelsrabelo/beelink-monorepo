@@ -10,8 +10,8 @@ import { cn } from "@harness-monorepo/ui/lib/utils"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
 import { MastheadHeight } from "./masthead-height"
+import { StorefrontAccountDropdown, type StorefrontAccountDropdownItem } from "./storefront-account-dropdown"
 import { StorefrontAccountLink } from "./storefront-account-link"
-import { StorefrontOrdersLink } from "./storefront-orders-link"
 import { StorefrontCartLink } from "./storefront-cart-link"
 import { StorefrontSearch, type StorefrontSearchScope } from "./storefront-search"
 
@@ -43,8 +43,13 @@ export interface StorefrontMastheadProps {
   accountHref?: string
   /** The signed-in shopper's name; absent or null, the link invites them to sign in. */
   accountName?: string | null
-  /** The shopper's orders, beside their account (6c); absent for a visitor. */
-  ordersHref?: string
+  /**
+   * A signed-in shopper's account pages and where "Sair" posts: with a name, the account opens them
+   * as a menu (J21). Absent for a visitor, whose account is the link to sign in.
+   */
+  accountMenu?: { items: readonly StorefrontAccountDropdownItem[]; signOutAction: string }
+  /** The signed-in shopper's conversations, between the account and the cart: the web's live one (K3). */
+  conversationsSlot?: ReactNode
   /** A site's named bands, as anchors. A shop passes none. */
   menu?: readonly StorefrontMenuItem[]
   /** A site's button — its contact band. Kept out of `menu`, which would list it twice. */
@@ -93,7 +98,8 @@ export function StorefrontMasthead({
   cartSlot,
   accountHref,
   accountName,
-  ordersHref,
+  accountMenu,
+  conversationsSlot,
   menu = [],
   cta = null,
   categories,
@@ -195,8 +201,12 @@ export function StorefrontMasthead({
           </Link>
         ) : null}
 
-        {ordersHref ? <StorefrontOrdersLink href={ordersHref} linkComponent={Link} messages={messages} /> : null}
-        {accountHref ? <StorefrontAccountLink href={accountHref} name={accountName ?? null} linkComponent={Link} messages={messages} /> : null}
+        {accountHref && accountName && accountMenu ? (
+          <StorefrontAccountDropdown name={accountName} href={accountHref} items={accountMenu.items} signOutAction={accountMenu.signOutAction} messages={messages} />
+        ) : accountHref ? (
+          <StorefrontAccountLink href={accountHref} name={accountName ?? null} linkComponent={Link} messages={messages} />
+        ) : null}
+        {conversationsSlot}
 
         {cartSlot ?? (cartHref ? <StorefrontCartLink href={cartHref} count={cartCount} linkComponent={Link} messages={messages} /> : null)}
       </div>

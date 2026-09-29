@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { accountOrderNumberOf, listingFiltersOf, safeBackOf, sectionOf, signInModeOf, storefrontRoutes, toggledOption, accountTabOf } from "./storefront-routes"
+import { accountOrderNumberOf, conversationOrderOf, listingFiltersOf, safeBackOf, sectionOf, signInModeOf, storefrontRoutes, toggledOption, accountTabOf } from "./storefront-routes"
 
 const routes = storefrontRoutes({
   slug: "mutante",
@@ -141,6 +141,14 @@ describe("an order's address", () => {
   it("sits under the orders tab, and its receipt is the same page asked as a document", () => {
     expect(storefrontRoutes(shop).accountOrder(14)).toBe("/loja/conta/pedidos/14")
     expect(storefrontRoutes(shop).accountOrder(14, { receipt: true })).toBe("/loja/conta/pedidos/14?comprovante=1")
+  })
+
+  it("has its conversation on the conversations' tab, named by the order", () => {
+    expect(storefrontRoutes(shop).accountConversation(14)).toBe("/loja/conta/conversas?pedido=14")
+    expect(conversationOrderOf({ pedido: "14" })).toBe(14)
+    expect(conversationOrderOf({ pedido: "abc" })).toBeNull()
+    expect(conversationOrderOf({ pedido: ["14", "15"] })).toBeNull()
+    expect(conversationOrderOf({})).toBeNull()
   })
 
   /** A fourth segment is never a product: anything but an order number under the orders word is a 404. */

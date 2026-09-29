@@ -48,14 +48,21 @@ export const ComCarrinho: Story = {
   args: { cartHref: "/padaria-da-ana/carrinho", cartCount: 3, accountHref: "/padaria-da-ana/conta" },
 }
 
-/** Com o cliente entrado: o nome no "Olá" e, ao lado, o caminho para os pedidos dele. */
+/** Com o cliente entrado: o nome no "Olá", e a conta abre o menu (passe o mouse ou clique). */
 export const ComCliente: Story = {
   args: {
     cartHref: "/padaria-da-ana/carrinho",
     cartCount: 1,
     accountHref: "/padaria-da-ana/conta",
-    accountName: "Marina",
-    ordersHref: "/padaria-da-ana/conta/pedidos",
+    accountName: "Marina Souza",
+    accountMenu: {
+      items: [
+        { key: "orders", href: "/padaria-da-ana/conta/pedidos" },
+        { key: "profile", href: "/padaria-da-ana/conta/perfil" },
+        { key: "messages", href: "/padaria-da-ana/conta/conversas" },
+      ],
+      signOutAction: "/padaria-da-ana/api/customer/sair",
+    },
   },
 }
 

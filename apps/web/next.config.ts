@@ -1,7 +1,17 @@
+// Node
+import path from "node:path"
+
 // Types
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  /**
+   * What docker/web.Dockerfile ships: a traced server with only the files it loads. Traced from the
+   * monorepo root, not from apps/web — packages/ui is read as source and the hoisted node_modules
+   * sit at the root, so a trace rooted here would leave both out of the image.
+   */
+  output: "standalone",
+  outputFileTracingRoot: path.join(__dirname, "../.."),
   /**
    * Stable and top-level in Next 16 — `experimental.typedRoutes` is the deprecated spelling. With
    * it off, `next typegen` emits no route helpers and every `PageProps<"/…">` and
