@@ -46,4 +46,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
   )
 }
 
+// The one way to raise one: the app never imports `sonner` itself, which lives in this package.
+export { toast } from "sonner"
 export { Toaster }

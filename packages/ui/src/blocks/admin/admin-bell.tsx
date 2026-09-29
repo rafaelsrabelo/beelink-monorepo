@@ -1,3 +1,6 @@
+// React
+import type { ComponentProps } from "react"
+
 // Libs
 import { BellIcon } from "lucide-react"
 
@@ -5,21 +8,21 @@ import { BellIcon } from "lucide-react"
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
-export interface AdminBellProps {
+export interface AdminBellProps extends Omit<ComponentProps<"button">, "children"> {
   unread?: number
-  onClick?: () => void
   messages?: UiMessages
 }
 
 /**
- * Notifications, in the header's right-hand group.
+ * Notifications, in the header's right-hand group: what came in and waits — messages not read,
+ * orders not accepted — counted on the bell.
  *
- * The count goes in the accessible name rather than beside the icon: the dot is a dot, and a screen
- * reader announcing "Notifications" tells a person nothing about whether it is worth opening. One
- * unread has its own sentence because "1 não lidas" is wrong in Portuguese and a dictionary cannot
- * hold the rule that fixes it.
+ * The count goes in the accessible name as well as the badge: a screen reader announcing
+ * "Notifications" tells a person nothing about whether it is worth opening. One unread has its own
+ * sentence because "1 não lidas" is wrong in Portuguese and a dictionary cannot hold the rule that
+ * fixes it. The rest of the props reach the button, so a popover can make it its trigger.
  */
-export function AdminBell({ unread = 0, onClick, messages = defaultMessages }: AdminBellProps) {
+export function AdminBell({ unread = 0, messages = defaultMessages, ...button }: AdminBellProps) {
   const text = messages.shell
   const label =
     unread === 0
@@ -31,13 +34,18 @@ export function AdminBell({ unread = 0, onClick, messages = defaultMessages }: A
   return (
     <button
       type="button"
-      onClick={onClick}
+      {...button}
       aria-label={label}
       className="bg-header-field text-header-foreground hover:bg-header-field-hover focus-visible:ring-header-foreground/70 relative grid size-8 place-items-center rounded-lg outline-none focus-visible:ring-2"
     >
       <BellIcon aria-hidden="true" className="size-4" />
       {unread > 0 ? (
-        <span aria-hidden="true" className="bg-header-accent absolute top-1.5 right-1.5 size-1.5 rounded-full" />
+        <span
+          aria-hidden="true"
+          className="bg-header-accent text-header-accent-foreground absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold"
+        >
+          {unread > 99 ? "99+" : unread}
+        </span>
       ) : null}
     </button>
   )
