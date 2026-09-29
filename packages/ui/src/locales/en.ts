@@ -190,7 +190,7 @@ export const en: UiMessages = {
     checkoutDeliverTo: "Deliver to {address}",
     checkoutPickup: "Pick up at the shop",
     checkoutNoAddress: "To have it delivered, add your address.",
-    checkoutFeeLater: "The shop tells the delivery fee when it confirms the order.",
+    checkoutFeeLater: "Delivery fee to be agreed with the shop: it tells you the amount when it confirms the order.",
     checkoutPayment: "Payment",
     checkoutChoosePayment: "Choose how you will pay.",
     checkoutStockShort: "There is not enough stock — {items}. Adjust the cart and try again.",

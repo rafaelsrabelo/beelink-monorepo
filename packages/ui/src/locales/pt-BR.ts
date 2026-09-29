@@ -190,7 +190,7 @@ export const ptBR: UiMessages = {
     checkoutDeliverTo: "Entregar em {address}",
     checkoutPickup: "Retirar na loja",
     checkoutNoAddress: "Para receber em casa, cadastre seu endereço.",
-    checkoutFeeLater: "A loja informa a taxa de entrega ao confirmar o pedido.",
+    checkoutFeeLater: "Frete a combinar com a loja: ela informa o valor ao confirmar o pedido.",
     checkoutPayment: "Pagamento",
     checkoutChoosePayment: "Escolha a forma de pagamento.",
     checkoutStockShort: "Não há estoque para tudo — {items}. Ajuste o carrinho e tente de novo.",

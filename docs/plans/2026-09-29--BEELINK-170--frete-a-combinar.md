@@ -43,3 +43,9 @@ O checkout já avisa que "a loja informa a taxa de entrega ao confirmar o pedido
 - **"+ frete" em mais lugares do que a DoD listava.** Na loja: o card de Meus pedidos, a Visão geral da conta e a mensagem de WhatsApp que sai do carrinho. No painel: a lista (tabela e cards), os pedidos da ficha do cliente, o aviso de pedido novo no sino e a mensagem de WhatsApp. Uma regra só escreve todos: `orderTotalText`, em `packages/ui/src/lib/order-total.ts`.
 - **Um pedido cancelado não diz "+ frete".** Não há mais nada a combinar, e o total dele é o que foi. Isso apareceu no teste no navegador, nos cancelados do carrinho.
 - **A migração foi conferida numa cópia do `harness_wt`.** As 5 entregas do carrinho viraram "a combinar". As entregas lançadas pelo lojista mantiveram o valor digitado, inclusive as de frete 0. As retiradas continuaram em 0.
+
+## Depois do rebase (29/09, noite)
+
+- **Rebase sobre a `main` com J8 a J12, K7, #143, #145 e #146.** Entrou sem conflito, e o type-check dos quatro workspaces passou sem ajuste. Os e-mails de status do J12 não mostram total, então não precisam de "+ frete".
+- **A migração foi renomeada para `20260930120000_delivery_fee_to_agree`.** O nome antigo, `20260929235000`, ordenava antes das migrações do J8, J9 e J12, que já estão na `main` e em bancos onde foram aplicadas. Ela só tinha rodado numa cópia descartada (`harness_l4`), então renomear não afeta nenhum banco.
+- **O checkout passa a dizer "Frete a combinar com a loja".** O ticket lista o checkout junto das outras telas. Ele já avisava que a loja informa a taxa, e agora usa a mesma frase das outras telas. O checkout não mostra total, só o subtotal, então não há "+ frete" para escrever ali.

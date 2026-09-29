@@ -30,7 +30,7 @@ describe("StorefrontCheckoutChoices", () => {
 
     expect(screen.getByRole("group", { name: "Como receber" })).toBeInTheDocument()
     expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeChecked()
-    expect(screen.getByText("A loja informa a taxa de entrega ao confirmar o pedido.")).toBeInTheDocument()
+    expect(screen.getByText("Frete a combinar com a loja: ela informa o valor ao confirmar o pedido.")).toBeInTheDocument()
     expect(screen.getAllByRole("radio", { name: /Pix|Dinheiro|Cartão de crédito/ })).toHaveLength(3)
     expect(screen.queryByRole("radio", { name: "Cartão de débito" })).toBeNull()
 
