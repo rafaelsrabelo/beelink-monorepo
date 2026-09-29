@@ -65,7 +65,7 @@ function OrderPage({ status, pickup = false }: { status: StorefrontOrderStatusPr
             method="Pagamento combinado com a loja: Pix"
           />
           {pickup ? (
-            <StorefrontOrderAddress title="Retirada na loja" lines={["Loja do Design", "Rua B, 20 — Centro · Fortaleza · CE"]} />
+            <StorefrontOrderAddress title="Retirada na loja" lines={["Loja do Design"]} />
           ) : (
             <StorefrontOrderAddress title="Endereço de entrega" lines={["Rafael Souza", "Rua Tibúrcio Cavalcante, 1200, apto 302", "Meireles — Fortaleza/CE — CEP 60160-230"]} />
           )}
@@ -117,7 +117,7 @@ export const Celular: Story = { globals: { viewport: { value: "mobile1", isRotat
 export const Comprovante: Story = {
   render: () => (
     <StorefrontOrderReceipt
-      shop={{ name: "Loja do Design", address: "Rua B, 20 — Centro · Fortaleza · CE" }}
+      shop={{ name: "Loja do Design" }}
       number={1042}
       placedOn="21 de set. de 2026, 14:02"
       customer="Rafael Souza"

@@ -320,6 +320,7 @@ export const ptBR: UiMessages = {
     orderStatusPreparing: "Em preparo",
     orderStatusOut: "Saiu para entrega",
     orderStatusDelivered: "Entregue em {date}",
+    orderStatusPickedUp: "Retirado em {date}",
     orderStatusCancelled: "Cancelado em {date}",
     orderCancelledByShop: "Cancelado pela loja",
     orderCancelledByYou: "Cancelado por você",

@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrderSituation, OrderStatus } from "@harness-monorepo/contracts"
+import type { CustomerOrderSituation } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -11,7 +11,7 @@ import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/sto
 // App
 import { AppLink } from "@/components/app-link"
 import { customerOrdersAt } from "@/lib/customer-orders"
-import { orderCardViewOf } from "@/lib/order-card-view"
+import { isOrderInProgress, orderCardViewOf } from "@/lib/order-card-view"
 import { isFiltered, orderListApiQueryOf, orderListEntriesOf, orderListQueryOf, type OrderListQuery } from "@/lib/order-list-query"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
@@ -26,9 +26,6 @@ export interface OrdersTabProps {
   locale: string
   messages: UiMessages
 }
-
-/** The statuses of an order on its way: the ones worth following. */
-const IN_PROGRESS: ReadonlySet<OrderStatus> = new Set(["RECEIVED", "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY"])
 
 const TABS: readonly { key: "ALL" | CustomerOrderSituation; situation: CustomerOrderSituation | undefined }[] = [
   { key: "ALL", situation: undefined },
@@ -78,7 +75,7 @@ export async function OrdersTab({ slug, routes, query, locale, messages }: Order
                 <StorefrontOrderCard
                   {...orderCardViewOf(order, { routes, locale, messages })}
                   detailsHref={routes.accountOrder(order.number)}
-                  trackHref={IN_PROGRESS.has(order.status) ? routes.accountOrder(order.number) : undefined}
+                  trackHref={isOrderInProgress(order.status) ? routes.accountOrder(order.number) : undefined}
                   // Each action joins with its ticket; the customer's cancel is the API's from J2.
                   actions={order.status === "RECEIVED" ? <OrderCancelLive slug={slug} number={order.number} messages={messages} /> : undefined}
                   linkComponent={AppLink}

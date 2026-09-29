@@ -319,6 +319,7 @@ export const en: UiMessages = {
     orderStatusPreparing: "Being prepared",
     orderStatusOut: "Out for delivery",
     orderStatusDelivered: "Delivered on {date}",
+    orderStatusPickedUp: "Picked up on {date}",
     orderStatusCancelled: "Cancelled on {date}",
     orderCancelledByShop: "Cancelled by the shop",
     orderCancelledByYou: "Cancelled by you",

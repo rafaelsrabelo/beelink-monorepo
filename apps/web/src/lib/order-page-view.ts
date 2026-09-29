@@ -17,10 +17,12 @@ import { orderStepsOf } from "./order-steps"
 
 const ZONE = "America/Sao_Paulo"
 
-/** The shop as an order names it: who sold it, and where a pick-up is. */
+/**
+ * The shop as an order names it. Only its name: the public shop carries no address — it is kept out
+ * of what a search engine indexes — so a pick-up says where only once the shop decides to tell.
+ */
 export interface OrderShop {
   name: string
-  address: string | null
 }
 
 /** "21 de set. de 2026, 14:02": a moment with its year, for the top of a page and a receipt. */
@@ -54,10 +56,11 @@ export function orderStatusViewOf(order: CustomerOrder, context: OrderCardContex
 }
 
 /** An event's name, in the steps' words; a pick-up marked out for delivery is ready to be taken. */
-function eventTitleOf(status: OrderStatus, pickup: boolean, text: OrderCardContext["messages"]["storefront"]): string {
+function eventTitleOf(status: OrderStatus, first: boolean, pickup: boolean, text: OrderCardContext["messages"]["storefront"]): string {
   switch (status) {
+    // Placed once: a later "received" is the shop sending it back to waiting.
     case "RECEIVED":
-      return text.orderStepPlaced
+      return first ? text.orderStepPlaced : text.orderStatusReceived
     case "ACCEPTED":
       return text.orderStepAccepted
     case "PREPARING":
@@ -83,7 +86,7 @@ export function orderHistoryOf(order: CustomerOrder, { locale, messages }: Pick<
     .map((event, index) => ({
       day: day.format(new Date(event.at)),
       time: time.format(new Date(event.at)),
-      title: eventTitleOf(event.status, pickup, text),
+      title: eventTitleOf(event.status, index === 0, pickup, text),
       detail:
         index === 0
           ? order.placedBy === "CUSTOMER"
@@ -134,7 +137,7 @@ export function orderPaymentOf(order: CustomerOrder, { locale, messages }: Pick<
 /** Where it goes — who receives it, then the address line by line — or the shop it is picked up at. Null for a delivery that recorded none. */
 export function orderHandoverOf(order: CustomerOrder, shop: OrderShop, { messages }: Pick<OrderCardContext, "messages">): StorefrontOrderAddressProps | null {
   const text = messages.storefront
-  if (order.fulfillment === "PICKUP") return { title: text.orderPickupLabel, lines: [shop.name, shop.address].filter((line): line is string => Boolean(line)) }
+  if (order.fulfillment === "PICKUP") return { title: text.orderPickupLabel, lines: [shop.name] }
 
   const address = order.deliveryAddress
   if (!address) return null

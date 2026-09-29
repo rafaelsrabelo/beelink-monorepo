@@ -28,7 +28,8 @@ export function StorefrontOrderHistory({ events, messages = defaultMessages }: S
       <h2 className="text-lg font-extrabold shop-md:text-xl">{text.orderHistory}</h2>
       <ol className="flex flex-col">
         {events.map((event, index) => (
-          <li key={`${event.day}-${event.time}-${event.title}`} className="group flex gap-4">
+          // By position: the panel can set the same status twice within a minute, and the list never reorders.
+          <li key={index} className="group flex gap-4">
             <span className="flex w-[84px] shrink-0 flex-col text-[13px] text-shop-muted">
               <b className="font-bold text-shop-on-background">{event.day}</b>
               {event.time}

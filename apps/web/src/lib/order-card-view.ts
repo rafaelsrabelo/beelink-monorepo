@@ -26,13 +26,19 @@ export function momentOf(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }).format(new Date(iso))
 }
 
+/** Whether an order is on its way, and so worth following: received to out for delivery. */
+export function isOrderInProgress(status: CustomerOrderSummary["status"]): boolean {
+  return status !== "DELIVERED" && status !== "CANCELLED"
+}
+
 /** Where the order stands, in the shopper's words, and what to say under it. */
 export function orderStatusLineOf(
-  order: Pick<CustomerOrderSummary, "status" | "placedBy" | "cancelledBy" | "placedAt" | "statusAt">,
+  order: Pick<CustomerOrderSummary, "status" | "fulfillment" | "placedBy" | "cancelledBy" | "placedAt" | "statusAt">,
   { locale, messages }: Pick<OrderCardContext, "locale" | "messages">,
 ): Pick<StorefrontOrderCardProps, "headline" | "detail" | "tone"> {
   const text = messages.storefront
   const placed = format(order.placedBy === "CUSTOMER" ? text.orderPlacedByYou : text.orderPlacedByShop, { date: momentOf(order.placedAt, locale) })
+  const pickup = order.fulfillment === "PICKUP"
 
   switch (order.status) {
     case "RECEIVED":
@@ -41,10 +47,11 @@ export function orderStatusLineOf(
       return { headline: text.orderStatusAccepted, detail: placed, tone: "progress" }
     case "PREPARING":
       return { headline: text.orderStatusPreparing, detail: placed, tone: "progress" }
+    // The panel sets any status: on a pick-up, out for delivery can only mean ready to be taken.
     case "OUT_FOR_DELIVERY":
-      return { headline: text.orderStatusOut, detail: placed, tone: "progress" }
+      return { headline: pickup ? text.orderEventReadyForPickup : text.orderStatusOut, detail: placed, tone: "progress" }
     case "DELIVERED":
-      return { headline: format(text.orderStatusDelivered, { date: dayOf(order.statusAt, locale) }), detail: placed, tone: "done" }
+      return { headline: format(pickup ? text.orderStatusPickedUp : text.orderStatusDelivered, { date: dayOf(order.statusAt, locale) }), detail: placed, tone: "done" }
     case "CANCELLED":
       return {
         headline: format(text.orderStatusCancelled, { date: dayOf(order.statusAt, locale) }),

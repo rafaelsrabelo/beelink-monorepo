@@ -426,6 +426,7 @@ export interface UiMessages {
     orderStatusOut: string
     /** `{date}`. */
     orderStatusDelivered: string
+    orderStatusPickedUp: string
     orderStatusCancelled: string
     orderCancelledByShop: string
     orderCancelledByYou: string

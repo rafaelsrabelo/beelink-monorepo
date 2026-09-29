@@ -10,7 +10,7 @@ import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { StorefrontPrintButton } from "./storefront-print-button"
 
 export interface StorefrontOrderReceiptProps {
-  shop: { name: string; address: string | null }
+  shop: { name: string }
   number: number
   /** "21 de set. de 2026, 14:02". Every value arrives in words: the block formats nothing. */
   placedOn: string
@@ -21,6 +21,8 @@ export interface StorefrontOrderReceiptProps {
   rows: readonly { label: string; value: string }[]
   total: string
   method: string
+  /** Said over the order when it did not stand — "Cancelado em …" — so the paper never reads as a sale. */
+  note?: string | null
   /** The order's page, the way back from the document. It and "Imprimir" stay on the screen, never on the paper. */
   backHref: string
   linkComponent?: LinkComponent
@@ -30,7 +32,7 @@ export interface StorefrontOrderReceiptProps {
 /**
  * The order as a document to print or keep (J5): the shop, the order, what was bought and what it
  * cost, and where it went — and the line saying it is not a tax invoice, which the platform never
- * issues. The shop's WhatsApp and phone stay off it: the name and the address say who sold it.
+ * issues. The shop's WhatsApp and phone stay off it: its name says who sold it.
  */
 export function StorefrontOrderReceipt({
   shop,
@@ -42,6 +44,7 @@ export function StorefrontOrderReceipt({
   rows,
   total,
   method,
+  note,
   backHref,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
@@ -63,10 +66,12 @@ export function StorefrontOrderReceipt({
         <header className="flex flex-col gap-1 border-b border-shop-line pb-4">
           <p className="text-[11px] font-bold tracking-[0.04em] text-shop-muted uppercase">{text.receiptShop}</p>
           <p className="text-lg font-extrabold">{shop.name}</p>
-          {shop.address ? <p className="text-shop-muted">{shop.address}</p> : null}
         </header>
 
-        <h1 className="text-xl font-extrabold">{format(text.receiptTitle, { number: String(number) })}</h1>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-extrabold">{format(text.receiptTitle, { number: String(number) })}</h1>
+          {note ? <p className="text-base font-extrabold">{note}</p> : null}
+        </div>
 
         <dl className="grid gap-4 shop-md:grid-cols-3">
           <div className="flex flex-col gap-0.5">

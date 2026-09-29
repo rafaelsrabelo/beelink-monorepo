@@ -20,7 +20,6 @@ import { format } from "@harness-monorepo/ui/locales/index"
 // App
 import { AppLink } from "@/components/app-link"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
-import { addressLineOf } from "@/components/storefront/storefront-links"
 import { customerOrderAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
 import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf } from "@/lib/order-page-view"
@@ -87,9 +86,25 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
     </StorefrontFrame>
   )
 
+  const header = (extra: Partial<Parameters<typeof StorefrontOrderHeader>[0]> = {}) => (
+    <StorefrontOrderHeader
+      number={number}
+      trail={[
+        { label: ui.storefront.account, href: routes.account() },
+        { label: ui.storefront.accountOrders, href: routes.accountTab("orders") },
+      ]}
+      homeHref={routes.home}
+      backHref={routes.accountTab("orders")}
+      linkComponent={AppLink}
+      messages={ui}
+      {...extra}
+    />
+  )
+
   if (read.status === "failed") {
     return frame(
-      <div className="py-6">
+      <div className="flex flex-col gap-5 py-4 shop-lg:py-6">
+        {header()}
         <StorefrontOrdersEmpty variant="orderUnavailable" href={here} linkComponent={AppLink} messages={ui} />
       </div>,
     )
@@ -97,7 +112,9 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
 
   const { order } = read
   const context = { routes, locale: "pt-BR", messages: ui }
-  const shop = { name: store.name, address: addressLineOf(store) }
+  const shop = { name: store.name }
+  const status = orderStatusViewOf(order, context)
+  const cancelled = order.status === "CANCELLED"
   const handover = orderHandoverOf(order, shop, context)
   const { items, count } = orderItemsOf(order, context)
   const payment = orderPaymentOf(order, context)
@@ -112,6 +129,8 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
         handover={handover}
         items={items}
         {...payment}
+        // A cancelled order printed plain would read as a sale that happened.
+        note={cancelled ? [status.headline, status.detail].filter(Boolean).join(" · ") : null}
         backHref={routes.accountOrder(order.number)}
         linkComponent={AppLink}
         messages={ui}
@@ -123,27 +142,16 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
   return frame(
     <OrderCancelNotice>
       <StorefrontOrderLayout
-        header={
-          <StorefrontOrderHeader
-            number={order.number}
-            placed={orderPlacedLineOf(order, context)}
-            trail={[
-              { label: ui.storefront.account, href: routes.account() },
-              { label: ui.storefront.accountOrders, href: routes.accountTab("orders") },
-            ]}
-            homeHref={routes.home}
-            backHref={routes.accountTab("orders")}
-            receiptHref={routes.accountOrder(order.number, { receipt: true })}
-            // Each action joins with its ticket: talking to the shop (K3), buying again (J6).
-            actions={order.status === "RECEIVED" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : undefined}
-            linkComponent={AppLink}
-            messages={ui}
-          />
-        }
+        header={header({
+          placed: orderPlacedLineOf(order, context),
+          receiptHref: cancelled ? undefined : routes.accountOrder(order.number, { receipt: true }),
+          // Each action joins with its ticket: talking to the shop (K3), buying again (J6).
+          actions: order.status === "RECEIVED" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : undefined,
+        })}
         status={
           <>
             <OrderCancelNoticeLine messages={ui} />
-            <StorefrontOrderStatus {...orderStatusViewOf(order, context)} messages={ui} />
+            <StorefrontOrderStatus {...status} messages={ui} />
           </>
         }
         history={<StorefrontOrderHistory events={orderHistoryOf(order, context)} messages={ui} />}

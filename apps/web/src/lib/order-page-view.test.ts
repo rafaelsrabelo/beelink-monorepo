@@ -24,7 +24,7 @@ const routes = storefrontRoutes({
   },
 })
 const context = { routes, locale: "pt-BR", messages: ptBR }
-const shop = { name: "Loja do Design", address: "Rua B, 20 — Centro · Fortaleza · CE" }
+const shop = { name: "Loja do Design" }
 
 const order: CustomerOrder = {
   number: 14,
@@ -92,6 +92,23 @@ describe("an order's page, in the shopper's words", () => {
     ])
   })
 
+  it("says a pick-up is ready to be taken, then taken, where a delivery goes out and arrives", () => {
+    const events = [...order.events, { status: "OUT_FOR_DELIVERY" as const, at: "2026-09-29T13:00:00.000Z" }]
+    expect(orderStatusViewOf({ ...order, fulfillment: "PICKUP", status: "OUT_FOR_DELIVERY", events }, context).headline).toBe("Pronto para retirar")
+    expect(orderStatusViewOf({ ...order, status: "OUT_FOR_DELIVERY", events }, context).headline).toBe("Saiu para entrega")
+
+    const delivered = [...events, { status: "DELIVERED" as const, at: "2026-09-29T15:00:00.000Z" }]
+    expect(orderStatusViewOf({ ...order, fulfillment: "PICKUP", status: "DELIVERED", events: delivered }, context).headline).toBe("Retirado em 29 de set. de 2026")
+    expect(orderStatusViewOf({ ...order, status: "DELIVERED", events: delivered }, context).headline).toBe("Entregue em 29 de set. de 2026")
+  })
+
+  /** Placed once: the shop sending it back to waiting is not a second placing. */
+  it("names a later return to received by its status, not as the placing again", () => {
+    const back = { ...order, status: "RECEIVED" as const, events: [order.events[0]!, order.events[1]!, { status: "RECEIVED" as const, at: "2026-09-29T10:00:00.000Z" }] }
+
+    expect(orderHistoryOf(back, context).map((event) => event.title)).toEqual(["Aguardando a loja confirmar", "Loja confirmou", "Pedido feito"])
+  })
+
   it("prices each line as it was bought, and counts the units", () => {
     const { items, count } = orderItemsOf(order, context)
 
@@ -120,7 +137,7 @@ describe("an order's page, in the shopper's words", () => {
       title: "Endereço de entrega",
       lines: ["Marina Souza", "Rua Tibúrcio Cavalcante, 1200, apto 302", "Meireles — Fortaleza/CE — CEP 60160-230"],
     })
-    expect(orderHandoverOf({ ...order, fulfillment: "PICKUP", deliveryAddress: null }, shop, context)).toEqual({ title: "Retirada na loja", lines: ["Loja do Design", "Rua B, 20 — Centro · Fortaleza · CE"] })
+    expect(orderHandoverOf({ ...order, fulfillment: "PICKUP", deliveryAddress: null }, shop, context)).toEqual({ title: "Retirada na loja", lines: ["Loja do Design"] })
     expect(orderHandoverOf({ ...order, deliveryAddress: null }, shop, context)).toBeNull()
   })
 })

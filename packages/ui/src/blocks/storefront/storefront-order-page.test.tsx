@@ -80,6 +80,22 @@ describe("an order's page", () => {
     expect(screen.getByRole("heading", { name: "Endereço de entrega" })).toBeInTheDocument()
   })
 
+  /** 6f: on a phone what was bought and where it goes come before the log; from shop-lg the column moves right. */
+  it("puts the lines, the payment and the address before the history in the page's order", () => {
+    render(page())
+
+    const items = screen.getByRole("heading", { name: "Itens (3)" })
+    const history = screen.getByRole("heading", { name: "Histórico" })
+    expect(items.compareDocumentPosition(history) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it("titles an order it could not read, with the way back and nothing it does not know", () => {
+    render(<StorefrontOrderHeader number={14} trail={[{ label: "Meus pedidos", href: "/loja/conta/pedidos" }]} homeHref="/loja" backHref="/loja/conta/pedidos" />)
+
+    expect(screen.getByRole("heading", { level: 1, name: "Pedido nº 14" })).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Ver comprovante" })).toBeNull()
+  })
+
   it("draws no steps for a cancelled order, which says when and by whom", () => {
     render(<StorefrontOrderStatus headline="Cancelado em 28 de set. de 2026" detail="Cancelado por você" tone="cancelled" steps={null} />)
 

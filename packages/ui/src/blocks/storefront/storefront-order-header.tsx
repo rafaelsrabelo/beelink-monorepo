@@ -14,15 +14,15 @@ import { StorefrontBreadcrumb, type StorefrontCrumb } from "./storefront-breadcr
 
 export interface StorefrontOrderHeaderProps {
   number: number
-  /** Who placed it and when, already a sentence: "Feito por você na loja em 21 de set. de 2026, 14:02." */
-  placed: string
+  /** Who placed it and when, already a sentence: "Feito por você na loja em 21 de set. de 2026, 14:02." Unknown while the order could not be read. */
+  placed?: string | null
   /** The trail from the account to the list; the order itself is its last crumb, added here. */
   trail: readonly StorefrontCrumb[]
   homeHref: string
   /** Meus pedidos: the phone's way back, where the trail has no room. */
   backHref: string
-  /** The order as a document to print: "Ver comprovante". */
-  receiptHref: string
+  /** The order as a document to print: "Ver comprovante". None for an order that did not stand. */
+  receiptHref?: string
   /** What else can be done with it now — each action arrives with its own ticket. */
   actions?: ReactNode
   linkComponent?: LinkComponent
@@ -59,13 +59,15 @@ export function StorefrontOrderHeader({
       <div className="flex flex-col gap-3 shop-md:flex-row shop-md:items-end">
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="text-2xl font-extrabold shop-lg:text-3xl">{title}</h1>
-          <p className="text-sm text-shop-muted">{placed}</p>
+          {placed ? <p className="text-sm text-shop-muted">{placed}</p> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2 shop-md:ml-auto">
           {actions}
-          <Link href={receiptHref} className="flex h-10 items-center rounded-full border border-shop-line-strong bg-shop-background px-4 text-sm font-semibold hover:bg-shop-fill">
-            {text.orderReceipt}
-          </Link>
+          {receiptHref ? (
+            <Link href={receiptHref} className="flex h-10 items-center rounded-full border border-shop-line-strong bg-shop-background px-4 text-sm font-semibold hover:bg-shop-fill">
+              {text.orderReceipt}
+            </Link>
+          ) : null}
         </div>
       </div>
     </header>
