@@ -47,6 +47,8 @@ function useSettleShopConversation(slug: string) {
     await queryClient.cancelQueries({ queryKey })
     queryClient.setQueryData(queryKey, conversation)
     await Promise.all([
+      // Read again behind it: a message that came in while the answer went is in no reply but this.
+      queryClient.invalidateQueries({ queryKey }),
       queryClient.invalidateQueries({ queryKey: [...conversationKeys.shop(slug), "list"] }),
       queryClient.invalidateQueries({ queryKey: conversationKeys.shopUnread(slug) }),
     ])

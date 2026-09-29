@@ -79,10 +79,13 @@ function NavList({
             */}
             <span className={cn("truncate", collapsed && "lg:sr-only")}>{item.title}</span>
             {item.badge ? (
-              <span className={cn("bg-primary text-primary-foreground ml-auto rounded-full px-1.5 text-[11px] leading-5 font-semibold", collapsed && "lg:hidden")}>
-                <span aria-hidden="true">{item.badge > 99 ? "99+" : item.badge}</span>
+              <>
+                <span aria-hidden="true" className={cn("bg-primary text-primary-foreground ml-auto rounded-full px-1.5 text-[11px] leading-5 font-semibold", collapsed && "lg:hidden")}>
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+                {/* Outside what the rail hides, so the name reads the same collapsed or not. */}
                 {item.badgeLabel ? <span className="sr-only">, {item.badgeLabel}</span> : null}
-              </span>
+              </>
             ) : null}
           </>
         )

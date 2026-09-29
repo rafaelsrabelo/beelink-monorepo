@@ -5,7 +5,9 @@ import { describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
+import { ConversationFailed } from "./conversation-failed"
 import { ConversationFilters } from "./conversation-filters"
+import { ConversationPager } from "./conversation-pager"
 import { ConversationList, type ConversationListRow } from "./conversation-list"
 import { ConversationReply } from "./conversation-reply"
 import { ConversationThread, type ConversationLine } from "./conversation-thread"
@@ -65,9 +67,27 @@ describe("the panel's conversations", () => {
     expect(onSearch).toHaveBeenCalledWith("Carla")
   })
 
+  it("says a read failed and asks again, and pages only when there is more", () => {
+    const onRetry = vi.fn()
+    render(<ConversationFailed message="As conversas não carregaram." onRetry={onRetry} />)
+    fireEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+    expect(onRetry).toHaveBeenCalledOnce()
+
+    const { container, rerender } = render(<ConversationPager newerHref={null} olderHref={null} />)
+    expect(container).toBeEmptyDOMElement()
+    rerender(<ConversationPager newerHref={null} olderHref="/c?pagina=2" />)
+    expect(screen.getByRole("link", { name: "Mais antigas" })).toHaveAttribute("href", "/c?pagina=2")
+  })
+
+  it("says an order that ended had no conversation", () => {
+    render(<ConversationThread customer="Carla" order="Pedido nº 9" lines={[]} state="none" />)
+    expect(screen.getByText("Não houve conversa neste pedido.")).toBeInTheDocument()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <div>
+        <ConversationFilters filters={[{ key: "OPEN", label: "Abertas", href: "#", active: true }]} search="" onSearch={() => undefined} />
         <ConversationList rows={rows} />
         <ConversationThread customer="Carla" order="Pedido nº 18" lines={lines} state="open" reply={<ConversationReply value="" onChange={() => undefined} onSubmit={() => undefined} canSend={false} />} />
       </div>,

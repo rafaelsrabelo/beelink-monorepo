@@ -48,7 +48,12 @@ export function ConversationFilters({ filters, search, onSearch, linkComponent: 
         <input
           type="search"
           value={term}
-          onChange={(event) => setTerm(event.target.value)}
+          onChange={(event) => {
+            setTerm(event.target.value)
+            // Emptied — the clear button, or by hand — the list goes back to every conversation at once.
+            if (event.target.value === "" && search !== "") onSearch("")
+          }}
+          maxLength={120}
           aria-label={text.searchLabel}
           placeholder={text.searchPlaceholder}
           className="placeholder:text-muted-foreground h-9 min-w-0 flex-1 bg-transparent text-sm outline-none"

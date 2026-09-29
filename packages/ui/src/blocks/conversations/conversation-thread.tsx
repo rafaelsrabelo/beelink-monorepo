@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useCallback, useEffect, useRef, type ReactNode } from "react"
+import { useCallback, useEffect, useId, useRef, type ReactNode } from "react"
 
 // Libs
 import { ArrowLeftIcon } from "lucide-react"
@@ -36,8 +36,8 @@ export interface ConversationThreadProps {
   /** Back to the list, on a phone where the conversation has the screen to itself. */
   backHref?: string | null
   lines: readonly ConversationLine[]
-  /** `open` takes an answer; `closed` is history; `empty` has nothing from the customer yet. */
-  state: "open" | "closed" | "empty"
+  /** `open` takes an answer; `closed` is history; `empty` waits for the customer; `none` ended with nothing said. */
+  state: "open" | "closed" | "empty" | "none"
   reply?: ReactNode
   /** Its own title, when the conversation stands alone rather than inside an order. */
   headed?: boolean
@@ -53,6 +53,7 @@ export function ConversationThread({ customer, order, orderHref, customerHref, b
   const text = messages.conversations
   // Opened from the list, the focused row is gone: the conversation's title takes its place.
   const heading = useRef<HTMLHeadingElement>(null)
+  const headingId = useId()
   useEffect(() => {
     if (headed) heading.current?.focus()
   }, [headed])
@@ -65,7 +66,7 @@ export function ConversationThread({ customer, order, orderHref, customerHref, b
   )
 
   return (
-    <section aria-label={customer} className="flex min-h-0 flex-1 flex-col gap-3">
+    <section {...(headed ? { "aria-labelledby": headingId } : { "aria-label": customer })} className="flex min-h-0 flex-1 flex-col gap-3">
       {headed ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {backHref ? (
@@ -74,7 +75,7 @@ export function ConversationThread({ customer, order, orderHref, customerHref, b
             </Link>
           ) : null}
           <div className="flex min-w-0 flex-col">
-            <h2 ref={heading} tabIndex={-1} className="truncate text-base font-semibold outline-none">
+            <h2 ref={heading} id={headingId} tabIndex={-1} className="focus-visible:ring-ring truncate rounded-sm text-base font-semibold outline-none focus-visible:ring-2">
               {customer}
             </h2>
             <div className="text-muted-foreground flex items-center gap-2 text-xs">{order}</div>
@@ -94,11 +95,11 @@ export function ConversationThread({ customer, order, orderHref, customerHref, b
         </div>
       ) : null}
 
-      {state === "empty" ? (
-        <p className="text-muted-foreground py-6 text-center text-sm">{text.noneYet}</p>
+      {state === "empty" || state === "none" ? (
+        <p className="text-muted-foreground py-6 text-center text-sm">{state === "empty" ? text.noneYet : text.noneClosed}</p>
       ) : (
         // A log: what arrives is read out; focusable, so a keyboard scrolls the history.
-        <div ref={scroller} role="log" tabIndex={0} aria-label={customer} className="focus-visible:ring-ring min-h-0 flex-1 overflow-y-auto rounded-md outline-none focus-visible:ring-2">
+        <div ref={scroller} role="log" tabIndex={0} aria-label={text.title} className="focus-visible:ring-ring min-h-0 flex-1 overflow-y-auto rounded-md outline-none focus-visible:ring-2">
           <ol className="flex flex-col gap-2 py-1">
             {lines.map((line) => (
               <li key={line.id} className={cn("flex max-w-[85%] flex-col gap-1", line.mine ? "items-end self-end" : "items-start self-start")}>

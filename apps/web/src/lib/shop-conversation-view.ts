@@ -15,7 +15,11 @@ export interface ShopConversationsAddress {
   filter: ShopConversationFilter
   q: string
   order: number | null
+  page: number
 }
+
+/** The API refuses a longer search; cut here, so an address never asks what can only fail. */
+export const SEARCH_MAX = 120
 
 const FILTERS: readonly ShopConversationFilter[] = ["OPEN", "UNREAD", "ALL"]
 
@@ -23,18 +27,21 @@ const FILTERS: readonly ShopConversationFilter[] = ["OPEN", "UNREAD", "ALL"]
 export function shopConversationsAddressOf(params: URLSearchParams): ShopConversationsAddress {
   const filter = params.get("filtro")?.toUpperCase()
   const order = Number(params.get("pedido"))
+  const page = Number(params.get("pagina"))
   return {
     filter: FILTERS.includes(filter as ShopConversationFilter) ? (filter as ShopConversationFilter) : "OPEN",
-    q: params.get("q")?.trim() ?? "",
+    q: [...(params.get("q")?.trim() ?? "")].slice(0, SEARCH_MAX).join(""),
     order: Number.isInteger(order) && order > 0 ? order : null,
+    page: Number.isInteger(page) && page > 1 ? page : 1,
   }
 }
 
 /** The tab's address for a state: each filter, search and open conversation is a link of its own. */
-export function shopConversationsHrefOf(slug: string, { filter, q, order }: ShopConversationsAddress): string {
+export function shopConversationsHrefOf(slug: string, { filter, q, order, page }: ShopConversationsAddress): string {
   const query = new URLSearchParams()
   if (filter !== "OPEN") query.set("filtro", filter.toLowerCase())
   if (q) query.set("q", q)
+  if (page > 1) query.set("pagina", String(page))
   if (order !== null) query.set("pedido", String(order))
   return `/admin/${slug}/conversations${query.size ? `?${query.toString()}` : ""}`
 }
@@ -76,7 +83,7 @@ export function shopConversationLinesOf(conversation: ShopConversation, { locale
 }
 
 /** Open, closed, or nothing from the customer yet — the shop answers only a conversation its customer opened. */
-export function shopConversationStateOf(conversation: ShopConversation): "open" | "closed" | "empty" {
-  if (conversation.messages.length === 0) return "empty"
+export function shopConversationStateOf(conversation: ShopConversation): "open" | "closed" | "empty" | "none" {
+  if (conversation.messages.length === 0) return conversation.order.open ? "empty" : "none"
   return conversation.order.open ? "open" : "closed"
 }

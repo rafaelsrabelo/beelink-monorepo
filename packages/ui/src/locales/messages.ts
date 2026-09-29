@@ -1521,8 +1521,11 @@ export interface UiMessages {
     viewCustomer: string
     back: string
     pickOne: string
+    older: string
+    newer: string
     threadFailed: string
     noneYet: string
+    noneClosed: string
     closed: string
     sent: string
     read: string

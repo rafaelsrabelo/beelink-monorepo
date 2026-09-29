@@ -42,3 +42,29 @@
 
 - Respostas prontas; atribuir a conversa a um atendente.
 - Anexos.
+
+## Adendo — revisão independente (2026-09-29)
+
+Um revisor. Corrigido:
+1. **A aba não tinha altura.** A lista de 20 linhas esticava a conversa, e a resposta ia parar longe,
+   abaixo da tela. Agora as colunas têm altura própria, e a lista e o histórico rolam por dentro.
+2. **A lista mostrava só a primeira página** (a API pagina de 20 em 20). Agora há "Mais recentes" e
+   "Mais antigas", com `?pagina=` no endereço.
+3. **Um pedido encerrado sem conversa** dizia que o cliente ainda podia escrever. Agora diz "Não houve
+   conversa neste pedido".
+4. **Testes e histórias que faltavam:**
+   - o componente ao vivo (lida pedida uma vez só; um 409 que vira histórico);
+   - a falha e a paginação;
+   - histórias dos filtros, da conversa encerrada, da conversa vazia, dos esqueletos e da falha.
+5. **Miúdos:**
+   - a busca entra no histórico do navegador (`push`), é cortada em 120 caracteres como a API, e
+     esvaziar o campo volta à lista inteira;
+   - o número de não lidas continua no nome do item com o menu recolhido;
+   - a resposta de um envio ou de uma leitura é seguida de uma releitura, para uma mensagem que chegou
+     no meio não ficar de fora;
+   - a conversa é nomeada pelo título (`aria-labelledby`), e o título ganha foco visível.
+
+Fica como está:
+- No filtro "Não lidas", abrir uma conversa a marca como lida, e a linha sai da lista enquanto ela
+  está aberta. É o filtro fazendo o que diz.
+- O bloco no pedido marca como lida ao abrir o pedido. O pedido é onde o lojista vê a conversa.
