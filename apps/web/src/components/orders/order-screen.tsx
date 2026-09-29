@@ -2,6 +2,7 @@
 
 // UI
 import { OrderDeliveryCard } from "@harness-monorepo/ui/blocks/orders/order-delivery-card"
+import { OrderFeeCard } from "@harness-monorepo/ui/blocks/orders/order-fee-card"
 import { OrderDetail } from "@harness-monorepo/ui/blocks/orders/order-detail"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { defaultLocale } from "@harness-monorepo/ui/locales/index"
@@ -14,7 +15,7 @@ import { OrderConversationSection } from "@/components/conversations/order-conve
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { addressLineOf } from "@/lib/customer-address"
 import { shopOrderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
-import { useOrder, useOrderDelivery, useUpdateOrderStatus } from "@/services/orders/order-hooks"
+import { useOrder, useOrderDelivery, useOrderDeliveryFee, useUpdateOrderStatus } from "@/services/orders/order-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
 export interface OrderScreenProps {
@@ -30,6 +31,7 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
   const store = useStore(slug)
   const status = useUpdateOrderStatus(slug, number)
   const delivery = useOrderDelivery(slug, number)
+  const fee = useOrderDeliveryFee(slug, number)
   const listHref = `/admin/${slug}/orders`
 
   if (order.isPending) {
@@ -77,6 +79,18 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
         statusError={pageErrorCopy(status.error, web)}
         delivery={
           current.fulfillment === "DELIVERY" ? (
+            <div className="flex flex-col gap-4">
+              {/* A cancelled order's fee no longer changes: the API refuses it, so the card is not offered. */}
+              {current.status !== "CANCELLED" ? (
+                <OrderFeeCard
+                  feeCents={current.deliveryFeeCents}
+                  onSave={(cents) => fee.mutate(cents)}
+                  pending={fee.isPending}
+                  error={fee.error ? pageErrorCopy(fee.error, web) : null}
+                  saved={fee.isSuccess}
+                  messages={messages}
+                />
+              ) : null}
             <OrderDeliveryCard
               delivery={current.delivery}
               onSave={(next) => delivery.mutate(next)}
@@ -88,6 +102,7 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
               needed={current.status === "OUT_FOR_DELIVERY" && !current.delivery}
               messages={messages}
             />
+            </div>
           ) : undefined
         }
         conversation={<OrderConversationSection slug={slug} number={current.number} locale={defaultLocale} messages={messages} />}

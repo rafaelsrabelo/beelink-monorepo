@@ -91,6 +91,7 @@ describe("the account's front", () => {
       recipientName: "Marina Souza",
       paymentMethod: "PIX",
       totalCents: 5000,
+      deliveryFeeCents: 1000,
       itemsCount: 1,
       items: [],
       moreItems: 0,

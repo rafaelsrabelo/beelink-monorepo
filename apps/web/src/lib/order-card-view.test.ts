@@ -35,6 +35,7 @@ const order: CustomerOrderSummary = {
   recipientName: "Bia Cliente",
   paymentMethod: "PIX",
   totalCents: 23722,
+  deliveryFeeCents: 1000,
   itemsCount: 3,
   items: [
     { productId: "p1", productSlug: "haze-300", productName: "Pré-Treino Haze", variantLabel: "Sabor: Uva", imageUrl: "https://img.test/haze.jpg", unitPriceCents: 11990, quantity: 1, lineTotalCents: 11990 },
@@ -55,6 +56,11 @@ describe("orderCardViewOf", () => {
       { name: "Pré-Treino Haze", href: "/loja/produtos/haze-300", imageUrl: "https://img.test/haze.jpg", meta: "Sabor: Uva · Qtd. 1" },
       { name: "Creatina", href: null, imageUrl: null, meta: "Qtd. 2" },
     ])
+  })
+
+  it("adds '+ frete' to the total while a delivery's fee is not agreed — not once the order is cancelled", () => {
+    expect(orderCardViewOf({ ...order, deliveryFeeCents: null }, context).total.replace(/\s/g, " ")).toBe("R$ 237,22 + frete · Pix")
+    expect(orderCardViewOf({ ...order, deliveryFeeCents: null, status: "CANCELLED", cancelledBy: "CUSTOMER" }, context).total.replace(/\s/g, " ")).toBe("R$ 237,22 · Pix")
   })
 
   it("says a pick-up is picked up", () => {

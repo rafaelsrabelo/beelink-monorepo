@@ -43,6 +43,15 @@ describe("OrderDetail", () => {
     expect(within(items).getByText("R$ 289,70")).toBeInTheDocument()
   })
 
+  /** BEELINK-170: a fee not agreed reads "A combinar", and the total says it leaves the fee out. */
+  it("says a delivery's fee is to be agreed, and the total '+ frete'", () => {
+    render(<OrderDetail order={{ ...order, deliveryFeeCents: null, totalCents: 27970 }} {...props} />)
+
+    const items = screen.getByRole("region", { name: "Itens" })
+    expect(within(items).getByText("A combinar")).toBeInTheDocument()
+    expect(within(items).getByText("R$ 279,70 + frete")).toBeInTheDocument()
+  })
+
   it("shows the customer, how it leaves and is paid, and a way to talk to them", () => {
     render(<OrderDetail order={order} {...props} />)
 

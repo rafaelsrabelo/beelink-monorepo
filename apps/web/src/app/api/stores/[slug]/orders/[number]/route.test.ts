@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 // App
 import { GET } from "./route"
 import { PATCH } from "./status/route"
+import { PUT as PUT_FEE } from "./delivery-fee/route"
 
 const SLUG = "mutante"
 const context = { params: Promise.resolve({ slug: SLUG, number: "12" }) }
@@ -58,5 +59,35 @@ describe("PATCH /api/stores/[slug]/orders/[number]/status", () => {
     vi.stubGlobal("fetch", vi.fn())
 
     expect((await PATCH(request("PATCH", { status: "PREPARING" }, "https://evil.example"), context)).status).toBe(403)
+  })
+})
+
+describe("PUT /api/stores/[slug]/orders/[number]/delivery-fee", () => {
+  function feeRequest(body: unknown, origin = "http://localhost:3000"): NextRequest {
+    return new NextRequest(`http://localhost:3000/api/stores/${SLUG}/orders/12/delivery-fee`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+      headers: new Headers({ "content-type": "application/json", origin, cookie: "bl_access=owner-token" }),
+    })
+  }
+
+  it("sends the agreed fee with the owner's token, and passes a refusal through", async () => {
+    const fetchSpy = vi.fn(async () => Response.json({ errorCode: "ORDER_DELIVERY_FOR_PICKUP" }, { status: 400 }))
+    vi.stubGlobal("fetch", fetchSpy)
+
+    const response = await PUT_FEE(feeRequest({ deliveryFeeCents: 1250 }), context)
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ errorCode: "ORDER_DELIVERY_FOR_PICKUP" })
+    const [url, init] = fetchSpy.mock.calls[0]! as unknown as [string, RequestInit]
+    expect(url).toBe(`http://api.test/api/stores/${SLUG}/orders/12/delivery-fee`)
+    expect(init.method).toBe("PUT")
+    expect(JSON.parse(String(init.body))).toEqual({ deliveryFeeCents: 1250 })
+  })
+
+  it("refuses a request from another site", async () => {
+    vi.stubGlobal("fetch", vi.fn())
+
+    expect((await PUT_FEE(feeRequest({ deliveryFeeCents: 1250 }, "https://evil.example"), context)).status).toBe(403)
   })
 })

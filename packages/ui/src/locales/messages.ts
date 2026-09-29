@@ -561,6 +561,9 @@ export interface UiMessages {
     orderSubtotal: string
     orderDelivery: string
     orderFree: string
+    /** A delivery whose fee the shop has not told yet (BEELINK-170), and its total beside it. */
+    orderFeeToAgree: string
+    orderTotalPlusFee: string
     orderDiscount: string
     orderTotalRow: string
     orderPaymentAgreed: string
@@ -1464,6 +1467,8 @@ export interface UiMessages {
     searchPlaceholder: string
     filterLabel: string
     all: string
+    /** A delivery's total while its fee is not agreed (BEELINK-170): "R$ 239,70 + frete". */
+    totalPlusFee: string
     /** Keyed by the wire's status, spelled out: this package imports no contracts. */
     statuses: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED", string>
     payments: Record<"MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD", string>
@@ -1614,6 +1619,15 @@ export interface UiMessages {
       whatsappGreeting: string
       whatsappLine: string
       whatsappFee: string
+      /** A delivery's fee not agreed yet (BEELINK-170): on the order, in its message, and the form that tells it. */
+      feeToAgree: string
+      whatsappFeeToAgree: string
+      feeFormTitle: string
+      feeFormHint: string
+      feeFormLabel: string
+      feeFormSave: string
+      feeFormSaved: string
+      feeFormInvalid: string
       whatsappPickup: string
       whatsappDiscount: string
       whatsappTotal: string

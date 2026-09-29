@@ -73,10 +73,10 @@ export const customerRecord: CustomerRecordView = {
 
 /** His history, newest first — a cancelled one among them, which his numbers leave out. */
 export const customerOrders: CustomerOrderItem[] = [
-  { number: 14, status: "PREPARING", paymentMethod: "PIX", totalCents: 17980, itemsCount: 2, placedAt: "2026-09-20T14:30:00.000Z" },
-  { number: 9, status: "CANCELLED", paymentMethod: "MONEY", totalCents: 5990, itemsCount: 1, placedAt: "2026-08-30T12:00:00.000Z" },
-  { number: 6, status: "DELIVERED", paymentMethod: "CREDIT_CARD", totalCents: 8990, itemsCount: 1, placedAt: "2026-08-02T12:00:00.000Z" },
-  { number: 3, status: "DELIVERED", paymentMethod: "PIX", totalCents: 9900, itemsCount: 3, placedAt: "2026-07-13T12:00:00.000Z" },
+  { number: 14, status: "PREPARING", fulfillment: "DELIVERY", paymentMethod: "PIX", totalCents: 17980, deliveryFeeCents: 1000, itemsCount: 2, placedAt: "2026-09-20T14:30:00.000Z" },
+  { number: 9, status: "CANCELLED", fulfillment: "DELIVERY", paymentMethod: "MONEY", totalCents: 5990, deliveryFeeCents: 1000, itemsCount: 1, placedAt: "2026-08-30T12:00:00.000Z" },
+  { number: 6, status: "DELIVERED", fulfillment: "DELIVERY", paymentMethod: "CREDIT_CARD", totalCents: 8990, deliveryFeeCents: 1000, itemsCount: 1, placedAt: "2026-08-02T12:00:00.000Z" },
+  { number: 3, status: "DELIVERED", fulfillment: "DELIVERY", paymentMethod: "PIX", totalCents: 9900, deliveryFeeCents: 1000, itemsCount: 3, placedAt: "2026-07-13T12:00:00.000Z" },
 ]
 
 /** Bia's other records: the one the shop registered with the phone she tried to save, and a namesake. */

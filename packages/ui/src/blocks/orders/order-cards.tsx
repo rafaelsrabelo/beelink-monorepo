@@ -3,6 +3,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // Block
 import { OrderStatusBadge } from "./order-status-badge"
+import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { itemsLabel, type OrderRowsProps } from "./order-table"
 
 /**
@@ -35,7 +36,7 @@ export function OrderCards({ orders, hrefOf, money, when, linkComponent: Link, m
               <span className="truncate">{order.customer.name}</span>
               {order.customer.phone ? <span className="text-muted-foreground text-xs tabular-nums">{order.customer.phone}</span> : null}
             </span>
-            <span className="font-medium tabular-nums">{money(order.totalCents)}</span>
+            <span className="font-medium tabular-nums">{orderTotalText(money(order.totalCents), order, messages.orders.totalPlusFee)}</span>
           </span>
           <span className="text-muted-foreground flex justify-between gap-2 text-xs">
             <span className="tabular-nums">{when(order.placedAt)}</span>
