@@ -57,7 +57,7 @@ describe("an order's conversation", () => {
     return call('POST', '/api/stores/lessari/customer/orders', session, { items: [{ variantId: variant, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' });
   }
 
-  const mine = (number = 1, session = shopper) => `/api/stores/lessari/customer/orders/${number}/conversation`;
+  const mine = (number = 1) => `/api/stores/lessari/customer/orders/${number}/conversation`;
   const shops = (number = 1) => `/api/stores/lessari/orders/${number}/conversation`;
 
   it('opens with the shopper’s first message, and the shop answers; each side counts what it has not read', async () => {
