@@ -330,6 +330,19 @@ export interface UiMessages {
     signUpSent: string
     /** After asking for a new password: said alike for any address. */
     forgotSent: string
+    /** The shop's own pages for a shopper's e-mailed links (BEELINK-149). */
+    verifyEmailTitle: string
+    newPasswordTitle: string
+    newPasswordLead: string
+    newPasswordLabel: string
+    newPasswordRepeat: string
+    newPasswordSubmit: string
+    linkSpentVerify: string
+    linkSpentReset: string
+    linkResend: string
+    linkAskAgain: string
+    emailConfirmed: string
+    passwordReplaced: string
     signOut: string
     /** `{name}` — the header's greeting once signed in: "Olá, Bia". */
     accountHello: string

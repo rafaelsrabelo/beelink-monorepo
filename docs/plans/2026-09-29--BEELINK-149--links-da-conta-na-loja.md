@@ -76,3 +76,19 @@ telas do painel passam a redirecionar para a tela da loja antes de gastar o toke
 
 - As cores e o logo da loja no próprio e-mail. O ticket pede o nome no assunto e no corpo.
 - Entrar sozinho depois de confirmar o e-mail ou trocar a senha.
+
+## Adendo da implementação (29/09)
+
+- **Salvar a senha nova não apaga a sessão deste navegador.** A API já encerra as sessões da conta
+  cujo link foi usado. Uma sessão de outra conta aberta no mesmo aparelho não é dela e fica.
+- **A tela "reenviar" da loja no painel (`ShopResendVerification`, do G7) saiu.** Os links de lojista
+  seguem no painel. Os de cliente redirecionam para a loja antes de chegar ali.
+- **A página de entrar da loja ganhou um aviso,** para "E-mail confirmado!" e "Senha trocada".
+- **Conferido em :3100, com o Mailpit:**
+  - um cadastro vindo do carrinho recebe "Loja do Design — confirme seu e-mail", de "Loja do Design";
+  - o link confirma e cai em Entrar com o aviso e `voltar` para o carrinho;
+  - o mesmo link, de novo, mostra a tela de link vencido dentro da loja;
+  - o "esqueci a senha" leva à tela de nova senha, que recusa duas senhas diferentes e, ao salvar,
+    cai em Entrar;
+  - os links antigos do painel com `voltar=/<loja>` redirecionam para a loja.
+- **Dados de teste:** a conta `cliente-j10@teste.dev` (senha `Senha!Nova456`) na loja-do-design.

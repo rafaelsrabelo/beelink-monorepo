@@ -155,6 +155,8 @@ export const en: WebMessages = {
     CUSTOMER_SIGN_UP_INVALID: "Check the fields: a name of 2 letters or more, and a password of 8 characters or more.",
     CUSTOMER_FIELDS_INVALID: "Check the fields: a name of 2 letters or more, and the mobile with its area code.",
     CUSTOMER_ADDRESS_FIELDS_INVALID: "Check the address: an 8-digit ZIP code, the street, the city and a 2-letter state.",
+    CUSTOMER_PASSWORD_MISMATCH: "The two passwords are not the same. Type them again.",
+    CUSTOMER_PASSWORD_INVALID: "The password needs 8 characters or more.",
     CUSTOMER_ADDRESS_NOT_FOUND: "That address is no longer on your account.",
     CUSTOMER_ADDRESS_LIMIT: "You already have 10 addresses, the most you can keep. Remove one to add another.",
     CUSTOMER_PHONE_TAKEN: "That mobile is already on another customer's record at this shop.",

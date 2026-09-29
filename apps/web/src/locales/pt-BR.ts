@@ -155,6 +155,8 @@ export const ptBR: WebMessages = {
     CUSTOMER_SIGN_UP_INVALID: "Confira os campos: o nome com 2 letras ou mais, e a senha com 8 caracteres ou mais.",
     CUSTOMER_FIELDS_INVALID: "Confira os campos: o nome com 2 letras ou mais e o celular com DDD.",
     CUSTOMER_ADDRESS_FIELDS_INVALID: "Confira o endereço: o CEP com 8 números, a rua, a cidade e a UF com 2 letras.",
+    CUSTOMER_PASSWORD_MISMATCH: "As duas senhas não são iguais. Digite de novo.",
+    CUSTOMER_PASSWORD_INVALID: "A senha precisa ter 8 caracteres ou mais.",
     CUSTOMER_ADDRESS_NOT_FOUND: "Esse endereço não está mais na sua conta.",
     CUSTOMER_ADDRESS_LIMIT: "Você já tem 10 endereços, o máximo. Remova um para adicionar outro.",
     CUSTOMER_PHONE_TAKEN: "Esse celular já está no cadastro de outro cliente desta loja.",
