@@ -19,6 +19,8 @@ export interface StorefrontSignInProps {
   error?: string | null
   /** The link is on its way — after signing up or asking for a new password. */
   sent?: boolean
+  /** What an e-mailed link just did — the e-mail confirmed, the password replaced — said over the form. */
+  notice?: string | null
   /** The other faces of this page. */
   hrefs: { signIn: string; signUp: string; forgot: string }
   /**
@@ -39,7 +41,19 @@ const LABEL = "flex flex-col gap-1 text-sm font-medium"
  * that posts to the web — no script needed to sign in, and no password ever held by page code.
  * The shop window stays open to anyone: this is a convenience, never a gate to the cart.
  */
-export function StorefrontSignIn({ mode, action, hidden, email = "", error, sent = false, hrefs, google, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontSignInProps) {
+export function StorefrontSignIn({
+  mode,
+  action,
+  hidden,
+  email = "",
+  error,
+  sent = false,
+  notice,
+  hrefs,
+  google,
+  linkComponent: Link = AnchorLink,
+  messages = defaultMessages,
+}: StorefrontSignInProps) {
   const text = messages.storefront
   const lead = mode === "criar" ? text.signUpLead : mode === "senha" ? text.forgotLead : text.signInLead
   const submit = mode === "criar" ? text.signUpSubmit : mode === "senha" ? text.forgotSubmit : text.signInSubmit
@@ -51,6 +65,12 @@ export function StorefrontSignIn({ mode, action, hidden, email = "", error, sent
       {error ? (
         <p role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
           {error}
+        </p>
+      ) : null}
+
+      {notice ? (
+        <p role="status" className="rounded-[10px] border border-shop-line bg-shop-fill px-4 py-3 text-sm">
+          {notice}
         </p>
       ) : null}
 

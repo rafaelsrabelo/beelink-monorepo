@@ -37,6 +37,13 @@ export interface StorefrontRouteWords {
    * password: `/<shop>/entrar`. Reserved since the beginning with the cart.
    */
   signIn: string;
+  /**
+   * Where the link in a shopper's confirmation e-mail opens, at the shop: `/<shop>/confirmar-email?token=…`.
+   * The API writes it into the e-mail (BEELINK-149), so a shop's customer never lands on the panel.
+   */
+  verifyEmail: string;
+  /** Where the link in a shopper's new-password e-mail opens, at the shop: `/<shop>/nova-senha?token=…`. */
+  resetPassword: string;
   /** The shopper's own page at this shop: `/<shop>/conta`. */
   account: string;
   /**

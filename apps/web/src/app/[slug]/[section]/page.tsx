@@ -16,7 +16,9 @@ import { StorefrontCartLive } from "@/components/storefront/storefront-cart-live
 import { StorefrontListing } from "@/components/storefront/storefront-listing"
 import { StorefrontAccountArea } from "@/components/storefront/account/storefront-account-area"
 import { StorefrontSectionBand } from "@/components/storefront/storefront-section-band"
+import { StorefrontResetPasswordSection } from "@/components/storefront/storefront-reset-password-section"
 import { StorefrontSignInSection } from "@/components/storefront/storefront-sign-in-section"
+import { StorefrontVerifyEmailSection } from "@/components/storefront/storefront-verify-email-section"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
@@ -58,7 +60,7 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[sl
     // A paged or searched shelf is not a landing page; it is the same shelf, reached differently. Nor
     // is a deep combination of filters: three narrowings of one shelf are not a page of their own.
     robots:
-      place.page > 1 || place.term || filterCountOf(place) >= 3 || ["cart", "signIn", "account"].includes(place.section.kind)
+      place.page > 1 || place.term || filterCountOf(place) >= 3 || ["cart", "signIn", "verifyEmail", "resetPassword", "account"].includes(place.section.kind)
         ? { index: false, follow: true }
         : undefined,
   }
@@ -120,6 +122,10 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
         <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={null} activeOrders={activeOrders} messages={ui} />
       ) : place.section.kind === "signIn" ? (
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
+      ) : place.section.kind === "verifyEmail" ? (
+        <StorefrontVerifyEmailSection place={place} routes={routes} query={query} />
+      ) : place.section.kind === "resetPassword" ? (
+        <StorefrontResetPasswordSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (
         <StorefrontCartLive
           slug={store.slug}

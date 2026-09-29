@@ -99,4 +99,5 @@ export class CustomerProfileResponse {
   @ApiProperty({ nullable: true, type: String, format: 'date' }) birthDate!: string | null;
   @ApiProperty({ type: CustomerAddressResponse, description: "The default address's parts; every part null while there is none." }) address!: CustomerAddressResponse;
   @ApiProperty({ type: [CustomerSavedAddressResponse], description: 'Every saved address, the default first, then the newest.' }) addresses!: CustomerSavedAddressResponse[];
+  @ApiProperty({ description: 'Whether the account has a password; one opened through Google has none until it creates one.' }) hasPassword!: boolean;
 }

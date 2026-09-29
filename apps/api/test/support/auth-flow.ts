@@ -28,10 +28,13 @@ export async function register(app: NestFastifyApplication, email: string, name 
   return response.json<User>();
 }
 
-/** Reads the verification link out of the inbox, like a person clicking it. */
+/**
+ * Reads the verification link out of the inbox, like a person clicking it: the panel's page, or a
+ * shop's own (`/<shop>/confirmar-email`, in either vocabulary) for a shopper's account.
+ */
 export async function verifyEmailOf(app: NestFastifyApplication, email: string): Promise<void> {
   const message = await waitForMessage(email);
-  const token = tokenFromLink(message.Text, '/verify-email');
+  const token = tokenFromLink(message.Text, '(?:/[a-z0-9-]+/confirmar-email|/verify-email)');
 
   const response = await app.inject({ method: 'POST', url: '/api/auth/verify-email', payload: { token } });
   if (response.statusCode !== 204) throw new Error(`verify-email answered ${response.statusCode}: ${response.payload}`);

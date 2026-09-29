@@ -18,7 +18,7 @@ const routes = storefrontRoutes({
     categories: "categorias",
     search: "busca",
     cart: "carrinho",
-    signIn: "entrar",
+    signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha",
     account: "conta",
     accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" },
   },

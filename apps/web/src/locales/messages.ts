@@ -45,6 +45,10 @@ export type WebErrorCode =
   | "CUSTOMER_FIELDS_INVALID"
   /** A saved address the API refused as a whole: a 400 from the addresses' save. */
   | "CUSTOMER_ADDRESS_FIELDS_INVALID"
+  /** The new password from an e-mailed link, typed differently the second time. */
+  | "CUSTOMER_PASSWORD_MISMATCH"
+  /** The new password from an e-mailed link, refused by the API for its length. */
+  | "CUSTOMER_PASSWORD_INVALID"
   // The shopper said no on Google's page: Google sends back `error`, not a code.
   | "GOOGLE_CANCELLED"
 

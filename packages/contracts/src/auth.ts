@@ -56,4 +56,8 @@ export type AuthErrorCode =
   | "AUTH_TOKEN_INVALID"
   | "AUTH_REFRESH_REUSED"
   | "AUTH_UNAUTHENTICATED"
+  /** The current password given to change it does not match: 403, never the 401 of a lapsed session. */
+  | "AUTH_PASSWORD_WRONG"
+  /** An account with no password to change — opened through Google — which creates one by an e-mailed link. */
+  | "AUTH_PASSWORD_NOT_SET"
   | "RATE_LIMITED";

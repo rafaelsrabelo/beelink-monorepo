@@ -10,23 +10,27 @@ import { dayOf } from '../../shared/http/birth-date.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { AccountScope } from '../auth/account-scope.js';
 import { AuthService } from '../auth/auth.service.js';
-import type { LoginDto, RegisterDto } from '../auth/dto/auth.dto.js';
+import type { LoginDto } from '../auth/dto/auth.dto.js';
+import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { SessionService } from '../auth/session.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { SAVED_ADDRESS_ORDER, addressPartsOf, toSavedAddress } from './customer-addresses.js';
+import type { CustomerRegisterDto } from './dto/customer-link.dto.js';
 import type { UpdateCustomerProfileDto } from './dto/customer.dto.js';
+import { shopReturnOf } from './shop-return.js';
 
-/** The record, its account's e-mail, and its addresses as `SAVED_ADDRESS_ORDER` reads them: the default first. */
-function toCustomerProfile(customer: CustomerModel, email: string, addresses: CustomerAddressModel[]): CustomerProfile {
+/** The record, its account — e-mail, and whether it has a password — and its addresses as `SAVED_ADDRESS_ORDER` reads them: the default first. */
+function toCustomerProfile(customer: CustomerModel, user: Pick<UserModel, 'email' | 'passwordHash'>, addresses: CustomerAddressModel[]): CustomerProfile {
   return {
     id: customer.id,
     name: customer.name,
-    email,
+    email: user.email,
     phone: customer.phone,
     cpf: customer.cpf,
     birthDate: dayOf(customer.birthDate),
     address: addressPartsOf(addresses.find((address) => address.isDefault)),
     addresses: addresses.map(toSavedAddress),
+    hasPassword: user.passwordHash !== null,
   } satisfies CustomerProfile;
 }
 
@@ -49,8 +53,8 @@ export class CustomersService {
    * answers "e-mail taken"; a shop window may not reveal who shops, so an address already in use
    * gets the same answer as a new one — and, if it was never verified, a fresh link.
    */
-  async register(storeSlug: string, dto: RegisterDto): Promise<void> {
-    const scope = await this.scopeOf(storeSlug);
+  async register(storeSlug: string, dto: CustomerRegisterDto): Promise<void> {
+    const scope = await this.scopeOf(storeSlug, dto.returnTo);
 
     try {
       const user = await this.auth.register(dto, scope);
@@ -64,13 +68,13 @@ export class CustomersService {
     }
   }
 
-  async resendVerification(storeSlug: string, email: string): Promise<void> {
-    await this.auth.resendVerification(email, await this.scopeOf(storeSlug));
+  async resendVerification(storeSlug: string, email: string, returnTo?: string): Promise<void> {
+    await this.auth.resendVerification(email, await this.scopeOf(storeSlug, returnTo));
   }
 
   /** The link comes back to this shop, and replaces the password of this shop's account only. */
-  async forgotPassword(storeSlug: string, email: string): Promise<void> {
-    await this.auth.forgotPassword(email, await this.scopeOf(storeSlug));
+  async forgotPassword(storeSlug: string, email: string, returnTo?: string): Promise<void> {
+    await this.auth.forgotPassword(email, await this.scopeOf(storeSlug, returnTo));
   }
 
   /** A shopper's session at this shop; the shop's record of them is made the first time. */
@@ -93,7 +97,7 @@ export class CustomersService {
     const user = await this.accountAt(storeId, userId);
 
     const record = await this.recordOf(storeId, user);
-    return toCustomerProfile(record, user.email, await this.addressesOf(record.id));
+    return toCustomerProfile(record, user, await this.addressesOf(record.id));
   }
 
   /**
@@ -123,7 +127,7 @@ export class CustomersService {
           ...(dto.birthDate !== undefined ? { birthDate: dto.birthDate === null ? null : new Date(`${dto.birthDate}T00:00:00.000Z`) } : {}),
         },
       });
-      return toCustomerProfile(updated, user.email, await this.addressesOf(updated.id));
+      return toCustomerProfile(updated, user, await this.addressesOf(updated.id));
     } catch (error) {
       // The phone identifies a customer within a shop. Two records of one shop cannot share it.
       if (error instanceof Error && 'code' in error && error.code === 'P2002') {
@@ -136,13 +140,50 @@ export class CustomersService {
     }
   }
 
+  /** The shopper's new password, given the current one; this session stays, the others end (BEELINK-150). */
+  async changePassword(storeSlug: string, userId: string, sessionId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const { storeId } = await this.scopeOf(storeSlug);
+    const user = await this.accountAt(storeId, userId);
+    await this.auth.changePassword(user.id, currentPassword, newPassword, sessionId);
+  }
+
+  /**
+   * The link that sets a password, to the shopper's own address — for an account opened through
+   * Google, which has none to change. It is the new-password e-mail of the shop's own page (J10).
+   */
+  async sendPasswordLink(storeSlug: string, userId: string, returnTo?: string): Promise<void> {
+    const scope = await this.scopeOf(storeSlug, returnTo);
+    const user = await this.accountAt(scope.storeId, userId);
+    await this.auth.forgotPassword(user.email, scope);
+  }
+
+  /** Every session of the shopper's account at this shop ends, this one too. */
+  async signOutEverywhere(storeSlug: string, userId: string): Promise<void> {
+    const { storeId } = await this.scopeOf(storeSlug);
+    const user = await this.accountAt(storeId, userId);
+    await this.sessions.revokeAllForUser(user.id);
+  }
+
   private addressesOf(customerId: string): Promise<CustomerAddressModel[]> {
     return this.prisma.customerAddress.findMany({ where: { customerId }, orderBy: SAVED_ADDRESS_ORDER });
   }
 
-  /** This shop's accounts, and where their e-mailed links lead: 404 for a shop that does not exist. */
-  private async scopeOf(storeSlug: string): Promise<AccountScope & { storeId: string }> {
-    return { storeId: await this.stores.publicStoreId(storeSlug), continuePath: `/${storeSlug}` };
+  /**
+   * This shop's accounts, and what their e-mails carry: the shop's name, its own pages for the links,
+   * in its own route words, and where the shopper goes back to. 404 for a shop that does not exist.
+   */
+  private async scopeOf(storeSlug: string, returnTo?: string): Promise<AccountScope & { storeId: string }> {
+    const store = await this.stores.publicStoreNaming(storeSlug);
+    const words = ROUTE_WORDS[store.routeVocabulary];
+    return {
+      storeId: store.id,
+      shop: {
+        name: store.name,
+        verifyPath: `/${storeSlug}/${words.verifyEmail}`,
+        resetPath: `/${storeSlug}/${words.resetPassword}`,
+        returnTo: shopReturnOf(storeSlug, returnTo),
+      },
+    };
   }
 
   /**
