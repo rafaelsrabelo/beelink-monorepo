@@ -13,7 +13,6 @@ const profile = {
   phone: "11988887777",
   cpf: "529.982.247-25",
   birthDate: "1990-05-17",
-  address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: "Bela Vista", city: "São Paulo", state: "SP" },
 }
 
 describe("StorefrontAccountForm", () => {
@@ -25,8 +24,8 @@ describe("StorefrontAccountForm", () => {
     expect(screen.getByLabelText("Celular")).toHaveValue("11988887777")
     expect(screen.getByLabelText(/^CPF/)).toHaveValue("529.982.247-25")
     expect(screen.getByLabelText(/^Data de nascimento/)).toHaveValue("1990-05-17")
-    expect(screen.getByLabelText("Rua")).toHaveValue("Av. Paulista")
-    expect(screen.getByLabelText("Complemento")).toHaveValue("")
+    // The addresses are cards of their own now, never fields of this form.
+    expect(screen.queryByLabelText("Rua")).toBeNull()
     expect(screen.queryByLabelText("E-mail")).toBeNull()
     expect(screen.getByText("bia@exemplo.com")).toBeInTheDocument()
   })

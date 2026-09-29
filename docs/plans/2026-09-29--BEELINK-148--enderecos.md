@@ -120,3 +120,22 @@ digitado fica no cookie da loja e vale mais: é a escolha dela para aquela compr
 - Frete por endereço.
 - Mostrar no painel os outros endereços do cliente.
 - Validar o endereço contra o CEP.
+
+## Adendo da implementação (29/09)
+
+- **"Quem recebe" não vem preenchido.** O nome do cliente aparece como placeholder, com a dica "Em
+  branco, você". Preenchido, ele ficaria gravado, e uma troca de nome depois não chegaria ao endereço.
+  Em branco, vale o nome do dia do pedido (decisão 2).
+- **O carrinho só recebe o endereço novo quando o formulário veio dele.** O formulário manda
+  `entregar=1`. Voltando ao perfil, a URL não carrega o id.
+- **O CEP aparece formatado nas linhas de endereço** (`addressLineOf`): "CEP 60323-231", e não os oito
+  dígitos crus que um cadastro antigo guarda. Isso vale também para a mensagem do pedido e para a
+  visão geral.
+- **O cartão "Seus dados" ficou da largura dos endereços** (`max-w-3xl`). Empilhados com larguras
+  diferentes, os dois pareciam desalinhados.
+- **Conferido em :3100** com a cliente de teste da loja-do-design:
+  - "Buscar CEP" preenche rua, bairro, cidade e UF.
+  - "Tornar padrão" e "Remover" funcionam, e o cabeçalho acompanha o CEP do padrão.
+  - O caminho do carrinho volta já com o endereço novo escolhido.
+  - O pedido nº 24 foi para "Trabalho", com "Recepção" como quem recebe.
+  - Tudo conferido também em 390 px.

@@ -61,7 +61,9 @@ The panel at `/admin/<slug>` is where the shopkeeper works: the catalogue, the o
 
 ## Customers
 
-A **customer** is a store's own record of someone who bought from it: a name, a phone number and an address, remembered so they do not retype it next time. The phone number identifies them **within one store**: the same person buying from two stores is two customers, and neither store learns about the other.
+A **customer** is a store's own record of someone who bought from it: a name, a phone number and their addresses, remembered so they do not retype them next time. The phone number identifies them **within one store**: the same person buying from two stores is two customers, and neither store learns about the other.
+
+A customer keeps **several addresses** — home, work — each with a name they give it and who receives there, and **one of them is the default**: where an order goes unless another is chosen at checkout, and the one address the shopkeeper sees on the customer's record.
 
 A customer may be **linked to an account** — the shop's own, opened there — and that link is what lets an address follow them. Opening the account is what makes the person the shop's customer: a lead until they buy. **No shopkeeper ever reads the account's password or sessions**, and no account reaches past its shop, which is what keeps the sentence above literally true: a person who buys from two stores is two customers with two accounts, and neither store can tell.
 
@@ -77,7 +79,7 @@ An **order** is the product's core record, and it is a fact about the past.
 - It holds **lines**: what was bought, how many, and the name and unit price **as they were at the moment of purchase**. A price change or a deleted product never rewrites an order that already happened.
 - It records its own totals: the subtotal, the delivery fee, any discount, and the total. Every one of them is a number, not a sentence.
 - It has a **status** the shopkeeper moves it through — received, accepted, being prepared, out for delivery, delivered, or cancelled — and the customer can follow it. A signed-in customer sees their own orders at the shop — the ones they placed and the ones the shop registered for them — with the lines, the totals, where it goes and each status with its time; never the shop's note on it. They may cancel one while it is still **received**; once the shop accepted it, only the shop cancels.
-- It says how it is being handed over (delivery or pick-up) and how it will be paid. A delivery keeps **where it went and who received it, as they were at the moment of purchase**: a customer who moves or changes their name never rewrites an old order, and an order from before the product kept it says it was not recorded rather than borrowing today's address. A delivery with nowhere to go — no street and city — is refused.
+- It says how it is being handed over (delivery or pick-up) and how it will be paid. A delivery goes to one of the customer's addresses and keeps **where it went and who received it, as they were at the moment of purchase**: a customer who moves or changes their name never rewrites an old order, and an order from before the product kept it says it was not recorded rather than borrowing today's address. A delivery with nowhere to go — no street and city — is refused.
 - The customer's own note to the shop is the customer's; it is never used to carry the product's own data.
 
 **Money is exact.** Every amount in the product is a whole number of cents. There is one representation, everywhere, and a total shown to a customer matches the total the shopkeeper sees to the cent.

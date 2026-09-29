@@ -19,7 +19,6 @@ const meta = {
       phone: null,
       cpf: null,
       birthDate: null,
-      address: { zipCode: null, street: null, number: null, complement: null, neighborhood: null, city: null, state: null },
     },
   },
 } satisfies Meta<typeof StorefrontAccountForm>
@@ -42,7 +41,6 @@ export const Completo: Story = {
       phone: "(11) 98888-7777",
       cpf: "529.982.247-25",
       birthDate: "1990-05-17",
-      address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: "Bela Vista", city: "São Paulo", state: "SP" },
     },
   },
 }

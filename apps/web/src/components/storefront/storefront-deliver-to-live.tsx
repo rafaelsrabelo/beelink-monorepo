@@ -20,15 +20,19 @@ function subscribe(onChange: () => void): () => void {
 
 export interface StorefrontDeliverToLiveProps {
   slug: string
+  /** The signed-in shopper's default address's CEP, eight digits, until they type another; null for a visitor. */
+  defaultCep?: string | null
   messages: UiMessages
 }
 
 /**
  * "Entregar em", keeping the visitor's CEP in the shop's own cookie. The server draws the invitation,
- * having no cookie to read — the page stays cacheable — and the browser draws the CEP kept.
+ * having no cookie to read — the page stays cacheable — and the browser draws the CEP kept. A
+ * signed-in shopper's default address stands in until they type a CEP: that one is their choice for
+ * this visit, and is kept over it.
  */
-export function StorefrontDeliverToLive({ slug, messages }: StorefrontDeliverToLiveProps) {
-  const cep = useSyncExternalStore(subscribe, () => cepFromCookies(document.cookie), () => null)
+export function StorefrontDeliverToLive({ slug, defaultCep = null, messages }: StorefrontDeliverToLiveProps) {
+  const cep = useSyncExternalStore(subscribe, () => cepFromCookies(document.cookie), () => null) ?? defaultCep
 
   return (
     <StorefrontDeliverTo

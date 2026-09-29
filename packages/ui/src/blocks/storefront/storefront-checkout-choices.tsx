@@ -16,17 +16,28 @@ export type CheckoutFulfillment = "DELIVERY" | "PICKUP"
 
 export interface StorefrontCheckoutChoice {
   fulfillment: CheckoutFulfillment
+  /** The saved address a delivery goes to; null before there is one to go to. */
+  addressId: string | null
   /** Null until the shopper picks one — a shop takes several, and none is theirs to assume. */
   paymentMethod: PaymentMethod | null
+}
+
+/** A saved address a delivery can go to, as the cart offers it. */
+export interface StorefrontCheckoutAddress {
+  id: string
+  /** "Casa · Rafael Souza"; who receives alone when the address has no name. */
+  heading: string
+  /** The address in one line. */
+  line: string
 }
 
 export interface StorefrontCheckoutChoicesProps {
   value: StorefrontCheckoutChoice
   onChange: (value: StorefrontCheckoutChoice) => void
-  /** Where a delivery goes, the shopper's address on file in one line; null: nowhere, so delivery is off. */
-  deliveryLine: string | null
+  /** The saved addresses a delivery can go to, the default first; none turns delivery off. */
+  addresses: readonly StorefrontCheckoutAddress[]
   /** Where the shopper adds an address, coming back to the cart. */
-  editHref: string
+  addHref: string
   /** The methods the shop takes, in its own order. */
   paymentMethods: readonly PaymentMethod[]
   disabled?: boolean
@@ -41,14 +52,15 @@ const RADIO = "mt-0.5 size-4 shrink-0 accent-shop-primary"
 
 /**
  * How the order is handed over and how it is paid — what an order cannot be placed without. A
- * delivery goes to the address the shop keeps, shown here; with none, it is off and says where to
- * add one. Nothing is charged here: the payment is a label the shop and the shopper settle by.
+ * delivery goes to one of the shopper's saved addresses, chosen here when there are several; with
+ * none, it is off and says where to add one. Nothing is charged here: the payment is a label the
+ * shop and the shopper settle by.
  */
 export function StorefrontCheckoutChoices({
   value,
   onChange,
-  deliveryLine,
-  editHref,
+  addresses,
+  addHref,
   paymentMethods,
   disabled = false,
   linkComponent: Link = AnchorLink,
@@ -56,6 +68,8 @@ export function StorefrontCheckoutChoices({
 }: StorefrontCheckoutChoicesProps) {
   const text = messages.storefront
   const id = useId()
+  const chosen = addresses.find((address) => address.id === value.addressId) ?? addresses[0] ?? null
+  const delivering = value.fulfillment === "DELIVERY"
 
   return (
     <div className="flex flex-col gap-4">
@@ -66,20 +80,40 @@ export function StorefrontCheckoutChoices({
             type="radio"
             name={`${id}-fulfillment`}
             className={RADIO}
-            checked={value.fulfillment === "DELIVERY"}
-            disabled={!deliveryLine}
-            onChange={() => onChange({ ...value, fulfillment: "DELIVERY" })}
+            checked={delivering}
+            disabled={!chosen}
+            onChange={() => onChange({ ...value, fulfillment: "DELIVERY", addressId: chosen?.id ?? null })}
           />
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="font-medium">{text.checkoutDelivery}</span>
             <span className="break-words text-xs text-shop-muted">
-              {deliveryLine ? format(text.checkoutDeliverTo, { address: deliveryLine }) : text.checkoutNoAddress}
+              {chosen ? format(text.checkoutDeliverTo, { address: chosen.line }) : text.checkoutNoAddress}
             </span>
           </span>
         </label>
-        {deliveryLine ? null : (
-          <Link href={editHref} className="self-start text-xs font-semibold text-shop-primary-ink hover:underline">
-            {text.checkoutEdit}
+        {delivering && addresses.length > 1 ? (
+          <fieldset className="ml-7 flex flex-col gap-2">
+            <legend className="mb-1 text-xs font-semibold">{text.checkoutAddressChoose}</legend>
+            {addresses.map((address) => (
+              <label key={address.id} className={OPTION}>
+                <input
+                  type="radio"
+                  name={`${id}-address`}
+                  className={RADIO}
+                  checked={chosen?.id === address.id}
+                  onChange={() => onChange({ ...value, addressId: address.id })}
+                />
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium break-words">{address.heading}</span>
+                  <span className="break-words text-xs text-shop-muted">{address.line}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        ) : null}
+        {chosen && !delivering ? null : (
+          <Link href={addHref} className="self-start text-xs font-semibold text-shop-primary-ink hover:underline">
+            {chosen ? text.checkoutAddAnotherAddress : text.checkoutAddAddress}
           </Link>
         )}
         <label className={OPTION}>

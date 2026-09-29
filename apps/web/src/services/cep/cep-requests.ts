@@ -32,14 +32,15 @@ function errorCodeOf(payload: unknown): string {
  * so a shopkeeper's address is not handed to a third party on every keystroke.
  *
  * The mask is stripped here as well as in the handler: the field accepts "12345-678", the path
- * segment holds eight digits, and the two must not disagree about what was looked up.
+ * segment holds eight digits, and the two must not disagree about what was looked up. `lane` is the
+ * panel's handler, or a shop's for its shopper (`/<slug>/api/cep`), where their session cookie lives.
  */
-export async function fetchZipCodeAddress(zipCode: string): Promise<ZipCodeAddress> {
+export async function fetchZipCodeAddress(zipCode: string, lane = "/api/cep"): Promise<ZipCodeAddress> {
   const digits = toZipCodeDigits(zipCode)
 
   if (digits.length !== 8) throw new CepRequestError("CEP_INVALID")
 
-  const response = await fetch(`/api/cep/${digits}`, { method: "GET", headers: JSON_HEADERS })
+  const response = await fetch(`${lane}/${digits}`, { method: "GET", headers: JSON_HEADERS })
 
   if (!response.ok) {
     throw new CepRequestError(errorCodeOf(await response.json().catch(() => null)))

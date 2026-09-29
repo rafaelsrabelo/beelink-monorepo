@@ -128,13 +128,13 @@ describe("the shop's sign-in form", () => {
     const fetched = vi.fn(async () => Response.json({ id: "c1" }, { status: 200 }))
     vi.stubGlobal("fetch", fetched)
 
-    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17", city: "São Paulo", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })
+    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })
     const [url, init] = (fetched.mock.calls[0] ?? []) as unknown as [string, RequestInit]
 
     expect(url).toContain("/stores/loja/customer/me")
     expect(init.method).toBe("PATCH")
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer a")
-    expect(JSON.parse(String(init.body))).toMatchObject({ name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17", address: { city: "São Paulo", street: "" } })
+    expect(JSON.parse(String(init.body))).toEqual({ name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17" })
     expect(response.headers.get("location")).toBe("http://localhost:3000/loja/conta?salvo=1")
   })
 

@@ -21,6 +21,7 @@ import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
+import { ADDRESS_KEY, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
@@ -134,7 +135,9 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
             signInHref: routes.signIn({ back: routes.cart() }),
             signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
             editHref: `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
+            addAddressHref: `${routes.accountTab("profile")}?${new URLSearchParams({ [ADDRESS_KEY]: NEW_ADDRESS, [BACK_KEY]: routes.cart() }).toString()}`,
           }}
+          deliverTo={paramOf(query[DELIVER_TO_KEY]) ?? null}
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           locale={locale}
           messages={ui}

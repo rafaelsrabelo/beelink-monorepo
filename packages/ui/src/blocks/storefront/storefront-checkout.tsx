@@ -8,19 +8,21 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { WhatsAppIcon } from "../store/store-brand-icons"
 import type { PaymentMethod } from "../store/store-types"
-import { StorefrontCheckoutChoices, type StorefrontCheckoutChoice } from "./storefront-checkout-choices"
+import { StorefrontCheckoutChoices, type StorefrontCheckoutAddress, type StorefrontCheckoutChoice } from "./storefront-checkout-choices"
 
-export type { CheckoutFulfillment, StorefrontCheckoutChoice } from "./storefront-checkout-choices"
+export type { CheckoutFulfillment, StorefrontCheckoutAddress, StorefrontCheckoutChoice } from "./storefront-checkout-choices"
 
 export interface StorefrontCheckoutCustomer {
-  /** Name and phone, a line each — only the ones on file; the address is `deliveryLine`. */
+  /** Name and phone, a line each — only the ones on file; the addresses are `addresses`. */
   lines: readonly string[]
   /** Whether the shop has a phone and an address for them; without, a hint says so. */
   complete: boolean
   /** Where to change them, coming back here after. */
   editHref: string
-  /** Their address in one line, where a delivery goes; null when they have none. */
-  deliveryLine: string | null
+  /** Their saved addresses a delivery can go to, the default first. */
+  addresses: readonly StorefrontCheckoutAddress[]
+  /** Where they add an address, coming back here after. */
+  addAddressHref: string
 }
 
 export interface StorefrontCheckoutProps {
@@ -113,8 +115,8 @@ export function StorefrontCheckout({
       <StorefrontCheckoutChoices
         value={choice}
         onChange={onChoiceChange}
-        deliveryLine={customer.deliveryLine}
-        editHref={customer.editHref}
+        addresses={customer.addresses}
+        addHref={customer.addAddressHref}
         paymentMethods={paymentMethods}
         disabled={pending}
         linkComponent={Link}

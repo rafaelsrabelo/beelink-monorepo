@@ -27,7 +27,6 @@ const profile = {
   phone: "5585999994321",
   cpf: "529.982.247-25",
   birthDate: "1988-11-03",
-  address: { zipCode: "60160-230", street: "Rua Tibúrcio Cavalcante", number: "1200", complement: "apto 302", neighborhood: "Meireles", city: "Fortaleza", state: "CE" },
 }
 
 const meta = {

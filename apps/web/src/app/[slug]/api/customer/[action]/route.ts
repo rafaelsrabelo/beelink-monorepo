@@ -98,7 +98,6 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
         phone: field("phone"),
         cpf: field("cpf"),
         birthDate: field("birthDate"),
-        address: Object.fromEntries(["zipCode", "street", "number", "complement", "neighborhood", "city", "state"].map((key) => [key, field(key)])),
       }
       const saved = await callAsShopper(request, slug, (accessToken) =>
         callApi({ path: `${shop}/me`, method: "PATCH", body, accessToken, clientIp }).catch(() => null),

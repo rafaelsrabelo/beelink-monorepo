@@ -276,6 +276,7 @@ export interface UiMessages {
     checkoutProductGoneAny: string
     checkoutPaymentGone: string
     checkoutAddressGone: string
+    checkoutAddressChosenGone: string
     checkoutSignedOut: string
     checkoutTooMany: string
     checkoutFailed: string
@@ -358,6 +359,37 @@ export interface UiMessages {
      * shopkeeper made from a WhatsApp sale. Says to talk to the shop, who can merge the two.
      */
     accountPhoneTaken: string
+    /** The shopper's saved addresses (BEELINK-148): the cards, their form and the cart's choice. */
+    addressesTitle: string
+    addressesAdd: string
+    addressesDefault: string
+    addressesEdit: string
+    addressesRemove: string
+    addressesMakeDefault: string
+    addressesEditLabel: string
+    addressesRemoveLabel: string
+    addressesMakeDefaultLabel: string
+    addressesLimit: string
+    addressesSaved: string
+    addressesRemoved: string
+    addressesDefaultSet: string
+    addressFormNew: string
+    addressFormEdit: string
+    addressLabel: string
+    addressLabelHint: string
+    addressLabelPlaceholder: string
+    addressRecipient: string
+    addressRecipientHint: string
+    addressLookup: string
+    addressLookupPending: string
+    addressLookupNotFound: string
+    addressLookupFailed: string
+    addressMakeDefault: string
+    addressSave: string
+    addressCancel: string
+    checkoutAddressChoose: string
+    checkoutAddAddress: string
+    checkoutAddAnotherAddress: string
     /** The product page (5b). `{name}` — the shop, over the title. */
     visitShop: string
     /** The buy column's landmark name. */
