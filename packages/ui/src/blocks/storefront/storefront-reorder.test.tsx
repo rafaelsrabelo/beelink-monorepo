@@ -37,6 +37,12 @@ describe("buying an order again", () => {
     expect(screen.queryByText("Ficaram de fora:")).toBeNull()
   })
 
+  it("says when part of the order did not fit the cart", () => {
+    render(<StorefrontReorderNotice number={14} outcome="added" left={[]} trimmed />)
+
+    expect(screen.getByRole("status")).toHaveTextContent("O carrinho aceita até 50 itens, com até 99 unidades de cada: parte do pedido não coube.")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <>

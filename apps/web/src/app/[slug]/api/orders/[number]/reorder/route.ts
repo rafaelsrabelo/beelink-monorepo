@@ -7,7 +7,7 @@ import type { CustomerReorder } from "@harness-monorepo/contracts"
 // App
 import { callApi } from "@/lib/api"
 import { clientIpOf, refuseForeignOrigin } from "@/lib/bff"
-import { addLine, CART_COOKIE, cartCookieOf, decodeCart } from "@/lib/cart-cookie"
+import { addLine, CART_COOKIE, cartCookieOf, decodeCart, sameLine, type CartLine } from "@/lib/cart-cookie"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { callAsShopper } from "@/lib/shopper-call"
 import { shopAt } from "@/lib/storefront-data"
@@ -40,11 +40,14 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   }
 
   const reorder = read.response?.ok ? ((await read.response.json().catch(() => null)) as CustomerReorder | null) : null
-  const answer = go(routes.cart({ reordered: Number(number), failed: !reorder }))
-  if (read.renewed) setCustomerSessionCookies(answer.cookies, slug, read.renewed)
-  if (!reorder) return answer
+  const before = decodeCart(request.cookies.get(CART_COOKIE)?.value)
+  const lines = (reorder?.lines ?? []).reduce((cart, line) => addLine(cart, { productId: line.productId, variantId: line.variantId, qty: line.quantity }), before)
+  // The cart's own limits — its lines, and each line's units — can cut what the API let through.
+  const qtyOf = (cart: readonly CartLine[], line: { productId: string; variantId: string | null }) => cart.find((entry) => sameLine(entry, line.productId, line.variantId))?.qty ?? 0
+  const trimmed = (reorder?.lines ?? []).some((line) => qtyOf(lines, line) - qtyOf(before, line) < line.quantity)
 
-  const lines = reorder.lines.reduce((cart, line) => addLine(cart, { productId: line.productId, variantId: line.variantId, qty: line.quantity }), decodeCart(request.cookies.get(CART_COOKIE)?.value))
-  answer.headers.append("set-cookie", cartCookieOf(slug, lines, request.nextUrl.protocol === "https:"))
+  const answer = go(routes.cart({ reordered: Number(number), failed: !reorder, trimmed }))
+  if (read.renewed) setCustomerSessionCookies(answer.cookies, slug, read.renewed)
+  if (reorder) answer.headers.append("set-cookie", cartCookieOf(slug, lines, request.nextUrl.protocol === "https:"))
   return answer
 }

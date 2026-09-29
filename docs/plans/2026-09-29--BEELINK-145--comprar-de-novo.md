@@ -56,3 +56,25 @@ pode passar do estoque; o checkout confere e diz, como já faz hoje.
 
 - Reservar estoque.
 - Escolher quais itens repetir: repete o pedido inteiro, como o ticket pede.
+
+## Adendo — revisão independente (2026-09-29)
+
+1. **Um produto sem opções entrava como uma segunda linha.** A vitrine grava esse produto no carrinho
+   sem variação, e a repetição gravava com o id da única variação: duas linhas do mesmo produto. A
+   API agora devolve a variação nula para um produto sem opções, e as duas se somam.
+2. **O aviso ficava sobre um pedido já enviado.** Fechando o pedido no próprio carrinho, o aviso
+   "os itens estão no carrinho" continuava acima de "pedido enviado". O aviso agora é parte do
+   carrinho e some quando o pedido sai.
+3. **Os limites do carrinho não eram ditos.** O carrinho aceita 50 linhas e 99 unidades por linha;
+   um pedido do painel pode ter mais. A rota compara o carrinho antes e depois e, se algo não coube,
+   o aviso diz.
+4. **"Falhou" aparecia sem a rota ter falhado.** Só a marca da rota (`falhou=1`) diz que falhou. Uma
+   segunda leitura vazia — um soluço, ou o nº de outro cliente no endereço — não mostra aviso, em vez
+   de mandar o cliente repetir e somar as linhas duas vezes.
+5. **Chaves da lista** repetidas quando dois itens se escrevem igual: agora pela posição.
+6. **A regra de qual ação cada cartão mostra** virou uma função testada (`orderActionOf`): cancelar
+   enquanto Recebido, comprar de novo quando encerrado, nada em andamento.
+
+No navegador, o estoque do Molotov na loja-do-design foi limitado a 1 por um instante para ver "só 1
+disponível", e voltou ao que era (sem contar estoque). Os pedidos 12 e 16 foram repetidos no
+carrinho do cliente de teste.

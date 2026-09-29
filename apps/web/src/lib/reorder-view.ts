@@ -24,16 +24,25 @@ function leftLineOf(line: CustomerReorderLeft, text: UiMessages["storefront"]): 
   return `${line.productName}${line.variantLabel ? ` (${line.variantLabel})` : ""} — ${why}`
 }
 
+/** What the address the handler sent the shopper to says: which order, and whether it failed or was cut. */
+export interface ReorderMark {
+  number: number
+  failed: boolean
+  trimmed: boolean
+}
+
 /**
- * What the cart says after "Comprar de novo": the order read again, or nothing when that failed —
- * the handler's word, or a read here that failed, since the page reads it once more to list what
- * stayed out.
+ * What the cart says after "Comprar de novo". Failed only on the handler's word: the page reads the
+ * order once more to list what stayed out, and a read here that comes back empty — a hiccup, or a
+ * number that is not theirs — says nothing rather than send them to add the lines twice.
  */
-export function reorderNoticeOf(number: number, reorder: CustomerReorder | null, failed: boolean, messages: UiMessages): Omit<StorefrontReorderNoticeProps, "messages"> {
-  if (failed || !reorder) return { number, outcome: "failed", left: [] }
+export function reorderNoticeOf(mark: ReorderMark, reorder: CustomerReorder | null, messages: UiMessages): Omit<StorefrontReorderNoticeProps, "messages"> | null {
+  if (mark.failed) return { number: mark.number, outcome: "failed", left: [] }
+  if (!reorder) return null
   return {
-    number,
+    number: mark.number,
     outcome: reorder.lines.length ? "added" : "none",
     left: reorder.left.map((line) => leftLineOf(line, messages.storefront)),
+    trimmed: mark.trimmed,
   }
 }

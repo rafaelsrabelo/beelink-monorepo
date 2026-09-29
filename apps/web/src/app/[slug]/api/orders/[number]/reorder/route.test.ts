@@ -78,6 +78,15 @@ describe("buying an order again", () => {
     expect(response.headers.getSetCookie().find((value) => value.startsWith("bl_cart="))).toContain("Path=/loja")
   })
 
+  it("says when the cart's own limits cut part of the order", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ number: 14, lines: [{ productId: P1, variantId: V1, quantity: 5 }], left: [] })))
+
+    const response = await post({ cookie: `bl_shopper_access=shopper-access; bl_cart=${P1.replaceAll("-", "")}.${V1.replaceAll("-", "")}.97` })
+
+    expect(response.headers.get("location")).toBe("http://localhost:3000/loja/carrinho?repetido=14&cheio=1")
+    expect(cartOf(response)).toEqual([{ productId: P1, variantId: V1, qty: 99 }])
+  })
+
   it("leaves the cart as it was and says so when the order could not be read", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 404, errorCode: "ORDER_NOT_FOUND", message: "x" }, { status: 404 })))
 

@@ -385,6 +385,7 @@ export const ptBR: UiMessages = {
     reorderLimitedOne: "só 1 disponível",
     reorderLimitedMany: "só {count} disponíveis",
     reorderFailed: "Não foi possível repetir o pedido nº {number} agora. Tente de novo.",
+    reorderTrimmed: "O carrinho aceita até 50 itens, com até 99 unidades de cada: parte do pedido não coube.",
     cartEmpty: "Seu carrinho está vazio.",
     cartEmptyHint: "O que você adicionar na loja aparece aqui.",
     account: "Minha conta",

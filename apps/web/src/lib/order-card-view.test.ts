@@ -8,7 +8,7 @@ import type { CustomerOrderSummary } from "@harness-monorepo/contracts"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { isOrderInProgress, orderCardViewOf, orderStatusLineOf } from "./order-card-view"
+import { isOrderInProgress, orderActionOf, orderCardViewOf, orderStatusLineOf } from "./order-card-view"
 import { storefrontRoutes } from "./storefront-routes"
 
 const routes = storefrontRoutes({
@@ -86,5 +86,14 @@ describe("isOrderInProgress", () => {
     expect(["RECEIVED", "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY"].every((status) => isOrderInProgress(status as CustomerOrderSummary["status"]))).toBe(true)
     expect(isOrderInProgress("DELIVERED")).toBe(false)
     expect(isOrderInProgress("CANCELLED")).toBe(false)
+  })
+})
+
+describe("orderActionOf", () => {
+  it("offers the cancel while received, buying again once it ended, and nothing on its way", () => {
+    expect(orderActionOf("RECEIVED")).toBe("cancel")
+    expect(["ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY"].map((status) => orderActionOf(status as CustomerOrderSummary["status"]))).toEqual([null, null, null])
+    expect(orderActionOf("DELIVERED")).toBe("reorder")
+    expect(orderActionOf("CANCELLED")).toBe("reorder")
   })
 })

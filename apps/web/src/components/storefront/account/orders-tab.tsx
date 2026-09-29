@@ -12,7 +12,7 @@ import { StorefrontReorderButton } from "@harness-monorepo/ui/blocks/storefront/
 // App
 import { AppLink } from "@/components/app-link"
 import { customerOrdersAt } from "@/lib/customer-orders"
-import { isOrderInProgress, orderCardViewOf } from "@/lib/order-card-view"
+import { isOrderInProgress, orderActionOf, orderCardViewOf } from "@/lib/order-card-view"
 import { isFiltered, orderListApiQueryOf, orderListEntriesOf, orderListQueryOf, type OrderListQuery } from "@/lib/order-list-query"
 import { reorderActionOf } from "@/lib/reorder-view"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
@@ -80,11 +80,11 @@ export async function OrdersTab({ slug, routes, query, locale, messages }: Order
                   trackHref={isOrderInProgress(order.status) ? routes.accountOrder(order.number) : undefined}
                   // Each action joins with its ticket: the cancel while received (J2), buying again once it ended (J6).
                   actions={
-                    order.status === "RECEIVED" ? (
+                    orderActionOf(order.status) === "cancel" ? (
                       <OrderCancelLive slug={slug} number={order.number} messages={messages} />
-                    ) : isOrderInProgress(order.status) ? undefined : (
+                    ) : orderActionOf(order.status) === "reorder" ? (
                       <StorefrontReorderButton action={reorderActionOf(slug, order.number)} messages={messages} />
-                    )
+                    ) : undefined
                   }
                   linkComponent={AppLink}
                   messages={messages}

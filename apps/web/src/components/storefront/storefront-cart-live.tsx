@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 
 // Next
 import { useRouter } from "next/navigation"
@@ -42,6 +42,8 @@ export interface StorefrontCartLiveProps {
   shopper: CustomerProfile | null
   /** Sign in, sign up and change details — each coming back to this cart. */
   identityHrefs: { signInHref: string; signUpHref: string; editHref: string }
+  /** What brought the shopper here — an order bought again — said over the cart until an order is sent from it. */
+  arrival?: ReactNode
   locale: string
   messages: UiMessages
 }
@@ -64,6 +66,7 @@ export function StorefrontCartLive({
   paymentMethods,
   shopper,
   identityHrefs,
+  arrival,
   locale,
   messages,
 }: StorefrontCartLiveProps) {
@@ -140,53 +143,57 @@ export function StorefrontCartLive({
     : null
 
   return (
-    <StorefrontCart
-      rows={view.rows.map((row) => ({ ...row, key: rowKeyOf(row), href: hrefs[row.productId] ?? continueHref }))}
-      subtotalCents={view.subtotalCents}
-      count={view.count}
-      locale={locale}
-      continueHref={continueHref}
-      notice={goneOnArrival ? messages.storefront.cartGone : null}
-      checkout={
-        <StorefrontCheckout
-          channel={whatsapp ? "whatsapp" : "shop"}
-          customer={
-            shopper
-              ? {
-                  lines: [shopper.name, shopper.phone].filter((line): line is string => Boolean(line)),
-                  complete: isReachable(shopper),
-                  editHref: identityHrefs.editHref,
-                  deliveryLine,
-                }
-              : null
-          }
-          signIn={identityHrefs}
-          paymentMethods={paymentMethods}
-          choice={choice}
-          onChoiceChange={(next) => {
-            setChoice(next)
-            setAsked(null)
-            placing.reset()
-          }}
-          onPlace={place}
-          pending={placing.isPending}
-          error={asked ?? refusal}
-          disabled={view.count === 0}
-          messages={messages}
-        />
-      }
-      // A changed cart is a new order to try: the refusal of the last one no longer describes it.
-      onQtyChange={(key, qty) => {
-        const row = byKey.get(key)
-        if (row) setQty(row.productId, row.variantId, qty)
-        placing.reset()
-      }}
-      onRemove={(key) => {
-        const row = byKey.get(key)
-        if (row) remove(row.productId, row.variantId)
-        placing.reset()
-      }}
-      messages={messages}
-    />
+    <>
+      {/* Its own box: the page's element as an only child, never a sibling React asks a key of. */}
+      {arrival ? <div className="pt-5">{arrival}</div> : null}
+      <StorefrontCart
+        rows={view.rows.map((row) => ({ ...row, key: rowKeyOf(row), href: hrefs[row.productId] ?? continueHref }))}
+        subtotalCents={view.subtotalCents}
+        count={view.count}
+        locale={locale}
+        continueHref={continueHref}
+        notice={goneOnArrival ? messages.storefront.cartGone : null}
+        checkout={
+          <StorefrontCheckout
+            channel={whatsapp ? "whatsapp" : "shop"}
+            customer={
+              shopper
+                ? {
+                    lines: [shopper.name, shopper.phone].filter((line): line is string => Boolean(line)),
+                    complete: isReachable(shopper),
+                    editHref: identityHrefs.editHref,
+                    deliveryLine,
+                  }
+                : null
+            }
+            signIn={identityHrefs}
+            paymentMethods={paymentMethods}
+            choice={choice}
+            onChoiceChange={(next) => {
+              setChoice(next)
+              setAsked(null)
+              placing.reset()
+            }}
+            onPlace={place}
+            pending={placing.isPending}
+            error={asked ?? refusal}
+            disabled={view.count === 0}
+            messages={messages}
+          />
+        }
+        // A changed cart is a new order to try: the refusal of the last one no longer describes it.
+        onQtyChange={(key, qty) => {
+          const row = byKey.get(key)
+          if (row) setQty(row.productId, row.variantId, qty)
+          placing.reset()
+        }}
+        onRemove={(key) => {
+          const row = byKey.get(key)
+          if (row) remove(row.productId, row.variantId)
+          placing.reset()
+        }}
+        messages={messages}
+      />
+    </>
   )
 }

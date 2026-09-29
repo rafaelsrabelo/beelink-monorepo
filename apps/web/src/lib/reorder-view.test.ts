@@ -24,16 +24,22 @@ describe("what the cart says after buying an order again", () => {
       ],
     }
 
-    expect(reorderNoticeOf(14, reorder, false, ptBR)).toEqual({
+    expect(reorderNoticeOf({ number: 14, failed: false, trimmed: true }, reorder, ptBR)).toEqual({
       number: 14,
       outcome: "added",
       left: ["Whey (Sabor: Uva) — esgotado", "Creatina — não está mais à venda", "Boné — só 1 disponível", "Meia — só 2 disponíveis"],
+      trimmed: true,
     })
   })
 
-  it("says nothing is on sale when no line went in, and that it failed when it did", () => {
-    expect(reorderNoticeOf(14, { number: 14, lines: [], left: [] }, false, ptBR).outcome).toBe("none")
-    expect(reorderNoticeOf(14, { number: 14, lines: [{ productId: "p", variantId: "v", quantity: 1 }], left: [] }, true, ptBR)).toEqual({ number: 14, outcome: "failed", left: [] })
-    expect(reorderNoticeOf(14, null, false, ptBR).outcome).toBe("failed")
+  it("says nothing is on sale when no line went in, and that it failed only when the handler said so", () => {
+    const mark = { number: 14, failed: false, trimmed: false }
+    expect(reorderNoticeOf(mark, { number: 14, lines: [], left: [] }, ptBR)?.outcome).toBe("none")
+    expect(reorderNoticeOf({ ...mark, failed: true }, { number: 14, lines: [{ productId: "p", variantId: "v", quantity: 1 }], left: [] }, ptBR)).toEqual({ number: 14, outcome: "failed", left: [] })
+  })
+
+  /** A second read that comes back empty is a hiccup, or a number that is not theirs: "try again" would add the lines twice. */
+  it("says nothing when the order could not be read again", () => {
+    expect(reorderNoticeOf({ number: 14, failed: false, trimmed: false }, null, ptBR)).toBeNull()
   })
 })

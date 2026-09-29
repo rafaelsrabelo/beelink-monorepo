@@ -219,10 +219,15 @@ export function storefrontRoutes(shop: StorefrontShop) {
 
     /**
      * The basket, which the header's icon points at from the first day. `reordered` names the order
-     * "Comprar de novo" just put in it, and `failed` says nothing came of it.
+     * "Comprar de novo" just put in it, `failed` says nothing came of it, and `trimmed` that part did
+     * not fit the cart's own limits.
      */
-    cart: ({ reordered, failed = false }: { reordered?: number; failed?: boolean } = {}) =>
-      withQuery(`${home}/${routeWords.cart}`, { [REORDERED_KEY]: reordered === undefined ? undefined : String(reordered), [REORDER_FAILED_KEY]: failed ? "1" : undefined }),
+    cart: ({ reordered, failed = false, trimmed = false }: { reordered?: number; failed?: boolean; trimmed?: boolean } = {}) =>
+      withQuery(`${home}/${routeWords.cart}`, {
+        [REORDERED_KEY]: reordered === undefined ? undefined : String(reordered),
+        [REORDER_FAILED_KEY]: failed ? "1" : undefined,
+        [REORDER_TRIMMED_KEY]: trimmed ? "1" : undefined,
+      }),
 
     /**
      * Where a shopper signs in — or, by `mode`, signs up (`criar`) or asks for a new password
@@ -295,6 +300,7 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
 /** The cart's keys after "Comprar de novo": the order bought again, and whether reading it failed. */
 export const REORDERED_KEY = "repetido"
 export const REORDER_FAILED_KEY = "falhou"
+export const REORDER_TRIMMED_KEY = "cheio"
 
 /** The receipt's key: the order's page drawn as a document to print. */
 export const RECEIPT_KEY = "comprovante"

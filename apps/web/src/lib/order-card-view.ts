@@ -31,6 +31,15 @@ export function isOrderInProgress(status: CustomerOrderSummary["status"]): boole
   return status !== "DELIVERED" && status !== "CANCELLED"
 }
 
+/**
+ * What a shopper can do with an order besides following it: cancel it while the shop has not
+ * accepted it (J2), buy it again once it ended (J6), and nothing while it is on its way.
+ */
+export function orderActionOf(status: CustomerOrderSummary["status"]): "cancel" | "reorder" | null {
+  if (status === "RECEIVED") return "cancel"
+  return isOrderInProgress(status) ? null : "reorder"
+}
+
 /** Where the order stands, in the shopper's words, and what to say under it. */
 export function orderStatusLineOf(
   order: Pick<CustomerOrderSummary, "status" | "fulfillment" | "placedBy" | "cancelledBy" | "placedAt" | "statusAt">,

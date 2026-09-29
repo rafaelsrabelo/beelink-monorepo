@@ -384,6 +384,7 @@ export const en: UiMessages = {
     reorderLimitedOne: "only 1 left",
     reorderLimitedMany: "only {count} left",
     reorderFailed: "Order no. {number} could not be bought again now. Try again.",
+    reorderTrimmed: "The cart holds up to 50 items, with up to 99 of each: part of the order did not fit.",
     cartEmpty: "Your cart is empty.",
     cartEmptyHint: "What you add in the shop shows up here.",
     account: "My account",

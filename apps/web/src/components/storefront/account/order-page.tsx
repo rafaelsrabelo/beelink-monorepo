@@ -23,7 +23,7 @@ import { AppLink } from "@/components/app-link"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { customerOrderAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
-import { isOrderInProgress } from "@/lib/order-card-view"
+import { orderActionOf } from "@/lib/order-card-view"
 import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf } from "@/lib/order-page-view"
 import { reorderActionOf } from "@/lib/reorder-view"
 import { shopperAt } from "@/lib/shopper"
@@ -149,7 +149,7 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
           placed: orderPlacedLineOf(order, context),
           receiptHref: cancelled ? undefined : routes.accountOrder(order.number, { receipt: true }),
           // Each action joins with its ticket: talking to the shop (K3). Buying again sits under the lines.
-          actions: order.status === "RECEIVED" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : undefined,
+          actions: orderActionOf(order.status) === "cancel" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : undefined,
         })}
         status={
           <>
@@ -163,7 +163,7 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
             <StorefrontOrderItems
               items={items}
               count={count}
-              actions={isOrderInProgress(order.status) ? undefined : <StorefrontReorderButton action={reorderActionOf(store.slug, order.number)} variant="all" messages={ui} />}
+              actions={orderActionOf(order.status) === "reorder" ? <StorefrontReorderButton action={reorderActionOf(store.slug, order.number)} variant="all" messages={ui} /> : undefined}
               linkComponent={AppLink}
               messages={ui}
             />

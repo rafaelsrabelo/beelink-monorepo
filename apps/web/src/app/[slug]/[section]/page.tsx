@@ -23,7 +23,7 @@ import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
-import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
+import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
 import { filterCountOf } from "@/lib/storefront-filters"
 
@@ -85,8 +85,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
 
   // "Comprar de novo" lands on the cart naming the order: read again here to say what stayed out.
   const reordered = cart && shopper ? orderNumberOf(paramOf(query[REORDERED_KEY])) : null
-  const reorderFailed = paramOf(query[REORDER_FAILED_KEY]) === "1"
-  const reorderNotice = reordered ? reorderNoticeOf(reordered, reorderFailed ? null : await customerReorderAt(store.slug, reordered), reorderFailed, ui) : null
+  const mark = reordered ? { number: reordered, failed: paramOf(query[REORDER_FAILED_KEY]) === "1", trimmed: paramOf(query[REORDER_TRIMMED_KEY]) === "1" } : null
+  const reorderNotice = mark ? reorderNoticeOf(mark, mark.failed ? null : await customerReorderAt(store.slug, mark.number), ui) : null
 
   // The shopper's own page is theirs alone: a visitor is sent to sign in, and brought back here.
   if (place.section.kind === "account" && !shopper) redirect(routes.signIn({ back: routes.account() }) as Parameters<typeof redirect>[0])
@@ -120,31 +120,25 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
       ) : place.section.kind === "signIn" ? (
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : cart ? (
-        <>
-          {reorderNotice ? (
-            <div className="pt-5">
-              <StorefrontReorderNotice {...reorderNotice} messages={ui} />
-            </div>
-          ) : null}
-          <StorefrontCartLive
-            slug={store.slug}
-            products={cart.products}
-            hrefs={Object.fromEntries(cart.products.map((product) => [product.id, routes.product(product.slug)]))}
-            continueHref={routes.catalog()}
-            goneOnArrival={cart.gone > 0}
-            shopName={store.name}
-            whatsapp={store.socialNetworks.whatsapp?.replace(/\D/g, "") || null}
-            paymentMethods={store.paymentMethods}
-            shopper={shopper}
-            identityHrefs={{
-              signInHref: routes.signIn({ back: routes.cart() }),
-              signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
-              editHref: `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
-            }}
-            locale={locale}
-            messages={ui}
-          />
-        </>
+        <StorefrontCartLive
+          slug={store.slug}
+          products={cart.products}
+          hrefs={Object.fromEntries(cart.products.map((product) => [product.id, routes.product(product.slug)]))}
+          continueHref={routes.catalog()}
+          goneOnArrival={cart.gone > 0}
+          shopName={store.name}
+          whatsapp={store.socialNetworks.whatsapp?.replace(/\D/g, "") || null}
+          paymentMethods={store.paymentMethods}
+          shopper={shopper}
+          identityHrefs={{
+            signInHref: routes.signIn({ back: routes.cart() }),
+            signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
+            editHref: `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
+          }}
+          arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
+          locale={locale}
+          messages={ui}
+        />
       ) : (
         <StorefrontCategoryGrid
           categories={navigation.categories}

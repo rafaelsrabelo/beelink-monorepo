@@ -500,6 +500,7 @@ export interface UiMessages {
     reorderLimitedOne: string
     reorderLimitedMany: string
     reorderFailed: string
+    reorderTrimmed: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string
