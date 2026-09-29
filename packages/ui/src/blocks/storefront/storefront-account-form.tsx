@@ -14,8 +14,8 @@ export interface StorefrontAccountFormProps {
   profile: StorefrontAccountProfile
   /** Where the details post; the web's route handler. */
   action: string
-  /** Where "Sair" posts. */
-  signOutAction: string
+  /** Where "Sair" posts; absent when the area's menu already offers it. */
+  signOutAction?: string
   /** Carried through the post: this page, to come back to. */
   hidden?: Readonly<Record<string, string>>
   /** A refusal, already a sentence. */
@@ -43,7 +43,7 @@ export function StorefrontAccountForm({ profile, action, signOutAction, hidden =
   )
 
   return (
-    <section className="mx-auto flex w-full max-w-xl flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
+    <section className="flex w-full max-w-xl flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
       <p className="text-sm text-shop-muted">{text.accountLead}</p>
 
       {error ? (
@@ -87,11 +87,13 @@ export function StorefrontAccountForm({ profile, action, signOutAction, hidden =
         </button>
       </form>
 
-      <form action={signOutAction} method="post" className="flex justify-center">
-        <button type="submit" className="text-sm font-semibold text-shop-muted hover:underline">
-          {text.signOut}
-        </button>
-      </form>
+      {signOutAction ? (
+        <form action={signOutAction} method="post" className="flex justify-center">
+          <button type="submit" className="text-sm font-semibold text-shop-muted hover:underline">
+            {text.signOut}
+          </button>
+        </form>
+      ) : null}
     </section>
   )
 }

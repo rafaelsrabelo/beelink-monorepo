@@ -16,7 +16,7 @@ vi.mock("@/components/storefront/shop-font", () => ({ figtree: { variable: "font
 
 const store = {
   slug: "loja",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } },
   layoutSettings: {},
   sections: [],
 } as unknown as PublicStore

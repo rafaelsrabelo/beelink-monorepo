@@ -20,7 +20,7 @@ import { StorefrontSections } from "./storefront-sections"
 
 const routes = storefrontRoutes({
   slug: "loja",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } },
 })
 
 function poster(id: string, span: ComponentSpan): PublicComponent {

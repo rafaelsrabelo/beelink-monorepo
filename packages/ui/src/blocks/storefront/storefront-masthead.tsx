@@ -11,6 +11,7 @@ import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BAND } from "./storefront-band"
 import { MastheadHeight } from "./masthead-height"
 import { StorefrontAccountLink } from "./storefront-account-link"
+import { StorefrontOrdersLink } from "./storefront-orders-link"
 import { StorefrontCartLink } from "./storefront-cart-link"
 import { StorefrontSearch, type StorefrontSearchScope } from "./storefront-search"
 
@@ -42,6 +43,8 @@ export interface StorefrontMastheadProps {
   accountHref?: string
   /** The signed-in shopper's name; absent or null, the link invites them to sign in. */
   accountName?: string | null
+  /** The shopper's orders, beside their account (6c); absent for a visitor. */
+  ordersHref?: string
   /** A site's named bands, as anchors. A shop passes none. */
   menu?: readonly StorefrontMenuItem[]
   /** A site's button — its contact band. Kept out of `menu`, which would list it twice. */
@@ -90,6 +93,7 @@ export function StorefrontMasthead({
   cartSlot,
   accountHref,
   accountName,
+  ordersHref,
   menu = [],
   cta = null,
   categories,
@@ -191,6 +195,7 @@ export function StorefrontMasthead({
           </Link>
         ) : null}
 
+        {ordersHref ? <StorefrontOrdersLink href={ordersHref} linkComponent={Link} messages={messages} /> : null}
         {accountHref ? <StorefrontAccountLink href={accountHref} name={accountName ?? null} linkComponent={Link} messages={messages} /> : null}
 
         {cartSlot ?? (cartHref ? <StorefrontCartLink href={cartHref} count={cartCount} linkComponent={Link} messages={messages} /> : null)}

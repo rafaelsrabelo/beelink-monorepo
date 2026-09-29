@@ -36,7 +36,9 @@ describe('CatalogSlugService.resolve', () => {
     // The invariant the reserved list exists for: a word added to ROUTE_WORDS and not reserved is a
     // slug a shop can take today and lose the day that word starts resolving.
     for (const words of Object.values(ROUTE_WORDS)) {
-      for (const word of Object.values(words)) {
+      // The account's tabs sit under it, a third segment; a category is the second, so they orphan none.
+      const { accountTabs: _tabs, ...secondSegments } = words;
+      for (const word of Object.values(secondSegments)) {
         expect(() => slugs.resolve(word, 'x')).toThrow(BadRequestException);
       }
     }

@@ -13,7 +13,7 @@ import { shopFooterColumnsOf } from "./shop-chrome"
 
 const routes = storefrontRoutes({
   slug: "mutante",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta" },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } },
 })
 
 describe("shopFooterColumnsOf", () => {

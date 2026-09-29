@@ -48,6 +48,17 @@ export const ComCarrinho: Story = {
   args: { cartHref: "/padaria-da-ana/carrinho", cartCount: 3, accountHref: "/padaria-da-ana/conta" },
 }
 
+/** Com o cliente entrado: o nome no "Olá" e, ao lado, o caminho para os pedidos dele. */
+export const ComCliente: Story = {
+  args: {
+    cartHref: "/padaria-da-ana/carrinho",
+    cartCount: 1,
+    accountHref: "/padaria-da-ana/conta",
+    accountName: "Marina",
+    ordersHref: "/padaria-da-ana/conta/pedidos",
+  },
+}
+
 export const SemWhatsapp: Story = {
   args: { orderHref: undefined },
 }

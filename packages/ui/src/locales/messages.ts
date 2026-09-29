@@ -367,6 +367,99 @@ export interface UiMessages {
     fullDescription: string
     /** The line over "Minha conta" in the header, for a visitor not signed in. */
     accountGreeting: string
+    /** The shopper's area (J3): its menu, in the design's order, and the way back to it on a phone. */
+    accountOverview: string
+    accountOrders: string
+    accountFavorites: string
+    accountReviews: string
+    accountProfile: string
+    accountMessages: string
+    accountBack: string
+    /** The front (6c): the order on its way, the last one when none is, and the shopper's details. */
+    accountInProgress: string
+    accountInProgressEyebrow: string
+    accountTrackOrder: string
+    accountShipTo: string
+    accountMoreInProgress: string
+    accountMoreInProgressMany: string
+    accountLastOrder: string
+    accountSeeOrders: string
+    accountDetailsEdit: string
+    accountDetailsPhone: string
+    accountDetailsEmail: string
+    accountDetailsNoPhone: string
+    accountDetailsNoAddress: string
+    accountDetailsAddressIncomplete: string
+    /** An order's steps (6c, 6f): one per status the shopper follows, the pick-up's last in its own words. */
+    orderSteps: string
+    orderStepPlaced: string
+    orderStepAccepted: string
+    orderStepPreparing: string
+    orderStepOut: string
+    orderStepDelivered: string
+    orderStepPickedUp: string
+    /** Read after a step's name by a screen reader; the marks say it to the eye. */
+    orderStepDone: string
+    orderStepTodo: string
+    /** Meus pedidos (J4): the list's toolbar, tabs, cards, the cancel and its refusals, and the empty states. */
+    ordersLinkTop: string
+    ordersFilterLabel: string
+    ordersSearchLabel: string
+    ordersSearchPlaceholder: string
+    ordersFilter: string
+    ordersPeriod: string
+    ordersAllTime: string
+    ordersLastMonths: string
+    ordersTabAll: string
+    ordersTabActive: string
+    ordersTabDelivered: string
+    ordersTabCancelled: string
+    orderPlacedOn: string
+    orderTotalLabel: string
+    orderShipTo: string
+    orderPickupLabel: string
+    /** `{number}`. */
+    orderNumber: string
+    orderStatusReceived: string
+    orderStatusAccepted: string
+    orderStatusPreparing: string
+    orderStatusOut: string
+    /** `{date}`. */
+    orderStatusDelivered: string
+    orderStatusCancelled: string
+    orderCancelledByShop: string
+    orderCancelledByYou: string
+    /** `{date}`. */
+    orderPlacedByYou: string
+    orderPlacedByShop: string
+    orderReceivedHint: string
+    /** `{qty}`; `{count}`. */
+    orderQty: string
+    orderMoreItem: string
+    orderMoreItems: string
+    orderCancel: string
+    /** `{number}`. */
+    orderCancelTitle: string
+    orderCancelBody: string
+    orderCancelKeep: string
+    /** The dialog's X: closing it keeps the order, but it reads as a close. */
+    orderCancelClose: string
+    orderCancelConfirm: string
+    orderCancelling: string
+    orderCancelRefusedAccepted: string
+    orderCancelRefusedDone: string
+    orderCancelFailed: string
+    /** The session ended between the page and the cancel. */
+    orderCancelSignedOut: string
+    /** Over the list once a cancel lands: the order may leave the tab shown, so it is said. */
+    orderCancelledNotice: string
+    ordersEmpty: string
+    ordersEmptyCta: string
+    ordersNoResults: string
+    ordersClear: string
+    /** The list could not be read: never shown as an empty list, which would say there are none. */
+    ordersUnavailable: string
+    ordersRetry: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string

@@ -265,7 +265,10 @@ describe("a shopper's order from the cart", () => {
         recipientName: 'Bia Cliente',
         itemsCount: 3,
         moreItems: 0,
-        items: [expect.objectContaining({ productName: 'Whey', imageUrl: 'https://img.test/whey.jpg' }), expect.objectContaining({ productName: 'Creatina', imageUrl: null })],
+        items: [
+          expect.objectContaining({ productName: 'Whey', productSlug: expect.any(String), imageUrl: 'https://img.test/whey.jpg' }),
+          expect.objectContaining({ productName: 'Creatina', imageUrl: null }),
+        ],
       });
       expect(page.orders[1]).toMatchObject({ number: 1, status: 'ACCEPTED', placedBy: 'SHOP', fulfillment: 'PICKUP', recipientName: null });
       expect(page).toMatchObject({ total: 2, counts: { ALL: 2, ACTIVE: 2, DELIVERED: 0, CANCELLED: 0 } });
@@ -311,6 +314,21 @@ describe("a shopper's order from the cart", () => {
       expect(JSON.stringify(order)).not.toContain('troco');
       expect(order).not.toHaveProperty('note');
       expect(order).not.toHaveProperty('customer');
+    });
+
+    /** The storefront opens a product's page only while it is on sale: a slug past that is a link to a 404. */
+    it('leads a line to its product only while the product is on sale, and keeps its photo either way', async () => {
+      const product = (await prisma.productVariant.findUniqueOrThrow({ where: { id: whey } })).productId;
+      await prisma.productImage.create({ data: { productId: product, url: 'https://img.test/whey.jpg' } });
+      await place();
+
+      const onSale = (await orders()).orders[0]!.items[0]!;
+      expect(onSale).toMatchObject({ productName: 'Whey', productSlug: expect.any(String) });
+
+      await prisma.product.update({ where: { id: product }, data: { status: 'DRAFT' } });
+      const offSale = { productName: 'Whey', productSlug: null, imageUrl: 'https://img.test/whey.jpg' };
+      expect((await orders()).orders[0]!.items[0]).toMatchObject(offSale);
+      expect((await call('GET', '/api/stores/lessari/customer/orders/1', shopper)).json<CustomerOrder>().items[0]).toMatchObject(offSale);
     });
 
     it('cancels an order the shop has not accepted, giving its stock back; after that only the shop cancels', async () => {

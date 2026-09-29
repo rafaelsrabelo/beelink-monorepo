@@ -85,3 +85,19 @@ export class ShopperOrderError extends Error {
     this.name = "ShopperOrderError"
   }
 }
+
+/** The shopper's own cancel of an order the shop has not accepted, through the shop's handler. */
+export async function cancelShopperOrder(slug: string, number: number): Promise<CustomerOrder> {
+  const response = await fetch(`/${encodeURIComponent(slug)}/api/orders/${number}/cancel`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: "{}",
+  })
+  const answer: unknown = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const code = typeof answer === "object" && answer !== null && "errorCode" in answer ? String(answer.errorCode) : null
+    throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"))
+  }
+  return answer as CustomerOrder
+}
