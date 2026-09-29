@@ -11,7 +11,7 @@ import { CustomerProfile } from "@harness-monorepo/ui/blocks/customers/customer-
 import { CustomerRecordHeader } from "@harness-monorepo/ui/blocks/customers/customer-record-header"
 import { CustomerStats } from "@harness-monorepo/ui/blocks/customers/customer-stats"
 import { Button } from "@harness-monorepo/ui/components/button"
-import { defaultLocale, format } from "@harness-monorepo/ui/locales/index"
+import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
@@ -29,6 +29,7 @@ import { useCustomerRecord } from "./use-customer-record"
 export interface CustomerScreenProps {
   slug: string
   customerId: string
+  locale: string
   messages: UiMessages
   web: WebMessages
 }
@@ -39,7 +40,7 @@ export interface CustomerScreenProps {
  * the WhatsApp message for where they stand. Their details are corrected here, in their card, and
  * another record of the same person is merged into one from here.
  */
-export function CustomerScreen({ slug, customerId, messages, web }: CustomerScreenProps) {
+export function CustomerScreen({ slug, customerId, locale, messages, web }: CustomerScreenProps) {
   const text = messages.customers
   const view = useCustomerRecord(slug, customerId, web)
   const merge = useCustomerMerge(slug, customerId, web)
@@ -101,7 +102,7 @@ export function CustomerScreen({ slug, customerId, messages, web }: CustomerScre
         {merge.merged ? text.record.duplicates.merged : null}
       </p>
 
-      <CustomerStats customer={customer} messages={messages} />
+      <CustomerStats customer={customer} locale={locale} messages={messages} />
 
       <CustomerDuplicates
         duplicates={customer.duplicates}
@@ -118,7 +119,7 @@ export function CustomerScreen({ slug, customerId, messages, web }: CustomerScre
             customer={customer}
             addressLine={addressLineOf(customer.address)}
             cpfLine={cpfLineOf(customer.cpf)}
-            birthDateLine={birthDateLineOf(customer.birthDate, defaultLocale)}
+            birthDateLine={birthDateLineOf(customer.birthDate, locale)}
             {...view.profile}
             messages={messages}
           />

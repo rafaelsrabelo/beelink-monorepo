@@ -57,7 +57,7 @@ describe("CustomerProfile", () => {
     expect(fact("E-mail")).toHaveTextContent("caio@exemplo.com · confirmado")
     expect(fact("Celular")).toHaveTextContent("5511955554444")
     expect(fact("CPF")).toHaveTextContent("529.982.247-25")
-    expect(fact("Nascimento")).toHaveTextContent("17/05/1990")
+    expect(fact("Data de nascimento")).toHaveTextContent("17/05/1990")
     expect(fact("Endereço")).toHaveTextContent("Rua Barão de Jaguara, 1000, apto 12 — Centro — Campinas/SP — CEP 13015-904")
   })
 
@@ -69,7 +69,7 @@ describe("CustomerProfile", () => {
     expect(fact("E-mail")).toHaveTextContent("Sem e-mail: cadastrado pela loja, sem conta.")
     expect(fact("Celular")).toHaveTextContent("Sem celular")
     expect(fact("CPF")).toHaveTextContent("Não informado")
-    expect(fact("Nascimento")).toHaveTextContent("Não informada")
+    expect(fact("Data de nascimento")).toHaveTextContent("Não informada")
     expect(fact("Endereço")).toHaveTextContent("Sem endereço cadastrado")
   })
 

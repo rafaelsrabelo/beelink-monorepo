@@ -88,7 +88,7 @@ afterEach(() => {
 })
 
 function renderScreen() {
-  return render(<CustomerScreen slug="loja" customerId={ID} messages={ui} web={web} />)
+  return render(<CustomerScreen slug="loja" customerId={ID} locale="pt-BR" messages={ui} web={web} />)
 }
 
 describe("CustomerScreen", () => {

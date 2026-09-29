@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { birthDateLineOf, cpfLineOf } from "./customer-identity"
+import { birthDateLineOf, brazilTodayOf, cpfLineOf } from "./customer-identity"
 
 describe("the CPF and the birth date as a person reads them", () => {
   it("writes the CPF's eleven digits with its points and dash", () => {
@@ -16,5 +16,10 @@ describe("the CPF and the birth date as a person reads them", () => {
     // Midnight UTC is still the day before in São Paulo: read as a local instant, this would be the 31st.
     expect(birthDateLineOf("2000-01-01", "pt-BR")).toBe("01/01/2000")
     expect(birthDateLineOf(null, "pt-BR")).toBeNull()
+  })
+
+  it("takes today as São Paulo's, which is still yesterday in UTC's small hours", () => {
+    expect(brazilTodayOf(new Date("2026-09-30T02:00:00.000Z"))).toBe("2026-09-29")
+    expect(brazilTodayOf(new Date("2026-09-30T15:00:00.000Z"))).toBe("2026-09-30")
   })
 })

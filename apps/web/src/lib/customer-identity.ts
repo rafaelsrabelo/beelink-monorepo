@@ -15,3 +15,13 @@ export function birthDateLineOf(day: string | null, locale: string): string | nu
   if (Number.isNaN(date.getTime())) return day
   return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(date)
 }
+
+/**
+ * Today in São Paulo, `YYYY-MM-DD`: the last day the birth date's picker offers — the same today the
+ * API checks a birth date against, so the picker offers no day the API would refuse.
+ */
+export function brazilTodayOf(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now)
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((each) => each.type === type)?.value ?? ""
+  return `${part("year")}-${part("month")}-${part("day")}`
+}

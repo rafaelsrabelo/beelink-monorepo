@@ -1133,7 +1133,7 @@ export const ptBR: UiMessages = {
       noAddress: "Sem endereço cadastrado",
       cpf: "CPF",
       noCpf: "Não informado",
-      birthDate: "Nascimento",
+      birthDate: "Data de nascimento",
       noBirthDate: "Não informada",
       edit: "Editar dados",
       save: "Salvar",

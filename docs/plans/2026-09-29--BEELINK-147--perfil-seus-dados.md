@@ -73,3 +73,30 @@ a frase diz o que corrigir.
 
 - Trocar o e-mail; verificar o celular.
 - Os endereços (J9), os avisos por e-mail (J12), a privacidade (J13).
+
+## Adendo da revisão (29/09)
+
+Dois revisores leram o ramo: um olhou correção, o outro regras e acessibilidade. O que entrou:
+
+- **O BFF deixa passar a frase do CPF e a da data.** Antes, todo 400 virava "confira os campos".
+  Agora só vira quando nenhum campo tem código próprio.
+- **A data no painel segue o idioma do painel.** Antes era sempre pt-BR. A página passa o `locale`,
+  e as estatísticas da ficha passam a usá-lo também.
+- **O "hoje" da data de nascimento é o de São Paulo, e não o de UTC.** Com o de UTC, das 21h à
+  meia-noite a API aceitava o dia de amanhã.
+- **O campo de nascimento não oferece um dia depois de hoje** (`max`, com o mesmo hoje da API). Uma
+  recusa custaria os outros valores digitados (decisão 8).
+- **O campo que a recusa nomeia fica marcado.** Vale para o celular de outro cliente, o CPF e a data.
+  Ele leva `aria-invalid` e é descrito pela frase da recusa.
+- **Na ficha, "Data de nascimento".** "Nascimento: Não informada" não concordava.
+- **O e2e da mesclagem cobre o CPF e a data.** O registro mantido recebe o CPF que não tinha e fica
+  com a data que já era sua.
+
+O que ficou de fora, de propósito:
+
+- **Dois campos errados de uma vez dizem só o do CPF ou o da data.** O pipe de validação responde o
+  primeiro código declarado. Com "confira os campos", a pessoa também precisaria de uma segunda volta.
+  Mudar o pipe mexe em toda a API, e não compensa aqui.
+- **Uma recusa já está na página quando ela carrega, e o leitor de tela pode não anunciá-la.** Isso
+  vem de antes deste ticket (G3), e vale para toda recusa do formulário. Pôr a recusa no `<title>`
+  resolveria sem script. Fica anotado no PR como pendência, fora deste ticket.

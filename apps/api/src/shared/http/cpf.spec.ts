@@ -27,7 +27,8 @@ describe('a CPF', () => {
 });
 
 describe('a birth date', () => {
-  const today = new Date(Date.UTC(2026, 8, 30));
+  // Noon in São Paulo on 30/09.
+  const today = new Date('2026-09-30T15:00:00.000Z');
 
   it('is a day that exists, from 1900 to today', () => {
     expect(isBirthDate('1990-05-17', today)).toBe(true);
@@ -40,5 +41,12 @@ describe('a birth date', () => {
     expect(isBirthDate('2026-10-01', today)).toBe(false);
     expect(isBirthDate('1899-12-31', today)).toBe(false);
     expect(isBirthDate('17/05/1990', today)).toBe(false);
+  });
+
+  it("ends today in Brazil: at 22:30 on 29/09 there, UTC's 30/09 is still to come", () => {
+    const evening = new Date('2026-09-30T01:30:00.000Z');
+
+    expect(isBirthDate('2026-09-29', evening)).toBe(true);
+    expect(isBirthDate('2026-09-30', evening)).toBe(false);
   });
 });

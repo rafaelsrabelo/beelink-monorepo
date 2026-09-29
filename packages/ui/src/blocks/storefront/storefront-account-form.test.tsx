@@ -40,6 +40,19 @@ describe("StorefrontAccountForm", () => {
     expect(screen.getByLabelText("Data de nascimento · Opcional")).toHaveValue("")
   })
 
+  /** A refusal that names a field marks that one invalid, described by the sentence; the others stay clean. */
+  it("points the field a refusal names at the sentence, and offers no birth date after today", () => {
+    render(
+      <StorefrontAccountForm profile={profile} action="#" error="Esse CPF não confere." invalidField="cpf" birthDateMax="2026-09-29" />,
+    )
+
+    const cpf = screen.getByLabelText(/^CPF/)
+    expect(cpf).toHaveAttribute("aria-invalid", "true")
+    expect(cpf).toHaveAccessibleDescription("Esse CPF não confere.")
+    expect(screen.getByLabelText("Celular")).not.toHaveAttribute("aria-invalid")
+    expect(screen.getByLabelText(/^Data de nascimento/)).toHaveAttribute("max", "2026-09-29")
+  })
+
   it("signs out through a form of its own", () => {
     render(<StorefrontAccountForm profile={profile} action="#" signOutAction="/api/x/sair" />)
 

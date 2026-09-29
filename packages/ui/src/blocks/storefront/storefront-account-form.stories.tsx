@@ -47,5 +47,5 @@ export const Completo: Story = {
   },
 }
 
-/** Um CPF cujos dígitos verificadores não batem volta com a frase dele, e não com "confira os campos". */
-export const CpfRecusado: Story = { args: { error: "Esse CPF não confere. Confira os números e salve de novo." } }
+/** Um CPF cujos dígitos verificadores não batem volta com a frase dele, e não com "confira os campos"; o campo fica marcado. */
+export const CpfRecusado: Story = { args: { error: "Esse CPF não confere. Confira os números e salve de novo.", invalidField: "cpf" } }

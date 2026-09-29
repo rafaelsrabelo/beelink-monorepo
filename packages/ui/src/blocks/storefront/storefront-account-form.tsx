@@ -1,3 +1,6 @@
+// React
+import { useId } from "react"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -25,6 +28,10 @@ export interface StorefrontAccountFormProps {
   hidden?: Readonly<Record<string, string>>
   /** A refusal, already a sentence. */
   error?: string | null
+  /** The field the refusal names, marked invalid and described by it; null when it names none. */
+  invalidField?: "phone" | "cpf" | "birthDate" | null
+  /** The last day a birth date may be, `YYYY-MM-DD`: the browser's picker refuses a later one before a post would. */
+  birthDateMax?: string
   saved?: boolean
   messages?: UiMessages
 }
@@ -37,16 +44,28 @@ const LABEL = "flex flex-col gap-1 text-sm font-medium"
  * keeps them, and a way to sign out. A plain form, like the sign-in: it posts and comes back, with no
  * script needed. The e-mail is the account's and is shown, not edited — it is not the shop's to change.
  */
-export function StorefrontAccountForm({ profile, action, signOutAction, hidden = {}, error, saved = false, messages = defaultMessages }: StorefrontAccountFormProps) {
+export function StorefrontAccountForm({
+  profile,
+  action,
+  signOutAction,
+  hidden = {},
+  error,
+  invalidField = null,
+  birthDateMax,
+  saved = false,
+  messages = defaultMessages,
+}: StorefrontAccountFormProps) {
   const text = messages.storefront
   const { address } = profile
+  const errorId = useId()
+  const invalid = (name: string) => (error && name === invalidField ? { "aria-invalid": true, "aria-describedby": errorId } : {})
   const field = (name: string, label: string, value: string | null, extra: Record<string, string | number | boolean> = {}, hint?: string) => (
     <label className={LABEL}>
       <span>
         {label}
         {hint ? <span className="font-normal text-shop-muted"> · {hint}</span> : null}
       </span>
-      <input name={name} defaultValue={value ?? ""} className={INPUT} {...extra} />
+      <input name={name} defaultValue={value ?? ""} className={INPUT} {...extra} {...invalid(name)} />
     </label>
   )
 
@@ -55,7 +74,7 @@ export function StorefrontAccountForm({ profile, action, signOutAction, hidden =
       <p className="text-sm text-shop-muted">{text.accountLead}</p>
 
       {error ? (
-        <p role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
+        <p id={errorId} role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
           {error}
         </p>
       ) : null}
@@ -80,7 +99,7 @@ export function StorefrontAccountForm({ profile, action, signOutAction, hidden =
             <span className="text-xs text-shop-muted">{text.accountEmailFixed}</span>
           </p>
           {field("cpf", text.accountCpf, profile.cpf, { inputMode: "numeric", autoComplete: "off", maxLength: 14, placeholder: "000.000.000-00" }, text.accountCpfHint)}
-          {field("birthDate", text.accountBirthDate, profile.birthDate, { type: "date", min: "1900-01-01", autoComplete: "bday" }, text.accountBirthDateHint)}
+          {field("birthDate", text.accountBirthDate, profile.birthDate, { type: "date", min: "1900-01-01", ...(birthDateMax ? { max: birthDateMax } : {}), autoComplete: "bday" }, text.accountBirthDateHint)}
         </fieldset>
 
         <fieldset className="grid grid-cols-6 gap-4">
