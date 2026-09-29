@@ -71,3 +71,48 @@ Ela só ganha a folga de um minuto no cookie (decisão 2).
 
 - Mudar a duração dos tokens.
 - Renovar dentro de `forwardSignedIn` (decisão 1).
+
+## Adendo — revisão independente e o que a conferência mostrou (2026-09-29)
+
+1. **A decisão 3 não cobria uma chamada lenta.** Os cookies novos de uma rota só chegam ao navegador
+   com a resposta dela. Um upload de 40 s que renovasse seguraria o refresh novo, e uma segunda
+   chamada, depois dos 20 s de tolerância da API, levaria o refresh já gasto. A API trata isso como
+   token roubado e encerra a sessão.
+
+   Agora o proxy renova **antes**: quando faltam menos de 3 minutos para o token vencer, lendo o
+   `exp` do token sem verificá-lo, só para decidir a hora. Numa aba aberta e em uso, quem renova é
+   uma chamada comum, e o upload nunca renova adiantado.
+
+   Por isso a entrada do matcher perdeu a condição "sem `bl_access`": ela recebe as rotas do painel
+   sempre que houver o refresh do painel. Continua de fora o que escreve cookies (`session`, `auth`)
+   e o que é da loja (`customer`, `storefront`), agora com o prefixo ancorado.
+2. **Queda da API numa rota:** o proxy deixava a rota responder 401, e a página ia para o login.
+   Agora a resposta é 503 `SERVICE_UNAVAILABLE`.
+3. **Queda da API numa página:** o `requireUser` lia "sem cookie de acesso" como "sem sessão" e
+   passava pela rota que limpa os cookies. Uma queda deslogava o lojista; a conferência pegou isso ao
+   vivo, quando a API de dev caiu. Agora, com o refresh presente, a página falha e os cookies ficam.
+4. **Sessão revogada em outro aparelho:** o `bl_access` continua lá, e o proxy levava de `/login`
+   de volta à página, que ia a `/api/session/expired` e perdia o `voltar`. Agora o 401 de uma
+   consulta vai direto a `/api/session/expired?voltar=…`, que limpa os cookies e leva ao login com o
+   `voltar`.
+5. **O `retry` novo** também valia para dois `fetchQuery` do novo pedido, que antes falhavam na hora.
+   Eles voltam a `retry: false`.
+6. O contrato da web (regra 3) e o `docs/README.md` da web descrevem a entrada nova do matcher.
+
+Fica para depois:
+- Um `error.tsx` no painel, com "Tentar de novo", para a página que falha numa queda. Hoje ela
+  mostra a tela de erro padrão do Next, o que ainda é melhor do que deslogar.
+- O e2e cobre a escrita com o cookie vencido e o redirecionamento com `voltar`, mas não o caminho
+  inteiro de uma consulta que recebe 401 numa página aberta. Esse caminho está coberto por unidade.
+- Dois cenários do e2e `auth-journey` já falhavam antes deste ticket e continuam falhando:
+  - o botão "Ana Souza" do cabeçalho não existe desde a mudança do app shell;
+  - o "Esqueceu a senha" responde "Algo deu errado" neste ambiente.
+
+  Não foram mexidos.
+
+Conferido em :3100:
+- `/admin/loja-do-design/orders` sem sessão leva a `/login?voltar=…`, e ao entrar volta a Pedidos;
+- sem o cookie de acesso, uma chamada do BFF responde 200, e o cookie volta renovado.
+
+O e2e `panel-session` passa contra o build de produção, rodado nas portas 3200/3201 para não parar o
+dev.

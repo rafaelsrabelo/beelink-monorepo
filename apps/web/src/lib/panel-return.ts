@@ -24,6 +24,16 @@ export function signInHrefOf(back: string): string {
   return path ? `/login?${RETURN_KEY}=${encodeURIComponent(path)}` : "/login"
 }
 
+/**
+ * Where a page goes when a call says its session is over: the route that clears the cookies first —
+ * a revoked session still has its access cookie, and the proxy would take `/login` for signed in —
+ * then the sign-in, and back to `back`.
+ */
+export function sessionEndedHrefOf(back: string): string {
+  const path = panelReturnOf(back)
+  return path ? `/api/session/expired?${RETURN_KEY}=${encodeURIComponent(path)}` : "/api/session/expired"
+}
+
 /** An answer that says the session is over: its refresh is spent too, since the proxy renews one still good. */
 export function isSignedOutError(error: unknown): boolean {
   return typeof error === "object" && error !== null && "errorCode" in error && error.errorCode === "AUTH_UNAUTHENTICATED"

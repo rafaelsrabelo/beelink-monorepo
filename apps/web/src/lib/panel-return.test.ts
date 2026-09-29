@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { isSignedOutError, panelReturnOf, signInHrefOf } from "./panel-return"
+import { isSignedOutError, panelReturnOf, sessionEndedHrefOf, signInHrefOf } from "./panel-return"
 
 describe("the page to go back to after signing in", () => {
   it("is a page of the panel, with its query", () => {
@@ -16,6 +16,8 @@ describe("the page to go back to after signing in", () => {
       expect(panelReturnOf(raw)).toBeNull()
     }
     expect(signInHrefOf("/loja/conta")).toBe("/login")
+    expect(sessionEndedHrefOf("/admin/loja")).toBe("/api/session/expired?voltar=%2Fadmin%2Floja")
+    expect(sessionEndedHrefOf("//evil.example")).toBe("/api/session/expired")
   })
 })
 

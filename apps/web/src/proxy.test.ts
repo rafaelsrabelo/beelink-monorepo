@@ -13,6 +13,12 @@ const SESSION = {
   user: { id: "1", name: "Ana Souza", email: "ana@exemplo.com", emailVerified: true, createdAt: "" },
 }
 
+/** An access token as the API signs one, as far as the proxy reads it: its expiry, `seconds` from now. */
+function tokenFor(seconds: number): string {
+  const payload = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + seconds })).toString("base64url")
+  return `h.${payload}.s`
+}
+
 function request(pathname: string, cookie?: string): NextRequest {
   const headers = new Headers()
   if (cookie) headers.set("cookie", cookie)
@@ -107,10 +113,10 @@ function selects(pathname: string, cookies: readonly string[] = []): boolean {
   return config.matcher.some((entry) => {
     if (typeof entry === "string") return new RegExp(`^${entry.replace("/:path*", "(?:/.*)?")}$`).test(pathname)
 
-    const cookiesMatch = entry.has.every((rule) => cookies.includes(rule.key)) && entry.missing.every((rule) => !cookies.includes(rule.key))
+    const cookiesMatch = (entry.has ?? []).every((rule) => cookies.includes(rule.key)) && (entry.missing ?? []).every((rule) => !cookies.includes(rule.key))
 
     // The panel's handlers: under /api, save the groups that write their own cookies or a shop's.
-    if (entry.source.startsWith("/api/")) return /^\/api\/(?!session|auth|customer|storefront)[^/]+(?:\/.*)?$/.test(pathname) && cookiesMatch
+    if (entry.source.startsWith("/api/")) return /^\/api\/(?!(?:session|auth|customer|storefront)(?:\/|$))[^/]+(?:\/.*)?$/.test(pathname) && cookiesMatch
 
     // The shop window's entry: a first segment that is neither Next's nor the API's.
     const segment = pathname.split("/")[1] ?? ""
@@ -141,10 +147,35 @@ describe("the panel's route handlers, a quarter of an hour into an open tab (BEE
     expect(response.cookies.get("bl_refresh")?.value).toBe("")
   })
 
-  it("is handed only the panel's handlers with a lapsed access cookie", () => {
+  it("renews ahead, a token with under three minutes left, and leaves a fresh one alone", async () => {
+    const fetched = vi.fn(async () => Response.json(SESSION, { status: 200 }))
+    vi.stubGlobal("fetch", fetched)
+
+    await proxy(request("/api/stores/loja/orders", `bl_refresh=r; bl_access=${tokenFor(600)}`))
+    expect(fetched).not.toHaveBeenCalled()
+
+    const ahead = await proxy(request("/api/stores/loja/orders", `bl_refresh=r; bl_access=${tokenFor(90)}`))
+    expect(ahead.cookies.get("bl_access")?.value).toBe("new-access")
+
+    // An upload answers late: it never renews ahead.
+    fetched.mockClear()
+    await proxy(request("/api/uploads", `bl_refresh=r; bl_access=${tokenFor(90)}`))
+    expect(fetched).not.toHaveBeenCalled()
+  })
+
+  it("answers an outage as one, never as a sign-out", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 503 })))
+
+    const response = await proxy(request("/api/stores/loja/orders", "bl_refresh=r"))
+
+    expect(response.status).toBe(503)
+    expect(response.cookies.get("bl_refresh")).toBeUndefined()
+  })
+
+  it("is handed only the panel's handlers, and only with a panel session", () => {
     expect(selects("/api/stores/loja/orders", ["bl_refresh"])).toBe(true)
     expect(selects("/api/uploads", ["bl_refresh"])).toBe(true)
-    expect(selects("/api/stores/loja/orders", ["bl_refresh", "bl_access"])).toBe(false)
+    expect(selects("/api/stores/loja/orders", ["bl_refresh", "bl_access"])).toBe(true)
     expect(selects("/api/stores/loja/orders")).toBe(false)
     for (const own of ["/api/session", "/api/session/expired", "/api/auth/login", "/api/customer/google/callback", "/api/storefront/loja/search"]) {
       expect(selects(own, ["bl_refresh"])).toBe(false)

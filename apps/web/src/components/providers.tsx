@@ -9,7 +9,7 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@ta
 import { ThemeProvider } from "next-themes"
 
 // App
-import { isPanelPage, isSignedOutError, signInHrefOf } from "@/lib/panel-return"
+import { isPanelPage, isSignedOutError, sessionEndedHrefOf } from "@/lib/panel-return"
 
 /**
  * A panel call that says the session is over sends the person to sign in, and back to this page
@@ -18,7 +18,7 @@ import { isPanelPage, isSignedOutError, signInHrefOf } from "@/lib/panel-return"
  */
 function signInWhenSignedOut(error: unknown): void {
   if (typeof window === "undefined" || !isSignedOutError(error) || !isPanelPage(window.location.pathname)) return
-  window.location.assign(signInHrefOf(window.location.pathname + window.location.search))
+  window.location.assign(sessionEndedHrefOf(window.location.pathname + window.location.search))
 }
 
 function makeQueryClient(): QueryClient {

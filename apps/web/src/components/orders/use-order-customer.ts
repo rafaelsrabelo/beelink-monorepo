@@ -59,7 +59,7 @@ export function useOrderCustomer(slug: string, initialCustomerId: string | null,
       if (!(error instanceof CustomerRequestError) || error.errorCode !== "CUSTOMER_PHONE_TAKEN") return
       const digits = canonicalPhoneOf(draft.phone)
       const found = await queryClient
-        .fetchQuery({ queryKey: customerKeys.list(slug, { q: digits, pageSize: 1 }), queryFn: () => fetchStoreCustomers(slug, { q: digits, pageSize: 1 }) })
+        .fetchQuery({ queryKey: customerKeys.list(slug, { q: digits, pageSize: 1 }), queryFn: () => fetchStoreCustomers(slug, { q: digits, pageSize: 1 }), retry: false })
         .catch(() => null)
       setExisting(found?.customers[0] ? optionOf(found.customers[0]) : null)
     }

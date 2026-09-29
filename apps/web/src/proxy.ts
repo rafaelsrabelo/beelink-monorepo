@@ -44,17 +44,45 @@ function panelFrom(request: NextRequest): URL {
 }
 
 /**
- * The panel's route handlers, with a session whose access cookie ran out a quarter of an hour into
- * an open tab (BEELINK-169). The matcher hands one over only with the refresh cookie there and the
- * access cookie gone. It never redirects — a handler answers JSON — and a refused refresh clears
- * the cookies, so the handler answers 401 and the page sends the person to sign in.
+ * Renewed this long before the access token runs out. A handler's new cookies reach the browser only
+ * with its answer: renewing on a call that answers late — an upload — while another call still
+ * carries the spent refresh past the API's 20 s grace would end the session as a stolen token.
+ * Renewing ahead, on the ordinary calls of an open panel, makes a renewal on a late one rare.
+ */
+const RENEW_AHEAD_S = 180
+
+/** Seconds left on an access token, read from its payload without checking it: only to time a renewal. */
+function secondsLeftOf(token: string): number | null {
+  try {
+    const payload = token.split(".")[1] ?? ""
+    const { exp } = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))) as { exp?: unknown }
+    return typeof exp === "number" ? exp - Date.now() / 1000 : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The panel's route handlers, with a session whose access token is running out or ran out a quarter
+ * of an hour into an open tab (BEELINK-169). It never redirects — a handler answers JSON. A refused
+ * refresh clears the cookies, so the handler answers 401 and the page sends the person to sign in;
+ * an API that did not answer is an outage, never a sign-out.
  */
 async function keepPanelSignedIn(request: NextRequest): Promise<NextResponse> {
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value
-  if (!refreshToken || request.cookies.has(ACCESS_COOKIE)) return NextResponse.next()
+  const accessToken = request.cookies.get(ACCESS_COOKIE)?.value
+  if (!refreshToken) return NextResponse.next()
+  if (accessToken) {
+    const left = secondsLeftOf(accessToken)
+    // An upload answers late: it renews only a token already gone, never ahead.
+    if (left === null || left > RENEW_AHEAD_S || request.nextUrl.pathname.startsWith("/api/uploads")) return NextResponse.next()
+  }
 
   const outcome = await refreshSession(refreshToken, request.headers.get("x-forwarded-for"))
-  if (outcome.status === "unavailable") return NextResponse.next()
+  if (outcome.status === "unavailable") {
+    if (accessToken) return NextResponse.next()
+    return NextResponse.json({ statusCode: 503, errorCode: "SERVICE_UNAVAILABLE", message: "The session could not be renewed" }, { status: 503 })
+  }
 
   if (outcome.status === "rejected") {
     const answer = NextResponse.next()
@@ -155,9 +183,9 @@ export const config = {
   // cookie, go to /login — would answer a crawler with a 302 for the whole public site. The
   // template this repo grew from matches the inverse, excluding a handful of paths and guarding
   // everything else; copying that matcher back in is the one edit that breaks bee-link silently.
-  // The route handlers under /api come in only to renew a panel session whose access cookie ran
-  // out, and never those that write their own cookies (session, auth) or a shop's (customer,
-  // storefront).
+  // The route handlers under /api come in only with a panel session, to renew it when its access
+  // token runs out, and never those that write their own cookies (session, auth) or a shop's
+  // (customer, storefront).
   matcher: [
     "/dashboard",
     "/dashboard/:path*",
@@ -172,9 +200,8 @@ export const config = {
     "/forgot-password",
     "/reset-password",
     {
-      source: "/api/:group((?!session|auth|customer|storefront)[^/]+)/:path*",
+      source: "/api/:group((?!(?:session|auth|customer|storefront)(?:/|$))[^/]+)/:path*",
       has: [{ type: "cookie", key: "bl_refresh" }],
-      missing: [{ type: "cookie", key: "bl_access" }],
     },
     // A shop window, but only for a signed-in shopper whose short-lived token has run out: the
     // conditions below keep every anonymous request — and every crawler — out of the proxy.
