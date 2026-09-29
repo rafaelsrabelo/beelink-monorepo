@@ -10,6 +10,7 @@ import { AppLink } from "@/components/app-link"
 import { lastOrderViewOf, orderNowViewOf } from "@/lib/account-overview"
 import { customerOrderAt, customerOrdersAt } from "@/lib/customer-orders"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
+import { OrderTalkLive } from "../conversations/order-talk-live"
 
 export interface AccountOrdersNowProps {
   slug: string
@@ -34,7 +35,14 @@ export async function AccountOrdersNow({ slug, routes, locale, messages }: Accou
   if (current) {
     const read = await customerOrderAt(slug, current.number)
     if (read.status !== "found") return unavailable
-    return <StorefrontOrderNow {...orderNowViewOf(read.order, active.counts.ACTIVE - 1, context)} linkComponent={AppLink} messages={messages} />
+    return (
+      <StorefrontOrderNow
+        {...orderNowViewOf(read.order, active.counts.ACTIVE - 1, context)}
+        actions={<OrderTalkLive number={read.order.number} href={routes.accountConversation(read.order.number)} size="md" messages={messages} />}
+        linkComponent={AppLink}
+        messages={messages}
+      />
+    )
   }
 
   if (active.counts.ALL === 0) return <StorefrontAccountOrdersNote kind="none" href={routes.catalog()} linkComponent={AppLink} messages={messages} />

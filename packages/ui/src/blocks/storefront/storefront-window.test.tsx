@@ -1,5 +1,6 @@
 // Libs
 import { render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
 // Locales
@@ -162,14 +163,26 @@ describe("StorefrontWindow", () => {
       expect(screen.getByText("3")).toBeInTheDocument()
     })
 
-    /** The window is the one path from the frame to the header: a prop it takes and drops is a link that never shows. */
-    it("hands the header the way to the shopper's orders, and draws none for a visitor", () => {
-      const { rerender } = renderWindow({ accountHref: "/padaria-da-ana/conta", ordersHref: "/padaria-da-ana/conta/pedidos" })
+    /** The window is the one path from the frame to the header: a prop it takes and drops is a menu that never opens. */
+    it("hands the header the shopper's account menu, and leaves a visitor the link to sign in", async () => {
+      const accountMenu = { items: [{ key: "orders" as const, href: "/padaria-da-ana/conta/pedidos" }], signOutAction: "/padaria-da-ana/api/customer/sair" }
+      const { rerender } = renderWindow({ accountHref: "/padaria-da-ana/conta", accountName: "Ana Lima", accountMenu })
 
+      await userEvent.click(screen.getByRole("button", { name: "Olá, Ana — Minha conta" }))
       expect(screen.getByRole("link", { name: "Meus pedidos" })).toHaveAttribute("href", "/padaria-da-ana/conta/pedidos")
 
       rerender(<StorefrontWindow name="Padaria da Ana" homeHref="/padaria-da-ana" colors={colors} accountHref="/padaria-da-ana/entrar" />)
-      expect(screen.queryByRole("link", { name: "Meus pedidos" })).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: /Minha conta/ })).not.toBeInTheDocument()
+      expect(screen.getByRole("link", { name: /Minha conta/ })).toHaveAttribute("href", "/padaria-da-ana/entrar")
+    })
+
+    it("hands the header the shopper's conversations, between the account and the cart", () => {
+      renderWindow({ accountHref: "/padaria-da-ana/conta", cartHref: "/padaria-da-ana/carrinho", conversationsSlot: <a href="/padaria-da-ana/conta/conversas">Conversas</a> })
+
+      const links = screen.getAllByRole("link").map((link) => link.textContent)
+      const at = links.indexOf("Conversas")
+      expect(at).toBeGreaterThan(links.findIndex((name) => name?.includes("Minha conta")))
+      expect(at).toBeLessThan(links.findIndex((name) => name?.includes("Carrinho")))
     })
   })
 

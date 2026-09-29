@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { accountContactOf, accountMenuOf, accountTabTitleOf, deliveredAccountTabOf, phoneLineOf } from "./account-menu"
+import { accountContactOf, accountMenuOf, accountTabTitleOf, deliveredAccountTabOf, headerAccountMenuOf, phoneLineOf } from "./account-menu"
 import { storefrontRoutes } from "./storefront-routes"
 
 const routes = storefrontRoutes({
@@ -21,12 +21,26 @@ const routes = storefrontRoutes({
   },
 })
 
+describe("the header's account menu", () => {
+  it("offers the orders, the profile and the conversation, in that order, and signs out at the shop's door", () => {
+    expect(headerAccountMenuOf(routes, "loja")).toEqual({
+      items: [
+        { key: "orders", href: "/loja/conta/pedidos" },
+        { key: "profile", href: "/loja/conta/perfil" },
+        { key: "messages", href: "/loja/conta/conversas" },
+      ],
+      signOutAction: "/loja/api/customer/sair",
+    })
+  })
+})
+
 describe("the account's menu", () => {
   it("lists the overview and only the tabs delivered, each at its own address", () => {
     expect(accountMenuOf(routes, { orders: 2 })).toEqual([
       { key: "overview", href: "/loja/conta" },
       { key: "orders", href: "/loja/conta/pedidos", count: 2 },
       { key: "profile", href: "/loja/conta/perfil", count: null },
+      { key: "messages", href: "/loja/conta/conversas", count: null },
     ])
     expect(accountTabTitleOf("profile", ptBR.storefront)).toBe("Perfil e endereços")
   })
@@ -43,6 +57,7 @@ describe("the account's menu", () => {
     }
     expect(deliveredAccountTabOf("perfil", routeWords)).toBe("profile")
     expect(deliveredAccountTabOf("pedidos", routeWords)).toBe("orders")
+    expect(deliveredAccountTabOf("conversas", routeWords)).toBe("messages")
     // Spelled and routed already, delivered by its own ticket: until then, a 404.
     expect(deliveredAccountTabOf("favoritos", routeWords)).toBeNull()
     expect(deliveredAccountTabOf("qualquer", routeWords)).toBeNull()

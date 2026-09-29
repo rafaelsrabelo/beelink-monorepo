@@ -24,13 +24,14 @@ import { AppLink } from "@/components/app-link"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { customerOrderAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
-import { orderActionOf } from "@/lib/order-card-view"
+import { isOrderInProgress, orderActionOf } from "@/lib/order-card-view"
 import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf, orderTrackingOf } from "@/lib/order-page-view"
 import { reorderActionOf } from "@/lib/reorder-view"
 import { shopperAt } from "@/lib/shopper"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { accountOrderNumberOf, paramOf, RECEIPT_KEY, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
+import { OrderTalkLive } from "../conversations/order-talk-live"
 import { OrderCancelLive } from "./order-cancel-live"
 import { OrderCancelNotice } from "./order-cancel-notice"
 import { OrderCancelNoticeLine } from "./order-cancel-notice-line"
@@ -150,8 +151,13 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
         header={header({
           placed: orderPlacedLineOf(order, context),
           receiptHref: cancelled ? undefined : routes.accountOrder(order.number, { receipt: true }),
-          // Each action joins with its ticket: talking to the shop (K3). Buying again sits under the lines.
-          actions: orderActionOf(order.status) === "cancel" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : undefined,
+          // Talking to the shop while it is on its way (K3), and the cancel while received. Buying again sits under the lines.
+          actions: isOrderInProgress(order.status) ? (
+            <>
+              <OrderTalkLive number={order.number} href={routes.accountConversation(order.number)} messages={ui} />
+              {orderActionOf(order.status) === "cancel" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : null}
+            </>
+          ) : undefined,
         })}
         status={
           <>
