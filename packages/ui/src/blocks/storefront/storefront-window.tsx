@@ -17,10 +17,8 @@ import { StorefrontFooter, type StorefrontFooterColumn, type StorefrontLink } fr
 import { StorefrontMasthead, type StorefrontMastheadProps } from "./storefront-masthead"
 import { StorefrontPitch } from "./storefront-pitch"
 
-/** Declared beside the palette now; re-exported because screens import it from here. */
+// Declared beside the palette and their blocks now; re-exported because screens import them from here.
 export type StorefrontColors = ShopColors
-
-// Declared beside their blocks now; re-exported because screens import them from here.
 export type { StorefrontFooterColumn, StorefrontLink, StorefrontNetwork } from "./storefront-footer"
 export type { StorefrontAnnouncementStrip } from "./storefront-announcement"
 export type { StorefrontMenuItem } from "./storefront-masthead"
@@ -30,7 +28,7 @@ export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
     "searchAction" | "searchValue" | "searchHidden" | "searchScopes" | "searchScope" | "searchSlot"
-    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "ordersHref" | "menu" | "cta" | "categories" | "deliverTo"
+    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "ordersHref" | "conversationsSlot" | "menu" | "cta" | "categories" | "deliverTo"
   > {
   name: string
   description?: string | null
@@ -115,9 +113,8 @@ export interface StorefrontWindowProps
  * properties, so one wrapper decides and any child asks for `--shop-primary` by name — which is
  * also why `web/no-hex-colors` is untroubled, as there is no literal anywhere.
  *
- * Nothing here reads a session. The cart and the account icon render only when the screen hands
- * over an address for them, and today it hands over neither: there is no cart and no buyer account
- * in the product, and an icon that goes nowhere teaches a visitor the rest of the page is a mockup.
+ * Nothing here reads a session: the cart, the account and the conversations render only when the
+ * screen hands them over, since an icon that goes nowhere teaches a visitor the page is a mockup.
  */
 export function StorefrontWindow({
   name,
@@ -140,6 +137,7 @@ export function StorefrontWindow({
   accountHref,
   accountName,
   ordersHref,
+  conversationsSlot,
   menu = [],
   cta = null,
   categories,
@@ -194,6 +192,7 @@ export function StorefrontWindow({
           cartSlot={cartSlot}
           {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
           {...(ordersHref ? { ordersHref } : {})}
+          conversationsSlot={conversationsSlot}
           menu={menu}
           cta={cta}
           categories={categories}

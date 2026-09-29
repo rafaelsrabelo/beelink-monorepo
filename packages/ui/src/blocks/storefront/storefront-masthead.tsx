@@ -45,6 +45,8 @@ export interface StorefrontMastheadProps {
   accountName?: string | null
   /** The shopper's orders, beside their account (6c); absent for a visitor. */
   ordersHref?: string
+  /** The signed-in shopper's conversations, between the account and the cart: the web's live one (K3). */
+  conversationsSlot?: ReactNode
   /** A site's named bands, as anchors. A shop passes none. */
   menu?: readonly StorefrontMenuItem[]
   /** A site's button — its contact band. Kept out of `menu`, which would list it twice. */
@@ -94,6 +96,7 @@ export function StorefrontMasthead({
   accountHref,
   accountName,
   ordersHref,
+  conversationsSlot,
   menu = [],
   cta = null,
   categories,
@@ -197,6 +200,7 @@ export function StorefrontMasthead({
 
         {ordersHref ? <StorefrontOrdersLink href={ordersHref} linkComponent={Link} messages={messages} /> : null}
         {accountHref ? <StorefrontAccountLink href={accountHref} name={accountName ?? null} linkComponent={Link} messages={messages} /> : null}
+        {conversationsSlot}
 
         {cartSlot ?? (cartHref ? <StorefrontCartLink href={cartHref} count={cartCount} linkComponent={Link} messages={messages} /> : null)}
       </div>

@@ -171,6 +171,15 @@ describe("StorefrontWindow", () => {
       rerender(<StorefrontWindow name="Padaria da Ana" homeHref="/padaria-da-ana" colors={colors} accountHref="/padaria-da-ana/entrar" />)
       expect(screen.queryByRole("link", { name: "Meus pedidos" })).not.toBeInTheDocument()
     })
+
+    it("hands the header the shopper's conversations, between the account and the cart", () => {
+      renderWindow({ accountHref: "/padaria-da-ana/conta", cartHref: "/padaria-da-ana/carrinho", conversationsSlot: <a href="/padaria-da-ana/conta/conversas">Conversas</a> })
+
+      const links = screen.getAllByRole("link").map((link) => link.textContent)
+      const at = links.indexOf("Conversas")
+      expect(at).toBeGreaterThan(links.findIndex((name) => name?.includes("Minha conta")))
+      expect(at).toBeLessThan(links.findIndex((name) => name?.includes("Carrinho")))
+    })
   })
 
   describe("the bands", () => {

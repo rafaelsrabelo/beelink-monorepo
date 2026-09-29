@@ -512,6 +512,38 @@ export interface UiMessages {
     orderTrackingSelected: string
     orderTrackingCarrierLink: string
     orderTrackingOwnLink: string
+    /** The order's conversation in the shop window (K3): the header's icon, the list, one conversation. */
+    conversationsTitle: string
+    conversationsLink: string
+    conversationsLinkWithOne: string
+    conversationsLinkWithCount: string
+    conversationsClose: string
+    conversationsBack: string
+    conversationsEmpty: string
+    conversationsEmptyHint: string
+    conversationsFailed: string
+    conversationClosedTag: string
+    /** A row's last line when the shopper wrote it: "Você: {body}". */
+    conversationYouSaid: string
+    conversationUnreadOne: string
+    conversationUnreadMany: string
+    conversationViewOrder: string
+    conversationStart: string
+    conversationClosed: string
+    conversationSent: string
+    conversationRead: string
+    conversationFromShop: string
+    conversationFromYou: string
+    conversationLabel: string
+    conversationPlaceholder: string
+    conversationSend: string
+    conversationSending: string
+    conversationTooLong: string
+    conversationRefusedClosed: string
+    conversationRefusedRate: string
+    conversationRefusedSignedOut: string
+    conversationRefusedUnknown: string
+    conversationFailed: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string
