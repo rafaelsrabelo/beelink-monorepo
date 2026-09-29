@@ -1,0 +1,233 @@
+# The production stack for Dokploy. It does not replace the root docker-compose.yml: that one is the
+# development stack (Postgres on 5432, Mailpit, the apps on the host); this one builds the production
+# images and runs behind Dokploy's Traefik. How to deploy it: docs/repo/deploy.md.
+#
+# What differs, and why it matters:
+#   · no port is published — Traefik exposes the web, through its labels;
+#   · the API has one public route and no domain of its own: the real-time socket, at
+#     `/api/socket.io` on the web's domain (docs/repo/realtime.md). Every other call goes through
+#     the web app's route handlers, and the rest of the API has no route from outside;
+#   · migrations and the seed run in their own container, before the API starts;
+#   · no Mailpit: production sends through a real SMTP provider.
+#
+# No `name:` on purpose — Dokploy passes `-p <appName>`. And no `container_name` anywhere: Dokploy
+# loses a service's logs and metrics when the name is pinned by hand.
+#
+# ONE API instance. The order chat keeps its sockets in the process's memory: with two replicas,
+# each would only know the sockets it opened itself. Scaling out needs a Socket.IO adapter and
+# sticky sessions first (docs/repo/realtime.md), not a replica count.
+#
+# HTTPS only. The session cookies are `Secure` in production, so over plain HTTP the browser drops
+# them and nobody can sign in — a domain Let's Encrypt cannot issue for (sslip.io, nip.io) is not a
+# shortcut here.
+#
+# Variables: paste .env.dokploy.example into Dokploy's Environment tab and fill it in.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    # The official image: the two extensions the migrations create (pg_trgm, unaccent) ship in its
+    # contrib, and its default user is a superuser, which CREATE EXTENSION needs. Postgres 18 because
+    # the seed calls uuidv7(), a built-in that exists only from 18.
+    image: postgres:18-alpine
+    restart: unless-stopped
+    logging: *logging
+    networks: [internal]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-beelink}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-beelink}
+    volumes:
+      # /var/lib/postgresql, not /var/lib/postgresql/data: the 18 image keeps the cluster in a
+      # per-major subfolder and refuses to start when it finds data at the old mount point.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      # `-h 127.0.0.1` is not a detail: without it pg_isready uses the unix socket, which accepts
+      # connections during initdb, before TCP opens. The check passes, `migrate` starts and dies
+      # with P1001 — on the first deploy, exactly when nothing is there to retry it.
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:-beelink} -d ${POSTGRES_DB:-beelink}",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 12
+
+  # A throwaway container: applies the pending migrations, upserts the store categories and exits.
+  # Showing as `exited` in the panel is its correct state. It stops at the `build` stage of the API
+  # image, the one that still has the Prisma CLI — the runtime image does not.
+  #
+  # The seed runs on every deploy on purpose: it is an ON CONFLICT upsert that never deletes, and
+  # without its rows the panel's category select reads "Sem categoria" for every shop.
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: build
+    restart: "no"
+    logging: *logging
+    networks: [internal]
+    working_dir: /app/apps/api
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-beelink}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-beelink}?schema=public
+    command: ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm exec prisma db seed"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    logging: *logging
+    # On Traefik's network for the socket alone: its router below is the only one the API has.
+    networks: [internal, dokploy-network]
+    # A LIST, not a map, on purpose. `NAME: ${NAME:-}` defines the variable as an EMPTY string when it
+    # is unset, and the env schema (apps/api/src/shared/config/env.ts) refuses "" for the Cloudinary
+    # and MapTiler keys — the API dies at boot. In the list form, `- NAME` with no `=` passes the
+    # variable only when it exists, and the schema sees the absence it expects.
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-beelink}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-beelink}?schema=public
+
+      # Anyone holding it can sign a valid access token for any account.
+      - JWT_SECRET=${JWT_SECRET:?generate with openssl rand -base64 48}
+
+      # Where the links inside e-mails point: confirm the account, reset the password.
+      - WEB_URL=https://${WEB_DOMAIN:?the host only, no https:// and no trailing slash}
+      # No browser calls the API, so CORS never decides anything; it names the web anyway, so the day
+      # something does call it the answer is already the narrow one.
+      - CORS_ORIGINS=https://${WEB_DOMAIN}
+
+      # Required here although the schema has a default: that default is Mailpit on localhost, which
+      # in production swallows every e-mail without an error — and an account that never receives
+      # its confirmation link can never sign in, shopkeeper or shopper.
+      - SMTP_URL=${SMTP_URL:?smtp(s)://user:password@host:port of the e-mail provider}
+      - MAIL_FROM=${MAIL_FROM:?e.g. bee-link <nao-responda@your-domain>}
+
+      # Every call reaches the API from the web container, which forwards the visitor's address in
+      # x-forwarded-for. Only containers on the internal network can reach the API, so trusting the
+      # private ranges is trusting the web — and it is what gives each visitor their own rate limit
+      # instead of one shared by everyone.
+      - TRUST_PROXY=${TRUST_PROXY:-loopback,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+
+      # From here down: pass-through. Leave a variable out of the Environment tab if it is not used —
+      # present-but-empty and absent are two different things to the schema.
+      - LOG_LEVEL
+
+      # Image uploads. All three or none; without them uploads refuse with UPLOAD_NOT_CONFIGURED.
+      - CLOUDINARY_CLOUD_NAME
+      - CLOUDINARY_API_KEY
+      - CLOUDINARY_API_SECRET
+      - CLOUDINARY_FOLDER
+
+      # Address search and geocoding in the panel. Without it the address is typed by hand.
+      - MAPTILER_API_KEY
+
+      # "Continuar com Google" at a shop. All three or none — half of it stops the boot. The redirect
+      # URI is https://<WEB_DOMAIN>/api/customer/google/callback, registered in the Google console.
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_CLIENT_SECRET
+      - GOOGLE_REDIRECT_URI
+
+      - AUTH_RATE_LIMIT_MAX
+      - AUTH_RATE_LIMIT_WINDOW
+      - STORE_WRITE_RATE_LIMIT_MAX
+      - STORE_WRITE_RATE_LIMIT_WINDOW
+      - CUSTOMER_ORDER_RATE_LIMIT_MAX
+      - CUSTOMER_ORDER_RATE_LIMIT_WINDOW
+      - UPLOAD_RATE_LIMIT_MAX
+      - UPLOAD_RATE_LIMIT_WINDOW
+      - LEAD_RATE_LIMIT_MAX
+      - LEAD_RATE_LIMIT_WINDOW
+      - ADDRESS_SEARCH_RATE_LIMIT_MAX
+      - ADDRESS_SEARCH_RATE_LIMIT_WINDOW
+    healthcheck:
+      # The slim image has no curl or wget; Node's own fetch does the job.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    depends_on:
+      postgres: { condition: service_healthy }
+      # A failed migration is a deploy that does not come up — not new code running on an old schema.
+      migrate: { condition: service_completed_successfully }
+    # The real-time socket, on the web's own domain: same origin, no second certificate, no CORS.
+    # Its rule is longer than the web's `Host(…)`, so Traefik tries it first; nothing else under
+    # `/api` reaches the API — the web's route handlers answer those.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-realtime.rule=Host(`${WEB_DOMAIN}`) && PathPrefix(`/api/socket.io`)"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-realtime.entrypoints=websecure"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-realtime.tls=true"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-realtime.tls.certresolver=letsencrypt"
+      - "traefik.http.services.${STACK_NAME:-beelink}-realtime.loadbalancer.server.port=3001"
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      args:
+        # Decided at BUILD time, inlined into the browser bundle: a new value needs a redeploy.
+        NEXT_PUBLIC_MAPTILER_TILE_KEY: ${NEXT_PUBLIC_MAPTILER_TILE_KEY:-}
+        # Where the page opens the real-time socket: the web's own origin, which the api's router
+        # sends on to the API. Only the origin is read.
+        NEXT_PUBLIC_REALTIME_URL: https://${WEB_DOMAIN}
+    restart: unless-stopped
+    logging: *logging
+    networks: [internal, dokploy-network]
+    environment:
+      # Server-only, read at runtime by the route handlers — the service name on the internal network.
+      - API_URL=http://api:3001/api
+    # `service_started`, not `service_healthy`: Docker never restarts an unhealthy container, so an
+    # API that is down would hold the web back forever, and a visitor would get nothing instead of
+    # a page that says something went wrong.
+    depends_on:
+      api: { condition: service_started }
+    # STACK_NAME prefixes every router, service and middleware name. Those names are global to the
+    # Traefik instance, not per project: two stacks (production and staging) both declaring
+    # `beelink-web` collide, one wins and the other domain answers 404 with nothing in the app's log.
+    labels:
+      - "traefik.enable=true"
+      # The container sits on two networks; without this Traefik picks either IP and the symptom is
+      # an intermittent 502.
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-web.rule=Host(`${WEB_DOMAIN}`)"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-web.entrypoints=websecure"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-web.tls=true"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.${STACK_NAME:-beelink}-web.loadbalancer.server.port=3000"
+      # Plain HTTP only redirects to HTTPS.
+      - "traefik.http.routers.${STACK_NAME:-beelink}-web-http.rule=Host(`${WEB_DOMAIN}`)"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-web-http.entrypoints=web"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-web-http.middlewares=${STACK_NAME:-beelink}-https-redirect"
+      - "traefik.http.middlewares.${STACK_NAME:-beelink}-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.${STACK_NAME:-beelink}-https-redirect.redirectscheme.permanent=true"
+
+networks:
+  internal:
+  # Created by Dokploy at install. It is how Traefik sees containers — whatever is not on it has no
+  # route from outside, which is what we want for postgres and migrate. The api is on it for its
+  # one router, the socket.
+  dokploy-network:
+    external: true
+
+volumes:
+  postgres-data:
