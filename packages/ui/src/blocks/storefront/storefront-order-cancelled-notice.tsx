@@ -1,6 +1,3 @@
-// React
-import type { Ref } from "react"
-
 // Libs
 import { CircleCheckIcon } from "lucide-react"
 
@@ -11,8 +8,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 export interface StorefrontOrderCancelledNoticeProps {
   /** The order just cancelled; null says nothing, and the region waits for the next one. */
   number: number | null
-  /** Where focus lands after a cancel: the card may leave the tab shown, and this line stays. */
-  ref?: Ref<HTMLDivElement>
+  /** Where focus lands after a cancel — the card may leave the tab shown, and this line stays — found by this id. */
+  id?: string
   messages?: UiMessages
 }
 
@@ -20,12 +17,12 @@ export interface StorefrontOrderCancelledNoticeProps {
  * "Pedido nº 14 cancelado.", over the list. On the tab of orders on their way the cancelled order
  * leaves the list, so without this line nothing would say the cancel went through.
  */
-export function StorefrontOrderCancelledNotice({ number, ref, messages = defaultMessages }: StorefrontOrderCancelledNoticeProps) {
+export function StorefrontOrderCancelledNotice({ number, id, messages = defaultMessages }: StorefrontOrderCancelledNoticeProps) {
   const text = messages.storefront
 
   return (
     <div
-      ref={ref}
+      id={id}
       role="status"
       tabIndex={-1}
       className={

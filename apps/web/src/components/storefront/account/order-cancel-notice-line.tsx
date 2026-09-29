@@ -14,5 +14,5 @@ export function OrderCancelNoticeLine({ messages }: { messages: UiMessages }) {
   const notice = useOrderCancelNotice()
   if (!notice) return null
 
-  return <StorefrontOrderCancelledNotice ref={notice.region} number={notice.cancelled} messages={messages} />
+  return <StorefrontOrderCancelledNotice id={notice.id} number={notice.cancelled} messages={messages} />
 }

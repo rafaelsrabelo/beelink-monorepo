@@ -44,7 +44,7 @@ export function OrderCancelLive({ slug, number, messages }: OrderCancelLiveProps
         cancel.reset()
         router.refresh()
       }}
-      landingFocus={notice ? () => notice.region.current : undefined}
+      landingFocus={notice ? () => document.getElementById(notice.id) : undefined}
       onConfirm={() =>
         cancel.mutate(number, {
           onSuccess: () => {
