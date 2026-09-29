@@ -1,5 +1,6 @@
 // Nest
 import { Injectable, Logger } from '@nestjs/common';
+import type { OnApplicationBootstrap } from '@nestjs/common';
 
 // Libs
 import { createTransport } from 'nodemailer';
@@ -33,13 +34,26 @@ export function addressOf(from: string): string {
 }
 
 @Injectable()
-export class MailService {
+export class MailService implements OnApplicationBootstrap {
   private readonly logger = new Logger(MailService.name);
   /**
    * The timeouts are well under the order outbox's lease (`OrderStatusMailer`): a send that hangs
    * gives up long before another sweep may claim the same e-mail and send it again.
    */
   private readonly transporter: Transporter = createTransport({ url: env.SMTP_URL, connectionTimeout: 30_000, greetingTimeout: 30_000, socketTimeout: 60_000 });
+
+  /**
+   * In production the provider is asked once, at boot, whether it takes this login (BEELINK-168). A
+   * send fails without failing its request, by design, so a wrong password otherwise surfaces only
+   * as the first sign-up nobody can confirm. Never awaited: a slow provider does not hold the boot.
+   */
+  onApplicationBootstrap(): void {
+    if (env.NODE_ENV !== 'production') return;
+    this.transporter.verify().then(
+      () => this.logger.log('SMTP took the login: e-mails can leave'),
+      (error: unknown) => this.logger.error({ err: error }, 'SMTP refused the connection or the login: no e-mail will leave'),
+    );
+  }
 
   /**
    * A shopper's links open their shop's own pages, bringing them back where they were going, and the

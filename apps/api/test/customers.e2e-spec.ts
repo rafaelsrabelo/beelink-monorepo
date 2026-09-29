@@ -66,7 +66,7 @@ describe("a shopper's door into a shop", () => {
     expect(message.Text).toContain('http://localhost:3000/lessari/confirmar-email?token=');
     expect(message.Text).toContain('&voltar=%2Flessari%2Fcarrinho');
     expect(message.Subject).toBe('lessari — confirme seu e-mail');
-    expect(message.From).toMatchObject({ Name: 'lessari', Address: 'nao-responda@harness.local' });
+    expect(message.From).toMatchObject({ Name: 'lessari', Address: 'nao-responda@bee-link.local' });
 
     // Anywhere outside the shop is the shop's front; a new link for the same account says the same.
     await clearInbox();
