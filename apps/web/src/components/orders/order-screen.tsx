@@ -1,6 +1,7 @@
 "use client"
 
 // UI
+import { OrderDeliveryCard } from "@harness-monorepo/ui/blocks/orders/order-delivery-card"
 import { OrderDetail } from "@harness-monorepo/ui/blocks/orders/order-detail"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import { defaultLocale } from "@harness-monorepo/ui/locales/index"
@@ -12,7 +13,7 @@ import { AppLink } from "@/components/app-link"
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { addressLineOf } from "@/lib/customer-address"
 import { shopOrderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
-import { useOrder, useUpdateOrderStatus } from "@/services/orders/order-hooks"
+import { useOrder, useOrderDelivery, useUpdateOrderStatus } from "@/services/orders/order-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
 export interface OrderScreenProps {
@@ -27,6 +28,7 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
   const order = useOrder(slug, number)
   const store = useStore(slug)
   const status = useUpdateOrderStatus(slug, number)
+  const delivery = useOrderDelivery(slug, number)
   const listHref = `/admin/${slug}/orders`
 
   if (order.isPending) {
@@ -72,6 +74,22 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
         onStatusChange={(next) => status.mutate(next)}
         statusPending={status.isPending}
         statusError={pageErrorCopy(status.error, web)}
+        delivery={
+          current.fulfillment === "DELIVERY" ? (
+            <OrderDeliveryCard
+              // Starts over from what the API answered, once a save or a removal lands.
+              key={JSON.stringify(current.delivery)}
+              delivery={current.delivery}
+              onSave={(next) => delivery.mutate(next)}
+              onClear={() => delivery.mutate(null)}
+              pending={delivery.isPending}
+              error={delivery.error ? pageErrorCopy(delivery.error, web) : null}
+              saved={delivery.isSuccess}
+              needed={current.status === "OUT_FOR_DELIVERY" && !current.delivery}
+              messages={messages}
+            />
+          ) : undefined
+        }
         linkComponent={AppLink}
         messages={messages}
       />

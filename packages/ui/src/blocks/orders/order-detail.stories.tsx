@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 // Block
+import { OrderDeliveryCard } from "./order-delivery-card"
 import { OrderDetail } from "./order-detail"
 import { order } from "./order-detail.fixtures"
 
@@ -48,3 +49,26 @@ export const Cancelado: Story = { args: { order: { ...order, status: "CANCELLED"
 export const SemCelular: Story = { args: { order: { ...order, customer: { ...order.customer, phone: null } }, whatsappHref: null } }
 
 export const NoCelular: Story = { globals: { viewport: { value: "mobile1", isRotated: false } } }
+
+/** Saiu para entrega sem entrega informada: o bloco pede quem entrega e quando chega. */
+export const SaiuSemEntrega: Story = {
+  args: {
+    order: { ...order, status: "OUT_FOR_DELIVERY" },
+    delivery: <OrderDeliveryCard delivery={null} onSave={() => {}} onClear={() => {}} needed />,
+  },
+}
+
+/** A entrega informada: transportadora, código e a janela de chegada. */
+export const ComEntrega: Story = {
+  args: {
+    order: { ...order, status: "OUT_FOR_DELIVERY" },
+    delivery: (
+      <OrderDeliveryCard
+        delivery={{ kind: "CARRIER", carrier: "Correios", service: "SEDEX", trackingCode: "AB123456789BR", trackingUrl: null, estimateFrom: "2026-09-25", estimateTo: "2026-09-26" }}
+        onSave={() => {}}
+        onClear={() => {}}
+        saved
+      />
+    ),
+  },
+}

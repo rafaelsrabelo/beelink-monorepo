@@ -501,6 +501,15 @@ export interface UiMessages {
     reorderLimitedMany: string
     reorderFailed: string
     reorderTrimmed: string
+    /** The window a delivery should arrive in, and how it comes (J7). */
+    orderEstimateRange: string
+    orderEstimateDay: string
+    orderTrackingOwn: string
+    orderTrackingCode: string
+    orderTrackingCopy: string
+    orderTrackingCopied: string
+    orderTrackingCarrierLink: string
+    orderTrackingOwnLink: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string
@@ -1450,6 +1459,22 @@ export interface UiMessages {
       payment: string
       note: string
       history: string
+      /** Who brings a delivery and when it should arrive (J7), told on the opened order. */
+      deliveryTitle: string
+      deliveryKind: string
+      deliveryKinds: Record<"OWN" | "CARRIER", string>
+      deliveryCarrier: string
+      deliveryService: string
+      deliveryCode: string
+      deliveryLink: string
+      deliveryLinkHint: string
+      deliveryWindow: string
+      deliveryFrom: string
+      deliveryUntil: string
+      deliverySave: string
+      deliveryClear: string
+      deliverySaved: string
+      deliveryNeeded: string
       actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM", string>
       markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
       statusLabel: string

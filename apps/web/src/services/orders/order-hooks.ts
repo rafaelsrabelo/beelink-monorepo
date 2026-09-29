@@ -5,12 +5,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { CreateOrderPayload, Order, OrderListQuery, OrderPage, OrderStatus } from "@harness-monorepo/contracts"
+import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, OrderPage, OrderStatus } from "@harness-monorepo/contracts"
 
 // App
 import { catalogKeys } from "../catalog/catalog-hooks"
 import { customerKeys } from "../customers/customer-hooks"
-import { createOrder, fetchOrder, fetchOrders, updateOrderStatus } from "./order-requests"
+import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, setOrderDelivery, updateOrderStatus } from "./order-requests"
 
 /** Built from their inputs, never spelled at a call site (docs/ai-rules/state-and-data.md). */
 export const orderKeys = {
@@ -78,5 +78,14 @@ export function useCreateOrder(slug: string): UseMutationResult<Order, Error, Cr
         // Placing it took its counted lines off the stock the catalogue shows.
         queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) }),
       ]),
+  })
+}
+
+/** Tells how a delivery goes, or takes it back (`null`); the order on screen is the API's answer. */
+export function useOrderDelivery(slug: string, number: number): UseMutationResult<Order, Error, OrderDeliveryPayload | null> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (delivery: OrderDeliveryPayload | null) => (delivery ? setOrderDelivery(slug, number, delivery) : clearOrderDelivery(slug, number)),
+    onSuccess: (order) => queryClient.setQueryData(orderKeys.detail(slug, number), order),
   })
 }

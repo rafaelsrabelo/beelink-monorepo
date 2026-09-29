@@ -69,3 +69,17 @@ export interface OrderDetailView {
   /** Oldest first. */
   events: readonly { status: OrderStatusValue; actor: OrderActorValue; at: string }[]
 }
+
+/** Who brings a delivery. Mirrors the wire's `OrderDeliveryKind`. */
+export type OrderDeliveryKindValue = "OWN" | "CARRIER"
+
+/** How a delivery goes, as the shopkeeper told it. Mirrors the wire's `OrderDelivery`; days are `YYYY-MM-DD`. */
+export interface OrderDeliveryValue {
+  kind: OrderDeliveryKindValue
+  carrier: string | null
+  service: string | null
+  trackingCode: string | null
+  trackingUrl: string | null
+  estimateFrom: string | null
+  estimateTo: string | null
+}

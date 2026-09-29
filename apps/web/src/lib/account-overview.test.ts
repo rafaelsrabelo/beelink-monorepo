@@ -44,6 +44,7 @@ const order: CustomerOrder = {
     { status: "ACCEPTED", at: "2026-09-27T18:10:00.000Z" },
     { status: "PREPARING", at: "2026-09-28T12:00:00.000Z" },
   ],
+  delivery: null,
 }
 
 describe("the account's front", () => {
@@ -69,6 +70,12 @@ describe("the account's front", () => {
     expect(orderNowViewOf(order, 1, context).more?.label).toBe("Você tem mais 1 pedido em andamento")
   })
 
+  it("says when it should arrive, once the shop told the window", () => {
+    const told = { ...order, delivery: { kind: "OWN" as const, carrier: null, service: null, trackingCode: null, trackingUrl: null, estimateFrom: "2026-09-29", estimateTo: "2026-09-29" } }
+
+    expect(orderNowViewOf(told, 0, context).note).toBe("Chega ter., 29 de set.")
+  })
+
   it("draws no destination for a delivery that recorded no address", () => {
     expect(orderNowViewOf({ ...order, deliveryAddress: null }, 0, context).destination).toBeNull()
   })
@@ -88,6 +95,7 @@ describe("the account's front", () => {
       items: [],
       moreItems: 0,
       placedAt: "2026-09-27T17:02:00.000Z",
+      estimate: null,
     }
 
     expect(lastOrderViewOf(last, context)).toEqual({

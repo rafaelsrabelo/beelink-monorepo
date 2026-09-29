@@ -1,5 +1,6 @@
 // Types
 import type {
+  OrderDeliveryPayload,
   CreateOrderPayload,
   Order,
   OrderListQuery,
@@ -84,6 +85,26 @@ export async function updateOrderStatus(slug: string, number: number, status: Or
     headers: JSON_HEADERS,
     body: JSON.stringify({ status }),
   })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
+  return payload as Order
+}
+
+/** Tells how a delivery goes: the whole record, replacing what was told. */
+export async function setOrderDelivery(slug: string, number: number, delivery: OrderDeliveryPayload): Promise<Order> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/delivery`, {
+    method: "PUT",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(delivery),
+  })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
+  return payload as Order
+}
+
+/** Takes back what was told of the delivery. */
+export async function clearOrderDelivery(slug: string, number: number): Promise<Order> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/delivery`, { method: "DELETE", headers: JSON_HEADERS })
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
   return payload as Order
