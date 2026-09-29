@@ -7,7 +7,7 @@ import type { WebMessages } from "@/locales"
 // App
 import { errorSentenceOf } from "@/lib/error-sentence"
 import { signInOptionsAt } from "@/lib/storefront-data"
-import { BACK_KEY, EMAIL_CONFIRMED_KEY, PASSWORD_REPLACED_KEY, paramOf, safeBackOf, type StorefrontRoutes } from "@/lib/storefront-routes"
+import { BACK_KEY, EMAIL_CONFIRMED_KEY, PASSWORD_REPLACED_KEY, SIGNED_OUT_EVERYWHERE_KEY, paramOf, safeBackOf, type StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionPlace, SectionQuery } from "@/lib/storefront-section"
 
 export interface StorefrontSignInSectionProps {
@@ -21,7 +21,7 @@ export interface StorefrontSignInSectionProps {
 /**
  * The shop's sign-in page, as the address asks for it: the face (`modo`), where to return
  * (`voltar`, kept inside the shop), what the last post came back with (`erro`, `enviado`), and what
- * an e-mailed link just did (`confirmado`, `senha-nova`).
+ * an e-mailed link just did (`confirmado`, `senha-nova`), or "Sair de todos os aparelhos" (`saiu`).
  * Everything is in the address because the form posts without a script and comes back by redirect.
  */
 export async function StorefrontSignInSection({ place, routes, query, errors }: StorefrontSignInSectionProps) {
@@ -50,7 +50,9 @@ export async function StorefrontSignInSection({ place, routes, query, errors }: 
             ? ui.storefront.emailConfirmed
             : paramOf(query[PASSWORD_REPLACED_KEY]) === "1"
               ? ui.storefront.passwordReplaced
-              : null
+              : paramOf(query[SIGNED_OUT_EVERYWHERE_KEY]) === "1"
+                ? ui.storefront.signedOutEverywhere
+                : null
         }
         {...(google ? { google: { href: googleHref, iconSrc: "/brand/google.svg" } } : {})}
         hrefs={{

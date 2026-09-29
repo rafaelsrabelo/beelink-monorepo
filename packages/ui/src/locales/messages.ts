@@ -343,6 +343,18 @@ export interface UiMessages {
     linkAskAgain: string
     linkSpentTitle: string
     linkSpentSignIn: string
+    /** The shopper's own access to their account (BEELINK-150). */
+    securityTitle: string
+    securityChangeLead: string
+    securityCurrentPassword: string
+    securityChangeSubmit: string
+    securityGoogleLead: string
+    securityCreateSubmit: string
+    securityEverywhereLead: string
+    securityEverywhereSubmit: string
+    securityPasswordChanged: string
+    securityLinkSent: string
+    signedOutEverywhere: string
     emailConfirmed: string
     passwordReplaced: string
     signOut: string

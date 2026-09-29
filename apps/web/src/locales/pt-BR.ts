@@ -111,6 +111,8 @@ export const ptBR: WebMessages = {
     AUTH_EMAIL_TAKEN: "Este e-mail já está cadastrado.",
     AUTH_INVALID_CREDENTIALS: "E-mail ou senha incorretos.",
     AUTH_EMAIL_NOT_VERIFIED: "Confirme seu e-mail antes de entrar. Enviamos um link quando você criou a conta.",
+    AUTH_PASSWORD_WRONG: "A senha atual não confere. Confira e tente de novo.",
+    AUTH_PASSWORD_NOT_SET: "Sua conta ainda não tem senha. Crie uma pelo link que mandamos por e-mail.",
     AUTH_TOKEN_INVALID: "Este link expirou ou já foi usado. Peça um novo.",
     AUTH_REFRESH_REUSED: "Sua sessão foi encerrada por segurança. Entre de novo.",
     AUTH_UNAUTHENTICATED: "Faça login para continuar.",

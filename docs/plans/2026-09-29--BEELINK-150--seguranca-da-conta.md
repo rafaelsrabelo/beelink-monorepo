@@ -68,3 +68,16 @@ aparelhos".
 - Trocar o e-mail.
 - Verificação em duas etapas.
 - A lista dos aparelhos com sessão aberta.
+
+## Adendo da implementação (29/09)
+
+- **"Sair de todos os aparelhos" leva à página de entrar da loja.** O formulário manda o endereço dela
+  (`entrada`), porque a palavra de rota é da loja, e a página diz "Você saiu de todos os aparelhos".
+- **As seções com âncora (`#enderecos`, `#seguranca`) rolam para baixo do cabeçalho fixo**
+  (`scroll-mt-40`). Antes, o aviso ficava escondido atrás dele.
+- **Conferido pelo BFF de verdade** em :3100 e :3101, com a conta `cliente-j11@teste.dev` criada para
+  isso: senha atual errada, senhas diferentes, a troca (esta sessão fica, a outra cai, a senha antiga
+  não entra mais) e sair de todos (os cookies vão embora e a página é Entrar, com `saiu=1`). O
+  navegador compartilhado estava com uma sessão em uso, e só foi usado para ver a seção (GET).
+- **O "Criar senha" do Google** ficou coberto pelo e2e (link, assunto, `voltar`, a primeira senha) e
+  pelo teste do bloco. Localmente, nenhuma conta sem senha entra pelo navegador.
