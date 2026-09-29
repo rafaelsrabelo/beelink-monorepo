@@ -105,12 +105,13 @@ export class SessionService {
   }
 
   /**
-   * Used when the password changes: every device has to sign in again. Their real-time sockets close
-   * with them, like every revocation below: a socket's ticket was checked only when it came in.
+   * Used when the password changes: every device has to sign in again — all but `keep`, the one that
+   * changed it, when there is one. Their real-time sockets close with them, like every revocation
+   * below: a socket's ticket was checked only when it came in.
    */
-  async revokeAllForUser(userId: string): Promise<void> {
+  async revokeAllForUser(userId: string, keep?: string): Promise<void> {
     const revoked = await this.prisma.session.updateManyAndReturn({
-      where: { userId, revokedAt: null },
+      where: { userId, revokedAt: null, ...(keep ? { id: { not: keep } } : {}) },
       data: { revokedAt: new Date() },
       select: { id: true },
     });

@@ -1,11 +1,12 @@
 // Nest
-import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, HttpCode, HttpStatus, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiAcceptedResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -27,6 +28,7 @@ import { CustomerAuthGuard, type AuthenticatedCustomer } from './customer-auth.g
 import { CurrentCustomer } from './customer.decorators.js';
 import { CustomersService } from './customers.service.js';
 import { CustomerEmailDto, CustomerRegisterDto } from './dto/customer-link.dto.js';
+import { ChangeCustomerPasswordDto, CustomerPasswordLinkDto } from './dto/customer-password.dto.js';
 import { CustomerProfileResponse, UpdateCustomerProfileDto } from './dto/customer.dto.js';
 
 /** Keyed by IP, as the panel's door is: the same accounts, the same guessing to slow down. */
@@ -111,6 +113,50 @@ export class CustomersController {
   @ApiUnauthorizedResponse({ description: "AUTH_UNAUTHENTICATED — no shopper's token, a shopkeeper's, or another shop's" })
   me(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer): Promise<CustomerProfile> {
     return this.customers.me(storeSlug, customer.userId);
+  }
+
+  @Put('me/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(CustomerAuthGuard)
+  @RouteConfig({ rateLimit })
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Change the shopper's password, given the current one; the other devices sign in again" })
+  @ApiNoContentResponse()
+  @ApiForbiddenResponse({ description: 'AUTH_PASSWORD_WRONG — the current password does not match' })
+  @ApiConflictResponse({ description: 'AUTH_PASSWORD_NOT_SET — an account opened through Google creates one by the e-mailed link' })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
+  async changePassword(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @Body() dto: ChangeCustomerPasswordDto,
+  ): Promise<void> {
+    await this.customers.changePassword(storeSlug, customer.userId, customer.sessionId, dto.currentPassword, dto.newPassword);
+  }
+
+  @Post('me/password/link')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(CustomerAuthGuard)
+  @RouteConfig({ rateLimit })
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "E-mail the shopper the link that sets their password — for an account opened through Google" })
+  @ApiAcceptedResponse()
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
+  async sendPasswordLink(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @Body() { returnTo }: CustomerPasswordLinkDto,
+  ): Promise<void> {
+    await this.customers.sendPasswordLink(storeSlug, customer.userId, returnTo);
+  }
+
+  @Delete('me/sessions')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(CustomerAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "End every session of the shopper's account at this shop, this one too" })
+  @ApiNoContentResponse()
+  async signOutEverywhere(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer): Promise<void> {
+    await this.customers.signOutEverywhere(storeSlug, customer.userId);
   }
 
   @Patch('me')

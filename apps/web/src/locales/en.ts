@@ -111,6 +111,8 @@ export const en: WebMessages = {
     AUTH_EMAIL_TAKEN: "This e-mail is already registered.",
     AUTH_INVALID_CREDENTIALS: "Wrong e-mail or password.",
     AUTH_EMAIL_NOT_VERIFIED: "Confirm your e-mail before signing in. We sent a link when you created the account.",
+    AUTH_PASSWORD_WRONG: "The current password does not match. Check it and try again.",
+    AUTH_PASSWORD_NOT_SET: "Your account has no password yet. Create one through the link we e-mail you.",
     AUTH_TOKEN_INVALID: "This link expired or was already used. Ask for a new one.",
     AUTH_REFRESH_REUSED: "Your session was ended for safety. Sign in again.",
     AUTH_UNAUTHENTICATED: "Sign in to continue.",

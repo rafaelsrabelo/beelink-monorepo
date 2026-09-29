@@ -15,11 +15,14 @@ import { BACK_KEY, paramOf, safeBackOf } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { StorefrontAddressEditor } from "./storefront-address-editor"
 import { StorefrontAddressesSection } from "./storefront-addresses-section"
+import { StorefrontSecuritySection } from "./storefront-security-section"
 
 export interface StorefrontAccountSectionProps {
   slug: string
   /** The profile tab's address, to come back to after a save. */
   accountHref: string
+  /** The shop's sign-in, where signing out of every device lands. */
+  signInHref: string
   profile: CustomerProfile
   query: SectionQuery
   errors: WebMessages["errors"]
@@ -64,7 +67,7 @@ const BLANK_ADDRESS = {
  * Reached from the cart, with its way back (`voltar`), a save goes back to the cart; otherwise, here.
  * A refusal always comes back here, still on its way to the cart: the cart has no form to say it on.
  */
-export function StorefrontAccountSection({ slug, accountHref, profile, query, errors, messages }: StorefrontAccountSectionProps) {
+export function StorefrontAccountSection({ slug, accountHref, signInHref, profile, query, errors, messages }: StorefrontAccountSectionProps) {
   const code = paramOf(query.erro)
   const back = paramOf(query[BACK_KEY]) ? safeBackOf(slug, paramOf(query[BACK_KEY])) : null
   const withBack = (params: Record<string, string>) => `${accountHref}?${new URLSearchParams({ ...params, ...(back ? { [BACK_KEY]: back } : {}) }).toString()}`
@@ -105,6 +108,7 @@ export function StorefrontAccountSection({ slug, accountHref, profile, query, er
         messages={messages}
       />
       <StorefrontAddressesSection slug={slug} accountHref={accountHref} profile={profile} query={gone} errors={errors} messages={messages} />
+      <StorefrontSecuritySection slug={slug} accountHref={accountHref} signInHref={signInHref} profile={profile} query={query} errors={errors} messages={messages} />
     </div>
   )
 }

@@ -71,7 +71,7 @@ export function StorefrontAddressCards({
   const carried = Object.entries(hidden).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)
 
   return (
-    <section id="enderecos" aria-labelledby={headingId} className="flex w-full max-w-3xl flex-col gap-4 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
+    <section id="enderecos" aria-labelledby={headingId} className="flex w-full scroll-mt-[calc(var(--shop-masthead-height,160px)+16px)] max-w-3xl flex-col gap-4 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
       <h2 id={headingId} className="text-base font-bold">
         {text.addressesTitle}
       </h2>
@@ -115,7 +115,7 @@ export function StorefrontAddressCards({
           )
 
           return (
-            <li key={address.id} id={`endereco-${address.id}`} className="flex scroll-mt-4 flex-col overflow-hidden rounded-xl border border-shop-line-strong">
+            <li key={address.id} id={`endereco-${address.id}`} className="flex scroll-mt-[calc(var(--shop-masthead-height,160px)+16px)] flex-col overflow-hidden rounded-xl border border-shop-line-strong">
               <span className={`border-b border-shop-line px-3.5 py-1.5 text-xs font-bold uppercase text-shop-muted ${address.isDefault ? "bg-shop-fill" : ""}`}>
                 {address.isDefault ? text.addressesDefault : <span aria-hidden="true">&nbsp;</span>}
               </span>
