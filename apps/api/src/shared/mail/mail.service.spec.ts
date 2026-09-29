@@ -9,6 +9,7 @@ vi.mock('nodemailer', () => ({ createTransport: vi.fn() }));
 
 describe('MailService at boot (BEELINK-168)', () => {
   const verify = vi.fn();
+  const nodeEnv = env.NODE_ENV;
 
   beforeEach(() => {
     verify.mockReset();
@@ -16,7 +17,7 @@ describe('MailService at boot (BEELINK-168)', () => {
   });
 
   afterEach(() => {
-    env.NODE_ENV = 'test';
+    env.NODE_ENV = nodeEnv;
   });
 
   it('asks the provider in production whether it takes the login, and logs a refusal without throwing', async () => {
