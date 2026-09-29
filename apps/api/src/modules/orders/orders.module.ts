@@ -4,7 +4,7 @@ import { Module } from '@nestjs/common';
 // App
 import { AuthModule } from '../auth/auth.module.js';
 import { CustomersModule } from '../customers/customers.module.js';
-import { RealtimeModule } from '../realtime/realtime.module.js';
+import { RealtimePublisherModule } from '../realtime/realtime-publisher.module.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { CustomerOrdersController } from './customer-orders.controller.js';
 import { CustomerOrdersService } from './customer-orders.service.js';
@@ -17,7 +17,7 @@ import { OrdersService } from './orders.service.js';
  * the shop; CustomersModule and AuthModule for the shopper's record and door; PrismaModule is global.
  */
 @Module({
-  imports: [StoresModule, CustomersModule, AuthModule, RealtimeModule],
+  imports: [StoresModule, CustomersModule, AuthModule, RealtimePublisherModule],
   controllers: [OrdersController, CustomerOrdersController],
   providers: [OrdersService, CustomerOrdersService, OrderPlacement],
 })

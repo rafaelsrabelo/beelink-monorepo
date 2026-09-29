@@ -12,9 +12,11 @@ model RealtimeTicket {
   tokenHash  String           @id @db.Char(64)
   audience   RealtimeAudience
   storeId    String           @db.Uuid
-  /// The shopper's record at the shop, for a CUSTOMER ticket.
+  /// The shopper's record at the shop: set on a CUSTOMER ticket, and only there (a CHECK in the migration).
   customerId String?          @db.Uuid
-  userId     String           @db.Uuid
+  /// The session that asked for it. Taken only while that session is alive, and the socket closes
+  /// when it ends — no foreign key, as with `oauth_states`: a ticket outlives nothing by a minute.
+  sessionId  String           @db.Uuid
   expiresAt  DateTime
 
   @@index([expiresAt])

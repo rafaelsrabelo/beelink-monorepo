@@ -141,14 +141,14 @@ export class OrdersService {
       });
       if (status === 'CANCELLED') await settleCancellation(tx, current);
       const conversation = await tx.orderConversation.count({ where: { orderId: current.id } });
-      return { order, customerId: current.customerId, conversation: conversation > 0 };
+      return { order, customerId: current.customerId, closes: conversation > 0 && isOpen(current.status) && !isOpen(status) };
     });
 
     // Told once the change is committed: both sides read the order again, and a conversation it
     // closes stops taking messages.
     const to = { storeId, customerId: moved.customerId };
     this.realtime.publish(to, { type: 'order.status', orderNumber: number, status });
-    if (moved.conversation && !isOpen(status)) this.realtime.publish(to, { type: 'conversation.closed', orderNumber: number });
+    if (moved.closes) this.realtime.publish(to, { type: 'conversation.closed', orderNumber: number });
     return toOrder(moved.order);
   }
 

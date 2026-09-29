@@ -1,14 +1,18 @@
 // Libs
 import { describe, expect, it, vi } from 'vitest';
-import type { Server } from 'socket.io';
+
+// Types
+import type { RealtimeServer } from './realtime-socket.js';
 
 // App
 import { RealtimePublisher } from './realtime-publisher.js';
 
 function fakeServer() {
   const emit = vi.fn();
+  const disconnectSockets = vi.fn();
   const to = vi.fn(() => ({ emit }));
-  return { server: { to } as unknown as Server, to, emit };
+  const into = vi.fn(() => ({ disconnectSockets }));
+  return { server: { to, in: into } as unknown as RealtimeServer, to, emit, into, disconnectSockets };
 }
 
 describe('RealtimePublisher', () => {
@@ -25,8 +29,23 @@ describe('RealtimePublisher', () => {
     expect(to).toHaveBeenLastCalledWith(['store:s1']);
   });
 
+  it("closes every socket of the sessions that ended, and asks nothing for none", () => {
+    const { server, into, disconnectSockets } = fakeServer();
+    const publisher = new RealtimePublisher();
+    publisher.attach(server);
+
+    publisher.endSessions(['a', 'b']);
+    expect(into).toHaveBeenCalledWith(['session:a', 'session:b']);
+    expect(disconnectSockets).toHaveBeenCalledWith(true);
+
+    publisher.endSessions([]);
+    expect(into).toHaveBeenCalledTimes(1);
+  });
+
   /** A script or a unit test has no socket server: the write it follows must not fail for that. */
   it('tells nobody, and throws nothing, before a server is attached', () => {
-    expect(() => new RealtimePublisher().publish({ storeId: 's1', customerId: null }, { type: 'conversation.closed', orderNumber: 1 })).not.toThrow();
+    const publisher = new RealtimePublisher();
+    expect(() => publisher.publish({ storeId: 's1', customerId: null }, { type: 'conversation.closed', orderNumber: 1 })).not.toThrow();
+    expect(() => publisher.endSessions(['a'])).not.toThrow();
   });
 });

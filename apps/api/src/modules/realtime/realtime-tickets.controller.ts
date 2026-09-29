@@ -1,19 +1,14 @@
 // Nest
 import { Controller, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiProperty, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 // Types
-import type { RealtimeTicket } from '@harness-monorepo/contracts';
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
+import { RealtimeTicketResponse } from './dto/realtime-ticket.response.js';
 import { RealtimeTicketsService } from './realtime-tickets.service.js';
-
-export class RealtimeTicketResponse implements RealtimeTicket {
-  @ApiProperty({ description: 'Single use: handed to the socket as `auth.ticket`.' }) ticket!: string;
-  @ApiProperty({ format: 'date-time' }) expiresAt!: string;
-}
 
 /** The shop's pass to its panel's room. Closed, like every panel route; a shopper's token is refused. */
 @ApiTags('realtime')
@@ -30,6 +25,6 @@ export class RealtimeTicketsController {
   @ApiOperation({ summary: "A ticket to the shop's room: short, single use, for the panel's socket" })
   @ApiOkResponse({ type: RealtimeTicketResponse })
   issue(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser): Promise<RealtimeTicketResponse> {
-    return this.tickets.issueForShop(storeSlug, current.id);
+    return this.tickets.issueForShop(storeSlug, current);
   }
 }

@@ -6,7 +6,7 @@ import { ApiBearerAuth, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTag
 import { Public } from '../auth/auth.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
 import { CurrentCustomer } from '../customers/customer.decorators.js';
-import { RealtimeTicketResponse } from './realtime-tickets.controller.js';
+import { RealtimeTicketResponse } from './dto/realtime-ticket.response.js';
 import { RealtimeTicketsService } from './realtime-tickets.service.js';
 
 /**
@@ -28,6 +28,6 @@ export class CustomerRealtimeTicketsController {
   @ApiOperation({ summary: "A ticket to the shopper's room at this shop: short, single use, for the shop window's socket" })
   @ApiOkResponse({ type: RealtimeTicketResponse })
   issue(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer): Promise<RealtimeTicketResponse> {
-    return this.tickets.issueForCustomer(storeSlug, customer.userId);
+    return this.tickets.issueForCustomer(storeSlug, customer);
   }
 }

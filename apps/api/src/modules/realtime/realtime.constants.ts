@@ -1,6 +1,7 @@
 /**
- * Where the socket answers, under the API's prefix like every route. The web's client names the same
- * path; contracts hold types only, so the two spell it apart.
+ * Where the socket answers. Fixed, not built from `API_PREFIX`: a gateway does not take the global
+ * prefix, and the web's client names this same path — contracts hold types only, so the two spell
+ * it apart.
  */
 export const REALTIME_PATH = '/api/socket.io';
 
@@ -18,4 +19,9 @@ export function storeRoom(storeId: string): string {
 /** A shopper's room at a shop: their customer record there, which is one shop's alone. */
 export function customerRoom(customerId: string): string {
   return `customer:${customerId}`;
+}
+
+/** Every socket a session opened, so ending the session closes them with it. */
+export function sessionRoom(sessionId: string): string {
+  return `session:${sessionId}`;
 }

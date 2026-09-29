@@ -20,3 +20,9 @@ export interface RealtimeTicket {
   /** ISO-8601. */
   expiresAt: string;
 }
+
+/**
+ * The refusal a socket reads in `connect_error`: a ticket unknown, taken already, past its minute,
+ * or of a session that has ended since.
+ */
+export type RealtimeErrorCode = "REALTIME_TICKET_INVALID";

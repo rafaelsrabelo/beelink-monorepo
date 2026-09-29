@@ -1,14 +1,12 @@
 // Nest
 import { Injectable } from '@nestjs/common';
 
-// Libs
-import type { Server } from 'socket.io';
-
 // Types
 import type { RealtimeEvent } from '@harness-monorepo/contracts';
+import type { RealtimeServer } from './realtime-socket.js';
 
 // App
-import { customerRoom, REALTIME_EVENT, storeRoom } from './realtime.constants.js';
+import { customerRoom, REALTIME_EVENT, sessionRoom, storeRoom } from './realtime.constants.js';
 
 /** Who hears an event: the shop's panel, and the shopper it concerns when there is one. */
 export interface RealtimeAudienceOf {
@@ -23,14 +21,23 @@ export interface RealtimeAudienceOf {
  */
 @Injectable()
 export class RealtimePublisher {
-  private server: Server | null = null;
+  private server: RealtimeServer | null = null;
 
-  attach(server: Server): void {
+  attach(server: RealtimeServer): void {
     this.server = server;
   }
 
   publish(to: RealtimeAudienceOf, event: RealtimeEvent): void {
     const rooms = [storeRoom(to.storeId), ...(to.customerId ? [customerRoom(to.customerId)] : [])];
     this.server?.to(rooms).emit(REALTIME_EVENT, event);
+  }
+
+  /**
+   * Closes every socket the sessions opened. A ticket is checked once, at the door: without this, a
+   * socket would keep hearing its room after a sign-out or a password reset ended its session.
+   */
+  endSessions(sessionIds: readonly string[]): void {
+    if (sessionIds.length === 0) return;
+    this.server?.in(sessionIds.map(sessionRoom)).disconnectSockets(true);
   }
 }

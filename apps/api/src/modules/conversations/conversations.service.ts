@@ -14,7 +14,7 @@ import { Prisma } from '../../generated/prisma/client.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { CustomersService } from '../customers/customers.service.js';
-import { RealtimePublisher } from '../realtime/realtime-publisher.js';
+import { RealtimePublisher, type RealtimeAudienceOf } from '../realtime/realtime-publisher.js';
 import { StoresService } from '../stores/stores.service.js';
 import {
   conversationError,
@@ -98,9 +98,7 @@ export class ConversationsService {
     const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, select: { id: true } });
     if (!order) throw notFound(number);
 
-    if (await this.markRead(order.id, 'CUSTOMER')) {
-      this.realtime.publish({ storeId, customerId }, { type: 'conversation.read', orderNumber: number, reader: 'CUSTOMER' });
-    }
+    await this.markRead(order.id, 'CUSTOMER', { storeId, customerId }, number);
     return this.customerRead(storeSlug, userId, number);
   }
 
@@ -160,9 +158,7 @@ export class ConversationsService {
     const order = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true, customerId: true } });
     if (!order) throw notFound(number);
 
-    if (await this.markRead(order.id, 'SHOP')) {
-      this.realtime.publish({ storeId, customerId: order.customerId }, { type: 'conversation.read', orderNumber: number, reader: 'SHOP' });
-    }
+    await this.markRead(order.id, 'SHOP', { storeId, customerId: order.customerId }, number);
     return this.shopRead(storeSlug, userId, number);
   }
 
@@ -241,12 +237,12 @@ export class ConversationsService {
     if (!order || !isOpen(order.status as Parameters<typeof isOpen>[0])) throw closed();
   }
 
-  /** The other side's messages, read now by `reader`; whether there were any, so a read of nothing tells nobody. */
-  private async markRead(orderId: string, reader: Side): Promise<boolean> {
+  /** The other side's messages, read now by `reader` — told to both rooms only when there were any. */
+  private async markRead(orderId: string, reader: Side, to: RealtimeAudienceOf, orderNumber: number): Promise<void> {
     const { count } = await this.prisma.orderMessage.updateMany({
       where: { conversation: { orderId }, author: reader === 'CUSTOMER' ? 'SHOP' : 'CUSTOMER', readAt: null },
       data: { readAt: new Date() },
     });
-    return count > 0;
+    if (count > 0) this.realtime.publish(to, { type: 'conversation.read', orderNumber, reader });
   }
 }
