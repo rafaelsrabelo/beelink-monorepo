@@ -7,7 +7,13 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontCheckout, type StorefrontCheckoutProps } from "./storefront-checkout"
 
 const signIn = { signInHref: "/loja/entrar?voltar=%2Floja%2Fcarrinho", signUpHref: "/loja/entrar?modo=criar&voltar=%2Floja%2Fcarrinho" }
-const customer = { lines: ["Bia Cliente", "11988887777"], complete: true, editHref: "/loja/conta?voltar=%2Floja%2Fcarrinho", deliveryLine: "Av. Paulista, 1000 — São Paulo/SP" }
+const customer = {
+  lines: ["Bia Cliente", "11988887777"],
+  complete: true,
+  editHref: "/loja/conta?voltar=%2Floja%2Fcarrinho",
+  addresses: [{ id: "a1", heading: "Casa · Bia Cliente", line: "Av. Paulista, 1000 — São Paulo/SP" }],
+  addAddressHref: "/loja/conta/perfil?endereco=novo&voltar=%2Floja%2Fcarrinho",
+}
 
 function checkout(props: Partial<StorefrontCheckoutProps> = {}) {
   return (
@@ -16,7 +22,7 @@ function checkout(props: Partial<StorefrontCheckoutProps> = {}) {
       customer={customer}
       signIn={signIn}
       paymentMethods={["PIX", "MONEY"]}
-      choice={{ fulfillment: "DELIVERY", paymentMethod: "PIX" }}
+      choice={{ fulfillment: "DELIVERY", addressId: "a1", paymentMethod: "PIX" }}
       onChoiceChange={() => {}}
       onPlace={() => {}}
       {...props}
@@ -53,7 +59,7 @@ describe("StorefrontCheckout", () => {
   })
 
   it("says what is missing from a record without a phone or address", () => {
-    render(checkout({ customer: { ...customer, lines: ["Bia"], complete: false, deliveryLine: null } }))
+    render(checkout({ customer: { ...customer, lines: ["Bia"], complete: false, addresses: [] } }))
 
     expect(screen.getByText(/Adicione seu celular e endereço/)).toBeInTheDocument()
   })

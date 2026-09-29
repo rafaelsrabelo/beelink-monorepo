@@ -96,12 +96,59 @@ describe("the shop's sign-in form", () => {
   })
 
   it("signs up and says the link is on its way — the same whatever the API knew about the address", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 202 })))
+    const fetched = vi.fn(async () => new Response(null, { status: 202 }))
+    vi.stubGlobal("fetch", fetched)
 
     const location = new URL((await post("criar", { ...form, name: "Bia" })).headers.get("location") ?? "")
 
     expect(location.searchParams.get("modo")).toBe("criar")
     expect(location.searchParams.get("enviado")).toBe("1")
+    // The e-mailed link brings the shopper back where they were going.
+    expect(JSON.parse(String(((fetched.mock.calls[0] as unknown[])[1] as RequestInit).body))).toMatchObject({ returnTo: "/loja/carrinho" })
+  })
+
+  describe("the new password from an e-mailed link", () => {
+    const fields = {
+      token: "t0k3n",
+      password: "senha-nova-comprida",
+      confirmacao: "senha-nova-comprida",
+      voltar: "/loja/carrinho",
+      retorno: "/loja/nova-senha?token=t0k3n&voltar=%2Floja%2Fcarrinho",
+      entrada: "/loja/entrar?voltar=%2Floja%2Fcarrinho",
+    }
+
+    it("saves it with the link's token, and signs in on the way back, told so", async () => {
+      const fetched = vi.fn(async () => new Response(null, { status: 204 }))
+      vi.stubGlobal("fetch", fetched)
+
+      const response = await post("nova-senha", fields)
+      const [url, init] = (fetched.mock.calls[0] ?? []) as unknown as [string, RequestInit]
+      const location = new URL(response.headers.get("location") ?? "")
+
+      expect(url).toContain("/auth/reset-password")
+      expect(JSON.parse(String(init.body))).toEqual({ token: "t0k3n", password: "senha-nova-comprida" })
+      expect(location.pathname).toBe("/loja/entrar")
+      expect(location.searchParams.get("voltar")).toBe("/loja/carrinho")
+      expect(location.searchParams.get("senha-nova")).toBe("1")
+    })
+
+    it("sends two different passwords back without a call, and a refusal back to the same page", async () => {
+      const fetched = vi.fn(async () => Response.json({ errorCode: "AUTH_TOKEN_INVALID" }, { status: 400 }))
+      vi.stubGlobal("fetch", fetched)
+
+      const mismatch = new URL((await post("nova-senha", { ...fields, confirmacao: "outra-senha-qualquer" })).headers.get("location") ?? "")
+      expect(fetched).not.toHaveBeenCalled()
+      expect(mismatch.pathname).toBe("/loja/nova-senha")
+      expect(mismatch.searchParams.get("token")).toBe("t0k3n")
+      expect(mismatch.searchParams.get("erro")).toBe("CUSTOMER_PASSWORD_MISMATCH")
+
+      const spent = new URL((await post("nova-senha", fields)).headers.get("location") ?? "")
+      expect(spent.searchParams.get("erro")).toBe("AUTH_TOKEN_INVALID")
+
+      vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "BAD_REQUEST" }, { status: 400 })))
+      const short = new URL((await post("nova-senha", { ...fields, password: "curta", confirmacao: "curta" })).headers.get("location") ?? "")
+      expect(short.searchParams.get("erro")).toBe("CUSTOMER_PASSWORD_INVALID")
+    })
   })
 
   it("asks for a new password at the shop the account belongs to", async () => {
@@ -128,13 +175,13 @@ describe("the shop's sign-in form", () => {
     const fetched = vi.fn(async () => Response.json({ id: "c1" }, { status: 200 }))
     vi.stubGlobal("fetch", fetched)
 
-    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17", city: "São Paulo", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })
+    const response = await post("perfil", { name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17", retorno: "/loja/conta" }, { cookie: "bl_shopper_access=a" })
     const [url, init] = (fetched.mock.calls[0] ?? []) as unknown as [string, RequestInit]
 
     expect(url).toContain("/stores/loja/customer/me")
     expect(init.method).toBe("PATCH")
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer a")
-    expect(JSON.parse(String(init.body))).toMatchObject({ name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17", address: { city: "São Paulo", street: "" } })
+    expect(JSON.parse(String(init.body))).toEqual({ name: "Bia", phone: "(11) 98888-7777", cpf: "529.982.247-25", birthDate: "1990-05-17" })
     expect(response.headers.get("location")).toBe("http://localhost:3000/loja/conta?salvo=1")
   })
 

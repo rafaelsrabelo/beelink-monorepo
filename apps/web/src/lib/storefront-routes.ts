@@ -69,6 +69,8 @@ export type StorefrontSection =
   | { kind: "search" }
   | { kind: "cart" }
   | { kind: "signIn" }
+  | { kind: "verifyEmail" }
+  | { kind: "resetPassword" }
   | { kind: "account" }
   | { kind: "category"; slug: string }
 
@@ -236,6 +238,16 @@ export function storefrontRoutes(shop: StorefrontShop) {
     signIn: ({ mode, back }: { mode?: SignInMode; back?: string } = {}) =>
       withQuery(`${home}/${routeWords.signIn}`, { [MODE_KEY]: mode === "entrar" ? undefined : mode, [BACK_KEY]: back }),
 
+    /**
+     * Where the links in a shopper's e-mails open (BEELINK-149), with their token and where to go
+     * back to once done. The API writes these same addresses into the e-mails. A shop read from the
+     * cache before the API spelled these words leads to its sign-in, never to `/undefined`.
+     */
+    verifyEmail: ({ token, back }: { token?: string; back?: string } = {}) =>
+      routeWords.verifyEmail ? withQuery(`${home}/${routeWords.verifyEmail}`, { token, [BACK_KEY]: back }) : withQuery(`${home}/${routeWords.signIn}`, { [BACK_KEY]: back }),
+    resetPassword: ({ token, back }: { token?: string; back?: string } = {}) =>
+      routeWords.resetPassword ? withQuery(`${home}/${routeWords.resetPassword}`, { token, [BACK_KEY]: back }) : withQuery(`${home}/${routeWords.signIn}`, { [BACK_KEY]: back }),
+
     /** The shopper's own area at this shop: its overview, with the menu of its tabs. */
     account: () => `${home}/${routeWords.account}`,
 
@@ -302,10 +314,19 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (segment === routeWords.search) return { kind: "search" }
   if (segment === routeWords.cart) return { kind: "cart" }
   if (segment === routeWords.signIn) return { kind: "signIn" }
+  // Spelled by the API since BEELINK-149; a shop read from the cache in the minute before has none.
+  if (routeWords.verifyEmail && segment === routeWords.verifyEmail) return { kind: "verifyEmail" }
+  if (routeWords.resetPassword && segment === routeWords.resetPassword) return { kind: "resetPassword" }
   if (segment === routeWords.account) return { kind: "account" }
 
   return { kind: "category", slug: segment }
 }
+
+/** The sign-in's notices after an e-mailed link was used: the e-mail confirmed, the password replaced. */
+export const EMAIL_CONFIRMED_KEY = "confirmado"
+export const PASSWORD_REPLACED_KEY = "senha-nova"
+/** The sign-in's notice after "Sair de todos os aparelhos" (BEELINK-150). */
+export const SIGNED_OUT_EVERYWHERE_KEY = "saiu"
 
 /** The cart's keys after "Comprar de novo": the order bought again, and whether reading it failed. */
 export const REORDERED_KEY = "repetido"

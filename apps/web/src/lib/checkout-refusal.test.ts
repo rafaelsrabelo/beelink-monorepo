@@ -45,10 +45,12 @@ describe("checkoutRefusalOf", () => {
     expect(checkoutRefusalOf({ errorCode: "ORDER_STOCK_INSUFFICIENT", details: { shortages: [{ variantId: "v9", available: 0 }] } }, rows, text)).toBe(text.checkoutStockShortAny)
     expect(checkoutRefusalOf({ errorCode: "ORDER_VARIANT_INVALID" }, rows, text)).toBe(text.checkoutProductGoneAny)
     expect(checkoutRefusalOf({ errorCode: "SOMETHING_ELSE" }, rows, text)).toBe(text.checkoutFailed)
+    // An address removed in another tab since the cart drew it: chosen, and gone.
+    expect(checkoutRefusalOf({ errorCode: "ORDER_ADDRESS_NOT_FOUND" }, rows, text)).toBe(text.checkoutAddressChosenGone)
   })
 
   it("reads the page again only for what the page read and has moved", () => {
-    expect(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_PAYMENT_NOT_ACCEPTED"].every(rereadsTheCart)).toBe(true)
+    expect(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_ADDRESS_NOT_FOUND", "ORDER_PAYMENT_NOT_ACCEPTED"].every(rereadsTheCart)).toBe(true)
     expect(rereadsTheCart("ORDER_STOCK_INSUFFICIENT")).toBe(false)
   })
 })

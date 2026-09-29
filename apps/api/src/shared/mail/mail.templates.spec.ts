@@ -1,5 +1,5 @@
 // App
-import { escapeHtml, leadReceived } from './mail.templates.js';
+import { emailVerification, escapeHtml, leadReceived, passwordReset } from './mail.templates.js';
 
 describe('leadReceived — a stranger’s words in the owner’s inbox', () => {
   const content = {
@@ -33,6 +33,31 @@ describe('leadReceived — a stranger’s words in the owner’s inbox', () => {
 
     expect(mail.text).not.toContain('Telefone');
     expect(mail.text).not.toContain('Mensagem');
+  });
+});
+
+describe("a shop's account e-mails", () => {
+  const url = 'http://localhost:3000/mutante/confirmar-email?token=t&voltar=%2Fmutante';
+
+  it('name the shop in the subject, atop the card and in the words, escaped in the HTML', () => {
+    const verify = emailVerification('Bia <b>', url, 24, 'Mutante & Cia');
+    const reset = passwordReset('Bia', url, 30, 'Mutante & Cia');
+
+    expect(verify.subject).toBe('Mutante & Cia — confirme seu e-mail');
+    expect(reset.subject).toBe('Mutante & Cia — crie uma nova senha');
+    expect(verify.text).toContain('ativar sua conta na loja Mutante & Cia');
+    expect(reset.text).toContain('nova senha para sua conta na loja Mutante & Cia');
+    expect(verify.html).toContain('>Mutante &amp; Cia</p>');
+    expect(verify.html).toContain('Olá, Bia &lt;b&gt;!');
+    expect(verify.html).not.toContain('<b>');
+    expect(verify.html).toContain(`href="${url}"`);
+  });
+
+  it("name nobody on a shopkeeper's: the panel's account is bee-link's", () => {
+    const verify = emailVerification('Ana', 'http://localhost:3000/verify-email?token=t', 24);
+
+    expect(verify.subject).toBe('Confirme seu e-mail');
+    expect(verify.text).toContain('para ativar sua conta:');
   });
 });
 

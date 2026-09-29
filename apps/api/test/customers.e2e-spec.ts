@@ -57,12 +57,26 @@ describe("a shopper's door into a shop", () => {
     return app.inject({ method: 'GET', url: `/api/stores/${slug}/customer/me`, headers: { authorization: `Bearer ${token}` } });
   }
 
-  it('signs up from a shop, with a verification link that leads back to it', async () => {
+  it("signs up from a shop, with a link to the shop's own page, in its name, back to where the shopper was going", async () => {
     const email = newEmail('cliente');
 
-    await post('/api/stores/lessari/customer/register', { name: 'Bia', email, password: PASSWORD });
+    await post('/api/stores/lessari/customer/register', { name: 'Bia', email, password: PASSWORD, returnTo: '/lessari/carrinho' });
 
-    expect((await waitForMessage(email)).Text).toContain('voltar=%2Flessari');
+    const message = await waitForMessage(email);
+    expect(message.Text).toContain('http://localhost:3000/lessari/confirmar-email?token=');
+    expect(message.Text).toContain('&voltar=%2Flessari%2Fcarrinho');
+    expect(message.Subject).toBe('lessari — confirme seu e-mail');
+    expect(message.From).toMatchObject({ Name: 'lessari', Address: 'nao-responda@harness.local' });
+
+    // Anywhere outside the shop is the shop's front; a new link for the same account says the same.
+    await clearInbox();
+    await post('/api/stores/lessari/customer/resend-verification', { email, returnTo: 'https://evil.example/lessari' });
+    expect((await waitForMessage(email)).Text).toMatch(/&voltar=%2Flessari\s/);
+    // Nor is a place too long to be one refused: the link still goes, to the front.
+    await clearInbox();
+    const long = await post('/api/stores/lessari/customer/resend-verification', { email, returnTo: `/lessari/${'a'.repeat(400)}` });
+    expect(long.statusCode).toBe(202);
+    expect((await waitForMessage(email)).Text).toMatch(/&voltar=%2Flessari\s/);
   });
 
   it('answers a sign-up with an address already in use exactly as a new one', async () => {
@@ -80,17 +94,26 @@ describe("a shopper's door into a shop", () => {
     const session = await shopperAt('lessari');
 
     const first = (await me('lessari', session.accessToken)).json<CustomerProfile>();
-    expect(first).toMatchObject({ name: 'Bia Cliente', phone: null, address: { city: null } });
+    expect(first).toMatchObject({ name: 'Bia Cliente', phone: null, address: { city: null }, addresses: [] });
 
     const updated = await app.inject({
       method: 'PATCH',
       url: '/api/stores/lessari/customer/me',
       headers: { authorization: `Bearer ${session.accessToken}` },
-      payload: { phone: '(11) 98888-7777', address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' } },
+      payload: { phone: '(11) 98888-7777' },
     });
     expect(updated.statusCode).toBe(200);
     // Kept as a WhatsApp link wants it: the key an order finds the customer by.
-    expect(updated.json<CustomerProfile>()).toMatchObject({ phone: '5511988887777', address: { city: 'São Paulo', state: 'SP' } });
+    expect(updated.json<CustomerProfile>()).toMatchObject({ phone: '5511988887777' });
+
+    // An address is saved on its own now; the profile's save refuses one.
+    const withAddress = await app.inject({
+      method: 'PATCH',
+      url: '/api/stores/lessari/customer/me',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      payload: { address: { city: 'São Paulo' } },
+    });
+    expect(withAddress.statusCode).toBe(400);
   });
 
   it('keeps the CPF and the birth date the shopper gives, refuses ones that cannot be, and clears them when blank', async () => {
@@ -176,10 +199,11 @@ describe("a shopper's door into a shop", () => {
     await shopperAt('outra', email);
     await clearInbox();
 
-    expect((await post('/api/stores/lessari/customer/forgot-password', { email })).statusCode).toBe(202);
+    expect((await post('/api/stores/lessari/customer/forgot-password', { email, returnTo: '/lessari/conta' })).statusCode).toBe(202);
     const message = await waitForMessage(email);
-    expect(message.Text).toContain('voltar=%2Flessari');
-    const reset = await post('/api/auth/reset-password', { token: tokenFromLink(message.Text, '/reset-password'), password: 'senha-nova-comprida' });
+    expect(message.Subject).toBe('lessari — crie uma nova senha');
+    expect(message.Text).toContain('&voltar=%2Flessari%2Fconta');
+    const reset = await post('/api/auth/reset-password', { token: tokenFromLink(message.Text, '/lessari/nova-senha'), password: 'senha-nova-comprida' });
     expect(reset.statusCode).toBe(204);
 
     expect((await post('/api/stores/lessari/customer/login', { email, password: 'senha-nova-comprida' })).statusCode).toBe(200);

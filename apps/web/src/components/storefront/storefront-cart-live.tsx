@@ -19,7 +19,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { useCart } from "./cart-provider"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
 import { checkoutRefusalOf, rereadsTheCart } from "@/lib/checkout-refusal"
-import { addressLineOf, isDeliverable, isReachable } from "@/lib/customer-address"
+import { isReachable } from "@/lib/customer-address"
+import { checkoutAddressesOf } from "@/lib/saved-address"
 import { orderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
 import { usePlaceShopperOrder } from "@/services/storefront/storefront-hooks"
 import { ShopperOrderError } from "@/services/storefront/storefront-requests"
@@ -40,8 +41,10 @@ export interface StorefrontCartLiveProps {
   paymentMethods: readonly PaymentMethod[]
   /** The signed-in shopper's record at this shop; null for a visitor, who is asked to sign in to order. */
   shopper: CustomerProfile | null
-  /** Sign in, sign up and change details — each coming back to this cart. */
-  identityHrefs: { signInHref: string; signUpHref: string; editHref: string }
+  /** Sign in, sign up, change details and add an address — each coming back to this cart. */
+  identityHrefs: { signInHref: string; signUpHref: string; editHref: string; addAddressHref: string }
+  /** An address just saved on the way from this cart, to deliver to; null or not the shopper's, the default. */
+  deliverTo?: string | null
   /** What brought the shopper here — an order bought again — said over the cart until an order is sent from it. */
   arrival?: ReactNode
   locale: string
@@ -66,6 +69,7 @@ export function StorefrontCartLive({
   paymentMethods,
   shopper,
   identityHrefs,
+  deliverTo = null,
   arrival,
   locale,
   messages,
@@ -77,15 +81,18 @@ export function StorefrontCartLive({
   const remove = useCart((cart) => cart.remove)
   const clear = useCart((cart) => cart.clear)
   const placing = usePlaceShopperOrder(slug)
-  const deliveryLine = shopper && isDeliverable(shopper.address) ? addressLineOf(shopper.address) : null
+  const addresses = useMemo(() => (shopper ? checkoutAddressesOf(shopper) : []), [shopper])
   const [picked, setChoice] = useState<StorefrontCheckoutChoice>(() => ({
-    fulfillment: deliveryLine ? "DELIVERY" : "PICKUP",
+    fulfillment: addresses.length ? "DELIVERY" : "PICKUP",
+    addressId: deliverTo,
     paymentMethod: paymentMethods.length === 1 ? paymentMethods[0]! : null,
   }))
   // What was picked, held to what the page says now: an address gone since, or a payment the shop
-  // stopped taking, is never what gets sent.
+  // stopped taking, is never what gets sent. The default stands in for an address no longer offered.
+  const address = addresses.find((each) => each.id === picked.addressId) ?? addresses[0] ?? null
   const choice: StorefrontCheckoutChoice = {
-    fulfillment: deliveryLine ? picked.fulfillment : "PICKUP",
+    fulfillment: address ? picked.fulfillment : "PICKUP",
+    addressId: address?.id ?? null,
     paymentMethod:
       picked.paymentMethod && paymentMethods.includes(picked.paymentMethod)
         ? picked.paymentMethod
@@ -120,7 +127,12 @@ export function StorefrontCartLive({
     if (tab) tab.opener = null
 
     placing.mutate(
-      { items: orderItemsOf(view.rows), fulfillment: choice.fulfillment, paymentMethod: choice.paymentMethod },
+      {
+        items: orderItemsOf(view.rows),
+        fulfillment: choice.fulfillment,
+        paymentMethod: choice.paymentMethod,
+        ...(choice.fulfillment === "DELIVERY" && choice.addressId ? { addressId: choice.addressId } : {}),
+      },
       {
         onSuccess: (order) => {
           const href = whatsapp ? whatsappOrderHref(whatsapp, orderMessageOf({ shopName, order, customer: shopper, locale, messages })) : null
@@ -162,7 +174,8 @@ export function StorefrontCartLive({
                     lines: [shopper.name, shopper.phone].filter((line): line is string => Boolean(line)),
                     complete: isReachable(shopper),
                     editHref: identityHrefs.editHref,
-                    deliveryLine,
+                    addresses,
+                    addAddressHref: identityHrefs.addAddressHref,
                   }
                 : null
             }

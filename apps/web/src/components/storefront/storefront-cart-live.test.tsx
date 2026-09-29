@@ -38,8 +38,17 @@ const bia: CustomerProfile = {
   birthDate: null,
   phone: "11988887777",
   address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: null, city: "São Paulo", state: "SP" },
+  addresses: [],
+  hasPassword: true,
 }
-const identityHrefs = { signInHref: "/loja/entrar?voltar=%2Floja%2Fcarrinho", signUpHref: "/loja/entrar?modo=criar", editHref: "/loja/conta?voltar=%2Floja%2Fcarrinho" }
+bia.addresses = [{ id: "a1", label: "Casa", recipientName: null, ...bia.address, isDefault: true }]
+const work = { id: "a2", label: "Trabalho", recipientName: "Recepção", ...bia.address, street: "Av. Faria Lima", number: "3477", isDefault: false }
+const identityHrefs = {
+  signInHref: "/loja/entrar?voltar=%2Floja%2Fcarrinho",
+  signUpHref: "/loja/entrar?modo=criar",
+  editHref: "/loja/conta?voltar=%2Floja%2Fcarrinho",
+  addAddressHref: "/loja/conta/perfil?endereco=novo&voltar=%2Floja%2Fcarrinho",
+}
 
 function cookieLines() {
   return decodeCart(
@@ -150,7 +159,7 @@ describe("StorefrontCartLive", () => {
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Pedido #12 feito!"))
     expect(fetched).toHaveBeenCalledWith("/loja/api/orders", expect.objectContaining({ method: "POST" }))
     const sentBody = JSON.parse(String((fetched.mock.calls[0] as unknown[] | undefined)?.[1] && ((fetched.mock.calls[0] as unknown[])[1] as RequestInit).body))
-    expect(sentBody).toEqual({ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", paymentMethod: "PIX" })
+    expect(sentBody).toEqual({ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1" })
     // Opened in the press, with no way back to this page, then pointed at the message with the number.
     expect(window.open).toHaveBeenCalledWith("", "_blank")
     expect(tab.opener).toBeNull()
@@ -248,15 +257,31 @@ describe("StorefrontCartLive", () => {
     const view = renderCart()
     expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeChecked()
 
-    view.redraw({ ...bia, address: { ...bia.address, street: null } })
+    view.redraw({ ...bia, addresses: [] })
     expect(screen.getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
   })
 
-  it("offers delivery only to a shopper with an address, starting on pick-up otherwise", () => {
-    renderCart(false, { ...bia, address: { ...bia.address, street: null } })
+  it("offers delivery only to a shopper with an address to deliver to, starting on pick-up otherwise", () => {
+    renderCart(false, { ...bia, addresses: [{ ...bia.addresses[0]!, street: null }] })
 
     expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeDisabled()
     expect(screen.getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
+    expect(screen.getByRole("link", { name: "Adicionar endereço" })).toHaveAttribute("href", identityHrefs.addAddressHref)
+  })
+
+  it("starts on the address just added from the cart, and sends the one chosen", async () => {
+    const fetched = vi.fn(async () => Response.json(placed, { status: 201 }))
+    vi.stubGlobal("fetch", fetched)
+    openedTab()
+    const view = renderCart(false, { ...bia, addresses: [...bia.addresses, work] }, { deliverTo: "a2" })
+
+    expect(screen.getByRole("radio", { name: /Trabalho · Recepção/ })).toBeChecked()
+    fireEvent.click(screen.getByRole("radio", { name: /Casa · Bia Cliente/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" }))
+
+    await waitFor(() => expect(fetched).toHaveBeenCalled())
+    expect(JSON.parse(String(((fetched.mock.calls[0] as unknown[])[1] as RequestInit).body))).toMatchObject({ fulfillment: "DELIVERY", addressId: "a1" })
+    view.unmount()
   })
 
   it("asks a visitor to sign in to order, and comes back to this cart", () => {

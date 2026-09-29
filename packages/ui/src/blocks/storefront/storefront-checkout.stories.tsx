@@ -5,7 +5,13 @@ import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
 import { sampleColorPresets } from "../store/store.fixtures"
 import { StorefrontCheckout } from "./storefront-checkout"
 
-const customer = { lines: ["Bia Cliente", "11988887777"], complete: true, editHref: "#", deliveryLine: "Av. Paulista, 1000 — São Paulo/SP" }
+const customer = {
+  lines: ["Bia Cliente", "11988887777"],
+  complete: true,
+  editHref: "#",
+  addresses: [{ id: "casa", heading: "Casa · Bia Cliente", line: "Av. Paulista, 1000 — São Paulo/SP" }],
+  addAddressHref: "#",
+}
 
 const meta = {
   title: "Blocos/Vitrine/Fechar pedido",
@@ -17,7 +23,7 @@ const meta = {
     signIn: { signInHref: "#", signUpHref: "#" },
     customer: null,
     paymentMethods: ["PIX", "MONEY", "CREDIT_CARD"],
-    choice: { fulfillment: "DELIVERY", paymentMethod: "PIX" },
+    choice: { fulfillment: "DELIVERY", addressId: "casa", paymentMethod: "PIX" },
     onChoiceChange: () => {},
     onPlace: () => {},
   },

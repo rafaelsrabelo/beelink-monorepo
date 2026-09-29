@@ -1,11 +1,11 @@
-import type { AuthSession } from "./auth.js";
+import type { AuthSession, EmailPayload, RegisterPayload } from "./auth.js";
 
 /**
  * A shopper's own door into a shop (docs/product/README.md, "Accounts" and "Customers").
  *
  * The account is bee-link's — the same kind a shopkeeper has — reached through the shop window, and
  * its session is never a shopkeeper's session. What the shop gets is a customer record: a name, a
- * phone and an address, its own, one per shop the person buys from. No shop reads the account.
+ * phone and their addresses, its own, one per shop the person buys from. No shop reads the account.
  *
  * Signing up, signing in, refreshing and signing out take the same payloads as the panel's door
  * (`RegisterPayload`, `LoginPayload`, `RefreshPayload`, `LogoutPayload`) and answer the same
@@ -24,6 +24,54 @@ export interface CustomerAddress {
   state: string | null;
 }
 
+/**
+ * One of the places a shopper receives orders (BEELINK-148), as the shop keeps it. The default is
+ * where an order goes unless another is chosen, and the address the panel reads and writes.
+ */
+export interface CustomerSavedAddress extends CustomerAddress {
+  id: string;
+  /** What the shopper calls it — "Casa", "Trabalho"; null when they gave it no name. */
+  label: string | null;
+  /** Who receives an order there; null is the shopper, by their name when the order is placed. */
+  recipientName: string | null;
+  isDefault: boolean;
+}
+
+/**
+ * A saved address as the shopper writes it, whole: a save replaces every part, and blank is null.
+ * The ZIP code, the street, the city and the state are required, since it is where the shop
+ * delivers. The number may be missing ("s/n"). `isDefault: true` makes it the default; false or
+ * absent leaves the default where it is. The first address is the default whatever it says, and one
+ * past the tenth is refused with `CUSTOMER_ADDRESS_LIMIT`.
+ */
+export interface SaveCustomerAddressPayload {
+  label?: string | null;
+  recipientName?: string | null;
+  zipCode: string;
+  street: string;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city: string;
+  /** Two letters; upper-cased when kept. */
+  state: string;
+  isDefault?: boolean;
+}
+
+/**
+ * Signing up at a shop: the panel's own payload, and where the confirmation link brings the shopper
+ * back once they confirm — a path inside the shop, where they were going; anything else is the
+ * shop's front.
+ */
+export interface CustomerRegisterPayload extends RegisterPayload {
+  returnTo?: string;
+}
+
+/** Asking a shop for a new link, confirmation or password: the e-mail, and where the link brings the shopper back. */
+export interface CustomerEmailPayload extends EmailPayload {
+  returnTo?: string;
+}
+
 /** What a signed-in shopper sees of themselves at one shop: that shop's record, and the account's e-mail. */
 export interface CustomerProfile {
   id: string;
@@ -35,10 +83,36 @@ export interface CustomerProfile {
   cpf: string | null;
   /** `YYYY-MM-DD`, a date with no time; null while the shopper has not given it. */
   birthDate: string | null;
+  /** The default address's parts; every part null while there is none. */
   address: CustomerAddress;
+  /** Every saved address, the default first, then the newest. */
+  addresses: CustomerSavedAddress[];
+  /**
+   * Whether the account has a password — one opened through Google has none until it creates one,
+   * by the link `POST /customer/me/password/link` sends (BEELINK-150).
+   */
+  hasPassword: boolean;
 }
 
-/** What a shopper may change of their record at a shop. An absent field is left as it is. */
+/**
+ * A signed-in shopper's new password: the current one, and the new one, 8 to 128 characters. The
+ * other devices' sessions end; this one stays. A wrong current password is `AUTH_PASSWORD_WRONG`, an
+ * account with none `AUTH_PASSWORD_NOT_SET`.
+ */
+export interface ChangeCustomerPasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/** Asking for the link that creates a password — for an account opened through Google — and where it brings the shopper back. */
+export interface CustomerPasswordLinkPayload {
+  returnTo?: string;
+}
+
+/**
+ * What a shopper may change of their record at a shop. An absent field is left as it is. The
+ * addresses are saved on their own (`SaveCustomerAddressPayload`).
+ */
 export interface UpdateCustomerProfilePayload {
   name?: string;
   /** Null clears it. */
@@ -47,7 +121,6 @@ export interface UpdateCustomerProfilePayload {
   cpf?: string | null;
   /** `YYYY-MM-DD`: a day that exists, not in the future, not before 1900. Null clears it. */
   birthDate?: string | null;
-  address?: Partial<CustomerAddress>;
 }
 
 /**
@@ -218,6 +291,10 @@ export type CustomerErrorCode =
   | "CUSTOMER_CPF_INVALID"
   /** A day that does not exist, one in the future, or one before 1900. */
   | "CUSTOMER_BIRTH_DATE_INVALID"
+  /** A saved address that is not this shopper's at this shop. */
+  | "CUSTOMER_ADDRESS_NOT_FOUND"
+  /** An eleventh address: ten is plenty for one person, and a cap on what a script could pile up. */
+  | "CUSTOMER_ADDRESS_LIMIT"
   /** The panel asked for a customer this shop does not have. */
   | "CUSTOMER_NOT_FOUND"
   /** A record merged with itself. */

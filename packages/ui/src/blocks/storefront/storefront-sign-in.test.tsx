@@ -45,6 +45,13 @@ describe("StorefrontSignIn", () => {
     expect(screen.getByRole("button", { name: "Enviar link" })).toBeInTheDocument()
   })
 
+  it("says over the sign-in what an e-mailed link just did", () => {
+    render(<StorefrontSignIn mode="entrar" action="#" hidden={{}} hrefs={hrefs} notice="E-mail confirmado! Entre para continuar." />)
+
+    expect(screen.getByRole("status")).toHaveTextContent("E-mail confirmado! Entre para continuar.")
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument()
+  })
+
   it("offers Google above the form when the shop can, as a plain link, on signing in and up only", () => {
     const google = { href: "/api/storefront/loja/customer/google?voltar=%2Floja", iconSrc: "/brand/google.svg" }
     const { container, rerender } = renderFace("entrar", { google })

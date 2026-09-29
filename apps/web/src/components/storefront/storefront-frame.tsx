@@ -83,8 +83,8 @@ export interface StorefrontFrameProps {
   searchSlot?: ReactNode
   /** Replaces the live "Entregar em": the design preview's, which keeps nothing. */
   deliverToSlot?: ReactNode
-  /** The signed-in shopper, read once per request by the page; null or absent, a visitor. */
-  shopper?: { name: string } | null
+  /** The signed-in shopper, read once per request by the page, with their default address's CEP; null or absent, a visitor. */
+  shopper?: { name: string; address?: { zipCode: string | null } } | null
   /**
    * How every injected link is drawn. The preview passes one that renders no `href`, so nothing
    * in it navigates and nothing in it takes a tab stop. `StorefrontWindow` does not forward this
@@ -197,7 +197,7 @@ export function StorefrontFrame({
               />
             ),
             // The visitor's CEP, kept for the shipping quote to come. A site delivers nothing.
-            deliverTo: deliverToSlot ?? <StorefrontDeliverToLive slug={store.slug} messages={messages} />,
+            deliverTo: deliverToSlot ?? <StorefrontDeliverToLive slug={store.slug} defaultCep={shopper?.address?.zipCode ?? null} messages={messages} />,
             searchAction: routes.search(),
             searchScopes: scopes,
             searchScope: scope,

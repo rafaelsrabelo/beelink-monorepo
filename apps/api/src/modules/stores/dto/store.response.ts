@@ -85,6 +85,10 @@ export class StorefrontRouteWordsResponse implements StorefrontRouteWords {
   @ApiProperty({ example: 'carrinho' }) cart!: string;
   @ApiProperty({ example: 'entrar', description: 'Sign-in, and with ?modo=criar or ?modo=senha, sign-up and a new password.' })
   signIn!: string;
+  @ApiProperty({ example: 'confirmar-email', description: "Where a shopper's confirmation link opens: ?token=…&voltar=…" })
+  verifyEmail!: string;
+  @ApiProperty({ example: 'nova-senha', description: "Where a shopper's new-password link opens: ?token=…&voltar=…" })
+  resetPassword!: string;
   @ApiProperty({ example: 'conta' }) account!: string;
   @ApiProperty({ type: StorefrontAccountTabsResponse, description: "The account's tabs, each a third segment under it." })
   accountTabs!: StorefrontAccountTabsResponse;

@@ -3,22 +3,10 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { CustomerModel } from '../../generated/prisma/models.js';
 
 // App
+import { lockCustomer } from './customer-addresses.js';
 import { refreshBooks } from './customer-books.js';
 
 type Tx = Prisma.TransactionClient;
-
-/** The parts of a record's address, taken whole or not at all. */
-const ADDRESS_PARTS = ['zipCode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state'] as const;
-
-type Address = Pick<CustomerModel, (typeof ADDRESS_PARTS)[number]>;
-
-function addressOf(row: Address): Address {
-  return Object.fromEntries(ADDRESS_PARTS.map((part) => [part, row[part]])) as Address;
-}
-
-function hasAddress(row: Address): boolean {
-  return ADDRESS_PARTS.some((part) => row[part] !== null);
-}
 
 /**
  * Which of the two records is kept: the one with an account — the one the person sees at the shop
@@ -31,15 +19,25 @@ export function keptOf<T extends Pick<CustomerModel, 'userId'>>(here: T, other: 
 }
 
 /**
- * The other record's orders moved to the kept one, which fills a phone, a CPF, a birth date or an
- * address it lacks and reads its books again; then the other is gone. Under the shop's row lock,
+ * The other record's orders and addresses moved to the kept one, which fills a phone, a CPF or a
+ * birth date it lacks and reads its books again; then the other is gone. Under the shop's row lock,
  * the one an order takes, so an order placed meanwhile is either moved with the rest or refused as
  * for a customer no longer there — never left pointing at a deleted row.
  *
- * An address is taken whole or not at all: half of one and half of another is nobody's address.
+ * Every address moves, whole: both records are one person, who receives at all of them. The kept
+ * record's default stays the default; the other's becomes it only when the kept one had none.
  */
 export async function mergeInto(tx: Tx, kept: CustomerModel, gone: CustomerModel): Promise<void> {
   await tx.order.updateMany({ where: { customerId: gone.id }, data: { customerId: kept.id } });
+  // The kept record's own address changes wait, so its default is still what was counted.
+  await lockCustomer(tx, kept.id);
+  const keptHasDefault = (await tx.customerAddress.count({ where: { customerId: kept.id, isDefault: true } })) > 0;
+  // Before the other is deleted, whose addresses would go with it. Raw, so each keeps its own
+  // `updatedAt`: a move is not an edit, and the default's successor is the address changed last.
+  await tx.$executeRaw`
+    UPDATE "customer_addresses"
+    SET "customerId" = ${kept.id}::uuid, "isDefault" = "isDefault" AND NOT ${keptHasDefault}::boolean
+    WHERE "customerId" = ${gone.id}::uuid`;
   // Gone before the kept one takes its phone: the index would refuse the two holding it at once.
   await tx.customer.delete({ where: { id: gone.id } });
 
@@ -50,7 +48,6 @@ export async function mergeInto(tx: Tx, kept: CustomerModel, gone: CustomerModel
       // What only a shopper gives, taken as the phone is: from the other record when this one lacks it.
       ...(kept.cpf === null ? { cpf: gone.cpf } : {}),
       ...(kept.birthDate === null ? { birthDate: gone.birthDate } : {}),
-      ...(hasAddress(kept) ? {} : addressOf(gone)),
       // The claim is settled once the record it pointed at is this one; one pointing elsewhere stays.
       ...(kept.claimedPhone !== null && kept.claimedPhone === gone.phone ? { claimedPhone: null } : {}),
     },

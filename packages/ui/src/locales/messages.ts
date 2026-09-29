@@ -276,6 +276,7 @@ export interface UiMessages {
     checkoutProductGoneAny: string
     checkoutPaymentGone: string
     checkoutAddressGone: string
+    checkoutAddressChosenGone: string
     checkoutSignedOut: string
     checkoutTooMany: string
     checkoutFailed: string
@@ -329,6 +330,33 @@ export interface UiMessages {
     signUpSent: string
     /** After asking for a new password: said alike for any address. */
     forgotSent: string
+    /** The shop's own pages for a shopper's e-mailed links (BEELINK-149). */
+    verifyEmailTitle: string
+    newPasswordTitle: string
+    newPasswordLead: string
+    newPasswordLabel: string
+    newPasswordRepeat: string
+    newPasswordSubmit: string
+    linkSpentVerify: string
+    linkSpentReset: string
+    linkResend: string
+    linkAskAgain: string
+    linkSpentTitle: string
+    linkSpentSignIn: string
+    /** The shopper's own access to their account (BEELINK-150). */
+    securityTitle: string
+    securityChangeLead: string
+    securityCurrentPassword: string
+    securityChangeSubmit: string
+    securityGoogleLead: string
+    securityCreateSubmit: string
+    securityEverywhereLead: string
+    securityEverywhereSubmit: string
+    securityPasswordChanged: string
+    securityLinkSent: string
+    signedOutEverywhere: string
+    emailConfirmed: string
+    passwordReplaced: string
     signOut: string
     /** `{name}` — the header's greeting once signed in: "Olá, Bia". */
     accountHello: string
@@ -358,6 +386,40 @@ export interface UiMessages {
      * shopkeeper made from a WhatsApp sale. Says to talk to the shop, who can merge the two.
      */
     accountPhoneTaken: string
+    /** The shopper's saved addresses (BEELINK-148): the cards, their form and the cart's choice. */
+    addressesTitle: string
+    addressesAdd: string
+    addressesDefault: string
+    addressesEdit: string
+    addressesRemove: string
+    addressesMakeDefault: string
+    addressesEditLabel: string
+    addressesRemoveLabel: string
+    addressesMakeDefaultLabel: string
+    addressesLimit: string
+    addressesSaved: string
+    addressesRemoved: string
+    addressesDefaultSet: string
+    addressFormNew: string
+    addressFormEdit: string
+    addressLabel: string
+    addressLabelHint: string
+    addressLabelPlaceholder: string
+    addressRecipient: string
+    addressRecipientHint: string
+    addressLookup: string
+    addressLookupPending: string
+    addressLookupNotFound: string
+    addressLookupFailed: string
+    addressMakeDefault: string
+    addressSave: string
+    addressCancel: string
+    addressesRemoveAsk: string
+    addressZipCodeFormat: string
+    addressStateFormat: string
+    checkoutAddressChoose: string
+    checkoutAddAddress: string
+    checkoutAddAnotherAddress: string
     /** The product page (5b). `{name}` — the shop, over the title. */
     visitShop: string
     /** The buy column's landmark name. */

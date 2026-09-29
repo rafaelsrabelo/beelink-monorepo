@@ -1,11 +1,13 @@
 // App
 import { shopAt } from "./storefront-data"
-import { storefrontRoutes } from "./storefront-routes"
+import { storefrontRoutes, type StorefrontRoutes } from "./storefront-routes"
 
 /** Where the person behind an e-mailed link signs in, and the shop whose door that is, if one. */
 export interface SignInAfter {
   href: string
   slug: string | null
+  /** The shop's own addresses, for a link sent before its pages existed (BEELINK-149); null for the panel. */
+  routes: StorefrontRoutes | null
 }
 
 /**
@@ -17,5 +19,6 @@ export async function signInAfter(voltar: string | string[] | undefined): Promis
   const slug = typeof voltar === "string" ? /^\/([a-z0-9-]+)$/.exec(voltar)?.[1] : undefined
   const shop = slug ? await shopAt(slug) : null
 
-  return shop ? { href: storefrontRoutes(shop).signIn(), slug: shop.slug } : { href: "/login", slug: null }
+  const routes = shop ? storefrontRoutes(shop) : null
+  return shop && routes ? { href: routes.signIn(), slug: shop.slug, routes } : { href: "/login", slug: null, routes: null }
 }

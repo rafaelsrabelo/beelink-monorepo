@@ -15,7 +15,6 @@ export interface StorefrontAccountProfile {
   cpf: string | null
   /** `YYYY-MM-DD`, as a date field takes it, or null. */
   birthDate: string | null
-  address: Record<"zipCode" | "street" | "number" | "complement" | "neighborhood" | "city" | "state", string | null>
 }
 
 export interface StorefrontAccountFormProps {
@@ -40,9 +39,10 @@ const INPUT = "h-11 w-full rounded-[10px] border border-shop-line-strong bg-shop
 const LABEL = "flex flex-col gap-1 text-sm font-medium"
 
 /**
- * The shopper's page at a shop: their name, phone, CPF, birth date and delivery address as this shop
- * keeps them, and a way to sign out. A plain form, like the sign-in: it posts and comes back, with no
- * script needed. The e-mail is the account's and is shown, not edited — it is not the shop's to change.
+ * The shopper's details at a shop: their name, phone, CPF and birth date as this shop keeps them, and
+ * a way to sign out. Their addresses are cards of their own (`StorefrontAddressCards`). A plain form,
+ * like the sign-in: it posts and comes back, with no script needed. The e-mail is the account's and
+ * is shown, not edited — it is not the shop's to change.
  */
 export function StorefrontAccountForm({
   profile,
@@ -56,7 +56,6 @@ export function StorefrontAccountForm({
   messages = defaultMessages,
 }: StorefrontAccountFormProps) {
   const text = messages.storefront
-  const { address } = profile
   const errorId = useId()
   const invalid = (name: string) => (error && name === invalidField ? { "aria-invalid": true, "aria-describedby": errorId } : {})
   const field = (name: string, label: string, value: string | null, extra: Record<string, string | number | boolean> = {}, hint?: string) => (
@@ -70,7 +69,7 @@ export function StorefrontAccountForm({
   )
 
   return (
-    <section className="flex w-full max-w-xl flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
+    <section className="flex w-full max-w-3xl flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
       <p className="text-sm text-shop-muted">{text.accountLead}</p>
 
       {error ? (
@@ -100,17 +99,6 @@ export function StorefrontAccountForm({
           </p>
           {field("cpf", text.accountCpf, profile.cpf, { inputMode: "numeric", autoComplete: "off", maxLength: 14, placeholder: "000.000.000-00" }, text.accountCpfHint)}
           {field("birthDate", text.accountBirthDate, profile.birthDate, { type: "date", min: "1900-01-01", ...(birthDateMax ? { max: birthDateMax } : {}), autoComplete: "bday" }, text.accountBirthDateHint)}
-        </fieldset>
-
-        <fieldset className="grid grid-cols-6 gap-4">
-          <legend className="col-span-6 mb-2 text-base font-bold">{text.accountAddress}</legend>
-          <div className="col-span-6 shop-sm:col-span-2">{field("zipCode", text.accountZipCode, address.zipCode, { inputMode: "numeric", autoComplete: "postal-code" })}</div>
-          <div className="col-span-6 shop-sm:col-span-4">{field("street", text.accountStreet, address.street, { autoComplete: "address-line1" })}</div>
-          <div className="col-span-2">{field("number", text.accountNumber, address.number)}</div>
-          <div className="col-span-4">{field("complement", text.accountComplement, address.complement, { autoComplete: "address-line2" })}</div>
-          <div className="col-span-6 shop-sm:col-span-3">{field("neighborhood", text.accountNeighborhood, address.neighborhood)}</div>
-          <div className="col-span-4 shop-sm:col-span-2">{field("city", text.accountCity, address.city, { autoComplete: "address-level2" })}</div>
-          <div className="col-span-2 shop-sm:col-span-1">{field("state", text.accountState, address.state, { maxLength: 2, autoComplete: "address-level1" })}</div>
         </fieldset>
 
         <button type="submit" className="h-12 rounded-xl bg-shop-primary text-base font-semibold text-shop-on-primary transition-opacity hover:opacity-90">
