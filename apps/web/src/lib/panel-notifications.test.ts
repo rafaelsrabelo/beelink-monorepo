@@ -22,7 +22,7 @@ const unread = {
   page: 1,
   pageSize: 20,
   conversations: [
-    { order: { number: 18, status: "PREPARING", open: true }, customer: { id: "c", name: "Carla" }, lastMessage: { author: "CUSTOMER", body: "Chega\\nsexta?", createdAt: "2026-09-29T13:50:00.000Z" }, unread: 2 },
+    { order: { number: 18, status: "PREPARING", fulfillment: "DELIVERY", open: true }, customer: { id: "c", name: "Carla" }, lastMessage: { kind: "MESSAGE", author: "CUSTOMER", body: "Chega\\nsexta?", createdAt: "2026-09-29T13:50:00.000Z" }, unread: 2 },
   ],
 } as unknown as ShopConversationPage
 
@@ -42,7 +42,7 @@ describe("the panel's bell", () => {
   })
 
   it("never shows the shop's own reply as the customer's words", () => {
-    const replied = { ...unread, conversations: [{ ...unread.conversations[0], lastMessage: { author: "SHOP", body: "Sai amanhã", createdAt: "2026-09-29T13:55:00.000Z" } }] } as unknown as ShopConversationPage
+    const replied = { ...unread, conversations: [{ ...unread.conversations[0], lastMessage: { kind: "MESSAGE", author: "SHOP", body: "Sai amanhã", createdAt: "2026-09-29T13:55:00.000Z" } }] } as unknown as ShopConversationPage
     expect(notificationsOf(undefined, replied, { slug: "loja", locale: "pt-BR", messages: ptBR })[0]?.detail).toBe("Carla")
   })
 

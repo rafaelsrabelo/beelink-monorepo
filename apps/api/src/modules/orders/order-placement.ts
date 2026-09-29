@@ -14,6 +14,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { deliveryOf } from './order-delivery.js';
 import { takeStock } from './order-stock.js';
@@ -106,6 +107,9 @@ export class OrderPlacement {
       });
 
       await refreshBooks(tx, customerId);
+      // The conversation is born with the order, its first status the first line. Told now, whatever
+      // day the shopkeeper dated the sale; not news to a customer who placed it themselves.
+      await noteOrderStatus(tx, { order: { id: order.id, customerId }, status, at: new Date(), seen: actor === 'CUSTOMER' });
       return order;
     });
   }

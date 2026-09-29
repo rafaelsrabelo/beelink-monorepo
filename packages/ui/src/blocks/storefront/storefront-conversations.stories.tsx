@@ -22,9 +22,11 @@ const rows: StorefrontConversationRow[] = [
 ]
 
 const lines: StorefrontConversationLine[] = [
+  { id: "0", mine: false, notice: true, body: "Pedido recebido. A loja vai confirmar em breve.", when: "Hoje, 09:58" },
   { id: "1", mine: true, body: "Oi! O pedido chega até sexta?", when: "Hoje, 10:02" },
   { id: "2", mine: false, body: "Oi, Rafael! Chega, sim.\nSai amanhã cedo pelos Correios.", when: "Hoje, 10:40" },
   { id: "3", mine: true, body: "Perfeito, obrigado!", when: "Hoje, 10:41", seen: "Lida" },
+  { id: "4", mine: false, notice: true, body: "Seu pedido saiu para entrega.", when: "Amanhã, 08:10" },
 ]
 
 const composer = <StorefrontConversationComposer value="" onChange={() => undefined} onSubmit={() => undefined} canSend={false} />

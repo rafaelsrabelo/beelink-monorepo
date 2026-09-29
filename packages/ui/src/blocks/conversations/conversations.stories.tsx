@@ -37,8 +37,10 @@ export const Conversa: Story = {
         orderHref="#"
         customerHref="#"
         lines={[
+          { id: "0", mine: false, notice: true, body: "Pedido aceito", when: "Hoje, 09:58" },
           { id: "1", mine: false, body: "Oi! O pedido chega até sexta?", when: "Hoje, 10:02" },
           { id: "2", mine: true, body: "Chega, sim. Sai amanhã cedo.", when: "Hoje, 10:40", seen: "Lida" },
+          { id: "3", mine: false, notice: true, body: "Pedido saiu para entrega", when: "Amanhã, 08:10" },
         ]}
         state="open"
         reply={<ConversationReply value="" onChange={() => undefined} onSubmit={() => undefined} canSend={false} />}

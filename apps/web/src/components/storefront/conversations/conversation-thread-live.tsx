@@ -46,11 +46,11 @@ export function ConversationThreadLive({ slug, routeWords, number, onBack, onVie
   const { mutate: markRead } = useMarkShopperConversationRead(slug, number)
   const [draft, setDraft] = useState("")
 
-  // Once per latest message from the shop: a read that fails is not asked again in a loop, and the
-  // next message the shop sends asks once more.
+  // Once per latest line from the shop's side — an answer or the order's move: a read that fails is
+  // not asked again in a loop, and the next one asks once more.
   const asked = useRef<string | null>(null)
   const unread = conversation.data?.unread ?? 0
-  const latestFromShop = conversation.data?.messages.findLast((message) => message.author === "SHOP")?.id ?? null
+  const latestFromShop = conversation.data?.messages.findLast((message) => message.kind === "STATUS" || message.author === "SHOP")?.id ?? null
   useEffect(() => {
     if (unread === 0 || latestFromShop === null || asked.current === latestFromShop) return
     asked.current = latestFromShop

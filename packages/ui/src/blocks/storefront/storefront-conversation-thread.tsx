@@ -22,6 +22,8 @@ export interface StorefrontConversationLine {
   id: string
   /** Written by the shopper; the shop's are drawn on the other side. */
   mine: boolean
+  /** The order moving (BEELINK-236): drawn in the middle, belonging to neither side. */
+  notice?: boolean
   /** Plain text, drawn as text, line breaks kept. */
   body: string
   when: string
@@ -83,7 +85,13 @@ export function StorefrontConversationThread({ title, orderHref, back, lines, cl
       <div ref={scroller} role="log" tabIndex={0} aria-label={title} className="min-h-0 flex-1 overflow-y-auto rounded-md focus-visible:ring-2 focus-visible:ring-shop-primary focus-visible:outline-none">
         {lines.length === 0 && !closed ? <p className="py-6 text-center text-sm text-shop-muted">{text.conversationStart}</p> : null}
         <ol className="flex flex-col gap-2 py-1">
-          {lines.map((line) => (
+          {lines.map((line) =>
+            line.notice ? (
+              <li key={line.id} className="flex flex-col items-center gap-0.5 self-center py-1 text-center">
+                <p className="rounded-full bg-shop-fill px-3 py-1 text-xs font-semibold text-shop-on-background">{line.body}</p>
+                <span className="text-[11px] text-shop-muted">{line.when}</span>
+              </li>
+            ) : (
             <li key={line.id} className={cn("flex max-w-[85%] flex-col gap-1", line.mine ? "items-end self-end" : "items-start self-start")}>
               <p
                 className={cn(
@@ -99,7 +107,8 @@ export function StorefrontConversationThread({ title, orderHref, back, lines, cl
                 {line.seen ? ` · ${line.seen}` : null}
               </span>
             </li>
-          ))}
+            ),
+          )}
         </ol>
       </div>
 

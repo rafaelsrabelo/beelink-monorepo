@@ -20,8 +20,8 @@ describe("the conversations' rows", () => {
   it("name the order, say who wrote the last line, and mark the ended ones", () => {
     const rows = conversationRowsOf(
       [
-        { order: { number: 18, status: "PREPARING", open: true }, lastMessage: { author: "SHOP", body: "Chega\nsexta", createdAt: "2026-09-29T13:40:00.000Z" }, unread: 2 },
-        { order: { number: 13, status: "DELIVERED", open: false }, lastMessage: { author: "CUSTOMER", body: "Obrigada!", createdAt: "2026-09-20T12:12:00.000Z" }, unread: 0 },
+        { order: { number: 18, status: "PREPARING", fulfillment: "DELIVERY", open: true }, lastMessage: { kind: "MESSAGE", author: "SHOP", body: "Chega\nsexta", createdAt: "2026-09-29T13:40:00.000Z" }, unread: 2 },
+        { order: { number: 13, status: "DELIVERED", fulfillment: "DELIVERY", open: false }, lastMessage: { kind: "MESSAGE", author: "CUSTOMER", body: "Obrigada!", createdAt: "2026-09-20T12:12:00.000Z" }, unread: 0 },
       ],
       { routes, ...context },
     )
@@ -37,12 +37,12 @@ describe("a conversation's lines", () => {
     const at = "2026-09-29T13:00:00.000Z"
     const lines = conversationLinesOf(
       {
-        order: { number: 18, status: "PREPARING", open: true },
+        order: { number: 18, status: "PREPARING", fulfillment: "DELIVERY", open: true },
         unread: 0,
         messages: [
-          { id: "1", author: "CUSTOMER", body: "Oi", createdAt: at, readAt: at },
-          { id: "2", author: "SHOP", body: "Olá", createdAt: at, readAt: null },
-          { id: "3", author: "CUSTOMER", body: "Chega sexta?", createdAt: at, readAt: null },
+          { kind: "MESSAGE", id: "1", author: "CUSTOMER", body: "Oi", createdAt: at, readAt: at },
+          { kind: "MESSAGE", id: "2", author: "SHOP", body: "Olá", createdAt: at, readAt: null },
+          { kind: "MESSAGE", id: "3", author: "CUSTOMER", body: "Chega sexta?", createdAt: at, readAt: null },
         ],
       },
       context,
@@ -53,6 +53,38 @@ describe("a conversation's lines", () => {
       [false, null],
       [true, "Enviada"],
     ])
+  })
+
+  /** BEELINK-236: the order's moves, worded for the shopper; a pick-up's end is "picked up". */
+  it("word the order's moves as notices, and keep the sent mark on the shopper's last message", () => {
+    const at = "2026-09-29T13:00:00.000Z"
+    const lines = conversationLinesOf(
+      {
+        order: { number: 18, status: "DELIVERED", fulfillment: "PICKUP", open: false },
+        unread: 1,
+        messages: [
+          { kind: "STATUS", id: "1", status: "RECEIVED", createdAt: at, readAt: at },
+          { kind: "MESSAGE", id: "2", author: "CUSTOMER", body: "Posso buscar hoje?", createdAt: at, readAt: at },
+          { kind: "STATUS", id: "3", status: "DELIVERED", createdAt: at, readAt: null },
+        ],
+      },
+      context,
+    )
+
+    expect(lines.map((line) => [line.notice ?? false, line.body, line.seen ?? null])).toEqual([
+      [true, "Pedido recebido. A loja vai confirmar em breve.", null],
+      [false, "Posso buscar hoje?", "Lida"],
+      [true, "Pedido retirado na loja.", null],
+    ])
+  })
+
+  it("preview a move as its words, with no 'Você:'", () => {
+    const [row] = conversationRowsOf(
+      [{ order: { number: 18, status: "OUT_FOR_DELIVERY", fulfillment: "DELIVERY", open: true }, lastMessage: { kind: "STATUS", status: "OUT_FOR_DELIVERY", createdAt: "2026-09-29T13:40:00.000Z" }, unread: 1 }],
+      { routes, ...context },
+    )
+
+    expect(row).toMatchObject({ preview: "Seu pedido saiu para entrega.", unread: 1 })
   })
 })
 

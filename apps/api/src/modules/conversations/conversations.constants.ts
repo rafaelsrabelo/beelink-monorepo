@@ -22,6 +22,21 @@ export function isOpen(status: OrderStatus): boolean {
   return OPEN_ORDER_STATUSES.includes(status);
 }
 
+/** Who reads a conversation: its customer, or the shop. */
+export type ConversationReader = 'CUSTOMER' | 'SHOP';
+
+/**
+ * What is unread for a reader, by author: the customer is told of the shop's answers and of the
+ * order's moves; the shop only of the customer's messages — a move is the shop's own doing.
+ */
+export const UNREAD_AUTHORS: Record<ConversationReader, readonly ('CUSTOMER' | 'SHOP' | 'SYSTEM')[]> = {
+  CUSTOMER: ['SHOP', 'SYSTEM'],
+  SHOP: ['CUSTOMER'],
+};
+
+/** Written by someone: the shop's list shows a conversation only once a person has said something in it. */
+export const WRITTEN_AUTHORS = ['CUSTOMER', 'SHOP'] as const;
+
 export function conversationError(
   errorCode: ConversationErrorCode | Extract<OrderErrorCode, 'ORDER_NOT_FOUND'>,
   message: string,

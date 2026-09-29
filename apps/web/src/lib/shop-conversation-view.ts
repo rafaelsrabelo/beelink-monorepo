@@ -9,6 +9,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { momentOf } from "./order-card-view"
+import { statusNoticeKeyOf } from "./status-notice"
 
 /** What the conversations' tab reads from its address: which filter, the search, and the one open. */
 export interface ShopConversationsAddress {
@@ -55,12 +56,17 @@ interface ViewContext {
 export function shopConversationRowsOf(page: ShopConversationPage, address: ShopConversationsAddress, slug: string, { locale, messages }: ViewContext): ConversationListRow[] {
   const text = messages.conversations
   return page.conversations.map(({ order, customer, lastMessage, unread }) => {
-    const body = lastMessage.body.replace(/\s+/g, " ").trim()
+    const body = lastMessage.kind === "MESSAGE" ? lastMessage.body.replace(/\s+/g, " ").trim() : ""
     return {
       number: order.number,
       customer: customer.name,
       order: `${format(text.orderLine, { number: String(order.number) })} · ${messages.orders.statuses[order.status]}`,
-      preview: lastMessage.author === "SHOP" ? format(text.youSaid, { body }) : body,
+      preview:
+        lastMessage.kind === "STATUS"
+          ? text.notices[statusNoticeKeyOf(lastMessage.status, order.fulfillment)]
+          : lastMessage.author === "SHOP"
+            ? format(text.youSaid, { body })
+            : body,
       when: momentOf(lastMessage.createdAt, locale),
       unread,
       closed: !order.open,
@@ -69,20 +75,33 @@ export function shopConversationRowsOf(page: ShopConversationPage, address: Shop
   })
 }
 
-/** Every message, oldest first; the shop's last one says whether the customer has read it. */
+/** Every message and notice, oldest first; the shop's last message says whether the customer has read it. */
 export function shopConversationLinesOf(conversation: ShopConversation, { locale, messages }: ViewContext): ConversationLine[] {
   const text = messages.conversations
-  const lastMine = conversation.messages.findLastIndex((message) => message.author === "SHOP")
-  return conversation.messages.map((message, index) => ({
-    id: message.id,
-    mine: message.author === "SHOP",
-    body: message.body,
-    when: momentOf(message.createdAt, locale),
-    seen: index === lastMine ? (message.readAt ? text.read : text.sent) : null,
-  }))
+  const lastMine = conversation.messages.findLastIndex((message) => message.kind === "MESSAGE" && message.author === "SHOP")
+  return conversation.messages.map((message, index) =>
+    message.kind === "STATUS"
+      ? {
+          id: message.id,
+          mine: false,
+          notice: true,
+          body: text.notices[statusNoticeKeyOf(message.status, conversation.order.fulfillment)],
+          when: momentOf(message.createdAt, locale),
+        }
+      : {
+          id: message.id,
+          mine: message.author === "SHOP",
+          body: message.body,
+          when: momentOf(message.createdAt, locale),
+          seen: index === lastMine ? (message.readAt ? text.read : text.sent) : null,
+        },
+  )
 }
 
-/** Open, closed, or nothing from the customer yet — the shop answers only a conversation its customer opened. */
+/**
+ * Open, closed, or none at all — an order has a conversation from its first status when its customer
+ * has an account to read it (BEELINK-236); "empty" is one who has none.
+ */
 export function shopConversationStateOf(conversation: ShopConversation): "open" | "closed" | "empty" | "none" {
   if (conversation.messages.length === 0) return conversation.order.open ? "empty" : "none"
   return conversation.order.open ? "open" : "closed"

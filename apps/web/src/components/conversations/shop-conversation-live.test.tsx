@@ -17,10 +17,10 @@ const at = "2026-09-29T13:00:00.000Z"
 
 function conversationWith(open: boolean, unread: number): ShopConversation {
   return {
-    order: { number: 18, status: open ? "PREPARING" : "DELIVERED", open },
+    order: { number: 18, status: open ? "PREPARING" : "DELIVERED", fulfillment: "DELIVERY", open },
     customer: { id: "c1", name: "Carla" },
     unread,
-    messages: [{ id: "m1", author: "CUSTOMER", body: "Chega sexta?", createdAt: at, readAt: null }],
+    messages: [{ kind: "MESSAGE", id: "m1", author: "CUSTOMER", body: "Chega sexta?", createdAt: at, readAt: null }],
   }
 }
 

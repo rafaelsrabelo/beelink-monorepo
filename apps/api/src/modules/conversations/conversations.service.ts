@@ -9,7 +9,7 @@ import type {
   ShopConversationPage,
   ShopConversationUnread,
 } from '@harness-monorepo/contracts';
-import { Prisma } from '../../generated/prisma/client.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
@@ -22,20 +22,25 @@ import {
   isOpen,
   OPEN_ORDER_STATUSES,
   SHOP_CONVERSATIONS_PAGE_SIZE,
+  UNREAD_AUTHORS,
+  WRITTEN_AUTHORS,
+  type ConversationReader,
 } from './conversations.constants.js';
-import { summarySelect, toCustomerConversation, toCustomerSummary, toShopConversation, toShopSummary, type LastMessageRow, type SummaryRow } from './conversations.mapper.js';
+import { summariesOf } from './conversation-summaries.js';
+import { summarySelect, toCustomerConversation, toCustomerSummary, toShopConversation, toShopSummary } from './conversations.mapper.js';
 import type { ListShopConversationsDto, SendConversationMessageDto } from './dto/conversation.dto.js';
 
 type Tx = Prisma.TransactionClient;
-type Side = 'CUSTOMER' | 'SHOP';
 
 /** The order a conversation is about, as either side reaches it: its head, and its messages oldest first. */
 const orderWithConversation = {
   id: true,
   number: true,
   status: true,
+  fulfillment: true,
   customer: { select: { id: true, name: true } },
-  conversation: { select: { id: true, messages: { orderBy: { createdAt: 'asc' } } } },
+  // The id breaks a tie: a notice and a message written in the same millisecond keep one order.
+  conversation: { select: { id: true, messages: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } } },
 } as const satisfies Prisma.OrderSelect;
 
 function notFound(number: number): NotFoundException {
@@ -47,9 +52,9 @@ function closed(): ConflictException {
 }
 
 /**
- * An order's conversation between its customer and the shop. The customer opens it with their first
- * message; the shop answers. It takes messages while the order is on its way — the order's status
- * says so, never a column — and stays readable to both sides after.
+ * An order's conversation between its customer and the shop. It is born with the order, carrying the
+ * order's moves as notices (order-status-notice.ts), and either side writes in it while the order is
+ * on its way — the order's status says so, never a column. It stays readable to both sides after.
  */
 @Injectable()
 export class ConversationsService {
@@ -62,7 +67,7 @@ export class ConversationsService {
 
   /* ── the customer's side ─────────────────────────────────────────────────── */
 
-  /** One of their orders' conversation; empty until they write — never a 404 for an order of theirs. */
+  /** One of their orders' conversation; empty for an order older than conversations — never a 404 for an order of theirs. */
   async customerRead(storeSlug: string, userId: string, number: number): Promise<CustomerConversation> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
     const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, select: orderWithConversation });
@@ -115,13 +120,13 @@ export class ConversationsService {
     // Open first, each group by its latest message: asked apart, so the cap never drops an open one for a closed one.
     const open = await read(true, CUSTOMER_CONVERSATIONS_MAX);
     const rows = open.length < CUSTOMER_CONVERSATIONS_MAX ? [...open, ...(await read(false, CUSTOMER_CONVERSATIONS_MAX - open.length))] : open;
-    const summaries = await this.summariesOf(rows, 'CUSTOMER');
+    const summaries = await summariesOf(this.prisma, rows, 'CUSTOMER');
     return summaries.map(({ row, last, unread }) => toCustomerSummary(row, last, unread));
   }
 
   /* ── the shop's side ─────────────────────────────────────────────────────── */
 
-  /** One order's conversation, from the panel; empty while the customer has not written. */
+  /** One order's conversation, from the panel; empty when its customer has no account to read one. */
   async shopRead(storeSlug: string, userId: string, number: number): Promise<ShopConversation> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const order = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, select: orderWithConversation });
@@ -129,24 +134,29 @@ export class ConversationsService {
     return toShopConversation(order, order.conversation?.messages ?? []);
   }
 
-  /** The shop's answer: to a conversation its customer opened, while the order is on its way. */
+  /** The shop's message, while the order is on its way — first or in answer, to a customer with an account to read it. */
   async shopSend(storeSlug: string, userId: string, number: number, dto: SendConversationMessageDto): Promise<ShopConversation> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const order = await this.prisma.order.findUnique({
       where: { storeId_number: { storeId, number } },
-      select: { id: true, customerId: true, conversation: { select: { id: true } } },
+      select: { id: true, customerId: true, customer: { select: { userId: true } } },
     });
     if (!order) throw notFound(number);
-    const conversation = order.conversation;
-    if (!conversation) {
-      throw new NotFoundException(conversationError('ORDER_CONVERSATION_NOT_FOUND', 'The customer has not opened a conversation on this order'));
+    if (!order.customer.userId) {
+      throw new NotFoundException(conversationError('ORDER_CONVERSATION_NOT_FOUND', 'The customer has no account at the shop to read a conversation'));
     }
 
     await this.prisma.$transaction(async (tx) => {
       await this.stillOpen(tx, order.id);
       const now = new Date();
+      // An order older than conversations has none yet: the shop's first message opens it.
+      const conversation = await tx.orderConversation.upsert({
+        where: { orderId: order.id },
+        create: { orderId: order.id, lastMessageAt: now },
+        update: { lastMessageAt: now },
+        select: { id: true },
+      });
       await tx.orderMessage.create({ data: { conversationId: conversation.id, author: 'SHOP', userId, body: dto.body, createdAt: now } });
-      await tx.orderConversation.update({ where: { id: conversation.id }, data: { lastMessageAt: now } });
     });
     this.realtime.publish({ storeId, customerId: order.customerId }, { type: 'conversation.message', orderNumber: number, author: 'SHOP' });
     return this.shopRead(storeSlug, userId, number);
@@ -162,7 +172,11 @@ export class ConversationsService {
     return this.shopRead(storeSlug, userId, number);
   }
 
-  /** A page of the shop's conversations, latest message first: open, unread or all, by order number or customer name. */
+  /**
+   * A page of the shop's conversations, latest message first: open, unread or all, by order number or
+   * customer name. Only those someone has written in: every order of a customer with an account has a
+   * conversation of notices, and the list is for talking, not a second list of orders.
+   */
   async shopList(storeSlug: string, userId: string, query: ListShopConversationsDto): Promise<ShopConversationPage> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const page = query.page ?? 1;
@@ -175,7 +189,10 @@ export class ConversationsService {
         ...(query.filter === 'OPEN' ? { status: { in: [...OPEN_ORDER_STATUSES] } } : {}),
         ...(q ? { OR: [...(number !== null ? [{ number }] : []), { customer: { name: { contains: q, mode: 'insensitive' as const } } }] } : {}),
       },
-      ...(query.filter === 'UNREAD' ? { messages: { some: { author: 'CUSTOMER', readAt: null } } } : {}),
+      messages:
+        query.filter === 'UNREAD'
+          ? { some: { author: { in: [...UNREAD_AUTHORS.SHOP] }, readAt: null } }
+          : { some: { author: { in: [...WRITTEN_AUTHORS] } } },
     };
 
     const [rows, total] = await this.prisma.$transaction([
@@ -188,7 +205,7 @@ export class ConversationsService {
       }),
       this.prisma.orderConversation.count({ where }),
     ]);
-    const summaries = await this.summariesOf(rows, 'SHOP');
+    const summaries = await summariesOf(this.prisma, rows, 'SHOP');
     return { conversations: summaries.map(({ row, last, unread }) => toShopSummary(row, last, unread)), total, page, pageSize: SHOP_CONVERSATIONS_PAGE_SIZE };
   }
 
@@ -204,31 +221,6 @@ export class ConversationsService {
   }
 
   /**
-   * A page's rows with their last message and the reader's unread count: two reads bounded to the
-   * page's ids. As relation includes, Prisma counts every unread message of the platform in one
-   * unbounded subquery, and loads every message of the page to keep one.
-   */
-  private async summariesOf(rows: readonly SummaryRow[], reader: Side): Promise<{ row: SummaryRow; last: LastMessageRow; unread: number }[]> {
-    if (!rows.length) return [];
-    const ids = rows.map((row) => row.id);
-    const [lasts, unread] = await Promise.all([
-      this.prisma.$queryRaw<LastMessageRow[]>(Prisma.sql`
-        SELECT DISTINCT ON ("conversationId") "conversationId", "author", "body", "createdAt"
-        FROM "order_messages" WHERE "conversationId" = ANY(${ids}::uuid[])
-        ORDER BY "conversationId", "createdAt" DESC, "id" DESC`),
-      this.prisma.orderMessage.groupBy({
-        by: ['conversationId'],
-        where: { conversationId: { in: ids }, author: reader === 'CUSTOMER' ? 'SHOP' : 'CUSTOMER', readAt: null },
-        _count: { _all: true },
-      }),
-    ]);
-    const lastOf = new Map(lasts.map((last) => [last.conversationId, last]));
-    const unreadOf = new Map(unread.map((group) => [group.conversationId, group._count._all]));
-    // Every conversation opens with a message, in the same transaction: none is ever without one.
-    return rows.map((row) => ({ row, last: lastOf.get(row.id)!, unread: unreadOf.get(row.id) ?? 0 }));
-  }
-
-  /**
    * The order's status, read again under a share lock: a status change to delivered or cancelled
    * waits for the message, or the message waits for it and sees it — never a message after the close.
    */
@@ -237,10 +229,10 @@ export class ConversationsService {
     if (!order || !isOpen(order.status as Parameters<typeof isOpen>[0])) throw closed();
   }
 
-  /** The other side's messages, read now by `reader` — told to both rooms only when there were any. */
-  private async markRead(orderId: string, reader: Side, to: RealtimeAudienceOf, orderNumber: number): Promise<void> {
+  /** What was the reader's to read, read now — told to both rooms only when there was any. */
+  private async markRead(orderId: string, reader: ConversationReader, to: RealtimeAudienceOf, orderNumber: number): Promise<void> {
     const { count } = await this.prisma.orderMessage.updateMany({
-      where: { conversation: { orderId }, author: reader === 'CUSTOMER' ? 'SHOP' : 'CUSTOMER', readAt: null },
+      where: { conversation: { orderId }, author: { in: [...UNREAD_AUTHORS[reader]] }, readAt: null },
       data: { readAt: new Date() },
     });
     if (count > 0) this.realtime.publish(to, { type: 'conversation.read', orderNumber, reader });

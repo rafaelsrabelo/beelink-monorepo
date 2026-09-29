@@ -82,6 +82,14 @@ An **order** is the product's core record, and it is a fact about the past.
 
 **Money is exact.** Every amount in the product is a whole number of cents. There is one representation, everywhere, and a total shown to a customer matches the total the shopkeeper sees to the cent.
 
+## The order's conversation
+
+An order whose customer has an account has a conversation, born with the order. The customer and the shop write in it while the order is on its way; once it is delivered or cancelled, the conversation closes and stays readable to both.
+
+Every move of the order is told in it as a **notice**: the status it moved to, never a sentence — each side words it for its own reader. A notice is news to the customer, unread until they read it, and never to the shop, whose own doing it is. A move the customer made — placing the order, cancelling it — is not news to them either.
+
+A customer known only by an order, with no account, has no conversation: there is no one to read it.
+
 ## Delivery
 
 A store decides whether it delivers, how far, and what it charges. The fee follows the **distance** between the store and the delivery address, within bands the shopkeeper sets, and a free-delivery threshold is one of those decisions. Beyond the store's radius, delivery is refused before the customer fills anything else in — not after.

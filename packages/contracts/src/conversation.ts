@@ -1,4 +1,4 @@
-import type { OrderStatus } from "./order.js";
+import type { OrderFulfillment, OrderStatus } from "./order.js";
 
 /* ── an order's conversation: its customer and the shop, about that order (BEELINK-160) ── */
 
@@ -6,7 +6,8 @@ import type { OrderStatus } from "./order.js";
 export type ConversationAuthor = "CUSTOMER" | "SHOP";
 
 /** One message, as written. Never who at the shop wrote it: to the customer, the shop is the shop. */
-export interface ConversationMessage {
+export interface ConversationWrittenMessage {
+  kind: "MESSAGE";
   id: string;
   author: ConversationAuthor;
   /** Plain text, drawn as text — never as HTML. */
@@ -18,12 +19,30 @@ export interface ConversationMessage {
 }
 
 /**
+ * The order moved (BEELINK-236): the status it moved to, never a sentence — each side words it for
+ * its own reader. Unread for the customer until they read it; never unread for the shop.
+ */
+export interface ConversationStatusNotice {
+  kind: "STATUS";
+  id: string;
+  status: OrderStatus;
+  /** ISO-8601. */
+  createdAt: string;
+  /** When the customer read it; null while they have not. ISO-8601. */
+  readAt: string | null;
+}
+
+export type ConversationMessage = ConversationWrittenMessage | ConversationStatusNotice;
+
+/**
  * A conversation's head: the order it is about, and whether it takes messages — while the order is
  * on its way; once delivered or cancelled it is history, readable by both sides.
  */
 export interface ConversationOrder {
   number: number;
   status: OrderStatus;
+  /** How it is handed over: a pick-up's end is "picked up", not "delivered". */
+  fulfillment: OrderFulfillment;
   open: boolean;
 }
 
@@ -34,12 +53,10 @@ export interface CustomerConversation {
   unread: number;
 }
 
-/** The last message, for a list. */
-export interface ConversationLastMessage {
-  author: ConversationAuthor;
-  body: string;
-  createdAt: string;
-}
+/** The last message, for a list: written, or the notice of a status. */
+export type ConversationLastMessage =
+  | { kind: "MESSAGE"; author: ConversationAuthor; body: string; createdAt: string }
+  | { kind: "STATUS"; status: OrderStatus; createdAt: string };
 
 /** A row of the customer's conversations at a shop. */
 export interface CustomerConversationSummary {
@@ -102,5 +119,5 @@ export interface SendConversationMessagePayload {
 export type ConversationErrorCode =
   /** The order was delivered or cancelled: its conversation is history now, and takes no message. */
   | "ORDER_CONVERSATION_CLOSED"
-  /** The shop answers a conversation its customer opened; there is none on this order yet. */
+  /** There is no conversation on this order: its customer has no account at the shop to read one. */
   | "ORDER_CONVERSATION_NOT_FOUND";

@@ -112,6 +112,17 @@ describe("one conversation", () => {
     render(<StorefrontConversationThread title="Pedido nº 20" orderHref="#" lines={[]} closed={false} />)
     expect(screen.getByText(/Escreva para a loja sobre este pedido/)).toBeInTheDocument()
   })
+
+  /** BEELINK-236: the order's move belongs to neither side, and says no one wrote it. */
+  it("draws a status notice in the middle, as neither side's message", () => {
+    const notice: StorefrontConversationLine = { id: "n", mine: false, notice: true, body: "Seu pedido saiu para entrega.", when: "10:45" }
+    render(<StorefrontConversationThread title="Pedido nº 18" orderHref="#" lines={[...lines, notice]} closed={false} />)
+
+    const item = screen.getAllByRole("listitem")[3]!
+    expect(item).toHaveTextContent("Seu pedido saiu para entrega.10:45")
+    expect(item).not.toHaveTextContent("A loja:")
+    expect(item).toHaveClass("self-center")
+  })
 })
 
 describe("the composer", () => {

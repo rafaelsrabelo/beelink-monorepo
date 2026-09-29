@@ -14,6 +14,7 @@ import { settleCancellation } from './order-cancellation.js';
 import { OrderPlacement } from './order-placement.js';
 import { reorderOf } from './order-reorder.js';
 import { CUSTOMER_ORDER_SITUATIONS, CUSTOMER_ORDERS_PAGE_SIZE, CUSTOMER_ORDERS_PAGE_SIZE_MAX, orderError } from './orders.constants.js';
+import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 
 /** The shops are Brazilian, and so is a customer's year: "2025" starts at midnight in Brasília. */
@@ -173,6 +174,8 @@ export class CustomerOrdersService {
         data: { status: 'CANCELLED', events: { create: { status: 'CANCELLED', actor: 'CUSTOMER', userId } } },
       });
       await settleCancellation(tx, current);
+      // The customer's own doing: in the conversation's history, but not news to them.
+      await noteOrderStatus(tx, { order: current, status: 'CANCELLED', at: new Date(), seen: true });
       return (await tx.orderConversation.count({ where: { orderId: current.id } })) > 0;
     });
     this.realtime.publish({ storeId, customerId }, { type: 'order.status', orderNumber: number, status: 'CANCELLED' });

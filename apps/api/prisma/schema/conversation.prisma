@@ -1,12 +1,15 @@
-/// Who wrote a message of an order's conversation: its customer, or the shop.
+/// Who wrote a message of an order's conversation: its customer, or the shop — or nobody, for the
+/// notice of a status the order moved to (BEELINK-236).
 enum ConversationAuthor {
   CUSTOMER
   SHOP
+  SYSTEM
 }
 
-/// The customer's conversation with the shop about one order (BEELINK-160). Opened by the
-/// customer's first message. Whether it takes messages is the order's status, never a column: it
-/// closes when the order is delivered or cancelled, and a flag here could say otherwise.
+/// The customer's conversation with the shop about one order (BEELINK-160). Born with the order when
+/// its customer has an account to read it, or with the order's next move for one placed before
+/// (BEELINK-236). Whether it takes messages is the order's status, never a column: it closes when the
+/// order is delivered or cancelled, and a flag here could say otherwise.
 model OrderConversation {
   id      String @id @default(uuid(7)) @db.Uuid
   orderId String @unique @db.Uuid
@@ -23,20 +26,24 @@ model OrderConversation {
   @@map("order_conversations")
 }
 
-/// One message, as written. Unread is a message the other side has not read: `readAt` is theirs.
+/// One message, as written, or the notice of a status. Unread is a message the other side has not
+/// read: `readAt` is theirs — a notice's other side is the customer.
 model OrderMessage {
   id             String            @id @default(uuid(7)) @db.Uuid
   conversationId String            @db.Uuid
   conversation   OrderConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   author ConversationAuthor
-  /// The account that wrote it — the shopper's, or a shopkeeper's.
+  /// The account that wrote it — the shopper's, or a shopkeeper's. Null on a notice.
   userId String? @db.Uuid
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  /// Plain text, up to 2000 characters, never drawn as HTML.
-  body      String    @db.VarChar(2000)
-  createdAt DateTime  @default(now())
+  /// Plain text, up to 2000 characters, never drawn as HTML. Empty on a notice, which each side
+  /// words for itself from `status`.
+  body      String       @db.VarChar(2000)
+  /// The status a notice tells of: set exactly when `author` is SYSTEM (a CHECK holds it).
+  status    OrderStatus?
+  createdAt DateTime     @default(now())
   /// When the other side read it; null while they have not.
   readAt    DateTime?
 

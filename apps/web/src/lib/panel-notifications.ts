@@ -54,9 +54,9 @@ export function notificationsOf(received: OrderPage | undefined, unread: ShopCon
       id: `message-${row.order.number}`,
       kind: "message" as const,
       title: format(text.notificationNewMessage, { number: String(row.order.number) }),
-      // The last line may be the shop's own reply, with the customer's still unread: then only who.
+      // The last line may be the shop's own reply or the order's move, with the customer's still unread: then only who.
       detail:
-        row.lastMessage.author === "CUSTOMER"
+        row.lastMessage.kind === "MESSAGE" && row.lastMessage.author === "CUSTOMER"
           ? format(text.notificationMessageDetail, { customer: row.customer.name, body: row.lastMessage.body.replace(/\s+/g, " ").trim() })
           : row.customer.name,
       when: momentOf(row.lastMessage.createdAt, locale),

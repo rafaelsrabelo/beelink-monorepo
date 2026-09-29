@@ -43,7 +43,7 @@ export function ShopConversationLive({ slug, number, locale, headed = true, back
 
   const asked = useRef<string | null>(null)
   const unread = conversation.data?.unread ?? 0
-  const latestFromCustomer = conversation.data?.messages.findLast((message) => message.author === "CUSTOMER")?.id ?? null
+  const latestFromCustomer = conversation.data?.messages.findLast((message) => message.kind === "MESSAGE" && message.author === "CUSTOMER")?.id ?? null
   useEffect(() => {
     if (unread === 0 || latestFromCustomer === null || asked.current === latestFromCustomer) return
     asked.current = latestFromCustomer
