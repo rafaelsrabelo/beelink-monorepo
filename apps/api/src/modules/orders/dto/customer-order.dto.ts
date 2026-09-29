@@ -173,7 +173,8 @@ const REORDER_LEFT_REASONS = ['OFF_SALE', 'SOLD_OUT', 'LIMITED'] as const satisf
 
 export class CustomerReorderLineResponse implements CustomerReorderLine {
   @ApiProperty({ format: 'uuid' }) productId!: string;
-  @ApiProperty({ format: 'uuid' }) variantId!: string;
+  @ApiProperty({ format: 'uuid', nullable: true, type: String, description: 'Null for a product without options, as the cart writes such a line.' })
+  variantId!: string | null;
   @ApiProperty({ description: 'As many as the order had, or as the stock allows.' }) quantity!: number;
 }
 

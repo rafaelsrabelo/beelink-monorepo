@@ -275,7 +275,8 @@ export type ReorderLeftReason = "OFF_SALE" | "SOLD_OUT" | "LIMITED";
 /** A line that goes into the cart again: the same combination, as many as the stock allows. */
 export interface CustomerReorderLine {
   productId: string;
-  variantId: string;
+  /** Null for a product without options, as the cart writes such a line, so the two add up rather than stand twice. */
+  variantId: string | null;
   quantity: number;
 }
 

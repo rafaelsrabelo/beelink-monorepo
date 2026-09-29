@@ -50,10 +50,21 @@ afterEach(() => {
 
 describe("buying an order again", () => {
   it("adds the order's lines to the cart it finds, and goes to the cart saying which order they came from", async () => {
-    const fetched = vi.fn(async () => Response.json({ number: 14, lines: [{ productId: P1, variantId: V1, quantity: 2 }, { productId: P1, variantId: V2, quantity: 1 }], left: [] }))
+    const P2 = "44444444-4444-4444-4444-444444444444"
+    const fetched = vi.fn(async () =>
+      Response.json({
+        number: 14,
+        lines: [
+          { productId: P1, variantId: V1, quantity: 2 },
+          { productId: P1, variantId: V2, quantity: 1 },
+          { productId: P2, variantId: null, quantity: 1 },
+        ],
+        left: [],
+      }),
+    )
     vi.stubGlobal("fetch", fetched)
 
-    const response = await post({ cookie: `bl_shopper_access=shopper-access; bl_cart=${P1.replaceAll("-", "")}.${V1.replaceAll("-", "")}.1` })
+    const response = await post({ cookie: `bl_shopper_access=shopper-access; bl_cart=${P1.replaceAll("-", "")}.${V1.replaceAll("-", "")}.1~${P2.replaceAll("-", "")}..2` })
 
     expect(response.status).toBe(303)
     expect(response.headers.get("location")).toBe("http://localhost:3000/loja/carrinho?repetido=14")
@@ -61,6 +72,7 @@ describe("buying an order again", () => {
     // Added to what was there, as the product page's "add" does.
     expect(cartOf(response)).toEqual([
       { productId: P1, variantId: V1, qty: 3 },
+      { productId: P2, variantId: null, qty: 3 },
       { productId: P1, variantId: V2, qty: 1 },
     ])
     expect(response.headers.getSetCookie().find((value) => value.startsWith("bl_cart="))).toContain("Path=/loja")

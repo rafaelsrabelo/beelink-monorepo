@@ -339,8 +339,9 @@ describe("a shopper's order from the cart", () => {
       expect(all.statusCode).toBe(200);
       expect(all.json<CustomerReorder>()).toEqual({
         number: 1,
+        // The whey has no options: named by its product alone, as the cart names it.
         lines: [
-          { productId: expect.any(String), variantId: whey, quantity: 2 },
+          { productId: expect.any(String), variantId: null, quantity: 2 },
           { productId: expect.any(String), variantId: grape, quantity: 1 },
         ],
         left: [],
@@ -351,7 +352,7 @@ describe("a shopper's order from the cart", () => {
       const grapeProduct = (await prisma.productVariant.findUniqueOrThrow({ where: { id: grape } })).productId;
       await prisma.product.update({ where: { id: grapeProduct }, data: { status: 'DRAFT' } });
       const some = (await reorder()).json<CustomerReorder>();
-      expect(some.lines).toEqual([{ productId: expect.any(String), variantId: whey, quantity: 1 }]);
+      expect(some.lines).toEqual([{ productId: expect.any(String), variantId: null, quantity: 1 }]);
       expect(some.left).toEqual([
         { productName: 'Whey', variantLabel: null, reason: 'LIMITED', added: 1 },
         { productName: 'Creatina', variantLabel: 'Sabor: Uva', reason: 'OFF_SALE', added: 0 },

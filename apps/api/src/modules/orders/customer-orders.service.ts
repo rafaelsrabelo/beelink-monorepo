@@ -124,12 +124,20 @@ export class CustomerOrdersService {
     const variantIds = order.items.flatMap((item) => (item.variantId ? [item.variantId] : []));
     const variants = await this.prisma.productVariant.findMany({
       where: { id: { in: variantIds }, storeId },
-      select: { id: true, productId: true, isActive: true, archivedAt: true, trackStock: true, stockQuantity: true, product: { select: { status: true } } },
+      select: {
+        id: true,
+        productId: true,
+        isActive: true,
+        archivedAt: true,
+        trackStock: true,
+        stockQuantity: true,
+        product: { select: { status: true, _count: { select: { options: true } } } },
+      },
     });
     return reorderOf(
       number,
       order.items,
-      variants.map(({ product, ...variant }) => ({ ...variant, productStatus: product.status })),
+      variants.map(({ product, ...variant }) => ({ ...variant, productStatus: product.status, productHasOptions: product._count.options > 0 })),
     );
   }
 

@@ -19,6 +19,8 @@ export interface ReorderVariant {
   trackStock: boolean;
   stockQuantity: number | null;
   productStatus: 'ACTIVE' | 'DRAFT';
+  /** Whether a shopper chooses a combination at all: a product without options is added by its product alone. */
+  productHasOptions: boolean;
 }
 
 /**
@@ -46,7 +48,7 @@ export function reorderOf(number: number, items: readonly ReorderItem[], variant
       continue;
     }
     const quantity = Math.min(item.quantity, stock);
-    lines.push({ productId: variant.productId, variantId: variant.id, quantity });
+    lines.push({ productId: variant.productId, variantId: variant.productHasOptions ? variant.id : null, quantity });
     if (quantity < item.quantity) left.push({ ...named, reason: 'LIMITED', added: quantity });
   }
 

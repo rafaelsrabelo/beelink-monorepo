@@ -13,6 +13,7 @@ const variant = (over: Partial<ReorderVariant>): ReorderVariant => ({
   trackStock: false,
   stockQuantity: null,
   productStatus: 'ACTIVE',
+  productHasOptions: true,
   ...over,
 });
 
@@ -26,6 +27,11 @@ describe('reorderOf', () => {
       ],
       left: [],
     });
+  });
+
+  /** The cart writes a product without options by its product alone: the same here, so the lines add up. */
+  it('names no combination for a product without options, as the cart does', () => {
+    expect(reorderOf(1, [item({})], [variant({ productHasOptions: false })]).lines).toEqual([{ productId: 'p1', variantId: null, quantity: 2 }]);
   });
 
   it('leaves out what the shop no longer sells: a draft, a switched-off or archived combination, one deleted', () => {
