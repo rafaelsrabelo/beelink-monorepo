@@ -86,6 +86,25 @@ describe("the shopper's own access to their account", () => {
     expect(response.cookies.get("bl_shopper_access")?.value).toBe("")
   })
 
+  it("behind the proxy, lands on the site the shopper is on, never the server's bind address", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })))
+    const request = new NextRequest("https://0.0.0.0:3000/loja/api/customer/seguranca/sair-de-todos", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        origin: "https://link.beecoders.net",
+        "x-forwarded-host": "link.beecoders.net",
+        cookie: "bl_shopper_access=a",
+      },
+      body: new URLSearchParams(here).toString(),
+    })
+
+    const landing = locationOf(await POST(request, { params: Promise.resolve({ slug: "loja", action: "sair-de-todos" }) }))
+
+    expect(landing.origin).toBe("https://link.beecoders.net")
+    expect(landing.pathname).toBe("/loja/entrar")
+  })
+
   it("answers only this shop's own forms, and keeps every landing inside it", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })))
 

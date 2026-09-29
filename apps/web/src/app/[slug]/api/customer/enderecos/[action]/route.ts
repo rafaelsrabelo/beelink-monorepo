@@ -6,7 +6,7 @@ import type { CustomerSavedAddress, SaveCustomerAddressPayload } from "@harness-
 
 // App
 import { callApi, isApiErrorBody, type ApiCall } from "@/lib/api"
-import { clientIpOf, refuseForeignOrigin } from "@/lib/bff"
+import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { ADDRESS_ERROR_KEY, ADDRESS_NOTICE_KEY, DELIVER_TO_KEY, type AddressNotice } from "@/lib/saved-address"
 import { callAsShopper } from "@/lib/shopper-call"
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const id = field("id")
   // A save without an id is a new address; any other id that is not one is an address not found.
   if ((id || action !== "salvar") && !ADDRESS_ID.test(id)) {
-    const refusal = new URL(safeBackOf(slug, field("formulario") || field("retorno")), request.url)
+    const refusal = new URL(safeBackOf(slug, field("formulario") || field("retorno")), publicOriginOf(request))
     refusal.searchParams.set(ADDRESS_ERROR_KEY, "CUSTOMER_ADDRESS_NOT_FOUND")
     return NextResponse.redirect(refusal, 303)
   }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   const answered = await callAsShopper(request, slug, (accessToken) => callApi({ ...call, accessToken, clientIp: clientIpOf(request) }).catch(() => null))
   if (answered.status === "signedOut") {
-    const signedOut = NextResponse.redirect(new URL(`/${slug}`, request.url), 303)
+    const signedOut = NextResponse.redirect(new URL(`/${slug}`, publicOriginOf(request)), 303)
     clearCustomerSessionCookies(signedOut.cookies, slug)
     return signedOut
   }
@@ -67,11 +67,11 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   let landing: URL
   if (response?.ok) {
-    landing = new URL(safeBackOf(slug, field("retorno")), request.url)
+    landing = new URL(safeBackOf(slug, field("retorno")), publicOriginOf(request))
     landing.searchParams.set(ADDRESS_NOTICE_KEY, NOTICE_OF[action as Action])
     if (action === "salvar" && field(DELIVER_TO_KEY) === "1") landing.searchParams.set(DELIVER_TO_KEY, ((await response.json()) as CustomerSavedAddress).id)
   } else {
-    landing = new URL(safeBackOf(slug, field("formulario") || field("retorno")), request.url)
+    landing = new URL(safeBackOf(slug, field("formulario") || field("retorno")), publicOriginOf(request))
     const body: unknown = response ? await response.json().catch(() => null) : null
     const code = isApiErrorBody(body) ? String(body.errorCode) : response?.status === 429 ? "RATE_LIMITED" : "UNKNOWN"
     landing.searchParams.set(ADDRESS_ERROR_KEY, response ? refusalOf(response.status, code) : "UNKNOWN")

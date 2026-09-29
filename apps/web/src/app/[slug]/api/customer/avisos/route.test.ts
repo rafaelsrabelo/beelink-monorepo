@@ -61,6 +61,20 @@ describe("the shopper's notices by e-mail", () => {
     expect(landing.searchParams.get("erro-avisos")).toBe("UNKNOWN")
   })
 
+  it("behind the proxy, lands on the site the shopper is on, never the server's bind address", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({})))
+    const request = new NextRequest("https://0.0.0.0:3000/loja/api/customer/avisos", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded", origin: "https://link.beecoders.net", "x-forwarded-host": "link.beecoders.net", cookie: "bl_shopper_access=a" },
+      body: new URLSearchParams({ ...here, orders: "1" }).toString(),
+    })
+
+    const landing = locationOf(await POST(request, { params: Promise.resolve({ slug: "loja" }) }))
+
+    expect(landing.origin).toBe("https://link.beecoders.net")
+    expect(landing.searchParams.get("aviso")).toBe("avisos-salvos")
+  })
+
   it("answers only this shop's own form", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({})))
 
