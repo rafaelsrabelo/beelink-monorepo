@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { accountContactOf, accountMenuOf, accountTabTitleOf, deliveredAccountTabOf, phoneLineOf } from "./account-menu"
+import { accountContactOf, accountMenuOf, accountTabTitleOf, deliveredAccountTabOf, headerAccountMenuOf, phoneLineOf } from "./account-menu"
 import { storefrontRoutes } from "./storefront-routes"
 
 const routes = storefrontRoutes({
@@ -19,6 +19,19 @@ const routes = storefrontRoutes({
     account: "conta",
     accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" },
   },
+})
+
+describe("the header's account menu", () => {
+  it("offers the orders, the profile and the conversation, in that order, and signs out at the shop's door", () => {
+    expect(headerAccountMenuOf(routes, "loja")).toEqual({
+      items: [
+        { key: "orders", href: "/loja/conta/pedidos" },
+        { key: "profile", href: "/loja/conta/perfil" },
+        { key: "messages", href: "/loja/conta/conversas" },
+      ],
+      signOutAction: "/loja/api/customer/sair",
+    })
+  })
 })
 
 describe("the account's menu", () => {

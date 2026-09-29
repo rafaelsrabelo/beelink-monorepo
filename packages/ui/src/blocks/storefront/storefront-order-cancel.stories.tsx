@@ -5,7 +5,6 @@ import { shopPaletteStyle } from "@harness-monorepo/ui/lib/shop-palette"
 import { sampleColorPresets } from "../store/store.fixtures"
 import { ShopPaletteProvider } from "./shop-palette-context"
 import { StorefrontOrderCancel } from "./storefront-order-cancel"
-import { StorefrontOrdersLink } from "./storefront-orders-link"
 
 const palette = shopPaletteStyle(sampleColorPresets[2]!.colors)
 
@@ -34,12 +33,3 @@ export const Cancelando: Story = { args: { pending: true } }
 
 /** A loja aceitou antes: a recusa, dentro do diálogo. */
 export const Recusado: Story = { args: { error: "A loja já aceitou este pedido. Para cancelar, fale com a loja." } }
-
-/** O link do cabeçalho para Meus pedidos, a partir de shop-lg. */
-export const LinkDoCabecalho: Story = {
-  render: () => (
-    <div className="flex items-center gap-6 rounded-xl bg-shop-header px-6 py-4 text-shop-on-header">
-      <StorefrontOrdersLink href="#" />
-    </div>
-  ),
-}

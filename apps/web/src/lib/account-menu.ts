@@ -1,5 +1,6 @@
 // Types
 import type { CustomerProfile, StorefrontAccountTab, StorefrontRouteWords } from "@harness-monorepo/contracts"
+import type { StorefrontAccountDropdownItem, StorefrontAccountDropdownKey } from "@harness-monorepo/ui/blocks/storefront/storefront-account-dropdown"
 import type { StorefrontAccountMenuItem } from "@harness-monorepo/ui/blocks/storefront/storefront-account-menu"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -21,6 +22,22 @@ export function deliveredAccountTabOf(segment: string, routeWords: StorefrontRou
 /** The area's menu: the overview, then each delivered tab in the design's order, with its count when it has one. */
 export function accountMenuOf(routes: StorefrontRoutes, counts: Partial<Record<StorefrontAccountTab, number>> = {}): StorefrontAccountMenuItem[] {
   return [{ key: "overview", href: routes.account() }, ...DELIVERED_ACCOUNT_TABS.map((tab) => ({ key: tab, href: routes.accountTab(tab), count: counts[tab] ?? null }))]
+}
+
+/** Where "Sair" posts, from the area's menu and from the header's. */
+export function customerSignOutActionOf(slug: string): string {
+  return `/${slug}/api/customer/sair`
+}
+
+/** The pages the header's account menu offers (J21), in its order. The overview is its heading, not an entry. */
+const HEADER_MENU_TABS: readonly StorefrontAccountDropdownKey[] = ["orders", "profile", "messages"]
+
+/** The header's account menu: the offered tabs that are delivered, and where "Sair" posts. */
+export function headerAccountMenuOf(routes: StorefrontRoutes, slug: string): { items: StorefrontAccountDropdownItem[]; signOutAction: string } {
+  return {
+    items: HEADER_MENU_TABS.filter((tab) => DELIVERED_ACCOUNT_TABS.includes(tab)).map((tab) => ({ key: tab, href: routes.accountTab(tab) })),
+    signOutAction: customerSignOutActionOf(slug),
+  }
 }
 
 /** The menu's title for a tab, in the shopper's words. */
