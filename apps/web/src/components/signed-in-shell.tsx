@@ -6,6 +6,7 @@ import { cookies } from "next/headers"
 
 // App
 import { AppShell } from "@/components/app-shell"
+import { PanelRealtime } from "@/components/realtime/panel-realtime"
 import { getMessages } from "@/lib/locale"
 import { PREFS_COOKIE, parsePrefs } from "@/lib/prefs"
 import { requireUser } from "@/lib/session"
@@ -21,6 +22,7 @@ export async function SignedInShell({ children }: { children: ReactNode }) {
 
   return (
     <AppShell user={user} ui={ui} web={web} locale={locale} prefs={prefs}>
+      <PanelRealtime />
       {children}
     </AppShell>
   )

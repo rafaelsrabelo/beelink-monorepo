@@ -19,6 +19,7 @@ import { StorefrontDeliverToLive } from "./storefront-deliver-to-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
+import { ShopperRealtime } from "./shopper-realtime"
 
 export interface StorefrontFrameProps {
   store: PublicStore
@@ -240,6 +241,8 @@ export function StorefrontFrame({
       addressLine={addressLineOf(store)}
       messages={messages}
     >
+      {/* Only with a shopper signed in: a visitor has no room of their own to hear. */}
+      {shopper ? <ShopperRealtime slug={store.slug} /> : null}
       {children}
     </StorefrontWindow>
   )
