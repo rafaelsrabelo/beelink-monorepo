@@ -10,6 +10,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { OrderCancelLive } from "./order-cancel-live"
 import { OrderCancelNotice } from "./order-cancel-notice"
+import { OrderCancelNoticeLine } from "./order-cancel-notice-line"
 
 const refresh = vi.fn()
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }))
@@ -31,7 +32,14 @@ function renderCard({ notice = false } = {}) {
       <OrderCancelLive slug="loja" number={12} messages={ptBR} />
     </article>
   )
-  return render(<QueryClientProvider client={client}>{notice ? <OrderCancelNotice messages={ptBR}>{card}</OrderCancelNotice> : card}</QueryClientProvider>)
+  return render(<QueryClientProvider client={client}>{notice ? (
+        <OrderCancelNotice>
+          <OrderCancelNoticeLine messages={ptBR} />
+          {card}
+        </OrderCancelNotice>
+      ) : (
+        card
+      )}</QueryClientProvider>)
 }
 
 async function confirmCancel() {

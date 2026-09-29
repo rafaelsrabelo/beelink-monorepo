@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { listingFiltersOf, safeBackOf, sectionOf, signInModeOf, storefrontRoutes, toggledOption, accountTabOf } from "./storefront-routes"
+import { accountOrderNumberOf, listingFiltersOf, safeBackOf, sectionOf, signInModeOf, storefrontRoutes, toggledOption, accountTabOf } from "./storefront-routes"
 
 const routes = storefrontRoutes({
   slug: "mutante",
@@ -132,5 +132,24 @@ describe("the shopper's area", () => {
     expect(accountTabOf("pedidos", shop.routeWords)).toBe("orders")
     expect(accountTabOf("profile", shop.routeWords)).toBeNull()
     expect(accountTabOf("", shop.routeWords)).toBeNull()
+  })
+})
+
+describe("an order's address", () => {
+  const shop = { slug: "loja", routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } } }
+
+  it("sits under the orders tab, and its receipt is the same page asked as a document", () => {
+    expect(storefrontRoutes(shop).accountOrder(14)).toBe("/loja/conta/pedidos/14")
+    expect(storefrontRoutes(shop).accountOrder(14, { receipt: true })).toBe("/loja/conta/pedidos/14?comprovante=1")
+  })
+
+  /** A fourth segment is never a product: anything but an order number under the orders word is a 404. */
+  it("reads an order number only under the orders word, and nothing that is not one", () => {
+    expect(accountOrderNumberOf("pedidos", "14", shop.routeWords)).toBe(14)
+    expect(accountOrderNumberOf("perfil", "14", shop.routeWords)).toBeNull()
+    for (const sub of ["0", "014", "abc", "14a", "-1", "2147483648", "99999999999"]) {
+      expect(accountOrderNumberOf("pedidos", sub, shop.routeWords)).toBeNull()
+    }
+    expect(accountOrderNumberOf("pedidos", "2147483647", shop.routeWords)).toBe(2147483647)
   })
 })

@@ -1,46 +1,33 @@
 "use client"
 
 // React
-import { createContext, use, useMemo, useRef, useState, type ReactNode } from "react"
-
-// Types
-import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
-
-// UI
-import { StorefrontOrderCancelledNotice } from "@harness-monorepo/ui/blocks/storefront/storefront-order-cancelled-notice"
+import { createContext, use, useMemo, useRef, useState, type ReactNode, type RefObject } from "react"
 
 export interface OrderCancelNoticeValue {
-  /** Says this order was cancelled, over the list. */
+  /** The order just cancelled; null until one is. */
+  cancelled: number | null
+  /** Says this order was cancelled, where the screen put its line. */
   announce: (number: number) => void
   /** The line that says it: where focus lands, since the cancelled card may leave the tab. */
-  target: () => HTMLElement | null
+  region: RefObject<HTMLDivElement | null>
 }
 
 const NoticeContext = createContext<OrderCancelNoticeValue | null>(null)
 
-export interface OrderCancelNoticeProps {
-  messages: UiMessages
-  children: ReactNode
-}
-
 /**
- * The line over the list that says a cancel went through. A client component above the cards, so
- * the page read again after the cancel redraws them and leaves this line — and its words — in place.
+ * Holds the news of a cancel that went through, for the line that says it (`OrderCancelNoticeLine`)
+ * and the cancel that makes it. A client component around what the page redraws after the cancel,
+ * so the redraw leaves its state — and the line's words — in place.
  */
-export function OrderCancelNotice({ messages, children }: OrderCancelNoticeProps) {
+export function OrderCancelNotice({ children }: { children: ReactNode }) {
   const [cancelled, setCancelled] = useState<number | null>(null)
   const region = useRef<HTMLDivElement>(null)
-  const value = useMemo<OrderCancelNoticeValue>(() => ({ announce: setCancelled, target: () => region.current }), [])
+  const value = useMemo<OrderCancelNoticeValue>(() => ({ cancelled, announce: setCancelled, region }), [cancelled])
 
-  return (
-    <NoticeContext value={value}>
-      <StorefrontOrderCancelledNotice ref={region} number={cancelled} messages={messages} />
-      {children}
-    </NoticeContext>
-  )
+  return <NoticeContext value={value}>{children}</NoticeContext>
 }
 
-/** The list's notice, or null where a cancel has none above it. */
+/** The notice around this cancel, or null where a cancel has none. */
 export function useOrderCancelNotice(): OrderCancelNoticeValue | null {
   return use(NoticeContext)
 }

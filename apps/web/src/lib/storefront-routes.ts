@@ -240,6 +240,17 @@ export function storefrontRoutes(shop: StorefrontShop) {
       return withQuery(word ? `${home}/${routeWords.account}/${word}` : `${home}/${routeWords.account}`, query)
     },
 
+    /**
+     * One of the shopper's orders, under the orders tab: `/<shop>/conta/pedidos/14`. The receipt is
+     * the same address with `comprovante=1`. A shop read before its tabs were spelled leads to the
+     * area's front, as `accountTab` does.
+     */
+    accountOrder: (number: number, { receipt = false }: { receipt?: boolean } = {}) => {
+      const word = routeWords.accountTabs?.orders
+      if (!word) return `${home}/${routeWords.account}`
+      return withQuery(`${home}/${routeWords.account}/${word}/${number}`, { [RECEIPT_KEY]: receipt ? "1" : undefined })
+    },
+
     /** One product. It never nests under a category: a product in two would have two addresses. */
     product: (productSlug: string) => `${home}/${routeWords.products}/${productSlug}`,
 
@@ -275,6 +286,22 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (segment === routeWords.account) return { kind: "account" }
 
   return { kind: "category", slug: segment }
+}
+
+/** The receipt's key: the order's page drawn as a document to print. */
+export const RECEIPT_KEY = "comprovante"
+
+/** The largest order number the API keeps (INT4): a longer one names no order. */
+const ORDER_NUMBER_MAX = 2_147_483_647
+
+/**
+ * The order a fourth segment names, under the account and its orders tab: `conta/pedidos/14` is 14.
+ * Null for anything else — another tab, a word, a zero, a number past any order — which is a 404.
+ */
+export function accountOrderNumberOf(item: string, sub: string, routeWords: StorefrontRouteWords): number | null {
+  if (accountTabOf(item, routeWords) !== "orders" || !/^[1-9]\d{0,9}$/.test(sub)) return null
+  const number = Number(sub)
+  return number <= ORDER_NUMBER_MAX ? number : null
 }
 
 /** Which tab of the shopper's area a third segment under `account` names; null when it names none. */

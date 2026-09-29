@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrderSituation } from "@harness-monorepo/contracts"
+import type { CustomerOrderSituation, OrderStatus } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -17,6 +17,7 @@ import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { OrderCancelLive } from "./order-cancel-live"
 import { OrderCancelNotice } from "./order-cancel-notice"
+import { OrderCancelNoticeLine } from "./order-cancel-notice-line"
 
 export interface OrdersTabProps {
   slug: string
@@ -25,6 +26,9 @@ export interface OrdersTabProps {
   locale: string
   messages: UiMessages
 }
+
+/** The statuses of an order on its way: the ones worth following. */
+const IN_PROGRESS: ReadonlySet<OrderStatus> = new Set(["RECEIVED", "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY"])
 
 const TABS: readonly { key: "ALL" | CustomerOrderSituation; situation: CustomerOrderSituation | undefined }[] = [
   { key: "ALL", situation: undefined },
@@ -55,7 +59,8 @@ export async function OrdersTab({ slug, routes, query, locale, messages }: Order
   return (
     <div className="flex flex-col gap-5">
       {/* Around the whole list, so it stays put when a cancel empties the tab and the page is read again. */}
-      <OrderCancelNotice messages={messages}>
+      <OrderCancelNotice>
+        <OrderCancelNoticeLine messages={messages} />
         {nothingEver ? null : (
           <StorefrontOrderTabs
             tabs={TABS.map((tab) => ({ label: tabLabels[tab.key], count: page.counts[tab.key], href: href({ situation: tab.situation }), current: asked.situation === tab.situation }))}
@@ -72,6 +77,8 @@ export async function OrdersTab({ slug, routes, query, locale, messages }: Order
               <li key={order.number}>
                 <StorefrontOrderCard
                   {...orderCardViewOf(order, { routes, locale, messages })}
+                  detailsHref={routes.accountOrder(order.number)}
+                  trackHref={IN_PROGRESS.has(order.status) ? routes.accountOrder(order.number) : undefined}
                   // Each action joins with its ticket; the customer's cancel is the API's from J2.
                   actions={order.status === "RECEIVED" ? <OrderCancelLive slug={slug} number={order.number} messages={messages} /> : undefined}
                   linkComponent={AppLink}

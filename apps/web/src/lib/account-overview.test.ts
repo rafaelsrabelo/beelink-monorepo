@@ -55,7 +55,7 @@ describe("the account's front", () => {
     expect(view.destination).toBe("Para Marina Souza · Rua Tibúrcio Cavalcante, 1200, apto 302 — Fortaleza/CE")
     expect(view.note).toBeNull()
     expect(view.steps.map((step) => step.state)).toEqual(["done", "done", "current", "todo", "todo"])
-    expect(view.href).toBe("/loja/conta/pedidos?situacao=em-andamento")
+    expect(view.href).toBe("/loja/conta/pedidos/1042")
     expect(view.more).toBeNull()
   })
 
