@@ -87,6 +87,26 @@ export interface CustomerProfile {
   address: CustomerAddress;
   /** Every saved address, the default first, then the newest. */
   addresses: CustomerSavedAddress[];
+  /**
+   * Whether the account has a password — one opened through Google has none until it creates one,
+   * by the link `POST /customer/me/password/link` sends (BEELINK-150).
+   */
+  hasPassword: boolean;
+}
+
+/**
+ * A signed-in shopper's new password: the current one, and the new one, 8 to 128 characters. The
+ * other devices' sessions end; this one stays. A wrong current password is `AUTH_PASSWORD_WRONG`, an
+ * account with none `AUTH_PASSWORD_NOT_SET`.
+ */
+export interface ChangeCustomerPasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/** Asking for the link that creates a password — for an account opened through Google — and where it brings the shopper back. */
+export interface CustomerPasswordLinkPayload {
+  returnTo?: string;
 }
 
 /**

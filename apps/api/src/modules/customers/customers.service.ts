@@ -19,17 +19,18 @@ import type { CustomerRegisterDto } from './dto/customer-link.dto.js';
 import type { UpdateCustomerProfileDto } from './dto/customer.dto.js';
 import { shopReturnOf } from './shop-return.js';
 
-/** The record, its account's e-mail, and its addresses as `SAVED_ADDRESS_ORDER` reads them: the default first. */
-function toCustomerProfile(customer: CustomerModel, email: string, addresses: CustomerAddressModel[]): CustomerProfile {
+/** The record, its account — e-mail, and whether it has a password — and its addresses as `SAVED_ADDRESS_ORDER` reads them: the default first. */
+function toCustomerProfile(customer: CustomerModel, user: Pick<UserModel, 'email' | 'passwordHash'>, addresses: CustomerAddressModel[]): CustomerProfile {
   return {
     id: customer.id,
     name: customer.name,
-    email,
+    email: user.email,
     phone: customer.phone,
     cpf: customer.cpf,
     birthDate: dayOf(customer.birthDate),
     address: addressPartsOf(addresses.find((address) => address.isDefault)),
     addresses: addresses.map(toSavedAddress),
+    hasPassword: user.passwordHash !== null,
   } satisfies CustomerProfile;
 }
 
@@ -96,7 +97,7 @@ export class CustomersService {
     const user = await this.accountAt(storeId, userId);
 
     const record = await this.recordOf(storeId, user);
-    return toCustomerProfile(record, user.email, await this.addressesOf(record.id));
+    return toCustomerProfile(record, user, await this.addressesOf(record.id));
   }
 
   /**
@@ -126,7 +127,7 @@ export class CustomersService {
           ...(dto.birthDate !== undefined ? { birthDate: dto.birthDate === null ? null : new Date(`${dto.birthDate}T00:00:00.000Z`) } : {}),
         },
       });
-      return toCustomerProfile(updated, user.email, await this.addressesOf(updated.id));
+      return toCustomerProfile(updated, user, await this.addressesOf(updated.id));
     } catch (error) {
       // The phone identifies a customer within a shop. Two records of one shop cannot share it.
       if (error instanceof Error && 'code' in error && error.code === 'P2002') {
@@ -137,6 +138,30 @@ export class CustomersService {
       }
       throw error;
     }
+  }
+
+  /** The shopper's new password, given the current one; this session stays, the others end (BEELINK-150). */
+  async changePassword(storeSlug: string, userId: string, sessionId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const { storeId } = await this.scopeOf(storeSlug);
+    const user = await this.accountAt(storeId, userId);
+    await this.auth.changePassword(user.id, currentPassword, newPassword, sessionId);
+  }
+
+  /**
+   * The link that sets a password, to the shopper's own address — for an account opened through
+   * Google, which has none to change. It is the new-password e-mail of the shop's own page (J10).
+   */
+  async sendPasswordLink(storeSlug: string, userId: string, returnTo?: string): Promise<void> {
+    const scope = await this.scopeOf(storeSlug, returnTo);
+    const user = await this.accountAt(scope.storeId, userId);
+    await this.auth.forgotPassword(user.email, scope);
+  }
+
+  /** Every session of the shopper's account at this shop ends, this one too. */
+  async signOutEverywhere(storeSlug: string, userId: string): Promise<void> {
+    const { storeId } = await this.scopeOf(storeSlug);
+    const user = await this.accountAt(storeId, userId);
+    await this.sessions.revokeAllForUser(user.id);
   }
 
   private addressesOf(customerId: string): Promise<CustomerAddressModel[]> {

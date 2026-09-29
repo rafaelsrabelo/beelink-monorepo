@@ -129,6 +129,24 @@ export class AuthService {
     await this.sessions.revokeAllForUser(userId);
   }
 
+  /**
+   * A signed-in account's new password, given the current one: the other devices sign in again, and
+   * `keep` — the session asking — stays. A wrong current password is a 403, never a 401: that reads
+   * to a client as a session to renew.
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string, keep: string): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { passwordHash: true } });
+    if (!user.passwordHash) {
+      throw new ConflictException({ errorCode: 'AUTH_PASSWORD_NOT_SET', message: 'This account has no password to change' });
+    }
+    if (!(await verify(user.passwordHash, currentPassword))) {
+      throw new ForbiddenException({ errorCode: 'AUTH_PASSWORD_WRONG', message: 'The current password does not match' });
+    }
+
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await hash(newPassword) } });
+    await this.sessions.revokeAllForUser(userId, keep);
+  }
+
   private accountOf(email: string, { storeId }: AccountScope): Promise<UserModel | null> {
     return this.prisma.user.findFirst({ where: { email, storeId } });
   }
