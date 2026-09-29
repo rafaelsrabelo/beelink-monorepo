@@ -125,7 +125,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     case "nova-senha": {
       // Refused, back to the new-password page itself, token and all; saved, on to the sign-in.
       const retry = (erro: string) => {
-        const page = new URL(safeBackOf(slug, field("retorno")), request.url)
+        const page = new URL(safeBackOf(slug, field("retorno")), publicOriginOf(request))
         page.searchParams.set("erro", erro)
         return NextResponse.redirect(page, 303)
       }
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       }
       // The API ended every session of that account. A session of another account in this browser
       // is not that account's, and stays: nothing here knows whose link it was.
-      const signIn = new URL(safeBackOf(slug, field("entrada")), request.url)
+      const signIn = new URL(safeBackOf(slug, field("entrada")), publicOriginOf(request))
       signIn.searchParams.set(PASSWORD_REPLACED_KEY, "1")
       return NextResponse.redirect(signIn, 303)
     }

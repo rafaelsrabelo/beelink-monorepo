@@ -7,7 +7,7 @@ import type { ChangeCustomerPasswordPayload, CustomerPasswordLinkPayload } from 
 // App
 import { SECURITY_ERROR_KEY, SECURITY_NOTICE_KEY, type SecurityNotice } from "@/lib/account-security"
 import { callApi, isApiErrorBody, type ApiCall } from "@/lib/api"
-import { clientIpOf, refuseForeignOrigin } from "@/lib/bff"
+import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { callAsShopper } from "@/lib/shopper-call"
 import { SHOP_SLUG } from "@/lib/shopper-forward"
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     return typeof value === "string" ? value : ""
   }
   const back = (key: string, value: string) => {
-    const page = new URL(safeBackOf(slug, field("retorno")), request.url)
+    const page = new URL(safeBackOf(slug, field("retorno")), publicOriginOf(request))
     page.searchParams.set(key, value)
     return page
   }
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   if (answered.status === "signedOut") {
     // This session ended elsewhere — a password changed on another device — before the form was
     // sent: nothing here was done, which the sign-in says, bringing the shopper back to the form.
-    const signIn = new URL(safeBackOf(slug, field("entrada")), request.url)
+    const signIn = new URL(safeBackOf(slug, field("entrada")), publicOriginOf(request))
     signIn.searchParams.set(BACK_KEY, safeBackOf(slug, field("retorno")).split("#")[0] ?? `/${slug}`)
     signIn.searchParams.set("erro", "AUTH_UNAUTHENTICATED")
     return signedOut(signIn, slug)
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   if (response?.ok && action === "sair-de-todos") {
     // This session ended with the rest: on to the shop's sign-in (`entrada`), told why.
-    const signIn = new URL(safeBackOf(slug, field("entrada")), request.url)
+    const signIn = new URL(safeBackOf(slug, field("entrada")), publicOriginOf(request))
     signIn.searchParams.set(SIGNED_OUT_EVERYWHERE_KEY, "1")
     return signedOut(signIn, slug)
   }
