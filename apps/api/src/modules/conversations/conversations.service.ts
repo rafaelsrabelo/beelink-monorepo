@@ -14,6 +14,7 @@ import { Prisma } from '../../generated/prisma/client.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { CustomersService } from '../customers/customers.service.js';
+import { RealtimePublisher, type RealtimeAudienceOf } from '../realtime/realtime-publisher.js';
 import { StoresService } from '../stores/stores.service.js';
 import {
   conversationError,
@@ -56,6 +57,7 @@ export class ConversationsService {
     private readonly prisma: PrismaService,
     private readonly customers: CustomersService,
     private readonly stores: StoresService,
+    private readonly realtime: RealtimePublisher,
   ) {}
 
   /* ── the customer's side ─────────────────────────────────────────────────── */
@@ -86,6 +88,7 @@ export class ConversationsService {
       });
       await tx.orderMessage.create({ data: { conversationId: conversation.id, author: 'CUSTOMER', userId, body: dto.body, createdAt: now } });
     });
+    this.realtime.publish({ storeId, customerId }, { type: 'conversation.message', orderNumber: number, author: 'CUSTOMER' });
     return this.customerRead(storeSlug, userId, number);
   }
 
@@ -95,7 +98,7 @@ export class ConversationsService {
     const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, select: { id: true } });
     if (!order) throw notFound(number);
 
-    await this.markRead(this.prisma, order.id, 'CUSTOMER');
+    await this.markRead(order.id, 'CUSTOMER', { storeId, customerId }, number);
     return this.customerRead(storeSlug, userId, number);
   }
 
@@ -131,7 +134,7 @@ export class ConversationsService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const order = await this.prisma.order.findUnique({
       where: { storeId_number: { storeId, number } },
-      select: { id: true, conversation: { select: { id: true } } },
+      select: { id: true, customerId: true, conversation: { select: { id: true } } },
     });
     if (!order) throw notFound(number);
     const conversation = order.conversation;
@@ -145,16 +148,17 @@ export class ConversationsService {
       await tx.orderMessage.create({ data: { conversationId: conversation.id, author: 'SHOP', userId, body: dto.body, createdAt: now } });
       await tx.orderConversation.update({ where: { id: conversation.id }, data: { lastMessageAt: now } });
     });
+    this.realtime.publish({ storeId, customerId: order.customerId }, { type: 'conversation.message', orderNumber: number, author: 'SHOP' });
     return this.shopRead(storeSlug, userId, number);
   }
 
   /** Read by the shop: the customer's messages it had not read. */
   async shopMarkRead(storeSlug: string, userId: string, number: number): Promise<ShopConversation> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const order = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true } });
+    const order = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true, customerId: true } });
     if (!order) throw notFound(number);
 
-    await this.markRead(this.prisma, order.id, 'SHOP');
+    await this.markRead(order.id, 'SHOP', { storeId, customerId: order.customerId }, number);
     return this.shopRead(storeSlug, userId, number);
   }
 
@@ -233,11 +237,12 @@ export class ConversationsService {
     if (!order || !isOpen(order.status as Parameters<typeof isOpen>[0])) throw closed();
   }
 
-  /** The other side's messages, read now by `reader`. */
-  private async markRead(tx: Tx | PrismaService, orderId: string, reader: Side): Promise<void> {
-    await tx.orderMessage.updateMany({
+  /** The other side's messages, read now by `reader` — told to both rooms only when there were any. */
+  private async markRead(orderId: string, reader: Side, to: RealtimeAudienceOf, orderNumber: number): Promise<void> {
+    const { count } = await this.prisma.orderMessage.updateMany({
       where: { conversation: { orderId }, author: reader === 'CUSTOMER' ? 'SHOP' : 'CUSTOMER', readAt: null },
       data: { readAt: new Date() },
     });
+    if (count > 0) this.realtime.publish(to, { type: 'conversation.read', orderNumber, reader });
   }
 }

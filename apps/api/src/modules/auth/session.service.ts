@@ -9,6 +9,7 @@ import type { UserModel } from '../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 import {
   ACCESS_TOKEN_TTL_SECONDS,
   REFRESH_REUSE_GRACE_SECONDS,
@@ -32,6 +33,7 @@ export class SessionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly realtime: RealtimePublisher,
   ) {}
 
   async start(user: UserModel, userAgent?: string, audience: SessionAudience = 'OWNER'): Promise<AuthSession> {
@@ -102,12 +104,17 @@ export class SessionService {
     return session !== null
   }
 
-  /** Used when the password changes: every device has to sign in again. */
+  /**
+   * Used when the password changes: every device has to sign in again. Their real-time sockets close
+   * with them, like every revocation below: a socket's ticket was checked only when it came in.
+   */
   async revokeAllForUser(userId: string): Promise<void> {
-    await this.prisma.session.updateMany({
+    const revoked = await this.prisma.session.updateManyAndReturn({
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },
+      select: { id: true },
     });
+    this.realtime.endSessions(revoked.map((session) => session.id));
   }
 
   private async revokeSession(sessionId: string): Promise<void> {
@@ -115,6 +122,7 @@ export class SessionService {
       where: { id: sessionId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+    this.realtime.endSessions([sessionId]);
   }
 
   private async issue(user: UserModel, sessionId: string, audience: SessionAudience): Promise<AuthSession> {

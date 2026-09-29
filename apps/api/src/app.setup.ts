@@ -1,6 +1,7 @@
 // Nest
 import { HttpException } from '@nestjs/common';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Libs
@@ -66,6 +67,8 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
       ),
   });
 
+  // Socket.IO on Fastify's own server: the real-time channel (BEELINK-161), at its own path.
+  app.useWebSocketAdapter(new IoAdapter(app));
   app.setGlobalPrefix(env.API_PREFIX);
   app.useGlobalPipes(
     new ApiValidationPipe({

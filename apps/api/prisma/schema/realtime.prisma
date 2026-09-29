@@ -1,0 +1,24 @@
+/// Who a real-time ticket lets in: a shopkeeper to their shop's room, or a shopper to theirs.
+enum RealtimeAudience {
+  SHOP
+  CUSTOMER
+}
+
+/// A short, single-use pass to the real-time channel (BEELINK-161). The web's server asks for it
+/// with the session in its cookies, and the browser hands it to the socket: the session's tokens
+/// never reach the page. Kept here and not in memory, so any instance of the API can take it once.
+model RealtimeTicket {
+  /// sha256 of the ticket: the ticket itself is never stored.
+  tokenHash  String           @id @db.Char(64)
+  audience   RealtimeAudience
+  storeId    String           @db.Uuid
+  /// The shopper's record at the shop: set on a CUSTOMER ticket, and only there (a CHECK in the migration).
+  customerId String?          @db.Uuid
+  /// The session that asked for it. Taken only while that session is alive, and the socket closes
+  /// when it ends — no foreign key, as with `oauth_states`: a ticket outlives nothing by a minute.
+  sessionId  String           @db.Uuid
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+  @@map("realtime_tickets")
+}
