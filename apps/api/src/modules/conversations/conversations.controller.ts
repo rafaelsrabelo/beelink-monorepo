@@ -66,7 +66,7 @@ export class ConversationsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Answer the customer; the conversation answered, as it now stands' })
   @ApiCreatedResponse({ type: ShopConversationResponse })
-  @ApiNotFoundResponse({ description: 'ORDER_CONVERSATION_NOT_FOUND — the customer has not opened one' })
+  @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND · ORDER_NOT_FOUND · ORDER_CONVERSATION_NOT_FOUND — the customer has not opened one' })
   @ApiConflictResponse({ description: 'ORDER_CONVERSATION_CLOSED — the order was delivered or cancelled' })
   send(
     @Param('storeSlug') storeSlug: string,

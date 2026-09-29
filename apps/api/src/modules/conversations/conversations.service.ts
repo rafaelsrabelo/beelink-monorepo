@@ -9,7 +9,7 @@ import type {
   ShopConversationPage,
   ShopConversationUnread,
 } from '@harness-monorepo/contracts';
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
@@ -22,7 +22,7 @@ import {
   OPEN_ORDER_STATUSES,
   SHOP_CONVERSATIONS_PAGE_SIZE,
 } from './conversations.constants.js';
-import { summaryInclude, toCustomerConversation, toCustomerSummary, toShopConversation, toShopSummary } from './conversations.mapper.js';
+import { summarySelect, toCustomerConversation, toCustomerSummary, toShopConversation, toShopSummary, type LastMessageRow, type SummaryRow } from './conversations.mapper.js';
 import type { ListShopConversationsDto, SendConversationMessageDto } from './dto/conversation.dto.js';
 
 type Tx = Prisma.TransactionClient;
@@ -71,11 +71,11 @@ export class ConversationsService {
   /** Their message: the conversation opens with the first one, and takes none once the order is over. */
   async customerSend(storeSlug: string, userId: string, number: number, dto: SendConversationMessageDto): Promise<CustomerConversation> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, select: { id: true, status: true } });
+    const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, select: { id: true } });
     if (!order) throw notFound(number);
-    if (!isOpen(order.status)) throw closed();
 
     await this.prisma.$transaction(async (tx) => {
+      await this.stillOpen(tx, order.id);
       const now = new Date();
       // On the unique order id: the first two messages at once open one conversation, not two.
       const conversation = await tx.orderConversation.upsert({
@@ -102,15 +102,18 @@ export class ConversationsService {
   /** Their conversations at this shop: those still taking messages first, then the latest. */
   async customerList(storeSlug: string, userId: string): Promise<CustomerConversationSummary[]> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    const rows = await this.prisma.orderConversation.findMany({
-      where: { order: { storeId, customerId } },
-      include: summaryInclude('CUSTOMER'),
-      orderBy: { lastMessageAt: 'desc' },
-      take: CUSTOMER_CONVERSATIONS_MAX,
-    });
-    const summaries = rows.map(toCustomerSummary);
-    // A stable sort: open ones first, each group still by its latest message.
-    return [...summaries.filter((row) => row.order.open), ...summaries.filter((row) => !row.order.open)];
+    const read = (open: boolean, take: number) =>
+      this.prisma.orderConversation.findMany({
+        where: { order: { storeId, customerId, status: open ? { in: [...OPEN_ORDER_STATUSES] } : { notIn: [...OPEN_ORDER_STATUSES] } } },
+        select: summarySelect,
+        orderBy: [{ lastMessageAt: 'desc' }, { id: 'desc' }],
+        take,
+      });
+    // Open first, each group by its latest message: asked apart, so the cap never drops an open one for a closed one.
+    const open = await read(true, CUSTOMER_CONVERSATIONS_MAX);
+    const rows = open.length < CUSTOMER_CONVERSATIONS_MAX ? [...open, ...(await read(false, CUSTOMER_CONVERSATIONS_MAX - open.length))] : open;
+    const summaries = await this.summariesOf(rows, 'CUSTOMER');
+    return summaries.map(({ row, last, unread }) => toCustomerSummary(row, last, unread));
   }
 
   /* ── the shop's side ─────────────────────────────────────────────────────── */
@@ -128,19 +131,20 @@ export class ConversationsService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const order = await this.prisma.order.findUnique({
       where: { storeId_number: { storeId, number } },
-      select: { status: true, conversation: { select: { id: true } } },
+      select: { id: true, conversation: { select: { id: true } } },
     });
     if (!order) throw notFound(number);
-    if (!order.conversation) {
+    const conversation = order.conversation;
+    if (!conversation) {
       throw new NotFoundException(conversationError('ORDER_CONVERSATION_NOT_FOUND', 'The customer has not opened a conversation on this order'));
     }
-    if (!isOpen(order.status)) throw closed();
 
-    const now = new Date();
-    await this.prisma.$transaction([
-      this.prisma.orderMessage.create({ data: { conversationId: order.conversation.id, author: 'SHOP', userId, body: dto.body, createdAt: now } }),
-      this.prisma.orderConversation.update({ where: { id: order.conversation.id }, data: { lastMessageAt: now } }),
-    ]);
+    await this.prisma.$transaction(async (tx) => {
+      await this.stillOpen(tx, order.id);
+      const now = new Date();
+      await tx.orderMessage.create({ data: { conversationId: conversation.id, author: 'SHOP', userId, body: dto.body, createdAt: now } });
+      await tx.orderConversation.update({ where: { id: conversation.id }, data: { lastMessageAt: now } });
+    });
     return this.shopRead(storeSlug, userId, number);
   }
 
@@ -173,14 +177,15 @@ export class ConversationsService {
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.orderConversation.findMany({
         where,
-        include: summaryInclude('SHOP'),
+        select: summarySelect,
         orderBy: [{ lastMessageAt: 'desc' }, { id: 'desc' }],
         skip: (page - 1) * SHOP_CONVERSATIONS_PAGE_SIZE,
         take: SHOP_CONVERSATIONS_PAGE_SIZE,
       }),
       this.prisma.orderConversation.count({ where }),
     ]);
-    return { conversations: rows.map(toShopSummary), total, page, pageSize: SHOP_CONVERSATIONS_PAGE_SIZE };
+    const summaries = await this.summariesOf(rows, 'SHOP');
+    return { conversations: summaries.map(({ row, last, unread }) => toShopSummary(row, last, unread)), total, page, pageSize: SHOP_CONVERSATIONS_PAGE_SIZE };
   }
 
   /** What the panel's bell counts: the customers' messages the shop has not read, and the conversations they are in. */
@@ -192,6 +197,40 @@ export class ConversationsService {
       this.prisma.orderConversation.count({ where: { order: { storeId }, messages: { some: unread } } }),
     ]);
     return { messages, conversations };
+  }
+
+  /**
+   * A page's rows with their last message and the reader's unread count: two reads bounded to the
+   * page's ids. As relation includes, Prisma counts every unread message of the platform in one
+   * unbounded subquery, and loads every message of the page to keep one.
+   */
+  private async summariesOf(rows: readonly SummaryRow[], reader: Side): Promise<{ row: SummaryRow; last: LastMessageRow; unread: number }[]> {
+    if (!rows.length) return [];
+    const ids = rows.map((row) => row.id);
+    const [lasts, unread] = await Promise.all([
+      this.prisma.$queryRaw<LastMessageRow[]>(Prisma.sql`
+        SELECT DISTINCT ON ("conversationId") "conversationId", "author", "body", "createdAt"
+        FROM "order_messages" WHERE "conversationId" = ANY(${ids}::uuid[])
+        ORDER BY "conversationId", "createdAt" DESC, "id" DESC`),
+      this.prisma.orderMessage.groupBy({
+        by: ['conversationId'],
+        where: { conversationId: { in: ids }, author: reader === 'CUSTOMER' ? 'SHOP' : 'CUSTOMER', readAt: null },
+        _count: { _all: true },
+      }),
+    ]);
+    const lastOf = new Map(lasts.map((last) => [last.conversationId, last]));
+    const unreadOf = new Map(unread.map((group) => [group.conversationId, group._count._all]));
+    // Every conversation opens with a message, in the same transaction: none is ever without one.
+    return rows.map((row) => ({ row, last: lastOf.get(row.id)!, unread: unreadOf.get(row.id) ?? 0 }));
+  }
+
+  /**
+   * The order's status, read again under a share lock: a status change to delivered or cancelled
+   * waits for the message, or the message waits for it and sees it — never a message after the close.
+   */
+  private async stillOpen(tx: Tx, orderId: string): Promise<void> {
+    const [order] = await tx.$queryRaw<{ status: string }[]>`SELECT "status" FROM "orders" WHERE "id" = ${orderId}::uuid FOR SHARE`;
+    if (!order || !isOpen(order.status as Parameters<typeof isOpen>[0])) throw closed();
   }
 
   /** The other side's messages, read now by `reader`. */

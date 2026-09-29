@@ -25,10 +25,6 @@ export function toOrderHead(order: { number: number; status: OrderStatus }): Con
   return { number: order.number, status: order.status, open: isOpen(order.status) };
 }
 
-function toLastMessage(row: MessageRow): ConversationLastMessage {
-  return { author: row.author, body: row.body, createdAt: row.createdAt.toISOString() };
-}
-
 /** Unread, from where the reader sits: the other side's messages they have not read. */
 function unreadOf(messages: readonly MessageRow[], reader: 'CUSTOMER' | 'SHOP'): number {
   return messages.filter((message) => message.author !== reader && message.readAt === null).length;
@@ -50,26 +46,31 @@ export function toShopConversation(
   };
 }
 
-/** What a list row is read with: the order, its last message, and the reader's unread count. */
-export function summaryInclude(reader: 'CUSTOMER' | 'SHOP') {
-  return {
-    order: { select: { number: true, status: true, customer: { select: { id: true, name: true } } } },
-    messages: { orderBy: { createdAt: 'desc' }, take: 1 },
-    _count: { select: { messages: { where: { author: reader === 'CUSTOMER' ? 'SHOP' : 'CUSTOMER', readAt: null } } } },
-  } as const satisfies Prisma.OrderConversationInclude;
+/** What a list row is read with: the conversation and its order. Its last message and unread count are read apart, bounded to the page. */
+export const summarySelect = {
+  id: true,
+  lastMessageAt: true,
+  order: { select: { number: true, status: true, customer: { select: { id: true, name: true } } } },
+} as const satisfies Prisma.OrderConversationSelect;
+
+export type SummaryRow = Prisma.OrderConversationGetPayload<{ select: typeof summarySelect }>;
+
+/** A conversation's last message, as the list query reads it. */
+export interface LastMessageRow {
+  conversationId: string;
+  author: 'CUSTOMER' | 'SHOP';
+  body: string;
+  createdAt: Date;
 }
 
-type SummaryRow = Prisma.OrderConversationGetPayload<{ include: ReturnType<typeof summaryInclude> }>;
-
-export function toCustomerSummary(row: SummaryRow): CustomerConversationSummary {
-  return { order: toOrderHead(row.order), lastMessage: toLastMessage(row.messages[0]!), unread: row._count.messages };
+function toLastMessage(row: LastMessageRow): ConversationLastMessage {
+  return { author: row.author, body: row.body, createdAt: row.createdAt.toISOString() };
 }
 
-export function toShopSummary(row: SummaryRow): ShopConversationSummary {
-  return {
-    order: toOrderHead(row.order),
-    customer: { id: row.order.customer.id, name: row.order.customer.name },
-    lastMessage: toLastMessage(row.messages[0]!),
-    unread: row._count.messages,
-  };
+export function toCustomerSummary(row: SummaryRow, last: LastMessageRow, unread: number): CustomerConversationSummary {
+  return { order: toOrderHead(row.order), lastMessage: toLastMessage(last), unread };
+}
+
+export function toShopSummary(row: SummaryRow, last: LastMessageRow, unread: number): ShopConversationSummary {
+  return { order: toOrderHead(row.order), customer: { id: row.order.customer.id, name: row.order.customer.name }, lastMessage: toLastMessage(last), unread };
 }

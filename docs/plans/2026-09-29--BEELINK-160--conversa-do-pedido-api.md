@@ -63,3 +63,36 @@ loja respondeu. O lojista vê o cliente (nome) e o nº do pedido.
 
 - Anexos, fotos, respostas automáticas.
 - Tempo real (K2), a tela do cliente (K3) e o painel (K4).
+
+## Adendo — revisão independente (2026-09-29)
+
+1. **As listas varriam a plataforma inteira.** Como `include`, o Prisma contava as não lidas numa
+   subconsulta sem filtro por conversa (todas as mensagens não lidas de todas as lojas) e trazia
+   todas as mensagens da página para ficar com a última. Agora a linha é só a conversa e o pedido,
+   e duas leituras presas aos ids da página trazem o resto: a última mensagem por `DISTINCT ON` e
+   as não lidas por `groupBy`, servidas pelos índices.
+2. **Uma mensagem podia entrar depois do pedido fechar.** O status era lido fora da transação. Agora
+   ele é relido com `FOR SHARE` dentro dela: a mudança para Entregue ou Cancelado espera a mensagem,
+   ou a mensagem espera a mudança e a vê.
+3. **"Abertas primeiro" se perdia depois de 50 conversas.** O limite era aplicado antes da
+   separação. Agora as abertas vêm numa consulta e as fechadas completam até o limite.
+4. **O Swagger escondia dois 404** do envio da loja: agora lista `STORE_NOT_FOUND`,
+   `ORDER_NOT_FOUND` e `ORDER_CONVERSATION_NOT_FOUND`.
+5. **O e2e ganhou** as não lidas por linha nas duas listas, o total e a página, o pedido cancelado,
+   o token do lojista nas rotas do cliente e o cliente de outra loja.
+
+### Outra loja: 403 para o lojista, como no resto do painel
+
+A DoD 6 diz "de outra loja responde 404". Do lado do cliente, é 404 (ou 401 para o token de outra
+loja). Do lado do painel, o dono de outra loja recebe `STORE_FORBIDDEN` (403), como em toda rota do
+painel de uma loja que não é dele: o e2e fixa isso.
+
+### O limite de ritmo não tem e2e
+
+Como no pedido do carrinho, o e2e eleva o limite para não tropeçar nele, e nenhum teste confirma
+que ele existe. Fica registrado.
+
+### Dados de teste
+
+No `harness_wt`, o cliente de teste escreveu no pedido nº 18 ("Olá! O pedido chega até sexta?"). A
+mensagem fica para conferir o K3 e o K4.

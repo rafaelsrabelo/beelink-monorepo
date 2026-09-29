@@ -91,6 +91,15 @@ describe("an order's conversation", () => {
     expect(JSON.stringify(read.json())).not.toContain(owner.user.id);
   });
 
+  it('takes no message on a cancelled order either', async () => {
+    await place();
+    await call('POST', `${mine()}/messages`, shopper, { body: 'Mudei de ideia' });
+    await call('POST', '/api/stores/lessari/customer/orders/1/cancel', shopper, {});
+
+    expect((await call('POST', `${mine()}/messages`, shopper, { body: 'Ainda aí?' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_CONVERSATION_CLOSED' });
+    expect((await call('GET', mine(), shopper)).json<CustomerConversation>()).toMatchObject({ order: { status: 'CANCELLED', open: false }, messages: [{ body: 'Mudei de ideia' }] });
+  });
+
   it('closes when the order is over, and stays readable to both sides', async () => {
     await place();
     await call('POST', `${mine()}/messages`, shopper, { body: 'Chega hoje?' });
@@ -113,19 +122,30 @@ describe("an order's conversation", () => {
     await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'CANCELLED' });
     await call('POST', `${shops(1)}/read`, owner);
 
+    await call('POST', `${shops(1)}/messages`, owner, { body: 'Resposta um' });
+    await call('POST', `${shops(1)}/messages`, owner, { body: 'Resposta dois' });
+
     const list = (await call('GET', '/api/stores/lessari/customer/conversations', shopper)).json<CustomerConversationSummary[]>();
-    // Order 2 is newer, but over: the open one comes first.
-    expect(list.map((row) => [row.order.number, row.order.open, row.lastMessage.body])).toEqual([
-      [1, true, 'Sobre o primeiro'],
-      [2, false, 'Sobre o segundo'],
+    // Order 2 is newer, but over: the open one comes first. Each row counts the shop's messages unread.
+    expect(list.map((row) => [row.order.number, row.order.open, row.lastMessage.author, row.lastMessage.body, row.unread])).toEqual([
+      [1, true, 'SHOP', 'Resposta dois', 2],
+      [2, false, 'CUSTOMER', 'Sobre o segundo', 0],
+    ]);
+
+    const whole = (await call('GET', '/api/stores/lessari/conversations', owner)).json<ShopConversationPage>();
+    // The shop answered order 1 last; its customer's message there is read, order 2's is not.
+    expect(whole).toMatchObject({ total: 2, page: 1, pageSize: 20 });
+    expect(whole.conversations.map((row) => [row.order.number, row.customer.name, row.unread])).toEqual([
+      [1, 'Bia Cliente', 0],
+      [2, 'Bia Cliente', 1],
     ]);
 
     const page = (query: string) => call('GET', `/api/stores/lessari/conversations${query}`, owner).then((response) => response.json<ShopConversationPage>().conversations.map((row) => row.order.number));
-    expect(await page('')).toEqual([2, 1]);
+    expect(await page('')).toEqual([1, 2]);
     expect(await page('?filter=OPEN')).toEqual([1]);
     expect(await page('?filter=UNREAD')).toEqual([2]);
     expect(await page('?q=2')).toEqual([2]);
-    expect(await page('?q=bia')).toEqual([2, 1]);
+    expect(await page('?q=bia')).toEqual([1, 2]);
     expect(await page('?q=ninguem')).toEqual([]);
     expect((await call('GET', '/api/stores/lessari/conversations?filter=TODAS', owner)).statusCode).toBe(400);
   });
@@ -146,9 +166,15 @@ describe("an order's conversation", () => {
     expect((await call('POST', `${mine()}/messages`, shopper, { body: '❤️'.repeat(1001) })).statusCode).toBe(400);
     expect((await call('POST', `${mine()}/messages`, shopper, { body: 'a'.repeat(2000) })).statusCode).toBe(201);
 
-    // A shopper's token opens no panel route, and no token opens the shopper's.
+    // A shopper's token opens no panel route, a shopkeeper's none of the shopper's, and no token neither.
     expect((await call('GET', shops(), shopper)).statusCode).toBe(401);
+    expect((await call('GET', mine(), owner)).statusCode).toBe(401);
     expect((await call('GET', mine())).statusCode).toBe(401);
+    // A shopper of another shop is a stranger here.
+    expect((await call('GET', mine(), await shopperOf('outra', 'De Outra'))).statusCode).toBe(401);
+    // Another shop's owner is refused as on every panel route of a shop not theirs.
+    const neighbour = await signUpAndSignIn(app, newEmail('vizinha'));
+    expect((await call('GET', shops(), neighbour)).json<ApiErrorBody>()).toMatchObject({ errorCode: 'STORE_FORBIDDEN' });
     expect(await prisma.orderMessage.count()).toBe(1);
   });
 });
