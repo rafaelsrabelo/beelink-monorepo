@@ -6,7 +6,7 @@ import type { CustomerReorder } from "@harness-monorepo/contracts"
 
 // App
 import { callApi } from "@/lib/api"
-import { clientIpOf, refuseForeignOrigin } from "@/lib/bff"
+import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { addLine, CART_COOKIE, cartCookieOf, decodeCart, sameLine, type CartLine } from "@/lib/cart-cookie"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { callAsShopper } from "@/lib/shopper-call"
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   if (!store || !/^\d{1,10}$/.test(number)) return NextResponse.json({ statusCode: 404, errorCode: "NOT_FOUND", message: "No such order" }, { status: 404 })
 
   const routes = storefrontRoutes(store)
-  const go = (path: string) => NextResponse.redirect(new URL(path, request.url), 303)
+  const go = (path: string) => NextResponse.redirect(new URL(path, publicOriginOf(request)), 303)
 
   const read = await callAsShopper(request, slug, (accessToken) =>
     callApi({ path: `/stores/${encodeURIComponent(slug)}/customer/orders/${number}/reorder`, method: "GET", accessToken, clientIp: clientIpOf(request) }).catch(() => null),

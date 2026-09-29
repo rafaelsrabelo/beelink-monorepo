@@ -6,7 +6,7 @@ import type { AuthSession } from "@harness-monorepo/contracts"
 
 // App
 import { callApi, isApiErrorBody } from "@/lib/api"
-import { clientIpOf, refuseForeignOrigin } from "@/lib/bff"
+import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import {
   CUSTOMER_REFRESH_COOKIE,
   clearCustomerSessionCookies,
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   // Back to the sign-in page, with what to say: always inside this shop, whatever the form claimed.
   const bounce = (mode: string, query: Record<string, string>) => {
-    const page = new URL(safeBackOf(slug, field("retorno")), request.url)
+    const page = new URL(safeBackOf(slug, field("retorno")), publicOriginOf(request))
     if (mode !== "entrar") page.searchParams.set(MODE_KEY, mode)
     page.searchParams.set(BACK_KEY, back)
     for (const [key, value] of Object.entries(query)) page.searchParams.set(key, value)
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       const response = await callApi({ path: `${shop}/login`, body: { email, password: field("password") }, clientIp }).catch(() => null)
       if (!response?.ok) return bounce("entrar", { erro: response ? await codeOf(response) : "UNKNOWN", email })
 
-      const answer = NextResponse.redirect(new URL(back, request.url), 303)
+      const answer = NextResponse.redirect(new URL(back, publicOriginOf(request)), 303)
       setCustomerSessionCookies(answer.cookies, slug, (await response.json()) as AuthSession)
       return answer
     }
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       return bounce("criar", { enviado: "1", email })
     }
     case "perfil": {
-      const page = new URL(safeBackOf(slug, field("retorno")), request.url)
+      const page = new URL(safeBackOf(slug, field("retorno")), publicOriginOf(request))
       const body = {
         name: field("name").trim(),
         phone: field("phone"),
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
         callApi({ path: `${shop}/me`, method: "PATCH", body, accessToken, clientIp }).catch(() => null),
       )
       if (saved.status === "signedOut") {
-        const signedOut = NextResponse.redirect(new URL(`/${slug}`, request.url), 303)
+        const signedOut = NextResponse.redirect(new URL(`/${slug}`, publicOriginOf(request)), 303)
         clearCustomerSessionCookies(signedOut.cookies, slug)
         return signedOut
       }
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
       // A refusal goes back to the form (`formulario`), wherever a save would have gone: a phone the
       // shop already has is said there, and nowhere else.
-      const landing = response?.ok ? page : new URL(safeBackOf(slug, field("formulario") || field("retorno")), request.url)
+      const landing = response?.ok ? page : new URL(safeBackOf(slug, field("formulario") || field("retorno")), publicOriginOf(request))
       if (response?.ok) landing.searchParams.set("salvo", "1")
       else landing.searchParams.set("erro", response?.status === 400 ? "CUSTOMER_FIELDS_INVALID" : response ? await codeOf(response) : "UNKNOWN")
 
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
       // Signing out always ends here, the API reachable or not: the cookies go either way.
       if (refreshToken) await callApi({ path: `${shop}/logout`, body: { refreshToken }, clientIp }).catch(() => null)
 
-      const answer = NextResponse.redirect(new URL(`/${slug}`, request.url), 303)
+      const answer = NextResponse.redirect(new URL(`/${slug}`, publicOriginOf(request)), 303)
       clearCustomerSessionCookies(answer.cookies, slug)
       return answer
     }

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 // App
+import { publicOriginOf } from "@/lib/bff"
 import { RETURN_KEY, signInHrefOf } from "@/lib/panel-return"
 import { clearSessionCookies } from "@/lib/session-cookies"
 
@@ -17,7 +18,7 @@ import { clearSessionCookies } from "@/lib/session-cookies"
 export function GET(request: NextRequest): NextResponse {
   // `voltar` survives the trip: the page the session ended on is where signing in comes back to.
   const back = request.nextUrl.searchParams.get(RETURN_KEY)
-  const answer = NextResponse.redirect(new URL(back ? signInHrefOf(back) : "/login", request.url))
+  const answer = NextResponse.redirect(new URL(back ? signInHrefOf(back) : "/login", publicOriginOf(request)))
   clearSessionCookies(answer.cookies)
 
   return answer

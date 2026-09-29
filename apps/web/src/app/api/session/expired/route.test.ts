@@ -21,4 +21,12 @@ describe("GET /api/session/expired", () => {
     const elsewhere = GET(new NextRequest("http://localhost:3000/api/session/expired?voltar=https%3A%2F%2Fevil.example"))
     expect(elsewhere.headers.get("location")).toBe("http://localhost:3000/login")
   })
+
+  it("sends the person to the site they are on, not to the address the server binds behind the proxy", () => {
+    const response = GET(
+      new NextRequest("https://0.0.0.0:3000/api/session/expired", { headers: { "x-forwarded-host": "link.beecoders.net" } }),
+    )
+
+    expect(response.headers.get("location")).toBe("https://link.beecoders.net/login")
+  })
 })

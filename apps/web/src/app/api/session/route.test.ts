@@ -68,6 +68,20 @@ describe("POST /api/session", () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
+  it("signs in from the site's own page behind the proxy, where the server binds 0.0.0.0", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(SESSION, { status: 200 })))
+
+    const response = await POST(
+      new NextRequest("https://0.0.0.0:3000/api/session", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "https://link.beecoders.net", "x-forwarded-host": "link.beecoders.net" },
+        body: JSON.stringify({ email: "ana@exemplo.com", password: "uma-senha-comprida" }),
+      }),
+    )
+
+    expect(response.status).toBe(200)
+  })
+
   it("forwards the caller's address, so the API's rate limit sees people and not this server", async () => {
     const fetchSpy = vi.fn(async () => Response.json(SESSION, { status: 200 }))
     vi.stubGlobal("fetch", fetchSpy)
