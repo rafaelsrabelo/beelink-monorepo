@@ -115,7 +115,7 @@ export class CustomersController {
   @Patch('me')
   @UseGuards(CustomerAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "Change the shopper's name, phone or address at this shop" })
+  @ApiOperation({ summary: "Change the shopper's name, phone, CPF or birth date at this shop" })
   @ApiOkResponse({ type: CustomerProfileResponse })
   @ApiConflictResponse({ description: 'CUSTOMER_PHONE_TAKEN' })
   update(

@@ -2,14 +2,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
-import { Transform, Type } from 'class-transformer';
-import { IsObject, IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf } from 'class-validator';
 
 // Types
 import type { CustomerAddress, UpdateCustomerProfilePayload } from '@harness-monorepo/contracts';
 
 // App
 import { IsBirthDate } from '../../../shared/http/birth-date.js';
+import { CustomerSavedAddressResponse } from './customer-address.dto.js';
 import { IsCpf, cpfDigitsOf } from '../../../shared/http/cpf.js';
 import { normaliseWhatsapp } from '../../stores/dto/store-fields.dto.js';
 
@@ -77,10 +78,6 @@ export class UpdateCustomerProfileDto implements UpdateCustomerProfilePayload {
   @ApiPropertyOptional({ example: '1990-05-17', nullable: true, type: String, format: 'date', description: 'From 1900 to today. Refused with CUSTOMER_BIRTH_DATE_INVALID.' })
   @IsOptional() @blankIsNull @trim @ValidateIf((_, value) => value !== null) @IsBirthDate({ context: { errorCode: 'CUSTOMER_BIRTH_DATE_INVALID' } })
   birthDate?: string | null;
-
-  @ApiPropertyOptional({ type: CustomerAddressDto })
-  @IsOptional() @IsObject() @ValidateNested() @Type(() => CustomerAddressDto)
-  address?: CustomerAddressDto;
 }
 
 export class CustomerAddressResponse implements CustomerAddress {
@@ -100,5 +97,6 @@ export class CustomerProfileResponse {
   @ApiProperty({ nullable: true, type: String, description: 'Digits only, with the country code.' }) phone!: string | null;
   @ApiProperty({ nullable: true, type: String, description: 'The eleven digits.' }) cpf!: string | null;
   @ApiProperty({ nullable: true, type: String, format: 'date' }) birthDate!: string | null;
-  @ApiProperty({ type: CustomerAddressResponse }) address!: CustomerAddressResponse;
+  @ApiProperty({ type: CustomerAddressResponse, description: "The default address's parts; every part null while there is none." }) address!: CustomerAddressResponse;
+  @ApiProperty({ type: [CustomerSavedAddressResponse], description: 'Every saved address, the default first, then the newest.' }) addresses!: CustomerSavedAddressResponse[];
 }

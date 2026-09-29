@@ -1,5 +1,5 @@
 /// A shop's own record of someone who buys from it (docs/product/README.md, "Customers"): a name, a
-/// phone and an address, remembered so they are not typed again. It belongs to the shop; the account
+/// phone and their addresses, remembered so they are not typed again. It belongs to the shop; the account
 /// it may be linked to is bee-link's, and no shop ever reads that account through it.
 ///
 /// The same person buying from two shops is two customers. The phone identifies one within a shop,
@@ -24,13 +24,6 @@ model Customer {
   cpf          String?   @db.Char(11)
   /// A day, no time: when the shopper was born, if they said.
   birthDate    DateTime? @db.Date
-  zipCode      String?
-  street       String?
-  number       String?
-  complement   String?
-  neighborhood String?
-  city         String?
-  state        String?
   /// The shop's books on this customer, kept by the transaction that places or cancels an order so
   /// the list can filter and sort by them without reading the orders. Cancelled ones do not count.
   ordersCount     Int       @default(0)
@@ -42,7 +35,8 @@ model Customer {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  orders Order[]
+  orders    Order[]
+  addresses CustomerAddress[]
 
   @@unique([storeId, userId])
   @@unique([storeId, phone])
@@ -51,4 +45,33 @@ model Customer {
   /// The CRM's stage filter and its "latest order" sort.
   @@index([storeId, lastOrderAt])
   @@map("customers")
+}
+
+/// One place a customer receives orders (BEELINK-148): home, work. A customer has none until they
+/// give one, and one of them is the default: where an order goes unless another is chosen, and the
+/// address the panel reads and writes. At most one default per customer, by the partial unique index;
+/// exactly one while there are any, kept so by the service.
+model CustomerAddress {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  customerId    String   @db.Uuid
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// What the customer calls it — "Casa", "Trabalho"; null when they gave it no name.
+  label         String?
+  /// Who receives an order there; null is the customer, by the name they have when the order is placed.
+  recipientName String?
+  zipCode       String?
+  street        String?
+  number        String?
+  complement    String?
+  neighborhood  String?
+  city          String?
+  /// Two letters, upper case.
+  state         String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([customerId], where: { isDefault: true }, map: "customer_addresses_one_default_key")
+  @@index([customerId])
+  @@map("customer_addresses")
 }

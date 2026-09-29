@@ -3,7 +3,7 @@ import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/co
 
 // Types
 import type { AuthSession, CustomerProfile } from '@harness-monorepo/contracts';
-import type { CustomerModel, UserModel } from '../../generated/prisma/models.js';
+import type { CustomerAddressModel, CustomerModel, UserModel } from '../../generated/prisma/models.js';
 
 // App
 import { dayOf } from '../../shared/http/birth-date.js';
@@ -13,9 +13,11 @@ import { AuthService } from '../auth/auth.service.js';
 import type { LoginDto, RegisterDto } from '../auth/dto/auth.dto.js';
 import { SessionService } from '../auth/session.service.js';
 import { StoresService } from '../stores/stores.service.js';
+import { SAVED_ADDRESS_ORDER, addressPartsOf, toSavedAddress } from './customer-addresses.js';
 import type { UpdateCustomerProfileDto } from './dto/customer.dto.js';
 
-function toCustomerProfile(customer: CustomerModel, email: string): CustomerProfile {
+/** The record, its account's e-mail, and its addresses as `SAVED_ADDRESS_ORDER` reads them: the default first. */
+function toCustomerProfile(customer: CustomerModel, email: string, addresses: CustomerAddressModel[]): CustomerProfile {
   return {
     id: customer.id,
     name: customer.name,
@@ -23,15 +25,8 @@ function toCustomerProfile(customer: CustomerModel, email: string): CustomerProf
     phone: customer.phone,
     cpf: customer.cpf,
     birthDate: dayOf(customer.birthDate),
-    address: {
-      zipCode: customer.zipCode,
-      street: customer.street,
-      number: customer.number,
-      complement: customer.complement,
-      neighborhood: customer.neighborhood,
-      city: customer.city,
-      state: customer.state,
-    },
+    address: addressPartsOf(addresses.find((address) => address.isDefault)),
+    addresses: addresses.map(toSavedAddress),
   } satisfies CustomerProfile;
 }
 
@@ -97,7 +92,8 @@ export class CustomersService {
     const { storeId } = await this.scopeOf(storeSlug);
     const user = await this.accountAt(storeId, userId);
 
-    return toCustomerProfile(await this.recordOf(storeId, user), user.email);
+    const record = await this.recordOf(storeId, user);
+    return toCustomerProfile(record, user.email, await this.addressesOf(record.id));
   }
 
   /**
@@ -125,10 +121,9 @@ export class CustomersService {
           ...(dto.cpf !== undefined ? { cpf: dto.cpf } : {}),
           // Midnight UTC is the day itself in a `DATE` column; see `dayOf`.
           ...(dto.birthDate !== undefined ? { birthDate: dto.birthDate === null ? null : new Date(`${dto.birthDate}T00:00:00.000Z`) } : {}),
-          ...dto.address,
         },
       });
-      return toCustomerProfile(updated, user.email);
+      return toCustomerProfile(updated, user.email, await this.addressesOf(updated.id));
     } catch (error) {
       // The phone identifies a customer within a shop. Two records of one shop cannot share it.
       if (error instanceof Error && 'code' in error && error.code === 'P2002') {
@@ -139,6 +134,10 @@ export class CustomersService {
       }
       throw error;
     }
+  }
+
+  private addressesOf(customerId: string): Promise<CustomerAddressModel[]> {
+    return this.prisma.customerAddress.findMany({ where: { customerId }, orderBy: SAVED_ADDRESS_ORDER });
   }
 
   /** This shop's accounts, and where their e-mailed links lead: 404 for a shop that does not exist. */

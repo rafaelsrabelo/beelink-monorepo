@@ -29,6 +29,8 @@ export interface Placement {
   storeId: string;
   items: readonly CreateOrderItemInput[];
   fulfillment: OrderFulfillment;
+  /** The customer's saved address a delivery goes to; null is their default. */
+  addressId: string | null;
   paymentMethod: PaymentMethod;
   deliveryFeeCents: number;
   discountCents: number;
@@ -83,7 +85,7 @@ export class OrderPlacement {
       // Before the order is written: a line the stock cannot cover refuses the whole order.
       await takeStock(tx, lines);
       const customerId = await placement.customerOf(tx);
-      const delivery = await deliveryOf(tx, customerId, placement.fulfillment);
+      const delivery = await deliveryOf(tx, customerId, placement.fulfillment, placement.addressId);
 
       const order = await tx.order.create({
         data: {

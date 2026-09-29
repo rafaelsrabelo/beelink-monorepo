@@ -80,17 +80,26 @@ describe("a shopper's door into a shop", () => {
     const session = await shopperAt('lessari');
 
     const first = (await me('lessari', session.accessToken)).json<CustomerProfile>();
-    expect(first).toMatchObject({ name: 'Bia Cliente', phone: null, address: { city: null } });
+    expect(first).toMatchObject({ name: 'Bia Cliente', phone: null, address: { city: null }, addresses: [] });
 
     const updated = await app.inject({
       method: 'PATCH',
       url: '/api/stores/lessari/customer/me',
       headers: { authorization: `Bearer ${session.accessToken}` },
-      payload: { phone: '(11) 98888-7777', address: { city: 'São Paulo', state: 'sp', zipCode: '01310-930' } },
+      payload: { phone: '(11) 98888-7777' },
     });
     expect(updated.statusCode).toBe(200);
     // Kept as a WhatsApp link wants it: the key an order finds the customer by.
-    expect(updated.json<CustomerProfile>()).toMatchObject({ phone: '5511988887777', address: { city: 'São Paulo', state: 'SP' } });
+    expect(updated.json<CustomerProfile>()).toMatchObject({ phone: '5511988887777' });
+
+    // An address is saved on its own now; the profile's save refuses one.
+    const withAddress = await app.inject({
+      method: 'PATCH',
+      url: '/api/stores/lessari/customer/me',
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      payload: { address: { city: 'São Paulo' } },
+    });
+    expect(withAddress.statusCode).toBe(400);
   });
 
   it('keeps the CPF and the birth date the shopper gives, refuses ones that cannot be, and clears them when blank', async () => {

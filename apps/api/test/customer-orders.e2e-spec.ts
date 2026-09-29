@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { ApiErrorBody, AuthSession, CustomerOrder, CustomerOrderPage, CustomerReorder, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, CustomerOrder, CustomerOrderPage, CustomerReorder, CustomerSavedAddress, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -42,7 +42,8 @@ describe("a shopper's order from the cart", () => {
     whey = await variantOf(await addProduct('Whey', 8990));
     grape = await flavoured(await addProduct('Creatina', 5990), 'Sabor', 'Uva');
     shopper = await shopperOf('lessari', 'Bia Cliente');
-    await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777', address: paulista });
+    await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777' });
+    await call('POST', '/api/stores/lessari/customer/addresses', shopper, paulista);
   });
 
   function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', url: string, session?: AuthSession, payload?: object) {
@@ -155,6 +156,42 @@ describe("a shopper's order from the cart", () => {
     ]);
   });
 
+  it('goes to the saved address chosen, received by whom it names; without one, to the default', async () => {
+    const work = (
+      await call('POST', '/api/stores/lessari/customer/addresses', shopper, {
+        label: 'Trabalho',
+        recipientName: 'Recepção',
+        zipCode: '04538-133',
+        street: 'Av. Brigadeiro Faria Lima',
+        number: '3477',
+        city: 'São Paulo',
+        state: 'sp',
+      })
+    ).json<CustomerSavedAddress>();
+
+    const chosen = await place({ addressId: work.id });
+    expect(chosen.statusCode).toBe(201);
+    expect(chosen.json<CustomerOrder>().deliveryAddress).toEqual({
+      recipientName: 'Recepção',
+      zipCode: '04538-133',
+      street: 'Av. Brigadeiro Faria Lima',
+      number: '3477',
+      complement: null,
+      neighborhood: null,
+      city: 'São Paulo',
+      state: 'SP',
+    });
+
+    // The address is photographed: removing it later leaves the order where it went.
+    await call('DELETE', `/api/stores/lessari/customer/addresses/${work.id}`, shopper);
+    expect((await call('GET', '/api/stores/lessari/customer/orders/1', shopper)).json<CustomerOrder>().deliveryAddress).toMatchObject({ recipientName: 'Recepção' });
+
+    const byDefault = await place();
+    expect(byDefault.json<CustomerOrder>().deliveryAddress).toEqual({ recipientName: 'Bia Cliente', ...paulista });
+    // Deleted since the cart drew it: refused, never sent to the default instead.
+    expect((await place({ addressId: work.id })).json()).toMatchObject({ errorCode: 'ORDER_ADDRESS_NOT_FOUND' });
+  });
+
   it('takes a pick-up without an address, and keeps none on it', async () => {
     const nowhere = await shopperOf('lessari', 'Dani Rocha');
 
@@ -166,9 +203,14 @@ describe("a shopper's order from the cart", () => {
   it('refuses what it cannot place, saving nothing — the same refusals as the panel', async () => {
     const nowhere = await shopperOf('lessari', 'Dani Rocha');
     const outraWhey = await variantOf(await addProduct('Whey', 8990, 'outra'));
+    const theirs = (await call('POST', '/api/stores/lessari/customer/addresses', nowhere, paulista)).json<CustomerSavedAddress>();
+    await call('DELETE', `/api/stores/lessari/customer/addresses/${theirs.id}`, nowhere);
+    const someoneElses = (await call('POST', '/api/stores/lessari/customer/addresses', await shopperOf('lessari', 'Caio Lima'), paulista)).json<CustomerSavedAddress>();
     await prisma.store.update({ where: { slug: 'lessari' }, data: { paymentMethods: ['PIX'] } });
     const cases: [AuthSession, object, string][] = [
       [nowhere, {}, 'ORDER_DELIVERY_ADDRESS_MISSING'],
+      [shopper, { addressId: someoneElses.id }, 'ORDER_ADDRESS_NOT_FOUND'],
+      [shopper, { addressId: 'nao-e-um-id' }, 'BAD_REQUEST'],
       [shopper, { paymentMethod: 'MONEY' }, 'ORDER_PAYMENT_NOT_ACCEPTED'],
       [shopper, { items: [{ variantId: outraWhey, quantity: 1 }] }, 'ORDER_VARIANT_INVALID'],
       [shopper, { items: [{ variantId: whey, quantity: 1 }, { variantId: whey, quantity: 1 }] }, 'ORDER_ITEM_DUPLICATE'],

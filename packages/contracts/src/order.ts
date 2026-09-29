@@ -47,12 +47,12 @@ export interface OrderCustomer {
 }
 
 /**
- * Where a delivery goes, photographed from the customer's record when the order was placed: the
- * customer moving, or changing their name, never rewrites where an order went. It always has a
- * street and a city — a delivery without them is refused — and whatever else the record held.
+ * Where a delivery goes, photographed from the customer's saved address when the order was placed:
+ * the customer moving, or changing their name, never rewrites where an order went. It always has a
+ * street and a city — a delivery without them is refused — and whatever else the address held.
  */
 export interface OrderDeliveryAddress extends CustomerAddress {
-  /** Who receives it: the customer's name as it was. */
+  /** Who receives it, as it was: the address's own recipient, else the customer's name. */
   recipientName: string;
   street: string;
   city: string;
@@ -172,8 +172,8 @@ export interface CreateOrderPayload {
   customer: OrderCustomerInput;
   items: CreateOrderItemInput[];
   /**
-   * A delivery goes where the customer's record says, and the order keeps that address as it was;
-   * a customer with no street and city is refused with `ORDER_DELIVERY_ADDRESS_MISSING`.
+   * A delivery goes to the customer's default address, and the order keeps that address as it was;
+   * a customer with no street and city there is refused with `ORDER_DELIVERY_ADDRESS_MISSING`.
    */
   fulfillment: OrderFulfillment;
   /** Ignored, as zero, on a pick-up. */
@@ -193,14 +193,16 @@ export interface UpdateOrderStatusPayload {
 
 /**
  * The cart as its signed-in customer places it: the lines, how it leaves and how it is paid. The
- * prices, the totals and the address are the API's — a delivery goes where the customer's record
- * says (`ORDER_DELIVERY_ADDRESS_MISSING` when it says nowhere). It starts `RECEIVED`: the shop
- * still has to accept it.
+ * prices and the totals are the API's. A delivery goes to the saved address chosen, or to the
+ * default without one (`ORDER_DELIVERY_ADDRESS_MISSING` when there is nowhere to go). It starts
+ * `RECEIVED`: the shop still has to accept it.
  */
 export interface PlaceCustomerOrderPayload {
   items: CreateOrderItemInput[];
   fulfillment: OrderFulfillment;
   paymentMethod: PaymentMethod;
+  /** One of the customer's saved addresses (`CustomerSavedAddress.id`); ignored on a pick-up. Another's is `ORDER_ADDRESS_NOT_FOUND`. */
+  addressId?: string;
 }
 
 /** One line as its customer reads it: what was bought, at the price of that moment. */
@@ -350,6 +352,8 @@ export type OrderErrorCode =
   | "ORDER_CUSTOMER_NOT_FOUND"
   /** A delivery for a customer whose record has no street and city: nowhere to send it. */
   | "ORDER_DELIVERY_ADDRESS_MISSING"
+  /** The cart chose a saved address that is not the customer's — deleted since, or never theirs. */
+  | "ORDER_ADDRESS_NOT_FOUND"
   /** A line the shop does not sell — another shop's, switched off, or off sale. Its `details` are `OrderVariantInvalidDetails`. */
   | "ORDER_VARIANT_INVALID"
   | "ORDER_ITEM_DUPLICATE"

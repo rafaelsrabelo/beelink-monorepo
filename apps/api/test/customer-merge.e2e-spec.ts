@@ -84,11 +84,11 @@ describe('two records of one person, made one by the shopkeeper', () => {
 
     expect(await flagsOf()).toEqual({ 'Maria WhatsApp': false, 'Outra Pessoa': false, 'Maria Souza': false });
 
-    const refused = await call('PATCH', '/api/stores/lessari/customer/me', session, { phone: '11977776666', address: { city: 'Santos' } });
+    const refused = await call('PATCH', '/api/stores/lessari/customer/me', session, { phone: '11977776666', name: 'Maria S.' });
     expect(refused.statusCode).toBe(409);
     expect(refused.json()).toMatchObject({ errorCode: 'CUSTOMER_PHONE_TAKEN' });
     // Refused whole: the phone is only remembered as a claim, and the rest of the request is not saved.
-    expect((await call('GET', '/api/stores/lessari/customer/me', session)).json<CustomerProfile>()).toMatchObject({ phone: null, address: { city: null } });
+    expect((await call('GET', '/api/stores/lessari/customer/me', session)).json<CustomerProfile>()).toMatchObject({ phone: null, name: 'Maria Souza' });
 
     expect(await flagsOf()).toEqual({ 'Maria WhatsApp': true, 'Outra Pessoa': false, 'Maria Souza': true });
     expect((await record(me.id)).duplicates).toEqual([
@@ -146,8 +146,14 @@ describe('two records of one person, made one by the shopkeeper', () => {
 
     const kept = (await merge(here.id, other.id)).json<StoreCustomerDetail>();
 
-    // Its own phone, and its own address — never half of each.
+    // Its own phone, and its own default address — never half of each.
     expect(kept).toMatchObject({ id: here.id, phone: '5521977776666', ordersCount: 1, address: { city: 'Niterói', zipCode: null, street: null } });
+    // The other's address came along, whole, as one more of the same person's.
+    const addresses = await prisma.customerAddress.findMany({ where: { customerId: here.id }, orderBy: { isDefault: 'desc' } });
+    expect(addresses.map(({ city, street, isDefault }) => ({ city, street, isDefault }))).toEqual([
+      { city: 'Niterói', street: null, isDefault: true },
+      { city: null, street: 'Rua B', isDefault: false },
+    ]);
   });
 
   it('refuses itself, another shop, two accounts and anyone but the owner', async () => {

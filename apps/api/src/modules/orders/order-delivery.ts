@@ -22,7 +22,7 @@ export interface DeliveryColumns {
   deliveryState: string | null;
 }
 
-/** The part of a customer's record a delivery reads. */
+/** The part of a saved address a delivery reads, with who receives there. */
 export interface CustomerAddressRow {
   name: string;
   zipCode: string | null;
@@ -52,9 +52,9 @@ function filled(value: string | null): string | null {
 }
 
 /**
- * The customer's record as it is now, photographed as the order's delivery — or null when it has
- * no street and city, which is nowhere to deliver. The shop window already reads an address that
- * way (`isReachable`): demanding a number or a neighbourhood would refuse customers a shop serves.
+ * A saved address as it is now, photographed as the order's delivery — or null when it has no
+ * street and city, which is nowhere to deliver. The shop window already reads an address that way
+ * (`isReachable`): demanding a number or a neighbourhood would refuse customers a shop serves.
  */
 export function deliveryColumnsOf(customer: CustomerAddressRow): DeliveryColumns | null {
   const street = filled(customer.street);
@@ -74,18 +74,23 @@ export function deliveryColumnsOf(customer: CustomerAddressRow): DeliveryColumns
 }
 
 /**
- * The delivery columns of an order being placed, inside its transaction: none on a pick-up, the
- * customer's address on a delivery. A delivery with nowhere to go throws, and the transaction takes
- * the order's number, its stock and a customer registered with it back along with it.
+ * The delivery columns of an order being placed, inside its transaction: none on a pick-up; on a
+ * delivery, the saved address chosen, else the customer's default, received by its recipient or
+ * else the customer. A chosen address that is not the customer's, or nowhere to go, throws — and the
+ * transaction takes the order's number, its stock and a customer registered with it back with it.
  */
-export async function deliveryOf(tx: Tx, customerId: string, fulfillment: OrderFulfillment): Promise<DeliveryColumns> {
+export async function deliveryOf(tx: Tx, customerId: string, fulfillment: OrderFulfillment, addressId: string | null): Promise<DeliveryColumns> {
   if (fulfillment === 'PICKUP') return PICKUP;
 
   const customer = await tx.customer.findUniqueOrThrow({
     where: { id: customerId },
-    select: { name: true, zipCode: true, street: true, number: true, complement: true, neighborhood: true, city: true, state: true },
+    select: { name: true, addresses: { where: addressId ? { id: addressId } : { isDefault: true }, take: 1 } },
   });
-  const columns = deliveryColumnsOf(customer);
+  const address = customer.addresses[0];
+  if (addressId && !address) {
+    throw new BadRequestException(orderError('ORDER_ADDRESS_NOT_FOUND', "The address chosen is not one of the customer's"));
+  }
+  const columns = address ? deliveryColumnsOf({ ...address, name: address.recipientName ?? customer.name }) : null;
   if (!columns) {
     throw new BadRequestException(orderError('ORDER_DELIVERY_ADDRESS_MISSING', 'The customer has no street and city to deliver to'));
   }
