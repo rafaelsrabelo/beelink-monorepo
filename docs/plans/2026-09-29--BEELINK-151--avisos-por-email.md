@@ -70,3 +70,17 @@
 - Notificação push.
 - O envio das ofertas.
 - O envio dos avisos de favoritos, que é do J16.
+
+## Adendo da implementação (29/09)
+
+- **O despachante usa o relógio deste processo, e não o do banco.** O Prisma grava `nextAttemptAt` a
+  partir daqui. No Docker local, o relógio do banco estava um instante atrás, e uma linha recém-gravada
+  ainda não vencia.
+- **A tela diz quando a pessoa aceitou as ofertas** ("Você aceitou em 29/09/2026"), no dia de São
+  Paulo.
+- **A frase "no máximo 1 mensagem por semana", da 6h, ficou de fora.** Hoje nada garante esse limite,
+  e o envio de ofertas está fora do escopo.
+- **Conferido em :3100 e :3101 com o Mailpit:**
+  - os avisos da `cliente-j11` foram salvos pelo BFF, com as ofertas e a data;
+  - o pedido nº 25 da loja-do-design, aceito pela dona, mandou "Loja do Design — pedido nº 25
+    confirmado", de "Loja do Design", com o link para `/loja-do-design/conta/pedidos/25`.

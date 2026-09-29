@@ -15,6 +15,7 @@ import { BACK_KEY, paramOf, safeBackOf } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { StorefrontAddressEditor } from "./storefront-address-editor"
 import { StorefrontAddressesSection } from "./storefront-addresses-section"
+import { StorefrontNoticesSection } from "./storefront-notices-section"
 import { StorefrontSecuritySection } from "./storefront-security-section"
 
 export interface StorefrontAccountSectionProps {
@@ -108,6 +109,7 @@ export function StorefrontAccountSection({ slug, accountHref, signInHref, profil
         messages={messages}
       />
       <StorefrontAddressesSection slug={slug} accountHref={accountHref} profile={profile} query={gone} errors={errors} messages={messages} />
+      <StorefrontNoticesSection slug={slug} accountHref={accountHref} signInHref={signInHref} profile={profile} query={query} errors={errors} messages={messages} />
       <StorefrontSecuritySection slug={slug} accountHref={accountHref} signInHref={signInHref} profile={profile} query={query} errors={errors} messages={messages} />
     </div>
   )

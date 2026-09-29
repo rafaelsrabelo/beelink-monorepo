@@ -355,6 +355,18 @@ export interface UiMessages {
     securityPasswordChanged: string
     securityLinkSent: string
     signedOutEverywhere: string
+    /** The shopper's notices by e-mail (BEELINK-151). */
+    noticesTitle: string
+    noticesLead: string
+    noticesOrders: string
+    noticesOrdersHint: string
+    noticesFavorites: string
+    noticesFavoritesHint: string
+    noticesOffers: string
+    noticesOffersHint: string
+    noticesOffersSince: string
+    noticesSave: string
+    noticesSaved: string
     emailConfirmed: string
     passwordReplaced: string
     signOut: string
