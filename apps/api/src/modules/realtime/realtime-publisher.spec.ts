@@ -21,9 +21,9 @@ describe('RealtimePublisher', () => {
     const publisher = new RealtimePublisher();
     publisher.attach(server);
 
-    publisher.publish({ storeId: 's1', customerId: 'c1' }, { type: 'order.created', orderNumber: 7 });
+    publisher.publish({ storeId: 's1', customerId: 'c1' }, { type: 'order.created', orderNumber: 7, placedBy: 'CUSTOMER' });
     expect(to).toHaveBeenLastCalledWith(['store:s1', 'customer:c1']);
-    expect(emit).toHaveBeenLastCalledWith('event', { type: 'order.created', orderNumber: 7 });
+    expect(emit).toHaveBeenLastCalledWith('event', { type: 'order.created', orderNumber: 7, placedBy: 'CUSTOMER' });
 
     publisher.publish({ storeId: 's1', customerId: null }, { type: 'order.status', orderNumber: 7, status: 'ACCEPTED' });
     expect(to).toHaveBeenLastCalledWith(['store:s1']);

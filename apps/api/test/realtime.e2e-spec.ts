@@ -117,7 +117,7 @@ describe('the real-time channel', () => {
     const window = await connect(await customerTicket());
 
     await placeOrder();
-    expect(await heard(panel, { type: 'order.created' })).toEqual({ type: 'order.created', orderNumber: 1 });
+    expect(await heard(panel, { type: 'order.created' })).toEqual({ type: 'order.created', orderNumber: 1, placedBy: 'CUSTOMER' });
     await heard(window, { type: 'order.created', orderNumber: 1 });
 
     await call('POST', '/api/stores/lessari/customer/orders/1/conversation/messages', shopper, { body: 'Oi' });
@@ -157,7 +157,7 @@ describe('the real-time channel', () => {
     const window = await connect(await customerTicket());
     const customer = { id: await customerIdOf(shopper) };
     await call('POST', '/api/stores/lessari/orders', owner, { customer, items: [{ variantId: variant, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' });
-    await heard(window, { type: 'order.created', orderNumber: 1 });
+    await heard(window, { type: 'order.created', orderNumber: 1, placedBy: 'SHOP' });
   });
 
   it('keeps each room its own: another shop and another shopper hear nothing', async () => {

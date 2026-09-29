@@ -1915,6 +1915,15 @@ export interface UiMessages {
     /** `{count}` — how many are unread. */
     notificationsUnread: string
     notificationsUnreadOne: string
+    /** The bell's menu and the toast that tells of what came in (BEELINK-163). */
+    notificationsTitle: string
+    notificationsEmpty: string
+    notificationsSeeOrders: string
+    notificationNewOrder: string
+    notificationNewMessage: string
+    notificationOrderDetail: string
+    notificationMessageDetail: string
+    notificationOpen: string
     storeMenu: string
     yourStores: string
     noStore: string

@@ -6,7 +6,7 @@ import { panelKeysOf, shopperReadOf } from "./realtime-invalidation"
 
 describe("what an event reads again", () => {
   it("in the panel: the lists, the customers and the stock for a new order, the opened order and its conversation for a move", () => {
-    expect(panelKeysOf({ type: "order.created", orderNumber: 7 }, "loja")).toEqual([
+    expect(panelKeysOf({ type: "order.created", orderNumber: 7, placedBy: "CUSTOMER" }, "loja")).toEqual([
       ["orders", "loja", "list"],
       ["store-customers", "loja"],
       ["catalog", "loja", "products"],

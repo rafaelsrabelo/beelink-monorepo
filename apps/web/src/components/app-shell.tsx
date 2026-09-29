@@ -41,6 +41,7 @@ import { LocaleSwitcher } from "@/components/locale-switcher"
 import { PREFS_COOKIE, PREFS_MAX_AGE } from "@/lib/prefs"
 import { useSignOut } from "@/services/auth/auth-hooks"
 import { useMyStores } from "@/services/stores/store-hooks"
+import { PanelNotifications } from "@/components/panel-notifications"
 
 export interface AppShellProps {
   user: User
@@ -134,7 +135,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
           linkComponent={AppLink}
           messages={ui}
           search={<AdminSearch messages={ui} />}
-          bell={<AdminBell messages={ui} />}
+          bell={shopSlug ? <PanelNotifications key={shopSlug} slug={shopSlug} locale={locale} messages={ui} /> : <AdminBell messages={ui} />}
           storeMenu={
             <AdminStoreMenu
               current={workspaces.find((workspace) => workspace.slug === shopSlug) ?? null}
