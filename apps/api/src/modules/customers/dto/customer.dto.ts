@@ -2,18 +2,22 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
-import { Transform, Type } from 'class-transformer';
-import { IsObject, IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf, ValidateNested } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf } from 'class-validator';
 
 // Types
 import type { CustomerAddress, UpdateCustomerProfilePayload } from '@harness-monorepo/contracts';
 
 // App
+import { IsBirthDate } from '../../../shared/http/birth-date.js';
+import { CustomerSavedAddressResponse } from './customer-address.dto.js';
+import { IsCpf, cpfDigitsOf } from '../../../shared/http/cpf.js';
 import { normaliseWhatsapp } from '../../stores/dto/store-fields.dto.js';
 
 const trim = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value));
 /** Blank is "not given": an empty field in a form is not a value to store. */
 const blankIsNull = Transform(({ value }: { value: unknown }) => (typeof value === 'string' && value.trim() === '' ? null : value));
+const cpfDigits = Transform(({ value }: { value: unknown }) => cpfDigitsOf(value));
 
 export class CustomerAddressDto implements Partial<CustomerAddress> {
   @ApiPropertyOptional({ example: '01310-930', nullable: true, type: String })
@@ -67,9 +71,13 @@ export class UpdateCustomerProfileDto implements UpdateCustomerProfilePayload {
   @Matches(/^\d{12,15}$/)
   phone?: string | null;
 
-  @ApiPropertyOptional({ type: CustomerAddressDto })
-  @IsOptional() @IsObject() @ValidateNested() @Type(() => CustomerAddressDto)
-  address?: CustomerAddressDto;
+  @ApiPropertyOptional({ example: '529.982.247-25', nullable: true, type: String, description: 'Points and dash or not; kept as its eleven digits. Refused with CUSTOMER_CPF_INVALID.' })
+  @IsOptional() @blankIsNull @cpfDigits @ValidateIf((_, value) => value !== null) @IsCpf({ context: { errorCode: 'CUSTOMER_CPF_INVALID' } })
+  cpf?: string | null;
+
+  @ApiPropertyOptional({ example: '1990-05-17', nullable: true, type: String, format: 'date', description: 'From 1900 to today. Refused with CUSTOMER_BIRTH_DATE_INVALID.' })
+  @IsOptional() @blankIsNull @trim @ValidateIf((_, value) => value !== null) @IsBirthDate({ context: { errorCode: 'CUSTOMER_BIRTH_DATE_INVALID' } })
+  birthDate?: string | null;
 }
 
 export class CustomerAddressResponse implements CustomerAddress {
@@ -87,5 +95,9 @@ export class CustomerProfileResponse {
   @ApiProperty() name!: string;
   @ApiProperty() email!: string;
   @ApiProperty({ nullable: true, type: String, description: 'Digits only, with the country code.' }) phone!: string | null;
-  @ApiProperty({ type: CustomerAddressResponse }) address!: CustomerAddressResponse;
+  @ApiProperty({ nullable: true, type: String, description: 'The eleven digits.' }) cpf!: string | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date' }) birthDate!: string | null;
+  @ApiProperty({ type: CustomerAddressResponse, description: "The default address's parts; every part null while there is none." }) address!: CustomerAddressResponse;
+  @ApiProperty({ type: [CustomerSavedAddressResponse], description: 'Every saved address, the default first, then the newest.' }) addresses!: CustomerSavedAddressResponse[];
+  @ApiProperty({ description: 'Whether the account has a password; one opened through Google has none until it creates one.' }) hasPassword!: boolean;
 }

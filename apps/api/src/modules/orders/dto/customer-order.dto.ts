@@ -1,7 +1,7 @@
 // Nest
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 
 // Types
 import type {
@@ -51,13 +51,18 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @Type(() => OrderItemDto)
   items!: OrderItemDto[];
 
-  @ApiProperty({ enum: ORDER_FULFILLMENTS, description: "A delivery goes to the shopper's address on file." })
+  @ApiProperty({ enum: ORDER_FULFILLMENTS, description: "A delivery goes to the saved address chosen, else to the shopper's default." })
   @IsIn(ORDER_FULFILLMENTS)
   fulfillment!: OrderFulfillment;
 
   @ApiProperty({ enum: PAYMENT_METHODS })
   @IsIn(PAYMENT_METHODS)
   paymentMethod!: PaymentMethod;
+
+  @ApiPropertyOptional({ format: 'uuid', description: "One of the shopper's saved addresses; ignored on a pick-up. Another's is ORDER_ADDRESS_NOT_FOUND." })
+  @IsOptional()
+  @IsUUID('all')
+  addressId?: string;
 }
 
 export class CustomerOrderItemResponse implements CustomerOrderItem {

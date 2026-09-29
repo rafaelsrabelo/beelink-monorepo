@@ -17,7 +17,8 @@ const meta = {
       name: "Bia Cliente",
       email: "bia@exemplo.com",
       phone: null,
-      address: { zipCode: null, street: null, number: null, complement: null, neighborhood: null, city: null, state: null },
+      cpf: null,
+      birthDate: null,
     },
   },
 } satisfies Meta<typeof StorefrontAccountForm>
@@ -29,3 +30,20 @@ type Story = StoryObj<typeof meta>
 export const Nova: Story = {}
 
 export const Salvo: Story = { args: { saved: true } }
+
+/** Tudo preenchido: o CPF escrito como a pessoa escreve, e a data no campo do navegador. */
+export const Completo: Story = {
+  args: {
+    saved: true,
+    profile: {
+      name: "Bia Cliente",
+      email: "bia@exemplo.com",
+      phone: "(11) 98888-7777",
+      cpf: "529.982.247-25",
+      birthDate: "1990-05-17",
+    },
+  },
+}
+
+/** Um CPF cujos dígitos verificadores não batem volta com a frase dele, e não com "confira os campos"; o campo fica marcado. */
+export const CpfRecusado: Story = { args: { error: "Esse CPF não confere. Confira os números e salve de novo.", invalidField: "cpf" } }

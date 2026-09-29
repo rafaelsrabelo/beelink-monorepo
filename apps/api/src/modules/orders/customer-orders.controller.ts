@@ -96,7 +96,7 @@ export class CustomerOrdersController {
   @ApiOperation({ summary: "Place the cart as the shopper's order; it starts received, numbered and priced here" })
   @ApiCreatedResponse({ type: CustomerOrderResponse })
   @ApiBadRequestResponse({
-    description: 'ORDER_DELIVERY_ADDRESS_MISSING · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_TOTAL_TOO_LARGE',
+    description: 'ORDER_DELIVERY_ADDRESS_MISSING · ORDER_ADDRESS_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_TOTAL_TOO_LARGE',
   })
   @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT — `details` is `OrderStockDetails`' })
   @ApiTooManyRequestsResponse({ description: 'Too many orders from this address' })

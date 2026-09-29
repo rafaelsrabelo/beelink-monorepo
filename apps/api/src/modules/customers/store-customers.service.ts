@@ -16,12 +16,13 @@ import type { CustomerOrderByWithRelationInput, CustomerWhereInput } from '../..
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
+import { firstAddressOf, writeDefaultAddress } from './customer-addresses.js';
 import { duplicatesOf, flaggedIdsOf } from './customer-duplicates.js';
 import { keptOf, mergeInto } from './customer-merge.js';
 import { CUSTOMER_STAGES, CUSTOMERS_PAGE_SIZE, CUSTOMERS_PAGE_SIZE_MAX } from './customers.constants.js';
 import { customerSince } from './customer-stage.js';
 import type { CreateStoreCustomerDto, MergeStoreCustomerDto, UpdateStoreCustomerDto } from './dto/store-customer.dto.js';
-import { toStoreCustomer, toStoreCustomerDetail, WITH_ACCOUNT, type CustomerRow } from './store-customer.mapper.js';
+import { RECORD_INCLUDE, toStoreCustomer, toStoreCustomerDetail, type CustomerRow } from './store-customer.mapper.js';
 
 /** A customer id is a uuid column: anything else is no customer, never a query the database refuses. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,9 +75,10 @@ export class StoreCustomersService {
     const store = await this.ownedStore(storeSlug, userId);
 
     try {
+      const address = firstAddressOf(dto.address);
       const row = await this.prisma.customer.create({
-        data: { storeId: store.id, name: dto.name, phone: dto.phone, ...dto.address },
-        include: WITH_ACCOUNT,
+        data: { storeId: store.id, name: dto.name, phone: dto.phone, ...(address ? { addresses: { create: address } } : {}) },
+        include: RECORD_INCLUDE,
       });
       const flagged = await flaggedIdsOf(this.prisma, [row.id]);
       return toStoreCustomer(row, store.inactiveAfterDays, new Date(), flagged.has(row.id));
@@ -103,22 +105,24 @@ export class StoreCustomersService {
 
   /**
    * The shopkeeper's correction of the shop's record: the one the shopper sees too, so what is fixed
-   * here reads fixed there. A phone another customer of the shop has is refused and nothing of the
-   * request is written — the update is one statement, and the index refuses it whole.
+   * here reads fixed there. The address is the default one (`writeDefaultAddress`). A phone another
+   * customer of the shop has is refused and nothing of the request is written: one transaction.
    */
   async update(storeSlug: string, userId: string, customerId: string, dto: UpdateStoreCustomerDto): Promise<StoreCustomerDetail> {
     const store = await this.ownedStore(storeSlug, userId);
     const { id } = await this.recordIn(store.id, customerId);
 
     try {
-      const row = await this.prisma.customer.update({
-        where: { id },
-        data: {
-          ...(dto.name !== undefined ? { name: dto.name } : {}),
-          ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
-          ...dto.address,
-        },
-        include: WITH_ACCOUNT,
+      const row = await this.prisma.$transaction(async (tx) => {
+        await tx.customer.update({
+          where: { id },
+          data: {
+            ...(dto.name !== undefined ? { name: dto.name } : {}),
+            ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
+          },
+        });
+        if (dto.address) await writeDefaultAddress(tx, id, dto.address);
+        return tx.customer.findUniqueOrThrow({ where: { id }, include: RECORD_INCLUDE });
       });
       return await this.detailOf(row, store.inactiveAfterDays);
     } catch (error) {
@@ -158,7 +162,7 @@ export class StoreCustomersService {
 
   private async recordIn(storeId: string, customerId: string, db: Pick<Prisma.TransactionClient, 'customer'> = this.prisma): Promise<CustomerRow> {
     const row = UUID.test(customerId)
-      ? await db.customer.findFirst({ where: { id: customerId.toLowerCase(), storeId }, include: WITH_ACCOUNT })
+      ? await db.customer.findFirst({ where: { id: customerId.toLowerCase(), storeId }, include: RECORD_INCLUDE })
       : null;
     if (!row) throw new NotFoundException({ errorCode: 'CUSTOMER_NOT_FOUND', message: 'No such customer in this shop' });
     return row;
@@ -194,7 +198,7 @@ export class StoreCustomersService {
     const [rows, total, ...counts] = await this.prisma.$transaction([
       this.prisma.customer.findMany({
         where,
-        include: WITH_ACCOUNT,
+        include: RECORD_INCLUDE,
         orderBy: ORDER_BY[query.sort ?? 'RECENT'],
         skip: (page - 1) * pageSize,
         take: pageSize,

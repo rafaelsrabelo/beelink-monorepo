@@ -17,7 +17,7 @@ export interface CheckoutRefusal {
  * shopper's session or record, or the shop's payments. Not the stock: the catalogue the cart reads is
  * cached, and a refresh would draw the same cart — the refusal names the lines instead.
  */
-const REREAD = new Set(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_PAYMENT_NOT_ACCEPTED"])
+const REREAD = new Set(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_ADDRESS_NOT_FOUND", "ORDER_PAYMENT_NOT_ACCEPTED"])
 
 export function rereadsTheCart(errorCode: string): boolean {
   return REREAD.has(errorCode)
@@ -62,6 +62,8 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
       return text.checkoutPaymentGone
     case "ORDER_DELIVERY_ADDRESS_MISSING":
       return text.checkoutAddressGone
+    case "ORDER_ADDRESS_NOT_FOUND":
+      return text.checkoutAddressChosenGone
     case "AUTH_UNAUTHENTICATED":
       return text.checkoutSignedOut
     case "RATE_LIMITED":

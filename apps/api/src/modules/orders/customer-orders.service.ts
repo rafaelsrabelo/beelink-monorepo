@@ -49,6 +49,7 @@ export class CustomerOrdersService {
       storeId,
       items: dto.items,
       fulfillment: dto.fulfillment,
+      addressId: dto.addressId?.toLowerCase() ?? null,
       paymentMethod: dto.paymentMethod,
       deliveryFeeCents: 0,
       discountCents: 0,

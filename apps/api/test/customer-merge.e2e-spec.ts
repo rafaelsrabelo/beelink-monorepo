@@ -84,11 +84,11 @@ describe('two records of one person, made one by the shopkeeper', () => {
 
     expect(await flagsOf()).toEqual({ 'Maria WhatsApp': false, 'Outra Pessoa': false, 'Maria Souza': false });
 
-    const refused = await call('PATCH', '/api/stores/lessari/customer/me', session, { phone: '11977776666', address: { city: 'Santos' } });
+    const refused = await call('PATCH', '/api/stores/lessari/customer/me', session, { phone: '11977776666', name: 'Maria S.' });
     expect(refused.statusCode).toBe(409);
     expect(refused.json()).toMatchObject({ errorCode: 'CUSTOMER_PHONE_TAKEN' });
     // Refused whole: the phone is only remembered as a claim, and the rest of the request is not saved.
-    expect((await call('GET', '/api/stores/lessari/customer/me', session)).json<CustomerProfile>()).toMatchObject({ phone: null, address: { city: null } });
+    expect((await call('GET', '/api/stores/lessari/customer/me', session)).json<CustomerProfile>()).toMatchObject({ phone: null, name: 'Maria Souza' });
 
     expect(await flagsOf()).toEqual({ 'Maria WhatsApp': true, 'Outra Pessoa': false, 'Maria Souza': true });
     expect((await record(me.id)).duplicates).toEqual([
@@ -97,12 +97,16 @@ describe('two records of one person, made one by the shopkeeper', () => {
     expect((await record(registered.id)).duplicates).toMatchObject([{ id: me.id, name: 'Maria Souza', phone: null, hasAccount: true, reason: 'PHONE' }]);
   });
 
-  it('moves the orders to the record with an account, fills its phone and address, and deletes the other', async () => {
+  it('moves the orders to the record with an account, fills its phone, CPF and address, and deletes the other', async () => {
     const registered = await register({ name: 'Maria WhatsApp', phone: '(11) 97777-6666', address: { zipCode: '01310-930', street: 'Av. Paulista', number: '1000', city: 'São Paulo', state: 'SP' } });
     const first = await place(registered.id, 1);
     await place(registered.id, 2);
     await call('PATCH', `/api/stores/lessari/orders/${first.number}/status`, owner, { status: 'CANCELLED' });
+    // Only a shopper gives a CPF or a birth date, so the shopkeeper's record gets them as another account's merge left them.
+    await prisma.customer.update({ where: { id: registered.id }, data: { cpf: '52998224725', birthDate: new Date('1990-05-17T00:00:00.000Z') } });
     const { session, me } = await shopper('Maria Souza');
+    // Apart from the phone: that save is refused whole, and leaves only the claim behind.
+    await call('PATCH', '/api/stores/lessari/customer/me', session, { birthDate: '1985-01-02' });
     await call('PATCH', '/api/stores/lessari/customer/me', session, { phone: '11977776666' });
 
     // Asked from the shopkeeper's record: the one kept is still the account's.
@@ -114,6 +118,9 @@ describe('two records of one person, made one by the shopkeeper', () => {
       id: me.id,
       name: 'Maria Souza',
       phone: '5511977776666',
+      // The CPF it lacked comes from the other record; the birth date it had stays its own.
+      cpf: '52998224725',
+      birthDate: '1985-01-02',
       address: { zipCode: '01310-930', street: 'Av. Paulista', number: '1000', city: 'São Paulo', state: 'SP' },
       ordersCount: 1,
       totalSpentCents: 17980,
@@ -139,8 +146,14 @@ describe('two records of one person, made one by the shopkeeper', () => {
 
     const kept = (await merge(here.id, other.id)).json<StoreCustomerDetail>();
 
-    // Its own phone, and its own address — never half of each.
+    // Its own phone, and its own default address — never half of each.
     expect(kept).toMatchObject({ id: here.id, phone: '5521977776666', ordersCount: 1, address: { city: 'Niterói', zipCode: null, street: null } });
+    // The other's address came along, whole, as one more of the same person's.
+    const addresses = await prisma.customerAddress.findMany({ where: { customerId: here.id }, orderBy: { isDefault: 'desc' } });
+    expect(addresses.map(({ city, street, isDefault }) => ({ city, street, isDefault }))).toEqual([
+      { city: 'Niterói', street: null, isDefault: true },
+      { city: null, street: 'Rua B', isDefault: false },
+    ]);
   });
 
   it('refuses itself, another shop, two accounts and anyone but the owner', async () => {

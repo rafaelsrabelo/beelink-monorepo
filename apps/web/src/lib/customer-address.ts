@@ -8,7 +8,7 @@ import type { CustomerAddress, CustomerProfile } from "@harness-monorepo/contrac
 export function addressLineOf(address: CustomerAddress): string | null {
   const street = [address.street, address.number, address.complement].filter(Boolean).join(", ")
   const place = [address.city, address.state].filter(Boolean).join("/")
-  const parts = [street, address.neighborhood, place, address.zipCode ? `CEP ${address.zipCode}` : null].filter(Boolean)
+  const parts = [street, address.neighborhood, place, address.zipCode ? `CEP ${zipCodeOf(address.zipCode)}` : null].filter(Boolean)
 
   return parts.length ? parts.join(" — ") : null
 }
@@ -33,7 +33,7 @@ export function isDeliverable(address: Pick<CustomerAddress, "street" | "city">)
   return Boolean(address.street?.trim() && address.city?.trim())
 }
 
-/** Whether the shop can reach the shopper and deliver: a phone, and a street with a city. */
-export function isReachable(profile: Pick<CustomerProfile, "phone" | "address">): boolean {
-  return Boolean(profile.phone) && isDeliverable(profile.address)
+/** Whether the shop can reach the shopper and deliver: a phone, and a saved address with a street and a city. */
+export function isReachable(profile: Pick<CustomerProfile, "phone" | "addresses">): boolean {
+  return Boolean(profile.phone) && profile.addresses.some(isDeliverable)
 }

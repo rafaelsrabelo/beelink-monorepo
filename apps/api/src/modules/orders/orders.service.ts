@@ -48,6 +48,8 @@ export class OrdersService {
       storeId,
       items: dto.items,
       fulfillment: dto.fulfillment,
+      // The panel knows a customer by their default address.
+      addressId: null,
       paymentMethod: dto.paymentMethod,
       deliveryFeeCents: dto.deliveryFeeCents ?? 0,
       discountCents: dto.discountCents ?? 0,

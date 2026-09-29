@@ -6,6 +6,7 @@ interface MailpitSearch {
 }
 
 interface MailpitMessage {
+  From: { Name: string; Address: string };
   Subject: string;
   Text: string;
   HTML: string;

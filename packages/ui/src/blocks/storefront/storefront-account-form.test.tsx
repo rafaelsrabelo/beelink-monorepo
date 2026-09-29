@@ -11,7 +11,8 @@ const profile = {
   name: "Bia Cliente",
   email: "bia@exemplo.com",
   phone: "11988887777",
-  address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: "Bela Vista", city: "São Paulo", state: "SP" },
+  cpf: "529.982.247-25",
+  birthDate: "1990-05-17",
 }
 
 describe("StorefrontAccountForm", () => {
@@ -19,12 +20,36 @@ describe("StorefrontAccountForm", () => {
     const { container } = render(<StorefrontAccountForm profile={profile} action="/api/x/perfil" signOutAction="/api/x/sair" />)
 
     expect(container.querySelector("form")).toHaveAttribute("action", "/api/x/perfil")
-    expect(screen.getByLabelText("Nome")).toHaveValue("Bia Cliente")
-    expect(screen.getByLabelText("Celular (WhatsApp)")).toHaveValue("11988887777")
-    expect(screen.getByLabelText("Rua")).toHaveValue("Av. Paulista")
-    expect(screen.getByLabelText("Complemento")).toHaveValue("")
+    expect(screen.getByLabelText("Nome completo")).toHaveValue("Bia Cliente")
+    expect(screen.getByLabelText("Celular")).toHaveValue("11988887777")
+    expect(screen.getByLabelText(/^CPF/)).toHaveValue("529.982.247-25")
+    expect(screen.getByLabelText(/^Data de nascimento/)).toHaveValue("1990-05-17")
+    // The addresses are cards of their own now, never fields of this form.
+    expect(screen.queryByLabelText("Rua")).toBeNull()
     expect(screen.queryByLabelText("E-mail")).toBeNull()
     expect(screen.getByText("bia@exemplo.com")).toBeInTheDocument()
+  })
+
+  /** Both are optional: a shopper who never gave them sees empty fields that say so, and a date field. */
+  it("leaves the CPF and the birth date empty, marked optional", () => {
+    render(<StorefrontAccountForm profile={{ ...profile, cpf: null, birthDate: null }} action="#" />)
+
+    expect(screen.getByLabelText("CPF · Opcional · para a nota fiscal")).toHaveValue("")
+    expect(screen.getByLabelText("Data de nascimento · Opcional")).toHaveAttribute("type", "date")
+    expect(screen.getByLabelText("Data de nascimento · Opcional")).toHaveValue("")
+  })
+
+  /** A refusal that names a field marks that one invalid, described by the sentence; the others stay clean. */
+  it("points the field a refusal names at the sentence, and offers no birth date after today", () => {
+    render(
+      <StorefrontAccountForm profile={profile} action="#" error="Esse CPF não confere." invalidField="cpf" birthDateMax="2026-09-29" />,
+    )
+
+    const cpf = screen.getByLabelText(/^CPF/)
+    expect(cpf).toHaveAttribute("aria-invalid", "true")
+    expect(cpf).toHaveAccessibleDescription("Esse CPF não confere.")
+    expect(screen.getByLabelText("Celular")).not.toHaveAttribute("aria-invalid")
+    expect(screen.getByLabelText(/^Data de nascimento/)).toHaveAttribute("max", "2026-09-29")
   })
 
   it("signs out through a form of its own", () => {

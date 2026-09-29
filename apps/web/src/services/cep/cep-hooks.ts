@@ -4,10 +4,11 @@
 import { useMutation } from "@tanstack/react-query"
 
 // Types
+import type { StorefrontZipCodeLookup } from "@harness-monorepo/ui/blocks/storefront/storefront-address-form"
 import type { ZipCodeAddress } from "./cep-requests"
 
 // App
-import { fetchZipCodeAddress } from "./cep-requests"
+import { CepRequestError, fetchZipCodeAddress } from "./cep-requests"
 
 export interface ZipCodeLookupHandle {
   /**
@@ -28,7 +29,8 @@ export interface ZipCodeLookupHandle {
  * rendered — re-fetching it on a window focus would silently overwrite what someone was typing.
  */
 export function useZipCodeLookup(): ZipCodeLookupHandle {
-  const mutation = useMutation({ mutationFn: fetchZipCodeAddress })
+  // Wrapped: the query client hands a mutation function a second argument, which is not a lane.
+  const mutation = useMutation({ mutationFn: (zipCode: string) => fetchZipCodeAddress(zipCode) })
 
   return {
     lookup: (zipCode: string) => mutation.mutateAsync(zipCode).catch(() => null),
@@ -36,4 +38,20 @@ export function useZipCodeLookup(): ZipCodeLookupHandle {
     error: mutation.error,
     reset: mutation.reset,
   }
+}
+
+/**
+ * The shopper's lookup at a shop, for its address form: through the shop's own lane, answered as the
+ * form takes it. A postcode that is not one reads as unknown, which the shopper can fix; anything
+ * else as the service being down, which they cannot.
+ */
+export function useShopperZipCodeLookup(slug: string): (zipCode: string) => Promise<StorefrontZipCodeLookup> {
+  const mutation = useMutation({ mutationFn: (zipCode: string) => fetchZipCodeAddress(zipCode, `/${slug}/api/cep`) })
+
+  return (zipCode) =>
+    mutation.mutateAsync(zipCode).then(
+      ({ street, neighborhood, city, state }): StorefrontZipCodeLookup => ({ status: "found", street, neighborhood, city, state }),
+      (error: unknown): StorefrontZipCodeLookup =>
+        error instanceof CepRequestError && (error.errorCode === "CEP_NOT_FOUND" || error.errorCode === "CEP_INVALID") ? { status: "not-found" } : { status: "unavailable" },
+    )
 }
