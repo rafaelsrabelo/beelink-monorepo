@@ -21,7 +21,11 @@ FROM base AS build
 # nothing. It is public by design — the tiles are fetched by the page — and restricted by origin in
 # MapTiler. API_URL is not here: it is server-only and read at runtime.
 ARG NEXT_PUBLIC_MAPTILER_TILE_KEY=""
-ENV NEXT_PUBLIC_MAPTILER_TILE_KEY=$NEXT_PUBLIC_MAPTILER_TILE_KEY
+# The origin the page opens the real-time socket on. Unset, the channel stays shut and every page
+# still works (docs/repo/realtime.md).
+ARG NEXT_PUBLIC_REALTIME_URL=""
+ENV NEXT_PUBLIC_MAPTILER_TILE_KEY=$NEXT_PUBLIC_MAPTILER_TILE_KEY \
+    NEXT_PUBLIC_REALTIME_URL=$NEXT_PUBLIC_REALTIME_URL
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch
 COPY . .

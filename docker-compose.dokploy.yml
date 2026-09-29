@@ -4,17 +4,18 @@
 #
 # What differs, and why it matters:
 #   · no port is published — Traefik exposes the web, through its labels;
-#   · the API has no public route at all. The browser never calls it (every call goes through the
-#     web app's route handlers), so it lives on the internal network next to Postgres;
+#   · the API has one public route and no domain of its own: the real-time socket, at
+#     `/api/socket.io` on the web's domain (docs/repo/realtime.md). Every other call goes through
+#     the web app's route handlers, and the rest of the API has no route from outside;
 #   · migrations and the seed run in their own container, before the API starts;
 #   · no Mailpit: production sends through a real SMTP provider.
 #
 # No `name:` on purpose — Dokploy passes `-p <appName>`. And no `container_name` anywhere: Dokploy
 # loses a service's logs and metrics when the name is pinned by hand.
 #
-# ONE API instance. Nothing here is built to scale out yet, and the order chat (Épico K) will keep
-# its sockets in the process's memory: with two replicas, each would only know the sockets it opened
-# itself. Scaling out needs a shared channel first (Postgres LISTEN/NOTIFY), not a replica count.
+# ONE API instance. The order chat keeps its sockets in the process's memory: with two replicas,
+# each would only know the sockets it opened itself. Scaling out needs a Socket.IO adapter and
+# sticky sessions first (docs/repo/realtime.md), not a replica count.
 #
 # HTTPS only. The session cookies are `Secure` in production, so over plain HTTP the browser drops
 # them and nobody can sign in — a domain Let's Encrypt cannot issue for (sslip.io, nip.io) is not a
@@ -87,7 +88,8 @@ services:
       dockerfile: docker/api.Dockerfile
     restart: unless-stopped
     logging: *logging
-    networks: [internal]
+    # On Traefik's network for the socket alone: its router below is the only one the API has.
+    networks: [internal, dokploy-network]
     # A LIST, not a map, on purpose. `NAME: ${NAME:-}` defines the variable as an EMPTY string when it
     # is unset, and the env schema (apps/api/src/shared/config/env.ts) refuses "" for the Cloudinary
     # and MapTiler keys — the API dies at boot. In the list form, `- NAME` with no `=` passes the
@@ -166,14 +168,28 @@ services:
       postgres: { condition: service_healthy }
       # A failed migration is a deploy that does not come up — not new code running on an old schema.
       migrate: { condition: service_completed_successfully }
+    # The real-time socket, on the web's own domain: same origin, no second certificate, no CORS.
+    # Its rule is longer than the web's `Host(…)`, so Traefik tries it first; nothing else under
+    # `/api` reaches the API — the web's route handlers answer those.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-realtime.rule=Host(`${WEB_DOMAIN}`) && PathPrefix(`/api/socket.io`)"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-realtime.entrypoints=websecure"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-realtime.tls=true"
+      - "traefik.http.routers.${STACK_NAME:-beelink}-realtime.tls.certresolver=letsencrypt"
+      - "traefik.http.services.${STACK_NAME:-beelink}-realtime.loadbalancer.server.port=3001"
 
   web:
     build:
       context: .
       dockerfile: docker/web.Dockerfile
       args:
-        # Decided at BUILD time, inlined into the browser bundle: a new key needs a redeploy.
+        # Decided at BUILD time, inlined into the browser bundle: a new value needs a redeploy.
         NEXT_PUBLIC_MAPTILER_TILE_KEY: ${NEXT_PUBLIC_MAPTILER_TILE_KEY:-}
+        # Where the page opens the real-time socket: the web's own origin, which the api's router
+        # sends on to the API. Only the origin is read.
+        NEXT_PUBLIC_REALTIME_URL: https://${WEB_DOMAIN}
     restart: unless-stopped
     logging: *logging
     networks: [internal, dokploy-network]
@@ -208,7 +224,8 @@ services:
 networks:
   internal:
   # Created by Dokploy at install. It is how Traefik sees containers — whatever is not on it has no
-  # route from outside, which is what we want for postgres, migrate and the api.
+  # route from outside, which is what we want for postgres and migrate. The api is on it for its
+  # one router, the socket.
   dokploy-network:
     external: true
 
