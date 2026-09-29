@@ -12,7 +12,8 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { AppLink } from "@/components/app-link"
-import { useSignIn } from "@/services/auth/auth-hooks"
+import { useResendVerification, useSignIn } from "@/services/auth/auth-hooks"
+import { AuthRequestError } from "@/services/auth/auth-requests"
 import { errorCopy } from "./auth-error-copy"
 
 export interface LoginScreenProps {
@@ -25,6 +26,8 @@ export interface LoginScreenProps {
 export function LoginScreen({ ui, web, back = null }: LoginScreenProps) {
   const router = useRouter()
   const signIn = useSignIn()
+  const resend = useResendVerification()
+  const unverified = signIn.error instanceof AuthRequestError && signIn.error.errorCode === "AUTH_EMAIL_NOT_VERIFIED"
 
   return (
     <LoginForm
@@ -32,13 +35,20 @@ export function LoginScreen({ ui, web, back = null }: LoginScreenProps) {
       linkComponent={AppLink}
       pending={signIn.isPending}
       error={errorCopy(signIn.error, web)}
-      onSubmit={(values) =>
+      resend={
+        unverified
+          ? { onResend: (email) => resend.mutate(email), pending: resend.isPending, sent: resend.isSuccess }
+          : undefined
+      }
+      onSubmit={(values) => {
+        // A new attempt may be another address: a link sent for the last one says nothing about it.
+        resend.reset()
         signIn.mutate(values, {
           onSuccess: () => {
             router.replace((back ?? "/dashboard") as Parameters<typeof router.replace>[0])
           },
         })
-      }
+      }}
     />
   )
 }

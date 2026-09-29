@@ -20,9 +20,23 @@ export const ComErroDoServidor: Story = {
   args: { error: "E-mail ou senha incorretos." },
 }
 
-/** An unverified account is refused with its own sentence, so the person knows what to do. */
+/**
+ * An unverified account is refused with its own sentence, and a new link is one click away — the
+ * first one may never have arrived.
+ */
 export const EmailNaoConfirmado: Story = {
-  args: { error: "Confirme seu e-mail antes de entrar. Enviamos um link quando você criou a conta." },
+  args: {
+    error: "Confirme seu e-mail antes de entrar. Enviamos um link quando você criou a conta.",
+    resend: { onResend: fn() },
+  },
+}
+
+/** The new link is on its way: said where the button was. */
+export const NovoLinkEnviado: Story = {
+  args: {
+    error: "Confirme seu e-mail antes de entrar. Enviamos um link quando você criou a conta.",
+    resend: { onResend: fn(), sent: true },
+  },
 }
 
 export const Enviando: Story = {

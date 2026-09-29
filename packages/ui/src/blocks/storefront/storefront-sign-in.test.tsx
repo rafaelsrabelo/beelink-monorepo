@@ -72,6 +72,31 @@ describe("StorefrontSignIn", () => {
     expect(screen.queryByText("ou")).not.toBeInTheDocument()
   })
 
+  it("offers another confirmation link for the e-mail typed when the refusal is an unconfirmed one", () => {
+    const { container } = renderFace("entrar", {
+      email: "bia@exemplo.com",
+      error: "Confirme seu e-mail antes de entrar.",
+      resendAction: "/loja/api/customer/reenviar",
+    })
+
+    const resend = screen.getByRole("button", { name: "Mandar outro link" }).closest("form")
+    expect(resend).toHaveAttribute("method", "post")
+    expect(resend).toHaveAttribute("action", "/loja/api/customer/reenviar")
+    expect(resend?.querySelector("input[name=email]")).toHaveValue("bia@exemplo.com")
+    expect(resend?.querySelector("input[name=voltar]")).toHaveValue("/loja/carrinho")
+    // The sign-in form stays, for the shopper who confirms and comes straight back.
+    expect(container.querySelectorAll("form")).toHaveLength(2)
+  })
+
+  it("offers no new link without a refusal, or without the e-mail it would go to", () => {
+    const { unmount } = renderFace("entrar", { email: "bia@exemplo.com", resendAction: "/loja/api/customer/reenviar" })
+    expect(screen.queryByRole("button", { name: "Mandar outro link" })).not.toBeInTheDocument()
+    unmount()
+
+    renderFace("entrar", { error: "Confirme seu e-mail antes de entrar.", resendAction: "/loja/api/customer/reenviar" })
+    expect(screen.queryByRole("button", { name: "Mandar outro link" })).not.toBeInTheDocument()
+  })
+
   it("has no accessibility violations, on each face, with Google offered or not", async () => {
     const google = { href: "/api/storefront/loja/customer/google", iconSrc: "/brand/google.svg" }
     for (const mode of ["entrar", "criar", "senha"] as const) {

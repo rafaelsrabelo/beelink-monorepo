@@ -25,6 +25,15 @@ export const NovaSenha: Story = { args: { mode: "senha" } }
 /** Uma recusa, já em frase. */
 export const Recusado: Story = { args: { error: "E-mail ou senha incorretos.", email: "bia@exemplo.com" } }
 
+/** E-mail não confirmado: outro link, para o e-mail digitado, logo abaixo da recusa. */
+export const EmailNaoConfirmado: Story = {
+  args: {
+    error: "Confirme seu e-mail antes de entrar. Enviamos um link quando você criou a conta.",
+    email: "bia@exemplo.com",
+    resendAction: "#",
+  },
+}
+
 /** Depois de criar a conta: o link está a caminho. */
 export const LinkEnviado: Story = { args: { mode: "criar", sent: true, email: "bia@exemplo.com" } }
 
