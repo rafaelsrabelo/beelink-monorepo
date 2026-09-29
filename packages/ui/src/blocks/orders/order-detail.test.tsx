@@ -52,6 +52,15 @@ describe("OrderDetail", () => {
     expect(within(items).getByText("R$ 279,70 + frete")).toBeInTheDocument()
   })
 
+  it("leaves the fee out of a cancelled order that never agreed one", () => {
+    render(<OrderDetail order={{ ...order, status: "CANCELLED", deliveryFeeCents: null, totalCents: 27970 }} {...props} />)
+
+    const items = screen.getByRole("region", { name: "Itens" })
+    expect(within(items).queryByText("A combinar")).not.toBeInTheDocument()
+    expect(within(items).queryByText("Entrega")).not.toBeInTheDocument()
+    expect(within(items).getByText("R$ 279,70")).toBeInTheDocument()
+  })
+
   it("shows the customer, how it leaves and is paid, and a way to talk to them", () => {
     render(<OrderDetail order={order} {...props} />)
 

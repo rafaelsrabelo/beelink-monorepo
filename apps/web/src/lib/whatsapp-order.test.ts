@@ -118,6 +118,14 @@ describe("shopOrderMessageOf", () => {
     expect(message).toContain("Total: R$\u00a094,80 + frete")
   })
 
+  it("says nothing of a fee on a cancelled order that never agreed one", () => {
+    const message = shopOrderMessageOf({ shopName: "Loja", order: { ...order, status: "CANCELLED", deliveryFeeCents: null, totalCents: 9480 }, locale: "pt-BR", messages: ptBR })
+
+    expect(message).not.toContain("a combinar")
+    expect(message).not.toContain("+ frete")
+    expect(message).toContain("Total: R$\u00a094,80")
+  })
+
   it("says a pick-up is collected at the shop, with no fee", () => {
     const message = shopOrderMessageOf({ shopName: "Loja", order: { ...order, fulfillment: "PICKUP", deliveryFeeCents: 0, discountCents: 0 }, locale: "pt-BR", messages: ptBR })
 

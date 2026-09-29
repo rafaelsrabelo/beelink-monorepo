@@ -443,6 +443,7 @@ export const ptBR: UiMessages = {
     orderFree: "Grátis",
     orderFeeToAgree: "A combinar",
     orderTotalPlusFee: "{total} + frete",
+    orderCardTotalPlusFee: "{total} + frete a combinar",
     orderDiscount: "Desconto",
     orderTotalRow: "Total",
     orderPaymentAgreed: "Pagamento combinado com a loja: {method}",

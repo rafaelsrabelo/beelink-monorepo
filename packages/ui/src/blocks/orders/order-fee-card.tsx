@@ -7,7 +7,7 @@ import { useId, useState, type FormEvent } from "react"
 import { Button } from "@harness-monorepo/ui/components/button"
 import { Field, FieldDescription, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { Input } from "@harness-monorepo/ui/components/input"
-import { centsFrom } from "@harness-monorepo/ui/lib/money"
+import { centsFrom, reaisFrom } from "@harness-monorepo/ui/lib/money"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -25,9 +25,6 @@ export interface OrderFeeCardProps {
   messages?: UiMessages
 }
 
-/** Cents as the field shows them: "12,50", or empty for a fee not agreed. */
-const typedOf = (cents: number | null) => (cents === null ? "" : (cents / 100).toFixed(2).replace(".", ","))
-
 /**
  * A delivery's fee, told on the opened order once it is agreed (BEELINK-170). The total and the
  * customer's order follow it; zero is a free delivery, told as such.
@@ -36,13 +33,13 @@ export function OrderFeeCard({ feeCents, onSave, pending = false, error, saved =
   const text = messages.orders.detail
   const id = useId()
   const [seen, setSeen] = useState(feeCents)
-  const [draft, setDraft] = useState(() => typedOf(feeCents))
+  const [draft, setDraft] = useState(() => reaisFrom(feeCents))
   const [edited, setEdited] = useState(false)
   const [invalid, setInvalid] = useState(false)
   // Started over in the render a save lands in, never remounted: the field and its focus stay.
   if (feeCents !== seen) {
     setSeen(feeCents)
-    setDraft(typedOf(feeCents))
+    setDraft(reaisFrom(feeCents))
     setEdited(false)
   }
 

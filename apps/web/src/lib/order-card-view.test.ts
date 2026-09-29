@@ -58,8 +58,8 @@ describe("orderCardViewOf", () => {
     ])
   })
 
-  it("adds '+ frete' to the total while a delivery's fee is not agreed — not once the order is cancelled", () => {
-    expect(orderCardViewOf({ ...order, deliveryFeeCents: null }, context).total.replace(/\s/g, " ")).toBe("R$ 237,22 + frete · Pix")
+  it("adds '+ frete a combinar' to the total while a delivery's fee is not agreed — not once the order is cancelled", () => {
+    expect(orderCardViewOf({ ...order, deliveryFeeCents: null }, context).total.replace(/\s/g, " ")).toBe("R$ 237,22 + frete a combinar · Pix")
     expect(orderCardViewOf({ ...order, deliveryFeeCents: null, status: "CANCELLED", cancelledBy: "CUSTOMER" }, context).total.replace(/\s/g, " ")).toBe("R$ 237,22 · Pix")
   })
 

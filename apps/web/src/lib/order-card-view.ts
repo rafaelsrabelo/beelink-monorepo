@@ -84,7 +84,7 @@ export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardC
   return {
     number: order.number,
     placedOn: dayOf(order.placedAt, locale),
-    total: `${orderTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}`,
+    total: `${orderTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderCardTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}`,
     shipTo: order.fulfillment === "PICKUP" ? text.orderPickupLabel : order.recipientName,
     ...orderStatusLineOf(order, context),
     items: order.items.map((item) => ({

@@ -1,5 +1,5 @@
 // UI
-import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
+import { feeLineOf, orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -65,6 +65,7 @@ export interface ShopOrderMessageInput {
 export function shopOrderMessageOf({ shopName, order, locale, messages }: ShopOrderMessageInput): string {
   const text = messages.orders.detail
   const money = (cents: number) => formatCents(cents, locale, "BRL")
+  const fee = feeLineOf(order)
   const lines = order.items.map((item) =>
     format(text.whatsappLine, {
       qty: String(item.quantity),
@@ -78,11 +79,13 @@ export function shopOrderMessageOf({ shopName, order, locale, messages }: ShopOr
     "",
     ...lines,
     "",
-    order.fulfillment === "PICKUP"
-      ? text.whatsappPickup
-      : order.deliveryFeeCents === null
-        ? text.whatsappFeeToAgree
-        : format(text.whatsappFee, { value: money(order.deliveryFeeCents) }),
+    ...(order.fulfillment === "PICKUP"
+      ? [text.whatsappPickup]
+      : fee === "toAgree"
+        ? [text.whatsappFeeToAgree]
+        : fee
+          ? [format(text.whatsappFee, { value: money(fee.cents) })]
+          : []),
     ...(order.discountCents > 0 ? [format(text.whatsappDiscount, { value: money(order.discountCents) })] : []),
     format(text.whatsappTotal, { value: orderTotalText(money(order.totalCents), order, messages.orders.totalPlusFee) }),
     format(text.whatsappPayment, { value: messages.orders.payments[order.paymentMethod] }),

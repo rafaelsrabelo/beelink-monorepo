@@ -564,6 +564,8 @@ export interface UiMessages {
     /** A delivery whose fee the shop has not told yet (BEELINK-170), and its total beside it. */
     orderFeeToAgree: string
     orderTotalPlusFee: string
+    /** The same on a "Meus pedidos" card, which has no fee row to say "a combinar" in. */
+    orderCardTotalPlusFee: string
     orderDiscount: string
     orderTotalRow: string
     orderPaymentAgreed: string

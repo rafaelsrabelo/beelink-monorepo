@@ -442,6 +442,7 @@ export const en: UiMessages = {
     orderFree: "Free",
     orderFeeToAgree: "To be agreed",
     orderTotalPlusFee: "{total} + delivery",
+    orderCardTotalPlusFee: "{total} + delivery to be agreed",
     orderDiscount: "Discount",
     orderTotalRow: "Total",
     orderPaymentAgreed: "Payment agreed with the shop: {method}",
