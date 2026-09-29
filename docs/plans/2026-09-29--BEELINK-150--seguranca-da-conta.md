@@ -81,3 +81,33 @@ aparelhos".
   navegador compartilhado estava com uma sessão em uso, e só foi usado para ver a seção (GET).
 - **O "Criar senha" do Google** ficou coberto pelo e2e (link, assunto, `voltar`, a primeira senha) e
   pelo teste do bloco. Localmente, nenhuma conta sem senha entra pelo navegador.
+
+## Adendo da revisão (29/09)
+
+Dois revisores leram o ramo: um olhou correção e segurança, o outro regras e acessibilidade. O
+primeiro não achou defeito. Provou quatro coisas:
+- a sessão de uma loja não age em outra;
+- a sessão mantida continua renovando;
+- só os sockets das outras sessões fecham;
+- o limite de tentativas vale para as rotas novas.
+
+Os dois primeiros casos entraram no e2e.
+
+O que entrou pela revisão:
+
+- **Uma sessão encerrada em outro aparelho, antes do envio, leva a Entrar** com "Faça login para
+  continuar" e a volta para `#seguranca`. Antes, a pessoa caía na vitrine sem saber que nada foi
+  feito. No "Sair de todos", ela acharia que tinha saído de todos os aparelhos.
+- **Os corpos que o BFF manda são checados contra os tipos do contrato** (`satisfies`). Um campo
+  renomeado quebra a compilação do web.
+- **Cada botão é descrito pelo parágrafo dele** (`aria-describedby`). Quem chega por Tab ouve também o
+  que ele faz.
+- **A margem de rolagem das âncoras usa a altura medida do cabeçalho** (`--shop-masthead-height`),
+  como a página de produto.
+
+O que ficou de fora, de propósito:
+
+- **O Chrome oferece atualizar a senha salva também numa recusa** (senha atual errada, limite, API
+  fora), porque o formulário volta vazio. Evitar isso pediria script.
+- **A troca de senha e o fim das outras sessões não estão numa transação só,** como no reset de
+  senha, que já era assim. Uma falha entre os dois deixaria a senha trocada e os aparelhos abertos.

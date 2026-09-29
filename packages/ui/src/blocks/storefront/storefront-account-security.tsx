@@ -48,6 +48,9 @@ export function StorefrontAccountSecurity({
   const text = messages.storefront
   const headingId = useId()
   const errorId = useId()
+  const changeLeadId = useId()
+  const createLeadId = useId()
+  const everywhereLeadId = useId()
   const carried = Object.entries(hidden).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)
 
   const password = (name: StorefrontSecurityField, label: string, autoComplete: string, hint?: string) => {
@@ -81,7 +84,7 @@ export function StorefrontAccountSecurity({
   }
 
   return (
-    <section id="seguranca" aria-labelledby={headingId} className="flex w-full scroll-mt-40 max-w-3xl flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
+    <section id="seguranca" aria-labelledby={headingId} className="flex w-full scroll-mt-[calc(var(--shop-masthead-height,160px)+16px)] max-w-3xl flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
       <h2 id={headingId} className="text-base font-bold">
         {text.securityTitle}
       </h2>
@@ -100,23 +103,31 @@ export function StorefrontAccountSecurity({
       {hasPassword ? (
         <form action={actions.change} method="post" className="flex flex-col gap-4">
           {carried}
-          <p className="text-sm text-shop-muted">{text.securityChangeLead}</p>
-          {/* The account's login, for a password manager to file the new password under; nobody types it. */}
+          <p id={changeLeadId} className="text-sm text-shop-muted">
+            {text.securityChangeLead}
+          </p>
+          {/*
+            The account's login, for a password manager to file the new password under; nobody types
+            it. `readOnly` keeps it out of the form's validation: an address the browser would reject
+            would otherwise block the save with nothing on screen to fix.
+          */}
           <input type="email" name="username" value={email} autoComplete="username" readOnly hidden />
           {password("atual", text.securityCurrentPassword, "current-password")}
           <div className="grid gap-4 shop-md:grid-cols-2">
             {password("password", text.newPasswordLabel, "new-password", text.signInPasswordHint)}
             {password("confirmacao", text.newPasswordRepeat, "new-password")}
           </div>
-          <button type="submit" className={`${PRIMARY} self-start`}>
+          <button type="submit" aria-describedby={changeLeadId} className={`${PRIMARY} self-start`}>
             {text.securityChangeSubmit}
           </button>
         </form>
       ) : (
         <form action={actions.create} method="post" className="flex flex-col gap-4">
           {carried}
-          <p className="text-sm text-shop-muted">{format(text.securityGoogleLead, { email })}</p>
-          <button type="submit" className={`${PRIMARY} self-start`}>
+          <p id={createLeadId} className="text-sm text-shop-muted">
+            {format(text.securityGoogleLead, { email })}
+          </p>
+          <button type="submit" aria-describedby={createLeadId} className={`${PRIMARY} self-start`}>
             {text.securityCreateSubmit}
           </button>
         </form>
@@ -124,8 +135,10 @@ export function StorefrontAccountSecurity({
 
       <form action={actions.everywhere} method="post" className="flex flex-col gap-3 border-t border-shop-line pt-5">
         {carried}
-        <p className="text-sm text-shop-muted">{text.securityEverywhereLead}</p>
-        <button type="submit" className={`${SECONDARY} self-start`}>
+        <p id={everywhereLeadId} className="text-sm text-shop-muted">
+          {text.securityEverywhereLead}
+        </p>
+        <button type="submit" aria-describedby={everywhereLeadId} className={`${SECONDARY} self-start`}>
           {text.securityEverywhereSubmit}
         </button>
       </form>

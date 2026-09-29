@@ -62,6 +62,8 @@ describe("a shopper's own access to their account", () => {
     expect((await change({ currentPassword: PASSWORD, newPassword: 'uma-senha-nova-comprida' })).statusCode).toBe(204);
 
     expect((await me(here)).statusCode).toBe(200);
+    // This device's session stays whole: its refresh token still renews it.
+    expect((await call('POST', '/api/stores/lessari/customer/refresh', undefined, { refreshToken: here.refreshToken })).statusCode).toBe(200);
     expect((await me(elsewhere)).statusCode).toBe(401);
     expect((await call('POST', '/api/stores/lessari/customer/refresh', undefined, { refreshToken: elsewhere.refreshToken })).statusCode).toBe(401);
     expect((await call('POST', '/api/stores/lessari/customer/login', undefined, { email, password: PASSWORD })).statusCode).toBe(401);
@@ -115,13 +117,20 @@ describe("a shopper's own access to their account", () => {
     await expect(signIn(PASSWORD)).resolves.toBeDefined();
   });
 
-  it("is the signed-in shopper's alone", async () => {
-    for (const [method, url] of [
-      ['PUT', '/api/stores/lessari/customer/me/password'],
-      ['POST', '/api/stores/lessari/customer/me/password/link'],
-      ['DELETE', '/api/stores/lessari/customer/me/sessions'],
+  it("is the signed-in shopper's alone, at their own shop", async () => {
+    const owner = await signUpAndSignIn(app, newEmail('outra-dona'));
+    await call('POST', '/api/stores', owner, shopBody('outra'));
+
+    for (const [method, path, payload] of [
+      ['PUT', 'me/password', { currentPassword: PASSWORD, newPassword: 'uma-senha-nova-comprida' }],
+      ['POST', 'me/password/link', {}],
+      ['DELETE', 'me/sessions', undefined],
     ] as const) {
-      expect((await call(method, url, undefined, {})).statusCode, url).toBe(401);
+      expect((await call(method, `/api/stores/lessari/customer/${path}`, undefined, payload)).statusCode, path).toBe(401);
+      // A session opened at one shop is a stranger at another: nothing there moves for it.
+      expect((await call(method, `/api/stores/outra/customer/${path}`, here, payload)).statusCode, `outra ${path}`).toBe(401);
     }
+    expect((await me(here)).statusCode).toBe(200);
+    await expect(signIn(PASSWORD)).resolves.toBeDefined();
   });
 });

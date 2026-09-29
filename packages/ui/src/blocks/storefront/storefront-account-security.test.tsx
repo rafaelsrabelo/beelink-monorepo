@@ -38,9 +38,14 @@ describe("StorefrontAccountSecurity", () => {
   it("signs out of every device by a form of its own, for either kind of account", () => {
     for (const hasPassword of [true, false]) {
       const { unmount } = render(security({ hasPassword }))
-      expect(screen.getByRole("button", { name: "Sair de todos os aparelhos" }).closest("form")).toHaveAttribute("action", actions.everywhere)
+      const everywhere = screen.getByRole("button", { name: "Sair de todos os aparelhos" })
+      expect(everywhere.closest("form")).toHaveAttribute("action", actions.everywhere)
+      // Each button says what it does beyond its name, to whoever reaches it by Tab.
+      expect(everywhere).toHaveAccessibleDescription("Encerra a sua sessão neste e em qualquer outro aparelho.")
       unmount()
     }
+    render(security({ hasPassword: false }))
+    expect(screen.getByRole("button", { name: "Criar senha" })).toHaveAccessibleDescription(/mandamos um link para bia@exemplo\.com/)
   })
 
   it("marks the field a refusal is about, and says what the last change did", () => {

@@ -1,6 +1,9 @@
 // Next
 import { NextResponse, type NextRequest } from "next/server"
 
+// Types
+import type { ChangeCustomerPasswordPayload, CustomerPasswordLinkPayload } from "@harness-monorepo/contracts"
+
 // App
 import { SECURITY_ERROR_KEY, SECURITY_NOTICE_KEY, type SecurityNotice } from "@/lib/account-security"
 import { callApi, isApiErrorBody, type ApiCall } from "@/lib/api"
@@ -8,7 +11,7 @@ import { clientIpOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { callAsShopper } from "@/lib/shopper-call"
 import { SHOP_SLUG } from "@/lib/shopper-forward"
-import { SIGNED_OUT_EVERYWHERE_KEY, safeBackOf } from "@/lib/storefront-routes"
+import { BACK_KEY, SIGNED_OUT_EVERYWHERE_KEY, safeBackOf } from "@/lib/storefront-routes"
 
 const ACTIONS = ["trocar-senha", "criar-senha", "sair-de-todos"] as const
 type Action = (typeof ACTIONS)[number]
@@ -52,7 +55,14 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 
   const call = callOf(action as Action, slug, field)
   const answered = await callAsShopper(request, slug, (accessToken) => callApi({ ...call, accessToken, clientIp: clientIpOf(request) }).catch(() => null))
-  if (answered.status === "signedOut") return signedOut(new URL(`/${slug}`, request.url), slug)
+  if (answered.status === "signedOut") {
+    // This session ended elsewhere — a password changed on another device — before the form was
+    // sent: nothing here was done, which the sign-in says, bringing the shopper back to the form.
+    const signIn = new URL(safeBackOf(slug, field("entrada")), request.url)
+    signIn.searchParams.set(BACK_KEY, safeBackOf(slug, field("retorno")).split("#")[0] ?? `/${slug}`)
+    signIn.searchParams.set("erro", "AUTH_UNAUTHENTICATED")
+    return signedOut(signIn, slug)
+  }
   const { response, renewed } = answered
 
   if (response?.ok && action === "sair-de-todos") {
@@ -80,9 +90,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
 /** The API call each action makes. */
 function callOf(action: Action, slug: string, field: (name: string) => string): Omit<ApiCall, "accessToken" | "clientIp"> {
   const me = `/stores/${encodeURIComponent(slug)}/customer/me`
-  if (action === "trocar-senha") return { path: `${me}/password`, method: "PUT", body: { currentPassword: field("atual"), newPassword: field("password") } }
+  if (action === "trocar-senha") {
+    return { path: `${me}/password`, method: "PUT", body: { currentPassword: field("atual"), newPassword: field("password") } satisfies ChangeCustomerPasswordPayload }
+  }
   // The link brings the shopper back to this page's own place, as the form carried it.
-  if (action === "criar-senha") return { path: `${me}/password/link`, method: "POST", body: { returnTo: safeBackOf(slug, field("retorno")).split("#")[0] } }
+  if (action === "criar-senha") {
+    return { path: `${me}/password/link`, method: "POST", body: { returnTo: safeBackOf(slug, field("retorno")).split("#")[0] } satisfies CustomerPasswordLinkPayload }
+  }
   return { path: `${me}/sessions`, method: "DELETE" }
 }
 

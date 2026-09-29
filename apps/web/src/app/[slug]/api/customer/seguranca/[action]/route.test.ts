@@ -73,6 +73,19 @@ describe("the shopper's own access to their account", () => {
     expect(response.cookies.get("bl_shopper_access")?.value).toBe("")
   })
 
+  it("sends a session that ended elsewhere to the sign-in, told so, on its way back to the form", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "AUTH_UNAUTHENTICATED" }, { status: 401 })))
+
+    const response = await post("sair-de-todos", here, { cookie: "bl_shopper_access=old" })
+    const landing = locationOf(response)
+
+    expect(landing.pathname).toBe("/loja/entrar")
+    expect(landing.searchParams.get("erro")).toBe("AUTH_UNAUTHENTICATED")
+    expect(landing.searchParams.get("voltar")).toBe("/loja/conta/perfil")
+    expect(landing.searchParams.has("saiu")).toBe(false)
+    expect(response.cookies.get("bl_shopper_access")?.value).toBe("")
+  })
+
   it("answers only this shop's own forms, and keeps every landing inside it", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })))
 
