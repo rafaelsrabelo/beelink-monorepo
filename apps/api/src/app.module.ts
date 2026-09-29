@@ -14,6 +14,7 @@ import { PageModule } from './modules/page/page.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { CustomersModule } from './modules/customers/customers.module.js';
 import { LeadsModule } from './modules/leads/leads.module.js';
+import { ConversationsModule } from './modules/conversations/conversations.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { StoresModule } from './modules/stores/stores.module.js';
 import { UploadsModule } from './modules/uploads/uploads.module.js';
@@ -46,6 +47,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     CustomersModule,
     LeadsModule,
     OrdersModule,
+    ConversationsModule,
     UploadsModule,
   ],
   controllers: [HealthController],

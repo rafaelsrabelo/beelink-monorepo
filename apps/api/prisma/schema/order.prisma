@@ -77,6 +77,8 @@ model Order {
   events OrderEvent[]
   /// Who delivers it and when it should arrive — a delivery's alone, never a pick-up's.
   delivery OrderDelivery?
+  /// The customer's conversation with the shop about it, once they wrote (BEELINK-160).
+  conversation OrderConversation?
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])
