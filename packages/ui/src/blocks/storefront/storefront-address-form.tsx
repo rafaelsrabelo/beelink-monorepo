@@ -53,6 +53,8 @@ export interface StorefrontAddressFormProps {
 const INPUT = "h-11 w-full rounded-[10px] border border-shop-line-strong bg-shop-background px-3 text-base text-shop-on-background"
 const LABEL = "flex flex-col gap-1 text-sm font-medium"
 const LOOKED_UP = ["street", "neighborhood", "city", "state"] as const
+/** Where the shopper goes on after a found CEP: the first of these still empty — a city-wide CEP names no street. */
+const NEXT_AFTER_LOOKUP = ["street", "number"] as const
 
 /**
  * One address of the shopper's, new or edited: a plain form that posts and comes back, the browser
@@ -85,6 +87,7 @@ export function StorefrontAddressForm({
     const found = await onZipCodeLookup(zipCode)
     if (found.status !== "found") {
       setLookup({ pending: false, said: found.status === "not-found" ? text.addressLookupNotFound : text.addressLookupFailed })
+      input("zipCode")?.focus()
       return
     }
     for (const part of LOOKED_UP) {
@@ -92,7 +95,8 @@ export function StorefrontAddressForm({
       if (field && found[part]) field.value = found[part]
     }
     setLookup({ pending: false, said: null })
-    input("number")?.focus()
+    const next = NEXT_AFTER_LOOKUP.map(input).find((field) => field !== null && field.value === "")
+    ;(next ?? input("number"))?.focus()
   }
 
   const field = (name: keyof StorefrontAddressFormValues, label: string, extra: Record<string, string | number | boolean> = {}, hint?: string) => (
@@ -131,14 +135,23 @@ export function StorefrontAddressForm({
         </div>
 
         <div className="col-span-6 flex flex-col gap-1 shop-sm:col-span-3">
-          {field("zipCode", text.accountZipCode, { required: true, inputMode: "numeric", pattern: "\\d{5}-?\\d{3}", maxLength: 9, autoComplete: "postal-code" })}
+          {field("zipCode", text.accountZipCode, {
+            required: true,
+            inputMode: "numeric",
+            pattern: "\\d{5}-?\\d{3}",
+            // Room for a CEP typed with a dot, so the browser says the format rather than cutting it short.
+            maxLength: 10,
+            title: text.addressZipCodeFormat,
+            autoComplete: "postal-code",
+          })}
           {onZipCodeLookup ? (
+            // Not `disabled`: a button disabled under the focus drops it to the page's start.
             <button
               type="button"
               onClick={lookUp}
               aria-busy={lookup.pending || undefined}
-              className="self-start text-sm font-semibold text-shop-primary-ink hover:underline disabled:opacity-60"
-              disabled={lookup.pending}
+              aria-disabled={lookup.pending || undefined}
+              className="self-start text-sm font-semibold text-shop-primary-ink hover:underline aria-disabled:opacity-60"
             >
               {lookup.pending ? text.addressLookupPending : text.addressLookup}
             </button>
@@ -153,7 +166,7 @@ export function StorefrontAddressForm({
         <div className="col-span-4">{field("complement", text.accountComplement, { maxLength: 80, autoComplete: "address-line2" })}</div>
         <div className="col-span-6 shop-sm:col-span-3">{field("neighborhood", text.accountNeighborhood, { maxLength: 80 })}</div>
         <div className="col-span-4 shop-sm:col-span-2">{field("city", text.accountCity, { required: true, maxLength: 80, autoComplete: "address-level2" })}</div>
-        <div className="col-span-2 shop-sm:col-span-1">{field("state", text.accountState, { required: true, maxLength: 2, pattern: "[A-Za-z]{2}", autoComplete: "address-level1" })}</div>
+        <div className="col-span-2 shop-sm:col-span-1">{field("state", text.accountState, { required: true, maxLength: 2, pattern: "[A-Za-z]{2}", title: text.addressStateFormat, autoComplete: "address-level1" })}</div>
 
         {offerDefault ? (
           <label className="col-span-6 flex items-center gap-2 text-sm">

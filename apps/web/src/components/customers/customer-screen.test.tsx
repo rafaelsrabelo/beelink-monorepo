@@ -199,11 +199,8 @@ describe("CustomerScreen", () => {
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
 
     const [payload, options] = mocks.mutate.mock.calls[0]! as [unknown, { onSuccess: () => void }]
-    expect(payload).toEqual({
-      name: "Caio Lima Souza",
-      phone: "5511955554444",
-      address: { zipCode: "13015-904", street: "Rua Barão de Jaguara", number: "1000", complement: "", neighborhood: "Centro", city: "Campinas", state: "SP" },
-    })
+    // The address was not touched, so none of it goes: the default it is written on may have moved since.
+    expect(payload).toEqual({ name: "Caio Lima Souza", phone: "5511955554444" })
     options.onSuccess()
     expect(await screen.findByRole("button", { name: "Editar dados" })).toBeInTheDocument()
   })
@@ -259,7 +256,16 @@ describe("the record's address and correction", () => {
   it("leaves a phone nobody typed out of the correction, so a record without one keeps none", () => {
     const address = { zipCode: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" }
 
-    expect(correctionOf({ name: " Rita ", phone: " ", address })).toEqual({ name: "Rita", address })
-    expect(correctionOf({ name: "Rita", phone: "(11) 96666-5555", address })).toEqual({ name: "Rita", phone: "(11) 96666-5555", address })
+    expect(correctionOf({ name: " Rita ", phone: " ", address })).toEqual({ name: "Rita" })
+    expect(correctionOf({ name: "Rita", phone: "(11) 96666-5555", address })).toEqual({ name: "Rita", phone: "(11) 96666-5555" })
+  })
+
+  /** The default the shopper may have switched since the form opened keeps every part the shopkeeper did not touch. */
+  it("sends only the address parts changed from the record as it was read, a blank one clearing it", () => {
+    const read = { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: null, city: "São Paulo", state: "SP" }
+    const draft = { zipCode: "01310-930", street: "Av. Paulista", number: "1010", complement: "", neighborhood: "", city: "", state: "SP" }
+
+    expect(correctionOf({ name: "Rita", phone: "", address: draft }, read)).toEqual({ name: "Rita", address: { number: "1010", city: "" } })
+    expect(correctionOf({ name: "Rita", phone: "", address: { ...draft, number: "1000", city: "São Paulo" } }, read)).toEqual({ name: "Rita" })
   })
 })

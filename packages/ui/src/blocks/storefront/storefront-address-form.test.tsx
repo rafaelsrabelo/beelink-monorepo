@@ -77,15 +77,27 @@ describe("StorefrontAddressForm", () => {
     expect(screen.getByLabelText("Número")).toHaveFocus()
   })
 
-  it("says when the ZIP code is unknown or the lookup is down, leaving the fields to be typed", async () => {
+  it("says when the ZIP code is unknown or the lookup is down, back on the ZIP code, leaving the fields to be typed", async () => {
     const onZipCodeLookup = vi.fn().mockResolvedValueOnce({ status: "not-found" }).mockResolvedValueOnce({ status: "unavailable" })
     render(form({ onZipCodeLookup }))
 
     await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
     expect(screen.getByRole("status")).toHaveTextContent("Não achamos esse CEP.")
+    expect(screen.getByLabelText("CEP")).toHaveFocus()
     await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
     expect(screen.getByRole("status")).toHaveTextContent("Não deu para buscar o CEP agora.")
     expect(screen.getByLabelText("Rua")).toHaveValue("")
+  })
+
+  /** A city-wide CEP names no street: the street is where the shopper goes on, not the number. */
+  it("moves on to the street when the ZIP code names none, and states the formats it asks for", async () => {
+    render(form({ onZipCodeLookup: async () => ({ status: "found", street: null, neighborhood: null, city: "Maracanaú", state: "CE" }) }))
+
+    await userEvent.click(screen.getByRole("button", { name: "Buscar CEP" }))
+    expect(screen.getByLabelText("Cidade")).toHaveValue("Maracanaú")
+    expect(screen.getByLabelText("Rua")).toHaveFocus()
+    expect(screen.getByLabelText("CEP")).toHaveAttribute("title", "8 números, como 60160-230")
+    expect(screen.getByLabelText("UF")).toHaveAttribute("title", "2 letras, como CE")
   })
 
   it("has no accessibility violations", async () => {

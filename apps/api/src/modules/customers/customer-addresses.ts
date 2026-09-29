@@ -46,9 +46,16 @@ export async function lockCustomer(tx: Tx, customerId: string): Promise<void> {
   await tx.$queryRaw`SELECT 1 FROM "customers" WHERE "id" = ${customerId}::uuid FOR UPDATE`;
 }
 
-/** After the default went: the address changed last takes its place, when any is left. */
+/**
+ * After the default went: the address changed last takes its place, when any is left — one a
+ * delivery can go to (a street and a city) before one it cannot, since the panel, the header and
+ * the shop's own orders all read the default.
+ */
 export async function promoteDefault(tx: Tx, customerId: string): Promise<void> {
-  const next = await tx.customerAddress.findFirst({ where: { customerId }, orderBy: { updatedAt: 'desc' }, select: { id: true } });
+  const newest = { orderBy: { updatedAt: 'desc' }, select: { id: true } } as const;
+  const next =
+    (await tx.customerAddress.findFirst({ where: { customerId, street: { not: null }, city: { not: null } }, ...newest })) ??
+    (await tx.customerAddress.findFirst({ where: { customerId }, ...newest }));
   if (next) await tx.customerAddress.update({ where: { id: next.id }, data: { isDefault: true } });
 }
 

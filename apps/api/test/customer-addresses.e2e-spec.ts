@@ -118,6 +118,25 @@ describe("a shopper's saved addresses at a shop", () => {
     expect(me.address).toEqual({ zipCode: null, street: null, number: null, complement: null, neighborhood: null, city: null, state: null });
   });
 
+  it('promotes one a delivery can go to, and a merge moves addresses without making them the newest', async () => {
+    await save(home);
+    await save(work);
+    // A record the shopkeeper typed with a city alone, merged into the shopper's: it arrives last.
+    const typed = (await call('POST', '/api/stores/lessari/customers', owner, { name: 'Rafael', phone: '85988887777', address: { city: 'Niterói' } })).json<StoreCustomer>();
+    const merged = await call('POST', `/api/stores/lessari/customers/${typed.id}/merge`, owner, { otherId: (await meOf()).id });
+    expect(merged.statusCode).toBe(200);
+    expect((await listOf()).map((address) => [address.city, address.isDefault])).toEqual([
+      ['Fortaleza', true],
+      ['Niterói', false],
+      ['Fortaleza', false],
+    ]);
+
+    const casa = (await listOf()).find((address) => address.label === 'Casa')!;
+    await call('DELETE', url(`/${casa.id}`), shopper);
+    // Trabalho, which a delivery can reach, and not the city the shopkeeper once typed.
+    expect(await defaultsOf()).toEqual(['Trabalho']);
+  });
+
   it('refuses an address with no ZIP code, street, city or state, or a malformed one, saving nothing', async () => {
     for (const payload of [
       { ...home, zipCode: '6016' },

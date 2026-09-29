@@ -8,6 +8,7 @@ import { StorefrontDeliverTo } from "@harness-monorepo/ui/blocks/storefront/stor
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { cepDigitsOf } from "@/lib/saved-address"
 import { cepFromCookies, shopPrefsCookieOf } from "@/lib/shop-prefs-cookie"
 
 /** Said when this tab keeps a new CEP, so the block reads the cookie again. */
@@ -20,7 +21,7 @@ function subscribe(onChange: () => void): () => void {
 
 export interface StorefrontDeliverToLiveProps {
   slug: string
-  /** The signed-in shopper's default address's CEP, eight digits, until they type another; null for a visitor. */
+  /** The signed-in shopper's default address's CEP, as the record keeps it, until they type another; null for a visitor. */
   defaultCep?: string | null
   messages: UiMessages
 }
@@ -32,7 +33,7 @@ export interface StorefrontDeliverToLiveProps {
  * this visit, and is kept over it.
  */
 export function StorefrontDeliverToLive({ slug, defaultCep = null, messages }: StorefrontDeliverToLiveProps) {
-  const cep = useSyncExternalStore(subscribe, () => cepFromCookies(document.cookie), () => null) ?? defaultCep
+  const cep = useSyncExternalStore(subscribe, () => cepFromCookies(document.cookie), () => null) ?? cepDigitsOf(defaultCep)
 
   return (
     <StorefrontDeliverTo

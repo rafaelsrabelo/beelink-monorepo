@@ -18,6 +18,9 @@ type Action = (typeof ACTIONS)[number]
 
 const NOTICE_OF: Record<Action, AddressNotice> = { salvar: "endereco-salvo", remover: "endereco-removido", padrao: "endereco-padrao" }
 
+/** An address's id: nothing else goes into the API's path — `..` would climb out of the address. */
+const ADDRESS_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /** Any 400 from a save is the address at large: the form already holds each field to its rule. */
 function refusalOf(status: number, code: string): string {
   return status === 400 ? "CUSTOMER_ADDRESS_FIELDS_INVALID" : code
@@ -45,7 +48,13 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     return typeof value === "string" ? value : ""
   }
   const shop = `/stores/${encodeURIComponent(slug)}/customer/addresses`
-  const id = encodeURIComponent(field("id"))
+  const id = field("id")
+  // A save without an id is a new address; any other id that is not one is an address not found.
+  if ((id || action !== "salvar") && !ADDRESS_ID.test(id)) {
+    const refusal = new URL(safeBackOf(slug, field("formulario") || field("retorno")), request.url)
+    refusal.searchParams.set(ADDRESS_ERROR_KEY, "CUSTOMER_ADDRESS_NOT_FOUND")
+    return NextResponse.redirect(refusal, 303)
+  }
   const call = callOf(action as Action, shop, id, field)
 
   const answered = await callAsShopper(request, slug, (accessToken) => callApi({ ...call, accessToken, clientIp: clientIpOf(request) }).catch(() => null))

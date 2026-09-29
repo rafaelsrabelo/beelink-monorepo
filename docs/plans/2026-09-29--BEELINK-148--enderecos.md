@@ -139,3 +139,26 @@ digitado fica no cookie da loja e vale mais: é a escolha dela para aquela compr
   - O caminho do carrinho volta já com o endereço novo escolhido.
   - O pedido nº 24 foi para "Trabalho", com "Recepção" como quem recebe.
   - Tudo conferido também em 390 px.
+
+## Adendo da revisão (29/09)
+
+Dois revisores leram o ramo: um olhou correção, o outro regras e acessibilidade. O que entrou:
+
+- **"Remover" pergunta antes, no próprio cartão** (`?remover=<id>`), sem script. Isso muda a decisão
+  8: apagar um dado salvo com um toque só não atende o WCAG 3.3.4.
+- **Toda mudança volta para os cartões (`#enderecos`),** onde o aviso aparece. No celular, o topo da
+  aba fica embaixo do formulário inteiro de "Seus dados".
+- **Os botões de cada cartão levam também a rua no nome.** Dois endereços sem apelido e com o mesmo
+  destinatário teriam botões iguais para o leitor de tela. O título do cartão virou `<h3>`.
+- **"Buscar CEP" não perde o foco** (`aria-disabled`, e não `disabled`). Com um CEP desconhecido, o
+  foco volta ao CEP. Com um CEP de cidade inteira, que não traz rua, o foco vai para a Rua. O CEP e a
+  UF dizem o formato que pedem.
+- **Os links novos são os do Next** (`AppLink`), como no resto da área da conta.
+- **A promoção do padrão prefere um endereço que dá para entregar.** Uma mesclagem move os endereços
+  sem mexer no `updatedAt`, então um endereço que chega por ela não passa a ser o "mexido por último".
+- **Um código na URL só vale pela chave própria** (`Object.hasOwn`). `?aviso=constructor` ou
+  `?erro=toString` derrubavam a página. Isso vale também para `?erro=` do formulário do J8 e da página
+  de entrar, que tinham o mesmo defeito.
+- **A correção do painel manda só as partes do endereço que mudaram.** Se a cliente trocou o padrão
+  enquanto o formulário do painel estava aberto, o que ninguém mexeu não sobrescreve o endereço novo.
+- **O BFF só aceita um UUID como id de endereço.** `..` subiria um nível no caminho da API.

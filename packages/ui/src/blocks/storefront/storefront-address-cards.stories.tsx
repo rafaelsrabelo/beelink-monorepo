@@ -11,6 +11,7 @@ const home = {
   lines: ["Rua Tibúrcio Cavalcante, 1200, apto 302", "Meireles, Fortaleza/CE", "60160-230"],
   isDefault: true,
   editHref: "#",
+  removeHref: "#",
 }
 const work = {
   id: "trabalho",
@@ -18,6 +19,7 @@ const work = {
   lines: ["Av. Santos Dumont, 3000, sala 1104", "Aldeota, Fortaleza/CE", "60150-162"],
   isDefault: false,
   editHref: "#",
+  removeHref: "#",
 }
 
 const meta = {
@@ -25,7 +27,7 @@ const meta = {
   component: StorefrontAddressCards,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={shopPaletteStyle(sampleColorPresets[2]!.colors)}>{Story()}</div>],
-  args: { addresses: [home, work], addHref: "#", limit: 10, removeAction: "#", defaultAction: "#" },
+  args: { addresses: [home, work], addHref: "#", limit: 10, removeAction: "#", defaultAction: "#", cancelHref: "#" },
 } satisfies Meta<typeof StorefrontAddressCards>
 
 export default meta
@@ -42,6 +44,9 @@ export const SemApelido: Story = { args: { addresses: [{ ...home, heading: "Rafa
 
 /** Depois de salvar. */
 export const Salvo: Story = { args: { notice: "Pronto, o endereço foi salvo." } }
+
+/** "Remover" pede confirmação no próprio cartão, sem script. */
+export const ConfirmandoRemocao: Story = { args: { confirming: "trabalho" } }
 
 /** No máximo de endereços: não há como adicionar outro. */
 export const NoLimite: Story = { args: { addHref: null } }

@@ -9,6 +9,8 @@ import { addressLineOf, isDeliverable, zipCodeOf } from "./customer-address"
 /** The profile tab's query: the address form open, `novo` or a saved address's id. */
 export const ADDRESS_KEY = "endereco"
 export const NEW_ADDRESS = "novo"
+/** The profile tab's query: the card whose removal waits for a yes. */
+export const REMOVE_KEY = "remover"
 /** What the last change to the addresses came back with (`AddressNotice`). */
 export const ADDRESS_NOTICE_KEY = "aviso"
 /** A refused change to the addresses, as its code; apart from `erro`, which is the details form's. */
@@ -28,7 +30,8 @@ export function addressNoticeOf(raw: string | undefined, messages: UiMessages): 
     "endereco-removido": text.addressesRemoved,
     "endereco-padrao": text.addressesDefaultSet,
   }
-  return raw && raw in said ? said[raw as AddressNotice] : null
+  // Own keys only: `?aviso=constructor` names `Object`'s constructor through `in`.
+  return raw && Object.hasOwn(said, raw) ? said[raw as AddressNotice] : null
 }
 
 /** "Casa · Rafael Souza": the name the shopper gave it and who receives there; who receives alone, without a name. */

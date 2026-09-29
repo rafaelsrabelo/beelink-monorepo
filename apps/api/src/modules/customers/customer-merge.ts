@@ -32,8 +32,12 @@ export async function mergeInto(tx: Tx, kept: CustomerModel, gone: CustomerModel
   // The kept record's own address changes wait, so its default is still what was counted.
   await lockCustomer(tx, kept.id);
   const keptHasDefault = (await tx.customerAddress.count({ where: { customerId: kept.id, isDefault: true } })) > 0;
-  // Before the other is deleted, whose addresses would go with it.
-  await tx.customerAddress.updateMany({ where: { customerId: gone.id }, data: { customerId: kept.id, ...(keptHasDefault ? { isDefault: false } : {}) } });
+  // Before the other is deleted, whose addresses would go with it. Raw, so each keeps its own
+  // `updatedAt`: a move is not an edit, and the default's successor is the address changed last.
+  await tx.$executeRaw`
+    UPDATE "customer_addresses"
+    SET "customerId" = ${kept.id}::uuid, "isDefault" = "isDefault" AND NOT ${keptHasDefault}::boolean
+    WHERE "customerId" = ${gone.id}::uuid`;
   // Gone before the kept one takes its phone: the index would refuse the two holding it at once.
   await tx.customer.delete({ where: { id: gone.id } });
 

@@ -7,7 +7,7 @@ import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 // Types
-import type { UpdateStoreCustomerPayload } from "@harness-monorepo/contracts"
+import type { CustomerAddress, UpdateStoreCustomerPayload } from "@harness-monorepo/contracts"
 import type { OrderCustomerDraft } from "@harness-monorepo/ui/lib/order-form"
 
 // App
@@ -25,12 +25,17 @@ export function historyPageOf(params: Pick<URLSearchParams, "get">): number {
 
 /**
  * The form's draft as the API takes it. The phone goes only when there is one: a record that never
- * had one keeps none, and the form already refused emptying one that had. Every address part goes,
- * a blank one clearing it — the API reads blank as nothing.
+ * had one keeps none, and the form already refused emptying one that had. Of the address, only the
+ * parts the shopkeeper changed from the record as it was read go, a blank one clearing it: the API
+ * writes them on the customer's default address, which the shopper may have switched meanwhile, and
+ * the parts nobody touched must not overwrite it.
  */
-export function correctionOf(draft: OrderCustomerDraft): UpdateStoreCustomerPayload {
+export function correctionOf(draft: OrderCustomerDraft, read: CustomerAddress | null = null): UpdateStoreCustomerPayload {
   const phone = draft.phone.trim()
-  return { name: draft.name.trim(), ...(phone ? { phone } : {}), address: draft.address }
+  const changed = Object.fromEntries(
+    Object.entries(draft.address).filter(([part, value]) => value.trim() !== (read?.[part as keyof CustomerAddress] ?? "")),
+  )
+  return { name: draft.name.trim(), ...(phone ? { phone } : {}), ...(Object.keys(changed).length ? { address: changed } : {}) }
 }
 
 /**
@@ -69,7 +74,7 @@ export function useCustomerRecord(slug: string, customerId: string, web: WebMess
         update.reset()
         setEditing(false)
       },
-      onSave: (draft: OrderCustomerDraft) => update.mutate(correctionOf(draft), { onSuccess: () => setEditing(false) }),
+      onSave: (draft: OrderCustomerDraft) => update.mutate(correctionOf(draft, record.data?.address ?? null), { onSuccess: () => setEditing(false) }),
       pending: update.isPending,
       phoneError: phoneTaken ? pageErrorCopy(update.error, web) : undefined,
       error: phoneTaken ? undefined : pageErrorCopy(update.error, web),

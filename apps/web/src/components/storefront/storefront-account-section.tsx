@@ -9,6 +9,7 @@ import type { WebMessages } from "@/locales"
 // App
 import { phoneLineOf } from "@/lib/account-menu"
 import { brazilTodayOf, cpfLineOf } from "@/lib/customer-identity"
+import { errorSentenceOf } from "@/lib/error-sentence"
 import { ADDRESS_ERROR_KEY, ADDRESS_KEY, ADDRESSES_MAX, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
 import { BACK_KEY, paramOf, safeBackOf } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
@@ -39,7 +40,7 @@ const INVALID_FIELD_OF: Readonly<Record<string, StorefrontAccountFormProps["inva
  */
 function errorOf(code: string, errors: WebMessages["errors"], messages: UiMessages): string {
   if (code === "CUSTOMER_PHONE_TAKEN") return messages.storefront.accountPhoneTaken
-  return errors[code as keyof WebMessages["errors"]] ?? errors.UNKNOWN
+  return errorSentenceOf(errors, code)
 }
 
 const BLANK_ADDRESS = {
@@ -80,10 +81,10 @@ export function StorefrontAccountSection({ slug, accountHref, profile, query, er
         shopperName={profile.name}
         action={`/${slug}/api/customer/enderecos/salvar`}
         // On the way from the cart, the address saved is the one the cart then delivers to.
-        hidden={{ retorno: back ?? accountHref, formulario: withBack({ [ADDRESS_KEY]: editing?.id ?? NEW_ADDRESS }), ...(back ? { [DELIVER_TO_KEY]: "1" } : {}) }}
-        cancelHref={back ?? accountHref}
+        hidden={{ retorno: back ?? `${accountHref}#enderecos`, formulario: withBack({ [ADDRESS_KEY]: editing?.id ?? NEW_ADDRESS }), ...(back ? { [DELIVER_TO_KEY]: "1" } : {}) }}
+        cancelHref={back ?? `${accountHref}#enderecos`}
         offerDefault={profile.addresses.length > 0 && !editing?.isDefault}
-        error={refused ? (errors[refused as keyof WebMessages["errors"]] ?? errors.UNKNOWN) : null}
+        error={refused ? errorSentenceOf(errors, refused) : null}
         messages={messages}
       />
     )

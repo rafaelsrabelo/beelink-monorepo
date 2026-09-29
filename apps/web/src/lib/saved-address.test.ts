@@ -4,8 +4,11 @@ import { describe, expect, it } from "vitest"
 // Types
 import type { CustomerSavedAddress } from "@harness-monorepo/contracts"
 
+// UI
+import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
+
 // App
-import { cepDigitsOf, checkoutAddressesOf, savedAddressHeadingOf, savedAddressLinesOf } from "./saved-address"
+import { addressNoticeOf, cepDigitsOf, checkoutAddressesOf, savedAddressHeadingOf, savedAddressLinesOf } from "./saved-address"
 
 const home: CustomerSavedAddress = {
   id: "a1",
@@ -45,5 +48,10 @@ describe("a saved address as the shop window reads it", () => {
     expect(cepDigitsOf("60323-231")).toBe("60323231")
     expect(cepDigitsOf("6032")).toBeNull()
     expect(cepDigitsOf(null)).toBeNull()
+  })
+
+  it("says what the last change did, and nothing for a word it does not know", () => {
+    expect(addressNoticeOf("endereco-removido", ptBR)).toBe("O endereço foi removido.")
+    for (const word of [undefined, "", "outra-coisa", "constructor", "toString"]) expect(addressNoticeOf(word, ptBR)).toBeNull()
   })
 })

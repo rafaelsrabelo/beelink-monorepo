@@ -19,7 +19,6 @@ import { StorefrontDeliverToLive } from "./storefront-deliver-to-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { headerAccountMenuOf } from "@/lib/account-menu"
-import { cepDigitsOf } from "@/lib/saved-address"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 import { ShopperConversationsLive } from "./conversations/shopper-conversations-live"
 
@@ -198,7 +197,7 @@ export function StorefrontFrame({
               />
             ),
             // The visitor's CEP, kept for the shipping quote to come. A site delivers nothing.
-            deliverTo: deliverToSlot ?? <StorefrontDeliverToLive slug={store.slug} defaultCep={cepDigitsOf(shopper?.address?.zipCode)} messages={messages} />,
+            deliverTo: deliverToSlot ?? <StorefrontDeliverToLive slug={store.slug} defaultCep={shopper?.address?.zipCode ?? null} messages={messages} />,
             searchAction: routes.search(),
             searchScopes: scopes,
             searchScope: scope,

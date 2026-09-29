@@ -387,6 +387,9 @@ export interface UiMessages {
     addressMakeDefault: string
     addressSave: string
     addressCancel: string
+    addressesRemoveAsk: string
+    addressZipCodeFormat: string
+    addressStateFormat: string
     checkoutAddressChoose: string
     checkoutAddAddress: string
     checkoutAddAnotherAddress: string

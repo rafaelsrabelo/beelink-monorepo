@@ -82,6 +82,16 @@ describe("the shopper's address forms", () => {
     expect(locationOf(made).searchParams.get("aviso")).toBe("endereco-padrao")
   })
 
+  it("comes back to the cards themselves, where what it did is said", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })))
+
+    const landing = locationOf(await post("remover", { id: saved.id, retorno: "/loja/conta/perfil#enderecos" }))
+
+    expect(landing.pathname).toBe("/loja/conta/perfil")
+    expect(landing.hash).toBe("#enderecos")
+    expect(landing.searchParams.get("aviso")).toBe("endereco-removido")
+  })
+
   it("brings a refusal back to the form, saying the address at large or the API's own word", async () => {
     const fields = { ...address, retorno: "/loja/carrinho", formulario: "/loja/conta/perfil?endereco=novo&voltar=%2Floja%2Fcarrinho" }
 
@@ -97,6 +107,17 @@ describe("the shopper's address forms", () => {
 
     vi.stubGlobal("fetch", vi.fn(async () => null as unknown as Response).mockRejectedValue(new Error("down")))
     expect(locationOf(await post("remover", { id: saved.id, retorno: "/loja/conta/perfil" })).searchParams.get("erro-endereco")).toBe("UNKNOWN")
+  })
+
+  it("calls the API with nothing but an address's id in its path", async () => {
+    const fetched = vi.fn(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal("fetch", fetched)
+
+    for (const [action, id] of [["remover", ".."], ["padrao", ""], ["salvar", "../default"]] as const) {
+      const landing = locationOf(await post(action, { ...address, id, retorno: "/loja/conta/perfil#enderecos" }))
+      expect(landing.searchParams.get("erro-endereco"), `${action} ${id}`).toBe("CUSTOMER_ADDRESS_NOT_FOUND")
+    }
+    expect(fetched).not.toHaveBeenCalled()
   })
 
   it("keeps every landing inside the shop, and answers only this shop's own forms", async () => {

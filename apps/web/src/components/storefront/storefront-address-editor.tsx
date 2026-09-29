@@ -4,6 +4,7 @@
 import { StorefrontAddressForm, type StorefrontAddressFormProps } from "@harness-monorepo/ui/blocks/storefront/storefront-address-form"
 
 // App
+import { AppLink } from "@/components/app-link"
 import { useShopperZipCodeLookup } from "@/services/cep/cep-hooks"
 
 export type StorefrontAddressEditorProps = Omit<StorefrontAddressFormProps, "onZipCodeLookup" | "linkComponent"> & { slug: string }
@@ -12,5 +13,5 @@ export type StorefrontAddressEditorProps = Omit<StorefrontAddressFormProps, "onZ
 export function StorefrontAddressEditor({ slug, ...form }: StorefrontAddressEditorProps) {
   const lookup = useShopperZipCodeLookup(slug)
 
-  return <StorefrontAddressForm {...form} onZipCodeLookup={lookup} />
+  return <StorefrontAddressForm {...form} onZipCodeLookup={lookup} linkComponent={AppLink} />
 }
