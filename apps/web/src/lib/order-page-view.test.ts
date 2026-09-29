@@ -8,7 +8,7 @@ import type { CustomerOrder } from "@harness-monorepo/contracts"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf } from "./order-page-view"
+import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf, orderTrackingOf } from "./order-page-view"
 import { storefrontRoutes } from "./storefront-routes"
 
 const routes = storefrontRoutes({
@@ -48,6 +48,7 @@ const order: CustomerOrder = {
     { status: "ACCEPTED", at: "2026-09-28T18:10:00.000Z" },
     { status: "PREPARING", at: "2026-09-29T12:00:00.000Z" },
   ],
+  delivery: null,
 }
 
 describe("an order's page, in the shopper's words", () => {
@@ -139,5 +140,21 @@ describe("an order's page, in the shopper's words", () => {
     })
     expect(orderHandoverOf({ ...order, fulfillment: "PICKUP", deliveryAddress: null }, shop, context)).toEqual({ title: "Retirada na loja", lines: ["Loja do Design"] })
     expect(orderHandoverOf({ ...order, deliveryAddress: null }, shop, context)).toBeNull()
+  })
+
+  it("says the window it should arrive in once the shop told it, and how it comes", () => {
+    const delivery = { kind: "CARRIER" as const, carrier: "Correios", service: "SEDEX", trackingCode: "AB123456789BR", trackingUrl: "https://rastreamento.correios.com.br/app/index.php", estimateFrom: "2026-09-30", estimateTo: "2026-10-02" }
+    const told = { ...order, delivery }
+
+    expect(orderStatusViewOf(told, context).detail).toBe("Chega entre qua., 30 de set. e sex., 2 de out.")
+    expect(orderTrackingOf(told, context)).toEqual({ by: "Correios · SEDEX", code: "AB123456789BR", href: "https://rastreamento.correios.com.br/app/index.php", hrefLabel: "Ver no site da transportadora" })
+    expect(orderTrackingOf({ ...told, delivery: { ...delivery, kind: "OWN", carrier: null, service: null, trackingUrl: "https://loja.com/1" } }, context)).toMatchObject({ by: "Entrega da própria loja", hrefLabel: "Acompanhar a entrega" })
+  })
+
+  it("draws no tracking with nothing to follow, nor on a cancelled order", () => {
+    const own = { kind: "OWN" as const, carrier: null, service: null, trackingCode: null, trackingUrl: null, estimateFrom: "2026-09-30", estimateTo: "2026-09-30" }
+    expect(orderTrackingOf({ ...order, delivery: own }, context)).toBeNull()
+    expect(orderTrackingOf({ ...order, status: "CANCELLED", delivery: { ...own, trackingCode: "X1" } }, context)).toBeNull()
+    expect(orderTrackingOf(order, context)).toBeNull()
   })
 })

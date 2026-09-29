@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Libs
 import { ArrowLeftIcon } from "lucide-react"
 
@@ -28,6 +31,8 @@ export interface OrderDetailProps {
   statusPending?: boolean
   /** Why the last status change did not go through, in words. */
   statusError?: string
+  /** How a delivery goes — its card, first in the side column; none on a pick-up. */
+  delivery?: ReactNode
   locale?: string
   currency?: string
   linkComponent?: LinkComponent
@@ -44,6 +49,7 @@ export function OrderDetail({
   onStatusChange,
   statusPending = false,
   statusError,
+  delivery,
   locale = defaultLocale,
   currency = "BRL",
   linkComponent: Link = AnchorLink,
@@ -87,6 +93,7 @@ export function OrderDetail({
       <div className="grid items-start gap-6 @4xl/main:grid-cols-[minmax(0,1fr)_20rem]">
         <OrderItems order={order} money={money} messages={messages} />
         <div className="flex flex-col gap-6">
+          {delivery}
           <OrderFacts
             order={order}
             deliveryLine={deliveryLine}

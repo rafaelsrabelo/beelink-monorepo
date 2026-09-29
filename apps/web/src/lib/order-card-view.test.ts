@@ -8,7 +8,7 @@ import type { CustomerOrderSummary } from "@harness-monorepo/contracts"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { isOrderInProgress, orderCardViewOf, orderStatusLineOf } from "./order-card-view"
+import { isOrderInProgress, orderActionOf, orderCardViewOf, orderStatusLineOf } from "./order-card-view"
 import { storefrontRoutes } from "./storefront-routes"
 
 const routes = storefrontRoutes({
@@ -42,6 +42,7 @@ const order: CustomerOrderSummary = {
   ],
   moreItems: 1,
   placedAt: "2026-09-21T17:02:00.000Z",
+  estimate: null,
 }
 
 describe("orderCardViewOf", () => {
@@ -86,5 +87,24 @@ describe("isOrderInProgress", () => {
     expect(["RECEIVED", "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY"].every((status) => isOrderInProgress(status as CustomerOrderSummary["status"]))).toBe(true)
     expect(isOrderInProgress("DELIVERED")).toBe(false)
     expect(isOrderInProgress("CANCELLED")).toBe(false)
+  })
+})
+
+describe("orderActionOf", () => {
+  it("offers the cancel while received, buying again once it ended, and nothing on its way", () => {
+    expect(orderActionOf("RECEIVED")).toBe("cancel")
+    expect(["ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY"].map((status) => orderActionOf(status as CustomerOrderSummary["status"]))).toEqual([null, null, null])
+    expect(orderActionOf("DELIVERED")).toBe("reorder")
+    expect(orderActionOf("CANCELLED")).toBe("reorder")
+  })
+})
+
+describe("the card's line once the shop told the window", () => {
+  it("says when it should arrive rather than when it was placed, while on its way", () => {
+    const told = { ...order, status: "PREPARING" as const, estimate: { from: "2026-09-24", to: "2026-09-25" } }
+
+    expect(orderStatusLineOf(told, context).detail).toBe("Chega entre qui., 24 e sex., 25 de set.")
+    // Delivered, the window has nothing more to say.
+    expect(orderStatusLineOf({ ...told, status: "DELIVERED" }, context).detail).toMatch(/^Feito por você/)
   })
 })

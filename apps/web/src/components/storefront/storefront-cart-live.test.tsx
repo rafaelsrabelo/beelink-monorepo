@@ -229,6 +229,19 @@ describe("StorefrontCartLive", () => {
     expect(screen.queryByRole("link", { name: /Tente de novo/ })).toBeNull()
   })
 
+  /** Said over a cart that is gone, "os itens estão no carrinho" would contradict "pedido enviado". */
+  it("says what brought the shopper here over the cart, and stops once the order is sent", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ ...placed, fulfillment: "PICKUP", deliveryAddress: null }, { status: 201 })))
+    renderCart(false, bia, { whatsapp: null, arrival: <p>Os itens do pedido nº 11 estão no carrinho.</p> })
+    expect(screen.getByText("Os itens do pedido nº 11 estão no carrinho.")).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
+    fireEvent.click(screen.getByRole("button", { name: "Fazer pedido" }))
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("A loja recebeu o seu pedido e vai confirmar."))
+    expect(screen.queryByText("Os itens do pedido nº 11 estão no carrinho.")).toBeNull()
+  })
+
   it("never keeps a delivery chosen once the address is gone from the page", () => {
     const view = renderCart()
     expect(screen.getByRole("radio", { name: /Receber em casa/ })).toBeChecked()

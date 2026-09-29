@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -18,7 +18,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
-import { CreateOrderDto, ListOrdersDto, UpdateOrderStatusDto } from './dto/order.dto.js';
+import { CreateOrderDto, ListOrdersDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { OrderPageResponse, OrderResponse } from './dto/order.response.js';
 import { OrderNumberPipe } from './order-number.pipe.js';
 import { OrdersService } from './orders.service.js';
@@ -69,6 +69,30 @@ export class OrdersController {
     @CurrentUser() current: AuthenticatedUser,
   ): Promise<OrderResponse> {
     return this.orders.get(storeSlug, current.id, number);
+  }
+
+  @Put(':number/delivery')
+  @ApiOperation({ summary: 'Tell how a delivery goes — who brings it, its tracking, its window — replacing what was told' })
+  @ApiOkResponse({ type: OrderResponse })
+  @ApiBadRequestResponse({ description: 'ORDER_DELIVERY_FOR_PICKUP — a pick-up has no delivery · ORDER_DELIVERY_WINDOW_INVALID' })
+  setDelivery(
+    @Param('storeSlug') storeSlug: string,
+    @Param('number', OrderNumberPipe) number: number,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: OrderDeliveryDto,
+  ): Promise<OrderResponse> {
+    return this.orders.setDelivery(storeSlug, current.id, number, dto);
+  }
+
+  @Delete(':number/delivery')
+  @ApiOperation({ summary: "Take back what was told of the delivery; the order reads as one nobody told yet" })
+  @ApiOkResponse({ type: OrderResponse })
+  clearDelivery(
+    @Param('storeSlug') storeSlug: string,
+    @Param('number', OrderNumberPipe) number: number,
+    @CurrentUser() current: AuthenticatedUser,
+  ): Promise<OrderResponse> {
+    return this.orders.clearDelivery(storeSlug, current.id, number);
   }
 
   @Patch(':number/status')

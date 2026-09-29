@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrderSituation, OrderErrorCode, OrderFulfillment, OrderStatus } from '@harness-monorepo/contracts';
+import type { CustomerOrderSituation, OrderDeliveryKind, OrderErrorCode, OrderFulfillment, OrderStatus } from '@harness-monorepo/contracts';
 
 export const ORDER_STATUSES = [
   'RECEIVED',
@@ -11,6 +11,8 @@ export const ORDER_STATUSES = [
 ] as const satisfies readonly OrderStatus[];
 
 export const ORDER_FULFILLMENTS = ['DELIVERY', 'PICKUP'] as const satisfies readonly OrderFulfillment[];
+
+export const ORDER_DELIVERY_KINDS = ['OWN', 'CARRIER'] as const satisfies readonly OrderDeliveryKind[];
 
 export const ORDERS_PAGE_SIZE = 20;
 /** The customer's list is cards, not rows: fewer to a page. */

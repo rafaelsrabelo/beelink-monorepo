@@ -7,7 +7,7 @@ import { cache } from "react"
 import { cookies } from "next/headers"
 
 // Types
-import type { CustomerOrder, CustomerOrderListQuery, CustomerOrderPage } from "@harness-monorepo/contracts"
+import type { CustomerOrder, CustomerOrderListQuery, CustomerOrderPage, CustomerReorder } from "@harness-monorepo/contracts"
 
 // App
 import { callApi } from "./api"
@@ -57,4 +57,9 @@ export function customerOrdersAt(slug: string, query: CustomerOrderListQuery = {
 /** One of the shopper's orders, with its timeline and where it goes — or why there is none to show. */
 export function customerOrderAt(slug: string, number: number): Promise<CustomerOrderRead> {
   return readOrder(slug, number)
+}
+
+/** One of the shopper's orders against today's catalogue, as "Comprar de novo" put it in the cart; null when it could not be read. */
+export function customerReorderAt(slug: string, number: number): Promise<CustomerReorder | null> {
+  return readAsShopper<CustomerReorder>(`/stores/${encodeURIComponent(slug)}/customer/orders/${number}/reorder`)
 }

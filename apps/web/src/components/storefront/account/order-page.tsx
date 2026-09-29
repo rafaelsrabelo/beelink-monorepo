@@ -14,7 +14,9 @@ import { StorefrontOrderLayout } from "@harness-monorepo/ui/blocks/storefront/st
 import { StorefrontOrderPayment } from "@harness-monorepo/ui/blocks/storefront/storefront-order-payment"
 import { StorefrontOrderReceipt } from "@harness-monorepo/ui/blocks/storefront/storefront-order-receipt"
 import { StorefrontOrderStatus } from "@harness-monorepo/ui/blocks/storefront/storefront-order-status"
+import { StorefrontOrderTracking } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tracking"
 import { StorefrontOrdersEmpty } from "@harness-monorepo/ui/blocks/storefront/storefront-orders-empty"
+import { StorefrontReorderButton } from "@harness-monorepo/ui/blocks/storefront/storefront-reorder-button"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
@@ -22,7 +24,9 @@ import { AppLink } from "@/components/app-link"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { customerOrderAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
-import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf } from "@/lib/order-page-view"
+import { orderActionOf } from "@/lib/order-card-view"
+import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf, orderTrackingOf } from "@/lib/order-page-view"
+import { reorderActionOf } from "@/lib/reorder-view"
 import { shopperAt } from "@/lib/shopper"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { accountOrderNumberOf, paramOf, RECEIPT_KEY, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
@@ -114,6 +118,7 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
   const context = { routes, locale: "pt-BR", messages: ui }
   const shop = { name: store.name }
   const status = orderStatusViewOf(order, context)
+  const tracking = orderTrackingOf(order, context)
   const cancelled = order.status === "CANCELLED"
   const handover = orderHandoverOf(order, shop, context)
   const { items, count } = orderItemsOf(order, context)
@@ -145,19 +150,25 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
         header={header({
           placed: orderPlacedLineOf(order, context),
           receiptHref: cancelled ? undefined : routes.accountOrder(order.number, { receipt: true }),
-          // Each action joins with its ticket: talking to the shop (K3), buying again (J6).
-          actions: order.status === "RECEIVED" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : undefined,
+          // Each action joins with its ticket: talking to the shop (K3). Buying again sits under the lines.
+          actions: orderActionOf(order.status) === "cancel" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : undefined,
         })}
         status={
           <>
             <OrderCancelNoticeLine messages={ui} />
-            <StorefrontOrderStatus {...status} messages={ui} />
+            <StorefrontOrderStatus {...status} tracking={tracking ? <StorefrontOrderTracking {...tracking} messages={ui} /> : undefined} messages={ui} />
           </>
         }
         history={<StorefrontOrderHistory events={orderHistoryOf(order, context)} messages={ui} />}
         aside={
           <>
-            <StorefrontOrderItems items={items} count={count} linkComponent={AppLink} messages={ui} />
+            <StorefrontOrderItems
+              items={items}
+              count={count}
+              actions={orderActionOf(order.status) === "reorder" ? <StorefrontReorderButton action={reorderActionOf(store.slug, order.number)} variant="all" messages={ui} /> : undefined}
+              linkComponent={AppLink}
+              messages={ui}
+            />
             <StorefrontOrderPayment {...payment} messages={ui} />
             {handover ? <StorefrontOrderAddress {...handover} /> : null}
           </>
