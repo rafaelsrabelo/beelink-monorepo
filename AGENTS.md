@@ -82,6 +82,7 @@ beelink-monorepo/
 │   ├── contracts/    # wire types, types only — the one place a shape is defined
 │   └── ui/           # the web's design system — tokens, primitives, blocks, Storybook
 ├── docs/             # product · repo · ai-rules · plans
+├── docker/           # the production images; docker-compose.dokploy.yml runs them — docs/repo/deploy.md
 ├── scripts/          # gates + the local CI mirror — plain shell, any tool can run them
 ├── .claude/skills/   # the workflows an agent runs: implement, deliver, learn
 ├── .github/          # CI + PR template
