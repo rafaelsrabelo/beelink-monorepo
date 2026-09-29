@@ -47,6 +47,31 @@ describe("LoginForm", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("E-mail ou senha incorretos.")
   })
 
+  it("offers another confirmation link, to the e-mail typed, when the refusal is an unconfirmed one", async () => {
+    const onResend = vi.fn()
+    const onSubmit = vi.fn()
+    render(<LoginForm onSubmit={onSubmit} error="Confirme seu e-mail antes de entrar." resend={{ onResend }} />)
+
+    await userEvent.type(screen.getByLabelText("E-mail"), "ana@exemplo.com")
+    await userEvent.click(screen.getByRole("button", { name: "Enviar novo link" }))
+
+    expect(onResend).toHaveBeenCalledWith("ana@exemplo.com")
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it("says the new link is on its way once it was sent, and offers no second one", () => {
+    render(<LoginForm onSubmit={vi.fn()} error="Confirme seu e-mail antes de entrar." resend={{ onResend: vi.fn(), sent: true }} />)
+
+    expect(screen.getByRole("status")).toHaveTextContent("Enviamos um novo link.")
+    expect(screen.queryByRole("button", { name: "Enviar novo link" })).not.toBeInTheDocument()
+  })
+
+  it("offers no new link for any other refusal", () => {
+    render(<LoginForm onSubmit={vi.fn()} error="E-mail ou senha incorretos." />)
+
+    expect(screen.queryByRole("button", { name: "Enviar novo link" })).not.toBeInTheDocument()
+  })
+
   it("says it is working and refuses a second click", () => {
     render(<LoginForm onSubmit={vi.fn()} pending />)
 
@@ -78,9 +103,11 @@ describe("LoginForm", () => {
     expect(await screen.findByText("Enter a valid e-mail address")).toBeInTheDocument()
   })
 
-  it("has no accessibility violations", async () => {
-    const { container } = render(<LoginForm onSubmit={vi.fn()} error="E-mail ou senha incorretos." />)
+  it("has no accessibility violations, with a new confirmation link offered or not", async () => {
+    const { container, rerender } = render(<LoginForm onSubmit={vi.fn()} error="E-mail ou senha incorretos." />)
+    await expectNoA11yViolations(container)
 
+    rerender(<LoginForm onSubmit={vi.fn()} error="Confirme seu e-mail antes de entrar." resend={{ onResend: vi.fn() }} />)
     await expectNoA11yViolations(container)
   })
 })

@@ -76,6 +76,30 @@ describe('signing up', () => {
     expect(response.json<ApiErrorBody>().errorCode).toBe('AUTH_EMAIL_NOT_VERIFIED');
   });
 
+  it('lets an account whose confirmation was lost in once it resets its password from the e-mail', async () => {
+    const email = newEmail('confirmacao-perdida');
+    await register(app, email);
+    // The confirmation never reaches anyone: the inbox is cleared before it is read.
+    await clearInbox();
+
+    await app.inject({ method: 'POST', url: '/api/auth/forgot-password', payload: { email } });
+    const token = tokenFromLink((await waitForMessage(email)).Text, '/reset-password');
+    const reset = await app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      payload: { token, password: 'senha-nova-bem-comprida' },
+    });
+    expect(reset.statusCode).toBe(204);
+
+    const signedIn = await app.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { email, password: 'senha-nova-bem-comprida' },
+    });
+    expect(signedIn.statusCode).toBe(200);
+    expect(signedIn.json<{ user: User }>().user.emailVerified).toBe(true);
+  });
+
   it('spends a verification token once, and says nothing about why a link failed', async () => {
     const email = newEmail('token-gasto');
     await register(app, email);

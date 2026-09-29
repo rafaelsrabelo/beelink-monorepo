@@ -17,6 +17,11 @@ export interface StorefrontSignInProps {
   email?: string
   /** A refusal, already a sentence. */
   error?: string | null
+  /**
+   * The refusal was an unconfirmed e-mail: where "Mandar outro link" posts the address typed, with
+   * the same hidden fields. Without it the shopper is told a link was sent and offered no other.
+   */
+  resendAction?: string
   /** The link is on its way — after signing up or asking for a new password. */
   sent?: boolean
   /** What an e-mailed link just did — the e-mail confirmed, the password replaced — said over the form. */
@@ -47,6 +52,7 @@ export function StorefrontSignIn({
   hidden,
   email = "",
   error,
+  resendAction,
   sent = false,
   notice,
   hrefs,
@@ -66,6 +72,21 @@ export function StorefrontSignIn({
         <p role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
           {error}
         </p>
+      ) : null}
+
+      {error && resendAction && email ? (
+        <form action={resendAction} method="post">
+          {Object.entries(hidden).map(([name, value]) => (
+            <input key={name} type="hidden" name={name} value={value} />
+          ))}
+          <input type="hidden" name="email" value={email} />
+          <button
+            type="submit"
+            className="flex h-11 w-full items-center justify-center rounded-xl border border-shop-line-strong bg-shop-background text-sm font-semibold text-shop-on-background transition-colors hover:bg-shop-fill"
+          >
+            {text.linkResend}
+          </button>
+        </form>
       ) : null}
 
       {notice ? (

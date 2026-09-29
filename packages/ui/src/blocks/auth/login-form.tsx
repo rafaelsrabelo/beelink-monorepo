@@ -31,6 +31,11 @@ export interface LoginFormProps {
   signupHref?: string
   forgotPasswordHref?: string
   linkComponent?: LinkComponent
+  /**
+   * The refusal was an unconfirmed e-mail: another link goes to the address typed, from here. Without
+   * it the page says a link was sent and offers no way to get one when it never arrived.
+   */
+  resend?: { onResend: (email: string) => void; pending?: boolean; sent?: boolean }
   /** Every sentence this block renders. Defaults to the product's own language. */
   messages?: UiMessages
 }
@@ -42,6 +47,7 @@ export function LoginForm({
   signupHref = "/signup",
   forgotPasswordHref = "/forgot-password",
   linkComponent: Link = AnchorLink,
+  resend,
   messages = defaultMessages,
 }: LoginFormProps) {
   const text = messages.login
@@ -66,6 +72,25 @@ export function LoginForm({
     >
       <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
         <FieldGroup>
+          {resend ? (
+            <Field>
+              {resend.sent ? (
+                <p role="status" className="text-sm text-muted-foreground">
+                  {messages.verifyEmail.resentBody}
+                </p>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={resend.pending}
+                  onClick={() => resend.onResend(form.getValues("email"))}
+                >
+                  {resend.pending ? messages.verifyEmail.resending : messages.verifyEmail.resend}
+                </Button>
+              )}
+            </Field>
+          ) : null}
+
           <Field>
             <FieldLabel htmlFor="email">{text.emailLabel}</FieldLabel>
             <Input

@@ -44,6 +44,7 @@ export async function StorefrontSignInSection({ place, routes, query, errors }: 
         hidden={{ [BACK_KEY]: back, retorno: routes.signIn() }}
         email={paramOf(query.email) ?? ""}
         error={error}
+        {...(code === "AUTH_EMAIL_NOT_VERIFIED" ? { resendAction: `/${store.slug}/api/customer/reenviar` } : {})}
         sent={paramOf(query.enviado) === "1"}
         notice={
           paramOf(query[EMAIL_CONFIRMED_KEY]) === "1"
