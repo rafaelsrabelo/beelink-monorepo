@@ -7,4 +7,6 @@ export const conversationKeys = {
   all: ["conversations"] as const,
   shop: (slug: string) => [...conversationKeys.all, "shop", slug] as const,
   shopper: (slug: string) => [...conversationKeys.all, "shopper", slug] as const,
+  shopList: (slug: string, query: object) => [...conversationKeys.shop(slug), "list", query] as const,
+  shopUnread: (slug: string) => [...conversationKeys.shop(slug), "unread"] as const,
 }
