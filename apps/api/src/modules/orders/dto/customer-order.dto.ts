@@ -10,6 +10,10 @@ import type {
   CustomerOrderItem,
   CustomerOrderListQuery,
   CustomerOrderPage,
+  CustomerReorder,
+  CustomerReorderLeft,
+  CustomerReorderLine,
+  ReorderLeftReason,
   CustomerOrderSituation,
   CustomerOrderSummary,
   OrderFulfillment,
@@ -163,4 +167,26 @@ export class ListCustomerOrdersDto implements CustomerOrderListQuery {
   @Max(CUSTOMER_ORDERS_PAGE_SIZE_MAX)
   @Type(() => Number)
   pageSize?: number;
+}
+
+const REORDER_LEFT_REASONS = ['OFF_SALE', 'SOLD_OUT', 'LIMITED'] as const satisfies readonly ReorderLeftReason[];
+
+export class CustomerReorderLineResponse implements CustomerReorderLine {
+  @ApiProperty({ format: 'uuid' }) productId!: string;
+  @ApiProperty({ format: 'uuid' }) variantId!: string;
+  @ApiProperty({ description: 'As many as the order had, or as the stock allows.' }) quantity!: number;
+}
+
+export class CustomerReorderLeftResponse implements CustomerReorderLeft {
+  @ApiProperty() productName!: string;
+  @ApiProperty({ nullable: true, type: String, example: 'Sabor: Uva · Peso: 300 g' }) variantLabel!: string | null;
+  @ApiProperty({ enum: REORDER_LEFT_REASONS, description: 'OFF_SALE — the shop no longer sells it · SOLD_OUT — none left · LIMITED — fewer left than the order had' })
+  reason!: ReorderLeftReason;
+  @ApiProperty({ description: 'Units that went in: zero unless LIMITED.' }) added!: number;
+}
+
+export class CustomerReorderResponse implements CustomerReorder {
+  @ApiProperty() number!: number;
+  @ApiProperty({ type: [CustomerReorderLineResponse] }) lines!: CustomerReorderLineResponse[];
+  @ApiProperty({ type: [CustomerReorderLeftResponse] }) left!: CustomerReorderLeftResponse[];
 }

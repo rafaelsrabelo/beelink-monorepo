@@ -217,8 +217,12 @@ export function storefrontRoutes(shop: StorefrontShop) {
         ...filterEntries(filters),
       }),
 
-    /** The basket, which the header's icon points at from the first day. */
-    cart: () => `${home}/${routeWords.cart}`,
+    /**
+     * The basket, which the header's icon points at from the first day. `reordered` names the order
+     * "Comprar de novo" just put in it, and `failed` says nothing came of it.
+     */
+    cart: ({ reordered, failed = false }: { reordered?: number; failed?: boolean } = {}) =>
+      withQuery(`${home}/${routeWords.cart}`, { [REORDERED_KEY]: reordered === undefined ? undefined : String(reordered), [REORDER_FAILED_KEY]: failed ? "1" : undefined }),
 
     /**
      * Where a shopper signs in — or, by `mode`, signs up (`criar`) or asks for a new password
@@ -288,6 +292,10 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   return { kind: "category", slug: segment }
 }
 
+/** The cart's keys after "Comprar de novo": the order bought again, and whether reading it failed. */
+export const REORDERED_KEY = "repetido"
+export const REORDER_FAILED_KEY = "falhou"
+
 /** The receipt's key: the order's page drawn as a document to print. */
 export const RECEIPT_KEY = "comprovante"
 
@@ -299,8 +307,13 @@ const ORDER_NUMBER_MAX = 2_147_483_647
  * Null for anything else — another tab, a word, a zero, a number past any order — which is a 404.
  */
 export function accountOrderNumberOf(item: string, sub: string, routeWords: StorefrontRouteWords): number | null {
-  if (accountTabOf(item, routeWords) !== "orders" || !/^[1-9]\d{0,9}$/.test(sub)) return null
-  const number = Number(sub)
+  return accountTabOf(item, routeWords) === "orders" ? orderNumberOf(sub) : null
+}
+
+/** An order number as an address writes it — no zero, no leading zeros, none past the column — or null. */
+export function orderNumberOf(raw: string | undefined): number | null {
+  if (!raw || !/^[1-9]\d{0,9}$/.test(raw)) return null
+  const number = Number(raw)
   return number <= ORDER_NUMBER_MAX ? number : null
 }
 

@@ -266,6 +266,39 @@ export interface CustomerOrderPage {
   years: number[];
 }
 /**
+ * Why a line of an order does not go back into the cart as it was: the shop no longer sells it
+ * (a draft, an archived or switched-off combination, a deleted product), none is left, or fewer
+ * are left than the order had.
+ */
+export type ReorderLeftReason = "OFF_SALE" | "SOLD_OUT" | "LIMITED";
+
+/** A line that goes into the cart again: the same combination, as many as the stock allows. */
+export interface CustomerReorderLine {
+  productId: string;
+  variantId: string;
+  quantity: number;
+}
+
+/** A line that stays out, or goes in with fewer: what it was, why, and how many went in. */
+export interface CustomerReorderLeft {
+  productName: string;
+  variantLabel: string | null;
+  reason: ReorderLeftReason;
+  /** Units that went in: zero unless the reason is `LIMITED`. */
+  added: number;
+}
+
+/**
+ * An order read to be bought again against today's catalogue: what goes into the cart and what does
+ * not. Prices are not in it — the cart prices every line from the catalogue on each read.
+ */
+export interface CustomerReorder {
+  number: number;
+  lines: CustomerReorderLine[];
+  left: CustomerReorderLeft[];
+}
+
+/**
  * The error codes the order routes answer, beyond the store's own (`STORE_NOT_FOUND`,
  * `STORE_FORBIDDEN`) and the HTTP-status fallbacks.
  */

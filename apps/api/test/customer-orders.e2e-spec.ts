@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { ApiErrorBody, AuthSession, CustomerOrder, CustomerOrderPage, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, CustomerOrder, CustomerOrderPage, CustomerReorder, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -329,6 +329,43 @@ describe("a shopper's order from the cart", () => {
       const offSale = { productName: 'Whey', productSlug: null, imageUrl: 'https://img.test/whey.jpg' };
       expect((await orders()).orders[0]!.items[0]).toMatchObject(offSale);
       expect((await call('GET', '/api/stores/lessari/customer/orders/1', shopper)).json<CustomerOrder>().items[0]).toMatchObject(offSale);
+    });
+
+    it('reads an order again against today: what goes back into the cart, and what stays out and why', async () => {
+      await place();
+      const reorder = () => call('GET', '/api/stores/lessari/customer/orders/1/reorder', shopper);
+
+      const all = await reorder();
+      expect(all.statusCode).toBe(200);
+      expect(all.json<CustomerReorder>()).toEqual({
+        number: 1,
+        lines: [
+          { productId: expect.any(String), variantId: whey, quantity: 2 },
+          { productId: expect.any(String), variantId: grape, quantity: 1 },
+        ],
+        left: [],
+      });
+
+      // Fewer left than the order had: in, with what there is. The grape's product off sale: out.
+      await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 1 } });
+      const grapeProduct = (await prisma.productVariant.findUniqueOrThrow({ where: { id: grape } })).productId;
+      await prisma.product.update({ where: { id: grapeProduct }, data: { status: 'DRAFT' } });
+      const some = (await reorder()).json<CustomerReorder>();
+      expect(some.lines).toEqual([{ productId: expect.any(String), variantId: whey, quantity: 1 }]);
+      expect(some.left).toEqual([
+        { productName: 'Whey', variantLabel: null, reason: 'LIMITED', added: 1 },
+        { productName: 'Creatina', variantLabel: 'Sabor: Uva', reason: 'OFF_SALE', added: 0 },
+      ]);
+
+      await prisma.productVariant.update({ where: { id: whey }, data: { stockQuantity: 0 } });
+      expect((await reorder()).json<CustomerReorder>().left[0]).toMatchObject({ productName: 'Whey', reason: 'SOLD_OUT', added: 0 });
+
+      // Another customer's order is no order of theirs.
+      const other = await shopperOf('lessari', 'Outra Pessoa');
+      const stranger = await call('GET', '/api/stores/lessari/customer/orders/1/reorder', other);
+      expect(stranger.statusCode).toBe(404);
+      expect(stranger.json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_NOT_FOUND' });
+      expect((await call('GET', '/api/stores/lessari/customer/orders/1/reorder')).statusCode).toBe(401);
     });
 
     it('cancels an order the shop has not accepted, giving its stock back; after that only the shop cancels', async () => {

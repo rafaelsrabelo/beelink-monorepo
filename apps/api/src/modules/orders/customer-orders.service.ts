@@ -2,7 +2,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { CustomerOrder, CustomerOrderPage, CustomerOrderSituation, OrderStatus } from '@harness-monorepo/contracts';
+import type { CustomerOrder, CustomerOrderPage, CustomerOrderSituation, CustomerReorder, OrderStatus } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -12,6 +12,7 @@ import { CUSTOMER_ORDER_INCLUDE, toCustomerOrder, toCustomerOrderSummary } from 
 import type { ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
 import { settleCancellation } from './order-cancellation.js';
 import { OrderPlacement } from './order-placement.js';
+import { reorderOf } from './order-reorder.js';
 import { CUSTOMER_ORDER_SITUATIONS, CUSTOMER_ORDERS_PAGE_SIZE, CUSTOMER_ORDERS_PAGE_SIZE_MAX, orderError } from './orders.constants.js';
 
 /** The shops are Brazilian, and so is a customer's year: "2025" starts at midnight in Brasília. */
@@ -106,6 +107,30 @@ export class CustomerOrdersService {
   async get(storeSlug: string, userId: string, number: number): Promise<CustomerOrder> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
     return this.read(storeId, customerId, number);
+  }
+
+  /**
+   * One of the customer's orders read against today's catalogue, to be bought again: what goes into
+   * the cart and what stays out. A read: nothing is reserved, and the checkout checks again.
+   */
+  async reorder(storeSlug: string, userId: string, number: number): Promise<CustomerReorder> {
+    const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
+    const order = await this.prisma.order.findFirst({
+      where: { storeId, customerId, number },
+      select: { items: { orderBy: { position: 'asc' }, select: { productId: true, variantId: true, productName: true, variantLabel: true, quantity: true } } },
+    });
+    if (!order) throw notFound(number);
+
+    const variantIds = order.items.flatMap((item) => (item.variantId ? [item.variantId] : []));
+    const variants = await this.prisma.productVariant.findMany({
+      where: { id: { in: variantIds }, storeId },
+      select: { id: true, productId: true, isActive: true, archivedAt: true, trackStock: true, stockQuantity: true, product: { select: { status: true } } },
+    });
+    return reorderOf(
+      number,
+      order.items,
+      variants.map(({ product, ...variant }) => ({ ...variant, productStatus: product.status })),
+    );
   }
 
   /**

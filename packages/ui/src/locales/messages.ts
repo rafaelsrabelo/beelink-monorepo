@@ -489,6 +489,17 @@ export interface UiMessages {
     receiptNotInvoice: string
     receiptPrint: string
     receiptBack: string
+    /** Buying an order again (J6): the button, and what the cart says of it. */
+    reorder: string
+    reorderAll: string
+    reorderDone: string
+    reorderNone: string
+    reorderLeft: string
+    reorderOffSale: string
+    reorderSoldOut: string
+    reorderLimitedOne: string
+    reorderLimitedMany: string
+    reorderFailed: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string
