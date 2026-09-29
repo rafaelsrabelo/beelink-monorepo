@@ -50,6 +50,7 @@ export const en: WebMessages = {
       home: "Home",
       orders: "Orders",
       products: "Products",
+      conversations: "Conversations",
       customers: "Customers",
       categories: "Categories",
       design: "Design mode",

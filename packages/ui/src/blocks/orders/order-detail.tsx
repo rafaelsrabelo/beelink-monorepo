@@ -33,6 +33,8 @@ export interface OrderDetailProps {
   statusError?: string
   /** How a delivery goes — its card, first in the side column; none on a pick-up. */
   delivery?: ReactNode
+  /** The order's conversation with its customer, under the lines (BEELINK-164). */
+  conversation?: ReactNode
   locale?: string
   currency?: string
   linkComponent?: LinkComponent
@@ -50,6 +52,7 @@ export function OrderDetail({
   statusPending = false,
   statusError,
   delivery,
+  conversation,
   locale = defaultLocale,
   currency = "BRL",
   linkComponent: Link = AnchorLink,
@@ -91,7 +94,10 @@ export function OrderDetail({
       </header>
 
       <div className="grid items-start gap-6 @4xl/main:grid-cols-[minmax(0,1fr)_20rem]">
-        <OrderItems order={order} money={money} messages={messages} />
+        <div className="flex min-w-0 flex-col gap-6">
+          <OrderItems order={order} money={money} messages={messages} />
+          {conversation}
+        </div>
         <div className="flex flex-col gap-6">
           {delivery}
           <OrderFacts

@@ -11,8 +11,8 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import { momentOf } from "./order-card-view"
 import type { StorefrontRoutes } from "./storefront-routes"
 
-/** The API's limit, counted as the database counts it: in code points, so an emoji is one. */
-export const MESSAGE_MAX = 2000
+// One limit for both sides of a conversation: the shopper's here, the shop's in the panel.
+export { MESSAGE_MAX, messageLengthOf } from "./message-length"
 
 interface ConversationContext {
   locale: string
@@ -53,9 +53,4 @@ export function conversationLinesOf(conversation: CustomerConversation, { locale
 /** What the header's balloon counts: the shop's messages not read yet, across every conversation. */
 export function unreadOf(summaries: readonly CustomerConversationSummary[] | undefined): number {
   return (summaries ?? []).reduce((total, summary) => total + summary.unread, 0)
-}
-
-/** How long a draft is as the API measures it: trimmed, in code points. */
-export function messageLengthOf(draft: string): number {
-  return [...draft.trim()].length
 }

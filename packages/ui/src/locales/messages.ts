@@ -1534,6 +1534,50 @@ export interface UiMessages {
       whatsappStatus: string
     }
   }
+  /** The panel's conversations: the tab, one conversation, and the one inside an order (BEELINK-164). */
+  conversations: {
+    title: string
+    intro: string
+    filterOpen: string
+    filterUnread: string
+    filterAll: string
+    filtersLabel: string
+    searchLabel: string
+    searchPlaceholder: string
+    empty: string
+    emptyHint: string
+    failed: string
+    retry: string
+    unreadOne: string
+    unreadMany: string
+    closedTag: string
+    youSaid: string
+    orderLine: string
+    viewOrder: string
+    viewCustomer: string
+    back: string
+    pickOne: string
+    older: string
+    newer: string
+    threadFailed: string
+    noneYet: string
+    noneClosed: string
+    closed: string
+    sent: string
+    read: string
+    fromCustomer: string
+    fromShop: string
+    replyLabel: string
+    replyPlaceholder: string
+    send: string
+    sending: string
+    tooLong: string
+    refusedClosed: string
+    refusedUnknown: string
+    orderSection: string
+    navUnread: string
+    navUnreadOne: string
+  }
   leads: {
     title: string
     description: string
