@@ -3,6 +3,9 @@
 // React
 import { useEffect } from "react"
 
+// Next
+import { usePathname } from "next/navigation"
+
 // Types
 import type { StorefrontRouteWords } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -38,8 +41,13 @@ export function ShopperConversationsLive({ slug, routeWords, messages }: Shopper
   const routes = storefrontRoutes({ slug, routeWords })
   const list = useShopperConversations(slug)
   const { open, order, show, back, close, mount } = useConversationPanel()
+  const pathname = usePathname()
 
   useEffect(() => mount(), [mount])
+  // A page left from inside the panel — "Ver pedido", Back — does not open on it.
+  useEffect(() => {
+    close()
+  }, [pathname, close])
 
   return (
     <>
@@ -47,7 +55,8 @@ export function ShopperConversationsLive({ slug, routeWords, messages }: Shopper
         <StorefrontConversationsLink href={routes.accountTab("messages")} unread={unreadOf(list.data)} onOpen={() => show(null)} linkComponent={AppLink} messages={messages} />
       ) : null}
       <StorefrontConversationsPanel open={open} onOpenChange={(next) => (next ? undefined : close())} className={figtree.variable} style={panelFont} messages={messages}>
-        {open ? <ShopperConversations slug={slug} routeWords={routeWords} order={order} onSelect={show} onBack={back} messages={messages} /> : null}
+        {/* Drawn only while the sheet is, so it slides out with its content; hidden, nothing reads or marks read. */}
+        <ShopperConversations slug={slug} routeWords={routeWords} order={order} onSelect={show} onBack={back} onViewOrder={close} messages={messages} />
       </StorefrontConversationsPanel>
     </>
   )

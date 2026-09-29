@@ -26,7 +26,8 @@ export const useConversationPanel = create<ConversationPanelState>()((set) => ({
   panels: 0,
   show: (order) => set({ open: true, order }),
   back: () => set({ order: null }),
-  close: () => set({ open: false, order: null }),
+  // The order stays until the next open says which, so the sheet slides out with what it showed.
+  close: () => set({ open: false }),
   mount: () => {
     set((state) => ({ panels: state.panels + 1 }))
     return () => set((state) => ({ panels: state.panels - 1 }))

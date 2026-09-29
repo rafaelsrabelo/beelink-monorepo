@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useCallback, type ReactNode } from "react"
+import { useCallback, useEffect, useRef, type ReactNode } from "react"
 
 // Libs
 import { ArrowLeftIcon } from "lucide-react"
@@ -40,6 +40,8 @@ export interface StorefrontConversationThreadProps {
   closed: boolean
   /** The web's composer, while the conversation takes messages. */
   composer?: ReactNode
+  /** Leaving for the order's page: the web closes the panel the conversation is in. */
+  onViewOrder?: () => void
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -48,9 +50,12 @@ export interface StorefrontConversationThreadProps {
  * One order's conversation: the shopper's messages on one side and the shop's on the other, oldest
  * first, and the composer under them — or, once the order is over, the words that it ended with it.
  */
-export function StorefrontConversationThread({ title, orderHref, back, lines, closed, composer, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontConversationThreadProps) {
+export function StorefrontConversationThread({ title, orderHref, back, lines, closed, composer, onViewOrder, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontConversationThreadProps) {
   const text = messages.storefront
   // Kept at the latest message as they arrive; a count that stays the same leaves the reader where they are.
+  // Arriving from the list, the focused row is gone: the conversation's title takes its place.
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => heading.current?.focus(), [])
   const scroller = useCallback(
     (element: HTMLDivElement | null) => {
       if (element && lines.length) element.scrollTop = element.scrollHeight
@@ -66,13 +71,16 @@ export function StorefrontConversationThread({ title, orderHref, back, lines, cl
             <ArrowLeftIcon aria-hidden="true" className="size-5" />
           </Link>
         ) : null}
-        <h3 className="text-base font-extrabold">{title}</h3>
-        <Link href={orderHref} className="ml-auto text-sm font-semibold text-shop-primary-ink hover:underline">
+        <h3 ref={heading} tabIndex={-1} className="text-base font-extrabold outline-none">
+          {title}
+        </h3>
+        <Link href={orderHref} onClick={onViewOrder} className="ml-auto text-sm font-semibold text-shop-primary-ink hover:underline">
           {text.conversationViewOrder}
         </Link>
       </div>
 
-      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
+      {/* A log: what arrives is read out; focusable, so a keyboard scrolls the history. */}
+      <div ref={scroller} role="log" tabIndex={0} aria-label={title} className="min-h-0 flex-1 overflow-y-auto rounded-md focus-visible:ring-2 focus-visible:ring-shop-primary focus-visible:outline-none">
         {lines.length === 0 && !closed ? <p className="py-6 text-center text-sm text-shop-muted">{text.conversationStart}</p> : null}
         <ol className="flex flex-col gap-2 py-1">
           {lines.map((line) => (

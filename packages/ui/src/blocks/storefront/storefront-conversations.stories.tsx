@@ -93,7 +93,7 @@ export const Entradas: Story = {
     <div className="flex items-center gap-6 text-shop-on-background">
       <StorefrontConversationsLink href="#" unread={3} />
       <StorefrontOrderTalk href="#" />
-      <StorefrontOrderTalk href="#" emphasis="quiet" />
+      <StorefrontOrderTalk href="#" size="md" />
     </div>
   ),
 }

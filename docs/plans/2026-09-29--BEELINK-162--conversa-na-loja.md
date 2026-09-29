@@ -110,3 +110,65 @@ painel.
 - A faixa "Algum problema com o pedido?" (decisão 3).
 - Som ou notificação do sistema.
 - O painel do lojista: o sino é o K4, a aba Conversas o K5.
+
+## Adendo — revisão independente (2026-09-29)
+
+Dois revisores: um nos dados e na segurança, outro na interface e nas regras. Corrigido:
+
+1. **Marcar como lida entrava em loop quando falhava.** O efeito dependia de `isPending`: uma falha o
+   disparava de novo, sem fim. Agora ele pede uma vez por última mensagem da loja.
+2. **O painel ficava aberto depois de "Ver pedido" ou de voltar no navegador.** O estado é de módulo
+   e sobrevivia à navegação. Agora o painel fecha quando o caminho muda, e o "Ver pedido" fecha o
+   painel mesmo quando leva à página que está atrás dele.
+3. **Uma releitura que falhava apagava a conversa da tela.** Isso vinha do poll, do foco ou do
+   canal, e o campo de escrever sumia junto. Agora só a primeira leitura mostra o erro.
+4. **Enviar apagava o que foi digitado durante o envio.** Agora só sai do campo o texto que foi.
+5. **Sessão:** o `callAsShopper` deslogava a cliente quando a renovação achava a API fora do ar. Com
+   o ícone lendo a lista em toda página, isso passaria a acontecer muito. Agora a resposta é 502 e
+   os cookies ficam, com teste.
+6. **Cache:** a resposta do envio ou da leitura cancela uma releitura em voo antes de virar o dado,
+   para uma resposta velha não chegar por cima dela.
+7. **Acessibilidade:**
+   - o título da conversa recebe o foco ao abrir;
+   - ao voltar, a linha da conversa de onde se veio recebe o foco;
+   - o histórico é um `log`, que anuncia o que chega e rola pelo teclado;
+   - o botão Enviar não se desabilita enquanto envia, para o foco não cair no `body`;
+   - o título do painel ganhou a fonte da loja.
+8. **Campo de escrever:**
+   - o placeholder estava na cor de fundo de imagem, quase invisível;
+   - no celular, Enter quebra a linha e quem envia é o botão;
+   - o Enter que encerra uma composição no Safari não envia mais.
+9. **Aba:**
+   - a caixa rola quando há muitas conversas;
+   - o endereço acompanha o que está aberto (`?pedido=`);
+   - um `?pedido=` novo na mesma página é respeitado.
+10. **Miúdos:**
+    - o esqueleto tem a altura real do campo de escrever;
+    - "2.000" é escrito com o separador;
+    - `emphasis` virou `size`;
+    - o comentário do `orderNumberOf` voltou ao lugar;
+    - uma resposta 2xx vazia agora é erro.
+11. **Testes novos:**
+    - componente da conversa: lida pedida uma vez só, releitura que falha sem apagar a tela,
+      recusa que mantém o texto;
+    - axe no painel, no balão e no "Falar com a loja";
+    - o slot de ações do cartão da Visão geral.
+
+Conferido em :3100, no computador e a 390 px, com a cliente de teste:
+- o painel abre pelo pedido e pelo balão;
+- a cliente enviou no pedido nº 18. A resposta da loja, pela API, chegou sozinha, e a mensagem dela
+  passou de "Enviada" a "Lida". A resposta da loja foi marcada como lida ao aparecer;
+- o pedido nº 20 foi entregue, e a conversa dele ficou só de leitura, com o aviso;
+- a aba abre com `?pedido=`;
+- os botões aparecem na Visão geral e em Meus pedidos só nos pedidos em andamento.
+
+Dados de teste no `harness_wt`:
+- duas mensagens da loja e uma da cliente no pedido nº 18;
+- o pedido nº 20 com uma mensagem, e agora Entregue.
+
+### Fica para depois
+
+- O lojista ainda não lê nem responde pelo painel: o sino é o K4, e a aba Conversas o K5. Até lá, a
+  mensagem da cliente fica guardada, e o painel recebe o aviso sem mostrá-lo. Por isso o K3 não
+  deveria ir para produção antes do K5.
+- A contagem de não lidas no menu da Minha conta (decisão 4).

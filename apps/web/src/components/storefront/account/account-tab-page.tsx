@@ -113,7 +113,7 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
             <OrdersTab slug={store.slug} routes={routes} query={query} locale="pt-BR" messages={ui} />
           </Suspense>
         ) : tab === "messages" ? (
-          <AccountConversations slug={store.slug} routeWords={store.routeWords} initialOrder={conversationOrderOf(query)} messages={ui} />
+          <AccountConversations key={conversationOrderOf(query) ?? "list"} slug={store.slug} routeWords={store.routeWords} initialOrder={conversationOrderOf(query)} messages={ui} />
         ) : (
           <Suspense fallback={<StorefrontAccountSkeleton />}>
             <StorefrontAccountSection slug={store.slug} accountHref={routes.accountTab("profile")} profile={shopper} query={query} errors={web.errors} messages={ui} />

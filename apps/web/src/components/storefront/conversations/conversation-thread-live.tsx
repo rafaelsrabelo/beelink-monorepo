@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Types
 import type { StorefrontRouteWords } from "@harness-monorepo/contracts"
@@ -28,6 +28,8 @@ export interface ConversationThreadLiveProps {
   number: number
   /** Back to the list, in place; without it the conversation stands alone. */
   onBack?: () => void
+  /** Leaving for the order's page, from inside the panel. */
+  onViewOrder?: () => void
   messages: UiMessages
 }
 
@@ -36,34 +38,48 @@ export interface ConversationThreadLiveProps {
  * unread messages are marked read while it shows: the API tells the channel only when it marked
  * something, so the read, its event and the read again end there.
  */
-export function ConversationThreadLive({ slug, routeWords, number, onBack, messages }: ConversationThreadLiveProps) {
+export function ConversationThreadLive({ slug, routeWords, number, onBack, onViewOrder, messages }: ConversationThreadLiveProps) {
   const text = messages.storefront
   const routes = storefrontRoutes({ slug, routeWords })
   const conversation = useShopperConversation(slug, number)
   const send = useSendShopperMessage(slug, number)
-  const { mutate: markRead, isPending: marking } = useMarkShopperConversationRead(slug, number)
+  const { mutate: markRead } = useMarkShopperConversationRead(slug, number)
   const [draft, setDraft] = useState("")
 
+  // Once per latest message from the shop: a read that fails is not asked again in a loop, and the
+  // next message the shop sends asks once more.
+  const asked = useRef<string | null>(null)
   const unread = conversation.data?.unread ?? 0
+  const latestFromShop = conversation.data?.messages.findLast((message) => message.author === "SHOP")?.id ?? null
   useEffect(() => {
-    if (unread > 0 && !marking) markRead()
-  }, [unread, marking, markRead])
+    if (unread === 0 || latestFromShop === null || asked.current === latestFromShop) return
+    asked.current = latestFromShop
+    markRead()
+  }, [unread, latestFromShop, markRead])
 
   if (conversation.isPending) return <StorefrontConversationThreadSkeleton />
-  if (conversation.isError) return <StorefrontConversationFailed message={text.conversationFailed} onRetry={() => void conversation.refetch()} messages={messages} />
+  // Only a first read that failed: a later one keeps the conversation on screen, and the draft with it.
+  if (!conversation.data) return <StorefrontConversationFailed message={text.conversationFailed} onRetry={() => void conversation.refetch()} messages={messages} />
 
   const length = messageLengthOf(draft)
   const tooLong = length > MESSAGE_MAX
-  const error = send.isError ? conversationRefusalOf(send.error, text) : tooLong ? format(text.conversationTooLong, { max: String(MESSAGE_MAX) }) : null
+  const error = send.isError
+    ? conversationRefusalOf(send.error, text)
+    : tooLong
+      ? format(text.conversationTooLong, { max: new Intl.NumberFormat("pt-BR").format(MESSAGE_MAX) })
+      : null
 
-  const submit = () =>
-    send.mutate(draft.trim(), {
-      onSuccess: () => setDraft(""),
+  const submit = () => {
+    const sent = draft.trim()
+    send.mutate(sent, {
+      // What was typed while it went stays: only the message that went leaves the field.
+      onSuccess: () => setDraft((current) => (current.trim() === sent ? "" : current)),
       // The order ended meanwhile: read it again, and the composer gives way to the words that it did.
       onError: (failure) => {
         if (failure instanceof ShopperConversationError && failure.errorCode === "ORDER_CONVERSATION_CLOSED") void conversation.refetch()
       },
     })
+  }
 
   return (
     <StorefrontConversationThread
@@ -72,6 +88,7 @@ export function ConversationThreadLive({ slug, routeWords, number, onBack, messa
       back={onBack ? { href: routes.accountTab("messages"), onBack } : null}
       lines={conversationLinesOf(conversation.data, { locale: "pt-BR", messages })}
       closed={!conversation.data.order.open}
+      {...(onViewOrder ? { onViewOrder } : {})}
       composer={
         <StorefrontConversationComposer
           value={draft}

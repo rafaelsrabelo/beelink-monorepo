@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import { useEffect, useRef } from "react"
+
 // Utils
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
@@ -31,6 +34,8 @@ export interface StorefrontConversationListProps {
   rows: readonly StorefrontConversationRow[]
   /** Opens one in place, on a plain click; without it every row is a plain link. */
   onSelect?: (number: number) => void
+  /** Back from this order's conversation: its row takes the focus the back link had. */
+  focusNumber?: number | null
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -39,8 +44,12 @@ export interface StorefrontConversationListProps {
  * The shopper's conversations at the shop, as the API orders them: those still taking messages
  * first. Each row names its order, the last line, when, and how many from the shop wait unread.
  */
-export function StorefrontConversationList({ rows, onSelect, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontConversationListProps) {
+export function StorefrontConversationList({ rows, onSelect, focusNumber = null, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontConversationListProps) {
   const text = messages.storefront
+  const list = useRef<HTMLUListElement>(null)
+  useEffect(() => {
+    if (focusNumber !== null) list.current?.querySelector<HTMLElement>(`[data-order="${focusNumber}"]`)?.focus()
+  }, [focusNumber])
 
   if (rows.length === 0) {
     return (
@@ -52,11 +61,12 @@ export function StorefrontConversationList({ rows, onSelect, linkComponent: Link
   }
 
   return (
-    <ul className="flex flex-col divide-y divide-shop-line">
+    <ul ref={list} className="flex flex-col divide-y divide-shop-line">
       {rows.map((row) => (
         <li key={row.number}>
           <Link
             href={row.href}
+            data-order={row.number}
             onClick={(event) => openInPlace(event, onSelect ? () => onSelect(row.number) : undefined)}
             className="flex items-start gap-3 rounded-lg px-2 py-3 text-shop-on-background hover:bg-shop-fill"
           >

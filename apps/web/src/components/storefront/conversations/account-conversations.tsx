@@ -8,6 +8,7 @@ import type { StorefrontRouteWords } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { storefrontRoutes } from "@/lib/storefront-routes"
 import { ShopperConversations } from "./shopper-conversations"
 
 export interface AccountConversationsProps {
@@ -24,10 +25,21 @@ export interface AccountConversationsProps {
  */
 export function AccountConversations({ slug, routeWords, initialOrder, messages }: AccountConversationsProps) {
   const [order, setOrder] = useState(initialOrder)
+  const routes = storefrontRoutes({ slug, routeWords })
+
+  // The address follows what shows, so a reload opens the same thing.
+  const select = (number: number) => {
+    setOrder(number)
+    window.history.replaceState(null, "", routes.accountConversation(number))
+  }
+  const back = () => {
+    setOrder(null)
+    window.history.replaceState(null, "", routes.accountTab("messages"))
+  }
 
   return (
-    <div className="flex h-[min(70svh,640px)] flex-col rounded-2xl border border-shop-line bg-shop-background p-4 shop-md:p-5">
-      <ShopperConversations slug={slug} routeWords={routeWords} order={order} onSelect={setOrder} onBack={() => setOrder(null)} messages={messages} />
+    <div className="flex h-[min(70svh,640px)] flex-col overflow-y-auto rounded-2xl border border-shop-line bg-shop-background p-4 shop-md:p-5">
+      <ShopperConversations slug={slug} routeWords={routeWords} order={order} onSelect={select} onBack={back} messages={messages} />
     </div>
   )
 }

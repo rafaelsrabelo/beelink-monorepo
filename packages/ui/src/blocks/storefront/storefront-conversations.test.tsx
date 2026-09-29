@@ -70,6 +70,11 @@ describe("the conversations list", () => {
     expect(onSelect).toHaveBeenCalledWith(18)
   })
 
+  it("gives the focus back to the row of the conversation just left", () => {
+    render(<StorefrontConversationList rows={rows} focusNumber={13} />)
+    expect(within(screen.getAllByRole("listitem")[1]!).getByRole("link")).toHaveFocus()
+  })
+
   it("says there is none yet, and where one starts", () => {
     render(<StorefrontConversationList rows={[]} />)
     expect(screen.getByText("Nenhuma conversa ainda.")).toBeInTheDocument()
@@ -81,6 +86,9 @@ describe("one conversation", () => {
   it("draws each side's messages, oldest first, and whether the shop read the last one", () => {
     render(<StorefrontConversationThread title="Pedido nº 18" orderHref="/loja/conta/pedidos/18" back={{ href: "/loja/conta/conversas" }} lines={lines} closed={false} composer={<p>composer</p>} />)
 
+    // The title takes the focus the row it came from had; what arrives is read out.
+    expect(screen.getByRole("heading", { name: "Pedido nº 18" })).toHaveFocus()
+    expect(screen.getByRole("log", { name: "Pedido nº 18" })).toBeInTheDocument()
     const items = screen.getAllByRole("listitem")
     expect(items).toHaveLength(3)
     expect(items[0]).toHaveTextContent("Você: O pedido chega até sexta?")
@@ -127,7 +135,11 @@ describe("the composer", () => {
   it("sends nothing while sending, or with nothing to send", () => {
     const onSubmit = vi.fn()
     const { rerender } = render(<StorefrontConversationComposer value="Oi" onChange={() => undefined} onSubmit={onSubmit} pending />)
-    expect(screen.getByRole("button", { name: "Enviando…" })).toBeDisabled()
+    // Not disabled, so the focus stays; but a click sends nothing twice.
+    const sending = screen.getByRole("button", { name: "Enviando…" })
+    expect(sending).toHaveAttribute("aria-disabled", "true")
+    fireEvent.click(sending)
+    expect(onSubmit).not.toHaveBeenCalled()
 
     rerender(<StorefrontConversationComposer value="" onChange={() => undefined} onSubmit={onSubmit} canSend={false} />)
     expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled()
@@ -158,6 +170,19 @@ describe("the conversations panel", () => {
 })
 
 describe("accessibility", () => {
+  it("has no violations in the ways in, or in the panel", async () => {
+    const { container } = render(
+      <div>
+        <StorefrontConversationsLink href="#" unread={2} />
+        <StorefrontOrderTalk href="#" />
+      </div>,
+    )
+    await expectNoA11yViolations(container)
+
+    render(<StorefrontConversationsPanel open onOpenChange={() => undefined}><StorefrontConversationList rows={rows} /></StorefrontConversationsPanel>)
+    await expectNoA11yViolations(screen.getByRole("dialog"))
+  })
+
   it("has no violations in the list, a conversation and the composer", async () => {
     const { container } = render(
       <div>

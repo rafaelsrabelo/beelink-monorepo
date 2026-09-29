@@ -39,6 +39,11 @@ describe("StorefrontOrderNow", () => {
     expect(screen.getByRole("link", { name: "Você tem mais 2 pedidos em andamento" })).toHaveAttribute("href", "/loja/conta/pedidos?situacao=em-andamento")
   })
 
+  it("draws the other actions beside the way to follow it", () => {
+    render(<StorefrontOrderNow {...order} actions={<a href="/loja/conta/conversas?pedido=1042">Falar com a loja</a>} />)
+    expect(screen.getByRole("link", { name: "Falar com a loja" })).toHaveAttribute("href", "/loja/conta/conversas?pedido=1042")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<StorefrontOrderNow {...order} more={{ label: "Você tem mais 1 pedido em andamento", href: "#" }} />)
     await expectNoA11yViolations(container)

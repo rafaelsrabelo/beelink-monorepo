@@ -45,8 +45,11 @@ export function useShopperConversation(slug: string, number: number | null): Use
 /** What the API answered becomes the conversation on screen; the list reads its last line and count again. */
 function useSettleConversation(slug: string) {
   const queryClient = useQueryClient()
-  return (conversation: CustomerConversation) => {
-    queryClient.setQueryData(conversationKeys.shopperOrder(slug, conversation.order.number), conversation)
+  return async (conversation: CustomerConversation) => {
+    const queryKey = conversationKeys.shopperOrder(slug, conversation.order.number)
+    // A read already in flight began before this answer, and would land over it without the message.
+    await queryClient.cancelQueries({ queryKey })
+    queryClient.setQueryData(queryKey, conversation)
     return queryClient.invalidateQueries({ queryKey: conversationKeys.shopperList(slug) })
   }
 }

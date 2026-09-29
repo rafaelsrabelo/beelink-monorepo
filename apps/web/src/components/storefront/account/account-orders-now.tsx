@@ -38,7 +38,7 @@ export async function AccountOrdersNow({ slug, routes, locale, messages }: Accou
     return (
       <StorefrontOrderNow
         {...orderNowViewOf(read.order, active.counts.ACTIVE - 1, context)}
-        actions={<OrderTalkLive number={read.order.number} href={routes.accountConversation(read.order.number)} emphasis="quiet" messages={messages} />}
+        actions={<OrderTalkLive number={read.order.number} href={routes.accountConversation(read.order.number)} size="md" messages={messages} />}
         linkComponent={AppLink}
         messages={messages}
       />

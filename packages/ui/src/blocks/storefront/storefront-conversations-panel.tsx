@@ -46,7 +46,7 @@ export function StorefrontConversationsPanel({ open, onOpenChange, children, cla
         className={cn("gap-0 bg-shop-background text-shop-on-background data-[side=right]:w-full data-[side=right]:sm:max-w-md", className)}
       >
         <SheetHeader className="flex-row items-center justify-between border-b border-shop-line px-4 py-3">
-          <SheetTitle className="text-lg font-extrabold text-shop-on-background">{text.conversationsTitle}</SheetTitle>
+          <SheetTitle className="font-[inherit] text-lg font-extrabold text-shop-on-background">{text.conversationsTitle}</SheetTitle>
           <SheetClose render={<button type="button" aria-label={text.conversationsClose} className="rounded-md p-1.5 text-shop-muted hover:bg-shop-fill" />}>
             <XIcon aria-hidden="true" className="size-5" />
           </SheetClose>

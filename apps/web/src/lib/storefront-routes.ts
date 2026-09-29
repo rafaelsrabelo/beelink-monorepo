@@ -329,13 +329,13 @@ export function accountOrderNumberOf(item: string, sub: string, routeWords: Stor
   return accountTabOf(item, routeWords) === "orders" ? orderNumberOf(sub) : null
 }
 
-/** An order number as an address writes it — no zero, no leading zeros, none past the column — or null. */
 /** The order whose conversation the conversations' tab opens on, from `?pedido=`; null for none or one that is not a number. */
 export function conversationOrderOf(query: Record<string, string | string[] | undefined>): number | null {
   const raw = query[CONVERSATION_KEY]
   return orderNumberOf(typeof raw === "string" ? raw : undefined)
 }
 
+/** An order number as an address writes it — no zero, no leading zeros, none past the column — or null. */
 export function orderNumberOf(raw: string | undefined): number | null {
   if (!raw || !/^[1-9]\d{0,9}$/.test(raw)) return null
   const number = Number(raw)

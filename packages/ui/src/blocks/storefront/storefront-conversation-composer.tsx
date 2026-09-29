@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useId, type FormEvent, type KeyboardEvent } from "react"
+import { useId, useRef, type FormEvent, type KeyboardEvent } from "react"
 
 // Libs
 import { SendHorizontalIcon } from "lucide-react"
@@ -32,13 +32,17 @@ export function StorefrontConversationComposer({ value, onChange, onSubmit, pend
   const id = useId()
   const errorId = `${id}-error`
   const ready = canSend && !pending
+  const field = useRef<HTMLTextAreaElement>(null)
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (ready) onSubmit()
   }
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return
+    // 229 is Safari's Enter that ends a composition; a touch keyboard's Enter breaks the line, and
+    // the button sends — a phone has no Shift+Enter.
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || event.keyCode === 229) return
+    if (window.matchMedia?.("(pointer: coarse)").matches) return
     event.preventDefault()
     if (ready) onSubmit()
   }
@@ -50,6 +54,7 @@ export function StorefrontConversationComposer({ value, onChange, onSubmit, pend
           {text.conversationLabel}
         </label>
         <textarea
+          ref={field}
           id={id}
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -58,11 +63,14 @@ export function StorefrontConversationComposer({ value, onChange, onSubmit, pend
           placeholder={text.conversationPlaceholder}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-1 text-sm text-shop-on-background outline-none placeholder:text-shop-placeholder"
+          className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-1.5 py-1 text-sm text-shop-on-background outline-none placeholder:text-shop-muted"
         />
+        {/* Not disabled while sending: a disabled button drops the focus the shopper sent from. */}
         <button
           type="submit"
-          disabled={!ready}
+          disabled={!canSend}
+          aria-disabled={pending || undefined}
+          onClick={() => field.current?.focus()}
           className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-shop-primary px-4 text-sm font-bold text-shop-on-primary disabled:opacity-50"
         >
           <SendHorizontalIcon aria-hidden="true" className="size-4" />

@@ -30,6 +30,7 @@ async function ask<T>(path: string, init: { method: "GET" | "POST"; body?: strin
     const code = typeof answer === "object" && answer !== null && "errorCode" in answer ? String(answer.errorCode) : null
     throw new ShopperConversationError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"), response.status)
   }
+  if (answer === null) throw new ShopperConversationError("UNKNOWN", response.status)
   return answer as T
 }
 

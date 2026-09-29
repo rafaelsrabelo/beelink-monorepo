@@ -40,6 +40,18 @@ describe("the shopper's conversations", () => {
     expect(response.cookies.get("bl_shopper_access")?.value).toBe("")
   })
 
+  /** Asked on every page of the shop now: an API down in the middle of a renewal must not sign anybody out. */
+  it("answers it could not reach the shop, cookies kept, when the renewal finds the API down", async () => {
+    const fetched = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => new Response("", { status: 503 }))
+    fetched.mockResolvedValueOnce(Response.json({ statusCode: 401, errorCode: "AUTH_UNAUTHENTICATED", message: "x" }, { status: 401 }))
+    vi.stubGlobal("fetch", fetched)
+
+    const response = await get({ cookie: "bl_shopper_access=old; bl_shopper_refresh=refresh" })
+
+    expect(response.status).toBe(502)
+    expect(response.cookies.get("bl_shopper_refresh")).toBeUndefined()
+  })
+
   it("refuses another site and a slug that is none, before calling anything", async () => {
     const fetched = vi.fn()
     vi.stubGlobal("fetch", fetched)

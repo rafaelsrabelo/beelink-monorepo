@@ -20,16 +20,19 @@ export interface ConversationListLiveProps {
   routeWords: StorefrontRouteWords
   /** Opens one in place; each row is still a link to its own page. */
   onSelect?: (number: number) => void
+  /** The order just come back from, whose row takes the focus. */
+  focusNumber?: number | null
   messages: UiMessages
 }
 
 /** The shopper's conversations at the shop, read live: every event on the channel reads them again. */
-export function ConversationListLive({ slug, routeWords, onSelect, messages }: ConversationListLiveProps) {
+export function ConversationListLive({ slug, routeWords, onSelect, focusNumber = null, messages }: ConversationListLiveProps) {
   const list = useShopperConversations(slug)
 
   if (list.isPending) return <StorefrontConversationListSkeleton />
-  if (list.isError) return <StorefrontConversationFailed message={messages.storefront.conversationsFailed} onRetry={() => void list.refetch()} messages={messages} />
+  // Only a first read that failed: a later one keeps the list as it was.
+  if (!list.data) return <StorefrontConversationFailed message={messages.storefront.conversationsFailed} onRetry={() => void list.refetch()} messages={messages} />
 
   const rows = conversationRowsOf(list.data, { routes: storefrontRoutes({ slug, routeWords }), locale: "pt-BR", messages })
-  return <StorefrontConversationList rows={rows} {...(onSelect ? { onSelect } : {})} linkComponent={AppLink} messages={messages} />
+  return <StorefrontConversationList rows={rows} {...(onSelect ? { onSelect } : {})} focusNumber={focusNumber} linkComponent={AppLink} messages={messages} />
 }
