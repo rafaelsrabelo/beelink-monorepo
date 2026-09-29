@@ -34,25 +34,38 @@ describe("StorefrontAccountShell", () => {
     expect(screen.getByRole("navigation", { name: "Minha conta" })).toBeInTheDocument()
   })
 
-  it("draws the front with the menu and the overview, and no way back", () => {
+  it("holds a tab's tools beside its title, inside its header", () => {
     render(
-      <StorefrontAccountShell menu={menu} page={{ kind: "overview" }}>
-        <StorefrontAccountOverview name="Bia Cliente" shortcuts={[{ key: "profile", href: "/loja/conta/perfil", hint: "Seus dados" }]} />
+      <StorefrontAccountShell menu={menu} page={{ kind: "tab", title: "Meus pedidos", backHref: "/loja/conta", tools: <form role="search" aria-label="Buscar nos pedidos" /> }}>
+        <p>a lista</p>
       </StorefrontAccountShell>,
     )
 
-    expect(screen.getByRole("heading", { level: 1, name: "Olá, Bia" })).toBeInTheDocument()
-    // The phone's front, where the overview is out of sight, has a heading of its own.
-    expect(screen.getByRole("heading", { level: 1, name: "Minha conta" })).toBeInTheDocument()
+    const header = screen.getByRole("heading", { level: 1, name: "Meus pedidos" }).closest("header")!
+    expect(within(header).getByRole("search", { name: "Buscar nos pedidos" })).toBeInTheDocument()
+  })
+
+  it("draws the front with the menu and what the overview tells, under one heading and no way back", () => {
+    render(
+      <StorefrontAccountShell menu={menu} page={{ kind: "overview" }}>
+        <StorefrontAccountOverview name="Bia Cliente">
+          <p>o pedido em andamento</p>
+        </StorefrontAccountOverview>
+      </StorefrontAccountShell>,
+    )
+
+    expect(screen.getAllByRole("heading", { level: 1 }).map((heading) => heading.textContent)).toEqual(["Olá, Bia"])
+    expect(screen.getByText("o pedido em andamento")).toBeInTheDocument()
+    expect(screen.getByRole("navigation", { name: "Minha conta" })).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Minha conta" })).toBeNull()
-    // The overview's card, apart from the menu's entry of the same name.
-    expect(within(screen.getByRole("list")).getByRole("link", { name: /Perfil e endereços/ })).toHaveAttribute("href", "/loja/conta/perfil")
   })
 
   it("has no accessibility violations on the front and on a tab", async () => {
     const front = render(
       <StorefrontAccountShell menu={menu} page={{ kind: "overview" }}>
-        <StorefrontAccountOverview name="Bia" shortcuts={[{ key: "profile", href: "#" }]} />
+        <StorefrontAccountOverview name="Bia">
+          <p>o pedido em andamento</p>
+        </StorefrontAccountOverview>
       </StorefrontAccountShell>,
     )
     await expectNoA11yViolations(front.container)

@@ -23,8 +23,6 @@ export type StorefrontColors = ShopColors
 // Declared beside their blocks now; re-exported because screens import them from here.
 export type { StorefrontFooterColumn, StorefrontLink, StorefrontNetwork } from "./storefront-footer"
 export type { StorefrontAnnouncementStrip } from "./storefront-announcement"
-
-// Where they are declared now; re-exported because screens import them from here.
 export type { StorefrontMenuItem } from "./storefront-masthead"
 export type { StorefrontBanner } from "./storefront-cover"
 
@@ -32,7 +30,7 @@ export interface StorefrontWindowProps
   extends Pick<
     StorefrontMastheadProps,
     "searchAction" | "searchValue" | "searchHidden" | "searchScopes" | "searchScope" | "searchSlot"
-    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "menu" | "cta" | "categories" | "deliverTo"
+    | "cartHref" | "cartCount" | "cartSlot" | "accountHref" | "accountName" | "ordersHref" | "menu" | "cta" | "categories" | "deliverTo"
   > {
   name: string
   description?: string | null
@@ -141,6 +139,7 @@ export function StorefrontWindow({
   cartSlot,
   accountHref,
   accountName,
+  ordersHref,
   menu = [],
   cta = null,
   categories,
@@ -194,6 +193,7 @@ export function StorefrontWindow({
           {...(cartCount !== undefined ? { cartCount } : {})}
           cartSlot={cartSlot}
           {...(accountHref ? { accountHref, accountName: accountName ?? null } : {})}
+          {...(ordersHref ? { ordersHref } : {})}
           menu={menu}
           cta={cta}
           categories={categories}

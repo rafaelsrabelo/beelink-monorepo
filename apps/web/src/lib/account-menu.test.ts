@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { accountContactOf, accountMenuOf, accountShortcutsOf, accountTabTitleOf, deliveredAccountTabOf } from "./account-menu"
+import { accountContactOf, accountMenuOf, accountTabTitleOf, deliveredAccountTabOf, phoneLineOf } from "./account-menu"
 import { storefrontRoutes } from "./storefront-routes"
 
 const routes = storefrontRoutes({
@@ -23,17 +23,15 @@ const routes = storefrontRoutes({
 
 describe("the account's menu", () => {
   it("lists the overview and only the tabs delivered, each at its own address", () => {
-    expect(accountMenuOf(routes)).toEqual([
+    expect(accountMenuOf(routes, { orders: 2 })).toEqual([
       { key: "overview", href: "/loja/conta" },
-      { key: "profile", href: "/loja/conta/perfil" },
+      { key: "orders", href: "/loja/conta/pedidos", count: 2 },
+      { key: "profile", href: "/loja/conta/perfil", count: null },
     ])
-    expect(accountShortcutsOf(routes, ptBR.storefront)).toEqual([{ key: "profile", href: "/loja/conta/perfil", hint: "Seus dados e o endereço de entrega" }])
     expect(accountTabTitleOf("profile", ptBR.storefront)).toBe("Perfil e endereços")
   })
 
   it("opens a delivered tab by its word, and nothing for a tab still to come or a word that is none", () => {
-    const words = routes.home ? undefined : undefined
-    void words
     const routeWords = {
       products: "produtos",
       categories: "categorias",
@@ -44,8 +42,9 @@ describe("the account's menu", () => {
       accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" },
     }
     expect(deliveredAccountTabOf("perfil", routeWords)).toBe("profile")
+    expect(deliveredAccountTabOf("pedidos", routeWords)).toBe("orders")
     // Spelled and routed already, delivered by its own ticket: until then, a 404.
-    expect(deliveredAccountTabOf("pedidos", routeWords)).toBeNull()
+    expect(deliveredAccountTabOf("favoritos", routeWords)).toBeNull()
     expect(deliveredAccountTabOf("qualquer", routeWords)).toBeNull()
   })
 
@@ -54,5 +53,7 @@ describe("the account's menu", () => {
     expect(accountContactOf({ phone: "551133334444", email: "r@x.dev" })).toBe("(11) 3333-4444")
     expect(accountContactOf({ phone: "+351912345678", email: "r@x.dev" })).toBe("+351912345678")
     expect(accountContactOf({ phone: null, email: "r@x.dev" })).toBe("r@x.dev")
+    expect(phoneLineOf(null)).toBeNull()
+    expect(phoneLineOf("5585999994321")).toBe("(85) 99999-4321")
   })
 })

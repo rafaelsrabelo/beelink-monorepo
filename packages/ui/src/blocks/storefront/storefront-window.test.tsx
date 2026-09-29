@@ -161,6 +161,16 @@ describe("StorefrontWindow", () => {
       expect(screen.getByRole("link", { name: /Minha conta/ })).toBeInTheDocument()
       expect(screen.getByText("3")).toBeInTheDocument()
     })
+
+    /** The window is the one path from the frame to the header: a prop it takes and drops is a link that never shows. */
+    it("hands the header the way to the shopper's orders, and draws none for a visitor", () => {
+      const { rerender } = renderWindow({ accountHref: "/padaria-da-ana/conta", ordersHref: "/padaria-da-ana/conta/pedidos" })
+
+      expect(screen.getByRole("link", { name: "Meus pedidos" })).toHaveAttribute("href", "/padaria-da-ana/conta/pedidos")
+
+      rerender(<StorefrontWindow name="Padaria da Ana" homeHref="/padaria-da-ana" colors={colors} accountHref="/padaria-da-ana/entrar" />)
+      expect(screen.queryByRole("link", { name: "Meus pedidos" })).not.toBeInTheDocument()
+    })
   })
 
   describe("the bands", () => {

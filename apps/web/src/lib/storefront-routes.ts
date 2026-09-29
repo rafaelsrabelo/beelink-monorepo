@@ -235,9 +235,9 @@ export function storefrontRoutes(shop: StorefrontShop) {
      * web's cache keeps a shop for a minute — leads to the area's front rather than to `/undefined`,
      * so a cart drawn in that minute still stands.
      */
-    accountTab: (tab: StorefrontAccountTab) => {
+    accountTab: (tab: StorefrontAccountTab, query: Record<string, string | undefined> = {}) => {
       const word = routeWords.accountTabs?.[tab]
-      return word ? `${home}/${routeWords.account}/${word}` : `${home}/${routeWords.account}`
+      return withQuery(word ? `${home}/${routeWords.account}/${word}` : `${home}/${routeWords.account}`, query)
     },
 
     /** One product. It never nests under a category: a product in two would have two addresses. */
