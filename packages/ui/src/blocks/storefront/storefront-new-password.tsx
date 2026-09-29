@@ -1,3 +1,6 @@
+// React
+import { useId } from "react"
+
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -9,6 +12,8 @@ export interface StorefrontNewPasswordProps {
   hidden: Readonly<Record<string, string>>
   /** A refusal, already a sentence. */
   error?: string | null
+  /** The field the refusal is about — the new password, or its repetition — marked and described by it. */
+  invalidField?: "password" | "confirmacao" | null
   messages?: UiMessages
 }
 
@@ -19,38 +24,44 @@ const INPUT = "h-11 rounded-[10px] border border-shop-line-strong bg-shop-backgr
  * so a slip is caught before the old one is gone. A plain form, like the sign-in: no script, and no
  * password ever held by page code.
  */
-export function StorefrontNewPassword({ action, hidden, error, messages = defaultMessages }: StorefrontNewPasswordProps) {
+export function StorefrontNewPassword({ action, hidden, error, invalidField = null, messages = defaultMessages }: StorefrontNewPasswordProps) {
   const text = messages.storefront
-  const field = (id: string, name: string, label: string, hint?: string) => (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium">
-        {label}
-      </label>
-      <input
-        id={id}
-        name={name}
-        type="password"
-        required
-        minLength={8}
-        maxLength={128}
-        autoComplete="new-password"
-        aria-describedby={hint ? `${id}-hint` : undefined}
-        className={INPUT}
-      />
-      {hint ? (
-        <span id={`${id}-hint`} className="text-xs text-shop-muted">
-          {hint}
-        </span>
-      ) : null}
-    </div>
-  )
+  const errorId = useId()
+  const field = (id: string, name: "password" | "confirmacao", label: string, hint?: string) => {
+    const invalid = Boolean(error) && name === invalidField
+    const described = [hint ? `${id}-hint` : null, invalid ? errorId : null].filter(Boolean).join(" ")
+    return (
+      <div className="flex flex-col gap-1">
+        <label htmlFor={id} className="text-sm font-medium">
+          {label}
+        </label>
+        <input
+          id={id}
+          name={name}
+          type="password"
+          required
+          minLength={8}
+          maxLength={128}
+          autoComplete="new-password"
+          aria-describedby={described || undefined}
+          aria-invalid={invalid || undefined}
+          className={INPUT}
+        />
+        {hint ? (
+          <span id={`${id}-hint`} className="text-xs text-shop-muted">
+            {hint}
+          </span>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <section className="mx-auto flex w-full max-w-md flex-col gap-5 rounded-xl border border-shop-line bg-shop-background p-6 text-shop-on-background">
       <p className="text-sm text-shop-muted">{text.newPasswordLead}</p>
 
       {error ? (
-        <p role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
+        <p id={errorId} role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
           {error}
         </p>
       ) : null}

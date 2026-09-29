@@ -253,6 +253,8 @@ export const ptBR: UiMessages = {
     linkSpentReset: "Esse link para criar uma nova senha já foi usado ou venceu. Peça outro e use o mais recente.",
     linkResend: "Mandar outro link",
     linkAskAgain: "Pedir outro link",
+    linkSpentTitle: "Esse link não vale mais",
+    linkSpentSignIn: "Já confirmou? É só entrar",
     emailConfirmed: "E-mail confirmado! Entre para continuar.",
     passwordReplaced: "Pronto, sua senha foi trocada. Entre com a nova senha.",
     signOut: "Sair",

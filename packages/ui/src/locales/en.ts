@@ -253,6 +253,8 @@ export const en: UiMessages = {
     linkSpentReset: "This new-password link was already used or has expired. Ask for another and use the newest one.",
     linkResend: "Send another link",
     linkAskAgain: "Ask for another link",
+    linkSpentTitle: "This link no longer works",
+    linkSpentSignIn: "Already confirmed? Just sign in",
     emailConfirmed: "E-mail confirmed! Sign in to continue.",
     passwordReplaced: "Done, your password was replaced. Sign in with the new one.",
     signOut: "Sign out",

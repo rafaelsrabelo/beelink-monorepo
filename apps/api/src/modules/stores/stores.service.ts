@@ -220,18 +220,18 @@ export class StoresService {
   }
 
   /**
-   * The same ownership rule, for a module that needs the shop's id and nothing else about it.
-   *
-   * It exists so the catalogue does not copy `assertOwnership` — which is exactly how the legacy
-   * ended up with 25 inconsistent versions of this check. It selects two columns rather than
-   * reusing the private method, because a product write has no use for the shop's address, colours
-   * and taxonomy row, and this runs on every one of them.
-   */
-  /**
    * The same lookup with no owner: a visitor reading a shop window is nobody, and the catalogue
    * they are served is the one the shopkeeper published. It selects the id alone for the same
    * reason `ownedStoreId` selects two columns — this runs on every storefront read.
    */
+  async publicStoreId(slug: string): Promise<string> {
+    const row = await this.prisma.store.findUnique({ where: { slug }, select: { id: true } });
+
+    if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
+
+    return row.id;
+  }
+
   /** A shop by its slug, as its accounts' e-mails name it and spell its links; 404 when there is none. */
   async publicStoreNaming(slug: string): Promise<{ id: string; name: string; routeVocabulary: RouteVocabulary }> {
     const row = await this.prisma.store.findUnique({ where: { slug }, select: { id: true, name: true, routeVocabulary: true } });
@@ -241,14 +241,14 @@ export class StoresService {
     return row;
   }
 
-  async publicStoreId(slug: string): Promise<string> {
-    const row = await this.prisma.store.findUnique({ where: { slug }, select: { id: true } });
-
-    if (!row) throw new NotFoundException(storeError('STORE_NOT_FOUND', `No shop at "${slug}"`));
-
-    return row.id;
-  }
-
+  /**
+   * The same ownership rule, for a module that needs the shop's id and nothing else about it.
+   *
+   * It exists so the catalogue does not copy `assertOwnership` — which is exactly how the legacy
+   * ended up with 25 inconsistent versions of this check. It selects two columns rather than
+   * reusing the private method, because a product write has no use for the shop's address, colours
+   * and taxonomy row, and this runs on every one of them.
+   */
   async ownedStoreId(slug: string, userId: string): Promise<string> {
     const row = await this.prisma.store.findUnique({
       where: { slug },

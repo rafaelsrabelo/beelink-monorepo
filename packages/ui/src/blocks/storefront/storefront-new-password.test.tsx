@@ -24,10 +24,16 @@ describe("StorefrontNewPassword", () => {
     expect(screen.getByRole("button", { name: "Salvar nova senha" })).toBeInTheDocument()
   })
 
-  it("says why the last try was refused", () => {
-    render(<StorefrontNewPassword action="#" hidden={hidden} error="As duas senhas não são iguais. Digite de novo." />)
+  it("says why the last try was refused, at the field it is about", () => {
+    render(<StorefrontNewPassword action="#" hidden={hidden} error="As duas senhas não são iguais. Digite de novo." invalidField="confirmacao" />)
 
     expect(screen.getByRole("alert")).toHaveTextContent("As duas senhas não são iguais.")
+    const repeat = screen.getByLabelText("Repita a nova senha")
+    expect(repeat).toHaveAttribute("aria-invalid", "true")
+    expect(repeat).toHaveAccessibleDescription("As duas senhas não são iguais. Digite de novo.")
+    // The other keeps its hint alone.
+    expect(screen.getByLabelText("Nova senha")).not.toHaveAttribute("aria-invalid")
+    expect(screen.getByLabelText("Nova senha")).toHaveAccessibleDescription("No mínimo 8 caracteres.")
   })
 
   it("has no accessibility violations", async () => {

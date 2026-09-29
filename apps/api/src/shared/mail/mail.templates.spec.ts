@@ -45,8 +45,8 @@ describe("a shop's account e-mails", () => {
 
     expect(verify.subject).toBe('Mutante & Cia — confirme seu e-mail');
     expect(reset.subject).toBe('Mutante & Cia — crie uma nova senha');
-    expect(verify.text).toContain('ativar sua conta na Mutante & Cia');
-    expect(reset.text).toContain('nova senha para sua conta na Mutante & Cia');
+    expect(verify.text).toContain('ativar sua conta na loja Mutante & Cia');
+    expect(reset.text).toContain('nova senha para sua conta na loja Mutante & Cia');
     expect(verify.html).toContain('>Mutante &amp; Cia</p>');
     expect(verify.html).toContain('Olá, Bia &lt;b&gt;!');
     expect(verify.html).not.toContain('<b>');

@@ -20,4 +20,4 @@ type Story = StoryObj<typeof meta>
 export const Padrao: Story = {}
 
 /** As duas senhas não batem. */
-export const Diferentes: Story = { args: { error: "As duas senhas não são iguais. Digite de novo." } }
+export const Diferentes: Story = { args: { error: "As duas senhas não são iguais. Digite de novo.", invalidField: "confirmacao" } }

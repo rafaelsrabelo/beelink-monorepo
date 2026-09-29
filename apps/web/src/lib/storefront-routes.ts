@@ -240,11 +240,13 @@ export function storefrontRoutes(shop: StorefrontShop) {
 
     /**
      * Where the links in a shopper's e-mails open (BEELINK-149), with their token and where to go
-     * back to once done. The API writes these same addresses into the e-mails.
+     * back to once done. The API writes these same addresses into the e-mails. A shop read from the
+     * cache before the API spelled these words leads to its sign-in, never to `/undefined`.
      */
-    verifyEmail: ({ token, back }: { token?: string; back?: string } = {}) => withQuery(`${home}/${routeWords.verifyEmail}`, { token, [BACK_KEY]: back }),
+    verifyEmail: ({ token, back }: { token?: string; back?: string } = {}) =>
+      routeWords.verifyEmail ? withQuery(`${home}/${routeWords.verifyEmail}`, { token, [BACK_KEY]: back }) : withQuery(`${home}/${routeWords.signIn}`, { [BACK_KEY]: back }),
     resetPassword: ({ token, back }: { token?: string; back?: string } = {}) =>
-      withQuery(`${home}/${routeWords.resetPassword}`, { token, [BACK_KEY]: back }),
+      routeWords.resetPassword ? withQuery(`${home}/${routeWords.resetPassword}`, { token, [BACK_KEY]: back }) : withQuery(`${home}/${routeWords.signIn}`, { [BACK_KEY]: back }),
 
     /** The shopper's own area at this shop: its overview, with the menu of its tabs. */
     account: () => `${home}/${routeWords.account}`,

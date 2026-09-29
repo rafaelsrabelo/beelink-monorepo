@@ -16,7 +16,11 @@ export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => escaped[char] ?? char);
 }
 
-/** `brand`, already escaped, heads the card: whose e-mail this is, when it is a shop's. */
+/**
+ * `brand`, already escaped, heads the card: whose e-mail this is, when it is a shop's. The colours
+ * are literals, not the design system's tokens: a mail client reads no CSS variables and no
+ * stylesheet, only inline styles.
+ */
 function layout(title: string, body: string, actionLabel: string, actionUrl: string, brand?: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
@@ -42,7 +46,7 @@ function layout(title: string, body: string, actionLabel: string, actionUrl: str
  */
 export function emailVerification(name: string, url: string, hours: number, shopName?: string): MailContent {
   const greeting = `Olá, ${name}!`;
-  const account = shopName ? `sua conta na ${shopName}` : 'sua conta';
+  const account = shopName ? `sua conta na loja ${shopName}` : 'sua conta';
   return {
     subject: shopName ? `${shopName} — confirme seu e-mail` : 'Confirme seu e-mail',
     text: `${greeting}\n\nConfirme seu e-mail para ativar ${account}:\n${url}\n\nO link vale por ${hours} horas e só pode ser usado uma vez.\nSe não foi você quem criou a conta, ignore esta mensagem.`,
@@ -59,7 +63,7 @@ export function emailVerification(name: string, url: string, hours: number, shop
 
 export function passwordReset(name: string, url: string, minutes: number, shopName?: string): MailContent {
   const greeting = `Olá, ${name}!`;
-  const account = shopName ? `sua conta na ${shopName}` : 'sua conta';
+  const account = shopName ? `sua conta na loja ${shopName}` : 'sua conta';
   return {
     subject: shopName ? `${shopName} — crie uma nova senha` : 'Redefinir sua senha',
     text: `${greeting}\n\nUse este link para criar uma nova senha para ${account}:\n${url}\n\nO link vale por ${minutes} minutos e só pode ser usado uma vez.\nSe não foi você quem pediu, ignore esta mensagem: sua senha continua a mesma.`,

@@ -16,7 +16,7 @@ export default meta
 type Story = StoryObj<typeof StorefrontLinkSpent>
 
 /** O link de confirmação vencido: manda outro dali mesmo. */
-export const Confirmacao: Story = { args: { kind: "confirm", action: "#", hidden: {} } }
+export const Confirmacao: Story = { args: { kind: "confirm", action: "#", hidden: {}, signInHref: "#" } }
 
 /** O link de nova senha vencido: leva a pedir outro. */
 export const NovaSenha: Story = { args: { kind: "reset", askHref: "#" } }

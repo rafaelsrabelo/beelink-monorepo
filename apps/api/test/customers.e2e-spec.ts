@@ -72,6 +72,11 @@ describe("a shopper's door into a shop", () => {
     await clearInbox();
     await post('/api/stores/lessari/customer/resend-verification', { email, returnTo: 'https://evil.example/lessari' });
     expect((await waitForMessage(email)).Text).toMatch(/&voltar=%2Flessari\s/);
+    // Nor is a place too long to be one refused: the link still goes, to the front.
+    await clearInbox();
+    const long = await post('/api/stores/lessari/customer/resend-verification', { email, returnTo: `/lessari/${'a'.repeat(400)}` });
+    expect(long.statusCode).toBe(202);
+    expect((await waitForMessage(email)).Text).toMatch(/&voltar=%2Flessari\s/);
   });
 
   it('answers a sign-up with an address already in use exactly as a new one', async () => {

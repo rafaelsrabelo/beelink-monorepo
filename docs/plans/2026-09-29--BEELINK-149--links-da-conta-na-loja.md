@@ -92,3 +92,28 @@ telas do painel passam a redirecionar para a tela da loja antes de gastar o toke
     cai em Entrar;
   - os links antigos do painel com `voltar=/<loja>` redirecionam para a loja.
 - **Dados de teste:** a conta `cliente-j10@teste.dev` (senha `Senha!Nova456`) na loja-do-design.
+
+## Adendo da revisão (29/09)
+
+Dois revisores leram o ramo: um olhou correção e segurança, o outro regras e acessibilidade. O que
+entrou:
+
+- **O link de confirmação já usado leva também a Entrar** ("Já confirmou? É só entrar"). O token é
+  gasto no primeiro clique, então quem chega ali quase sempre já confirmou. O "reenviar" não manda
+  nada para uma conta confirmada, e a pessoa ficaria esperando um e-mail que não vem. O cartão ganhou
+  um título ("Esse link não vale mais").
+- **Na nova senha, a recusa marca o campo dela** (`aria-invalid` e a frase como descrição), como no
+  J8.
+- **A chamada que gasta o token saiu do componente e foi para `src/lib/account-links.ts`.** Um
+  componente não faz requisição.
+- **"sua conta na loja {nome}",** e não "na {nome}": nem todo nome de loja é feminino.
+- **O `returnTo` é resolvido como o navegador o resolveria** (`%2e%2e`, barra invertida, fragmento).
+  Um caminho longo demais vira a vitrine, sem recusar o cadastro.
+- **Os links das páginas novas, numa loja lida do cache antes do deploy, levam a Entrar,** e não a
+  `/undefined`.
+
+O que ficou de fora, de propósito:
+
+- **O gerenciador de senhas guarda a senha nova sem usuário.** Para isso, a página precisaria do
+  e-mail da conta num campo escondido (`autocomplete="username"`), e ela só conhece o token. Ler a
+  conta pelo token sem gastá-lo pediria uma rota nova na API.

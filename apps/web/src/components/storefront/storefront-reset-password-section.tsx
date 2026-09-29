@@ -39,6 +39,7 @@ export function StorefrontResetPasswordSection({ place, routes, query, errors }:
           // A refusal comes back to this very page, token and all; a save lands on the sign-in.
           hidden={{ token, [BACK_KEY]: back, retorno: routes.resetPassword({ token, back }), entrada: routes.signIn({ back }) }}
           error={code ? errorSentenceOf(errors, code) : null}
+          invalidField={code === "CUSTOMER_PASSWORD_MISMATCH" ? "confirmacao" : code === "CUSTOMER_PASSWORD_INVALID" ? "password" : null}
           messages={ui}
         />
       )}

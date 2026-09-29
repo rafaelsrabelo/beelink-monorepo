@@ -8,13 +8,18 @@ import { StorefrontLinkSpent } from "./storefront-link-spent"
 
 describe("StorefrontLinkSpent", () => {
   it("sends another confirmation link from here, to the e-mail typed", () => {
-    const { container } = render(<StorefrontLinkSpent kind="confirm" action="/loja/api/customer/reenviar" hidden={{ voltar: "/loja/carrinho", retorno: "/loja/entrar" }} />)
+    const { container } = render(
+      <StorefrontLinkSpent kind="confirm" action="/loja/api/customer/reenviar" hidden={{ voltar: "/loja/carrinho", retorno: "/loja/entrar" }} signInHref="/loja/entrar?voltar=%2Floja%2Fcarrinho" />,
+    )
 
+    expect(screen.getByRole("heading", { name: "Esse link não vale mais" })).toBeInTheDocument()
     expect(screen.getByText(/Esse link de confirmação já foi usado ou venceu/)).toBeInTheDocument()
     expect(container.querySelector("form")).toHaveAttribute("action", "/loja/api/customer/reenviar")
     expect(container.querySelector('input[name="voltar"]')).toHaveValue("/loja/carrinho")
     expect(screen.getByLabelText("E-mail")).toBeRequired()
     expect(screen.getByRole("button", { name: "Mandar outro link" })).toBeInTheDocument()
+    // Spent by a first click, the e-mail is most likely confirmed already: signing in is the way on.
+    expect(screen.getByRole("link", { name: "Já confirmou? É só entrar" })).toHaveAttribute("href", "/loja/entrar?voltar=%2Floja%2Fcarrinho")
   })
 
   it("leads a spent new-password link to asking for another", () => {
@@ -25,7 +30,7 @@ describe("StorefrontLinkSpent", () => {
   })
 
   it("has no accessibility violations", async () => {
-    const { container } = render(<StorefrontLinkSpent kind="confirm" action="#" hidden={{}} />)
+    const { container } = render(<StorefrontLinkSpent kind="confirm" action="#" hidden={{}} signInHref="#" />)
     await expectNoA11yViolations(container)
   })
 })

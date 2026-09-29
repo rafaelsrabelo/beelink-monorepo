@@ -341,6 +341,8 @@ export interface UiMessages {
     linkSpentReset: string
     linkResend: string
     linkAskAgain: string
+    linkSpentTitle: string
+    linkSpentSignIn: string
     emailConfirmed: string
     passwordReplaced: string
     signOut: string

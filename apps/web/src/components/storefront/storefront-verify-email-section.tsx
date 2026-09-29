@@ -5,7 +5,8 @@ import { redirect } from "next/navigation"
 import { StorefrontLinkSpent } from "@harness-monorepo/ui/blocks/storefront/storefront-link-spent"
 
 // App
-import { callApi } from "@/lib/api"
+import { AppLink } from "@/components/app-link"
+import { emailConfirmedBy } from "@/lib/account-links"
 import { BACK_KEY, EMAIL_CONFIRMED_KEY, paramOf, safeBackOf, type StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionPlace, SectionQuery } from "@/lib/storefront-section"
 
@@ -26,8 +27,7 @@ export async function StorefrontVerifyEmailSection({ place, routes, query }: Sto
   const back = safeBackOf(store.slug, paramOf(query[BACK_KEY]))
   const token = paramOf(query.token)
 
-  const verified = token ? (await callApi({ path: "/auth/verify-email", body: { token } }).catch(() => null))?.ok === true : false
-  if (verified) {
+  if (token && (await emailConfirmedBy(token))) {
     const signIn = new URL(routes.signIn({ back }), "http://shop.invalid")
     signIn.searchParams.set(EMAIL_CONFIRMED_KEY, "1")
     redirect(`${signIn.pathname}${signIn.search}` as Parameters<typeof redirect>[0])
@@ -35,7 +35,14 @@ export async function StorefrontVerifyEmailSection({ place, routes, query }: Sto
 
   return (
     <div className="py-4">
-      <StorefrontLinkSpent kind="confirm" action={`/${store.slug}/api/customer/reenviar`} hidden={{ [BACK_KEY]: back, retorno: routes.signIn() }} messages={ui} />
+      <StorefrontLinkSpent
+        kind="confirm"
+        action={`/${store.slug}/api/customer/reenviar`}
+        hidden={{ [BACK_KEY]: back, retorno: routes.signIn() }}
+        signInHref={routes.signIn({ back })}
+        linkComponent={AppLink}
+        messages={ui}
+      />
     </div>
   )
 }
