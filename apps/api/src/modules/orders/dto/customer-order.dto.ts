@@ -36,7 +36,7 @@ import {
   ORDERS_PAGE_MAX,
 } from '../orders.constants.js';
 import { OrderItemDto } from './order.dto.js';
-import { OrderDeliveryAddressResponse } from './order.response.js';
+import { OrderDeliveryAddressResponse, OrderDeliveryResponse } from './order.response.js';
 
 const SITUATIONS = Object.keys(CUSTOMER_ORDER_SITUATIONS) as CustomerOrderSituation[];
 const SIDES = ['CUSTOMER', 'SHOP'] as const satisfies readonly OrderPlacedBy[];
@@ -95,6 +95,13 @@ export class CustomerOrderResponse implements CustomerOrder {
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
   @ApiProperty({ type: [CustomerOrderEventResponse], description: 'Oldest first; never who set each status.' })
   events!: CustomerOrderEventResponse[];
+  @ApiProperty({ type: OrderDeliveryResponse, nullable: true, description: 'Who brings it and when, once the shop told; null on a pick-up.' })
+  delivery!: OrderDeliveryResponse | null;
+}
+
+export class CustomerOrderEstimateResponse {
+  @ApiProperty({ format: 'date' }) from!: string;
+  @ApiProperty({ format: 'date' }) to!: string;
 }
 
 export class CustomerOrderSummaryResponse implements CustomerOrderSummary {
@@ -111,6 +118,8 @@ export class CustomerOrderSummaryResponse implements CustomerOrderSummary {
   @ApiProperty({ type: [CustomerOrderItemResponse], description: 'The first lines, as a card shows them.' }) items!: CustomerOrderItemResponse[];
   @ApiProperty({ description: 'Lines past those.' }) moreItems!: number;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
+  @ApiProperty({ type: CustomerOrderEstimateResponse, nullable: true, description: 'The window it should arrive in, once the shop told one.' })
+  estimate!: CustomerOrderEstimateResponse | null;
 }
 
 class CustomerOrderCountsResponse {

@@ -18,6 +18,7 @@ Every document under `docs/` is linked from this page; `docs-gate` fails the bui
 - [repo/harness.md](repo/harness.md) — how this documentation works, how it is gated, and how to tell if it helps
 - [repo/ci.md](repo/ci.md) — the hooks, the local mirror, the CI jobs, and why they are shaped that way
 - [repo/mcp-dev-tools.md](repo/mcp-dev-tools.md) — the browser tools an agent uses to see runtime state
+- [repo/realtime.md](repo/realtime.md) — the WebSocket channel: what its hosting needs, and what changes past one instance
 
 ## Rules
 

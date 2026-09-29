@@ -27,6 +27,7 @@ model User {
   customers   Customer[]
   /// The order statuses this account set, as a shopkeeper.
   orderEvents OrderEvent[]
+  orderMessages OrderMessage[]
   /// The providers this account signs in through besides its password (G5).
   identities  AccountIdentity[]
   pageVersions StorePageVersion[]

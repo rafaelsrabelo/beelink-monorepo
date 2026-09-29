@@ -9,6 +9,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import type { StorefrontRoutes } from "./storefront-routes"
+import { estimateLineOf } from "./order-estimate"
 
 export interface OrderCardContext {
   routes: StorefrontRoutes
@@ -40,25 +41,29 @@ export function orderActionOf(status: CustomerOrderSummary["status"]): "cancel" 
   return isOrderInProgress(status) ? null : "reorder"
 }
 
-/** Where the order stands, in the shopper's words, and what to say under it. */
+/**
+ * Where the order stands, in the shopper's words, and what to say under it: once the shop told the
+ * window a delivery should arrive in, that — "Chega entre …" — is what a shopper looks for first.
+ */
 export function orderStatusLineOf(
-  order: Pick<CustomerOrderSummary, "status" | "fulfillment" | "placedBy" | "cancelledBy" | "placedAt" | "statusAt">,
+  order: Pick<CustomerOrderSummary, "status" | "fulfillment" | "placedBy" | "cancelledBy" | "placedAt" | "statusAt"> & { estimate?: CustomerOrderSummary["estimate"] },
   { locale, messages }: Pick<OrderCardContext, "locale" | "messages">,
 ): Pick<StorefrontOrderCardProps, "headline" | "detail" | "tone"> {
   const text = messages.storefront
   const placed = format(order.placedBy === "CUSTOMER" ? text.orderPlacedByYou : text.orderPlacedByShop, { date: momentOf(order.placedAt, locale) })
   const pickup = order.fulfillment === "PICKUP"
+  const onItsWay = order.estimate ? estimateLineOf(order.estimate, locale, messages) : placed
 
   switch (order.status) {
     case "RECEIVED":
       return { headline: text.orderStatusReceived, detail: `${placed} ${text.orderReceivedHint}`, tone: "progress" }
     case "ACCEPTED":
-      return { headline: text.orderStatusAccepted, detail: placed, tone: "progress" }
+      return { headline: text.orderStatusAccepted, detail: onItsWay, tone: "progress" }
     case "PREPARING":
-      return { headline: text.orderStatusPreparing, detail: placed, tone: "progress" }
+      return { headline: text.orderStatusPreparing, detail: onItsWay, tone: "progress" }
     // The panel sets any status: on a pick-up, out for delivery can only mean ready to be taken.
     case "OUT_FOR_DELIVERY":
-      return { headline: pickup ? text.orderEventReadyForPickup : text.orderStatusOut, detail: placed, tone: "progress" }
+      return { headline: pickup ? text.orderEventReadyForPickup : text.orderStatusOut, detail: onItsWay, tone: "progress" }
     case "DELIVERED":
       return { headline: format(pickup ? text.orderStatusPickedUp : text.orderStatusDelivered, { date: dayOf(order.statusAt, locale) }), detail: placed, tone: "done" }
     case "CANCELLED":

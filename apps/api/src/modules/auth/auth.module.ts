@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 
 // App
 import { env } from '../../shared/config/env.js';
+import { RealtimePublisherModule } from '../realtime/realtime-publisher.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { EmailTokenService } from './email-token.service.js';
@@ -18,6 +19,8 @@ import { SessionService } from './session.service.js';
       signOptions: { algorithm: 'HS256' },
       verifyOptions: { algorithms: ['HS256'] },
     }),
+    // A revoked session closes its real-time sockets.
+    RealtimePublisherModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, SessionService, EmailTokenService],

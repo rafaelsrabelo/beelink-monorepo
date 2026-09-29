@@ -14,6 +14,7 @@ import { StorefrontOrderLayout } from "@harness-monorepo/ui/blocks/storefront/st
 import { StorefrontOrderPayment } from "@harness-monorepo/ui/blocks/storefront/storefront-order-payment"
 import { StorefrontOrderReceipt } from "@harness-monorepo/ui/blocks/storefront/storefront-order-receipt"
 import { StorefrontOrderStatus } from "@harness-monorepo/ui/blocks/storefront/storefront-order-status"
+import { StorefrontOrderTracking } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tracking"
 import { StorefrontOrdersEmpty } from "@harness-monorepo/ui/blocks/storefront/storefront-orders-empty"
 import { StorefrontReorderButton } from "@harness-monorepo/ui/blocks/storefront/storefront-reorder-button"
 import { format } from "@harness-monorepo/ui/locales/index"
@@ -24,7 +25,7 @@ import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { customerOrderAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
 import { orderActionOf } from "@/lib/order-card-view"
-import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf } from "@/lib/order-page-view"
+import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf, orderTrackingOf } from "@/lib/order-page-view"
 import { reorderActionOf } from "@/lib/reorder-view"
 import { shopperAt } from "@/lib/shopper"
 import { navigationAt, shopAt } from "@/lib/storefront-data"
@@ -117,6 +118,7 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
   const context = { routes, locale: "pt-BR", messages: ui }
   const shop = { name: store.name }
   const status = orderStatusViewOf(order, context)
+  const tracking = orderTrackingOf(order, context)
   const cancelled = order.status === "CANCELLED"
   const handover = orderHandoverOf(order, shop, context)
   const { items, count } = orderItemsOf(order, context)
@@ -154,7 +156,7 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
         status={
           <>
             <OrderCancelNoticeLine messages={ui} />
-            <StorefrontOrderStatus {...status} messages={ui} />
+            <StorefrontOrderStatus {...status} tracking={tracking ? <StorefrontOrderTracking {...tracking} messages={ui} /> : undefined} messages={ui} />
           </>
         }
         history={<StorefrontOrderHistory events={orderHistoryOf(order, context)} messages={ui} />}

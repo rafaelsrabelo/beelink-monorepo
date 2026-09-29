@@ -12,6 +12,7 @@ import { StorefrontOrderPayment } from "./storefront-order-payment"
 import { StorefrontOrderReceipt } from "./storefront-order-receipt"
 import { StorefrontOrderStatus, type StorefrontOrderStatusProps } from "./storefront-order-status"
 import type { StorefrontOrderStep } from "./storefront-order-steps"
+import { StorefrontOrderTracking } from "./storefront-order-tracking"
 
 const steps: StorefrontOrderStep[] = [
   { label: "Pedido feito", when: "21 de set., 14:02", state: "done" },
@@ -88,6 +89,19 @@ type Story = StoryObj<typeof meta>
 
 /** 6e: a caminho, com as etapas, o histórico e a coluna de itens, pagamento e endereço. */
 export const EmAndamento: Story = {}
+
+/** 6e com a entrega informada: a janela de chegada e a transportadora com o código para copiar. */
+export const ComRastreio: Story = {
+  args: {
+    status: {
+      headline: "Saiu para entrega",
+      detail: "Chega entre qui., 25 e sex., 26 de set.",
+      tone: "progress",
+      steps,
+      tracking: <StorefrontOrderTracking by="Correios · SEDEX" code="AB123456789BR" href="#" hrefLabel="Ver no site da transportadora" />,
+    },
+  },
+}
 
 /** Uma retirada: sem "Saiu para entrega", sem linha de entrega no pagamento, e o endereço da loja. */
 export const Retirada: Story = {

@@ -45,7 +45,7 @@ describe("a shopper's order from the cart", () => {
     await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777', address: paulista });
   });
 
-  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, session?: AuthSession, payload?: object) {
+  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', url: string, session?: AuthSession, payload?: object) {
     return app.inject({ method, url, headers: session ? { authorization: `Bearer ${session.accessToken}` } : {}, ...(payload ? { payload } : {}) });
   }
 
@@ -110,6 +110,7 @@ describe("a shopper's order from the cart", () => {
     expect(Object.keys(order).sort()).toEqual(
       [
         'cancelledBy',
+        'delivery',
         'deliveryAddress',
         'deliveryFeeCents',
         'discountCents',
@@ -329,6 +330,56 @@ describe("a shopper's order from the cart", () => {
       const offSale = { productName: 'Whey', productSlug: null, imageUrl: 'https://img.test/whey.jpg' };
       expect((await orders()).orders[0]!.items[0]).toMatchObject(offSale);
       expect((await call('GET', '/api/stores/lessari/customer/orders/1', shopper)).json<CustomerOrder>().items[0]).toMatchObject(offSale);
+    });
+
+    it("tells the delivery on the shop's side, and the shopper reads who brings it, its tracking and its window", async () => {
+      await place();
+      const put = (payload: object, session = owner, number = 1) => call('PUT', `/api/stores/lessari/orders/${number}/delivery`, session, payload);
+      const told = { kind: 'CARRIER', carrier: 'Correios', service: 'SEDEX', trackingCode: 'AB123456789BR', estimateFrom: '2026-09-25', estimateTo: '2026-09-26' };
+
+      const set = await put(told);
+      expect(set.statusCode).toBe(200);
+      // The shop reads what it typed — no link — so its form never saves one it did not type.
+      expect(set.json<Order>().delivery).toEqual({ ...told, trackingUrl: null });
+
+      // The shopper, with no link given, is led to the Correios' own page for a code of theirs.
+      const mine = await call('GET', '/api/stores/lessari/customer/orders/1', shopper);
+      expect(mine.json<CustomerOrder>().delivery).toEqual({ ...told, trackingUrl: 'https://rastreamento.correios.com.br/app/index.php' });
+      expect((await orders()).orders[0]).toMatchObject({ estimate: { from: '2026-09-25', to: '2026-09-26' } });
+
+      // Replaced whole: the shop's own link wins, and a field left out is cleared.
+      const own = await put({ kind: 'OWN', trackingUrl: 'https://entregas.lessari.com/1' });
+      expect(own.json<Order>().delivery).toEqual({ kind: 'OWN', carrier: null, service: null, trackingCode: null, trackingUrl: 'https://entregas.lessari.com/1', estimateFrom: null, estimateTo: null });
+      expect((await orders()).orders[0]!.estimate).toBeNull();
+
+      const cleared = await call('DELETE', '/api/stores/lessari/orders/1/delivery', owner);
+      expect(cleared.json<Order>().delivery).toBeNull();
+    });
+
+    it('keeps one delivery per order when two first saves arrive at once', async () => {
+      await place();
+      const saves = await Promise.all([1, 2, 3].map((n) => call('PUT', '/api/stores/lessari/orders/1/delivery', owner, { kind: 'OWN', trackingCode: `C${n}` })));
+
+      expect(saves.map((save) => save.statusCode)).toEqual([200, 200, 200]);
+      expect(await prisma.orderDelivery.count()).toBe(1);
+    });
+
+    it('refuses a window that is half or backwards, a link that is not https, a pick-up, and anyone but the shop', async () => {
+      await place();
+      await registered();
+      const put = (payload: object, session = owner, number = 1) => call('PUT', `/api/stores/lessari/orders/${number}/delivery`, session, payload);
+
+      expect((await put({ kind: 'OWN', estimateFrom: '2026-09-25' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_WINDOW_INVALID' });
+      expect((await put({ kind: 'OWN', estimateFrom: '2026-09-26', estimateTo: '2026-09-25' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_WINDOW_INVALID' });
+      expect((await put({ kind: 'OWN', estimateFrom: '2026-02-30', estimateTo: '2026-03-01' })).statusCode).toBe(400);
+      expect((await put({ kind: 'OWN', trackingUrl: 'http://entregas.lessari.com/1' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_LINK_INVALID' });
+      // Counted as the column counts: an emoji with its variation selector is two.
+      expect((await put({ kind: 'CARRIER', carrier: '❤️'.repeat(31) })).statusCode).toBe(400);
+      expect((await put({ kind: 'BICICLETA' })).statusCode).toBe(400);
+      // Order 2 is the shop's pick-up.
+      expect((await put({ kind: 'OWN' }, owner, 2)).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_FOR_PICKUP' });
+      expect((await put({ kind: 'OWN' }, shopper)).statusCode).toBe(401);
+      expect(await prisma.orderDelivery.count()).toBe(0);
     });
 
     it('reads an order again against today: what goes back into the cart, and what stays out and why', async () => {

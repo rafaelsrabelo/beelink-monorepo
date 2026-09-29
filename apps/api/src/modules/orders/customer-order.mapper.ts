@@ -10,6 +10,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { toDeliveryAddress } from './order-delivery.js';
+import { toCustomerDelivery } from './order-tracking.js';
 
 /** How many lines a card of the customer's list shows; the rest are "+ N itens". */
 export const CUSTOMER_ORDER_CARD_ITEMS = 3;
@@ -31,6 +32,7 @@ const itemInclude = {
 export const CUSTOMER_ORDER_INCLUDE = {
   items: { orderBy: { position: 'asc' }, include: itemInclude },
   events: { orderBy: { createdAt: 'asc' }, select: { status: true, actor: true, createdAt: true } },
+  delivery: true,
 } as const satisfies Prisma.OrderInclude;
 
 type CustomerOrderRow = Prisma.OrderGetPayload<{ include: typeof CUSTOMER_ORDER_INCLUDE }>;
@@ -47,6 +49,12 @@ function toItem(item: CustomerOrderRow['items'][number]): CustomerOrderItem {
     quantity: item.quantity,
     lineTotalCents: item.lineTotalCents,
   };
+}
+
+/** The window a delivery should arrive in, for the list's card: only once the shop told both days. */
+function estimateOf(delivery: CustomerOrderRow['delivery']): CustomerOrderSummary['estimate'] {
+  const told = delivery ? toCustomerDelivery(delivery) : null;
+  return told?.estimateFrom && told.estimateTo ? { from: told.estimateFrom, to: told.estimateTo } : null;
 }
 
 /** The customer's side or the shop's: the courier and the system speak for the shop. */
@@ -75,6 +83,7 @@ export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
     totalCents: row.totalCents,
     placedAt: row.placedAt.toISOString(),
     events: row.events.map((event) => ({ status: event.status, at: event.createdAt.toISOString() })),
+    delivery: row.delivery ? toCustomerDelivery(row.delivery) : null,
   } satisfies CustomerOrder;
 }
 
@@ -94,5 +103,6 @@ export function toCustomerOrderSummary(row: CustomerOrderRow): CustomerOrderSumm
     items: row.items.slice(0, CUSTOMER_ORDER_CARD_ITEMS).map(toItem),
     moreItems: Math.max(row.items.length - CUSTOMER_ORDER_CARD_ITEMS, 0),
     placedAt: row.placedAt.toISOString(),
+    estimate: estimateOf(row.delivery),
   } satisfies CustomerOrderSummary;
 }

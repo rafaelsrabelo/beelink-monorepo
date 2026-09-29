@@ -5,6 +5,7 @@ import type { StorefrontOrderHistoryEvent } from "@harness-monorepo/ui/blocks/st
 import type { StorefrontOrderItemLine } from "@harness-monorepo/ui/blocks/storefront/storefront-order-items"
 import type { StorefrontOrderPaymentProps } from "@harness-monorepo/ui/blocks/storefront/storefront-order-payment"
 import type { StorefrontOrderStatusProps } from "@harness-monorepo/ui/blocks/storefront/storefront-order-status"
+import type { StorefrontOrderTrackingProps } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tracking"
 
 // UI
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
@@ -13,6 +14,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 // App
 import { zipCodeOf } from "./customer-address"
 import { momentOf, orderStatusLineOf, type OrderCardContext } from "./order-card-view"
+import { estimateLineOf } from "./order-estimate"
 import { orderStepsOf } from "./order-steps"
 
 const ZONE = "America/Sao_Paulo"
@@ -41,8 +43,17 @@ export function orderPlacedLineOf(order: CustomerOrder, { locale, messages }: Pi
   return format(order.placedBy === "CUSTOMER" ? text.orderPlacedByYou : text.orderPlacedByShop, { date: fullMomentOf(order.placedAt, locale) })
 }
 
-/** Where it stands: the list card's words, when it last moved — or, cancelled, by whom — and its steps. */
-export function orderStatusViewOf(order: CustomerOrder, context: OrderCardContext): Omit<StorefrontOrderStatusProps, "messages"> {
+/** The window the shop told for a delivery, both days of it; null until then. */
+export function estimateOf(order: Pick<CustomerOrder, "delivery">): { from: string; to: string } | null {
+  const delivery = order.delivery
+  return delivery?.estimateFrom && delivery.estimateTo ? { from: delivery.estimateFrom, to: delivery.estimateTo } : null
+}
+
+/**
+ * Where it stands: the list card's words, then when it should arrive — once the shop told — or when
+ * it last moved; cancelled, by whom. And its steps.
+ */
+export function orderStatusViewOf(order: CustomerOrder, context: OrderCardContext): Omit<StorefrontOrderStatusProps, "messages" | "tracking"> {
   const text = context.messages.storefront
   const statusAt = statusAtOf(order)
   const { headline, tone } = orderStatusLineOf({ ...order, statusAt }, context)
@@ -50,9 +61,31 @@ export function orderStatusViewOf(order: CustomerOrder, context: OrderCardContex
   if (order.status === "CANCELLED") {
     return { headline, detail: order.cancelledBy === "CUSTOMER" ? text.orderCancelledByYou : text.orderCancelledByShop, tone, steps: null }
   }
+  const estimate = estimateOf(order)
   // Received is the placing itself, already at the top: what it waits for says more than when.
-  const detail = order.status === "RECEIVED" ? text.orderReceivedHint : order.status === "DELIVERED" ? null : format(text.orderUpdatedAt, { date: momentOf(statusAt, context.locale) })
+  const detail =
+    order.status === "RECEIVED"
+      ? text.orderReceivedHint
+      : order.status === "DELIVERED"
+        ? null
+        : estimate
+          ? estimateLineOf(estimate, context.locale, context.messages)
+          : format(text.orderUpdatedAt, { date: momentOf(statusAt, context.locale) })
   return { headline, detail, tone, steps: orderStepsOf(order, context) }
+}
+
+/**
+ * How the delivery comes, once the shop told something to follow it by — a carrier, a code, a link.
+ * A cancelled order has nothing left to follow.
+ */
+export function orderTrackingOf(order: CustomerOrder, { messages }: Pick<OrderCardContext, "messages">): Omit<StorefrontOrderTrackingProps, "messages"> | null {
+  const delivery = order.delivery
+  if (!delivery || order.status === "CANCELLED" || !(delivery.carrier || delivery.trackingCode || delivery.trackingUrl)) return null
+
+  const text = messages.storefront
+  const carrier = delivery.kind === "CARRIER"
+  const by = carrier ? [delivery.carrier ?? messages.orders.detail.deliveryKinds.CARRIER, delivery.service].filter(Boolean).join(" · ") : text.orderTrackingOwn
+  return { by, code: delivery.trackingCode, href: delivery.trackingUrl, hrefLabel: carrier ? text.orderTrackingCarrierLink : text.orderTrackingOwnLink }
 }
 
 /** An event's name, in the steps' words; a pick-up marked out for delivery is ready to be taken. */

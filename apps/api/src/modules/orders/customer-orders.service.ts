@@ -14,6 +14,7 @@ import { settleCancellation } from './order-cancellation.js';
 import { OrderPlacement } from './order-placement.js';
 import { reorderOf } from './order-reorder.js';
 import { CUSTOMER_ORDER_SITUATIONS, CUSTOMER_ORDERS_PAGE_SIZE, CUSTOMER_ORDERS_PAGE_SIZE_MAX, orderError } from './orders.constants.js';
+import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 
 /** The shops are Brazilian, and so is a customer's year: "2025" starts at midnight in Brasília. */
 const SHOP_OFFSET = '-03:00';
@@ -32,6 +33,7 @@ export class CustomerOrdersService {
     private readonly prisma: PrismaService,
     private readonly customers: CustomersService,
     private readonly placement: OrderPlacement,
+    private readonly realtime: RealtimePublisher,
   ) {}
 
   /**
@@ -57,6 +59,7 @@ export class CustomerOrdersService {
       onSaleOnly: true,
       customerOf: async () => customerId,
     });
+    this.realtime.publish({ storeId, customerId }, { type: 'order.created', orderNumber: placed.number });
     return this.read(storeId, customerId, placed.number);
   }
 
@@ -149,7 +152,7 @@ export class CustomerOrdersService {
   async cancel(storeSlug: string, userId: string, number: number): Promise<CustomerOrder> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
 
-    await this.prisma.$transaction(async (tx) => {
+    const conversation = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
 
       const current = await tx.order.findFirst({
@@ -170,7 +173,10 @@ export class CustomerOrdersService {
         data: { status: 'CANCELLED', events: { create: { status: 'CANCELLED', actor: 'CUSTOMER', userId } } },
       });
       await settleCancellation(tx, current);
+      return (await tx.orderConversation.count({ where: { orderId: current.id } })) > 0;
     });
+    this.realtime.publish({ storeId, customerId }, { type: 'order.status', orderNumber: number, status: 'CANCELLED' });
+    if (conversation) this.realtime.publish({ storeId, customerId }, { type: 'conversation.closed', orderNumber: number });
     return this.read(storeId, customerId, number);
   }
 
