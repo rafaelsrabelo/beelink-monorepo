@@ -43,8 +43,21 @@ describe("StorefrontOrderCard", () => {
     expect(screen.getByRole("button", { name: "Cancelar pedido" })).toBeInTheDocument()
   })
 
+  it("leads to the order's page by its number, and to follow it while it is on its way", () => {
+    const { rerender } = render(<StorefrontOrderCard {...card} />)
+    expect(screen.queryByRole("link", { name: "Ver detalhes" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Acompanhar pedido" })).toBeNull()
+
+    rerender(<StorefrontOrderCard {...card} detailsHref="/loja/conta/pedidos/1042" trackHref="/loja/conta/pedidos/1042" actions={<button type="button">Cancelar pedido</button>} />)
+    expect(screen.getByRole("link", { name: "Ver detalhes" })).toHaveAttribute("href", "/loja/conta/pedidos/1042")
+    const track = screen.getByRole("link", { name: "Acompanhar pedido" })
+    expect(track).toHaveAttribute("href", "/loja/conta/pedidos/1042")
+    // The way to follow it comes before anything else that can be done.
+    expect(track.compareDocumentPosition(screen.getByRole("button", { name: "Cancelar pedido" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it("has no accessibility violations", async () => {
-    const { container } = render(<StorefrontOrderCard {...card} />)
+    const { container } = render(<StorefrontOrderCard {...card} detailsHref="#" trackHref="#" />)
     await expectNoA11yViolations(container)
   })
 })

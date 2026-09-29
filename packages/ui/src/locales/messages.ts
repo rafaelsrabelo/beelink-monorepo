@@ -460,6 +460,34 @@ export interface UiMessages {
     /** The list could not be read: never shown as an empty list, which would say there are none. */
     ordersUnavailable: string
     ordersRetry: string
+    /** The order's own page (J5): its trail, its status and history, its lines, payment and address, and the receipt. */
+    orderDetails: string
+    orderReceipt: string
+    orderUpdatedAt: string
+    orderHistory: string
+    orderEventCancelled: string
+    orderEventReadyForPickup: string
+    orderEventPlacedByYou: string
+    orderEventPlacedByShop: string
+    orderEventByYou: string
+    orderEventByShop: string
+    orderItemsTitle: string
+    orderEach: string
+    orderPaymentTitle: string
+    orderSubtotal: string
+    orderDelivery: string
+    orderFree: string
+    orderDiscount: string
+    orderTotalRow: string
+    orderPaymentAgreed: string
+    orderUnavailable: string
+    receiptTitle: string
+    receiptShop: string
+    receiptCustomer: string
+    receiptDate: string
+    receiptNotInvoice: string
+    receiptPrint: string
+    receiptBack: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string

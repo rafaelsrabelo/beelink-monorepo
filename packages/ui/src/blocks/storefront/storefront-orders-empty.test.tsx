@@ -26,6 +26,13 @@ describe("StorefrontOrdersEmpty", () => {
     expect(screen.getByRole("link", { name: "Tentar de novo" })).toHaveAttribute("href", "/loja/conta/pedidos?situacao=entregues")
   })
 
+  it("says one order could not be read, on its own page", () => {
+    render(<StorefrontOrdersEmpty variant="orderUnavailable" href="/loja/conta/pedidos/14" />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar este pedido agora.")
+    expect(screen.getByRole("link", { name: "Tentar de novo" })).toHaveAttribute("href", "/loja/conta/pedidos/14")
+  })
+
   it("has no accessibility violations", async () => {
     const { container, rerender } = render(<StorefrontOrdersEmpty variant="none" href="#" />)
     await expectNoA11yViolations(container)
