@@ -13,6 +13,8 @@ import { OrderPlacement } from './order-placement.js';
 import { settleCancellation } from './order-cancellation.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
+import { isOpen } from '../conversations/conversations.constants.js';
+import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -26,6 +28,7 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly placement: OrderPlacement,
+    private readonly realtime: RealtimePublisher,
   ) {}
 
   async create(storeSlug: string, userId: string, dto: CreateOrderDto): Promise<Order> {
@@ -56,6 +59,7 @@ export class OrdersService {
       onSaleOnly: false,
       customerOf: (tx) => this.customerOf(tx, storeId, dto.customer),
     });
+    this.realtime.publish({ storeId, customerId: order.customerId }, { type: 'order.created', orderNumber: order.number });
     return toOrder(order);
   }
 
@@ -114,7 +118,7 @@ export class OrdersService {
   async updateStatus(storeSlug: string, userId: string, number: number, { status }: UpdateOrderStatusDto): Promise<Order> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
-    return this.prisma.$transaction(async (tx) => {
+    const moved = await this.prisma.$transaction(async (tx) => {
       // The same row lock as a new order takes, so a status change and a placement never interleave.
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
 
@@ -136,8 +140,16 @@ export class OrdersService {
         include: ORDER_INCLUDE,
       });
       if (status === 'CANCELLED') await settleCancellation(tx, current);
-      return toOrder(order);
+      const conversation = await tx.orderConversation.count({ where: { orderId: current.id } });
+      return { order, customerId: current.customerId, closes: conversation > 0 && isOpen(current.status) && !isOpen(status) };
     });
+
+    // Told once the change is committed: both sides read the order again, and a conversation it
+    // closes stops taking messages.
+    const to = { storeId, customerId: moved.customerId };
+    this.realtime.publish(to, { type: 'order.status', orderNumber: number, status });
+    if (moved.closes) this.realtime.publish(to, { type: 'conversation.closed', orderNumber: number });
+    return toOrder(moved.order);
   }
 
   /**
