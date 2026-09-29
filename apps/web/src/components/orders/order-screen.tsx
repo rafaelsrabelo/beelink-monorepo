@@ -10,6 +10,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import type { WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
+import { OrderConversationSection } from "@/components/conversations/order-conversation-section"
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { addressLineOf } from "@/lib/customer-address"
 import { shopOrderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
@@ -89,6 +90,7 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
             />
           ) : undefined
         }
+        conversation={<OrderConversationSection slug={slug} number={current.number} locale={defaultLocale} messages={messages} />}
         linkComponent={AppLink}
         messages={messages}
       />
