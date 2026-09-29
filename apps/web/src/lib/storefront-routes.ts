@@ -250,6 +250,16 @@ export function storefrontRoutes(shop: StorefrontShop) {
     },
 
     /**
+     * One order's conversation, on the conversations' own tab: `/<shop>/conta/conversas?pedido=14`.
+     * Where "Falar com a loja" leads without a script, or in a new tab; with one, the panel opens.
+     */
+    accountConversation: (number: number) => {
+      const word = routeWords.accountTabs?.messages
+      if (!word) return `${home}/${routeWords.account}`
+      return withQuery(`${home}/${routeWords.account}/${word}`, { [CONVERSATION_KEY]: String(number) })
+    },
+
+    /**
      * One of the shopper's orders, under the orders tab: `/<shop>/conta/pedidos/14`. The receipt is
      * the same address with `comprovante=1`. A shop read before its tabs were spelled leads to the
      * area's front, as `accountTab` does.
@@ -305,6 +315,9 @@ export const REORDER_TRIMMED_KEY = "cheio"
 /** The receipt's key: the order's page drawn as a document to print. */
 export const RECEIPT_KEY = "comprovante"
 
+/** Which order's conversation the conversations' tab opens on. */
+export const CONVERSATION_KEY = "pedido"
+
 /** The largest order number the API keeps (INT4): a longer one names no order. */
 const ORDER_NUMBER_MAX = 2_147_483_647
 
@@ -317,6 +330,12 @@ export function accountOrderNumberOf(item: string, sub: string, routeWords: Stor
 }
 
 /** An order number as an address writes it — no zero, no leading zeros, none past the column — or null. */
+/** The order whose conversation the conversations' tab opens on, from `?pedido=`; null for none or one that is not a number. */
+export function conversationOrderOf(query: Record<string, string | string[] | undefined>): number | null {
+  const raw = query[CONVERSATION_KEY]
+  return orderNumberOf(typeof raw === "string" ? raw : undefined)
+}
+
 export function orderNumberOf(raw: string | undefined): number | null {
   if (!raw || !/^[1-9]\d{0,9}$/.test(raw)) return null
   const number = Number(raw)

@@ -27,6 +27,7 @@ describe("the account's menu", () => {
       { key: "overview", href: "/loja/conta" },
       { key: "orders", href: "/loja/conta/pedidos", count: 2 },
       { key: "profile", href: "/loja/conta/perfil", count: null },
+      { key: "messages", href: "/loja/conta/conversas", count: null },
     ])
     expect(accountTabTitleOf("profile", ptBR.storefront)).toBe("Perfil e endereços")
   })
@@ -43,6 +44,7 @@ describe("the account's menu", () => {
     }
     expect(deliveredAccountTabOf("perfil", routeWords)).toBe("profile")
     expect(deliveredAccountTabOf("pedidos", routeWords)).toBe("orders")
+    expect(deliveredAccountTabOf("conversas", routeWords)).toBe("messages")
     // Spelled and routed already, delivered by its own ticket: until then, a 404.
     expect(deliveredAccountTabOf("favoritos", routeWords)).toBeNull()
     expect(deliveredAccountTabOf("qualquer", routeWords)).toBeNull()

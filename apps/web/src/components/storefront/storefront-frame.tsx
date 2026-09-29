@@ -19,6 +19,7 @@ import { StorefrontDeliverToLive } from "./storefront-deliver-to-live"
 import { StorefrontSearchLive } from "./storefront-search-live"
 import { addressLineOf, orderHrefOf, storefrontLinksOf } from "./storefront-links"
 import { storefrontRoutes } from "@/lib/storefront-routes"
+import { ShopperConversationsLive } from "./conversations/shopper-conversations-live"
 
 export interface StorefrontFrameProps {
   store: PublicStore
@@ -205,6 +206,7 @@ export function StorefrontFrame({
             accountHref: shopper ? routes.account() : routes.signIn(),
             accountName: shopper?.name ?? null,
             ordersHref: shopper ? routes.accountTab("orders") : undefined,
+            conversationsSlot: shopper ? <ShopperConversationsLive slug={store.slug} routeWords={store.routeWords} messages={messages} /> : undefined,
           })}
       {...(linkComponent ? { linkComponent } : {})}
       categories={

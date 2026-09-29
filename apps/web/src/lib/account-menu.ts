@@ -10,7 +10,7 @@ import { accountTabOf, type StorefrontRoutes } from "./storefront-routes"
  * The tabs that exist. Each ticket of the area appends its own: a tab listed here before its page
  * is built would be a menu entry that opens nothing.
  */
-export const DELIVERED_ACCOUNT_TABS: readonly StorefrontAccountTab[] = ["orders", "profile"]
+export const DELIVERED_ACCOUNT_TABS: readonly StorefrontAccountTab[] = ["orders", "profile", "messages"]
 
 /** The tab a third segment under the account opens, or null: a word of a tab not delivered opens nothing. */
 export function deliveredAccountTabOf(segment: string, routeWords: StorefrontRouteWords): StorefrontAccountTab | null {

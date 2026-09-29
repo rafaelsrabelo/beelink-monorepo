@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontConversationComposer } from "./storefront-conversation-composer"
+import { StorefrontConversationFailed } from "./storefront-conversation-failed"
 import { StorefrontConversationList, type StorefrontConversationRow } from "./storefront-conversation-list"
 import { StorefrontConversationThread, type StorefrontConversationLine } from "./storefront-conversation-thread"
 import { StorefrontConversationsLink } from "./storefront-conversations-link"
@@ -131,6 +132,16 @@ describe("the composer", () => {
     rerender(<StorefrontConversationComposer value="" onChange={() => undefined} onSubmit={onSubmit} canSend={false} />)
     expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled()
     expect(onSubmit).not.toHaveBeenCalled()
+  })
+})
+
+describe("a read that failed", () => {
+  it("says what did not load, and asks again", () => {
+    const onRetry = vi.fn()
+    render(<StorefrontConversationFailed message="As conversas não carregaram." onRetry={onRetry} />)
+    expect(screen.getByRole("alert")).toHaveTextContent("As conversas não carregaram.")
+    fireEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+    expect(onRetry).toHaveBeenCalledOnce()
   })
 })
 

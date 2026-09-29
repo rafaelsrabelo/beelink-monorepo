@@ -17,6 +17,7 @@ import { isFiltered, orderListApiQueryOf, orderListEntriesOf, orderListQueryOf, 
 import { reorderActionOf } from "@/lib/reorder-view"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
+import { OrderTalkLive } from "../conversations/order-talk-live"
 import { OrderCancelLive } from "./order-cancel-live"
 import { OrderCancelNotice } from "./order-cancel-notice"
 import { OrderCancelNoticeLine } from "./order-cancel-notice-line"
@@ -78,10 +79,14 @@ export async function OrdersTab({ slug, routes, query, locale, messages }: Order
                   {...orderCardViewOf(order, { routes, locale, messages })}
                   detailsHref={routes.accountOrder(order.number)}
                   trackHref={isOrderInProgress(order.status) ? routes.accountOrder(order.number) : undefined}
-                  // Each action joins with its ticket: the cancel while received (J2), buying again once it ended (J6).
+                  // Each action joins with its ticket: talking to the shop while on its way (K3), the cancel
+                  // while received (J2), buying again once it ended (J6).
                   actions={
-                    orderActionOf(order.status) === "cancel" ? (
-                      <OrderCancelLive slug={slug} number={order.number} messages={messages} />
+                    isOrderInProgress(order.status) ? (
+                      <>
+                        <OrderTalkLive number={order.number} href={routes.accountConversation(order.number)} messages={messages} />
+                        {orderActionOf(order.status) === "cancel" ? <OrderCancelLive slug={slug} number={order.number} messages={messages} /> : null}
+                      </>
                     ) : orderActionOf(order.status) === "reorder" ? (
                       <StorefrontReorderButton action={reorderActionOf(slug, order.number)} messages={messages} />
                     ) : undefined
