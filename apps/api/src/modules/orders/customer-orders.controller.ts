@@ -15,7 +15,7 @@ import {
 } from '@nestjs/swagger';
 
 // Types
-import type { CustomerOrder, CustomerOrderPage } from '@harness-monorepo/contracts';
+import type { CustomerOrder, CustomerOrderPage, CustomerReorder } from '@harness-monorepo/contracts';
 
 // App
 import { env } from '../../shared/config/env.js';
@@ -23,7 +23,7 @@ import { Public } from '../auth/auth.decorators.js';
 import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/customer-auth.guard.js';
 import { CurrentCustomer } from '../customers/customer.decorators.js';
 import { CustomerOrdersService } from './customer-orders.service.js';
-import { CustomerOrderPageResponse, CustomerOrderResponse, ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
+import { CustomerOrderPageResponse, CustomerOrderResponse, CustomerReorderResponse, ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
 import { OrderNumberPipe } from './order-number.pipe.js';
 
 /** Keyed by address: a valid account does not get to fill a shop's panel from a script. */
@@ -64,6 +64,17 @@ export class CustomerOrdersController {
     @Param('number', OrderNumberPipe) number: number,
   ): Promise<CustomerOrder> {
     return this.orders.get(storeSlug, customer.userId, number);
+  }
+
+  @Get(':number/reorder')
+  @ApiOperation({ summary: "One of the shopper's orders against today's catalogue: the lines that go back into the cart, and those that stay out and why" })
+  @ApiOkResponse({ type: CustomerReorderResponse })
+  reorder(
+    @Param('storeSlug') storeSlug: string,
+    @CurrentCustomer() customer: AuthenticatedCustomer,
+    @Param('number', OrderNumberPipe) number: number,
+  ): Promise<CustomerReorder> {
+    return this.orders.reorder(storeSlug, customer.userId, number);
   }
 
   @Post(':number/cancel')

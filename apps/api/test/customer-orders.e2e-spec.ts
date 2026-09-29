@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { ApiErrorBody, AuthSession, CustomerOrder, CustomerOrderPage, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, CustomerOrder, CustomerOrderPage, CustomerReorder, Order, OrderStockDetails, Product } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -45,7 +45,7 @@ describe("a shopper's order from the cart", () => {
     await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777', address: paulista });
   });
 
-  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, session?: AuthSession, payload?: object) {
+  function call(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', url: string, session?: AuthSession, payload?: object) {
     return app.inject({ method, url, headers: session ? { authorization: `Bearer ${session.accessToken}` } : {}, ...(payload ? { payload } : {}) });
   }
 
@@ -110,6 +110,7 @@ describe("a shopper's order from the cart", () => {
     expect(Object.keys(order).sort()).toEqual(
       [
         'cancelledBy',
+        'delivery',
         'deliveryAddress',
         'deliveryFeeCents',
         'discountCents',
@@ -329,6 +330,94 @@ describe("a shopper's order from the cart", () => {
       const offSale = { productName: 'Whey', productSlug: null, imageUrl: 'https://img.test/whey.jpg' };
       expect((await orders()).orders[0]!.items[0]).toMatchObject(offSale);
       expect((await call('GET', '/api/stores/lessari/customer/orders/1', shopper)).json<CustomerOrder>().items[0]).toMatchObject(offSale);
+    });
+
+    it("tells the delivery on the shop's side, and the shopper reads who brings it, its tracking and its window", async () => {
+      await place();
+      const put = (payload: object, session = owner, number = 1) => call('PUT', `/api/stores/lessari/orders/${number}/delivery`, session, payload);
+      const told = { kind: 'CARRIER', carrier: 'Correios', service: 'SEDEX', trackingCode: 'AB123456789BR', estimateFrom: '2026-09-25', estimateTo: '2026-09-26' };
+
+      const set = await put(told);
+      expect(set.statusCode).toBe(200);
+      // The shop reads what it typed — no link — so its form never saves one it did not type.
+      expect(set.json<Order>().delivery).toEqual({ ...told, trackingUrl: null });
+
+      // The shopper, with no link given, is led to the Correios' own page for a code of theirs.
+      const mine = await call('GET', '/api/stores/lessari/customer/orders/1', shopper);
+      expect(mine.json<CustomerOrder>().delivery).toEqual({ ...told, trackingUrl: 'https://rastreamento.correios.com.br/app/index.php' });
+      expect((await orders()).orders[0]).toMatchObject({ estimate: { from: '2026-09-25', to: '2026-09-26' } });
+
+      // Replaced whole: the shop's own link wins, and a field left out is cleared.
+      const own = await put({ kind: 'OWN', trackingUrl: 'https://entregas.lessari.com/1' });
+      expect(own.json<Order>().delivery).toEqual({ kind: 'OWN', carrier: null, service: null, trackingCode: null, trackingUrl: 'https://entregas.lessari.com/1', estimateFrom: null, estimateTo: null });
+      expect((await orders()).orders[0]!.estimate).toBeNull();
+
+      const cleared = await call('DELETE', '/api/stores/lessari/orders/1/delivery', owner);
+      expect(cleared.json<Order>().delivery).toBeNull();
+    });
+
+    it('keeps one delivery per order when two first saves arrive at once', async () => {
+      await place();
+      const saves = await Promise.all([1, 2, 3].map((n) => call('PUT', '/api/stores/lessari/orders/1/delivery', owner, { kind: 'OWN', trackingCode: `C${n}` })));
+
+      expect(saves.map((save) => save.statusCode)).toEqual([200, 200, 200]);
+      expect(await prisma.orderDelivery.count()).toBe(1);
+    });
+
+    it('refuses a window that is half or backwards, a link that is not https, a pick-up, and anyone but the shop', async () => {
+      await place();
+      await registered();
+      const put = (payload: object, session = owner, number = 1) => call('PUT', `/api/stores/lessari/orders/${number}/delivery`, session, payload);
+
+      expect((await put({ kind: 'OWN', estimateFrom: '2026-09-25' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_WINDOW_INVALID' });
+      expect((await put({ kind: 'OWN', estimateFrom: '2026-09-26', estimateTo: '2026-09-25' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_WINDOW_INVALID' });
+      expect((await put({ kind: 'OWN', estimateFrom: '2026-02-30', estimateTo: '2026-03-01' })).statusCode).toBe(400);
+      expect((await put({ kind: 'OWN', trackingUrl: 'http://entregas.lessari.com/1' })).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_LINK_INVALID' });
+      // Counted as the column counts: an emoji with its variation selector is two.
+      expect((await put({ kind: 'CARRIER', carrier: '❤️'.repeat(31) })).statusCode).toBe(400);
+      expect((await put({ kind: 'BICICLETA' })).statusCode).toBe(400);
+      // Order 2 is the shop's pick-up.
+      expect((await put({ kind: 'OWN' }, owner, 2)).json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DELIVERY_FOR_PICKUP' });
+      expect((await put({ kind: 'OWN' }, shopper)).statusCode).toBe(401);
+      expect(await prisma.orderDelivery.count()).toBe(0);
+    });
+
+    it('reads an order again against today: what goes back into the cart, and what stays out and why', async () => {
+      await place();
+      const reorder = () => call('GET', '/api/stores/lessari/customer/orders/1/reorder', shopper);
+
+      const all = await reorder();
+      expect(all.statusCode).toBe(200);
+      expect(all.json<CustomerReorder>()).toEqual({
+        number: 1,
+        // The whey has no options: named by its product alone, as the cart names it.
+        lines: [
+          { productId: expect.any(String), variantId: null, quantity: 2 },
+          { productId: expect.any(String), variantId: grape, quantity: 1 },
+        ],
+        left: [],
+      });
+
+      // Fewer left than the order had: in, with what there is. The grape's product off sale: out.
+      await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 1 } });
+      const grapeProduct = (await prisma.productVariant.findUniqueOrThrow({ where: { id: grape } })).productId;
+      await prisma.product.update({ where: { id: grapeProduct }, data: { status: 'DRAFT' } });
+      const some = (await reorder()).json<CustomerReorder>();
+      expect(some.lines).toEqual([{ productId: expect.any(String), variantId: null, quantity: 1 }]);
+      expect(some.left).toEqual([
+        { productName: 'Whey', variantLabel: null, reason: 'LIMITED', added: 1 },
+        { productName: 'Creatina', variantLabel: 'Sabor: Uva', reason: 'OFF_SALE', added: 0 },
+      ]);
+
+      await prisma.productVariant.update({ where: { id: whey }, data: { stockQuantity: 0 } });
+      expect((await reorder()).json<CustomerReorder>().left[0]).toMatchObject({ productName: 'Whey', reason: 'SOLD_OUT', added: 0 });
+
+      // Another customer's order is no order of theirs.
+      const other = await shopperOf('lessari', 'Outra Pessoa');
+      const stranger = await call('GET', '/api/stores/lessari/customer/orders/1/reorder', other);
+      expect(stranger.statusCode).toBe(404);
+      expect(stranger.json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_NOT_FOUND' });
+      expect((await call('GET', '/api/stores/lessari/customer/orders/1/reorder')).statusCode).toBe(401);
     });
 
     it('cancels an order the shop has not accepted, giving its stock back; after that only the shop cancels', async () => {

@@ -8,6 +8,7 @@ import type { Metadata } from "next"
 // UI
 import { StorefrontCategoryGrid } from "@harness-monorepo/ui/blocks/storefront/storefront-category-grid"
 import { StorefrontListingSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-listing-skeleton"
+import { StorefrontReorderNotice } from "@harness-monorepo/ui/blocks/storefront/storefront-reorder-notice"
 
 // App
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
@@ -18,10 +19,11 @@ import { StorefrontSectionBand } from "@/components/storefront/storefront-sectio
 import { StorefrontSignInSection } from "@/components/storefront/storefront-sign-in-section"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
-import { customerOrdersAt } from "@/lib/customer-orders"
+import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
+import { reorderNoticeOf } from "@/lib/reorder-view"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
-import { BACK_KEY, storefrontRoutes } from "@/lib/storefront-routes"
+import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
 import { filterCountOf } from "@/lib/storefront-filters"
 
@@ -81,6 +83,11 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // The menu's pill: how many orders are in progress, read only on the area's own front.
   const activeOrders = place.section.kind === "account" && shopper ? (await customerOrdersAt(store.slug, { situation: "ACTIVE", pageSize: 1 }))?.counts.ACTIVE : undefined
 
+  // "Comprar de novo" lands on the cart naming the order: read again here to say what stayed out.
+  const reordered = cart && shopper ? orderNumberOf(paramOf(query[REORDERED_KEY])) : null
+  const mark = reordered ? { number: reordered, failed: paramOf(query[REORDER_FAILED_KEY]) === "1", trimmed: paramOf(query[REORDER_TRIMMED_KEY]) === "1" } : null
+  const reorderNotice = mark ? reorderNoticeOf(mark, mark.failed ? null : await customerReorderAt(store.slug, mark.number), ui) : null
+
   // The shopper's own page is theirs alone: a visitor is sent to sign in, and brought back here.
   if (place.section.kind === "account" && !shopper) redirect(routes.signIn({ back: routes.account() }) as Parameters<typeof redirect>[0])
 
@@ -128,6 +135,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
             signUpHref: routes.signIn({ mode: "criar", back: routes.cart() }),
             editHref: `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
           }}
+          arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           locale={locale}
           messages={ui}
         />

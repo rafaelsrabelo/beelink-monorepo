@@ -34,7 +34,11 @@ export interface StorefrontOrderCardProps {
   items: readonly StorefrontOrderCardItem[]
   /** Lines past the ones shown: "+ N itens". */
   moreItems: number
-  /** What can be done with it now — each action arrives with its own ticket. */
+  /** The order's own page: "Ver detalhes" by its number. */
+  detailsHref?: string
+  /** "Acompanhar pedido", the card's first action, while the order is on its way. */
+  trackHref?: string
+  /** What else can be done with it now — each action arrives with its own ticket. */
   actions?: ReactNode
   linkComponent?: LinkComponent
   messages?: UiMessages
@@ -70,6 +74,8 @@ export function StorefrontOrderCard({
   tone,
   items,
   moreItems,
+  detailsHref,
+  trackHref,
   actions,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
@@ -87,7 +93,14 @@ export function StorefrontOrderCard({
         <Fact label={text.orderPlacedOn}>{placedOn}</Fact>
         <Fact label={text.orderTotalLabel}>{total}</Fact>
         {shipTo ? <Fact label={text.orderShipTo}>{shipTo}</Fact> : <div className="hidden shop-md:block" />}
-        <span className="text-sm font-bold shop-md:text-right">{format(text.orderNumber, { number: String(number) })}</span>
+        <div className="flex items-baseline gap-3 shop-md:flex-col shop-md:items-end shop-md:gap-0.5">
+          <span className="text-sm font-bold">{format(text.orderNumber, { number: String(number) })}</span>
+          {detailsHref ? (
+            <Link href={detailsHref} className="text-[13px] font-semibold text-shop-primary-ink hover:underline">
+              {text.orderDetails}
+            </Link>
+          ) : null}
+        </div>
       </header>
 
       <div className="flex flex-col gap-4 p-5">
@@ -122,7 +135,16 @@ export function StorefrontOrderCard({
           ))}
         </ul>
 
-        {actions ? <div className="flex flex-wrap gap-2 pt-1">{actions}</div> : null}
+        {trackHref || actions ? (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {trackHref ? (
+              <Link href={trackHref} className="flex h-10 items-center rounded-full bg-shop-primary px-4 text-sm font-bold text-shop-on-primary hover:opacity-90">
+                {text.accountTrackOrder}
+              </Link>
+            ) : null}
+            {actions}
+          </div>
+        ) : null}
       </div>
     </article>
   )

@@ -426,6 +426,7 @@ export interface UiMessages {
     orderStatusOut: string
     /** `{date}`. */
     orderStatusDelivered: string
+    orderStatusPickedUp: string
     orderStatusCancelled: string
     orderCancelledByShop: string
     orderCancelledByYou: string
@@ -460,6 +461,57 @@ export interface UiMessages {
     /** The list could not be read: never shown as an empty list, which would say there are none. */
     ordersUnavailable: string
     ordersRetry: string
+    /** The order's own page (J5): its trail, its status and history, its lines, payment and address, and the receipt. */
+    orderDetails: string
+    orderReceipt: string
+    orderUpdatedAt: string
+    orderHistory: string
+    orderEventCancelled: string
+    orderEventReadyForPickup: string
+    orderEventPlacedByYou: string
+    orderEventPlacedByShop: string
+    orderEventByYou: string
+    orderEventByShop: string
+    orderItemsTitle: string
+    orderEach: string
+    orderPaymentTitle: string
+    orderSubtotal: string
+    orderDelivery: string
+    orderFree: string
+    orderDiscount: string
+    orderTotalRow: string
+    orderPaymentAgreed: string
+    orderUnavailable: string
+    receiptTitle: string
+    receiptShop: string
+    receiptCustomer: string
+    receiptDate: string
+    receiptNotInvoice: string
+    receiptPrint: string
+    receiptBack: string
+    /** Buying an order again (J6): the button, and what the cart says of it. */
+    reorder: string
+    reorderAll: string
+    reorderDone: string
+    reorderNone: string
+    reorderLeft: string
+    reorderOffSale: string
+    reorderSoldOut: string
+    reorderLimitedOne: string
+    reorderLimitedMany: string
+    reorderFailed: string
+    reorderTrimmed: string
+    /** The window a delivery should arrive in, and how it comes (J7). */
+    orderEstimateRange: string
+    orderEstimateDay: string
+    orderTrackingOwn: string
+    orderTrackingCode: string
+    orderTrackingCopy: string
+    orderTrackingCopied: string
+    /** The clipboard refused: the code is selected instead, for the shopper to copy by hand. */
+    orderTrackingSelected: string
+    orderTrackingCarrierLink: string
+    orderTrackingOwnLink: string
     /** The basket's own page. Empty until there is anything that can put a line in it. */
     cartEmpty: string
     cartEmptyHint: string
@@ -1409,6 +1461,22 @@ export interface UiMessages {
       payment: string
       note: string
       history: string
+      /** Who brings a delivery and when it should arrive (J7), told on the opened order. */
+      deliveryTitle: string
+      deliveryKind: string
+      deliveryKinds: Record<"OWN" | "CARRIER", string>
+      deliveryCarrier: string
+      deliveryService: string
+      deliveryCode: string
+      deliveryLink: string
+      deliveryLinkHint: string
+      deliveryWindow: string
+      deliveryFrom: string
+      deliveryUntil: string
+      deliverySave: string
+      deliveryClear: string
+      deliverySaved: string
+      deliveryNeeded: string
       actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM", string>
       markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
       statusLabel: string

@@ -58,6 +58,13 @@ const envSchema = z.object({
   CUSTOMER_ORDER_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
 
   /**
+   * Per IP, on the route a shopper writes to the shop through, about an order. A person types a few
+   * lines a minute; a script with one valid account would otherwise flood a shop's conversations.
+   */
+  CUSTOMER_MESSAGE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  CUSTOMER_MESSAGE_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
+
+  /**
    * Which addresses may claim a client IP through x-forwarded-for. Every browser call arrives
    * through the web app's route handlers, so without this the rate limit sees one address for
    * everyone. Accepts Fastify's syntax: `loopback`, a CIDR, a comma-separated list, or `false`.

@@ -32,9 +32,9 @@ export async function AccountOrdersNow({ slug, routes, locale, messages }: Accou
 
   const current = active.orders[0]
   if (current) {
-    const order = await customerOrderAt(slug, current.number)
-    if (!order) return unavailable
-    return <StorefrontOrderNow {...orderNowViewOf(order, active.counts.ACTIVE - 1, context)} linkComponent={AppLink} messages={messages} />
+    const read = await customerOrderAt(slug, current.number)
+    if (read.status !== "found") return unavailable
+    return <StorefrontOrderNow {...orderNowViewOf(read.order, active.counts.ACTIVE - 1, context)} linkComponent={AppLink} messages={messages} />
   }
 
   if (active.counts.ALL === 0) return <StorefrontAccountOrdersNote kind="none" href={routes.catalog()} linkComponent={AppLink} messages={messages} />

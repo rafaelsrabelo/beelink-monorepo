@@ -14,8 +14,10 @@ import { addressLineOf, addressShortOf, isDeliverable, zipCodeOf } from "./custo
 import { orderStatusLineOf, type OrderCardContext } from "./order-card-view"
 import { orderListEntriesOf } from "./order-list-query"
 import { orderStepsOf } from "./order-steps"
+import { estimateLineOf } from "./order-estimate"
+import { estimateOf } from "./order-page-view"
 
-/** The list narrowed to the orders on their way: where the front sends a shopper to follow them, until each order has its page. */
+/** The list narrowed to the orders on their way: where the front sends a shopper to see the others. */
 export function ordersInProgressHrefOf(routes: OrderCardContext["routes"]): string {
   return routes.accountTab("orders", orderListEntriesOf({ situation: "ACTIVE", period: undefined, search: "", page: 1 }))
 }
@@ -30,7 +32,7 @@ export function orderNowViewOf(order: CustomerOrder, others: number, context: Or
   // The moment it reached its status, as the list's summary carries it.
   const statusAt = order.events.findLast((event) => event.status === order.status)?.at ?? order.placedAt
   const address = order.deliveryAddress
-  const href = ordersInProgressHrefOf(routes)
+  const estimate = estimateOf(order)
 
   return {
     eyebrow: format(text.accountInProgressEyebrow, { number: String(order.number), total: `${formatCents(order.totalCents, locale, "BRL")} · ${messages.orders.payments[order.paymentMethod]}` }),
@@ -41,10 +43,10 @@ export function orderNowViewOf(order: CustomerOrder, others: number, context: Or
         : address
           ? format(text.accountShipTo, { name: address.recipientName, address: addressShortOf(address) ?? "" })
           : null,
-    note: order.status === "RECEIVED" ? text.orderReceivedHint : null,
+    note: order.status === "RECEIVED" ? text.orderReceivedHint : estimate ? estimateLineOf(estimate, locale, messages) : null,
     steps: orderStepsOf(order, context) ?? [],
-    href,
-    more: others > 0 ? { label: format(others === 1 ? text.accountMoreInProgress : text.accountMoreInProgressMany, { count: String(others) }), href } : null,
+    href: routes.accountOrder(order.number),
+    more: others > 0 ? { label: format(others === 1 ? text.accountMoreInProgress : text.accountMoreInProgressMany, { count: String(others) }), href: ordersInProgressHrefOf(routes) } : null,
   }
 }
 

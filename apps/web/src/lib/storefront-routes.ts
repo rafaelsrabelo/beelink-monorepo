@@ -217,8 +217,17 @@ export function storefrontRoutes(shop: StorefrontShop) {
         ...filterEntries(filters),
       }),
 
-    /** The basket, which the header's icon points at from the first day. */
-    cart: () => `${home}/${routeWords.cart}`,
+    /**
+     * The basket, which the header's icon points at from the first day. `reordered` names the order
+     * "Comprar de novo" just put in it, `failed` says nothing came of it, and `trimmed` that part did
+     * not fit the cart's own limits.
+     */
+    cart: ({ reordered, failed = false, trimmed = false }: { reordered?: number; failed?: boolean; trimmed?: boolean } = {}) =>
+      withQuery(`${home}/${routeWords.cart}`, {
+        [REORDERED_KEY]: reordered === undefined ? undefined : String(reordered),
+        [REORDER_FAILED_KEY]: failed ? "1" : undefined,
+        [REORDER_TRIMMED_KEY]: trimmed ? "1" : undefined,
+      }),
 
     /**
      * Where a shopper signs in — or, by `mode`, signs up (`criar`) or asks for a new password
@@ -238,6 +247,17 @@ export function storefrontRoutes(shop: StorefrontShop) {
     accountTab: (tab: StorefrontAccountTab, query: Record<string, string | undefined> = {}) => {
       const word = routeWords.accountTabs?.[tab]
       return withQuery(word ? `${home}/${routeWords.account}/${word}` : `${home}/${routeWords.account}`, query)
+    },
+
+    /**
+     * One of the shopper's orders, under the orders tab: `/<shop>/conta/pedidos/14`. The receipt is
+     * the same address with `comprovante=1`. A shop read before its tabs were spelled leads to the
+     * area's front, as `accountTab` does.
+     */
+    accountOrder: (number: number, { receipt = false }: { receipt?: boolean } = {}) => {
+      const word = routeWords.accountTabs?.orders
+      if (!word) return `${home}/${routeWords.account}`
+      return withQuery(`${home}/${routeWords.account}/${word}/${number}`, { [RECEIPT_KEY]: receipt ? "1" : undefined })
     },
 
     /** One product. It never nests under a category: a product in two would have two addresses. */
@@ -275,6 +295,32 @@ export function sectionOf(segment: string, routeWords: StorefrontRouteWords): St
   if (segment === routeWords.account) return { kind: "account" }
 
   return { kind: "category", slug: segment }
+}
+
+/** The cart's keys after "Comprar de novo": the order bought again, and whether reading it failed. */
+export const REORDERED_KEY = "repetido"
+export const REORDER_FAILED_KEY = "falhou"
+export const REORDER_TRIMMED_KEY = "cheio"
+
+/** The receipt's key: the order's page drawn as a document to print. */
+export const RECEIPT_KEY = "comprovante"
+
+/** The largest order number the API keeps (INT4): a longer one names no order. */
+const ORDER_NUMBER_MAX = 2_147_483_647
+
+/**
+ * The order a fourth segment names, under the account and its orders tab: `conta/pedidos/14` is 14.
+ * Null for anything else — another tab, a word, a zero, a number past any order — which is a 404.
+ */
+export function accountOrderNumberOf(item: string, sub: string, routeWords: StorefrontRouteWords): number | null {
+  return accountTabOf(item, routeWords) === "orders" ? orderNumberOf(sub) : null
+}
+
+/** An order number as an address writes it — no zero, no leading zeros, none past the column — or null. */
+export function orderNumberOf(raw: string | undefined): number | null {
+  if (!raw || !/^[1-9]\d{0,9}$/.test(raw)) return null
+  const number = Number(raw)
+  return number <= ORDER_NUMBER_MAX ? number : null
 }
 
 /** Which tab of the shopper's area a third segment under `account` names; null when it names none. */

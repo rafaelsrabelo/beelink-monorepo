@@ -1,0 +1,46 @@
+/// Who wrote a message of an order's conversation: its customer, or the shop.
+enum ConversationAuthor {
+  CUSTOMER
+  SHOP
+}
+
+/// The customer's conversation with the shop about one order (BEELINK-160). Opened by the
+/// customer's first message. Whether it takes messages is the order's status, never a column: it
+/// closes when the order is delivered or cancelled, and a flag here could say otherwise.
+model OrderConversation {
+  id      String @id @default(uuid(7)) @db.Uuid
+  orderId String @unique @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// When its last message was written: what the lists sort by.
+  lastMessageAt DateTime
+
+  createdAt DateTime @default(now())
+
+  messages OrderMessage[]
+
+  @@index([lastMessageAt])
+  @@map("order_conversations")
+}
+
+/// One message, as written. Unread is a message the other side has not read: `readAt` is theirs.
+model OrderMessage {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  conversationId String            @db.Uuid
+  conversation   OrderConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  author ConversationAuthor
+  /// The account that wrote it — the shopper's, or a shopkeeper's.
+  userId String? @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Plain text, up to 2000 characters, never drawn as HTML.
+  body      String    @db.VarChar(2000)
+  createdAt DateTime  @default(now())
+  /// When the other side read it; null while they have not.
+  readAt    DateTime?
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, author, readAt])
+  @@map("order_messages")
+}

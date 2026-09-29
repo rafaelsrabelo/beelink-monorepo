@@ -7,16 +7,19 @@ import { StorefrontOrderCard } from "@harness-monorepo/ui/blocks/storefront/stor
 import { StorefrontOrderTabs } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tabs"
 import { StorefrontOrdersEmpty } from "@harness-monorepo/ui/blocks/storefront/storefront-orders-empty"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
+import { StorefrontReorderButton } from "@harness-monorepo/ui/blocks/storefront/storefront-reorder-button"
 
 // App
 import { AppLink } from "@/components/app-link"
 import { customerOrdersAt } from "@/lib/customer-orders"
-import { orderCardViewOf } from "@/lib/order-card-view"
+import { isOrderInProgress, orderActionOf, orderCardViewOf } from "@/lib/order-card-view"
 import { isFiltered, orderListApiQueryOf, orderListEntriesOf, orderListQueryOf, type OrderListQuery } from "@/lib/order-list-query"
+import { reorderActionOf } from "@/lib/reorder-view"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { OrderCancelLive } from "./order-cancel-live"
 import { OrderCancelNotice } from "./order-cancel-notice"
+import { OrderCancelNoticeLine } from "./order-cancel-notice-line"
 
 export interface OrdersTabProps {
   slug: string
@@ -55,7 +58,8 @@ export async function OrdersTab({ slug, routes, query, locale, messages }: Order
   return (
     <div className="flex flex-col gap-5">
       {/* Around the whole list, so it stays put when a cancel empties the tab and the page is read again. */}
-      <OrderCancelNotice messages={messages}>
+      <OrderCancelNotice>
+        <OrderCancelNoticeLine messages={messages} />
         {nothingEver ? null : (
           <StorefrontOrderTabs
             tabs={TABS.map((tab) => ({ label: tabLabels[tab.key], count: page.counts[tab.key], href: href({ situation: tab.situation }), current: asked.situation === tab.situation }))}
@@ -72,8 +76,16 @@ export async function OrdersTab({ slug, routes, query, locale, messages }: Order
               <li key={order.number}>
                 <StorefrontOrderCard
                   {...orderCardViewOf(order, { routes, locale, messages })}
-                  // Each action joins with its ticket; the customer's cancel is the API's from J2.
-                  actions={order.status === "RECEIVED" ? <OrderCancelLive slug={slug} number={order.number} messages={messages} /> : undefined}
+                  detailsHref={routes.accountOrder(order.number)}
+                  trackHref={isOrderInProgress(order.status) ? routes.accountOrder(order.number) : undefined}
+                  // Each action joins with its ticket: the cancel while received (J2), buying again once it ended (J6).
+                  actions={
+                    orderActionOf(order.status) === "cancel" ? (
+                      <OrderCancelLive slug={slug} number={order.number} messages={messages} />
+                    ) : orderActionOf(order.status) === "reorder" ? (
+                      <StorefrontReorderButton action={reorderActionOf(slug, order.number)} messages={messages} />
+                    ) : undefined
+                  }
                   linkComponent={AppLink}
                   messages={messages}
                 />

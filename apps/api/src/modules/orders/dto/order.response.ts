@@ -3,6 +3,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 // Types
 import type {
+  OrderDelivery,
+  OrderDeliveryKind,
   Order,
   OrderActor,
   OrderCustomer,
@@ -18,7 +20,7 @@ import type {
 
 // App
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
-import { ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
+import { ORDER_DELIVERY_KINDS, ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
 
 const ORDER_ACTORS = ['SHOPKEEPER', 'CUSTOMER', 'SYSTEM'] as const satisfies readonly OrderActor[];
 
@@ -62,6 +64,17 @@ export class OrderEventResponse implements OrderEvent {
   @ApiProperty({ format: 'date-time' }) at!: string;
 }
 
+export class OrderDeliveryResponse implements OrderDelivery {
+  @ApiProperty({ enum: ORDER_DELIVERY_KINDS }) kind!: OrderDeliveryKind;
+  @ApiProperty({ nullable: true, type: String, example: 'Correios' }) carrier!: string | null;
+  @ApiProperty({ nullable: true, type: String, example: 'SEDEX' }) service!: string | null;
+  @ApiProperty({ nullable: true, type: String, example: 'AB123456789BR' }) trackingCode!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: "The shopkeeper's link, else the Correios' page for a code of theirs." })
+  trackingUrl!: string | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date' }) estimateFrom!: string | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date' }) estimateTo!: string | null;
+}
+
 export class OrderResponse implements Order {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ description: 'Sequential within the shop.' }) number!: number;
@@ -83,6 +96,8 @@ export class OrderResponse implements Order {
   @ApiProperty({ nullable: true, type: String }) note!: string | null;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
   @ApiProperty({ type: [OrderEventResponse], description: 'Oldest first.' }) events!: OrderEventResponse[];
+  @ApiProperty({ type: OrderDeliveryResponse, nullable: true, description: 'Null on a pick-up, and on a delivery nobody told yet.' })
+  delivery!: OrderDeliveryResponse | null;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
 }
 
