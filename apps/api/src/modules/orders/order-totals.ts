@@ -21,6 +21,16 @@ export interface OrderTotals {
 export type TotalsRefusal = 'DISCOUNT_TOO_LARGE' | 'TOTAL_TOO_LARGE';
 
 /**
+ * The bounds every total answers to, wherever it is computed — placing an order and agreeing its
+ * fee later both land here, so neither can write what the other refuses.
+ */
+export function totalRefusalOf(totalCents: number): TotalsRefusal | null {
+  if (totalCents > ORDER_AMOUNT_MAX_CENTS) return 'TOTAL_TOO_LARGE';
+  if (totalCents < 0) return 'DISCOUNT_TOO_LARGE';
+  return null;
+}
+
+/**
  * The order's totals, from the lines' photographed prices.
  *
  * Refused when the discount would take the total below zero — a discount bigger than what is paid
@@ -41,8 +51,9 @@ export function totalsOf(
   const fee = fulfillment === 'PICKUP' ? 0 : deliveryFeeCents;
   const totalCents = subtotalCents + (fee ?? 0) - discountCents;
 
-  if (subtotalCents > ORDER_AMOUNT_MAX_CENTS || totalCents > ORDER_AMOUNT_MAX_CENTS) return 'TOTAL_TOO_LARGE';
-  if (totalCents < 0) return 'DISCOUNT_TOO_LARGE';
+  if (subtotalCents > ORDER_AMOUNT_MAX_CENTS) return 'TOTAL_TOO_LARGE';
+  const refusal = totalRefusalOf(totalCents);
+  if (refusal) return refusal;
   return { subtotalCents, deliveryFeeCents: fee, discountCents, totalCents };
 }
 

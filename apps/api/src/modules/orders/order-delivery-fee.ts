@@ -7,7 +7,8 @@ import type { Prisma } from '../../generated/prisma/client.js';
 // App
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { refreshBooks } from '../customers/customer-books.js';
-import { ORDER_AMOUNT_MAX_CENTS, orderError } from './orders.constants.js';
+import { totalRefusalOf } from './order-totals.js';
+import { orderError } from './orders.constants.js';
 import { ORDER_INCLUDE } from './orders.mapper.js';
 
 export type OrderWithDetail = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
@@ -35,9 +36,14 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
       throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change'));
     }
 
+    // Lowering a fee can leave a discount bigger than what is paid, as a placement would refuse it.
     const totalCents = current.subtotalCents + deliveryFeeCents - current.discountCents;
-    if (totalCents > ORDER_AMOUNT_MAX_CENTS) {
+    const refusal = totalRefusalOf(totalCents);
+    if (refusal === 'TOTAL_TOO_LARGE') {
       throw new BadRequestException(orderError('ORDER_TOTAL_TOO_LARGE', 'The order would pass what one order may be'));
+    }
+    if (refusal === 'DISCOUNT_TOO_LARGE') {
+      throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount would be larger than the order'));
     }
 
     const order = await tx.order.update({ where: { id: current.id }, data: { deliveryFeeCents, totalCents }, include: ORDER_INCLUDE });

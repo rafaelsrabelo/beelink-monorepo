@@ -88,7 +88,7 @@ export class OrdersController {
   @Put(':number/delivery-fee')
   @ApiOperation({ summary: 'Tell the fee agreed for a delivery; the total and the customer’s books follow (BEELINK-170)' })
   @ApiOkResponse({ type: OrderResponse })
-  @ApiBadRequestResponse({ description: 'ORDER_DELIVERY_FOR_PICKUP — a pick-up has no fee · ORDER_TOTAL_TOO_LARGE' })
+  @ApiBadRequestResponse({ description: 'ORDER_DELIVERY_FOR_PICKUP — a pick-up has no fee · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE' })
   @ApiConflictResponse({ description: 'ORDER_CANCELLED' })
   setDeliveryFee(
     @Param('storeSlug') storeSlug: string,

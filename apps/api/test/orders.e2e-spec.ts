@@ -195,6 +195,18 @@ describe("a shop's orders", () => {
     expect((await call('PUT', '/api/stores/lessari/orders/99/delivery-fee', owner, { deliveryFeeCents: 900 })).statusCode).toBe(404);
   });
 
+  it('refuses a fee that would leave the discount bigger than what is paid, and changes nothing', async () => {
+    // A registered delivery may carry a discount past its goods while the fee still covers it.
+    const order = (await place({ deliveryFeeCents: 1000, discountCents: 24500 })).json<Order>();
+    expect(order.totalCents).toBe(470);
+
+    const refused = await call('PUT', `/api/stores/lessari/orders/${order.number}/delivery-fee`, owner, { deliveryFeeCents: 0 });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json<ApiErrorBody>()).toMatchObject({ errorCode: 'ORDER_DISCOUNT_TOO_LARGE' });
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ deliveryFeeCents: 1000, totalCents: 470 });
+    expect(await prisma.customer.findUniqueOrThrow({ where: { id: order.customer.id } })).toMatchObject({ totalSpentCents: 470n });
+  });
+
   describe('the stock', () => {
     /** Counts a combination's stock, as the variations editor would. */
     async function counted(variantId: string, stockQuantity: number | null) {

@@ -355,15 +355,15 @@ export interface CustomerReorder {
   left: CustomerReorderLeft[];
 }
 
-/**
- * The error codes the order routes answer, beyond the store's own (`STORE_NOT_FOUND`,
- * `STORE_FORBIDDEN`) and the HTTP-status fallbacks.
- */
 /** The fee the shop agreed for a delivery, in whole cents (BEELINK-170): zero is a free delivery. */
 export interface SetOrderDeliveryFeePayload {
   deliveryFeeCents: number;
 }
 
+/**
+ * The error codes the order routes answer, beyond the store's own (`STORE_NOT_FOUND`,
+ * `STORE_FORBIDDEN`) and the HTTP-status fallbacks.
+ */
 export type OrderErrorCode =
   | "ORDER_NOT_FOUND"
   | "ORDER_CUSTOMER_NOT_FOUND"
