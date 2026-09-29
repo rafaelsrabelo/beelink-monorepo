@@ -22,7 +22,7 @@ export async function SignedInShell({ children }: { children: ReactNode }) {
 
   return (
     <AppShell user={user} ui={ui} web={web} locale={locale} prefs={prefs}>
-      <PanelRealtime />
+      <PanelRealtime messages={ui} />
       {children}
     </AppShell>
   )

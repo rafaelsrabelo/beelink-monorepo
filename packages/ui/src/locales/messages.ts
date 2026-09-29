@@ -1534,6 +1534,50 @@ export interface UiMessages {
       whatsappStatus: string
     }
   }
+  /** The panel's conversations: the tab, one conversation, and the one inside an order (BEELINK-164). */
+  conversations: {
+    title: string
+    intro: string
+    filterOpen: string
+    filterUnread: string
+    filterAll: string
+    filtersLabel: string
+    searchLabel: string
+    searchPlaceholder: string
+    empty: string
+    emptyHint: string
+    failed: string
+    retry: string
+    unreadOne: string
+    unreadMany: string
+    closedTag: string
+    youSaid: string
+    orderLine: string
+    viewOrder: string
+    viewCustomer: string
+    back: string
+    pickOne: string
+    older: string
+    newer: string
+    threadFailed: string
+    noneYet: string
+    noneClosed: string
+    closed: string
+    sent: string
+    read: string
+    fromCustomer: string
+    fromShop: string
+    replyLabel: string
+    replyPlaceholder: string
+    send: string
+    sending: string
+    tooLong: string
+    refusedClosed: string
+    refusedUnknown: string
+    orderSection: string
+    navUnread: string
+    navUnreadOne: string
+  }
   leads: {
     title: string
     description: string
@@ -1951,6 +1995,15 @@ export interface UiMessages {
     /** `{count}` — how many are unread. */
     notificationsUnread: string
     notificationsUnreadOne: string
+    /** The bell's menu and the toast that tells of what came in (BEELINK-163). */
+    notificationsTitle: string
+    notificationsEmpty: string
+    notificationsSeeOrders: string
+    notificationNewOrder: string
+    notificationNewMessage: string
+    notificationOrderDetail: string
+    notificationMessageDetail: string
+    notificationOpen: string
     storeMenu: string
     yourStores: string
     noStore: string

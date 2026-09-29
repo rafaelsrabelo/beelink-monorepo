@@ -59,7 +59,7 @@ export class OrdersService {
       onSaleOnly: false,
       customerOf: (tx) => this.customerOf(tx, storeId, dto.customer),
     });
-    this.realtime.publish({ storeId, customerId: order.customerId }, { type: 'order.created', orderNumber: order.number });
+    this.realtime.publish({ storeId, customerId: order.customerId }, { type: 'order.created', orderNumber: order.number, placedBy: 'SHOP' });
     return toOrder(order);
   }
 

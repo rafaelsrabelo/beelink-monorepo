@@ -30,6 +30,10 @@ export interface DashboardNavItem {
    * the item is disabled.
    */
   disabled?: boolean
+  /** What waits there — unread conversations — drawn beside the title; hidden when the rail is icons only. */
+  badge?: number
+  /** The badge said in words, for the item's accessible name: a number alone says nothing. */
+  badgeLabel?: string
 }
 
 export interface DashboardCard {

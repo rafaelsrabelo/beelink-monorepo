@@ -62,8 +62,8 @@ describe("useRealtimeChannel", () => {
     fake.options!.auth(answer)
     await vi.waitFor(() => expect(answer).toHaveBeenCalledWith({ ticket: "ticket-1" }))
 
-    act(() => fake.handlers.get("event")!({ type: "order.created", orderNumber: 3 }))
-    expect(onEvent).toHaveBeenCalledWith({ type: "order.created", orderNumber: 3 })
+    act(() => fake.handlers.get("event")!({ type: "order.created", orderNumber: 3, placedBy: "CUSTOMER" }))
+    expect(onEvent).toHaveBeenCalledWith({ type: "order.created", orderNumber: 3, placedBy: "CUSTOMER" })
   })
 
   /** What was said while the socket was away is lost: back, everything is read again — but not on the first connect. */

@@ -157,6 +157,8 @@ export interface WebMessages {
       /** Inside a shop the menu becomes that shop's. These are its items. */
       home: string
       orders: string
+      /** The shop's conversations with its customers (BEELINK-164). */
+      conversations: string
       products: string
       customers: string
       categories: string

@@ -12,6 +12,7 @@ import {
   HomeIcon,
   InboxIcon,
   LayoutTemplateIcon,
+  MessageCircleIcon,
   PackageIcon,
   SettingsIcon,
   ShoppingBagIcon,
@@ -29,6 +30,7 @@ import { AdminSearch } from "@harness-monorepo/ui/blocks/admin/admin-search"
 import { AdminShell } from "@harness-monorepo/ui/blocks/admin/admin-shell"
 import { AdminSidebar } from "@harness-monorepo/ui/blocks/admin/admin-sidebar"
 import { AdminStoreMenu } from "@harness-monorepo/ui/blocks/admin/admin-store-menu"
+import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Types
@@ -41,6 +43,8 @@ import { LocaleSwitcher } from "@/components/locale-switcher"
 import { PREFS_COOKIE, PREFS_MAX_AGE } from "@/lib/prefs"
 import { useSignOut } from "@/services/auth/auth-hooks"
 import { useMyStores } from "@/services/stores/store-hooks"
+import { PanelNotifications } from "@/components/panel-notifications"
+import { useShopUnread } from "@/services/conversations/shop-conversation-hooks"
 
 export interface AppShellProps {
   user: User
@@ -122,6 +126,11 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
   }
 
   const nav = web.stores.nav
+  // The conversations waiting for an answer, on their menu entry; the same read the bell makes.
+  const unread = useShopUnread(shopSlug ?? "", shopSlug !== null && !site).data?.conversations ?? 0
+  const unreadBadge = unread
+    ? { badge: unread, badgeLabel: unread === 1 ? ui.conversations.navUnreadOne : format(ui.conversations.navUnread, { count: String(unread) }) }
+    : {}
 
   return (
     <AdminShell
@@ -134,7 +143,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
           linkComponent={AppLink}
           messages={ui}
           search={<AdminSearch messages={ui} />}
-          bell={<AdminBell messages={ui} />}
+          bell={shopSlug ? <PanelNotifications key={shopSlug} slug={shopSlug} locale={locale} messages={ui} /> : <AdminBell messages={ui} />}
           storeMenu={
             <AdminStoreMenu
               current={workspaces.find((workspace) => workspace.slug === shopSlug) ?? null}
@@ -164,6 +173,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
               : [
                   item(nav.home, "", <HomeIcon />),
                   item(nav.orders, "/orders", <ShoppingBagIcon />, "prefix"),
+                  { ...item(nav.conversations, "/conversations", <MessageCircleIcon />, "prefix"), ...unreadBadge },
                   item(nav.products, "/products", <PackageIcon />, "prefix"),
                   // Categories arrives here in the same change that took the home card away from
                   // it. That card was its only door in the whole panel, and a screen nobody can
