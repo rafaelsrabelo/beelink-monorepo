@@ -111,8 +111,8 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
               <OrdersToolbar slug={store.slug} routes={routes} query={query} messages={ui} />
             </Suspense>
           ) : tab === "favorites" ? (
-            // No skeleton of its own: a form beside the title, which appears with the list.
-            <Suspense fallback={null}>
+            // The orders' toolbar's shape holds the title row's height until the order arrives.
+            <Suspense fallback={<StorefrontOrdersToolbarSkeleton />}>
               <FavoritesToolbar slug={store.slug} routes={routes} query={query} messages={ui} />
             </Suspense>
           ) : undefined

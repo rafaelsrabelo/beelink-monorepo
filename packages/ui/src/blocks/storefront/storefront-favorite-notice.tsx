@@ -40,7 +40,7 @@ export function StorefrontFavoriteNotice({ message, link, onClose, linkComponent
               </>
             ) : null}
           </span>
-          <button type="button" onClick={onClose} aria-label={text.favoriteNoticeClose} className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full">
+          <button type="button" onClick={onClose} aria-label={text.favoriteNoticeClose} className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full">
             <XIcon aria-hidden="true" className="size-4" />
           </button>
         </p>

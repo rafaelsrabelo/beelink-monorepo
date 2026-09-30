@@ -111,6 +111,9 @@ export const Indisponivel: Story = { render: () => <StorefrontFavoritesEmpty var
 /** Depois do coração de um card: o que aconteceu, já que o card simplesmente some. */
 export const Removido: Story = { render: () => <StorefrontFavoritesOutcome tone="done" message="Produto removido dos favoritos." /> }
 
+/** A remoção não passou: o motivo, como alerta. */
+export const RemocaoRecusada: Story = { render: () => <StorefrontFavoritesOutcome tone="failed" message="Sua sessão já tinha terminado, e nada foi feito. Entre de novo e tente outra vez." /> }
+
 /** A lista a caminho: os filtros e os cards em cinza. */
 export const Esqueleto: Story = {
   render: () => (

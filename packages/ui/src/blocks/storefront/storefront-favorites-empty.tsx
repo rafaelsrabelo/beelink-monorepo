@@ -37,7 +37,7 @@ export function StorefrontFavoritesEmpty({ variant, href, linkComponent: Link = 
       <p role={failed ? "alert" : undefined} className="max-w-md font-semibold">
         {words.sentence}
       </p>
-      <Link href={href} className="mt-1 rounded-[10px] bg-shop-primary px-4 py-2 text-sm font-semibold text-shop-on-primary">
+      <Link href={href} className="mt-1 inline-flex min-h-11 items-center rounded-[10px] bg-shop-primary px-4 text-sm font-semibold text-shop-on-primary">
         {words.door}
       </Link>
     </section>

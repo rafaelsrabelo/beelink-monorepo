@@ -98,7 +98,11 @@ export function StorefrontFavoriteCard({
         {/* Drawn, not a second link: a press falls through to the name's, which opens the page where "Avise-me" is. */}
         <div className="pointer-events-none relative z-10 mt-auto pt-1.5">
           {soldOut ? (
-            <span className="flex h-[42px] w-full items-center justify-center rounded-full border border-shop-line-strong bg-shop-background text-sm font-semibold">{text.favoriteSoldOut}</span>
+            <span className="flex h-[42px] w-full items-center justify-center gap-1 rounded-full border border-shop-line-strong bg-shop-background text-sm font-semibold">
+              {text.favoriteSoldOut}
+              {/* Drawn only: the press opens the page, and "Avise-me" is asked there, where a reader meets it. */}
+              <span aria-hidden="true">{text.favoriteSoldOutNotify}</span>
+            </span>
           ) : (
             action
           )}

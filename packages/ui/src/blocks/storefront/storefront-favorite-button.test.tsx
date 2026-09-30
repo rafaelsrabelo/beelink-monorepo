@@ -32,8 +32,9 @@ describe("StorefrontFavoriteButton", () => {
     const { rerender } = render(<StorefrontFavoriteButton name="Whey" liked={false} look="text" disabled onToggle={() => {}} />)
     expect(screen.getByRole("button", { name: "Adicionar aos favoritos" })).toBeDisabled()
 
+    // The words say the state, so it is not said again as pressed.
     rerender(<StorefrontFavoriteButton name="Whey" liked look="text" onToggle={() => {}} />)
-    expect(screen.getByRole("button", { name: "Nos seus favoritos" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "Nos seus favoritos" })).not.toHaveAttribute("aria-pressed")
   })
 
   it("has no accessibility violations", async () => {

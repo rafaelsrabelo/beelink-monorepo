@@ -7,10 +7,8 @@ import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
 import { FAVORITE_REMOVED, FAVORITES_ERROR_KEY } from "@/lib/favorite-list-query"
 import { callAsShopper } from "@/lib/shopper-call"
-import { SHOP_SLUG } from "@/lib/shopper-forward"
+import { PRODUCT_ID, SHOP_SLUG } from "@/lib/shopper-forward"
 import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
-
-const PRODUCT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * The heart on a card of Favoritos (6g), from a plain form, so the tab removes without a script.

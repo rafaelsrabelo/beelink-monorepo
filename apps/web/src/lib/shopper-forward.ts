@@ -13,6 +13,9 @@ import { callAsShopper } from "./shopper-call"
 /** A shop's slug as the API spells one; anything else names no shop, and nothing is asked. */
 export const SHOP_SLUG = /^[a-z0-9-]+$/
 
+/** A product id as the API takes one: anything else names no product, and nothing is asked. */
+export const PRODUCT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /** An order number as the API takes one. */
 export const ORDER_NUMBER = /^\d{1,10}$/
 

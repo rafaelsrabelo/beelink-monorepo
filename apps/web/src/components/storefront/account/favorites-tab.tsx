@@ -1,5 +1,5 @@
 // Types
-import type { CustomerFavorite, CustomerFavoriteFilter } from "@harness-monorepo/contracts"
+import type { CustomerFavoriteFilter } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -12,6 +12,7 @@ import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/sto
 // App
 import { AppLink } from "@/components/app-link"
 import { customerFavoritesAt } from "@/lib/customer-favorites"
+import { favoriteProductHrefOf, favoriteRemoveActionOf, likedOnOf } from "@/lib/favorite-card-view"
 import { errorSentenceOf } from "@/lib/error-sentence"
 import {
   beforeCentsOf,
@@ -42,17 +43,6 @@ const FILTERS: readonly { key: "ALL" | CustomerFavoriteFilter; filter: CustomerF
   { key: "ON_SALE", filter: "ON_SALE" },
   { key: "SOLD_OUT", filter: "SOLD_OUT" },
 ]
-
-/** "18 set", the day it was liked, in the shop's time zone. */
-function likedOnOf(iso: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", timeZone: "America/Sao_Paulo" }).format(new Date(iso))
-}
-
-/** The product's page, on the combination liked: where "Ver opções" and "avise-me" lead. */
-function productHrefOf(favorite: CustomerFavorite, routes: StorefrontRoutes): string {
-  const page = routes.product(favorite.slug)
-  return favorite.variant ? `${page}?${new URLSearchParams({ variant: favorite.variant.id })}` : page
-}
 
 /**
  * Favoritos (6g): the products the shopper liked at this shop, priced as of now and narrowed by the
@@ -105,7 +95,7 @@ export async function FavoritesTab({ slug, routes, query, locale, errors, messag
             <li key={favorite.productId}>
               <StorefrontFavoriteCard
                 name={favorite.name}
-                href={productHrefOf(favorite, routes)}
+                href={favoriteProductHrefOf(favorite, routes)}
                 imageUrl={favorite.imageUrl}
                 variantLabel={favorite.variant?.label ?? null}
                 priceCents={favorite.priceCents}
@@ -122,7 +112,7 @@ export async function FavoritesTab({ slug, routes, query, locale, errors, messag
                     messages={messages}
                   />
                 }
-                remove={{ action: `/${slug}/api/customer/favoritos`, fields: { produto: favorite.productId, retorno: back, entrada: routes.signIn() } }}
+                remove={{ action: favoriteRemoveActionOf(slug), fields: { produto: favorite.productId, retorno: back, entrada: routes.signIn() } }}
                 locale={locale}
                 linkComponent={AppLink}
                 messages={messages}

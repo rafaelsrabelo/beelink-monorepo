@@ -46,7 +46,8 @@ function SignedInHeart({ productId, productName, variantId = null, look = "icon"
       name={productName}
       liked={liked}
       look={look}
-      disabled={!ids.data}
+      // Only while the first read is on its way: one that failed leaves the heart pressable, and the press says why.
+      disabled={ids.isPending}
       onToggle={() => toggle.mutate({ productId, variantId, like: !liked }, { onError: favorites.report })}
       messages={messages}
     />

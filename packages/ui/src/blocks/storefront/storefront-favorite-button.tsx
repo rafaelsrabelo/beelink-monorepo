@@ -62,7 +62,8 @@ export function StorefrontFavoriteButton({
   return (
     <button
       type="button"
-      aria-pressed={liked}
+      // The words already say the state ("Nos seus favoritos"); pressed on top would say it twice.
+      aria-pressed={look === "icon" ? liked : undefined}
       aria-label={look === "icon" ? format(text.favoriteToggle, { name }) : undefined}
       disabled={disabled}
       onClick={onToggle}

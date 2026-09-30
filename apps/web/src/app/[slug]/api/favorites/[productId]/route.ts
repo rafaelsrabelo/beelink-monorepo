@@ -6,10 +6,7 @@ import type { LikeFavoritePayload } from "@harness-monorepo/contracts"
 
 // App
 import { refuseCrossOrigin } from "@/lib/bff"
-import { forwardAsShopper, SHOP_SLUG, shopperRefusal } from "@/lib/shopper-forward"
-
-/** A product id as the API takes one; anything else names nothing, and nothing is asked. */
-const PRODUCT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { forwardAsShopper, PRODUCT_ID, SHOP_SLUG, shopperRefusal } from "@/lib/shopper-forward"
 
 type Context = RouteContext<"/[slug]/api/favorites/[productId]">
 

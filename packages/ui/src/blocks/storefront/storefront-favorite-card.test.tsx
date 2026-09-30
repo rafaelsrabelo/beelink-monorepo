@@ -46,7 +46,8 @@ describe("StorefrontFavoriteCard", () => {
   it("offers the notice instead of the cart once sold out, and no seal without a drop", () => {
     render(<StorefrontFavoriteCard {...card} soldOut dropCents={0} beforeCents={null} />)
 
-    expect(screen.getByText("Esgotado · avise-me")).toBeInTheDocument()
+    expect(screen.getByText("Esgotado")).toBeInTheDocument()
+    expect(screen.getByText("· avise-me")).toHaveAttribute("aria-hidden", "true")
     expect(screen.queryByRole("button", { name: "Adicionar ao carrinho" })).not.toBeInTheDocument()
     expect(screen.queryByText(/desde que você curtiu/)).not.toBeInTheDocument()
   })

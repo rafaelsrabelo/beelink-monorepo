@@ -575,6 +575,8 @@ export interface UiMessages {
     favoriteLikedOn: string
     favoriteRemove: string
     favoriteSoldOut: string
+    /** Drawn beside "Esgotado" and never read: it is asked on the product's page. */
+    favoriteSoldOutNotify: string
     favoriteRemoved: string
     favoritesEmpty: string
     favoritesEmptyCta: string
