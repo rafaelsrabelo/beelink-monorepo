@@ -114,3 +114,29 @@
 - O aviso por e-mail (J16).
 - Compartilhar a lista.
 - Favoritos sem conta: sem sessão, o J15 leva a Entrar e volta.
+
+## Adendo da revisão (30/09)
+
+Dois revisores, um de correção e um das regras da casa. O que mudou:
+
+- **Os favoritos respondem códigos próprios,** em vez dos do catálogo:
+  `CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND`, `CUSTOMER_FAVORITE_VARIANT_NOT_FOUND` e
+  `CUSTOMER_FAVORITE_LIMIT`, todos em `FavoriteErrorCode`. O web guarda uma frase por código, e
+  `PRODUCT_VARIANT_NOT_FOUND` já tem a frase do editor do painel. A loja mostraria ao cliente o texto
+  do lojista. É o mesmo caminho do Avise-me, que tem o `RESTOCK_VARIANT_INVALID`. Isso corrige a
+  decisão 2.
+- **O produto curtido como um todo tem o preço da combinação mais barata à venda, com ou sem
+  estoque.** Não é mais o `priceCents` do produto. Aquele cache segue o que se pode pedir agora, então
+  o estoque voltando numa combinação mais barata parecia uma queda de preço. Um produto que não vende
+  nenhuma combinação fica com o cache. Isso corrige as decisões 1 e 4.
+- **A variação liga ao favorito com `NoAction`, não com `SetNull`.** Um `null` ali passaria por uma
+  curtida do produto inteiro e compararia o preço da variação com o mais barato do produto. Nada no
+  código apaga uma variação: ela é arquivada. E apagar o produto leva o favorito pela cascata dele
+  antes de a chave ser conferida, no fim do comando. Isso corrige a decisão 1.
+- **Favoritos de produtos em rascunho contam no limite de 200.** Eles ficam guardados e voltam com o
+  produto. O J15 deve dizer isso quando o limite recusar.
+- **Arrumação:**
+  - `lockCustomer` foi para `customers/customer-lock.ts`, e `variantLabelOf` para
+    `catalog/variant-label.ts`, porque endereços, junção, pedidos e favoritos os usam.
+  - Os limites e as listas foram para `favorites.constants.ts`.
+  - Um empate na curtida vai para o produto mais novo.

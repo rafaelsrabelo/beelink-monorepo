@@ -68,9 +68,9 @@ A customer keeps **several addresses** — home, work — each with a name they 
 
 A customer may be **linked to an account** — the shop's own, opened there — and that link is what lets an address follow them. Opening the account is what makes the person the shop's customer: a lead until they buy. **No shopkeeper ever reads the account's password or sessions**, and no account reaches past its shop, which is what keeps the sentence above literally true: a person who buys from two stores is two customers with two accounts, and neither store can tell.
 
-A signed-in customer keeps **favourites** at the shop: products they liked, one heart per product, with the combination they chose on its page when they chose one. A favourite remembers what it cost the day it was liked, so the shop can say it is cheaper now, on sale, or sold out. Liking it again changes nothing; choosing another combination is a new like at today's price. A product the shop takes back to draft leaves the list until it returns, and one it deletes leaves for good. A customer keeps at most 200.
-
 The link is optional, and a customer without one is not a lesser customer. Shops carried over from the legacy product arrive with no e-mail on file at all.
+
+A signed-in customer keeps **favourites** at the shop: products they liked, one heart per product, with the combination they chose on its page when they chose one. A favourite remembers what it cost the day it was liked, which is how the shop can say it is cheaper now; being on sale or sold out is read from the shop as it is today. Liking it again changes nothing, and choosing another combination is a new like at today's price. A product the shop takes back to draft leaves the list until it returns, and one it deletes leaves for good.
 
 **Buying requires a verified identity; reaching the checkout does not.** The shop window, the cart and the checkout form open for anyone, so the delivery fee is visible before anything is asked. What requires an account is **placing the order**, and for most people the account is what the purchase leaves behind rather than what it demanded up front.
 
