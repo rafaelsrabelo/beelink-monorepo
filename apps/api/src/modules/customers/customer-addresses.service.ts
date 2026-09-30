@@ -8,7 +8,8 @@ import type { CustomerAddressModel } from '../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { ADDRESSES_MAX, SAVED_ADDRESS_ORDER, lockCustomer, promoteDefault, toSavedAddress } from './customer-addresses.js';
+import { ADDRESSES_MAX, SAVED_ADDRESS_ORDER, promoteDefault, toSavedAddress } from './customer-addresses.js';
+import { lockCustomer } from './customer-lock.js';
 import { CustomersService } from './customers.service.js';
 import type { SaveCustomerAddressDto } from './dto/customer-address.dto.js';
 

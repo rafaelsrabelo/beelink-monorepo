@@ -3,7 +3,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { CustomerModel } from '../../generated/prisma/models.js';
 
 // App
-import { lockCustomer } from './customer-addresses.js';
+import { lockCustomer } from './customer-lock.js';
 import { refreshBooks } from './customer-books.js';
 
 type Tx = Prisma.TransactionClient;
