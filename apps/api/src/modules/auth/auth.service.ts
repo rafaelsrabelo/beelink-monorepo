@@ -126,23 +126,27 @@ export class AuthService {
     const userId = await this.emailTokens.consume(token, EmailTokenPurpose.RESET_PASSWORD);
     const passwordHash = await hash(password);
 
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    // One transaction: verifying the e-mail is what makes the owner's acceptance due, and a failure in
+    // between would leave the account taken over with no acceptance, never to be asked again.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: { passwordHash } });
 
-    // The link reached this inbox, which is everything verifying the e-mail proves. Without this, an
-    // account whose confirmation was lost sets a password and is refused at sign-in with it.
-    const verified = await this.prisma.user.updateMany({
-      where: { id: userId, emailVerifiedAt: null },
-      data: { emailVerifiedAt: new Date() },
+      // The link reached this inbox, which is everything verifying the e-mail proves. Without this, an
+      // account whose confirmation was lost sets a password and is refused at sign-in with it.
+      const verified = await tx.user.updateMany({
+        where: { id: userId, emailVerifiedAt: null },
+        data: { emailVerifiedAt: new Date() },
+      });
+
+      // The screen that sets the password says setting it accepts the terms (BEELINK-171). The owner's
+      // acceptance is recorded where the account has none of the version in force — one from before
+      // the terms, or an imported one, whose first screen this is — and where this reset is what proved
+      // the e-mail: whoever accepted at sign-up may not have been the owner, as on Google's takeover.
+      const accepted = await tx.legalAcceptance.count({ where: { userId, version: LEGAL_VERSION } });
+      if (verified.count > 0 || accepted === 0) {
+        await tx.legalAcceptance.create({ data: { userId, ...legalAcceptanceOf('PASSWORD_RESET') } });
+      }
     });
-
-    // The screen that sets the password says setting it accepts the terms (BEELINK-171). The owner's
-    // acceptance is recorded where the account has none of the version in force — one from before the
-    // terms, or an imported one, whose first screen this is — and where this reset is what proved the
-    // e-mail: whoever accepted at sign-up may not have been the owner, as on Google's takeover.
-    const accepted = await this.prisma.legalAcceptance.count({ where: { userId, version: LEGAL_VERSION } });
-    if (verified.count > 0 || accepted === 0) {
-      await this.prisma.legalAcceptance.create({ data: { userId, ...legalAcceptanceOf('PASSWORD_RESET') } });
-    }
 
     // Whoever knew the old password — including whoever prompted the reset — loses every session.
     await this.sessions.revokeAllForUser(userId);
