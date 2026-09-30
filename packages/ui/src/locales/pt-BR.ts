@@ -1480,6 +1480,7 @@ export const ptBR: UiMessages = {
     ratingStars: "{count} estrelas",
     productChip: "Produto: {name}",
     clearProduct: "Tirar o filtro de produto",
+    productUnknown: "o escolhido",
     onlyThisProduct: "Ver só as de {name}",
     ratedLabel: "Nota {rating} de 5",
     noComment: "Sem comentário.",

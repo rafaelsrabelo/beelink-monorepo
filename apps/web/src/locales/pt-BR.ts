@@ -51,6 +51,7 @@ export const ptBR: WebMessages = {
       orders: "Pedidos",
       products: "Produtos",
       conversations: "Conversas",
+      reviews: "Avaliações",
       customers: "Clientes",
       categories: "Categorias",
       design: "Modo design",

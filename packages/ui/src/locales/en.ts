@@ -1479,6 +1479,7 @@ export const en: UiMessages = {
     ratingStars: "{count} stars",
     productChip: "Product: {name}",
     clearProduct: "Clear the product filter",
+    productUnknown: "the one chosen",
     onlyThisProduct: "Only {name}'s",
     ratedLabel: "Rated {rating} out of 5",
     noComment: "No comment.",

@@ -1728,6 +1728,8 @@ export interface UiMessages {
     /** `{name}`. */
     productChip: string
     clearProduct: string
+    /** The chip's name for a product none of the page's reviews names. */
+    productUnknown: string
     /** `{name}`. */
     onlyThisProduct: string
     /** `{rating}`. */
