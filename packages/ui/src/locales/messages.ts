@@ -590,6 +590,33 @@ export interface UiMessages {
     favoritesHintOff: string
     favoritesHintChange: string
     favoritesHintTurnOn: string
+    /** Avaliar compras (6c, J18): the tab, its two sections, the stars, the form and what came of it. */
+    orderReviewProduct: string
+    reviewsPendingTitle: string
+    reviewsPendingHint: string
+    reviewsNothingPending: string
+    reviewsSentTitle: string
+    /** `{date}`. */
+    reviewDeliveredOn: string
+    reviewRatingLegend: string
+    reviewStarOne: string
+    /** `{count}`. */
+    reviewStarMany: string
+    /** `{rating}`: the stars read as one sentence. */
+    reviewRatedLabel: string
+    reviewCommentLabel: string
+    reviewCommentPlaceholder: string
+    reviewSend: string
+    reviewSave: string
+    reviewEdit: string
+    reviewHiddenByShop: string
+    reviewSent: string
+    reviewSaved: string
+    reviewsEmpty: string
+    reviewsEmptyCta: string
+    /** The list could not be read: never shown as nothing to rate. */
+    reviewsUnavailable: string
+    reviewsRetry: string
     /** The order's own page (J5): its trail, its status and history, its lines, payment and address, and the receipt. */
     orderDetails: string
     orderReceipt: string

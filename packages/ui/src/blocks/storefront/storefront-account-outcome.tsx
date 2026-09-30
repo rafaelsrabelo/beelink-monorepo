@@ -1,14 +1,17 @@
 // Libs
 import { CircleAlertIcon, CircleCheckIcon } from "lucide-react"
 
-export interface StorefrontFavoritesOutcomeProps {
-  /** A remove that went through, or one refused — already in words. */
+export interface StorefrontAccountOutcomeProps {
+  /** What went through, or what was refused — already in words. */
   tone: "done" | "failed"
   message: string
 }
 
-/** Over Favoritos after the heart on a card was pressed: what came of it, since the card is simply gone. */
-export function StorefrontFavoritesOutcome({ tone, message }: StorefrontFavoritesOutcomeProps) {
+/**
+ * Over a tab of the account after one of its forms: what came of it — a favourite removed, a review
+ * sent — or why not. The form's own card may be gone, so the tab says it.
+ */
+export function StorefrontAccountOutcome({ tone, message }: StorefrontAccountOutcomeProps) {
   const Icon = tone === "done" ? CircleCheckIcon : CircleAlertIcon
 
   return (
