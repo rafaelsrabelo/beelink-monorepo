@@ -11,7 +11,7 @@ model ProductReview {
   product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   customerId String          @db.Uuid
   customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  /// The combination bought — the latest delivery of the product when the review was written — and
+  /// The combination bought — in the latest delivered order with the product, by when it was placed — and
   /// its label as the order line kept it, which outlives the combination.
   variantId    String?         @db.Uuid
   variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
@@ -27,6 +27,7 @@ model ProductReview {
   /// edit does not publish what the shop took down.
   hiddenAt  DateTime?
   createdAt DateTime  @default(now())
+  /// The customer's last edit: hiding, publishing and a merge keep it.
   updatedAt DateTime  @updatedAt
 
   @@unique([customerId, productId])
@@ -34,5 +35,8 @@ model ProductReview {
   @@index([productId, hiddenAt, createdAt(sort: Desc)])
   /// The panel's list, the most recent first.
   @@index([storeId, createdAt(sort: Desc)])
+  /// For the SetNull when a combination or an order goes: without them, each deleted row scans the table.
+  @@index([variantId])
+  @@index([orderId])
   @@map("product_reviews")
 }

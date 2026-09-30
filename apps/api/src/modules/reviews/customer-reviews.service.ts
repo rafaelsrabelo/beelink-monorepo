@@ -10,9 +10,7 @@ import { CustomersService } from '../customers/customers.service.js';
 import type { CreateReviewDto, UpdateReviewDto } from './dto/review.dto.js';
 import { countIn, lockReview, recount } from './review-books.js';
 import { reviewInclude, toCustomerReview } from './reviews.mapper.js';
-import { reviewError } from './reviews.constants.js';
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { reviewError, UUID } from './reviews.constants.js';
 
 /** A line the shop delivered to this customer, of a product still on its shelf: what earns a review. */
 function deliveredTo(customerId: string) {
@@ -71,7 +69,7 @@ export class CustomerReviewsService {
 
   async create(storeSlug: string, userId: string, dto: CreateReviewDto): Promise<CustomerReview> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    // The latest delivery of it names the combination bought. None, another shop's, a draft or no
+    // The latest delivered order with it — by when it was placed — names the combination bought. None, another shop's, a draft or no
     // such product: one answer, so it tells nobody which ids exist where.
     const bought = await this.prisma.orderItem.findFirst({
       where: { ...deliveredTo(customerId), productId: dto.productId.toLowerCase(), product: { storeId, status: 'ACTIVE' } },
@@ -99,7 +97,7 @@ export class CustomerReviewsService {
     }
   }
 
-  /** Their words and rating again; a review the shop hid stays hidden. */
+  /** Their rating again, and their words when sent — absent keeps them; a review the shop hid stays hidden. */
   async update(storeSlug: string, userId: string, reviewId: string, dto: UpdateReviewDto): Promise<CustomerReview> {
     const { customerId } = await this.customers.shopperAt(storeSlug, userId);
     const missing = () => new NotFoundException(reviewError('CUSTOMER_REVIEW_NOT_FOUND', "No such review among this customer's"));
@@ -109,7 +107,7 @@ export class CustomerReviewsService {
       await lockReview(tx, reviewId.toLowerCase());
       const current = await tx.productReview.findFirst({ where: { id: reviewId.toLowerCase(), customerId } });
       if (!current) throw missing();
-      const updated = await tx.productReview.update({ where: { id: current.id }, data: { rating: dto.rating, comment: dto.comment ?? null }, include: reviewInclude });
+      const updated = await tx.productReview.update({ where: { id: current.id }, data: { rating: dto.rating, ...(dto.comment !== undefined ? { comment: dto.comment } : {}) }, include: reviewInclude });
       if (current.hiddenAt === null) await recount(tx, current.productId, current.rating, dto.rating);
       return updated;
     });

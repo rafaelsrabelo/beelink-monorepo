@@ -55,7 +55,7 @@ export interface CustomerPendingReview {
   slug: string;
   name: string;
   imageUrl: string | null;
-  /** The combination of the latest delivery of it. */
+  /** The combination in the latest delivered order with it, by when that order was placed. */
   variantLabel: string | null;
   orderNumber: number;
   /** ISO-8601, when that order was delivered. */
@@ -87,6 +87,7 @@ export interface CreateReviewPayload {
 
 export interface UpdateReviewPayload {
   rating: ReviewRating;
+  /** Absent keeps the comment; null or blank removes it. */
   comment?: string | null;
 }
 

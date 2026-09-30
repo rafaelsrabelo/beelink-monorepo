@@ -2,7 +2,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 // Types
@@ -18,10 +18,8 @@ import type {
 
 // App
 import { blankToNull } from '../../stores/dto/store-fields.dto.js';
-import { REVIEW_COMMENT_MAX, REVIEW_RATINGS, REVIEW_STATUSES, REVIEWS_PAGE_MAX, REVIEWS_PAGE_SIZE_MAX } from '../reviews.constants.js';
+import { PUBLIC_REVIEWS_PAGE_SIZE, REVIEW_COMMENT_MAX, REVIEW_RATINGS, REVIEW_STATUSES, REVIEWS_PAGE_MAX, REVIEWS_PAGE_SIZE_MAX, STORE_REVIEWS_PAGE_SIZE } from '../reviews.constants.js';
 
-/** Trimmed, and blank is none: an empty box is a rating alone. */
-const comment = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() || null : value));
 const optional = ValidateIf((_, value) => value !== null && value !== undefined);
 
 export class UpdateReviewDto implements UpdateReviewPayload {
@@ -30,8 +28,8 @@ export class UpdateReviewDto implements UpdateReviewPayload {
   @IsIn(REVIEW_RATINGS)
   rating!: ReviewRating;
 
-  @ApiPropertyOptional({ nullable: true, type: String, maxLength: REVIEW_COMMENT_MAX })
-  @comment
+  @ApiPropertyOptional({ nullable: true, type: String, maxLength: REVIEW_COMMENT_MAX, description: 'Trimmed; blank or null is none. On an edit, absent keeps it.' })
+  @blankToNull
   @optional
   @IsString()
   @MaxLength(REVIEW_COMMENT_MAX)
@@ -60,7 +58,7 @@ class ReviewPageDto {
   @Type(() => Number)
   page?: number;
 
-  @ApiPropertyOptional({ minimum: 1, maximum: REVIEWS_PAGE_SIZE_MAX })
+  @ApiPropertyOptional({ minimum: 1, maximum: REVIEWS_PAGE_SIZE_MAX, description: `${PUBLIC_REVIEWS_PAGE_SIZE} on the shop window, ${STORE_REVIEWS_PAGE_SIZE} in the panel.` })
   @IsOptional()
   @IsInt()
   @Min(1)

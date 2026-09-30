@@ -10,6 +10,8 @@ export const STORE_REVIEWS_PAGE_SIZE = 20;
 export const REVIEWS_PAGE_SIZE_MAX = 50;
 export const REVIEWS_PAGE_MAX = 10_000;
 
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function reviewError(errorCode: ReviewErrorCode, message: string): { errorCode: ReviewErrorCode; message: string } {
   return { errorCode, message };
 }

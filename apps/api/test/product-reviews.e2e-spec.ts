@@ -87,9 +87,12 @@ describe("products' reviews", () => {
   const cacheOf = (productId: string) => prisma.product.findUniqueOrThrow({ where: { id: productId }, select: { reviewCount: true, reviewRatingSum: true } });
 
   it('offers what was delivered and not rated, takes a review of it with the combination bought, and shows it', async () => {
-    const [grape] = haze.variants;
+    const [grape, apple] = haze.variants;
+    const beta = await addProduct({ name: 'Beta', slug: 'beta', priceCents: 5000 });
+    await orderFor(shopper, [apple!.id]);
     await orderFor(shopper, [grape!.id, whey.variants[0]!.id]);
-    await orderFor(shopper, [whey.variants[0]!.id], 'ACCEPTED');
+    // On its way still: not something to rate.
+    await orderFor(shopper, [beta.variants[0]!.id], 'ACCEPTED');
 
     const pending = (await call('GET', '/api/stores/lessari/customer/reviews/pending', shopper)).json<CustomerPendingReview[]>();
     expect(pending.map((line) => [line.name, line.variantLabel])).toEqual([
@@ -177,9 +180,9 @@ describe("products' reviews", () => {
     await call('PATCH', `/api/stores/lessari/reviews/${mine.id}`, owner, { hidden: true });
     expect(await cacheOf(whey.id)).toEqual({ reviewCount: 0, reviewRatingSum: 0 });
 
-    // The shopper's edit does not publish what the shop took down.
+    // The shopper's edit does not publish what the shop took down; leaving the comment out keeps it.
     await call('PUT', `/api/stores/lessari/customer/reviews/${mine.id}`, shopper, { rating: 2 });
-    expect((await call('GET', '/api/stores/lessari/customer/reviews', shopper)).json<CustomerReview[]>()[0]).toMatchObject({ rating: 2, hidden: true });
+    expect((await call('GET', '/api/stores/lessari/customer/reviews', shopper)).json<CustomerReview[]>()[0]).toMatchObject({ rating: 2, comment: 'Chegou aberto.', hidden: true });
     expect(await cacheOf(whey.id)).toEqual({ reviewCount: 0, reviewRatingSum: 0 });
     expect((await call('GET', '/api/stores/lessari/reviews?status=HIDDEN', owner)).json<StoreReviewPage>()).toMatchObject({ total: 1, counts: { ALL: 1, PUBLISHED: 0, HIDDEN: 1 } });
 
@@ -191,6 +194,33 @@ describe("products' reviews", () => {
     expect((await call('GET', '/api/stores/lessari/reviews', stranger)).statusCode).toBe(403);
     expect((await call('PATCH', `/api/stores/lessari/reviews/${mine.id}`, shopper, { hidden: true })).statusCode).toBe(401);
     expect((await call('PATCH', '/api/stores/outra/reviews/' + mine.id, owner, { hidden: true })).json()).toMatchObject({ errorCode: 'REVIEW_NOT_FOUND' });
+  });
+
+  it('filters the panel by rating and product, shows the shop window only the published, and moves reviews in a merge', async () => {
+    const ana = await shopperOf('lessari', 'Ana Lima');
+    for (const buyer of [shopper, ana]) await orderFor(buyer, [whey.variants[0]!.id, haze.variants[0]!.id]);
+    const bias = (await review({ productId: whey.id, rating: 5 })).json<CustomerReview>();
+    await review({ productId: haze.id, rating: 3 });
+    const anas = (await review({ productId: whey.id, rating: 2 }, ana)).json<CustomerReview>();
+
+    const byRating = (await call('GET', '/api/stores/lessari/reviews?rating=5', owner)).json<StoreReviewPage>();
+    expect(byRating.reviews.map((row) => row.id)).toEqual([bias.id]);
+    const byProduct = (await call('GET', `/api/stores/lessari/reviews?productId=${whey.id}`, owner)).json<StoreReviewPage>();
+    expect(byProduct).toMatchObject({ total: 2, counts: { ALL: 2 } });
+
+    await call('PATCH', `/api/stores/lessari/reviews/${anas.id}`, owner, { hidden: true });
+    expect(await publicPage(whey.id)).toMatchObject({ summary: { average: 5, count: 1, histogram: { 2: 0, 5: 1 } }, total: 1, reviews: [{ id: bias.id }] });
+
+    // Bia's account goes; the shop registers her again by phone, and merges the two records.
+    await prisma.customer.updateMany({ where: { name: 'Bia Souza' }, data: { userId: null } });
+    const again = await shopperOf('lessari', 'Bia Souza');
+    const [old, fresh] = await prisma.customer.findMany({ where: { name: 'Bia Souza' }, orderBy: { createdAt: 'asc' } });
+    const merged = await call('POST', `/api/stores/lessari/customers/${fresh!.id}/merge`, owner, { otherId: old!.id });
+    expect(merged.statusCode).toBe(200);
+    // Her reviews follow her, and the cache still says what the shop window shows.
+    expect((await call('GET', '/api/stores/lessari/customer/reviews', again)).json<CustomerReview[]>().map((row) => row.rating).sort()).toEqual([3, 5]);
+    expect(await cacheOf(whey.id)).toEqual({ reviewCount: 1, reviewRatingSum: 5 });
+    expect((await publicPage(whey.id)).reviews[0]).toMatchObject({ authorName: 'Bia S.' });
   });
 
   it('pages a product’s published reviews, filters by rating, and answers a draft as its page does', async () => {

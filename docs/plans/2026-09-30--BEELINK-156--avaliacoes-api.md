@@ -93,3 +93,20 @@
 - Fotos na avaliação.
 - As telas (J18, J19, D14).
 - A contagem das "novas" no menu do painel (J19).
+
+## Adendo da revisão (30/09)
+
+- **A junção de registros leva as avaliações.** Um registro cuja conta foi apagada guarda as
+  avaliações dele, e a junção do painel apaga esse registro. Antes, as avaliações iam em cascata e o
+  cache do produto ficava contando o que não existia mais. Agora elas passam para o registro mantido
+  quando ele não avaliou aquele produto. Quando avaliou, a do outro sai do cache antes de ir embora.
+- **`updatedAt` é a última edição do cliente.** Ocultar, publicar e juntar registros não mexem nele.
+  Um "(editada)" futuro não culpa o cliente pelo que a loja fez.
+- **Um PUT sem `comment` mantém o comentário;** `null` ou em branco o remove.
+- **Índices em `variantId` e `orderId`,** para o `SetNull` não varrer a tabela.
+- **O Swagger mostra a `rating` do card.**
+- **Fica como decisão de produto: um pedido Entregue que muda de status depois** (a API deixa, fora
+  do Cancelado). A avaliação feita continua, porque a entrega aconteceu; a regra de quem avalia vale
+  na hora de escrever. Se o produto pedir o contrário, a avaliação passa a ser ocultada quando o
+  pedido sai de Entregue.
+- **`?page=` vazio responde 400,** como em Meus pedidos. As telas nunca mandam o campo vazio.

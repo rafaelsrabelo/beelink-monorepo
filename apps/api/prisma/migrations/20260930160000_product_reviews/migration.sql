@@ -29,6 +29,12 @@ CREATE INDEX "product_reviews_productId_hiddenAt_createdAt_idx" ON "product_revi
 CREATE INDEX "product_reviews_storeId_createdAt_idx" ON "product_reviews"("storeId", "createdAt" DESC);
 
 -- CreateIndex
+CREATE INDEX "product_reviews_variantId_idx" ON "product_reviews"("variantId");
+
+-- CreateIndex
+CREATE INDEX "product_reviews_orderId_idx" ON "product_reviews"("orderId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "product_reviews_customerId_productId_key" ON "product_reviews"("customerId", "productId");
 
 -- AddForeignKey

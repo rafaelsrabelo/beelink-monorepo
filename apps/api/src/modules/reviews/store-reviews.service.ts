@@ -13,9 +13,8 @@ import { StoresService } from '../stores/stores.service.js';
 import type { PublicReviewListDto, SetReviewVisibilityDto, StoreReviewListDto } from './dto/review.dto.js';
 import { countIn, countOut, lockReview } from './review-books.js';
 import { reviewInclude, toPublicReview, toStoreReview } from './reviews.mapper.js';
-import { PUBLIC_REVIEWS_PAGE_SIZE, REVIEW_RATINGS, reviewError, STORE_REVIEWS_PAGE_SIZE } from './reviews.constants.js';
+import { PUBLIC_REVIEWS_PAGE_SIZE, REVIEW_RATINGS, reviewError, STORE_REVIEWS_PAGE_SIZE, UUID } from './reviews.constants.js';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NEWEST: Prisma.ProductReviewOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'desc' }];
 
 /**
@@ -94,7 +93,8 @@ export class StoreReviewsService {
       if (!current) throw missing();
       if (dto.hidden === (current.hiddenAt !== null)) return tx.productReview.findUniqueOrThrow({ where: { id: current.id }, include: reviewInclude });
 
-      const updated = await tx.productReview.update({ where: { id: current.id }, data: { hiddenAt: dto.hidden ? new Date() : null }, include: reviewInclude });
+      // `updatedAt` kept: it is the customer's last edit, and hiding is the shop's doing, not theirs.
+      const updated = await tx.productReview.update({ where: { id: current.id }, data: { hiddenAt: dto.hidden ? new Date() : null, updatedAt: current.updatedAt }, include: reviewInclude });
       await (dto.hidden ? countOut : countIn)(tx, current.productId, current.rating);
       return updated;
     });
