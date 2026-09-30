@@ -612,6 +612,8 @@ export interface UiMessages {
     reviewHiddenByShop: string
     reviewSent: string
     reviewSaved: string
+    /** A rating or comment the shop refused: the form's own words, not the panel's. */
+    reviewInvalid: string
     reviewsEmpty: string
     reviewsEmptyCta: string
     /** The list could not be read: never shown as nothing to rate. */

@@ -15,6 +15,8 @@ export interface StorefrontReviewFormProps {
   hidden: Readonly<Record<string, string>>
   /** Names the stars' radios and the comment's box, so two forms on one page never share a field. */
   idPrefix: string
+  /** The product's, said with the legend: a reader tabbing from one card's stars to the next hears which. */
+  productName: string
   /** The rating and the words already given, when editing. */
   rating?: number | null
   comment?: string | null
@@ -33,7 +35,7 @@ const RATINGS = [1, 2, 3, 4, 5] as const
  * eye reads. A star is filled when the radio checked comes after it, or is its own — CSS alone, no
  * script. A reader hears a group of radios named "3 estrelas".
  */
-export function StorefrontReviewForm({ action, hidden, idPrefix, rating, comment, submitLabel, messages = defaultMessages }: StorefrontReviewFormProps) {
+export function StorefrontReviewForm({ action, hidden, idPrefix, productName, rating, comment, submitLabel, messages = defaultMessages }: StorefrontReviewFormProps) {
   const text = messages.storefront
 
   return (
@@ -43,7 +45,10 @@ export function StorefrontReviewForm({ action, hidden, idPrefix, rating, comment
       ))}
 
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="mb-1 text-sm font-semibold">{text.reviewRatingLegend}</legend>
+        <legend className="mb-1 text-sm font-semibold">
+          {text.reviewRatingLegend}
+          <span className="sr-only">: {productName}</span>
+        </legend>
         <div className="flex w-fit gap-1 rounded-lg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-shop-primary-ink">
           {RATINGS.map((value) => {
             const id = `${idPrefix}-nota-${value}`
@@ -53,7 +58,8 @@ export function StorefrontReviewForm({ action, hidden, idPrefix, rating, comment
                 <input type="radio" id={id} name="nota" value={value} required defaultChecked={rating === value} className="sr-only" />
                 <label
                   htmlFor={id}
-                  className="flex size-11 cursor-pointer items-center justify-center text-shop-line-strong [&:has(~input:checked)]:text-shop-primary-ink [input:checked+&]:text-shop-primary-ink"
+                  // Muted, not a line colour: an empty star is an option to see, at 3:1 or more.
+                  className="flex size-11 cursor-pointer items-center justify-center rounded-full text-shop-muted [&:has(~input:checked)]:text-shop-primary-ink [input:checked+&]:text-shop-primary-ink [input:focus-visible+&]:ring-2 [input:focus-visible+&]:ring-shop-primary-ink"
                 >
                   <StarIcon aria-hidden="true" className="size-7" fill="currentColor" strokeWidth={1.2} />
                   <span className="sr-only">{value === 1 ? text.reviewStarOne : format(text.reviewStarMany, { count: String(value) })}</span>

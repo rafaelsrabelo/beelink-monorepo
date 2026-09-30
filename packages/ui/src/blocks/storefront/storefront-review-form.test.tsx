@@ -11,11 +11,11 @@ const hidden = { acao: "criar", produto: "p-1", retorno: "/loja/conta/avaliacoes
 
 describe("StorefrontReviewForm", () => {
   it("asks a rating out of five stars, in the eye's order, and a comment, as a plain form", async () => {
-    const { container } = render(<StorefrontReviewForm action="/loja/api/customer/avaliacoes" hidden={hidden} idPrefix="p-1" submitLabel="Enviar avaliação" />)
+    const { container } = render(<StorefrontReviewForm action="/loja/api/customer/avaliacoes" hidden={hidden} idPrefix="p-1" productName="Produto" submitLabel="Enviar avaliação" />)
 
     const stars = screen.getAllByRole("radio")
     expect(stars.map((star) => star.getAttribute("value"))).toEqual(["1", "2", "3", "4", "5"])
-    expect(screen.getByRole("group", { name: "Sua nota" })).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Sua nota: Produto" })).toBeInTheDocument()
     expect(stars[0]).toBeRequired()
 
     await userEvent.click(screen.getByLabelText("4 estrelas"))
@@ -26,7 +26,7 @@ describe("StorefrontReviewForm", () => {
   })
 
   it("starts from the rating and words already given, when editing", () => {
-    render(<StorefrontReviewForm action="#" hidden={{ acao: "editar" }} idPrefix="r-1" rating={2} comment="Chegou aberto." submitLabel="Salvar avaliação" />)
+    render(<StorefrontReviewForm action="#" hidden={{ acao: "editar" }} idPrefix="r-1" productName="Produto" rating={2} comment="Chegou aberto." submitLabel="Salvar avaliação" />)
 
     expect(screen.getByLabelText("2 estrelas")).toBeChecked()
     expect(screen.getByRole("textbox", { name: "Comentário (opcional)" })).toHaveValue("Chegou aberto.")
@@ -35,7 +35,7 @@ describe("StorefrontReviewForm", () => {
   })
 
   it("has no accessibility violations", async () => {
-    const { container } = render(<StorefrontReviewForm action="#" hidden={hidden} idPrefix="p-1" rating={3} submitLabel="Enviar avaliação" />)
+    const { container } = render(<StorefrontReviewForm action="#" hidden={hidden} idPrefix="p-1" productName="Produto" rating={3} submitLabel="Enviar avaliação" />)
     await expectNoA11yViolations(container)
   })
 })

@@ -476,6 +476,7 @@ export const en: UiMessages = {
     reviewHiddenByShop: "Hidden by the shop: only you see this review.",
     reviewSent: "Review sent. Thank you!",
     reviewSaved: "Review saved.",
+    reviewInvalid: "Choose 1 to 5 stars and write a comment of up to 1000 characters.",
     reviewsEmpty: "Once an order is delivered, you review its products here.",
     reviewsEmptyCta: "See my orders",
     reviewsUnavailable: "We couldn't load your reviews just now.",

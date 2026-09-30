@@ -61,7 +61,7 @@ export class CustomerPendingReviewResponse implements CustomerPendingReview {
 export class CustomerReviewResponse implements CustomerReview {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ format: 'uuid' }) productId!: string;
-  @ApiProperty() slug!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Null once the product is a draft.' }) slug!: string | null;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({ enum: REVIEW_RATINGS }) rating!: ReviewRating;

@@ -4,7 +4,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 /** What each side reads with a review: the product as a card names it, and the customer. */
 export const reviewInclude = {
-  product: { select: { id: true, name: true, slug: true, images: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 } } },
+  product: { select: { id: true, name: true, slug: true, status: true, images: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 } } },
   customer: { select: { id: true, name: true, userId: true } },
 } as const satisfies Prisma.ProductReviewInclude;
 
@@ -37,7 +37,7 @@ export function toCustomerReview(row: ReviewRow): CustomerReview {
   return {
     id: row.id,
     productId: row.product.id,
-    slug: row.product.slug,
+    slug: row.product.status === 'ACTIVE' ? row.product.slug : null,
     name: row.product.name,
     imageUrl: row.product.images[0]?.url ?? null,
     rating: row.rating as ReviewRating,

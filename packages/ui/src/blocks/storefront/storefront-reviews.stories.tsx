@@ -13,8 +13,8 @@ import { StorefrontReviewsSection } from "./storefront-reviews-section"
 import { StorefrontReviewsSkeleton } from "./storefront-reviews-skeleton"
 
 const pending: StorefrontReviewCardProps[] = [
-  { id: "avaliar-creatina", name: "Creatina Monohidratada 300g", href: "#", imageUrl: null, meta: "Entregue em 12 set · Sem sabor", form: <StorefrontReviewForm action="#" hidden={{}} idPrefix="creatina" submitLabel="Enviar avaliação" /> },
-  { id: "avaliar-coqueteleira", name: "Coqueteleira Mutante 700ml", href: "#", imageUrl: null, meta: "Entregue em 12 set · Cor: Preta", form: <StorefrontReviewForm action="#" hidden={{}} idPrefix="coqueteleira" submitLabel="Enviar avaliação" /> },
+  { id: "avaliar-creatina", name: "Creatina Monohidratada 300g", href: "#", imageUrl: null, meta: "Entregue em 12 set · Sem sabor", form: <StorefrontReviewForm action="#" hidden={{}} idPrefix="creatina" productName="Produto" submitLabel="Enviar avaliação" /> },
+  { id: "avaliar-coqueteleira", name: "Coqueteleira Mutante 700ml", href: "#", imageUrl: null, meta: "Entregue em 12 set · Cor: Preta", form: <StorefrontReviewForm action="#" hidden={{}} idPrefix="coqueteleira" productName="Produto" submitLabel="Enviar avaliação" /> },
 ]
 
 const sent: StorefrontReviewCardProps[] = [
@@ -26,7 +26,7 @@ const sent: StorefrontReviewCardProps[] = [
     meta: "Sabor: Frutas vermelhas",
     rating: 5,
     comment: "Dá energia sem aquela coceira. Comprarei de novo.",
-    form: <StorefrontReviewForm action="#" hidden={{}} idPrefix="haze" rating={5} comment="Dá energia sem aquela coceira. Comprarei de novo." submitLabel="Salvar avaliação" />,
+    form: <StorefrontReviewForm action="#" hidden={{}} idPrefix="haze" productName="Produto" rating={5} comment="Dá energia sem aquela coceira. Comprarei de novo." submitLabel="Salvar avaliação" />,
   },
   {
     id: "avaliar-whey",
@@ -37,7 +37,7 @@ const sent: StorefrontReviewCardProps[] = [
     rating: 2,
     comment: "Chegou com o lacre aberto.",
     hidden: true,
-    form: <StorefrontReviewForm action="#" hidden={{}} idPrefix="whey" rating={2} comment="Chegou com o lacre aberto." submitLabel="Salvar avaliação" />,
+    form: <StorefrontReviewForm action="#" hidden={{}} idPrefix="whey" productName="Produto" rating={2} comment="Chegou com o lacre aberto." submitLabel="Salvar avaliação" />,
   },
 ]
 

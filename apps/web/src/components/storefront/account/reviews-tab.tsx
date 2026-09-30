@@ -31,29 +31,43 @@ export interface ReviewsTabProps {
 /**
  * Avaliar compras (6c): what the shop delivered and the shopper has not rated, each with the stars
  * and the box right there, then the reviews they sent, each with its edit. Read on the server with
- * their session; every form posts to the shop's handler and comes back here with what came of it.
+ * their session; every form posts to the shop's handler and comes back here, at its product's card,
+ * which says what came of it — or over the tab, when that card is no longer here.
  */
 export async function ReviewsTab({ slug, routes, query, locale, errors, messages }: ReviewsTabProps) {
   const text = messages.storefront
   const [pending, sent] = await Promise.all([pendingReviewsAt(slug), shopperReviewsAt(slug)])
   const back = routes.accountTab("reviews")
 
-  if (!pending || !sent) return <StorefrontReviewsEmpty variant="unavailable" href={back} linkComponent={AppLink} messages={messages} />
-  if (pending.length === 0 && sent.length === 0) return <StorefrontReviewsEmpty variant="none" href={routes.accountTab("orders")} linkComponent={AppLink} messages={messages} />
-
   const asked = paramOf(query[REVIEW_PRODUCT_KEY])
   const refused = paramOf(query[REVIEWS_ERROR_KEY])
-  const outcome = paramOf(query.aviso)
+  const went = paramOf(query.aviso)
+  // A rejected field is the form's own mistake, said in the form's words.
+  const outcome = refused ? (
+    <StorefrontAccountOutcome tone="failed" message={refused === "BAD_REQUEST" ? text.reviewInvalid : errorSentenceOf(errors, refused)} />
+  ) : went === REVIEW_SENT || went === REVIEW_SAVED ? (
+    <StorefrontAccountOutcome tone="done" message={went === REVIEW_SENT ? text.reviewSent : text.reviewSaved} />
+  ) : null
+  const hasCard = asked !== undefined && [...(pending ?? []), ...(sent ?? [])].some((row) => row.productId === asked)
+  const outcomeOf = (productId: string) => (hasCard && asked === productId ? outcome : null)
+  const above = hasCard ? null : outcome
+
+  if (!pending || !sent) return <StorefrontReviewsEmpty variant="unavailable" href={back} linkComponent={AppLink} messages={messages} />
+  if (pending.length === 0 && sent.length === 0) {
+    return (
+      <div className="flex flex-col gap-6">
+        {above}
+        <StorefrontReviewsEmpty variant="none" href={routes.accountTab("orders")} linkComponent={AppLink} messages={messages} />
+      </div>
+    )
+  }
+
   const action = reviewsActionOf(slug)
   const fields = (productId: string) => ({ produto: productId, retorno: back, entrada: routes.signIn() })
 
   return (
     <div className="flex flex-col gap-6">
-      {refused ? (
-        <StorefrontAccountOutcome tone="failed" message={errorSentenceOf(errors, refused)} />
-      ) : outcome === REVIEW_SENT || outcome === REVIEW_SAVED ? (
-        <StorefrontAccountOutcome tone="done" message={outcome === REVIEW_SENT ? text.reviewSent : text.reviewSaved} />
-      ) : null}
+      {above}
 
       <StorefrontReviewsSection title={text.reviewsPendingTitle} hint={pending.length > 0 ? text.reviewsPendingHint : text.reviewsNothingPending}>
         {pending.map((line) => (
@@ -64,7 +78,8 @@ export async function ReviewsTab({ slug, routes, query, locale, errors, messages
             href={routes.product(line.slug)}
             imageUrl={line.imageUrl}
             meta={[format(text.reviewDeliveredOn, { date: likedOnOf(line.deliveredAt, locale) }), line.variantLabel].filter(Boolean).join(" · ")}
-            form={<StorefrontReviewForm action={action} hidden={{ acao: "criar", ...fields(line.productId) }} idPrefix={line.productId} submitLabel={text.reviewSend} messages={messages} />}
+            outcome={outcomeOf(line.productId)}
+            form={<StorefrontReviewForm action={action} hidden={{ acao: "criar", ...fields(line.productId) }} idPrefix={line.productId} productName={line.name} submitLabel={text.reviewSend} messages={messages} />}
             linkComponent={AppLink}
             messages={messages}
           />
@@ -78,18 +93,21 @@ export async function ReviewsTab({ slug, routes, query, locale, errors, messages
               key={review.id}
               id={reviewAnchorOf(review.productId)}
               name={review.name}
-              href={routes.product(review.slug)}
+              href={review.slug ? routes.product(review.slug) : null}
               imageUrl={review.imageUrl}
               meta={review.variantLabel}
               rating={review.rating}
               comment={review.comment}
               hidden={review.hidden}
-              open={asked === review.productId}
+              // The one an order led to opens, and stays open when its save was refused; a save that went closes it.
+              open={asked === review.productId && !went}
+              outcome={outcomeOf(review.productId)}
               form={
                 <StorefrontReviewForm
                   action={action}
                   hidden={{ acao: "editar", avaliacao: review.id, ...fields(review.productId) }}
                   idPrefix={review.id}
+                  productName={review.name}
                   rating={review.rating}
                   comment={review.comment}
                   submitLabel={text.reviewSave}

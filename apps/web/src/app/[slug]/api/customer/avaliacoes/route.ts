@@ -8,7 +8,7 @@ import type { CreateReviewPayload, ReviewRating, UpdateReviewPayload } from "@ha
 import { callApi, isApiErrorBody } from "@/lib/api"
 import { clientIpOf, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
-import { REVIEW_SAVED, REVIEW_SENT, REVIEWS_ERROR_KEY, reviewAnchorOf } from "@/lib/review-view"
+import { REVIEW_PRODUCT_KEY, REVIEW_SAVED, REVIEW_SENT, REVIEWS_ERROR_KEY, reviewAnchorOf } from "@/lib/review-view"
 import { callAsShopper } from "@/lib/shopper-call"
 import { PRODUCT_ID, SHOP_SLUG } from "@/lib/shopper-forward"
 import { BACK_KEY, safeBackOf } from "@/lib/storefront-routes"
@@ -37,7 +37,11 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const target = editing ? field("avaliacao") : field("produto")
   const landing = new URL(back, publicOriginOf(request))
   const productId = field("produto")
-  if (PRODUCT_ID.test(productId)) landing.hash = reviewAnchorOf(productId)
+  // The product's card is where the page lands, and where it says what came of the post.
+  if (PRODUCT_ID.test(productId)) {
+    landing.searchParams.set(REVIEW_PRODUCT_KEY, productId)
+    landing.hash = reviewAnchorOf(productId)
+  }
   const refuse = (code: string) => {
     landing.searchParams.set(REVIEWS_ERROR_KEY, code)
     return NextResponse.redirect(landing, 303)
@@ -46,8 +50,9 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   if (!PRODUCT_ID.test(target) || !RATINGS.includes(field("nota"))) return refuse(RATINGS.includes(field("nota")) ? "UNKNOWN" : "BAD_REQUEST")
 
   const rating = Number(field("nota")) as ReviewRating
-  // The box sent is the comment: emptied, it is removed.
-  const comment = field("comentario").trim() || null
+  // The box sent is the comment: emptied, it is removed. A browser sends its line breaks as CRLF,
+  // which would count twice against the API's 1000 characters.
+  const comment = field("comentario").replace(/\r\n/g, "\n").trim() || null
   const base = `/stores/${encodeURIComponent(slug)}/customer/reviews`
   const answered = await callAsShopper(request, slug, (accessToken) =>
     callApi(

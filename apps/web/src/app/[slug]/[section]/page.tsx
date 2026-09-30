@@ -86,9 +86,14 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const cart = place.section.kind === "cart" ? await cartAt(store.slug) : null
   const shopper = await shopperAt(store.slug)
   // The menu's pill: how many orders are in progress, read only on the area's own front.
-  const activeOrders = place.section.kind === "account" && shopper ? (await customerOrdersAt(store.slug, { situation: "ACTIVE", pageSize: 1 }))?.counts.ACTIVE : undefined
-  const favorites = place.section.kind === "account" && shopper ? (await customerFavoritesAt(store.slug, { pageSize: 1 }))?.counts.ALL : undefined
-  const pendingReviews = place.section.kind === "account" && shopper ? (await pendingReviewsAt(store.slug))?.length : undefined
+  // The menu's counts, read together: each is its own call to the API.
+  const [inProgress, liked, toRate] =
+    place.section.kind === "account" && shopper
+      ? await Promise.all([customerOrdersAt(store.slug, { situation: "ACTIVE", pageSize: 1 }), customerFavoritesAt(store.slug, { pageSize: 1 }), pendingReviewsAt(store.slug)])
+      : [null, null, null]
+  const activeOrders = inProgress?.counts.ACTIVE
+  const favorites = liked?.counts.ALL
+  const pendingReviews = toRate?.length
 
   // "Comprar de novo" lands on the cart naming the order: read again here to say what stayed out.
   const reordered = cart && shopper ? orderNumberOf(paramOf(query[REORDERED_KEY])) : null

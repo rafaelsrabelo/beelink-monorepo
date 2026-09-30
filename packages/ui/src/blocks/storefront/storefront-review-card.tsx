@@ -29,11 +29,13 @@ export interface StorefrontReviewCardProps {
   form: ReactNode
   /** The edit starts open — the one a delivered order led to. */
   open?: boolean
+  /** What came of this product's form, drawn at the top of its card: the place the page lands on. */
+  outcome?: ReactNode
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
-/** Five stars in the rating colour, read as one sentence. */
+/** Five stars in the shop's ink — the rating's own colour is too light on a card's white — read as one sentence. */
 function Stars({ rating, label }: { rating: number; label: string }) {
   return (
     <p className="flex items-center gap-0.5 text-shop-primary-ink">
@@ -49,7 +51,7 @@ function Stars({ rating, label }: { rating: number; label: string }) {
  * One product of Avaliar compras (6c): what arrived, with the stars and the box right there — or
  * the review already sent, its stars and words, and the same form to edit it behind "Editar".
  */
-export function StorefrontReviewCard({ id, name, href, imageUrl, meta, rating, comment, hidden = false, form, open = false, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontReviewCardProps) {
+export function StorefrontReviewCard({ id, name, href, imageUrl, meta, rating, comment, hidden = false, form, open = false, outcome, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontReviewCardProps) {
   const text = messages.storefront
   const sent = rating !== undefined && rating !== null
 
@@ -60,6 +62,7 @@ export function StorefrontReviewCard({ id, name, href, imageUrl, meta, rating, c
         {imageUrl ? <img src={imageUrl} alt="" loading="lazy" className="size-full object-cover" /> : null}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
+        {outcome}
         <div className="flex flex-col gap-0.5">
           <h3 className="text-[15px] font-semibold">{href ? <Link href={href}>{name}</Link> : name}</h3>
           {meta ? <p className="text-xs text-shop-muted">{meta}</p> : null}
@@ -75,8 +78,9 @@ export function StorefrontReviewCard({ id, name, href, imageUrl, meta, rating, c
                 {text.reviewHiddenByShop}
               </p>
             ) : null}
-            <details open={open} className="group">
-              <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold text-shop-primary-ink">{text.reviewEdit}</summary>
+            <details open={open}>
+              {/* A list item, so the marker says open or closed; tall enough to be a target. */}
+              <summary className="cursor-pointer py-3 text-sm font-semibold text-shop-primary-ink">{text.reviewEdit}</summary>
               <div className="pt-2">{form}</div>
             </details>
           </>

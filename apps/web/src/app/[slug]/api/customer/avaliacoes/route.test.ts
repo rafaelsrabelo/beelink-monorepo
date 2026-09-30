@@ -36,6 +36,7 @@ describe("a review from Avaliar compras", () => {
     expect(JSON.parse(String(init?.body))).toEqual({ productId: PRODUCT, rating: 4, comment: "Muito bom" })
     expect(landing.pathname).toBe("/loja/conta/avaliacoes")
     expect(landing.searchParams.get("aviso")).toBe("avaliacao-enviada")
+    expect(landing.searchParams.get("produto")).toBe(PRODUCT)
     expect(landing.hash).toBe(`#avaliar-${PRODUCT}`)
   })
 
@@ -44,6 +45,9 @@ describe("a review from Avaliar compras", () => {
     vi.stubGlobal("fetch", fetched)
 
     const landing = locationOf(await post({ ...here, acao: "editar", avaliacao: REVIEW, nota: "2", comentario: "   " }))
+    // A browser's line breaks are CRLF: one character each for the API's limit.
+    await post({ ...here, acao: "editar", avaliacao: REVIEW, nota: "2", comentario: "Chegou\r\naberto" })
+    expect(JSON.parse(String(fetched.mock.calls[1]?.[1]?.body))).toEqual({ rating: 2, comment: "Chegou\naberto" })
     const [url, init] = fetched.mock.calls[0] ?? []
 
     expect(url).toContain(`/stores/loja/customer/reviews/${REVIEW}`)

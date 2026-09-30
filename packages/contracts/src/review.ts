@@ -66,7 +66,8 @@ export interface CustomerPendingReview {
 export interface CustomerReview {
   id: string;
   productId: string;
-  slug: string;
+  /** The product's, while it is on sale; null once it is a draft — its page answers 404. */
+  slug: string | null;
   name: string;
   imageUrl: string | null;
   rating: ReviewRating;

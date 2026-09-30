@@ -91,3 +91,18 @@
 - **As duas seções da aba usam um bloco próprio,** `StorefrontReviewsSection`.
 - **O resultado de um formulário usa o bloco genérico** `StorefrontAccountOutcome`, que antes era o
   de Favoritos.
+
+## Adendo da revisão (30/09)
+
+- **O resultado de um envio aparece dentro do card do produto,** para onde a âncora leva. A rota
+  passa `?produto=` além do `#avaliar-`. Antes ele ficava acima das seções, fora da tela. Quando o
+  card não existe mais (um NOT_ELIGIBLE que esvaziou a lista), aparece acima, antes dos estados vazios.
+- **As estrelas vazias usam `shop-muted`,** com 3:1 ou mais, porque são as opções que se veem. A
+  estrela com foco ganha um anel.
+- **A legenda diz o produto a quem lê a tela** ("Sua nota: Whey"), e o `summary` do Editar volta a
+  ter o marcador de aberto e fechado.
+- **As quebras de linha CRLF viram LF antes de contar os 1000 caracteres.** Um campo recusado
+  (`BAD_REQUEST`) usa a frase do formulário, e não a do painel.
+- **`CustomerReview.slug` é nulo quando o produto sai de venda:** a avaliação enviada não leva a um
+  404.
+- **A frente da conta lê as três contagens do menu juntas** (`Promise.all`).

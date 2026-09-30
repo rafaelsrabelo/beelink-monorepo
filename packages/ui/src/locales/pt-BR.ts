@@ -477,6 +477,7 @@ export const ptBR: UiMessages = {
     reviewHiddenByShop: "Oculta pela loja: só você vê esta avaliação.",
     reviewSent: "Avaliação enviada. Obrigado!",
     reviewSaved: "Avaliação salva.",
+    reviewInvalid: "Escolha de 1 a 5 estrelas e escreva um comentário de até 1000 caracteres.",
     reviewsEmpty: "Quando um pedido for entregue, você avalia os produtos aqui.",
     reviewsEmptyCta: "Ver meus pedidos",
     reviewsUnavailable: "Não deu para carregar suas avaliações agora.",
