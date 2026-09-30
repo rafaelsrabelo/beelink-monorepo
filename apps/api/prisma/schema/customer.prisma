@@ -46,6 +46,7 @@ model Customer {
   orders    Order[]
   addresses CustomerAddress[]
   favorites CustomerFavorite[]
+  favoriteNotices FavoriteNotice[]
 
   @@unique([storeId, userId])
   @@unique([storeId, phone])

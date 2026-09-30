@@ -6,6 +6,7 @@ import type { CustomerFavoriteIds, CustomerFavoritePage, FavoriteErrorCode } fro
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { isSoldOut } from '../catalog/catalog.visibility.js';
 import { lockCustomer } from '../customers/customer-lock.js';
 import { CustomersService } from '../customers/customers.service.js';
 import type { LikeFavoriteDto, ListCustomerFavoritesDto } from './dto/favorite.dto.js';
@@ -67,13 +68,16 @@ export class FavoritesService {
     const product = UUID.test(productId)
       ? await this.prisma.product.findFirst({
           where: { id: productId.toLowerCase(), storeId, status: 'ACTIVE' },
-          select: { id: true, priceCents: true, compareAtPriceCents: true, variants: SELLING_VARIANTS },
+          select: { id: true, priceCents: true, compareAtPriceCents: true, trackStock: true, stockQuantity: true, variants: SELLING_VARIANTS },
         })
       : null;
     if (!product) throw new NotFoundException(favoriteError('CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND', 'No such product on sale in this shop'));
 
     const variant = variantId
-      ? await this.prisma.productVariant.findFirst({ where: { id: variantId, productId: product.id, isActive: true, archivedAt: null }, select: { priceCents: true } })
+      ? await this.prisma.productVariant.findFirst({
+          where: { id: variantId, productId: product.id, isActive: true, archivedAt: null },
+          select: { priceCents: true, trackStock: true, stockQuantity: true },
+        })
       : null;
     if (variantId && !variant) throw new NotFoundException(favoriteError('CUSTOMER_FAVORITE_VARIANT_NOT_FOUND', 'This product does not sell that combination'));
 
@@ -83,7 +87,9 @@ export class FavoritesService {
       const current = await tx.customerFavorite.findUnique({ where: { customerId_productId: { customerId, productId: product.id } }, select: { id: true, variantId: true } });
       if (current?.variantId === variantId) return;
 
-      const liked = { variantId, likedPriceCents: (variant ?? wholeProductPriceOf(product)).priceCents, likedAt: new Date() };
+      // What the favourite first sees is the like itself: a notice is owed from here on (`watchFavorites`).
+      const likedPriceCents = (variant ?? wholeProductPriceOf(product)).priceCents;
+      const liked = { variantId, likedPriceCents, likedAt: new Date(), seenPriceCents: likedPriceCents, seenSoldOut: isSoldOut(variant ?? product) };
       if (current) {
         await tx.customerFavorite.update({ where: { id: current.id }, data: liked });
         return;

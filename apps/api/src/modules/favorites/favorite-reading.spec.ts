@@ -49,6 +49,8 @@ function rowOf(overrides: Partial<FavoriteRow> = {}): FavoriteRow {
     variantId: variant?.id ?? null,
     likedPriceCents: 20990,
     likedAt: LIKED_AT,
+    seenPriceCents: 20990,
+    seenSoldOut: false,
     product: productOf(),
     ...overrides,
     variant,
