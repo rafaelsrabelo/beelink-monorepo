@@ -432,7 +432,7 @@ export const legalTexts = {
             items: [
               "o carrinho e o CEP de \"Entregar em\" ficam em cookies no seu navegador, e não no banco de dados do bee-link;",
               "o formulário de contato de uma loja ou site guarda o seu nome e as respostas aos campos que o dono escolheu, como e-mail e telefone, e a mensagem também é enviada ao e-mail do dono;",
-              "o \"Avise-me\" de um produto esgotado guarda o seu número de WhatsApp e, se você quiser, o seu nome, para que a loja avise quando o produto voltar.",
+              "o \"Avise-me\" de um produto esgotado guarda o seu número de WhatsApp e, se você quiser, o seu nome, para que a loja possa avisar quando o produto voltar; esse aviso ainda não existe no bee-link, e hoje o pedido fica guardado sem que a loja o veja.",
             ],
           },
         ],
@@ -488,7 +488,7 @@ export const legalTexts = {
               "MapTiler: recebe o endereço que o lojista digita na busca de endereço do painel e fornece o mapa dessas telas, que o navegador do lojista carrega direto dela;",
               "OpenStreetMap, pelo serviço Nominatim: recebe o endereço da loja para calcular a posição dela no mapa;",
               "ViaCEP: recebe o CEP digitado no endereço da loja ou num endereço de entrega da sua conta, a partir do servidor do bee-link e sem o seu IP, para preencher rua, bairro e cidade;",
-              "Google: só quando você usa o \"Continuar com Google\"; o Google confirma quem você é e informa ao bee-link o identificador da sua conta, o seu nome e o seu e-mail;",
+              "Google: só quando você usa o \"Continuar com Google\"; o Google confirma quem você é e informa ao bee-link o identificador da sua conta, o seu nome, o seu e-mail e a sua foto de perfil, e o bee-link guarda só o identificador, o nome e o e-mail;",
               "hospedagem: o servidor onde o bee-link funciona e onde fica o banco de dados, [PREENCHER: provedor e país do servidor].",
             ],
           },
@@ -498,7 +498,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "O WhatsApp só recebe dados quando você toca num link de WhatsApp. O aplicativo abre com uma mensagem pronta, que você pode revisar antes de enviar. Depois de um pedido, essa mensagem leva o número do pedido, os itens, o total, o endereço de entrega, a forma de pagamento, o seu nome e o seu celular. O que você envia passa a seguir as regras do WhatsApp e da loja.",
+            text: "O WhatsApp só recebe dados quando alguém toca num link de WhatsApp, e o aplicativo abre com uma mensagem pronta, que pode ser revisada antes de enviar. Depois de um pedido, você pode mandar à loja uma mensagem com o número do pedido, os itens, o total, o endereço de entrega, a forma de pagamento, o seu nome e o seu celular. No painel, a loja pode abrir uma conversa com o seu celular, com os dados do seu pedido, como os itens, o total, a forma de pagamento e o andamento, e também com o telefone de quem deixou uma mensagem no formulário de contato. O que é enviado passa a seguir as regras do WhatsApp e de quem o recebe.",
           },
           {
             kind: "paragraph",
