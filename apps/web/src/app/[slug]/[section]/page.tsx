@@ -21,6 +21,7 @@ import { StorefrontSignInSection } from "@/components/storefront/storefront-sign
 import { StorefrontVerifyEmailSection } from "@/components/storefront/storefront-verify-email-section"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
+import { customerFavoritesAt } from "@/lib/customer-favorites"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
 import { ADDRESS_KEY, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
@@ -85,6 +86,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const shopper = await shopperAt(store.slug)
   // The menu's pill: how many orders are in progress, read only on the area's own front.
   const activeOrders = place.section.kind === "account" && shopper ? (await customerOrdersAt(store.slug, { situation: "ACTIVE", pageSize: 1 }))?.counts.ACTIVE : undefined
+  const favorites = place.section.kind === "account" && shopper ? (await customerFavoritesAt(store.slug, { pageSize: 1 }))?.counts.ALL : undefined
 
   // "Comprar de novo" lands on the cart naming the order: read again here to say what stayed out.
   const reordered = cart && shopper ? orderNumberOf(paramOf(query[REORDERED_KEY])) : null
@@ -119,7 +121,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
       ) : place.section.kind === "account" && shopper ? (
-        <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={null} activeOrders={activeOrders} messages={ui} />
+        <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={null} activeOrders={activeOrders} favorites={favorites} messages={ui} />
       ) : place.section.kind === "signIn" ? (
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : place.section.kind === "verifyEmail" ? (

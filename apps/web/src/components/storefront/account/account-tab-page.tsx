@@ -7,6 +7,7 @@ import type { Metadata } from "next"
 
 // UI
 import { StorefrontAccountSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-account-skeleton"
+import { StorefrontFavoritesSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-favorites-skeleton"
 import { StorefrontOrdersSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-orders-skeleton"
 import { StorefrontOrdersToolbarSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-orders-toolbar-skeleton"
 
@@ -14,6 +15,7 @@ import { StorefrontOrdersToolbarSkeleton } from "@harness-monorepo/ui/blocks/sto
 import { StorefrontAccountSection } from "@/components/storefront/storefront-account-section"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { accountTabTitleOf, deliveredAccountTabOf } from "@/lib/account-menu"
+import { customerFavoritesAt } from "@/lib/customer-favorites"
 import { customerOrdersAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
@@ -21,6 +23,8 @@ import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { conversationOrderOf, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { AccountConversations } from "../conversations/account-conversations"
+import { FavoritesTab } from "./favorites-tab"
+import { FavoritesToolbar } from "./favorites-toolbar"
 import { OrdersTab } from "./orders-tab"
 import { OrdersToolbar } from "./orders-toolbar"
 import { StorefrontAccountArea } from "./storefront-account-area"
@@ -75,10 +79,11 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
   // Theirs alone: a visitor signs in and comes back to this very tab.
   if (!shopper) redirect(routes.signIn({ back: routes.accountTab(tab) }) as Parameters<typeof redirect>[0])
 
-  const [{ ui, web }, { categories, onSale }, inProgress] = await Promise.all([
+  const [{ ui, web }, { categories, onSale }, inProgress, liked] = await Promise.all([
     getMessages(),
     navigationAt(slug),
     customerOrdersAt(slug, { situation: "ACTIVE", pageSize: 1 }),
+    customerFavoritesAt(slug, { pageSize: 1 }),
   ])
 
   return (
@@ -99,10 +104,16 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
         shopper={shopper}
         tab={tab}
         activeOrders={inProgress?.counts.ACTIVE}
+        favorites={liked?.counts.ALL}
         tools={
           tab === "orders" ? (
             <Suspense fallback={<StorefrontOrdersToolbarSkeleton />}>
               <OrdersToolbar slug={store.slug} routes={routes} query={query} messages={ui} />
+            </Suspense>
+          ) : tab === "favorites" ? (
+            // No skeleton of its own: a form beside the title, which appears with the list.
+            <Suspense fallback={null}>
+              <FavoritesToolbar slug={store.slug} routes={routes} query={query} messages={ui} />
             </Suspense>
           ) : undefined
         }
@@ -111,6 +122,10 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
         {tab === "orders" ? (
           <Suspense fallback={<StorefrontOrdersSkeleton />}>
             <OrdersTab slug={store.slug} routes={routes} query={query} locale="pt-BR" messages={ui} />
+          </Suspense>
+        ) : tab === "favorites" ? (
+          <Suspense fallback={<StorefrontFavoritesSkeleton />}>
+            <FavoritesTab slug={store.slug} routes={routes} query={query} locale="pt-BR" errors={web.errors} messages={ui} />
           </Suspense>
         ) : tab === "messages" ? (
           <AccountConversations key={conversationOrderOf(query) ?? "list"} slug={store.slug} routeWords={store.routeWords} initialOrder={conversationOrderOf(query)} messages={ui} />
