@@ -5,6 +5,7 @@ import type {
   CustomerErrorCode,
   FavoriteErrorCode,
   LeadErrorCode,
+  ReviewErrorCode,
   OrderErrorCode,
   ConversationErrorCode,
   StoreErrorCode,
@@ -242,6 +243,7 @@ export interface WebMessages {
     | AuthErrorCode
     | CustomerErrorCode
     | FavoriteErrorCode
+    | ReviewErrorCode
     | StoreErrorCode
     | LeadErrorCode
     | OrderErrorCode

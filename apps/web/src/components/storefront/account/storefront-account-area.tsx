@@ -29,6 +29,8 @@ export interface StorefrontAccountAreaProps {
   activeOrders?: number
   /** How many products the shopper liked, beside Favoritos in the menu (6g). */
   favorites?: number
+  /** How many delivered products wait for a rating, beside Avaliar compras (J18). */
+  pendingReviews?: number
   /** Beside a tab's title: its search and filters. */
   tools?: ReactNode
   children?: ReactNode
@@ -40,12 +42,12 @@ export interface StorefrontAccountAreaProps {
  * tabs delivered. The front tells what the shopper would come to check — the order on its way and
  * their details — and leaves the way to each tab to the menu beside it.
  */
-export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders, favorites, tools, children, messages }: StorefrontAccountAreaProps) {
+export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders, favorites, pendingReviews, tools, children, messages }: StorefrontAccountAreaProps) {
   const text = messages.storefront
   const menu = (
     <StorefrontAccountMenu
       shopper={{ name: shopper.name, contact: accountContactOf(shopper) }}
-      items={accountMenuOf(routes, { orders: activeOrders, favorites })}
+      items={accountMenuOf(routes, { orders: activeOrders, favorites, reviews: pendingReviews })}
       current={tab ?? "overview"}
       signOutAction={customerSignOutActionOf(slug)}
       linkComponent={AppLink}

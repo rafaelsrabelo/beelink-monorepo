@@ -79,3 +79,15 @@
 - A aba do painel (J19).
 - A seção da página do produto (D14).
 - Fotos na avaliação.
+
+## Adendo da implementação (30/09)
+
+- **As estrelas ficam de 1 a 5 também no HTML,** e não invertidas, para que as setas do teclado andem
+  no sentido em que o olho lê. Uma estrela se pinta quando o rádio marcado vem depois dela
+  (`:has(~ input:checked)`) ou é o dela (`input:checked + label`). Continua sendo só CSS. Isso
+  substitui a decisão 2.
+- **"Avaliar produto" diz o produto a quem lê a tela** (": Whey", invisível). A estrela do texto é
+  só desenhada.
+- **As duas seções da aba usam um bloco próprio,** `StorefrontReviewsSection`.
+- **O resultado de um formulário usa o bloco genérico** `StorefrontAccountOutcome`, que antes era o
+  de Favoritos.
