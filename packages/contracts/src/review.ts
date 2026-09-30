@@ -129,6 +129,11 @@ export interface SetReviewVisibilityPayload {
   hidden: boolean;
 }
 
+/** The reviews written since the owner last opened the panel's list (BEELINK-158), hidden or not. */
+export interface StoreReviewsUnseen {
+  count: number;
+}
+
 /** What the reviews answer; the apps own the sentences. */
 export type ReviewErrorCode =
   /** The shop never delivered this product to this shopper. */

@@ -223,6 +223,22 @@ describe("products' reviews", () => {
     expect((await publicPage(whey.id)).reviews[0]).toMatchObject({ authorName: 'Bia S.' });
   });
 
+  it("counts the reviews written since the owner last opened the list", async () => {
+    const unseen = async () => (await call('GET', '/api/stores/lessari/reviews/unseen', owner)).json<{ count: number }>().count;
+    await orderFor(shopper, [whey.variants[0]!.id, haze.variants[0]!.id]);
+    await review({ productId: whey.id, rating: 5 });
+    expect(await unseen()).toBe(1);
+
+    expect((await call('POST', '/api/stores/lessari/reviews/seen', owner)).statusCode).toBe(204);
+    expect(await unseen()).toBe(0);
+    await review({ productId: haze.id, rating: 3 });
+    expect(await unseen()).toBe(1);
+
+    const stranger = await signUpAndSignIn(app, newEmail('outra-dona'));
+    expect((await call('GET', '/api/stores/lessari/reviews/unseen', stranger)).statusCode).toBe(403);
+    expect((await call('POST', '/api/stores/lessari/reviews/seen', shopper)).statusCode).toBe(401);
+  });
+
   it('pages a product’s published reviews, filters by rating, and answers a draft as its page does', async () => {
     const buyers = await Promise.all(['Ana Lima', 'Caio', 'Duda Reis'].map((name) => shopperOf('lessari', name)));
     for (const [index, buyer] of buyers.entries()) {
