@@ -432,8 +432,6 @@ export const en: UiMessages = {
     favoriteLimit: "You already have {count} favourites, the most you can keep. Remove some to like others.",
     favoriteLimitLink: "See favourites",
     favoriteNoticeClose: "Close notice",
-    favoritesCountOne: "1 product",
-    favoritesCountMany: "{count} products",
     favoritesFilterLabel: "Filter favourites",
     favoritesTabAll: "All",
     favoritesTabDropped: "Price dropped",

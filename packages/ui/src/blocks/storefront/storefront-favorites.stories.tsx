@@ -8,6 +8,7 @@ import { StorefrontAccountShell } from "./storefront-account-shell"
 import { StorefrontCardCartButton } from "./storefront-card-cart-button"
 import { StorefrontFavoriteCard, type StorefrontFavoriteCardProps } from "./storefront-favorite-card"
 import { StorefrontFavoritesEmpty } from "./storefront-favorites-empty"
+import { StorefrontFavoritesOutcome } from "./storefront-favorites-outcome"
 import { StorefrontFavoritesSkeleton } from "./storefront-favorites-skeleton"
 import { StorefrontFavoritesSort } from "./storefront-favorites-sort"
 import { StorefrontOrderTabs } from "./storefront-order-tabs"
@@ -106,6 +107,9 @@ export const SemResultados: Story = { render: () => <StorefrontFavoritesEmpty va
 
 /** A leitura falhou: nunca "nenhum favorito", e sim o erro e o tentar de novo. */
 export const Indisponivel: Story = { render: () => <StorefrontFavoritesEmpty variant="unavailable" href="#" /> }
+
+/** Depois do coração de um card: o que aconteceu, já que o card simplesmente some. */
+export const Removido: Story = { render: () => <StorefrontFavoritesOutcome tone="done" message="Produto removido dos favoritos." /> }
 
 /** A lista a caminho: os filtros e os cards em cinza. */
 export const Esqueleto: Story = {

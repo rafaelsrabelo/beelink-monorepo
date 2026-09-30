@@ -558,9 +558,7 @@ export interface UiMessages {
     favoriteLimit: string
     favoriteLimitLink: string
     favoriteNoticeClose: string
-    /** Favoritos (6g): the tab's count, filters, order, cards, the remove and the empty states. `{count}`. */
-    favoritesCountOne: string
-    favoritesCountMany: string
+    /** Favoritos (6g): the tab's filters, order, cards, the remove and the empty states. */
     favoritesFilterLabel: string
     favoritesTabAll: string
     favoritesTabDropped: string

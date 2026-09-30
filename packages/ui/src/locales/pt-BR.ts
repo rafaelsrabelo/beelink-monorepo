@@ -433,8 +433,6 @@ export const ptBR: UiMessages = {
     favoriteLimit: "Você já tem {count} favoritos, o máximo. Remova alguns para curtir outros.",
     favoriteLimitLink: "Ver favoritos",
     favoriteNoticeClose: "Fechar aviso",
-    favoritesCountOne: "1 produto",
-    favoritesCountMany: "{count} produtos",
     favoritesFilterLabel: "Filtrar favoritos",
     favoritesTabAll: "Todos",
     favoritesTabDropped: "Baixou de preço",
