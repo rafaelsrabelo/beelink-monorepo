@@ -9,6 +9,7 @@ import { StorefrontAccountShell } from "./storefront-account-shell"
 import { StorefrontReviewCard, type StorefrontReviewCardProps } from "./storefront-review-card"
 import { StorefrontReviewForm } from "./storefront-review-form"
 import { StorefrontReviewsEmpty } from "./storefront-reviews-empty"
+import { StorefrontReviewsSection } from "./storefront-reviews-section"
 import { StorefrontReviewsSkeleton } from "./storefront-reviews-skeleton"
 
 const pending: StorefrontReviewCardProps[] = [
@@ -60,18 +61,16 @@ function ReviewsTab({ toRate, rated }: { toRate: readonly StorefrontReviewCardPr
   return (
     <StorefrontAccountShell menu={menu} page={{ kind: "tab", title: "Avaliar compras", backHref: "#" }}>
       <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-extrabold">Para avaliar</h2>
+        <StorefrontReviewsSection title="Para avaliar" hint={toRate.length ? "Sua nota ajuda outros clientes. Só quem comprou pode avaliar." : "Nada para avaliar agora."}>
           {toRate.map((card) => (
             <StorefrontReviewCard key={card.id} {...card} />
           ))}
-        </section>
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-extrabold">Suas avaliações</h2>
+        </StorefrontReviewsSection>
+        <StorefrontReviewsSection title="Suas avaliações">
           {rated.map((card) => (
             <StorefrontReviewCard key={card.id} {...card} />
           ))}
-        </section>
+        </StorefrontReviewsSection>
       </div>
     </StorefrontAccountShell>
   )
