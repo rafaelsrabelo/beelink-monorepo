@@ -88,3 +88,19 @@ Pontos confirmados que ficam fora deste ticket:
 - **Importação do sistema antigo (L7).** Ela grava lojas direto no banco, sem passar pela checagem de slug. Precisa recusar ou renomear lojas chamadas `termos` e `privacidade`. Na virada loja a loja do BEE-1, os links na raiz (`/termos`, `/privacidade` e as rotas do Google) cairiam no app antigo.
 - **A tela de consentimento OAuth do Google (fora do repositório)** precisa das URLs `/privacidade` e `/termos`.
 - **A loja não tem dados jurídicos próprios** (razão social, CNPJ, e-mail de contato). Por isso a política não consegue nomear cada loja como controladora com dados do produto, e diz o papel de forma genérica.
+
+## Depois da revisão (30/09)
+
+Uma revisão em quatro frentes, com verificação adversarial, confirmou estes pontos, todos corrigidos:
+
+- **O Google também registra o aceite para a conta que ainda não tem o da versão em vigor.** Isso vale em qualquer ramo: o vínculo que já existe, e a conta confirmada que liga o Google agora. O botão diz "Ao continuar com Google, você aceita…" também na tela de entrar. Pela decisão original, uma conta anterior aos termos entraria pelo Google ouvindo isso sem nada ser registrado. Uma conta que já tem o aceite da versão não ganha linha repetida. Esta regra substitui a do plano ("uma conta confirmada que só liga o Google não registra nada").
+- **A redefinição de senha grava a confirmação do e-mail e o aceite numa transação só.**
+- **O aviso do Google fica logo abaixo do botão do Google**, nas duas telas que o mostram. Entrar com senha não aceita nada, então essa tela termina só com os dois links.
+- **Um teste prende a data que a página mostra à versão do contrato.** "Vigente desde 30 de setembro de 2026" tem que ser a data que `LegalVersion` nomeia.
+- **Os commits da UI e do web viraram um só**, para cada commit compilar sozinho.
+- **Correções no texto da política:**
+  - o WhatsApp também recebe dados quando a loja abre uma conversa pelo painel (com o cliente, com os dados do pedido, ou com quem usou o formulário de contato);
+  - o Google também informa a foto de perfil, que o bee-link não guarda;
+  - o aviso do "Avise-me" ainda não existe, e hoje a loja não vê esses pedidos.
+
+Refutados na verificação: o texto só em pt-BR e o site institucional, que o `docs/product` ainda não descreve. O primeiro é uma decisão do plano. O segundo é uma diferença anterior a este ticket.
