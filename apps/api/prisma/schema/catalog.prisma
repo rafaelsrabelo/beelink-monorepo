@@ -353,7 +353,7 @@ model ProductVariant {
   restockRequests RestockRequest[]
   /// Order lines that named this variant; an order keeps its photograph when the variant goes.
   orderItems      OrderItem[]
-  /// Favourites that named this combination; they fall back to the product when it goes.
+  /// Favourites that named this combination (BEELINK-153); it is archived rather than deleted under them.
   favorites       CustomerFavorite[]
 
   @@unique([storeId, sku])

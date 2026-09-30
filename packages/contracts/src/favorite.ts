@@ -50,7 +50,11 @@ export interface CustomerFavorite {
   variant: CustomerFavoriteVariant | null;
   /** Whether it sells combinations: a card sends one liked as a whole to its page to choose. */
   hasOptions: boolean;
-  /** Today's price of what was liked — the combination's, or the product's "a partir de". Whole cents. */
+  /**
+   * Today's price of what was liked, in whole cents: the combination's, or for the product as a
+   * whole the cheapest combination the shop sells, in stock or not — so stock coming back to a
+   * cheaper one is not a price that dropped.
+   */
   priceCents: number;
   /** The shop's "de" price today, above `priceCents`; null without a promotion. */
   compareAtPriceCents: number | null;
@@ -91,10 +95,11 @@ export interface LikeFavoritePayload {
   variantId?: string | null;
 }
 
-/**
- * What liking answers besides the catalogue's `PRODUCT_NOT_FOUND` (a draft, another shop's, or no
- * such product) and `PRODUCT_VARIANT_NOT_FOUND` (a combination this product does not sell).
- */
+/** What the favourites answer; the apps own the sentences. */
 export type FavoriteErrorCode =
+  /** A draft, another shop's product, or none at all: one answer, so it tells nobody which ids exist where. */
+  | "CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND"
+  /** A combination this product does not sell — switched off, archived, or another product's. */
+  | "CUSTOMER_FAVORITE_VARIANT_NOT_FOUND"
   /** A two-hundred-and-first favourite: plenty for one person, and a cap on what a script could pile up. */
-  "CUSTOMER_FAVORITE_LIMIT";
+  | "CUSTOMER_FAVORITE_LIMIT";

@@ -9,14 +9,16 @@ model CustomerFavorite {
   customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   productId  String          @db.Uuid
   product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  /// The combination chosen on the product's page; null for the product as a whole. SetNull, so a
-  /// deleted combination leaves the favourite on its product. An archived or switched-off one stays
-  /// here and is ignored where the favourite is read.
+  /// The combination chosen on the product's page; null for the product as a whole. A combination
+  /// that stops existing is archived, never deleted, and is ignored where the favourite is read.
+  /// NoAction and not SetNull: a null here would pass for a like of the whole product, and compare
+  /// the combination's price with the product's cheapest. Deleting the product still takes the
+  /// favourite, by its own cascade, before the statement's end checks this key.
   variantId  String?         @db.Uuid
-  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  /// The combination's price when it was liked, or the product's "a partir de" for one liked as a
-  /// whole. Whole cents, never negative (a CHECK in the migration). Liking the same thing again
-  /// keeps it; choosing another combination is a new like, with its own price and date.
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: NoAction)
+  /// The combination's price when it was liked, or for one liked as a whole the cheapest combination
+  /// on sale, in stock or not. Whole cents, never negative (a CHECK in the migration). Liking the
+  /// same thing again keeps it; choosing another combination is a new like, with its own price and date.
   likedPriceCents Int
   likedAt         DateTime @default(now())
 

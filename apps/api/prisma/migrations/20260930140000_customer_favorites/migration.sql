@@ -28,8 +28,7 @@ ALTER TABLE "customer_favorites" ADD CONSTRAINT "customer_favorites_customerId_f
 ALTER TABLE "customer_favorites" ADD CONSTRAINT "customer_favorites_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "customer_favorites" ADD CONSTRAINT "customer_favorites_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "product_variants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "customer_favorites" ADD CONSTRAINT "customer_favorites_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "product_variants"("id") ON DELETE NO ACTION ON UPDATE CASCADE;
 
-
--- A price is whole cents and never negative, as on the rows it is copied from.
+-- A price is whole cents and never negative. The rows it is copied from are checked by the API alone.
 ALTER TABLE "customer_favorites" ADD CONSTRAINT "customer_favorites_liked_price_check" CHECK ("likedPriceCents" >= 0);

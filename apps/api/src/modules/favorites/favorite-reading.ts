@@ -4,17 +4,15 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { isSoldOut } from '../catalog/catalog.visibility.js';
-import { variantLabelOf } from '../orders/order-totals.js';
+import { variantLabelOf } from '../catalog/variant-label.js';
 
-/** A shopper keeps at most this many: plenty for one person, and a cap on what a script could pile up. */
-export const FAVORITES_MAX = 200;
-export const FAVORITES_PAGE_SIZE = 24;
-export const FAVORITES_PAGE_SIZE_MAX = 48;
-/** `FAVORITES_MAX` over the smallest page. */
-export const FAVORITES_PAGE_MAX = FAVORITES_MAX;
-
-export const FAVORITE_FILTERS = ['PRICE_DROPPED', 'ON_SALE', 'SOLD_OUT'] as const satisfies readonly CustomerFavoriteFilter[];
-export const FAVORITE_SORTS = ['RECENT', 'PRICE_ASC', 'DISCOUNT'] as const satisfies readonly CustomerFavoriteSort[];
+/** The combinations a shop sells, in stock or not: what a product liked as a whole is priced from. */
+export const SELLING_VARIANTS = {
+  where: { isActive: true, archivedAt: null },
+  select: { priceCents: true, compareAtPriceCents: true },
+  orderBy: [{ priceCents: 'asc' }, { position: 'asc' }],
+  take: 1,
+} as const satisfies Prisma.Product$variantsArgs;
 
 /** The product's card fields and the liked combination's, in one read of every favourite. */
 export const favoriteInclude = {
@@ -28,6 +26,7 @@ export const favoriteInclude = {
       trackStock: true,
       stockQuantity: true,
       images: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 },
+      variants: SELLING_VARIANTS,
       _count: { select: { options: true } },
     },
   },
@@ -48,6 +47,17 @@ export const favoriteInclude = {
 
 export type FavoriteRow = Prisma.CustomerFavoriteGetPayload<{ include: typeof favoriteInclude }>;
 
+type Price = { priceCents: number; compareAtPriceCents: number | null };
+
+/**
+ * A product's "a partir de" for a favourite: its cheapest combination on sale, in stock or not.
+ * Not the product's `priceCents` — that cache follows what can be ordered now, so stock coming back
+ * to a cheaper combination would read as a price that dropped. A product selling nothing keeps its cache.
+ */
+export function wholeProductPriceOf(product: Price & { variants: readonly Price[] }): Price {
+  return product.variants[0] ?? product;
+}
+
 /**
  * A favourite priced as of now. The liked combination is read while the shop sells it; once it is
  * archived or switched off the favourite reads its product, and claims no drop — the product's
@@ -56,7 +66,7 @@ export type FavoriteRow = Prisma.CustomerFavoriteGetPayload<{ include: typeof fa
 export function toCustomerFavorite(row: FavoriteRow): CustomerFavorite {
   const { product } = row;
   const variant = row.variant && row.variant.isActive && row.variant.archivedAt === null ? row.variant : null;
-  const priced = variant ?? product;
+  const priced = variant ?? wholeProductPriceOf(product);
   const likedTheSameThing = variant !== null || row.variantId === null;
 
   return {
@@ -77,7 +87,8 @@ export function toCustomerFavorite(row: FavoriteRow): CustomerFavorite {
     likedAt: row.likedAt.toISOString(),
     priceDropCents: likedTheSameThing ? Math.max(0, row.likedPriceCents - priced.priceCents) : 0,
     onSale: priced.compareAtPriceCents !== null && priced.compareAtPriceCents > priced.priceCents,
-    soldOut: isSoldOut(priced),
+    // Sold out is the shelf's fact: the combination's own, or the product's across all it sells.
+    soldOut: isSoldOut(variant ?? product),
   } satisfies CustomerFavorite;
 }
 
@@ -96,7 +107,8 @@ export function savingOf(favorite: CustomerFavorite): number {
   return before > favorite.priceCents ? (before - favorite.priceCents) / before : 0;
 }
 
-const byLikedAtDesc = (a: CustomerFavorite, b: CustomerFavorite): number => b.likedAt.localeCompare(a.likedAt) || a.productId.localeCompare(b.productId);
+// Ties — two likes in one millisecond — go to the newer product: ids are time-ordered (uuid v7).
+const byLikedAtDesc = (a: CustomerFavorite, b: CustomerFavorite): number => b.likedAt.localeCompare(a.likedAt) || b.productId.localeCompare(a.productId);
 
 const ORDERS: Record<CustomerFavoriteSort, (a: CustomerFavorite, b: CustomerFavorite) => number> = {
   RECENT: byLikedAtDesc,

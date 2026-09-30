@@ -1,6 +1,7 @@
 // Nest
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Put, Query, UseGuards } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiNoContentResponse,
@@ -38,6 +39,7 @@ export class FavoritesController {
   @Get()
   @ApiOperation({ summary: "A page of the shopper's favourites, priced as of now, with every filter's count" })
   @ApiOkResponse({ type: CustomerFavoritePageResponse })
+  @ApiBadRequestResponse({ description: 'BAD_REQUEST — an unknown filter or sort, or a page out of bounds' })
   list(
     @Param('storeSlug') storeSlug: string,
     @CurrentCustomer() customer: AuthenticatedCustomer,
@@ -57,7 +59,8 @@ export class FavoritesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Like a product, or the combination chosen on its page; liking it again changes nothing' })
   @ApiNoContentResponse()
-  @ApiNotFoundResponse({ description: 'PRODUCT_NOT_FOUND — a draft, another shop\'s, or none · PRODUCT_VARIANT_NOT_FOUND' })
+  @ApiBadRequestResponse({ description: 'BAD_REQUEST — a variantId that is not a uuid' })
+  @ApiNotFoundResponse({ description: "STORE_NOT_FOUND · CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND — a draft, another shop's, or none · CUSTOMER_FAVORITE_VARIANT_NOT_FOUND" })
   @ApiConflictResponse({ description: 'CUSTOMER_FAVORITE_LIMIT' })
   async like(
     @Param('storeSlug') storeSlug: string,

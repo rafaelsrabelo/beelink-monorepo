@@ -19,7 +19,7 @@ import type {
 
 // App
 import { blankToNull } from '../../stores/dto/store-fields.dto.js';
-import { FAVORITE_FILTERS, FAVORITE_SORTS, FAVORITES_PAGE_MAX, FAVORITES_PAGE_SIZE, FAVORITES_PAGE_SIZE_MAX } from '../favorite-reading.js';
+import { FAVORITE_FILTERS, FAVORITE_SORTS, FAVORITES_PAGE_MAX, FAVORITES_PAGE_SIZE, FAVORITES_PAGE_SIZE_MAX } from '../favorites.constants.js';
 
 /** Liking a product: the combination chosen on its page, or none for the product as a whole. */
 export class LikeFavoriteDto implements LikeFavoritePayload {
@@ -83,7 +83,9 @@ export class CustomerFavoriteResponse implements CustomerFavorite {
   @ApiProperty() soldOut!: boolean;
 }
 
-export class CustomerFavoriteCountsResponse implements Record<'ALL' | CustomerFavoriteFilter, number> {
+type FavoriteCounts = CustomerFavoritePage['counts'];
+
+export class CustomerFavoriteCountsResponse implements FavoriteCounts {
   @ApiProperty() ALL!: number;
   @ApiProperty() PRICE_DROPPED!: number;
   @ApiProperty() ON_SALE!: number;

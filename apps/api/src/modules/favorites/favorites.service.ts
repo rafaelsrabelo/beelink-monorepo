@@ -2,17 +2,21 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { CustomerFavoriteIds, CustomerFavoritePage } from '@harness-monorepo/contracts';
+import type { CustomerFavoriteIds, CustomerFavoritePage, FavoriteErrorCode } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { catalogError } from '../catalog/catalog-slug.service.js';
-import { lockCustomer } from '../customers/customer-addresses.js';
+import { lockCustomer } from '../customers/customer-lock.js';
 import { CustomersService } from '../customers/customers.service.js';
 import type { LikeFavoriteDto, ListCustomerFavoritesDto } from './dto/favorite.dto.js';
-import { FAVORITES_MAX, FAVORITES_PAGE_SIZE, favoriteInclude, pageOf, toCustomerFavorite } from './favorite-reading.js';
+import { SELLING_VARIANTS, favoriteInclude, pageOf, toCustomerFavorite, wholeProductPriceOf } from './favorite-reading.js';
+import { FAVORITES_MAX, FAVORITES_PAGE_SIZE } from './favorites.constants.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function favoriteError(errorCode: FavoriteErrorCode, message: string): { errorCode: FavoriteErrorCode; message: string } {
+  return { errorCode, message };
+}
 
 /** What the shop window shows: a draft is its owner's alone, and leaves every favourite list. */
 const PUBLISHED = { product: { status: 'ACTIVE' } } as const;
@@ -61,14 +65,17 @@ export class FavoritesService {
 
     // A draft, another shop's or no such product: one answer, so it tells nobody which ids exist where.
     const product = UUID.test(productId)
-      ? await this.prisma.product.findFirst({ where: { id: productId.toLowerCase(), storeId, status: 'ACTIVE' }, select: { id: true, priceCents: true } })
+      ? await this.prisma.product.findFirst({
+          where: { id: productId.toLowerCase(), storeId, status: 'ACTIVE' },
+          select: { id: true, priceCents: true, compareAtPriceCents: true, variants: SELLING_VARIANTS },
+        })
       : null;
-    if (!product) throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', 'No such product on sale in this shop'));
+    if (!product) throw new NotFoundException(favoriteError('CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND', 'No such product on sale in this shop'));
 
     const variant = variantId
       ? await this.prisma.productVariant.findFirst({ where: { id: variantId, productId: product.id, isActive: true, archivedAt: null }, select: { priceCents: true } })
       : null;
-    if (variantId && !variant) throw new NotFoundException(catalogError('PRODUCT_VARIANT_NOT_FOUND', 'This product does not sell that combination'));
+    if (variantId && !variant) throw new NotFoundException(favoriteError('CUSTOMER_FAVORITE_VARIANT_NOT_FOUND', 'This product does not sell that combination'));
 
     await this.prisma.$transaction(async (tx) => {
       // Under the record's lock, so two likes at once cannot both pass the cap.
@@ -76,14 +83,14 @@ export class FavoritesService {
       const current = await tx.customerFavorite.findUnique({ where: { customerId_productId: { customerId, productId: product.id } }, select: { id: true, variantId: true } });
       if (current?.variantId === variantId) return;
 
-      const liked = { variantId, likedPriceCents: variant?.priceCents ?? product.priceCents, likedAt: new Date() };
+      const liked = { variantId, likedPriceCents: (variant ?? wholeProductPriceOf(product)).priceCents, likedAt: new Date() };
       if (current) {
         await tx.customerFavorite.update({ where: { id: current.id }, data: liked });
         return;
       }
 
       if ((await tx.customerFavorite.count({ where: { customerId } })) >= FAVORITES_MAX) {
-        throw new ConflictException({ errorCode: 'CUSTOMER_FAVORITE_LIMIT', message: `A customer keeps at most ${FAVORITES_MAX} favourites` });
+        throw new ConflictException(favoriteError('CUSTOMER_FAVORITE_LIMIT', `A customer keeps at most ${FAVORITES_MAX} favourites`));
       }
       await tx.customerFavorite.create({ data: { customerId, productId: product.id, ...liked } });
     });

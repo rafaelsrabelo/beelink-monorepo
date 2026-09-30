@@ -124,6 +124,23 @@ describe("a shopper's favourites at a shop", () => {
     expect((await pageOf()).favorites[0]).toMatchObject({ variant: null, likedPriceCents: 20990, priceCents: 20990 });
   });
 
+  it("prices a product liked as a whole by its cheapest combination, so stock coming back is no drop", async () => {
+    const haze = await hazeInTwoFlavours();
+    const [grape, apple] = haze.variants;
+    // Uva is the cheaper, and has none left: the shelf's "a partir de" is Maçã verde's.
+    await call('PUT', `/api/stores/lessari/products/${haze.id}/variants`, owner, { variants: [{ id: grape!.id, priceCents: 19990, stockQuantity: 0 }] });
+
+    await like(haze.id);
+    expect((await pageOf()).favorites[0]).toMatchObject({ variant: null, likedPriceCents: 19990, priceCents: 19990, priceDropCents: 0 });
+
+    await call('PUT', `/api/stores/lessari/products/${haze.id}/variants`, owner, { variants: [{ id: grape!.id, stockQuantity: 4 }] });
+    expect((await pageOf()).favorites[0]).toMatchObject({ priceCents: 19990, priceDropCents: 0 });
+
+    // A real drop reads as one.
+    await call('PUT', `/api/stores/lessari/products/${haze.id}/variants`, owner, { variants: [{ id: grape!.id, priceCents: 17990 }, { id: apple!.id, priceCents: 21990 }] });
+    expect((await pageOf()).favorites[0]).toMatchObject({ priceCents: 17990, priceDropCents: 2000 });
+  });
+
   it('filters and counts dropped, on sale and sold out, and orders by the like, the price and the saving', async () => {
     const dropped = await addProduct({ name: 'Baixou', slug: 'baixou', priceCents: 10000 });
     const onSale = await addProduct({ name: 'Promoção', slug: 'promocao', priceCents: 5000 });
@@ -161,7 +178,7 @@ describe("a shopper's favourites at a shop", () => {
 
     const refused = await like(draft.id);
     expect(refused.statusCode).toBe(404);
-    expect(refused.json()).toMatchObject({ errorCode: 'PRODUCT_NOT_FOUND' });
+    expect(refused.json()).toMatchObject({ errorCode: 'CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND' });
 
     await call('PUT', `/api/stores/lessari/products/${whey.id}`, owner, { status: 'DRAFT' });
     expect(await pageOf()).toMatchObject({ favorites: [], counts: { ALL: 0 } });
@@ -170,8 +187,10 @@ describe("a shopper's favourites at a shop", () => {
     await call('PUT', `/api/stores/lessari/products/${whey.id}`, owner, { status: 'ACTIVE' });
     expect(await idsOf()).toEqual([whey.id]);
 
-    // Deleting the product takes the favourite with it.
-    await call('DELETE', `/api/stores/lessari/products/${whey.id}`, owner);
+    // Deleting the product takes the favourite with it, a combination's too.
+    const haze = await hazeInTwoFlavours();
+    await like(haze.id, { variantId: haze.variants[0]!.id });
+    for (const product of [whey, haze]) expect((await call('DELETE', `/api/stores/lessari/products/${product.id}`, owner)).statusCode).toBe(204);
     expect(await prisma.customerFavorite.count()).toBe(0);
   });
 
@@ -184,12 +203,12 @@ describe("a shopper's favourites at a shop", () => {
     for (const productId of [elsewhere.id, 'nao-e-um-id', '01a0ffff-ffff-7fff-bfff-ffffffffffff']) {
       const response = await like(productId);
       expect(response.statusCode, productId).toBe(404);
-      expect(response.json(), productId).toMatchObject({ errorCode: 'PRODUCT_NOT_FOUND' });
+      expect(response.json(), productId).toMatchObject({ errorCode: 'CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND' });
     }
     for (const variantId of [whey.variants[0]!.id, haze.variants[1]!.id]) {
       const response = await like(haze.id, { variantId });
       expect(response.statusCode, variantId).toBe(404);
-      expect(response.json(), variantId).toMatchObject({ errorCode: 'PRODUCT_VARIANT_NOT_FOUND' });
+      expect(response.json(), variantId).toMatchObject({ errorCode: 'CUSTOMER_FAVORITE_VARIANT_NOT_FOUND' });
     }
     expect((await like(haze.id, { variantId: 'uva' })).statusCode).toBe(400);
 
@@ -205,12 +224,12 @@ describe("a shopper's favourites at a shop", () => {
   });
 
   it('keeps at most 200 favourites', async () => {
-    const [store] = await prisma.store.findMany({ where: { slug: 'lessari' }, select: { id: true } });
-    const customer = await prisma.customer.findFirstOrThrow({ where: { storeId: store!.id }, select: { id: true } });
+    const store = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' }, select: { id: true } });
+    const customer = await prisma.customer.findFirstOrThrow({ where: { storeId: store.id }, select: { id: true } });
     await prisma.product.createMany({
-      data: Array.from({ length: 200 }, (_, index) => ({ storeId: store!.id, slug: `p-${index}`, name: `Produto ${index}`, priceCents: 1000, maxPriceCents: 1000 })),
+      data: Array.from({ length: 200 }, (_, index) => ({ storeId: store.id, slug: `p-${index}`, name: `Produto ${index}`, priceCents: 1000, maxPriceCents: 1000 })),
     });
-    const products = await prisma.product.findMany({ where: { storeId: store!.id }, select: { id: true } });
+    const products = await prisma.product.findMany({ where: { storeId: store.id }, select: { id: true } });
     await prisma.customerFavorite.createMany({ data: products.map((product) => ({ customerId: customer.id, productId: product.id, likedPriceCents: 1000 })) });
 
     const one = await addProduct({ name: 'Mais um', slug: 'mais-um', priceCents: 1000 });

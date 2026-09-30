@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { CustomerFavorite } from '@harness-monorepo/contracts';
 
 // App
-import { type FavoriteRow, pageOf, savingOf, toCustomerFavorite } from './favorite-reading.js';
+import { type FavoriteRow, pageOf, savingOf, toCustomerFavorite, wholeProductPriceOf } from './favorite-reading.js';
 
 const LIKED_AT = new Date('2026-09-18T12:00:00.000Z');
 
@@ -19,6 +19,7 @@ function productOf(overrides: Partial<FavoriteRow['product']> = {}): FavoriteRow
     trackStock: false,
     stockQuantity: null,
     images: [{ url: 'https://img/haze.jpg' }],
+    variants: [{ priceCents: 20990, compareAtPriceCents: null }],
     _count: { options: 1 },
     ...overrides,
   };
@@ -70,22 +71,27 @@ describe('toCustomerFavorite', () => {
     });
   });
 
-  it('prices a product liked as a whole by its "a partir de", and a dearer price is no drop', () => {
-    const favorite = toCustomerFavorite(rowOf({ likedPriceCents: 18990, product: productOf({ priceCents: 20990, compareAtPriceCents: 24990 }) }));
+  it('prices a product liked as a whole by its cheapest combination on sale, and a dearer price is no drop', () => {
+    const favorite = toCustomerFavorite(rowOf({ likedPriceCents: 18990, product: productOf({ variants: [{ priceCents: 20990, compareAtPriceCents: 24990 }] }) }));
 
     expect(favorite).toMatchObject({ variant: null, imageUrl: 'https://img/haze.jpg', priceCents: 20990, compareAtPriceCents: 24990, priceDropCents: 0, onSale: true });
   });
 
   it('reads the product once the combination is archived or switched off, and claims no drop', () => {
     for (const gone of [variantOf({ archivedAt: new Date() }), variantOf({ isActive: false })]) {
-      const favorite = toCustomerFavorite(rowOf({ likedPriceCents: 30990, variant: gone, product: productOf({ priceCents: 9990 }) }));
+      const favorite = toCustomerFavorite(rowOf({ likedPriceCents: 30990, variant: gone, product: productOf({ variants: [{ priceCents: 9990, compareAtPriceCents: null }] }) }));
       expect(favorite).toMatchObject({ variant: null, priceCents: 9990, priceDropCents: 0 });
     }
   });
 
-  it('claims no drop either when the combination was deleted and only its id went', () => {
-    const favorite = toCustomerFavorite({ ...rowOf({ likedPriceCents: 30990, product: productOf({ priceCents: 9990 }) }), variantId: 'v-gone' });
-    expect(favorite.priceDropCents).toBe(0);
+  it("does not read stock coming back to a cheaper combination as a drop: the product's cache follows stock", () => {
+    // The cache says 19990 now that Uva is back; the cheapest combination on sale was 19990 all along.
+    const product = productOf({ priceCents: 19990, variants: [{ priceCents: 19990, compareAtPriceCents: null }] });
+    expect(toCustomerFavorite(rowOf({ likedPriceCents: 19990, product }))).toMatchObject({ priceCents: 19990, priceDropCents: 0 });
+  });
+
+  it("keeps the product's cache for one that sells no combination at all", () => {
+    expect(wholeProductPriceOf({ priceCents: 5000, compareAtPriceCents: 6000, variants: [] })).toEqual({ priceCents: 5000, compareAtPriceCents: 6000, variants: [] });
   });
 
   it('is sold out by the shop window’s rule, on the combination when it is the one read', () => {
