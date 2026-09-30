@@ -23,6 +23,7 @@ An **account** is how a person proves who they are. A shopkeeper has one, and it
 - Signing in opens a **session** on that device, at the door the account belongs to: the panel, or its shop. A session lives while it is used at least once every 30 days; signing out ends that device's session only.
 - A forgotten password is replaced through an e-mailed link, valid for 1 hour and usable once. Replacing the password ends every session of the account.
 - Whether an e-mail has an account is never revealed: "forgot password" and "resend confirmation" answer the same way for any address, and a wrong password reads the same as an unknown e-mail.
+- Every account is opened under **bee-link's terms of use**, having read its **privacy policy**, both public at the site's root. Opening one says so beside the button, whether it is a form or "Continuar com Google", and the account keeps a record of the version it accepted and when. Continuing with Google, or setting a password from an e-mailed link, records it too when the account has no record of the version in force, or when it is what proves the e-mail belongs to whoever holds the account. The texts carry one version, the day they took effect, and a new version is a new record, never an edit of the old one. The privacy policy says who answers for which data: the shopkeeper for their shop's customers, with bee-link as the one processing it for them, and bee-link for the shopkeepers' own accounts.
 
 ## Stores
 

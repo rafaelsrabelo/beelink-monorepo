@@ -18,6 +18,7 @@ import { Input } from "@harness-monorepo/ui/components/input"
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 
 // Block
 import { AuthCard } from "./auth-card"
@@ -29,6 +30,9 @@ export interface SignupFormProps {
   pending?: boolean
   error?: string
   loginHref?: string
+  /** bee-link's terms and privacy policy, which creating the account accepts (BEELINK-171). */
+  termsHref?: string
+  privacyHref?: string
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -38,10 +42,13 @@ export function SignupForm({
   pending = false,
   error,
   loginHref = "/login",
+  termsHref = "/termos",
+  privacyHref = "/privacidade",
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: SignupFormProps) {
   const text = messages.signup
+  const legal = messages.legal
   const form = useForm<SignupValues>({
     resolver: zodResolver(createSignupSchema(messages.validation)),
     defaultValues: { name: "", email: "", password: "" },
@@ -105,6 +112,21 @@ export function SignupForm({
             <Button type="submit" disabled={pending}>
               {pending ? text.submitting : text.submit}
             </Button>
+            {/* Beside the button that creates the account: pressing it is what accepts. */}
+            <FieldDescription className="text-center">
+              {withParts(legal.signUpNotice, {
+                terms: (
+                  <Link href={termsHref} className="underline underline-offset-4">
+                    {legal.terms}
+                  </Link>
+                ),
+                privacy: (
+                  <Link href={privacyHref} className="underline underline-offset-4">
+                    {legal.privacy}
+                  </Link>
+                ),
+              })}
+            </FieldDescription>
           </Field>
         </FieldGroup>
       </form>

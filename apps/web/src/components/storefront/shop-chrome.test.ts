@@ -29,6 +29,21 @@ describe("shopFooterColumnsOf", () => {
   it("has no contact column for a shop no one can message", () => {
     const store = { socialNetworks: { whatsapp: null } } as unknown as PublicStore
 
-    expect(shopFooterColumnsOf(store, routes, ptBR).map((column) => column.id)).toEqual(["shop"])
+    expect(shopFooterColumnsOf(store, routes, ptBR).map((column) => column.id)).toEqual(["shop", "legal"])
+  })
+
+  it("ends with bee-link's terms and privacy policy, which every shop account is opened under (BEELINK-171)", () => {
+    const store = { socialNetworks: { whatsapp: "5585999998888" } } as unknown as PublicStore
+
+    const legal = shopFooterColumnsOf(store, routes, ptBR).at(-1)
+
+    expect(legal).toEqual({
+      id: "legal",
+      title: "Termos e privacidade",
+      items: [
+        { label: "Termos de uso", href: "/termos" },
+        { label: "Política de privacidade", href: "/privacidade" },
+      ],
+    })
   })
 })

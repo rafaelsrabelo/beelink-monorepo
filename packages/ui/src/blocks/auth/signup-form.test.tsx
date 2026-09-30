@@ -42,6 +42,14 @@ describe("SignupForm", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Este e-mail já está cadastrado.")
   })
 
+  it("says, beside the button, that creating the account accepts bee-link's terms (BEELINK-171)", () => {
+    render(<SignupForm onSubmit={vi.fn()} termsHref="/legal/termos" privacyHref="/legal/privacidade" />)
+
+    expect(screen.getByText(/Ao criar a conta, você aceita os/)).toHaveTextContent("Ao criar a conta, você aceita os Termos de uso e declara ter lido a Política de privacidade.")
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/legal/termos")
+    expect(screen.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute("href", "/legal/privacidade")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<SignupForm onSubmit={vi.fn()} />)
 

@@ -129,11 +129,13 @@ describe('stores', () => {
       expect(store.slug).toBe('padaria-do-bairro');
     });
 
-    it('refuses a slug that would shadow a route of the app itself', async () => {
-      const response = await call('POST', '/api/stores', owner, { ...createBody, slug: 'admin' });
+    it("refuses a slug that would shadow a route of the app itself, bee-link's legal pages included", async () => {
+      for (const slug of ['admin', 'termos', 'privacidade']) {
+        const response = await call('POST', '/api/stores', owner, { ...createBody, slug });
 
-      expect(response.statusCode).toBe(400);
-      expect(response.json<ApiErrorBody>().errorCode).toBe('STORE_SLUG_RESERVED');
+        expect(response.statusCode).toBe(400);
+        expect(response.json<ApiErrorBody>().errorCode).toBe('STORE_SLUG_RESERVED');
+      }
     });
 
     it('refuses a slug another shop already holds, whoever asks', async () => {

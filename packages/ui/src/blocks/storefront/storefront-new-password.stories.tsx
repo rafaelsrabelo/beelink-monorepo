@@ -10,7 +10,7 @@ const meta = {
   component: StorefrontNewPassword,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={shopPaletteStyle(sampleColorPresets[2]!.colors)}>{Story()}</div>],
-  args: { action: "#", hidden: { token: "t0k3n" } },
+  args: { action: "#", hidden: { token: "t0k3n" }, legalHrefs: { terms: "#", privacy: "#" } },
 } satisfies Meta<typeof StorefrontNewPassword>
 
 export default meta

@@ -4,6 +4,10 @@ import { useId } from "react"
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { withParts } from "@harness-monorepo/ui/lib/text-parts"
+
+// Block
+import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 
 export interface StorefrontNewPasswordProps {
   /** Where the new password posts: the web's route handler, which hands it to the API with the link's token. */
@@ -14,6 +18,9 @@ export interface StorefrontNewPasswordProps {
   error?: string | null
   /** The field the refusal is about — the new password, or its repetition — marked and described by it. */
   invalidField?: "password" | "confirmacao" | null
+  /** bee-link's terms and privacy policy, which setting the password accepts (BEELINK-171). */
+  legalHrefs: { terms: string; privacy: string }
+  linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
@@ -24,8 +31,9 @@ const INPUT = "h-11 rounded-[10px] border border-shop-line-strong bg-shop-backgr
  * so a slip is caught before the old one is gone. A plain form, like the sign-in: no script, and no
  * password ever held by page code.
  */
-export function StorefrontNewPassword({ action, hidden, error, invalidField = null, messages = defaultMessages }: StorefrontNewPasswordProps) {
+export function StorefrontNewPassword({ action, hidden, error, invalidField = null, legalHrefs, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontNewPasswordProps) {
   const text = messages.storefront
+  const legal = messages.legal
   const errorId = useId()
   const field = (id: string, name: "password" | "confirmacao", label: string, hint?: string) => {
     const invalid = Boolean(error) && name === invalidField
@@ -76,6 +84,13 @@ export function StorefrontNewPassword({ action, hidden, error, invalidField = nu
           {text.newPasswordSubmit}
         </button>
       </form>
+
+      <p className="text-center text-xs text-shop-muted">
+        {withParts(legal.resetNotice, {
+          terms: <Link href={legalHrefs.terms} className="underline hover:text-shop-on-background">{legal.terms}</Link>,
+          privacy: <Link href={legalHrefs.privacy} className="underline hover:text-shop-on-background">{legal.privacy}</Link>,
+        })}
+      </p>
     </section>
   )
 }
