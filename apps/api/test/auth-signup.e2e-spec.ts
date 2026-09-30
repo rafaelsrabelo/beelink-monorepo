@@ -5,6 +5,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { ApiErrorBody, User } from '@harness-monorepo/contracts';
 
 // App
+import { LEGAL_VERSION } from '../src/modules/auth/auth.constants.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { PASSWORD, newEmail, register, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
@@ -46,6 +47,19 @@ describe('signing up', () => {
     });
     expect(signedIn.statusCode).toBe(200);
     expect(signedIn.json<{ user: User }>().user.emailVerified).toBe(true);
+  });
+
+  it('records the terms the account accepted, and their version, with the account (BEELINK-171)', async () => {
+    const email = newEmail('termos');
+    await register(app, email);
+
+    const prisma = app.get(PrismaService);
+    const account = await prisma.user.findFirstOrThrow({ where: { email, storeId: null }, include: { legalAcceptances: true } });
+    expect(account.legalAcceptances).toEqual([expect.objectContaining({ version: LEGAL_VERSION, via: 'SIGN_UP' })]);
+
+    // A second sign-up of the address creates no account, and so records nothing.
+    await app.inject({ method: 'POST', url: '/api/auth/register', payload: { name: 'Outra', email, password: PASSWORD } });
+    expect(await prisma.legalAcceptance.count({ where: { user: { email } } })).toBe(1);
   });
 
   it('refuses a second account on the same e-mail, whatever its casing', async () => {
@@ -98,6 +112,33 @@ describe('signing up', () => {
     });
     expect(signedIn.statusCode).toBe(200);
     expect(signedIn.json<{ user: User }>().user.emailVerified).toBe(true);
+
+    // Whoever signed up may not have owned the address; the owner, proven by the reset, accepts now.
+    const acceptances = await app.get(PrismaService).legalAcceptance.findMany({ where: { user: { email } }, orderBy: { id: 'asc' } });
+    expect(acceptances.map((acceptance) => acceptance.via)).toEqual(['SIGN_UP', 'PASSWORD_RESET']);
+  });
+
+  /** BEELINK-171: an account from before the terms, or an imported one, meets them setting a password. */
+  it('records the terms on the first reset of an account that never accepted them, and only once', async () => {
+    const prisma = app.get(PrismaService);
+    const email = newEmail('antes-dos-termos');
+    await prisma.user.create({ data: { name: 'Lojista Antigo', email, emailVerifiedAt: new Date() } });
+
+    const resetTo = async (password: string) => {
+      await clearInbox();
+      await app.inject({ method: 'POST', url: '/api/auth/forgot-password', payload: { email } });
+      const token = tokenFromLink((await waitForMessage(email)).Text, '/reset-password');
+      expect((await app.inject({ method: 'POST', url: '/api/auth/reset-password', payload: { token, password } })).statusCode).toBe(204);
+    };
+
+    await resetTo('senha-nova-bem-comprida');
+    expect(await prisma.legalAcceptance.findMany({ where: { user: { email } } })).toEqual([
+      expect.objectContaining({ version: LEGAL_VERSION, via: 'PASSWORD_RESET' }),
+    ]);
+
+    // The version in force is already accepted: another reset records nothing more.
+    await resetTo('outra-senha-bem-comprida');
+    expect(await prisma.legalAcceptance.count({ where: { user: { email } } })).toBe(1);
   });
 
   it('spends a verification token once, and says nothing about why a link failed', async () => {

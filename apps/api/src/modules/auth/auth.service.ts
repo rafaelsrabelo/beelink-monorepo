@@ -13,7 +13,7 @@ import type { UserModel } from '../../generated/prisma/models.js';
 import { MailService } from '../../shared/mail/mail.service.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { PANEL_ACCOUNTS, type AccountScope, type AccountShop } from './account-scope.js';
-import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from './auth.constants.js';
+import { EMAIL_VERIFICATION_TTL_HOURS, LEGAL_VERSION, legalAcceptanceOf, PASSWORD_RESET_TTL_MINUTES } from './auth.constants.js';
 import { createOpaqueToken } from './auth.tokens.js';
 import type { LoginDto, RegisterDto } from './dto/auth.dto.js';
 import { EmailTokenService } from './email-token.service.js';
@@ -42,7 +42,10 @@ export class AuthService {
     const passwordHash = await hash(password);
 
     try {
-      const user = await this.prisma.user.create({ data: { name, email, passwordHash, storeId: scope.storeId } });
+      // The terms go in the same insert (BEELINK-171): the form said creating the account accepts them.
+      const user = await this.prisma.user.create({
+        data: { name, email, passwordHash, storeId: scope.storeId, legalAcceptances: { create: legalAcceptanceOf('SIGN_UP') } },
+      });
       await this.sendVerification(user.id, user.email, user.name, scope.shop);
       return toUser(user);
     } catch (error) {
@@ -127,10 +130,19 @@ export class AuthService {
 
     // The link reached this inbox, which is everything verifying the e-mail proves. Without this, an
     // account whose confirmation was lost sets a password and is refused at sign-in with it.
-    await this.prisma.user.updateMany({
+    const verified = await this.prisma.user.updateMany({
       where: { id: userId, emailVerifiedAt: null },
       data: { emailVerifiedAt: new Date() },
     });
+
+    // The screen that sets the password says setting it accepts the terms (BEELINK-171). The owner's
+    // acceptance is recorded where the account has none of the version in force — one from before the
+    // terms, or an imported one, whose first screen this is — and where this reset is what proved the
+    // e-mail: whoever accepted at sign-up may not have been the owner, as on Google's takeover.
+    const accepted = await this.prisma.legalAcceptance.count({ where: { userId, version: LEGAL_VERSION } });
+    if (verified.count > 0 || accepted === 0) {
+      await this.prisma.legalAcceptance.create({ data: { userId, ...legalAcceptanceOf('PASSWORD_RESET') } });
+    }
 
     // Whoever knew the old password — including whoever prompted the reset — loses every session.
     await this.sessions.revokeAllForUser(userId);

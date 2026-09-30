@@ -7,6 +7,7 @@ import type { UserModel } from '../../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import { legalAcceptanceOf } from '../../auth/auth.constants.js';
 import { SessionService } from '../../auth/session.service.js';
 import { StoresService } from '../../stores/stores.service.js';
 import { CustomersService } from '../customers.service.js';
@@ -115,7 +116,10 @@ export class CustomerGoogleService {
         const existing = await tx.user.findUnique({ where: { storeId_email: { storeId, email: claims.email } } });
         let user: UserModel;
         if (!existing) {
-          user = await tx.user.create({ data: { name: claims.name, email: claims.email, storeId, passwordHash: null, emailVerifiedAt: new Date() } });
+          // The Google button says continuing accepts the terms (BEELINK-171), and there is no form.
+          user = await tx.user.create({
+            data: { name: claims.name, email: claims.email, storeId, passwordHash: null, emailVerifiedAt: new Date(), legalAcceptances: { create: legalAcceptanceOf('GOOGLE') } },
+          });
         } else if (!claims.authoritative) {
           // The address was verified once, when the Google account was made, and may have changed
           // hands since: it may open a new account, never someone's existing one. The refusal is
@@ -127,7 +131,11 @@ export class CustomerGoogleService {
           // An address never confirmed may carry a password its owner never chose — anyone can sign
           // up with someone else's e-mail. Google just proved whose it is, so that password goes, and
           // with it every session it opened. The owner sets their own through "forgot my password".
-          user = await tx.user.update({ where: { id: existing.id }, data: { emailVerifiedAt: new Date(), passwordHash: null } });
+          // Whoever accepted the terms at sign-up may not have been the owner either: the owner does, now.
+          user = await tx.user.update({
+            where: { id: existing.id },
+            data: { emailVerifiedAt: new Date(), passwordHash: null, legalAcceptances: { create: legalAcceptanceOf('GOOGLE') } },
+          });
           await tx.session.deleteMany({ where: { userId: existing.id } });
         }
 

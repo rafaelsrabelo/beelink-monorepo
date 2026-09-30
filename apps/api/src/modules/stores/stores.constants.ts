@@ -24,12 +24,15 @@ export const RESERVED_SLUGS: readonly string[] = [
   'logout',
   'mine',
   'orders',
+  // bee-link's terms and privacy policy live at the site's root (BEELINK-171).
+  'privacidade',
   'public',
   'reset-password',
   'settings',
   'signup',
   'store',
   'stores',
+  'termos',
   'verify-email',
 ];
 
