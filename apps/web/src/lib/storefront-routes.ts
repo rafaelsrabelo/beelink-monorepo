@@ -42,7 +42,9 @@ export function safeBackOf(slug: string, raw: string | string[] | undefined | nu
 
   const home = `/${slug}`
   const value = typeof raw === "string" ? raw : ""
-  if (value !== home && (!value.startsWith(`${home}/`) || value.includes("//") || value.includes("\\"))) return home
+  // The front door with a query is the shop too: a heart on the home comes back as `/loja?curtir=…`.
+  const inShop = value === home || value.startsWith(`${home}/`) || value.startsWith(`${home}?`)
+  if (value !== home && (!inShop || value.includes("//") || value.includes("\\"))) return home
 
   // Resolved as the browser will resolve it: `/loja/../outra` is `/outra`, and so is `%2e%2e`.
   const resolved = URL.canParse(value, "http://shop.invalid") ? new URL(value, "http://shop.invalid").pathname : ""

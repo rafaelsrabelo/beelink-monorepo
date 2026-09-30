@@ -109,3 +109,29 @@
 - O aviso por e-mail (J16).
 - O coração no menu do cabeçalho (J21 escolheu as entradas dele).
 - O coração nos cards compactos de "Relacionados".
+
+## Adendo da revisão (30/09)
+
+O revisor de regras e acessibilidade terminou. O de correção parou no meio, por limite de uso da
+conta, e eu mesmo fiz as verificações que ele tinha de fazer. O que mudou:
+
+- **A volta do login pela página inicial perdia o coração.** O endereço `/loja?curtir=…` não passava
+  pelo `safeBackOf`, que só aceitava `/loja` ou `/loja/…`. Agora a página inicial com parâmetros
+  também é da loja. Continuam recusados `/lojaoutra?…` e um parâmetro com `//`.
+- **O botão em palavras não é mais `aria-pressed`.** As palavras já dizem o estado ("Nos seus
+  favoritos"), e um leitor de tela ouviria o estado duas vezes.
+- **Uma leitura dos ids que falhou deixa o coração ativo.** O toque diz o motivo, em vez de deixar
+  todos os corações apagados sem aviso.
+- **"Esgotado" é lido, e "· avise-me" é só desenhado:** o Avise-me é pedido na página do produto.
+- **O botão da ordem diz "Aplicar",** para não ter o mesmo nome do seletor.
+- **Toques de 44px** no fechar do aviso e na porta do estado vazio.
+- **Carregamento da ordem:** o esqueleto da barra de Meus pedidos segura a altura do título enquanto a
+  ordem carrega.
+- **O bloco `StorefrontFavoritesOutcome`** diz o que aconteceu depois de remover. Ele não estava
+  previsto no plano.
+- **Montadores em `lib/favorite-card-view.ts`:** o endereço do produto, a data e a ação de remover,
+  com o slug codificado.
+- **Fica registrado:** um link compartilhado com `?curtir=<id>` curte o produto para quem o abrir já
+  com sessão. É um GET que muda estado, de impacto baixo (curtir é reversível e não expõe nada).
+  Fica assim enquanto o J16 não mandar e-mail por causa disso. Se mandar, a curtida da volta passa a
+  exigir que a pessoa tenha acabado de entrar.
