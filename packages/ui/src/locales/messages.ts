@@ -1713,6 +1713,45 @@ export interface UiMessages {
     }
   }
   /** The panel's conversations: the tab, one conversation, and the one inside an order (BEELINK-164). */
+  /** The panel's reviews (J19): the list, its filters, its actions and the menu's count of new ones. */
+  reviews: {
+    title: string
+    intro: string
+    statusLabel: string
+    statusAll: string
+    statusPublished: string
+    statusHidden: string
+    ratingLabel: string
+    ratingAll: string
+    /** `{count}`: the pill says "5★" to the eye, this to a reader. */
+    ratingStars: string
+    /** `{name}`. */
+    productChip: string
+    clearProduct: string
+    /** `{name}`. */
+    onlyThisProduct: string
+    /** `{rating}`. */
+    ratedLabel: string
+    noComment: string
+    /** `{name}`, `{date}`. */
+    byOn: string
+    hidden: string
+    hide: string
+    publish: string
+    /** `{name}`: which customer's review a button acts on. */
+    hideLabel: string
+    publishLabel: string
+    empty: string
+    emptyHint: string
+    emptyFiltered: string
+    failed: string
+    retry: string
+    /** `{from}`, `{to}`, `{total}`. */
+    range: string
+    /** The menu's count; `{count}`. */
+    navNewOne: string
+    navNew: string
+  }
   conversations: {
     title: string
     intro: string
