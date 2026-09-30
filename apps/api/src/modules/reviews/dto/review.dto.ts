@@ -1,0 +1,95 @@
+// Nest
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+// Libs
+import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+
+// Types
+import type {
+  CreateReviewPayload,
+  PublicReviewListQuery,
+  ReviewRating,
+  SetReviewVisibilityPayload,
+  StoreReviewListQuery,
+  StoreReviewStatus,
+  UpdateReviewPayload,
+} from '@harness-monorepo/contracts';
+
+// App
+import { blankToNull } from '../../stores/dto/store-fields.dto.js';
+import { REVIEW_COMMENT_MAX, REVIEW_RATINGS, REVIEW_STATUSES, REVIEWS_PAGE_MAX, REVIEWS_PAGE_SIZE_MAX } from '../reviews.constants.js';
+
+/** Trimmed, and blank is none: an empty box is a rating alone. */
+const comment = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() || null : value));
+const optional = ValidateIf((_, value) => value !== null && value !== undefined);
+
+export class UpdateReviewDto implements UpdateReviewPayload {
+  @ApiProperty({ enum: REVIEW_RATINGS })
+  @IsInt()
+  @IsIn(REVIEW_RATINGS)
+  rating!: ReviewRating;
+
+  @ApiPropertyOptional({ nullable: true, type: String, maxLength: REVIEW_COMMENT_MAX })
+  @comment
+  @optional
+  @IsString()
+  @MaxLength(REVIEW_COMMENT_MAX)
+  comment?: string | null;
+}
+
+export class CreateReviewDto extends UpdateReviewDto implements CreateReviewPayload {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  productId!: string;
+}
+
+export class SetReviewVisibilityDto implements SetReviewVisibilityPayload {
+  @ApiProperty({ description: 'True hides it from the shop window; false publishes it again.' })
+  @IsBoolean()
+  hidden!: boolean;
+}
+
+// `@Type(() => Number)` and not the pipe's implicit conversion — apps/api/AGENTS.md, rule 6.
+class ReviewPageDto {
+  @ApiPropertyOptional({ minimum: 1, maximum: REVIEWS_PAGE_MAX, default: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(REVIEWS_PAGE_MAX)
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: REVIEWS_PAGE_SIZE_MAX })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(REVIEWS_PAGE_SIZE_MAX)
+  @Type(() => Number)
+  pageSize?: number;
+
+  @ApiPropertyOptional({ enum: REVIEW_RATINGS, description: 'Only this rating.' })
+  @IsOptional()
+  @IsInt()
+  @IsIn(REVIEW_RATINGS)
+  @Type(() => Number)
+  rating?: ReviewRating;
+}
+
+/** A page of a product's published reviews: 10 by default. */
+export class PublicReviewListDto extends ReviewPageDto implements PublicReviewListQuery {}
+
+/** A page of the shop's reviews: 20 by default. */
+export class StoreReviewListDto extends ReviewPageDto implements StoreReviewListQuery {
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
+  @blankToNull
+  @IsUUID()
+  productId?: string;
+
+  @ApiPropertyOptional({ enum: REVIEW_STATUSES, description: 'Absent is both.' })
+  @IsOptional()
+  @blankToNull
+  @IsIn(REVIEW_STATUSES)
+  status?: StoreReviewStatus;
+}

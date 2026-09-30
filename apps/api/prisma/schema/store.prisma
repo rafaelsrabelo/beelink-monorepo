@@ -150,6 +150,7 @@ model Store {
   productCategories ProductCategory[]
   products          Product[]
   productVariants   ProductVariant[]
+  productReviews    ProductReview[]
   restockRequests   RestockRequest[]
   sections          StoreSection[]
   pages             StorePage[]

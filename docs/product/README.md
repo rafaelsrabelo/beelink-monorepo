@@ -74,6 +74,12 @@ A signed-in customer keeps **favourites** at the shop: products they liked, one 
 
 **Buying requires a verified identity; reaching the checkout does not.** The shop window, the cart and the checkout form open for anyone, so the delivery fee is visible before anything is asked. What requires an account is **placing the order**, and for most people the account is what the purchase leaves behind rather than what it demanded up front.
 
+## Reviews
+
+A product's **reviews** come from the people the shop delivered it to. A customer rates a product they received — one to five stars, and a few words if they want — once, and may rewrite it later; the review keeps the combination they bought. It is published at once. The shopkeeper cannot edit a review, but may **hide** one from the shop window and publish it again; the customer still sees their own, marked hidden, and rewriting it does not bring it back.
+
+The shop window shows a product's average and how many reviews it has, how many of each rating, and the reviews themselves, newest first. It names each reviewer by their first name and an initial, and as "Cliente" once they no longer have an account.
+
 ## Orders
 
 An **order** is the product's core record, and it is a fact about the past.
