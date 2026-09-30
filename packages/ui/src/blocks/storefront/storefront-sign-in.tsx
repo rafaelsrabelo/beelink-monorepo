@@ -111,6 +111,8 @@ export function StorefrontSignIn({
             <img src={google.iconSrc} alt="" width={20} height={20} className="size-5" />
             {text.continueWithGoogle}
           </a>
+          {/* Beside the button it is about: Google can open an account from either face, with no form. */}
+          <p className="-mt-2 text-center text-xs text-shop-muted">{withParts(legal.googleNotice, links)}</p>
           <p className="flex items-center gap-3 text-xs text-shop-muted before:h-px before:flex-1 before:bg-shop-line after:h-px after:flex-1 after:bg-shop-line">
             {text.signInOr}
           </p>
@@ -166,13 +168,9 @@ export function StorefrontSignIn({
       )}
 
       <p className="text-center text-xs text-shop-muted">
-        {/* Where an account can be opened — the form, or Google from any face — the page says that
-            opening it accepts bee-link's terms (BEELINK-171); elsewhere the two links are enough. */}
-        {mode === "criar" && !sent
-          ? withParts(legal.signUpNotice, links)
-          : mode === "entrar" && google
-            ? withParts(legal.googleNotice, links)
-            : withParts(legal.links, links)}
+        {/* Beside "Criar conta", opening the account accepts bee-link's terms (BEELINK-171); signing in
+            or asking for a password accepts nothing, and the two links are enough. */}
+        {mode === "criar" && !sent ? withParts(legal.signUpNotice, links) : withParts(legal.links, links)}
       </p>
 
       <nav className="flex flex-col items-center gap-2 text-sm">

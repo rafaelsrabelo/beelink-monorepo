@@ -23,10 +23,25 @@ describe("StorefrontSignIn — bee-link's terms (BEELINK-171)", () => {
     expect(screen.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute("href", "/privacidade")
   })
 
-  it("says Google accepts them on the sign-in face, where Google can open an account with no form", () => {
-    renderFace("entrar", { google })
+  it("says, right under the Google button on either face, that Google opening an account accepts them", () => {
+    for (const mode of ["entrar", "criar"] as const) {
+      const { container, unmount } = renderFace(mode, { google })
 
-    expect(screen.getByText(/Ao continuar com Google/)).toHaveTextContent("Ao continuar com Google, você aceita os Termos de uso e declara ter lido a Política de privacidade.")
+      const notice = screen.getByText(/Ao continuar com Google/)
+      expect(notice).toHaveTextContent("Ao continuar com Google, você aceita os Termos de uso e declara ter lido a Política de privacidade.")
+      // After the button it is about, before the form: not a footnote of the password sign-in.
+      const button = screen.getByRole("link", { name: "Continuar com Google" })
+      expect(button.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(notice.compareDocumentPosition(container.querySelector("form")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      unmount()
+    }
+  })
+
+  it("accepts nothing on signing in with a password: only the two links there", () => {
+    renderFace("entrar")
+
+    expect(screen.queryByText(/você aceita/)).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
   })
 
   it("only links the two texts where nothing is being accepted", () => {
