@@ -1,6 +1,7 @@
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
@@ -26,8 +27,8 @@ export interface StorefrontSignInProps {
   sent?: boolean
   /** What an e-mailed link just did — the e-mail confirmed, the password replaced — said over the form. */
   notice?: string | null
-  /** The other faces of this page. */
-  hrefs: { signIn: string; signUp: string; forgot: string }
+  /** The other faces of this page, and bee-link's terms and privacy policy (BEELINK-171). */
+  hrefs: { signIn: string; signUp: string; forgot: string; terms: string; privacy: string }
   /**
    * "Continuar com Google", when the shop can offer it: the address that starts the flow, and
    * Google's "G" — its colours are Google's, so the screen hands over the file rather than this
@@ -61,6 +62,11 @@ export function StorefrontSignIn({
   messages = defaultMessages,
 }: StorefrontSignInProps) {
   const text = messages.storefront
+  const legal = messages.legal
+  const links = {
+    terms: <Link href={hrefs.terms} className="underline hover:text-shop-on-background">{legal.terms}</Link>,
+    privacy: <Link href={hrefs.privacy} className="underline hover:text-shop-on-background">{legal.privacy}</Link>,
+  }
   const lead = mode === "criar" ? text.signUpLead : mode === "senha" ? text.forgotLead : text.signInLead
   const submit = mode === "criar" ? text.signUpSubmit : mode === "senha" ? text.forgotSubmit : text.signInSubmit
 
@@ -158,6 +164,16 @@ export function StorefrontSignIn({
           </button>
         </form>
       )}
+
+      <p className="text-center text-xs text-shop-muted">
+        {/* Where an account can be opened — the form, or Google from any face — the page says that
+            opening it accepts bee-link's terms (BEELINK-171); elsewhere the two links are enough. */}
+        {mode === "criar" && !sent
+          ? withParts(legal.signUpNotice, links)
+          : mode === "entrar" && google
+            ? withParts(legal.googleNotice, links)
+            : withParts(legal.links, links)}
+      </p>
 
       <nav className="flex flex-col items-center gap-2 text-sm">
         {mode === "entrar" ? (

@@ -10,6 +10,7 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { useResendVerification, useSignUp } from "@/services/auth/auth-hooks"
 import { errorCopy } from "./auth-error-copy"
 
@@ -45,6 +46,8 @@ export function SignupScreen({ ui, web }: { ui: UiMessages; web: WebMessages }) 
     <SignupForm
       messages={ui}
       linkComponent={AppLink}
+      termsHref={LEGAL_ROUTES.terms}
+      privacyHref={LEGAL_ROUTES.privacy}
       pending={signUp.isPending}
       error={errorCopy(signUp.error, web)}
       onSubmit={(values) => signUp.mutate(values)}

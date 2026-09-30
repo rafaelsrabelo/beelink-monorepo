@@ -2079,6 +2079,20 @@ export interface UiMessages {
    * machine-readable form is `aria-keyshortcuts`, which is ARIA token syntax and never translated.
    */
   /** Sentences more than one family of blocks needs. */
+  /** Bee-link's terms of use and privacy policy (BEELINK-171): their pages, and where accepting them is said. */
+  legal: {
+    terms: string
+    privacy: string
+    /** Beside "Criar conta": creating the account is accepting. {terms} and {privacy} are links. */
+    signUpNotice: string
+    /** Beside "Continuar com Google", which may open an account with no form. */
+    googleNotice: string
+    /** Beside setting a password from an e-mailed link: the first screen of an imported account, or its owner's. */
+    resetNotice: string
+    /** The two links side by side, where nothing is being accepted. */
+    links: string
+    footerTitle: string
+  }
   shared: {
     confirmDeleteTitle: string
     delete: string

@@ -10,7 +10,7 @@ const meta = {
   component: StorefrontSignIn,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={{ ...shopPaletteStyle(sampleColorPresets[2]!.colors), backgroundColor: "var(--shop-canvas)", padding: 24 }}>{Story()}</div>],
-  args: { mode: "entrar", action: "#", hidden: {}, hrefs: { signIn: "#", signUp: "#", forgot: "#" } },
+  args: { mode: "entrar", action: "#", hidden: {}, hrefs: { signIn: "#", signUp: "#", forgot: "#", terms: "#", privacy: "#" } },
 } satisfies Meta<typeof StorefrontSignIn>
 
 export default meta

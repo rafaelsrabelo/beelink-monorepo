@@ -1774,6 +1774,15 @@ export const ptBR: UiMessages = {
       removed: "Categoria excluída",
     },
   },
+  legal: {
+    terms: "Termos de uso",
+    privacy: "Política de privacidade",
+    signUpNotice: "Ao criar a conta, você aceita os {terms} e declara ter lido a {privacy}.",
+    googleNotice: "Ao continuar com Google, você aceita os {terms} e declara ter lido a {privacy}.",
+    resetNotice: "Ao definir a senha, você aceita os {terms} e declara ter lido a {privacy}.",
+    links: "{terms} · {privacy}",
+    footerTitle: "Termos e privacidade",
+  },
   shared: {
     confirmDeleteTitle: "Tem certeza?",
     delete: "Excluir",

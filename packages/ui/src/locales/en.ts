@@ -1773,6 +1773,15 @@ export const en: UiMessages = {
       removed: "Category deleted",
     },
   },
+  legal: {
+    terms: "Terms of use",
+    privacy: "Privacy policy",
+    signUpNotice: "By creating the account, you accept the {terms} and confirm you have read the {privacy}.",
+    googleNotice: "By continuing with Google, you accept the {terms} and confirm you have read the {privacy}.",
+    resetNotice: "By setting the password, you accept the {terms} and confirm you have read the {privacy}.",
+    links: "{terms} · {privacy}",
+    footerTitle: "Terms and privacy",
+  },
   shared: {
     confirmDeleteTitle: "Are you sure?",
     delete: "Delete",
