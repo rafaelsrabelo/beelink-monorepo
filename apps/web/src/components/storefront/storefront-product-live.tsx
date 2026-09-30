@@ -9,6 +9,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { useCart } from "./cart-provider"
+import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
 import { useRestockRequest } from "@/services/storefront/storefront-hooks"
 
 /** The refusals a visitor can meet asking for a restock, as sentences picked on the server. */
@@ -81,6 +82,7 @@ export function StorefrontProductLive({
       images={product.images}
       orderHref={orderHref}
       cart={{ onAdd: (variantId, qty) => add({ productId: product.id, variantId, qty }), href: cartHref }}
+      favorite={(variantId, look) => <StorefrontFavoriteLive productId={product.id} productName={product.name} variantId={variantId} look={look} messages={messages} />}
       soldOut={product.soldOut}
       options={product.options}
       variants={product.variants}

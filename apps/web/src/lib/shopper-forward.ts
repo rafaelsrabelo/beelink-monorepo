@@ -40,10 +40,13 @@ export async function forwardAsShopper(request: NextRequest, slug: string, call:
   }
   if (!answered.response) return shopperRefusal(502, "UNKNOWN", "The shop could not be reached")
 
-  const payload: unknown = await answered.response.json().catch(() => null)
-  const answer = NextResponse.json(payload ?? { statusCode: answered.response.status, errorCode: "UNKNOWN", message: "Unexpected answer" }, {
-    status: answered.response.status,
-  })
+  // No content has no body to pass on, and `NextResponse.json` refuses a 204 outright.
+  const answer = answered.response.status === 204 ? new NextResponse(null, { status: 204 }) : await withBodyOf(answered.response)
   if (answered.renewed) setCustomerSessionCookies(answer.cookies, slug, answered.renewed)
   return answer
+}
+
+async function withBodyOf(response: Response): Promise<NextResponse> {
+  const payload: unknown = await response.json().catch(() => null)
+  return NextResponse.json(payload ?? { statusCode: response.status, errorCode: "UNKNOWN", message: "Unexpected answer" }, { status: response.status })
 }

@@ -3,6 +3,7 @@ import type {
   AuthErrorCode,
   CatalogErrorCode,
   CustomerErrorCode,
+  FavoriteErrorCode,
   LeadErrorCode,
   OrderErrorCode,
   ConversationErrorCode,
@@ -240,6 +241,7 @@ export interface WebMessages {
   errors: Record<
     | AuthErrorCode
     | CustomerErrorCode
+    | FavoriteErrorCode
     | StoreErrorCode
     | LeadErrorCode
     | OrderErrorCode

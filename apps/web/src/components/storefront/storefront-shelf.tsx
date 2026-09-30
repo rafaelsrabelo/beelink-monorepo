@@ -9,6 +9,7 @@ import { StorefrontProductRail } from "@harness-monorepo/ui/blocks/storefront/st
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
 import { StorefrontCardCartLive } from "./storefront-card-cart-live"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import { gridColumnsOf } from "./grid-columns"
@@ -75,6 +76,8 @@ export function StorefrontShelf({
     showPrice,
     showBadge,
     ...(quickAdd ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={messages} /> } : {}),
+    // Nothing outside a shop's pages: the panel's previews draw these shelves with no shopper to ask.
+    cardFavorite: (product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} messages={messages} />,
     ...(linkComponent ? { linkComponent } : {}),
     messages,
   }

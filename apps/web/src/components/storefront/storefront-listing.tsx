@@ -14,6 +14,7 @@ import { StorefrontSearch } from "@harness-monorepo/ui/blocks/storefront/storefr
 
 // App
 import { pageCountOf, type StorefrontShelf } from "@/lib/storefront-data"
+import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
 import { StorefrontCardCartLive } from "./storefront-card-cart-live"
 import { StorefrontListingControls } from "./storefront-listing-controls"
 import { categoryFilterOf, clearFiltersHrefOf, discountFilterOf, filterChipsOf, optionFiltersOf, priceFilterOf } from "@/lib/storefront-filters"
@@ -112,6 +113,7 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
           showPrice={layout.showProductPrice ?? true}
           showBadge={layout.showProductBadges ?? true}
           {...(layout.showQuickAdd ?? true ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={ui} /> } : {})}
+          cardFavorite={(product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} messages={ui} />}
           messages={ui}
         >
           <StorefrontPagination
