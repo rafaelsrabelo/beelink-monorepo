@@ -124,6 +124,23 @@ describe("a shopper's Google door into a shop", () => {
     expect(login.statusCode).toBe(200);
   });
 
+  /** BEELINK-171: the button says continuing accepts the terms, on the sign-in face as much as on the other. */
+  it('records the terms for an account from before them, the first time Google lands on it, and only once', async () => {
+    const email = newEmail('antes-dos-termos');
+    const store = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } });
+    await prisma.user.create({ data: { name: 'Bia Antiga', email, storeId: store.id, emailVerifiedAt: new Date() } });
+
+    const first = await start();
+    expect((await finish(google.grant({ email, sub: 'google-bia' }), first.state)).statusCode).toBe(200);
+    // The tie now exists: the next sign-in goes through it, and finds the terms already taken.
+    const again = await start();
+    expect((await finish(google.grant({ email, sub: 'google-bia' }), again.state)).statusCode).toBe(200);
+
+    expect(await prisma.legalAcceptance.findMany({ where: { user: { email } } })).toEqual([
+      expect.objectContaining({ version: LEGAL_VERSION, via: 'GOOGLE' }),
+    ]);
+  });
+
   // Anyone can sign up with someone else's e-mail; the password such an account carries is theirs.
   it('verifies an account whose e-mail was never confirmed, and drops the password nobody proved', async () => {
     const email = newEmail('pendente');
