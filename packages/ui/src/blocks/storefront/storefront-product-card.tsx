@@ -37,6 +37,8 @@ export interface StorefrontProductCardProps {
   showBadge?: boolean
   /** Under the price, above the card's link: the web's "Adicionar ao carrinho". */
   action?: ReactNode
+  /** On the photo's top-right corner, above the card's link: the web's heart. */
+  favorite?: ReactNode
   /**
    * `compact` is 5b's related card: the whole card one link with no frame, a 180px photo, the name in
    * the link colour and the price as one string. No badge and no action: it is a suggestion, and
@@ -69,6 +71,7 @@ export function StorefrontProductCard({
   showPrice = true,
   showBadge = true,
   action,
+  favorite,
   density = "default",
   inRail = false,
   linkComponent: Link = AnchorLink,
@@ -119,6 +122,8 @@ export function StorefrontProductCard({
         {showBadge ? (
           <StorefrontDiscountBadge priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} messages={messages} />
         ) : null}
+        {/* Above the name's stretched link, like the action: a press on the heart is the heart's. */}
+        {favorite ? <div className="pointer-events-none absolute top-2.5 right-2.5 z-10">{favorite}</div> : null}
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-3.5">

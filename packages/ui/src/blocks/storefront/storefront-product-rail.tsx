@@ -18,6 +18,8 @@ export interface StorefrontProductRailProps {
   productHref: (productSlug: string) => string
   /** What each card offers under its price — the web\'s "Adicionar ao carrinho". */
   cardAction?: (product: StorefrontProduct) => ReactNode
+  /** The heart on each card's photo, drawn by the screen. */
+  cardFavorite?: (product: StorefrontProduct) => ReactNode
   locale: string
   /** The band's title, and the name the scrollable region answers to. Defaults to "Destaques". */
   title?: string
@@ -60,6 +62,7 @@ export function StorefrontProductRail({
   products,
   productHref,
   cardAction,
+  cardFavorite,
   locale,
   title,
   label,
@@ -101,6 +104,7 @@ export function StorefrontProductRail({
                 showPrice={showPrice}
                 showBadge={showBadge}
                 action={cardAction?.(product)}
+                favorite={cardFavorite?.(product)}
                 inRail
                 linkComponent={Link}
                 messages={messages}

@@ -544,6 +544,47 @@ export interface UiMessages {
     /** The list could not be read: never shown as an empty list, which would say there are none. */
     ordersUnavailable: string
     ordersRetry: string
+    /**
+     * The heart (J15): on a card's photo and on the product's page. `{name}` is the product's. Signed
+     * out it is a link to sign in, which comes back with the product liked.
+     */
+    favoriteToggle: string
+    favoriteSignIn: string
+    /** The product page's buy box says it in words: to add, and once added. */
+    favoriteAddText: string
+    favoriteSavedText: string
+    /** A like the API refused, in the notice at the foot of the screen. `{count}` is the cap. */
+    favoriteFailed: string
+    favoriteLimit: string
+    favoriteLimitLink: string
+    favoriteNoticeClose: string
+    /** Favoritos (6g): the tab's count, filters, order, cards, the remove and the empty states. `{count}`. */
+    favoritesCountOne: string
+    favoritesCountMany: string
+    favoritesFilterLabel: string
+    favoritesTabAll: string
+    favoritesTabDropped: string
+    favoritesTabOnSale: string
+    favoritesTabSoldOut: string
+    favoritesSortLabel: string
+    favoritesSortRecent: string
+    favoritesSortPrice: string
+    favoritesSortDiscount: string
+    favoritesSortApply: string
+    /** `{amount}`, already formatted. */
+    favoriteDrop: string
+    /** `{date}`. */
+    favoriteLikedOn: string
+    favoriteRemove: string
+    favoriteSoldOut: string
+    favoriteRemoved: string
+    favoritesEmpty: string
+    favoritesEmptyCta: string
+    favoritesNoResults: string
+    favoritesClear: string
+    /** The list could not be read: never shown as an empty list. */
+    favoritesUnavailable: string
+    favoritesRetry: string
     /** The order's own page (J5): its trail, its status and history, its lines, payment and address, and the receipt. */
     orderDetails: string
     orderReceipt: string

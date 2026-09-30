@@ -84,6 +84,14 @@ describe("StorefrontProductCard", () => {
     expect(container.querySelector("a")).toHaveClass("after:absolute", "after:inset-0")
   })
 
+  it("puts the heart over the photo's corner, above the card's link", () => {
+    renderCard({ favorite: <button type="button">Curtir Bolsa Amora</button> })
+
+    const corner = screen.getByRole("button", { name: "Curtir Bolsa Amora" }).parentElement
+    expect(corner).toHaveClass("absolute", "z-10")
+    expect(corner?.parentElement).toHaveClass("aspect-[259/230]")
+  })
+
   it("passes through its photos when it has more than one, and draws the cover alone otherwise", () => {
     const { container, rerender } = renderCard({ product: { ...product, imageUrls: ["/1.jpg", "/2.jpg"] } })
     expect(container.querySelectorAll("img")).toHaveLength(2)

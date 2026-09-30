@@ -21,6 +21,8 @@ export interface StorefrontProductGridProps {
   productHref: (productSlug: string) => string
   /** What each card offers under its price — the web\'s "Adicionar ao carrinho". */
   cardAction?: (product: StorefrontProduct) => ReactNode
+  /** The heart on each card's photo, drawn by the screen. */
+  cardFavorite?: (product: StorefrontProduct) => ReactNode
   locale: string
   title: string
   label?: string
@@ -57,6 +59,7 @@ export function StorefrontProductGrid({
   products,
   productHref,
   cardAction,
+  cardFavorite,
   locale,
   title,
   label,
@@ -89,6 +92,7 @@ export function StorefrontProductGrid({
               showPrice={showPrice}
               showBadge={showBadge}
               action={cardAction?.(product)}
+              favorite={cardFavorite?.(product)}
               linkComponent={Link}
               messages={messages}
             />
