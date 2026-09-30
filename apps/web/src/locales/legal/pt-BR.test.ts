@@ -11,6 +11,13 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
     for (const document of documents) expect(document.lang).toBe("pt-BR")
   })
 
+  // The API records `LegalVersion`; the page shows `effective`. This is what keeps the two one day.
+  it("say they took effect on the day their version names", () => {
+    const day = new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${legalTexts.version}T00:00:00Z`))
+
+    for (const document of documents) expect(document.effective).toBe(`Vigente desde ${day}`)
+  })
+
   // The page keys each heading, paragraph and item by its text: a repeated one would be dropped.
   it("never repeat a heading, an intro paragraph or an item of one list", () => {
     for (const document of documents) {
