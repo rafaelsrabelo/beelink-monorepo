@@ -1,0 +1,26 @@
+/// Where an account took bee-link's terms (BEELINK-171): a sign-up form, "Continuar com Google", or
+/// setting a password from an e-mailed link — see `LegalAcceptanceChannel` in the contracts.
+enum LegalAcceptanceChannel {
+  SIGN_UP
+  GOOGLE
+  PASSWORD_RESET
+}
+
+/// Each time an account accepted bee-link's terms of use and read its privacy policy (BEELINK-171):
+/// the version of the texts in force and when. Append-only, like an order's events — a new version of
+/// the texts is a new row, never an edit of the old one.
+///
+/// Written in the same insert that creates the account, so neither exists without the other. It goes
+/// with the account: an acceptance that no longer names anyone proves nothing.
+model LegalAcceptance {
+  id         String                 @id @default(uuid(7)) @db.Uuid
+  userId     String                 @db.Uuid
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// The day the texts took effect, as `LegalVersion` in the contracts: "2026-09-30".
+  version    String
+  via        LegalAcceptanceChannel
+  acceptedAt DateTime               @default(now())
+
+  @@index([userId])
+  @@map("legal_acceptances")
+}

@@ -5,6 +5,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { AuthSession, CustomerProfile, StoreCustomerPage } from '@harness-monorepo/contracts';
 
 // App
+import { LEGAL_VERSION } from '../src/modules/auth/auth.constants.js';
 import { CustomersService } from '../src/modules/customers/customers.service.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { PASSWORD, newEmail, register, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
@@ -66,7 +67,11 @@ describe("a shopper's door into a shop", () => {
     expect(message.Text).toContain('http://localhost:3000/lessari/confirmar-email?token=');
     expect(message.Text).toContain('&voltar=%2Flessari%2Fcarrinho');
     expect(message.Subject).toBe('lessari — confirme seu e-mail');
-    expect(message.From).toMatchObject({ Name: 'lessari', Address: 'nao-responda@harness.local' });
+    expect(message.From).toMatchObject({ Name: 'lessari', Address: 'nao-responda@bee-link.local' });
+    // The form said creating the account accepts the terms (BEELINK-171): that is recorded with it.
+    expect(await app.get(PrismaService).legalAcceptance.findMany({ where: { user: { email } } })).toEqual([
+      expect.objectContaining({ version: LEGAL_VERSION, via: 'SIGN_UP' }),
+    ]);
 
     // Anywhere outside the shop is the shop's front; a new link for the same account says the same.
     await clearInbox();
@@ -88,6 +93,7 @@ describe("a shopper's door into a shop", () => {
     expect(again.statusCode).toBe(202);
     expect(again.payload).toBe('');
     expect(await app.get(PrismaService).user.count({ where: { email } })).toBe(1);
+    expect(await app.get(PrismaService).legalAcceptance.count({ where: { user: { email } } })).toBe(1);
   });
 
   it("keeps a shop's record of the shopper, made on first sign-in, and lets them change it", async () => {

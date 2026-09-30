@@ -29,6 +29,16 @@ The server builds both images. `next build` needs roughly 2 GB of memory on its 
 
 A push to `main` and a redeploy (manual, or Dokploy's webhook). `migrate` runs on every deploy, so a merged migration reaches the database before the code that reads it; if it fails, the new API does not start on a schema it cannot read — the deploy fails in Dokploy's log instead.
 
+## E-mail
+
+Confirming an account and resetting a password travel by e-mail, and nothing else in the product works without the first one.
+
+- **The sender's domain is verified.** The address in `MAIL_FROM` sits on a domain whose SPF, DKIM and DMARC records the provider published. Without them the messages land in spam, and a DMARC policy of `quarantine` sends anything that fails it there. A shop's e-mail keeps this address and goes out under the shop's name.
+- **The password in `SMTP_URL` is percent-encoded** (`encodeURIComponent`) unless it is letters and digits only, and a mailbox login writes its `@` as `%40`. A raw `?` ends the URL, and the API refuses the environment at boot ("Invalid URL at SMTP_URL"). A raw `$` is read by Compose as a variable, and the password arrives changed with no error anywhere.
+- **The boot log says whether the login works.** In production the API asks the provider once, as it starts. It logs `SMTP took the login` or `SMTP refused the connection or the login`, with the provider's reply: `EAUTH`/`535` is the user or the password, and `ECONNREFUSED`/`ETIMEDOUT` is the host or the port. A send that fails later is logged as `Could not send e-mail`, and it never fails the request that caused it.
+- **Checking a login without sending anything**, from `apps/api` with the URL in `SMTP_URL`: `node -e 'require("nodemailer").createTransport(process.env.SMTP_URL).verify().then(() => console.log("ok"), (e) => console.log(e.code, e.response))'`.
+- **After the first deploy, check delivery by hand:** a shopkeeper signing up, a customer signing up at a shop, and a password reset, each in a Gmail inbox and an Outlook one — in the inbox, not in spam.
+
 ## Constraints
 
 - **HTTPS only.** Session cookies are `Secure` in production; over plain HTTP the browser drops them and nobody signs in.

@@ -3,10 +3,12 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 
 // Types
 import type { CustomerSignInOptions, GoogleAuthorization, GoogleSignIn } from '@harness-monorepo/contracts';
+import type { Prisma } from '../../../generated/prisma/client.js';
 import type { UserModel } from '../../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
+import { LEGAL_VERSION, legalAcceptanceOf } from '../../auth/auth.constants.js';
 import { SessionService } from '../../auth/session.service.js';
 import { StoresService } from '../../stores/stores.service.js';
 import { CustomersService } from '../customers.service.js';
@@ -14,6 +16,16 @@ import { codeChallengeOf, googleConfig, GoogleOAuthClient, newCodeVerifier, newS
 
 /** Long enough to pick an account and consent; short enough that an abandoned state is soon gone. */
 const STATE_TTL_MS = 10 * 60 * 1000;
+
+/**
+ * The Google button says continuing accepts bee-link's terms (BEELINK-171), on the sign-in face too:
+ * an account that holds no acceptance of the version in force — one from before the terms — takes
+ * it now, however Google lands on it. One that already holds it gets no second row.
+ */
+async function acceptTermsIfDue(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  const accepted = await tx.legalAcceptance.count({ where: { userId, version: LEGAL_VERSION } });
+  if (accepted === 0) await tx.legalAcceptance.create({ data: { userId, ...legalAcceptanceOf('GOOGLE') } });
+}
 
 /** Only an address inside the shop the flow began at comes back out; anything else is dropped. */
 function returnToOf(storeSlug: string, returnTo: string | undefined): string | null {
@@ -110,12 +122,18 @@ export class CustomerGoogleService {
     try {
       return await this.prisma.$transaction(async (tx) => {
         const known = await tx.accountIdentity.findUnique({ where: tie, include: { user: true } });
-        if (known) return known.user;
+        if (known) {
+          await acceptTermsIfDue(tx, known.user.id);
+          return known.user;
+        }
 
         const existing = await tx.user.findUnique({ where: { storeId_email: { storeId, email: claims.email } } });
         let user: UserModel;
         if (!existing) {
-          user = await tx.user.create({ data: { name: claims.name, email: claims.email, storeId, passwordHash: null, emailVerifiedAt: new Date() } });
+          // The Google button says continuing accepts the terms (BEELINK-171), and there is no form.
+          user = await tx.user.create({
+            data: { name: claims.name, email: claims.email, storeId, passwordHash: null, emailVerifiedAt: new Date(), legalAcceptances: { create: legalAcceptanceOf('GOOGLE') } },
+          });
         } else if (!claims.authoritative) {
           // The address was verified once, when the Google account was made, and may have changed
           // hands since: it may open a new account, never someone's existing one. The refusal is
@@ -123,11 +141,16 @@ export class CustomerGoogleService {
           throw new ForbiddenException({ errorCode: 'GOOGLE_EMAIL_UNVERIFIED', message: 'Google does not vouch for this e-mail enough to open an existing account' });
         } else if (existing.emailVerifiedAt) {
           user = existing;
+          await acceptTermsIfDue(tx, existing.id);
         } else {
           // An address never confirmed may carry a password its owner never chose — anyone can sign
           // up with someone else's e-mail. Google just proved whose it is, so that password goes, and
           // with it every session it opened. The owner sets their own through "forgot my password".
-          user = await tx.user.update({ where: { id: existing.id }, data: { emailVerifiedAt: new Date(), passwordHash: null } });
+          // Whoever accepted the terms at sign-up may not have been the owner either: the owner does, now.
+          user = await tx.user.update({
+            where: { id: existing.id },
+            data: { emailVerifiedAt: new Date(), passwordHash: null, legalAcceptances: { create: legalAcceptanceOf('GOOGLE') } },
+          });
           await tx.session.deleteMany({ where: { userId: existing.id } });
         }
 

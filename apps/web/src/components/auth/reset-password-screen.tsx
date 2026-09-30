@@ -13,6 +13,7 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { useResetPassword } from "@/services/auth/auth-hooks"
 import { errorCopy } from "./auth-error-copy"
 
@@ -36,6 +37,8 @@ export function ResetPasswordScreen({ ui, web, token, signInHref }: { ui: UiMess
   return (
     <ResetPasswordForm
       messages={ui}
+      termsHref={LEGAL_ROUTES.terms}
+      privacyHref={LEGAL_ROUTES.privacy}
       linkComponent={AppLink}
       loginHref={signInHref}
       pending={reset.isPending}

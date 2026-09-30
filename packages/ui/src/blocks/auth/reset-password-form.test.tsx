@@ -8,6 +8,14 @@ import { expectNoA11yViolations } from "../../test/a11y"
 import { ResetPasswordForm } from "./reset-password-form"
 
 describe("ResetPasswordForm", () => {
+  it("says, beside the button, that setting the password accepts bee-link's terms (BEELINK-171)", () => {
+    render(<ResetPasswordForm onSubmit={vi.fn()} termsHref="/termos" privacyHref="/privacidade" />)
+
+    expect(screen.getByText(/Ao definir a senha/)).toHaveTextContent("Ao definir a senha, você aceita os Termos de uso e declara ter lido a Política de privacidade.")
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
+    expect(screen.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute("href", "/privacidade")
+  })
+
   it("refuses two passwords that do not match", async () => {
     const onSubmit = vi.fn()
     render(<ResetPasswordForm onSubmit={onSubmit} />)

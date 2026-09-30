@@ -6,6 +6,7 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { errorSentenceOf } from "@/lib/error-sentence"
+import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { signInOptionsAt } from "@/lib/storefront-data"
 import { BACK_KEY, EMAIL_CONFIRMED_KEY, PASSWORD_REPLACED_KEY, SIGNED_OUT_EVERYWHERE_KEY, paramOf, safeBackOf, type StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionPlace, SectionQuery } from "@/lib/storefront-section"
@@ -60,6 +61,8 @@ export async function StorefrontSignInSection({ place, routes, query, errors }: 
           signIn: routes.signIn({ back }),
           signUp: routes.signIn({ mode: "criar", back }),
           forgot: routes.signIn({ mode: "senha", back }),
+          terms: LEGAL_ROUTES.terms,
+          privacy: LEGAL_ROUTES.privacy,
         }}
         messages={ui}
       />
