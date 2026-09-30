@@ -125,7 +125,7 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
           </Suspense>
         ) : tab === "favorites" ? (
           <Suspense fallback={<StorefrontFavoritesSkeleton />}>
-            <FavoritesTab slug={store.slug} routes={routes} query={query} locale="pt-BR" errors={web.errors} messages={ui} />
+            <FavoritesTab slug={store.slug} routes={routes} query={query} notices={shopper.notifications.favorites} locale="pt-BR" errors={web.errors} messages={ui} />
           </Suspense>
         ) : tab === "messages" ? (
           <AccountConversations key={conversationOrderOf(query) ?? "list"} slug={store.slug} routeWords={store.routeWords} initialOrder={conversationOrderOf(query)} messages={ui} />

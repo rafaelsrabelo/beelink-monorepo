@@ -585,6 +585,11 @@ export interface UiMessages {
     /** The list could not be read: never shown as an empty list. */
     favoritesUnavailable: string
     favoritesRetry: string
+    /** Over the tab (J16): the notices of a favourite go by e-mail, and where to change them. */
+    favoritesHintOn: string
+    favoritesHintOff: string
+    favoritesHintChange: string
+    favoritesHintTurnOn: string
     /** The order's own page (J5): its trail, its status and history, its lines, payment and address, and the receipt. */
     orderDetails: string
     orderReceipt: string
