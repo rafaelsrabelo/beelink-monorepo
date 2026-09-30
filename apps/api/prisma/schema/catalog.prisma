@@ -192,6 +192,8 @@ model Product {
   restockRequests RestockRequest[]
   /// Order lines that named this product; an order keeps its photograph when the product goes.
   orderItems      OrderItem[]
+  /// Shoppers who liked it (BEELINK-153); deleting the product takes their favourite with it.
+  favorites       CustomerFavorite[]
 
   @@unique([storeId, slug])
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
@@ -351,6 +353,8 @@ model ProductVariant {
   restockRequests RestockRequest[]
   /// Order lines that named this variant; an order keeps its photograph when the variant goes.
   orderItems      OrderItem[]
+  /// Favourites that named this combination; they fall back to the product when it goes.
+  favorites       CustomerFavorite[]
 
   @@unique([storeId, sku])
   @@index([productId, position])
