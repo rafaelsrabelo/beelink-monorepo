@@ -13,4 +13,5 @@ export type * from "./store.js";
 export type * from "./store-pages.js";
 export type * from "./page-versions.js";
 export type * from "./realtime.js";
+export type * from "./review.js";
 export type * from "./user.js";
