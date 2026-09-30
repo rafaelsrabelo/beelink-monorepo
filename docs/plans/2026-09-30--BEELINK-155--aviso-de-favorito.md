@@ -96,3 +96,34 @@
 - Aviso por WhatsApp ou push.
 - Enviar para o Avise-me.
 - Um resumo diário ou semanal: o aviso é por produto, com o limite de 7 dias.
+
+## Adendo da revisão (30/09)
+
+O revisor apontou seis defeitos, e todos foram corrigidos:
+
+- **A revisão dos favoritos é feita em lote.** Antes eram três comandos por favorito, dentro da
+  transação de uma venda ou de um cancelamento, com o limite de 5 s do Prisma: um produto com
+  milhares de favoritos derrubaria o cancelamento. Agora são poucos comandos, qualquer que seja o
+  número de favoritos:
+  - lê-se o produto, as variações curtidas e os favoritos só com o que o preço e o estoque pedem;
+  - as marcas se atualizam por grupo (`updateMany`);
+  - uma leitura dos avisos dos últimos 7 dias;
+  - um `createMany`.
+
+  A regra pura ficou em `watchOf`, com teste de unidade.
+- **Uma queda durante o rascunho é dita na publicação.** Enquanto o produto é rascunho, nada se move.
+  Publicar (um salvar só de status, que não passa pelo `syncProductCache`) revê os favoritos.
+- **Uma queda enquanto esgotado não se perde.** Enquanto o preço não pode ser pedido, a marca só
+  sobe. Na volta, o aviso diz a queda desde o preço de antes de esgotar. O teste que passava pelo
+  motivo errado agora muda só o estoque na volta.
+- **Uma queda que ninguém compra não é notícia.** No produto inteiro, a queda só conta quando a
+  variação mais barata à venda pode ser pedida.
+- **O envio relê tudo.** O aviso guarda a combinação (`variantId`, um valor e não uma chave), e o
+  envio relê o favorito como a lista o lê. Ele desiste quando o produto esgotou de novo, quando a
+  curtida mudou de combinação ou quando a combinação deixou de ser vendida.
+- **O deadlock entre um cancelamento e uma curtida.**
+  - `lockCustomer` passa a `FOR NO KEY UPDATE`: ainda serializa as escritas do mesmo registro, mas
+    não bloqueia o `KEY SHARE` de uma chave estrangeira, como a do aviso inserido sob a trava do
+    produto.
+  - A curtida lê o produto dentro da transação, depois de um `FOR KEY SHARE` nele. Assim ela espera
+    uma escrita em curso naquele produto e grava o preço que valeu.

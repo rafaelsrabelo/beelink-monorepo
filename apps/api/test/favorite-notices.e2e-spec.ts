@@ -129,15 +129,16 @@ describe("a favourite's notice by e-mail", () => {
     expect(message.Text).toMatch(/Whey, que você curtiu em lessari, voltou ao estoque e sai por R\$\s89,90\./);
   });
 
-  it('says both in one e-mail when it came back cheaper, and a drop while sold out waits for the return', async () => {
+  it('says both in one e-mail when it came back cheaper: a drop while sold out waits for the return', async () => {
     const whey = await addProduct({ name: 'Whey', slug: 'whey', priceCents: 10000, trackStock: true, stockQuantity: 0 });
     await like(whey.id);
 
     await edit(whey.id, { priceCents: 9000 });
     expect(await notices()).toEqual([]);
 
-    await edit(whey.id, { priceCents: 8000, stockQuantity: 3 });
-    expect(await notices()).toMatchObject([{ backInStock: true, priceCents: 8000, previousPriceCents: 9000 }]);
+    // Only the stock moves now: the drop told is from the price before it sold out.
+    await edit(whey.id, { stockQuantity: 3 });
+    expect(await notices()).toMatchObject([{ backInStock: true, priceCents: 9000, previousPriceCents: 10000 }]);
     await flush();
     expect((await waitForMessage(email, 10_000, 'voltou ao estoque')).Subject).toBe('lessari — Whey baixou de preço e voltou ao estoque');
   });
@@ -159,7 +160,7 @@ describe("a favourite's notice by e-mail", () => {
     expect((await notices()).at(-1)).toMatchObject({ priceCents: 8500, previousPriceCents: 9500 });
   });
 
-  it('tells no one who turned the notice off, nor of a draft; what they saw still moves', async () => {
+  it('tells no one who turned the notice off, and what changed while a draft once it is published', async () => {
     const whey = await addProduct({ name: 'Whey', slug: 'whey', priceCents: 10000 });
     await like(whey.id);
 
@@ -171,18 +172,25 @@ describe("a favourite's notice by e-mail", () => {
     await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, offers: false });
     await edit(whey.id, { status: 'DRAFT', priceCents: 8000 });
     expect(await notices()).toEqual([]);
+    expect(await prisma.customerFavorite.findFirst({ select: { seenPriceCents: true } })).toEqual({ seenPriceCents: 9000 });
+
+    // Published again, with nothing else in the save: the drop it had meanwhile is news now.
+    await edit(whey.id, { status: 'ACTIVE' });
+    expect(await notices()).toMatchObject([{ priceCents: 8000, previousPriceCents: 9000 }]);
   });
 
-  it('reads everything again before sending: unliked or turned off since, nothing goes, and it is done', async () => {
+  it('reads everything again before sending: unliked or sold out again since, nothing goes, and it is done', async () => {
     const whey = await addProduct({ name: 'Whey', slug: 'whey', priceCents: 10000 });
     const beta = await addProduct({ name: 'Beta', slug: 'beta', priceCents: 5000 });
-    await like(whey.id);
-    await like(beta.id);
+    const coco = await addProduct({ name: 'Coco', slug: 'coco', priceCents: 3000, trackStock: true, stockQuantity: 2 });
+    for (const product of [whey, beta, coco]) await like(product.id);
     await edit(whey.id, { priceCents: 9000 });
     await edit(beta.id, { priceCents: 4000 });
-    expect(await notices()).toHaveLength(2);
+    await edit(coco.id, { priceCents: 2500 });
+    expect(await notices()).toHaveLength(3);
 
     await call('DELETE', `/api/stores/lessari/customer/favorites/${whey.id}`, shopper);
+    await edit(coco.id, { stockQuantity: 0 });
     expect(await flush()).toBe(1);
     const all = await notices();
     expect(all.every((notice) => notice.sentAt !== null)).toBe(true);

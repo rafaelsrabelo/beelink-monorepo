@@ -63,28 +63,28 @@ export class FavoritesService {
   async like(storeSlug: string, userId: string, productId: string, dto: LikeFavoriteDto): Promise<void> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
     const variantId = dto.variantId?.toLowerCase() ?? null;
-
     // A draft, another shop's or no such product: one answer, so it tells nobody which ids exist where.
-    const product = UUID.test(productId)
-      ? await this.prisma.product.findFirst({
-          where: { id: productId.toLowerCase(), storeId, status: 'ACTIVE' },
-          select: { id: true, priceCents: true, compareAtPriceCents: true, trackStock: true, stockQuantity: true, variants: SELLING_VARIANTS },
-        })
-      : null;
-    if (!product) throw new NotFoundException(favoriteError('CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND', 'No such product on sale in this shop'));
-
-    const variant = variantId
-      ? await this.prisma.productVariant.findFirst({
-          where: { id: variantId, productId: product.id, isActive: true, archivedAt: null },
-          select: { priceCents: true, trackStock: true, stockQuantity: true },
-        })
-      : null;
-    if (variantId && !variant) throw new NotFoundException(favoriteError('CUSTOMER_FAVORITE_VARIANT_NOT_FOUND', 'This product does not sell that combination'));
+    const missing = () => new NotFoundException(favoriteError('CUSTOMER_FAVORITE_PRODUCT_NOT_FOUND', 'No such product on sale in this shop'));
+    if (!UUID.test(productId)) throw missing();
+    const id = productId.toLowerCase();
 
     await this.prisma.$transaction(async (tx) => {
-      // Under the record's lock, so two likes at once cannot both pass the cap.
+      // The record's lock, so two likes at once cannot both pass the cap; then the product's key, so
+      // a write to it in flight — whose watch would miss this favourite — ends before the price is read.
       await lockCustomer(tx, customerId);
-      const current = await tx.customerFavorite.findUnique({ where: { customerId_productId: { customerId, productId: product.id } }, select: { id: true, variantId: true } });
+      await tx.$queryRaw`SELECT 1 FROM "products" WHERE "id" = ${id}::uuid FOR KEY SHARE`;
+
+      const product = await tx.product.findFirst({
+        where: { id, storeId, status: 'ACTIVE' },
+        select: { id: true, priceCents: true, compareAtPriceCents: true, trackStock: true, stockQuantity: true, variants: SELLING_VARIANTS },
+      });
+      if (!product) throw missing();
+      const variant = variantId
+        ? await tx.productVariant.findFirst({ where: { id: variantId, productId: id, isActive: true, archivedAt: null }, select: { priceCents: true, trackStock: true, stockQuantity: true } })
+        : null;
+      if (variantId && !variant) throw new NotFoundException(favoriteError('CUSTOMER_FAVORITE_VARIANT_NOT_FOUND', 'This product does not sell that combination'));
+
+      const current = await tx.customerFavorite.findUnique({ where: { customerId_productId: { customerId, productId: id } }, select: { id: true, variantId: true } });
       if (current?.variantId === variantId) return;
 
       // What the favourite first sees is the like itself: a notice is owed from here on (`watchFavorites`).
@@ -98,7 +98,7 @@ export class FavoritesService {
       if ((await tx.customerFavorite.count({ where: { customerId } })) >= FAVORITES_MAX) {
         throw new ConflictException(favoriteError('CUSTOMER_FAVORITE_LIMIT', `A customer keeps at most ${FAVORITES_MAX} favourites`));
       }
-      await tx.customerFavorite.create({ data: { customerId, productId: product.id, ...liked } });
+      await tx.customerFavorite.create({ data: { customerId, productId: id, ...liked } });
     });
   }
 

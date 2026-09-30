@@ -47,6 +47,9 @@ model FavoriteNotice {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   productId  String   @db.Uuid
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// The combination the favourite named when the notice was born; null for the product as a whole.
+  /// A value, not a key: the mailer compares it with the favourite's, and sends nothing when it moved.
+  variantId          String?   @db.Uuid
   /// Today's price when the notice was born: what the e-mail says, whatever it is by the time it goes.
   priceCents         Int
   /// The price it was before, when it dropped; null when it only came back.

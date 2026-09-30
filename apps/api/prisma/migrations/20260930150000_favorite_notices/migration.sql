@@ -11,6 +11,7 @@ CREATE TABLE "favorite_notices" (
     "id" UUID NOT NULL,
     "customerId" UUID NOT NULL,
     "productId" UUID NOT NULL,
+    "variantId" UUID,
     "priceCents" INTEGER NOT NULL,
     "previousPriceCents" INTEGER,
     "backInStock" BOOLEAN NOT NULL,

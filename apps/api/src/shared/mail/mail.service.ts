@@ -37,7 +37,7 @@ export function addressOf(from: string): string {
 export class MailService implements OnApplicationBootstrap {
   private readonly logger = new Logger(MailService.name);
   /**
-   * The timeouts are well under the order outbox's lease (`OrderStatusMailer`): a send that hangs
+   * The timeouts are well under an outbox's lease (`OutboxMailer`): a send that hangs
    * gives up long before another sweep may claim the same e-mail and send it again.
    */
   private readonly transporter: Transporter = createTransport({ url: env.SMTP_URL, connectionTimeout: 30_000, greetingTimeout: 30_000, socketTimeout: 60_000 });
