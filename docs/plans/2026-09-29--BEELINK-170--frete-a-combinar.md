@@ -1,0 +1,66 @@
+# BEELINK-170 · L4 — Sem regra de frete, o pedido diz "frete a combinar" em vez de R$ 0
+
+> **Tier:** plans — verdade de um momento, para um ticket. Append-only.
+
+## O problema
+
+O checkout já avisa que "a loja informa a taxa de entrega ao confirmar o pedido", mas o pedido do carrinho grava `deliveryFeeCents = 0` (`customer-orders.service.ts`). Depois de fechado, tudo trata esse zero como um valor:
+
+- a página do pedido da cliente diz **"Entrega: Grátis"** (`order-page-view.ts`);
+- o total parece final, em Meus pedidos, no comprovante e no painel;
+- a mensagem de WhatsApp do painel diz "Entrega: R$ 0,00".
+
+## Definition of Done
+
+1. Um pedido de **entrega** fechado pelo carrinho grava o frete como **a combinar**, não como zero. O total dele é o dos produtos.
+2. Os pedidos de entrega do carrinho que já existem com frete zero passam a ser "a combinar".
+3. Na loja, a página do pedido e o comprovante dizem **"Entrega: A combinar"**, e o total diz **"+ frete"**. O card de Meus pedidos também diz "+ frete". Um frete zero lançado de verdade continua dizendo "Grátis".
+4. No painel, o pedido aberto mostra "A combinar" e um campo para lançar o frete. A lista de pedidos diz "+ frete", e a mensagem de WhatsApp diz "Entrega: a combinar".
+5. Lançar o frete recalcula o total e a conta do cliente no CRM. A cliente passa a ver o valor e o total certo. Uma retirada e um pedido cancelado recusam o frete.
+6. A retirada continua sem frete.
+
+## Decisões
+
+- **`deliveryFeeCents: number | null`** no contrato (`Order`, `OrderSummary`, `CustomerOrder`, `CustomerOrderSummary`) e no banco. `null` quer dizer que não foi combinado: um fato diferente de "grátis", que é `0`. Um CHECK garante que só uma entrega pode ter o frete nulo.
+- **O total de um pedido a combinar é o dos produtos** (subtotal menos desconto). É o que a loja sabe cobrar hoje, e cada tela diz "+ frete" ao lado.
+- **Migração dos pedidos antigos:** vira nulo o frete zero de uma entrega cujo primeiro evento foi da cliente (`RECEIVED` com autor `CUSTOMER`, que é o pedido do carrinho). Um pedido lançado pelo lojista com frete zero continua zero, porque ali o zero foi digitado.
+- **O pedido lançado pelo lojista não muda:** ele digita o frete no formulário (H3), e o valor vazio segue sendo zero.
+- **Rota `PUT /stores/:slug/orders/:number/delivery-fee` com `{ deliveryFeeCents }`**, no estilo do `PUT :number/delivery` (J7):
+  - usa a mesma trava da loja que a mudança de status;
+  - recusa retirada com `ORDER_DELIVERY_FOR_PICKUP` e pedido cancelado com `ORDER_CANCELLED`;
+  - recusa um total acima do teto com `ORDER_TOTAL_TOO_LARGE`;
+  - recalcula a conta do cliente no CRM (`refreshBooks`).
+- **Sem evento de tempo real novo:** o J7 também não publica, e a página da cliente é desenhada no servidor, então mostra o valor na próxima vez que abrir.
+
+## Fora de escopo
+
+- Calcular o frete, que é o Épico M. Quando o M4 existir, o pedido de uma loja com regras nasce com o frete cotado.
+- Voltar um frete lançado para "a combinar".
+- Avisar a cliente no chat quando o frete é lançado. O K7 avisa só mudança de status.
+
+## Depois da implementação (29/09)
+
+- **"+ frete" em mais lugares do que a DoD listava.** Na loja: o card de Meus pedidos, a Visão geral da conta e a mensagem de WhatsApp que sai do carrinho. No painel: a lista (tabela e cards), os pedidos da ficha do cliente, o aviso de pedido novo no sino e a mensagem de WhatsApp. Uma regra só escreve todos: `orderTotalText`, em `packages/ui/src/lib/order-total.ts`.
+- **Um pedido cancelado não diz "+ frete".** Não há mais nada a combinar, e o total dele é o que foi. Isso apareceu no teste no navegador, nos cancelados do carrinho.
+- **A migração foi conferida numa cópia do `harness_wt`.** As 5 entregas do carrinho viraram "a combinar". As entregas lançadas pelo lojista mantiveram o valor digitado, inclusive as de frete 0. As retiradas continuaram em 0.
+
+## Depois do rebase (29/09, noite)
+
+- **Rebase sobre a `main` com J8 a J12, K7, #143, #145 e #146.** Entrou sem conflito, e o type-check dos quatro workspaces passou sem ajuste. Os e-mails de status do J12 não mostram total, então não precisam de "+ frete".
+- **A migração foi renomeada para `20260930120000_delivery_fee_to_agree`.** O nome antigo, `20260929235000`, ordenava antes das migrações do J8, J9 e J12, que já estão na `main` e em bancos onde foram aplicadas. Ela só tinha rodado numa cópia descartada (`harness_l4`), então renomear não afeta nenhum banco.
+- **O checkout passa a dizer "Frete a combinar com a loja".** O ticket lista o checkout junto das outras telas. Ele já avisava que a loja informa a taxa, e agora usa a mesma frase das outras telas. O checkout não mostra total, só o subtotal, então não há "+ frete" para escrever ali.
+
+## Depois da revisão (29/09, noite)
+
+Uma revisão em quatro frentes, com verificação adversarial, confirmou oito pontos. Todos foram corrigidos:
+
+- **Lançar o frete recusa um total negativo.** Um pedido registrado pode ter desconto maior que os produtos enquanto o frete cobre a diferença. Baixar o frete depois gravava um total abaixo de zero e mexia na conta do cliente no CRM. Agora a rota responde `ORDER_DISCOUNT_TOO_LARGE`, como a criação do pedido já respondia. A checagem do total ficou num lugar só, `totalRefusalOf`, usado pelos dois caminhos.
+- **Um pedido cancelado que nunca combinou frete não diz "A combinar".** A página do pedido, o comprovante, o pedido no painel e a mensagem de WhatsApp tiram a linha da entrega, e o total não diz "+ frete". A regra ficou num helper só, `feeLineOf`, ao lado do `feeToAgree`. Um cancelado que já tinha frete lançado continua mostrando o valor.
+- **O card de Meus pedidos diz "+ frete a combinar".** O ticket lista Meus pedidos entre as telas que dizem que o frete é a combinar, e o card não tem linha de entrega onde dizer isso.
+- **Uma recusa ao salvar o frete relê o pedido.** O pedido pode ter sido cancelado em outra aba, e o card de frete sai junto.
+- **Um frete acima do teto responde `ORDER_TOTAL_TOO_LARGE`, e não um erro de validação genérico.** A tela mostra "O pedido passa de R$ 1.000.000,00."
+- O card de frete usa o `reaisFrom` de `lib/money`, e não uma cópia dele.
+- `docs/product/README.md` diz que o frete de uma entrega pode ainda não estar combinado, e que isso nunca é zero.
+- O tipo `SetOrderDeliveryFeePayload` saiu de baixo do comentário do `OrderErrorCode`.
+
+A revisão levantou mais um ponto, refutado na verificação: "-12,50" vira 1250 no campo. É o comportamento documentado do `centsFrom`, anterior a este ticket e igual em todo campo de dinheiro.

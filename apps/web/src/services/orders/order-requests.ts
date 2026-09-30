@@ -1,6 +1,7 @@
 // Types
 import type {
   OrderDeliveryPayload,
+  SetOrderDeliveryFeePayload,
   CreateOrderPayload,
   Order,
   OrderListQuery,
@@ -96,6 +97,18 @@ export async function setOrderDelivery(slug: string, number: number, delivery: O
     method: "PUT",
     headers: JSON_HEADERS,
     body: JSON.stringify(delivery),
+  })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
+  return payload as Order
+}
+
+/** Tells the fee agreed for a delivery (BEELINK-170); zero is a free delivery. */
+export async function setOrderDeliveryFee(slug: string, number: number, deliveryFeeCents: number): Promise<Order> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/delivery-fee`, {
+    method: "PUT",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ deliveryFeeCents } satisfies SetOrderDeliveryFeePayload),
   })
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))

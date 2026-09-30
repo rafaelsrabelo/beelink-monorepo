@@ -133,6 +133,22 @@ describe("an order's page, in the shopper's words", () => {
     expect(orderPaymentOf({ ...order, fulfillment: "PICKUP", discountCents: 0 }, context).rows.map((row) => row.label)).toEqual(["Subtotal"])
   })
 
+  /** BEELINK-170: a fee not agreed is "a combinar", never "Grátis", and the total says it leaves the fee out. */
+  it("says a delivery's fee is to be agreed, and the total '+ frete', while the shop has not told it", () => {
+    const payment = orderPaymentOf({ ...order, deliveryFeeCents: null }, context)
+
+    expect(payment.rows.find((row) => row.label === "Entrega")).toMatchObject({ value: "A combinar" })
+    expect(payment.rows.find((row) => row.label === "Entrega")).not.toHaveProperty("positive")
+    expect(payment.total.replace(/\s/g, " ")).toBe("R$ 94,80 + frete")
+  })
+
+  it("leaves the fee out of a cancelled order that never agreed one: there is nothing left to agree", () => {
+    const payment = orderPaymentOf({ ...order, status: "CANCELLED", cancelledBy: "CUSTOMER", deliveryFeeCents: null }, context)
+
+    expect(payment.rows.find((row) => row.label === "Entrega")).toBeUndefined()
+    expect(payment.total).not.toContain("frete")
+  })
+
   it("says where it goes, or the shop it is picked up at", () => {
     expect(orderHandoverOf(order, shop, context)).toEqual({
       title: "Endereço de entrega",

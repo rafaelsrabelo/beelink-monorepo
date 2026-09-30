@@ -1,6 +1,7 @@
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
@@ -26,8 +27,8 @@ export interface StorefrontSignInProps {
   sent?: boolean
   /** What an e-mailed link just did — the e-mail confirmed, the password replaced — said over the form. */
   notice?: string | null
-  /** The other faces of this page. */
-  hrefs: { signIn: string; signUp: string; forgot: string }
+  /** The other faces of this page, and bee-link's terms and privacy policy (BEELINK-171). */
+  hrefs: { signIn: string; signUp: string; forgot: string; terms: string; privacy: string }
   /**
    * "Continuar com Google", when the shop can offer it: the address that starts the flow, and
    * Google's "G" — its colours are Google's, so the screen hands over the file rather than this
@@ -61,6 +62,11 @@ export function StorefrontSignIn({
   messages = defaultMessages,
 }: StorefrontSignInProps) {
   const text = messages.storefront
+  const legal = messages.legal
+  const links = {
+    terms: <Link href={hrefs.terms} className="underline hover:text-shop-on-background">{legal.terms}</Link>,
+    privacy: <Link href={hrefs.privacy} className="underline hover:text-shop-on-background">{legal.privacy}</Link>,
+  }
   const lead = mode === "criar" ? text.signUpLead : mode === "senha" ? text.forgotLead : text.signInLead
   const submit = mode === "criar" ? text.signUpSubmit : mode === "senha" ? text.forgotSubmit : text.signInSubmit
 
@@ -105,6 +111,8 @@ export function StorefrontSignIn({
             <img src={google.iconSrc} alt="" width={20} height={20} className="size-5" />
             {text.continueWithGoogle}
           </a>
+          {/* Beside the button it is about: Google can open an account from either face, with no form. */}
+          <p className="-mt-2 text-center text-xs text-shop-muted">{withParts(legal.googleNotice, links)}</p>
           <p className="flex items-center gap-3 text-xs text-shop-muted before:h-px before:flex-1 before:bg-shop-line after:h-px after:flex-1 after:bg-shop-line">
             {text.signInOr}
           </p>
@@ -158,6 +166,12 @@ export function StorefrontSignIn({
           </button>
         </form>
       )}
+
+      <p className="text-center text-xs text-shop-muted">
+        {/* Beside "Criar conta", opening the account accepts bee-link's terms (BEELINK-171); signing in
+            or asking for a password accepts nothing, and the two links are enough. */}
+        {mode === "criar" && !sent ? withParts(legal.signUpNotice, links) : withParts(legal.links, links)}
+      </p>
 
       <nav className="flex flex-col items-center gap-2 text-sm">
         {mode === "entrar" ? (

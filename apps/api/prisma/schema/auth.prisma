@@ -31,6 +31,8 @@ model User {
   /// The providers this account signs in through besides its password (G5).
   identities  AccountIdentity[]
   pageVersions StorePageVersion[]
+  /// Each version of bee-link's terms this account accepted (BEELINK-171).
+  legalAcceptances LegalAcceptance[]
 
   @@unique([storeId, email])
   // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null

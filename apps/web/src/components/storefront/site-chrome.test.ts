@@ -61,6 +61,15 @@ describe("site chrome", () => {
     expect(navigation?.items.map((item) => item.label)).toEqual(["Serviços", "Como funciona", "Pedir orçamento"])
   })
 
+  it("ends with bee-link's terms and privacy policy, like a shop's footer (BEELINK-171)", () => {
+    const store = { socialNetworks: { whatsapp: null } } as unknown as PublicStore
+
+    const legal = siteFooterColumnsOf(store, sections, ptBR).at(-1)
+
+    expect(legal?.id).toBe("legal")
+    expect(legal?.items.map((item) => item.href)).toEqual(["/termos", "/privacidade"])
+  })
+
   /** On a landing the bands are the home's: an anchor alone would point at a band this page does not have. */
   it("leads back to the home's bands from another page", () => {
     expect(menuOf(sections, "/asfalto")[0]).toMatchObject({ label: "Serviços", href: "/asfalto#servicos" })

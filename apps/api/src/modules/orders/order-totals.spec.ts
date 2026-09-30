@@ -1,5 +1,14 @@
 // App
-import { totalsOf, variantLabelOf } from './order-totals.js';
+import { totalRefusalOf, totalsOf, variantLabelOf } from './order-totals.js';
+
+describe('totalRefusalOf', () => {
+  it('holds a total between zero and the cap, both ends allowed', () => {
+    expect(totalRefusalOf(0)).toBeNull();
+    expect(totalRefusalOf(100_000_000)).toBeNull();
+    expect(totalRefusalOf(-1)).toBe('DISCOUNT_TOO_LARGE');
+    expect(totalRefusalOf(100_000_001)).toBe('TOTAL_TOO_LARGE');
+  });
+});
 
 describe('totalsOf', () => {
   it('adds the lines, the fee and takes the discount off, in cents', () => {

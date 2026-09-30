@@ -94,7 +94,7 @@ export class CustomerOrderResponse implements CustomerOrder {
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
   @ApiProperty({ type: [CustomerOrderItemResponse] }) items!: CustomerOrderItemResponse[];
   @ApiProperty() subtotalCents!: number;
-  @ApiProperty() deliveryFeeCents!: number;
+  @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
   @ApiProperty() discountCents!: number;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
@@ -119,6 +119,7 @@ export class CustomerOrderSummaryResponse implements CustomerOrderSummary {
   @ApiProperty({ nullable: true, type: String }) recipientName!: string | null;
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
   @ApiProperty() totalCents!: number;
+  @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
   @ApiProperty({ description: 'Units across every line.' }) itemsCount!: number;
   @ApiProperty({ type: [CustomerOrderItemResponse], description: 'The first lines, as a card shows them.' }) items!: CustomerOrderItemResponse[];
   @ApiProperty({ description: 'Lines past those.' }) moreItems!: number;

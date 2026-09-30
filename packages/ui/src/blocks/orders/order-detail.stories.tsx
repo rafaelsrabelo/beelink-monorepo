@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 
 // Block
 import { OrderDeliveryCard } from "./order-delivery-card"
+import { OrderFeeCard } from "./order-fee-card"
 import { OrderDetail } from "./order-detail"
 import { order } from "./order-detail.fixtures"
 
@@ -55,6 +56,14 @@ export const SaiuSemEntrega: Story = {
   args: {
     order: { ...order, status: "OUT_FOR_DELIVERY" },
     delivery: <OrderDeliveryCard delivery={null} onSave={() => {}} onClear={() => {}} needed />,
+  },
+}
+
+/** O pedido do carrinho, com o frete ainda a combinar: o total diz "+ frete", e o card lança o valor (BEELINK-170). */
+export const FreteACombinar: Story = {
+  args: {
+    order: { ...order, status: "RECEIVED", deliveryFeeCents: null, totalCents: 27970 },
+    delivery: <OrderFeeCard feeCents={null} onSave={() => {}} />,
   },
 }
 

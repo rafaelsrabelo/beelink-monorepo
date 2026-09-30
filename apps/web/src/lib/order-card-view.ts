@@ -5,6 +5,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
+import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
@@ -83,7 +84,7 @@ export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardC
   return {
     number: order.number,
     placedOn: dayOf(order.placedAt, locale),
-    total: `${formatCents(order.totalCents, locale, "BRL")} · ${messages.orders.payments[order.paymentMethod]}`,
+    total: `${orderTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderCardTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}`,
     shipTo: order.fulfillment === "PICKUP" ? text.orderPickupLabel : order.recipientName,
     ...orderStatusLineOf(order, context),
     items: order.items.map((item) => ({

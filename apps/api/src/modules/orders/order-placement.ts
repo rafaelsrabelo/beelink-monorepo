@@ -34,7 +34,8 @@ export interface Placement {
   /** The customer's saved address a delivery goes to; null is their default. */
   addressId: string | null;
   paymentMethod: PaymentMethod;
-  deliveryFeeCents: number;
+  /** Null for a delivery whose fee the shop has not told yet. */
+  deliveryFeeCents: number | null;
   discountCents: number;
   note: string | null;
   placedAt: Date;

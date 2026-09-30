@@ -561,6 +561,11 @@ export interface UiMessages {
     orderSubtotal: string
     orderDelivery: string
     orderFree: string
+    /** A delivery whose fee the shop has not told yet (BEELINK-170), and its total beside it. */
+    orderFeeToAgree: string
+    orderTotalPlusFee: string
+    /** The same on a "Meus pedidos" card, which has no fee row to say "a combinar" in. */
+    orderCardTotalPlusFee: string
     orderDiscount: string
     orderTotalRow: string
     orderPaymentAgreed: string
@@ -1464,6 +1469,8 @@ export interface UiMessages {
     searchPlaceholder: string
     filterLabel: string
     all: string
+    /** A delivery's total while its fee is not agreed (BEELINK-170): "R$ 239,70 + frete". */
+    totalPlusFee: string
     /** Keyed by the wire's status, spelled out: this package imports no contracts. */
     statuses: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED", string>
     payments: Record<"MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD", string>
@@ -1614,6 +1621,15 @@ export interface UiMessages {
       whatsappGreeting: string
       whatsappLine: string
       whatsappFee: string
+      /** A delivery's fee not agreed yet (BEELINK-170): on the order, in its message, and the form that tells it. */
+      feeToAgree: string
+      whatsappFeeToAgree: string
+      feeFormTitle: string
+      feeFormHint: string
+      feeFormLabel: string
+      feeFormSave: string
+      feeFormSaved: string
+      feeFormInvalid: string
       whatsappPickup: string
       whatsappDiscount: string
       whatsappTotal: string
@@ -2063,6 +2079,20 @@ export interface UiMessages {
    * machine-readable form is `aria-keyshortcuts`, which is ARIA token syntax and never translated.
    */
   /** Sentences more than one family of blocks needs. */
+  /** Bee-link's terms of use and privacy policy (BEELINK-171): their pages, and where accepting them is said. */
+  legal: {
+    terms: string
+    privacy: string
+    /** Beside "Criar conta": creating the account is accepting. {terms} and {privacy} are links. */
+    signUpNotice: string
+    /** Beside "Continuar com Google", which may open an account with no form. */
+    googleNotice: string
+    /** Beside setting a password from an e-mailed link: the first screen of an imported account, or its owner's. */
+    resetNotice: string
+    /** The two links side by side, where nothing is being accepted. */
+    links: string
+    footerTitle: string
+  }
   shared: {
     confirmDeleteTitle: string
     delete: string

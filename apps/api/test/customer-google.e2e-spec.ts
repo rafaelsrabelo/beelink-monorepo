@@ -8,6 +8,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { AuthSession, GoogleAuthorization, GoogleSignIn } from '@harness-monorepo/contracts';
 
 // App
+import { LEGAL_VERSION } from '../src/modules/auth/auth.constants.js';
 import { codeChallengeOf, GoogleOAuthClient, type GoogleClaims } from '../src/modules/customers/google/google-oauth.client.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
@@ -91,8 +92,10 @@ describe("a shopper's Google door into a shop", () => {
     expect(signedIn).toMatchObject({ storeSlug: 'lessari', returnTo: '/lessari/carrinho' });
     expect(signedIn.session.accessToken).toBeTruthy();
 
-    const user = await prisma.user.findFirstOrThrow({ where: { email }, include: { store: true, identities: true, customers: true } });
+    const user = await prisma.user.findFirstOrThrow({ where: { email }, include: { store: true, identities: true, customers: true, legalAcceptances: true } });
     expect(user.store?.slug).toBe('lessari');
+    // No form: the button said continuing accepts the terms (BEELINK-171).
+    expect(user.legalAcceptances).toEqual([expect.objectContaining({ version: LEGAL_VERSION, via: 'GOOGLE' })]);
     expect(user.emailVerifiedAt).not.toBeNull();
     expect(user.passwordHash).toBeNull();
     expect(user.identities).toHaveLength(1);
@@ -115,8 +118,27 @@ describe("a shopper's Google door into a shop", () => {
     expect(await prisma.user.count({ where: { email } })).toBe(1);
     expect((await prisma.accountIdentity.findFirstOrThrow()).userId).toBe(before.id);
     expect((await prisma.customer.findMany({ where: { userId: before.id } })).length).toBe(1);
+    // It accepted at sign-up; tying Google to it records nothing more.
+    expect((await prisma.legalAcceptance.findMany({ where: { userId: before.id } })).map((acceptance) => acceptance.via)).toEqual(['SIGN_UP']);
     const login = await app.inject({ method: 'POST', url: '/api/stores/lessari/customer/login', payload: { email, password: PASSWORD } });
     expect(login.statusCode).toBe(200);
+  });
+
+  /** BEELINK-171: the button says continuing accepts the terms, on the sign-in face as much as on the other. */
+  it('records the terms for an account from before them, the first time Google lands on it, and only once', async () => {
+    const email = newEmail('antes-dos-termos');
+    const store = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } });
+    await prisma.user.create({ data: { name: 'Bia Antiga', email, storeId: store.id, emailVerifiedAt: new Date() } });
+
+    const first = await start();
+    expect((await finish(google.grant({ email, sub: 'google-bia' }), first.state)).statusCode).toBe(200);
+    // The tie now exists: the next sign-in goes through it, and finds the terms already taken.
+    const again = await start();
+    expect((await finish(google.grant({ email, sub: 'google-bia' }), again.state)).statusCode).toBe(200);
+
+    expect(await prisma.legalAcceptance.findMany({ where: { user: { email } } })).toEqual([
+      expect.objectContaining({ version: LEGAL_VERSION, via: 'GOOGLE' }),
+    ]);
   });
 
   // Anyone can sign up with someone else's e-mail; the password such an account carries is theirs.
@@ -130,6 +152,9 @@ describe("a shopper's Google door into a shop", () => {
     const user = await prisma.user.findFirstOrThrow({ where: { email } });
     expect(user.emailVerifiedAt).not.toBeNull();
     expect(user.passwordHash).toBeNull();
+    // Whoever typed the e-mail accepted at sign-up; the owner Google just proved accepts now.
+    const acceptances = await prisma.legalAcceptance.findMany({ where: { userId: user.id }, orderBy: { id: 'asc' } });
+    expect(acceptances.map((acceptance) => acceptance.via)).toEqual(['SIGN_UP', 'GOOGLE']);
     const login = await app.inject({ method: 'POST', url: '/api/stores/lessari/customer/login', payload: { email, password: PASSWORD } });
     expect(login.json()).toMatchObject({ errorCode: 'AUTH_INVALID_CREDENTIALS' });
   });

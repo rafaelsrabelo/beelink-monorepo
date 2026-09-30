@@ -73,6 +73,7 @@ export function toOrderSummary(row: OrderSummaryRow): OrderSummary {
     fulfillment: row.fulfillment,
     paymentMethod: row.paymentMethod,
     totalCents: row.totalCents,
+    deliveryFeeCents: row.deliveryFeeCents,
     itemsCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
     placedAt: row.placedAt.toISOString(),
   } satisfies OrderSummary;

@@ -13,11 +13,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { OrderStatusBadge } from "../orders/order-status-badge"
 import { itemsLabel } from "../orders/order-table"
+import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import type { OrderListItem } from "../orders/order-types"
 import { formatCents } from "../storefront/storefront-price"
 
 /** One order of the history: the list's row without the customer, who is the record's. */
-export type CustomerOrderItem = Pick<OrderListItem, "number" | "status" | "paymentMethod" | "totalCents" | "itemsCount" | "placedAt">
+export type CustomerOrderItem = Pick<OrderListItem, "number" | "status" | "fulfillment" | "paymentMethod" | "totalCents" | "deliveryFeeCents" | "itemsCount" | "placedAt">
 
 export interface CustomerOrdersProps {
   orders: readonly CustomerOrderItem[]
@@ -97,7 +98,7 @@ export function CustomerOrders({
                 </span>
               </span>
               <span className="flex items-center gap-3">
-                <span className="font-medium tabular-nums">{money(order.totalCents)}</span>
+                <span className="font-medium tabular-nums">{orderTotalText(money(order.totalCents), order, messages.orders.totalPlusFee)}</span>
                 <OrderStatusBadge status={order.status} messages={messages} />
               </span>
             </li>

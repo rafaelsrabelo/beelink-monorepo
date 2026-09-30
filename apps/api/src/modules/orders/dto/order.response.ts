@@ -90,7 +90,7 @@ export class OrderResponse implements Order {
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
   @ApiProperty({ type: [OrderItemResponse] }) items!: OrderItemResponse[];
   @ApiProperty() subtotalCents!: number;
-  @ApiProperty() deliveryFeeCents!: number;
+  @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
   @ApiProperty() discountCents!: number;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ nullable: true, type: String }) note!: string | null;
@@ -109,6 +109,7 @@ export class OrderSummaryResponse implements OrderSummary {
   @ApiProperty({ enum: ORDER_FULFILLMENTS }) fulfillment!: OrderFulfillment;
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
   @ApiProperty() totalCents!: number;
+  @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
   @ApiProperty({ description: 'Units across every line.' }) itemsCount!: number;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
 }

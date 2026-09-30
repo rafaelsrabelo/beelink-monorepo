@@ -13,6 +13,8 @@ export interface OrderListItem {
   fulfillment: OrderFulfillmentValue
   paymentMethod: OrderPaymentValue
   totalCents: number
+  /** Null while a delivery's fee is not agreed: the total then reads "+ frete". */
+  deliveryFeeCents: number | null
   itemsCount: number
   /** ISO-8601. */
   placedAt: string
@@ -60,7 +62,8 @@ export interface OrderDetailView {
   paymentMethod: OrderPaymentValue
   items: readonly OrderDetailItem[]
   subtotalCents: number
-  deliveryFeeCents: number
+  /** Null while a delivery's fee is not agreed (BEELINK-170); zero is a free delivery. */
+  deliveryFeeCents: number | null
   discountCents: number
   totalCents: number
   note: string | null

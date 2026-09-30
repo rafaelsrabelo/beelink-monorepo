@@ -18,6 +18,7 @@ import { Input } from "@harness-monorepo/ui/components/input"
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 
 // Block
 import { AuthCard } from "./auth-card"
@@ -29,6 +30,9 @@ export interface ResetPasswordFormProps {
   pending?: boolean
   error?: string
   loginHref?: string
+  /** bee-link's terms and privacy policy, which setting the password accepts (BEELINK-171). */
+  termsHref?: string
+  privacyHref?: string
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -38,10 +42,13 @@ export function ResetPasswordForm({
   pending = false,
   error,
   loginHref = "/login",
+  termsHref = "/termos",
+  privacyHref = "/privacidade",
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: ResetPasswordFormProps) {
   const text = messages.resetPassword
+  const legal = messages.legal
   const form = useForm<ResetPasswordValues>({
     resolver: zodResolver(createResetPasswordSchema(messages.validation)),
     defaultValues: { password: "", passwordConfirmation: "" },
@@ -89,6 +96,21 @@ export function ResetPasswordForm({
             <Button type="submit" disabled={pending}>
               {pending ? text.submitting : text.submit}
             </Button>
+            {/* An imported shopkeeper's first screen is this one, never the sign-up. */}
+            <FieldDescription className="text-center">
+              {withParts(legal.resetNotice, {
+                terms: (
+                  <Link href={termsHref} className="underline underline-offset-4">
+                    {legal.terms}
+                  </Link>
+                ),
+                privacy: (
+                  <Link href={privacyHref} className="underline underline-offset-4">
+                    {legal.privacy}
+                  </Link>
+                ),
+              })}
+            </FieldDescription>
           </Field>
         </FieldGroup>
       </form>

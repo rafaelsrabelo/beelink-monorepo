@@ -58,7 +58,7 @@ Every variable is declared in [../.env.example](../.env.example) and validated i
 | `LOG_LEVEL` | `info` | pino level |
 | `JWT_SECRET` | — | required, 32 characters or more; signs the access token |
 | `SMTP_URL` | `smtp://localhost:1025` | Mailpit in development |
-| `MAIL_FROM` | `Harness <nao-responda@harness.local>` | |
+| `MAIL_FROM` | `bee-link <nao-responda@bee-link.local>` | |
 | `WEB_URL` | `http://localhost:3000` | where the links in e-mails point |
 | `AUTH_RATE_LIMIT_MAX` | `5` | per IP, per window, on the unauthenticated auth routes |
 | `AUTH_RATE_LIMIT_WINDOW` | `1 minute` | |

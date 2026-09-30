@@ -10,7 +10,7 @@ import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, O
 // App
 import { catalogKeys } from "../catalog/catalog-hooks"
 import { customerKeys } from "../customers/customer-hooks"
-import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, setOrderDelivery, updateOrderStatus } from "./order-requests"
+import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
 
 /** Built from their inputs, never spelled at a call site (docs/ai-rules/state-and-data.md). */
 export const orderKeys = {
@@ -79,6 +79,24 @@ export function useCreateOrder(slug: string): UseMutationResult<Order, Error, Cr
         // Placing it took its counted lines off the stock the catalogue shows.
         queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) }),
       ]),
+  })
+}
+
+/**
+ * Tells the fee agreed for a delivery (BEELINK-170): the order on screen is the API's answer, and the
+ * list and the customers' books read again — the total both show moved. A refusal reads the order
+ * again too: it may have been cancelled in another tab, and the fee card goes with it.
+ */
+export function useOrderDeliveryFee(slug: string, number: number): UseMutationResult<Order, Error, number> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (deliveryFeeCents: number) => setOrderDeliveryFee(slug, number, deliveryFeeCents),
+    onSuccess: (order) => {
+      queryClient.setQueryData(orderKeys.detail(slug, number), order)
+      void queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) })
+      void queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) })
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey: orderKeys.detail(slug, number) }),
   })
 }
 

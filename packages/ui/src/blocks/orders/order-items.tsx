@@ -3,10 +3,11 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import { feeLineOf, orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import type { OrderDetailView } from "./order-types"
 
 export interface OrderItemsProps {
-  order: Pick<OrderDetailView, "items" | "subtotalCents" | "deliveryFeeCents" | "discountCents" | "totalCents" | "fulfillment">
+  order: Pick<OrderDetailView, "items" | "subtotalCents" | "deliveryFeeCents" | "discountCents" | "totalCents" | "fulfillment" | "status">
   money: (cents: number) => string
   messages?: UiMessages
 }
@@ -26,6 +27,7 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
  */
 export function OrderItems({ order, money, messages = defaultMessages }: OrderItemsProps) {
   const text = messages.orders.detail
+  const fee = feeLineOf(order)
 
   return (
     <section aria-labelledby="order-items-title" className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
@@ -50,9 +52,9 @@ export function OrderItems({ order, money, messages = defaultMessages }: OrderIt
       </ul>
       <dl className="flex flex-col gap-2">
         <Row label={text.subtotal} value={money(order.subtotalCents)} />
-        {order.fulfillment === "DELIVERY" ? <Row label={text.fee} value={money(order.deliveryFeeCents)} /> : null}
+        {fee !== null ? <Row label={text.fee} value={fee === "toAgree" ? text.feeToAgree : money(fee.cents)} /> : null}
         {order.discountCents > 0 ? <Row label={text.discount} value={`− ${money(order.discountCents)}`} /> : null}
-        <Row label={text.total} value={money(order.totalCents)} strong />
+        <Row label={text.total} value={orderTotalText(money(order.totalCents), order, messages.orders.totalPlusFee)} strong />
       </dl>
     </section>
   )

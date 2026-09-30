@@ -11,7 +11,8 @@ export interface PricedLine {
 
 export interface OrderTotals {
   subtotalCents: number;
-  deliveryFeeCents: number;
+  /** Null while a delivery's fee is not agreed: the total leaves it out. */
+  deliveryFeeCents: number | null;
   discountCents: number;
   totalCents: number;
 }
@@ -20,27 +21,39 @@ export interface OrderTotals {
 export type TotalsRefusal = 'DISCOUNT_TOO_LARGE' | 'TOTAL_TOO_LARGE';
 
 /**
+ * The bounds every total answers to, wherever it is computed — placing an order and agreeing its
+ * fee later both land here, so neither can write what the other refuses.
+ */
+export function totalRefusalOf(totalCents: number): TotalsRefusal | null {
+  if (totalCents > ORDER_AMOUNT_MAX_CENTS) return 'TOTAL_TOO_LARGE';
+  if (totalCents < 0) return 'DISCOUNT_TOO_LARGE';
+  return null;
+}
+
+/**
  * The order's totals, from the lines' photographed prices.
  *
  * Refused when the discount would take the total below zero — a discount bigger than what is paid
  * is a typo, not a gift — and when a line or the order passes `ORDER_AMOUNT_MAX_CENTS`, which also
  * keeps every amount inside the columns' integer range. A pick-up has no delivery fee, whatever
- * was typed: the fee is what the delivery costs.
+ * was typed: the fee is what the delivery costs. A delivery's fee not agreed yet (null) stays out of
+ * the total until the shop tells it.
  */
 export function totalsOf(
   lines: readonly PricedLine[],
   fulfillment: OrderFulfillment,
-  deliveryFeeCents: number,
+  deliveryFeeCents: number | null,
   discountCents: number,
 ): OrderTotals | TotalsRefusal {
   if (lines.some((line) => line.unitPriceCents * line.quantity > ORDER_AMOUNT_MAX_CENTS)) return 'TOTAL_TOO_LARGE';
 
   const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
   const fee = fulfillment === 'PICKUP' ? 0 : deliveryFeeCents;
-  const totalCents = subtotalCents + fee - discountCents;
+  const totalCents = subtotalCents + (fee ?? 0) - discountCents;
 
-  if (subtotalCents > ORDER_AMOUNT_MAX_CENTS || totalCents > ORDER_AMOUNT_MAX_CENTS) return 'TOTAL_TOO_LARGE';
-  if (totalCents < 0) return 'DISCOUNT_TOO_LARGE';
+  if (subtotalCents > ORDER_AMOUNT_MAX_CENTS) return 'TOTAL_TOO_LARGE';
+  const refusal = totalRefusalOf(totalCents);
+  if (refusal) return refusal;
   return { subtotalCents, deliveryFeeCents: fee, discountCents, totalCents };
 }
 

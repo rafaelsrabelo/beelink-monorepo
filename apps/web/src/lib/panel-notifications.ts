@@ -4,6 +4,7 @@ import type { AdminNotification } from "@harness-monorepo/ui/blocks/admin/admin-
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
+import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
@@ -43,7 +44,7 @@ export function notificationsOf(received: OrderPage | undefined, unread: ShopCon
       id: `order-${order.number}`,
       kind: "order" as const,
       title: format(text.notificationNewOrder, { number: String(order.number) }),
-      detail: format(text.notificationOrderDetail, { customer: order.customer.name, total: money.format(order.totalCents / 100) }),
+      detail: format(text.notificationOrderDetail, { customer: order.customer.name, total: orderTotalText(money.format(order.totalCents / 100), order, messages.orders.totalPlusFee) }),
       when: momentOf(order.placedAt, locale),
       href: panelOrderHrefOf(slug, order.number),
     },

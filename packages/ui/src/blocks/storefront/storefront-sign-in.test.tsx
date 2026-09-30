@@ -6,11 +6,52 @@ import { describe, expect, it } from "vitest"
 import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontSignIn, type StorefrontSignInMode } from "./storefront-sign-in"
 
-const hrefs = { signIn: "/loja/entrar", signUp: "/loja/entrar?modo=criar", forgot: "/loja/entrar?modo=senha" }
+const hrefs = { signIn: "/loja/entrar", signUp: "/loja/entrar?modo=criar", forgot: "/loja/entrar?modo=senha", terms: "/termos", privacy: "/privacidade" }
 
 function renderFace(mode: StorefrontSignInMode, extra: Partial<Parameters<typeof StorefrontSignIn>[0]> = {}) {
   return render(<StorefrontSignIn mode={mode} action={`/api/storefront/loja/customer/${mode}`} hidden={{ voltar: "/loja/carrinho", retorno: "/loja/entrar" }} hrefs={hrefs} {...extra} />)
 }
+
+const google = { href: "/api/storefront/loja/customer/google", iconSrc: "/brand/google.svg" }
+
+describe("StorefrontSignIn — bee-link's terms (BEELINK-171)", () => {
+  it("says, beside creating the account, that creating it accepts the terms, with both texts a link away", () => {
+    renderFace("criar")
+
+    expect(screen.getByText(/Ao criar a conta, você aceita os/)).toHaveTextContent("Ao criar a conta, você aceita os Termos de uso e declara ter lido a Política de privacidade.")
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
+    expect(screen.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute("href", "/privacidade")
+  })
+
+  it("says, right under the Google button on either face, that Google opening an account accepts them", () => {
+    for (const mode of ["entrar", "criar"] as const) {
+      const { container, unmount } = renderFace(mode, { google })
+
+      const notice = screen.getByText(/Ao continuar com Google/)
+      expect(notice).toHaveTextContent("Ao continuar com Google, você aceita os Termos de uso e declara ter lido a Política de privacidade.")
+      // After the button it is about, before the form: not a footnote of the password sign-in.
+      const button = screen.getByRole("link", { name: "Continuar com Google" })
+      expect(button.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(notice.compareDocumentPosition(container.querySelector("form")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      unmount()
+    }
+  })
+
+  it("accepts nothing on signing in with a password: only the two links there", () => {
+    renderFace("entrar")
+
+    expect(screen.queryByText(/você aceita/)).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
+  })
+
+  it("only links the two texts where nothing is being accepted", () => {
+    renderFace("senha")
+
+    expect(screen.queryByText(/você aceita/)).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos")
+    expect(screen.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute("href", "/privacidade")
+  })
+})
 
 describe("StorefrontSignIn", () => {
   it("signs in with a plain form that posts, carrying where to return", () => {

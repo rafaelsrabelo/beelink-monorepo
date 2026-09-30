@@ -8,6 +8,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import type { LinkComponent } from "../auth/auth-link"
 import { OrderStatusBadge } from "./order-status-badge"
+import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import type { OrderListItem } from "./order-types"
 
 export interface OrderRowsProps {
@@ -68,7 +69,7 @@ export function OrderTable({ orders, hrefOf, money, when, linkComponent: Link, m
                 </div>
               </TableCell>
               <TableCell className="text-muted-foreground">{itemsLabel(order.itemsCount, messages)}</TableCell>
-              <TableCell className="text-right font-medium tabular-nums">{money(order.totalCents)}</TableCell>
+              <TableCell className="text-right font-medium tabular-nums">{orderTotalText(money(order.totalCents), order, messages.orders.totalPlusFee)}</TableCell>
               <TableCell className="text-muted-foreground">{text.payments[order.paymentMethod]}</TableCell>
               <TableCell>
                 <OrderStatusBadge status={order.status} messages={messages} />

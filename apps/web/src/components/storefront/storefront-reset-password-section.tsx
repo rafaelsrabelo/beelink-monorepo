@@ -8,6 +8,7 @@ import type { WebMessages } from "@/locales"
 // App
 import { AppLink } from "@/components/app-link"
 import { errorSentenceOf } from "@/lib/error-sentence"
+import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { BACK_KEY, paramOf, safeBackOf, type StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionPlace, SectionQuery } from "@/lib/storefront-section"
 
@@ -36,6 +37,8 @@ export function StorefrontResetPasswordSection({ place, routes, query, errors }:
       ) : (
         <StorefrontNewPassword
           action={`/${store.slug}/api/customer/nova-senha`}
+          legalHrefs={LEGAL_ROUTES}
+          linkComponent={AppLink}
           // A refusal comes back to this very page, token and all; a save lands on the sign-in.
           hidden={{ token, [BACK_KEY]: back, retorno: routes.resetPassword({ token, back }), entrada: routes.signIn({ back }) }}
           error={code ? errorSentenceOf(errors, code) : null}

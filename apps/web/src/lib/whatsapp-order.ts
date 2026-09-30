@@ -1,4 +1,5 @@
 // UI
+import { feeLineOf, orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -12,7 +13,7 @@ import { addressLineOf } from "./customer-address"
 export interface OrderMessageInput {
   shopName: string
   /** The order as the API placed it: its number, and the lines and total the shop sees in its panel. */
-  order: Pick<CustomerOrder, "number" | "items" | "totalCents" | "fulfillment" | "deliveryAddress" | "paymentMethod">
+  order: Pick<CustomerOrder, "number" | "items" | "totalCents" | "deliveryFeeCents" | "fulfillment" | "deliveryAddress" | "paymentMethod">
   /** Who placed it, as the shop keeps them: their name and phone go under the total. */
   customer: Pick<CustomerProfile, "name" | "phone">
   locale: string
@@ -41,7 +42,8 @@ export function orderMessageOf({ shopName, order, customer, locale, messages }: 
     "",
     ...lines,
     "",
-    format(text.orderTotal, { total: money(order.totalCents) }),
+    // A delivery's fee not agreed yet stays out of the total: "+ frete" says so (BEELINK-170).
+    format(text.orderTotal, { total: orderTotalText(money(order.totalCents), order, text.orderTotalPlusFee) }),
     order.fulfillment === "PICKUP" ? text.orderPickup : format(text.orderAddress, { address: address ?? "" }),
     format(text.orderPayment, { method: messages.orders.payments[order.paymentMethod] }),
     format(text.orderCustomer, { name: customer.name }),
@@ -63,6 +65,7 @@ export interface ShopOrderMessageInput {
 export function shopOrderMessageOf({ shopName, order, locale, messages }: ShopOrderMessageInput): string {
   const text = messages.orders.detail
   const money = (cents: number) => formatCents(cents, locale, "BRL")
+  const fee = feeLineOf(order)
   const lines = order.items.map((item) =>
     format(text.whatsappLine, {
       qty: String(item.quantity),
@@ -76,9 +79,15 @@ export function shopOrderMessageOf({ shopName, order, locale, messages }: ShopOr
     "",
     ...lines,
     "",
-    order.fulfillment === "DELIVERY" ? format(text.whatsappFee, { value: money(order.deliveryFeeCents) }) : text.whatsappPickup,
+    ...(order.fulfillment === "PICKUP"
+      ? [text.whatsappPickup]
+      : fee === "toAgree"
+        ? [text.whatsappFeeToAgree]
+        : fee
+          ? [format(text.whatsappFee, { value: money(fee.cents) })]
+          : []),
     ...(order.discountCents > 0 ? [format(text.whatsappDiscount, { value: money(order.discountCents) })] : []),
-    format(text.whatsappTotal, { value: money(order.totalCents) }),
+    format(text.whatsappTotal, { value: orderTotalText(money(order.totalCents), order, messages.orders.totalPlusFee) }),
     format(text.whatsappPayment, { value: messages.orders.payments[order.paymentMethod] }),
     format(text.whatsappStatus, { value: messages.orders.statuses[order.status] }),
   ].join("\n")

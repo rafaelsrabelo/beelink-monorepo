@@ -8,6 +8,7 @@ import type { StorefrontOrderStatusProps } from "@harness-monorepo/ui/blocks/sto
 import type { StorefrontOrderTrackingProps } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tracking"
 
 // UI
+import { feeLineOf, orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { format } from "@harness-monorepo/ui/locales/index"
 
@@ -157,14 +158,21 @@ export function orderItemsOf(order: CustomerOrder, { routes, locale, messages }:
 export function orderPaymentOf(order: CustomerOrder, { locale, messages }: Pick<OrderCardContext, "locale" | "messages">): Omit<StorefrontOrderPaymentProps, "messages"> {
   const text = messages.storefront
   const money = (cents: number) => formatCents(cents, locale, "BRL")
+  const fee = feeLineOf(order)
   const rows: StorefrontOrderPaymentProps["rows"] = [
     { label: text.orderSubtotal, value: money(order.subtotalCents) },
-    ...(order.fulfillment === "DELIVERY"
-      ? [order.deliveryFeeCents === 0 ? { label: text.orderDelivery, value: text.orderFree, positive: true } : { label: text.orderDelivery, value: money(order.deliveryFeeCents) }]
-      : []),
+    ...(fee === null
+      ? []
+      : [
+          fee === "toAgree"
+            ? { label: text.orderDelivery, value: text.orderFeeToAgree }
+            : fee.cents === 0
+              ? { label: text.orderDelivery, value: text.orderFree, positive: true }
+              : { label: text.orderDelivery, value: money(fee.cents) },
+        ]),
     ...(order.discountCents > 0 ? [{ label: text.orderDiscount, value: `− ${money(order.discountCents)}`, positive: true }] : []),
   ]
-  return { rows, total: money(order.totalCents), method: format(text.orderPaymentAgreed, { method: messages.orders.payments[order.paymentMethod] }) }
+  return { rows, total: orderTotalText(money(order.totalCents), order, text.orderTotalPlusFee), method: format(text.orderPaymentAgreed, { method: messages.orders.payments[order.paymentMethod] }) }
 }
 
 /** Where it goes — who receives it, then the address line by line — or the shop it is picked up at. Null for a delivery that recorded none. */

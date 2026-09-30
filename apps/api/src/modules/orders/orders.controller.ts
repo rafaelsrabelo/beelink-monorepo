@@ -18,6 +18,7 @@ import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
+import { SetOrderDeliveryFeeDto } from './dto/order-delivery-fee.dto.js';
 import { CreateOrderDto, ListOrdersDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { OrderPageResponse, OrderResponse } from './dto/order.response.js';
 import { OrderNumberPipe } from './order-number.pipe.js';
@@ -82,6 +83,20 @@ export class OrdersController {
     @Body() dto: OrderDeliveryDto,
   ): Promise<OrderResponse> {
     return this.orders.setDelivery(storeSlug, current.id, number, dto);
+  }
+
+  @Put(':number/delivery-fee')
+  @ApiOperation({ summary: 'Tell the fee agreed for a delivery; the total and the customer’s books follow (BEELINK-170)' })
+  @ApiOkResponse({ type: OrderResponse })
+  @ApiBadRequestResponse({ description: 'ORDER_DELIVERY_FOR_PICKUP — a pick-up has no fee · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE' })
+  @ApiConflictResponse({ description: 'ORDER_CANCELLED' })
+  setDeliveryFee(
+    @Param('storeSlug') storeSlug: string,
+    @Param('number', OrderNumberPipe) number: number,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: SetOrderDeliveryFeeDto,
+  ): Promise<OrderResponse> {
+    return this.orders.setDeliveryFee(storeSlug, current.id, number, dto);
   }
 
   @Delete(':number/delivery')

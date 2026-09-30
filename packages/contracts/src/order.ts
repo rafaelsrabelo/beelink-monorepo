@@ -110,7 +110,11 @@ export interface Order {
   paymentMethod: PaymentMethod;
   items: OrderItem[];
   subtotalCents: number;
-  deliveryFeeCents: number;
+  /**
+   * Null on a delivery whose fee was not agreed yet (BEELINK-170): "a combinar" — never zero, which
+   * is a free delivery. Zero on a pick-up. The total leaves an unagreed fee out.
+   */
+  deliveryFeeCents: number | null;
   discountCents: number;
   totalCents: number;
   note: string | null;
@@ -132,6 +136,8 @@ export interface OrderSummary {
   fulfillment: OrderFulfillment;
   paymentMethod: PaymentMethod;
   totalCents: number;
+  /** Null while a delivery's fee is not agreed: the total then says "+ frete" beside it. */
+  deliveryFeeCents: number | null;
   /** How many units, across every line. */
   itemsCount: number;
   placedAt: string;
@@ -249,7 +255,11 @@ export interface CustomerOrder {
   paymentMethod: PaymentMethod;
   items: CustomerOrderItem[];
   subtotalCents: number;
-  deliveryFeeCents: number;
+  /**
+   * Null on a delivery whose fee was not agreed yet (BEELINK-170): "a combinar" — never zero, which
+   * is a free delivery. Zero on a pick-up. The total leaves an unagreed fee out.
+   */
+  deliveryFeeCents: number | null;
   discountCents: number;
   totalCents: number;
   /** ISO-8601. */
@@ -273,6 +283,8 @@ export interface CustomerOrderSummary {
   recipientName: string | null;
   paymentMethod: PaymentMethod;
   totalCents: number;
+  /** Null while a delivery's fee is not agreed: the total then says "+ frete" beside it. */
+  deliveryFeeCents: number | null;
   /** Units across every line. */
   itemsCount: number;
   /** The first lines, as many as the card shows. */
@@ -343,6 +355,11 @@ export interface CustomerReorder {
   left: CustomerReorderLeft[];
 }
 
+/** The fee the shop agreed for a delivery, in whole cents (BEELINK-170): zero is a free delivery. */
+export interface SetOrderDeliveryFeePayload {
+  deliveryFeeCents: number;
+}
+
 /**
  * The error codes the order routes answer, beyond the store's own (`STORE_NOT_FOUND`,
  * `STORE_FORBIDDEN`) and the HTTP-status fallbacks.
@@ -366,7 +383,7 @@ export type OrderErrorCode =
   /** The customer cancels only while the order is received; once the shop accepted it, the shop does. */
   | "ORDER_NOT_CANCELLABLE"
   | "ORDER_STATUS_UNCHANGED"
-  /** A pick-up is handed over at the shop: it has no delivery to tell. */
+  /** A pick-up is handed over at the shop: it has no delivery to tell, and no fee. */
   | "ORDER_DELIVERY_FOR_PICKUP"
   /** The arrival window needs both days, and cannot end before it starts. */
   | "ORDER_DELIVERY_WINDOW_INVALID"

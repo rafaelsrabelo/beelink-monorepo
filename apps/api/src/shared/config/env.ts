@@ -32,7 +32,7 @@ const envSchema = z.object({
 
   /** Mailpit in development and tests; a transactional provider in production. */
   SMTP_URL: z.url().default('smtp://localhost:1025'),
-  MAIL_FROM: z.string().min(1).default('Harness <nao-responda@harness.local>'),
+  MAIL_FROM: z.string().min(1).default('bee-link <nao-responda@bee-link.local>'),
 
   /** Where the links inside e-mails point — the web app, not the API. */
   WEB_URL: z.url().default('http://localhost:3000'),

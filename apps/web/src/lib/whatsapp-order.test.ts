@@ -14,6 +14,7 @@ const placed = {
     { productId: "p2", productSlug: "whey", productName: "Whey", variantLabel: "Peso: 900g · Sabor: Chocolate", imageUrl: null, unitPriceCents: 14990, quantity: 1, lineTotalCents: 14990 },
   ],
   totalCents: 24970,
+  deliveryFeeCents: 1000,
   fulfillment: "DELIVERY" as const,
   deliveryAddress: {
     recipientName: "Rafael",
@@ -52,6 +53,12 @@ describe("the WhatsApp order", () => {
         "Celular: 11988887777",
       ].join("\n"),
     )
+  })
+
+  it("writes the total '+ frete' while the delivery's fee is not agreed", () => {
+    const message = orderMessageOf({ shopName: "Loja do Design", order: { ...placed, deliveryFeeCents: null }, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
+
+    expect(message).toContain("Total: R$ 249,70 + frete")
   })
 
   it("says a pick-up is picked up, and writes no phone the shop does not have", () => {
@@ -102,6 +109,21 @@ describe("shopOrderMessageOf", () => {
         "Status: Em preparo",
       ].join("\n"),
     )
+  })
+
+  it("says a fee not agreed yet is to be agreed, and the total leaves it out", () => {
+    const message = shopOrderMessageOf({ shopName: "Loja", order: { ...order, deliveryFeeCents: null, totalCents: 9480 }, locale: "pt-BR", messages: ptBR })
+
+    expect(message).toContain("Entrega: a combinar")
+    expect(message).toContain("Total: R$\u00a094,80 + frete")
+  })
+
+  it("says nothing of a fee on a cancelled order that never agreed one", () => {
+    const message = shopOrderMessageOf({ shopName: "Loja", order: { ...order, status: "CANCELLED", deliveryFeeCents: null, totalCents: 9480 }, locale: "pt-BR", messages: ptBR })
+
+    expect(message).not.toContain("a combinar")
+    expect(message).not.toContain("+ frete")
+    expect(message).toContain("Total: R$\u00a094,80")
   })
 
   it("says a pick-up is collected at the shop, with no fee", () => {
