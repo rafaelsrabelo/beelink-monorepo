@@ -1,5 +1,5 @@
 // Types
-import type { CouponKind, CouponStatus, DiscountKind, PromotionErrorCode, PromotionScope, PromotionStatus } from '@harness-monorepo/contracts';
+import type { CouponKind, CouponStatus, DiscountKind, PricesChangeAtHeader, PromotionErrorCode, PromotionScope, PromotionStatus } from '@harness-monorepo/contracts';
 
 export const DISCOUNT_KINDS = ['PERCENT', 'FIXED'] as const satisfies readonly DiscountKind[];
 export const COUPON_KINDS = ['PERCENT', 'FIXED', 'FREE_SHIPPING'] as const satisfies readonly CouponKind[];
@@ -16,6 +16,15 @@ export const PERCENT_BPS_MAX = 10_000;
 export const DISCOUNT_AMOUNT_MAX_CENTS = 100_000_000;
 /** What one promotion may name; past it, the shopkeeper wants a category, or the whole cart. */
 export const PROMOTION_TARGETS_MAX = 200;
+/**
+ * How many promotions a shop may have running at one instant, the newest first; past it, the older
+ * ones do not apply. No shop runs fifty at once: this is the bound on what every read of the shop
+ * window and every order loads, so a shop cannot make its own public pages — and the database they
+ * share with every other shop — read ten thousand promotions per request.
+ */
+export const RUNNING_PROMOTIONS_MAX = 50;
+
+export const PRICES_CHANGE_AT_HEADER = 'x-prices-change-at' satisfies PricesChangeAtHeader;
 
 /**
  * As it is typed: 3 to 30 of these, in either case, stored in upper case — the migration's CHECK

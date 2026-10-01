@@ -200,3 +200,11 @@ export type PromotionErrorCode =
   | "COUPON_CODE_TAKEN"
   | "COUPON_DISCOUNT_INVALID"
   | "COUPON_PERIOD_INVALID";
+
+/**
+ * The response header a public catalogue read carries while a promotion of the shop is still to
+ * start or to end (BEELINK-193): the instant, ISO-8601, at which the prices in the answer change by
+ * themselves. No write happens at that instant, so nothing drops a cached copy: whoever keeps one
+ * reads this and asks again once it has passed. Absent when no change is scheduled.
+ */
+export type PricesChangeAtHeader = "x-prices-change-at";

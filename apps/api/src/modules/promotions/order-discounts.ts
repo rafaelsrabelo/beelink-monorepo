@@ -5,6 +5,7 @@ import type { CouponModel } from '../../generated/prisma/models.js';
 // App
 import type { PricingPromotion } from './discount-pricing.js';
 import { promotionWhereOf } from './promotion-status.js';
+import { RUNNING_PROMOTIONS_MAX } from './promotions.constants.js';
 
 /** The injected client outside a transaction, the transaction's inside one: a quote and an order read alike. */
 type Db = Prisma.TransactionClient;
@@ -14,15 +15,25 @@ type Db = Prisma.TransactionClient;
  * arithmetic is `discount-pricing.ts`; whether a coupon is taken is `coupon-verdict.ts`.
  */
 
+/** What a cart holds, to read of each promotion only what it names among it. */
+export interface CartTargets {
+  productIds: readonly string[];
+  categoryIds: readonly string[];
+}
+
 /**
- * The shop's promotions running at `at`, the newest first, each with what it names among the
- * cart's products and categories only: a promotion naming two hundred products is read as the two
- * the cart holds.
+ * The shop's promotions running at `at`, the newest first, at most `RUNNING_PROMOTIONS_MAX`. The
+ * one reading of "what runs now", for an order and for the shop window alike: two would be two
+ * rules that agree today.
+ *
+ * With `only`, each comes with what it names among the cart's products and categories — a promotion
+ * naming two hundred products is read as the two the cart holds. Without it, with everything it names.
  */
-export async function runningPromotions(db: Db, storeId: string, at: Date, productIds: readonly string[], categoryIds: readonly string[]): Promise<PricingPromotion[]> {
+export async function runningPromotions(db: Db, storeId: string, at: Date, only?: CartTargets): Promise<PricingPromotion[]> {
   const rows = await db.promotion.findMany({
     where: { storeId, ...promotionWhereOf('ACTIVE', at) },
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: RUNNING_PROMOTIONS_MAX,
     select: {
       id: true,
       name: true,
@@ -30,8 +41,8 @@ export async function runningPromotions(db: Db, storeId: string, at: Date, produ
       discountKind: true,
       percentBps: true,
       amountCents: true,
-      products: { where: { productId: { in: [...productIds] } }, select: { productId: true } },
-      categories: { where: { categoryId: { in: [...categoryIds] } }, select: { categoryId: true } },
+      products: { ...(only ? { where: { productId: { in: [...only.productIds] } } } : {}), select: { productId: true } },
+      categories: { ...(only ? { where: { categoryId: { in: [...only.categoryIds] } } } : {}), select: { categoryId: true } },
     },
   });
   return rows.map(({ products, categories, ...promotion }) => ({

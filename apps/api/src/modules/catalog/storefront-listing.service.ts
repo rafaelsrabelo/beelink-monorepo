@@ -86,13 +86,15 @@ export class StorefrontListingService {
   }
 
   /**
-   * One page of the shelf and how many it holds. Read in one transaction, so the pager never
+   * One page of the shelf and how many it holds: read in one transaction, so the pager never
    * disagrees with its pages.
    *
-   * "Maior desconto" with a promotion running is ordered here and not by the database: a promotion's
-   * discount is in no column to order by. The whole filtered shelf is read lean — a shop's shelf,
-   * not a marketplace's — ordered by the percent each card will print, and only the page's rows are
-   * read in full. Ties fall as the column's order breaks them: the shopkeeper's position, then the id.
+   * But for "maior desconto" with a promotion running, which is ordered here and not by the
+   * database: a promotion's discount is in no column to order by. The whole filtered shelf is read
+   * lean — a shop's shelf, not a marketplace's — and counted from that one read, ordered by the
+   * percent each card will print, and only the page's rows are then read in full; a product deleted
+   * between the two reads leaves that page one short. Ties fall as the column's order breaks them:
+   * the shopkeeper's position, then the id.
    */
   private async pageOf(where: ProductWhereInput, sort: StorefrontSort, page: number, pageSize: number, promotions: readonly PricingPromotion[]): Promise<[ShelfCardRow[], number]> {
     if (sort !== 'maior-desconto' || promotions.length === 0) {

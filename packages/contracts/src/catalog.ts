@@ -214,8 +214,14 @@ export interface PublicProductVariant {
   id: string;
   /** One value id per option, in the options' order. Empty on the default variant. */
   optionValueIds: string[];
+  /** What is paid now, and what it was: under a promotion, as `PublicProductCard`'s two prices. */
   priceCents: number;
   compareAtPriceCents: number | null;
+  /**
+   * The promotion that set this combination's price; null or absent with none. Its own, since two
+   * promotions may price two combinations of one product.
+   */
+  promotionName?: string | null;
   /** This combination's photo, when it has one of its own. */
   imageUrl: string | null;
   /**

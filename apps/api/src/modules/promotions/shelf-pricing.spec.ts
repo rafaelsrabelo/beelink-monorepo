@@ -67,6 +67,11 @@ describe('promotedCard and promotedDetail', () => {
     expect(promotedCard(card, LOOSE, [proteins])).toEqual({ ...card, promotionName: null });
   });
 
+  it('price each end of the range by itself: a cheapest combination given away takes nothing, the dearest its share', () => {
+    const fromFree = { ...card, priceCents: 0, priceRange: { minCents: 0, maxCents: 10000 } };
+    expect(promotedCard(fromFree, LOOSE, [ten])).toMatchObject({ priceCents: 0, compareAtPriceCents: null, promotionName: null, priceRange: { minCents: 0, maxCents: 9000 } });
+  });
+
   it('price each combination of a product’s page by its own price', () => {
     const detail = {
       ...card,
@@ -76,10 +81,32 @@ describe('promotedCard and promotedDetail', () => {
       ],
     } as unknown as PublicProductDetail;
 
-    expect(promotedDetail(detail, WHEY, [ten]).variants.map((variant) => [variant.priceCents, variant.compareAtPriceCents])).toEqual([
-      [17091, 18990],
-      [18891, 22990],
+    expect(promotedDetail(detail, WHEY, [ten]).variants.map((variant) => [variant.priceCents, variant.compareAtPriceCents, variant.promotionName])).toEqual([
+      [17091, 18990, 'Dez'],
+      [18891, 22990, 'Dez'],
     ]);
     expect(promotedDetail(detail, WHEY, [])).toBe(detail);
+  });
+
+  it('name on each combination the promotion that priced it, which is not always the product’s', () => {
+    // R$ 30,00 off is the better cut of the cheaper combination; 20% is of the dearer.
+    const thirty = promotion('Trinta reais', { scope: 'PRODUCTS', discountKind: 'FIXED', amountCents: 3000, productIds: ['whey'] });
+    const twenty = promotion('Vinte', { percentBps: 2000 });
+    const detail = {
+      ...card,
+      priceCents: 10000,
+      priceRange: { minCents: 10000, maxCents: 30000 },
+      variants: [
+        { id: 'v1', optionValueIds: [], priceCents: 10000, compareAtPriceCents: null, imageUrl: null, available: true },
+        { id: 'v2', optionValueIds: [], priceCents: 30000, compareAtPriceCents: null, imageUrl: null, available: true },
+      ],
+    } as unknown as PublicProductDetail;
+
+    const promoted = promotedDetail(detail, WHEY, [thirty, twenty]);
+    expect(promoted).toMatchObject({ priceCents: 7000, promotionName: 'Trinta reais', priceRange: { minCents: 7000, maxCents: 24000 } });
+    expect(promoted.variants.map((variant) => [variant.priceCents, variant.promotionName])).toEqual([
+      [7000, 'Trinta reais'],
+      [24000, 'Vinte'],
+    ]);
   });
 });

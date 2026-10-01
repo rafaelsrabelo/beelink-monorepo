@@ -33,6 +33,16 @@ describe("discountPercent", () => {
   ])("reads %i from %i as -%i%%", (price, compareAt, percent) => {
     expect(discountPercent(price, compareAt)).toBe(percent)
   })
+
+  /** 0.29 × 100, 0.57 × 100 and 0.58 × 100 each fall a hair short of a whole number in floating point. */
+  it.each([29, 57, 58])("reads a cut of exactly %i%% as itself, never one less", (percent) => {
+    expect(discountPercent(10000 - percent * 100, 10000)).toBe(percent)
+    expect(discountPercent(18900 - percent * 189, 18900)).toBe(percent)
+  })
+
+  it("reads every whole cut of a whole price as itself", () => {
+    for (let percent = 1; percent <= 99; percent += 1) expect(discountPercent(10000 - percent * 100, 10000), String(percent)).toBe(percent)
+  })
 })
 
 describe("priceParts", () => {

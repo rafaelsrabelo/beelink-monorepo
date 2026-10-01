@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, UseInterceptors } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiBearerAuth,
@@ -18,6 +18,7 @@ import {
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
+import { PricesChangeInterceptor } from '../promotions/prices-change.interceptor.js';
 import { env } from '../../shared/config/env.js';
 import { CurrentUser, Public } from '../auth/auth.decorators.js';
 import { StoreColorsDto } from './dto/store-fields.dto.js';
@@ -69,6 +70,7 @@ export class StoresController {
 
   @Get(':slug/public')
   @Public()
+  @UseInterceptors(PricesChangeInterceptor)
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
   @ApiOperation({ summary: 'The shop window — everything an anonymous visitor is served, and no more' })
   @ApiOkResponse({ type: PublicStoreResponse })

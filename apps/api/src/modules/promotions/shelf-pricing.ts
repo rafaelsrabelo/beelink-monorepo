@@ -50,26 +50,29 @@ export function shelfPercentOf(product: ShelfProduct, promotions: readonly Prici
   return was !== null && was > price.priceCents ? Math.floor(((was - price.priceCents) * 100) / was) : 0;
 }
 
-/** A card with the promotion on its price and on its range. With none running, the card as it came. */
+/**
+ * A card with the promotion on its price and on its range. With none running, the card as it came.
+ *
+ * The two ends of the range are priced each by itself: a share or an amount off a unit keeps the
+ * order of two prices, and a cheapest combination given away takes no promotion while the dearest does.
+ */
 export function promotedCard<T extends PublicProductCard>(card: T, product: ShelfProduct, promotions: readonly PricingPromotion[]): T {
   if (promotions.length === 0) return card;
 
   const price = shelfPriceOf(product, promotions, card.priceCents, card.compareAtPriceCents);
-  if (price.promotionName === null) return { ...card, promotionName: null };
-  // The dearest combination takes the same promotion: a share or an amount off a unit keeps the order of two prices.
   const maxCents = shelfPriceOf(product, promotions, card.priceRange.maxCents, null).priceCents;
   return { ...card, ...price, priceRange: { minCents: price.priceCents, maxCents } };
 }
 
-/** A product's page: the card's prices, and each combination's own. */
+/**
+ * A product's page: the card's prices, and each combination's own — with the promotion that set
+ * it, since two promotions may price two combinations of one product.
+ */
 export function promotedDetail(detail: PublicProductDetail, product: ShelfProduct, promotions: readonly PricingPromotion[]): PublicProductDetail {
   if (promotions.length === 0) return detail;
 
   return {
     ...promotedCard(detail, product, promotions),
-    variants: detail.variants.map((variant) => {
-      const { priceCents, compareAtPriceCents } = shelfPriceOf(product, promotions, variant.priceCents, variant.compareAtPriceCents);
-      return { ...variant, priceCents, compareAtPriceCents };
-    }),
+    variants: detail.variants.map((variant) => ({ ...variant, ...shelfPriceOf(product, promotions, variant.priceCents, variant.compareAtPriceCents) })),
   };
 }

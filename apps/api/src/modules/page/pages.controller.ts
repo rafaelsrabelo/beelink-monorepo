@@ -1,5 +1,5 @@
 // Nest
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseInterceptors } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiBadRequestResponse,
@@ -19,6 +19,7 @@ import {
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
+import { PricesChangeInterceptor } from '../promotions/prices-change.interceptor.js';
 import { env } from '../../shared/config/env.js';
 import { CurrentUser, Public } from '../auth/auth.decorators.js';
 import { STOREFRONT_RATE_LIMIT } from '../stores/stores.constants.js';
@@ -127,6 +128,7 @@ export class PagesController {
  * place quietly opens the other.
  */
 @ApiTags('storefront')
+@UseInterceptors(PricesChangeInterceptor)
 @Controller('stores/:storeSlug/landings')
 export class PublicLandingsController {
   constructor(private readonly landings: LandingReadService) {}

@@ -62,7 +62,7 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
   // A pick-up has no fee, whatever was typed; the coupon reads the fee the order will have.
   const fee = fulfillment === 'PICKUP' ? 0 : input.deliveryFeeCents;
 
-  const promotions = await runningPromotions(db, storeId, at, lines.map((line) => line.productId), lines.flatMap((line) => line.categoryIds));
+  const promotions = await runningPromotions(db, storeId, at, { productIds: lines.map((line) => line.productId), categoryIds: lines.flatMap((line) => line.categoryIds) });
   const lineDiscounts = promotionDiscountsOf(lines, promotions);
   const promotionDiscountCents = lineDiscounts.reduce((sum, line) => sum + line.discountCents, 0);
   const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);

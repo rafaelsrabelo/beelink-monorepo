@@ -187,6 +187,19 @@ describe("StorefrontProductDetail", () => {
       ])
     })
 
+    it("names the promotion of the combination chosen, which is not always the product's", () => {
+      const promoted = BLOUSE_VARIANTS.map((variant) =>
+        variant.id === "g-preto" ? { ...variant, priceCents: 17520, compareAtPriceCents: 21900, promotionName: "Vinte por cento" } : { ...variant, priceCents: 15900, compareAtPriceCents: 18900, promotionName: "Trinta reais" },
+      )
+      const { unmount } = renderProduct({ ...withVariants, variants: promoted, promotionName: "Trinta reais", initialVariantId: "g-preto" })
+      expect(screen.getByText("Promoção: Vinte por cento")).toBeInTheDocument()
+      expect(screen.queryByText("Promoção: Trinta reais")).toBeNull()
+      unmount()
+
+      renderProduct({ ...withVariants, variants: promoted, promotionName: "Trinta reais", initialVariantId: "p-areia" })
+      expect(screen.getByText("Promoção: Trinta reais")).toBeInTheDocument()
+    })
+
     it("opens on the combination the address asked for", () => {
       renderProduct({ ...withVariants, initialVariantId: "g-preto" })
 

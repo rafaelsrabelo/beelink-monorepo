@@ -45,7 +45,10 @@ export interface StorefrontProductDetailProps {
   description: string | null
   priceCents: number
   compareAtPriceCents: number | null
-  /** The promotion that set the price, said under it while the price shows a cut; absent with none. */
+  /**
+   * The promotion that set the price, said under it while the price shows a cut; absent with none.
+   * A combination chosen says its own: two promotions may price two combinations of one product.
+   */
   promotionName?: string | null
   images: readonly StorefrontProductImage[]
   /** `wa.me/<digits>?text=…`, built by the screen, with `ORDER_VARIANT_MARK` where the combination goes. */
@@ -142,6 +145,7 @@ export function StorefrontProductDetail({
   // The chosen combination's price, or the product's: the column, the box and the photo's badge.
   const cents = variant?.priceCents ?? priceCents
   const was = variant ? variant.compareAtPriceCents : compareAtPriceCents
+  const promotion = variant ? variant.promotionName : promotionName
   // The chosen combination's photos, the most specific first, behind the variant's own when it has one.
   const fitting = variant
     ? photosOf(images, optionOfValue(options, (option) => option.values, (entry) => entry.id), variant.optionValueIds)
@@ -161,7 +165,7 @@ export function StorefrontProductDetail({
     // Announced as it changes with the choice, so a screen reader hears the new price.
     <div aria-live="polite" className="flex flex-col gap-1">
       <StorefrontPrice priceCents={cents} compareAtPriceCents={was} locale={locale} size="product" showBadge={showBadge} messages={messages} />
-      {promotionName && was !== null && was > cents ? <p className="text-sm font-medium">{format(messages.storefront.promotion, { name: promotionName })}</p> : null}
+      {promotion && was !== null && was > cents ? <p className="text-sm font-medium">{format(messages.storefront.promotion, { name: promotion })}</p> : null}
     </div>
   ) : undefined
 

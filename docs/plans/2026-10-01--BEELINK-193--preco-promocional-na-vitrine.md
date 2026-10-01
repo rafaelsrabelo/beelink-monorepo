@@ -93,3 +93,48 @@ um ticket à parte.
 - O filtro e a ordenação por preço sobre o preço promocional (decisão 4).
 - A linha de promoção nos totais do checkout e o campo de cupom (O5).
 - A faixa ligada à promoção (decisão 6).
+
+## Adendo da revisão (01/10)
+
+Um revisor de correção leu o diff. A vitrine e o pedido concordam (a mesma leitura das promoções, a
+mesma regra por unidade), e o arredondamento novo não quebra nenhum `CHECK`. O que mudou:
+
+- **O selo não lê mais 28% numa promoção de 29%.** `discountPercent` (no `packages/ui`) dividia antes
+  de multiplicar, em ponto flutuante: 0,29 × 100 dá 28,999…, e o selo arredonda para baixo. Acontecia
+  com cortes exatos de 29%, 57% e 58%, de uma promoção ou do "de/por" da própria loja. Agora multiplica
+  antes, em centavos inteiros, que é a conta que a API faz nos filtros.
+- **Um preço promocional vencido não é mais servido.** A decisão 5 dizia "aparecem em até um minuto",
+  e estava errada: o cache do web serve a resposta guardada enquanto busca a nova, então a primeira
+  visita depois de uma noite sem movimento via o preço da promoção que acabou à meia-noite. O começo
+  e o fim de uma promoção não são uma escrita, e nada derrubava esse cache. Agora:
+  - toda leitura pública do catálogo responde, no cabeçalho `x-prices-change-at`, o próximo instante
+    em que os preços da loja mudam sozinhos (uma promoção ativa que ainda vai começar ou acabar);
+  - o `public-api.ts` do web não serve uma resposta guardada depois desse instante: busca de novo, sem
+    cache, só naquela requisição, enquanto o cache se atualiza por trás.
+
+  Conferido no navegador: uma promoção agendada para dali a um minuto apareceu na primeira visita
+  depois do horário. **Isso corrige a decisão 5.**
+- **Um produto de preço zero não é mais contado como oferta.** Uma promoção não tira nada de um
+  brinde, mas a condição de busca o incluía por alcance. As condições agora pedem preço maior que zero.
+- **Cada combinação diz a promoção que deu o preço dela.** Com duas promoções valendo, a combinação
+  mais cara podia ter o preço de uma e a página dizer o nome da outra. `PublicProductVariant` ganhou
+  `promotionName`, e a faixa de preço do card é calculada ponta a ponta.
+- **No máximo 50 promoções valem ao mesmo tempo, as mais novas** (`RUNNING_PROMOTIONS_MAX`). É o teto
+  do que cada leitura da vitrine e cada pedido carregam. A vitrine e o pedido passaram a usar a mesma
+  função de leitura (`runningPromotions`), em vez de duas que concordavam.
+- **Os produtos com "de/por" e promoção são lidos só entre os que estão na prateleira** (sem rascunhos
+  nem esgotados).
+- **`promotionName` entrou no Swagger,** e a comparação de preço do corte não passa mais do limite da
+  coluna.
+
+O que fica como está, sabendo:
+
+- **Um percentual quebrado logo abaixo de um corte pode ler o corte no selo e ficar fora do filtro.**
+  9,99% de R$ 18,99 dá R$ 1,90 de desconto (arredondado para cima), o selo lê 10%, e o filtro "10% ou
+  mais" não traz o produto. Com percentual inteiro isso só acontece abaixo de R$ 1,00.
+- **Uma promoção no carrinho inteiro faz cada listagem ler todos os produtos com "de/por" próprio da
+  prateleira,** para calcular o desconto dos dois juntos. São os que o lojista marcou à mão.
+- **"Maior desconto" com promoção ativa lê a prateleira filtrada inteira a cada página** (decisão 4).
+- **A mensagem do WhatsApp do pedido mostra as linhas pelo preço do catálogo e o total com desconto,**
+  sem uma linha de desconto entre eles. Vem do O2 e fica para o O5, que é quem mostra o desconto no
+  comprovante e nas mensagens.

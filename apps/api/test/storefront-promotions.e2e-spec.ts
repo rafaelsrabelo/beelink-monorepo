@@ -128,7 +128,7 @@ describe('the shop window under promotions', () => {
 
     const page = (await app.inject({ method: 'GET', url: `/api/stores/lessari/catalog/${whey.slug}` })).json<PublicProductDetail>();
     expect(page).toMatchObject({ priceCents: 17091, compareAtPriceCents: 18990, promotionName: 'Proteínas', priceRange: { minCents: 17091, maxCents: 17091 } });
-    expect(page.variants.map((variant) => [variant.priceCents, variant.compareAtPriceCents])).toEqual([[17091, 18990]]);
+    expect(page.variants.map((variant) => [variant.priceCents, variant.compareAtPriceCents, variant.promotionName])).toEqual([[17091, 18990, 'Proteínas']]);
 
     const cart = (await app.inject({ method: 'GET', url: `/api/stores/lessari/cart?produto=${whey.id}&produto=${kit.id}` })).json<StorefrontCartProducts>();
     expect(priced(cart.products)).toEqual({ Whey: [17091, 18990, 'Proteínas'], Kit: [10000, 12000, null] });
@@ -236,6 +236,71 @@ describe('the shop window under promotions', () => {
       Kit: [10000, 12000, null],
       Caro: [49000, 50000, 'Dez reais'],
     });
+  });
+
+  it('takes nothing off a product given away, and never counts it as on sale', async () => {
+    const free = await add<ProductDetail>('products', { name: 'Brinde', priceCents: 0 });
+    await promotion({ name: 'Loja toda' });
+    await promotion({ name: 'Dez reais', scope: 'PRODUCTS', discountKind: 'FIXED', percentBps: null, amountCents: 1000, productIds: [free.id] });
+
+    const catalog = await shelf();
+    expect(priced(catalog.products).Brinde).toEqual([0, null, null]);
+    expect(names(await shelf('?desconto=1'))).not.toContain('Brinde');
+    expect(names(await shelf('?desconto=30'))).not.toContain('Brinde');
+    // Five priced products on sale; the gift is the sixth on the shelf.
+    expect(catalog.total).toBe(6);
+    expect(catalog.facets.discount.count).toBe(5);
+  });
+
+  it('says on every public read when the prices next change by themselves, and nothing when no change is scheduled', async () => {
+    const reads = () =>
+      Promise.all(
+        [`/api/stores/lessari/catalog`, `/api/stores/lessari/catalog/${whey.slug}`, `/api/stores/lessari/cart?produto=${whey.id}`, '/api/stores/lessari/public'].map(async (url) => {
+          const response = await app.inject({ method: 'GET', url });
+          if (response.statusCode !== 200) throw new Error(`GET ${url} answered ${response.statusCode}`);
+          return response.headers['x-prices-change-at'] ?? null;
+        }),
+      );
+
+    expect(await reads()).toEqual([null, null, null, null]);
+
+    // Running with no end, and one that ended: nothing is still to happen.
+    await promotion({ name: 'Sem fim' });
+    await promotion({ name: 'Encerrada', startsAt: daysFromNow(-5), endsAt: daysFromNow(-2) });
+    expect(await reads()).toEqual([null, null, null, null]);
+
+    // The nearest of what is still to come: this one's end, before the other's start.
+    const ending = await promotion({ name: 'Acaba amanhã', endsAt: daysFromNow(1) });
+    const starting = await promotion({ name: 'Semana que vem', startsAt: daysFromNow(3), endsAt: daysFromNow(9) });
+    expect(await reads()).toEqual([ending.endsAt, ending.endsAt, ending.endsAt, ending.endsAt]);
+
+    // Paused, its end changes nothing: the next thing to happen is the other's start.
+    await call('PATCH', `/api/stores/lessari/promotions/${ending.id}`, { active: false });
+    expect(await reads()).toEqual([starting.startsAt, starting.startsAt, starting.startsAt, starting.startsAt]);
+
+    // An owner's read carries none: it is never kept.
+    expect((await call('GET', `/api/stores/lessari/products/${whey.id}`)).headers['x-prices-change-at']).toBeUndefined();
+  });
+
+  it('prices by the fifty newest promotions running, on the shelf and in the order alike', async () => {
+    const store = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } });
+    const started = new Date(Date.now() - DAY);
+    // The oldest is the deepest cut, and one too many: 60%, behind fifty newer ones of 1% to 50%.
+    await prisma.promotion.createMany({
+      data: Array.from({ length: 51 }, (_, index) => ({
+        storeId: store.id,
+        name: `Promoção ${index}`,
+        scope: 'CART' as const,
+        discountKind: 'PERCENT' as const,
+        percentBps: index === 0 ? 6000 : index * 100,
+        startsAt: started,
+        createdAt: new Date(started.getTime() + index * 1000),
+      })),
+    });
+
+    expect(priced((await shelf()).products).Creatina).toEqual([2995, 5990, 'Promoção 50']);
+    const quote = (await app.inject({ method: 'POST', url: '/api/stores/lessari/cart/quote', payload: { items: [{ variantId: creatine.variants[0]!.id, quantity: 2 }] } })).json<OrderQuote>();
+    expect(quote.lines[0]).toMatchObject({ discountCents: 5990, promotion: { name: 'Promoção 50' } });
   });
 
   it('keeps the owner’s own read of a product at the catalogue’s price', async () => {

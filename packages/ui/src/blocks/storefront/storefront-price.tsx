@@ -34,9 +34,13 @@ export function formatCents(cents: number, locale: string, currency: string): st
 /**
  * Rounded down, so a 49.6% discount never advertises itself as 50%. The shop is making a claim
  * about money here and the rounding should never be in its favour.
+ *
+ * Multiplied before it is divided, in whole cents: dividing first leaves 0.29 × 100 a hair under
+ * 29 in floating point, and "de 100 por 71" — or a promotion of 29% — printed -28%. It is also the
+ * order the API's own percent is worked out in, which its filters and its "maior desconto" read.
  */
 export function discountPercent(priceCents: number, compareAtPriceCents: number): number {
-  return Math.floor(((compareAtPriceCents - priceCents) / compareAtPriceCents) * 100)
+  return Math.floor(((compareAtPriceCents - priceCents) * 100) / compareAtPriceCents)
 }
 
 /**
