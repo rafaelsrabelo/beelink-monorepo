@@ -9,6 +9,7 @@ import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
+import { reviewHrefOf } from "./review-view"
 import type { StorefrontRoutes } from "./storefront-routes"
 import { estimateLineOf } from "./order-estimate"
 
@@ -92,6 +93,7 @@ export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardC
       href: item.productSlug ? routes.product(item.productSlug) : null,
       imageUrl: item.imageUrl,
       meta: [item.variantLabel, format(text.orderQty, { qty: String(item.quantity) })].filter(Boolean).join(" · "),
+      reviewHref: order.status === "DELIVERED" && item.productId && item.productSlug ? reviewHrefOf(routes, item.productId) : null,
     })),
     moreItems: order.moreItems,
   }

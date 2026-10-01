@@ -36,10 +36,11 @@ describe("the header's account menu", () => {
 
 describe("the account's menu", () => {
   it("lists the overview and only the tabs delivered, each at its own address", () => {
-    expect(accountMenuOf(routes, { orders: 2, favorites: 12 })).toEqual([
+    expect(accountMenuOf(routes, { orders: 2, favorites: 12, reviews: 3 })).toEqual([
       { key: "overview", href: "/loja/conta" },
       { key: "orders", href: "/loja/conta/pedidos", count: 2 },
       { key: "favorites", href: "/loja/conta/favoritos", count: 12 },
+      { key: "reviews", href: "/loja/conta/avaliacoes", count: 3 },
       { key: "profile", href: "/loja/conta/perfil", count: null },
       { key: "messages", href: "/loja/conta/conversas", count: null },
     ])
@@ -60,8 +61,7 @@ describe("the account's menu", () => {
     expect(deliveredAccountTabOf("pedidos", routeWords)).toBe("orders")
     expect(deliveredAccountTabOf("conversas", routeWords)).toBe("messages")
     expect(deliveredAccountTabOf("favoritos", routeWords)).toBe("favorites")
-    // Spelled and routed already, delivered by its own ticket: until then, a 404.
-    expect(deliveredAccountTabOf("avaliacoes", routeWords)).toBeNull()
+    expect(deliveredAccountTabOf("avaliacoes", routeWords)).toBe("reviews")
     expect(deliveredAccountTabOf("qualquer", routeWords)).toBeNull()
   })
 

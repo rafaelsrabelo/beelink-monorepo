@@ -44,6 +44,8 @@ const delivered: StorefrontOrderCardProps = {
   headline: "Entregue em 12 set 2026",
   detail: "Feito por você na loja em 8 set, 10:15.",
   tone: "done",
+  // Delivered: each line leads to its rating (J18).
+  items: items.map((item) => ({ ...item, reviewHref: "#" })),
   moreItems: 0,
   actions: undefined,
 }

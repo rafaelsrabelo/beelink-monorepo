@@ -2,6 +2,9 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { ProductVariantModel } from '../../generated/prisma/models.js';
 
+// App
+import { watchFavorites } from '../favorites/favorite-watch.js';
+
 /** The client a write goes through: the injected one, or a transaction's. */
 type Db = Prisma.TransactionClient;
 
@@ -106,7 +109,11 @@ export async function lockProduct(db: Db, productId: string): Promise<void> {
   await db.$queryRaw`SELECT 1 FROM "products" WHERE "id" = ${productId}::uuid FOR UPDATE`;
 }
 
-/** Rewrites a product's cache from its current variants. Call it inside the transaction that changed them. */
+/**
+ * Rewrites a product's cache from its current variants, and looks at its favourites again: a price
+ * or a stock that moved may owe a notice (BEELINK-155). Call it inside the transaction that changed
+ * them — every write that touches a product's variants does, which is why the watch lives here.
+ */
 export async function syncProductCache(db: Db, productId: string): Promise<void> {
   const variants = await db.productVariant.findMany({
     where: { productId, archivedAt: null },
@@ -114,4 +121,5 @@ export async function syncProductCache(db: Db, productId: string): Promise<void>
   });
 
   await db.product.update({ where: { id: productId }, data: productCacheOf(variants) });
+  await watchFavorites(db, productId);
 }

@@ -102,7 +102,9 @@ export function shopConversationLinesOf(conversation: ShopConversation, { locale
  * Open, closed, or none at all — an order has a conversation from its first status when its customer
  * has an account to read it (BEELINK-236); "empty" is one who has none.
  */
-export function shopConversationStateOf(conversation: ShopConversation): "open" | "closed" | "empty" | "none" {
+export function shopConversationStateOf(conversation: ShopConversation): "open" | "closed" | "left" | "empty" | "none" {
   if (conversation.messages.length === 0) return conversation.order.open ? "empty" : "none"
-  return conversation.order.open ? "open" : "closed"
+  if (!conversation.order.open) return "closed"
+  // An answer would reach nobody: the customer deleted their account (BEELINK-152).
+  return conversation.customer.hasAccount ? "open" : "left"
 }

@@ -329,6 +329,8 @@ export const EMAIL_CONFIRMED_KEY = "confirmado"
 export const PASSWORD_REPLACED_KEY = "senha-nova"
 /** The sign-in's notice after "Sair de todos os aparelhos" (BEELINK-150). */
 export const SIGNED_OUT_EVERYWHERE_KEY = "saiu"
+/** The sign-in's notice after "Excluir minha conta" (BEELINK-152). */
+export const ACCOUNT_DELETED_KEY = "conta-excluida"
 
 /** The cart's keys after "Comprar de novo": the order bought again, and whether reading it failed. */
 export const REORDERED_KEY = "repetido"

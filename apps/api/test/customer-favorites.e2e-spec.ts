@@ -230,7 +230,7 @@ describe("a shopper's favourites at a shop", () => {
       data: Array.from({ length: 200 }, (_, index) => ({ storeId: store.id, slug: `p-${index}`, name: `Produto ${index}`, priceCents: 1000, maxPriceCents: 1000 })),
     });
     const products = await prisma.product.findMany({ where: { storeId: store.id }, select: { id: true } });
-    await prisma.customerFavorite.createMany({ data: products.map((product) => ({ customerId: customer.id, productId: product.id, likedPriceCents: 1000 })) });
+    await prisma.customerFavorite.createMany({ data: products.map((product) => ({ customerId: customer.id, productId: product.id, likedPriceCents: 1000, seenPriceCents: 1000 })) });
 
     const one = await addProduct({ name: 'Mais um', slug: 'mais-um', priceCents: 1000 });
     const refused = await like(one.id);

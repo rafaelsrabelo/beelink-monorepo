@@ -16,6 +16,7 @@ import {
   PackageIcon,
   SettingsIcon,
   ShoppingBagIcon,
+  StarIcon,
   TagsIcon,
   UsersIcon,
 } from "lucide-react"
@@ -45,6 +46,7 @@ import { useSignOut } from "@/services/auth/auth-hooks"
 import { useMyStores } from "@/services/stores/store-hooks"
 import { PanelNotifications } from "@/components/panel-notifications"
 import { useShopUnread } from "@/services/conversations/shop-conversation-hooks"
+import { useShopReviewsUnseen } from "@/services/reviews/shop-review-hooks"
 
 export interface AppShellProps {
   user: User
@@ -131,6 +133,8 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
   const unreadBadge = unread
     ? { badge: unread, badgeLabel: unread === 1 ? ui.conversations.navUnreadOne : format(ui.conversations.navUnread, { count: String(unread) }) }
     : {}
+  const unseen = useShopReviewsUnseen(shopSlug ?? "", shopSlug !== null && !site).data?.count ?? 0
+  const unseenBadge = unseen ? { badge: unseen, badgeLabel: unseen === 1 ? ui.reviews.navNewOne : format(ui.reviews.navNew, { count: String(unseen) }) } : {}
 
   return (
     <AdminShell
@@ -185,6 +189,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                   // missing from its own list.
                   item(nav.design, "/design", <LayoutTemplateIcon />),
                   item(nav.customers, "/customers", <UsersIcon />, "prefix"),
+                  { ...item(nav.reviews, "/reviews", <StarIcon />, "prefix"), ...unseenBadge },
                 ]
           }
           footerItems={[item(site ? nav.siteSettings : nav.settings, "/store", <SettingsIcon />)]}

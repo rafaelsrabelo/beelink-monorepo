@@ -1,5 +1,6 @@
 // Types
 import type {
+  ConversationCustomer,
   ConversationLastMessage,
   ConversationMessage,
   ConversationOrder,
@@ -46,10 +47,15 @@ export function toCustomerConversation(order: OrderHeadRow, messages: readonly M
   return { order: toOrderHead(order), messages: messages.map(toMessage), unread: unreadOf(messages, 'CUSTOMER') };
 }
 
-export function toShopConversation(order: OrderHeadRow & { customer: { id: string; name: string } }, messages: readonly MessageRow[]): ShopConversation {
+/** The customer as the shop names them, and whether an answer still has someone to reach. */
+function toConversationCustomer(customer: { id: string; name: string; userId: string | null }): ConversationCustomer {
+  return { id: customer.id, name: customer.name, hasAccount: customer.userId !== null };
+}
+
+export function toShopConversation(order: OrderHeadRow & { customer: { id: string; name: string; userId: string | null } }, messages: readonly MessageRow[]): ShopConversation {
   return {
     order: toOrderHead(order),
-    customer: { id: order.customer.id, name: order.customer.name },
+    customer: toConversationCustomer(order.customer),
     messages: messages.map(toMessage),
     unread: unreadOf(messages, 'SHOP'),
   };
@@ -59,7 +65,7 @@ export function toShopConversation(order: OrderHeadRow & { customer: { id: strin
 export const summarySelect = {
   id: true,
   lastMessageAt: true,
-  order: { select: { number: true, status: true, fulfillment: true, customer: { select: { id: true, name: true } } } },
+  order: { select: { number: true, status: true, fulfillment: true, customer: { select: { id: true, name: true, userId: true } } } },
 } as const satisfies Prisma.OrderConversationSelect;
 
 export type SummaryRow = Prisma.OrderConversationGetPayload<{ select: typeof summarySelect }>;
@@ -84,5 +90,5 @@ export function toCustomerSummary(row: SummaryRow, last: LastMessageRow, unread:
 }
 
 export function toShopSummary(row: SummaryRow, last: LastMessageRow, unread: number): ShopConversationSummary {
-  return { order: toOrderHead(row.order), customer: { id: row.order.customer.id, name: row.order.customer.name }, lastMessage: toLastMessage(last), unread };
+  return { order: toOrderHead(row.order), customer: toConversationCustomer(row.order.customer), lastMessage: toLastMessage(last), unread };
 }

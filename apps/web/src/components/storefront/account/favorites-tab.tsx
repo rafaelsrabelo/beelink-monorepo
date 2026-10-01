@@ -5,7 +5,8 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // UI
 import { StorefrontFavoriteCard } from "@harness-monorepo/ui/blocks/storefront/storefront-favorite-card"
 import { StorefrontFavoritesEmpty } from "@harness-monorepo/ui/blocks/storefront/storefront-favorites-empty"
-import { StorefrontFavoritesOutcome } from "@harness-monorepo/ui/blocks/storefront/storefront-favorites-outcome"
+import { StorefrontFavoritesHint } from "@harness-monorepo/ui/blocks/storefront/storefront-favorites-hint"
+import { StorefrontAccountOutcome } from "@harness-monorepo/ui/blocks/storefront/storefront-account-outcome"
 import { StorefrontOrderTabs } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tabs"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
 
@@ -32,6 +33,8 @@ export interface FavoritesTabProps {
   slug: string
   routes: StorefrontRoutes
   query: SectionQuery
+  /** Whether the shopper kept the favourites' notices by e-mail on (J16), from the profile the menu read. */
+  notices: boolean
   locale: string
   errors: WebMessages["errors"]
   messages: UiMessages
@@ -49,7 +52,7 @@ const FILTERS: readonly { key: "ALL" | CustomerFavoriteFilter; filter: CustomerF
  * address — filter, order, page — read on the server with their session, once per request with
  * the order beside the title. A list that could not be read says so, and offers to read it again.
  */
-export async function FavoritesTab({ slug, routes, query, locale, errors, messages }: FavoritesTabProps) {
+export async function FavoritesTab({ slug, routes, query, notices, locale, errors, messages }: FavoritesTabProps) {
   const text = messages.storefront
   const asked = favoriteListQueryOf(query)
   const page = await customerFavoritesAt(slug, favoriteListApiQueryOf(asked))
@@ -68,10 +71,12 @@ export async function FavoritesTab({ slug, routes, query, locale, errors, messag
   return (
     <div className="flex flex-col gap-5">
       {refused ? (
-        <StorefrontFavoritesOutcome tone="failed" message={errorSentenceOf(errors, refused)} />
+        <StorefrontAccountOutcome tone="failed" message={errorSentenceOf(errors, refused)} />
       ) : removed ? (
-        <StorefrontFavoritesOutcome tone="done" message={text.favoriteRemoved} />
+        <StorefrontAccountOutcome tone="done" message={text.favoriteRemoved} />
       ) : null}
+
+      {page.counts.ALL === 0 ? null : <StorefrontFavoritesHint on={notices} settingsHref={`${routes.accountTab("profile")}#avisos`} linkComponent={AppLink} messages={messages} />}
 
       {page.counts.ALL === 0 ? null : (
         <StorefrontOrderTabs

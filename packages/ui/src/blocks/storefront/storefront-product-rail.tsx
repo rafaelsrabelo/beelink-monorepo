@@ -29,6 +29,8 @@ export interface StorefrontProductRailProps {
   seeAllHref?: string
   showPrice?: boolean
   showBadge?: boolean
+  /** The cards' rating line; the shop may hide it. */
+  showRating?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -69,6 +71,7 @@ export function StorefrontProductRail({
   seeAllHref,
   showPrice = true,
   showBadge = true,
+  showRating = true,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductRailProps) {
@@ -103,6 +106,7 @@ export function StorefrontProductRail({
                 locale={locale}
                 showPrice={showPrice}
                 showBadge={showBadge}
+                showRating={showRating}
                 action={cardAction?.(product)}
                 favorite={cardFavorite?.(product)}
                 inRail

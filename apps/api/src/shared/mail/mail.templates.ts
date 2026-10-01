@@ -129,6 +129,51 @@ export function orderStatusChanged({ name, shopName, number, status, pickup }: O
   };
 }
 
+export interface FavoriteNoticeContent {
+  name: string;
+  shopName: string;
+  productName: string;
+  /** "Sabor: Uva"; null for a product liked as a whole. */
+  variantLabel: string | null;
+  /** Today's price when the notice was born. */
+  priceCents: number;
+  /** What it cost before, when it dropped; null when it only came back. */
+  previousPriceCents: number | null;
+  backInStock: boolean;
+}
+
+function brl(cents: number): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
+}
+
+/**
+ * A favourite got cheaper, came back in stock, or both (BEELINK-155): the shop's name on it, the way
+ * to the product at the shop, and — last — the way to stop these notices, straight to the box that
+ * turns them off (`settingsUrl`).
+ */
+export function favoriteNotice(content: FavoriteNoticeContent, url: string, settingsUrl: string): MailContent {
+  const { name, shopName, productName, variantLabel, priceCents, previousPriceCents, backInStock } = content;
+  const dropped = previousPriceCents !== null;
+  const what = dropped && backInStock ? 'baixou de preço e voltou ao estoque' : dropped ? 'baixou de preço' : 'voltou ao estoque';
+  const thing = variantLabel ? `${productName} (${variantLabel})` : productName;
+  const price = dropped ? `agora sai por ${brl(priceCents)} (antes ${brl(previousPriceCents)})` : `sai por ${brl(priceCents)}`;
+  const line = backInStock ? `${thing}, que você curtiu em ${shopName}, voltou ao estoque e ${price}.` : `${thing}, que você curtiu em ${shopName}, ${price}.`;
+  const greeting = `Olá, ${name}!`;
+  const why = 'Você recebe este aviso porque curtiu este produto. Para não receber mais, desmarque "Favoritos" e salve';
+  return {
+    subject: `${shopName} — ${productName} ${what}`,
+    text: `${greeting}\n\n${line}\n\nVeja o produto:\n${url}\n\n${why}:\n${settingsUrl}`,
+    html: layout(
+      escapeHtml(greeting),
+      `<p style="margin:0">${escapeHtml(line)}</p>`,
+      'Ver produto',
+      url,
+      escapeHtml(shopName),
+      `${escapeHtml(why)}: <a href="${settingsUrl}" style="color:#52525b">avisos da sua conta</a>.`,
+    ),
+  };
+}
+
 /** What the owner is told about a lead. Values are the visitor's; every one is escaped for HTML. */
 export interface LeadReceivedContent {
   ownerName: string;

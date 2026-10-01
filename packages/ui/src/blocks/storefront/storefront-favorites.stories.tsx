@@ -8,7 +8,8 @@ import { StorefrontAccountShell } from "./storefront-account-shell"
 import { StorefrontCardCartButton } from "./storefront-card-cart-button"
 import { StorefrontFavoriteCard, type StorefrontFavoriteCardProps } from "./storefront-favorite-card"
 import { StorefrontFavoritesEmpty } from "./storefront-favorites-empty"
-import { StorefrontFavoritesOutcome } from "./storefront-favorites-outcome"
+import { StorefrontFavoritesHint } from "./storefront-favorites-hint"
+import { StorefrontAccountOutcome } from "./storefront-account-outcome"
 import { StorefrontFavoritesSkeleton } from "./storefront-favorites-skeleton"
 import { StorefrontFavoritesSort } from "./storefront-favorites-sort"
 import { StorefrontOrderTabs } from "./storefront-order-tabs"
@@ -72,6 +73,7 @@ function FavoritesTab({ favorites }: { favorites: readonly StorefrontFavoriteCar
   return (
     <StorefrontAccountShell menu={menu} page={{ kind: "tab", title: "Favoritos", backHref: "#", tools: sort }}>
       <div className="flex flex-col gap-5">
+        <StorefrontFavoritesHint on settingsHref="#" />
         <StorefrontOrderTabs label="Filtrar favoritos" tabs={filters} />
         <ul className="grid grid-cols-2 gap-4 shop-md:grid-cols-3 shop-lg:grid-cols-4">
           {favorites.map((favorite) => (
@@ -108,11 +110,14 @@ export const SemResultados: Story = { render: () => <StorefrontFavoritesEmpty va
 /** A leitura falhou: nunca "nenhum favorito", e sim o erro e o tentar de novo. */
 export const Indisponivel: Story = { render: () => <StorefrontFavoritesEmpty variant="unavailable" href="#" /> }
 
+/** Os avisos de favoritos desligados: a frase e o caminho para ligar. */
+export const AvisosDesligados: Story = { render: () => <StorefrontFavoritesHint on={false} settingsHref="#" /> }
+
 /** Depois do coração de um card: o que aconteceu, já que o card simplesmente some. */
-export const Removido: Story = { render: () => <StorefrontFavoritesOutcome tone="done" message="Produto removido dos favoritos." /> }
+export const Removido: Story = { render: () => <StorefrontAccountOutcome tone="done" message="Produto removido dos favoritos." /> }
 
 /** A remoção não passou: o motivo, como alerta. */
-export const RemocaoRecusada: Story = { render: () => <StorefrontFavoritesOutcome tone="failed" message="Sua sessão já tinha terminado, e nada foi feito. Entre de novo e tente outra vez." /> }
+export const RemocaoRecusada: Story = { render: () => <StorefrontAccountOutcome tone="failed" message="Sua sessão já tinha terminado, e nada foi feito. Entre de novo e tente outra vez." /> }
 
 /** A lista a caminho: os filtros e os cards em cinza. */
 export const Esqueleto: Story = {

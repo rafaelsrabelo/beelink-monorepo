@@ -67,3 +67,18 @@ export const ComOpcoes: Story = {
     },
   },
 }
+
+/** Com avaliações: a média, as estrelas e a contagem sob o nome, quando a loja mostra a nota. */
+export const ComNota: Story = {
+  args: {
+    product: {
+      id: "p5",
+      slug: "whey",
+      name: "Whey Protein Isolado 900g",
+      priceCents: 18990,
+      compareAtPriceCents: null,
+      imageUrl: "https://picsum.photos/seed/whey/520/460",
+      rating: { average: 4.7, count: 128 },
+    },
+  },
+}

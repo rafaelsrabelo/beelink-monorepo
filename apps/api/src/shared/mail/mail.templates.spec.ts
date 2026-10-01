@@ -1,5 +1,5 @@
 // App
-import { emailVerification, escapeHtml, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
+import { emailVerification, escapeHtml, favoriteNotice, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
 
 describe('leadReceived — a stranger’s words in the owner’s inbox', () => {
   const content = {
@@ -58,6 +58,30 @@ describe("a shop's account e-mails", () => {
 
     expect(verify.subject).toBe('Confirme seu e-mail');
     expect(verify.text).toContain('para ativar sua conta:');
+  });
+});
+
+describe("a favourite's notice, told to who liked it", () => {
+  const base = { name: 'Bia', shopName: 'Mutante & Cia', productName: 'Whey <Isolado>', variantLabel: 'Sabor: Uva', priceCents: 15990, previousPriceCents: 18990, backInStock: false };
+  const url = 'https://link.test/mutante/produtos/whey';
+  const settings = 'https://link.test/mutante/conta/perfil#avisos';
+
+  it('says what changed in the subject, and the price it has now beside the one it had', () => {
+    const dropped = favoriteNotice(base, url, settings);
+    expect(dropped.subject).toBe('Mutante & Cia — Whey <Isolado> baixou de preço');
+    expect(dropped.text).toMatch(/Whey <Isolado> \(Sabor: Uva\), que você curtiu em Mutante & Cia, agora sai por R\$\s159,90 \(antes R\$\s189,90\)\./);
+
+    expect(favoriteNotice({ ...base, previousPriceCents: null, backInStock: true }, url, settings).subject).toBe('Mutante & Cia — Whey <Isolado> voltou ao estoque');
+    expect(favoriteNotice({ ...base, backInStock: true }, url, settings).subject).toBe('Mutante & Cia — Whey <Isolado> baixou de preço e voltou ao estoque');
+    expect(favoriteNotice({ ...base, variantLabel: null, previousPriceCents: null, backInStock: true }, url, settings).text).toMatch(/Whey <Isolado>, que você curtiu em Mutante & Cia, voltou ao estoque e sai por R\$\s159,90\./);
+  });
+
+  it('escapes the names in the HTML, and ends on the way to stop these notices', () => {
+    const mail = favoriteNotice({ ...base, name: 'Bia <b>' }, url, settings);
+    expect(mail.html).toContain('Whey &lt;Isolado&gt;');
+    expect(mail.html).toContain('Olá, Bia &lt;b&gt;!');
+    expect(mail.html).not.toContain('<Isolado>');
+    expect(mail.text.trimEnd().endsWith(settings)).toBe(true);
   });
 });
 
