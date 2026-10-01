@@ -21,6 +21,9 @@ import { StorefrontSignInSection } from "@/components/storefront/storefront-sign
 import { StorefrontVerifyEmailSection } from "@/components/storefront/storefront-verify-email-section"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
+import { cartQuoteOf, firstFulfillmentOf } from "@/lib/cart-pricing"
+import { cartQuoteAt } from "@/lib/cart-quote"
+import { cartViewOf } from "@/lib/cart-view"
 import { customerFavoritesAt } from "@/lib/customer-favorites"
 import { pendingReviewsAt } from "@/lib/customer-reviews"
 import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
@@ -84,8 +87,9 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // Asked once, awaited twice: by the band's count and by the grid, each under its own boundary.
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
-  const cart = place.section.kind === "cart" ? await cartAt(store.slug) : null
-  const shopper = await shopperAt(store.slug)
+  const [cart, shopper] = await Promise.all([place.section.kind === "cart" ? cartAt(store.slug) : null, shopperAt(store.slug)])
+  // And its totals, priced by the API as the order would be (BEELINK-194): the promotions' rows are in the HTML too.
+  const served = cart ? await cartQuoteAt(store.slug, cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null)) : null
   // The menu's counts, read together on the area's own front: each is its own call to the API. The
   // favourites' page is the rail's too, so the front reads it once.
   const [inProgress, liked, toRate] =
@@ -165,6 +169,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           }}
           deliverTo={paramOf(query[DELIVER_TO_KEY]) ?? null}
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
+          served={served}
           locale={locale}
           messages={ui}
         />

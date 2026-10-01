@@ -1,13 +1,21 @@
 "use client"
 
 // Libs
-import { useMutation, useQuery, type UseMutationResult } from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { CreateRestockRequestPayload, CustomerOrder, PlaceCustomerOrderPayload, PublicProductCard } from "@harness-monorepo/contracts"
+import type {
+  CreateRestockRequestPayload,
+  CustomerOrder,
+  CustomerOrderQuotePayload,
+  OrderQuote,
+  PlaceCustomerOrderPayload,
+  PublicProductCard,
+} from "@harness-monorepo/contracts"
 
 // App
-import { cancelShopperOrder, placeShopperOrder, searchStorefront, sendRestockRequest } from "./storefront-requests"
+import { sameCart, type ServedQuote } from "@/lib/cart-pricing"
+import { cancelShopperOrder, placeShopperOrder, quoteCart, searchStorefront, sendRestockRequest } from "./storefront-requests"
 
 /** Below this a shop answers with most of itself, and every keystroke would be a request. */
 const MIN_QUERY_LENGTH = 2
@@ -15,9 +23,17 @@ const MIN_QUERY_LENGTH = 2
 /** Long enough for a word to finish, short enough that the list does not feel late. */
 const DEBOUNCE_MS = 250
 
+/**
+ * How long a price is trusted without asking again. A promotion starts or ends with no write to tell
+ * the page, so a cart left open is priced again when the shopper comes back to it.
+ */
+const QUOTE_STALE_MS = 30 * 1000
+
 export const storefrontKeys = {
   all: ["storefront"] as const,
   search: (slug: string, term: string, scope: string) => [...storefrontKeys.all, slug, "search", scope, term] as const,
+  quotes: (slug: string) => [...storefrontKeys.all, slug, "quote"] as const,
+  quote: (slug: string, cart: CustomerOrderQuotePayload) => [...storefrontKeys.quotes(slug), cart] as const,
 }
 
 export interface StorefrontSearchHandle {
@@ -64,6 +80,28 @@ export interface RestockVariables {
 export function useRestockRequest(slug: string): UseMutationResult<void, Error, RestockVariables> {
   return useMutation({
     mutationFn: ({ productId, payload }: RestockVariables) => sendRestockRequest(slug, productId, payload),
+  })
+}
+
+/**
+ * The cart's price, following the cart (BEELINK-194). It starts from the price the page was served
+ * with when that answers this very cart, so the first paint asks nothing. A changed cart keeps the
+ * last price on screen while the new one is asked, rather than drop the summary to a skeleton at
+ * every press of "+".
+ *
+ * Not retried: a refusal — a line the shop stopped selling, too many tries — is not a blip, and the
+ * next change of the cart asks again anyway.
+ */
+export function useCartQuote(slug: string, cart: CustomerOrderQuotePayload, served: ServedQuote | null): UseQueryResult<OrderQuote, Error> {
+  return useQuery({
+    queryKey: storefrontKeys.quote(slug, cart),
+    queryFn: () => quoteCart(slug, cart),
+    enabled: cart.items.length > 0,
+    initialData: () => (served && sameCart(served.cart, cart) ? served.quote : undefined),
+    initialDataUpdatedAt: served?.at,
+    placeholderData: keepPreviousData,
+    staleTime: QUOTE_STALE_MS,
+    retry: false,
   })
 }
 
