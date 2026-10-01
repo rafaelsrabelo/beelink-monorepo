@@ -6,6 +6,7 @@ import type {
   DesignPublishProblemKind,
   ProductSource,
 } from "../blocks/design/design-types"
+import type { CouponRefusalValue } from "../lib/order-discounts"
 import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
 import type { StoreType } from "../blocks/store/store-types"
@@ -150,6 +151,8 @@ export interface UiMessages {
   storefront: {
     /** "-40%", computed from the pair of prices and never stored beside them. */
     discount: string
+    /** `{name}` — the promotion that set the product page's price, by the shopkeeper's name for it. */
+    promotion: string
     /** `{price}` — what it cost before, under the product page's price: "De: R$ 149,90". */
     priceWas: string
     /** `{rating}` `{count}` — what a reader hears for the stars: "Nota 4,7 de 5, 128 avaliações". */
@@ -208,6 +211,16 @@ export interface UiMessages {
     /** The cart page (F2). `{name}` names the line a control acts on, for a reader. */
     cartSummary: string
     cartSubtotal: string
+    /** The summary's last row, said once something was taken off. */
+    cartTotal: string
+    /** `{name}` `{value}` — a first-purchase promotion a visitor's cart would get, announced until they sign in (BEELINK-245). */
+    cartFirstPurchaseOpen: string
+    /** `{value}` — the same when several would apply, and none is named. */
+    cartFirstPurchaseOpenUnnamed: string
+    /** `{name}` — why it is not theirs, to a customer who has bought from the shop before. */
+    cartFirstPurchaseClosed: string
+    /** The same when several would apply, and none is named. */
+    cartFirstPurchaseClosedUnnamed: string
     /** `{count}` — units that can be ordered now. */
     cartItems: string
     cartItemsOne: string
@@ -220,6 +233,25 @@ export interface UiMessages {
     cartUnavailable: string
     /** Lines whose product left the shop, taken out when the page opened. */
     cartGone: string
+    couponLabel: string
+    couponPlaceholder: string
+    couponApply: string
+    couponChecking: string
+    couponRemove: string
+    /** `{code}`: the remove button's name for a reader, who hears no chip beside it. */
+    couponRemoveNamed: string
+    /** `{code}`. */
+    couponApplied: string
+    /** A visitor is told where the code goes: only a signed-in customer's is checked. */
+    couponSignedOut: string
+    /** Why a code is not taken; `BELOW_MINIMUM` takes `{value}`. */
+    couponRefusals: Record<CouponRefusalValue, string>
+    /** Added to `NOT_APPLICABLE` on a pick-up, the one case it has a remedy for. */
+    couponPickupHint: string
+    couponFailed: string
+    couponTooMany: string
+    /** A coupon in force whose check did not come back: the order waits for it, or for its removal. */
+    couponUnchecked: string
     /** Adding to the cart (F3), on a card and on the product page. */
     addToCart: string
     addedToCart: string
@@ -281,6 +313,8 @@ export interface UiMessages {
     checkoutSignedOut: string
     checkoutTooMany: string
     checkoutFailed: string
+    /** `{reason}`: a sentence of `couponRefusals`, for an order refused over its coupon. */
+    checkoutCouponGone: string
     /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
     checkoutSignInPrompt: string
     checkoutSignIn: string
@@ -684,7 +718,12 @@ export interface UiMessages {
     orderTotalPlusFee: string
     /** The same on a "Meus pedidos" card, which has no fee row to say "a combinar" in. */
     orderCardTotalPlusFee: string
-    orderDiscount: string
+    /** `{value}`: under a card's total. */
+    orderCardSaving: string
+    /** `{value}`, `{code}`. */
+    orderCardSavingCoupon: string
+    /** `{code}`: a coupon that took nothing yet — a free delivery whose fee is not agreed. */
+    orderCardCoupon: string
     orderTotalRow: string
     orderPaymentAgreed: string
     orderUnavailable: string
@@ -1589,6 +1628,23 @@ export interface UiMessages {
     all: string
     /** A delivery's total while its fee is not agreed (BEELINK-170): "R$ 239,70 + frete". */
     totalPlusFee: string
+    /** An order's discount, a row per part — shared by the shop window and the panel (BEELINK-194). */
+    discountRows: {
+      promotion: string
+      /** `{name}`: the one promotion that took it. */
+      promotionNamed: string
+      promotions: string
+      /** `{code}`. */
+      coupon: string
+      /** What the shopkeeper typed. */
+      manual: string
+      /** A free-delivery coupon's value while the fee is not agreed, in place of an amount. */
+      freeDelivery: string
+      /** `{name}`, `{value}`: under a line a promotion took something off. */
+      linePromotion: string
+      /** `{label}`, `{value}`: a row as one line of a message. */
+      line: string
+    }
     /** Keyed by the wire's status, spelled out: this package imports no contracts. */
     statuses: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED", string>
     payments: Record<"MONEY" | "PIX" | "CREDIT_CARD" | "DEBIT_CARD", string>
@@ -1671,10 +1727,11 @@ export interface UiMessages {
       summary: string
       subtotal: string
       fee: string
-      discountLine: string
       total: string
       discountTooLarge: string
       totalTooLarge: string
+      /** The API could not price the sale: the total on screen is the form's own, without the day's promotions. */
+      unpriced: string
       invalidMoney: string
       missingCustomer: string
       missingItems: string
@@ -1703,7 +1760,6 @@ export interface UiMessages {
       items: string
       subtotal: string
       fee: string
-      discount: string
       total: string
       fulfillment: string
       payment: string
@@ -1749,7 +1805,6 @@ export interface UiMessages {
       feeFormSaved: string
       feeFormInvalid: string
       whatsappPickup: string
-      whatsappDiscount: string
       whatsappTotal: string
       whatsappPayment: string
       whatsappStatus: string
@@ -1819,6 +1874,14 @@ export interface UiMessages {
     startsAtHelp: string
     endsAtLabel: string
     endsAtHelp: string
+    /** Who a promotion or a coupon is for (BEELINK-245): the choice's legend, and its two options. */
+    audienceLabel: string
+    audienceEveryone: string
+    audienceFirstPurchase: string
+    /** What counts as a first purchase, said under the choice once it is the one made. */
+    audienceFirstPurchaseHelp: string
+    /** The mark a list's row carries when it is for a first purchase only. */
+    firstPurchaseBadge: string
     /** `{from}`, `{to}`. */
     periodFromTo: string
     /** `{from}`. */

@@ -4,6 +4,9 @@ import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { SectionShape } from './page-document.js';
 
 // App
+import type { PricingPromotion } from '../promotions/discount-pricing.js';
+import { promotedCard } from '../promotions/shelf-pricing.js';
+import { runningShelfPromotions, shelfSaleOf } from '../promotions/shelf-sale.js';
 import { isSoldOut } from '../catalog/catalog.visibility.js';
 import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery, toShowcaseCard } from '../catalog/showcase.query.js';
 import { itemsOf } from './page.mapper.js';
@@ -18,10 +21,15 @@ import { NO_SHELVES, type PageLookups, type ShelvesByComponent } from './page-pu
 
 /** Every lookup for a page's bands, in parallel. */
 export async function lookupsOf(db: PrismaService, storeId: string, sections: readonly SectionShape[]): Promise<PageLookups> {
+  const components = sections.flatMap((section) => section.components);
+  // Asked only by a page that draws products: the promotions that price them.
+  const drawsProducts = components.some((component) => component.isActive && (component.kind === 'PRODUCTS' || component.kind === 'FEATURED_PRODUCT'));
+  const promotions = drawsProducts ? await runningShelfPromotions(db, storeId, new Date()) : [];
+
   const [slugs, shelves, featured] = await Promise.all([
     slideSlugs(db, sections),
-    shelvesOf(db, storeId, sections),
-    featuredOf(db, storeId, sections),
+    shelvesOf(db, storeId, sections, promotions),
+    featuredOf(db, storeId, sections, promotions),
   ]);
   return { slugs, shelves, featured };
 }
@@ -38,6 +46,7 @@ async function featuredOf(
   db: PrismaService,
   storeId: string,
   sections: readonly SectionShape[],
+  promotions: readonly PricingPromotion[],
 ): Promise<ReadonlyMap<string, PublicFeaturedProduct>> {
   const blocks = sections
     .flatMap((section) => section.components)
@@ -53,7 +62,7 @@ async function featuredOf(
     where: { id: { in: blocks.map((block) => block.productId) }, storeId, status: 'ACTIVE' },
     select: { ...SHOWCASE_CARD_SELECT, trackStock: true, stockQuantity: true },
   });
-  const byId = new Map(rows.map((row) => [row.id, { ...toShowcaseCard(row), soldOut: isSoldOut(row) }]));
+  const byId = new Map(rows.map((row) => [row.id, { ...promotedCard(toShowcaseCard(row), row, promotions), soldOut: isSoldOut(row) }]));
 
   return new Map(blocks.flatMap((block) => (byId.has(block.productId) ? [[block.componentId, byId.get(block.productId)!] as const] : [])));
 }
@@ -66,13 +75,15 @@ async function featuredOf(
  * source runs lives in `catalog/showcase.query.ts`, where the rule of what is on the shelf already is. Hidden showcases are skipped — the mapper drops them anyway, and a query for a
  * shelf nobody sees is a query the anonymous page pays for.
  */
-async function shelvesOf(db: PrismaService, storeId: string, sections: readonly SectionShape[]): Promise<ShelvesByComponent> {
+async function shelvesOf(db: PrismaService, storeId: string, sections: readonly SectionShape[], promotions: readonly PricingPromotion[]): Promise<ShelvesByComponent> {
   const showcases = sections
     .flatMap((section) => section.components)
     .filter((component) => component.isActive && component.kind === 'PRODUCTS');
 
   if (!showcases.length) return NO_SHELVES;
 
+  const priceField = db.product.fields.priceCents;
+  const { onSale } = shelfSaleOf(promotions, [], priceField);
   const categoryIds = showcases.flatMap((showcase) =>
     showcase.source === 'CATEGORY' && showcase.sourceCategoryId ? [showcase.sourceCategoryId] : [],
   );
@@ -86,9 +97,9 @@ async function shelvesOf(db: PrismaService, storeId: string, sections: readonly 
       : [],
     Promise.all(
       showcases.map(async (showcase) => {
-        const query = showcaseQuery(storeId, showcase, db.product.fields.priceCents);
+        const query = showcaseQuery(storeId, showcase, priceField, onSale);
         const rows = query ? await db.product.findMany({ ...query, select: SHOWCASE_CARD_SELECT }) : [];
-        return [showcase, shelfOf(showcase, rows)] as const;
+        return [showcase, shelfOf(showcase, rows, promotions)] as const;
       }),
     ),
   ]);

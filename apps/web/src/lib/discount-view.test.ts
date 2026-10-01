@@ -25,6 +25,7 @@ const promotion: Promotion = {
   endsAt: "2026-10-16T02:59:00.000Z",
   active: true,
   status: "ACTIVE",
+  audience: "EVERYONE",
   products: [],
   categories: [],
   createdAt: "2026-10-01T12:00:00.000Z",
@@ -45,6 +46,7 @@ const coupon: Coupon = {
   usedCount: 3,
   active: true,
   status: "ACTIVE",
+  audience: "EVERYONE",
   createdAt: "2026-10-01T12:00:00.000Z",
   updatedAt: "2026-10-01T12:00:00.000Z",
 }
@@ -94,6 +96,11 @@ describe("a promotion's row", () => {
     expect(row!.period).toMatch(/^De 1 de out\. de 2026,? 09:00 a 15 de out\. de 2026,? 23:59$/)
     expect(promotionRowsOf([{ ...promotion, endsAt: null }], text)[0]!.period).toMatch(/^Desde 1 de out\. de 2026,? 09:00, sem data para acabar$/)
   })
+
+  /** BEELINK-245: the list marks the row from it. */
+  it("says who it is for", () => {
+    expect(promotionRowsOf([promotion, { ...promotion, id: "p2", audience: "FIRST_PURCHASE" }], text).map((row) => row.audience)).toEqual(["EVERYONE", "FIRST_PURCHASE"])
+  })
 })
 
 describe("a coupon's row", () => {
@@ -104,6 +111,12 @@ describe("a coupon's row", () => {
     expect(plain(rowOf({}).minimum ?? "")).toBe("Pedido mínimo de R$ 50,00")
     expect(plain(rowOf({ kind: "FIXED", percentBps: null, amountCents: 2000 }).discount)).toBe("R$ 20,00")
     expect(rowOf({ kind: "FREE_SHIPPING", percentBps: null, minSubtotalCents: 0 })).toMatchObject({ discount: "Frete grátis", minimum: null })
+  })
+
+  /** BEELINK-245: the list marks the row from it. */
+  it("says who it is for", () => {
+    expect(rowOf({}).audience).toBe("EVERYONE")
+    expect(rowOf({ audience: "FIRST_PURCHASE" }).audience).toBe("FIRST_PURCHASE")
   })
 
   it("writes a percentage as its reader does", () => {

@@ -149,6 +149,7 @@ export class PromotionsService {
       discountKind: dto.discountKind,
       ...discount,
       ...period,
+      audience: dto.audience ?? 'EVERYONE',
     } satisfies Prisma.PromotionUpdateInput;
     return { fields, productIds, categoryIds };
   }

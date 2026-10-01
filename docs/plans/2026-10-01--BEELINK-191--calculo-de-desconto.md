@@ -184,3 +184,15 @@ O que fica como está, sabendo:
 - **As promoções e as listas delas são lidas em comandos separados.** Uma edição do lojista
   exatamente entre os dois poderia precificar um pedido com a regra velha e a lista nova. A janela é
   de milissegundos, e fica aceita.
+
+## Adendo do O4 (01/10)
+
+- **O percentual passou a ser arredondado para cima, ao centavo,** na promoção e no cupom. A decisão 1
+  dizia "arredondado para baixo". Com o O4 (BEELINK-193) o preço promocional vai para o card, e o selo
+  de desconto é calculado pelos dois preços, arredondando para baixo: 10% de R$ 18,99 dava R$ 1,89 e
+  o selo lia "9%". Para cima, a promoção de 10% lê sempre 10% ou mais. A diferença é de no máximo um
+  centavo por unidade, a favor do cliente.
+- **A regra por unidade ganhou nome:** `unitDiscountOf`. A vitrine e o carrinho chamam a mesma função.
+- **Um percentual que sobra de qualquer valor dá pelo menos um centavo.** O motivo `NOT_APPLICABLE`
+  por "percentual que não chega a um centavo" (adendo da revisão) deixa de acontecer: só sobra o caso
+  em que as promoções não deixaram nada dos produtos.

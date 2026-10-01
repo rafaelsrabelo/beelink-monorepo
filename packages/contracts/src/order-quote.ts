@@ -20,6 +20,8 @@ export type CouponRefusalReason =
   | "INACTIVE"
   /** This customer already used it as many times as one customer may. */
   | "CUSTOMER_LIMIT"
+  /** It is for a first purchase, and this customer already has an order at the shop that stands (BEELINK-245). */
+  | "NOT_FIRST_PURCHASE"
   /** A free delivery on a pick-up, or nothing left of the products to take a discount from. */
   | "NOT_APPLICABLE"
   /** What is left of the products after the promotions is below what it asks for. */
@@ -44,6 +46,24 @@ export interface QuotedCouponRefused {
 
 export type QuotedCoupon = QuotedCouponApplied | QuotedCouponRefused;
 
+/**
+ * A first-purchase promotion that reaches this cart and was not applied (BEELINK-245). The cart
+ * announces it rather than hide it: a visitor is told it is confirmed once they are identified, and
+ * a customer who has bought before is told why it is not theirs. Applied, it is a line's promotion
+ * like any other, and this is null.
+ */
+export interface QuotedFirstPurchase {
+  /**
+   * `UNIDENTIFIED`: nobody is identified yet, so nobody can be said to be on a first purchase.
+   * `NOT_FIRST`: this customer already has an order at the shop that stands.
+   */
+  status: "UNIDENTIFIED" | "NOT_FIRST";
+  /** The promotion's name when one alone would apply; null when several would. */
+  promotionName: string | null;
+  /** What it would take off this cart beyond what the cart already gets — always more than zero. */
+  discountCents: number;
+}
+
 /** One line of the cart, priced. */
 export interface OrderQuoteLine {
   variantId: string;
@@ -65,6 +85,8 @@ export interface OrderQuote {
   subtotalCents: number;
   /** The sum of the lines' `discountCents`. */
   promotionDiscountCents: number;
+  /** A first-purchase promotion this cart would get and did not; null with none, and once it applied. */
+  firstPurchase: QuotedFirstPurchase | null;
   /** Null when no code was sent. */
   coupon: QuotedCoupon | null;
   /** Zero unless the coupon was applied — and on a free delivery whose fee is not agreed yet. */
@@ -76,6 +98,16 @@ export interface OrderQuote {
   /** Null on a delivery whose fee is not agreed yet; zero on a pick-up. */
   deliveryFeeCents: number | null;
   totalCents: number;
+}
+
+/**
+ * The signed-in customer's cart with no code (BEELINK-245): priced as theirs — a first-purchase
+ * promotion applies or says why not — at a door that counts its calls apart from the one that
+ * answers about codes, so a cart that only changes quantities never spends those.
+ */
+export interface CustomerCartQuotePayload {
+  items: CreateOrderItemInput[];
+  fulfillment: OrderFulfillment;
 }
 
 /** The visitor's cart, priced with the shop's promotions. No coupon: that takes a signed-in customer. */
@@ -95,7 +127,12 @@ export interface CustomerOrderQuotePayload {
 
 /** The panel's sale before it is registered: the body of `CreateOrderPayload` that prices it. */
 export interface ShopOrderQuotePayload {
-  /** Whose order it is, for a coupon's limit by customer; absent checks only the coupon's own. */
+  /**
+   * Whose order it is: for a coupon's limit by customer, and for a first purchase (BEELINK-245) —
+   * a phone the shop does not have is somebody the order would register, so a first purchase.
+   * Absent, nobody is identified: the coupon's own limits alone, and a first-purchase promotion
+   * announced rather than applied.
+   */
   customer?: OrderCustomerInput;
   items: CreateOrderItemInput[];
   fulfillment: OrderFulfillment;

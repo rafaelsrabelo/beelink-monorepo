@@ -31,7 +31,11 @@ import { OrderQuotes } from './order-quote.service.js';
 /** Keyed by address: a valid account does not get to fill a shop's panel from a script. */
 const rateLimit = { max: env.CUSTOMER_ORDER_RATE_LIMIT_MAX, timeWindow: env.CUSTOMER_ORDER_RATE_LIMIT_WINDOW };
 
-/** The quote says whether a coupon's code exists: a bucket of its own, so pricing never spends an order's. */
+/**
+ * The quote says whether a coupon's code exists: a bucket of its own, so pricing never spends an
+ * order's — and a small one, so a cart with no code is priced at `customer/cart/quote` instead
+ * (BEELINK-245), which answers nothing about codes and spends none of these.
+ */
 const quoteRateLimit = { max: env.CUSTOMER_QUOTE_RATE_LIMIT_MAX, timeWindow: env.CUSTOMER_QUOTE_RATE_LIMIT_WINDOW };
 
 /**

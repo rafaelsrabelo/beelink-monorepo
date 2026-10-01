@@ -1,5 +1,5 @@
 // Types
-import type { CouponKind, DiscountKind, PromotionScope } from '@harness-monorepo/contracts';
+import type { CouponKind, DiscountAudience, DiscountKind, PromotionScope, QuotedFirstPurchase } from '@harness-monorepo/contracts';
 
 // App
 import { PERCENT_BPS_MAX } from './promotions.constants.js';
@@ -10,7 +10,10 @@ import { PERCENT_BPS_MAX } from './promotions.constants.js';
  *
  * Promotions never add up. A line takes the one promotion that is worth the most on it; a fixed
  * amount off the whole cart is not a line's, so it stands against all the lines' promotions together
- * and the larger of the two is the cart's. Every discount is rounded down to whole cents.
+ * and the larger of the two is the cart's.
+ *
+ * A percentage is rounded up to the cent, in the customer's favour: "10% off" then never reads as
+ * 9% on the shelf's badge, which is computed from the two prices and rounds down (BEELINK-193).
  */
 
 export interface PricingLine {
@@ -28,6 +31,8 @@ export interface PricingPromotion {
   discountKind: DiscountKind;
   percentBps: number | null;
   amountCents: number | null;
+  /** Who it is for. The arithmetic prices with every promotion it is given: leaving out those not for this customer is the caller's. */
+  audience: DiscountAudience;
   productIds: readonly string[];
   categoryIds: readonly string[];
 }
@@ -44,7 +49,7 @@ function isCartAmount(promotion: PricingPromotion): boolean {
   return promotion.scope === 'CART' && promotion.discountKind === 'FIXED';
 }
 
-function reaches(promotion: PricingPromotion, line: PricingLine): boolean {
+function reaches(promotion: PricingPromotion, line: Pick<PricingLine, 'productId' | 'categoryIds'>): boolean {
   switch (promotion.scope) {
     case 'CART':
       return true;
@@ -55,26 +60,44 @@ function reaches(promotion: PricingPromotion, line: PricingLine): boolean {
   }
 }
 
-/** Off one unit, so a shelf's promotional price times the quantity is the line's. */
+/** A share of an amount, up to the cent: never more than the amount, since the share is at most all of it. */
+function shareOf(cents: number, percentBps: number | null): number {
+  return Math.ceil((cents * (percentBps ?? 0)) / PERCENT_BPS_MAX);
+}
+
 function perUnit(promotion: PricingPromotion, unitPriceCents: number): number {
-  if (promotion.discountKind === 'PERCENT') return Math.floor((unitPriceCents * (promotion.percentBps ?? 0)) / PERCENT_BPS_MAX);
+  if (promotion.discountKind === 'PERCENT') return shareOf(unitPriceCents, promotion.percentBps);
   return Math.min(promotion.amountCents ?? 0, unitPriceCents);
+}
+
+/** What a unit is priced from: the product, where it sits, and the catalogue's price of one. */
+export type PricingUnit = Pick<PricingLine, 'productId' | 'categoryIds' | 'unitPriceCents'>;
+
+/**
+ * The one promotion worth the most off one unit; on a tie, the first of the list. It is what the
+ * shop window prices a product with and what a cart's line multiplies by its quantity, so the
+ * shelf's promotional price times the quantity is the line's. A fixed amount off the whole cart is
+ * no unit's, and is left out.
+ */
+export function unitDiscountOf(unit: PricingUnit, promotions: readonly PricingPromotion[]): LineDiscount {
+  let best = NONE;
+  for (const promotion of promotions) {
+    if (isCartAmount(promotion) || !reaches(promotion, unit)) continue;
+    const discountCents = perUnit(promotion, unit.unitPriceCents);
+    if (discountCents > best.discountCents) best = { discountCents, promotion: { id: promotion.id, name: promotion.name } };
+  }
+  return best;
 }
 
 function sumOf(discounts: readonly LineDiscount[]): number {
   return discounts.reduce((sum, line) => sum + line.discountCents, 0);
 }
 
-/** The one promotion worth the most on each line; on a tie, the first of the list. */
+/** Each line's unit discount, times its quantity. */
 function bestPerLine(lines: readonly PricingLine[], promotions: readonly PricingPromotion[]): LineDiscount[] {
   return lines.map((line) => {
-    let best = NONE;
-    for (const promotion of promotions) {
-      if (isCartAmount(promotion) || !reaches(promotion, line)) continue;
-      const discountCents = perUnit(promotion, line.unitPriceCents) * line.quantity;
-      if (discountCents > best.discountCents) best = { discountCents, promotion: { id: promotion.id, name: promotion.name } };
-    }
-    return best;
+    const unit = unitDiscountOf(line, promotions);
+    return { discountCents: unit.discountCents * line.quantity, promotion: unit.promotion };
   });
 }
 
@@ -118,6 +141,38 @@ export function promotionDiscountsOf(lines: readonly PricingLine[], promotions: 
   return cart && cart.amountCents > sumOf(perLine) ? shared(lines, cart.promotion, cart.amountCents, subtotalCents) : perLine;
 }
 
+/**
+ * The promotions that price a cart whoever buys it: those for a first purchase left out. A customer
+ * on a first purchase competes with every promotion; anyone else, and a cart nobody is identified
+ * on, with these.
+ */
+export function forEveryone(promotions: readonly PricingPromotion[]): PricingPromotion[] {
+  return promotions.filter((promotion) => promotion.audience === 'EVERYONE');
+}
+
+/** What `QuotedFirstPurchase` says of the cart alone. Its `status` is why this customer did not get it, which the arithmetic does not know. */
+export type FirstPurchaseOffer = Omit<QuotedFirstPurchase, 'status'>;
+
+/**
+ * What a cart priced without the promotions for a first purchase is missing (BEELINK-245): how much
+ * more it would lose with them competing, as they do for a customer on a first purchase. It is the
+ * difference between the two pricings and not such a promotion's own worth — promotions never add
+ * up, so one that a promotion for everyone beats or ties adds nothing, and nothing is announced: null.
+ */
+export function firstPurchaseOfferOf(lines: readonly PricingLine[], promotions: readonly PricingPromotion[]): FirstPurchaseOffer | null {
+  const forFirstPurchase = promotions.filter((promotion) => promotion.audience === 'FIRST_PURCHASE');
+  if (forFirstPurchase.length === 0) return null;
+
+  const offered = promotionDiscountsOf(lines, promotions);
+  const given = promotionDiscountsOf(lines, forEveryone(promotions));
+  const discountCents = sumOf(offered) - sumOf(given);
+  if (discountCents <= 0) return null;
+
+  // Named by what it adds, not by where it sits: on a tie it may hold a line and add nothing to it.
+  const adding = forFirstPurchase.filter((promotion) => offered.some((line, at) => line.promotion?.id === promotion.id && line.discountCents > given[at]!.discountCents));
+  return { promotionName: adding.length === 1 ? adding[0]!.name : null, discountCents };
+}
+
 export interface PricingCoupon {
   kind: CouponKind;
   percentBps: number | null;
@@ -125,13 +180,14 @@ export interface PricingCoupon {
 }
 
 /**
- * What a coupon takes off, after the promotions: a share or an amount of what is left of the
- * products (`baseCents`), never more than it; or the delivery fee — zero while that is not agreed.
+ * What a coupon takes off, after the promotions: a share — rounded up, as a promotion's — or an
+ * amount of what is left of the products (`baseCents`), never more than it; or the delivery fee,
+ * zero while that is not agreed.
  */
 export function couponDiscountOf(coupon: PricingCoupon, baseCents: number, deliveryFeeCents: number | null): number {
   switch (coupon.kind) {
     case 'PERCENT':
-      return Math.floor((baseCents * (coupon.percentBps ?? 0)) / PERCENT_BPS_MAX);
+      return shareOf(baseCents, coupon.percentBps);
     case 'FIXED':
       return Math.min(coupon.amountCents ?? 0, baseCents);
     case 'FREE_SHIPPING':

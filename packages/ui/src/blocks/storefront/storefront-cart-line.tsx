@@ -21,6 +21,10 @@ export interface StorefrontCartRow {
   unitPriceCents: number
   qty: number
   lineTotalCents: number
+  /** What the line cost before a promotion took something off it, struck beside its total; absent with none. */
+  wasCents?: number | null
+  /** The promotion that took it, by the shopkeeper's name for it. */
+  promotion?: string | null
   available: boolean
 }
 
@@ -41,10 +45,15 @@ const STEP = "flex size-9 items-center justify-center text-shop-on-background di
  * One line of the cart: the photo, the name as a link back to its page, the combination, the unit
  * price, a − n + stepper, the line's total and a way to take it out. A sold-out line stays in view
  * and says it will not be ordered, rather than vanishing from under the shopper.
+ *
+ * A line a promotion took something off says which, and what it cost before: the summary's subtotal
+ * is the sum of those, and without them the lines would add up to less than it.
  */
 export function StorefrontCartLine({ row, locale, maxQty = 99, onQtyChange, onRemove, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontCartLineProps) {
   const text = messages.storefront
   const money = (cents: number) => formatCents(cents, locale, "BRL")
+  // A sold-out line is not ordered, so nothing was taken off it: its own total is the one struck.
+  const was = row.available && typeof row.wasCents === "number" && row.wasCents > row.lineTotalCents ? row.wasCents : null
 
   return (
     <li className={cn("flex gap-4 border-b border-shop-line py-4 last:border-b-0", !row.available && "opacity-70")}>
@@ -58,6 +67,7 @@ export function StorefrontCartLine({ row, locale, maxQty = 99, onQtyChange, onRe
         </Link>
         {row.variantLabel ? <p className="text-[13px] text-shop-muted">{row.variantLabel}</p> : null}
         <p className="text-[13px] text-shop-muted">{money(row.unitPriceCents)}</p>
+        {row.promotion ? <p className="text-[13px] font-semibold text-shop-positive-ink">{format(text.promotion, { name: row.promotion })}</p> : null}
         {row.available ? null : <p className="text-[13px] font-semibold text-shop-sale-ink">{text.cartUnavailable}</p>}
 
         <div className="mt-1 flex items-center gap-3">
@@ -76,7 +86,15 @@ export function StorefrontCartLine({ row, locale, maxQty = 99, onQtyChange, onRe
         </div>
       </div>
 
-      <p className={cn("shrink-0 text-[15px] font-bold tabular-nums", !row.available && "line-through")}>{money(row.lineTotalCents)}</p>
+      <div className="flex shrink-0 flex-col items-end">
+        {was !== null ? (
+          <s className="text-xs text-shop-muted tabular-nums">
+            <span className="sr-only">{format(text.priceWas, { price: "" }).trim()} </span>
+            {money(was)}
+          </s>
+        ) : null}
+        <p className={cn("text-[15px] font-bold tabular-nums", !row.available && "line-through")}>{money(row.lineTotalCents)}</p>
+      </div>
     </li>
   )
 }

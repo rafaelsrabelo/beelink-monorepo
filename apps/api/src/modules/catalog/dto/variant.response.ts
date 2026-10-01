@@ -65,6 +65,8 @@ export class PublicProductVariantResponse implements PublicProductVariant {
   optionValueIds!: string[];
   @ApiProperty({ example: 18900, description: 'Whole cents.' }) priceCents!: number;
   @ApiProperty({ nullable: true, type: Number, description: 'Whole cents.' }) compareAtPriceCents!: number | null;
+  @ApiProperty({ required: false, nullable: true, type: String, description: "The promotion that set this combination's price." })
+  promotionName?: string | null;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({ description: 'It can be ordered now. False is sold out. Derived, never the count.' })
   available!: boolean;

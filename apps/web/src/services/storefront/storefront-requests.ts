@@ -1,5 +1,12 @@
 // Types
-import type { CreateRestockRequestPayload, CustomerOrder, PlaceCustomerOrderPayload, PublicProductCard } from "@harness-monorepo/contracts"
+import type {
+  CreateRestockRequestPayload,
+  CustomerOrder,
+  CustomerOrderQuotePayload,
+  OrderQuote,
+  PlaceCustomerOrderPayload,
+  PublicProductCard,
+} from "@harness-monorepo/contracts"
 
 export interface StorefrontSearchResult {
   products: PublicProductCard[]
@@ -73,6 +80,28 @@ export async function placeShopperOrder(slug: string, payload: PlaceCustomerOrde
     throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"), details)
   }
   return answer as CustomerOrder
+}
+
+/**
+ * What the cart costs now (BEELINK-194): the lines, what the promotions take off them and whether the
+ * coupon typed is taken. Through the shop's own handler, which picks the API's door — a code is
+ * checked for a signed-in shopper only. A coupon that does not hold is an answer, not a failure.
+ */
+export async function quoteCart(slug: string, cart: CustomerOrderQuotePayload): Promise<OrderQuote> {
+  const response = await fetch(`/${encodeURIComponent(slug)}/api/orders/quote`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify(cart),
+  })
+  const answer: unknown = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const code = typeof answer === "object" && answer !== null && "errorCode" in answer ? String(answer.errorCode) : null
+    throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"))
+  }
+  // A 2xx that is not a price — a proxy's own page — is a failure here, never a cart to draw from.
+  if (typeof answer !== "object" || answer === null || !("lines" in answer) || !Array.isArray(answer.lines)) throw new ShopperOrderError("UNKNOWN")
+  return answer as OrderQuote
 }
 
 /** What a refused order carries: the API's stable code, never a sentence, and the lines it named. */

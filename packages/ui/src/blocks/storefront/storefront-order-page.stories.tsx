@@ -60,7 +60,8 @@ function OrderPage({ status, pickup = false }: { status: StorefrontOrderStatusPr
             rows={[
               { label: "Subtotal", value: "R$ 249,70" },
               ...(pickup ? [] : [{ label: "Entrega", value: "Grátis", positive: true }]),
-              { label: "Desconto", value: "− R$ 12,48", positive: true },
+              { label: "Promoção: Semana do Whey", value: "− R$ 7,49", positive: true },
+              { label: "Cupom BEMVINDO5", value: "− R$ 4,99", positive: true },
             ]}
             total="R$ 237,22"
             method="Pagamento combinado com a loja: Pix"
@@ -140,7 +141,8 @@ export const Comprovante: Story = {
       rows={[
         { label: "Subtotal", value: "R$ 249,70" },
         { label: "Entrega", value: "Grátis" },
-        { label: "Desconto", value: "− R$ 12,48" },
+        { label: "Promoção: Semana do Whey", value: "− R$ 7,49" },
+        { label: "Cupom BEMVINDO5", value: "− R$ 4,99" },
       ]}
       total="R$ 237,22"
       method="Pagamento combinado com a loja: Pix"
