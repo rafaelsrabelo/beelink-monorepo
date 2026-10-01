@@ -1712,7 +1712,6 @@ export interface UiMessages {
       whatsappStatus: string
     }
   }
-  /** The panel's conversations: the tab, one conversation, and the one inside an order (BEELINK-164). */
   /** The panel's reviews (J19): the list, its filters, its actions and the menu's count of new ones. */
   reviews: {
     title: string
@@ -1723,7 +1722,8 @@ export interface UiMessages {
     statusHidden: string
     ratingLabel: string
     ratingAll: string
-    /** `{count}`: the pill says "5★" to the eye, this to a reader. */
+    /** The pill says "5★" to the eye, this to a reader; `{count}`. */
+    ratingStarOne: string
     ratingStars: string
     /** `{name}`. */
     productChip: string
@@ -1754,6 +1754,7 @@ export interface UiMessages {
     navNewOne: string
     navNew: string
   }
+  /** The panel's conversations: the tab, one conversation, and the one inside an order (BEELINK-164). */
   conversations: {
     title: string
     intro: string

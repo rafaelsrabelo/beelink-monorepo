@@ -8,7 +8,7 @@ import type { StoreReview, StoreReviewPage, StoreReviewsUnseen } from '@harness-
 // App
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
-import { SetReviewVisibilityDto, StoreReviewListDto } from './dto/review.dto.js';
+import { MarkReviewsSeenDto, SetReviewVisibilityDto, StoreReviewListDto } from './dto/review.dto.js';
 import { StoreReviewPageResponse, StoreReviewResponse, StoreReviewsUnseenResponse } from './dto/review.response.js';
 import { StoreReviewsService } from './store-reviews.service.js';
 
@@ -41,10 +41,10 @@ export class StoreReviewsController {
 
   @Post('seen')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'The owner opened the list: what is in it now is seen' })
+  @ApiOperation({ summary: 'The owner saw the list up to its newest review; the mark never goes back' })
   @ApiNoContentResponse()
-  async markSeen(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser): Promise<void> {
-    await this.reviews.markSeen(storeSlug, current.id);
+  async markSeen(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() dto: MarkReviewsSeenDto): Promise<void> {
+    await this.reviews.markSeen(storeSlug, current.id, dto);
   }
 
   @Patch(':reviewId')

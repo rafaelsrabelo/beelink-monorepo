@@ -14,7 +14,8 @@ import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 export interface ReviewStatusFilter {
   key: string
   label: string
-  count: number
+  /** Absent while the list is read: a zero beside the skeleton would be a false count. */
+  count?: number
   href: string
   active: boolean
 }
@@ -50,8 +51,13 @@ export function ReviewFilters({ statuses, ratings, product, linkComponent: Link 
       <nav aria-label={text.statusLabel} className="flex flex-wrap gap-1.5">
         {statuses.map((status) => (
           <Link key={status.key} href={status.href} aria-current={status.active ? "true" : undefined} className={cn(PILL, status.active ? ACTIVE : "hover:bg-muted")}>
-            {status.label}{" "}
-            <span className="tabular-nums opacity-70">({status.count})</span>
+            {status.label}
+            {status.count !== undefined ? (
+              <>
+                {" "}
+                <span className="tabular-nums opacity-70">({status.count})</span>
+              </>
+            ) : null}
           </Link>
         ))}
       </nav>
@@ -63,20 +69,20 @@ export function ReviewFilters({ statuses, ratings, product, linkComponent: Link 
             ) : (
               <>
                 <span aria-hidden="true">{filter.rating}★</span>
-                <span className="sr-only">{format(text.ratingStars, { count: String(filter.rating) })}</span>
+                <span className="sr-only">{filter.rating === 1 ? text.ratingStarOne : format(text.ratingStars, { count: String(filter.rating) })}</span>
               </>
             )}
           </Link>
         ))}
-        {product ? (
-          <span className={cn(PILL, "bg-muted border-transparent")}>
-            {format(text.productChip, { name: product.name })}
-            <Link href={product.clearHref} aria-label={text.clearProduct} className="hover:bg-background -mr-1 inline-flex size-7 items-center justify-center rounded-full">
-              <XIcon aria-hidden="true" className="size-3.5" />
-            </Link>
-          </span>
-        ) : null}
       </nav>
+      {product ? (
+        <p className={cn(PILL, "bg-muted w-fit border-transparent")}>
+          {format(text.productChip, { name: product.name })}
+          <Link href={product.clearHref} aria-label={text.clearProduct} className="hover:bg-background -mr-1 inline-flex size-7 items-center justify-center rounded-full">
+            <XIcon aria-hidden="true" className="size-3.5" />
+          </Link>
+        </p>
+      ) : null}
     </div>
   )
 }

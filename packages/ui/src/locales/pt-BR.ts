@@ -1477,6 +1477,7 @@ export const ptBR: UiMessages = {
     statusHidden: "Ocultas",
     ratingLabel: "Por nota",
     ratingAll: "Todas as notas",
+    ratingStarOne: "1 estrela",
     ratingStars: "{count} estrelas",
     productChip: "Produto: {name}",
     clearProduct: "Tirar o filtro de produto",

@@ -36,6 +36,15 @@ describe("ReviewFilters", () => {
     expect(screen.getByText("Produto: Whey")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Tirar o filtro de produto" })).toHaveAttribute("href", "?estado=ocultas")
   })
+
+  it("leaves the counts out while the list is read, says one star in the singular, and has no accessibility violations", async () => {
+    const { container } = render(
+      <ReviewFilters statuses={[{ key: "ALL", label: "Todas", href: "?", active: true }]} ratings={[{ rating: 1, href: "?nota=1", active: false }]} product={null} />,
+    )
+    expect(screen.getByRole("link", { name: "Todas" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "1 estrela" })).toBeInTheDocument()
+    await expectNoA11yViolations(container)
+  })
 })
 
 describe("ReviewList", () => {
@@ -46,11 +55,19 @@ describe("ReviewList", () => {
     expect(screen.getByText("Nota 5 de 5")).toBeInTheDocument()
     expect(screen.getByText("Sem comentário.")).toBeInTheDocument()
     expect(screen.getByText("Oculta")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Whey" })).toHaveAttribute("href", "?produto=p1")
+    expect(screen.getByRole("link", { name: "Ver só as de Whey" })).toHaveAttribute("href", "?produto=p1")
 
+    expect(onToggle).not.toHaveBeenCalled()
+    expect(screen.getByRole("button", { name: "Publicar a avaliação de Caio" })).toBeDisabled()
+    // One on its way holds the others too.
+    expect(screen.getByRole("button", { name: "Ocultar a avaliação de Bia Souza" })).toBeDisabled()
+  })
+
+  it("hands the row to the screen when no other is on its way", async () => {
+    const onToggle = vi.fn()
+    render(<ReviewList rows={rows} empty="none" onToggle={onToggle} />)
     await userEvent.click(screen.getByRole("button", { name: "Ocultar a avaliação de Bia Souza" }))
     expect(onToggle).toHaveBeenCalledWith(rows[0])
-    expect(screen.getByRole("button", { name: "Publicar a avaliação de Caio" })).toBeDisabled()
   })
 
   it("says why it is empty: none yet, or none under the filters", () => {
@@ -70,10 +87,11 @@ describe("ReviewList", () => {
 describe("ReviewsFailed and ReviewListSkeleton", () => {
   it("says the read failed and asks again; the skeleton is hidden from readers", async () => {
     const onRetry = vi.fn()
-    render(<ReviewsFailed onRetry={onRetry} />)
+    const failed = render(<ReviewsFailed onRetry={onRetry} />)
     expect(screen.getByRole("alert")).toHaveTextContent("As avaliações não carregaram.")
     await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
     expect(onRetry).toHaveBeenCalledOnce()
+    await expectNoA11yViolations(failed.container)
 
     const { container } = render(<ReviewListSkeleton />)
     expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true")

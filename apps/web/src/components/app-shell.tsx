@@ -133,7 +133,6 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
   const unreadBadge = unread
     ? { badge: unread, badgeLabel: unread === 1 ? ui.conversations.navUnreadOne : format(ui.conversations.navUnread, { count: String(unread) }) }
     : {}
-  // The reviews written since the list was last opened (J19).
   const unseen = useShopReviewsUnseen(shopSlug ?? "", shopSlug !== null && !site).data?.count ?? 0
   const unseenBadge = unseen ? { badge: unseen, badgeLabel: unseen === 1 ? ui.reviews.navNewOne : format(ui.reviews.navNew, { count: String(unseen) }) } : {}
 

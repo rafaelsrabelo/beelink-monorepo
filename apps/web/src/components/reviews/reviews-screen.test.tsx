@@ -54,10 +54,10 @@ describe("ReviewsScreen", () => {
   it("marks the list seen on opening, and lists the reviews with every status' count", () => {
     render(<ReviewsScreen slug="loja" locale="pt-BR" messages={ui} web={web} />)
 
-    expect(mocks.markSeen).toHaveBeenCalledOnce()
+    expect(mocks.markSeen).toHaveBeenCalledWith({ until: "2026-09-30T12:00:00.000Z" })
     expect(mocks.reviews).toHaveBeenCalledWith("loja", {})
     expect(screen.getByRole("link", { name: "Ocultas (1)" })).toHaveAttribute("href", "/admin/loja/reviews?estado=ocultas")
-    expect(screen.getByRole("link", { name: "Whey" })).toHaveAttribute("href", `/admin/loja/reviews?produto=${PRODUCT}`)
+    expect(screen.getByRole("link", { name: "Ver só as de Whey" })).toHaveAttribute("href", `/admin/loja/reviews?produto=${PRODUCT}`)
   })
 
   it("asks what the address says, and names the product it is narrowed to", () => {
@@ -65,6 +65,8 @@ describe("ReviewsScreen", () => {
     render(<ReviewsScreen slug="loja" locale="pt-BR" messages={ui} web={web} />)
 
     expect(mocks.reviews).toHaveBeenCalledWith("loja", { status: "PUBLISHED", rating: 5, productId: PRODUCT })
+    // Narrowed, the newest are not all on screen: nothing is marked seen.
+    expect(mocks.markSeen).not.toHaveBeenCalled()
     expect(screen.getByText("Produto: Whey")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Tirar o filtro de produto" })).toHaveAttribute("href", "/admin/loja/reviews?estado=publicadas&nota=5")
   })

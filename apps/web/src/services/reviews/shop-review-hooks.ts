@@ -4,7 +4,7 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { StoreReview, StoreReviewListQuery, StoreReviewPage, StoreReviewsUnseen } from "@harness-monorepo/contracts"
+import type { MarkReviewsSeenPayload, StoreReview, StoreReviewListQuery, StoreReviewPage, StoreReviewsUnseen } from "@harness-monorepo/contracts"
 
 // App
 import { shopReviewKeys } from "./shop-review-keys"
@@ -21,12 +21,15 @@ export function useShopReviewsUnseen(slug: string, enabled: boolean): UseQueryRe
   return useQuery({ queryKey: shopReviewKeys.unseen(slug), queryFn: () => fetchShopReviewsUnseen(slug), enabled, refetchInterval: UNSEEN_EVERY_MS })
 }
 
-/** The list opened: what is in it now is seen, and the menu's count goes back to nothing. */
-export function useMarkShopReviewsSeen(slug: string): UseMutationResult<void, Error, void> {
+/**
+ * The owner saw the list up to its newest review; the menu's count is read again. Invalidated, not
+ * set to nothing: a read of it already in flight began before the mark, and would land over a zero.
+ */
+export function useMarkShopReviewsSeen(slug: string): UseMutationResult<void, Error, MarkReviewsSeenPayload> {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => markShopReviewsSeen(slug),
-    onSuccess: () => queryClient.setQueryData<StoreReviewsUnseen>(shopReviewKeys.unseen(slug), { count: 0 }),
+    mutationFn: (payload: MarkReviewsSeenPayload) => markShopReviewsSeen(slug, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: shopReviewKeys.unseen(slug) }),
   })
 }
 

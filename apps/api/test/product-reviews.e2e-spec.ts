@@ -229,10 +229,18 @@ describe("products' reviews", () => {
     await review({ productId: whey.id, rating: 5 });
     expect(await unseen()).toBe(1);
 
-    expect((await call('POST', '/api/stores/lessari/reviews/seen', owner)).statusCode).toBe(204);
-    expect(await unseen()).toBe(0);
+    // Seen up to the newest the screen received: one written meanwhile is still new.
+    const [first] = (await call('GET', '/api/stores/lessari/reviews', owner)).json<StoreReviewPage>().reviews;
     await review({ productId: haze.id, rating: 3 });
+    expect((await call('POST', '/api/stores/lessari/reviews/seen', owner, { until: first!.createdAt })).statusCode).toBe(204);
     expect(await unseen()).toBe(1);
+    // The mark never goes back, and without `until` it is now.
+    await call('POST', '/api/stores/lessari/reviews/seen', owner, { until: '2020-01-01T00:00:00.000Z' });
+    expect(await unseen()).toBe(1);
+    const before = await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' }, select: { updatedAt: true } });
+    await call('POST', '/api/stores/lessari/reviews/seen', owner, {});
+    expect(await unseen()).toBe(0);
+    expect(await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' }, select: { updatedAt: true } })).toEqual(before);
 
     const stranger = await signUpAndSignIn(app, newEmail('outra-dona'));
     expect((await call('GET', '/api/stores/lessari/reviews/unseen', stranger)).statusCode).toBe(403);

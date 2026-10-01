@@ -25,7 +25,7 @@ export interface ReviewListProps {
   rows: readonly ReviewListRow[]
   /** Why there are none: the shop has none yet, or none under the filters chosen. */
   empty: "none" | "filtered"
-  /** The review whose hide or publish is on its way: its button waits. */
+  /** The review whose hide or publish is on its way. Every button waits meanwhile: two at once would race on the counts. */
   busyId?: string | null
   onToggle: (row: ReviewListRow) => void
   linkComponent?: LinkComponent
@@ -65,7 +65,7 @@ export function ReviewList({ rows, empty, busyId = null, onToggle, linkComponent
             <p className={row.comment ? "text-sm whitespace-pre-line" : "text-muted-foreground text-sm italic"}>{row.comment ?? text.noComment}</p>
             <p className="text-muted-foreground text-xs">
               {format(text.byOn, { name: row.customerName, date: row.date })} ·{" "}
-              <Link href={row.productHref} className="text-foreground font-medium hover:underline">
+              <Link href={row.productHref} aria-label={format(text.onlyThisProduct, { name: row.productName })} className="text-foreground font-medium hover:underline">
                 {row.productName}
               </Link>
             </p>
@@ -73,7 +73,8 @@ export function ReviewList({ rows, empty, busyId = null, onToggle, linkComponent
           <button
             type="button"
             onClick={() => onToggle(row)}
-            disabled={busyId === row.id}
+            disabled={busyId !== null}
+            aria-busy={busyId === row.id || undefined}
             aria-label={format(row.hidden ? text.publishLabel : text.hideLabel, { name: row.customerName })}
             className="hover:bg-muted inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 self-start rounded-md border px-3 text-sm font-medium disabled:cursor-default disabled:opacity-60"
           >

@@ -1476,6 +1476,7 @@ export const en: UiMessages = {
     statusHidden: "Hidden",
     ratingLabel: "By rating",
     ratingAll: "All ratings",
+    ratingStarOne: "1 star",
     ratingStars: "{count} stars",
     productChip: "Product: {name}",
     clearProduct: "Clear the product filter",

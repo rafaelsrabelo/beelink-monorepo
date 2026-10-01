@@ -63,3 +63,19 @@
 - Responder à avaliação.
 - A seção da página do produto (D14).
 - Um evento em tempo real de avaliação nova.
+
+## Adendo da revisão (30/09)
+
+- **"Visto" só depois da primeira leitura sem filtros,** e até a avaliação mais nova que a tela
+  recebeu (`POST …/seen { until }`). Uma avaliação escrita enquanto a página carregava continua nova,
+  e abrir a aba já filtrada não marca o que não apareceu. A marca nunca volta para trás, e o
+  `updatedAt` da loja não muda: abrir uma lista não edita a loja.
+- **O número do menu é invalidado, e não zerado à mão.** Uma leitura dele já em curso começou antes
+  da marca e chegaria por cima de um zero.
+- **Enquanto um ocultar ou publicar está a caminho, todos os botões esperam,** porque dois ao mesmo
+  tempo disputariam as contagens.
+- **As abas de estado não mostram contagem enquanto a lista carrega.** Uma página além da última
+  conta como filtrada.
+- **O link do produto diz o que faz** ("Ver só as de Whey"), "1 estrela" fica no singular, e o chip
+  do produto sai da navegação de nota.
+- **Os testes com axe cobrem `ReviewFilters` e `ReviewsFailed`.**

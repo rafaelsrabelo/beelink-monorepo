@@ -44,19 +44,25 @@ export function ReviewsScreen({ slug, locale, messages, web }: ReviewsScreenProp
   const toggle = useSetShopReviewVisibility(slug)
   const { mutate: markSeen } = useMarkShopReviewsSeen(slug)
   const hrefOf = (next: Parameters<typeof shopReviewsHrefOf>[2]) => shopReviewsHrefOf(slug, address, next)
+  const filtered = address.status !== undefined || address.rating !== undefined || address.productId !== undefined || address.page > 1
 
-  useEffect(() => markSeen(), [markSeen, slug])
+  // Seen once the newest are on screen — the first page with no filter — and up to the newest the
+  // screen received: one written while the page loaded is still new.
+  const newest = !filtered && list.data && !list.isPlaceholderData ? (list.data.reviews[0]?.createdAt ?? null) : undefined
+  useEffect(() => {
+    if (newest !== undefined) markSeen(newest ? { until: newest } : {})
+  }, [markSeen, newest])
 
   const counts = list.data?.counts
+  const countOf = (key: keyof NonNullable<typeof counts>) => (counts ? { count: counts[key] } : {})
   const statuses = [
-    { key: "ALL", label: text.statusAll, count: counts?.ALL ?? 0, href: hrefOf({ status: undefined }), active: address.status === undefined },
-    { key: "PUBLISHED", label: text.statusPublished, count: counts?.PUBLISHED ?? 0, href: hrefOf({ status: "PUBLISHED" }), active: address.status === "PUBLISHED" },
-    { key: "HIDDEN", label: text.statusHidden, count: counts?.HIDDEN ?? 0, href: hrefOf({ status: "HIDDEN" }), active: address.status === "HIDDEN" },
+    { key: "ALL", label: text.statusAll, ...countOf("ALL"), href: hrefOf({ status: undefined }), active: address.status === undefined },
+    { key: "PUBLISHED", label: text.statusPublished, ...countOf("PUBLISHED"), href: hrefOf({ status: "PUBLISHED" }), active: address.status === "PUBLISHED" },
+    { key: "HIDDEN", label: text.statusHidden, ...countOf("HIDDEN"), href: hrefOf({ status: "HIDDEN" }), active: address.status === "HIDDEN" },
   ]
   const ratings = RATINGS.map((rating) => ({ rating, href: hrefOf({ rating: rating ?? undefined }), active: (address.rating ?? null) === rating }))
   // The product's name comes from its reviews on the page; none on it, and the chip still names one.
   const productName = list.data?.reviews.find((review) => review.product.id === address.productId)?.product.name ?? text.productUnknown
-  const filtered = address.status !== undefined || address.rating !== undefined || address.productId !== undefined
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 lg:px-6">
