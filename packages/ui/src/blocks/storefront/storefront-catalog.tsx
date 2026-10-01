@@ -30,6 +30,8 @@ export interface StorefrontCatalogProps {
   productsPerRow?: 2 | 3 | 4
   showPrice?: boolean
   showBadge?: boolean
+  /** The cards' rating line; the shop may hide it. */
+  showRating?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
   children?: ReactNode
@@ -71,6 +73,7 @@ export function StorefrontCatalog({
   productsPerRow = 3,
   showPrice = true,
   showBadge = true,
+  showRating = true,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
   children,
@@ -89,6 +92,7 @@ export function StorefrontCatalog({
                 locale={locale}
                 showPrice={showPrice}
                 showBadge={showBadge}
+                showRating={showRating}
                 action={cardAction?.(product)}
                 favorite={cardFavorite?.(product)}
                 linkComponent={Link}

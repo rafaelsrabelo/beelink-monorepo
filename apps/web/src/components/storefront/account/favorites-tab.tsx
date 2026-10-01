@@ -6,7 +6,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { StorefrontFavoriteCard } from "@harness-monorepo/ui/blocks/storefront/storefront-favorite-card"
 import { StorefrontFavoritesEmpty } from "@harness-monorepo/ui/blocks/storefront/storefront-favorites-empty"
 import { StorefrontFavoritesHint } from "@harness-monorepo/ui/blocks/storefront/storefront-favorites-hint"
-import { StorefrontFavoritesOutcome } from "@harness-monorepo/ui/blocks/storefront/storefront-favorites-outcome"
+import { StorefrontAccountOutcome } from "@harness-monorepo/ui/blocks/storefront/storefront-account-outcome"
 import { StorefrontOrderTabs } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tabs"
 import { StorefrontPagination } from "@harness-monorepo/ui/blocks/storefront/storefront-pagination"
 
@@ -71,9 +71,9 @@ export async function FavoritesTab({ slug, routes, query, notices, locale, error
   return (
     <div className="flex flex-col gap-5">
       {refused ? (
-        <StorefrontFavoritesOutcome tone="failed" message={errorSentenceOf(errors, refused)} />
+        <StorefrontAccountOutcome tone="failed" message={errorSentenceOf(errors, refused)} />
       ) : removed ? (
-        <StorefrontFavoritesOutcome tone="done" message={text.favoriteRemoved} />
+        <StorefrontAccountOutcome tone="done" message={text.favoriteRemoved} />
       ) : null}
 
       {page.counts.ALL === 0 ? null : <StorefrontFavoritesHint on={notices} settingsHref={`${routes.accountTab("profile")}#avisos`} linkComponent={AppLink} messages={messages} />}

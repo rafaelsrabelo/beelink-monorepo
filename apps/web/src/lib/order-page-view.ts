@@ -17,6 +17,7 @@ import { zipCodeOf } from "./customer-address"
 import { momentOf, orderStatusLineOf, type OrderCardContext } from "./order-card-view"
 import { estimateLineOf } from "./order-estimate"
 import { orderStepsOf } from "./order-steps"
+import { reviewHrefOf } from "./review-view"
 
 const ZONE = "America/Sao_Paulo"
 
@@ -150,6 +151,8 @@ export function orderItemsOf(order: CustomerOrder, { routes, locale, messages }:
       .filter(Boolean)
       .join(" · "),
     price: formatCents(item.lineTotalCents, locale, "BRL"),
+    // Delivered, and still on sale: the line leads to its rating (J18).
+    reviewHref: order.status === "DELIVERED" && item.productId && item.productSlug ? reviewHrefOf(routes, item.productId) : null,
   }))
   return { items, count: order.items.reduce((sum, item) => sum + item.quantity, 0) }
 }

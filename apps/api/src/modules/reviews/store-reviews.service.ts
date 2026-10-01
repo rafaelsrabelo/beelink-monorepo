@@ -2,7 +2,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { PublicProductReviews, ReviewRating, StoreReview, StoreReviewPage } from '@harness-monorepo/contracts';
+import type { PublicProductReviews, ReviewRating, StoreReview, StoreReviewPage, StoreReviewsUnseen } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -10,7 +10,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { catalogError } from '../catalog/catalog-slug.service.js';
 import { ratingOf } from '../catalog/product-rating.js';
 import { StoresService } from '../stores/stores.service.js';
-import type { PublicReviewListDto, SetReviewVisibilityDto, StoreReviewListDto } from './dto/review.dto.js';
+import type { MarkReviewsSeenDto, PublicReviewListDto, SetReviewVisibilityDto, StoreReviewListDto } from './dto/review.dto.js';
 import { countIn, countOut, lockReview } from './review-books.js';
 import { reviewInclude, toPublicReview, toStoreReview } from './reviews.mapper.js';
 import { PUBLIC_REVIEWS_PAGE_SIZE, REVIEW_RATINGS, reviewError, STORE_REVIEWS_PAGE_SIZE, UUID } from './reviews.constants.js';
@@ -79,6 +79,30 @@ export class StoreReviewsService {
       this.prisma.productReview.count({ where: { ...base, hiddenAt: { not: null } } }),
     ]);
     return { reviews: rows.map(toStoreReview), total, page, pageSize, counts: { ALL: all, PUBLISHED: all - hidden, HIDDEN: hidden } } satisfies StoreReviewPage;
+  }
+
+  /** The reviews written since the owner last opened the list: the menu's "new". */
+  async unseen(storeSlug: string, userId: string): Promise<StoreReviewsUnseen> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const store = await this.prisma.store.findUniqueOrThrow({ where: { id: storeId }, select: { reviewsSeenAt: true } });
+    const count = await this.prisma.productReview.count({ where: { storeId, ...(store.reviewsSeenAt ? { createdAt: { gt: store.reviewsSeenAt } } : {}) } });
+    return { count } satisfies StoreReviewsUnseen;
+  }
+
+  /**
+   * The owner saw the list up to `until` — the newest review the screen received — so one written
+   * while the page was loading is still new. The mark never goes back, nor past now; and the shop's
+   * `updatedAt` stays, since opening a list edits nothing of it.
+   */
+  async markSeen(storeSlug: string, userId: string, dto: MarkReviewsSeenDto): Promise<void> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const now = new Date();
+    const until = dto.until && dto.until < now ? dto.until : now;
+    await this.prisma.$transaction(async (tx) => {
+      const store = await tx.store.findUniqueOrThrow({ where: { id: storeId }, select: { reviewsSeenAt: true, updatedAt: true } });
+      if (store.reviewsSeenAt && store.reviewsSeenAt >= until) return;
+      await tx.store.update({ where: { id: storeId }, data: { reviewsSeenAt: until, updatedAt: store.updatedAt } });
+    });
   }
 
   /** Hidden from the shop window, or published again; the same state asked again changes nothing. */

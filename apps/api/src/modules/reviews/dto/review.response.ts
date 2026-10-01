@@ -10,6 +10,7 @@ import type {
   ReviewRating,
   StoreReview,
   StoreReviewPage,
+  StoreReviewsUnseen,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -61,7 +62,7 @@ export class CustomerPendingReviewResponse implements CustomerPendingReview {
 export class CustomerReviewResponse implements CustomerReview {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ format: 'uuid' }) productId!: string;
-  @ApiProperty() slug!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Null once the product is a draft.' }) slug!: string | null;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({ enum: REVIEW_RATINGS }) rating!: ReviewRating;
@@ -107,4 +108,8 @@ export class StoreReviewPageResponse implements StoreReviewPage {
   @ApiProperty() page!: number;
   @ApiProperty() pageSize!: number;
   @ApiProperty({ type: StoreReviewCountsResponse, description: 'Following the rating and the product, not the status.' }) counts!: StoreReviewCountsResponse;
+}
+
+export class StoreReviewsUnseenResponse implements StoreReviewsUnseen {
+  @ApiProperty({ description: 'Written since the owner last opened the list, hidden or not.' }) count!: number;
 }

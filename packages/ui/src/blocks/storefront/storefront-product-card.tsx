@@ -8,6 +8,7 @@ import { optionCountOf } from "@harness-monorepo/ui/lib/option-count"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { StorefrontCardPhotos } from "./storefront-card-photos"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
+import { StorefrontRating } from "./storefront-rating"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -26,6 +27,8 @@ export interface StorefrontProduct {
   hasOptions?: boolean
   /** Its first option and how many values it has, for the line "4 sabores" under the name. */
   optionSummary?: { name: string; valueCount: number } | null
+  /** The published reviews' average and count; null while there is none. */
+  rating?: { average: number; count: number } | null
 }
 
 export interface StorefrontProductCardProps {
@@ -35,6 +38,8 @@ export interface StorefrontProductCardProps {
   locale: string
   showPrice?: boolean
   showBadge?: boolean
+  /** The rating line under the name, when the product has reviews; the shop may hide it. */
+  showRating?: boolean
   /** Under the price, above the card's link: the web's "Adicionar ao carrinho". */
   action?: ReactNode
   /** On the photo's top-right corner, above the card's link: the web's heart. */
@@ -70,6 +75,7 @@ export function StorefrontProductCard({
   locale,
   showPrice = true,
   showBadge = true,
+  showRating = true,
   action,
   favorite,
   density = "default",
@@ -134,6 +140,8 @@ export function StorefrontProductCard({
         >
           {product.name}
         </Link>
+
+        {showRating && product.rating ? <StorefrontRating average={product.rating.average} count={product.rating.count} locale={locale} size="card" messages={messages} /> : null}
 
         {showPrice ? (
           <StorefrontPrice

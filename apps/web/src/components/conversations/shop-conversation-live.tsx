@@ -65,8 +65,9 @@ export function ShopConversationLive({ slug, number, locale, headed = true, back
     send.mutate(sent, {
       // What was typed while it went stays: only the answer that went leaves the field.
       onSuccess: () => setDraft((current) => (current.trim() === sent ? "" : current)),
+      // Closed meanwhile, or its customer's account deleted: read again, and the answer box goes.
       onError: (failure) => {
-        if (failure instanceof ShopConversationError && failure.errorCode === "ORDER_CONVERSATION_CLOSED") void conversation.refetch()
+        if (failure instanceof ShopConversationError && (failure.errorCode === "ORDER_CONVERSATION_CLOSED" || failure.errorCode === "ORDER_CONVERSATION_NOT_FOUND")) void conversation.refetch()
       },
     })
   }

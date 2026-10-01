@@ -65,6 +65,8 @@ export interface StorefrontProductDetailProps {
    * address for "Comprar agora". Absent, the page offers the WhatsApp order alone.
    */
   cart?: { onAdd: (variantId: string | null, qty: number) => void; href: string }
+  /** The rating line under the title, leading to the reviews; absent while there is none. */
+  rating?: ReactNode
   /** The heart for the combination chosen now (null while none is): on the photo, and last in the buy box, as 5b draws both. */
   favorite?: (variantId: string | null, look: "icon" | "text") => ReactNode
   /** "Avise-me" for a sold-out combination; absent, the page offers none. */
@@ -113,6 +115,7 @@ export function StorefrontProductDetail({
   onVariantChange,
   cart,
   favorite,
+  rating,
   restock,
   locale,
   showPrice = true,
@@ -192,6 +195,7 @@ export function StorefrontProductDetail({
           shopName={shopName}
           homeHref={homeHref}
           name={name}
+          rating={rating}
           price={price}
           picker={picker}
           description={description}
