@@ -166,6 +166,15 @@ describe('firstPurchaseOfferOf', () => {
     expect(firstPurchaseOfferOf(cart, [wheys, creatines, ten])).toEqual({ promotionName: 'whey', discountCents: 7596 });
   });
 
+  it('names the one that adds, not one that holds a line on a tie and adds nothing to it', () => {
+    // 10% for everyone and 10% for a first purchase, the newer first: it keeps the creatine's line while adding nothing there.
+    const tie = welcome('empate', { scope: 'PRODUCTS', percentBps: 1000, productIds: [CREATINE] });
+    const ten = promotion('dez', { scope: 'PRODUCTS', percentBps: 1000, productIds: [CREATINE] });
+    const wheys = welcome('whey', { scope: 'PRODUCTS', percentBps: 2000, productIds: [WHEY] });
+
+    expect(firstPurchaseOfferOf(cart, [tie, wheys, ten])).toEqual({ promotionName: 'whey', discountCents: 7596 });
+  });
+
   it('weighs a fixed amount off the cart as the cart’s: offered only past the lines’ own promotions together', () => {
     const twenty = welcome('vinte', { discountKind: 'FIXED', amountCents: 2000 });
     const wheys = promotion('whey', { scope: 'PRODUCTS', percentBps: 500, productIds: [WHEY] });

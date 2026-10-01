@@ -139,3 +139,26 @@ nova: a linha "Promoção: Boas-vindas", o cupom aceito depois dela, o pedido #4
 No carrinho seguinte dela e no da Marina (que já comprou): "Boas-vindas vale só na primeira compra."
 e o cupom recusado com "Esse cupom vale só na primeira compra."
 
+## Adendo da revisão (01/10)
+
+Um revisor independente leu o diff e não achou defeito: não há estado em que o pedido saia com preço
+diferente do que a API calcula, nem ciclo novo de travas. O que mudou a partir das observações dele:
+
+- **O nome da promoção anunciada é o da que acrescenta algo,** e não o da que só ocupa uma linha. Num
+  empate exato entre uma promoção para todos e uma de primeira compra, a de primeira compra ficava na
+  linha sem tirar nada a mais, e o anúncio perdia o nome da que de fato tirava. Teste de unidade.
+- **Os pedidos do cliente só são lidos para uma promoção de primeira compra que alcança o carrinho.**
+  Uma de produtos escolhidos que não tem nenhum deles no carrinho não custa mais a leitura nem a trava.
+- **A ordem das travas ficou documentada** em `PricingInput.lock`: o pedido do cliente trava o cupom
+  antes do cliente; a venda do painel cadastra o cliente antes de cotar. O que impede de cruzarem é a
+  trava da linha da loja, que toda gravação toma primeiro.
+
+O que fica como está, sabendo:
+
+- **Sessão que acaba com o carrinho aberto:** o handler cota como visitante e limpa os cookies, mas a
+  página ainda guarda o preço sob a chave do cliente até a próxima ação. Decisão do O5, mantida.
+- **`PUT` sem `audience` volta para "todos".** É a regra de toda chave opcional menos `active`, e o
+  formulário sempre envia. Um cliente de API que não for o web precisa saber.
+- **O `like` dos favoritos e a gravação do pedido já se cruzavam antes deste ticket** (cliente → produto
+  num, produto → cliente no outro). Este ticket não cria a aresta; `refreshBooks` já a tinha.
+

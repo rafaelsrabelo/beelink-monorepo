@@ -164,11 +164,13 @@ export function firstPurchaseOfferOf(lines: readonly PricingLine[], promotions: 
   if (forFirstPurchase.length === 0) return null;
 
   const offered = promotionDiscountsOf(lines, promotions);
-  const discountCents = sumOf(offered) - sumOf(promotionDiscountsOf(lines, forEveryone(promotions)));
+  const given = promotionDiscountsOf(lines, forEveryone(promotions));
+  const discountCents = sumOf(offered) - sumOf(given);
   if (discountCents <= 0) return null;
 
-  const onLines = forFirstPurchase.filter((promotion) => offered.some((line) => line.promotion?.id === promotion.id));
-  return { promotionName: onLines.length === 1 ? onLines[0]!.name : null, discountCents };
+  // Named by what it adds, not by where it sits: on a tie it may hold a line and add nothing to it.
+  const adding = forFirstPurchase.filter((promotion) => offered.some((line, at) => line.promotion?.id === promotion.id && line.discountCents > given[at]!.discountCents));
+  return { promotionName: adding.length === 1 ? adding[0]!.name : null, discountCents };
 }
 
 export interface PricingCoupon {

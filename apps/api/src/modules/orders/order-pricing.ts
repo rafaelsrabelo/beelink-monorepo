@@ -8,7 +8,7 @@ import type { CouponModel } from '../../generated/prisma/models.js';
 
 // App
 import { couponRefusalOf, storedCodeOf } from '../promotions/coupon-verdict.js';
-import { couponDiscountOf, firstPurchaseOfferOf, forEveryone, promotionDiscountsOf, type LineDiscount } from '../promotions/discount-pricing.js';
+import { couponDiscountOf, firstPurchaseOfferOf, forEveryone, promotionDiscountsOf, type LineDiscount, type PricingPromotion } from '../promotions/discount-pricing.js';
 import { couponByCode, customerUsesOf, firstPurchaseOf, runningPromotions } from '../promotions/order-discounts.js';
 import type { OrderLine } from './order-lines.js';
 import { totalsOf, type OrderTotals } from './order-totals.js';
@@ -21,6 +21,11 @@ import { orderError } from './orders.constants.js';
  */
 export interface PricingCustomer {
   id: string | null;
+}
+
+/** Read with what it names among the cart alone (`runningPromotions`' `only`): a list left empty reaches no line. */
+function reachesTheCart(promotion: PricingPromotion): boolean {
+  return promotion.scope === 'CART' || promotion.productIds.length > 0 || promotion.categoryIds.length > 0;
 }
 
 /** What an order is priced from, whoever asks: a quote reads it, a placement writes what it answers. */
@@ -40,7 +45,9 @@ export interface PricingInput {
   at: Date;
   /**
    * Hold what the limits are read from to the end of the transaction — the coupon's row, and the
-   * customer's before a first purchase is said: a placement's, never a quote's.
+   * customer's before a first purchase is said: a placement's, never a quote's. The two are taken
+   * coupon first here and customer first by the panel's sale, which registers its customer before
+   * pricing: what keeps that from ever crossing is the shop's row, which every placement holds first.
    */
   lock: boolean;
 }
@@ -86,10 +93,10 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
   const stored = input.couponCode === null ? null : storedCodeOf(input.couponCode);
   const found = stored ? await couponByCode(db, storeId, stored, input.lock) : null;
 
-  // The customer's orders are read only when a discount is for a first purchase: a cart with none
-  // costs no look at them, and a placement takes no lock on its customer. Somebody the order would
-  // register has none to read.
-  const asked = promotions.some((promotion) => promotion.audience === 'FIRST_PURCHASE') || found?.audience === 'FIRST_PURCHASE';
+  // The customer's orders are read only when a discount for a first purchase reaches the cart: one
+  // that does not costs no look at them, and a placement takes no lock on its customer. Somebody the
+  // order would register has none to read.
+  const asked = promotions.some((promotion) => promotion.audience === 'FIRST_PURCHASE' && reachesTheCart(promotion)) || found?.audience === 'FIRST_PURCHASE';
   const onFirstPurchase = !asked || !customer ? null : customer.id === null || (await firstPurchaseOf(db, customer.id, input.lock));
 
   const lineDiscounts = promotionDiscountsOf(lines, onFirstPurchase ? promotions : forEveryone(promotions));

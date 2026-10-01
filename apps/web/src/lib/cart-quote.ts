@@ -31,7 +31,7 @@ export async function cartQuoteAt(slug: string, cart: CustomerOrderQuotePayload,
 
   const shop = `/stores/${encodeURIComponent(slug)}`
   const accessToken = shopperId ? (await cookies()).get(CUSTOMER_ACCESS_COOKIE)?.value : undefined
-  // The shopper was read with this cookie: gone since, the price is not theirs to ask for here.
+  // The shopper is read from this cookie in the same request, so one without it is none: a guard, not a case.
   if (shopperId && !accessToken) return null
 
   const clientIp = (await headers()).get("x-forwarded-for")
