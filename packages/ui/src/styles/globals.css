@@ -262,21 +262,25 @@
      * and nowhere else a component can reach: `web/no-hex-colors` scans .ts and .tsx only, which is
      * exactly why a colour that has to be written down lives in CSS.
      *
-     * The header keeps its own foreground and field colours because it is dark on a light page: the
-     * page's --foreground would be unreadable on it, and reaching for a token that happens to be
-     * light is how a theme change later turns the header into black on black.
+     * The header is Beelink's yellow with ink on it (01/10/2026; it was a dark bar), in the light
+     * theme and the dark one alike. It keeps its own foreground and field colours because it is
+     * neither theme's page: the page's --foreground is white in the dark theme, unreadable on the
+     * yellow, and reaching for a token that happens to be dark is how a theme change later turns
+     * the header into white on yellow. The fields are the ink at a low alpha, so they darken the
+     * yellow rather than grey it.
      */
-    --header: oklch(0.205 0 0);                    /* #1a1a1a */
-    --header-foreground: oklch(0.922 0 0);         /* #e3e3e3 */
-    --header-border: oklch(1 0 0 / 12%);
-    --header-field: oklch(1 0 0 / 10%);
-    --header-field-hover: oklch(1 0 0 / 16%);
-    /* The one chromatic value: the badge behind a shop's initials, and the unread dot. */
-    --header-accent: oklch(0.878 0.176 164.5);     /* #36fba1 */
-    --header-accent-foreground: oklch(0.343 0.077 163.7); /* #0c5132 */
-    /* Something waiting to go live — the design editor's unpublished draft. Amber, apart from the
-       accent's green, which says something is new rather than something is pending. */
-    --header-pending: oklch(0.828 0.165 78);       /* #f5b83d */
+    --header: oklch(0.842 0.168 90.4);             /* #f5c518 — the brand's yellow */
+    --header-foreground: oklch(0.178 0 0);         /* #111111 */
+    --header-border: oklch(0 0 0 / 18%);
+    --header-field: oklch(0 0 0 / 8%);
+    --header-field-hover: oklch(0 0 0 / 14%);
+    /* The badge behind a shop's initials, and the unread count: ink, the one thing that stands
+       out on the yellow. */
+    --header-accent: oklch(0.178 0 0);             /* #111111 */
+    --header-accent-foreground: oklch(0.985 0 0);  /* #fafafa */
+    /* Something waiting to go live — the design editor's unpublished draft. A red-orange: amber
+       would vanish into the yellow, and the ink is what "nothing pending" already uses. */
+    --header-pending: oklch(0.52 0.19 33);         /* #b5320f */
 
     /* The rail, a shade darker than the page it sits beside — which is what separates the two
        without a border, the way the reference does it. */

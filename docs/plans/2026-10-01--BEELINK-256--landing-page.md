@@ -167,3 +167,18 @@ Pedido do Rafael: ao compartilhar `link.beecoders.net`, a prévia mostrar títul
   próprio domínio. Isso é o V1 do Épico V (BEELINK-247); quando ele chegar, `siteOrigin()` sai.
 - Só a landing. A prévia das lojas é o V2 (BEELINK-248), e `robots.txt` e sitemap são o V4
   (BEELINK-250).
+
+## Adendo — o ícone da marca (01/10)
+
+O Rafael entregou o ícone: uma sacola preta com a marca, sobre amarelo.
+
+- **Aba do navegador:** `favicon.ico`, `icon.png` e `apple-icon.png` em `apps/web/src/app` são o
+  ícone. Foi redesenhado em vetor a partir da imagem e exportado nos tamanhos, com o amarelo da marca.
+- **Link compartilhado:** `share-v2.png` troca a `share-v1.png` (a logo no creme). É o ícone
+  centrado no amarelo, para um recorte quadrado não o cortar.
+- **Painel:** a barra do topo deixou de ser preta e passou ao amarelo da marca, com o ícone no lugar
+  da palavra "beelink" (o nome continua dito a um leitor de tela). Li "a cor de fundo é o amarelo em
+  vez de preto" como a cor da barra. A barra do editor de design usa os mesmos tokens e mudou junto.
+- **Contraste na barra amarela:** texto e ícones em preto; o selo da loja e o contador de avisos em
+  preto com texto claro (eram verdes); o ponto de "alterações não publicadas" virou vermelho-alaranjado
+  (âmbar some no amarelo); o texto de apoio da busca subiu de 60% para 70% do preto (60% dava 4,2:1).

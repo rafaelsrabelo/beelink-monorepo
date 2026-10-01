@@ -17,12 +17,12 @@ export type PreviewDevice = (typeof PREVIEW_DEVICES)[number]
 export interface PreviewDeviceToggleProps {
   value: PreviewDevice
   onChange: (value: PreviewDevice) => void
-  /** `header` draws it on the editor's dark bar, in the header's own tokens. */
+  /** `header` draws it on the editor's yellow bar, in the header's own tokens. */
   tone?: "default" | "header"
   messages?: UiMessages
 }
 
-/** On the dark bar: the chosen device filled light, so which one it is reads at a glance. */
+/** On the yellow bar: the chosen device filled with the ink, so which one it is reads at a glance. */
 const HEADER_ITEM =
   "h-9 border-header-border text-header-foreground hover:bg-header-field-hover hover:text-header-foreground aria-pressed:bg-header-foreground aria-pressed:text-header aria-pressed:hover:bg-header-foreground/90 aria-pressed:hover:text-header"
 

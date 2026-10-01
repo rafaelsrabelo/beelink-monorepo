@@ -9,7 +9,7 @@ export const ptBR: WebMessages = {
   landing: {
     title: "Beelink — Tudo o que o seu e-commerce precisa",
     description: "Loja online, checkout, chat, envios e marketing num lugar só. Crie sua loja e comece a vender hoje.",
-    shareImageAlt: "Logo da Beelink",
+    shareImageAlt: "Ícone da Beelink: uma sacola com a marca",
   },
   auth: {
     signupSuccessTitle: "Confira seu e-mail",

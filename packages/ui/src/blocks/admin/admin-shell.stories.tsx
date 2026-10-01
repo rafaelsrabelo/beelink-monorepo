@@ -58,5 +58,5 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** The whole frame: one dark bar, a rail a shade darker than the page, and the page rounded at the top. */
+/** The whole frame: one yellow bar, a rail a shade darker than the page, and the page rounded at the top. */
 export const Padrao: Story = {}

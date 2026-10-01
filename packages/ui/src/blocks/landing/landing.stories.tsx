@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 
 import { ptBR } from "@harness-monorepo/ui/locales/index"
 
+import { BeelinkBag } from "./beelink-bag"
 import { BrandLines } from "./brand-lines"
 import { LandingBanners } from "./landing-banners"
 import { LandingCourierForm } from "./landing-courier-form"
@@ -129,6 +130,17 @@ export const ChamadaERodape: Story = {
 /** No celular: uma coluna, sem o hub, com os banners rolando de lado. */
 /** O topo numa tela estreita: os links de seção, os termos e a política de privacidade vão para o menu. */
 export const TopoNoCelular: Story = { ...TopoEHero, globals: { viewport: { value: "mobile1", isRotated: false } } }
+
+/** O ícone: a sacola com a marca. É o da aba do navegador, do link compartilhado e da barra do painel. */
+export const Icone: Story = {
+  args: { children: null },
+  render: () => (
+    <div className="flex items-center gap-6 bg-brand-yellow p-10 text-brand-ink">
+      <BeelinkBag className="size-8" />
+      <BeelinkBag className="size-24" />
+    </div>
+  ),
+}
 
 /** As duas linhas amarelas do canto, sozinhas: a landing e as telas de conta as desenham. */
 export const Linhas: Story = {
