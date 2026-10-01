@@ -129,6 +129,18 @@ While a promotion runs, the shop window shows it: the price a visitor reads is t
 
 Either can be **paused** and switched back on. Where one stands — scheduled, running, paused, ended, or a coupon used up — is read from the clock and its limits, never set by hand. An order keeps the discount it took as it was, whatever is edited afterwards, and a coupon lists the orders it went into.
 
+## Cashback
+
+A store may give **cashback**: a share of what a customer pays for the products comes back to them as credit, to spend on that store's later orders. The shopkeeper switches it on and sets the rules — the share, how long a credit lasts once given (or that it never expires), the smallest order that earns, and how much of an order credit may pay for. A change to the rules applies to orders placed from then on; credit already given keeps the validity it was given with.
+
+**Credit is the store's, not money.** It belongs to the customer's record at that store, is spent only there, and is never withdrawn, transferred or seen by another store. A customer with no account earns and spends it too, through the record the shop keeps of them.
+
+An order **earns** on the products, after the promotions, the coupon and any credit spent on it — never on the delivery. The credit is **pending** while the order is open and becomes **usable once the order is delivered**, the same proof of a sale reviews rest on, since the product does not see the payment; its validity counts from the delivery. An order that is cancelled, or that leaves *delivered*, takes back what it earned — and when the customer already spent that credit, the balance **stops at zero**: it never goes negative, and the shopkeeper is shown the difference.
+
+Credit is **spent** the soonest-to-expire first. Credit spent on an order that is then cancelled comes back with the validity it had — and at least seven more days, so it can still be used.
+
+Each customer's credit is a **statement** that only grows: what was earned, spent, taken back, expired, and what the shopkeeper adjusted by hand, with their reason. A line is never edited; a mistake is answered by another line. The balance is what the statement adds up to, and every change to it happens under the customer's lock, so two orders at once never spend the same credit. The shopkeeper sees what the store owes in credit, and how much of it expires soon.
+
 ## Checkout and the handoff to WhatsApp
 
 Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp**. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil. It names the order by its number, and its lines, its discounts and its total are the ones the product recorded, not the ones the page computed.
