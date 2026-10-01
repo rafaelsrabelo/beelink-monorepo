@@ -356,6 +356,19 @@ export interface UiMessages {
     securityPasswordChanged: string
     securityLinkSent: string
     signedOutEverywhere: string
+    /** "Baixar meus dados" and "Excluir minha conta" (BEELINK-152). */
+    privacyTitle: string
+    privacyLead: string
+    privacyDownload: string
+    privacyDownloadHint: string
+    privacyDownloadFailed: string
+    privacyDelete: string
+    privacyDeleteLead: string
+    privacyDeletePassword: string
+    privacyDeleteEmail: string
+    privacyDeleteSubmit: string
+    privacyPasswordWrong: string
+    accountDeleted: string
     /** The shopper's notices by e-mail (BEELINK-151). */
     noticesTitle: string
     noticesLead: string
@@ -591,6 +604,18 @@ export interface UiMessages {
     favoritesHintOff: string
     favoritesHintChange: string
     favoritesHintTurnOn: string
+    /** The account's front (6c, BEELINK-159): the purchases to rate and the favourites' rail. */
+    overviewReviewsTitle: string
+    overviewSeeAll: string
+    overviewReviewComment: string
+    overviewReviewOpen: string
+    quickRatingGroup: string
+    favoritesRailTitle: string
+    favoritesRailCountOne: string
+    favoritesRailCountMany: string
+    favoritesRailDroppedOne: string
+    favoritesRailDroppedMany: string
+    favoritesRailDrop: string
     /** Avaliar compras (6c, J18): the tab, its two sections, the stars, the form and what came of it. */
     orderReviewProduct: string
     reviewsPendingTitle: string
@@ -1801,6 +1826,8 @@ export interface UiMessages {
     noneYet: string
     noneClosed: string
     closed: string
+    /** The customer deleted their account (BEELINK-152): the order may still be on its way, and no answer reaches them. */
+    customerLeft: string
     sent: string
     read: string
     fromCustomer: string
