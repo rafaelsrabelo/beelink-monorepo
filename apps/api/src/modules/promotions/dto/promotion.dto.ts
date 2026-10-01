@@ -3,7 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDate, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, Max, MaxDate, MaxLength, Min, MinDate } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsISO8601, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, Max, Min, ValidateIf } from 'class-validator';
 
 // Types
 import type {
@@ -22,6 +22,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import { blankToNull } from '../../stores/dto/store-fields.dto.js';
 import {
   COUPON_CODE,
@@ -34,9 +35,8 @@ import {
   DISCOUNTS_PAGE_MAX,
   DISCOUNTS_PAGE_SIZE,
   DISCOUNTS_PAGE_SIZE_MAX,
+  INSTANT,
   PERCENT_BPS_MAX,
-  PERIOD_MAX,
-  PERIOD_MIN,
   PROMOTION_NAME_MAX,
   PROMOTION_SCOPES,
   PROMOTION_STATUSES,
@@ -47,18 +47,16 @@ import {
 const answering = (errorCode: PromotionErrorCode) => ({ context: { errorCode } });
 
 const trimmed = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value));
-/** As it is stored, so "bemvindo10" and "BEMVINDO10" are one code before any rule reads it. */
-const upperCased = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toUpperCase() : value));
 
-/** Dates arrive as ISO-8601 strings and are held as `Date`s from the pipe on. */
-type Dated<T> = Omit<T, 'startsAt' | 'endsAt'>;
+/** Absent is allowed, null is not: a switch sent as null would read as its default, on. */
+const unlessAbsent = ValidateIf((_, value) => value !== undefined);
 
-export class PromotionDto implements Dated<PromotionPayload> {
+export class PromotionDto implements PromotionPayload {
   @ApiProperty({ maxLength: PROMOTION_NAME_MAX, example: 'Semana do Consumidor' })
   @trimmed
   @IsString()
   @IsNotEmpty()
-  @MaxLength(PROMOTION_NAME_MAX)
+  @MaxCodePoints(PROMOTION_NAME_MAX)
   name!: string;
 
   @ApiProperty({ enum: PROMOTION_SCOPES })
@@ -83,22 +81,19 @@ export class PromotionDto implements Dated<PromotionPayload> {
   @Max(DISCOUNT_AMOUNT_MAX_CENTS, answering('PROMOTION_DISCOUNT_INVALID'))
   amountCents?: number | null;
 
-  @ApiProperty({ format: 'date-time' })
-  @Type(() => Date)
-  @IsDate(answering('PROMOTION_PERIOD_INVALID'))
-  @MinDate(PERIOD_MIN, answering('PROMOTION_PERIOD_INVALID'))
-  @MaxDate(PERIOD_MAX, answering('PROMOTION_PERIOD_INVALID'))
-  startsAt!: Date;
+  @ApiProperty({ format: 'date-time', description: 'ISO-8601, with its offset.' })
+  @IsISO8601({ strict: true }, answering('PROMOTION_PERIOD_INVALID'))
+  @Matches(INSTANT, answering('PROMOTION_PERIOD_INVALID'))
+  startsAt!: string;
 
   @ApiPropertyOptional({ nullable: true, type: String, format: 'date-time', description: 'After startsAt; absent or null runs until paused.' })
   @IsOptional()
-  @Type(() => Date)
-  @IsDate(answering('PROMOTION_PERIOD_INVALID'))
-  @MaxDate(PERIOD_MAX, answering('PROMOTION_PERIOD_INVALID'))
-  endsAt?: Date | null;
+  @IsISO8601({ strict: true }, answering('PROMOTION_PERIOD_INVALID'))
+  @Matches(INSTANT, answering('PROMOTION_PERIOD_INVALID'))
+  endsAt?: string | null;
 
-  @ApiPropertyOptional({ default: true, description: 'False is paused.' })
-  @IsOptional()
+  @ApiPropertyOptional({ description: 'False is paused. Absent is true on a create, and keeps the switch as it is on a replace.' })
+  @unlessAbsent
   @IsBoolean()
   active?: boolean;
 
@@ -117,9 +112,9 @@ export class PromotionDto implements Dated<PromotionPayload> {
   categoryIds?: string[];
 }
 
-export class CouponDto implements Dated<CouponPayload> {
-  @ApiProperty({ example: 'BEMVINDO10', description: '3 to 30 of A–Z, 0–9, "-" and "_", starting with a letter or a digit; stored in upper case.' })
-  @upperCased
+export class CouponDto implements CouponPayload {
+  @ApiProperty({ example: 'BEMVINDO10', description: '3 to 30 of A–Z, 0–9, "-" and "_", in either case, starting with a letter or a digit; stored in upper case.' })
+  @trimmed
   @IsString(answering('COUPON_CODE_INVALID'))
   @Matches(COUPON_CODE, answering('COUPON_CODE_INVALID'))
   code!: string;
@@ -149,19 +144,16 @@ export class CouponDto implements Dated<CouponPayload> {
   @Max(DISCOUNT_AMOUNT_MAX_CENTS)
   minSubtotalCents?: number;
 
-  @ApiProperty({ format: 'date-time' })
-  @Type(() => Date)
-  @IsDate(answering('COUPON_PERIOD_INVALID'))
-  @MinDate(PERIOD_MIN, answering('COUPON_PERIOD_INVALID'))
-  @MaxDate(PERIOD_MAX, answering('COUPON_PERIOD_INVALID'))
-  startsAt!: Date;
+  @ApiProperty({ format: 'date-time', description: 'ISO-8601, with its offset.' })
+  @IsISO8601({ strict: true }, answering('COUPON_PERIOD_INVALID'))
+  @Matches(INSTANT, answering('COUPON_PERIOD_INVALID'))
+  startsAt!: string;
 
   @ApiPropertyOptional({ nullable: true, type: String, format: 'date-time', description: 'After startsAt; absent or null never expires.' })
   @IsOptional()
-  @Type(() => Date)
-  @IsDate(answering('COUPON_PERIOD_INVALID'))
-  @MaxDate(PERIOD_MAX, answering('COUPON_PERIOD_INVALID'))
-  endsAt?: Date | null;
+  @IsISO8601({ strict: true }, answering('COUPON_PERIOD_INVALID'))
+  @Matches(INSTANT, answering('COUPON_PERIOD_INVALID'))
+  endsAt?: string | null;
 
   @ApiPropertyOptional({ nullable: true, type: Number, minimum: 1, maximum: COUPON_MAX_USES_MAX, description: 'How many orders may use it; absent or null is no limit.' })
   @IsOptional()
@@ -177,8 +169,8 @@ export class CouponDto implements Dated<CouponPayload> {
   @Max(COUPON_MAX_USES_PER_CUSTOMER_MAX)
   maxUsesPerCustomer?: number | null;
 
-  @ApiPropertyOptional({ default: true, description: 'False is paused.' })
-  @IsOptional()
+  @ApiPropertyOptional({ description: 'False is paused. Absent is true on a create, and keeps the switch as it is on a replace.' })
+  @unlessAbsent
   @IsBoolean()
   active?: boolean;
 }

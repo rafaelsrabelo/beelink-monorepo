@@ -52,7 +52,7 @@ export interface Promotion {
   updatedAt: string;
 }
 
-/** What the form sends, to create and to replace: an optional key left out is cleared. */
+/** What the form sends, to create and to replace: an optional key left out is cleared — all but `active`. */
 export interface PromotionPayload {
   /** 1 to 80 characters, trimmed. */
   name: string;
@@ -60,10 +60,11 @@ export interface PromotionPayload {
   discountKind: DiscountKind;
   percentBps?: number | null;
   amountCents?: number | null;
+  /** ISO-8601 with its offset (`2026-10-05T13:00:00.000Z`), as `endsAt`. */
   startsAt: string;
   /** After `startsAt`; absent or null runs until paused. */
   endsAt?: string | null;
-  /** Absent is true. */
+  /** Absent is true on a create, and keeps the switch as it is on a replace. */
   active?: boolean;
   /** One to 200 of the shop's products on a `PRODUCTS` scope; absent or empty otherwise. */
   productIds?: string[];
@@ -122,20 +123,22 @@ export interface Coupon {
   updatedAt: string;
 }
 
-/** What the form sends, to create and to replace: an optional key left out is cleared. */
+/** What the form sends, to create and to replace: an optional key left out is cleared — all but `active`. */
 export interface CouponPayload {
-  /** 3 to 30 of A–Z, 0–9, `-` and `_`, starting with a letter or a digit; stored in upper case. */
+  /** 3 to 30 of A–Z, 0–9, `-` and `_`, in either case, starting with a letter or a digit; stored in upper case. */
   code: string;
   kind: CouponKind;
   percentBps?: number | null;
   amountCents?: number | null;
   /** Absent is zero. */
   minSubtotalCents?: number;
+  /** ISO-8601 with its offset, as `endsAt`. */
   startsAt: string;
+  /** After `startsAt`; absent or null never expires. */
   endsAt?: string | null;
   maxUses?: number | null;
   maxUsesPerCustomer?: number | null;
-  /** Absent is true. */
+  /** Absent is true on a create, and keeps the switch as it is on a replace. */
   active?: boolean;
 }
 

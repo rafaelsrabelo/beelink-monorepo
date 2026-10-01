@@ -159,3 +159,25 @@ Estas perguntas são do cálculo, e este ticket não as responde. O modelo serve
 - A condição "só na primeira compra" (O6).
 - Apagar promoção ou cupom, e buscar cupom por código na lista.
 - Cupons da plataforma (Épicos S e T).
+
+## Adendo da revisão (01/10)
+
+Um revisor de correção leu o diff. Situação, isolamento entre lojas, corridas e chaves estrangeiras
+saíram limpos. O que mudou:
+
+- **O nome da promoção é contado como a coluna conta,** em code points (`MaxCodePoints`). Um nome de
+  79 letras e um coração passava no limite de 80 e estourava o `VARCHAR(80)` com um 500.
+- **Os `CHECK` do desconto pedem o valor pelo nome** (`IS NOT NULL`). Um `NULL` comparado dá `NULL`, e
+  o `CHECK` deixava passar um percentual ou um valor fixo sem número nenhum. A API já recusava; o
+  banco agora recusa de qualquer um. A migração foi editada antes do primeiro push.
+- **`startsAt` e `endsAt` só aceitam ISO-8601 com o deslocamento** (`2026-10-05T13:00:00.000Z`).
+  Antes, tudo o que `new Date()` lê passava: "10/05/2026" virava 5 de outubro, 31 de fevereiro
+  virava 3 de março, e uma hora sem deslocamento dependia do fuso do servidor. Os limites do
+  calendário (2000 a 2100) foram para a regra `periodOf`.
+- **O código do cupom é conferido como foi digitado, e só depois vai para maiúsculas.** Subir a caixa
+  antes transformava "straße" em `STRASSE` e aceitava um código que o lojista não escreveu. Isso
+  cumpre a decisão 1: acento é recusado, e não corrigido.
+- **`active` não aceita `null`, e o `PUT` sem `active` mantém o interruptor como está.** Antes, um
+  formulário que salvasse um cupom pausado sem mandar o campo o religava, sem aviso. Isso corrige a
+  decisão 3: a substituição limpa todo campo opcional ausente, menos esse. No `POST`, ausente
+  continua sendo ligado.

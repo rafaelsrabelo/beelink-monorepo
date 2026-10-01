@@ -148,6 +148,11 @@ describe("a shop's promotions and coupons", () => {
 
       const paused = await call('PATCH', `/api/stores/lessari/promotions/${promotion.id}`, owner, { active: false });
       expect(paused.json<Promotion>()).toMatchObject({ active: false, status: 'PAUSED', name: 'Proteínas em oferta' });
+      // A form saved without the switch leaves it paused; one that sends it is obeyed.
+      const renamed = await call('PUT', `/api/stores/lessari/promotions/${promotion.id}`, owner, promotionBody({ name: 'Ainda pausada' }));
+      expect(renamed.json<Promotion>()).toMatchObject({ name: 'Ainda pausada', active: false, status: 'PAUSED' });
+      expect((await call('PUT', `/api/stores/lessari/promotions/${promotion.id}`, owner, promotionBody({ active: true }))).json<Promotion>()).toMatchObject({ active: true });
+      await call('PATCH', `/api/stores/lessari/promotions/${promotion.id}`, owner, { active: false });
       const resumed = await call('PATCH', `/api/stores/lessari/promotions/${promotion.id}`, owner, { active: true });
       expect(resumed.json<Promotion>()).toMatchObject({ active: true, status: 'ACTIVE' });
 
@@ -175,8 +180,12 @@ describe("a shop's promotions and coupons", () => {
       expect((await refused({ discountKind: 'FREE_SHIPPING', percentBps: null }))[0]).toBe(400);
 
       expect(await refused({ endsAt: daysFromNow(-2) })).toEqual([400, 'PROMOTION_PERIOD_INVALID']);
-      expect(await refused({ startsAt: 'amanhã' })).toEqual([400, 'PROMOTION_PERIOD_INVALID']);
       expect(await refused({ startsAt: '2200-01-01T00:00:00.000Z' })).toEqual([400, 'PROMOTION_PERIOD_INVALID']);
+      // Only an ISO-8601 instant with its offset: anything else is a guess at what was meant.
+      for (const startsAt of ['amanhã', '10/05/2026', '2026-02-31T00:00:00Z', '2026-10-05T10:00', '2026-10-05', '5', 1790000000000, true, null]) {
+        expect(await refused({ startsAt }), String(startsAt)).toEqual([400, 'PROMOTION_PERIOD_INVALID']);
+      }
+      expect(await refused({ endsAt: 0 })).toEqual([400, 'PROMOTION_PERIOD_INVALID']);
 
       expect(await refused({ scope: 'PRODUCTS' })).toEqual([400, 'PROMOTION_TARGETS_INVALID']);
       expect(await refused({ scope: 'CATEGORIES', productIds: [whey.id] })).toEqual([400, 'PROMOTION_TARGETS_INVALID']);
@@ -185,8 +194,18 @@ describe("a shop's promotions and coupons", () => {
 
       expect((await refused({ name: '   ' }))[0]).toBe(400);
       expect((await refused({ name: 'x'.repeat(81) }))[0]).toBe(400);
+      // Counted as the column counts: a heart is two code points, and the 81st would overflow it.
+      expect((await refused({ name: `${'x'.repeat(79)}❤️` }))[0]).toBe(400);
       expect((await refused({ scope: 'SHOP' }))[0]).toBe(400);
+      expect((await refused({ active: null }))[0]).toBe(400);
       expect(await prisma.promotion.count()).toBe(0);
+
+      // What the API never writes, the database refuses from any writer: a kind with no value.
+      const storeId = (await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } })).id;
+      for (const discountKind of ['PERCENT', 'FIXED'] as const) {
+        await expect(prisma.promotion.create({ data: { storeId, name: 'Sem valor', scope: 'CART', discountKind, startsAt: new Date() } })).rejects.toThrow();
+      }
+      expect(Array.from((await made<Promotion>('promotions', promotionBody({ name: `${'x'.repeat(78)}❤️` }))).name)).toHaveLength(80);
     });
 
     it('answers another shop’s product, category or promotion as one that is not there', async () => {
@@ -259,6 +278,8 @@ describe("a shop's promotions and coupons", () => {
       expect((await call('PUT', `/api/stores/lessari/coupons/${other.id}`, owner, couponBody({ code: 'outro' }))).statusCode).toBe(200);
 
       expect((await call('PATCH', `/api/stores/lessari/coupons/${coupon.id}`, owner, { active: false })).json<Coupon>()).toMatchObject({ active: false, status: 'PAUSED', code: 'VOLTEI15' });
+      // A form saved without the switch leaves it paused.
+      expect((await call('PUT', `/api/stores/lessari/coupons/${coupon.id}`, owner, couponBody({ code: 'VOLTEI15', percentBps: 2000 }))).json<Coupon>()).toMatchObject({ percentBps: 2000, active: false, status: 'PAUSED' });
       expect((await call('PATCH', `/api/stores/lessari/coupons/${coupon.id}`, owner, { active: true })).json<Coupon>()).toMatchObject({ active: true, status: 'ACTIVE' });
     });
 
@@ -310,7 +331,8 @@ describe("a shop's promotions and coupons", () => {
         return [response.statusCode, errorOf(response)];
       };
 
-      for (const code of ['AB', 'BEM VINDO', 'PROMOÇÃO', '-DEZ', 'X'.repeat(31), '', 10]) {
+      // "straße" would read STRASSE once its case is raised: refused as typed, never corrected.
+      for (const code of ['AB', 'BEM VINDO', 'PROMOÇÃO', 'straße', 'ﬁrst10', '-DEZ', 'X'.repeat(31), '', 10]) {
         expect(await refused({ code }), String(code)).toEqual([400, 'COUPON_CODE_INVALID']);
       }
 
@@ -322,12 +344,18 @@ describe("a shop's promotions and coupons", () => {
 
       expect(await refused({ endsAt: daysFromNow(-2) })).toEqual([400, 'COUPON_PERIOD_INVALID']);
       expect(await refused({ startsAt: undefined })).toEqual([400, 'COUPON_PERIOD_INVALID']);
+      expect(await refused({ startsAt: '2026-10-05 10:00' })).toEqual([400, 'COUPON_PERIOD_INVALID']);
+      expect(await refused({ endsAt: '31/12/2026' })).toEqual([400, 'COUPON_PERIOD_INVALID']);
+      expect((await refused({ active: null }))[0]).toBe(400);
 
       expect((await refused({ maxUses: 0 }))[0]).toBe(400);
       expect((await refused({ maxUsesPerCustomer: 0 }))[0]).toBe(400);
       expect((await refused({ minSubtotalCents: -1 }))[0]).toBe(400);
       // What the API never writes, the database refuses from any writer.
-      await expect(prisma.coupon.create({ data: { storeId: (await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } })).id, code: 'minusculo', kind: 'PERCENT', percentBps: 1000, startsAt: new Date() } })).rejects.toThrow();
+      const storeId = (await prisma.store.findUniqueOrThrow({ where: { slug: 'lessari' } })).id;
+      await expect(prisma.coupon.create({ data: { storeId, code: 'minusculo', kind: 'PERCENT', percentBps: 1000, startsAt: new Date() } })).rejects.toThrow();
+      await expect(prisma.coupon.create({ data: { storeId, code: 'SEM-VALOR', kind: 'PERCENT', startsAt: new Date() } })).rejects.toThrow();
+      await expect(prisma.coupon.create({ data: { storeId, code: 'SEM-VALOR', kind: 'FIXED', startsAt: new Date() } })).rejects.toThrow();
       expect(await prisma.coupon.count()).toBe(0);
     });
 

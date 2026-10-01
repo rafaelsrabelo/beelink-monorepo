@@ -121,14 +121,15 @@ ALTER TABLE "coupon_redemptions" ADD CONSTRAINT "coupon_redemptions_couponId_fke
 ALTER TABLE "coupon_redemptions" ADD CONSTRAINT "coupon_redemptions_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 
--- A discount states its kind, and the kind decides which of the two numbers it carries.
+-- A discount states its kind, and the kind decides which of the two numbers it carries. Each value
+-- is asked for by name: a NULL compared to anything is NULL, and a CHECK lets NULL through.
 ALTER TABLE "promotions" ADD CONSTRAINT "promotions_discount_check" CHECK (
-  ("discountKind" = 'PERCENT' AND "percentBps" BETWEEN 1 AND 10000 AND "amountCents" IS NULL)
-  OR ("discountKind" = 'FIXED' AND "amountCents" >= 1 AND "percentBps" IS NULL)
+  ("discountKind" = 'PERCENT' AND "percentBps" IS NOT NULL AND "percentBps" BETWEEN 1 AND 10000 AND "amountCents" IS NULL)
+  OR ("discountKind" = 'FIXED' AND "amountCents" IS NOT NULL AND "amountCents" >= 1 AND "percentBps" IS NULL)
 );
 ALTER TABLE "coupons" ADD CONSTRAINT "coupons_discount_check" CHECK (
-  ("kind" = 'PERCENT' AND "percentBps" BETWEEN 1 AND 10000 AND "amountCents" IS NULL)
-  OR ("kind" = 'FIXED' AND "amountCents" >= 1 AND "percentBps" IS NULL)
+  ("kind" = 'PERCENT' AND "percentBps" IS NOT NULL AND "percentBps" BETWEEN 1 AND 10000 AND "amountCents" IS NULL)
+  OR ("kind" = 'FIXED' AND "amountCents" IS NOT NULL AND "amountCents" >= 1 AND "percentBps" IS NULL)
   OR ("kind" = 'FREE_SHIPPING' AND "percentBps" IS NULL AND "amountCents" IS NULL)
 );
 

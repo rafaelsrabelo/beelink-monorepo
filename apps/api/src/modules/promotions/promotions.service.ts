@@ -9,7 +9,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { PromotionDto, PromotionListDto, SetDiscountActiveDto } from './dto/promotion.dto.js';
-import { assertPeriod, discountOf, targetsOf } from './promotion-rules.js';
+import { discountOf, periodOf, targetsOf } from './promotion-rules.js';
 import { promotionWhereOf } from './promotion-status.js';
 import { DISCOUNTS_PAGE_SIZE, promotionError, UUID } from './promotions.constants.js';
 import { promotionInclude, toPromotion } from './promotions.mapper.js';
@@ -81,6 +81,7 @@ export class PromotionsService {
         data: {
           storeId,
           ...fields,
+          isActive: dto.active ?? true,
           products: { createMany: { data: productIds.map((productId) => ({ productId })) } },
           categories: { createMany: { data: categoryIds.map((categoryId) => ({ categoryId })) } },
         },
@@ -90,7 +91,11 @@ export class PromotionsService {
     return toPromotion(row, new Date());
   }
 
-  /** A replacement, as the shop's own: the whole of what the form edits, its lists included. */
+  /**
+   * A replacement, as the shop's own: the whole of what the form edits, its lists included. The
+   * switch alone stays as it is when the body leaves it out — a form saved without it would
+   * otherwise put a paused promotion back on, with nothing to say so.
+   */
   async replace(storeSlug: string, userId: string, promotionId: string, dto: PromotionDto): Promise<Promotion> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const id = await this.idOf(storeId, promotionId);
@@ -101,6 +106,7 @@ export class PromotionsService {
         where: { id },
         data: {
           ...fields,
+          ...(dto.active === undefined ? {} : { isActive: dto.active }),
           products: { deleteMany: {}, createMany: { data: productIds.map((productId) => ({ productId })) } },
           categories: { deleteMany: {}, createMany: { data: categoryIds.map((categoryId) => ({ categoryId })) } },
         },
@@ -128,7 +134,7 @@ export class PromotionsService {
   /** What a body writes, once its rules hold and everything it names is this shop's. */
   private async writeOf(storeId: string, dto: PromotionDto) {
     const discount = discountOf(dto.discountKind, dto.percentBps, dto.amountCents, 'PROMOTION_DISCOUNT_INVALID');
-    assertPeriod(dto.startsAt, dto.endsAt, 'PROMOTION_PERIOD_INVALID');
+    const period = periodOf(dto.startsAt, dto.endsAt, 'PROMOTION_PERIOD_INVALID');
     const { productIds, categoryIds } = targetsOf(dto.scope, dto.productIds, dto.categoryIds);
 
     const [products, categories] = await Promise.all([
@@ -142,9 +148,7 @@ export class PromotionsService {
       scope: dto.scope,
       discountKind: dto.discountKind,
       ...discount,
-      startsAt: dto.startsAt,
-      endsAt: dto.endsAt ?? null,
-      isActive: dto.active ?? true,
+      ...period,
     } satisfies Prisma.PromotionUpdateInput;
     return { fields, productIds, categoryIds };
   }

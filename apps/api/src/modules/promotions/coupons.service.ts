@@ -10,7 +10,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { uniqueViolationOn } from '../catalog/product-rules.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { CouponDto, CouponListDto, CouponRedemptionListDto, SetDiscountActiveDto } from './dto/promotion.dto.js';
-import { assertPeriod, discountOf } from './promotion-rules.js';
+import { discountOf, periodOf } from './promotion-rules.js';
 import { couponWhereOf } from './promotion-status.js';
 import { DISCOUNTS_PAGE_SIZE, promotionError, UUID } from './promotions.constants.js';
 import { redemptionInclude, toCoupon, toCouponRedemption } from './promotions.mapper.js';
@@ -66,18 +66,20 @@ export class CouponsService {
 
   async create(storeSlug: string, userId: string, dto: CouponDto): Promise<Coupon> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const row = await this.prisma.coupon.create({ data: { storeId, ...fieldsOf(dto) } }).catch(refuseTakenCode);
+    const row = await this.prisma.coupon.create({ data: { storeId, ...fieldsOf(dto), isActive: dto.active ?? true } }).catch(refuseTakenCode);
     return toCoupon(row, new Date());
   }
 
   /**
    * A replacement, as the shop's own. Everything may change, the code of a used coupon too: an
    * order keeps what it took as it was. A `maxUses` below what was used is taken — it reads exhausted.
+   * The switch alone stays as it is when the body leaves it out, as a promotion's.
    */
   async replace(storeSlug: string, userId: string, couponId: string, dto: CouponDto): Promise<Coupon> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const id = await this.idOf(storeId, couponId);
-    const row = await this.prisma.coupon.update({ where: { id }, data: fieldsOf(dto) }).catch(refuseTakenCode);
+    const data = { ...fieldsOf(dto), ...(dto.active === undefined ? {} : { isActive: dto.active }) };
+    const row = await this.prisma.coupon.update({ where: { id }, data }).catch(refuseTakenCode);
     return toCoupon(row, new Date());
   }
 
@@ -116,21 +118,20 @@ export class CouponsService {
   }
 }
 
-/** What a body writes, once its rules hold. The code arrives already in upper case, from the DTO. */
+/** What a body writes, once its rules hold — all but the switch, which a create and a replace read apart. */
 function fieldsOf(dto: CouponDto) {
   const discount = discountOf(dto.kind, dto.percentBps, dto.amountCents, 'COUPON_DISCOUNT_INVALID');
-  assertPeriod(dto.startsAt, dto.endsAt, 'COUPON_PERIOD_INVALID');
+  const period = periodOf(dto.startsAt, dto.endsAt, 'COUPON_PERIOD_INVALID');
 
   return {
-    code: dto.code,
+    // Only ASCII reaches here (COUPON_CODE), so raising the case changes no letter into another.
+    code: dto.code.toUpperCase(),
     kind: dto.kind,
     ...discount,
     minSubtotalCents: dto.minSubtotalCents ?? 0,
-    startsAt: dto.startsAt,
-    endsAt: dto.endsAt ?? null,
+    ...period,
     maxUses: dto.maxUses ?? null,
     maxUsesPerCustomer: dto.maxUsesPerCustomer ?? null,
-    isActive: dto.active ?? true,
   } satisfies Prisma.CouponUpdateInput;
 }
 

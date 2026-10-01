@@ -5,7 +5,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { CouponKind, PromotionErrorCode, PromotionScope } from '@harness-monorepo/contracts';
 
 // App
-import { promotionError } from './promotions.constants.js';
+import { PERIOD_MAX, PERIOD_MIN, promotionError } from './promotions.constants.js';
 
 /**
  * What a promotion and a coupon refuse that one field alone cannot say: each is a rule about two.
@@ -42,10 +42,21 @@ export function discountOf(kind: CouponKind, percentBps: number | null | undefin
   }
 }
 
-export function assertPeriod(startsAt: Date, endsAt: Date | null | undefined, errorCode: PeriodCode): void {
-  if (endsAt && endsAt <= startsAt) {
-    throw new BadRequestException(promotionError(errorCode, 'endsAt must be after startsAt, or absent to never end'));
+export interface Period {
+  startsAt: Date;
+  endsAt: Date | null;
+}
+
+/** The two instants of a body, once each is on the calendar and the end comes after the start. */
+export function periodOf(startsAt: string, endsAt: string | null | undefined, errorCode: PeriodCode): Period {
+  const period = { startsAt: new Date(startsAt), endsAt: endsAt ? new Date(endsAt) : null };
+  const refuse = (message: string) => new BadRequestException(promotionError(errorCode, message));
+
+  for (const instant of [period.startsAt, period.endsAt]) {
+    if (instant && !(instant >= PERIOD_MIN && instant <= PERIOD_MAX)) throw refuse('startsAt and endsAt are instants between 2000 and 2100');
   }
+  if (period.endsAt && period.endsAt <= period.startsAt) throw refuse('endsAt must be after startsAt, or absent to never end');
+  return period;
 }
 
 export interface PromotionTargets {

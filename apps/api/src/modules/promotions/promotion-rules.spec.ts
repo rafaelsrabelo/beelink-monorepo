@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // App
-import { assertPeriod, discountOf, targetsOf } from './promotion-rules.js';
+import { discountOf, periodOf, targetsOf } from './promotion-rules.js';
 
 /** The `errorCode` a refusal answers. */
 function codeOf(run: () => unknown): string | undefined {
@@ -30,18 +30,24 @@ describe('discountOf', () => {
   });
 });
 
-describe('assertPeriod', () => {
-  const start = new Date('2026-10-01T00:00:00.000Z');
+describe('periodOf', () => {
+  const start = '2026-10-01T00:00:00.000Z';
 
-  it('takes an end after the start, or none', () => {
-    expect(codeOf(() => assertPeriod(start, new Date('2026-10-01T00:00:00.001Z'), 'PROMOTION_PERIOD_INVALID'))).toBeUndefined();
-    expect(codeOf(() => assertPeriod(start, null, 'PROMOTION_PERIOD_INVALID'))).toBeUndefined();
-    expect(codeOf(() => assertPeriod(start, undefined, 'COUPON_PERIOD_INVALID'))).toBeUndefined();
+  it('reads the two instants, with an end after the start or none', () => {
+    expect(periodOf(start, '2026-10-01T00:00:00.001Z', 'PROMOTION_PERIOD_INVALID')).toEqual({ startsAt: new Date(start), endsAt: new Date('2026-10-01T00:00:00.001Z') });
+    expect(periodOf(start, null, 'PROMOTION_PERIOD_INVALID')).toEqual({ startsAt: new Date(start), endsAt: null });
+    expect(periodOf('2026-09-30T21:00:00-03:00', undefined, 'COUPON_PERIOD_INVALID')).toEqual({ startsAt: new Date(start), endsAt: null });
   });
 
   it('refuses an end at the start or before it', () => {
-    expect(codeOf(() => assertPeriod(start, start, 'PROMOTION_PERIOD_INVALID'))).toBe('PROMOTION_PERIOD_INVALID');
-    expect(codeOf(() => assertPeriod(start, new Date('2026-09-30T00:00:00.000Z'), 'COUPON_PERIOD_INVALID'))).toBe('COUPON_PERIOD_INVALID');
+    expect(codeOf(() => periodOf(start, start, 'PROMOTION_PERIOD_INVALID'))).toBe('PROMOTION_PERIOD_INVALID');
+    expect(codeOf(() => periodOf(start, '2026-09-30T00:00:00.000Z', 'COUPON_PERIOD_INVALID'))).toBe('COUPON_PERIOD_INVALID');
+  });
+
+  it('refuses an instant off the calendar, and one that is no date at all', () => {
+    expect(codeOf(() => periodOf('1999-12-31T23:59:59.999Z', null, 'PROMOTION_PERIOD_INVALID'))).toBe('PROMOTION_PERIOD_INVALID');
+    expect(codeOf(() => periodOf(start, '2100-01-01T00:00:00.001Z', 'COUPON_PERIOD_INVALID'))).toBe('COUPON_PERIOD_INVALID');
+    expect(codeOf(() => periodOf('amanhã', null, 'COUPON_PERIOD_INVALID'))).toBe('COUPON_PERIOD_INVALID');
   });
 });
 

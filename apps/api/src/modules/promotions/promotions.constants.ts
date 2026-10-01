@@ -17,10 +17,20 @@ export const DISCOUNT_AMOUNT_MAX_CENTS = 100_000_000;
 /** What one promotion may name; past it, the shopkeeper wants a category, or the whole cart. */
 export const PROMOTION_TARGETS_MAX = 200;
 
-/** As it is stored: upper case, 3 to 30 characters. The migration's CHECK repeats it. */
-export const COUPON_CODE = /^[A-Z0-9][A-Z0-9_-]{2,29}$/;
+/**
+ * As it is typed: 3 to 30 of these, in either case, stored in upper case — the migration's CHECK
+ * repeats it for what is stored. Matched before the case is raised: raising first would turn "ß"
+ * into "SS" and take a code the shopkeeper never wrote.
+ */
+export const COUPON_CODE = /^[A-Za-z0-9][A-Za-z0-9_-]{2,29}$/;
 export const COUPON_MAX_USES_MAX = 1_000_000;
 export const COUPON_MAX_USES_PER_CUSTOMER_MAX = 1000;
+
+/**
+ * A date and a time with its offset. ISO-8601 alone also takes "2026-10-05T10:00", which is read in
+ * the server's own zone — a period would start at a different instant on each machine.
+ */
+export const INSTANT = /T.+(Z|[+-]\d{2}:\d{2})$/;
 
 /** A period inside what a calendar shows; past it, a date typed wrong rather than a plan. */
 export const PERIOD_MIN = new Date('2000-01-01T00:00:00.000Z');
