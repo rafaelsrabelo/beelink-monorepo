@@ -115,6 +115,8 @@ export interface WebMessages {
   landing: {
     title: string
     description: string
+    /** Says the share image to a reader: the picture a link preview shows. */
+    shareImageAlt: string
   }
   auth: {
     signupSuccessTitle: string

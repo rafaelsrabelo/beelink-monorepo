@@ -155,3 +155,15 @@ Pedidos do Rafael depois de ver a landing no ar. Branch `fix/landing-smooth-scro
   "Termos de uso" e "Política de privacidade". No celular o menu também traz "Entrar" e "Criar minha
   loja". É um `<details>`: abre mesmo antes do script carregar, e fecha ao seguir um link ou com Esc.
   Corrige a decisão 4, que dizia que os links apenas sumiam.
+
+## Adendo — prévia do link da landing (01/10)
+
+Pedido do Rafael: ao compartilhar `link.beecoders.net`, a prévia mostrar título, descrição e a logo.
+
+- `/` passou a declarar Open Graph e Twitter Card, com endereços absolutos, e o canonical.
+- A imagem é `apps/web/public/brand/share-v1.png`: a logo oficial no fundo creme, em 1200×630. O
+  nome leva versão porque o WhatsApp guarda a prévia pelo endereço da imagem.
+- O endereço do site sai do pedido (`siteOrigin()`), porque o web ainda não tem uma variável com o
+  próprio domínio. Isso é o V1 do Épico V (BEELINK-247); quando ele chegar, `siteOrigin()` sai.
+- Só a landing. A prévia das lojas é o V2 (BEELINK-248), e `robots.txt` e sitemap são o V4
+  (BEELINK-250).
