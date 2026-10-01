@@ -408,6 +408,18 @@
  * reachable by keyboard because the scroller is focusable and named. A scrolling region with no
  * bar, no peek and no focus is a region a person cannot tell is there.
  */
+/*
+ * A page that asks for it travels to its own anchors rather than cutting to them. The document is
+ * what scrolls, so the rule sits on it and the page opts in from below with `data-smooth-anchors`:
+ * the panel and the shop window keep the instant jump they have. Never for someone who asked for
+ * less motion — to them a page sliding by is the thing they turned off.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  html:has([data-smooth-anchors]) {
+    scroll-behavior: smooth;
+  }
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
 

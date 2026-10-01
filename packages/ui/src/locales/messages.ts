@@ -2692,6 +2692,8 @@ export interface UiMessages {
     /** The logo's link, for a reader. */
     homeLabel: string
     nav: { label: string; solutions: string; ecosystem: string; how: string; couriers: string; faq: string }
+    /** Names the button that opens the links on a narrow screen. */
+    menu: string
     signIn: string
     createStore: string
     hero: { titleLight: string; titleStrong: string; lead: string; start: string; solutions: string; tagline: string }

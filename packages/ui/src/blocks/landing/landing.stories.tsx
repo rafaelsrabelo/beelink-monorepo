@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 
 import { ptBR } from "@harness-monorepo/ui/locales/index"
 
+import { BrandLines } from "./brand-lines"
 import { LandingBanners } from "./landing-banners"
 import { LandingCourierForm } from "./landing-courier-form"
 import { LandingCouriers } from "./landing-couriers"
@@ -30,7 +31,7 @@ export const Pagina: Story = {
   args: { children: null },
   render: () => (
     <LandingShell>
-      <LandingHeader loginHref={hrefs.loginHref} signupHref={hrefs.signupHref} />
+      <LandingHeader {...hrefs} />
       <main>
         <LandingHero signupHref={hrefs.signupHref} />
         <LandingBanners signupHref={hrefs.signupHref} exampleHref="#loja-de-exemplo" />
@@ -50,7 +51,7 @@ export const TopoEHero: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0">
-      <LandingHeader loginHref={hrefs.loginHref} signupHref={hrefs.signupHref} />
+      <LandingHeader {...hrefs} />
       <LandingHero signupHref={hrefs.signupHref} />
     </LandingShell>
   ),
@@ -126,4 +127,17 @@ export const ChamadaERodape: Story = {
 }
 
 /** No celular: uma coluna, sem o hub, com os banners rolando de lado. */
+/** O topo numa tela estreita: os links de seção, os termos e a política de privacidade vão para o menu. */
+export const TopoNoCelular: Story = { ...TopoEHero, globals: { viewport: { value: "mobile1", isRotated: false } } }
+
+/** As duas linhas amarelas do canto, sozinhas: a landing e as telas de conta as desenham. */
+export const Linhas: Story = {
+  args: { children: null },
+  render: () => (
+    <div className="relative h-80 overflow-hidden bg-brand-ground">
+      <BrandLines className="top-0 right-0" />
+    </div>
+  ),
+}
+
 export const NoCelular: Story = { ...Pagina, globals: { viewport: { value: "mobile1", isRotated: false } } }
