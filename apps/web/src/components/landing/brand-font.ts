@@ -5,10 +5,10 @@ import localFont from "next/font/local"
 import type { CSSProperties } from "react"
 
 /**
- * Beelink's own typeface: the landing wears it, and the signed-out screens set the brand's name in it (BEELINK-256).
+ * Beelink's own typeface, which the landing wears and nothing else does (BEELINK-256).
  *
  * Its design is drawn in Plus Jakarta Sans, from the light weight of its headings to the extra bold.
- * Loaded by those two and never by the root layout, for the reason `shop-font.ts` gives: a
+ * Loaded by the landing's page and never by the root layout, for the reason `shop-font.ts` gives: a
  * font in the root is preloaded on every panel page too, and the panel stays in Geist.
  *
  * **The file is in the repository, not fetched from Google.** `next/font/google` downloads the font

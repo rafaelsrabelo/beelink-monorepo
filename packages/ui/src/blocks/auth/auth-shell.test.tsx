@@ -19,7 +19,6 @@ describe("AuthShell", () => {
 
     const home = screen.getByRole("link", { name: "Beelink, início" })
     expect(home).toHaveAttribute("href", "/")
-    expect(home).toHaveTextContent("Beelink")
     expect(home.querySelector("svg")).toHaveAttribute("aria-hidden", "true")
     expect(screen.getByRole("heading", { level: 1, name: "Entrar" })).toBeInTheDocument()
   })
@@ -30,10 +29,11 @@ describe("AuthShell", () => {
     expect(container.firstElementChild).toHaveClass("bg-brand-ground", "dark:bg-muted")
   })
 
-  it("wears the brand's typeface on the name only: the forms stay in the panel's", () => {
+  /** The logo is a picture of the name: the link says it once, and the forms keep the panel's typeface. */
+  it("draws the official logo, named by the link around it", () => {
     const { container } = render(<AuthShell>conteúdo</AuthShell>)
 
-    expect((screen.getByRole("link") as HTMLElement).style.fontFamily).toBe("var(--font-brand, inherit)")
+    expect(screen.getByRole("link").querySelector("svg")).toHaveAttribute("viewBox", "0 0 1938 542")
     expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe("")
   })
 

@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import type { CSSProperties, ReactNode } from "react"
+import type { ReactNode } from "react"
 
 // Libs
 import { MenuIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react"
@@ -12,7 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
-import { BeelinkBag } from "../landing/beelink-bag"
+import { BeelinkLogo } from "../landing/beelink-logo"
 
 export interface AdminHeaderProps {
   /** Where the brand returns to. The screen owns the route. */
@@ -94,11 +94,11 @@ export function AdminHeader({
 
         <Link
           href={brandHref}
-          style={{ "--beelink-bag-ground": "var(--header)" } as CSSProperties}
-          className="focus-visible:ring-header-foreground/70 flex items-center gap-2 rounded-md px-1 py-0.5 outline-none focus-visible:ring-2"
+          className="text-header-foreground focus-visible:ring-header-foreground/70 flex items-center rounded-md px-1 py-0.5 outline-none focus-visible:ring-2"
         >
-          {/* The icon stands for the name, which a reader still hears: the bar's ground is the icon's own. */}
-          <BeelinkBag className="text-header-foreground size-8" />
+          {/* The logo is a picture of the name, which a reader still hears. On a phone the bar is full: the bag alone. */}
+          <BeelinkLogo variant="icon" className="h-8 sm:hidden" />
+          <BeelinkLogo className="hidden h-7 sm:block" />
           <span className="sr-only">{text.brand}</span>
         </Link>
       </div>

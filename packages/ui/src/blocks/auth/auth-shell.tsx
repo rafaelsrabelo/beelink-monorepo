@@ -6,7 +6,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { BeelinkMark } from "../landing/beelink-mark"
+import { BeelinkLogo } from "../landing/beelink-logo"
 import { BrandLines } from "../landing/brand-lines"
 import { AnchorLink, type LinkComponent } from "./auth-link"
 
@@ -33,11 +33,9 @@ export function AuthShell({ homeHref = "/", children, linkComponent: Link = Anch
       <Link
         href={homeHref}
         aria-label={messages.landing.homeLabel}
-        className="relative flex items-center gap-3 rounded-md text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current dark:text-foreground"
-        style={{ fontFamily: "var(--font-brand, inherit)" }}
+        className="relative flex rounded-md text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current dark:text-foreground"
       >
-        <BeelinkMark className="size-10" />
-        <span className="text-[28px] font-extrabold tracking-[-0.02em]">{messages.landing.brand}</span>
+        <BeelinkLogo className="h-11" />
       </Link>
       {/* Above the lines: a card they ran behind would still be readable, a link under them could not be clicked. */}
       <div className="relative flex w-full flex-col items-center gap-6">{children}</div>

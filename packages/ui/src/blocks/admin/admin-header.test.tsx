@@ -38,6 +38,17 @@ describe("AdminHeader", () => {
 
   // Everything in the outer columns arrives as a node: this package may not fetch and may not
   // route, so what a bell does and which shops exist belong to the screen.
+  /** A phone's bar holds the menu, the search, the bell and the shop: the bag alone fits beside them. */
+  it("draws the logo, the bag alone on a phone and the whole of it from sm", () => {
+    renderHeader()
+
+    const logos = [...screen.getByRole("link", { name: ptBR.shell.brand }).querySelectorAll("svg")]
+    expect(logos.map((logo) => [logo.getAttribute("viewBox"), logo.getAttribute("class")])).toEqual([
+      ["0 0 566 542", expect.stringContaining("sm:hidden")],
+      ["0 0 1938 542", expect.stringContaining("sm:block")],
+    ])
+  })
+
   it("renders the three things the screen handed it", () => {
     renderHeader()
 

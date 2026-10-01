@@ -7,7 +7,7 @@ import type { LandingProductValue, UiMessages } from "@harness-monorepo/ui/local
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
-import { BeelinkMark } from "./beelink-mark"
+import { BeelinkLogo } from "./beelink-logo"
 import { LANDING_ANCHORS } from "./landing-header"
 import { LANDING_CONTAINER } from "./landing-styles"
 
@@ -37,10 +37,7 @@ export function LandingFooter({ termsHref, privacyHref, year, linkComponent: Lin
     <footer className="mt-14 border-t-[1.5px] border-brand-line md:mt-20">
       <div className={cn(LANDING_CONTAINER, "flex flex-wrap gap-x-20 gap-y-10 py-14 text-[15px]")}>
         <div className="flex max-w-[300px] flex-col gap-3.5">
-          <span className="flex items-center gap-2.5">
-            <BeelinkMark className="size-8" />
-            <b className="text-[22px] tracking-[-0.02em]">{messages.landing.brand}</b>
-          </span>
+          <BeelinkLogo label={messages.landing.brand} className="h-9 self-start" />
           <span className="leading-normal text-brand-muted">{text.tagline}</span>
         </div>
         <nav aria-label={text.solutions} className={COLUMN}>
