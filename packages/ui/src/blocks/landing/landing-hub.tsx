@@ -46,7 +46,7 @@ export function LandingHub({ className, messages = defaultMessages }: LandingHub
         <path d="M285 335 L420 440" />
       </svg>
       <div className="absolute top-[260px] left-[210px] flex size-[150px] items-center justify-center rounded-[36px] bg-brand-yellow shadow-2xl ring-[14px] shadow-brand-yellow/45 ring-brand-yellow/20">
-        <BeelinkMark strokeWidth={3.2} className="size-[78px]" />
+        <BeelinkMark className="size-[78px]" />
       </div>
       {HUB.map(({ product, x, y }) => {
         const Icon = LANDING_PRODUCT_ICON[product]

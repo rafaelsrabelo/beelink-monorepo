@@ -27,7 +27,7 @@ export function LandingPhoneBanner({ messages = defaultMessages }: LandingPhoneB
         <div className="absolute top-[50px] left-[170px] h-[540px] w-[260px] -rotate-6 rounded-[40px] bg-brand-ink p-2.5 shadow-2xl shadow-brand-ink/30">
           <div className="flex size-full flex-col overflow-hidden rounded-[31px] bg-brand-surface">
             <div className="flex h-[46px] items-center gap-2 bg-brand-ink px-3.5 text-sm font-extrabold text-brand-on-ink">
-              <BeelinkMark strokeWidth={3.6} className="size-[18px] text-brand-yellow" />
+              <BeelinkMark className="size-[18px] text-brand-yellow" />
               {text.shop}
             </div>
             <div className="m-2.5 flex h-[120px] flex-col justify-end gap-1 rounded-[14px] bg-brand-yellow p-3">

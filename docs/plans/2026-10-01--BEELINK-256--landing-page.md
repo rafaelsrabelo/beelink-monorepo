@@ -132,3 +132,10 @@ O que a revisão achou e o que mudou. O texto acima fica como foi escrito.
 - **"combos"** aparece no banner da loja e no passo 2. O produto não tem combos.
 - O formulário diz **"Leva 2 minutos. Os documentos vêm no próximo passo."**, e o cadastro não está
   aberto.
+
+## Adendo — logo oficial (01/10)
+
+O Rafael entregou `logo.png` (símbolo e nome, preto sobre transparente). O símbolo foi redesenhado
+em vetor a partir das medidas do arquivo, em `BeelinkMark`: um PNG preto não aparece na seção preta
+nem aceita a cor do texto. O nome "Beelink" continua como texto, na fonte da página. Com o arquivo
+em SVG, o nome também pode vir do desenho oficial.

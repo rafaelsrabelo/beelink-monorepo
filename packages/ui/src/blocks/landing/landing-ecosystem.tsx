@@ -85,7 +85,7 @@ export function LandingEcosystem({ messages = defaultMessages }: LandingEcosyste
         </ul>
         <div aria-hidden="true" className="absolute top-[240px] left-[290px] hidden h-[320px] w-[280px] drop-shadow-2xl lg:block">
           <div className={cn(HEXAGON, "flex size-full flex-col items-center justify-center gap-3 bg-brand-surface")}>
-            <BeelinkMark strokeWidth={3.2} className="size-24" />
+            <BeelinkMark className="size-24" />
             <span className="text-[40px] font-extrabold tracking-[-0.03em]">{messages.landing.brand}</span>
           </div>
         </div>
