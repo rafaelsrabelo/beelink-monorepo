@@ -82,3 +82,45 @@ cancelado aparece marcado, porque o uso dele foi devolvido (O2).
 - O preço promocional na vitrine (O4) e o cupom no checkout (O5).
 - Apagar promoção ou cupom, e buscar cupom por código: a API do O1 não tem.
 - O formulário de registrar pedido chamando a prévia do dono (O5).
+
+## Adendo da revisão (01/10)
+
+Um revisor leu o diff contra as regras da casa e a API. As rotas, o endereço das listas e o corpo
+enviado saíram limpos. O que mudou:
+
+- **Uma data digitada pela metade não é mais salva como "sem fim".** O campo `datetime-local` só com
+  o dia preenchido devolve vazio, igual a um campo em branco. O formulário agora pergunta ao navegador
+  (`validity.badInput`) no envio, e a tela pede a hora que falta.
+- **Um número com duas leituras é recusado, e não adivinhado.** "1.000" no pedido mínimo virava
+  R$ 1,00, e um cupom pensado para pedidos acima de mil reais valeria para qualquer pedido. Os campos
+  de desconto e de mínimo usam um leitor estrito (`centsFromStrict`): "1.000" é mil, "1.000,50" é mil
+  e cinquenta centavos, e sinal, três casas ou letra pedem para digitar de novo. Isso corrige a
+  decisão 2.
+- **O ano fora do calendário é dito no campo certo.** "26" digitado como ano é o ano 26 para o campo;
+  antes passava e voltava da API com a frase do fim antes do início.
+- **Abrir o formulário ou os usos leva o foco para lá.** O painel abre acima da lista, e a linha que o
+  abriu pode estar uma tela abaixo.
+- **Escolher ou tirar um produto devolve o foco para a busca,** em vez de deixá-lo cair no topo da
+  página.
+- **Cada campo aponta para a sua frase de erro e de ajuda** (`aria-describedby`), como no formulário
+  do cliente.
+- **As categorias carregando são um esqueleto, e a leitura que falhou diz que falhou.** Antes a tela
+  dizia "a loja ainda não tem categorias" nos dois casos.
+- **Uma promoção ou um cupom novo, criado com um filtro ativo, leva à lista sem filtro,** onde ele é a
+  primeira linha. E uma página que ficou vazia (a última linha saiu da situação) volta para a última
+  página com linhas.
+- **A lista espera enquanto um salvamento está a caminho,** e a recusa da API some quando o campo é
+  corrigido.
+- **A lista e o formulário leem a hora no mesmo relógio** (`-03:00` fixo). Antes a lista usava o fuso
+  de Brasília do sistema, que diverge do fixo nas datas em que houve horário de verão. O campo "Começa
+  em" agora diz "No horário de Brasília".
+- **O percentual da lista segue o idioma de quem lê** ("12.5%" em inglês), e "0 de 1 usos" virou
+  "Usos: 0 de 1".
+
+O que fica como está, sabendo:
+
+- **Os segundos de um início ou de um fim se perdem ao editar.** O campo vai até o minuto, e este
+  formulário só grava minutos cheios. Só afeta um registro criado por outro cliente da API.
+- **Uma loja fora do fuso de Brasília** vê e digita o horário de Brasília. O campo diz isso.
+- **Os botões "Anterior" e "Próxima" do paginador ficam em português na interface em inglês,** como
+  nas Avaliações.

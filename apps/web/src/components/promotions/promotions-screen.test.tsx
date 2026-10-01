@@ -15,6 +15,7 @@ import { PromotionsScreen } from "./promotions-screen"
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
+  replace: vi.fn(),
   search: new URLSearchParams(),
   promotions: vi.fn(),
   products: vi.fn(),
@@ -24,7 +25,8 @@ const mocks = vi.hoisted(() => ({
   toggleState: { isPending: false, variables: undefined as { id: string } | undefined, error: null as Error | null },
 }))
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }), useSearchParams: () => mocks.search }))
+const router = { push: mocks.push, replace: mocks.replace }
+vi.mock("next/navigation", () => ({ useRouter: () => router, useSearchParams: () => mocks.search }))
 vi.mock("@/services/addresses/use-debounced-value", () => ({ useDebouncedValue: (value: string) => value }))
 vi.mock("@/services/catalog/catalog-hooks", () => ({
   useProducts: mocks.products,
@@ -33,6 +35,8 @@ vi.mock("@/services/catalog/catalog-hooks", () => ({
       { id: "k1", slug: "proteinas", name: "Proteínas", parentSlug: null },
       { id: "k2", slug: "whey", name: "Whey", parentSlug: "proteinas" },
     ],
+    isError: false,
+    refetch: vi.fn(),
   }),
 }))
 vi.mock("@/services/promotions/promotion-hooks", () => ({
@@ -58,6 +62,9 @@ beforeEach(() => {
   mocks.products.mockReturnValue({ data: { products: [{ id: "w1", name: "Whey 900g" }, { id: "w2", name: "Creatina 300g" }] }, isFetching: false })
   mocks.save.mockReset()
   mocks.toggle.mockReset()
+  mocks.push.mockReset()
+  mocks.replace.mockReset()
+  mocks.saveState.reset.mockReset()
   Object.assign(mocks.saveState, { isPending: false, error: null })
   Object.assign(mocks.toggleState, { isPending: false, variables: undefined, error: null })
 })
@@ -109,6 +116,46 @@ describe("PromotionsScreen", () => {
     expect(mocks.save).toHaveBeenCalledOnce()
     expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { name: "Dia das Mães", scope: "CART", discountKind: "PERCENT", percentBps: 1500, amountCents: null, endsAt: null, productIds: [], categoryIds: [] } })
     expect(mocks.save.mock.calls[0]?.[0].payload).not.toHaveProperty("active")
+  })
+
+  it("puts the focus on the form it opens, which may be a screen away from the row", async () => {
+    view()
+    await userEvent.click(screen.getByRole("button", { name: "Editar a promoção Queima" }))
+    expect(within(screen.getByRole("region", { name: "Editar promoção" })).getByLabelText("Nome")).toHaveFocus()
+  })
+
+  it("shows a new promotion saved under a status: the unfiltered list, where it is the first row", async () => {
+    mocks.search = new URLSearchParams("situacao=pausadas")
+    mocks.save.mockImplementation((_variables: unknown, options: { onSuccess: () => void }) => options.onSuccess())
+    view()
+    await userEvent.click(screen.getByRole("button", { name: "Nova promoção" }))
+    const form = screen.getByRole("region", { name: "Nova promoção" })
+    await userEvent.type(within(form).getByLabelText("Nome"), "Dia das Mães")
+    await userEvent.type(within(form).getByLabelText("Percentual (%)"), "15")
+    await userEvent.click(within(form).getByRole("button", { name: "Salvar" }))
+
+    expect(mocks.push).toHaveBeenCalledWith("/admin/loja/promotions")
+    expect(screen.queryByRole("region", { name: "Nova promoção" })).not.toBeInTheDocument()
+  })
+
+  it("holds the list while a save is on its way, and takes back the API's refusal once a field is corrected", async () => {
+    mocks.saveState.error = Object.assign(new Error("x"), { errorCode: "PROMOTION_TARGET_NOT_FOUND" })
+    const { rerender } = view()
+    await userEvent.click(screen.getByRole("button", { name: "Editar a promoção Queima" }))
+    mocks.saveState.reset.mockReset()
+    await userEvent.type(screen.getByLabelText("Nome"), "!")
+    expect(mocks.saveState.reset).toHaveBeenCalled()
+
+    mocks.saveState.isPending = true
+    rerender(<PromotionsScreen slug="loja" locale="pt-BR" messages={ui} web={web} />)
+    expect(screen.getByRole("button", { name: "Editar a promoção Semana do Consumidor" })).toBeDisabled()
+  })
+
+  it("steps back to the last page with rows when the one asked for is past the end", () => {
+    mocks.search = new URLSearchParams("situacao=ativas&pagina=3")
+    mocks.promotions.mockReturnValue({ data: { ...page, promotions: [], total: 21, page: 3, pageSize: 20 }, isPending: false, isFetching: false, refetch: vi.fn() })
+    view()
+    expect(mocks.replace).toHaveBeenCalledWith("/admin/loja/promotions?situacao=ativas&pagina=2")
   })
 
   it("edits one with what it names, searching the catalogue only while products are being chosen", async () => {

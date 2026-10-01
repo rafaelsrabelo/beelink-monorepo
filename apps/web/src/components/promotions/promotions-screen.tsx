@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 // Next
 import { useRouter, useSearchParams } from "next/navigation"
@@ -17,7 +17,8 @@ import { DiscountStatusTabs } from "@harness-monorepo/ui/blocks/promotions/disco
 import { PromotionForm } from "@harness-monorepo/ui/blocks/promotions/promotion-form"
 import { PromotionList } from "@harness-monorepo/ui/blocks/promotions/promotion-list"
 import { Button } from "@harness-monorepo/ui/components/button"
-import type { PromotionFormIssues, PromotionFormValues } from "@harness-monorepo/ui/lib/discount-form"
+import { useFocusOnSwap } from "@harness-monorepo/ui/hooks/use-focus-on-swap"
+import type { HalfTypedDates, PromotionFormIssues, PromotionFormValues } from "@harness-monorepo/ui/lib/discount-form"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -31,6 +32,7 @@ import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useProductCategories, useProducts } from "@/services/catalog/catalog-hooks"
 import { usePromotions, useSavePromotion, useSetPromotionActive } from "@/services/promotions/promotion-hooks"
 import { useDiscountEditor } from "./use-discount-editor"
+import { useLastPage } from "./use-last-page"
 
 export interface PromotionsScreenProps {
   slug: string
@@ -41,6 +43,8 @@ export interface PromotionsScreenProps {
 
 const STATUSES = ["ACTIVE", "SCHEDULED", "PAUSED", "ENDED"] as const satisfies readonly PromotionStatus[]
 const NO_ISSUES: PromotionFormIssues = {}
+/** No row's id: every button of the list waits, none reads as the busy one. */
+const SAVING = ""
 const SEARCH_DEBOUNCE_MS = 300
 const SEARCH_PAGE_SIZE = 20
 
@@ -68,6 +72,13 @@ export function PromotionsScreen({ slug, locale, messages, web }: PromotionsScre
   const idBySlug = new Map((categories.data ?? []).map((category) => [category.slug, category.id]))
 
   const hrefOf = (next: Parameters<typeof promotionsHrefOf>[2]) => promotionsHrefOf(slug, address, next)
+  const goTo = (href: string) => router.push(href as Parameters<typeof router.push>[0])
+  useLastPage(list.data && { rows: list.data.promotions.length, total: list.data.total, page: list.data.page, pageSize: list.data.pageSize }, (page) => hrefOf({ page }))
+
+  // The form opens above the list, which may be a screen away from the row whose button opened it:
+  // the focus goes to its first field, and the page scrolls with it.
+  const panel = useRef<HTMLElement>(null)
+  useFocusOnSwap(editor.editing ? `form:${editor.editing.id ?? "new"}` : "closed", panel)
   const counts = list.data?.counts
   const tabs = [
     { key: "ALL", label: text.tabs.ALL, ...(counts ? { count: counts.ALL } : {}), href: hrefOf({ status: undefined }), active: address.status === undefined },
@@ -88,11 +99,28 @@ export function PromotionsScreen({ slug, locale, messages, web }: PromotionsScre
     editor.open(promotion.id, promotionFormOf(promotion))
   }
 
-  function submit() {
+  function submit(halfTyped: HalfTypedDates) {
     if (!editor.editing) return
-    const result = promotionPayloadOf(editor.editing.value, shared.issues)
+    const { id } = editor.editing
+    const result = promotionPayloadOf(editor.editing.value, shared.issues, halfTyped)
     if ("issues" in result) return editor.refuse(result.issues)
-    save.mutate({ id: editor.editing.id, payload: result.payload }, { onSuccess: editor.close })
+    save.mutate(
+      { id, payload: result.payload },
+      {
+        onSuccess: () => {
+          editor.close()
+          // A new one is the first row of the unfiltered list: under a status or on a later page it
+          // would be saved and nowhere to be seen.
+          if (id === null && (address.status !== undefined || address.page > 1)) goTo(hrefOf({ status: undefined }))
+        },
+      },
+    )
+  }
+
+  /** A field corrected takes back what the API said of the last attempt, as it takes back the field's own issue. */
+  function change(value: PromotionFormValues) {
+    if (save.error) save.reset()
+    editor.change(value)
   }
 
   return (
@@ -106,16 +134,17 @@ export function PromotionsScreen({ slug, locale, messages, web }: PromotionsScre
       </header>
 
       {editor.editing ? (
-        <section aria-label={editor.editing.id ? text.editTitle : text.create} className="rounded-xl border p-4 sm:p-6">
+        <section ref={panel} aria-label={editor.editing.id ? text.editTitle : text.create} className="rounded-xl border p-4 sm:p-6">
           <h2 className="mb-4 text-lg font-semibold">{editor.editing.id ? text.editTitle : text.create}</h2>
           <PromotionForm
             value={editor.editing.value}
-            onChange={editor.change}
+            onChange={change}
             productQuery={productQuery}
             onProductQueryChange={setProductQuery}
             productResults={(products.data?.products ?? []).map((product) => ({ id: product.id, name: product.name }))}
             productsSearching={search !== productQuery.trim() || products.isFetching}
-            categories={(categories.data ?? []).map((category) => ({ id: category.id, name: category.name, parentId: category.parentSlug ? (idBySlug.get(category.parentSlug) ?? null) : null }))}
+            categories={categories.data ? categories.data.map((category) => ({ id: category.id, name: category.name, parentId: category.parentSlug ? (idBySlug.get(category.parentSlug) ?? null) : null })) : null}
+            onRetryCategories={categories.isError ? () => void categories.refetch() : undefined}
             issues={editor.editing.issues}
             error={pageErrorCopy(save.error, web)}
             onSubmit={submit}
@@ -139,7 +168,8 @@ export function PromotionsScreen({ slug, locale, messages, web }: PromotionsScre
           <PromotionList
             rows={promotionRowsOf(list.data.promotions, { locale, messages })}
             empty={address.status !== undefined || address.page > 1 ? "filtered" : "none"}
-            busyId={toggle.isPending ? toggle.variables?.id : null}
+            // A save on its way holds the list too: opening another row would leave its refusal unheard.
+            busyId={toggle.isPending ? toggle.variables?.id : save.isPending ? SAVING : null}
             onEdit={(row) => openEdit(row.id)}
             onToggle={(row) => toggle.mutate({ id: row.id, active: !row.active })}
             messages={messages}
@@ -152,7 +182,7 @@ export function PromotionsScreen({ slug, locale, messages, web }: PromotionsScre
           page={list.data.page}
           pageSize={list.data.pageSize}
           total={list.data.total}
-          onPageChange={(page) => router.push(hrefOf({ page }) as Parameters<typeof router.push>[0])}
+          onPageChange={(page) => goTo(hrefOf({ page }))}
           busy={list.isFetching}
           rangeLabel={(from, to, total) => format(shared.range, { from: String(from), to: String(to), total: String(total) })}
         />

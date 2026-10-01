@@ -16,7 +16,7 @@ describe("CouponList", () => {
 
     expect(screen.getByText("BEMVINDO10")).toBeInTheDocument()
     expect(screen.getByText("10% · Pedido mínimo de R$ 50,00")).toBeInTheDocument()
-    expect(screen.getByText("Desde 1 out 2026, sem data para acabar · 3 de 100 usos")).toBeInTheDocument()
+    expect(screen.getByText("Desde 1 out 2026, sem data para acabar · Usos: 3 de 100")).toBeInTheDocument()
     expect(screen.getByText("Frete grátis")).toBeInTheDocument()
     expect(screen.getByText("Ativo")).toBeInTheDocument()
     expect(screen.getByText("Pausado")).toBeInTheDocument()
@@ -83,9 +83,22 @@ describe("CouponForm", () => {
     expect(screen.getByText("Código inválido.")).toBeInTheDocument()
     expect(screen.getByText("Informe um número inteiro.")).toBeInTheDocument()
     expect(screen.getByText("Outro cupom da loja já tem este código.")).toBeInTheDocument()
+    // A reader arriving at the field hears why it is wrong, and the help of one that is not.
+    expect(screen.getByLabelText("Código")).toHaveAccessibleDescription("Código inválido.")
+    expect(screen.getByLabelText("Limite por cliente")).toHaveAccessibleDescription("Quantas vezes o mesmo cliente pode usar. Em branco, não há limite.")
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
-    expect(onSubmit).toHaveBeenCalledOnce()
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith({ startsAt: false, endsAt: false })
     await expectNoA11yViolations(container)
+  })
+
+  it("tells the screen which date the browser holds half-typed: it reads as blank, and is not", async () => {
+    const onSubmit = vi.fn()
+    render(<CouponForm value={couponValues} onChange={() => {}} onSubmit={onSubmit} onCancel={() => {}} />)
+    // jsdom cannot half-fill the control; this is what a browser reports of a date with no time.
+    Object.defineProperty(screen.getByLabelText("Termina em"), "validity", { value: { badInput: true } })
+
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith({ startsAt: false, endsAt: true })
   })
 })
 

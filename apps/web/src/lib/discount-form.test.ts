@@ -47,6 +47,23 @@ describe("a promotion's form", () => {
     expect(promotionPayloadOf({ ...promotion, scope: "CATEGORIES" }, text)).toEqual({ issues: { categories: text.categories } })
   })
 
+  it("refuses a date the browser holds half-typed, which reads as blank, and a year off the calendar", () => {
+    // Only the day of the end was typed: sent as blank it would be saved as "never ends".
+    expect(promotionPayloadOf(promotion, text, { startsAt: false, endsAt: true })).toEqual({ issues: { endsAt: text.date } })
+    expect(promotionPayloadOf(promotion, text, { startsAt: true, endsAt: false })).toEqual({ issues: { startsAt: text.date } })
+    // "26" typed as the year is the year 26 to the field.
+    expect(promotionPayloadOf({ ...promotion, startsAt: "0026-10-01T09:00" }, text)).toEqual({ issues: { startsAt: text.date } })
+    expect(promotionPayloadOf({ ...promotion, endsAt: "2100-01-01T00:00" }, text)).toEqual({ issues: { endsAt: text.date } })
+  })
+
+  it("refuses a number with two readings instead of picking one", () => {
+    for (const percent of ["1.000", "-10", "1e2", "12,555", "100,001", "10%"]) expect(promotionPayloadOf({ ...promotion, percent }, text), percent).toEqual({ issues: { percent: text.percent } })
+    for (const amount of ["-5", "1,000", "abc"]) expect(promotionPayloadOf({ ...promotion, kind: "FIXED", amount }, text), amount).toEqual({ issues: { amount: text.amount } })
+    // The Brazilian thousands form has one reading: a thousand reais.
+    expect(promotionPayloadOf({ ...promotion, kind: "FIXED", amount: "R$ 1.000" }, text)).toEqual({ payload: expect.objectContaining({ amountCents: 100000 }) })
+    expect(promotionPayloadOf({ ...promotion, percent: "100" }, text)).toEqual({ payload: expect.objectContaining({ percentBps: 10000 }) })
+  })
+
   it("fills the form from a promotion, in the shopkeeper's units", () => {
     const stored: Promotion = {
       id: "p1",
@@ -100,6 +117,13 @@ describe("a coupon's form", () => {
       issues: { percent: text.percent, minSubtotal: text.amount, maxUses: text.limit, maxUsesPerCustomer: text.limit, endsAt: text.endsBeforeStart },
     })
     expect(couponPayloadOf({ ...coupon, maxUsesPerCustomer: "1001" }, text)).toEqual({ issues: { maxUsesPerCustomer: text.limit } })
+    expect(couponPayloadOf({ ...coupon, minSubtotal: "-5" }, text)).toEqual({ issues: { minSubtotal: text.amount } })
+    expect(couponPayloadOf(coupon, text, { startsAt: false, endsAt: true })).toEqual({ issues: { endsAt: text.date } })
+  })
+
+  it("reads a minimum of a thousand as a thousand: one real would let every order in", () => {
+    expect(couponPayloadOf({ ...coupon, minSubtotal: "1.000" }, text)).toEqual({ payload: expect.objectContaining({ minSubtotalCents: 100000 }) })
+    expect(couponPayloadOf({ ...coupon, minSubtotal: "1.000,50" }, text)).toEqual({ payload: expect.objectContaining({ minSubtotalCents: 100050 }) })
   })
 
   it("fills the form from a coupon: no minimum and no limits are blanks", () => {

@@ -9,7 +9,6 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
-import { percentFrom } from "@/lib/discount-form"
 import { shopMomentOf } from "@/lib/shop-time"
 
 /** The two lists' address, in the panel's own words: `situacao` and `pagina`. */
@@ -60,6 +59,11 @@ export function discountQueryOf<S extends string>(address: DiscountAddress<S>): 
   return { ...(address.status ? { status: address.status } : {}), ...(address.page > 1 ? { page: address.page } : {}) }
 }
 
+/** "12,5%" to a Brazilian reader and "12.5%" to an English one: the list is read, not typed back. */
+function percentOf(bps: number | null, locale: string): string {
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format((bps ?? 0) / 100)}%`
+}
+
 function moneyOf(cents: number, locale: string): string {
   return new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" }).format(cents / 100)
 }
@@ -78,7 +82,7 @@ function periodOf(startsAt: string, endsAt: string | null, { locale, messages }:
 function promotionSummaryOf(promotion: Promotion, { locale, messages }: Text): string {
   const text = messages.discounts.promotions
   const amount = moneyOf(promotion.amountCents ?? 0, locale)
-  const discount = promotion.discountKind === "PERCENT" ? `${percentFrom(promotion.percentBps)}%` : promotion.scope === "CART" ? amount : format(text.perUnit, { amount })
+  const discount = promotion.discountKind === "PERCENT" ? percentOf(promotion.percentBps, locale) : promotion.scope === "CART" ? amount : format(text.perUnit, { amount })
   if (promotion.scope === "CART") return format(text.summaryCart, { discount })
 
   const count = promotion.scope === "PRODUCTS" ? promotion.products.length : promotion.categories.length
@@ -110,7 +114,7 @@ export function couponRowsOf(coupons: readonly Coupon[], text: Text): CouponList
   return coupons.map((coupon) => ({
     id: coupon.id,
     code: coupon.code,
-    discount: coupon.kind === "FREE_SHIPPING" ? words.freeShipping : coupon.kind === "PERCENT" ? `${percentFrom(coupon.percentBps)}%` : moneyOf(coupon.amountCents ?? 0, text.locale),
+    discount: coupon.kind === "FREE_SHIPPING" ? words.freeShipping : coupon.kind === "PERCENT" ? percentOf(coupon.percentBps, text.locale) : moneyOf(coupon.amountCents ?? 0, text.locale),
     minimum: coupon.minSubtotalCents > 0 ? format(words.minimum, { amount: moneyOf(coupon.minSubtotalCents, text.locale) }) : null,
     period: periodOf(coupon.startsAt, coupon.endsAt, text),
     uses: usesOf(coupon, text.messages),

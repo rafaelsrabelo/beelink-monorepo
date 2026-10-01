@@ -53,3 +53,23 @@ export type CouponFormIssues = Partial<Record<"code" | "percent" | "amount" | "m
 
 /** The API's ceiling on what one promotion names. */
 export const PROMOTION_TARGETS_MAX = 200
+
+/** Which of a form's two date fields hold a value the browser cannot read yet. */
+export interface HalfTypedDates {
+  startsAt: boolean
+  endsAt: boolean
+}
+
+/**
+ * A `datetime-local` field with only its date filled in reports an empty value: to the code it
+ * reads exactly like one left blank, and a blank end means "never ends". The browser alone knows
+ * the difference (`validity.badInput`), so the form asks it as it is sent. The two fields are found
+ * by their `name`.
+ */
+export function halfTypedDates(form: HTMLFormElement): HalfTypedDates {
+  const halfTyped = (name: string) => {
+    const field = form.elements.namedItem(name)
+    return field instanceof HTMLInputElement && field.validity.badInput
+  }
+  return { startsAt: halfTyped("startsAt"), endsAt: halfTyped("endsAt") }
+}

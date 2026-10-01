@@ -15,6 +15,7 @@ import { CouponsScreen } from "./coupons-screen"
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
+  replace: vi.fn(),
   search: new URLSearchParams(),
   coupons: vi.fn(),
   redemptions: vi.fn(),
@@ -24,7 +25,8 @@ const mocks = vi.hoisted(() => ({
   toggleState: { isPending: false, variables: undefined as { id: string } | undefined, error: null as Error | null },
 }))
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }), useSearchParams: () => mocks.search }))
+const router = { push: mocks.push, replace: mocks.replace }
+vi.mock("next/navigation", () => ({ useRouter: () => router, useSearchParams: () => mocks.search }))
 vi.mock("@/services/promotions/promotion-hooks", () => ({
   useCoupons: mocks.coupons,
   useCouponRedemptions: mocks.redemptions,
@@ -74,7 +76,7 @@ describe("CouponsScreen", () => {
     expect(screen.getByRole("link", { name: "Todos (2)" })).toHaveAttribute("aria-current", "true")
     expect(screen.getByRole("link", { name: "Esgotados (0)" })).toHaveAttribute("href", "/admin/loja/coupons?situacao=esgotados")
     expect(screen.getByText("BEMVINDO10")).toBeInTheDocument()
-    expect(screen.getByText(/3 de 100 usos$/)).toBeInTheDocument()
+    expect(screen.getByText(/Usos: 3 de 100$/)).toBeInTheDocument()
     expect(screen.getByText("Frete grátis")).toBeInTheDocument()
   })
 
@@ -134,6 +136,8 @@ describe("CouponsScreen", () => {
     expect(mocks.redemptions).toHaveBeenLastCalledWith("loja", "c1", {})
     expect(within(panel).getByRole("link", { name: "Pedido #12" })).toHaveAttribute("href", "/admin/loja/orders/12")
     expect(within(panel).getByText("Cancelado")).toBeInTheDocument()
+    // The panel opened above the list: the focus is in it, on its first control.
+    expect(within(panel).getByRole("button", { name: "Fechar" })).toHaveFocus()
 
     // Opening the form takes the uses' place, and closing them leaves the list alone.
     await userEvent.click(screen.getByRole("button", { name: "Editar o cupom FRETE" }))

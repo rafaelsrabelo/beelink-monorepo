@@ -19,7 +19,12 @@ export function instantOf(input: string): string | null {
   return Number.isNaN(instant.getTime()) ? null : instant.toISOString()
 }
 
-/** "1 de out. de 2026, 09:00": the day and the minute, on the shop's clock. */
+/**
+ * "1 de out. de 2026, 09:00": the day and the minute, on the shop's clock. The same fixed offset as
+ * the field, applied by hand and then read as UTC: asking the formatter for Brasília's zone instead
+ * would give a list an hour apart from its own form on any date that zone kept summer time.
+ */
 export function shopMomentOf(instant: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }).format(new Date(instant))
+  const onShopClock = new Date(new Date(instant).getTime() - SHOP_OFFSET_MS)
+  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }).format(onShopClock)
 }

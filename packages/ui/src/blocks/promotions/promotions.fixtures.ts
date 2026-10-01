@@ -12,9 +12,9 @@ export const promotionRows: PromotionListRow[] = [
 ]
 
 export const couponRows: CouponListRow[] = [
-  { id: "c1", code: "BEMVINDO10", discount: "10%", minimum: "Pedido mínimo de R$ 50,00", period: "Desde 1 out 2026, sem data para acabar", uses: "3 de 100 usos", status: "ACTIVE", active: true },
+  { id: "c1", code: "BEMVINDO10", discount: "10%", minimum: "Pedido mínimo de R$ 50,00", period: "Desde 1 out 2026, sem data para acabar", uses: "Usos: 3 de 100", status: "ACTIVE", active: true },
   { id: "c2", code: "FRETE-GRATIS", discount: "Frete grátis", minimum: null, period: "De 1 out 2026 a 31 out 2026", uses: "Nenhum uso", status: "PAUSED", active: false },
-  { id: "c3", code: "MENOS20", discount: "R$ 20,00", minimum: null, period: "Desde 1 set 2026, sem data para acabar", uses: "50 de 50 usos", status: "EXHAUSTED", active: true },
+  { id: "c3", code: "MENOS20", discount: "R$ 20,00", minimum: null, period: "Desde 1 set 2026, sem data para acabar", uses: "Usos: 50 de 50", status: "EXHAUSTED", active: true },
 ]
 
 export const redemptionRows: CouponRedemptionRow[] = [

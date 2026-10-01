@@ -1,10 +1,10 @@
 // Types
 import type { Coupon, CouponPayload, Promotion, PromotionPayload } from "@harness-monorepo/contracts"
-import type { CouponFormIssues, CouponFormValues, PromotionFormIssues, PromotionFormValues } from "@harness-monorepo/ui/lib/discount-form"
+import type { CouponFormIssues, CouponFormValues, HalfTypedDates, PromotionFormIssues, PromotionFormValues } from "@harness-monorepo/ui/lib/discount-form"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
-import { centsFrom, reaisFrom } from "@harness-monorepo/ui/lib/money"
+import { centsFromStrict, reaisFrom } from "@harness-monorepo/ui/lib/money"
 
 // App
 import { instantOf, shopInputOf } from "@/lib/shop-time"
@@ -30,15 +30,16 @@ export function percentFrom(bps: number | null): string {
 
 /**
  * A percentage typed as a person types it into basis points. It is the money parser on purpose:
- * "12,5" per cent is 1250 hundredths, exactly as "12,50" reais is 1250 cents.
+ * "12,5" per cent is 1250 hundredths, exactly as "12,50" reais is 1250 cents. The strict one, which
+ * refuses what it would have to guess: "1.000" read as one, or "-10" as ten, is a discount nobody set.
  */
 function bpsFrom(typed: string): number | null {
-  const bps = centsFrom(typed)
+  const bps = centsFromStrict(typed)
   return bps !== null && bps >= 1 && bps <= PERCENT_BPS_MAX ? bps : null
 }
 
 function amountFrom(typed: string): number | null {
-  const cents = centsFrom(typed)
+  const cents = centsFromStrict(typed)
   return cents !== null && cents >= 1 && cents <= AMOUNT_MAX_CENTS ? cents : null
 }
 
@@ -55,13 +56,25 @@ interface PeriodFields {
   endsAt: string
 }
 
-/** The two instants, or which of the two fields to correct. */
-function periodOf(value: PeriodFields, text: Issues): { startsAt: string; endsAt: string | null; issues: { startsAt?: string; endsAt?: string } } {
-  const startsAt = instantOf(value.startsAt)
-  const endsAt = value.endsAt === "" ? null : instantOf(value.endsAt)
+const NOT_HALF_TYPED: HalfTypedDates = { startsAt: false, endsAt: false }
+
+/** An instant on the calendar the API takes (2000 to 2100): a year typed as "26" is the year 26. */
+function momentOf(input: string): string | null {
+  const instant = instantOf(input)
+  return instant !== null && instant >= "2000-01-01" && instant < "2100-01-01" ? instant : null
+}
+
+/**
+ * The two instants, or which of the two fields to correct. A field the browser holds half-typed
+ * reads as empty: without `halfTyped`, an end with its date and no time would be saved as "never ends".
+ */
+function periodOf(value: PeriodFields, halfTyped: HalfTypedDates, text: Issues): { startsAt: string; endsAt: string | null; issues: { startsAt?: string; endsAt?: string } } {
+  const startsAt = halfTyped.startsAt ? null : momentOf(value.startsAt)
+  const blankEnd = value.endsAt === "" && !halfTyped.endsAt
+  const endsAt = blankEnd || halfTyped.endsAt ? null : momentOf(value.endsAt)
   const issues: { startsAt?: string; endsAt?: string } = {}
   if (startsAt === null) issues.startsAt = text.date
-  if (value.endsAt !== "" && endsAt === null) issues.endsAt = text.date
+  if (!blankEnd && endsAt === null) issues.endsAt = text.date
   else if (startsAt !== null && endsAt !== null && endsAt <= startsAt) issues.endsAt = text.endsBeforeStart
   return { startsAt: startsAt ?? "", endsAt, issues }
 }
@@ -89,11 +102,11 @@ export function promotionFormOf(promotion: Promotion): PromotionFormValues {
  * What the form sends, or the fields to correct. `active` is left out on purpose: the API keeps
  * the switch as it is, so saving a paused promotion does not put it back on.
  */
-export function promotionPayloadOf(value: PromotionFormValues, text: Issues): { payload: PromotionPayload } | { issues: PromotionFormIssues } {
+export function promotionPayloadOf(value: PromotionFormValues, text: Issues, halfTyped: HalfTypedDates = NOT_HALF_TYPED): { payload: PromotionPayload } | { issues: PromotionFormIssues } {
   const name = value.name.trim()
   const percentBps = value.kind === "PERCENT" ? bpsFrom(value.percent) : null
   const amountCents = value.kind === "FIXED" ? amountFrom(value.amount) : null
-  const period = periodOf(value, text)
+  const period = periodOf(value, halfTyped, text)
 
   const issues: PromotionFormIssues = {
     ...(name === "" ? { name: text.required } : {}),
@@ -141,14 +154,14 @@ export function couponFormOf(coupon: Coupon): CouponFormValues {
 }
 
 /** What the form sends, or the fields to correct; `active` is left out, as on a promotion. */
-export function couponPayloadOf(value: CouponFormValues, text: Issues): { payload: CouponPayload } | { issues: CouponFormIssues } {
+export function couponPayloadOf(value: CouponFormValues, text: Issues, halfTyped: HalfTypedDates = NOT_HALF_TYPED): { payload: CouponPayload } | { issues: CouponFormIssues } {
   const code = value.code.trim()
   const percentBps = value.kind === "PERCENT" ? bpsFrom(value.percent) : null
   const amountCents = value.kind === "FIXED" ? amountFrom(value.amount) : null
-  const minSubtotalCents = value.minSubtotal.trim() === "" ? 0 : centsFrom(value.minSubtotal)
+  const minSubtotalCents = value.minSubtotal.trim() === "" ? 0 : centsFromStrict(value.minSubtotal)
   const maxUses = limitFrom(value.maxUses, 1_000_000)
   const maxUsesPerCustomer = limitFrom(value.maxUsesPerCustomer, 1000)
-  const period = periodOf(value, text)
+  const period = periodOf(value, halfTyped, text)
 
   const issues: CouponFormIssues = {
     ...(code === "" ? { code: text.required } : COUPON_CODE.test(code) ? {} : { code: text.code }),

@@ -38,6 +38,25 @@ export function centsFrom(typed: string): number | null {
   return reais * 100 + (Number.isFinite(cents) ? cents : 0)
 }
 
+/**
+ * The same crossing for a field where a guess is paid for by somebody: a discount, a minimum order.
+ * `centsFrom` reads "1.000" as one real, because its last separator is the decimal one — fine for a
+ * price a shopkeeper sees printed back at once, costly for a minimum that then lets every order in.
+ *
+ * So this one takes only what has one reading: reais with an optional comma or dot and up to two
+ * decimals ("139,90", "139.9"), or the Brazilian thousands form ("1.000", "1.234,56"), with or
+ * without "R$". A sign, three decimals, a letter: null, and the screen asks again.
+ */
+export function centsFromStrict(typed: string): number | null {
+  const cleaned = typed.trim().replace(/^R\$\s*/i, "")
+  const grouped = /^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(cleaned)
+  if (!grouped && !/^\d+([.,]\d{1,2})?$/.test(cleaned)) return null
+
+  const [whole = "", fraction = ""] = (grouped ? cleaned.replace(/\./g, "") : cleaned).split(/[.,]/)
+  const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"))
+  return Number.isSafeInteger(cents) ? cents : null
+}
+
 /** Cents back into what the field shows. Always two decimals, so an empty cents place is not lost. */
 export function reaisFrom(cents: number | null | undefined): string {
   if (cents === null || cents === undefined) return ""

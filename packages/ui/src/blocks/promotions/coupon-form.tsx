@@ -10,7 +10,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { CouponFormIssues, CouponFormValues } from "@harness-monorepo/ui/lib/discount-form"
+import { halfTypedDates, type CouponFormIssues, type CouponFormValues, type HalfTypedDates } from "@harness-monorepo/ui/lib/discount-form"
 import { DiscountPeriodFields } from "./discount-period-fields"
 import { DiscountValueFields } from "./discount-value-fields"
 
@@ -20,7 +20,8 @@ export interface CouponFormProps {
   issues?: CouponFormIssues
   /** A refusal of the whole save, already a sentence. */
   error?: string
-  onSubmit: () => void
+  /** With which of the two dates the browser holds half-typed: they read as blank, and are not. */
+  onSubmit: (halfTyped: HalfTypedDates) => void
   onCancel: () => void
   pending?: boolean
   messages?: UiMessages
@@ -41,7 +42,7 @@ export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCa
       noValidate
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit()
+        onSubmit(halfTypedDates(event.currentTarget))
       }}
       className="flex flex-col gap-6"
     >
@@ -58,10 +59,10 @@ export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCa
           className="font-mono uppercase"
           disabled={pending}
           aria-invalid={issues.code ? true : undefined}
+          aria-describedby="coupon-code-note"
           onChange={(event) => set({ code: event.target.value })}
         />
-        <FieldDescription>{text.codeHelp}</FieldDescription>
-        <FieldError>{issues.code}</FieldError>
+        {issues.code ? <FieldError id="coupon-code-note">{issues.code}</FieldError> : <FieldDescription id="coupon-code-note">{text.codeHelp}</FieldDescription>}
       </Field>
 
       <DiscountValueFields
@@ -81,9 +82,17 @@ export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCa
 
       <Field data-invalid={issues.minSubtotal ? true : undefined} className="max-w-64">
         <FieldLabel htmlFor="coupon-minimum">{text.minSubtotalLabel}</FieldLabel>
-        <Input id="coupon-minimum" inputMode="decimal" placeholder="0,00" value={value.minSubtotal} disabled={pending} aria-invalid={issues.minSubtotal ? true : undefined} onChange={(event) => set({ minSubtotal: event.target.value })} />
-        <FieldDescription>{text.minSubtotalHelp}</FieldDescription>
-        <FieldError>{issues.minSubtotal}</FieldError>
+        <Input
+          id="coupon-minimum"
+          inputMode="decimal"
+          placeholder="0,00"
+          value={value.minSubtotal}
+          disabled={pending}
+          aria-invalid={issues.minSubtotal ? true : undefined}
+          aria-describedby="coupon-minimum-note"
+          onChange={(event) => set({ minSubtotal: event.target.value })}
+        />
+        {issues.minSubtotal ? <FieldError id="coupon-minimum-note">{issues.minSubtotal}</FieldError> : <FieldDescription id="coupon-minimum-note">{text.minSubtotalHelp}</FieldDescription>}
       </Field>
 
       <DiscountPeriodFields startsAt={value.startsAt} endsAt={value.endsAt} onChange={set} issues={issues} disabled={pending} messages={messages} />
@@ -91,9 +100,16 @@ export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCa
       <div className="grid gap-4 sm:grid-cols-2">
         <Field data-invalid={issues.maxUses ? true : undefined}>
           <FieldLabel htmlFor="coupon-max-uses">{text.maxUsesLabel}</FieldLabel>
-          <Input id="coupon-max-uses" inputMode="numeric" value={value.maxUses} disabled={pending} aria-invalid={issues.maxUses ? true : undefined} onChange={(event) => set({ maxUses: event.target.value })} />
-          <FieldDescription>{text.maxUsesHelp}</FieldDescription>
-          <FieldError>{issues.maxUses}</FieldError>
+          <Input
+            id="coupon-max-uses"
+            inputMode="numeric"
+            value={value.maxUses}
+            disabled={pending}
+            aria-invalid={issues.maxUses ? true : undefined}
+            aria-describedby="coupon-max-uses-note"
+            onChange={(event) => set({ maxUses: event.target.value })}
+          />
+          {issues.maxUses ? <FieldError id="coupon-max-uses-note">{issues.maxUses}</FieldError> : <FieldDescription id="coupon-max-uses-note">{text.maxUsesHelp}</FieldDescription>}
         </Field>
         <Field data-invalid={issues.maxUsesPerCustomer ? true : undefined}>
           <FieldLabel htmlFor="coupon-max-per-customer">{text.maxUsesPerCustomerLabel}</FieldLabel>
@@ -103,10 +119,14 @@ export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCa
             value={value.maxUsesPerCustomer}
             disabled={pending}
             aria-invalid={issues.maxUsesPerCustomer ? true : undefined}
+            aria-describedby="coupon-max-per-customer-note"
             onChange={(event) => set({ maxUsesPerCustomer: event.target.value })}
           />
-          <FieldDescription>{text.maxUsesPerCustomerHelp}</FieldDescription>
-          <FieldError>{issues.maxUsesPerCustomer}</FieldError>
+          {issues.maxUsesPerCustomer ? (
+            <FieldError id="coupon-max-per-customer-note">{issues.maxUsesPerCustomer}</FieldError>
+          ) : (
+            <FieldDescription id="coupon-max-per-customer-note">{text.maxUsesPerCustomerHelp}</FieldDescription>
+          )}
         </Field>
       </div>
 

@@ -23,4 +23,10 @@ describe("the shop's clock", () => {
   it("says the day and the minute on the shop's clock", () => {
     expect(shopMomentOf("2026-10-02T01:30:00.000Z", "pt-BR")).toMatch(/^1 de out\. de 2026,? 22:30$/)
   })
+
+  it("reads the list and the form on one clock, on a date Brasília kept summer time too", () => {
+    // December 2018 was UTC−2 there: a formatter asked for that zone would say 10:00 beside a field saying 09:00.
+    expect(shopInputOf("2018-12-01T12:00:00.000Z")).toBe("2018-12-01T09:00")
+    expect(shopMomentOf("2018-12-01T12:00:00.000Z", "pt-BR")).toMatch(/09:00$/)
+  })
 })

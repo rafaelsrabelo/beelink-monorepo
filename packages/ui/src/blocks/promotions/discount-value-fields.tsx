@@ -70,17 +70,34 @@ export function DiscountValueFields<K extends CouponKindValue>({ kinds, kind, pe
       {kind === "PERCENT" ? (
         <Field data-invalid={issues.percent ? true : undefined} className="max-w-48">
           <FieldLabel htmlFor={`${id}-percent`}>{text.percentLabel}</FieldLabel>
-          <Input id={`${id}-percent`} inputMode="decimal" placeholder="10" value={percent} disabled={disabled} aria-invalid={issues.percent ? true : undefined} onChange={(event) => onChange({ percent: event.target.value })} />
-          <FieldError>{issues.percent}</FieldError>
+          <Input
+            id={`${id}-percent`}
+            inputMode="decimal"
+            placeholder="10"
+            value={percent}
+            disabled={disabled}
+            aria-invalid={issues.percent ? true : undefined}
+            aria-describedby={issues.percent ? `${id}-percent-error` : undefined}
+            onChange={(event) => onChange({ percent: event.target.value })}
+          />
+          <FieldError id={`${id}-percent-error`}>{issues.percent}</FieldError>
         </Field>
       ) : null}
 
       {kind === "FIXED" ? (
         <Field data-invalid={issues.amount ? true : undefined} className="max-w-64">
           <FieldLabel htmlFor={`${id}-amount`}>{text.amountLabel}</FieldLabel>
-          <Input id={`${id}-amount`} inputMode="decimal" placeholder="0,00" value={amount} disabled={disabled} aria-invalid={issues.amount ? true : undefined} onChange={(event) => onChange({ amount: event.target.value })} />
-          {amountHelp ? <FieldDescription>{amountHelp}</FieldDescription> : null}
-          <FieldError>{issues.amount}</FieldError>
+          <Input
+            id={`${id}-amount`}
+            inputMode="decimal"
+            placeholder="0,00"
+            value={amount}
+            disabled={disabled}
+            aria-invalid={issues.amount ? true : undefined}
+            aria-describedby={issues.amount ? `${id}-amount-error` : amountHelp ? `${id}-amount-help` : undefined}
+            onChange={(event) => onChange({ amount: event.target.value })}
+          />
+          {issues.amount ? <FieldError id={`${id}-amount-error`}>{issues.amount}</FieldError> : amountHelp ? <FieldDescription id={`${id}-amount-help`}>{amountHelp}</FieldDescription> : null}
         </Field>
       ) : null}
     </div>

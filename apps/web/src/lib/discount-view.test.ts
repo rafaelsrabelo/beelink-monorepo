@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest"
 import type { Coupon, CouponRedemption, Promotion } from "@harness-monorepo/contracts"
 
 // UI
+import { en } from "@harness-monorepo/ui/locales/en"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
@@ -99,10 +100,16 @@ describe("a coupon's row", () => {
   const rowOf = (overrides: Partial<Coupon>) => couponRowsOf([{ ...coupon, ...overrides }], text)[0]!
 
   it("says what it gives, what it asks for and how many times it was used", () => {
-    expect(rowOf({})).toMatchObject({ code: "BEMVINDO10", discount: "12,5%", uses: "3 de 100 usos", status: "ACTIVE", active: true })
+    expect(rowOf({})).toMatchObject({ code: "BEMVINDO10", discount: "12,5%", uses: "Usos: 3 de 100", status: "ACTIVE", active: true })
     expect(plain(rowOf({}).minimum ?? "")).toBe("Pedido mínimo de R$ 50,00")
     expect(plain(rowOf({ kind: "FIXED", percentBps: null, amountCents: 2000 }).discount)).toBe("R$ 20,00")
     expect(rowOf({ kind: "FREE_SHIPPING", percentBps: null, minSubtotalCents: 0 })).toMatchObject({ discount: "Frete grátis", minimum: null })
+  })
+
+  it("writes a percentage as its reader does", () => {
+    const [row] = couponRowsOf([coupon], { locale: "en", messages: en })
+    expect(row).toMatchObject({ discount: "12.5%", uses: "Uses: 3 of 100" })
+    expect(promotionRowsOf([{ ...promotion, percentBps: 1250 }], { locale: "en", messages: en })[0]!.summary).toBe("12.5% off the whole cart")
   })
 
   it("counts the uses in words when there is no limit", () => {

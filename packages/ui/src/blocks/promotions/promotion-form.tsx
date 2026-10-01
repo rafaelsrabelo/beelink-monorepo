@@ -11,7 +11,7 @@ import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { DiscountTargetOption, PromotionFormIssues, PromotionFormValues, PromotionScopeValue } from "@harness-monorepo/ui/lib/discount-form"
+import { halfTypedDates, type DiscountTargetOption, type HalfTypedDates, type PromotionFormIssues, type PromotionFormValues, type PromotionScopeValue } from "@harness-monorepo/ui/lib/discount-form"
 import { DiscountPeriodFields } from "./discount-period-fields"
 import { DiscountValueFields } from "./discount-value-fields"
 import { PromotionCategoryPicker, type PromotionCategoryOption } from "./promotion-category-picker"
@@ -25,11 +25,15 @@ export interface PromotionFormProps {
   onProductQueryChange: (query: string) => void
   productResults: readonly DiscountTargetOption[]
   productsSearching?: boolean
-  categories: readonly PromotionCategoryOption[]
+  /** Null while they are read. */
+  categories: readonly PromotionCategoryOption[] | null
+  /** The read of the categories failed: said so, with the way to ask again. */
+  onRetryCategories?: () => void
   issues?: PromotionFormIssues
   /** A refusal of the whole save, already a sentence. */
   error?: string
-  onSubmit: () => void
+  /** With which of the two dates the browser holds half-typed: they read as blank, and are not. */
+  onSubmit: (halfTyped: HalfTypedDates) => void
   onCancel: () => void
   pending?: boolean
   messages?: UiMessages
@@ -52,6 +56,7 @@ export function PromotionForm({
   productResults,
   productsSearching = false,
   categories,
+  onRetryCategories,
   issues = {},
   error,
   onSubmit,
@@ -69,14 +74,23 @@ export function PromotionForm({
       noValidate
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit()
+        onSubmit(halfTypedDates(event.currentTarget))
       }}
       className="flex flex-col gap-6"
     >
       <Field data-invalid={issues.name ? true : undefined}>
         <FieldLabel htmlFor="promotion-name">{text.nameLabel}</FieldLabel>
-        <Input id="promotion-name" value={value.name} maxLength={80} placeholder={text.namePlaceholder} disabled={pending} aria-invalid={issues.name ? true : undefined} onChange={(event) => set({ name: event.target.value })} />
-        <FieldError>{issues.name}</FieldError>
+        <Input
+          id="promotion-name"
+          value={value.name}
+          maxLength={80}
+          placeholder={text.namePlaceholder}
+          disabled={pending}
+          aria-invalid={issues.name ? true : undefined}
+          aria-describedby={issues.name ? "promotion-name-error" : undefined}
+          onChange={(event) => set({ name: event.target.value })}
+        />
+        <FieldError id="promotion-name-error">{issues.name}</FieldError>
       </Field>
 
       <FieldSet className="flex flex-col gap-2">
@@ -113,7 +127,7 @@ export function PromotionForm({
         />
       ) : null}
       {value.scope === "CATEGORIES" ? (
-        <PromotionCategoryPicker categories={categories} chosenIds={value.categoryIds} onChange={(categoryIds) => set({ categoryIds })} issue={issues.categories} disabled={pending} messages={messages} />
+        <PromotionCategoryPicker categories={categories} onRetry={onRetryCategories} chosenIds={value.categoryIds} onChange={(categoryIds) => set({ categoryIds })} issue={issues.categories} disabled={pending} messages={messages} />
       ) : null}
 
       <DiscountValueFields

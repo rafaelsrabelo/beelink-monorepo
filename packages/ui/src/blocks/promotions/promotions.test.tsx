@@ -101,6 +101,9 @@ describe("PromotionForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Tirar Whey Protein Isolado 900g" }))
     expect(props.onChange).toHaveBeenLastCalledWith({ ...promotionValues, products: [] })
 
+    // The button pressed is gone with its row: the focus goes to the search, not to the page.
+    expect(screen.getByRole("searchbox", { name: "Buscar produto" })).toHaveFocus()
+
     await userEvent.type(screen.getByRole("searchbox", { name: "Buscar produto" }), "c")
     expect(props.onProductQueryChange).toHaveBeenCalledWith("c")
     // No list of categories on a PRODUCTS scope.
@@ -121,6 +124,29 @@ describe("PromotionForm", () => {
     rerender(<PromotionForm {...formProps({ value: { ...promotionValues, scope: "CART" } })} />)
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument()
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument()
+  })
+
+  it("never says the shop has no categories while they are read, or when the read failed", async () => {
+    const byCategory = { ...promotionValues, scope: "CATEGORIES" as const }
+    const { rerender } = render(<PromotionForm {...formProps({ value: byCategory, categories: null })} />)
+    expect(screen.queryByText("A loja ainda não tem categorias.")).not.toBeInTheDocument()
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+
+    const onRetryCategories = vi.fn()
+    rerender(<PromotionForm {...formProps({ value: byCategory, categories: null, onRetryCategories })} />)
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar a lista.")
+    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+    expect(onRetryCategories).toHaveBeenCalledOnce()
+
+    rerender(<PromotionForm {...formProps({ value: byCategory, categories: [] })} />)
+    expect(screen.getByText("A loja ainda não tem categorias.")).toBeInTheDocument()
+  })
+
+  it("says why no more products go in once it names as many as a promotion takes", () => {
+    const products = Array.from({ length: 200 }, (_, index) => ({ id: `p${index}`, name: `Produto ${index}` }))
+    render(<PromotionForm {...formProps({ value: { ...promotionValues, products }, productResults: [{ id: "novo", name: "Mais um" }] })} />)
+    expect(screen.getByRole("button", { name: "Escolher Mais um" })).toBeDisabled()
+    expect(screen.getByText("Uma promoção vale para até 200 produtos.")).toBeInTheDocument()
   })
 
   it("asks for the one value its kind carries, and says what a fixed amount comes off", async () => {
@@ -147,8 +173,12 @@ describe("PromotionForm", () => {
     expect(screen.getByText("O fim precisa ser depois do início.")).toBeInTheDocument()
     expect(screen.getByText("Um produto escolhido não é mais desta loja.")).toBeInTheDocument()
 
+    expect(screen.getByLabelText("Nome")).toHaveAccessibleDescription("Preencha este campo.")
+    expect(screen.getByLabelText("Termina em")).toHaveAccessibleDescription("O fim precisa ser depois do início.")
+    expect(screen.getByLabelText("Começa em")).toHaveAccessibleDescription("No horário de Brasília.")
+
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
-    expect(props.onSubmit).toHaveBeenCalledOnce()
+    expect(props.onSubmit).toHaveBeenCalledExactlyOnceWith({ startsAt: false, endsAt: false })
     await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
     expect(props.onCancel).toHaveBeenCalledOnce()
   })

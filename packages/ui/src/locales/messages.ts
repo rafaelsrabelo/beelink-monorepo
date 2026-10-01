@@ -1815,6 +1815,8 @@ export interface UiMessages {
     percentLabel: string
     amountLabel: string
     startsAtLabel: string
+    /** Which clock the two fields are read on. */
+    startsAtHelp: string
     endsAtLabel: string
     endsAtHelp: string
     /** `{from}`, `{to}`. */
@@ -1858,6 +1860,8 @@ export interface UiMessages {
       productNone: string
       productsChosen: string
       productsEmpty: string
+      /** Said once the list holds as many as one promotion takes. */
+      productsFull: string
       /** `{name}`. */
       productAdd: string
       productRemove: string
