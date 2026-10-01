@@ -12,8 +12,7 @@ import { LandingRail } from "./landing-rail"
  * reads, where it stands and the two scrolling methods are supplied by hand, and the observer is a
  * stub that fires once.
  */
-function renderRail({ at = 0 }: { at?: number } = {}) {
-  const scrollBy = vi.fn()
+function renderRail({ at = 0, window = 600 }: { at?: number; window?: number } = {}) {
   const scrollTo = vi.fn()
 
   vi.stubGlobal(
@@ -26,16 +25,15 @@ function renderRail({ at = 0 }: { at?: number } = {}) {
       disconnect() {}
     },
   )
-  // Three banners of 600px in a 1200px window: the row ends 600px in.
-  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(1200)
+  // Three banners of 600px, 1800px in all: a 600px window stops at each, a wider one runs out of row first.
+  vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(window)
   vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(1800)
   vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(600)
   vi.spyOn(HTMLElement.prototype, "scrollLeft", "get").mockReturnValue(at)
-  Object.defineProperty(HTMLElement.prototype, "scrollBy", { value: scrollBy, configurable: true, writable: true })
   Object.defineProperty(HTMLElement.prototype, "scrollTo", { value: scrollTo, configurable: true, writable: true })
 
   const view = render(
-    <LandingRail heading={<h2>Uma plataforma.</h2>} label="Destaques" previousLabel="Anterior" nextLabel="Próximo" position="Destaque {current} de {total}" count={3}>
+    <LandingRail heading={<h2>Uma plataforma.</h2>} label="Destaques" previousLabel="Anterior" nextLabel="Próximo" position="Página {current} de {total}" count={3}>
       <li>um</li>
       <li>dois</li>
       <li>três</li>
@@ -43,7 +41,7 @@ function renderRail({ at = 0 }: { at?: number } = {}) {
   )
   const dots = () => [...view.container.querySelectorAll("[aria-hidden='true'] > span")].map((dot) => (dot.className.includes("w-7") ? "●" : "○")).join("")
 
-  return { ...view, scrollBy, scrollTo, dots }
+  return { ...view, scrollTo, dots }
 }
 
 afterEach(() => {
@@ -61,17 +59,17 @@ describe("LandingRail", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Uma plataforma." })).toBeInTheDocument()
   })
 
-  it("steps a banner at a time, and leaves the smoothness to CSS", async () => {
-    const { scrollBy } = renderRail()
+  it("steps to the next banner, and leaves the smoothness to CSS", async () => {
+    const { scrollTo } = renderRail()
 
     await userEvent.click(screen.getByRole("button", { name: "Próximo" }))
 
     // No `behavior`: passed here it fights the row's snap.
-    expect(scrollBy).toHaveBeenCalledWith({ left: 600 })
+    expect(scrollTo).toHaveBeenCalledWith({ left: 600 })
   })
 
   it("wraps round at either end rather than dead-ending", async () => {
-    const atEnd = renderRail({ at: 600 })
+    const atEnd = renderRail({ at: 1200 })
     await userEvent.click(screen.getByRole("button", { name: "Próximo" }))
     expect(atEnd.scrollTo).toHaveBeenCalledWith({ left: 0 })
     atEnd.unmount()
@@ -79,20 +77,46 @@ describe("LandingRail", () => {
 
     const atStart = renderRail({ at: 0 })
     await userEvent.click(screen.getByRole("button", { name: "Anterior" }))
-    expect(atStart.scrollTo).toHaveBeenCalledWith({ left: 600 })
+    expect(atStart.scrollTo).toHaveBeenCalledWith({ left: 1200 })
+  })
+
+  /**
+   * A 900px window: the row ends 900px in, 300px past the second banner's start. A banner's width
+   * back from there is 300px, between two stops — and the snap took it on to the first, skipping one.
+   */
+  it("goes back to the banner before from the row's end, where the end falls between two banners", async () => {
+    const { scrollTo, dots } = renderRail({ at: 900, window: 900 })
+    expect(dots()).toBe("○○●")
+
+    await userEvent.click(screen.getByRole("button", { name: "Anterior" }))
+
+    expect(scrollTo).toHaveBeenCalledWith({ left: 600 })
   })
 
   it("lights the dot of the banner in view, and says which to a reader", () => {
     const start = renderRail({ at: 0 })
     expect(start.dots()).toBe("●○○")
-    expect(screen.getByText("Destaque 1 de 3")).toHaveAttribute("aria-live", "polite")
+    expect(screen.getByText("Página 1 de 3")).toHaveAttribute("aria-live", "polite")
     start.unmount()
     vi.restoreAllMocks()
 
-    // The row's end: the last banner is in view, though its edge never reached the row's start.
-    const end = renderRail({ at: 600 })
-    expect(end.dots()).toBe("○○●")
-    expect(screen.getByText("Destaque 3 de 3")).toBeInTheDocument()
+    const middle = renderRail({ at: 600 })
+    expect(middle.dots()).toBe("○●○")
+    expect(screen.getByText("Página 2 de 3")).toBeInTheDocument()
+  })
+
+  /** A 1200px window shows two banners at once: the row ends where the second one starts, and the third never has a stop of its own. */
+  it("counts the places the row stops at, not the banners: a wide window has two", async () => {
+    const start = renderRail({ at: 0, window: 1200 })
+    expect(start.dots()).toBe("●○")
+    await userEvent.click(screen.getByRole("button", { name: "Próximo" }))
+    expect(start.scrollTo).toHaveBeenCalledWith({ left: 600 })
+    start.unmount()
+    vi.restoreAllMocks()
+
+    const end = renderRail({ at: 600, window: 1200 })
+    expect(end.dots()).toBe("○●")
+    expect(screen.getByText("Página 2 de 2")).toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {

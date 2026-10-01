@@ -9,9 +9,6 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
-// Locales
-import { format } from "@harness-monorepo/ui/locales/index"
-
 // Block
 import { LANDING_CONTAINER, LANDING_SCROLL_GUTTER } from "./landing-styles"
 
@@ -22,35 +19,57 @@ export interface LandingRailProps {
   label: string
   previousLabel: string
   nextLabel: string
-  /** "Destaque {current} de {total}", said to a reader as the row moves. */
+  /** "Página {current} de {total}", said to a reader as the row moves. */
   position: string
-  /** How many banners the row holds: one dot each. */
+  /** How many banners the row holds: what the dots show until the row has been measured. */
   count: number
   /** The banners, each an `<li>`. */
   children: ReactNode
 }
 
-const ARROW = "flex size-[52px] items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
+const ARROW = "flex size-[52px] items-center justify-center rounded-full"
 
-/** The banner in view, from zero. The last one counts as in view once the row reached its end, which a wide screen does before its edge lines up. */
-function indexOf(track: HTMLElement | null, count: number): number {
-  const first = track?.querySelector("li")
-  if (!track || !first) return 0
-  if (track.scrollLeft >= track.scrollWidth - track.clientWidth - 4) return track.scrollLeft > 4 ? count - 1 : 0
+/**
+ * Where the row comes to rest: each banner's own start, until the row's end takes over. A wide
+ * screen shows two banners and a half at once, so its row ends before the third one's start is
+ * reached — three banners, and two places to stop. The dots and the arrows count these, not the
+ * banners: a dot that can never light and an arrow that lands between two stops are the same mistake.
+ */
+function stopsOf(track: HTMLElement): number[] {
+  const first = track.querySelector("li")
+  const row = first?.parentElement
+  if (!first || !row) return [0]
 
-  const gap = Number.parseFloat(getComputedStyle(first.parentElement ?? first).columnGap) || 0
-  return Math.min(count - 1, Math.round(track.scrollLeft / (first.offsetWidth + gap)))
+  const end = Math.max(0, track.scrollWidth - track.clientWidth)
+  const stride = first.offsetWidth + (Number.parseFloat(getComputedStyle(row).columnGap) || 0)
+  const stops = [0]
+  for (let at = 1; at < row.children.length; at++) {
+    const stop = Math.min(end, at * stride)
+    // Sub-pixel layout: two stops a hair apart are one.
+    if (stop > (stops.at(-1) ?? 0) + 4) stops.push(stop)
+  }
+  return stops
+}
+
+/** "current/total", the stop nearest to where the row stands — a string, so the snapshot stays equal while nothing moved. */
+function positionOf(track: HTMLElement | null, count: number): string {
+  if (!track) return `0/${count}`
+
+  const stops = stopsOf(track)
+  const nearest = stops.reduce((best, stop, at) => (Math.abs(stop - track.scrollLeft) < Math.abs((stops[best] ?? 0) - track.scrollLeft) ? at : best), 0)
+  return `${nearest}/${stops.length}`
 }
 
 /**
  * The banners' row: it scrolls sideways by itself — a finger, a trackpad and the arrow keys move it
  * before any script arrives — and the two arrows and the dots are additions on top. The reasoning,
  * and the measurements behind each choice here, are `storefront/scroll-rail.tsx`'s: native overflow
- * with snap, no `behavior` passed to `scrollBy` (it fights the snap; the smoothness is CSS's), and
+ * with snap, no `behavior` passed when scrolling (it fights the snap; the smoothness is CSS's), and
  * arrows that wrap round at either end.
  *
  * A file of its own for the same reason too: the banners stay server-rendered, and what reaches the
- * browser is a ref, two handlers and which dot is lit.
+ * browser is a ref, two handlers and which dot is lit. It imports no dictionary for the same reason —
+ * `locales/index` would carry every sentence of the design system into the page's script.
  */
 export function LandingRail({ heading, label, previousLabel, nextLabel, position, count, children }: LandingRailProps) {
   const track = useRef<HTMLDivElement>(null)
@@ -67,19 +86,18 @@ export function LandingRail({ heading, label, previousLabel, nextLabel, position
       el.removeEventListener("scroll", changed)
     }
   }, [])
-  const current = useSyncExternalStore(follow, () => indexOf(track.current, count), () => 0)
+  const [current, total] = useSyncExternalStore(follow, () => positionOf(track.current, count), () => `0/${count}`)
+    .split("/")
+    .map(Number) as [number, number]
 
+  /** To the next stop, not by a banner's width: from the row's end, a banner back lands between two stops and the snap picks the wrong one. */
   const step = (direction: 1 | -1) => {
     const el = track.current
-    const first = el?.querySelector("li")
-    if (!el || !first) return
+    if (!el) return
 
-    const end = el.scrollWidth - el.clientWidth
-    if (direction === 1 && el.scrollLeft >= end - 4) return el.scrollTo({ left: 0 })
-    if (direction === -1 && el.scrollLeft <= 4) return el.scrollTo({ left: end })
-
-    const gap = Number.parseFloat(getComputedStyle(first.parentElement ?? first).columnGap) || 0
-    el.scrollBy({ left: direction * (first.offsetWidth + gap) })
+    const stops = stopsOf(el)
+    const from = Number(positionOf(el, count).split("/")[0])
+    el.scrollTo({ left: stops[(from + direction + stops.length) % stops.length] ?? 0 })
   }
 
   /** A focused arrow is scrolled into view, and the page would lurch as the row moves: a pointer does not focus it, Tab still does. */
@@ -99,23 +117,32 @@ export function LandingRail({ heading, label, previousLabel, nextLabel, position
           </button>
         </div>
       </div>
-      {/* Focusable and named: the arrow keys scroll what holds the focus, and a row is nothing to them otherwise. */}
+      {/*
+        Focusable and named: the arrow keys scroll what holds the focus, and a row is nothing to them
+        otherwise. Its ring is drawn inside, since the row runs to the window's edges.
+
+        The row is as wide as the window, never the page's 1440px column: past that width the first
+        banner still lines up with the column — the gutter grows by half of what the window has to
+        spare — and the last one runs off the window's edge rather than being cut in mid-air.
+      */}
       <div
         ref={track}
         tabIndex={0}
         role="group"
         aria-label={label}
-        className={cn(LANDING_SCROLL_GUTTER, "no-scrollbar mx-auto max-w-[1440px] snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-ink motion-safe:scroll-smooth")}
+        className={cn(
+          LANDING_SCROLL_GUTTER,
+          "no-scrollbar snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:-outline-offset-2 motion-safe:scroll-smooth min-[90rem]:scroll-px-[max(6rem,calc(50vw-39rem))]",
+        )}
       >
-        <ul className="flex w-max gap-[18px] px-6 md:px-10 xl:px-16 min-[90rem]:px-24">{children}</ul>
+        <ul className="flex w-max gap-[18px] px-6 md:px-10 xl:px-16 min-[90rem]:px-[max(6rem,calc(50vw-39rem))]">{children}</ul>
       </div>
-      <div aria-hidden="true" className="mt-7 flex justify-center gap-2">
-        {Array.from({ length: count }, (_, at) => (
-          <span key={at} className={cn("h-2 rounded-full transition-all", at === current ? "w-7 bg-brand-ink" : "w-2 bg-brand-line-strong")} />
-        ))}
+      {/* The height is held while the dots change, so nothing below moves. */}
+      <div aria-hidden="true" className="mt-7 flex h-2 justify-center gap-2">
+        {total > 1 ? Array.from({ length: total }, (_, at) => <span key={at} className={cn("h-2 rounded-full transition-all", at === current ? "w-7 bg-brand-ink" : "w-2 bg-brand-line-strong")} />) : null}
       </div>
       <p aria-live="polite" className="sr-only">
-        {format(position, { current: String(current + 1), total: String(count) })}
+        {position.replace("{current}", String(current + 1)).replace("{total}", String(total))}
       </p>
     </>
   )

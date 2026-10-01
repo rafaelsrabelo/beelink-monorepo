@@ -13,7 +13,7 @@ import { LandingCta } from "./landing-cta"
 import { LandingEcosystem } from "./landing-ecosystem"
 import { LandingFaq } from "./landing-faq"
 import { LandingFooter } from "./landing-footer"
-import { LandingHeader } from "./landing-header"
+import { LANDING_ANCHORS, LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
@@ -110,10 +110,12 @@ describe("LandingHero", () => {
   it("draws the hub as a picture: a reader is not told the five twice", () => {
     const { container } = render(<LandingHero signupHref="/signup" />)
 
-    const hub = container.querySelector("[aria-hidden='true'].relative")!
-    expect(hub).toHaveTextContent("eMarketing")
-    expect(screen.queryByText("eMarketing")).toBeInTheDocument()
-    expect(within(hub as HTMLElement).queryAllByRole("link")).toHaveLength(0)
+    const hub = screen.getByText("eMarketing").closest<HTMLElement>("[aria-hidden='true']")!
+    expect(hub).not.toBeNull()
+    expect(container.querySelectorAll("[aria-hidden='true']")).toContain(hub)
+    // `hidden`: without it the query skips what a reader is not told, and finds nothing whatever is there.
+    expect(within(hub).queryAllByRole("link", { hidden: true })).toHaveLength(0)
+    expect(within(hub).queryAllByRole("button", { hidden: true })).toHaveLength(0)
   })
 })
 
@@ -176,8 +178,18 @@ describe("LandingCouriers", () => {
   })
 
   /** A public page shows no "[confirmar]": what the design left open is left out. */
-  it("shows nothing the design marked as still to confirm", () => {
-    const { container } = render(<Page />)
+  it.each([
+    ["pt-BR", undefined],
+    ["en", en],
+  ])("shows nothing the design marked as still to confirm, in %s", (_, messages) => {
+    const { container } = render(
+      <>
+        <LandingBanners signupHref="/signup" messages={messages} />
+        <LandingCouriers termsHref="/termos" privacyHref="/privacidade" messages={messages} />
+        <LandingFaq messages={messages} />
+        <LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} messages={messages} />
+      </>,
+    )
 
     expect(container.textContent).not.toMatch(/\[|\]/)
   })
@@ -235,6 +247,16 @@ describe("the landing page, whole", () => {
     const { container } = render(<Page />)
 
     expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe("var(--font-brand, inherit)")
+  })
+
+  /** Every link down the page — the header's, the hero's, the banners', the footer's — is one of these. */
+  it("has a section behind every anchor its links point at", () => {
+    const { container } = render(<Page />)
+
+    for (const anchor of Object.values(LANDING_ANCHORS)) expect(container.querySelector(anchor), anchor).not.toBeNull()
+    const links = [...container.querySelectorAll("a[href^='#']")].map((link) => link.getAttribute("href")!)
+    expect(links.length).toBeGreaterThan(8)
+    for (const href of links) expect(container.querySelector(href), href).not.toBeNull()
   })
 
   it("has one h1, and a heading for every section under it", () => {

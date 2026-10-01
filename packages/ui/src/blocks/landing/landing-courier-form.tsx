@@ -13,23 +13,26 @@ import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { LandingVehicleValue, UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { createCourierSchema, LANDING_VEHICLES, type CourierValues } from "./landing-courier-schema"
-import { LANDING_CTA } from "./landing-styles"
+import { LANDING_CTA, LANDING_FOCUS_ON_GROUND } from "./landing-styles"
 
 export interface LandingCourierFormProps {
   termsHref: string
   privacyHref: string
   linkComponent?: LinkComponent
-  messages?: UiMessages
+  /**
+   * The form's own sentences, and only them. This is a Client Component: what it is handed is
+   * written into the page for the browser to read back, and the whole dictionary would be.
+   */
+  text: UiMessages["landing"]["couriers"]["form"]
 }
 
 const VEHICLE_ICON: Record<LandingVehicleValue, LucideIcon> = { MOTORCYCLE: MotorbikeIcon, BICYCLE: BikeIcon, CAR: CarIcon, ON_FOOT: FootprintsIcon }
-const LABEL = "flex flex-col gap-1.5 text-sm font-bold"
+const FIELD = "flex flex-col gap-1.5"
 const INPUT = "h-[52px] rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface px-4 text-base font-normal aria-invalid:border-brand-danger"
 const REFUSAL = "text-[13px] font-semibold text-brand-danger"
 const TEXT_FIELDS = [
@@ -44,8 +47,7 @@ const TEXT_FIELDS = [
  * (decided on 01/10/2026): a valid one is answered with a sentence saying so, rather than with a
  * silence that would read as "received".
  */
-export function LandingCourierForm({ termsHref, privacyHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingCourierFormProps) {
-  const text = messages.landing.couriers.form
+export function LandingCourierForm({ termsHref, privacyHref, linkComponent: Link = AnchorLink, text }: LandingCourierFormProps) {
   const id = useId()
   const [checked, setChecked] = useState(false)
   const form = useForm<CourierValues>({
@@ -59,11 +61,14 @@ export function LandingCourierForm({ termsHref, privacyHref, linkComponent: Link
   return (
     <form
       noValidate
+      // Until the script arrives a submit is the browser's own, and a form's default is a GET that
+      // writes the name and the phone into the address. `dialog`, outside a dialog, sends nothing.
+      method="dialog"
       aria-labelledby={`${id}-title`}
       onSubmit={form.handleSubmit(() => setChecked(true))}
       // Typed again, it is another form: the sentence said of the last one is not about it.
       onChange={() => setChecked(false)}
-      className="relative flex w-full flex-col gap-[18px] self-center rounded-[32px] bg-brand-ground p-6 text-brand-ink shadow-2xl shadow-brand-ink/40 sm:p-9 xl:w-[460px] xl:shrink-0"
+      className={cn(LANDING_FOCUS_ON_GROUND, "relative flex w-full flex-col gap-[18px] self-center rounded-[32px] bg-brand-ground p-6 text-brand-ink shadow-2xl shadow-brand-ink/40 sm:p-9 xl:w-[460px] xl:shrink-0")}
     >
       <div className="flex flex-col gap-1.5">
         <h3 id={`${id}-title`} className="text-[28px] font-extrabold tracking-[-0.02em]">
@@ -73,23 +78,27 @@ export function LandingCourierForm({ termsHref, privacyHref, linkComponent: Link
       </div>
 
       {TEXT_FIELDS.map(({ name, autoComplete, inputMode }) => (
-        <label key={name} className={LABEL}>
-          {labels[name]}
+        // The refusal sits beside the label, not in it: inside, it is read as part of the field's name and again as its description.
+        <div key={name} className={FIELD}>
+          <label htmlFor={`${id}-${name}`} className="text-sm font-bold">
+            {labels[name]}
+          </label>
           <input
+            id={`${id}-${name}`}
             {...form.register(name)}
             autoComplete={autoComplete}
             inputMode={inputMode}
             placeholder={placeholders[name]}
             aria-invalid={errors[name] ? true : undefined}
-            aria-describedby={errors[name] ? `${id}-${name}` : undefined}
+            aria-describedby={errors[name] ? `${id}-${name}-refusal` : undefined}
             className={INPUT}
           />
           {errors[name] ? (
-            <span id={`${id}-${name}`} className={REFUSAL}>
+            <span id={`${id}-${name}-refusal`} className={REFUSAL}>
               {errors[name].message}
             </span>
           ) : null}
-        </label>
+        </div>
       ))}
 
       <fieldset className="flex flex-col gap-2">
@@ -103,7 +112,8 @@ export function LandingCourierForm({ termsHref, privacyHref, linkComponent: Link
                 key={vehicle}
                 className="flex h-[72px] cursor-pointer flex-col items-center justify-center gap-1 rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface text-[13px] font-semibold hover:border-brand-ink has-checked:border-2 has-checked:border-brand-ink has-checked:bg-brand-yellow has-checked:font-bold has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand-ink"
               >
-                <input type="radio" value={vehicle} {...form.register("vehicle")} className="sr-only" />
+                {/* `defaultChecked` is for the page before its script: the form library marks the choice only once it runs. */}
+                <input type="radio" value={vehicle} defaultChecked={vehicle === "MOTORCYCLE"} {...form.register("vehicle")} className="sr-only" />
                 <Icon aria-hidden="true" className="size-[22px]" />
                 {text.vehicles[vehicle]}
               </label>
@@ -118,7 +128,7 @@ export function LandingCourierForm({ termsHref, privacyHref, linkComponent: Link
             type="checkbox"
             {...form.register("consent")}
             aria-invalid={errors.consent ? true : undefined}
-            aria-describedby={errors.consent ? `${id}-consent` : undefined}
+            aria-describedby={errors.consent ? `${id}-consent-refusal` : undefined}
             className="mt-px size-[18px] shrink-0 accent-brand-ink"
           />
           <span>
@@ -137,7 +147,7 @@ export function LandingCourierForm({ termsHref, privacyHref, linkComponent: Link
           </span>
         </label>
         {errors.consent ? (
-          <span id={`${id}-consent`} className={REFUSAL}>
+          <span id={`${id}-consent-refusal`} className={REFUSAL}>
             {errors.consent.message}
           </span>
         ) : null}

@@ -97,3 +97,38 @@ como no desenho, e o PR lista essas frases para ele decidir antes de publicar.
 - Guardar o interesse do entregador (tabela e rota na API).
 - Sitemap, robots e imagem de compartilhamento: são do Épico V (BEELINK-246, BEELINK-250).
 - A landing v1 e a seção de preços dela.
+
+## Adendo — revisão independente (01/10)
+
+O que a revisão achou e o que mudou. O texto acima fica como foi escrito.
+
+- **Correção da decisão 4:** os links de seção do topo somem abaixo de `xl` (1280 px), não de `lg`.
+  Em 1024 px eles quebravam a linha do topo.
+- **`EXAMPLE_STORE_SLUG` vazia derrubava o web ao subir.** O `.env.example` traz a linha em branco, e
+  o esquema recusava `""`. Agora vazio vale como ausente. A variável entrou no
+  `docker-compose.dokploy.yml` e no `.env.dokploy.example`, para poder ser ligada em produção.
+- **Foco pelo teclado invisível.** O anel usava a cor do próprio botão, e um botão preto na seção
+  preta não mostrava nada. Agora a moldura desenha o anel de tudo abaixo dela, na cor que o fundo
+  pede: preto no creme e no amarelo, claro no preto.
+- **Carrossel.** "Anterior" pulava o banner do meio entre 990 e 1346 px, e acima de 1346 px havia
+  três pontos para dois lugares de parada. As setas agora vão de parada em parada, e os pontos contam
+  as paradas. O texto para leitor de tela virou "Página 2 de 3". Acima de 1440 px a fileira vai até a
+  borda da janela, em vez de ser cortada no meio.
+- **Formulário.** Antes do script carregar, "Continuar cadastro" fazia um GET com nome e telefone no
+  endereço. O formulário agora usa `method="dialog"`, que não envia nada. O aviso de campo saiu de
+  dentro do rótulo (era lido duas vezes). "Moto" já vem marcada no HTML. O telefone aceita o 0 na
+  frente do DDD e recusa DDD com zero.
+- **Peso da página.** O formulário recebia o dicionário inteiro do design system, e ele ia escrito no
+  HTML. Agora recebe só as frases dele.
+- **Celular estreito.** Os quatro passos do cadastro ficam dois a dois abaixo de 640 px (o quarto era
+  cortado em telas de até 365 px). O banner e o título do hero cabem em 320 px.
+- **1440 px com barra de rolagem clássica:** a coluna do ecossistema passou a 400 px, com título em
+  50 px, para o palco dos hexágonos caber quando a barra tira 15 px da janela.
+- **Testes novos:** `/` fora do proxy para qualquer combinação de cookies; uma seção para cada âncora;
+  nenhum colchete também em inglês; `server-env.test.ts`.
+
+### Textos que continuam para o Rafael decidir
+
+- **"combos"** aparece no banner da loja e no passo 2. O produto não tem combos.
+- O formulário diz **"Leva 2 minutos. Os documentos vêm no próximo passo."**, e o cadastro não está
+  aberto.

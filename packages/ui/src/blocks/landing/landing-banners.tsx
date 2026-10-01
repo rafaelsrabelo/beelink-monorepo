@@ -13,7 +13,7 @@ import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { LANDING_ANCHORS } from "./landing-header"
 import { LandingPhoneBanner } from "./landing-phone-banner"
 import { LandingRail } from "./landing-rail"
-import { LANDING_CTA, LANDING_LIFT } from "./landing-styles"
+import { LANDING_CTA, LANDING_FOCUS_ON_INK, LANDING_LIFT } from "./landing-styles"
 import { LandingTitle } from "./landing-title"
 
 export interface LandingBannersProps {
@@ -24,8 +24,8 @@ export interface LandingBannersProps {
   messages?: UiMessages
 }
 
-/** A banner in the row: a phone's width on a phone, the design's 600px from there. */
-const SLIDE = "w-80 shrink-0 snap-start sm:w-[600px]"
+/** A banner in the row: a phone's width on a phone — less on one narrower than the banner and its gutters — and the design's 600px from there. */
+const SLIDE = "w-[min(20rem,calc(100vw-3rem))] shrink-0 snap-start sm:w-[600px]"
 const BANNER = "flex h-full min-h-[480px] flex-col gap-[22px] rounded-[36px] p-7 sm:h-[580px] sm:p-12"
 const TAG = "flex h-9 items-center self-start rounded-full border-[1.5px] px-4 text-[13px] font-bold tracking-[0.06em] uppercase"
 const TITLE = "text-4xl leading-[1.02] font-extrabold tracking-[-0.035em] sm:text-[54px]"
@@ -58,7 +58,7 @@ export function LandingBanners({ signupHref, exampleHref = null, linkComponent: 
   const text = messages.landing.banners
 
   return (
-    <section id="solucoes" aria-label={text.label} className="relative scroll-mt-6 pt-14 pb-10 md:pt-[72px]">
+    <section id="solucoes" className="relative scroll-mt-6 pt-14 pb-10 md:pt-[72px]">
       <LandingRail
         heading={<LandingTitle light={text.titleLight} strong={text.titleStrong} strongFirst dot={false} className="text-3xl leading-[1.05] tracking-[-0.03em] md:text-5xl" />}
         label={text.label}
@@ -89,7 +89,7 @@ export function LandingBanners({ signupHref, exampleHref = null, linkComponent: 
           <LandingPhoneBanner messages={messages} />
         </li>
         <li className={SLIDE}>
-          <article className={cn(LANDING_LIFT, BANNER, "bg-brand-ink text-brand-on-ink")}>
+          <article className={cn(LANDING_LIFT, LANDING_FOCUS_ON_INK, BANNER, "bg-brand-ink text-brand-on-ink")}>
             <span className={cn(TAG, "border-brand-on-ink/35")}>{text.shipping.tag}</span>
             <h3 className={TITLE}>
               {text.shipping.title}

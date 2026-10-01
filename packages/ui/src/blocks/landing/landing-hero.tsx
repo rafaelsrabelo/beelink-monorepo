@@ -36,7 +36,7 @@ export function LandingHero({ signupHref, linkComponent: Link = AnchorLink, mess
           light={text.titleLight}
           strong={text.titleStrong}
           // The design's 92px breaks its light line in two inside the column the hub leaves: the size its lines fit in.
-          className="text-[44px] leading-[0.98] sm:text-6xl xl:text-[72px] min-[90rem]:text-[84px]"
+          className="text-[clamp(2.25rem,11.5vw,2.75rem)] leading-[0.98] sm:text-6xl xl:text-[72px] min-[90rem]:text-[84px]"
           lightClassName="text-[0.935em]"
         />
         <p className="max-w-[540px] text-lg leading-[1.55] text-brand-text md:text-xl">{text.lead}</p>

@@ -198,6 +198,8 @@ services:
     environment:
       # Server-only, read at runtime by the route handlers — the service name on the internal network.
       - API_URL=http://api:3001/api
+      # The shop the landing page offers as an example. Unset, it arrives blank and the page offers none.
+      - EXAMPLE_STORE_SLUG=${EXAMPLE_STORE_SLUG:-}
     # `service_started`, not `service_healthy`: Docker never restarts an unhealthy container, so an
     # API that is down would hold the web back forever, and a visitor would get nothing instead of
     # a page that says something went wrong.

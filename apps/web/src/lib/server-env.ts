@@ -10,11 +10,17 @@ const schema = z.object({
   /**
    * A shop the landing page offers as an example ("Ver uma loja de exemplo"). Optional: without it
    * the page offers none, rather than lead to a shop that may not exist where this is deployed.
+   *
+   * Blank counts as unset: `.env.example` ships the line empty and compose hands an unset variable
+   * over as `""`, and a refusal here is the whole web failing to start over an optional link.
    */
-  EXAMPLE_STORE_SLUG: z
-    .string()
-    .regex(/^[a-z0-9-]+$/)
-    .optional(),
+  EXAMPLE_STORE_SLUG: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z
+      .string()
+      .regex(/^[a-z0-9-]+$/)
+      .optional(),
+  ),
 })
 
 const parsed = schema.safeParse(process.env)

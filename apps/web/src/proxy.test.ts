@@ -254,6 +254,17 @@ describe("the proxy matcher", () => {
     expect(response.headers.get("location")).toBeNull()
   })
 
+  /**
+   * The landing page (BEELINK-256). Handed to the proxy, a visitor with no session would be sent to
+   * /login — the root answering with the sign-in is the very thing the landing replaced.
+   */
+  it("never selects the root, whoever asks: the landing page is everyone's", () => {
+    expect(selects("/")).toBe(false)
+    expect(selects("/", ["bl_access", "bl_refresh"])).toBe(false)
+    expect(selects("/", ["bl_refresh"])).toBe(false)
+    expect(selects("/", ["bl_shopper_refresh"])).toBe(false)
+  })
+
   it("still selects everything that needs a session, and the screens that end one", () => {
     expect(selects("/dashboard")).toBe(true)
     expect(selects("/dashboard/settings")).toBe(true)

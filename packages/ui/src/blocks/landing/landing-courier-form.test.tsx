@@ -15,7 +15,7 @@ const NOT_OPEN = "O cadastro de entregadores abre em breve. Nada foi enviado: se
 
 function renderForm() {
   const user = userEvent.setup()
-  render(<LandingCourierForm termsHref="/termos" privacyHref="/privacidade" />)
+  render(<LandingCourierForm termsHref="/termos" privacyHref="/privacidade" text={ptBR.landing.couriers.form} />)
   return user
 }
 
@@ -43,6 +43,7 @@ describe("the courier's schema", () => {
     ["a first name alone", { name: "Rafael" }],
     ["a number with no area code", { whatsapp: "98888-7777" }],
     ["a number with digits to spare", { whatsapp: "85 9 8888 7777 12" }],
+    ["an area code no place has", { whatsapp: "(00) 98888-7777" }],
     ["no city", { city: " " }],
     ["a vehicle the form does not offer", { vehicle: "SKATE" }],
     ["no acceptance", { consent: false }],
@@ -50,7 +51,7 @@ describe("the courier's schema", () => {
     expect(schema.safeParse({ ...valid, ...change }).success).toBe(false)
   })
 
-  it.each(["(85) 9 8888-7777", "85 3333-4444", "+55 85 98888-7777"])("reads %s as a number with its area code", (whatsapp) => {
+  it.each(["(85) 9 8888-7777", "85 3333-4444", "+55 85 98888-7777", "085 98888-7777", "55 3333-4444"])("reads %s as a number with its area code", (whatsapp) => {
     expect(schema.safeParse({ ...valid, whatsapp }).success).toBe(true)
   })
 })
@@ -69,11 +70,11 @@ describe("LandingCourierForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Continuar cadastro" }))
 
-    const name = await screen.findByLabelText(/Nome completo/)
+    const name = await screen.findByLabelText("Nome completo")
     expect(name).toHaveAttribute("aria-invalid", "true")
     expect(name).toHaveAccessibleDescription("Informe o nome completo, com sobrenome.")
-    expect(screen.getByLabelText(/WhatsApp/)).toHaveAccessibleDescription("Informe um celular com DDD.")
-    expect(screen.getByLabelText(/Cidade onde quer entregar/)).toHaveAccessibleDescription("Informe a cidade.")
+    expect(screen.getByLabelText("WhatsApp")).toHaveAccessibleDescription("Informe um celular com DDD.")
+    expect(screen.getByLabelText("Cidade onde quer entregar")).toHaveAccessibleDescription("Informe a cidade.")
     expect(screen.getByRole("checkbox")).toHaveAccessibleDescription("Marque o aceite para continuar.")
     expect(name).toHaveFocus()
     expect(screen.queryByText(NOT_OPEN)).not.toBeInTheDocument()
@@ -105,6 +106,14 @@ describe("LandingCourierForm", () => {
     await waitFor(() => expect(screen.queryByText(NOT_OPEN)).not.toBeInTheDocument())
   })
 
+  /** Before the script arrives the browser submits by itself, and a default GET would put the name and the phone in the address. */
+  it("is a form the browser itself sends nowhere, with the motorbike chosen in the HTML", () => {
+    renderForm()
+
+    expect(screen.getByRole("form", { name: "Comece seu cadastro" })).toHaveAttribute("method", "dialog")
+    expect(screen.getByRole("radio", { name: "Moto" })).toHaveAttribute("checked")
+  })
+
   it("leads to the terms and the privacy policy it asks to be accepted", () => {
     renderForm()
 
@@ -114,7 +123,7 @@ describe("LandingCourierForm", () => {
 
   it("has no accessibility violations, empty and refused", async () => {
     const user = userEvent.setup()
-    const { container } = render(<LandingCourierForm termsHref="/termos" privacyHref="/privacidade" />)
+    const { container } = render(<LandingCourierForm termsHref="/termos" privacyHref="/privacidade" text={ptBR.landing.couriers.form} />)
     await expectNoA11yViolations(container)
 
     await user.click(screen.getByRole("button", { name: "Continuar cadastro" }))

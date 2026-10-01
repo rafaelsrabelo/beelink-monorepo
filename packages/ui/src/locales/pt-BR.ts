@@ -2284,7 +2284,7 @@ export const ptBR: UiMessages = {
       titleLight: "Três formas de crescer com a Beelink.",
       previous: "Anterior",
       next: "Próximo",
-      position: "Destaque {current} de {total}",
+      position: "Página {current} de {total}",
       store: {
         tag: "Beelink Store",
         title: "Sua loja no ar hoje mesmo.",

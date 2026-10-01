@@ -6,10 +6,16 @@ import type { LandingVehicleValue, UiMessages } from "@harness-monorepo/ui/local
 
 export const LANDING_VEHICLES = ["MOTORCYCLE", "BICYCLE", "CAR", "ON_FOOT"] as const satisfies readonly LandingVehicleValue[]
 
-/** A Brazilian mobile or landline as typed: ten or eleven digits with the area code, the country's 55 in front or not. */
+/**
+ * A Brazilian mobile or landline as typed: ten or eleven digits with the area code, the country's 55
+ * or the trunk's 0 in front or not. No area code has a zero in it.
+ */
 function hasAreaCode(typed: string): boolean {
-  const digits = typed.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "")
-  return digits.length === 10 || digits.length === 11
+  const digits = typed
+    .replace(/\D/g, "")
+    .replace(/^55(?=\d{10,11}$)/, "")
+    .replace(/^0(?=\d{10,11}$)/, "")
+  return /^[1-9]{2}\d{8,9}$/.test(digits)
 }
 
 /**

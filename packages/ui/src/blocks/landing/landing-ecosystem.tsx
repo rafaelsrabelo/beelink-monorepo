@@ -37,7 +37,8 @@ const HEXAGON = "lg:[clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_
  * screen it is on — the design's hexagons around Beelink's own where the stage fits, plain cards in
  * a grid where it does not — so the five are in the page once, for a reader and a crawler alike.
  *
- * Beside the stage the heading has a 420px column, and "E-COMMERCE." in the design's 64px is wider
+ * Beside the stage the heading has a 400px column — the stage and it fit beside a classic scrollbar
+ * too, which takes 15px from the window — and "E-COMMERCE." in the design's 64px is wider
  * than it: there, and only there, it is set smaller rather than run under the hexagons.
  */
 export function LandingEcosystem({ messages = defaultMessages }: LandingEcosystemProps) {
@@ -45,9 +46,9 @@ export function LandingEcosystem({ messages = defaultMessages }: LandingEcosyste
   const products = messages.landing.products
 
   return (
-    <section id="ecossistema" className={cn(LANDING_CONTAINER, "relative flex scroll-mt-6 flex-col gap-10 py-16 md:py-20 min-[90rem]:flex-row min-[90rem]:items-center min-[90rem]:gap-9 min-[90rem]:pt-[110px]")}>
-      <div className="relative flex flex-col gap-[22px] min-[90rem]:w-[420px] min-[90rem]:shrink-0">
-        <LandingTitle light={text.titleLight} strong={text.titleStrong} className="text-4xl leading-[0.98] uppercase md:text-[64px] min-[90rem]:text-[52px]" lightClassName="font-medium" />
+    <section id="ecossistema" className={cn(LANDING_CONTAINER, "relative flex scroll-mt-6 flex-col gap-10 py-16 md:py-20 min-[90rem]:flex-row min-[90rem]:items-center min-[90rem]:gap-6 min-[90rem]:pt-[110px]")}>
+      <div className="relative flex flex-col gap-[22px] min-[90rem]:w-[400px] min-[90rem]:shrink-0">
+        <LandingTitle light={text.titleLight} strong={text.titleStrong} className="text-4xl leading-[0.98] uppercase md:text-[64px] min-[90rem]:text-[50px]" lightClassName="font-medium" />
         <p className="max-w-[560px] text-lg leading-[1.6] text-brand-text">{text.text}</p>
         <div className="flex flex-col gap-2.5">
           <span className="text-[13px] font-bold tracking-[0.32em] uppercase">{text.kicker}</span>

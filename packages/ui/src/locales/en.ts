@@ -2283,7 +2283,7 @@ export const en: UiMessages = {
       titleLight: "Three ways to grow with Beelink.",
       previous: "Previous",
       next: "Next",
-      position: "Highlight {current} of {total}",
+      position: "Page {current} of {total}",
       store: {
         tag: "Beelink Store",
         title: "Your shop live today.",
