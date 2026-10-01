@@ -11,7 +11,7 @@ src/
 ├── proxy.ts                    # the allow-list matcher + the only place that refreshes a token
 ├── app/
 │   ├── layout.tsx              # <html lang>, providers, toaster
-│   ├── page.tsx                # "/" → /dashboard
+│   ├── page.tsx                # "/" — Beelink's landing page (blocks/landing), public, outside the proxy
 │   ├── (auth)/                 # login · signup · verify-email · forgot-password · reset-password
 │   ├── (admin)/                # the signed-in shell: /dashboard · /create-store · /admin/<slug>
 │   └── api/
@@ -27,6 +27,7 @@ src/
 │   ├── store/                  # the shop screens, the error-to-copy map and the form↔wire mapper
 │   ├── app-shell.tsx           # sidebar, header, sign-out — the menu is built from the address
 │   ├── app-link.tsx            # next/link behind the design system's plain-string href
+│   ├── landing/brand-font.ts   # Plus Jakarta Sans, loaded by the landing alone
 │   └── locale-switcher.tsx
 ├── lib/
 │   ├── api.ts                  # the session-bearing caller — `cache: "no-store"`

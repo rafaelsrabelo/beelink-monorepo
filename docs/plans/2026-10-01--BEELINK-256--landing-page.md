@@ -1,0 +1,141 @@
+# BEELINK-256 — Landing page da Beelink na rota inicial
+
+> **Tier:** plans. Vale para um momento e um ticket: envelhece por construção e só recebe acréscimos.
+>
+> Desenho: canvas "bee-link — fluxos de criação, modo design e variações", artboard "10 · Landing
+> Beelink v2 — marca nova, banners e cadastro de entregador". Sai da `main`.
+
+## Definição de Pronto
+
+1. `/` mostra a landing v2: topo, hero com o hub, carrossel de três banners, ecossistema em
+   hexágonos, três passos, seção Para entregadores, perguntas, chamada final e rodapé.
+2. A página funciona no celular. O desenho é só de computador (1440 px).
+3. "Entrar" leva ao login. "Criar minha loja" e "Começar agora" levam ao cadastro.
+4. O formulário de entregador valida os campos e não envia nada.
+5. As cores da marca são tokens do design system. Nenhuma cor escrita num componente.
+6. Todo texto está nos dicionários, em pt-BR e en.
+7. Cada bloco tem história no Storybook e teste com axe. `pnpm ci-check` verde.
+
+## Decisões do Rafael (01/10)
+
+- **Versão:** a v2.
+- **Entregadores:** a seção fica só no visual. O formulário tem as validações e não envia nada. O app
+  do entregador é o Épico R.
+- **Ticket:** este, BEELINK-256.
+
+## Decisões
+
+### 1. O login continua em `/login`
+
+O Rafael perguntou qual é melhor: `/login` ou `/auth/login`. Fica `/login`.
+
+- Os e-mails de confirmação e de nova senha já enviados apontam para `/verify-email` e
+  `/reset-password`. Mudar o endereço exige redirecionar os antigos para sempre.
+- Mover para `/auth/*` mexe no proxy, nos e-mails da API, no retorno do Google e nos testes, e não
+  muda nada para quem usa.
+- A raiz deixa de redirecionar para o painel e vira a landing. "Entrar" aponta para `/login`, e o
+  proxy leva quem já está conectado direto ao painel, como hoje.
+
+Se mais adiante fizer sentido juntar as telas de conta em `/auth/*`, é um ticket próprio.
+
+### 2. A marca nova entra como tokens
+
+Creme, amarelo e preto viram tokens `brand-*` em `packages/ui/src/styles/globals.css`, o único
+arquivo onde uma cor pode ser escrita. Os blocos usam as classes (`bg-brand-yellow`,
+`text-brand-ink`). A fonte do desenho, Plus Jakarta Sans, é carregada só pela landing: o painel
+continua em Geist.
+
+### 3. Os blocos ficam em `packages/ui/src/blocks/landing`
+
+Um bloco por seção, cada um com os textos vindos do dicionário (`messages.landing`). O `apps/web`
+só monta a página e entrega os endereços.
+
+### 4. Celular
+
+- **Hub do hero e hexágonos:** no computador, as posições do desenho. Em telas menores, os mesmos
+  cinco itens viram uma grade de cards. É um DOM só, sem conteúdo duplicado.
+- **Banners:** rolagem nativa de lado, com encaixe. As setas e os pontos são um acréscimo: a fileira
+  rola com o dedo, o trackpad e o teclado antes de qualquer script carregar (a mesma razão do
+  `scroll-rail.tsx` da vitrine).
+- **Menu do topo:** os links de seção somem abaixo de `lg`. "Entrar" e "Criar minha loja" ficam.
+
+### 5. O formulário de entregador
+
+Campos: nome completo, WhatsApp, cidade, como entrega (moto, bicicleta, carro, a pé) e o aceite dos
+termos. Valida ao enviar, com `react-hook-form` e `zod`, como os outros formulários. Com tudo certo,
+mostra uma frase dizendo que o cadastro ainda não está aberto e que nada foi enviado. Nenhuma
+requisição sai.
+
+### 6. O que o desenho deixa em aberto
+
+O desenho marca itens entre colchetes como "a confirmar", e alguns links não têm destino. Uma página
+pública não pode mostrar colchetes nem link que não leva a lugar nenhum. O que fiz com cada um:
+
+| No desenho | Na página |
+|---|---|
+| Rodapé: "© 2026 Beelink · [razão social e CNPJ]" | "© ano Beelink". A razão social entra quando o Rafael passar. |
+| Formulário: "Requisitos da sua categoria: [confirmar…]" | Fora. |
+| Benefício "Ganhos à vista … [regra de repasse]" | A frase sem o colchete. |
+| Perguntas de entregador com resposta "[Confirmar…]" (3) | A pergunta fica; a resposta diz que o cadastro ainda não abriu e que a regra será publicada. |
+| Pergunta "Posso usar meus próprios entregadores?" ("[Confirmar]…") | Resposta com o que o produto faz hoje: entrega própria ou transportadora. |
+| Aceite: "termos para entregadores" | "termos de uso", com link para `/termos`. Não existem termos de entregador. |
+| Rodapé: "Termos do entregador", "Central de ajuda", "Fale com a gente" | Fora: não têm página nem canal definido. |
+| Rodapé, coluna Soluções (links `#`) | Apontam para a seção do ecossistema. |
+| "Ver uma loja de exemplo" | Só aparece quando `EXAMPLE_STORE_SLUG` está configurada. |
+| Logo "redesenhado à mão: trocar pelo SVG oficial" | O do desenho, num componente só (`BeelinkMark`), para trocar num lugar. |
+| Números "01, 02, 03" em amarelo sobre o card branco | Em preto, com o ponto amarelo dos títulos. Amarelo sobre branco dá contraste de 1,6:1. |
+
+### 7. O que a página promete e o produto ainda não tem
+
+A v2 fala de "Checkout", "eMarketing", "Envios" e de "chamar um entregador Beelink" (passo 3 e banner
+Beelink Envios). O Rafael escolheu a v2 sabendo que o app do entregador não existe. Os textos ficam
+como no desenho, e o PR lista essas frases para ele decidir antes de publicar.
+
+## Fora de escopo
+
+- Mover as telas de conta para `/auth/*` (decisão 1).
+- Guardar o interesse do entregador (tabela e rota na API).
+- Sitemap, robots e imagem de compartilhamento: são do Épico V (BEELINK-246, BEELINK-250).
+- A landing v1 e a seção de preços dela.
+
+## Adendo — revisão independente (01/10)
+
+O que a revisão achou e o que mudou. O texto acima fica como foi escrito.
+
+- **Correção da decisão 4:** os links de seção do topo somem abaixo de `xl` (1280 px), não de `lg`.
+  Em 1024 px eles quebravam a linha do topo.
+- **`EXAMPLE_STORE_SLUG` vazia derrubava o web ao subir.** O `.env.example` traz a linha em branco, e
+  o esquema recusava `""`. Agora vazio vale como ausente. A variável entrou no
+  `docker-compose.dokploy.yml` e no `.env.dokploy.example`, para poder ser ligada em produção.
+- **Foco pelo teclado invisível.** O anel usava a cor do próprio botão, e um botão preto na seção
+  preta não mostrava nada. Agora a moldura desenha o anel de tudo abaixo dela, na cor que o fundo
+  pede: preto no creme e no amarelo, claro no preto.
+- **Carrossel.** "Anterior" pulava o banner do meio entre 990 e 1346 px, e acima de 1346 px havia
+  três pontos para dois lugares de parada. As setas agora vão de parada em parada, e os pontos contam
+  as paradas. O texto para leitor de tela virou "Página 2 de 3". Acima de 1440 px a fileira vai até a
+  borda da janela, em vez de ser cortada no meio.
+- **Formulário.** Antes do script carregar, "Continuar cadastro" fazia um GET com nome e telefone no
+  endereço. O formulário agora usa `method="dialog"`, que não envia nada. O aviso de campo saiu de
+  dentro do rótulo (era lido duas vezes). "Moto" já vem marcada no HTML. O telefone aceita o 0 na
+  frente do DDD e recusa DDD com zero.
+- **Peso da página.** O formulário recebia o dicionário inteiro do design system, e ele ia escrito no
+  HTML. Agora recebe só as frases dele.
+- **Celular estreito.** Os quatro passos do cadastro ficam dois a dois abaixo de 640 px (o quarto era
+  cortado em telas de até 365 px). O banner e o título do hero cabem em 320 px.
+- **1440 px com barra de rolagem clássica:** a coluna do ecossistema passou a 400 px, com título em
+  50 px, para o palco dos hexágonos caber quando a barra tira 15 px da janela.
+- **Testes novos:** `/` fora do proxy para qualquer combinação de cookies; uma seção para cada âncora;
+  nenhum colchete também em inglês; `server-env.test.ts`.
+
+### Textos que continuam para o Rafael decidir
+
+- **"combos"** aparece no banner da loja e no passo 2. O produto não tem combos.
+- O formulário diz **"Leva 2 minutos. Os documentos vêm no próximo passo."**, e o cadastro não está
+  aberto.
+
+## Adendo — logo oficial (01/10)
+
+O Rafael entregou `logo.png` (símbolo e nome, preto sobre transparente). O símbolo foi redesenhado
+em vetor a partir das medidas do arquivo, em `BeelinkMark`: um PNG preto não aparece na seção preta
+nem aceita a cor do texto. O nome "Beelink" continua como texto, na fonte da página. Com o arquivo
+em SVG, o nome também pode vir do desenho oficial.

@@ -2683,7 +2683,107 @@ export interface UiMessages {
       debitCardHint: string
     }
   }
+  /**
+   * Beelink's own landing page, at the site's root (BEELINK-256). A heading drawn in two weights
+   * comes as two strings — the light line and the strong one — so the block never splits a sentence.
+   */
+  landing: {
+    brand: string
+    /** The logo's link, for a reader. */
+    homeLabel: string
+    nav: { label: string; solutions: string; ecosystem: string; how: string; couriers: string; faq: string }
+    signIn: string
+    createStore: string
+    hero: { titleLight: string; titleStrong: string; lead: string; start: string; solutions: string; tagline: string }
+    /** The five parts of the ecosystem, as the hero's hub and the hexagons both name them. `label` is the hexagon's, in the brand's own capitals. */
+    products: Record<LandingProductValue, { name: string; label: string; text: string }>
+    banners: {
+      /** Names the row of banners for a reader. */
+      label: string
+      titleStrong: string
+      titleLight: string
+      previous: string
+      next: string
+      /** `{current}`, `{total}`: which banner is in view. */
+      position: string
+      store: { tag: string; title: string; text: string; points: readonly [string, string, string]; example: string }
+      /** The phone drawn in the middle banner: a picture, said once to a reader by `label`. */
+      phone: { label: string; shop: string; collection: string; order: string; orderDetail: string; out: string; outDetail: string }
+      shipping: { tag: string; title: string; text: string; points: readonly [string, string, string]; cta: string }
+    }
+    ecosystem: { titleLight: string; titleStrong: string; text: string; kicker: string; kickerText: string }
+    steps: { titleLight: string; titleStrong: string; lead: string; items: readonly [LandingStep, LandingStep, LandingStep] }
+    couriers: {
+      tag: string
+      titleLight: string
+      titleStrong: string
+      lead: string
+      perks: readonly [LandingStep, LandingStep, LandingStep, LandingStep]
+      flowTitle: string
+      flow: readonly [string, string, string, string]
+      form: {
+        title: string
+        lead: string
+        name: string
+        namePlaceholder: string
+        whatsapp: string
+        whatsappPlaceholder: string
+        city: string
+        cityPlaceholder: string
+        vehicle: string
+        vehicles: Record<LandingVehicleValue, string>
+        /** `{terms}` and `{privacy}` are the two links. */
+        consent: string
+        terms: string
+        privacy: string
+        submit: string
+        nameRequired: string
+        whatsappInvalid: string
+        cityRequired: string
+        consentRequired: string
+        /** Said once the form is valid: the sign-up is not open, and nothing left the browser. */
+        notOpen: string
+      }
+    }
+    faq: {
+      titleLight: string
+      titleStrong: string
+      lead: string
+      shopkeeperTag: string
+      courierTag: string
+      shopkeeper: readonly LandingQuestion[]
+      courier: readonly LandingQuestion[]
+    }
+    cta: { titleLight: string; titleStrong: string; courier: string }
+    footer: {
+      tagline: string
+      solutions: string
+      couriers: string
+      courierSignUp: string
+      company: string
+      terms: string
+      privacy: string
+      /** `{year}`. */
+      rights: string
+    }
+  }
 }
 
 /** The two the product ships. `pt-BR` is the default; `en` is what the repository itself speaks. */
 export type Locale = "pt-BR" | "en"
+
+/** The five parts of Beelink's ecosystem, as the landing names them. */
+export type LandingProductValue = "store" | "chat" | "checkout" | "shipping" | "marketing"
+
+/** How a courier delivers, as the landing's form offers it. */
+export type LandingVehicleValue = "MOTORCYCLE" | "BICYCLE" | "CAR" | "ON_FOOT"
+
+export interface LandingStep {
+  title: string
+  text: string
+}
+
+export interface LandingQuestion {
+  question: string
+  answer: string
+}

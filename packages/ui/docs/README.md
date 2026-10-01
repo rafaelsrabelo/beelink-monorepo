@@ -54,6 +54,17 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/store/store-image-field` | `id`, `label`, `value`, `onChange`, `onUpload`, `pending`, `previewAlt`, `aspect` | Blocos/Loja/Campo de imagem |
 | `blocks/store/store-color-field` | `id`, `label`, `value`, `onChange`, `pickerSuffix` | Blocos/Loja/Campo de cor |
 | `blocks/store/store-color-preview` | `colors` | Blocos/Loja/Prévia das cores |
+| `blocks/landing/landing-shell` | `children` — the brand's ground and `--font-brand` | Blocos/Landing |
+| `blocks/landing/landing-header` | `loginHref`, `signupHref`, `homeHref` | Blocos/Landing → Topo e hero |
+| `blocks/landing/landing-hero` | `signupHref` (draws `landing-hub` from `xl`) | Blocos/Landing → Topo e hero |
+| `blocks/landing/landing-banners` | `signupHref`, `exampleHref` (over `landing-rail` and `landing-phone-banner`) | Blocos/Landing → Banners |
+| `blocks/landing/landing-ecosystem` | — | Blocos/Landing → Ecossistema |
+| `blocks/landing/landing-steps` | — | Blocos/Landing → Passos |
+| `blocks/landing/landing-couriers` | `termsHref`, `privacyHref` (holds `landing-courier-form`) | Blocos/Landing → Entregadores |
+| `blocks/landing/landing-courier-form` | `termsHref`, `privacyHref`, `text` (its own slice of the dictionary) — validates, sends nothing | Blocos/Landing → Formulário do entregador |
+| `blocks/landing/landing-faq` | — | Blocos/Landing → Perguntas |
+| `blocks/landing/landing-cta` | `signupHref` | Blocos/Landing → Chamada e rodapé |
+| `blocks/landing/landing-footer` | `termsHref`, `privacyHref`, `year` | Blocos/Landing → Chamada e rodapé |
 
 `auth-link` is the default every block navigates with until an app passes `next/link`. It is one line, and its test is still
 the longest of the three it has: a link component that swallowed the extra props would drop the `aria-current` the sidebar
@@ -62,6 +73,8 @@ injects, and the page would look right while telling a screen reader nothing.
 The form blocks validate shape only — a well-formed e-mail, a long-enough password, six hexadecimal digits. Whether the account exists, or the slug is taken, is the API's answer, and it arrives as the `error` prop, already a sentence.
 
 The `store-*-fields` blocks are the panels of one form, not five forms: `store-settings-form` owns the react-hook-form instance and `PUT /stores/:slug` replaces the shop whole, so a tab that saved on its own would clear what the others hold. A save refused by the schema opens the first tab that refused it.
+
+The landing's blocks wear **Beelink's own brand**, not the panel's and not a shop's: the `brand-*` tokens in `globals.css` (a cream ground, one yellow, black) and the typeface the screen hands over as `--font-brand`. Their copy is `messages.landing`, a heading in two weights arriving as two strings. `beelink-mark` is the mark, traced from the official artwork as a vector so it takes the colour of the ground it sits on. `landing-rail` is the banners' row, on `storefront/scroll-rail`'s reasoning: native scrolling first, arrows and dots on top — and the dots count the places the row stops at, which on a wide screen are fewer than its banners. The two client blocks, `landing-rail` and `landing-courier-form`, import no dictionary and take only their own sentences: what a Client Component is handed is written into the page. `landing-shell` draws every focus ring below it, in the colour `--landing-focus` names, which a black ground sets to a light one.
 
 `store-create-form` composes the same panels over `POST /stores`, which accepts less: no layout, no banner and no payment methods, so its appearance tab is `store-colors-fields` alone. Two things it does that the settings form cannot. The slug is **editable** — `store-identity-fields` shows it read-only until a screen passes `onSlugChange` — and is proposed from the name by `slugify` until the shopkeeper touches it, so a shop whose address is taken is renamed rather than abandoned. And each tab carries an icon **and** a screen-reader sentence when it holds a refused field: a create submitted from the first tab that fails on the fourth otherwise refuses in silence, and a coloured dot alone is not a verdict.
 

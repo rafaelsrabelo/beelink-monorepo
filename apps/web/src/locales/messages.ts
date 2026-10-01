@@ -111,6 +111,11 @@ export interface WebMessages {
     title: string
     description: string
   }
+  /** The landing page at the site's root (BEELINK-256): what a search result and a shared link say of it. */
+  landing: {
+    title: string
+    description: string
+  }
   auth: {
     signupSuccessTitle: string
     signupSuccessDescription: string

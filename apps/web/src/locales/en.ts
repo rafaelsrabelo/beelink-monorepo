@@ -6,6 +6,10 @@ export const en: WebMessages = {
     title: "bee-link",
     description: "Your online shop, with orders over WhatsApp. Build the window, take the orders, keep the conversation.",
   },
+  landing: {
+    title: "Beelink — Everything your e-commerce needs",
+    description: "Online shop, checkout, chat, shipping and marketing in one place. Create your shop and start selling today.",
+  },
   auth: {
     signupSuccessTitle: "Check your e-mail",
     signupSuccessDescription: "We sent a link to confirm your account",
