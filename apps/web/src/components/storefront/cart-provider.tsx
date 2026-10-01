@@ -17,7 +17,7 @@ const CartContext = createContext<CartStore | null>(null)
  * An empty one that ignores every change stands in, rather than a header that throws.
  */
 const INERT: CartStore = createCartStore("", [])
-INERT.setState({ add: () => {}, setQty: () => {}, remove: () => {}, clear: () => {}, setCoupon: () => {} })
+INERT.setState({ add: () => {}, setQty: () => {}, remove: () => {}, clear: () => {} })
 
 export interface CartProviderProps {
   slug: string

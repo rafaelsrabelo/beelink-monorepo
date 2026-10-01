@@ -1,7 +1,7 @@
 "use client"
 
 // Libs
-import { keepPreviousData, useMutation, useQuery, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
+import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
 
 // Types
 import type {
@@ -89,17 +89,23 @@ export function useRestockRequest(slug: string): UseMutationResult<void, Error, 
  * last price on screen while the new one is asked, rather than drop the summary to a skeleton at
  * every press of "+".
  *
+ * The page is served before any coupon is checked. A cart that arrives with one kept shows the
+ * served price — the same cart, without the coupon — until the answer with it lands.
+ *
  * Not retried: a refusal — a line the shop stopped selling, too many tries — is not a blip, and the
  * next change of the cart asks again anyway.
  */
 export function useCartQuote(slug: string, cart: CustomerOrderQuotePayload, served: ServedQuote | null): UseQueryResult<OrderQuote, Error> {
+  // In `cartQuoteOf`'s own order, which is what makes two questions comparable.
+  const servedWithoutCoupon = served && sameCart(served.cart, { items: cart.items, fulfillment: cart.fulfillment }) ? served.quote : undefined
+
   return useQuery({
     queryKey: storefrontKeys.quote(slug, cart),
     queryFn: () => quoteCart(slug, cart),
     enabled: cart.items.length > 0,
     initialData: () => (served && sameCart(served.cart, cart) ? served.quote : undefined),
     initialDataUpdatedAt: served?.at,
-    placeholderData: keepPreviousData,
+    placeholderData: (previous: OrderQuote | undefined) => previous ?? servedWithoutCoupon,
     staleTime: QUOTE_STALE_MS,
     retry: false,
   })

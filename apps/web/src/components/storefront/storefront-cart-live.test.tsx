@@ -410,11 +410,16 @@ describe("the cart's price and its coupon", () => {
     ])
     // Its chip stands in for the field, and the price just read is the one kept: nothing asked twice.
     expect(screen.queryByLabelText("Cupom de desconto")).toBeNull()
+    // In the page's address, under the code as the shop stores it: a reload comes back with it, and nothing is kept in the browser.
+    expect(window.location.search).toBe("?cupom=BEMVINDO10")
+    expect(document.cookie).not.toContain("BEMVINDO10")
 
     fireEvent.click(placeButton())
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Pedido #12 feito!"))
     expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", couponCode: "BEMVINDO10" }])
     expect(bodiesTo(fetched, "/loja/api/orders/quote")).toHaveLength(1)
+    // The coupon went out with the order: the next cart starts without it.
+    expect(window.location.search).toBe("")
   })
 
   it("says why a code is not taken, leaves the totals without it, and places the order with no coupon", async () => {
@@ -583,6 +588,63 @@ describe("the cart's price and its coupon", () => {
       ["Promoção: Semana da Blusa", "− R$ 11,98"],
       ["Total", "R$ 107,82"],
     ])
+  })
+
+  /** The page is served before any coupon is checked: one its address names — back from adding an address — is asked about on arrival. */
+  it("checks the coupon the page's address named, showing the served price until the answer lands, and holds the order meanwhile", async () => {
+    const fetched = network()
+    renderCart(false, bia, { coupon: "BEMVINDO10" })
+
+    // At once: its chip, the price the page came with — dimmed — and a button that waits.
+    expect(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeInTheDocument()
+    expect(screen.queryByText("Cupom BEMVINDO10 aplicado.")).toBeNull()
+    expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]])
+    expect(screen.getByRole("complementary").querySelector("dl")).toHaveAttribute("aria-busy", "true")
+    expect(placeButton()).toBeDisabled()
+
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", couponCode: "BEMVINDO10" }])
+    expect(summaryRows()[1]).toEqual(["Cupom BEMVINDO10", "− R$ 11,98"])
+    expect(placeButton()).toBeEnabled()
+  })
+
+  it("says why the coupon its address named does not hold, with a way to take it off — out of the address too", async () => {
+    window.history.replaceState(null, "", "/loja/carrinho?cupom=BEMVINDO10&entregar=a1")
+    network({ quote: (cart) => (cart.couponCode ? refusedOver(cart, { reason: "EXPIRED" }) : Response.json(quoteOf(cart))) })
+    renderCart(false, bia, { coupon: "BEMVINDO10" })
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Esse cupom venceu."))
+    expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]])
+
+    fireEvent.click(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" }))
+    expect(screen.getByLabelText("Cupom de desconto")).toBeInTheDocument()
+    // The rest of the address is left as it was.
+    expect(window.location.search).toBe("?entregar=a1")
+  })
+
+  it("takes the coupon along on every way out of the cart that comes back to it", async () => {
+    renderCart()
+    const backOf = (name: string) => new URL(screen.getByRole("link", { name }).getAttribute("href")!, "http://x").searchParams.get("voltar")
+    expect(backOf("Alterar dados")).toBe("/loja/carrinho")
+
+    await applyCoupon("BEMVINDO10")
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+
+    expect(backOf("Alterar dados")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+    expect(backOf("Entregar em outro endereço")).toBe("/loja/carrinho?cupom=BEMVINDO10")
+
+    fireEvent.click(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" }))
+    expect(backOf("Alterar dados")).toBe("/loja/carrinho")
+  })
+
+  it("leaves a visitor's coupon unchecked, and takes it along to the sign-in: it is checked once they are back", () => {
+    const fetched = network()
+    renderCart(false, null, { coupon: "BEMVINDO10" })
+
+    expect(screen.queryByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeNull()
+    expect(screen.getByText("Tem um cupom de desconto? Você aplica depois de entrar na sua conta.")).toBeInTheDocument()
+    expect(fetched).not.toHaveBeenCalled()
+    expect(new URL(screen.getByRole("link", { name: "Entrar para fazer o pedido" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
   })
 
   it("reads the page again when the session ended while a code was typed", async () => {

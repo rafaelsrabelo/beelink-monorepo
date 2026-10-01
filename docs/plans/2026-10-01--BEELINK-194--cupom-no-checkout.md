@@ -114,3 +114,33 @@ A promoção "só na primeira compra" depende de quem compra. Quando ela existir
 identificado precisa da porta do cliente mesmo sem cupom, e o limite de 30 em 5 minutos passa a
 contar cada mudança de quantidade. O O6 resolve isso (um limite para a cotação e outro para o
 código).
+
+## Adendo: o cupom viaja no endereço do carrinho (01/10)
+
+A conferência no navegador derrubou a decisão 2. Ela dizia que o cupom, guardado em memória,
+sobreviveria à ida para "adicionar endereço" e à volta. Não sobrevive: salvar o endereço envia um
+formulário e carrega a página de novo, e os links do carrinho são carregamentos de página também. O
+cliente aplicava o cupom, cadastrava o endereço, voltava, e o cupom tinha sumido sem aviso.
+
+- **O cupom aplicado fica no endereço do carrinho:** `/<slug>/carrinho?cupom=BEMVINDO10`. Aplicar e
+  remover trocam o endereço sem recarregar a página. Recarregar mantém o cupom.
+- **Os links que saem do carrinho e voltam** (entrar, criar conta, alterar dados, adicionar endereço)
+  levam o cupom no `voltar`. O visitante que chega com um cupom no endereço entra na conta e volta
+  com ele, e aí ele é conferido.
+- **Ao chegar,** a página mostra os totais com que foi servida (sem o cupom), esmaecidos, até a
+  resposta do cupom. O botão de fechar o pedido espera essa resposta.
+- **Feito o pedido,** o cupom sai do endereço.
+- **Sair para comprar mais e voltar pelo ícone do carrinho perde o cupom.** O campo fica vazio e os
+  totais sem a linha, e o cliente digita de novo.
+
+**Por que não um cookie, como o do carrinho.** A política de privacidade lista cada cookie pelo nome
+e pelo que guarda (`apps/web/src/locales/legal/pt-BR.ts`), e mudar o que o produto guarda pede uma
+versão nova dos textos legais (`LegalVersion`). Um cookie para o cupom seria essa mudança. O endereço
+da página não guarda nada no navegador.
+
+**Um efeito a mais:** um link com `?cupom=` já deixa o cupom pronto para quem tem conta. Ninguém
+pediu isso; o ticket do modal de boas-vindas, se vier, pode usar.
+
+Também da conferência: no card de Meus pedidos, a linha do desconto quebra em duas em vez de cortar o
+código do cupom.
+

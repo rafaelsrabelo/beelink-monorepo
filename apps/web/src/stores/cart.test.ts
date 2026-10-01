@@ -52,22 +52,6 @@ describe("the cart store", () => {
     expect(cookieNow()).toBeUndefined()
   })
 
-  /** BEELINK-194: the coupon is the page's, never the cookie's, and goes out with the order. */
-  it("keeps the coupon in memory alone, and lets it go when the cart is emptied", () => {
-    const store = createCartStore("loja", [])
-    store.getState().add({ productId: product, variantId: null, qty: 1 })
-
-    store.getState().setCoupon("BEMVINDO10")
-
-    expect(store.getState().coupon).toBe("BEMVINDO10")
-    expect(decodeCart(cookieNow())).toEqual([{ productId: product, variantId: null, qty: 1 }])
-    expect(document.cookie).not.toContain("BEMVINDO10")
-    expect(createCartStore("loja", decodeCart(cookieNow())).getState().coupon).toBeNull()
-
-    store.getState().clear()
-    expect(store.getState().coupon).toBeNull()
-  })
-
   it("keeps another shop's cart out of this one", () => {
     const store = createCartStore("outra", [])
     store.getState().add({ productId: product, variantId: null, qty: 1 })

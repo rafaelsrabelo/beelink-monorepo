@@ -115,9 +115,13 @@ A store runs **promotions** — a discount over the whole cart, or over named pr
 
 A **coupon** is a code a customer types. A code is unique **within its store** whatever the case it is typed in, valid for a period, and may be limited in how many times it can be used in total or by one customer. It gives a discount, as a promotion does, or a free delivery, and may ask for a minimum subtotal. A coupon that has run out, expired or does not apply says so at checkout, before the customer commits.
 
+Only an **identified customer** applies a coupon: whether a code exists is not told to a visitor, who is told the code goes in once they sign in. The answer comes with the cart's totals — taken, or the reason it was not — and an order carries the coupon the customer was shown as applied, and no other. One that stopped holding between that answer and the order refuses the order rather than place it at another price.
+
 Promotions never add up. Each line of a cart takes the one promotion worth the most on it — a promotion on a category covers its subcategories — and a fixed amount off the whole cart stands against the lines' own promotions together: the customer gets the larger. The coupon comes after, over what is left of the products, and one order takes one coupon. A percentage is rounded up to the cent, in the customer's favour — a promotion of 10% never reads as 9% — and no total goes below zero.
 
 The discount is computed in one place. What the cart shows, what the checkout shows and what the order records are the same calculation, read at the moment the order is placed. A coupon's limits are checked as the order is written, so two orders at once never both take its last use. A cancelled order gives its coupon's use back.
+
+What came off is said **part by part**, wherever an order or a cart is read: the promotions, the coupon by its code, and what the shopkeeper took off by hand — on the cart, the customer's order and its receipt, their list of orders, the shop's panel and the WhatsApp messages. A free delivery whose fee is not agreed yet is said in words, and to its customer such a total is final: the coupon covers whatever fee is agreed.
 
 While a promotion runs, the shop window shows it: the price a visitor reads is the promotional one, with what it was beside it, and that price times the quantity is what the order takes off. A fixed amount off the whole cart is the exception — it is no product's price, and shows in the cart.
 
@@ -125,7 +129,9 @@ Either can be **paused** and switched back on. Where one stands — scheduled, r
 
 ## Checkout and the handoff to WhatsApp
 
-Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp**. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil. It names the order by its number, and its lines and total are the ones the product recorded, not the ones the page computed.
+Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp**. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil. It names the order by its number, and its lines, its discounts and its total are the ones the product recorded, not the ones the page computed.
+
+A sale the shopkeeper registers in the panel is priced the same way before it is saved: the summary they confirm is the total the product will record, a promotion running on the day of the sale included.
 
 An order placed at checkout starts **received**: the shopkeeper accepts it, or cancels it. A shop with no WhatsApp still takes orders — the customer is told the shop will confirm.
 

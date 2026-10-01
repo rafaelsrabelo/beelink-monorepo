@@ -21,6 +21,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { useCart } from "./cart-provider"
 import { useCartPricing } from "./use-cart-pricing"
 import { useCheckoutChoice } from "./use-checkout-choice"
+import { waysBackWithCoupon } from "@/lib/cart-coupon"
 import type { ServedQuote } from "@/lib/cart-pricing"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
 import { checkoutRefusalOf, rereadsTheCart } from "@/lib/checkout-refusal"
@@ -53,6 +54,8 @@ export interface StorefrontCartLiveProps {
   arrival?: ReactNode
   /** The cart's price as the page was served with it, so the summary is in the HTML; null and the browser asks. */
   served?: ServedQuote | null
+  /** The coupon the page's address named (`?cupom=`), to be checked on arrival; null with none. */
+  coupon?: string | null
   locale: string
   messages: UiMessages
 }
@@ -80,6 +83,7 @@ export function StorefrontCartLive({
   deliverTo = null,
   arrival,
   served = null,
+  coupon = null,
   locale,
   messages,
 }: StorefrontCartLiveProps) {
@@ -97,7 +101,9 @@ export function StorefrontCartLive({
   const [sent, setSent] = useState<{ number: number; href: string | null } | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
-  const pricing = useCartPricing({ slug, view, fulfillment: choice.fulfillment, signedIn: shopper !== null, served, locale, messages })
+  const pricing = useCartPricing({ slug, view, fulfillment: choice.fulfillment, signedIn: shopper !== null, served, arrivedWith: coupon, locale, messages })
+  // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
+  const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
 
   // A line the shop no longer sells is taken out of the cookie once, rather than asked for forever.
   useEffect(() => {
@@ -136,6 +142,7 @@ export function StorefrontCartLive({
           if (tab && href) tab.location.href = href
           setSent({ number: order.number, href })
           clear()
+          pricing.forget()
         },
         onError: (error) => {
           tab?.close()
@@ -199,13 +206,13 @@ export function StorefrontCartLive({
                   ? {
                       lines: [shopper.name, shopper.phone].filter((line): line is string => Boolean(line)),
                       complete: isReachable(shopper),
-                      editHref: identityHrefs.editHref,
+                      editHref: ways.editHref,
                       addresses,
-                      addAddressHref: identityHrefs.addAddressHref,
+                      addAddressHref: ways.addAddressHref,
                     }
                   : null
               }
-              signIn={identityHrefs}
+              signIn={ways}
               paymentMethods={paymentMethods}
               choice={choice}
               onChoiceChange={(next) => changed(() => setChoice(next))}

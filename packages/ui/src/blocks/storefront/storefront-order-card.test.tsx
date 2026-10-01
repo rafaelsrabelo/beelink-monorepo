@@ -39,7 +39,10 @@ describe("StorefrontOrderCard", () => {
   /** BEELINK-194: the list says what came off an order, and the coupon it took. */
   it("says what was taken off under the total, and nothing there for an order with no discount", () => {
     const { rerender } = render(<StorefrontOrderCard {...card} saving="Desconto de R$ 42,50 · cupom BEMVINDO10" />)
-    expect(screen.getByText("R$ 237,22 · Pix").nextElementSibling).toHaveTextContent("Desconto de R$ 42,50 · cupom BEMVINDO10")
+    const saving = screen.getByText("R$ 237,22 · Pix").nextElementSibling!
+    expect(saving).toHaveTextContent("Desconto de R$ 42,50 · cupom BEMVINDO10")
+    // Never cut short, as the facts above it are: the code is the end of the sentence.
+    expect(saving).not.toHaveClass("truncate")
 
     rerender(<StorefrontOrderCard {...card} />)
     expect(screen.getByText("R$ 237,22 · Pix").nextElementSibling).toBeNull()

@@ -59,7 +59,8 @@ function Fact({ label, note, children }: { label: string; note?: string | null; 
     <div className="flex min-w-0 flex-col gap-0.5">
       <span className="text-[11px] font-bold tracking-[0.04em] text-shop-muted uppercase">{label}</span>
       <span className="truncate text-sm font-semibold">{children}</span>
-      {note ? <span className="truncate text-xs font-semibold text-shop-positive-ink">{note}</span> : null}
+      {/* Wrapped, never cut: the coupon's code is at its end, and it is what the shopper looks for. */}
+      {note ? <span className="text-xs font-semibold break-words text-shop-positive-ink">{note}</span> : null}
     </div>
   )
 }

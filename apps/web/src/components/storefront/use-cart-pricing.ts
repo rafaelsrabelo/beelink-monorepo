@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 // Next
 import { useRouter } from "next/navigation"
@@ -18,7 +18,7 @@ import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-p
 import { couponRefusalTextOf } from "@harness-monorepo/ui/lib/order-discounts"
 
 // App
-import { useCart } from "./cart-provider"
+import { pathWithCoupon } from "@/lib/cart-coupon"
 import { cartPricingOf, cartQuoteOf, sameCart, type CartPricing, type ServedQuote } from "@/lib/cart-pricing"
 import type { CartView } from "@/lib/cart-view"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
@@ -36,6 +36,8 @@ export interface CartPricingInput {
   signedIn: boolean
   /** The price the page was served with; null when the server could not ask for one. */
   served: ServedQuote | null
+  /** The coupon the page's address named — one carried back from adding an address, or a link's; null with none. */
+  arrivedWith: string | null
   locale: string
   messages: UiMessages
 }
@@ -61,12 +63,16 @@ export interface CartPricingHandle extends CartPricing {
   /** The amounts on screen are the ones before the last change. */
   stale: boolean
   coupon: CartCouponHandle
+  /** The coupon the address carries, whoever is looking: the links that leave the cart and come back take it along. */
+  carried: string | null
   /** What goes with the order: the coupon the screen says is applied, and no other. */
   orderCoupon: string | null
   /** Why the order cannot go out yet over its coupon: it is still being checked, or the check failed. */
   couponBlock: "checking" | "failed" | null
   /** Asks for the price again, whatever is kept: an order was refused over what it said. */
   recheck: () => void
+  /** The order went out with it: the coupon leaves the address, so the next cart starts without one. */
+  forget: () => void
 }
 
 function failureOf(error: unknown, text: UiMessages["storefront"]): string {
@@ -80,13 +86,20 @@ function failureOf(error: unknown, text: UiMessages["storefront"]): string {
  * API's, asked again as the cart changes; the coupon is asked about once, when it is applied, and
  * then follows the cart — a code that was refused is said and dropped, never sent again with every
  * press of "+".
+ *
+ * The coupon in force is this page's own state, written through to the page's address (`cart-coupon.ts`)
+ * so a reload, and the trip to add an address, come back with it.
  */
-export function useCartPricing({ slug, view, fulfillment, signedIn, served, locale, messages }: CartPricingInput): CartPricingHandle {
+export function useCartPricing({ slug, view, fulfillment, signedIn, served, arrivedWith, locale, messages }: CartPricingInput): CartPricingHandle {
   const text = messages.storefront
   const router = useRouter()
   const queryClient = useQueryClient()
-  const kept = useCart((cart) => cart.coupon)
-  const setCoupon = useCart((cart) => cart.setCoupon)
+  const [kept, setKept] = useState(arrivedWith)
+  // `replaceState` and not a navigation: the address changes under the page, and nothing is read again.
+  const setCoupon = useCallback((code: string | null) => {
+    setKept(code)
+    window.history.replaceState(window.history.state, "", pathWithCoupon(`${window.location.pathname}${window.location.search}`, code))
+  }, [])
   const coupon = signedIn ? kept : null
 
   // The quantities settle before they are asked about; how it leaves and the coupon are one press each.
@@ -154,8 +167,10 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, loca
         if (!applying.isIdle && !applying.isPending) applying.reset()
       },
     },
+    carried: kept,
     orderCoupon: verdict?.status === "APPLIED" ? coupon : null,
     couponBlock,
     recheck: () => void queryClient.invalidateQueries({ queryKey: storefrontKeys.quotes(slug) }),
+    forget: () => setCoupon(null),
   }
 }

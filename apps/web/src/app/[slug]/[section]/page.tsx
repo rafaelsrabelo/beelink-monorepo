@@ -21,6 +21,7 @@ import { StorefrontSignInSection } from "@/components/storefront/storefront-sign
 import { StorefrontVerifyEmailSection } from "@/components/storefront/storefront-verify-email-section"
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
+import { COUPON_KEY, couponIn } from "@/lib/cart-coupon"
 import { cartQuoteOf, firstFulfillmentOf } from "@/lib/cart-pricing"
 import { cartQuoteAt } from "@/lib/cart-quote"
 import { cartViewOf } from "@/lib/cart-view"
@@ -170,6 +171,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           deliverTo={paramOf(query[DELIVER_TO_KEY]) ?? null}
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           served={served}
+          coupon={couponIn(paramOf(query[COUPON_KEY]))}
           locale={locale}
           messages={ui}
         />
