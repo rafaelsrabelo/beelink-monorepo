@@ -21,9 +21,9 @@ const favorites: StorefrontFavoritesRailItem[] = [
 function ToRate() {
   return (
     <StorefrontReviewsSection title="Avalie suas compras" hint="Sua nota ajuda outros clientes. Só quem comprou pode avaliar." aside={<a href="#" className="py-2 text-sm font-semibold text-shop-primary-ink">Ver todos (5)</a>}>
-      <div className="grid gap-3 shop-md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 shop-md:grid-cols-2">
         {["Creatina Monohidratada 300g", "Coqueteleira Mutante 700ml"].map((name) => (
-          <StorefrontReviewCard key={name} id={name} name={name} href="#" imageUrl={null} meta="Entregue em 12 set · Sem sabor" form={<StorefrontQuickRating action="#" hidden={{}} productName={name} />} />
+          <StorefrontReviewCard key={name} id={`avaliar-${name.split(" ")[0]!.toLowerCase()}`} name={name} href="#" imageUrl={null} meta="Entregue em 12 set · Sem sabor" form={<StorefrontQuickRating action="#" hidden={{}} productName={name} />} />
         ))}
       </div>
     </StorefrontReviewsSection>

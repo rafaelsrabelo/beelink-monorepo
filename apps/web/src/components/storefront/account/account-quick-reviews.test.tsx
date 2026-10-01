@@ -10,11 +10,14 @@ import { ptBR as ui } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
 import { storefrontRoutes } from "@/lib/storefront-routes"
-import { ptBR } from "@/locales/pt-BR"
 import { AccountQuickReviews } from "./account-quick-reviews"
 
 const pending = vi.hoisted(() => ({ current: null as CustomerPendingReview[] | null }))
 vi.mock("@/lib/customer-reviews", () => ({ pendingReviewsAt: async () => pending.current }))
+vi.mock("@/lib/locale", async () => {
+  const { ptBR } = await import("@/locales/pt-BR")
+  return { getMessages: async () => ({ web: ptBR }) }
+})
 
 const routes = storefrontRoutes({
   slug: "loja",
@@ -33,7 +36,7 @@ const pendingOf = (count: number): CustomerPendingReview[] =>
   Array.from({ length: count }, (_, index) => ({ productId: `p${index + 1}`, slug: `produto-${index + 1}`, name: `Produto ${index + 1}`, imageUrl: null, variantLabel: index === 0 ? "Sabor: Uva" : null, orderNumber: 10, deliveredAt: "2026-09-20T12:00:00.000Z" }))
 
 async function mount(query: Record<string, string> = {}) {
-  const drawn = await AccountQuickReviews({ slug: "loja", routes, query, locale: "pt-BR", errors: ptBR.errors, messages: ui })
+  const drawn = await AccountQuickReviews({ slug: "loja", routes, query, locale: "pt-BR", messages: ui })
   return render(<>{drawn}</>)
 }
 
@@ -75,6 +78,24 @@ describe("Avalie suas compras, on the account's front", () => {
     const card = container.querySelector("article#avaliar-p6")!
     expect(container.querySelector("article")).toBe(card)
     expect(within(card as HTMLElement).getByRole("alert")).toBeInTheDocument()
+  })
+
+  it("leads a second tap, refused once the first went through, to the review on the tab", async () => {
+    pending.current = pendingOf(2)
+    const { container } = await mount({ produto: "p9", "erro-avaliacoes": "CUSTOMER_REVIEW_EXISTS" })
+
+    const landing = container.querySelector("#avaliar-p9")!
+    expect(within(landing as HTMLElement).getByRole("alert")).toHaveTextContent("Você já avaliou este produto.")
+    expect(within(landing as HTMLElement).getByRole("link", { name: "Abrir em Avaliar compras" })).toHaveAttribute("href", "/loja/conta/avaliacoes?produto=p9#avaliar-p9")
+    expect(container.querySelectorAll("#avaliar-p9")).toHaveLength(1)
+  })
+
+  it("never says sent over a card still to rate, nor gives two places one id", async () => {
+    pending.current = pendingOf(2)
+    const { container } = await mount({ produto: "p1", aviso: "avaliacao-enviada" })
+
+    expect(screen.queryByRole("status")).toBeNull()
+    expect(container.querySelectorAll("#avaliar-p1")).toHaveLength(1)
   })
 
   it("draws nothing with nothing to rate, or when the read failed", async () => {

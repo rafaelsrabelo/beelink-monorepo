@@ -475,6 +475,7 @@ export const en: UiMessages = {
     overviewReviewsTitle: "Rate your purchases",
     overviewSeeAll: "See all ({count})",
     overviewReviewComment: "Write a comment",
+    overviewReviewOpen: "Open in Review purchases",
     quickRatingGroup: "Rate {name}",
     favoritesRailTitle: "Your favourites",
     favoritesRailCountOne: "1 product",

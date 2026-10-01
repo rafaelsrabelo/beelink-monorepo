@@ -138,7 +138,6 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           favorites={favorites}
           pendingReviews={pendingReviews}
           query={query}
-          errors={(await getMessages()).web.errors}
           messages={ui}
         />
       ) : place.section.kind === "signIn" ? (

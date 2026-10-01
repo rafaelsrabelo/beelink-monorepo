@@ -1,6 +1,5 @@
 // Types
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
-import type { WebMessages } from "@/locales"
 
 // UI
 import { StorefrontAccountOutcome } from "@harness-monorepo/ui/blocks/storefront/storefront-account-outcome"
@@ -14,6 +13,7 @@ import { AppLink } from "@/components/app-link"
 import { pendingReviewsAt } from "@/lib/customer-reviews"
 import { errorSentenceOf } from "@/lib/error-sentence"
 import { likedOnOf } from "@/lib/favorite-card-view"
+import { getMessages } from "@/lib/locale"
 import { quickReviewsOf } from "@/lib/overview-parts"
 import { REVIEW_PRODUCT_KEY, REVIEW_SENT, REVIEWS_ERROR_KEY, reviewAnchorOf, reviewHrefOf, reviewsActionOf } from "@/lib/review-view"
 import { paramOf, type StorefrontRoutes } from "@/lib/storefront-routes"
@@ -24,7 +24,6 @@ export interface AccountQuickReviewsProps {
   routes: StorefrontRoutes
   query: SectionQuery
   locale: string
-  errors: WebMessages["errors"]
   messages: UiMessages
 }
 
@@ -34,17 +33,19 @@ export interface AccountQuickReviewsProps {
  * top, at the place the page lands, with the way to add words on the tab; a refusal in its card.
  * Nothing to rate, or a read that failed, draws nothing: the front is whole without it.
  */
-export async function AccountQuickReviews({ slug, routes, query, locale, errors, messages }: AccountQuickReviewsProps) {
+export async function AccountQuickReviews({ slug, routes, query, locale, messages }: AccountQuickReviewsProps) {
   const pending = await pendingReviewsAt(slug)
   if (!pending) return null
 
   const text = messages.storefront
   const asked = paramOf(query[REVIEW_PRODUCT_KEY])
   const refused = paramOf(query[REVIEWS_ERROR_KEY])
-  const sent = asked !== undefined && paramOf(query.aviso) === REVIEW_SENT
+  const stillPending = asked !== undefined && pending.some((line) => line.productId === asked)
+  // Only once its card is gone: the notice takes the place the page lands on, `#avaliar-<id>`.
+  const sent = asked !== undefined && !stillPending && paramOf(query.aviso) === REVIEW_SENT
   const shown = quickReviewsOf(pending, asked)
-  const failure = refused ? <StorefrontAccountOutcome tone="failed" message={refused === "BAD_REQUEST" ? text.reviewInvalid : errorSentenceOf(errors, refused)} /> : null
-  const inCard = failure !== null && shown.some((line) => line.productId === asked)
+  const failure = refused ? <StorefrontAccountOutcome tone="failed" message={errorSentenceOf((await getMessages()).web.errors, refused)} /> : null
+  const inCard = failure !== null && stillPending
 
   if (shown.length === 0 && !sent && !failure) return null
 
@@ -72,9 +73,20 @@ export async function AccountQuickReviews({ slug, routes, query, locale, errors,
           </AppLink>
         </div>
       ) : null}
-      {failure && !inCard ? <div id={asked ? reviewAnchorOf(asked) : undefined} className="scroll-mt-24">{failure}</div> : null}
+      {failure && !inCard ? (
+        // Refused for a product no longer to rate — a second tap after the first went through: its
+        // review is on the tab, to edit there.
+        <div id={asked ? reviewAnchorOf(asked) : undefined} className="flex scroll-mt-24 flex-col items-start gap-1">
+          {failure}
+          {asked ? (
+            <AppLink href={reviewHrefOf(routes, asked)} className="py-2 text-sm font-semibold text-shop-primary-ink hover:underline">
+              {text.overviewReviewOpen}
+            </AppLink>
+          ) : null}
+        </div>
+      ) : null}
       {shown.length > 0 ? (
-        <div className="grid gap-3 shop-md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 shop-md:grid-cols-2">
           {shown.map((line) => (
             <StorefrontReviewCard
               key={line.productId}

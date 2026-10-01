@@ -608,6 +608,7 @@ export interface UiMessages {
     overviewReviewsTitle: string
     overviewSeeAll: string
     overviewReviewComment: string
+    overviewReviewOpen: string
     quickRatingGroup: string
     favoritesRailTitle: string
     favoritesRailCountOne: string

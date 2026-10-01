@@ -476,6 +476,7 @@ export const ptBR: UiMessages = {
     overviewReviewsTitle: "Avalie suas compras",
     overviewSeeAll: "Ver todos ({count})",
     overviewReviewComment: "Escrever um comentário",
+    overviewReviewOpen: "Abrir em Avaliar compras",
     quickRatingGroup: "Dar nota a {name}",
     favoritesRailTitle: "Seus favoritos",
     favoritesRailCountOne: "1 produto",

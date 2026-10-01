@@ -19,7 +19,6 @@ import { accountContactOf, accountMenuOf, accountTabTitleOf, customerSignOutActi
 import { accountDetailsViewOf } from "@/lib/account-overview"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
-import type { WebMessages } from "@/locales"
 import { AccountFavoritesRail } from "./account-favorites-rail"
 import { AccountOrdersNow } from "./account-orders-now"
 import { AccountQuickReviews } from "./account-quick-reviews"
@@ -38,8 +37,6 @@ export interface StorefrontAccountAreaProps {
   pendingReviews?: number
   /** The front's address: what a rating sent from it came back with. A tab reads its own. */
   query?: SectionQuery
-  /** The sentences for a refused rating, on the front. */
-  errors?: WebMessages["errors"]
   /** Beside a tab's title: its search and filters. */
   tools?: ReactNode
   children?: ReactNode
@@ -51,7 +48,7 @@ export interface StorefrontAccountAreaProps {
  * tabs delivered. The front tells what the shopper would come to check — the order on its way, their
  * details, what to rate and their favourites — and leaves the way to each tab to the menu beside it.
  */
-export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders, favorites, pendingReviews, query = {}, errors, tools, children, messages }: StorefrontAccountAreaProps) {
+export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders, favorites, pendingReviews, query = {}, tools, children, messages }: StorefrontAccountAreaProps) {
   const text = messages.storefront
   const menu = (
     <StorefrontAccountMenu
@@ -79,11 +76,9 @@ export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders
             <AccountOrdersNow slug={slug} routes={routes} locale="pt-BR" messages={messages} />
           </Suspense>
           <StorefrontAccountDetails {...accountDetailsViewOf(shopper)} editHref={routes.accountTab("profile")} linkComponent={AppLink} messages={messages} />
-          {errors ? (
-            <Suspense fallback={<StorefrontOverviewSkeleton kind="reviews" />}>
-              <AccountQuickReviews slug={slug} routes={routes} query={query} locale="pt-BR" errors={errors} messages={messages} />
-            </Suspense>
-          ) : null}
+          <Suspense fallback={<StorefrontOverviewSkeleton kind="reviews" />}>
+            <AccountQuickReviews slug={slug} routes={routes} query={query} locale="pt-BR" messages={messages} />
+          </Suspense>
           <Suspense fallback={<StorefrontOverviewSkeleton kind="favorites" />}>
             <AccountFavoritesRail slug={slug} routes={routes} locale="pt-BR" messages={messages} />
           </Suspense>

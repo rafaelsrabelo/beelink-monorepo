@@ -70,7 +70,7 @@ export function StorefrontFavoritesRail({ items, total, dropped, allHref, locale
               <span className="line-clamp-2 text-sm font-medium group-hover:underline">{item.name}</span>
               <span className="text-sm font-bold">{formatCents(item.priceCents, locale, currency)}</span>
               {item.dropCents > 0 ? (
-                <span className="w-fit rounded-full bg-shop-sale px-2 py-0.5 text-xs font-semibold text-shop-on-sale">
+                <span className="w-fit rounded-full bg-shop-positive px-2 py-0.5 text-xs font-semibold text-shop-on-positive">
                   {format(text.favoritesRailDrop, { amount: formatCents(item.dropCents, locale, currency) })}
                 </span>
               ) : null}

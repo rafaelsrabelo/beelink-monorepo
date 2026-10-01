@@ -66,3 +66,23 @@
 
 - Os cartões por aba (decisão 1).
 - Um comentário na Visão geral: ele se escreve na aba Avaliar compras.
+
+## Adendo da revisão (30/09)
+
+- **As estrelas cabem num celular.** Cinco de 44 px passavam da largura do card ao lado da foto, e a
+  página rolava de lado num celular de 360 px.
+  - No celular elas têm 36 px, sem espaço entre si, e quebram a linha antes de rolar a página.
+  - A partir de `shop-sm` voltam a 44 px.
+  - O formulário da aba Avaliar compras (J18) tem o mesmo aperto e fica para um ticket próprio.
+- **Um segundo toque recusado tem saída.** Tocar 3 e logo 5 envia duas notas: a primeira fica, a
+  segunda volta `CUSTOMER_REVIEW_EXISTS`, e o produto já não está pendente. A recusa aparece no
+  lugar da âncora, com "Abrir em Avaliar compras".
+- **O aviso de enviada só aparece quando o card já saiu,** para não repetir o `id` da âncora.
+- **O hover que acende as estrelas anteriores vale só com ponteiro de verdade** (`@media (hover:
+  hover)`). Num toque, ele ficaria aceso.
+- **"Baixou R$ X" usa as cores de positivo**, como o card da aba Favoritos.
+- **`AccountQuickReviews` lê as frases de erro sozinho,** e a área deixa de receber `errors`. Uma
+  recusa `BAD_REQUEST` usa a frase geral: a frase do formulário fala de um comentário que a frente
+  não tem.
+- **O esqueleto quase nunca aparece.** A página espera as mesmas leituras para os números do menu
+  antes de desenhar. O `Suspense` fica, para o dia em que o menu não as ler.

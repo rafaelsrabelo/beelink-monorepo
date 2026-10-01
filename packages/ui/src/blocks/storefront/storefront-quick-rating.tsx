@@ -30,7 +30,8 @@ export function StorefrontQuickRating({ action, hidden, productName, messages = 
       {Object.entries(hidden).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
-      <div role="group" aria-label={format(text.quickRatingGroup, { name: productName })} className="flex w-fit gap-0.5">
+      {/* 36px stars on a phone, where five at 44 overflow a card beside its photo; they wrap before they scroll the page. */}
+      <div role="group" aria-label={format(text.quickRatingGroup, { name: productName })} className="flex flex-wrap shop-sm:gap-0.5">
         {RATINGS.map((value) => (
           <button
             key={value}
@@ -38,7 +39,8 @@ export function StorefrontQuickRating({ action, hidden, productName, messages = 
             name="nota"
             value={value}
             // Muted, not a line colour: an empty star is an option to see, at 3:1 or more.
-            className="flex size-11 cursor-pointer items-center justify-center rounded-full text-shop-muted hover:text-shop-primary-ink focus-visible:text-shop-primary-ink focus-visible:outline-2 focus-visible:outline-shop-primary-ink [&:has(~button:focus-visible)]:text-shop-primary-ink [&:has(~button:hover)]:text-shop-primary-ink"
+            // The hover that lights the stars before is held to a real pointer: a tap would leave it on.
+            className="flex size-9 cursor-pointer items-center justify-center rounded-full text-shop-muted hover:text-shop-primary-ink focus-visible:text-shop-primary-ink focus-visible:outline-2 focus-visible:outline-shop-primary-ink shop-sm:size-11 [&:has(~button:focus-visible)]:text-shop-primary-ink [@media(hover:hover)]:[&:has(~button:hover)]:text-shop-primary-ink"
           >
             <StarIcon aria-hidden="true" className="size-6" fill="currentColor" strokeWidth={1.2} />
             <span className="sr-only">{value === 1 ? text.reviewStarOne : format(text.reviewStarMany, { count: String(value) })}</span>
