@@ -2,6 +2,7 @@
 import { ListIcon, PauseIcon, PencilIcon, PlayIcon } from "lucide-react"
 
 // UI
+import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Button } from "@harness-monorepo/ui/components/button"
 
 // Locales
@@ -9,7 +10,7 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { DiscountStatusValue } from "@harness-monorepo/ui/lib/discount-form"
+import type { DiscountAudienceValue, DiscountStatusValue } from "@harness-monorepo/ui/lib/discount-form"
 import { DiscountStatusBadge } from "./discount-status-badge"
 
 export interface CouponListRow {
@@ -24,6 +25,7 @@ export interface CouponListRow {
   uses: string
   status: DiscountStatusValue
   active: boolean
+  audience: DiscountAudienceValue
 }
 
 export interface CouponListProps {
@@ -39,7 +41,8 @@ export interface CouponListProps {
 
 /**
  * The shop's coupons: each code with what it gives, what it asks for, its period, how many times it
- * was used and where it stands — and the owner's three moves: edit it, pause it, read its uses.
+ * was used and where it stands — and the owner's three moves: edit it, pause it, read its uses. One
+ * that is for a first purchase only is marked beside what it gives.
  */
 export function CouponList({ rows, empty, busyId = null, onEdit, onToggle, onUses, messages = defaultMessages }: CouponListProps) {
   const shared = messages.discounts
@@ -63,7 +66,10 @@ export function CouponList({ rows, empty, busyId = null, onEdit, onToggle, onUse
               <p className="font-mono font-medium break-all">{row.code}</p>
               <DiscountStatusBadge status={row.status} label={text.status[row.status]} />
             </div>
-            <p className="text-sm">{[row.discount, row.minimum].filter(Boolean).join(" · ")}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm">{[row.discount, row.minimum].filter(Boolean).join(" · ")}</p>
+              {row.audience === "FIRST_PURCHASE" ? <Badge variant="secondary">{shared.firstPurchaseBadge}</Badge> : null}
+            </div>
             <p className="text-muted-foreground text-xs">
               {row.period} · {row.uses}
             </p>

@@ -63,6 +63,8 @@ export type PlacedOrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCL
  *
  * The order is priced inside it (`priceOrder`), at the instant it is placed: the promotions running
  * then, and the coupon read under its row's lock, so its limit is the one the use is written against.
+ * A first purchase is said under the customer's own lock (BEELINK-245): of two orders of one
+ * customer placed at once, the second reads the first, and only one is priced as a first purchase.
  */
 @Injectable()
 export class OrderPlacement {
@@ -93,9 +95,9 @@ export class OrderPlacement {
         deliveryFeeCents: placement.deliveryFeeCents,
         manualDiscountCents: placement.discountCents,
         couponCode: placement.couponCode,
-        customerId,
+        customer: { id: customerId },
         at: placement.placedAt,
-        lockCoupon: true,
+        lock: true,
       });
       if (priced.refusal) throw couponRefused(priced.refusal);
 

@@ -8,6 +8,7 @@ import type {
   Coupon,
   CouponRedemptionPage,
   CustomerOrder,
+  CustomerOrderPage,
   Order,
   OrderCouponRefusedDetails,
   OrderQuote,
@@ -128,6 +129,7 @@ describe("an order's discounts", () => {
       expect(priced).toMatchObject({
         subtotalCents: 43970,
         promotionDiscountCents: 4098,
+        firstPurchase: null,
         coupon: null,
         couponDiscountCents: 0,
         manualDiscountCents: 0,
@@ -282,6 +284,9 @@ describe("an order's discounts", () => {
       const shops = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
       expect(shops).toMatchObject({ promotionDiscountCents: 3798, couponDiscountCents: 4018, discountCents: 7816, coupon: { code: 'BEMVINDO10', kind: 'PERCENT' }, totalCents: 36154 });
       expect(shops.items[0]).toMatchObject({ discountCents: 3798, promotionName: 'Proteínas' });
+      // The customer's own list says the same of it, on the card: what came off, and the code.
+      const mine = (await call('GET', '/api/stores/lessari/customer/orders', bia)).json<CustomerOrderPage>();
+      expect(mine.orders.map((each) => [each.number, each.discountCents, each.coupon, each.totalCents])).toEqual([[1, 7816, { code: 'BEMVINDO10', kind: 'PERCENT' }, 36154]]);
       const record = await prisma.customer.findFirstOrThrow({ where: { userId: { not: null } } });
       expect(record.totalSpentCents).toBe(36154n);
 

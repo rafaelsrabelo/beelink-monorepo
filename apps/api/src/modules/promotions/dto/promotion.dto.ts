@@ -12,6 +12,7 @@ import type {
   CouponPayload,
   CouponRedemptionListQuery,
   CouponStatus,
+  DiscountAudience,
   DiscountKind,
   PromotionErrorCode,
   PromotionListQuery,
@@ -31,6 +32,7 @@ import {
   COUPON_MAX_USES_PER_CUSTOMER_MAX,
   COUPON_STATUSES,
   DISCOUNT_AMOUNT_MAX_CENTS,
+  DISCOUNT_AUDIENCES,
   DISCOUNT_KINDS,
   DISCOUNTS_PAGE_MAX,
   DISCOUNTS_PAGE_SIZE,
@@ -48,7 +50,7 @@ const answering = (errorCode: PromotionErrorCode) => ({ context: { errorCode } }
 
 const trimmed = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value));
 
-/** Absent is allowed, null is not: a switch sent as null would read as its default, on. */
+/** Absent is allowed, null is not: sent as null, a switch would read as its default, on — and an audience as everyone. */
 const unlessAbsent = ValidateIf((_, value) => value !== undefined);
 
 export class PromotionDto implements PromotionPayload {
@@ -96,6 +98,11 @@ export class PromotionDto implements PromotionPayload {
   @unlessAbsent
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({ enum: DISCOUNT_AUDIENCES, default: 'EVERYONE', description: 'Who it is for: FIRST_PURCHASE is a customer with no order at the shop that stands. Absent is EVERYONE, on a replace too.' })
+  @unlessAbsent
+  @IsIn(DISCOUNT_AUDIENCES)
+  audience?: DiscountAudience;
 
   @ApiPropertyOptional({ type: [String], format: 'uuid', maxItems: PROMOTION_TARGETS_MAX, description: 'The products of a PRODUCTS scope; absent or empty otherwise.' })
   @IsOptional()
@@ -173,6 +180,11 @@ export class CouponDto implements CouponPayload {
   @unlessAbsent
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({ enum: DISCOUNT_AUDIENCES, default: 'EVERYONE', description: 'Who may use it: FIRST_PURCHASE is a customer with no order at the shop that stands. Absent is EVERYONE, on a replace too.' })
+  @unlessAbsent
+  @IsIn(DISCOUNT_AUDIENCES)
+  audience?: DiscountAudience;
 }
 
 export class SetDiscountActiveDto implements SetDiscountActivePayload {

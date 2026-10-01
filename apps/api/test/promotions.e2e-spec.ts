@@ -85,6 +85,7 @@ describe("a shop's promotions and coupons", () => {
         amountCents: null,
         active: true,
         status: 'ACTIVE',
+        audience: 'EVERYONE',
         products: [],
         categories: [],
       });
@@ -161,6 +162,33 @@ describe("a shop's promotions and coupons", () => {
       await prisma.product.delete({ where: { id: whey.id } });
       const narrowed = (await call('GET', `/api/stores/lessari/promotions/${promotion.id}`, owner)).json<Promotion>();
       expect(narrowed.products.map((product) => product.name)).toEqual(['Creatina']);
+    });
+
+    it('keeps who a promotion is for — everyone unless said — and a replacement that leaves it out is for everyone again', async () => {
+      const welcome = await made<Promotion>('promotions', promotionBody({ name: 'Primeira compra', audience: 'FIRST_PURCHASE' }));
+      expect(welcome.audience).toBe('FIRST_PURCHASE');
+      await made<Promotion>('promotions', promotionBody());
+
+      const all = (await call('GET', '/api/stores/lessari/promotions', owner)).json<PromotionPage>();
+      expect(all.promotions.map((promotion) => [promotion.name, promotion.audience])).toEqual([
+        ['Semana do Consumidor', 'EVERYONE'],
+        ['Primeira compra', 'FIRST_PURCHASE'],
+      ]);
+
+      // Pausing is not a replacement: it leaves the audience where it was.
+      const url = `/api/stores/lessari/promotions/${welcome.id}`;
+      expect((await call('PATCH', url, owner, { active: false })).json<Promotion>()).toMatchObject({ active: false, audience: 'FIRST_PURCHASE' });
+      expect((await call('PUT', url, owner, promotionBody({ name: 'Boas-vindas', audience: 'FIRST_PURCHASE' }))).json<Promotion>()).toMatchObject({ name: 'Boas-vindas', audience: 'FIRST_PURCHASE' });
+      // A form saved without it clears it, as every optional key but the switch.
+      expect((await call('PUT', url, owner, promotionBody())).json<Promotion>()).toMatchObject({ active: false, audience: 'EVERYONE' });
+      expect((await call('GET', url, owner)).json<Promotion>().audience).toBe('EVERYONE');
+
+      // Null is not "everyone": a form that sends it believes it said something.
+      for (const audience of ['RETURNING', 'first_purchase', '', null, 1]) {
+        expect((await call('POST', '/api/stores/lessari/promotions', owner, promotionBody({ audience }))).statusCode, String(audience)).toBe(400);
+        expect((await call('PUT', url, owner, promotionBody({ audience }))).statusCode, String(audience)).toBe(400);
+      }
+      expect(await prisma.promotion.count()).toBe(2);
     });
 
     it('refuses a value that does not match its kind, a period that ends before it starts and lists that do not match the scope', async () => {
@@ -249,6 +277,7 @@ describe("a shop's promotions and coupons", () => {
         usedCount: 0,
         active: true,
         status: 'ACTIVE',
+        audience: 'EVERYONE',
       });
 
       const again = await call('POST', '/api/stores/lessari/coupons', owner, couponBody({ code: 'BemVindo10' }));
@@ -281,6 +310,30 @@ describe("a shop's promotions and coupons", () => {
       // A form saved without the switch leaves it paused.
       expect((await call('PUT', `/api/stores/lessari/coupons/${coupon.id}`, owner, couponBody({ code: 'VOLTEI15', percentBps: 2000 }))).json<Coupon>()).toMatchObject({ percentBps: 2000, active: false, status: 'PAUSED' });
       expect((await call('PATCH', `/api/stores/lessari/coupons/${coupon.id}`, owner, { active: true })).json<Coupon>()).toMatchObject({ active: true, status: 'ACTIVE' });
+    });
+
+    it('keeps who a coupon is for — everyone unless said — and a replacement that leaves it out is for everyone again', async () => {
+      const welcome = await made<Coupon>('coupons', couponBody({ code: 'PRIMEIRA10', audience: 'FIRST_PURCHASE' }));
+      expect(welcome.audience).toBe('FIRST_PURCHASE');
+      await made<Coupon>('coupons', couponBody());
+
+      const all = (await call('GET', '/api/stores/lessari/coupons', owner)).json<CouponPage>();
+      expect(all.coupons.map((coupon) => [coupon.code, coupon.audience])).toEqual([
+        ['BEMVINDO10', 'EVERYONE'],
+        ['PRIMEIRA10', 'FIRST_PURCHASE'],
+      ]);
+
+      const url = `/api/stores/lessari/coupons/${welcome.id}`;
+      expect((await call('PATCH', url, owner, { active: false })).json<Coupon>()).toMatchObject({ active: false, audience: 'FIRST_PURCHASE' });
+      expect((await call('PUT', url, owner, couponBody({ code: 'PRIMEIRA15', percentBps: 1500, audience: 'FIRST_PURCHASE' }))).json<Coupon>()).toMatchObject({ code: 'PRIMEIRA15', audience: 'FIRST_PURCHASE' });
+      expect((await call('PUT', url, owner, couponBody({ code: 'PRIMEIRA15' }))).json<Coupon>()).toMatchObject({ active: false, audience: 'EVERYONE' });
+      expect((await call('GET', url, owner)).json<Coupon>().audience).toBe('EVERYONE');
+
+      for (const audience of ['RETURNING', 'first_purchase', '', null, 1]) {
+        expect((await call('POST', '/api/stores/lessari/coupons', owner, couponBody({ code: 'OUTRO', audience }))).statusCode, String(audience)).toBe(400);
+        expect((await call('PUT', url, owner, couponBody({ code: 'PRIMEIRA15', audience }))).statusCode, String(audience)).toBe(400);
+      }
+      expect(await prisma.coupon.count()).toBe(2);
     });
 
     it('lists by where each stands — exhausted at its limit — with the count of every status', async () => {

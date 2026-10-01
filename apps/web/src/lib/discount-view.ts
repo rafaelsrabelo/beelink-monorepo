@@ -99,6 +99,7 @@ export function promotionRowsOf(promotions: readonly Promotion[], text: Text): P
     period: periodOf(promotion.startsAt, promotion.endsAt, text),
     status: promotion.status,
     active: promotion.active,
+    audience: promotion.audience,
   }))
 }
 
@@ -120,6 +121,7 @@ export function couponRowsOf(coupons: readonly Coupon[], text: Text): CouponList
     uses: usesOf(coupon, text.messages),
     status: coupon.status,
     active: coupon.active,
+    audience: coupon.audience,
   }))
 }
 

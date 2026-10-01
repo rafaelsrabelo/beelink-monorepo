@@ -106,6 +106,8 @@ export function toCustomerOrderSummary(row: CustomerOrderRow): CustomerOrderSumm
     paymentMethod: row.paymentMethod,
     totalCents: row.totalCents,
     deliveryFeeCents: row.deliveryFeeCents,
+    discountCents: row.discountCents,
+    coupon: toOrderCoupon(row),
     itemsCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
     items: row.items.slice(0, CUSTOMER_ORDER_CARD_ITEMS).map(toItem),
     moreItems: Math.max(row.items.length - CUSTOMER_ORDER_CARD_ITEMS, 0),

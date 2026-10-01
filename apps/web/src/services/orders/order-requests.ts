@@ -6,9 +6,11 @@ import type {
   Order,
   OrderListQuery,
   OrderPage,
+  OrderQuote,
   OrderStatus,
   OrderStockDetails,
   OrderStockShortage,
+  ShopOrderQuotePayload,
 } from "@harness-monorepo/contracts"
 
 /**
@@ -69,6 +71,21 @@ export async function createOrder(slug: string, payload: CreateOrderPayload): Pr
   const body: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new OrderRequestError(errorCodeOf(body), (body as { details?: unknown } | null)?.details)
   return body as Order
+}
+
+/**
+ * What a sale would cost before it is registered (BEELINK-194): the API's own pricing, with the
+ * promotions running on the day it is dated. Nothing is saved, reserved or used by asking.
+ */
+export async function quoteOrder(slug: string, sale: ShopOrderQuotePayload): Promise<OrderQuote> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/quote`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(sale),
+  })
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(body), (body as { details?: unknown } | null)?.details)
+  return body as OrderQuote
 }
 
 /** One order, by its number in the shop. */

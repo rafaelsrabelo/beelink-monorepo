@@ -22,13 +22,15 @@ import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { catalogKeys, useProduct, useProducts } from "@/services/catalog/catalog-hooks"
 import { fetchProduct } from "@/services/catalog/catalog-requests"
 import { customerKeys } from "@/services/customers/customer-hooks"
-import { useCreateOrder } from "@/services/orders/order-hooks"
+import { useCreateOrder, useOrderQuote } from "@/services/orders/order-hooks"
 import { OrderRequestError, shortagesOf } from "@/services/orders/order-requests"
-import { moneyOf, orderPayloadOf, productOptionOf, variantOptionsOf } from "./new-order-mapping"
+import { moneyOf, orderPayloadOf, productOptionOf, saleOf, shownTotalsOf, variantOptionsOf } from "./new-order-mapping"
 import { useDeliveryTo } from "./use-delivery-to"
 
 const SEARCH_DEBOUNCE_MS = 300
 const SEARCH_PAGE_SIZE = 8
+/** A fee or a discount is typed a digit at a time: the sale is priced once the typing rests. */
+const QUOTE_DEBOUNCE_MS = 400
 
 /** Today in the shopkeeper's own calendar. Read on the client only: the server's clock is in another zone. */
 function localDay(date: Date): string {
@@ -101,7 +103,19 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   const placedOn = details.placedOn || today
   const feeCents = details.fulfillment === "DELIVERY" ? moneyOf(details.deliveryFee) : 0
   const discountCents = moneyOf(details.discount)
-  const totals = orderTotalsOf(lines, details.fulfillment, feeCents ?? 0, discountCents ?? 0)
+  // The form's own sum: what is sent, and what refuses a typed amount before anything is asked.
+  const own = orderTotalsOf(lines, details.fulfillment, feeCents ?? 0, discountCents ?? 0)
+  const priceable = lines.length > 0 && feeCents !== null && discountCents !== null && typeof own !== "string" && today !== ""
+  const sale = priceable ? saleOf({ customerId: customer?.id ?? null, lines, fulfillment: details.fulfillment, deliveryFeeCents: feeCents ?? 0, discountCents: discountCents ?? 0, placedOn, today }) : null
+  // Settled by what is asked, never by identity: a note typed is a new render and the same sale, and
+  // another customer chosen is another sale.
+  const saleKey = sale ? JSON.stringify(sale) : null
+  const settled = useDebouncedValue(saleKey, QUOTE_DEBOUNCE_MS) === saleKey
+  // Asked once the typing rests; until then the last price stays on screen, dimmed.
+  const quote = useOrderQuote(slug, settled ? sale : null)
+  // The API's answer for what is on screen — not the last sale's, kept while this one is asked.
+  const answered = sale !== null && settled && !quote.isPlaceholderData && !quote.isPending
+  const totals = shownTotalsOf(own, sale ? (quote.data ?? null) : null, answered && quote.error instanceof OrderRequestError ? quote.error.errorCode : null)
 
   const issues: OrderDetailsIssues & { customer?: string; lines?: string } = {}
   if (feeCents === null) issues.deliveryFee = text.invalidMoney
@@ -118,9 +132,10 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   function submit(): boolean {
     if (save.isPending || save.isSuccess) return true
     setSubmitted(true)
-    if (Object.keys(issues).length || typeof totals === "string" || !customer || !details.paymentMethod) return false
+    if (Object.keys(issues).length || typeof totals === "string" || typeof own === "string" || !customer || !details.paymentMethod) return false
 
-    const payload = orderPayloadOf({ customerId: customer.id, lines, details: { ...details, placedOn }, paymentMethod: details.paymentMethod, totals, today })
+    // The amounts typed, never the API's price of them: the order is priced again as it is written.
+    const payload = orderPayloadOf({ customerId: customer.id, lines, details: { ...details, placedOn }, paymentMethod: details.paymentMethod, totals: own, today })
     save.mutate(payload, {
       onSuccess: (order) => router.push(`/admin/${slug}/orders/${order.number}` as Parameters<typeof router.push>[0]),
       // The stock moved since the products were read: each short line learns how many are left, and says so.
@@ -163,6 +178,10 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     details: { value: { ...details, placedOn }, onChange: setDetails, today, deliveryTo },
     productError: detail.error ?? products.error,
     totals,
+    /** The sale is being priced: the amounts on screen are the ones before the last change. */
+    pricing: sale !== null && !answered && !quote.isError,
+    /** The API could not price it — out of reach, too many tries — and the summary says the total is the form's own. */
+    unpriced: answered && quote.isError && !quote.data && typeof totals !== "string",
     /** Shown once a save was tried: a form that opens covered in red asks nothing of anyone. */
     issues: submitted ? issues : {},
     announcement,

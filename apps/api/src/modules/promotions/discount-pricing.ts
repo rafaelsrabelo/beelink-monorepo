@@ -1,5 +1,5 @@
 // Types
-import type { CouponKind, DiscountKind, PromotionScope } from '@harness-monorepo/contracts';
+import type { CouponKind, DiscountAudience, DiscountKind, PromotionScope, QuotedFirstPurchase } from '@harness-monorepo/contracts';
 
 // App
 import { PERCENT_BPS_MAX } from './promotions.constants.js';
@@ -31,6 +31,8 @@ export interface PricingPromotion {
   discountKind: DiscountKind;
   percentBps: number | null;
   amountCents: number | null;
+  /** Who it is for. The arithmetic prices with every promotion it is given: leaving out those not for this customer is the caller's. */
+  audience: DiscountAudience;
   productIds: readonly string[];
   categoryIds: readonly string[];
 }
@@ -137,6 +139,38 @@ export function promotionDiscountsOf(lines: readonly PricingLine[], promotions: 
     if (amountCents > (cart?.amountCents ?? 0)) cart = { promotion, amountCents };
   }
   return cart && cart.amountCents > sumOf(perLine) ? shared(lines, cart.promotion, cart.amountCents, subtotalCents) : perLine;
+}
+
+/**
+ * The promotions that price a cart whoever buys it: those for a first purchase left out. A customer
+ * on a first purchase competes with every promotion; anyone else, and a cart nobody is identified
+ * on, with these.
+ */
+export function forEveryone(promotions: readonly PricingPromotion[]): PricingPromotion[] {
+  return promotions.filter((promotion) => promotion.audience === 'EVERYONE');
+}
+
+/** What `QuotedFirstPurchase` says of the cart alone. Its `status` is why this customer did not get it, which the arithmetic does not know. */
+export type FirstPurchaseOffer = Omit<QuotedFirstPurchase, 'status'>;
+
+/**
+ * What a cart priced without the promotions for a first purchase is missing (BEELINK-245): how much
+ * more it would lose with them competing, as they do for a customer on a first purchase. It is the
+ * difference between the two pricings and not such a promotion's own worth — promotions never add
+ * up, so one that a promotion for everyone beats or ties adds nothing, and nothing is announced: null.
+ */
+export function firstPurchaseOfferOf(lines: readonly PricingLine[], promotions: readonly PricingPromotion[]): FirstPurchaseOffer | null {
+  const forFirstPurchase = promotions.filter((promotion) => promotion.audience === 'FIRST_PURCHASE');
+  if (forFirstPurchase.length === 0) return null;
+
+  const offered = promotionDiscountsOf(lines, promotions);
+  const given = promotionDiscountsOf(lines, forEveryone(promotions));
+  const discountCents = sumOf(offered) - sumOf(given);
+  if (discountCents <= 0) return null;
+
+  // Named by what it adds, not by where it sits: on a tie it may hold a line and add nothing to it.
+  const adding = forFirstPurchase.filter((promotion) => offered.some((line, at) => line.promotion?.id === promotion.id && line.discountCents > given[at]!.discountCents));
+  return { promotionName: adding.length === 1 ? adding[0]!.name : null, discountCents };
 }
 
 export interface PricingCoupon {

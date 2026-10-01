@@ -11,6 +11,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { halfTypedDates, type CouponFormIssues, type CouponFormValues, type HalfTypedDates } from "@harness-monorepo/ui/lib/discount-form"
+import { DiscountAudienceField } from "./discount-audience-field"
 import { DiscountPeriodFields } from "./discount-period-fields"
 import { DiscountValueFields } from "./discount-value-fields"
 
@@ -29,8 +30,8 @@ export interface CouponFormProps {
 
 /**
  * One coupon as its owner fills it in: the code a customer will type, what it gives — a share, an
- * amount or a free delivery — what it asks of the cart, for how long, and how many times it may be
- * used in all and by one customer. Every limit left blank is no limit.
+ * amount or a free delivery — what it asks of the cart, who it is for, for how long, and how many
+ * times it may be used in all and by one customer. Every limit left blank is no limit.
  */
 export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCancel, pending = false, messages = defaultMessages }: CouponFormProps) {
   const shared = messages.discounts
@@ -94,6 +95,8 @@ export function CouponForm({ value, onChange, issues = {}, error, onSubmit, onCa
         />
         {issues.minSubtotal ? <FieldError id="coupon-minimum-note">{issues.minSubtotal}</FieldError> : <FieldDescription id="coupon-minimum-note">{text.minSubtotalHelp}</FieldDescription>}
       </Field>
+
+      <DiscountAudienceField audience={value.audience} onChange={set} disabled={pending} messages={messages} />
 
       <DiscountPeriodFields startsAt={value.startsAt} endsAt={value.endsAt} onChange={set} issues={issues} disabled={pending} messages={messages} />
 
