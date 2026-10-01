@@ -101,7 +101,7 @@ export function StorefrontCartLive({
   const [sent, setSent] = useState<{ number: number; href: string | null } | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
-  const pricing = useCartPricing({ slug, view, fulfillment: choice.fulfillment, signedIn: shopper !== null, served, arrivedWith: coupon, locale, messages })
+  const pricing = useCartPricing({ slug, view, fulfillment: choice.fulfillment, shopperId: shopper?.id ?? null, served, arrivedWith: coupon, locale, messages })
   // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
   const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
 
@@ -180,6 +180,7 @@ export function StorefrontCartLive({
         count={view.count}
         discounts={pricing.discounts}
         total={pricing.total}
+        offer={pricing.offer}
         pricing={pricing.pricing}
         stale={pricing.stale}
         locale={locale}

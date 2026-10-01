@@ -21,7 +21,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe("POST /api/stores/[slug]/orders/quote", () => {
   it("forwards the sale whole with the owner's token, and answers the API's price of it", async () => {
-    const priced = { lines: [], subtotalCents: 20000, promotionDiscountCents: 2500, coupon: null, couponDiscountCents: 0, manualDiscountCents: 500, discountCents: 3000, deliveryFeeCents: 0, totalCents: 17000 }
+    const priced = { lines: [], subtotalCents: 20000, promotionDiscountCents: 2500, firstPurchase: null, coupon: null, couponDiscountCents: 0, manualDiscountCents: 500, discountCents: 3000, deliveryFeeCents: 0, totalCents: 17000 }
     const fetchSpy = vi.fn(async () => Response.json(priced))
     vi.stubGlobal("fetch", fetchSpy)
 

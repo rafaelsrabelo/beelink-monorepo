@@ -21,6 +21,16 @@ export interface StorefrontCartDiscount {
   value: string
 }
 
+/**
+ * A first-purchase promotion the cart would get and did not: "open" is an offer waiting for the
+ * visitor to identify themselves, "closed" is one that is not this customer's, with the reason.
+ * The text arrives already in words.
+ */
+export interface StorefrontCartOffer {
+  text: string
+  tone: "open" | "closed"
+}
+
 export interface StorefrontCartProps {
   rows: readonly StorefrontCartRow[]
   /** Only what can be ordered now — before any promotion, once the cart is priced with its discounts. */
@@ -30,6 +40,8 @@ export interface StorefrontCartProps {
   discounts?: readonly StorefrontCartDiscount[]
   /** What is left to pay, in words — "R$ 157,50 + frete". Said under a discount; the subtotal says it otherwise. */
   total?: string | null
+  /** A first-purchase offer that is in none of the amounts above, said under them; none, and nothing is said. */
+  offer?: StorefrontCartOffer | null
   /** The cart is being priced for the first time: the amounts wait as a skeleton rather than show a sum about to change. */
   pricing?: boolean
   /** The cart changed and is being priced again: the amounts on screen are the ones before the change. */
@@ -48,12 +60,23 @@ export interface StorefrontCartProps {
 }
 
 /**
+ * An offer still open wears the shop's tint, to be noticed; one that is not this customer's is said
+ * quietly. The words on the tint stay the page's ink: the brand's is measured to read on the page,
+ * and its own tint takes that contrast back.
+ */
+const OFFER_TONE: Record<StorefrontCartOffer["tone"], string> = {
+  open: "rounded-[10px] bg-shop-primary-tint px-4 py-3 font-medium",
+  closed: "text-shop-muted",
+}
+
+/**
  * The cart page: its lines, and a summary beside them with the subtotal, what was taken off it and
  * the way out. Empty, it is a sentence and a way back to the shelf — never a checkout with nothing
  * in it.
  *
  * The amounts are the API's (BEELINK-194): a promotion and a coupon each have their row, and the
- * block adds nothing up — two sums of one cart are two totals to disagree.
+ * block adds nothing up — two sums of one cart are two totals to disagree. A first-purchase offer
+ * (BEELINK-245) is a sentence under those rows and never one of them: what it names was not taken off.
  */
 export function StorefrontCart({
   rows,
@@ -61,6 +84,7 @@ export function StorefrontCart({
   count,
   discounts = [],
   total = null,
+  offer = null,
   pricing = false,
   stale = false,
   locale,
@@ -130,6 +154,8 @@ export function StorefrontCart({
             </div>
           ) : null}
         </dl>
+        {/* It comes from the same pricing as the rows above: it waits and dims with them. */}
+        {offer && !pricing ? <p className={cn("text-sm break-words transition-opacity", OFFER_TONE[offer.tone], stale && "opacity-60")}>{offer.text}</p> : null}
         {checkout}
       </aside>
     </div>

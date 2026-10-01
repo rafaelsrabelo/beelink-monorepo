@@ -56,6 +56,8 @@ export interface OrderPayloadInput {
 }
 
 export interface SaleInput {
+  /** Whose sale it is, once chosen; null before. A first-purchase promotion and a coupon's limit per customer are theirs. */
+  customerId: string | null
   lines: readonly OrderFormLine[]
   fulfillment: OrderFulfillment
   /** Whole cents, as typed: zero is left out. */
@@ -69,13 +71,20 @@ export interface SaleInput {
 
 /**
  * What prices a sale, as the API takes it — for the price asked before it is registered and for the
- * order itself, so the two cannot be asked differently: no prices, zero amounts left out. Today is
- * left to the API's clock; a day past is sent at its noon, so no time zone moves it a day.
+ * order itself, so the two cannot be asked differently: the customer by id once chosen, no prices,
+ * zero amounts left out. Today is left to the API's clock; a day past is sent at its noon, so no
+ * time zone moves it a day.
+ *
+ * The customer is part of the price (BEELINK-245): without them the API cannot apply a first-purchase
+ * promotion it applies once the order names them, and the summary would show another total.
  */
-export function saleOf({ lines, fulfillment, deliveryFeeCents, discountCents, placedOn, today }: SaleInput): ShopOrderQuotePayload {
+export function saleOf(input: SaleInput & { customerId: string }): ShopOrderQuotePayload & Pick<CreateOrderPayload, "customer">
+export function saleOf(input: SaleInput): ShopOrderQuotePayload
+export function saleOf({ customerId, lines, fulfillment, deliveryFeeCents, discountCents, placedOn, today }: SaleInput): ShopOrderQuotePayload {
   const day = placedOn || today
 
   return {
+    ...(customerId ? { customer: { id: customerId } } : {}),
     items: lines.map((line) => ({ variantId: line.variantId, quantity: line.quantity })),
     fulfillment,
     ...(deliveryFeeCents ? { deliveryFeeCents } : {}),
@@ -84,13 +93,12 @@ export function saleOf({ lines, fulfillment, deliveryFeeCents, discountCents, pl
   }
 }
 
-/** The order as the API takes it: the customer by id, what prices the sale, how it is paid and what was said. */
+/** The order as the API takes it: what prices the sale — its customer among it — how it is paid and what was said. */
 export function orderPayloadOf({ customerId, lines, details, paymentMethod, totals, today }: OrderPayloadInput): CreateOrderPayload {
   const note = details.note.trim()
 
   return {
-    customer: { id: customerId },
-    ...saleOf({ lines, fulfillment: details.fulfillment, deliveryFeeCents: totals.deliveryFeeCents, discountCents: totals.discountCents, placedOn: details.placedOn, today }),
+    ...saleOf({ customerId, lines, fulfillment: details.fulfillment, deliveryFeeCents: totals.deliveryFeeCents, discountCents: totals.discountCents, placedOn: details.placedOn, today }),
     paymentMethod,
     ...(note ? { note } : {}),
   }

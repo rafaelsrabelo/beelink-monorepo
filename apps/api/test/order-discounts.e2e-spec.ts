@@ -129,6 +129,7 @@ describe("an order's discounts", () => {
       expect(priced).toMatchObject({
         subtotalCents: 43970,
         promotionDiscountCents: 4098,
+        firstPurchase: null,
         coupon: null,
         couponDiscountCents: 0,
         manualDiscountCents: 0,

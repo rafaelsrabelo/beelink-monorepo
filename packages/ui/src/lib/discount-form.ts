@@ -10,6 +10,8 @@ export type DiscountKindValue = "PERCENT" | "FIXED"
 export type PromotionScopeValue = "CART" | "PRODUCTS" | "CATEGORIES"
 export type CouponKindValue = DiscountKindValue | "FREE_SHIPPING"
 export type DiscountStatusValue = "ACTIVE" | "SCHEDULED" | "PAUSED" | "ENDED" | "EXHAUSTED"
+/** Mirrors the wire's `DiscountAudience`: everyone, or only a customer with no order at the shop that stands. */
+export type DiscountAudienceValue = "EVERYONE" | "FIRST_PURCHASE"
 
 /** A product or a category chosen for a promotion, by the name the list shows. */
 export interface DiscountTargetOption {
@@ -25,6 +27,7 @@ export interface PromotionFormValues {
   percent: string
   /** Reais, as typed. */
   amount: string
+  audience: DiscountAudienceValue
   /** `yyyy-mm-ddThh:mm`, in the shop's own time. */
   startsAt: string
   /** Empty runs until paused. */
@@ -42,6 +45,7 @@ export interface CouponFormValues {
   amount: string
   /** Reais; empty asks for none. */
   minSubtotal: string
+  audience: DiscountAudienceValue
   startsAt: string
   endsAt: string
   /** Whole numbers, as typed; empty is no limit. */

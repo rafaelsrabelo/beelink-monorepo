@@ -14,7 +14,7 @@ const OWN = { compareAtPriceCents: { gt: PRICE } };
 const PRICED = { priceCents: { gt: 0 } };
 
 function promotion(id: string, overrides: Partial<PricingPromotion>): PricingPromotion {
-  return { id, name: id, scope: 'CART', discountKind: 'PERCENT', percentBps: null, amountCents: null, productIds: [], categoryIds: [], ...overrides };
+  return { id, name: id, scope: 'CART', discountKind: 'PERCENT', percentBps: null, amountCents: null, audience: 'EVERYONE', productIds: [], categoryIds: [], ...overrides };
 }
 
 const wheys = promotion('whey', { scope: 'PRODUCTS', percentBps: 1500, productIds: ['p1', 'p2'] });

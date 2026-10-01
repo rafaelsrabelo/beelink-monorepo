@@ -213,6 +213,14 @@ export interface UiMessages {
     cartSubtotal: string
     /** The summary's last row, said once something was taken off. */
     cartTotal: string
+    /** `{name}` `{value}` — a first-purchase promotion a visitor's cart would get, announced until they sign in (BEELINK-245). */
+    cartFirstPurchaseOpen: string
+    /** `{value}` — the same when several would apply, and none is named. */
+    cartFirstPurchaseOpenUnnamed: string
+    /** `{name}` — why it is not theirs, to a customer who has bought from the shop before. */
+    cartFirstPurchaseClosed: string
+    /** The same when several would apply, and none is named. */
+    cartFirstPurchaseClosedUnnamed: string
     /** `{count}` — units that can be ordered now. */
     cartItems: string
     cartItemsOne: string
@@ -1866,6 +1874,14 @@ export interface UiMessages {
     startsAtHelp: string
     endsAtLabel: string
     endsAtHelp: string
+    /** Who a promotion or a coupon is for (BEELINK-245): the choice's legend, and its two options. */
+    audienceLabel: string
+    audienceEveryone: string
+    audienceFirstPurchase: string
+    /** What counts as a first purchase, said under the choice once it is the one made. */
+    audienceFirstPurchaseHelp: string
+    /** The mark a list's row carries when it is for a first purchase only. */
+    firstPurchaseBadge: string
     /** `{from}`, `{to}`. */
     periodFromTo: string
     /** `{from}`. */

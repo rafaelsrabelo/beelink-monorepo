@@ -79,9 +79,9 @@ function periodOf(value: PeriodFields, halfTyped: HalfTypedDates, text: Issues):
   return { startsAt: startsAt ?? "", endsAt, issues }
 }
 
-/** A new promotion: a percentage off the whole cart, starting now. */
+/** A new promotion: a percentage off the whole cart, for everyone, starting now. */
 export function emptyPromotion(now: Date): PromotionFormValues {
-  return { name: "", scope: "CART", kind: "PERCENT", percent: "", amount: "", startsAt: shopInputOf(now), endsAt: "", products: [], categoryIds: [] }
+  return { name: "", scope: "CART", kind: "PERCENT", percent: "", amount: "", audience: "EVERYONE", startsAt: shopInputOf(now), endsAt: "", products: [], categoryIds: [] }
 }
 
 export function promotionFormOf(promotion: Promotion): PromotionFormValues {
@@ -91,6 +91,7 @@ export function promotionFormOf(promotion: Promotion): PromotionFormValues {
     kind: promotion.discountKind,
     percent: percentFrom(promotion.percentBps),
     amount: reaisFrom(promotion.amountCents),
+    audience: promotion.audience,
     startsAt: shopInputOf(promotion.startsAt),
     endsAt: promotion.endsAt ? shopInputOf(promotion.endsAt) : "",
     products: promotion.products.map((product) => ({ id: product.id, name: product.name })),
@@ -125,6 +126,7 @@ export function promotionPayloadOf(value: PromotionFormValues, text: Issues, hal
       discountKind: value.kind,
       percentBps,
       amountCents,
+      audience: value.audience,
       startsAt: period.startsAt,
       endsAt: period.endsAt,
       // Only the list its scope asks for: the other may still hold what was chosen before the scope changed.
@@ -134,9 +136,9 @@ export function promotionPayloadOf(value: PromotionFormValues, text: Issues, hal
   }
 }
 
-/** A new coupon: a percentage, starting now, with no minimum and no limits. */
+/** A new coupon: a percentage, for everyone, starting now, with no minimum and no limits. */
 export function emptyCoupon(now: Date): CouponFormValues {
-  return { code: "", kind: "PERCENT", percent: "", amount: "", minSubtotal: "", startsAt: shopInputOf(now), endsAt: "", maxUses: "", maxUsesPerCustomer: "" }
+  return { code: "", kind: "PERCENT", percent: "", amount: "", minSubtotal: "", audience: "EVERYONE", startsAt: shopInputOf(now), endsAt: "", maxUses: "", maxUsesPerCustomer: "" }
 }
 
 export function couponFormOf(coupon: Coupon): CouponFormValues {
@@ -146,6 +148,7 @@ export function couponFormOf(coupon: Coupon): CouponFormValues {
     percent: percentFrom(coupon.percentBps),
     amount: reaisFrom(coupon.amountCents),
     minSubtotal: coupon.minSubtotalCents > 0 ? reaisFrom(coupon.minSubtotalCents) : "",
+    audience: coupon.audience,
     startsAt: shopInputOf(coupon.startsAt),
     endsAt: coupon.endsAt ? shopInputOf(coupon.endsAt) : "",
     maxUses: coupon.maxUses === null ? "" : String(coupon.maxUses),
@@ -175,6 +178,6 @@ export function couponPayloadOf(value: CouponFormValues, text: Issues, halfTyped
   if (Object.keys(issues).length > 0 || minSubtotalCents === null || maxUses === "invalid" || maxUsesPerCustomer === "invalid") return { issues }
 
   return {
-    payload: { code, kind: value.kind, percentBps, amountCents, minSubtotalCents, startsAt: period.startsAt, endsAt: period.endsAt, maxUses, maxUsesPerCustomer },
+    payload: { code, kind: value.kind, percentBps, amountCents, minSubtotalCents, audience: value.audience, startsAt: period.startsAt, endsAt: period.endsAt, maxUses, maxUsesPerCustomer },
   }
 }

@@ -36,7 +36,7 @@ function variantIdsIn(details: unknown): string[] {
   return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : []
 }
 
-const COUPON_REFUSALS = ["NOT_FOUND", "EXPIRED", "EXHAUSTED", "INACTIVE", "CUSTOMER_LIMIT", "NOT_APPLICABLE", "BELOW_MINIMUM"] as const satisfies readonly CouponRefusalReason[]
+const COUPON_REFUSALS = ["NOT_FOUND", "EXPIRED", "EXHAUSTED", "INACTIVE", "CUSTOMER_LIMIT", "NOT_FIRST_PURCHASE", "NOT_APPLICABLE", "BELOW_MINIMUM"] as const satisfies readonly CouponRefusalReason[]
 
 /** Why the order's coupon was refused, as the API said it; null when the answer names no reason this app knows. */
 function couponRefusalIn(details: unknown): OrderCouponRefusedDetails | null {

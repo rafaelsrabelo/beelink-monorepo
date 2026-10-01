@@ -71,7 +71,7 @@ describe("orderPayloadOf", () => {
 
 /** BEELINK-194: the sale is priced by the API before it is registered, asked exactly as the order will be. */
 describe("saleOf", () => {
-  const sale = { lines, fulfillment: "DELIVERY" as const, deliveryFeeCents: 1000, discountCents: 500, placedOn: "", today: "2026-09-25" }
+  const sale = { customerId: null, lines, fulfillment: "DELIVERY" as const, deliveryFeeCents: 1000, discountCents: 500, placedOn: "", today: "2026-09-25" }
 
   it("prices the sale as the order will be sent: no prices, zero amounts left out, today left to the API", () => {
     expect(saleOf(sale)).toEqual({ items: [{ variantId: "v1", quantity: 1 }], fulfillment: "DELIVERY", deliveryFeeCents: 1000, discountCents: 500 })
@@ -87,7 +87,14 @@ describe("saleOf", () => {
   it("is what the order sends, and nothing the order does not", () => {
     const order = orderPayloadOf({ customerId: "c1", lines, details: { ...details, placedOn: "2026-09-20" }, paymentMethod: "PIX", totals: { ...totals, discountCents: 500 }, today: "2026-09-25" })
 
-    expect(order).toMatchObject(saleOf({ ...sale, placedOn: "2026-09-20" }))
+    expect(order).toMatchObject(saleOf({ ...sale, customerId: "c1", placedOn: "2026-09-20" }))
+  })
+
+  /** BEELINK-245: a first-purchase promotion is the customer's, and the API applies it once the order names them. */
+  it("names the customer once one is chosen, so the price is theirs — and another customer is another question", () => {
+    expect(saleOf(sale)).not.toHaveProperty("customer")
+    expect(saleOf({ ...sale, customerId: "c1" })).toMatchObject({ customer: { id: "c1" } })
+    expect(JSON.stringify(saleOf({ ...sale, customerId: "c1" }))).not.toBe(JSON.stringify(saleOf({ ...sale, customerId: "c2" })))
   })
 })
 
@@ -96,6 +103,7 @@ describe("shownTotalsOf", () => {
     lines: [{ variantId: "v1", productId: "p1", quantity: 1, unitPriceCents: 5000, lineTotalCents: 5000, discountCents: 500, promotion: { id: "pr1", name: "Semana do Whey" } }],
     subtotalCents: 5000,
     promotionDiscountCents: 500,
+    firstPurchase: null,
     coupon: null,
     couponDiscountCents: 0,
     manualDiscountCents: 300,

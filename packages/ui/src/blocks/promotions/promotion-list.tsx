@@ -2,6 +2,7 @@
 import { PauseIcon, PencilIcon, PlayIcon } from "lucide-react"
 
 // UI
+import { Badge } from "@harness-monorepo/ui/components/badge"
 import { Button } from "@harness-monorepo/ui/components/button"
 
 // Locales
@@ -9,6 +10,7 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
+import type { DiscountAudienceValue } from "@harness-monorepo/ui/lib/discount-form"
 import { DiscountStatusBadge } from "./discount-status-badge"
 
 export interface PromotionListRow {
@@ -21,6 +23,7 @@ export interface PromotionListRow {
   status: "ACTIVE" | "SCHEDULED" | "PAUSED" | "ENDED"
   /** The owner's switch, whatever the status reads: an ended promotion can still be paused. */
   active: boolean
+  audience: DiscountAudienceValue
 }
 
 export interface PromotionListProps {
@@ -36,7 +39,8 @@ export interface PromotionListProps {
 
 /**
  * The shop's promotions: each with what it takes off and where, its period, where it stands, and
- * the two things the owner does from the list — edit it, and pause it or switch it back on.
+ * the two things the owner does from the list — edit it, and pause it or switch it back on. One
+ * that is for a first purchase only is marked beside what it takes off.
  */
 export function PromotionList({ rows, empty, busyId = null, onEdit, onToggle, messages = defaultMessages }: PromotionListProps) {
   const shared = messages.discounts
@@ -60,7 +64,10 @@ export function PromotionList({ rows, empty, busyId = null, onEdit, onToggle, me
               <p className="font-medium break-words">{row.name}</p>
               <DiscountStatusBadge status={row.status} label={text.status[row.status]} />
             </div>
-            <p className="text-sm">{row.summary}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm">{row.summary}</p>
+              {row.audience === "FIRST_PURCHASE" ? <Badge variant="secondary">{shared.firstPurchaseBadge}</Badge> : null}
+            </div>
             <p className="text-muted-foreground text-xs">{row.period}</p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">

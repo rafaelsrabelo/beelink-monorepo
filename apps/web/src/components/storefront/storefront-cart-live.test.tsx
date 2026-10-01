@@ -77,6 +77,7 @@ function quoteOf(cart: CustomerOrderQuotePayload, over: Partial<OrderQuote> = {}
     lines,
     subtotalCents,
     promotionDiscountCents: 0,
+    firstPurchase: null,
     coupon,
     couponDiscountCents,
     manualDiscountCents: 0,
@@ -89,10 +90,10 @@ function quoteOf(cart: CustomerOrderQuotePayload, over: Partial<OrderQuote> = {}
 
 const cartLines = (goneOnArrival: boolean) => [{ productId: blusa.id, variantId: null, qty: 2 }, ...(goneOnArrival ? [{ productId: gone, variantId: null, qty: 1 }] : [])]
 
-/** The price the page was served with, asked as the page asks it: this cart, before any coupon. */
+/** The price the page was served with, asked as the page asks it: this cart, before any coupon, for whoever reads it. */
 function servedFor(goneOnArrival: boolean, shopper: CustomerProfile | null, over: Partial<OrderQuote> = {}): ServedQuote {
   const cart = cartQuoteOf(cartViewOf(cartLines(goneOnArrival), [blusa]).rows, firstFulfillmentOf(shopper), null)
-  return { cart, quote: quoteOf(cart, over), at: Date.now() }
+  return { shopperId: shopper?.id ?? null, cart, quote: quoteOf(cart, over), at: Date.now() }
 }
 
 type Fetched = ReturnType<typeof vi.fn<(url: string, init?: RequestInit) => Promise<Response>>>
@@ -807,3 +808,88 @@ describe("the cart's price and its coupon", () => {
   })
 })
 
+/** BEELINK-245: a first-purchase promotion is announced in the cart, and a price is whoever asked for it. */
+describe("the cart's first purchase", () => {
+  const variantId = blusa.variants[0]!.id
+  /** Bia, with nowhere to deliver: her cart and a visitor's are one question, a pick-up. */
+  const pickup = { ...bia, addresses: [] }
+  /** Boas-vindas, 15% off the first purchase, applied: Bia has never bought here. */
+  const welcomed: Partial<OrderQuote> = {
+    lines: [{ variantId, productId: blusa.id, quantity: 2, unitPriceCents: 5990, lineTotalCents: 11980, discountCents: 1797, promotion: { id: "pr9", name: "Boas-vindas" } }],
+    promotionDiscountCents: 1797,
+    discountCents: 1797,
+    deliveryFeeCents: 0,
+    totalCents: 10183,
+  }
+  const announced = (status: "UNIDENTIFIED" | "NOT_FIRST"): Partial<OrderQuote> => ({ firstPurchase: { status, promotionName: "Boas-vindas", discountCents: 1797 } })
+  const summary = () => screen.getByRole("complementary")
+  const summaryRows = () => [...summary().querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+
+  it("tells a visitor what the first purchase takes off, and leaves it out of the total until they are identified", () => {
+    renderCart(false, null, { served: servedFor(false, null, announced("UNIDENTIFIED")) })
+
+    expect(summary()).toHaveTextContent("Boas-vindas: − R$ 17,97 na sua primeira compra. Entre na sua conta para confirmar.")
+    expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]])
+  })
+
+  it("tells a customer who has bought before that it is not theirs", () => {
+    renderCart(false, bia, { served: servedFor(false, bia, announced("NOT_FIRST")) })
+
+    expect(summary()).toHaveTextContent("Boas-vindas vale só na primeira compra.")
+    expect(summary()).not.toHaveTextContent("Entre na sua conta")
+    expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]])
+  })
+
+  it("never shows a shopper's price to the visitor the page is read again as: the session ended under it", () => {
+    const fetched = network()
+    const client = new QueryClient()
+    const view = render(cartTree(client, false, pickup, { served: servedFor(false, pickup, welcomed) }))
+    expect(summaryRows()[1]).toEqual(["Promoção: Boas-vindas", "− R$ 17,97"])
+
+    view.rerender(cartTree(client, false, null, { served: servedFor(false, null, announced("UNIDENTIFIED")) }))
+
+    expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]])
+    expect(summary()).toHaveTextContent("Entre na sua conta para confirmar.")
+    expect(fetched).not.toHaveBeenCalled()
+  })
+
+  it("never shows a visitor's price to the shopper who signs in: theirs is asked for, with the skeleton meanwhile", async () => {
+    const fetched = network({ quote: (cart) => Response.json(quoteOf(cart, welcomed)) })
+    const client = new QueryClient()
+    const view = render(cartTree(client, false, null, { served: servedFor(false, null, announced("UNIDENTIFIED")) }))
+    expect(summary()).toHaveTextContent("Entre na sua conta para confirmar.")
+
+    // Read again signed in, with no price served: the visitor's is not one to stand in for it.
+    view.rerender(cartTree(client, false, pickup, { served: null }))
+    expect(summary().querySelector("dl")).toHaveAttribute("aria-busy", "true")
+    expect(summary()).not.toHaveTextContent("Entre na sua conta para confirmar.")
+
+    await waitFor(() => expect(summaryRows()[1]).toEqual(["Promoção: Boas-vindas", "− R$ 17,97"]))
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: [{ variantId, quantity: 2 }], fulfillment: "PICKUP" }])
+  })
+
+  it("takes no price the page was served for somebody else as this reader's", async () => {
+    const fetched = network({ quote: (cart) => Response.json(quoteOf(cart, welcomed)) })
+    renderCart(false, pickup, { served: servedFor(false, null, announced("UNIDENTIFIED")) })
+
+    expect(summary().querySelector("dl")).toHaveAttribute("aria-busy", "true")
+    await waitFor(() => expect(summaryRows()[1]).toEqual(["Promoção: Boas-vindas", "− R$ 17,97"]))
+    expect(summary()).not.toHaveTextContent("Entre na sua conta")
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toHaveLength(1)
+  })
+
+  it("stops asking about a first-purchase coupon a returning customer typed, and keeps its reason on screen", async () => {
+    const fetched = network({
+      quote: (cart) => (cart.couponCode ? Response.json({ ...quoteOf({ ...cart, couponCode: undefined }), coupon: { status: "REFUSED", code: "BEMVINDO10", reason: "NOT_FIRST_PURCHASE" } }) : Response.json(quoteOf(cart))),
+    })
+    renderCart(false, bia, { coupon: "BEMVINDO10" })
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Esse cupom vale só na primeira compra."))
+
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
+    await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (3 itens)", "R$ 179,70"]]))
+
+    // No change of the cart makes it a first purchase: asked about once, on arrival.
+    expect(bodiesTo(fetched, "/loja/api/orders/quote").map((body) => body.couponCode)).toEqual(["BEMVINDO10", undefined])
+    expect(screen.getByRole("alert")).toHaveTextContent("Esse cupom vale só na primeira compra.")
+  })
+})

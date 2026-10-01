@@ -28,6 +28,7 @@ export function toPromotion(row: PromotionRow, now: Date): Promotion {
     endsAt: row.endsAt?.toISOString() ?? null,
     active: row.isActive,
     status: promotionStatusOf(row, now),
+    audience: row.audience,
     products: row.products.map(({ product }) => product),
     categories: row.categories.map(({ category }) => category),
     createdAt: row.createdAt.toISOString(),
@@ -50,6 +51,7 @@ export function toCoupon(row: CouponModel, now: Date): Coupon {
     usedCount: row.usedCount,
     active: row.isActive,
     status: couponStatusOf(row, now),
+    audience: row.audience,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   } satisfies Coupon;

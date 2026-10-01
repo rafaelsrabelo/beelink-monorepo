@@ -106,8 +106,9 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   // The form's own sum: what is sent, and what refuses a typed amount before anything is asked.
   const own = orderTotalsOf(lines, details.fulfillment, feeCents ?? 0, discountCents ?? 0)
   const priceable = lines.length > 0 && feeCents !== null && discountCents !== null && typeof own !== "string" && today !== ""
-  const sale = priceable ? saleOf({ lines, fulfillment: details.fulfillment, deliveryFeeCents: feeCents ?? 0, discountCents: discountCents ?? 0, placedOn, today }) : null
-  // Settled by what is asked, never by identity: a note typed is a new render and the same sale.
+  const sale = priceable ? saleOf({ customerId: customer?.id ?? null, lines, fulfillment: details.fulfillment, deliveryFeeCents: feeCents ?? 0, discountCents: discountCents ?? 0, placedOn, today }) : null
+  // Settled by what is asked, never by identity: a note typed is a new render and the same sale, and
+  // another customer chosen is another sale.
   const saleKey = sale ? JSON.stringify(sale) : null
   const settled = useDebouncedValue(saleKey, QUOTE_DEBOUNCE_MS) === saleKey
   // Asked once the typing rests; until then the last price stays on screen, dimmed.

@@ -18,13 +18,13 @@ const promotion: PromotionFormValues = { ...emptyPromotion(NOW), name: "  Semana
 const coupon: CouponFormValues = { ...emptyCoupon(NOW), code: " bemvindo10 ", percent: "10" }
 
 describe("a promotion's form", () => {
-  it("starts as a percentage off the whole cart, from now on the shop's clock", () => {
-    expect(emptyPromotion(NOW)).toMatchObject({ scope: "CART", kind: "PERCENT", startsAt: "2026-10-01T09:00", endsAt: "", products: [], categoryIds: [] })
+  it("starts as a percentage off the whole cart, for everyone, from now on the shop's clock", () => {
+    expect(emptyPromotion(NOW)).toMatchObject({ scope: "CART", kind: "PERCENT", audience: "EVERYONE", startsAt: "2026-10-01T09:00", endsAt: "", products: [], categoryIds: [] })
   })
 
   it("sends basis points, an instant and no switch — a save never puts a paused promotion back on", () => {
     expect(promotionPayloadOf(promotion, text)).toEqual({
-      payload: { name: "Semana do Consumidor", scope: "CART", discountKind: "PERCENT", percentBps: 1250, amountCents: null, startsAt: "2026-10-01T12:00:00.000Z", endsAt: null, productIds: [], categoryIds: [] },
+      payload: { name: "Semana do Consumidor", scope: "CART", discountKind: "PERCENT", percentBps: 1250, amountCents: null, audience: "EVERYONE", startsAt: "2026-10-01T12:00:00.000Z", endsAt: null, productIds: [], categoryIds: [] },
     })
   })
 
@@ -34,6 +34,11 @@ describe("a promotion's form", () => {
       payload: expect.objectContaining({ discountKind: "FIXED", percentBps: null, amountCents: 1500, endsAt: "2026-10-16T02:59:00.000Z", productIds: [], categoryIds: ["k1"] }),
     })
     expect(promotionPayloadOf({ ...value, scope: "PRODUCTS" }, text)).toEqual({ payload: expect.objectContaining({ productIds: ["p1"], categoryIds: [] }) })
+  })
+
+  /** BEELINK-245. */
+  it("sends who it is for: a promotion kept for the first purchase says so", () => {
+    expect(promotionPayloadOf({ ...promotion, audience: "FIRST_PURCHASE" }, text)).toEqual({ payload: expect.objectContaining({ audience: "FIRST_PURCHASE" }) })
   })
 
   it("names every field to correct, and sends nothing", () => {
@@ -64,7 +69,7 @@ describe("a promotion's form", () => {
     expect(promotionPayloadOf({ ...promotion, percent: "100" }, text)).toEqual({ payload: expect.objectContaining({ percentBps: 10000 }) })
   })
 
-  it("fills the form from a promotion, in the shopkeeper's units", () => {
+  it("fills the form from a promotion, in the shopkeeper's units, for the audience stored", () => {
     const stored: Promotion = {
       id: "p1",
       name: "Proteínas",
@@ -76,14 +81,15 @@ describe("a promotion's form", () => {
       endsAt: "2026-10-16T02:59:00.000Z",
       active: false,
       status: "PAUSED",
+      audience: "FIRST_PURCHASE",
       products: [{ id: "w1", name: "Whey", slug: "whey" }],
       categories: [],
       createdAt: "2026-10-01T12:00:00.000Z",
       updatedAt: "2026-10-01T12:00:00.000Z",
     }
-    expect(promotionFormOf(stored)).toEqual({ name: "Proteínas", scope: "PRODUCTS", kind: "FIXED", percent: "", amount: "15,50", startsAt: "2026-10-01T09:00", endsAt: "2026-10-15T23:59", products: [{ id: "w1", name: "Whey" }], categoryIds: [] })
+    expect(promotionFormOf(stored)).toEqual({ name: "Proteínas", scope: "PRODUCTS", kind: "FIXED", percent: "", amount: "15,50", audience: "FIRST_PURCHASE", startsAt: "2026-10-01T09:00", endsAt: "2026-10-15T23:59", products: [{ id: "w1", name: "Whey" }], categoryIds: [] })
     // And what it sends back is what was stored.
-    expect(promotionPayloadOf(promotionFormOf(stored), text)).toEqual({ payload: expect.objectContaining({ amountCents: 1550, startsAt: stored.startsAt, endsAt: stored.endsAt, productIds: ["w1"] }) })
+    expect(promotionPayloadOf(promotionFormOf(stored), text)).toEqual({ payload: expect.objectContaining({ amountCents: 1550, audience: "FIRST_PURCHASE", startsAt: stored.startsAt, endsAt: stored.endsAt, productIds: ["w1"] }) })
   })
 })
 
@@ -97,13 +103,22 @@ describe("a percentage", () => {
 })
 
 describe("a coupon's form", () => {
+  it("starts as a percentage for everyone, with no minimum and no limits", () => {
+    expect(emptyCoupon(NOW)).toMatchObject({ kind: "PERCENT", audience: "EVERYONE", minSubtotal: "", maxUses: "", maxUsesPerCustomer: "" })
+  })
+
   it("sends the code as typed, the limits as numbers or none, and a blank minimum as zero", () => {
     expect(couponPayloadOf(coupon, text)).toEqual({
-      payload: { code: "bemvindo10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, startsAt: "2026-10-01T12:00:00.000Z", endsAt: null, maxUses: null, maxUsesPerCustomer: null },
+      payload: { code: "bemvindo10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 0, audience: "EVERYONE", startsAt: "2026-10-01T12:00:00.000Z", endsAt: null, maxUses: null, maxUsesPerCustomer: null },
     })
     expect(couponPayloadOf({ ...coupon, minSubtotal: "50", maxUses: "100", maxUsesPerCustomer: " 1 " }, text)).toEqual({
       payload: expect.objectContaining({ minSubtotalCents: 5000, maxUses: 100, maxUsesPerCustomer: 1 }),
     })
+  })
+
+  /** BEELINK-245. */
+  it("sends who it is for: a coupon kept for the first purchase says so", () => {
+    expect(couponPayloadOf({ ...coupon, audience: "FIRST_PURCHASE" }, text)).toEqual({ payload: expect.objectContaining({ audience: "FIRST_PURCHASE" }) })
   })
 
   it("sends no value for a free delivery, whatever was typed before the kind changed", () => {
@@ -126,7 +141,7 @@ describe("a coupon's form", () => {
     expect(couponPayloadOf({ ...coupon, minSubtotal: "1.000,50" }, text)).toEqual({ payload: expect.objectContaining({ minSubtotalCents: 100050 }) })
   })
 
-  it("fills the form from a coupon: no minimum and no limits are blanks", () => {
+  it("fills the form from a coupon: no minimum and no limits are blanks, and its audience is the one stored", () => {
     const stored: Coupon = {
       id: "c1",
       code: "BEMVINDO10",
@@ -141,9 +156,10 @@ describe("a coupon's form", () => {
       usedCount: 3,
       active: true,
       status: "ACTIVE",
+      audience: "FIRST_PURCHASE",
       createdAt: "2026-10-01T12:00:00.000Z",
       updatedAt: "2026-10-01T12:00:00.000Z",
     }
-    expect(couponFormOf(stored)).toEqual({ code: "BEMVINDO10", kind: "PERCENT", percent: "10", amount: "", minSubtotal: "", startsAt: "2026-10-01T09:00", endsAt: "", maxUses: "", maxUsesPerCustomer: "2" })
+    expect(couponFormOf(stored)).toEqual({ code: "BEMVINDO10", kind: "PERCENT", percent: "10", amount: "", minSubtotal: "", audience: "FIRST_PURCHASE", startsAt: "2026-10-01T09:00", endsAt: "", maxUses: "", maxUsesPerCustomer: "2" })
   })
 })

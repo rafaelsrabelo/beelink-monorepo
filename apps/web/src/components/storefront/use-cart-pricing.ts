@@ -32,8 +32,11 @@ export interface CartPricingInput {
   slug: string
   view: CartView
   fulfillment: OrderFulfillment
-  /** A coupon is a signed-in shopper's: a visitor's cart is priced without one. */
-  signedIn: boolean
+  /**
+   * Who is asking: the signed-in shopper's id, or null for a visitor. A coupon is a shopper's — a
+   * visitor's cart is priced without one — and so is a price, since a first-purchase promotion is.
+   */
+  shopperId: string | null
   /** The price the page was served with; null when the server could not ask for one. */
   served: ServedQuote | null
   /** The coupon the page's address named — one carried back from adding an address, or a link's; null with none. */
@@ -82,7 +85,7 @@ function failureOf(error: unknown, text: UiMessages["storefront"]): string {
 }
 
 /** The refusals no change of the cart undoes: asking again with every press of "+" would only spend the door's limit. */
-const FINAL: readonly CouponRefusalReason[] = ["NOT_FOUND", "EXPIRED", "EXHAUSTED", "INACTIVE", "CUSTOMER_LIMIT"]
+const FINAL: readonly CouponRefusalReason[] = ["NOT_FOUND", "EXPIRED", "EXHAUSTED", "INACTIVE", "CUSTOMER_LIMIT", "NOT_FIRST_PURCHASE"]
 
 /** The cart itself cannot be priced — a line the shop stopped selling — whatever its coupon. */
 function isCartRefusal(error: unknown): boolean {
@@ -98,14 +101,14 @@ function isCartRefusal(error: unknown): boolean {
  * The coupon in force is this page's own state, written through to the page's address (`cart-coupon.ts`)
  * so a reload, and the trip to add an address, come back with it.
  */
-export function useCartPricing({ slug, view, fulfillment, signedIn, served, arrivedWith, locale, messages }: CartPricingInput): CartPricingHandle {
+export function useCartPricing({ slug, view, fulfillment, shopperId, served, arrivedWith, locale, messages }: CartPricingInput): CartPricingHandle {
   const text = messages.storefront
   const router = useRouter()
   const queryClient = useQueryClient()
   const [kept, setKept] = useState(arrivedWith)
   // The question whose answer refused the coupon for good. The answer itself is read back from the cache.
   const [settledBy, setSettledBy] = useState<CustomerOrderQuotePayload | null>(null)
-  const settled = useAnsweredCartQuote(slug, settledBy)?.coupon
+  const settled = useAnsweredCartQuote(slug, shopperId, settledBy)?.coupon
   const setCoupon = useCallback((code: string | null) => {
     setKept(code)
     setSettledBy(null)
@@ -114,7 +117,7 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
     // own, keeps the old address as the page's, and puts it back at the next `router.refresh()`.
     window.history.replaceState(null, "", pathWithCoupon(`${window.location.pathname}${window.location.search}`, code))
   }, [])
-  const coupon = signedIn ? kept : null
+  const coupon = shopperId ? kept : null
   const dead = coupon !== null && settledBy?.couponCode === coupon && settled?.status === "REFUSED" ? settled : null
   // What the price is asked with: the coupon in force, unless it was refused for good.
   const asked = dead ? null : coupon
@@ -124,7 +127,7 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
   const cart = useMemo(() => cartQuoteOf(rows, fulfillment, asked), [rows, fulfillment, asked])
   // By what is asked, not by identity: a page read again hands over the same cart as new rows.
   const settling = useMemo(() => !sameCart(cartQuoteOf(view.rows, fulfillment, asked), cart), [view.rows, fulfillment, asked, cart])
-  const quote = useCartQuote(slug, cart, served)
+  const quote = useCartQuote(slug, shopperId, cart, served)
   const signedOut = quote.error instanceof ShopperOrderError && quote.error.errorCode === "AUTH_UNAUTHENTICATED"
   const context = { pickup: fulfillment === "PICKUP", money: (cents: number) => formatCents(cents, locale, "BRL") }
   const refusalOf = (verdict: QuotedCoupon | null | undefined) => (verdict?.status === "REFUSED" ? couponRefusalTextOf(verdict, context, text) : null)
@@ -136,7 +139,7 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
       if (answer.coupon?.status === "APPLIED") {
         // Kept here, before the mutation settles: the price just read is the one the cart reads next,
         // under the code as the shop stores it, and the field hands over to the coupon in one draw.
-        queryClient.setQueryData(storefrontKeys.quote(slug, cartQuoteOf(view.rows, fulfillment, answer.coupon.code)), answer)
+        queryClient.setQueryData(storefrontKeys.quote(slug, shopperId, cartQuoteOf(view.rows, fulfillment, answer.coupon.code)), answer)
         setCoupon(answer.coupon.code)
       }
       return answer

@@ -23,6 +23,13 @@ describe("CouponList", () => {
     expect(screen.getByText("Esgotado")).toBeInTheDocument()
   })
 
+  it("marks the one that is for a first purchase only, beside what it gives, and no other", () => {
+    render(<CouponList rows={couponRows} empty="none" onEdit={() => {}} onToggle={() => {}} onUses={() => {}} />)
+
+    expect(screen.getByText("BEMVINDO10").closest("li")).toHaveTextContent(/10% · Pedido mínimo de R\$ 50,00\s*Primeira compra/)
+    expect(screen.getAllByText("Primeira compra")).toHaveLength(1)
+  })
+
   it("hands the row to the screen to edit it, pause it or read its uses, and holds every button while a pause is on its way", async () => {
     const onEdit = vi.fn()
     const onToggle = vi.fn()
@@ -71,6 +78,19 @@ describe("CouponForm", () => {
     render(<CouponForm value={{ ...couponValues, kind: "FREE_SHIPPING" }} onChange={() => {}} onSubmit={() => {}} onCancel={() => {}} />)
     expect(screen.queryByLabelText("Percentual (%)")).not.toBeInTheDocument()
     expect(screen.queryByLabelText("Valor (R$)")).not.toBeInTheDocument()
+  })
+
+  it("asks who the coupon is for, and says what counts as a first purchase once that is the choice", async () => {
+    const onChange = vi.fn()
+    const { container, rerender } = render(<CouponForm value={couponValues} onChange={onChange} onSubmit={() => {}} onCancel={() => {}} />)
+
+    expect(screen.getByRole("button", { name: "Todos os clientes" })).toHaveAttribute("aria-pressed", "true")
+    await userEvent.click(screen.getByRole("button", { name: "Só na primeira compra" }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...couponValues, audience: "FIRST_PURCHASE" })
+
+    rerender(<CouponForm value={{ ...couponValues, audience: "FIRST_PURCHASE" }} onChange={onChange} onSubmit={() => {}} onCancel={() => {}} />)
+    expect(screen.getByRole("button", { name: "Só na primeira compra" })).toHaveAccessibleDescription("Vale para quem ainda não tem nenhum pedido na loja. Pedido cancelado não conta.")
+    await expectNoA11yViolations(container)
   })
 
   it("says each field to correct and the refusal of the whole save, sends, and has no accessibility violations", async () => {

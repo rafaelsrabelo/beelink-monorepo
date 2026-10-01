@@ -37,8 +37,8 @@ vi.mock("@/services/promotions/promotion-hooks", () => ({
 const stamp = "2026-10-01T12:00:00.000Z"
 const page: CouponPage = {
   coupons: [
-    { id: "c1", code: "BEMVINDO10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 5000, startsAt: stamp, endsAt: null, maxUses: 100, maxUsesPerCustomer: 1, usedCount: 3, active: true, status: "ACTIVE", createdAt: stamp, updatedAt: stamp },
-    { id: "c2", code: "FRETE", kind: "FREE_SHIPPING", percentBps: null, amountCents: null, minSubtotalCents: 0, startsAt: stamp, endsAt: null, maxUses: null, maxUsesPerCustomer: null, usedCount: 0, active: false, status: "PAUSED", createdAt: stamp, updatedAt: stamp },
+    { id: "c1", code: "BEMVINDO10", kind: "PERCENT", percentBps: 1000, amountCents: null, minSubtotalCents: 5000, startsAt: stamp, endsAt: null, maxUses: 100, maxUsesPerCustomer: 1, usedCount: 3, active: true, status: "ACTIVE", audience: "FIRST_PURCHASE", createdAt: stamp, updatedAt: stamp },
+    { id: "c2", code: "FRETE", kind: "FREE_SHIPPING", percentBps: null, amountCents: null, minSubtotalCents: 0, startsAt: stamp, endsAt: null, maxUses: null, maxUsesPerCustomer: null, usedCount: 0, active: false, status: "PAUSED", audience: "EVERYONE", createdAt: stamp, updatedAt: stamp },
   ],
   total: 2,
   page: 1,
@@ -109,6 +109,34 @@ describe("CouponsScreen", () => {
 
     expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { code: "voltei15", kind: "PERCENT", percentBps: 1500, minSubtotalCents: 0, maxUses: null, maxUsesPerCustomer: 1 } })
     expect(mocks.save.mock.calls[0]?.[0].payload).not.toHaveProperty("active")
+  })
+
+  /** BEELINK-245. */
+  it("says who a coupon is for: marked on its row, chosen in the form and sent with it", async () => {
+    view()
+    // One row is marked: the coupon for everyone says nothing.
+    expect(within(screen.getByText("BEMVINDO10").closest("li")!).getByText("Primeira compra")).toBeInTheDocument()
+    expect(screen.getAllByText("Primeira compra")).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole("button", { name: "Novo cupom" }))
+    const form = screen.getByRole("region", { name: "Novo cupom" })
+    const audience = within(form).getByRole("group", { name: "Para quem vale" })
+    expect(within(audience).getByRole("button", { name: "Todos os clientes" })).toHaveAttribute("aria-pressed", "true")
+
+    await userEvent.type(within(form).getByLabelText("Código"), "primeira10")
+    await userEvent.type(within(form).getByLabelText("Percentual (%)"), "10")
+    await userEvent.click(within(audience).getByRole("button", { name: "Só na primeira compra" }))
+    await userEvent.click(within(form).getByRole("button", { name: "Salvar" }))
+
+    expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { code: "primeira10", percentBps: 1000, audience: "FIRST_PURCHASE" } })
+  })
+
+  it("opens a coupon on the audience it was saved with", async () => {
+    view()
+    await userEvent.click(screen.getByRole("button", { name: "Editar o cupom BEMVINDO10" }))
+    const audience = within(screen.getByRole("region", { name: "Editar cupom" })).getByRole("group", { name: "Para quem vale" })
+
+    expect(within(audience).getByRole("button", { name: "Só na primeira compra" })).toHaveAttribute("aria-pressed", "true")
   })
 
   it("edits one with what it holds, and says the API's refusal as a sentence", async () => {

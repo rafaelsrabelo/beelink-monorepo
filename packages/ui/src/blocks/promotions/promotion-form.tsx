@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { halfTypedDates, type DiscountTargetOption, type HalfTypedDates, type PromotionFormIssues, type PromotionFormValues, type PromotionScopeValue } from "@harness-monorepo/ui/lib/discount-form"
+import { DiscountAudienceField } from "./discount-audience-field"
 import { DiscountPeriodFields } from "./discount-period-fields"
 import { DiscountValueFields } from "./discount-value-fields"
 import { PromotionCategoryPicker, type PromotionCategoryOption } from "./promotion-category-picker"
@@ -44,7 +45,8 @@ const PRESSED = "aria-pressed:border-primary aria-pressed:bg-primary aria-presse
 
 /**
  * One promotion as its owner fills it in: what it is called, where it applies — the whole cart, or
- * the products or categories named right under the choice — how much comes off, and for how long.
+ * the products or categories named right under the choice — how much comes off, who it is for, and
+ * for how long.
  *
  * It has no "active" switch: pausing is a button of the list, and a save never moves it.
  */
@@ -144,6 +146,8 @@ export function PromotionForm({
         disabled={pending}
         messages={messages}
       />
+
+      <DiscountAudienceField audience={value.audience} onChange={set} disabled={pending} messages={messages} />
 
       <DiscountPeriodFields startsAt={value.startsAt} endsAt={value.endsAt} onChange={set} issues={issues} disabled={pending} messages={messages} />
 

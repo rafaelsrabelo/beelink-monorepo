@@ -47,8 +47,8 @@ vi.mock("@/services/promotions/promotion-hooks", () => ({
 
 const page: PromotionPage = {
   promotions: [
-    { id: "p1", name: "Semana do Consumidor", scope: "CART", discountKind: "PERCENT", percentBps: 1000, amountCents: null, startsAt: "2026-10-01T12:00:00.000Z", endsAt: null, active: true, status: "ACTIVE", products: [], categories: [], createdAt: "2026-10-01T12:00:00.000Z", updatedAt: "2026-10-01T12:00:00.000Z" },
-    { id: "p2", name: "Queima", scope: "PRODUCTS", discountKind: "FIXED", percentBps: null, amountCents: 500, startsAt: "2026-09-01T12:00:00.000Z", endsAt: null, active: false, status: "PAUSED", products: [{ id: "w1", name: "Whey 900g", slug: "whey-900g" }], categories: [], createdAt: "2026-09-01T12:00:00.000Z", updatedAt: "2026-09-01T12:00:00.000Z" },
+    { id: "p1", name: "Semana do Consumidor", scope: "CART", discountKind: "PERCENT", percentBps: 1000, amountCents: null, startsAt: "2026-10-01T12:00:00.000Z", endsAt: null, active: true, status: "ACTIVE", audience: "EVERYONE", products: [], categories: [], createdAt: "2026-10-01T12:00:00.000Z", updatedAt: "2026-10-01T12:00:00.000Z" },
+    { id: "p2", name: "Queima", scope: "PRODUCTS", discountKind: "FIXED", percentBps: null, amountCents: 500, startsAt: "2026-09-01T12:00:00.000Z", endsAt: null, active: false, status: "PAUSED", audience: "FIRST_PURCHASE", products: [{ id: "w1", name: "Whey 900g", slug: "whey-900g" }], categories: [], createdAt: "2026-09-01T12:00:00.000Z", updatedAt: "2026-09-01T12:00:00.000Z" },
   ],
   total: 2,
   page: 1,
@@ -116,6 +116,34 @@ describe("PromotionsScreen", () => {
     expect(mocks.save).toHaveBeenCalledOnce()
     expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { name: "Dia das Mães", scope: "CART", discountKind: "PERCENT", percentBps: 1500, amountCents: null, endsAt: null, productIds: [], categoryIds: [] } })
     expect(mocks.save.mock.calls[0]?.[0].payload).not.toHaveProperty("active")
+  })
+
+  /** BEELINK-245. */
+  it("says who a promotion is for: marked on its row, chosen in the form and sent with it", async () => {
+    view()
+    // One row is marked: the promotion for everyone says nothing.
+    expect(within(screen.getByText("Queima").closest("li")!).getByText("Primeira compra")).toBeInTheDocument()
+    expect(screen.getAllByText("Primeira compra")).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole("button", { name: "Nova promoção" }))
+    const form = screen.getByRole("region", { name: "Nova promoção" })
+    const audience = within(form).getByRole("group", { name: "Para quem vale" })
+    expect(within(audience).getByRole("button", { name: "Todos os clientes" })).toHaveAttribute("aria-pressed", "true")
+
+    await userEvent.type(within(form).getByLabelText("Nome"), "Boas-vindas")
+    await userEvent.type(within(form).getByLabelText("Percentual (%)"), "15")
+    await userEvent.click(within(audience).getByRole("button", { name: "Só na primeira compra" }))
+    await userEvent.click(within(form).getByRole("button", { name: "Salvar" }))
+
+    expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { name: "Boas-vindas", percentBps: 1500, audience: "FIRST_PURCHASE" } })
+  })
+
+  it("opens a promotion on the audience it was saved with", async () => {
+    view()
+    await userEvent.click(screen.getByRole("button", { name: "Editar a promoção Queima" }))
+    const audience = within(screen.getByRole("region", { name: "Editar promoção" })).getByRole("group", { name: "Para quem vale" })
+
+    expect(within(audience).getByRole("button", { name: "Só na primeira compra" })).toHaveAttribute("aria-pressed", "true")
   })
 
   it("puts the focus on the form it opens, which may be a screen away from the row", async () => {

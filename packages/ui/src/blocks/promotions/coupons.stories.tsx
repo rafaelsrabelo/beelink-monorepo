@@ -33,7 +33,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Três cupons: um ativo, um pausado e um esgotado. */
+/** Três cupons: um ativo, que vale só na primeira compra, um pausado e um esgotado. */
 export const Lista: Story = {}
 
 /** A loja ainda não tem cupons. */
@@ -47,6 +47,15 @@ export const FormularioFreteGratis: Story = {
   render: () => (
     <div className="max-w-2xl">
       <CouponForm value={{ ...couponValues, code: "FRETE-GRATIS", kind: "FREE_SHIPPING", percent: "" }} onChange={() => {}} onSubmit={() => {}} onCancel={() => {}} />
+    </div>
+  ),
+}
+
+/** Só na primeira compra: a ajuda sob a escolha diz o que conta como primeira compra. */
+export const FormularioPrimeiraCompra: Story = {
+  render: () => (
+    <div className="max-w-2xl">
+      <CouponForm value={{ ...couponValues, audience: "FIRST_PURCHASE" }} onChange={() => {}} onSubmit={() => {}} onCancel={() => {}} />
     </div>
   ),
 }

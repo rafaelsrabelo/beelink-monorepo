@@ -45,6 +45,16 @@ export const ComDescontos: Story = {
   },
 }
 
+/** Visitante: a promoção de primeira compra é anunciada com o valor, e só entra no total quando ele se identifica. */
+export const PrimeiraCompraAnunciada: Story = {
+  args: { ...ComItens.args, offer: { tone: "open", text: "Boas-vindas: − R$ 26,97 na sua primeira compra. Entre na sua conta para confirmar." } },
+}
+
+/** Cliente que já comprou na loja: a frase diz por que a promoção não é dele. */
+export const PrimeiraCompraJaFeita: Story = {
+  args: { ...ComItens.args, offer: { tone: "closed", text: "Boas-vindas vale só na primeira compra." } },
+}
+
 /** A primeira cotação ainda não chegou: os valores esperam. */
 export const Cotando: Story = { args: { ...ComItens.args, pricing: true } }
 

@@ -4,7 +4,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { ON_THE_SHELF_WHERE } from '../catalog/catalog.visibility.js';
-import type { PricingPromotion } from './discount-pricing.js';
+import { forEveryone, type PricingPromotion } from './discount-pricing.js';
 import { runningPromotions } from './order-discounts.js';
 import { shelfPercentOf } from './shelf-pricing.js';
 
@@ -35,18 +35,22 @@ export function plainSale(priceField: ProductFieldRefs['priceCents']): ShelfSale
 /**
  * The promotions that price a unit, among those running at `at`, each with everything it names.
  * The same reading an order prices with (`runningPromotions`), less a fixed amount off the whole
- * cart, which prices no product.
+ * cart, which prices no product — and less those for a first purchase (BEELINK-245): the shop
+ * window is one page, kept and served to every visitor, and who is on a first purchase is only
+ * known once they are identified, at the cart.
  */
 export async function runningShelfPromotions(db: Prisma.TransactionClient, storeId: string, at: Date): Promise<PricingPromotion[]> {
-  return (await runningPromotions(db, storeId, at)).filter((promotion) => promotion.scope !== 'CART' || promotion.discountKind !== 'FIXED');
+  return forEveryone(await runningPromotions(db, storeId, at)).filter((promotion) => promotion.scope !== 'CART' || promotion.discountKind !== 'FIXED');
 }
 
 /**
  * The next instant the shop's prices change by themselves: a promotion still to start, or one
- * still to end. Null when none is scheduled. A paused promotion changes nothing at either instant.
+ * still to end. Null when none is scheduled. A paused promotion changes nothing at either instant,
+ * and neither does one for a first purchase: it is on no public price, so a kept page is as good
+ * after it starts or ends as before.
  */
 export async function nextPromotionChange(db: Prisma.TransactionClient, storeSlug: string, at: Date): Promise<Date | null> {
-  const ofShop = { store: { slug: storeSlug }, isActive: true };
+  const ofShop = { store: { slug: storeSlug }, isActive: true, audience: 'EVERYONE' } satisfies Prisma.PromotionWhereInput;
   const [start, end] = await Promise.all([
     db.promotion.aggregate({ where: { ...ofShop, startsAt: { gt: at } }, _min: { startsAt: true } }),
     db.promotion.aggregate({ where: { ...ofShop, endsAt: { gt: at } }, _min: { endsAt: true } }),
