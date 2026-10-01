@@ -356,6 +356,18 @@ export interface UiMessages {
     securityPasswordChanged: string
     securityLinkSent: string
     signedOutEverywhere: string
+    /** "Baixar meus dados" and "Excluir minha conta" (BEELINK-152). */
+    privacyTitle: string
+    privacyLead: string
+    privacyDownload: string
+    privacyDownloadHint: string
+    privacyDelete: string
+    privacyDeleteLead: string
+    privacyDeletePassword: string
+    privacyDeleteEmail: string
+    privacyDeleteSubmit: string
+    privacyPasswordWrong: string
+    accountDeleted: string
     /** The shopper's notices by e-mail (BEELINK-151). */
     noticesTitle: string
     noticesLead: string
