@@ -53,6 +53,7 @@ export interface StorefrontComponentProps {
   routes: StorefrontRoutes
   showPrice: boolean
   showBadge: boolean
+  showRating?: boolean
   /** "Adicionar ao carrinho" on each card of a showcase. */
   quickAdd?: boolean
   linkComponent?: LinkComponent
@@ -81,6 +82,7 @@ export function StorefrontComponent({
   routes,
   showPrice,
   showBadge,
+  showRating = true,
   quickAdd = false,
   linkComponent,
   contact = null,
@@ -229,6 +231,7 @@ export function StorefrontComponent({
           routes={routes}
           showPrice={showPrice}
           showBadge={showBadge}
+          showRating={showRating}
           quickAdd={quickAdd}
           {...link}
           messages={messages}

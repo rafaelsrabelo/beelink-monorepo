@@ -1,5 +1,5 @@
 // Types
-import type { CustomerSignInOptions, PublicLanding, PublicProductCategory, PublicProductDetail, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontSort } from "@harness-monorepo/contracts"
+import type { CustomerSignInOptions, PublicLanding, PublicProductCategory, PublicProductDetail, PublicProductReviews, PublicReviewListQuery, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontSort } from "@harness-monorepo/contracts"
 
 // App
 import { callPublicApi } from "./public-api"
@@ -142,6 +142,21 @@ export async function productAt(slug: string, productSlug: string): Promise<Publ
   if (!response.ok) return null
 
   return (await response.json()) as PublicProductDetail
+}
+
+/**
+ * A product's published reviews — the summary and a page — under the catalogue's tag, which a hide in
+ * the panel drops (`revalidateStore`). Null when they could not be read: the section is the page's
+ * last, and a failure there never takes the product with it.
+ */
+export async function productReviewsAt(slug: string, productId: string, query: PublicReviewListQuery = {}): Promise<PublicProductReviews | null> {
+  const search = new URLSearchParams(Object.entries(query).flatMap(([key, value]) => (value === undefined ? [] : [[key, String(value)]])))
+  const response = await callPublicApi({
+    path: `/stores/${slug}/products/${encodeURIComponent(productId)}/reviews${search.size ? `?${search.toString()}` : ""}`,
+    tags: [catalogTag(slug)],
+  }).catch(() => null)
+
+  return response?.ok ? ((await response.json()) as PublicProductReviews) : null
 }
 
 /** How many pages a total divides into. Never zero: an empty shop still has one page to be on. */

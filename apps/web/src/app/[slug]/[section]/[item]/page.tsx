@@ -9,6 +9,7 @@ import type { Metadata } from "next"
 import type { PublicProductDetail, PublicStore } from "@harness-monorepo/contracts"
 
 // UI
+import { StorefrontProductReviewsSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-product-reviews-skeleton"
 import { StorefrontBreadcrumb } from "@harness-monorepo/ui/blocks/storefront/storefront-breadcrumb"
 import { StorefrontProductDetails } from "@harness-monorepo/ui/blocks/storefront/storefront-product-details"
 import { StorefrontRelatedSkeleton } from "@harness-monorepo/ui/blocks/storefront/storefront-related-skeleton"
@@ -20,6 +21,7 @@ import { ORDER_VARIANT_MARK } from "@harness-monorepo/ui/lib/variant-choice"
 // App
 import { AccountTabPage, accountTabMetadata, isAccountSegment } from "@/components/storefront/account/account-tab-page"
 import { StorefrontFrame } from "@/components/storefront/storefront-frame"
+import { ProductReviews } from "@/components/storefront/product-reviews"
 import { StorefrontProductLive } from "@/components/storefront/storefront-product-live"
 import { StorefrontRelated } from "@/components/storefront/storefront-related"
 import { getMessages } from "@/lib/locale"
@@ -199,6 +201,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         cartHref={routes.cart()}
         showPrice={layout.showProductPrice ?? true}
         showBadge={layout.showProductBadges ?? true}
+        showRating={layout.showProductRating ?? true}
         showStock={layout.showProductStock ?? true}
         finishesOnWhatsApp={Boolean(order)}
         seller={{ name: store.name, paymentMethods: store.paymentMethods }}
@@ -230,6 +233,11 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         specs={specRowsOf(product.options, product.category, ui.storefront.specCategory)}
         messages={ui}
       />
+
+      {/* 5b's last section, `#avaliacoes`, where the rating line under the title lands. */}
+      <Suspense fallback={<StorefrontProductReviewsSkeleton />}>
+        <ProductReviews slug={slug} productId={product.id} path={routes.product(product.slug)} query={query} locale="pt-BR" messages={ui} />
+      </Suspense>
     </StorefrontFrame>
   )
 }
