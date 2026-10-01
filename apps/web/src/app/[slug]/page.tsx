@@ -98,6 +98,7 @@ export default async function StorefrontPage({ params }: PageProps<"/[slug]">) {
             routes={routes}
             showPrice={layout.showProductPrice ?? true}
             showBadge={layout.showProductBadges ?? true}
+            showRating={layout.showProductRating ?? true}
             quickAdd={layout.showQuickAdd ?? true}
             contact={{ slug, whatsappHref: orderHrefOf(store) ?? null, copy: contactCopyOf(web) }}
             messages={ui}

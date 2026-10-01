@@ -18,6 +18,11 @@ describe("StorefrontReviewsSection", () => {
     expect(screen.getByText("card")).toBeInTheDocument()
   })
 
+  it("puts the way to the rest beside the title", () => {
+    render(<StorefrontReviewsSection title="Avalie suas compras" aside={<a href="/loja/conta/avaliacoes">Ver todos (6)</a>} />)
+    expect(screen.getByRole("link", { name: "Ver todos (6)" })).toHaveAttribute("href", "/loja/conta/avaliacoes")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<StorefrontReviewsSection title="Suas avaliações" />)
     await expectNoA11yViolations(container)

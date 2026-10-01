@@ -101,6 +101,7 @@ export class ConversationLastMessageResponse {
 export class ConversationCustomerResponse implements ConversationCustomer {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({ description: 'False once the customer deleted their account: the conversation takes no answer.' }) hasAccount!: boolean;
 }
 
 export class CustomerConversationResponse implements CustomerConversation {

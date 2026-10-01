@@ -176,6 +176,7 @@ export const en: WebMessages = {
     CUSTOMER_NOT_FOUND: "That customer is not this shop's. Search for or register the customer.",
     CUSTOMER_MERGE_SELF: "Choose another record to merge with this one.",
     CUSTOMER_MERGE_TWO_ACCOUNTS: "Both records have an account at the shop, and two accounts cannot be merged.",
+    CUSTOMER_DELETE_EMAIL_MISMATCH: "That is not the account's e-mail. Your account was not deleted.",
     ORDER_NOT_FOUND: "That order does not exist at this shop.",
     ORDER_CUSTOMER_NOT_FOUND: "That customer is no longer this shop's. Choose another.",
     ORDER_ADDRESS_NOT_FOUND: "The address chosen is no longer on the account. Choose another.",

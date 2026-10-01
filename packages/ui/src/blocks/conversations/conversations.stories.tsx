@@ -70,6 +70,13 @@ export const Encerrada: Story = {
   ),
 }
 
+/** O cliente excluiu a conta com o pedido a caminho: o histórico fica, e não há como responder por aqui. */
+export const ClienteExcluiuAConta: Story = {
+  render: () => (
+    <ConversationThread customer="Rafael Rocha" order="Pedido nº 12 · Em preparo" lines={[{ id: "1", mine: false, body: "Posso buscar hoje?", when: "30 de set., 10:12" }]} state="left" />
+  ),
+}
+
 export const SemMensagens: Story = { render: () => <ConversationThread customer="Bia Lima" order="Pedido nº 17" lines={[]} state="empty" /> }
 
 export const ConversaCarregando: Story = { render: () => <ConversationThreadSkeleton /> }
