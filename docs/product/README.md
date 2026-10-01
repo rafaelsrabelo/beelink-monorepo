@@ -115,9 +115,11 @@ A store runs **promotions** — a discount over the whole cart, or over named pr
 
 A **coupon** is a code a customer types. A code is unique **within its store** whatever the case it is typed in, valid for a period, and may be limited in how many times it can be used in total or by one customer. It gives a discount, as a promotion does, or a free delivery, and may ask for a minimum subtotal. A coupon that has run out, expired or does not apply says so at checkout, before the customer commits.
 
-Promotions never add up. Each line of a cart takes the one promotion worth the most on it — a promotion on a category covers its subcategories — and a fixed amount off the whole cart stands against the lines' own promotions together: the customer gets the larger. The coupon comes after, over what is left of the products, and one order takes one coupon. A discount is rounded down to whole cents, and no total goes below zero.
+Promotions never add up. Each line of a cart takes the one promotion worth the most on it — a promotion on a category covers its subcategories — and a fixed amount off the whole cart stands against the lines' own promotions together: the customer gets the larger. The coupon comes after, over what is left of the products, and one order takes one coupon. A percentage is rounded up to the cent, in the customer's favour — a promotion of 10% never reads as 9% — and no total goes below zero.
 
 The discount is computed in one place. What the cart shows, what the checkout shows and what the order records are the same calculation, read at the moment the order is placed. A coupon's limits are checked as the order is written, so two orders at once never both take its last use. A cancelled order gives its coupon's use back.
+
+While a promotion runs, the shop window shows it: the price a visitor reads is the promotional one, with what it was beside it, and that price times the quantity is what the order takes off. A fixed amount off the whole cart is the exception — it is no product's price, and shows in the cart.
 
 Either can be **paused** and switched back on. Where one stands — scheduled, running, paused, ended, or a coupon used up — is read from the clock and its limits, never set by hand. An order keeps the discount it took as it was, whatever is edited afterwards, and a coupon lists the orders it went into.
 
