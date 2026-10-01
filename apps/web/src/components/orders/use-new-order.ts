@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useMemo, useRef, useState, useSyncExternalStore } from "react"
+import { useRef, useState, useSyncExternalStore } from "react"
 
 // Next
 import { useRouter } from "next/navigation"
@@ -106,15 +106,14 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   // The form's own sum: what is sent, and what refuses a typed amount before anything is asked.
   const own = orderTotalsOf(lines, details.fulfillment, feeCents ?? 0, discountCents ?? 0)
   const priceable = lines.length > 0 && feeCents !== null && discountCents !== null && typeof own !== "string" && today !== ""
-  // By its amounts, never by `details` whole: a note typed is not a sale to price again.
-  const sale = useMemo(
-    () => (priceable ? saleOf({ lines, fulfillment: details.fulfillment, deliveryFeeCents: feeCents ?? 0, discountCents: discountCents ?? 0, placedOn, today }) : null),
-    [priceable, lines, details.fulfillment, feeCents, discountCents, placedOn, today],
-  )
-  const asked = useDebouncedValue(sale, QUOTE_DEBOUNCE_MS)
-  const quote = useOrderQuote(slug, asked)
+  const sale = priceable ? saleOf({ lines, fulfillment: details.fulfillment, deliveryFeeCents: feeCents ?? 0, discountCents: discountCents ?? 0, placedOn, today }) : null
+  // Settled by what is asked, never by identity: a note typed is a new render and the same sale.
+  const saleKey = sale ? JSON.stringify(sale) : null
+  const settled = useDebouncedValue(saleKey, QUOTE_DEBOUNCE_MS) === saleKey
+  // Asked once the typing rests; until then the last price stays on screen, dimmed.
+  const quote = useOrderQuote(slug, settled ? sale : null)
   // The API's answer for what is on screen — not the last sale's, kept while this one is asked.
-  const answered = sale !== null && asked === sale && !quote.isPlaceholderData && !quote.isPending
+  const answered = sale !== null && settled && !quote.isPlaceholderData && !quote.isPending
   const totals = shownTotalsOf(own, sale ? (quote.data ?? null) : null, answered && quote.error instanceof OrderRequestError ? quote.error.errorCode : null)
 
   const issues: OrderDetailsIssues & { customer?: string; lines?: string } = {}
