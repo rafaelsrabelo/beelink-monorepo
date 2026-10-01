@@ -5,6 +5,7 @@ import type {
   CustomerErrorCode,
   FavoriteErrorCode,
   LeadErrorCode,
+  ReviewErrorCode,
   OrderErrorCode,
   ConversationErrorCode,
   StoreErrorCode,
@@ -168,6 +169,7 @@ export interface WebMessages {
       orders: string
       /** The shop's conversations with its customers (BEELINK-164). */
       conversations: string
+      reviews: string
       products: string
       customers: string
       categories: string
@@ -242,6 +244,7 @@ export interface WebMessages {
     | AuthErrorCode
     | CustomerErrorCode
     | FavoriteErrorCode
+    | ReviewErrorCode
     | StoreErrorCode
     | LeadErrorCode
     | OrderErrorCode

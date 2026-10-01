@@ -22,6 +22,8 @@ import { StorefrontVerifyEmailSection } from "@/components/storefront/storefront
 import { getMessages } from "@/lib/locale"
 import { cartAt } from "@/lib/cart"
 import { customerFavoritesAt } from "@/lib/customer-favorites"
+import { pendingReviewsAt } from "@/lib/customer-reviews"
+import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
 import { ADDRESS_KEY, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
@@ -84,9 +86,15 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
   const cart = place.section.kind === "cart" ? await cartAt(store.slug) : null
   const shopper = await shopperAt(store.slug)
-  // The menu's pill: how many orders are in progress, read only on the area's own front.
-  const activeOrders = place.section.kind === "account" && shopper ? (await customerOrdersAt(store.slug, { situation: "ACTIVE", pageSize: 1 }))?.counts.ACTIVE : undefined
-  const favorites = place.section.kind === "account" && shopper ? (await customerFavoritesAt(store.slug, { pageSize: 1 }))?.counts.ALL : undefined
+  // The menu's counts, read together on the area's own front: each is its own call to the API. The
+  // favourites' page is the rail's too, so the front reads it once.
+  const [inProgress, liked, toRate] =
+    place.section.kind === "account" && shopper
+      ? await Promise.all([customerOrdersAt(store.slug, { situation: "ACTIVE", pageSize: 1 }), customerFavoritesAt(store.slug, { pageSize: OVERVIEW_FAVORITES }), pendingReviewsAt(store.slug)])
+      : [null, null, null]
+  const activeOrders = inProgress?.counts.ACTIVE
+  const favorites = liked?.counts.ALL
+  const pendingReviews = toRate?.length
 
   // "Comprar de novo" lands on the cart naming the order: read again here to say what stayed out.
   const reordered = cart && shopper ? orderNumberOf(paramOf(query[REORDERED_KEY])) : null
@@ -121,7 +129,17 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           <StorefrontListing place={place} routes={routes} catalogue={catalogue} locale={locale} />
         </Suspense>
       ) : place.section.kind === "account" && shopper ? (
-        <StorefrontAccountArea slug={store.slug} routes={routes} shopper={shopper} tab={null} activeOrders={activeOrders} favorites={favorites} messages={ui} />
+        <StorefrontAccountArea
+          slug={store.slug}
+          routes={routes}
+          shopper={shopper}
+          tab={null}
+          activeOrders={activeOrders}
+          favorites={favorites}
+          pendingReviews={pendingReviews}
+          query={query}
+          messages={ui}
+        />
       ) : place.section.kind === "signIn" ? (
         <StorefrontSignInSection place={place} routes={routes} query={query} errors={(await getMessages()).web.errors} />
       ) : place.section.kind === "verifyEmail" ? (

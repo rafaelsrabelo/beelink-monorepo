@@ -39,6 +39,8 @@ export interface StorefrontSectionsProps {
   routes: StorefrontRoutes
   showPrice: boolean
   showBadge: boolean
+  /** The cards' rating line — the shop's `showProductRating`; on unless it says otherwise. */
+  showRating?: boolean
   /** "Adicionar ao carrinho" on each card of a showcase. */
   quickAdd?: boolean
   /** Whether a cart can be reached from this page: a landing without the shop's header cannot. */
@@ -85,6 +87,7 @@ export function StorefrontSections({
   routes,
   showPrice,
   showBadge,
+  showRating = true,
   quickAdd = false,
   cartReachable = true,
   linkComponent,
@@ -134,6 +137,7 @@ export function StorefrontSections({
                     routes={routes}
                     showPrice={showPrice}
                     showBadge={showBadge}
+                    showRating={showRating}
                     quickAdd={quickAdd}
                     cartReachable={cartReachable}
                     editing={renderBlock !== undefined}

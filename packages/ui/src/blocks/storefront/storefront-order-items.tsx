@@ -17,6 +17,8 @@ export interface StorefrontOrderItemLine {
   meta: string
   /** The line at the price of the day it was ordered. */
   price: string
+  /** "★ Avaliar produto" (J18): on a delivered order's line, where it is rated. */
+  reviewHref?: string | null
 }
 
 export interface StorefrontOrderItemsProps {
@@ -55,6 +57,15 @@ export function StorefrontOrderItems({ items, count, actions, linkComponent: Lin
               )}
               <span className="text-xs text-shop-muted">{item.meta}</span>
               <span className="text-sm font-bold">{item.price}</span>
+              {item.reviewHref ? (
+                <Link href={item.reviewHref} className="inline-flex min-h-11 w-fit items-center text-xs font-semibold text-shop-primary-ink hover:underline">
+                  <span aria-hidden="true">★&nbsp;</span>
+                  {text.orderReviewProduct}
+                  {/* Every line says the same words: the product's name tells a reader which. */}
+                  <span className="sr-only">: {item.name}</span>
+                </Link>
+              ) : null}
+
             </div>
           </li>
         ))}

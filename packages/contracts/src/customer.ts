@@ -322,6 +322,8 @@ export type CustomerErrorCode =
   | "CUSTOMER_MERGE_SELF"
   /** Both records have an account: two people's sign-ins cannot become one record. */
   | "CUSTOMER_MERGE_TWO_ACCOUNTS"
+  /** Deleting an account opened through Google: the e-mail typed is not the account's. */
+  | "CUSTOMER_DELETE_EMAIL_MISMATCH"
   /** Google sign-in is not set up on this deployment. */
   | "GOOGLE_SIGN_IN_UNAVAILABLE"
   /** The state is unknown, used or expired: the flow was not started here, or took too long. */

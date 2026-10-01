@@ -144,12 +144,17 @@ model Store {
   /// computed from it when read, never stored, so changing it moves every customer at once.
   inactiveAfterDays Int @default(60)
 
+  /// When the owner last opened the panel's reviews (BEELINK-158): those written after it are the
+  /// menu's "new". Null counts every one — none was seen yet.
+  reviewsSeenAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   productCategories ProductCategory[]
   products          Product[]
   productVariants   ProductVariant[]
+  productReviews    ProductReview[]
   restockRequests   RestockRequest[]
   sections          StoreSection[]
   pages             StorePage[]

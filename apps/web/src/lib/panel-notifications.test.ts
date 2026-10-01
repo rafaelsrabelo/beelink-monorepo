@@ -22,7 +22,7 @@ const unread = {
   page: 1,
   pageSize: 20,
   conversations: [
-    { order: { number: 18, status: "PREPARING", fulfillment: "DELIVERY", open: true }, customer: { id: "c", name: "Carla" }, lastMessage: { kind: "MESSAGE", author: "CUSTOMER", body: "Chega\\nsexta?", createdAt: "2026-09-29T13:50:00.000Z" }, unread: 2 },
+    { order: { number: 18, status: "PREPARING", fulfillment: "DELIVERY", open: true }, customer: { id: "c", name: "Carla", hasAccount: true }, lastMessage: { kind: "MESSAGE", author: "CUSTOMER", body: "Chega\\nsexta?", createdAt: "2026-09-29T13:50:00.000Z" }, unread: 2 },
   ],
 } as unknown as ShopConversationPage
 

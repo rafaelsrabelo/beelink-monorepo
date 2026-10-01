@@ -9,7 +9,7 @@ import { StorefrontCardCartButton } from "./storefront-card-cart-button"
 import { StorefrontFavoriteCard, type StorefrontFavoriteCardProps } from "./storefront-favorite-card"
 import { StorefrontFavoritesEmpty } from "./storefront-favorites-empty"
 import { StorefrontFavoritesHint } from "./storefront-favorites-hint"
-import { StorefrontFavoritesOutcome } from "./storefront-favorites-outcome"
+import { StorefrontAccountOutcome } from "./storefront-account-outcome"
 import { StorefrontFavoritesSkeleton } from "./storefront-favorites-skeleton"
 import { StorefrontFavoritesSort } from "./storefront-favorites-sort"
 import { StorefrontOrderTabs } from "./storefront-order-tabs"
@@ -114,10 +114,10 @@ export const Indisponivel: Story = { render: () => <StorefrontFavoritesEmpty var
 export const AvisosDesligados: Story = { render: () => <StorefrontFavoritesHint on={false} settingsHref="#" /> }
 
 /** Depois do coração de um card: o que aconteceu, já que o card simplesmente some. */
-export const Removido: Story = { render: () => <StorefrontFavoritesOutcome tone="done" message="Produto removido dos favoritos." /> }
+export const Removido: Story = { render: () => <StorefrontAccountOutcome tone="done" message="Produto removido dos favoritos." /> }
 
 /** A remoção não passou: o motivo, como alerta. */
-export const RemocaoRecusada: Story = { render: () => <StorefrontFavoritesOutcome tone="failed" message="Sua sessão já tinha terminado, e nada foi feito. Entre de novo e tente outra vez." /> }
+export const RemocaoRecusada: Story = { render: () => <StorefrontAccountOutcome tone="failed" message="Sua sessão já tinha terminado, e nada foi feito. Entre de novo e tente outra vez." /> }
 
 /** A lista a caminho: os filtros e os cards em cinza. */
 export const Esqueleto: Story = {
