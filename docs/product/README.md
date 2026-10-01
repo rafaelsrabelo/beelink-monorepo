@@ -111,9 +111,11 @@ An estimated arrival is a **window** (from–to), because a single number is a p
 
 ## Promotions and coupons
 
-A store runs **promotions** — a discount over the whole cart, or over named products or categories, for a period the shopkeeper sets. A discount is either a percentage or a fixed amount, and which one it is, is stated rather than inferred.
+A store runs **promotions** — a discount over the whole cart, or over named products or categories, for a period the shopkeeper sets. A discount is either a percentage or a fixed amount, and which one it is, is stated rather than inferred. A period has a start and may have no end: it then runs until the shopkeeper pauses it.
 
-A **coupon** is a code a customer types. A code is unique **within its store**, valid for a period, and may be limited in how many times it can be used in total or by one customer. A coupon that has run out, expired or does not apply says so at checkout, before the customer commits.
+A **coupon** is a code a customer types. A code is unique **within its store** whatever the case it is typed in, valid for a period, and may be limited in how many times it can be used in total or by one customer. It gives a discount, as a promotion does, or a free delivery, and may ask for a minimum subtotal. A coupon that has run out, expired or does not apply says so at checkout, before the customer commits.
+
+Either can be **paused** and switched back on. Where one stands — scheduled, running, paused, ended, or a coupon used up — is read from the clock and its limits, never set by hand. An order keeps the discount it took as it was, whatever is edited afterwards, and a coupon lists the orders it went into.
 
 ## Checkout and the handoff to WhatsApp
 
