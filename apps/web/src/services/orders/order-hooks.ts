@@ -1,16 +1,16 @@
 "use client"
 
 // Libs
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, OrderPage, OrderStatus } from "@harness-monorepo/contracts"
+import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, OrderPage, OrderQuote, OrderStatus, ShopOrderQuotePayload } from "@harness-monorepo/contracts"
 
 // App
 import { catalogKeys } from "../catalog/catalog-hooks"
 import { customerKeys } from "../customers/customer-hooks"
-import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
+import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, quoteOrder, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
 
 /** Built from their inputs, never spelled at a call site (docs/ai-rules/state-and-data.md). */
 export const orderKeys = {
@@ -19,6 +19,7 @@ export const orderKeys = {
   lists: (slug: string) => [...orderKeys.store(slug), "list"] as const,
   list: (slug: string, query: OrderListQuery) => [...orderKeys.lists(slug), query] as const,
   detail: (slug: string, number: number) => [...orderKeys.store(slug), "detail", number] as const,
+  quote: (slug: string, sale: ShopOrderQuotePayload | null) => [...orderKeys.store(slug), "quote", sale] as const,
 }
 
 export function useOrders(slug: string, query: OrderListQuery = {}, options?: { enabled?: boolean; refetchInterval?: number | false }): UseQueryResult<OrderPage, Error> {
@@ -29,6 +30,25 @@ export function useOrders(slug: string, query: OrderListQuery = {}, options?: { 
     refetchInterval: options?.refetchInterval ?? false,
     // The page on screen stays while the next one, or the next filter, is on its way.
     placeholderData: (previous) => previous,
+  })
+}
+
+/** How long a sale's price is trusted: a promotion starts or ends with no write to tell the form. */
+const QUOTE_STALE_MS = 30 * 1000
+
+/**
+ * The sale being written, as the API would price it (BEELINK-194); null while there is nothing to
+ * price. The last price stays on screen while the next is asked — the form's own sum never shows
+ * between two answers — and a refusal is not retried: it says a typed amount cannot be.
+ */
+export function useOrderQuote(slug: string, sale: ShopOrderQuotePayload | null): UseQueryResult<OrderQuote, Error> {
+  return useQuery({
+    queryKey: orderKeys.quote(slug, sale),
+    queryFn: () => quoteOrder(slug, sale!),
+    enabled: slug !== "" && sale !== null,
+    placeholderData: keepPreviousData,
+    staleTime: QUOTE_STALE_MS,
+    retry: false,
   })
 }
 

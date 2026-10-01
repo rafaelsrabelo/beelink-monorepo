@@ -132,6 +132,7 @@ function fieldsOf(dto: CouponDto) {
     ...period,
     maxUses: dto.maxUses ?? null,
     maxUsesPerCustomer: dto.maxUsesPerCustomer ?? null,
+    audience: dto.audience ?? 'EVERYONE',
   } satisfies Prisma.CouponUpdateInput;
 }
 

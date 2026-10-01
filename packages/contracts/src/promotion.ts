@@ -12,6 +12,13 @@ import type { OrderStatus } from "./order.js";
 
 export type DiscountKind = "PERCENT" | "FIXED";
 
+/**
+ * Who a promotion or a coupon is for (BEELINK-245): everyone, or only a customer on their first
+ * purchase — one with no order at the shop that stands. A cancelled order does not count, so a
+ * customer whose only order was cancelled is on their first purchase again.
+ */
+export type DiscountAudience = "EVERYONE" | "FIRST_PURCHASE";
+
 /** What a promotion discounts: every line of the cart, or the named products or categories. */
 export type PromotionScope = "CART" | "PRODUCTS" | "CATEGORIES";
 
@@ -44,6 +51,7 @@ export interface Promotion {
   /** The owner's switch: false is paused. */
   active: boolean;
   status: PromotionStatus;
+  audience: DiscountAudience;
   /** The products of a `PRODUCTS` scope, by name; empty otherwise, and once every one was deleted. */
   products: PromotionTarget[];
   /** The categories of a `CATEGORIES` scope, by name; empty otherwise. */
@@ -66,6 +74,8 @@ export interface PromotionPayload {
   endsAt?: string | null;
   /** Absent is true on a create, and keeps the switch as it is on a replace. */
   active?: boolean;
+  /** Absent is `EVERYONE`. */
+  audience?: DiscountAudience;
   /** One to 200 of the shop's products on a `PRODUCTS` scope; absent or empty otherwise. */
   productIds?: string[];
   /** One to 200 of the shop's categories on a `CATEGORIES` scope; absent or empty otherwise. */
@@ -119,6 +129,7 @@ export interface Coupon {
   usedCount: number;
   active: boolean;
   status: CouponStatus;
+  audience: DiscountAudience;
   createdAt: string;
   updatedAt: string;
 }
@@ -140,6 +151,8 @@ export interface CouponPayload {
   maxUsesPerCustomer?: number | null;
   /** Absent is true on a create, and keeps the switch as it is on a replace. */
   active?: boolean;
+  /** Absent is `EVERYONE`. */
+  audience?: DiscountAudience;
 }
 
 export interface CouponListQuery {
@@ -200,3 +213,11 @@ export type PromotionErrorCode =
   | "COUPON_CODE_TAKEN"
   | "COUPON_DISCOUNT_INVALID"
   | "COUPON_PERIOD_INVALID";
+
+/**
+ * The response header a public catalogue read carries while a promotion of the shop is still to
+ * start or to end (BEELINK-193): the instant, ISO-8601, at which the prices in the answer change by
+ * themselves. No write happens at that instant, so nothing drops a cached copy: whoever keeps one
+ * reads this and asks again once it has passed. Absent when no change is scheduled.
+ */
+export type PricesChangeAtHeader = "x-prices-change-at";

@@ -17,6 +17,10 @@ import { OrderQuotes } from './order-quote.service.js';
  * off them. Open to anyone, like the cart's own read beside it — and for that reason it takes no
  * coupon: a route that answers whether a code exists is a way to guess a shop's codes.
  *
+ * Nobody is identified here, so a promotion for a first purchase (BEELINK-245) is not on the lines:
+ * the answer announces it, with what it would take off, for the cart to say it is theirs once they
+ * sign in. The signed-in shopper's cart is priced at their own door, `customer/cart/quote`.
+ *
  * A POST, unlike the cart's read: the lines travel in the body, and the answer depends on the hour,
  * so there is nothing to cache by address.
  */
@@ -29,7 +33,7 @@ export class CartQuoteController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @RouteConfig({ rateLimit: STOREFRONT_RATE_LIMIT })
-  @ApiOperation({ summary: "A cart priced with the shop's promotions: each line's discount and the totals" })
+  @ApiOperation({ summary: "A cart priced with the shop's promotions: each line's discount and the totals, and a first-purchase promotion announced" })
   @ApiOkResponse({ type: OrderQuoteResponse })
   @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_TOTAL_TOO_LARGE' })
   @ApiNotFoundResponse({ description: 'STORE_NOT_FOUND' })

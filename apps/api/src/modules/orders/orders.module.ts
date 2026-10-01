@@ -7,6 +7,7 @@ import { CustomersModule } from '../customers/customers.module.js';
 import { RealtimePublisherModule } from '../realtime/realtime-publisher.module.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { CartQuoteController } from './cart-quote.controller.js';
+import { CustomerCartQuoteController } from './customer-cart-quote.controller.js';
 import { CustomerOrdersController } from './customer-orders.controller.js';
 import { CustomerOrdersService } from './customer-orders.service.js';
 import { OrderPlacement } from './order-placement.js';
@@ -21,7 +22,7 @@ import { OrdersService } from './orders.service.js';
  */
 @Module({
   imports: [StoresModule, CustomersModule, AuthModule, RealtimePublisherModule],
-  controllers: [OrdersController, CustomerOrdersController, CartQuoteController],
+  controllers: [OrdersController, CustomerOrdersController, CartQuoteController, CustomerCartQuoteController],
   providers: [OrdersService, CustomerOrdersService, OrderPlacement, OrderQuotes, OrderStatusMailer],
 })
 export class OrdersModule {}

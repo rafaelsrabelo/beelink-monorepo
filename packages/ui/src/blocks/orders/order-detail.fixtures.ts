@@ -18,16 +18,30 @@ export const order: OrderDetailView = {
   },
   paymentMethod: "PIX",
   items: [
-    { id: "i1", productName: "Whey Protein", variantLabel: "Sabor: Baunilha · Peso: 900 g", sku: "WHEY-BAU-900", unitPriceCents: 12990, quantity: 2, lineTotalCents: 25980 },
-    { id: "i2", productName: "Coqueteleira", variantLabel: null, sku: null, unitPriceCents: 2490, quantity: 1, lineTotalCents: 2490 },
+    { id: "i1", productName: "Whey Protein", variantLabel: "Sabor: Baunilha · Peso: 900 g", sku: "WHEY-BAU-900", unitPriceCents: 12990, quantity: 2, lineTotalCents: 25980, discountCents: 0, promotionName: null },
+    { id: "i2", productName: "Coqueteleira", variantLabel: null, sku: null, unitPriceCents: 2490, quantity: 1, lineTotalCents: 2490, discountCents: 0, promotionName: null },
   ],
   subtotalCents: 28470,
   deliveryFeeCents: 1000,
   discountCents: 500,
+  promotionDiscountCents: 0,
+  couponDiscountCents: 0,
+  coupon: null,
   totalCents: 28970,
   note: "Entregar depois das 18h",
   placedAt: "2026-09-25T14:30:00.000Z",
   events: [
     { status: "ACCEPTED", actor: "SHOPKEEPER", at: "2026-09-25T14:31:00.000Z" },
   ],
+}
+
+/** The same order with a promotion on its first line, a coupon and a typed discount: 25,98 + 10,00 + 5,00 off. */
+export const discountedOrder: OrderDetailView = {
+  ...order,
+  items: [{ ...order.items[0]!, discountCents: 2598, promotionName: "Semana do Whey" }, order.items[1]!],
+  discountCents: 4098,
+  promotionDiscountCents: 2598,
+  couponDiscountCents: 1000,
+  coupon: { code: "BEMVINDO10", kind: "FIXED" },
+  totalCents: 25372,
 }

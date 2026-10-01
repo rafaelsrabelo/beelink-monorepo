@@ -8,6 +8,7 @@ import type {
   Coupon,
   CouponRedemptionPage,
   CustomerOrder,
+  CustomerOrderPage,
   Order,
   OrderCouponRefusedDetails,
   OrderQuote,
@@ -122,20 +123,21 @@ describe("an order's discounts", () => {
       expect(priced.lines).toEqual([
         // 10% of 189,90 a unit, twice — the category above the whey's own.
         { variantId: whey, productId: wheyProduct.id, quantity: 2, unitPriceCents: 18990, lineTotalCents: 37980, discountCents: 3798, promotion: { id: expect.any(String), name: 'Proteínas' } },
-        // 5% of 59,90 is 2,995: 2,99.
-        { variantId: creatine, productId: expect.any(String), quantity: 1, unitPriceCents: 5990, lineTotalCents: 5990, discountCents: 299, promotion: { id: expect.any(String), name: 'Loja toda' } },
+        // 5% of 59,90 is 2,995: 3,00, a share rounded up to the cent.
+        { variantId: creatine, productId: expect.any(String), quantity: 1, unitPriceCents: 5990, lineTotalCents: 5990, discountCents: 300, promotion: { id: expect.any(String), name: 'Loja toda' } },
       ]);
       expect(priced).toMatchObject({
         subtotalCents: 43970,
-        promotionDiscountCents: 4097,
+        promotionDiscountCents: 4098,
+        firstPurchase: null,
         coupon: null,
         couponDiscountCents: 0,
         manualDiscountCents: 0,
-        discountCents: 4097,
+        discountCents: 4098,
         deliveryFeeCents: null,
-        totalCents: 39873,
+        totalCents: 39872,
       });
-      expect(await cartQuote({ fulfillment: 'PICKUP' })).toMatchObject({ deliveryFeeCents: 0, totalCents: 39873 });
+      expect(await cartQuote({ fulfillment: 'PICKUP' })).toMatchObject({ deliveryFeeCents: 0, totalCents: 39872 });
     });
 
     it('takes a fixed amount off the cart only when it beats the lines’ own promotions together', async () => {
@@ -179,15 +181,15 @@ describe("an order's discounts", () => {
       await promotion({ name: 'Loja toda', percentBps: 1000 });
       await coupon({ code: 'bemvindo10' });
 
-      // 43970 − 4397 of promotions leaves 39573: 10% of it, rounded down.
+      // 43970 − 4397 of promotions leaves 39573: 10% of it, rounded up to the cent.
       expect(await quote({ couponCode: ' BemVindo10 ' })).toMatchObject({
         subtotalCents: 43970,
         promotionDiscountCents: 4397,
         coupon: { status: 'APPLIED', code: 'BEMVINDO10', kind: 'PERCENT' },
-        couponDiscountCents: 3957,
-        discountCents: 8354,
+        couponDiscountCents: 3958,
+        discountCents: 8355,
         deliveryFeeCents: 0,
-        totalCents: 35616,
+        totalCents: 35615,
       });
 
       await coupon({ code: 'MENOS500', kind: 'FIXED', percentBps: null, amountCents: 50000 });
@@ -255,15 +257,15 @@ describe("an order's discounts", () => {
       const response = await place({ couponCode: 'bemvindo10' });
       expect(response.statusCode).toBe(201);
       const order = response.json<CustomerOrder>();
-      // 37980 − 3798 of the promotion, plus the creatine, leaves 40172: the coupon takes 4017.
+      // 37980 − 3798 of the promotion, plus the creatine, leaves 40172: the coupon takes 4018.
       expect(order).toMatchObject({
         subtotalCents: 43970,
         promotionDiscountCents: 3798,
-        couponDiscountCents: 4017,
-        discountCents: 7815,
+        couponDiscountCents: 4018,
+        discountCents: 7816,
         coupon: { code: 'BEMVINDO10', kind: 'PERCENT' },
         deliveryFeeCents: 0,
-        totalCents: 36155,
+        totalCents: 36154,
       });
       expect(order.items.map((item) => [item.unitPriceCents, item.lineTotalCents, item.discountCents, item.promotionName])).toEqual([
         [18990, 37980, 3798, 'Proteínas'],
@@ -278,12 +280,15 @@ describe("an order's discounts", () => {
       // The use is on the coupon, and the shop reads the same order.
       expect(await usedOf('BEMVINDO10')).toBe(1);
       const uses = (await call('GET', `/api/stores/lessari/coupons/${welcome.id}/redemptions`, owner)).json<CouponRedemptionPage>();
-      expect(uses.redemptions.map((use) => [use.order.number, use.customer.name, use.discountCents])).toEqual([[1, 'Bia Cliente', 4017]]);
+      expect(uses.redemptions.map((use) => [use.order.number, use.customer.name, use.discountCents])).toEqual([[1, 'Bia Cliente', 4018]]);
       const shops = (await call('GET', '/api/stores/lessari/orders/1', owner)).json<Order>();
-      expect(shops).toMatchObject({ promotionDiscountCents: 3798, couponDiscountCents: 4017, discountCents: 7815, coupon: { code: 'BEMVINDO10', kind: 'PERCENT' }, totalCents: 36155 });
+      expect(shops).toMatchObject({ promotionDiscountCents: 3798, couponDiscountCents: 4018, discountCents: 7816, coupon: { code: 'BEMVINDO10', kind: 'PERCENT' }, totalCents: 36154 });
       expect(shops.items[0]).toMatchObject({ discountCents: 3798, promotionName: 'Proteínas' });
+      // The customer's own list says the same of it, on the card: what came off, and the code.
+      const mine = (await call('GET', '/api/stores/lessari/customer/orders', bia)).json<CustomerOrderPage>();
+      expect(mine.orders.map((each) => [each.number, each.discountCents, each.coupon, each.totalCents])).toEqual([[1, 7816, { code: 'BEMVINDO10', kind: 'PERCENT' }, 36154]]);
       const record = await prisma.customer.findFirstOrThrow({ where: { userId: { not: null } } });
-      expect(record.totalSpentCents).toBe(36155n);
+      expect(record.totalSpentCents).toBe(36154n);
 
       // The promotion and the coupon change; the order is what it was.
       await call('PUT', `/api/stores/lessari/promotions/${proteinas.id}`, owner, { name: 'Outro nome', scope: 'CART', discountKind: 'PERCENT', percentBps: 5000, startsAt: daysFromNow(-1) });
@@ -384,11 +389,11 @@ describe("an order's discounts", () => {
         subtotalCents: 43970,
         promotionDiscountCents: 4397,
         coupon: { status: 'APPLIED', code: 'BEMVINDO10' },
-        couponDiscountCents: 3957,
+        couponDiscountCents: 3958,
         manualDiscountCents: 1000,
-        discountCents: 9354,
+        discountCents: 9355,
         deliveryFeeCents: 1500,
-        totalCents: 36116,
+        totalCents: 36115,
       });
 
       const response = await register(body);
@@ -396,11 +401,11 @@ describe("an order's discounts", () => {
       expect(response.json<Order>()).toMatchObject({
         subtotalCents: 43970,
         promotionDiscountCents: 4397,
-        couponDiscountCents: 3957,
-        discountCents: 9354,
+        couponDiscountCents: 3958,
+        discountCents: 9355,
         coupon: { code: 'BEMVINDO10', kind: 'PERCENT' },
         deliveryFeeCents: 1500,
-        totalCents: 36116,
+        totalCents: 36115,
       });
 
       // The customer the order found by phone already used it: the quote says so before the sale is registered.
@@ -443,8 +448,8 @@ describe("an order's discounts", () => {
       expect(refusalOf(await register({ couponCode: 'VENCIDO' }))).toEqual(['ORDER_COUPON_REFUSED', 'EXPIRED']);
 
       const then = (await register({ placedAt: daysFromNow(-7), couponCode: 'VENCIDO' })).json<Order>();
-      // 20% of each unit, then the coupon's 10% of what is left.
-      expect(then).toMatchObject({ promotionDiscountCents: 8794, couponDiscountCents: 3517, coupon: { code: 'VENCIDO' } });
+      // 20% of each unit, then the coupon's 10% of what is left: 3517,6, up to the cent.
+      expect(then).toMatchObject({ promotionDiscountCents: 8794, couponDiscountCents: 3518, coupon: { code: 'VENCIDO' } });
       expect(then.items[0]).toMatchObject({ promotionName: 'Semana passada' });
     });
   });

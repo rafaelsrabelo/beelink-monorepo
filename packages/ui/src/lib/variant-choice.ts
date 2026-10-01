@@ -33,6 +33,8 @@ export interface ChoiceVariant {
   optionValueIds: readonly string[]
   priceCents: number
   compareAtPriceCents: number | null
+  /** The promotion that set this combination's price; null or absent with none. */
+  promotionName?: string | null
   imageUrl: string | null
   available: boolean
 }

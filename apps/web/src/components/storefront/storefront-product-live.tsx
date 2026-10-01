@@ -85,6 +85,7 @@ export function StorefrontProductLive({
       description={product.description}
       priceCents={product.priceCents}
       compareAtPriceCents={product.compareAtPriceCents}
+      promotionName={product.promotionName}
       images={product.images}
       orderHref={orderHref}
       cart={{ onAdd: (variantId, qty) => add({ productId: product.id, variantId, qty }), href: cartHref }}

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // App
-import { couponDiscountOf, promotionDiscountsOf, type PricingLine, type PricingPromotion } from './discount-pricing.js';
+import { couponDiscountOf, firstPurchaseOfferOf, forEveryone, promotionDiscountsOf, unitDiscountOf, type PricingLine, type PricingPromotion } from './discount-pricing.js';
 
 const WHEY = 'whey';
 const CREATINE = 'creatine';
@@ -12,7 +12,7 @@ const WHEYS = 'wheys';
 const line = (productId: string, unitPriceCents: number, quantity = 1, categoryIds: string[] = []): PricingLine => ({ productId, categoryIds, unitPriceCents, quantity });
 
 function promotion(id: string, overrides: Partial<PricingPromotion>): PricingPromotion {
-  return { id, name: id, scope: 'CART', discountKind: 'PERCENT', percentBps: null, amountCents: null, productIds: [], categoryIds: [], ...overrides };
+  return { id, name: id, scope: 'CART', discountKind: 'PERCENT', percentBps: null, amountCents: null, audience: 'EVERYONE', productIds: [], categoryIds: [], ...overrides };
 }
 
 const cents = (lines: readonly PricingLine[], promotions: readonly PricingPromotion[]) => promotionDiscountsOf(lines, promotions).map((discount) => discount.discountCents);
@@ -23,10 +23,10 @@ describe('promotionDiscountsOf', () => {
     expect(promotionDiscountsOf([line(WHEY, 18990, 2)], [])).toEqual([{ discountCents: 0, promotion: null }]);
   });
 
-  it('takes a percentage off each unit, rounded down, on every line of the cart', () => {
+  it('takes a percentage off each unit, rounded up to the cent, on every line of the cart', () => {
     const ten = promotion('dez', { percentBps: 1000 });
-    // 10% of 18,99 is 1,899: 1,89 a unit, three times — never 5,69 off the line.
-    expect(cents([line(WHEY, 1899, 3), line(CREATINE, 5990)], [ten])).toEqual([567, 599]);
+    // 10% of 18,99 is 1,899: 1,90 a unit, three times — the shelf's price of one, times three.
+    expect(cents([line(WHEY, 1899, 3), line(CREATINE, 5990)], [ten])).toEqual([570, 599]);
     expect(names([line(WHEY, 1899, 3)], [ten])).toEqual(['dez']);
   });
 
@@ -98,9 +98,106 @@ describe('promotionDiscountsOf', () => {
   });
 });
 
+describe('unitDiscountOf', () => {
+  const unit = { productId: WHEY, categoryIds: [WHEYS, PROTEINS], unitPriceCents: 1899 };
+
+  it('is what one unit loses on the shelf: the best of the promotions that reach it', () => {
+    const ten = promotion('dez', { percentBps: 1000 });
+    const proteins = promotion('proteinas', { scope: 'CATEGORIES', percentBps: 2000, categoryIds: [PROTEINS] });
+    expect(unitDiscountOf(unit, [ten, proteins])).toEqual({ discountCents: 380, promotion: { id: 'proteinas', name: 'proteinas' } });
+    expect(unitDiscountOf({ ...unit, categoryIds: [] }, [ten, proteins])).toEqual({ discountCents: 190, promotion: { id: 'dez', name: 'dez' } });
+  });
+
+  it('never reads a percentage as less than it is: the price left, taken from the price, is at least the share', () => {
+    // The shelf's badge is floor((was − now) / was): rounding the discount down would print 9%.
+    for (const unitPriceCents of [1899, 1894, 999, 101, 33, 7]) {
+      const { discountCents } = unitDiscountOf({ ...unit, unitPriceCents }, [promotion('dez', { percentBps: 1000 })]);
+      expect(Math.floor((discountCents * 100) / unitPriceCents), String(unitPriceCents)).toBeGreaterThanOrEqual(10);
+      expect(discountCents).toBeLessThanOrEqual(unitPriceCents);
+    }
+  });
+
+  it('leaves a fixed amount off the whole cart out: it is no unit\'s', () => {
+    expect(unitDiscountOf(unit, [promotion('vinte', { discountKind: 'FIXED', amountCents: 2000 })])).toEqual({ discountCents: 0, promotion: null });
+  });
+});
+
+describe('firstPurchaseOfferOf', () => {
+  const welcome = (id: string, overrides: Partial<PricingPromotion>) => promotion(id, { audience: 'FIRST_PURCHASE', ...overrides });
+  /** Two wheys and a creatine: 43970. */
+  const cart = [line(WHEY, 18990, 2), line(CREATINE, 5990)];
+
+  it('is what a first-purchase promotion would take off a cart nothing else reaches, by its name', () => {
+    // 15% of each unit, rounded up: 28,49 twice and 8,99.
+    expect(firstPurchaseOfferOf(cart, [welcome('boas-vindas', { percentBps: 1500 })])).toEqual({ promotionName: 'boas-vindas', discountCents: 6597 });
+  });
+
+  it('is only what it adds to what the cart already gets: the two are never added up', () => {
+    const ten = promotion('dez', { percentBps: 1000 });
+    // 65,97 with it against the 43,97 every cart gets.
+    expect(firstPurchaseOfferOf(cart, [welcome('boas-vindas', { percentBps: 1500 }), ten])).toEqual({ promotionName: 'boas-vindas', discountCents: 2200 });
+  });
+
+  it('announces nothing when a promotion for everyone beats it', () => {
+    expect(firstPurchaseOfferOf(cart, [welcome('boas-vindas', { percentBps: 1000 }), promotion('vinte', { percentBps: 2000 })])).toBeNull();
+  });
+
+  it('announces nothing on a tie, whichever of the two is the newer: the cart loses the same either way', () => {
+    const first = welcome('boas-vindas', { percentBps: 1000 });
+    const ten = promotion('dez', { percentBps: 1000 });
+    expect(firstPurchaseOfferOf(cart, [first, ten])).toBeNull();
+    expect(firstPurchaseOfferOf(cart, [ten, first])).toBeNull();
+  });
+
+  it('announces nothing with none running, or with one that reaches nothing in the cart', () => {
+    expect(firstPurchaseOfferOf(cart, [])).toBeNull();
+    expect(firstPurchaseOfferOf(cart, [promotion('dez', { percentBps: 1000 })])).toBeNull();
+    expect(firstPurchaseOfferOf(cart, [welcome('bcaa', { scope: 'PRODUCTS', percentBps: 5000, productIds: ['bcaa'] })])).toBeNull();
+  });
+
+  it('names none when several would be on the lines, and the one left when the others lose theirs', () => {
+    const wheys = welcome('whey', { scope: 'PRODUCTS', percentBps: 2000, productIds: [WHEY] });
+    const creatines = welcome('creatina', { scope: 'PRODUCTS', discountKind: 'FIXED', amountCents: 500, productIds: [CREATINE] });
+    // 20% of the two wheys and 5,00 off the creatine.
+    expect(firstPurchaseOfferOf(cart, [wheys, creatines])).toEqual({ promotionName: null, discountCents: 8096 });
+
+    // 10% for everyone is 5,99 off the creatine: it keeps that line, and only the wheys' is offered.
+    const ten = promotion('dez', { scope: 'PRODUCTS', percentBps: 1000, productIds: [CREATINE] });
+    expect(firstPurchaseOfferOf(cart, [wheys, creatines, ten])).toEqual({ promotionName: 'whey', discountCents: 7596 });
+  });
+
+  it('names the one that adds, not one that holds a line on a tie and adds nothing to it', () => {
+    // 10% for everyone and 10% for a first purchase, the newer first: it keeps the creatine's line while adding nothing there.
+    const tie = welcome('empate', { scope: 'PRODUCTS', percentBps: 1000, productIds: [CREATINE] });
+    const ten = promotion('dez', { scope: 'PRODUCTS', percentBps: 1000, productIds: [CREATINE] });
+    const wheys = welcome('whey', { scope: 'PRODUCTS', percentBps: 2000, productIds: [WHEY] });
+
+    expect(firstPurchaseOfferOf(cart, [tie, wheys, ten])).toEqual({ promotionName: 'whey', discountCents: 7596 });
+  });
+
+  it('weighs a fixed amount off the cart as the cart’s: offered only past the lines’ own promotions together', () => {
+    const twenty = welcome('vinte', { discountKind: 'FIXED', amountCents: 2000 });
+    const wheys = promotion('whey', { scope: 'PRODUCTS', percentBps: 500, productIds: [WHEY] });
+    // 5% of 189,90 is 9,50 a unit: 19,00 from the wheys' own against 20,00 off the cart.
+    expect(firstPurchaseOfferOf(cart, [wheys, twenty])).toEqual({ promotionName: 'vinte', discountCents: 100 });
+    // A third whey makes it 28,50, past the 20,00.
+    expect(firstPurchaseOfferOf([line(WHEY, 18990, 3), line(CREATINE, 5990)], [wheys, twenty])).toBeNull();
+  });
+});
+
+describe('forEveryone', () => {
+  it('leaves the promotions for a first purchase out, in the order the rest came', () => {
+    const newer = promotion('nova', { percentBps: 1000 });
+    const older = promotion('antiga', { percentBps: 500 });
+    expect(forEveryone([newer, promotion('boas-vindas', { audience: 'FIRST_PURCHASE', percentBps: 1500 }), older])).toEqual([newer, older]);
+  });
+});
+
 describe('couponDiscountOf', () => {
-  it('takes a percentage of what is left of the products, rounded down', () => {
-    expect(couponDiscountOf({ kind: 'PERCENT', percentBps: 1000, amountCents: null }, 18991, 1000)).toBe(1899);
+  it('takes a percentage of what is left of the products, rounded up to the cent and never past it', () => {
+    expect(couponDiscountOf({ kind: 'PERCENT', percentBps: 1000, amountCents: null }, 18991, 1000)).toBe(1900);
+    expect(couponDiscountOf({ kind: 'PERCENT', percentBps: 10000, amountCents: null }, 18991, 1000)).toBe(18991);
+    expect(couponDiscountOf({ kind: 'PERCENT', percentBps: 1, amountCents: null }, 5, null)).toBe(1);
   });
 
   it('takes a fixed amount, never more than what is left', () => {

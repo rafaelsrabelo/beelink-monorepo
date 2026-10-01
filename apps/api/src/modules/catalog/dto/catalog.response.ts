@@ -93,6 +93,8 @@ export class PublicProductCardResponse implements PublicProductCard {
   @ApiProperty({ example: 4990, description: 'Whole cents.' }) priceCents!: number;
   @ApiProperty({ nullable: true, type: Number, description: 'Whole cents, or null for no discount.' })
   compareAtPriceCents!: number | null;
+  @ApiProperty({ required: false, nullable: true, type: String, description: "The promotion that set the price, by the shopkeeper's name for it." })
+  promotionName?: string | null;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({ nullable: true, type: String }) categorySlug!: string | null;
   @ApiProperty({ type: PriceRangeResponse, description: 'The cheapest and dearest variant a customer can order.' })

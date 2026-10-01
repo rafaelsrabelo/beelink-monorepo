@@ -18,9 +18,11 @@ const coupon: VerdictCoupon = {
   maxUses: 10,
   maxUsesPerCustomer: 1,
   usedCount: 3,
+  audience: 'EVERYONE',
 };
-const context: CouponContext = { at: NOW, baseCents: 10000, fulfillment: 'DELIVERY', deliveryFeeCents: null, customerUses: 0 };
+const context: CouponContext = { at: NOW, baseCents: 10000, fulfillment: 'DELIVERY', deliveryFeeCents: null, customerUses: 0, firstPurchase: true };
 const FREE = { kind: 'FREE_SHIPPING', percentBps: null } as const;
+const WELCOME = { audience: 'FIRST_PURCHASE' } as const;
 const reasonOf = (row: Partial<VerdictCoupon> | null, given: Partial<CouponContext> = {}) => couponRefusalOf(row && { ...coupon, ...row }, { ...context, ...given })?.reason ?? null;
 
 describe('couponRefusalOf', () => {
@@ -35,9 +37,8 @@ describe('couponRefusalOf', () => {
     // A delivery already free has no fee to waive.
     expect(reasonOf(FREE, { deliveryFeeCents: 0 })).toBe('NOT_APPLICABLE');
     expect(reasonOf({}, { baseCents: 0 })).toBe('NOT_APPLICABLE');
-    // 10% of nine cents does not reach one.
-    expect(reasonOf({}, { baseCents: 9 })).toBe('NOT_APPLICABLE');
-    expect(reasonOf({}, { baseCents: 10 })).toBeNull();
+    // A share is rounded up: anything left of the products gives at least a cent.
+    expect(reasonOf({}, { baseCents: 9 })).toBeNull();
     expect(reasonOf({ kind: 'FIXED', percentBps: null, amountCents: 500 }, { baseCents: 1 })).toBeNull();
   });
 
@@ -60,10 +61,27 @@ describe('couponRefusalOf', () => {
     expect(reasonOf({ maxUsesPerCustomer: null }, { customerUses: 7 })).toBeNull();
   });
 
+  it('keeps a coupon for a first purchase from a customer with an order that stands, and from nobody else', () => {
+    expect(reasonOf(WELCOME, { firstPurchase: true })).toBeNull();
+    expect(reasonOf(WELCOME, { firstPurchase: false })).toBe('NOT_FIRST_PURCHASE');
+    // A quote may come before its customer is chosen: nobody is refused for what cannot be said yet.
+    expect(reasonOf(WELCOME, { firstPurchase: null })).toBeNull();
+    // A coupon for everyone asks nothing of the customer's orders.
+    expect(reasonOf({}, { firstPurchase: false })).toBeNull();
+  });
+
   it('gives the first reason that holds: expired before exhausted, the customer’s limit before the minimum', () => {
     expect(reasonOf({ endsAt: at('2026-09-30T00:00:00.000Z'), usedCount: 10, isActive: false })).toBe('EXPIRED');
     expect(reasonOf({ usedCount: 10, isActive: false })).toBe('EXHAUSTED');
     expect(reasonOf({ minSubtotalCents: 15000 }, { customerUses: 1 })).toBe('CUSTOMER_LIMIT');
+  });
+
+  it('says a first purchase is over after the customer’s limit, and before what the cart lacks', () => {
+    const bought = { firstPurchase: false } as const;
+    expect(reasonOf({ ...WELCOME, isActive: false }, bought)).toBe('INACTIVE');
+    expect(reasonOf(WELCOME, { ...bought, customerUses: 1 })).toBe('CUSTOMER_LIMIT');
+    expect(reasonOf(WELCOME, { ...bought, baseCents: 0 })).toBe('NOT_FIRST_PURCHASE');
+    expect(reasonOf({ ...WELCOME, minSubtotalCents: 15000 }, bought)).toBe('NOT_FIRST_PURCHASE');
   });
 
   it('waives a delivery fee whatever is left of the products, above its minimum', () => {

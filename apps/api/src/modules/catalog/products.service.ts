@@ -27,6 +27,8 @@ import { imageRows, refuseForeignImageValues } from './product-images.js';
 import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
 import { watchFavorites } from '../favorites/favorite-watch.js';
 import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
+import { promotedDetail } from '../promotions/shelf-pricing.js';
+import { runningShelfPromotions } from '../promotions/shelf-sale.js';
 import { productDetailInclude, toProductDetail, toPublicProductDetail } from './variant.mapper.js';
 
 /**
@@ -143,20 +145,23 @@ export class ProductsService {
 
     if (!row) throw new NotFoundException(catalogError('PRODUCT_NOT_FOUND', `No product at "${slug}"`));
 
-    return toPublicProductDetail(row);
+    return promotedDetail(toPublicProductDetail(row), row, await runningShelfPromotions(this.prisma, storeId, new Date()));
   }
 
-  /** The active products among these ids, in the order asked; a sold-out one is included, marked. */
+  /**
+   * The active products among these ids, in the order asked; a sold-out one is included, marked.
+   * Priced as the shop window prices them, so a cart adds up what its lines' pages said.
+   */
   async publicByIds(storeId: string, ids: readonly string[]): Promise<PublicProductDetail[]> {
-    const rows = await this.prisma.product.findMany({
-      where: { storeId, id: { in: [...ids] }, status: 'ACTIVE' },
-      include: productDetailInclude,
-    });
+    const [rows, promotions] = await Promise.all([
+      this.prisma.product.findMany({ where: { storeId, id: { in: [...ids] }, status: 'ACTIVE' }, include: productDetailInclude }),
+      runningShelfPromotions(this.prisma, storeId, new Date()),
+    ]);
     const byId = new Map(rows.map((row) => [row.id, row]));
 
     return ids.flatMap((id) => {
       const row = byId.get(id);
-      return row ? [toPublicProductDetail(row)] : [];
+      return row ? [promotedDetail(toPublicProductDetail(row), row, promotions)] : [];
     });
   }
 
