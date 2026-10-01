@@ -1,0 +1,55 @@
+/**
+ * What the promotions' and the coupons' forms hold while they are filled in: strings, as inputs
+ * hold them. The screen turns them into the wire's shape, or into the fields to correct.
+ *
+ * A `.ts` under `lib/` and not a types file beside the blocks: the package's export map points
+ * `./blocks/*` at `.tsx`, so the app could not reach it there.
+ */
+
+export type DiscountKindValue = "PERCENT" | "FIXED"
+export type PromotionScopeValue = "CART" | "PRODUCTS" | "CATEGORIES"
+export type CouponKindValue = DiscountKindValue | "FREE_SHIPPING"
+export type DiscountStatusValue = "ACTIVE" | "SCHEDULED" | "PAUSED" | "ENDED" | "EXHAUSTED"
+
+/** A product or a category chosen for a promotion, by the name the list shows. */
+export interface DiscountTargetOption {
+  id: string
+  name: string
+}
+
+export interface PromotionFormValues {
+  name: string
+  scope: PromotionScopeValue
+  kind: DiscountKindValue
+  /** Per cent, as typed: "10", "12,5". */
+  percent: string
+  /** Reais, as typed. */
+  amount: string
+  /** `yyyy-mm-ddThh:mm`, in the shop's own time. */
+  startsAt: string
+  /** Empty runs until paused. */
+  endsAt: string
+  products: DiscountTargetOption[]
+  categoryIds: string[]
+}
+
+export type PromotionFormIssues = Partial<Record<"name" | "percent" | "amount" | "startsAt" | "endsAt" | "products" | "categories", string>>
+
+export interface CouponFormValues {
+  code: string
+  kind: CouponKindValue
+  percent: string
+  amount: string
+  /** Reais; empty asks for none. */
+  minSubtotal: string
+  startsAt: string
+  endsAt: string
+  /** Whole numbers, as typed; empty is no limit. */
+  maxUses: string
+  maxUsesPerCustomer: string
+}
+
+export type CouponFormIssues = Partial<Record<"code" | "percent" | "amount" | "minSubtotal" | "startsAt" | "endsAt" | "maxUses" | "maxUsesPerCustomer", string>>
+
+/** The API's ceiling on what one promotion names. */
+export const PROMOTION_TARGETS_MAX = 200

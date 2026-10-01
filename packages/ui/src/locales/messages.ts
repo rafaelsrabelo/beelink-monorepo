@@ -1797,6 +1797,137 @@ export interface UiMessages {
     navNewOne: string
     navNew: string
   }
+  /** The panel's promotions and coupons (BEELINK-192): what both screens share, then each one's own. */
+  discounts: {
+    statusLabel: string
+    failed: string
+    retry: string
+    /** `{from}`, `{to}`, `{total}`. */
+    range: string
+    edit: string
+    pause: string
+    resume: string
+    save: string
+    cancel: string
+    kindLabel: string
+    kindPercent: string
+    kindFixed: string
+    percentLabel: string
+    amountLabel: string
+    startsAtLabel: string
+    endsAtLabel: string
+    endsAtHelp: string
+    /** `{from}`, `{to}`. */
+    periodFromTo: string
+    /** `{from}`. */
+    periodFrom: string
+    /** A field the screen refuses before sending, each a sentence of its own. */
+    issues: {
+      required: string
+      percent: string
+      amount: string
+      date: string
+      endsBeforeStart: string
+      products: string
+      categories: string
+      code: string
+      limit: string
+    }
+    promotions: {
+      title: string
+      intro: string
+      /** The filter's words, in the plural; and each row's, in the singular. */
+      tabs: Record<"ALL" | "ACTIVE" | "SCHEDULED" | "PAUSED" | "ENDED", string>
+      status: Record<"ACTIVE" | "SCHEDULED" | "PAUSED" | "ENDED", string>
+      create: string
+      editTitle: string
+      empty: string
+      emptyHint: string
+      emptyFiltered: string
+      nameLabel: string
+      namePlaceholder: string
+      scopeLabel: string
+      scopeCart: string
+      scopeProducts: string
+      scopeCategories: string
+      amountCartHelp: string
+      amountUnitHelp: string
+      productsLabel: string
+      productSearchLabel: string
+      productSearchPlaceholder: string
+      productNone: string
+      productsChosen: string
+      productsEmpty: string
+      /** `{name}`. */
+      productAdd: string
+      productRemove: string
+      categoriesLabel: string
+      categoriesHelp: string
+      categoriesEmpty: string
+      /** `{discount}`. */
+      summaryCart: string
+      /** `{discount}`, `{count}`. */
+      summaryProductsOne: string
+      summaryProducts: string
+      summaryCategoriesOne: string
+      summaryCategories: string
+      /** A promotion every product it named was deleted from; `{discount}`. */
+      summaryNothing: string
+      /** `{amount}`. */
+      perUnit: string
+      /** `{name}`: which promotion a button acts on. */
+      editLabel: string
+      pauseLabel: string
+      resumeLabel: string
+    }
+    coupons: {
+      title: string
+      intro: string
+      tabs: Record<"ALL" | "ACTIVE" | "SCHEDULED" | "PAUSED" | "ENDED" | "EXHAUSTED", string>
+      status: Record<"ACTIVE" | "SCHEDULED" | "PAUSED" | "ENDED" | "EXHAUSTED", string>
+      create: string
+      editTitle: string
+      empty: string
+      emptyHint: string
+      emptyFiltered: string
+      codeLabel: string
+      codeHelp: string
+      kindFreeShipping: string
+      freeShipping: string
+      minSubtotalLabel: string
+      minSubtotalHelp: string
+      maxUsesLabel: string
+      maxUsesHelp: string
+      maxUsesPerCustomerLabel: string
+      maxUsesPerCustomerHelp: string
+      /** `{amount}`. */
+      minimum: string
+      usesNone: string
+      usesOne: string
+      /** `{count}`. */
+      uses: string
+      /** `{used}`, `{max}`. */
+      usesOf: string
+      viewUses: string
+      /** `{code}`. */
+      usesTitle: string
+      usesIntro: string
+      usesEmpty: string
+      usesClose: string
+      /** `{number}`. */
+      useOrder: string
+      /** `{name}`, `{date}`. */
+      useByOn: string
+      /** `{amount}`. */
+      useTook: string
+      useCancelled: string
+      /** `{code}`: which coupon a button acts on. */
+      editLabel: string
+      pauseLabel: string
+      resumeLabel: string
+      usesLabel: string
+    }
+  }
   /** The panel's conversations: the tab, one conversation, and the one inside an order (BEELINK-164). */
   conversations: {
     title: string
