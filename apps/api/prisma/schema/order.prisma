@@ -48,7 +48,18 @@ model Order {
   /// delivery, which is zero (BEELINK-170); a CHECK keeps null to deliveries. Typed by the
   /// shopkeeper until the delivery module computes it.
   deliveryFeeCents Int? @default(0)
+  /// Everything taken off the order: the promotions, the coupon and what the shopkeeper typed.
+  /// `totalCents = subtotalCents + deliveryFeeCents − discountCents`, as before the first two existed.
   discountCents    Int @default(0)
+  /// Its parts (BEELINK-191), photographed like the rest; what is left of `discountCents` is the
+  /// typed discount. The promotions' is the sum of the lines'. The coupon's, on a free delivery, is
+  /// the fee — zero while that is not agreed, and set with it.
+  promotionDiscountCents Int @default(0)
+  couponDiscountCents    Int @default(0)
+  /// The coupon as it was when the order took it: the coupon may be edited or paused since. Both or
+  /// neither, by a CHECK. Which coupon it was is in `couponRedemption`.
+  couponCode String?     @db.VarChar(30)
+  couponKind CouponKind?
   totalCents       Int
 
   /// Where a delivery goes, photographed from the customer's record when the order is placed: the
@@ -112,14 +123,22 @@ model OrderItem {
   variantLabel String? @db.VarChar(320)
   sku          String? @db.VarChar(64)
 
+  /// The catalogue's price, and that price times the quantity: a promotion's discount stays apart.
   unitPriceCents Int
   quantity       Int
   lineTotalCents Int
+  /// What a promotion took off this line (BEELINK-191), never more than the line, and the promotion
+  /// by its name as it was. The link is kept while the promotion exists.
+  discountCents  Int        @default(0)
+  promotionId    String?    @db.Uuid
+  promotion      Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  promotionName  String?    @db.VarChar(80)
   position       Int
 
   @@index([orderId, position])
   @@index([productId])
   @@index([variantId])
+  @@index([promotionId])
   @@map("order_items")
 }
 

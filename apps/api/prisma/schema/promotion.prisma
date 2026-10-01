@@ -53,6 +53,8 @@ model Promotion {
   /// every product it named was deleted — applies to nothing.
   products   PromotionProduct[]
   categories PromotionCategory[]
+  /// The order lines it took a discount off (BEELINK-191); each keeps its own photograph.
+  orderItems OrderItem[]
 
   /// The panel's list, the newest first.
   @@index([storeId, createdAt(sort: Desc)])
