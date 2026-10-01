@@ -47,6 +47,10 @@ describe("checkoutRefusalOf", () => {
     expect(checkoutRefusalOf({ errorCode: "ORDER_COUPON_REFUSED", details: { reason: "NOT_APPLICABLE" } }, rows, text, { ...context, pickup: true })).toContain(
       "Cupom de frete grátis vale só para entrega.",
     )
+    // BEELINK-245: an order placed meanwhile, in another tab, ended the first purchase.
+    expect(checkoutRefusalOf({ errorCode: "ORDER_COUPON_REFUSED", details: { reason: "NOT_FIRST_PURCHASE" } }, rows, text, context)).toBe(
+      "O cupom não entrou no pedido. Esse cupom vale só na primeira compra. Confira o total e faça o pedido de novo.",
+    )
     // A reason this app does not know is not guessed at.
     expect(checkoutRefusalOf({ errorCode: "ORDER_COUPON_REFUSED", details: { reason: "SOMETHING_NEW" } }, rows, text, context)).toBe(text.checkoutFailed)
     expect(checkoutRefusalOf({ errorCode: "ORDER_COUPON_REFUSED" }, rows, text, context)).toBe(text.checkoutFailed)

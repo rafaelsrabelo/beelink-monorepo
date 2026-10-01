@@ -89,8 +89,9 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
   const [cart, shopper] = await Promise.all([place.section.kind === "cart" ? cartAt(store.slug) : null, shopperAt(store.slug)])
-  // And its totals, priced by the API as the order would be (BEELINK-194): the promotions' rows are in the HTML too.
-  const served = cart ? await cartQuoteAt(store.slug, cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null)) : null
+  // And its totals, priced by the API as the order would be (BEELINK-194) and for whoever is reading
+  // (BEELINK-245): the promotions' rows are in the HTML too.
+  const served = cart ? await cartQuoteAt(store.slug, cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null), shopper?.id ?? null) : null
   // The menu's counts, read together on the area's own front: each is its own call to the API. The
   // favourites' page is the rail's too, so the front reads it once.
   const [inProgress, liked, toRate] =

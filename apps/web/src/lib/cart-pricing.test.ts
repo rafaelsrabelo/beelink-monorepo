@@ -42,6 +42,7 @@ const quote: OrderQuote = {
   ],
   subtotalCents: 25990,
   promotionDiscountCents: 2500,
+  firstPurchase: null,
   coupon: null,
   couponDiscountCents: 0,
   manualDiscountCents: 0,
@@ -89,7 +90,7 @@ describe("the cart as the API priced it", () => {
   it("reads as the shelf prices it while there is no price: one subtotal, no row, no line touched", () => {
     const view = viewOf([row({}), creatine])
 
-    expect(cartPricingOf(null, view, context)).toEqual({ subtotalCents: 23490, discounts: [], total: null, lines: new Map() })
+    expect(cartPricingOf(null, view, context)).toEqual({ subtotalCents: 23490, discounts: [], total: null, lines: new Map(), offer: null })
   })
 
   it("says the subtotal before the promotion, what came off, the total, and the line the promotion reached", () => {
@@ -144,5 +145,42 @@ describe("the cart as the API priced it", () => {
 
   it("takes nothing off a line that will not be ordered", () => {
     expect(cartPricingOf(quote, viewOf([row({ available: false }), creatine]), context).lines.size).toBe(0)
+  })
+})
+
+/** BEELINK-245: a first-purchase promotion the price left out is said under it, never added to it. */
+describe("the cart's first-purchase offer", () => {
+  const view = viewOf([row({}), creatine])
+  const offerOf = (firstPurchase: OrderQuote["firstPurchase"]) => {
+    const offer = cartPricingOf({ ...quote, firstPurchase }, view, context).offer
+    return offer && { ...offer, text: offer.text.replace(/\s/g, " ") }
+  }
+
+  it("tells a visitor what it would take off, and that signing in confirms it", () => {
+    expect(offerOf({ status: "UNIDENTIFIED", promotionName: "Boas-vindas", discountCents: 2349 })).toEqual({
+      tone: "open",
+      text: "Boas-vindas: − R$ 23,49 na sua primeira compra. Entre na sua conta para confirmar.",
+    })
+    // Several would apply, and none of them alone is the one.
+    expect(offerOf({ status: "UNIDENTIFIED", promotionName: null, discountCents: 2349 })).toEqual({
+      tone: "open",
+      text: "Desconto de primeira compra: − R$ 23,49. Entre na sua conta para confirmar.",
+    })
+  })
+
+  it("tells a customer who has bought before that it is not theirs, with no amount to want", () => {
+    expect(offerOf({ status: "NOT_FIRST", promotionName: "Boas-vindas", discountCents: 2349 })).toEqual({ tone: "closed", text: "Boas-vindas vale só na primeira compra." })
+    expect(offerOf({ status: "NOT_FIRST", promotionName: null, discountCents: 2349 })).toEqual({
+      tone: "closed",
+      text: "A promoção de primeira compra vale só para quem ainda não comprou na loja.",
+    })
+  })
+
+  it("says nothing with none, and leaves the totals as the API priced them", () => {
+    expect(offerOf(null)).toBeNull()
+
+    const offered = cartPricingOf({ ...quote, firstPurchase: { status: "UNIDENTIFIED", promotionName: "Boas-vindas", discountCents: 2349 } }, view, context)
+    expect(spaced(offered.total)).toBe("R$ 234,90 + frete")
+    expect(offered.discounts.map((line) => line.label)).toEqual(["Promoção: Semana do Whey"])
   })
 })

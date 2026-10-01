@@ -1,11 +1,13 @@
 // Types
-import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote } from "@harness-monorepo/contracts"
+import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, QuotedFirstPurchase } from "@harness-monorepo/contracts"
+import type { StorefrontCartOffer } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { discountLinesOf, type DiscountLine } from "@harness-monorepo/ui/lib/order-discounts"
 import { customerTotalText } from "@harness-monorepo/ui/lib/order-total"
+import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { orderItemsOf, rowKeyOf, type CartRow, type CartView } from "./cart-view"
@@ -34,8 +36,13 @@ export function firstFulfillmentOf(shopper: Pick<CustomerProfile, "name" | "addr
   return shopper && checkoutAddressesOf(shopper).length ? "DELIVERY" : "PICKUP"
 }
 
-/** The price the page was served with, and the question it answers: the browser starts from it rather than ask again. */
+/**
+ * The price the page was served with, who it was priced for and the question it answers: the browser
+ * starts from it rather than ask again.
+ */
 export interface ServedQuote {
+  /** Whose price it is (BEELINK-245): the signed-in shopper's id; null is a visitor's, which is anyone's. */
+  shopperId: string | null
   cart: CustomerOrderQuotePayload
   quote: OrderQuote
   /** When it was priced, in epoch milliseconds: it ages from then, not from when the page reached the browser. */
@@ -58,12 +65,29 @@ export interface CartPricing {
   total: string | null
   /** By the row's key. A row with no entry reads as the shelf prices it. */
   lines: ReadonlyMap<string, PricedCartLine>
+  /** A first-purchase promotion the cart would get and did not (BEELINK-245): in none of the amounts above. Null with none. */
+  offer: StorefrontCartOffer | null
 }
 
 export interface CartPricingContext {
   fulfillment: OrderFulfillment
   locale: string
   messages: UiMessages
+}
+
+/**
+ * A first-purchase promotion left out of the price, as the cart says it: to a visitor, what it would
+ * take off once they are identified; to a customer who has bought before, that it is not theirs.
+ * Several at once have no one name, and are said without it.
+ */
+function offerOf(firstPurchase: QuotedFirstPurchase | null, money: (cents: number) => string, text: UiMessages["storefront"]): StorefrontCartOffer | null {
+  if (!firstPurchase) return null
+
+  const name = firstPurchase.promotionName
+  if (firstPurchase.status === "NOT_FIRST") return { tone: "closed", text: name ? format(text.cartFirstPurchaseClosed, { name }) : text.cartFirstPurchaseClosedUnnamed }
+
+  const value = money(firstPurchase.discountCents)
+  return { tone: "open", text: name ? format(text.cartFirstPurchaseOpen, { name, value }) : format(text.cartFirstPurchaseOpenUnnamed, { value }) }
 }
 
 /**
@@ -76,7 +100,7 @@ export interface CartPricingContext {
  * the stepper at once instead of waiting for the answer.
  */
 export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfillment, locale, messages }: CartPricingContext): CartPricing {
-  if (!quote) return { subtotalCents: view.subtotalCents, discounts: [], total: null, lines: new Map() }
+  if (!quote) return { subtotalCents: view.subtotalCents, discounts: [], total: null, lines: new Map(), offer: null }
 
   const money = (cents: number) => formatCents(cents, locale, "BRL")
   const coupon = quote.coupon?.status === "APPLIED" ? { code: quote.coupon.code, kind: quote.coupon.kind } : null
@@ -108,5 +132,5 @@ export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfil
     lines.set(rowKeyOf(row), { lineTotalCents, wasCents: before > lineTotalCents ? before : null, promotion: line.promotion?.name ?? null })
   }
 
-  return { subtotalCents: quote.subtotalCents, discounts, total, lines }
+  return { subtotalCents: quote.subtotalCents, discounts, total, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront) }
 }
