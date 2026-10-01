@@ -1,15 +1,15 @@
 // Nest
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiForbiddenResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 // Types
-import type { StoreReview, StoreReviewPage } from '@harness-monorepo/contracts';
+import type { StoreReview, StoreReviewPage, StoreReviewsUnseen } from '@harness-monorepo/contracts';
 
 // App
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 import { CurrentUser } from '../auth/auth.decorators.js';
-import { SetReviewVisibilityDto, StoreReviewListDto } from './dto/review.dto.js';
-import { StoreReviewPageResponse, StoreReviewResponse } from './dto/review.response.js';
+import { MarkReviewsSeenDto, SetReviewVisibilityDto, StoreReviewListDto } from './dto/review.dto.js';
+import { StoreReviewPageResponse, StoreReviewResponse, StoreReviewsUnseenResponse } from './dto/review.response.js';
 import { StoreReviewsService } from './store-reviews.service.js';
 
 /**
@@ -30,6 +30,21 @@ export class StoreReviewsController {
   @ApiOkResponse({ type: StoreReviewPageResponse })
   list(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Query() query: StoreReviewListDto): Promise<StoreReviewPage> {
     return this.reviews.list(storeSlug, current.id, query);
+  }
+
+  @Get('unseen')
+  @ApiOperation({ summary: 'How many reviews were written since the owner last opened the list' })
+  @ApiOkResponse({ type: StoreReviewsUnseenResponse })
+  unseen(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser): Promise<StoreReviewsUnseen> {
+    return this.reviews.unseen(storeSlug, current.id);
+  }
+
+  @Post('seen')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'The owner saw the list up to its newest review; the mark never goes back' })
+  @ApiNoContentResponse()
+  async markSeen(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() dto: MarkReviewsSeenDto): Promise<void> {
+    await this.reviews.markSeen(storeSlug, current.id, dto);
   }
 
   @Patch(':reviewId')

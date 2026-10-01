@@ -3,11 +3,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
 import { Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import { IsBoolean, IsDate, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 // Types
 import type {
   CreateReviewPayload,
+  MarkReviewsSeenPayload,
   PublicReviewListQuery,
   ReviewRating,
   SetReviewVisibilityPayload,
@@ -46,6 +47,14 @@ export class SetReviewVisibilityDto implements SetReviewVisibilityPayload {
   @ApiProperty({ description: 'True hides it from the shop window; false publishes it again.' })
   @IsBoolean()
   hidden!: boolean;
+}
+
+export class MarkReviewsSeenDto implements Omit<MarkReviewsSeenPayload, 'until'> {
+  @ApiPropertyOptional({ format: 'date-time', description: "The newest review the owner's screen received; absent is now." })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  until?: Date;
 }
 
 // `@Type(() => Number)` and not the pipe's implicit conversion — apps/api/AGENTS.md, rule 6.

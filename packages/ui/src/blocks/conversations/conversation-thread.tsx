@@ -38,8 +38,11 @@ export interface ConversationThreadProps {
   /** Back to the list, on a phone where the conversation has the screen to itself. */
   backHref?: string | null
   lines: readonly ConversationLine[]
-  /** `open` takes an answer; `closed` is history; `empty` waits for the customer; `none` ended with nothing said. */
-  state: "open" | "closed" | "empty" | "none"
+  /**
+   * `open` takes an answer; `closed` is history; `left` is history too, its customer's account gone
+   * while the order may still be on its way; `empty` waits for the customer; `none` ended with nothing said.
+   */
+  state: "open" | "closed" | "left" | "empty" | "none"
   reply?: ReactNode
   /** Its own title, when the conversation stands alone rather than inside an order. */
   headed?: boolean
@@ -126,7 +129,7 @@ export function ConversationThread({ customer, order, orderHref, customerHref, b
         </div>
       )}
 
-      {state === "open" ? reply : state === "closed" ? <p className="bg-muted text-muted-foreground rounded-lg px-4 py-3 text-sm">{text.closed}</p> : null}
+      {state === "open" ? reply : state === "closed" || state === "left" ? <p className="bg-muted text-muted-foreground rounded-lg px-4 py-3 text-sm">{state === "closed" ? text.closed : text.customerLeft}</p> : null}
     </section>
   )
 }

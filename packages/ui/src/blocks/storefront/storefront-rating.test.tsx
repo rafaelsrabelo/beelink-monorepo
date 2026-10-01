@@ -21,12 +21,19 @@ describe("StorefrontRating", () => {
     expect(screen.getByText("★★★★★")).toHaveClass("text-shop-rating")
   })
 
-  it("links the count to the reviews when told where they are, out of the tab order", () => {
+  it("links the count to the reviews when told where they are, and the link says the rating", () => {
     render(<StorefrontRating average={4.2} count={12} locale="pt-BR" reviewsHref="#avaliacoes" />)
 
-    const link = screen.getByText("(12)")
+    const link = screen.getByRole("link", { name: "Nota 4,2 de 5, 12 avaliações" })
     expect(link).toHaveAttribute("href", "#avaliacoes")
-    expect(link).toHaveAttribute("tabindex", "-1")
+    expect(link).not.toHaveAttribute("tabindex")
+    expect(screen.getAllByText("Nota 4,2 de 5, 12 avaliações")).toHaveLength(1)
+  })
+
+  it("says one review in the singular", () => {
+    render(<StorefrontRating average={5} count={1} locale="pt-BR" />)
+
+    expect(screen.getByText("Nota 5,0 de 5, 1 avaliação")).toHaveClass("sr-only")
   })
 
   it("has no accessibility violations", async () => {

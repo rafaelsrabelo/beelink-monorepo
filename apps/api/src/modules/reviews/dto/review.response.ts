@@ -10,6 +10,7 @@ import type {
   ReviewRating,
   StoreReview,
   StoreReviewPage,
+  StoreReviewsUnseen,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -107,4 +108,8 @@ export class StoreReviewPageResponse implements StoreReviewPage {
   @ApiProperty() page!: number;
   @ApiProperty() pageSize!: number;
   @ApiProperty({ type: StoreReviewCountsResponse, description: 'Following the rating and the product, not the status.' }) counts!: StoreReviewCountsResponse;
+}
+
+export class StoreReviewsUnseenResponse implements StoreReviewsUnseen {
+  @ApiProperty({ description: 'Written since the owner last opened the list, hidden or not.' }) count!: number;
 }

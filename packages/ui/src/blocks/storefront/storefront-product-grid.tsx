@@ -31,6 +31,8 @@ export interface StorefrontProductGridProps {
   columns?: StorefrontGridColumns
   showPrice?: boolean
   showBadge?: boolean
+  /** The cards' rating line; the shop may hide it. */
+  showRating?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -67,6 +69,7 @@ export function StorefrontProductGrid({
   columns = 4,
   showPrice = true,
   showBadge = true,
+  showRating = true,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: StorefrontProductGridProps) {
@@ -91,6 +94,7 @@ export function StorefrontProductGrid({
               locale={locale}
               showPrice={showPrice}
               showBadge={showBadge}
+              showRating={showRating}
               action={cardAction?.(product)}
               favorite={cardFavorite?.(product)}
               linkComponent={Link}

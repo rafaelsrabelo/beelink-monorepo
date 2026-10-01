@@ -32,8 +32,9 @@ export function starsOf(average: number): string {
  * glyphs are for the eye; a reader hears one sentence — "Nota 4,7 de 5, 128 avaliações" — from
  * text in the block, never from an `aria-label` on a `div`.
  *
- * It draws whatever it is given and knows nothing of where a rating comes from: today that is the
- * example source the web keeps behind a switch, tomorrow a reviews domain.
+ * It draws whatever it is given and knows nothing of where a rating comes from — the published
+ * reviews' cache, on a card or under a product's title. Leading to the reviews, the count is the
+ * link, and it carries the sentence: a keyboard reaches it, and a reader hears where it goes.
  */
 export function StorefrontRating({
   average,
@@ -47,11 +48,11 @@ export function StorefrontRating({
 }: StorefrontRatingProps) {
   const text = messages.storefront
   const shown = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(average)
-  const said = format(text.ratingOf, { rating: shown, count: String(count) })
+  const said = format(count === 1 ? text.ratingOfOne : text.ratingOf, { rating: shown, count: String(count) })
 
   return (
     <div className={cn("flex items-center gap-1.5", size === "card" ? "text-[13px]" : "text-sm", className)}>
-      <span className="sr-only">{said}</span>
+      {reviewsHref ? null : <span className="sr-only">{said}</span>}
       <span aria-hidden="true" className={size === "card" ? "font-semibold" : "font-bold"}>
         {shown}
       </span>
@@ -59,8 +60,9 @@ export function StorefrontRating({
         {starsOf(average)}
       </span>
       {reviewsHref ? (
-        <Link href={reviewsHref} aria-hidden="true" tabIndex={-1} className="text-shop-primary-ink">
-          ({count})
+        <Link href={reviewsHref} className="text-shop-primary-ink hover:underline">
+          <span aria-hidden="true">({count})</span>
+          <span className="sr-only">{said}</span>
         </Link>
       ) : (
         <span aria-hidden="true">({count})</span>

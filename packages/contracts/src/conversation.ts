@@ -69,6 +69,11 @@ export interface CustomerConversationSummary {
 export interface ConversationCustomer {
   id: string;
   name: string;
+  /**
+   * Whether they still have an account at the shop to read an answer. False once they deleted it
+   * (BEELINK-152): the conversation stays the shop's history, and takes no answer.
+   */
+  hasAccount: boolean;
 }
 
 /** A conversation as the shop reads it: the customer, every message, and how many from the customer it has not read. */
