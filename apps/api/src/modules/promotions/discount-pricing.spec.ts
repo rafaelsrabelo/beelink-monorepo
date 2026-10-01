@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 // App
-import { couponDiscountOf, promotionDiscountsOf, type PricingLine, type PricingPromotion } from './discount-pricing.js';
+import { couponDiscountOf, promotionDiscountsOf, unitDiscountOf, type PricingLine, type PricingPromotion } from './discount-pricing.js';
 
 const WHEY = 'whey';
 const CREATINE = 'creatine';
@@ -23,10 +23,10 @@ describe('promotionDiscountsOf', () => {
     expect(promotionDiscountsOf([line(WHEY, 18990, 2)], [])).toEqual([{ discountCents: 0, promotion: null }]);
   });
 
-  it('takes a percentage off each unit, rounded down, on every line of the cart', () => {
+  it('takes a percentage off each unit, rounded up to the cent, on every line of the cart', () => {
     const ten = promotion('dez', { percentBps: 1000 });
-    // 10% of 18,99 is 1,899: 1,89 a unit, three times — never 5,69 off the line.
-    expect(cents([line(WHEY, 1899, 3), line(CREATINE, 5990)], [ten])).toEqual([567, 599]);
+    // 10% of 18,99 is 1,899: 1,90 a unit, three times — the shelf's price of one, times three.
+    expect(cents([line(WHEY, 1899, 3), line(CREATINE, 5990)], [ten])).toEqual([570, 599]);
     expect(names([line(WHEY, 1899, 3)], [ten])).toEqual(['dez']);
   });
 
@@ -98,9 +98,35 @@ describe('promotionDiscountsOf', () => {
   });
 });
 
+describe('unitDiscountOf', () => {
+  const unit = { productId: WHEY, categoryIds: [WHEYS, PROTEINS], unitPriceCents: 1899 };
+
+  it('is what one unit loses on the shelf: the best of the promotions that reach it', () => {
+    const ten = promotion('dez', { percentBps: 1000 });
+    const proteins = promotion('proteinas', { scope: 'CATEGORIES', percentBps: 2000, categoryIds: [PROTEINS] });
+    expect(unitDiscountOf(unit, [ten, proteins])).toEqual({ discountCents: 380, promotion: { id: 'proteinas', name: 'proteinas' } });
+    expect(unitDiscountOf({ ...unit, categoryIds: [] }, [ten, proteins])).toEqual({ discountCents: 190, promotion: { id: 'dez', name: 'dez' } });
+  });
+
+  it('never reads a percentage as less than it is: the price left, taken from the price, is at least the share', () => {
+    // The shelf's badge is floor((was − now) / was): rounding the discount down would print 9%.
+    for (const unitPriceCents of [1899, 1894, 999, 101, 33, 7]) {
+      const { discountCents } = unitDiscountOf({ ...unit, unitPriceCents }, [promotion('dez', { percentBps: 1000 })]);
+      expect(Math.floor((discountCents * 100) / unitPriceCents), String(unitPriceCents)).toBeGreaterThanOrEqual(10);
+      expect(discountCents).toBeLessThanOrEqual(unitPriceCents);
+    }
+  });
+
+  it('leaves a fixed amount off the whole cart out: it is no unit\'s', () => {
+    expect(unitDiscountOf(unit, [promotion('vinte', { discountKind: 'FIXED', amountCents: 2000 })])).toEqual({ discountCents: 0, promotion: null });
+  });
+});
+
 describe('couponDiscountOf', () => {
-  it('takes a percentage of what is left of the products, rounded down', () => {
-    expect(couponDiscountOf({ kind: 'PERCENT', percentBps: 1000, amountCents: null }, 18991, 1000)).toBe(1899);
+  it('takes a percentage of what is left of the products, rounded up to the cent and never past it', () => {
+    expect(couponDiscountOf({ kind: 'PERCENT', percentBps: 1000, amountCents: null }, 18991, 1000)).toBe(1900);
+    expect(couponDiscountOf({ kind: 'PERCENT', percentBps: 10000, amountCents: null }, 18991, 1000)).toBe(18991);
+    expect(couponDiscountOf({ kind: 'PERCENT', percentBps: 1, amountCents: null }, 5, null)).toBe(1);
   });
 
   it('takes a fixed amount, never more than what is left', () => {

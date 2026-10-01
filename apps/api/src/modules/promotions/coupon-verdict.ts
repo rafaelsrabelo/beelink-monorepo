@@ -50,7 +50,7 @@ export function couponRefusalOf(coupon: VerdictCoupon | null, context: CouponCon
  * A coupon that would take nothing off is refused rather than spent: a use for no discount is a use
  * the customer lost. A free delivery has nothing to waive on a pick-up, nor on a delivery already
  * free; one whose fee is not agreed yet is taken, and its discount follows the fee. A share or an
- * amount takes nothing when the promotions left nothing, or left too little for it to reach a cent.
+ * amount takes nothing when the promotions left nothing of the products.
  */
 function takesNothing(coupon: VerdictCoupon, context: CouponContext): boolean {
   if (coupon.kind === 'FREE_SHIPPING') return context.fulfillment === 'PICKUP' || context.deliveryFeeCents === 0;

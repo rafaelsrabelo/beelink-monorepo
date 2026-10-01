@@ -35,9 +35,8 @@ describe('couponRefusalOf', () => {
     // A delivery already free has no fee to waive.
     expect(reasonOf(FREE, { deliveryFeeCents: 0 })).toBe('NOT_APPLICABLE');
     expect(reasonOf({}, { baseCents: 0 })).toBe('NOT_APPLICABLE');
-    // 10% of nine cents does not reach one.
-    expect(reasonOf({}, { baseCents: 9 })).toBe('NOT_APPLICABLE');
-    expect(reasonOf({}, { baseCents: 10 })).toBeNull();
+    // A share is rounded up: anything left of the products gives at least a cent.
+    expect(reasonOf({}, { baseCents: 9 })).toBeNull();
     expect(reasonOf({ kind: 'FIXED', percentBps: null, amountCents: 500 }, { baseCents: 1 })).toBeNull();
   });
 
