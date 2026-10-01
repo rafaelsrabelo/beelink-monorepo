@@ -182,3 +182,16 @@ O Rafael entregou o ícone: uma sacola preta com a marca, sobre amarelo.
 - **Contraste na barra amarela:** texto e ícones em preto; o selo da loja e o contador de avisos em
   preto com texto claro (eram verdes); o ponto de "alterações não publicadas" virou vermelho-alaranjado
   (âmbar some no amarelo); o texto de apoio da busca subiu de 60% para 70% do preto (60% dava 4,2:1).
+
+## Adendo — a fonte quebrou o deploy (01/10)
+
+O deploy falhou no `next build` da imagem: `module-not-found` em cada `src` do
+`plus_jakarta_sans_*.module.css`. O `next/font/google` baixa a fonte do Google durante o build, e
+nesse build os arquivos da Plus Jakarta Sans não vieram.
+
+A fonte agora mora no repositório (`apps/web/src/components/landing/fonts/`) e é carregada com
+`next/font/local`: um arquivo só, a versão variável com os pesos 300 a 800, só o alfabeto latino
+(cobre pt-BR e en), 27 KB, com a licença SIL OFL ao lado. O build não depende mais da rede para ela.
+
+Geist (painel) e Figtree (vitrine) continuam vindo do Google no build. Não falharam até aqui; se
+falharem, a correção é a mesma.
