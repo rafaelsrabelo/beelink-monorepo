@@ -1,6 +1,6 @@
 // Types
-import type { CreateOrderPayload, PaymentMethod, Product, ProductDetail } from "@harness-monorepo/contracts"
-import type { OrderDetailsValues, OrderFormLine, OrderProductOption, OrderTotals, OrderVariantOption } from "@harness-monorepo/ui/lib/order-form"
+import type { CreateOrderPayload, OrderFulfillment, OrderQuote, PaymentMethod, Product, ProductDetail, ShopOrderQuotePayload } from "@harness-monorepo/contracts"
+import type { OrderDetailsValues, OrderFormLine, OrderProductOption, OrderTotals, OrderTotalsRefusal, OrderVariantOption } from "@harness-monorepo/ui/lib/order-form"
 
 // UI
 import { centsFrom } from "@harness-monorepo/ui/lib/money"
@@ -55,22 +55,73 @@ export interface OrderPayloadInput {
   today: string
 }
 
+export interface SaleInput {
+  /** Whose sale it is, once chosen; null before. A first-purchase promotion and a coupon's limit per customer are theirs. */
+  customerId: string | null
+  lines: readonly OrderFormLine[]
+  fulfillment: OrderFulfillment
+  /** Whole cents, as typed: zero is left out. */
+  deliveryFeeCents: number
+  discountCents: number
+  /** `yyyy-mm-dd`; empty is today. */
+  placedOn: string
+  /** `yyyy-mm-dd`, the shopkeeper's today. */
+  today: string
+}
+
 /**
- * The order as the API takes it: the customer by id, no prices, and zero amounts left out. Today
- * is left to the API's clock; a day past is sent at its noon, so no time zone moves it a day.
+ * What prices a sale, as the API takes it — for the price asked before it is registered and for the
+ * order itself, so the two cannot be asked differently: the customer by id once chosen, no prices,
+ * zero amounts left out. Today is left to the API's clock; a day past is sent at its noon, so no
+ * time zone moves it a day.
+ *
+ * The customer is part of the price (BEELINK-245): without them the API cannot apply a first-purchase
+ * promotion it applies once the order names them, and the summary would show another total.
  */
-export function orderPayloadOf({ customerId, lines, details, paymentMethod, totals, today }: OrderPayloadInput): CreateOrderPayload {
-  const note = details.note.trim()
-  const placedOn = details.placedOn || today
+export function saleOf(input: SaleInput & { customerId: string }): ShopOrderQuotePayload & Pick<CreateOrderPayload, "customer">
+export function saleOf(input: SaleInput): ShopOrderQuotePayload
+export function saleOf({ customerId, lines, fulfillment, deliveryFeeCents, discountCents, placedOn, today }: SaleInput): ShopOrderQuotePayload {
+  const day = placedOn || today
 
   return {
-    customer: { id: customerId },
+    ...(customerId ? { customer: { id: customerId } } : {}),
     items: lines.map((line) => ({ variantId: line.variantId, quantity: line.quantity })),
-    fulfillment: details.fulfillment,
-    ...(totals.deliveryFeeCents ? { deliveryFeeCents: totals.deliveryFeeCents } : {}),
-    ...(totals.discountCents ? { discountCents: totals.discountCents } : {}),
+    fulfillment,
+    ...(deliveryFeeCents ? { deliveryFeeCents } : {}),
+    ...(discountCents ? { discountCents } : {}),
+    ...(day && day !== today ? { placedAt: new Date(`${day}T12:00:00`).toISOString() } : {}),
+  }
+}
+
+/** The order as the API takes it: what prices the sale — its customer among it — how it is paid and what was said. */
+export function orderPayloadOf({ customerId, lines, details, paymentMethod, totals, today }: OrderPayloadInput): CreateOrderPayload {
+  const note = details.note.trim()
+
+  return {
+    ...saleOf({ customerId, lines, fulfillment: details.fulfillment, deliveryFeeCents: totals.deliveryFeeCents, discountCents: totals.discountCents, placedOn: details.placedOn, today }),
     paymentMethod,
     ...(note ? { note } : {}),
-    ...(placedOn && placedOn !== today ? { placedAt: new Date(`${placedOn}T12:00:00`).toISOString() } : {}),
+  }
+}
+
+/**
+ * What the summary shows (BEELINK-194): the API's own pricing of the sale once it answered — a
+ * promotion running on the day it is dated is in it, which the form's sum cannot know — and the
+ * form's sum until then. A refusal is said either way: the form's own, before anything is asked, or
+ * the API's, which holds the typed discount against what the promotions left.
+ */
+export function shownTotalsOf(own: OrderTotals | OrderTotalsRefusal, quote: OrderQuote | null, refusedAs: string | null): OrderTotals | OrderTotalsRefusal {
+  if (typeof own === "string") return own
+  if (refusedAs === "ORDER_DISCOUNT_TOO_LARGE") return "DISCOUNT_TOO_LARGE"
+  if (refusedAs === "ORDER_TOTAL_TOO_LARGE") return "TOTAL_TOO_LARGE"
+  if (!quote) return own
+
+  return {
+    subtotalCents: quote.subtotalCents,
+    // The panel always tells a fee: a delivery's is the amount typed, never "to be agreed".
+    deliveryFeeCents: quote.deliveryFeeCents ?? 0,
+    discountCents: quote.manualDiscountCents,
+    totalCents: quote.totalCents,
+    priced: quote.lines.map((line) => ({ discountCents: line.discountCents, promotionName: line.promotion?.name ?? null })),
   }
 }

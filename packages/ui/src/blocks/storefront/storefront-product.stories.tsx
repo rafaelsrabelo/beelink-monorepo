@@ -39,6 +39,9 @@ export const UmaFoto: Story = {
   args: { images: [{ id: "i1", url: "https://picsum.photos/seed/a1/800/800", alt: null }] },
 }
 
+/** Under a promotion: its name below the price, beside what the price was and the badge. */
+export const EmPromocao: Story = { args: { promotionName: "Semana do Consumidor" } }
+
 export const SemDesconto: Story = {
   args: { compareAtPriceCents: null },
 }

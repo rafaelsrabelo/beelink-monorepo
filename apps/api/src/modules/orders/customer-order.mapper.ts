@@ -11,6 +11,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 // App
 import { toDeliveryAddress } from './order-delivery.js';
 import { toCustomerDelivery } from './order-tracking.js';
+import { toOrderCoupon } from './orders.mapper.js';
 
 /** How many lines a card of the customer's list shows; the rest are "+ N itens". */
 export const CUSTOMER_ORDER_CARD_ITEMS = 3;
@@ -48,6 +49,8 @@ function toItem(item: CustomerOrderRow['items'][number]): CustomerOrderItem {
     unitPriceCents: item.unitPriceCents,
     quantity: item.quantity,
     lineTotalCents: item.lineTotalCents,
+    discountCents: item.discountCents,
+    promotionName: item.promotionName,
   };
 }
 
@@ -80,6 +83,9 @@ export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
     subtotalCents: row.subtotalCents,
     deliveryFeeCents: row.deliveryFeeCents,
     discountCents: row.discountCents,
+    promotionDiscountCents: row.promotionDiscountCents,
+    couponDiscountCents: row.couponDiscountCents,
+    coupon: toOrderCoupon(row),
     totalCents: row.totalCents,
     placedAt: row.placedAt.toISOString(),
     events: row.events.map((event) => ({ status: event.status, at: event.createdAt.toISOString() })),
@@ -100,6 +106,8 @@ export function toCustomerOrderSummary(row: CustomerOrderRow): CustomerOrderSumm
     paymentMethod: row.paymentMethod,
     totalCents: row.totalCents,
     deliveryFeeCents: row.deliveryFeeCents,
+    discountCents: row.discountCents,
+    coupon: toOrderCoupon(row),
     itemsCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
     items: row.items.slice(0, CUSTOMER_ORDER_CARD_ITEMS).map(toItem),
     moreItems: Math.max(row.items.length - CUSTOMER_ORDER_CARD_ITEMS, 0),

@@ -112,6 +112,8 @@ describe("a shopper's order from the cart", () => {
     expect(Object.keys(order).sort()).toEqual(
       [
         'cancelledBy',
+        'coupon',
+        'couponDiscountCents',
         'delivery',
         'deliveryAddress',
         'deliveryFeeCents',
@@ -123,6 +125,7 @@ describe("a shopper's order from the cart", () => {
         'paymentMethod',
         'placedAt',
         'placedBy',
+        'promotionDiscountCents',
         'status',
         'subtotalCents',
         'totalCents',

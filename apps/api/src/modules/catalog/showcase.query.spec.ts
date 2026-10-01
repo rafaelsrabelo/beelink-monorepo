@@ -30,7 +30,8 @@ function row(id: string): ShowcaseCardRow {
     reviewCount: 0,
     reviewRatingSum: 0,
     images: [{ url: `/${id}.jpg` }],
-    category: { slug: 'blusas' },
+    categoryId: 'c1',
+    category: { slug: 'blusas', parentId: null },
     _count: { options: 0 },
     options: [],
   };
@@ -45,7 +46,8 @@ describe('showcaseQuery — what each source asks the shelf for', () => {
       PRICE,
     );
 
-    expect(query!.where).toMatchObject({ storeId: STORE, AND: [ON_THE_SHELF_WHERE] });
+    expect(query!.where.storeId).toBe(STORE);
+    expect(query!.where.AND).toContainEqual(ON_THE_SHELF_WHERE);
   });
 
   it('draws a category and its children, and nothing when the category is gone', () => {
@@ -80,8 +82,13 @@ describe('showcaseQuery — what each source asks the shelf for', () => {
     expect(showcaseQuery(STORE, showcase(), PRICE)!.orderBy).toEqual([{ position: 'asc' }, { name: 'asc' }, { id: 'asc' }]);
   });
 
-  it('draws what is on sale by comparing the two prices', () => {
-    expect(showcaseQuery(STORE, showcase({ source: 'ON_SALE' }), PRICE)!.where.compareAtPriceCents).toEqual({ gt: PRICE });
+  it('draws what is on sale by comparing the two prices — and, with a promotion running, what it is told is on sale', () => {
+    expect(showcaseQuery(STORE, showcase({ source: 'ON_SALE' }), PRICE)!.where.AND).toEqual([ON_THE_SHELF_WHERE, { compareAtPriceCents: { gt: PRICE } }]);
+
+    const promoted = { OR: [{ compareAtPriceCents: { gt: PRICE } }, { id: { in: [P1] } }] };
+    expect(showcaseQuery(STORE, showcase({ source: 'ON_SALE' }), PRICE, promoted)!.where.AND).toEqual([ON_THE_SHELF_WHERE, promoted]);
+    // Only that source reads it.
+    expect(JSON.stringify(showcaseQuery(STORE, showcase({ source: 'NEWEST' }), PRICE, promoted))).not.toContain(P1);
   });
 
   it('takes the limit, twenty-four when none is set, and never more than forty-eight', () => {

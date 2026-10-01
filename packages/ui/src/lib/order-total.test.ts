@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // App
-import { feeLineOf, feeToAgree, orderTotalText } from "./order-total"
+import { customerTotalText, feeLineOf, feeToAgree, orderTotalText } from "./order-total"
 
 const delivery = { fulfillment: "DELIVERY" as const, deliveryFeeCents: null, status: "RECEIVED" }
 
@@ -34,5 +34,14 @@ describe("a delivery's fee, on one rule for every screen", () => {
   it("has no line for a pick-up", () => {
     expect(feeLineOf({ fulfillment: "PICKUP", deliveryFeeCents: 0, status: "RECEIVED" })).toBeNull()
     expect(feeToAgree({ fulfillment: "PICKUP", deliveryFeeCents: null })).toBe(false)
+  })
+})
+
+/** BEELINK-194: a free-delivery coupon waives whatever fee is agreed, so its customer's total is final. */
+describe("a total as its customer reads it", () => {
+  it("leaves '+ frete' out under a free delivery coupon, and keeps it under any other", () => {
+    expect(customerTotalText("R$ 10,00", { ...delivery, coupon: { kind: "FREE_SHIPPING" } }, "{total} + frete")).toBe("R$ 10,00")
+    expect(customerTotalText("R$ 10,00", { ...delivery, coupon: { kind: "PERCENT" } }, "{total} + frete")).toBe("R$ 10,00 + frete")
+    expect(customerTotalText("R$ 10,00", { ...delivery, coupon: null }, "{total} + frete")).toBe("R$ 10,00 + frete")
   })
 })

@@ -1,3 +1,4 @@
+import type { CouponKindValue } from "@harness-monorepo/ui/lib/order-discounts"
 import type { OrderFulfillmentValue, OrderPaymentValue } from "@harness-monorepo/ui/lib/order-form"
 
 /** Mirrors the wire's `OrderStatus`; this package imports no contracts. */
@@ -32,6 +33,10 @@ export interface OrderDetailItem {
   unitPriceCents: number
   quantity: number
   lineTotalCents: number
+  /** What a promotion took off this line; zero with none. */
+  discountCents: number
+  /** The promotion's name as it was; null with none. */
+  promotionName: string | null
 }
 
 /** An opened order: the wire's `Order`, as its page reads it. */
@@ -64,7 +69,12 @@ export interface OrderDetailView {
   subtotalCents: number
   /** Null while a delivery's fee is not agreed (BEELINK-170); zero is a free delivery. */
   deliveryFeeCents: number | null
+  /** Everything taken off; the two below are its named parts, and the rest is what the shopkeeper typed. */
   discountCents: number
+  promotionDiscountCents: number
+  couponDiscountCents: number
+  /** The coupon it took, as it was. */
+  coupon: { code: string; kind: CouponKindValue } | null
   totalCents: number
   note: string | null
   /** ISO-8601. */

@@ -11,11 +11,12 @@ import { StoresService } from '../stores/stores.service.js';
 import type { SetOrderDeliveryFeeDto } from './dto/order-delivery-fee.dto.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { agreeDeliveryFee } from './order-delivery-fee.js';
+import { placedAtOf } from './order-placed-at.js';
 import { OrderPlacement } from './order-placement.js';
 import { settleCancellation } from './order-cancellation.js';
 import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
-import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX, PLACED_AT_SKEW_MS } from './orders.constants.js';
+import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX } from './orders.constants.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
 import { isOpen } from '../conversations/conversations.constants.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
@@ -40,14 +41,7 @@ export class OrdersService {
   async create(storeSlug: string, userId: string, dto: CreateOrderDto): Promise<Order> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
 
-    const placedAt = dto.placedAt ? new Date(dto.placedAt) : new Date();
-    // ISO-shaped is not a date: "2026-02-30" passes the shape and parses to nothing.
-    if (Number.isNaN(placedAt.getTime())) {
-      throw new BadRequestException({ errorCode: 'BAD_REQUEST', message: 'placedAt is not a date' });
-    }
-    if (placedAt.getTime() > Date.now() + PLACED_AT_SKEW_MS) {
-      throw new BadRequestException(orderError('ORDER_PLACED_IN_FUTURE', 'An order cannot be placed in the future'));
-    }
+    const placedAt = placedAtOf(dto.placedAt);
 
     const order = await this.placement.place({
       storeId,
@@ -58,6 +52,7 @@ export class OrdersService {
       paymentMethod: dto.paymentMethod,
       deliveryFeeCents: dto.deliveryFeeCents ?? 0,
       discountCents: dto.discountCents ?? 0,
+      couponCode: dto.couponCode ?? null,
       note: dto.note?.length ? dto.note : null,
       placedAt,
       // Registered by the shopkeeper, who already agreed the sale: accepted, not received.

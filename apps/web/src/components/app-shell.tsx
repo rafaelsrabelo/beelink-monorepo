@@ -14,10 +14,12 @@ import {
   LayoutTemplateIcon,
   MessageCircleIcon,
   PackageIcon,
+  PercentIcon,
   SettingsIcon,
   ShoppingBagIcon,
   StarIcon,
   TagsIcon,
+  TicketIcon,
   UsersIcon,
 } from "lucide-react"
 
@@ -188,6 +190,8 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                   // screens for one thing is what had a top banner showing in design mode and
                   // missing from its own list.
                   item(nav.design, "/design", <LayoutTemplateIcon />),
+                  item(nav.promotions, "/promotions", <PercentIcon />, "prefix"),
+                  item(nav.coupons, "/coupons", <TicketIcon />, "prefix"),
                   item(nav.customers, "/customers", <UsersIcon />, "prefix"),
                   { ...item(nav.reviews, "/reviews", <StarIcon />, "prefix"), ...unseenBadge },
                 ]

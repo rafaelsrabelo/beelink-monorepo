@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // Lib
-import { centsFrom, reaisFrom } from "./money"
+import { centsFrom, centsFromStrict, reaisFrom } from "./money"
 
 describe("centsFrom", () => {
   /**
@@ -51,5 +51,24 @@ describe("reaisFrom", () => {
 
   it("round-trips what a person typed", () => {
     expect(reaisFrom(centsFrom("1.234,56"))).toBe("1234,56")
+  })
+})
+
+describe("centsFromStrict", () => {
+  it.each([
+    ["139,90", 13990],
+    ["139.9", 13990],
+    ["R$ 50", 5000],
+    ["  0,5 ", 50],
+    ["1.000", 100000],
+    ["1.234,56", 123456],
+    ["1.000.000", 100000000],
+  ])("reads %s as %i cents", (typed, cents) => {
+    expect(centsFromStrict(typed)).toBe(cents)
+  })
+
+  /** Each of these has two readings, or none: the screen asks again instead of picking one. */
+  it.each(["", "abc", "-10", "1e2", "12,555", "100,001", "1,000", "1.00.000", "10%", "1.000.00"])("refuses %s", (typed) => {
+    expect(centsFromStrict(typed)).toBeNull()
   })
 })

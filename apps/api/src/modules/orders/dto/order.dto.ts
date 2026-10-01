@@ -1,4 +1,5 @@
 // Nest
+import { applyDecorators } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -39,6 +40,7 @@ import { blankToNull, normaliseWhatsapp, trim } from '../../stores/dto/store-fie
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
   ORDER_AMOUNT_MAX_CENTS,
+  ORDER_COUPON_CODE_MAX_LENGTH,
   ORDER_DELIVERY_KINDS,
   ORDER_FULFILLMENTS,
   ORDER_ITEMS_MAX,
@@ -52,6 +54,15 @@ import {
 
 /** A UUID in the case Postgres answers it in, so an id sent in capitals still matches its row. */
 const lowerCase = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.toLowerCase() : value));
+
+/** A coupon's code as a person types it: blank is none, and whether it holds is the pricing's to say. */
+export const couponCode = applyDecorators(
+  ApiPropertyOptional({ nullable: true, type: String, maxLength: ORDER_COUPON_CODE_MAX_LENGTH, example: 'BEMVINDO10', description: 'A coupon of the shop, in any case; blank is none.' }),
+  IsOptional(),
+  blankToNull,
+  IsString(),
+  MaxLength(ORDER_COUPON_CODE_MAX_LENGTH),
+);
 
 /**
  * The customer, as a flat shape: `id` for one the shop has, or `name` and `phone` to register one
@@ -123,12 +134,15 @@ export class CreateOrderDto {
   @Max(ORDER_AMOUNT_MAX_CENTS)
   deliveryFeeCents?: number;
 
-  @ApiPropertyOptional({ minimum: 0, maximum: ORDER_AMOUNT_MAX_CENTS, description: 'Whole cents, off the total.' })
+  @ApiPropertyOptional({ minimum: 0, maximum: ORDER_AMOUNT_MAX_CENTS, description: 'Whole cents the shopkeeper takes off by hand, beyond the promotions and the coupon.' })
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(ORDER_AMOUNT_MAX_CENTS)
   discountCents?: number;
+
+  @couponCode
+  couponCode?: string | null;
 
   @ApiProperty({ enum: PAYMENT_METHODS })
   @IsIn(PAYMENT_METHODS)

@@ -34,3 +34,12 @@ export function feeLineOf(order: TotalOf): { cents: number } | "toAgree" | null 
 export function orderTotalText(total: string, order: TotalOf, plusFee: string): string {
   return feeToAgree(order) ? format(plusFee, { total }) : total
 }
+
+/**
+ * A total as its customer reads it. A free-delivery coupon waives whatever fee is agreed
+ * (BEELINK-194), so to them such a total is final: "+ frete" beside it would read as more to pay.
+ * The panel keeps `orderTotalText`, where "+ frete" says the fee is still to be told.
+ */
+export function customerTotalText(total: string, order: TotalOf & { coupon: { kind: string } | null }, plusFee: string): string {
+  return order.coupon?.kind === "FREE_SHIPPING" ? total : orderTotalText(total, order, plusFee)
+}

@@ -39,6 +39,9 @@ export const ORDER_NOTE_MAX_LENGTH = 500;
 /** R$ 1.000.000,00 — a fee or a discount beyond it is a typo with too many zeros. */
 export const ORDER_AMOUNT_MAX_CENTS = 100_000_000;
 
+/** As a coupon's code is bounded, with room for what a person pastes around it; past it, not a code. */
+export const ORDER_COUPON_CODE_MAX_LENGTH = 60;
+
 /** A clock a minute ahead of the server's is not an order placed in the future. */
 export const PLACED_AT_SKEW_MS = 60_000;
 

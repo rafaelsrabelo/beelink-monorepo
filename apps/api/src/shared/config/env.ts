@@ -58,6 +58,14 @@ const envSchema = z.object({
   CUSTOMER_ORDER_RATE_LIMIT_WINDOW: z.string().default('10 minutes'),
 
   /**
+   * Per IP, on the route a signed-in shopper prices their cart through — the one route that says
+   * whether a coupon's code exists. A checkout prices again at every change, a handful of times; a
+   * script with one valid account would otherwise guess a shop's codes.
+   */
+  CUSTOMER_QUOTE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
+  CUSTOMER_QUOTE_RATE_LIMIT_WINDOW: z.string().default('5 minutes'),
+
+  /**
    * Per IP, on the route a shopper writes to the shop through, about an order. A person types a few
    * lines a minute; a script with one valid account would otherwise flood a shop's conversations.
    */

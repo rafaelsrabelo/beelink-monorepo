@@ -37,6 +37,9 @@ const order: CustomerOrder = {
   subtotalCents: 23722,
   deliveryFeeCents: 0,
   discountCents: 0,
+  promotionDiscountCents: 0,
+  couponDiscountCents: 0,
+  coupon: null,
   totalCents: 23722,
   placedAt: "2026-09-27T17:02:00.000Z",
   events: [
@@ -92,6 +95,8 @@ describe("the account's front", () => {
       paymentMethod: "PIX",
       totalCents: 5000,
       deliveryFeeCents: 1000,
+      discountCents: 0,
+      coupon: null,
       itemsCount: 1,
       items: [],
       moreItems: 0,

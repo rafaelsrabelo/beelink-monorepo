@@ -1,5 +1,5 @@
 // Nest
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query, UseInterceptors } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiNotFoundResponse,
@@ -11,6 +11,7 @@ import {
 } from '@nestjs/swagger';
 
 // App
+import { PricesChangeInterceptor } from '../promotions/prices-change.interceptor.js';
 import { Public } from '../auth/auth.decorators.js';
 import { STOREFRONT_RATE_LIMIT } from '../stores/stores.constants.js';
 import { StoresService } from '../stores/stores.service.js';
@@ -41,6 +42,7 @@ function centsOfReais(reais: number | undefined): number | undefined {
  * visitor would be one visitor's answer handed to the next.
  */
 @ApiTags('storefront')
+@UseInterceptors(PricesChangeInterceptor)
 @Controller('stores/:storeSlug/catalog')
 export class StorefrontController {
   constructor(

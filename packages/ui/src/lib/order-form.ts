@@ -106,16 +106,25 @@ export interface OrderTotalsLine {
 export interface OrderTotals {
   subtotalCents: number
   deliveryFeeCents: number
+  /** What the shopkeeper typed. */
   discountCents: number
   totalCents: number
+  /**
+   * Each line as the API priced it: what a promotion took off it, and which (BEELINK-194). Absent
+   * until the API answered — a promotion is read at the day of the sale, and the form cannot know it.
+   * With it, the total is the API's own: the lines' discounts are already out of it.
+   */
+  priced?: readonly { discountCents: number; promotionName: string | null }[]
 }
 
 export type OrderTotalsRefusal = "DISCOUNT_TOO_LARGE" | "TOTAL_TOO_LARGE"
 
 /**
- * The totals the form shows before it saves — the same rules the API's `totalsOf` applies, over the
- * same prices, so the total on the screen is the one the API writes, to the cent. A pick-up charges
- * no delivery; a discount never passes the order; nothing passes the cap.
+ * The totals the form adds up itself — the same rules the API's `totalsOf` applies, over the same
+ * prices. A pick-up charges no delivery; a discount never passes the order; nothing passes the cap.
+ *
+ * It knows no promotion: what the form shows is the API's own pricing once that answered, and this
+ * sum stands until then, and is what says a typed amount cannot be before anything is asked.
  */
 export function orderTotalsOf(
   lines: readonly OrderTotalsLine[],

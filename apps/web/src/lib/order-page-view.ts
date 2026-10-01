@@ -8,7 +8,8 @@ import type { StorefrontOrderStatusProps } from "@harness-monorepo/ui/blocks/sto
 import type { StorefrontOrderTrackingProps } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tracking"
 
 // UI
-import { feeLineOf, orderTotalText } from "@harness-monorepo/ui/lib/order-total"
+import { discountLinesOf, linePromotionOf } from "@harness-monorepo/ui/lib/order-discounts"
+import { customerTotalText, feeLineOf } from "@harness-monorepo/ui/lib/order-total"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { format } from "@harness-monorepo/ui/locales/index"
 
@@ -136,9 +137,13 @@ export function orderHistoryOf(order: CustomerOrder, { locale, messages }: Pick<
     .reverse()
 }
 
-/** The lines at the prices of the day, and how many units they add up to. */
+/**
+ * The lines at the prices of the day, and how many units they add up to. A line a promotion reached
+ * says which and how much (BEELINK-194): its price stays the catalogue's, as the subtotal adds it up.
+ */
 export function orderItemsOf(order: CustomerOrder, { routes, locale, messages }: OrderCardContext): { items: StorefrontOrderItemLine[]; count: number } {
   const text = messages.storefront
+  const money = (cents: number) => formatCents(cents, locale, "BRL")
   const items = order.items.map((item) => ({
     name: item.productName,
     href: item.productSlug ? routes.product(item.productSlug) : null,
@@ -146,7 +151,8 @@ export function orderItemsOf(order: CustomerOrder, { routes, locale, messages }:
     meta: [
       item.variantLabel,
       format(text.orderQty, { qty: String(item.quantity) }),
-      item.quantity > 1 ? format(text.orderEach, { price: formatCents(item.unitPriceCents, locale, "BRL") }) : null,
+      item.quantity > 1 ? format(text.orderEach, { price: money(item.unitPriceCents) }) : null,
+      linePromotionOf(item, money, messages.orders.discountRows),
     ]
       .filter(Boolean)
       .join(" · "),
@@ -157,7 +163,10 @@ export function orderItemsOf(order: CustomerOrder, { routes, locale, messages }:
   return { items, count: order.items.reduce((sum, item) => sum + item.quantity, 0) }
 }
 
-/** The sums that apply — delivery only on a delivery, a discount only when there is one — and the way of paying agreed. */
+/**
+ * The sums that apply — delivery only on a delivery, and what came off part by part: the promotions,
+ * the coupon by its code, what the shop took off by hand — and the way of paying agreed.
+ */
 export function orderPaymentOf(order: CustomerOrder, { locale, messages }: Pick<OrderCardContext, "locale" | "messages">): Omit<StorefrontOrderPaymentProps, "messages"> {
   const text = messages.storefront
   const money = (cents: number) => formatCents(cents, locale, "BRL")
@@ -173,9 +182,9 @@ export function orderPaymentOf(order: CustomerOrder, { locale, messages }: Pick<
               ? { label: text.orderDelivery, value: text.orderFree, positive: true }
               : { label: text.orderDelivery, value: money(fee.cents) },
         ]),
-    ...(order.discountCents > 0 ? [{ label: text.orderDiscount, value: `− ${money(order.discountCents)}`, positive: true }] : []),
+    ...discountLinesOf(order, money, messages.orders.discountRows).map(({ label, value }) => ({ label, value, positive: true })),
   ]
-  return { rows, total: orderTotalText(money(order.totalCents), order, text.orderTotalPlusFee), method: format(text.orderPaymentAgreed, { method: messages.orders.payments[order.paymentMethod] }) }
+  return { rows, total: customerTotalText(money(order.totalCents), order, text.orderTotalPlusFee), method: format(text.orderPaymentAgreed, { method: messages.orders.payments[order.paymentMethod] }) }
 }
 
 /** Where it goes — who receives it, then the address line by line — or the shop it is picked up at. Null for a delivery that recorded none. */

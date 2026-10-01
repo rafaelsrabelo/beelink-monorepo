@@ -44,6 +44,18 @@ describe("StorefrontProductDetail", () => {
   })
 
 
+  it("names the promotion under the price while the price shows a cut, and not otherwise", () => {
+    const { rerender } = renderProduct({ promotionName: "Semana do Whey" })
+    expect(screen.getByText("Promoção: Semana do Whey")).toBeInTheDocument()
+
+    // No "de" above the price: nothing to attribute to a promotion.
+    rerender(<StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={null} promotionName="Semana do Whey" images={images} locale="pt-BR" />)
+    expect(screen.queryByText("Promoção: Semana do Whey")).toBeNull()
+
+    rerender(<StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={24900} images={images} locale="pt-BR" />)
+    expect(screen.queryByText(/^Promoção:/)).toBeNull()
+  })
+
   it("lays out 5b's three parts in order: the photos, the information under the shop's name, and a region for buying", () => {
     renderProduct({ cart: { onAdd: () => {}, href: "/lessari/carrinho" } })
 
@@ -173,6 +185,19 @@ describe("StorefrontProductDetail", () => {
         ["p-areia", 1],
         ["p-terracota", 1],
       ])
+    })
+
+    it("names the promotion of the combination chosen, which is not always the product's", () => {
+      const promoted = BLOUSE_VARIANTS.map((variant) =>
+        variant.id === "g-preto" ? { ...variant, priceCents: 17520, compareAtPriceCents: 21900, promotionName: "Vinte por cento" } : { ...variant, priceCents: 15900, compareAtPriceCents: 18900, promotionName: "Trinta reais" },
+      )
+      const { unmount } = renderProduct({ ...withVariants, variants: promoted, promotionName: "Trinta reais", initialVariantId: "g-preto" })
+      expect(screen.getByText("Promoção: Vinte por cento")).toBeInTheDocument()
+      expect(screen.queryByText("Promoção: Trinta reais")).toBeNull()
+      unmount()
+
+      renderProduct({ ...withVariants, variants: promoted, promotionName: "Trinta reais", initialVariantId: "p-areia" })
+      expect(screen.getByText("Promoção: Trinta reais")).toBeInTheDocument()
     })
 
     it("opens on the combination the address asked for", () => {

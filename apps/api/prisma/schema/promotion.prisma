@@ -19,6 +19,14 @@ enum CouponKind {
   FREE_SHIPPING
 }
 
+/// Who a promotion or a coupon is for (BEELINK-245): everyone, or only a customer on a first
+/// purchase — one with no order at the shop that stands. Which customers those are is read from
+/// their orders when one is priced, and never stored.
+enum DiscountAudience {
+  EVERYONE
+  FIRST_PURCHASE
+}
+
 /// A shop's promotion (BEELINK-190): a discount that applies by itself, for a period, over the cart or
 /// over named products or categories. Where it stands — scheduled, running, paused, ended — is read
 /// from the clock and never stored. An order photographs what it took, so an edit here never rewrites
@@ -46,6 +54,10 @@ model Promotion {
   /// The shopkeeper's switch: false is paused, whatever the period says.
   isActive Boolean   @default(true)
 
+  /// Who it is for. A FIRST_PURCHASE one prices an order, never the shop window: that is one page
+  /// for every visitor, and who is on a first purchase is known only once they are identified.
+  audience DiscountAudience @default(EVERYONE)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -53,6 +65,8 @@ model Promotion {
   /// every product it named was deleted — applies to nothing.
   products   PromotionProduct[]
   categories PromotionCategory[]
+  /// The order lines it took a discount off (BEELINK-191); each keeps its own photograph.
+  orderItems OrderItem[]
 
   /// The panel's list, the newest first.
   @@index([storeId, createdAt(sort: Desc)])
@@ -115,6 +129,10 @@ model Coupon {
   usedCount          Int  @default(0)
 
   isActive Boolean @default(true)
+
+  /// Who may use it, as on Promotion. A FIRST_PURCHASE one is refused to a customer with an order
+  /// that stands, whatever its limits say.
+  audience DiscountAudience @default(EVERYONE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

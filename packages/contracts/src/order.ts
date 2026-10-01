@@ -2,6 +2,7 @@
 
 // Types
 import type { CustomerAddress } from "./customer.js";
+import type { CouponKind } from "./promotion.js";
 import type { PaymentMethod } from "./store.js";
 
 /** Where an order stands. `CANCELLED` is final; the others move back and forth at the shopkeeper's word. */
@@ -25,9 +26,21 @@ export interface OrderItem {
   /** "Sabor: Uva · Peso: 300 g", in the product's option order. Null for a product with no options. */
   variantLabel: string | null;
   sku: string | null;
+  /** The catalogue's price of one unit when the order was placed, before any promotion. */
   unitPriceCents: number;
   quantity: number;
+  /** `unitPriceCents × quantity`: the promotion's discount is apart, in `discountCents`. */
   lineTotalCents: number;
+  /** What a promotion took off this line (BEELINK-191); zero with none. */
+  discountCents: number;
+  /** The promotion's name as it was; null with none. */
+  promotionName: string | null;
+}
+
+/** The coupon an order took, as it was: editing or pausing the coupon afterwards changes nothing here. */
+export interface OrderCoupon {
+  code: string;
+  kind: CouponKind;
 }
 
 /** A status the order had, who set it and when. */
@@ -115,7 +128,16 @@ export interface Order {
    * is a free delivery. Zero on a pick-up. The total leaves an unagreed fee out.
    */
   deliveryFeeCents: number | null;
+  /**
+   * Everything taken off: the promotions, the coupon and what the shopkeeper typed. The two below
+   * are its parts; the rest is the typed discount.
+   */
   discountCents: number;
+  /** The sum of the lines' promotion discounts. */
+  promotionDiscountCents: number;
+  /** What the coupon took off — on a free delivery, the fee, and zero while the fee is not agreed. */
+  couponDiscountCents: number;
+  coupon: OrderCoupon | null;
   totalCents: number;
   note: string | null;
   /** When it was sold, ISO-8601 — which may be before it was registered. */
@@ -184,7 +206,10 @@ export interface CreateOrderPayload {
   fulfillment: OrderFulfillment;
   /** Ignored, as zero, on a pick-up. */
   deliveryFeeCents?: number;
+  /** What the shopkeeper takes off by hand, beyond the promotions and the coupon. */
   discountCents?: number;
+  /** A coupon of the shop, in any case; one that does not hold refuses the order (`ORDER_COUPON_REFUSED`). */
+  couponCode?: string | null;
   paymentMethod: PaymentMethod;
   note?: string;
   /** ISO-8601; absent is now. The past is allowed, the future is not. */
@@ -209,6 +234,8 @@ export interface PlaceCustomerOrderPayload {
   paymentMethod: PaymentMethod;
   /** One of the customer's saved addresses (`CustomerSavedAddress.id`); ignored on a pick-up. Another's is `ORDER_ADDRESS_NOT_FOUND`. */
   addressId?: string;
+  /** A coupon of the shop, in any case; one that does not hold refuses the order (`ORDER_COUPON_REFUSED`). */
+  couponCode?: string | null;
 }
 
 /** One line as its customer reads it: what was bought, at the price of that moment. */
@@ -221,9 +248,13 @@ export interface CustomerOrderItem {
   variantLabel: string | null;
   /** The combination's photo, else the product's first — while the product exists. */
   imageUrl: string | null;
+  /** The catalogue's price of one unit when the order was placed, before any promotion. */
   unitPriceCents: number;
   quantity: number;
   lineTotalCents: number;
+  /** What a promotion took off this line; zero with none. */
+  discountCents: number;
+  promotionName: string | null;
 }
 
 /** Who placed an order, as its customer is told: they did, from the cart, or the shop registered it. */
@@ -260,7 +291,16 @@ export interface CustomerOrder {
    * is a free delivery. Zero on a pick-up. The total leaves an unagreed fee out.
    */
   deliveryFeeCents: number | null;
+  /**
+   * Everything taken off: the promotions, the coupon and what the shopkeeper typed. The two below
+   * are its parts; the rest is the typed discount.
+   */
   discountCents: number;
+  /** The sum of the lines' promotion discounts. */
+  promotionDiscountCents: number;
+  /** What the coupon took off — on a free delivery, the fee, and zero while the fee is not agreed. */
+  couponDiscountCents: number;
+  coupon: OrderCoupon | null;
   totalCents: number;
   /** ISO-8601. */
   placedAt: string;
@@ -285,6 +325,10 @@ export interface CustomerOrderSummary {
   totalCents: number;
   /** Null while a delivery's fee is not agreed: the total then says "+ frete" beside it. */
   deliveryFeeCents: number | null;
+  /** Everything taken off — promotions, coupon and what the shop typed — as the card says it under the total (BEELINK-194). */
+  discountCents: number;
+  /** The coupon it took, as it was; null with none. */
+  coupon: OrderCoupon | null;
   /** Units across every line. */
   itemsCount: number;
   /** The first lines, as many as the card shows. */
@@ -390,7 +434,9 @@ export type OrderErrorCode =
   /** A tracking link opens in the customer's browser: `https` only. */
   | "ORDER_DELIVERY_LINK_INVALID"
   /** A counted combination with fewer left than the order asks for. Its `details` are `OrderStockDetails`. */
-  | "ORDER_STOCK_INSUFFICIENT";
+  | "ORDER_STOCK_INSUFFICIENT"
+  /** The coupon sent with the order does not hold. Its `details` are `OrderCouponRefusedDetails`. */
+  | "ORDER_COUPON_REFUSED";
 
 /** One line the stock cannot cover: the combination, and how many the shop has of it. */
 export interface OrderStockShortage {

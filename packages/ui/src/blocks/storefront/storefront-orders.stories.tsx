@@ -23,6 +23,7 @@ const received: StorefrontOrderCardProps = {
   number: 1042,
   placedOn: "21 set 2026",
   total: "R$ 237,22 · Pix",
+  saving: "Desconto de R$ 12,48 · cupom BEMVINDO5",
   shipTo: "Rafael Souza",
   headline: "Aguardando a loja confirmar",
   detail: "Feito por você na loja em 21 set, 14:02. A loja confirma o pedido e o prazo.",
