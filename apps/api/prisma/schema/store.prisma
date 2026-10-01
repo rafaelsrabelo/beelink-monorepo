@@ -155,6 +155,8 @@ model Store {
   products          Product[]
   productVariants   ProductVariant[]
   productReviews    ProductReview[]
+  promotions        Promotion[]
+  coupons           Coupon[]
   restockRequests   RestockRequest[]
   sections          StoreSection[]
   pages             StorePage[]

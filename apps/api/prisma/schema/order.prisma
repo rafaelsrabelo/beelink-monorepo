@@ -85,6 +85,8 @@ model Order {
   statusEmails OrderStatusEmail[]
   /// The reviews it let its customer write (BEELINK-156).
   reviews ProductReview[]
+  /// The coupon it took, when it took one (BEELINK-190).
+  couponRedemption CouponRedemption?
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])
