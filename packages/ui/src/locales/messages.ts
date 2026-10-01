@@ -150,6 +150,8 @@ export interface UiMessages {
   storefront: {
     /** "-40%", computed from the pair of prices and never stored beside them. */
     discount: string
+    /** `{name}` — the promotion that set the product page's price, by the shopkeeper's name for it. */
+    promotion: string
     /** `{price}` — what it cost before, under the product page's price: "De: R$ 149,90". */
     priceWas: string
     /** `{rating}` `{count}` — what a reader hears for the stars: "Nota 4,7 de 5, 128 avaliações". */

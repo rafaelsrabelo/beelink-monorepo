@@ -44,6 +44,18 @@ describe("StorefrontProductDetail", () => {
   })
 
 
+  it("names the promotion under the price while the price shows a cut, and not otherwise", () => {
+    const { rerender } = renderProduct({ promotionName: "Semana do Whey" })
+    expect(screen.getByText("Promoção: Semana do Whey")).toBeInTheDocument()
+
+    // No "de" above the price: nothing to attribute to a promotion.
+    rerender(<StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={null} promotionName="Semana do Whey" images={images} locale="pt-BR" />)
+    expect(screen.queryByText("Promoção: Semana do Whey")).toBeNull()
+
+    rerender(<StorefrontProductDetail shopName="Lessari" homeHref="/lessari" name="Bolsa Amora" description={null} priceCents={18900} compareAtPriceCents={24900} images={images} locale="pt-BR" />)
+    expect(screen.queryByText(/^Promoção:/)).toBeNull()
+  })
+
   it("lays out 5b's three parts in order: the photos, the information under the shop's name, and a region for buying", () => {
     renderProduct({ cart: { onAdd: () => {}, href: "/lessari/carrinho" } })
 
