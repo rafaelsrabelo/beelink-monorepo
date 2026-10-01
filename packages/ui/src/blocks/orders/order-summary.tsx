@@ -15,6 +15,8 @@ export interface OrderSummaryProps {
   totals: OrderTotals | OrderTotalsRefusal
   /** The API is pricing what is on screen: the amounts shown are the ones before the last change. */
   pricing?: boolean
+  /** The API could not price it: the total is the form's own sum, and a promotion of the day may still come off. */
+  unpriced?: boolean
   money: (cents: number) => string
   pending?: boolean
   /** Why the last save did not go through, in words. */
@@ -36,7 +38,7 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
  * will write, so what the shopkeeper confirms is what is saved: a promotion running on the day of
  * the sale has its row, apart from what was typed as a discount.
  */
-export function OrderSummary({ totals, pricing = false, money, pending = false, error, messages = defaultMessages }: OrderSummaryProps) {
+export function OrderSummary({ totals, pricing = false, unpriced = false, money, pending = false, error, messages = defaultMessages }: OrderSummaryProps) {
   const text = messages.orders.form
   const refusal = typeof totals === "string" ? (totals === "DISCOUNT_TOO_LARGE" ? text.discountTooLarge : text.totalTooLarge) : null
   const promotionCents = typeof totals === "string" ? 0 : (totals.priced ?? []).reduce((sum, line) => sum + line.discountCents, 0)
@@ -69,6 +71,13 @@ export function OrderSummary({ totals, pricing = false, money, pending = false, 
           <Row label={text.total} value={money(totals.totalCents)} strong />
         </dl>
       )}
+
+      {/* Said rather than left to be found out on the saved order: the sum above knows no promotion. */}
+      {unpriced && typeof totals !== "string" ? (
+        <p role="status" className="text-muted-foreground text-sm">
+          {text.unpriced}
+        </p>
+      ) : null}
 
       {error ? (
         <p role="alert" className="text-destructive text-sm">

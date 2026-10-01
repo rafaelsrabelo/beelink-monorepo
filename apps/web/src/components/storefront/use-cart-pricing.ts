@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 // Types
-import type { OrderFulfillment, OrderQuote, QuotedCoupon } from "@harness-monorepo/contracts"
+import type { CouponRefusalReason, OrderFulfillment, OrderQuote, QuotedCoupon, QuotedCouponRefused } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -67,7 +67,7 @@ export interface CartPricingHandle extends CartPricing {
   carried: string | null
   /** What goes with the order: the coupon the screen says is applied, and no other. */
   orderCoupon: string | null
-  /** Why the order cannot go out yet over its coupon: it is still being checked, or the check failed. */
+  /** Why the order cannot go out yet over its coupon: a code is still being checked, or the check failed. */
   couponBlock: "checking" | "failed" | null
   /** Asks for the price again, whatever is kept: an order was refused over what it said. */
   recheck: () => void
@@ -81,11 +81,19 @@ function failureOf(error: unknown, text: UiMessages["storefront"]): string {
   return code === "AUTH_UNAUTHENTICATED" ? text.checkoutSignedOut : text.couponFailed
 }
 
+/** The refusals no change of the cart undoes: asking again with every press of "+" would only spend the door's limit. */
+const FINAL: readonly CouponRefusalReason[] = ["NOT_FOUND", "EXPIRED", "EXHAUSTED", "INACTIVE", "CUSTOMER_LIMIT"]
+
+/** The cart itself cannot be priced — a line the shop stopped selling — whatever its coupon. */
+function isCartRefusal(error: unknown): boolean {
+  return error instanceof ShopperOrderError && error.errorCode.startsWith("ORDER_")
+}
+
 /**
  * The cart's price and its coupon (BEELINK-194), as the cart page reads them. The price is the
- * API's, asked again as the cart changes; the coupon is asked about once, when it is applied, and
- * then follows the cart — a code that was refused is said and dropped, never sent again with every
- * press of "+".
+ * API's, asked again as the cart changes. A code typed is asked about once: taken, it is kept and
+ * follows the cart; refused, it is said and dropped. One kept that is refused for good — expired,
+ * used up — stays on screen with its reason and is not asked about again.
  *
  * The coupon in force is this page's own state, written through to the page's address (`cart-coupon.ts`)
  * so a reload, and the trip to add an address, come back with it.
@@ -95,18 +103,25 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
   const router = useRouter()
   const queryClient = useQueryClient()
   const [kept, setKept] = useState(arrivedWith)
-  // `replaceState` and not a navigation: the address changes under the page, and nothing is read again.
+  const [spent, setSpent] = useState<{ code: string; refusal: QuotedCouponRefused } | null>(null)
   const setCoupon = useCallback((code: string | null) => {
     setKept(code)
-    window.history.replaceState(window.history.state, "", pathWithCoupon(`${window.location.pathname}${window.location.search}`, code))
+    setSpent(null)
+    // `replaceState`, not a navigation: the address changes under the page and nothing is read again.
+    // With no state of the router's own: handed its state back, Next takes the call for one of its
+    // own, keeps the old address as the page's, and puts it back at the next `router.refresh()`.
+    window.history.replaceState(null, "", pathWithCoupon(`${window.location.pathname}${window.location.search}`, code))
   }, [])
   const coupon = signedIn ? kept : null
+  const dead = coupon !== null && spent?.code === coupon ? spent.refusal : null
+  // What the price is asked with: the coupon in force, unless it was refused for good.
+  const asked = dead ? null : coupon
 
   // The quantities settle before they are asked about; how it leaves and the coupon are one press each.
   const rows = useDebouncedValue(view.rows, QUANTITY_DEBOUNCE_MS)
-  const cart = useMemo(() => cartQuoteOf(rows, fulfillment, coupon), [rows, fulfillment, coupon])
+  const cart = useMemo(() => cartQuoteOf(rows, fulfillment, asked), [rows, fulfillment, asked])
   // By what is asked, not by identity: a page read again hands over the same cart as new rows.
-  const settling = useMemo(() => !sameCart(cartQuoteOf(view.rows, fulfillment, coupon), cart), [view.rows, fulfillment, coupon, cart])
+  const settling = useMemo(() => !sameCart(cartQuoteOf(view.rows, fulfillment, asked), cart), [view.rows, fulfillment, asked, cart])
   const quote = useCartQuote(slug, cart, served)
   const signedOut = quote.error instanceof ShopperOrderError && quote.error.errorCode === "AUTH_UNAUTHENTICATED"
   const context = { pickup: fulfillment === "PICKUP", money: (cents: number) => formatCents(cents, locale, "BRL") }
@@ -114,8 +129,8 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
 
   const applying = useMutation({
     mutationFn: async (code: string): Promise<OrderQuote> => {
-      const asked = cartQuoteOf(view.rows, fulfillment, code)
-      const answer = await quoteCart(slug, asked)
+      const cartNow = cartQuoteOf(view.rows, fulfillment, code)
+      const answer = await quoteCart(slug, cartNow)
       if (answer.coupon?.status === "APPLIED") {
         // Kept here, before the mutation settles: the price just read is the one the cart reads next,
         // under the code as the shop stores it, and the field hands over to the coupon in one draw.
@@ -135,27 +150,40 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
     if (signedOut) router.refresh()
   }, [signedOut, router])
 
+  const errored = !settling && quote.isError
+  // The cart cannot be priced at all, coupon or not: the order is left to go out, and its refusal names the line.
+  const cartRefused = errored && isCartRefusal(quote.error)
+  // With a coupon asked about, an answer that failed is no answer — not even the one kept from before it.
+  const unanswered = asked !== null && errored
   // The answer for the cart on screen — not one kept from a moment ago, nor one for quantities still settling.
-  const fresh = quote.data && !quote.isPlaceholderData && !settling ? quote.data : null
-  const verdict = coupon ? fresh?.coupon : null
-  const failed = coupon !== null && !settling && !fresh && quote.isError
-  const couponBlock = coupon === null || fresh ? null : failed ? "failed" : "checking"
+  const fresh = quote.data && !quote.isPlaceholderData && !settling && !unanswered ? quote.data : null
+  const verdict = asked ? fresh?.coupon : null
+  // Refused for good: remembered during the draw itself, so the next question already leaves the code out.
+  if (asked && verdict?.status === "REFUSED" && FINAL.includes(verdict.reason)) setSpent({ code: asked, refusal: verdict })
+
+  const failed = unanswered && !cartRefused
+  const couponBlock = applying.isPending ? "checking" : asked === null || fresh || cartRefused ? null : failed ? "failed" : "checking"
+  // What the coupon's own lines say: the last answer about this very code, kept while the cart is priced
+  // again — said from the fresh one alone, "aplicado" would blink at every press of "+".
+  const last = asked && !unanswered && quote.data?.coupon?.code.toUpperCase() === asked.toUpperCase() ? quote.data.coupon : null
 
   const error = coupon
-    ? (refusalOf(verdict) ?? (failed ? failureOf(quote.error, text) : null))
+    ? (refusalOf(dead ?? last) ?? (failed ? failureOf(quote.error, text) : null))
     : applying.isError
       ? failureOf(applying.error, text)
       : applying.data
         ? (refusalOf(applying.data.coupon) ?? (applying.data.coupon ? null : text.couponFailed))
         : null
+  // Nothing orderable is nothing to price: the answer kept from the cart before it is not this cart's.
+  const priced = cart.items.length === 0 || unanswered ? null : (quote.data ?? null)
 
   return {
-    ...cartPricingOf(quote.data ?? null, view, { fulfillment, locale, messages }),
+    ...cartPricingOf(priced, view, { fulfillment, locale, messages }),
     pricing: cart.items.length > 0 && quote.isPending,
-    stale: settling || quote.isPlaceholderData,
+    stale: cart.items.length > 0 && (settling || quote.isPlaceholderData),
     coupon: {
       applied: coupon,
-      holding: verdict?.status === "APPLIED",
+      holding: last?.status === "APPLIED",
       pending: applying.isPending,
       error,
       apply: (code) => applying.mutate(code),
@@ -168,7 +196,9 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
       },
     },
     carried: kept,
-    orderCoupon: verdict?.status === "APPLIED" ? coupon : null,
+    // The coupon the screen shows as applied — or, with a cart the API could not price, the one in
+    // force: the order is refused for that cart, and should it go through, the API decides the coupon.
+    orderCoupon: verdict?.status === "APPLIED" || (asked !== null && cartRefused) ? asked : null,
     couponBlock,
     recheck: () => void queryClient.invalidateQueries({ queryKey: storefrontKeys.quotes(slug) }),
     forget: () => setCoupon(null),

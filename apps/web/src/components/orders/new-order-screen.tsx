@@ -131,6 +131,7 @@ export function NewOrderScreen({ slug, customerId, messages, web }: NewOrderScre
           <OrderSummary
             totals={order.totals}
             pricing={order.pricing}
+            unpriced={order.unpriced}
             money={money}
             // Still disabled once saved: the page is on its way to the order, and a second press would be a second order.
             pending={order.save.isPending || order.save.isSuccess}

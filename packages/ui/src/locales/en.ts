@@ -1460,6 +1460,7 @@ export const en: UiMessages = {
       total: "Total",
       discountTooLarge: "The discount is more than the order.",
       totalTooLarge: "The order is over R$ 1,000,000.00.",
+      unpriced: "The promotions could not be checked now. The total is worked out again when the order is registered.",
       invalidMoney: "Type an amount, like 10.50.",
       missingCustomer: "Choose or register the customer.",
       missingItems: "Add at least one product.",

@@ -1461,6 +1461,7 @@ export const ptBR: UiMessages = {
       total: "Total",
       discountTooLarge: "O desconto passa do valor do pedido.",
       totalTooLarge: "O pedido passa de R$ 1.000.000,00.",
+      unpriced: "Não foi possível conferir as promoções agora. O total é calculado de novo ao registrar o pedido.",
       invalidMoney: "Digite um valor, como 10,50.",
       missingCustomer: "Escolha ou cadastre o cliente.",
       missingItems: "Adicione pelo menos um produto.",

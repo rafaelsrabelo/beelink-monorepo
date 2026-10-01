@@ -179,6 +179,8 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     totals,
     /** The sale is being priced: the amounts on screen are the ones before the last change. */
     pricing: sale !== null && !answered && !quote.isError,
+    /** The API could not price it — out of reach, too many tries — and the summary says the total is the form's own. */
+    unpriced: answered && quote.isError && !quote.data && typeof totals !== "string",
     /** Shown once a save was tried: a form that opens covered in red asks nothing of anyone. */
     issues: submitted ? issues : {},
     announcement,

@@ -31,6 +31,8 @@ export async function cartQuoteAt(slug: string, cart: CustomerOrderQuotePayload)
   }).catch(() => null)
   if (!response?.ok) return null
 
-  const quote = (await response.json().catch(() => null)) as OrderQuote | null
-  return quote ? { cart, quote, at: Date.now() } : null
+  const answer: unknown = await response.json().catch(() => null)
+  // A 2xx that is not a price is no price: the page draws from it, and the browser asks instead.
+  if (typeof answer !== "object" || answer === null || !("lines" in answer) || !Array.isArray(answer.lines)) return null
+  return { cart, quote: answer as OrderQuote, at: Date.now() }
 }

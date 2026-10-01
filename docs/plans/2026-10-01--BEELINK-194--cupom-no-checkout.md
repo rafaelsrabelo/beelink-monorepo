@@ -144,3 +144,38 @@ pediu isso; o ticket do modal de boas-vindas, se vier, pode usar.
 Também da conferência: no card de Meus pedidos, a linha do desconto quebra em duas em vez de cortar o
 código do cupom.
 
+## Adendo da revisão (01/10)
+
+Um revisor independente leu o diff. Ele não achou caminho para um pedido sair com preço diferente do
+que a API calcula. O que mudou:
+
+- **O `?cupom=` não volta mais ao que era.** Aplicar ou remover o cupom trocava o endereço, e o
+  próximo `router.refresh()` (que acontece sozinho, a cada evento de pedido em tempo real) devolvia o
+  endereço antigo: o cupom sumia do endereço com a tela ainda dizendo "aplicado", ou voltava depois
+  de removido. A troca de endereço passava para o Next o estado do próprio roteador, e o Next então a
+  tratava como dele. Agora passa sem estado. Conferido no navegador.
+- **O botão de fechar o pedido espera também o "Aplicar".** Antes, quem apertava "Fechar pedido"
+  enquanto o código ainda era conferido fazia o pedido sem o cupom.
+- **Carrinho só com itens esgotados** mostra R$ 0,00, e não mais os totais do carrinho de antes,
+  esmaecidos para sempre.
+- **Um carrinho que a API não consegue cotar** (um produto saiu de venda com a página aberta) não é
+  mais culpa do cupom. O pedido segue, e a recusa dele diz qual item saiu.
+- **Depois de um pedido recusado pelo cupom,** se a nova conferência falha, a linha do cupom sai dos
+  totais em vez de ficar como se ainda valesse.
+- **Um cupom guardado que foi recusado de vez** (vencido, esgotado, já usado, inexistente, pausado)
+  fica na tela com o motivo e deixa de ser perguntado a cada mudança do carrinho. Só é perguntado de
+  novo ao recarregar a página.
+- **"Cupom aplicado" não pisca** a cada mudança de quantidade.
+- **Painel:** quando a cotação da venda falha, o resumo diz que não conseguiu conferir as promoções e
+  que o total é recalculado ao registrar. Antes mostrava a soma local como se fosse o total final.
+- **Leitor de tela:** a região que anuncia "cupom aplicado" fica na página mesmo vazia.
+- **A primeira cotação, feita no servidor,** confere o formato da resposta como a do navegador.
+
+O que fica como está, sabendo:
+
+- **Um cupom recusado por regra do carrinho** (abaixo do mínimo, frete grátis em retirada) continua
+  sendo perguntado a cada mudança, porque o carrinho pode voltar a cumprir a regra. Conta no limite
+  de 30 em 5 minutos.
+- **O handler do painel não escapa o `slug`** ao montar o caminho da API. É a convenção dos handlers
+  vizinhos, e a API confere o dono da loja.
+

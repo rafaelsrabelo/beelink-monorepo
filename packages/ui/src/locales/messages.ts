@@ -1722,6 +1722,8 @@ export interface UiMessages {
       total: string
       discountTooLarge: string
       totalTooLarge: string
+      /** The API could not price the sale: the total on screen is the form's own, without the day's promotions. */
+      unpriced: string
       invalidMoney: string
       missingCustomer: string
       missingItems: string

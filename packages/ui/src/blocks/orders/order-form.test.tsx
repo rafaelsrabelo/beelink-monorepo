@@ -256,6 +256,15 @@ describe("the new order's details and summary", () => {
     expect(container.querySelector("dl")).toHaveAttribute("aria-busy", "true")
   })
 
+  /** From the review: a sum that knows no promotion, shown as if it were the API's, is the old mistake on the error path. */
+  it("says so when the API could not price the sale, rather than show the form's own sum as final", () => {
+    const { rerender } = render(<OrderSummary totals={{ subtotalCents: 28470, deliveryFeeCents: 0, discountCents: 0, totalCents: 28470 }} unpriced money={money} />)
+    expect(screen.getByRole("status")).toHaveTextContent("Não foi possível conferir as promoções agora. O total é calculado de novo ao registrar o pedido.")
+
+    rerender(<OrderSummary totals={{ subtotalCents: 28470, deliveryFeeCents: 0, discountCents: 0, totalCents: 28470 }} money={money} />)
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <form>

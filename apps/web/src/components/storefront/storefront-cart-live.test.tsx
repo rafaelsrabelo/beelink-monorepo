@@ -647,6 +647,146 @@ describe("the cart's price and its coupon", () => {
     expect(new URL(screen.getByRole("link", { name: "Entrar para fazer o pedido" }).getAttribute("href")!, "http://x").searchParams.get("voltar")).toBe("/loja/carrinho?cupom=BEMVINDO10")
   })
 
+  /** From the review: a code still being checked is a price nobody read yet, as a kept one being checked is. */
+  it("holds the order while a code just typed is being checked, and then sends it with the coupon", async () => {
+    let answer: (response: Response) => void = () => {}
+    const fetched = network({ quote: (cart) => (cart.couponCode ? (new Promise<Response>((resolve) => (answer = resolve)) as unknown as Response) : Response.json(quoteOf(cart))) })
+    openedTab()
+    renderCart()
+
+    await applyCoupon("BEMVINDO10")
+    await waitFor(() => expect(screen.getByRole("button", { name: "Conferindo…" })).toBeInTheDocument())
+    expect(placeButton()).toBeDisabled()
+    fireEvent.click(placeButton())
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
+
+    answer(Response.json(quoteOf({ items: blusas(2), fulfillment: "DELIVERY", couponCode: "BEMVINDO10" })))
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+    fireEvent.click(placeButton())
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toMatchObject({ couponCode: "BEMVINDO10" })
+  })
+
+  it("keeps saying the coupon is applied while the cart is priced again: the sentence does not blink at every press", async () => {
+    let hold = false
+    let answer: (response: Response) => void = () => {}
+    network({ quote: (cart) => (hold ? (new Promise<Response>((resolve) => (answer = () => resolve(Response.json(quoteOf(cart))))) as unknown as Response) : Response.json(quoteOf(cart))) })
+    renderCart()
+    await applyCoupon("BEMVINDO10")
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+
+    hold = true
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
+    await waitFor(() => expect(screen.getByRole("complementary").querySelector("dl")).toHaveAttribute("aria-busy", "true"))
+    // Still said, and the order still waits: the price for three is not in yet.
+    expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument()
+    await waitFor(() => expect(placeButton()).toBeDisabled())
+
+    await waitFor(() => expect(answer).not.toBe(undefined))
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    answer(new Response())
+    await waitFor(() => expect(summaryRows()[1]).toEqual(["Cupom BEMVINDO10", "− R$ 17,97"]))
+    expect(placeButton()).toBeEnabled()
+  })
+
+  it("stops asking about a coupon refused for good, and keeps its reason on screen", async () => {
+    const fetched = network({ quote: (cart) => (cart.couponCode ? refusedOver(cart, { reason: "EXPIRED" }) : Response.json(quoteOf(cart))) })
+    openedTab()
+    renderCart(false, bia, { coupon: "BEMVINDO10" })
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Esse cupom venceu."))
+
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
+    await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (3 itens)", "R$ 179,70"]]))
+
+    // One question about the code, on arrival; the cart that changed was priced without it.
+    expect(bodiesTo(fetched, "/loja/api/orders/quote").map((body) => body.couponCode)).toEqual(["BEMVINDO10", undefined])
+    expect(screen.getByRole("alert")).toHaveTextContent("Esse cupom venceu.")
+    expect(screen.getByRole("button", { name: "Remover o cupom BEMVINDO10" })).toBeInTheDocument()
+    // And the order goes out without it, as the screen says.
+    fireEvent.click(placeButton())
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).not.toHaveProperty("couponCode")
+  })
+
+  it("does not blame the coupon for a cart the API cannot price: the order goes out, and its refusal names the line", async () => {
+    let off = false
+    const gone = { statusCode: 400, errorCode: "ORDER_VARIANT_INVALID", message: "x", details: { variantIds: [variantId] } }
+    const fetched = network({
+      quote: (cart) => (off ? Response.json(gone, { status: 400 }) : Response.json(quoteOf(cart))),
+      order: () => Response.json(gone, { status: 400 }),
+    })
+    openedTab()
+    renderCart()
+    await applyCoupon("BEMVINDO10")
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+
+    // The shop stops selling the blusa while the cart is open.
+    off = true
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
+    await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (3 itens)", "R$ 179,70"]]))
+    expect(screen.queryByText(/Não foi possível conferir o cupom/)).toBeNull()
+    expect(placeButton()).toBeEnabled()
+
+    fireEvent.click(placeButton())
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Saiu de venda: Blusa."))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toMatchObject({ couponCode: "BEMVINDO10" })
+  })
+
+  it("takes the coupon's row away when the check after a refused order could not be made", async () => {
+    let refused = false
+    network({
+      order: () => {
+        refused = true
+        return Response.json({ statusCode: 409, errorCode: "ORDER_COUPON_REFUSED", message: "x", details: { reason: "EXHAUSTED" } }, { status: 409 })
+      },
+      quote: (cart) => (refused ? Response.json({ statusCode: 429, errorCode: "RATE_LIMITED", message: "x" }, { status: 429 }) : Response.json(quoteOf(cart))),
+    })
+    openedTab()
+    renderCart()
+    await applyCoupon("BEMVINDO10")
+    await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
+
+    fireEvent.click(placeButton())
+
+    await waitFor(() => expect(screen.getByText(/O cupom não entrou no pedido\./)).toBeInTheDocument())
+    // The answer kept from before the refusal is not shown as if it still held.
+    await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]]))
+    expect(screen.queryByText("Cupom BEMVINDO10 aplicado.")).toBeNull()
+    expect(screen.getByText("Muitas tentativas de cupom. Espere alguns minutos e tente de novo.")).toBeInTheDocument()
+  })
+
+  it("prices nothing when nothing can be ordered: the totals of the cart before it are not this cart's", async () => {
+    const soldOut = { ...blusa, id: "01a0d395-c1ab-7399-a472-000000000002", slug: "saia", name: "Saia", soldOut: true, variants: [{ ...blusa.variants[0]!, id: "01a0d395-c1ab-7399-a472-0000000000c1", priceCents: 9990 }] } as unknown as PublicProductDetail
+    const client = new QueryClient()
+    render(
+      <QueryClientProvider client={client}>
+        <CartProvider slug="loja" lines={[...cartLines(false), { productId: soldOut.id, variantId: null, qty: 1 }]}>
+          <StorefrontCartLive
+            slug="loja"
+            products={[blusa, soldOut]}
+            hrefs={{}}
+            continueHref="/loja/produtos"
+            goneOnArrival={false}
+            shopName="Loja"
+            whatsapp={null}
+            paymentMethods={["PIX"]}
+            shopper={bia}
+            identityHrefs={identityHrefs}
+            served={servedFor(false, bia, promotion)}
+            locale="pt-BR"
+            messages={ptBR}
+          />
+        </CartProvider>
+      </QueryClientProvider>,
+    )
+    expect(summaryRows()[1]).toEqual(["Promoção: Semana da Blusa", "− R$ 11,98"])
+
+    fireEvent.click(screen.getByRole("button", { name: "Remover Blusa do carrinho" }))
+
+    await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (0 itens)", "R$ 0,00"]]))
+    expect(screen.getByRole("complementary").querySelector("dl")).not.toHaveAttribute("aria-busy")
+  })
+
   it("reads the page again when the session ended while a code was typed", async () => {
     network({ quote: () => Response.json({ statusCode: 401, errorCode: "AUTH_UNAUTHENTICATED", message: "x" }, { status: 401 }) })
     renderCart()

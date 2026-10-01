@@ -142,10 +142,11 @@ export function StorefrontCoupon({
       )}
       {/*
         In the page before there is anything to say, so a reader hears the sentence arrive and not a
-        region appear. A live region and not a `status`: empty, it is nothing to land on, and the
-        cart's own status — a product that left the shop — stays the only one.
+        region appear — never `display: none` while empty, which would take it out of what a reader
+        is told about: the margin only takes back the gap an empty line would leave. A live region
+        and not a `status`: the cart's own status — a product that left the shop — stays the only one.
       */}
-      <p aria-live="polite" aria-atomic="true" className="text-sm text-shop-positive-ink empty:hidden">
+      <p aria-live="polite" aria-atomic="true" className="text-sm text-shop-positive-ink empty:-mt-2">
         {applied && holding && !error ? format(text.couponApplied, { code: applied }) : null}
       </p>
       {error ? (
