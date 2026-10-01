@@ -7,6 +7,14 @@ import { z } from "zod"
  */
 const schema = z.object({
   API_URL: z.url().default("http://localhost:3001/api"),
+  /**
+   * A shop the landing page offers as an example ("Ver uma loja de exemplo"). Optional: without it
+   * the page offers none, rather than lead to a shop that may not exist where this is deployed.
+   */
+  EXAMPLE_STORE_SLUG: z
+    .string()
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
 })
 
 const parsed = schema.safeParse(process.env)
