@@ -38,8 +38,8 @@ const order: CustomerOrderSummary = {
   deliveryFeeCents: 1000,
   itemsCount: 3,
   items: [
-    { productId: "p1", productSlug: "haze-300", productName: "Pré-Treino Haze", variantLabel: "Sabor: Uva", imageUrl: "https://img.test/haze.jpg", unitPriceCents: 11990, quantity: 1, lineTotalCents: 11990 },
-    { productId: null, productSlug: null, productName: "Creatina", variantLabel: null, imageUrl: null, unitPriceCents: 5866, quantity: 2, lineTotalCents: 11732 },
+    { productId: "p1", productSlug: "haze-300", productName: "Pré-Treino Haze", variantLabel: "Sabor: Uva", imageUrl: "https://img.test/haze.jpg", unitPriceCents: 11990, quantity: 1, lineTotalCents: 11990, discountCents: 0, promotionName: null },
+    { productId: null, productSlug: null, productName: "Creatina", variantLabel: null, imageUrl: null, unitPriceCents: 5866, quantity: 2, lineTotalCents: 11732, discountCents: 0, promotionName: null },
   ],
   moreItems: 1,
   placedAt: "2026-09-21T17:02:00.000Z",

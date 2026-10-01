@@ -10,8 +10,8 @@ import { orderMessageOf, shopOrderMessageOf, whatsappOrderHref } from "./whatsap
 const placed = {
   number: 12,
   items: [
-    { productId: "p1", productSlug: "camiseta-preta", productName: "Camiseta preta", variantLabel: null, imageUrl: null, unitPriceCents: 4990, quantity: 2, lineTotalCents: 9980 },
-    { productId: "p2", productSlug: "whey", productName: "Whey", variantLabel: "Peso: 900g · Sabor: Chocolate", imageUrl: null, unitPriceCents: 14990, quantity: 1, lineTotalCents: 14990 },
+    { productId: "p1", productSlug: "camiseta-preta", productName: "Camiseta preta", variantLabel: null, imageUrl: null, unitPriceCents: 4990, quantity: 2, lineTotalCents: 9980, discountCents: 0, promotionName: null },
+    { productId: "p2", productSlug: "whey", productName: "Whey", variantLabel: "Peso: 900g · Sabor: Chocolate", imageUrl: null, unitPriceCents: 14990, quantity: 1, lineTotalCents: 14990, discountCents: 0, promotionName: null },
   ],
   totalCents: 24970,
   deliveryFeeCents: 1000,
@@ -86,7 +86,7 @@ describe("shopOrderMessageOf", () => {
     status: "PREPARING" as const,
     customer: { id: "c1", name: "Bia", phone: "5511988887777" },
     items: [
-      { id: "i1", productId: null, variantId: null, productName: "Camiseta", variantLabel: "Tamanho: M", sku: null, unitPriceCents: 4990, quantity: 2, lineTotalCents: 9980 },
+      { id: "i1", productId: null, variantId: null, productName: "Camiseta", variantLabel: "Tamanho: M", sku: null, unitPriceCents: 4990, quantity: 2, lineTotalCents: 9980, discountCents: 0, promotionName: null },
     ],
     fulfillment: "DELIVERY" as const,
     deliveryFeeCents: 1000,

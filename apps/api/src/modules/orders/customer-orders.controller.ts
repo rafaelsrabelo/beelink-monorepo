@@ -15,7 +15,7 @@ import {
 } from '@nestjs/swagger';
 
 // Types
-import type { CustomerOrder, CustomerOrderPage, CustomerReorder } from '@harness-monorepo/contracts';
+import type { CustomerOrder, CustomerOrderPage, CustomerReorder, OrderQuote } from '@harness-monorepo/contracts';
 
 // App
 import { env } from '../../shared/config/env.js';
@@ -24,7 +24,10 @@ import { CustomerAuthGuard, type AuthenticatedCustomer } from '../customers/cust
 import { CurrentCustomer } from '../customers/customer.decorators.js';
 import { CustomerOrdersService } from './customer-orders.service.js';
 import { CustomerOrderPageResponse, CustomerOrderResponse, CustomerReorderResponse, ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
+import { CustomerOrderQuoteDto, OrderQuoteResponse } from './dto/order-quote.dto.js';
 import { OrderNumberPipe } from './order-number.pipe.js';
+import { OrderQuotes } from './order-quote.service.js';
+import { CUSTOMER_QUOTE_RATE_LIMIT } from './orders.constants.js';
 
 /** Keyed by address: a valid account does not get to fill a shop's panel from a script. */
 const rateLimit = { max: env.CUSTOMER_ORDER_RATE_LIMIT_MAX, timeWindow: env.CUSTOMER_ORDER_RATE_LIMIT_WINDOW };
@@ -42,7 +45,10 @@ const rateLimit = { max: env.CUSTOMER_ORDER_RATE_LIMIT_MAX, timeWindow: env.CUST
 @UseGuards(CustomerAuthGuard)
 @Controller('stores/:storeSlug/customer/orders')
 export class CustomerOrdersController {
-  constructor(private readonly orders: CustomerOrdersService) {}
+  constructor(
+    private readonly orders: CustomerOrdersService,
+    private readonly quotes: OrderQuotes,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: "The shopper's orders at this shop, most recent first, with the count of each tab" })
@@ -90,6 +96,17 @@ export class CustomerOrdersController {
     return this.orders.cancel(storeSlug, customer.userId, number);
   }
 
+  @Post('quote')
+  @RouteConfig({ rateLimit: CUSTOMER_QUOTE_RATE_LIMIT })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "The cart as the shopper's order would be priced, and whether the coupon they typed is taken — with the reason when it is not" })
+  @ApiOkResponse({ type: OrderQuoteResponse })
+  @ApiBadRequestResponse({ description: 'ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_TOTAL_TOO_LARGE' })
+  @ApiTooManyRequestsResponse({ description: 'Too many quotes from this address' })
+  quote(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer, @Body() dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
+    return this.quotes.forCustomer(storeSlug, customer.userId, dto);
+  }
+
   @Post()
   @RouteConfig({ rateLimit })
   @HttpCode(HttpStatus.CREATED)
@@ -98,7 +115,7 @@ export class CustomerOrdersController {
   @ApiBadRequestResponse({
     description: 'ORDER_DELIVERY_ADDRESS_MISSING · ORDER_ADDRESS_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_TOTAL_TOO_LARGE',
   })
-  @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT — `details` is `OrderStockDetails`' })
+  @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT — `details` is `OrderStockDetails` · ORDER_COUPON_REFUSED — `details` is `OrderCouponRefusedDetails`' })
   @ApiTooManyRequestsResponse({ description: 'Too many orders from this address' })
   place(
     @Param('storeSlug') storeSlug: string,

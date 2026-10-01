@@ -26,7 +26,7 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
 
     const current = await tx.order.findUnique({
       where: { storeId_number: { storeId, number } },
-      select: { id: true, status: true, fulfillment: true, customerId: true, subtotalCents: true, discountCents: true },
+      select: { id: true, status: true, fulfillment: true, customerId: true, subtotalCents: true, discountCents: true, couponKind: true, couponDiscountCents: true },
     });
     if (!current) throw new NotFoundException(orderError('ORDER_NOT_FOUND', `No order #${number} in this shop`));
     if (current.fulfillment === 'PICKUP') {
@@ -36,8 +36,13 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
       throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change'));
     }
 
+    // A free-delivery coupon takes the fee off, whatever it turns out to be: its discount follows
+    // the fee, and so does the use on the coupon's list.
+    const waived = current.couponKind === 'FREE_SHIPPING';
+    const couponDiscountCents = waived ? deliveryFeeCents : current.couponDiscountCents;
+    const discountCents = current.discountCents - current.couponDiscountCents + couponDiscountCents;
     // Lowering a fee can leave a discount bigger than what is paid, as a placement would refuse it.
-    const totalCents = current.subtotalCents + deliveryFeeCents - current.discountCents;
+    const totalCents = current.subtotalCents + deliveryFeeCents - discountCents;
     const refusal = totalRefusalOf(totalCents);
     if (refusal === 'TOTAL_TOO_LARGE') {
       throw new BadRequestException(orderError('ORDER_TOTAL_TOO_LARGE', 'The order would pass what one order may be'));
@@ -46,7 +51,8 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
       throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount would be larger than the order'));
     }
 
-    const order = await tx.order.update({ where: { id: current.id }, data: { deliveryFeeCents, totalCents }, include: ORDER_INCLUDE });
+    const order = await tx.order.update({ where: { id: current.id }, data: { deliveryFeeCents, couponDiscountCents, discountCents, totalCents }, include: ORDER_INCLUDE });
+    if (waived) await tx.couponRedemption.updateMany({ where: { orderId: current.id }, data: { discountCents: couponDiscountCents } });
     await refreshBooks(tx, current.customerId);
     return order;
   });

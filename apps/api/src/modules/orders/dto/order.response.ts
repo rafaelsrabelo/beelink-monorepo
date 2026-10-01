@@ -7,6 +7,8 @@ import type {
   OrderDeliveryKind,
   Order,
   OrderActor,
+  OrderCoupon,
+  CouponKind,
   OrderCustomer,
   OrderDeliveryAddress,
   OrderEvent,
@@ -19,6 +21,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import { ORDER_DELIVERY_KINDS, ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
 
@@ -53,9 +56,16 @@ export class OrderItemResponse implements OrderItem {
   @ApiProperty({ description: 'As it was when the order was placed.' }) productName!: string;
   @ApiProperty({ nullable: true, type: String, example: 'Sabor: Uva · Peso: 300 g' }) variantLabel!: string | null;
   @ApiProperty({ nullable: true, type: String }) sku!: string | null;
-  @ApiProperty({ description: 'Whole cents, as it was when the order was placed.' }) unitPriceCents!: number;
+  @ApiProperty({ description: "Whole cents: the catalogue's price when the order was placed, before any promotion." }) unitPriceCents!: number;
   @ApiProperty() quantity!: number;
   @ApiProperty() lineTotalCents!: number;
+  @ApiProperty({ description: 'What a promotion took off this line; zero with none.' }) discountCents!: number;
+  @ApiProperty({ nullable: true, type: String, description: "The promotion's name as it was." }) promotionName!: string | null;
+}
+
+export class OrderCouponResponse implements OrderCoupon {
+  @ApiProperty({ example: 'BEMVINDO10' }) code!: string;
+  @ApiProperty({ enum: COUPON_KINDS }) kind!: CouponKind;
 }
 
 export class OrderEventResponse implements OrderEvent {
@@ -91,7 +101,10 @@ export class OrderResponse implements Order {
   @ApiProperty({ type: [OrderItemResponse] }) items!: OrderItemResponse[];
   @ApiProperty() subtotalCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
-  @ApiProperty() discountCents!: number;
+  @ApiProperty({ description: 'Everything taken off: the promotions, the coupon and what the shopkeeper typed.' }) discountCents!: number;
+  @ApiProperty({ description: "The sum of the lines' promotion discounts." }) promotionDiscountCents!: number;
+  @ApiProperty({ description: 'What the coupon took off; on a free delivery, the fee.' }) couponDiscountCents!: number;
+  @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ nullable: true, type: String }) note!: string | null;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;

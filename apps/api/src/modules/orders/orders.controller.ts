@@ -14,14 +14,17 @@ import {
 } from '@nestjs/swagger';
 
 // Types
+import type { OrderQuote } from '@harness-monorepo/contracts';
 import type { AuthenticatedUser } from '../auth/auth.decorators.js';
 
 // App
 import { CurrentUser } from '../auth/auth.decorators.js';
 import { SetOrderDeliveryFeeDto } from './dto/order-delivery-fee.dto.js';
 import { CreateOrderDto, ListOrdersDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
+import { OrderQuoteResponse, ShopOrderQuoteDto } from './dto/order-quote.dto.js';
 import { OrderPageResponse, OrderResponse } from './dto/order.response.js';
 import { OrderNumberPipe } from './order-number.pipe.js';
+import { OrderQuotes } from './order-quote.service.js';
 import { OrdersService } from './orders.service.js';
 
 /** The owner's side of a shop's orders. Closed, like every panel route; a shopper's token is refused. */
@@ -32,7 +35,10 @@ import { OrdersService } from './orders.service.js';
 @ApiForbiddenResponse({ description: 'STORE_FORBIDDEN' })
 @Controller('stores/:storeSlug/orders')
 export class OrdersController {
-  constructor(private readonly orders: OrdersService) {}
+  constructor(
+    private readonly orders: OrdersService,
+    private readonly quotes: OrderQuotes,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -42,12 +48,24 @@ export class OrdersController {
     description:
       'ORDER_CUSTOMER_NOT_FOUND · ORDER_DELIVERY_ADDRESS_MISSING · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_PLACED_IN_FUTURE · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE',
   })
+  @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT · ORDER_COUPON_REFUSED — `details` is `OrderCouponRefusedDetails`' })
   create(
     @Param('storeSlug') storeSlug: string,
     @CurrentUser() current: AuthenticatedUser,
     @Body() dto: CreateOrderDto,
   ): Promise<OrderResponse> {
     return this.orders.create(storeSlug, current.id, dto);
+  }
+
+  @Post('quote')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'What a sale would be registered for: the promotions, the coupon and the typed discount, before it is an order' })
+  @ApiOkResponse({ type: OrderQuoteResponse })
+  @ApiBadRequestResponse({
+    description: 'ORDER_CUSTOMER_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PLACED_IN_FUTURE · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE',
+  })
+  quote(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() dto: ShopOrderQuoteDto): Promise<OrderQuote> {
+    return this.quotes.forShop(storeSlug, current.id, dto);
   }
 
   @Get()

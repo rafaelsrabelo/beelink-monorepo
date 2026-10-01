@@ -37,6 +37,9 @@ const order: CustomerOrder = {
   subtotalCents: 23722,
   deliveryFeeCents: 0,
   discountCents: 0,
+  promotionDiscountCents: 0,
+  couponDiscountCents: 0,
+  coupon: null,
   totalCents: 23722,
   placedAt: "2026-09-27T17:02:00.000Z",
   events: [

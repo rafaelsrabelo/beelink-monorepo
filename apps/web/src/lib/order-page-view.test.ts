@@ -35,12 +35,15 @@ const order: CustomerOrder = {
   deliveryAddress: { recipientName: "Marina Souza", zipCode: "60160230", street: "Rua Tibúrcio Cavalcante", number: "1200", complement: "apto 302", neighborhood: "Meireles", city: "Fortaleza", state: "CE" },
   paymentMethod: "PIX",
   items: [
-    { productId: "p1", productSlug: "molotov", productName: "Molotov 300g", variantLabel: "Sabor: Uva", imageUrl: null, unitPriceCents: 3990, quantity: 2, lineTotalCents: 7980 },
-    { productId: null, productSlug: null, productName: "Boné", variantLabel: null, imageUrl: null, unitPriceCents: 2000, quantity: 1, lineTotalCents: 2000 },
+    { productId: "p1", productSlug: "molotov", productName: "Molotov 300g", variantLabel: "Sabor: Uva", imageUrl: null, unitPriceCents: 3990, quantity: 2, lineTotalCents: 7980, discountCents: 0, promotionName: null },
+    { productId: null, productSlug: null, productName: "Boné", variantLabel: null, imageUrl: null, unitPriceCents: 2000, quantity: 1, lineTotalCents: 2000, discountCents: 0, promotionName: null },
   ],
   subtotalCents: 9980,
   deliveryFeeCents: 0,
   discountCents: 500,
+  promotionDiscountCents: 0,
+  couponDiscountCents: 0,
+  coupon: null,
   totalCents: 9480,
   placedAt: "2026-09-28T17:02:00.000Z",
   events: [
