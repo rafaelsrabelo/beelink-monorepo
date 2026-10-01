@@ -1,7 +1,7 @@
 "use client"
 
 // Libs
-import { useMutation, useQuery, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
+import { skipToken, useMutation, useQuery, type UseMutationResult, type UseQueryResult } from "@tanstack/react-query"
 
 // Types
 import type {
@@ -33,7 +33,7 @@ export const storefrontKeys = {
   all: ["storefront"] as const,
   search: (slug: string, term: string, scope: string) => [...storefrontKeys.all, slug, "search", scope, term] as const,
   quotes: (slug: string) => [...storefrontKeys.all, slug, "quote"] as const,
-  quote: (slug: string, cart: CustomerOrderQuotePayload) => [...storefrontKeys.quotes(slug), cart] as const,
+  quote: (slug: string, cart: CustomerOrderQuotePayload | null) => [...storefrontKeys.quotes(slug), cart] as const,
 }
 
 export interface StorefrontSearchHandle {
@@ -109,6 +109,15 @@ export function useCartQuote(slug: string, cart: CustomerOrderQuotePayload, serv
     staleTime: QUOTE_STALE_MS,
     retry: false,
   })
+}
+
+/**
+ * A price already in hand, read back by the question it answered and never asked again: what a
+ * coupon was refused with, kept on screen after the cart stopped asking about it. The answer stays
+ * the cache's — a copy of it in a component's state would be a second source for one fact.
+ */
+export function useAnsweredCartQuote(slug: string, cart: CustomerOrderQuotePayload | null): OrderQuote | undefined {
+  return useQuery<OrderQuote>({ queryKey: storefrontKeys.quote(slug, cart), queryFn: skipToken, staleTime: Infinity }).data
 }
 
 /**

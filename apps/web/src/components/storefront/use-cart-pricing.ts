@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 // Types
-import type { CouponRefusalReason, OrderFulfillment, OrderQuote, QuotedCoupon, QuotedCouponRefused } from "@harness-monorepo/contracts"
+import type { CouponRefusalReason, CustomerOrderQuotePayload, OrderFulfillment, OrderQuote, QuotedCoupon } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -22,7 +22,7 @@ import { pathWithCoupon } from "@/lib/cart-coupon"
 import { cartPricingOf, cartQuoteOf, sameCart, type CartPricing, type ServedQuote } from "@/lib/cart-pricing"
 import type { CartView } from "@/lib/cart-view"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
-import { storefrontKeys, useCartQuote } from "@/services/storefront/storefront-hooks"
+import { storefrontKeys, useAnsweredCartQuote, useCartQuote } from "@/services/storefront/storefront-hooks"
 import { quoteCart, ShopperOrderError } from "@/services/storefront/storefront-requests"
 
 /** Long enough for a run of presses on "+" to be one question, short enough that the total does not feel late. */
@@ -103,17 +103,19 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
   const router = useRouter()
   const queryClient = useQueryClient()
   const [kept, setKept] = useState(arrivedWith)
-  const [spent, setSpent] = useState<{ code: string; refusal: QuotedCouponRefused } | null>(null)
+  // The question whose answer refused the coupon for good. The answer itself is read back from the cache.
+  const [settledBy, setSettledBy] = useState<CustomerOrderQuotePayload | null>(null)
+  const settled = useAnsweredCartQuote(slug, settledBy)?.coupon
   const setCoupon = useCallback((code: string | null) => {
     setKept(code)
-    setSpent(null)
+    setSettledBy(null)
     // `replaceState`, not a navigation: the address changes under the page and nothing is read again.
     // With no state of the router's own: handed its state back, Next takes the call for one of its
     // own, keeps the old address as the page's, and puts it back at the next `router.refresh()`.
     window.history.replaceState(null, "", pathWithCoupon(`${window.location.pathname}${window.location.search}`, code))
   }, [])
   const coupon = signedIn ? kept : null
-  const dead = coupon !== null && spent?.code === coupon ? spent.refusal : null
+  const dead = coupon !== null && settledBy?.couponCode === coupon && settled?.status === "REFUSED" ? settled : null
   // What the price is asked with: the coupon in force, unless it was refused for good.
   const asked = dead ? null : coupon
 
@@ -159,7 +161,7 @@ export function useCartPricing({ slug, view, fulfillment, signedIn, served, arri
   const fresh = quote.data && !quote.isPlaceholderData && !settling && !unanswered ? quote.data : null
   const verdict = asked ? fresh?.coupon : null
   // Refused for good: remembered during the draw itself, so the next question already leaves the code out.
-  if (asked && verdict?.status === "REFUSED" && FINAL.includes(verdict.reason)) setSpent({ code: asked, refusal: verdict })
+  if (asked && verdict?.status === "REFUSED" && FINAL.includes(verdict.reason)) setSettledBy(cart)
 
   const failed = unanswered && !cartRefused
   const couponBlock = applying.isPending ? "checking" : asked === null || fresh || cartRefused ? null : failed ? "failed" : "checking"
