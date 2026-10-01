@@ -2261,6 +2261,7 @@ export const ptBR: UiMessages = {
     brand: "Beelink",
     homeLabel: "Beelink, início",
     nav: { label: "Principal", solutions: "Soluções", ecosystem: "Ecossistema", how: "Como funciona", couriers: "Para entregadores", faq: "Perguntas" },
+    menu: "Menu",
     signIn: "Entrar",
     createStore: "Criar minha loja",
     hero: {

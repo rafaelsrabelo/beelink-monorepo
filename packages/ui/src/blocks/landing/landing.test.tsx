@@ -39,7 +39,7 @@ afterEach(() => {
 function Page() {
   return (
     <LandingShell>
-      <LandingHeader loginHref={hrefs.loginHref} signupHref={hrefs.signupHref} />
+      <LandingHeader {...hrefs} />
       <main>
         <LandingHero signupHref={hrefs.signupHref} />
         <LandingBanners signupHref={hrefs.signupHref} />
@@ -80,19 +80,41 @@ describe("LandingTitle", () => {
 
 describe("LandingHeader", () => {
   it("leads to each section, to the sign-in and to the sign-up", () => {
-    render(<LandingHeader loginHref="/login" signupHref="/signup" />)
+    render(<LandingHeader {...hrefs} />)
 
     const nav = screen.getByRole("navigation", { name: "Principal" })
     expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["#solucoes", "#ecossistema", "#como", "#entregadores", "#perguntas"])
     expect(screen.getByRole("link", { name: "Beelink, início" })).toHaveAttribute("href", "/")
-    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/login")
-    expect(screen.getByRole("link", { name: "Criar minha loja" })).toHaveAttribute("href", "/signup")
+    // Twice each: in the bar, and in the menu a narrow screen opens.
+    expect(screen.getAllByRole("link", { name: "Entrar" }).map((link) => link.getAttribute("href"))).toEqual(["/login", "/login"])
+    expect(screen.getAllByRole("link", { name: "Criar minha loja" }).map((link) => link.getAttribute("href"))).toEqual(["/signup", "/signup"])
+  })
+
+  /** On a wide screen the legal texts are in the footer; on a phone the menu is where they are within reach. */
+  it("keeps a menu for the narrow screen: every section, the terms, the privacy policy and the two ways in", () => {
+    render(<LandingHeader {...hrefs} />)
+
+    const menu = screen.getByRole("navigation", { name: "Menu" }).closest("details")!
+    expect(menu).toHaveClass("xl:hidden")
+    expect(menu.querySelector("summary")).toHaveAccessibleName("Menu")
+    expect(within(menu).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["Soluções", "#solucoes"],
+      ["Ecossistema", "#ecossistema"],
+      ["Como funciona", "#como"],
+      ["Para entregadores", "#entregadores"],
+      ["Perguntas", "#perguntas"],
+      ["Termos de uso", "/termos"],
+      ["Política de privacidade", "/privacidade"],
+      ["Entrar", "/login"],
+      ["Criar minha loja", "/signup"],
+    ])
   })
 
   it("says everything in the language it is handed", () => {
-    render(<LandingHeader loginHref="/login" signupHref="/signup" messages={en} />)
+    render(<LandingHeader {...hrefs} messages={en} />)
 
-    expect(screen.getByRole("link", { name: "Sign in" })).toBeInTheDocument()
+    expect(screen.getAllByRole("link", { name: "Sign in" })).toHaveLength(2)
+    expect(screen.getByRole("link", { name: "Privacy policy" })).toBeInTheDocument()
     expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument()
   })
 })
@@ -257,6 +279,13 @@ describe("the landing page, whole", () => {
     const links = [...container.querySelectorAll("a[href^='#']")].map((link) => link.getAttribute("href")!)
     expect(links.length).toBeGreaterThan(8)
     for (const href of links) expect(container.querySelector(href), href).not.toBeNull()
+  })
+
+  /** The rule that makes the anchors travel is on the document, in `globals.css`, and asks for this. */
+  it("asks the document to travel to its anchors rather than cut to them", () => {
+    const { container } = render(<Page />)
+
+    expect(container.firstElementChild).toHaveAttribute("data-smooth-anchors")
   })
 
   it("has one h1, and a heading for every section under it", () => {

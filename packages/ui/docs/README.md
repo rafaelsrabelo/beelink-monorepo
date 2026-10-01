@@ -31,6 +31,7 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/auth/reset-password-form` | `onSubmit`, `pending`, `error` | Blocos/Autenticação/Nova senha |
 | `blocks/auth/verify-email-status` | `state`, `onResend`, `resent` | Blocos/Autenticação/Confirmação de e-mail |
 | `blocks/auth/auth-card` | `title`, `description`, `error`, `footer` | Blocos/Autenticação/Moldura |
+| `blocks/auth/auth-shell` | `homeHref`, `children` — the landing's ground and Beelink's mark around the signed-out screens | Blocos/Autenticação/Fundo |
 | `blocks/auth/auth-link` | `href`, plus whatever a primitive injects | Blocos/Autenticação/Link injetado |
 | `blocks/dashboard/app-sidebar` | `user`, `onSignOut`, `navMain`, `activeHref` | Blocos/Painel/Barra lateral |
 | `blocks/dashboard/nav-main` | `items`, `activeHref`, `linkComponent` | Blocos/Painel/Navegação principal |
@@ -55,7 +56,9 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/store/store-color-field` | `id`, `label`, `value`, `onChange`, `pickerSuffix` | Blocos/Loja/Campo de cor |
 | `blocks/store/store-color-preview` | `colors` | Blocos/Loja/Prévia das cores |
 | `blocks/landing/landing-shell` | `children` — the brand's ground and `--font-brand` | Blocos/Landing |
-| `blocks/landing/landing-header` | `loginHref`, `signupHref`, `homeHref` | Blocos/Landing → Topo e hero |
+| `blocks/landing/brand-lines` | `className` — the two yellow lines of the corner | Blocos/Landing → Linhas |
+| `blocks/landing/landing-header` | `loginHref`, `signupHref`, `termsHref`, `privacyHref`, `homeHref` | Blocos/Landing → Topo e hero |
+| `blocks/landing/landing-menu` | `label`, `sections`, `pages`, `signIn`, `createStore` — the header's links below `xl`, a `<details>` | Blocos/Landing → Topo no celular |
 | `blocks/landing/landing-hero` | `signupHref` (draws `landing-hub` from `xl`) | Blocos/Landing → Topo e hero |
 | `blocks/landing/landing-banners` | `signupHref`, `exampleHref` (over `landing-rail` and `landing-phone-banner`) | Blocos/Landing → Banners |
 | `blocks/landing/landing-ecosystem` | — | Blocos/Landing → Ecossistema |

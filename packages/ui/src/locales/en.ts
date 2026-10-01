@@ -2260,6 +2260,7 @@ export const en: UiMessages = {
     brand: "Beelink",
     homeLabel: "Beelink, home",
     nav: { label: "Main", solutions: "Solutions", ecosystem: "Ecosystem", how: "How it works", couriers: "For couriers", faq: "Questions" },
+    menu: "Menu",
     signIn: "Sign in",
     createStore: "Create my shop",
     hero: {

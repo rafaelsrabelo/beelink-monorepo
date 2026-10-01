@@ -139,3 +139,19 @@ O Rafael entregou `logo.png` (símbolo e nome, preto sobre transparente). O sím
 em vetor a partir das medidas do arquivo, em `BeelinkMark`: um PNG preto não aparece na seção preta
 nem aceita a cor do texto. O nome "Beelink" continua como texto, na fonte da página. Com o arquivo
 em SVG, o nome também pode vir do desenho oficial.
+
+## Adendo — ajustes depois do merge (01/10)
+
+Pedidos do Rafael depois de ver a landing no ar. Branch `fix/landing-smooth-scroll-and-auth-brand`.
+
+- **Rolagem até a seção.** Os links "Soluções", "Ecossistema" e os outros cortavam direto para a
+  seção. Agora a página desliza até ela. Quem pediu menos movimento no sistema continua com o corte.
+  A regra fica no documento (`globals.css`) e só vale na página que pede (`data-smooth-anchors`): o
+  painel e a vitrine não mudam.
+- **Telas de conta com a marca.** Login, cadastro, senha e confirmação de e-mail ganharam o fundo
+  creme da landing, as duas linhas amarelas e o logo sobre o cartão, que leva de volta à landing
+  (`AuthShell`). No tema escuro o fundo continua o do painel: os tokens da marca são de tema claro.
+- **Menu no celular.** Abaixo de 1280 px os links de seção vão para um menu atrás de um botão, com
+  "Termos de uso" e "Política de privacidade". No celular o menu também traz "Entrar" e "Criar minha
+  loja". É um `<details>`: abre mesmo antes do script carregar, e fecha ao seguir um link ou com Esc.
+  Corrige a decisão 4, que dizia que os links apenas sumiam.

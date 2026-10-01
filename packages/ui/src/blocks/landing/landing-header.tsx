@@ -11,6 +11,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { BeelinkMark } from "./beelink-mark"
+import { LandingMenu } from "./landing-menu"
 import { LANDING_CONTAINER, LANDING_CTA } from "./landing-styles"
 
 export interface LandingHeaderProps {
@@ -18,6 +19,9 @@ export interface LandingHeaderProps {
   homeHref?: string
   loginHref: string
   signupHref: string
+  /** The legal texts, which the narrow screen's menu leads to. */
+  termsHref: string
+  privacyHref: string
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -27,10 +31,11 @@ export const LANDING_ANCHORS = { solutions: "#solucoes", ecosystem: "#ecossistem
 
 /**
  * The landing's top: the mark, the way to each section, and the two ways in — signing in, and
- * creating a shop. Below the width the five links fit in, they give way to those two: the page is
- * one column to scroll, and the hero's own button is a thumb away.
+ * creating a shop. Below the width the five links fit in, they move into a menu behind one button,
+ * with the terms and the privacy policy — which the wide screen has in its footer, a long scroll
+ * away on a phone.
  */
-export function LandingHeader({ homeHref = "/", loginHref, signupHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingHeaderProps) {
+export function LandingHeader({ homeHref = "/", loginHref, signupHref, termsHref, privacyHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: LandingHeaderProps) {
   const text = messages.landing
   const sections = [
     [LANDING_ANCHORS.solutions, text.nav.solutions],
@@ -41,7 +46,7 @@ export function LandingHeader({ homeHref = "/", loginHref, signupHref, linkCompo
   ] as const
 
   return (
-    <header className={cn(LANDING_CONTAINER, "relative flex h-[76px] items-center gap-6 md:h-[92px] xl:gap-11")}>
+    <header className={cn(LANDING_CONTAINER, "relative z-20 flex h-[76px] items-center gap-6 md:h-[92px] xl:gap-11")}>
       <Link href={homeHref} aria-label={text.homeLabel} className="flex items-center gap-3">
         <BeelinkMark className="size-8 md:size-10" />
         <span className="text-2xl font-extrabold tracking-[-0.02em] md:text-[28px]">{text.brand}</span>
@@ -54,13 +59,25 @@ export function LandingHeader({ homeHref = "/", loginHref, signupHref, linkCompo
         ))}
       </nav>
       <div className="ml-auto flex items-center gap-2.5">
-        <Link href={loginHref} className="flex h-[46px] items-center px-[18px] text-[15px] font-semibold hover:underline">
+        <Link href={loginHref} className="hidden h-[46px] items-center px-[18px] text-[15px] font-semibold hover:underline sm:flex">
           {text.signIn}
         </Link>
         <Link href={signupHref} className={cn(LANDING_CTA, "hidden h-[46px] gap-2 bg-brand-ink px-[22px] text-[15px] font-bold text-brand-on-ink sm:inline-flex")}>
           {text.createStore}
           <ArrowRightIcon aria-hidden="true" className="size-4" />
         </Link>
+        <LandingMenu
+          label={text.menu}
+          sections={sections.map(([href, label]) => ({ href, label }))}
+          pages={[
+            { href: termsHref, label: messages.legal.terms },
+            { href: privacyHref, label: messages.legal.privacy },
+          ]}
+          signIn={{ href: loginHref, label: text.signIn }}
+          createStore={{ href: signupHref, label: text.createStore }}
+          linkComponent={Link}
+          className="xl:hidden"
+        />
       </div>
     </header>
   )

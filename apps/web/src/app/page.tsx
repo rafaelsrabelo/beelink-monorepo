@@ -41,7 +41,7 @@ export default async function LandingPage() {
   return (
     <div className={jakarta.variable} style={brandFontStyle}>
       <LandingShell>
-        <LandingHeader loginHref={LOGIN} signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
+        <LandingHeader loginHref={LOGIN} signupHref={SIGNUP} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
         <main>
           <LandingHero signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
           <LandingBanners signupHref={SIGNUP} exampleHref={exampleHref} linkComponent={AppLink} messages={ui} />
