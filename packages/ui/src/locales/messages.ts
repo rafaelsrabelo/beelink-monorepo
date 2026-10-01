@@ -614,6 +614,24 @@ export interface UiMessages {
     reviewSaved: string
     /** A rating or comment the shop refused: the form's own words, not the panel's. */
     reviewInvalid: string
+    /** The product page's reviews (D14, 5b): the summary, the histogram's rows and each review. */
+    productReviewsTitle: string
+    /** `{rating}`, already in the reader's numbers. */
+    productReviewsOutOf: string
+    productReviewsCountOne: string
+    /** `{count}`. */
+    productReviewsCountMany: string
+    productReviewsStarOne: string
+    /** `{stars}`. */
+    productReviewsStarMany: string
+    /** `{stars}`, `{percent}`: what a reader hears for a row of the histogram. */
+    productReviewsRowOne: string
+    productReviewsRowMany: string
+    productReviewsAll: string
+    productReviewsVerified: string
+    /** `{date}`. */
+    productReviewsOn: string
+    productReviewsNoneForRating: string
     reviewsEmpty: string
     reviewsEmptyCta: string
     /** The list could not be read: never shown as nothing to rate. */
