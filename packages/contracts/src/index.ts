@@ -4,6 +4,7 @@ export type * from "./page-items.js";
 export type * from "./catalog.js";
 export type * from "./conversation.js";
 export type * from "./customer.js";
+export type * from "./customer-data.js";
 export type * from "./error.js";
 export type * from "./favorite.js";
 export type * from "./leads.js";

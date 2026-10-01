@@ -6,44 +6,19 @@ import type { AuthSession, CustomerNotifications, CustomerProfile } from '@harne
 import type { CustomerAddressModel, CustomerModel, UserModel } from '../../generated/prisma/models.js';
 
 // App
-import { dayOf } from '../../shared/http/birth-date.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import type { AccountScope } from '../auth/account-scope.js';
+import type { AccountScope, AccountShop } from '../auth/account-scope.js';
 import { AuthService } from '../auth/auth.service.js';
 import type { LoginDto } from '../auth/dto/auth.dto.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { SessionService } from '../auth/session.service.js';
 import { StoresService } from '../stores/stores.service.js';
-import { SAVED_ADDRESS_ORDER, addressPartsOf, toSavedAddress } from './customer-addresses.js';
+import { SAVED_ADDRESS_ORDER } from './customer-addresses.js';
+import { toCustomerProfile, toNotifications } from './customer-profile.mapper.js';
 import type { CustomerRegisterDto } from './dto/customer-link.dto.js';
 import type { UpdateCustomerNotificationsDto } from './dto/customer-notifications.dto.js';
 import type { UpdateCustomerProfileDto } from './dto/customer.dto.js';
 import { shopReturnOf } from './shop-return.js';
-
-function toNotifications(customer: Pick<CustomerModel, 'notifyOrders' | 'notifyFavorites' | 'notifyOffers' | 'notifyOffersAt'>): CustomerNotifications {
-  return {
-    orders: customer.notifyOrders,
-    favorites: customer.notifyFavorites,
-    offers: customer.notifyOffers,
-    offersChosenAt: customer.notifyOffersAt?.toISOString() ?? null,
-  } satisfies CustomerNotifications;
-}
-
-/** The record, its account — e-mail, and whether it has a password — and its addresses as `SAVED_ADDRESS_ORDER` reads them: the default first. */
-function toCustomerProfile(customer: CustomerModel, user: Pick<UserModel, 'email' | 'passwordHash'>, addresses: CustomerAddressModel[]): CustomerProfile {
-  return {
-    id: customer.id,
-    name: customer.name,
-    email: user.email,
-    phone: customer.phone,
-    cpf: customer.cpf,
-    birthDate: dayOf(customer.birthDate),
-    address: addressPartsOf(addresses.find((address) => address.isDefault)),
-    addresses: addresses.map(toSavedAddress),
-    hasPassword: user.passwordHash !== null,
-    notifications: toNotifications(customer),
-  } satisfies CustomerProfile;
-}
 
 /**
  * The shopper's door: accounts that belong to one shop, opened and signed in to there and nowhere
@@ -194,7 +169,17 @@ export class CustomersService {
     await this.sessions.revokeAllForUser(user.id);
   }
 
-  private addressesOf(customerId: string): Promise<CustomerAddressModel[]> {
+  /**
+   * The shop, the signed-in shopper's account there and their record — made on first use, as `me`
+   * makes it — for what reads or ends the whole of it (BEELINK-152).
+   */
+  async shopperRecordAt(storeSlug: string, userId: string): Promise<{ storeId: string; shopName: string; user: UserModel; record: CustomerModel }> {
+    const scope = await this.scopeOf(storeSlug);
+    const user = await this.accountAt(scope.storeId, userId);
+    return { storeId: scope.storeId, shopName: scope.shop.name, user, record: await this.recordOf(scope.storeId, user) };
+  }
+
+  addressesOf(customerId: string): Promise<CustomerAddressModel[]> {
     return this.prisma.customerAddress.findMany({ where: { customerId }, orderBy: SAVED_ADDRESS_ORDER });
   }
 
@@ -202,7 +187,7 @@ export class CustomersService {
    * This shop's accounts, and what their e-mails carry: the shop's name, its own pages for the links,
    * in its own route words, and where the shopper goes back to. 404 for a shop that does not exist.
    */
-  private async scopeOf(storeSlug: string, returnTo?: string): Promise<AccountScope & { storeId: string }> {
+  private async scopeOf(storeSlug: string, returnTo?: string): Promise<AccountScope & { storeId: string; shop: AccountShop }> {
     const store = await this.stores.publicStoreNaming(storeSlug);
     const words = ROUTE_WORDS[store.routeVocabulary];
     return {

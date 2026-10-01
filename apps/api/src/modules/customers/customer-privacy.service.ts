@@ -1,0 +1,135 @@
+// Nest
+import { ForbiddenException, Injectable } from '@nestjs/common';
+
+// Libs
+import { verify } from '@node-rs/argon2';
+
+// Types
+import type { CustomerDataAccount, CustomerDataExport } from '@harness-monorepo/contracts';
+import type { UserModel } from '../../generated/prisma/models.js';
+
+// App
+import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { toCustomerConversation } from '../conversations/conversations.mapper.js';
+import { favoriteInclude, toCustomerFavorite } from '../favorites/favorite-reading.js';
+import { CUSTOMER_ORDER_INCLUDE, toCustomerOrder } from '../orders/customer-order.mapper.js';
+import { RealtimePublisher } from '../realtime/realtime-publisher.js';
+import { reviewInclude, toCustomerReview } from '../reviews/reviews.mapper.js';
+import { lockCustomer } from './customer-lock.js';
+import { toCustomerProfile } from './customer-profile.mapper.js';
+import { CustomersService } from './customers.service.js';
+import type { DeleteCustomerAccountDto } from './dto/customer-privacy.dto.js';
+
+/** What a record kept for the shop's books loses with its account: all it knew of the person beyond a name and a phone. */
+const FORGOTTEN = {
+  userId: null,
+  cpf: null,
+  birthDate: null,
+  claimedPhone: null,
+  notifyOrders: true,
+  notifyFavorites: true,
+  notifyOffers: false,
+  notifyOffersAt: null,
+} as const;
+
+/**
+ * A shopper's own data at a shop (BEELINK-152): a copy of all of it, and the end of their account.
+ * What the account was at this shop ends with it; the orders are the shop's books and stay, with the
+ * name and the address each one recorded when it was placed.
+ */
+@Injectable()
+export class CustomerPrivacyService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly customers: CustomersService,
+    private readonly realtime: RealtimePublisher,
+  ) {}
+
+  /** Every order and conversation, never a page: the file is the whole of it. */
+  async exportOf(storeSlug: string, userId: string): Promise<CustomerDataExport> {
+    const { storeId, shopName, user, record } = await this.customers.shopperRecordAt(storeSlug, userId);
+    const customerId = record.id;
+
+    const [account, addresses, orders, favorites, reviews, talked] = await Promise.all([
+      this.prisma.user.findUniqueOrThrow({
+        where: { id: user.id },
+        include: { identities: { select: { provider: true } }, legalAcceptances: { orderBy: { acceptedAt: 'asc' } } },
+      }),
+      this.customers.addressesOf(customerId),
+      this.prisma.order.findMany({ where: { storeId, customerId }, orderBy: [{ placedAt: 'desc' }, { number: 'desc' }], include: CUSTOMER_ORDER_INCLUDE }),
+      this.prisma.customerFavorite.findMany({ where: { customerId }, orderBy: { likedAt: 'desc' }, include: favoriteInclude }),
+      this.prisma.productReview.findMany({ where: { customerId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], include: reviewInclude }),
+      this.prisma.order.findMany({
+        where: { storeId, customerId, conversation: { isNot: null } },
+        orderBy: [{ placedAt: 'desc' }, { number: 'desc' }],
+        select: { number: true, status: true, fulfillment: true, conversation: { select: { messages: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } } } },
+      }),
+    ]);
+
+    return {
+      exportedAt: new Date().toISOString(),
+      shop: { name: shopName, slug: storeSlug },
+      account: {
+        name: account.name,
+        email: account.email,
+        emailVerifiedAt: account.emailVerifiedAt?.toISOString() ?? null,
+        createdAt: account.createdAt.toISOString(),
+        signInWith: [...(account.passwordHash ? (['PASSWORD'] as const) : []), ...account.identities.map(() => 'GOOGLE' as const)],
+        termsAccepted: account.legalAcceptances.map((row) => ({ version: row.version, via: row.via, acceptedAt: row.acceptedAt.toISOString() })),
+      } satisfies CustomerDataAccount,
+      profile: toCustomerProfile(record, user, addresses),
+      orders: orders.map(toCustomerOrder),
+      favorites: favorites.map(toCustomerFavorite),
+      reviews: reviews.map(toCustomerReview),
+      conversations: talked.map((order) => toCustomerConversation(order, order.conversation?.messages ?? [])),
+    } satisfies CustomerDataExport;
+  }
+
+  /**
+   * The account ends, confirmed by its password — or, with none, its e-mail typed again. Its
+   * sessions, tokens, Google ties and accepted terms go with it, by their cascades, and so does
+   * everything the shopper kept here for themselves. A record the shop's books name — an order, a
+   * review — stays the shop's, forgotten down to its name and phone; one they do not is deleted.
+   */
+  async deleteAccount(storeSlug: string, userId: string, dto: DeleteCustomerAccountDto): Promise<void> {
+    const { user, record } = await this.customers.shopperRecordAt(storeSlug, userId);
+    await this.confirm(user, dto);
+
+    const ended = await this.prisma.$transaction(async (tx) => {
+      await lockCustomer(tx, record.id);
+      const orders = await tx.order.count({ where: { customerId: record.id } });
+      const reviews = await tx.productReview.count({ where: { customerId: record.id } });
+
+      await tx.favoriteNotice.deleteMany({ where: { customerId: record.id } });
+      await tx.customerFavorite.deleteMany({ where: { customerId: record.id } });
+      if (orders > 0 || reviews > 0) {
+        // The orders keep where each one went; the saved addresses were the shopper's, not the books'.
+        await tx.customerAddress.deleteMany({ where: { customerId: record.id } });
+        await tx.customer.update({ where: { id: record.id }, data: FORGOTTEN });
+      } else {
+        await tx.customer.delete({ where: { id: record.id } });
+      }
+
+      const sessions = await tx.session.findMany({ where: { userId: user.id }, select: { id: true } });
+      await tx.user.delete({ where: { id: user.id } });
+      return sessions.map((session) => session.id);
+    });
+
+    // The guard reads the session on every request, so the token stops opening anything now; a
+    // socket's ticket was read once, at the door, and the socket has to be closed.
+    this.realtime.endSessions(ended);
+  }
+
+  /** The same 403 as a password change for a wrong password; an e-mail that is not the account's has its own. */
+  private async confirm(user: UserModel, dto: DeleteCustomerAccountDto): Promise<void> {
+    if (user.passwordHash) {
+      if (!dto.password || !(await verify(user.passwordHash, dto.password))) {
+        throw new ForbiddenException({ errorCode: 'AUTH_PASSWORD_WRONG', message: 'The password does not match' });
+      }
+      return;
+    }
+    if ((dto.email ?? '').trim().toLowerCase() !== user.email) {
+      throw new ForbiddenException({ errorCode: 'CUSTOMER_DELETE_EMAIL_MISMATCH', message: "That is not this account's e-mail" });
+    }
+  }
+}
