@@ -98,6 +98,9 @@ model Order {
   reviews ProductReview[]
   /// The coupon it took, when it took one (BEELINK-190).
   couponRedemption CouponRedemption?
+  /// The credit it earns (BEELINK-238), once there is one.
+  cashbackCredit  CashbackCredit?
+  cashbackEntries CashbackEntry[]
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])

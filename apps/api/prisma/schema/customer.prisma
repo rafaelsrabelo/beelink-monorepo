@@ -40,6 +40,12 @@ model Customer {
   totalSpentCents BigInt    @default(0)
   firstOrderAt    DateTime?
   lastOrderAt     DateTime?
+  /// The cashback this customer can spend at the shop (BEELINK-238): what is left of their available
+  /// lots, which is also what their statement adds up to. Kept like the books above, under the
+  /// customer's lock, so a list reads it without adding up a statement. Never negative, by a CHECK.
+  cashbackBalanceCents Int  @default(0)
+  /// What their orders will earn once delivered: the pending lots, not yet on the statement.
+  cashbackPendingCents Int  @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -48,6 +54,8 @@ model Customer {
   favorites CustomerFavorite[]
   favoriteNotices FavoriteNotice[]
   reviews   ProductReview[]
+  cashbackCredits CashbackCredit[]
+  cashbackEntries CashbackEntry[]
 
   @@unique([storeId, userId])
   @@unique([storeId, phone])
