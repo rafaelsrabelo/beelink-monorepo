@@ -124,7 +124,7 @@ export function StorefrontProductCard({
           // without pretending an image failed to load.
           <div className="flex size-full items-center justify-center text-xs text-shop-muted">{text.noPhoto}</div>
         )}
-        {/* The saving over the photo, as 5a draws it, and never without a real one. */}
+        {/* The saving over the photo's left corner — the right one is the heart's — and never without a real one. */}
         {showBadge ? (
           <StorefrontDiscountBadge priceCents={product.priceCents} compareAtPriceCents={product.compareAtPriceCents} messages={messages} />
         ) : null}

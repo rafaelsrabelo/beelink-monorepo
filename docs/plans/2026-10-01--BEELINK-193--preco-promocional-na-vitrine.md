@@ -138,3 +138,13 @@ O que fica como está, sabendo:
 - **A mensagem do WhatsApp do pedido mostra as linhas pelo preço do catálogo e o total com desconto,**
   sem uma linha de desconto entre eles. Vem do O2 e fica para o O5, que é quem mostra o desconto no
   comprovante e nas mensagens.
+
+## Adendo: o selo e o coração no card (01/10)
+
+O Rafael viu na loja de teste: no card, o coração de favoritar ficava em cima do selo de desconto. Os
+dois estavam no canto superior direito da foto. O design 5a desenhou o selo ali antes de o card ter
+coração (que veio com os favoritos, no J15), e a promoção tornou o caso comum.
+
+O selo do card passou para o canto superior esquerdo, como já era na página do produto. O coração
+continua no direito. O bloco do produto em destaque, que forçava o canto esquerdo por cima do direito
+e ficava com os dois, também se acerta com isso.

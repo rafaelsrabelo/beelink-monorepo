@@ -99,7 +99,9 @@ describe("StorefrontPrice", () => {
 describe("StorefrontDiscountBadge", () => {
   it("states the saving over a photo, rounded down, and nothing without one", () => {
     const { container, rerender } = render(<StorefrontDiscountBadge priceCents={18900} compareAtPriceCents={24900} />)
-    expect(screen.getByText("-24%")).toHaveClass("bg-shop-sale", "text-shop-on-sale", "right-2.5")
+    expect(screen.getByText("-24%")).toHaveClass("bg-shop-sale", "text-shop-on-sale", "left-2.5")
+    // Never the right corner: on a card that one is the heart's.
+    expect(screen.getByText("-24%").className).not.toMatch(/\bright-/)
 
     rerender(<StorefrontDiscountBadge priceCents={18900} compareAtPriceCents={24900} placement="photo" />)
     expect(screen.getByText("-24%")).toHaveClass("left-3.5")

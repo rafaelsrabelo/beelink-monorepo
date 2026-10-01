@@ -100,6 +100,18 @@ describe("StorefrontProductCard", () => {
     expect(corner?.parentElement).toHaveClass("aspect-[259/230]")
   })
 
+  it("keeps the saving and the heart on opposite corners of the photo, so neither covers the other", () => {
+    renderCard({ favorite: <button type="button">Curtir Bolsa Amora</button> })
+
+    const saving = screen.getByText("-24%")
+    const heart = screen.getByRole("button", { name: "Curtir Bolsa Amora" }).parentElement!
+    expect(saving.parentElement).toBe(heart.parentElement)
+    expect(saving).toHaveClass("top-2.5", "left-2.5")
+    expect(heart).toHaveClass("top-2.5", "right-2.5")
+    expect(saving.className).not.toMatch(/\bright-/)
+    expect(heart.className).not.toMatch(/\bleft-/)
+  })
+
   it("passes through its photos when it has more than one, and draws the cover alone otherwise", () => {
     const { container, rerender } = renderCard({ product: { ...product, imageUrls: ["/1.jpg", "/2.jpg"] } })
     expect(container.querySelectorAll("img")).toHaveLength(2)

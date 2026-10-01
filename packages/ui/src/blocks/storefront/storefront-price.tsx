@@ -165,7 +165,9 @@ export interface StorefrontDiscountBadgeProps {
 
 /**
  * "-20%" in the sale colour, over a photo. Its own block because the photo draws it, not the
- * price: on the card it sits in the top-right corner, on the product page's photo top-left.
+ * price. Top-left of the photo, on the card and on the product's page alike: the top-right corner
+ * is the heart's. 5a drew the card's saving on the right, before a card had a heart, and the two
+ * landed on the same corner — the heart over the saving, which then read as a red edge.
  * Nothing is drawn without a real saving.
  */
 export function StorefrontDiscountBadge({
@@ -184,7 +186,7 @@ export function StorefrontDiscountBadge({
       className={cn(
         // Over a photo that passes, zooms or opens on a press: above it, and the pointer goes through.
         "pointer-events-none absolute z-[2] font-extrabold text-shop-on-sale bg-shop-sale",
-        placement === "card" ? "top-2.5 right-2.5 rounded-md px-2 py-1 text-xs" : "top-3.5 left-3.5 rounded-[8px] px-2.5 py-[5px] text-[13px]",
+        placement === "card" ? "top-2.5 left-2.5 rounded-md px-2 py-1 text-xs" : "top-3.5 left-3.5 rounded-[8px] px-2.5 py-[5px] text-[13px]",
         className,
       )}
     >
