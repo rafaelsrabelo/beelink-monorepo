@@ -25,6 +25,7 @@ import {
 import { productInclude, toProduct } from './catalog.mapper.js';
 import { imageRows, refuseForeignImageValues } from './product-images.js';
 import { assertParcel, assertPrices, skuTaken, uniqueViolationOn } from './product-rules.js';
+import { watchFavorites } from '../favorites/favorite-watch.js';
 import { lockProduct, perUnitPatchOf, syncProductCache } from './variant-cache.js';
 import { productDetailInclude, toProductDetail, toPublicProductDetail } from './variant.mapper.js';
 
@@ -302,6 +303,9 @@ export class ProductsService {
           // Without options, the product's one variant is its default, and it takes the values.
           await tx.productVariant.updateMany({ where: { productId, archivedAt: null }, data: perUnit });
           await syncProductCache(tx, productId);
+        } else if (dto.status === 'ACTIVE' && current.status !== 'ACTIVE') {
+          // A draft published moves no variant, yet what changed while it was one is news now.
+          await watchFavorites(tx, productId);
         }
 
         return tx.product.findUniqueOrThrow({ where: { id: productId }, include: productDetailInclude });

@@ -15,6 +15,8 @@ export interface StorefrontCatalogProps {
   productHref: (productSlug: string) => string
   /** What each card offers under its price — the web\'s "Adicionar ao carrinho". */
   cardAction?: (product: StorefrontProduct) => ReactNode
+  /** The heart on each card's photo, drawn by the screen. */
+  cardFavorite?: (product: StorefrontProduct) => ReactNode
   /**
    * The way out of an empty shelf: with filters in force, the address of "Limpar tudo"; without,
    * the whole catalogue. Absent on the catalogue itself, which has nowhere wider to go.
@@ -28,6 +30,8 @@ export interface StorefrontCatalogProps {
   productsPerRow?: 2 | 3 | 4
   showPrice?: boolean
   showBadge?: boolean
+  /** The cards' rating line; the shop may hide it. */
+  showRating?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
   children?: ReactNode
@@ -61,6 +65,7 @@ export function StorefrontCatalog({
   products,
   productHref,
   cardAction,
+  cardFavorite,
   clearHref,
   filtered = false,
   retryHref,
@@ -68,6 +73,7 @@ export function StorefrontCatalog({
   productsPerRow = 3,
   showPrice = true,
   showBadge = true,
+  showRating = true,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
   children,
@@ -86,7 +92,9 @@ export function StorefrontCatalog({
                 locale={locale}
                 showPrice={showPrice}
                 showBadge={showBadge}
+                showRating={showRating}
                 action={cardAction?.(product)}
+                favorite={cardFavorite?.(product)}
                 linkComponent={Link}
                 messages={messages}
               />

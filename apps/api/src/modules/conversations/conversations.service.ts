@@ -38,7 +38,7 @@ const orderWithConversation = {
   number: true,
   status: true,
   fulfillment: true,
-  customer: { select: { id: true, name: true } },
+  customer: { select: { id: true, name: true, userId: true } },
   // The id breaks a tie: a notice and a message written in the same millisecond keep one order.
   conversation: { select: { id: true, messages: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } } },
 } as const satisfies Prisma.OrderSelect;

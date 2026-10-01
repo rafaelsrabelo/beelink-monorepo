@@ -3,7 +3,8 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { CustomerModel } from '../../generated/prisma/models.js';
 
 // App
-import { lockCustomer } from './customer-addresses.js';
+import { countOut } from '../reviews/review-books.js';
+import { lockCustomer } from './customer-lock.js';
 import { refreshBooks } from './customer-books.js';
 
 type Tx = Prisma.TransactionClient;
@@ -16,6 +17,23 @@ type Tx = Prisma.TransactionClient;
 export function keptOf<T extends Pick<CustomerModel, 'userId'>>(here: T, other: T): { kept: T; gone: T } | null {
   if (here.userId && other.userId) return null;
   return other.userId ? { kept: other, gone: here } : { kept: here, gone: other };
+}
+
+/**
+ * The other record's reviews (BEELINK-156) — one whose account was deleted keeps them — move to the
+ * kept one, which had none of that product; a product both reviewed keeps the kept one's, and the
+ * other's leaves the product's cache before its row goes with the record.
+ */
+async function moveReviews(tx: Tx, keptId: string, goneId: string): Promise<void> {
+  const reviews = await tx.productReview.findMany({ where: { customerId: goneId }, select: { id: true, productId: true, rating: true, hiddenAt: true, updatedAt: true } });
+  if (reviews.length === 0) return;
+  const kept = new Set((await tx.productReview.findMany({ where: { customerId: keptId, productId: { in: reviews.map((review) => review.productId) } }, select: { productId: true } })).map((review) => review.productId));
+
+  for (const review of reviews) {
+    // Its own `updatedAt` kept: a move is not the customer's edit.
+    if (!kept.has(review.productId)) await tx.productReview.update({ where: { id: review.id }, data: { customerId: keptId, updatedAt: review.updatedAt } });
+    else if (review.hiddenAt === null) await countOut(tx, review.productId, review.rating);
+  }
 }
 
 /**
@@ -38,6 +56,7 @@ export async function mergeInto(tx: Tx, kept: CustomerModel, gone: CustomerModel
     UPDATE "customer_addresses"
     SET "customerId" = ${kept.id}::uuid, "isDefault" = "isDefault" AND NOT ${keptHasDefault}::boolean
     WHERE "customerId" = ${gone.id}::uuid`;
+  await moveReviews(tx, kept.id, gone.id);
   // Gone before the kept one takes its phone: the index would refuse the two holding it at once.
   await tx.customer.delete({ where: { id: gone.id } });
 

@@ -15,10 +15,10 @@ import { ShopConversationLive } from "./shop-conversation-live"
 
 const at = "2026-09-29T13:00:00.000Z"
 
-function conversationWith(open: boolean, unread: number): ShopConversation {
+function conversationWith(open: boolean, unread: number, hasAccount = true): ShopConversation {
   return {
     order: { number: 18, status: open ? "PREPARING" : "DELIVERED", fulfillment: "DELIVERY", open },
-    customer: { id: "c1", name: "Carla" },
+    customer: { id: "c1", name: "Carla", hasAccount },
     unread,
     messages: [{ kind: "MESSAGE", id: "m1", author: "CUSTOMER", body: "Chega sexta?", createdAt: at, readAt: null }],
   }
@@ -70,6 +70,28 @@ describe("the panel's conversation, live", () => {
     await user.click(screen.getByRole("button", { name: "Enviar" }))
 
     expect(await screen.findByText(/a conversa agora é só histórico/)).toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: "Resposta ao cliente" })).toBeNull()
+  })
+
+  it("turns to history when the customer deleted their account, the order still on its way", async () => {
+    const user = userEvent.setup()
+    let gone = false
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.endsWith("/messages")) {
+          gone = true
+          return Response.json({ errorCode: "ORDER_CONVERSATION_NOT_FOUND" }, { status: 404 })
+        }
+        return Response.json(conversationWith(true, 0, !gone))
+      }),
+    )
+
+    mount()
+    await user.type(await screen.findByRole("textbox", { name: "Resposta ao cliente" }), "Chega, sim")
+    await user.click(screen.getByRole("button", { name: "Enviar" }))
+
+    expect(await screen.findByText(/O cliente excluiu a conta na loja/)).toBeInTheDocument()
     expect(screen.queryByRole("textbox", { name: "Resposta ao cliente" })).toBeNull()
   })
 })

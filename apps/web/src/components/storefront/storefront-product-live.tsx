@@ -5,10 +5,14 @@ import type { PaymentMethod, PublicProductDetail } from "@harness-monorepo/contr
 
 // UI
 import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
+import { PRODUCT_REVIEWS_ID } from "@harness-monorepo/ui/blocks/storefront/storefront-product-reviews"
+import { StorefrontRating } from "@harness-monorepo/ui/blocks/storefront/storefront-rating"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { AppLink } from "@/components/app-link"
 import { useCart } from "./cart-provider"
+import { StorefrontFavoriteLive } from "./favorites/storefront-favorite-live"
 import { useRestockRequest } from "@/services/storefront/storefront-hooks"
 
 /** The refusals a visitor can meet asking for a restock, as sentences picked on the server. */
@@ -32,6 +36,8 @@ export interface StorefrontProductLiveProps {
   cartHref: string
   showPrice: boolean
   showBadge: boolean
+  /** The rating line under the title, when the product has reviews; the shop may hide it. */
+  showRating?: boolean
   /** The layout's "Em estoque" switch. */
   showStock: boolean
   /** The shop takes orders on WhatsApp, which the buy box says. */
@@ -58,6 +64,7 @@ export function StorefrontProductLive({
   cartHref,
   showPrice,
   showBadge,
+  showRating = true,
   showStock,
   finishesOnWhatsApp,
   seller,
@@ -81,6 +88,12 @@ export function StorefrontProductLive({
       images={product.images}
       orderHref={orderHref}
       cart={{ onAdd: (variantId, qty) => add({ productId: product.id, variantId, qty }), href: cartHref }}
+      rating={
+        showRating && product.rating ? (
+          <StorefrontRating average={product.rating.average} count={product.rating.count} reviewsHref={`#${PRODUCT_REVIEWS_ID}`} locale="pt-BR" size="product" linkComponent={AppLink} messages={messages} />
+        ) : undefined
+      }
+      favorite={(variantId, look) => <StorefrontFavoriteLive productId={product.id} productName={product.name} variantId={variantId} look={look} messages={messages} />}
       soldOut={product.soldOut}
       options={product.options}
       variants={product.variants}

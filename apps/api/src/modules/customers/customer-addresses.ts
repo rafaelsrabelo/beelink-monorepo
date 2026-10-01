@@ -3,6 +3,9 @@ import type { CustomerAddress, CustomerSavedAddress } from '@harness-monorepo/co
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { CustomerAddressModel } from '../../generated/prisma/models.js';
 
+// App
+import { lockCustomer } from './customer-lock.js';
+
 type Tx = Prisma.TransactionClient;
 
 /** The parts of an address, as the wire's `CustomerAddress` names them. */
@@ -36,14 +39,6 @@ function hasAnyPart(address: CustomerAddress): boolean {
 /** The parts a partial write sends; one left out is not in it, so it is kept. */
 function sentPartsOf(parts: Partial<CustomerAddress>): Partial<CustomerAddress> {
   return Object.fromEntries(ADDRESS_PARTS.filter((part) => parts[part] !== undefined).map((part) => [part, parts[part]]));
-}
-
-/**
- * The customer's row, locked until the transaction ends: two changes to one customer's addresses
- * wait for each other, so there is never a moment with two defaults, or none while any is left.
- */
-export async function lockCustomer(tx: Tx, customerId: string): Promise<void> {
-  await tx.$queryRaw`SELECT 1 FROM "customers" WHERE "id" = ${customerId}::uuid FOR UPDATE`;
 }
 
 /**

@@ -20,7 +20,8 @@ import { deliveryOf } from './order-delivery.js';
 import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
 import { takeStock } from './order-stock.js';
-import { totalsOf, variantLabelOf } from './order-totals.js';
+import { variantLabelOf } from '../catalog/variant-label.js';
+import { totalsOf } from './order-totals.js';
 import { orderError } from './orders.constants.js';
 import { ORDER_INCLUDE } from './orders.mapper.js';
 

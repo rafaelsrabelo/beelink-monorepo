@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
@@ -43,6 +43,8 @@ export interface StorefrontProductPurchaseProps {
   /** The shop takes its orders on WhatsApp, which the box says under the buttons. */
   finishesOnWhatsApp?: boolean
   seller?: { name: string; paymentMethods: readonly PaymentMethod[] }
+  /** Last in the box, as 5b draws it: the web's "Adicionar aos favoritos". */
+  favorite?: ReactNode
   messages?: UiMessages
 }
 
@@ -50,8 +52,8 @@ export interface StorefrontProductPurchaseProps {
  * 5b's buy box — the price, the stock, how many, the two pills, where the order finishes and who
  * sells it — and, on a phone, the bar that offers the same button until the box is reached.
  *
- * It promises only what exists: no postcode quote, no "Restam N" (a count is never public), no
- * favourites. The price here is not announced; the information column's is.
+ * It promises only what exists: no postcode quote, and no "Restam N" (a count is never public). The
+ * price here is not announced; the information column's is.
  */
 export function StorefrontProductPurchase({
   name,
@@ -68,6 +70,7 @@ export function StorefrontProductPurchase({
   orderHref,
   finishesOnWhatsApp = false,
   seller,
+  favorite,
   messages = defaultMessages,
 }: StorefrontProductPurchaseProps) {
   const text = messages.storefront
@@ -156,6 +159,8 @@ export function StorefrontProductPurchase({
             <StorefrontSellerTable sellerName={seller.name} paymentMethods={seller.paymentMethods} messages={messages} />
           </>
         ) : null}
+
+        {favorite}
       </StorefrontProductBuy>
 
       {/* Outside the box: fixed, it takes no place in the grid, and it is not part of the region. */}

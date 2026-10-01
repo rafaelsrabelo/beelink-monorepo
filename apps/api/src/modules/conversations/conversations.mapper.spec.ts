@@ -36,16 +36,21 @@ describe('the conversation, as each side reads it', () => {
 
   it("counts, for each side, the other side's messages it has not read", () => {
     const messages = [message('CUSTOMER', null), message('CUSTOMER', at), message('SHOP', null), message('SHOP', null)];
-    const order = { ...head, customer: { id: 'k1', name: 'Bia' } };
+    const order = { ...head, customer: { id: 'k1', name: 'Bia', userId: 'u1' } };
 
     expect(toCustomerConversation(order, messages).unread).toBe(2);
     expect(toShopConversation(order, messages).unread).toBe(1);
   });
 
+  it('tells the shop when the customer no longer has an account to read an answer', () => {
+    expect(toShopConversation({ ...head, customer: { id: 'k1', name: 'Bia', userId: 'u1' } }, []).customer).toEqual({ id: 'k1', name: 'Bia', hasAccount: true });
+    expect(toShopConversation({ ...head, customer: { id: 'k1', name: 'Bia', userId: null } }, []).customer.hasAccount).toBe(false);
+  });
+
   /** BEELINK-236: a move is news to the customer, and the shop's own doing. */
   it('counts a status notice as unread for the customer only, and hands it over as its status alone', () => {
     const messages = [notice('ACCEPTED', at), notice('OUT_FOR_DELIVERY', null), message('SHOP', null)];
-    const order = { ...head, customer: { id: 'k1', name: 'Bia' } };
+    const order = { ...head, customer: { id: 'k1', name: 'Bia', userId: 'u1' } };
 
     expect(toCustomerConversation(order, messages).unread).toBe(2);
     expect(toShopConversation(order, messages).unread).toBe(0);

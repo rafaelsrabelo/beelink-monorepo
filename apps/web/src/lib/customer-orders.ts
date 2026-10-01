@@ -12,15 +12,7 @@ import type { CustomerOrder, CustomerOrderListQuery, CustomerOrderPage, Customer
 // App
 import { callApi } from "./api"
 import { CUSTOMER_ACCESS_COOKIE } from "./customer-session-cookies"
-
-/** A GET under the shopper's orders with their access cookie, or null with no cookie or no good answer. */
-async function readAsShopper<T>(path: string): Promise<T | null> {
-  const accessToken = (await cookies()).get(CUSTOMER_ACCESS_COOKIE)?.value
-  if (!accessToken) return null
-
-  const response = await callApi({ path, method: "GET", accessToken }).catch(() => null)
-  return response?.ok ? ((await response.json()) as T) : null
-}
+import { readAsShopper } from "./shopper-read"
 
 // Once per request for each address: the menu's count, the overview and the tab's toolbar and list
 // ask the same page, and `cache` compares its arguments by identity — so they arrive as a string.

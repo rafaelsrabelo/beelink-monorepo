@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 
 // UI
 import { optionOfValue, photosOf } from "@harness-monorepo/ui/lib/photo-choice"
@@ -65,6 +65,10 @@ export interface StorefrontProductDetailProps {
    * address for "Comprar agora". Absent, the page offers the WhatsApp order alone.
    */
   cart?: { onAdd: (variantId: string | null, qty: number) => void; href: string }
+  /** The rating line under the title, leading to the reviews; absent while there is none. */
+  rating?: ReactNode
+  /** The heart for the combination chosen now (null while none is): on the photo, and last in the buy box, as 5b draws both. */
+  favorite?: (variantId: string | null, look: "icon" | "text") => ReactNode
   /** "Avise-me" for a sold-out combination; absent, the page offers none. */
   restock?: {
     onSubmit: (variantId: string, submission: RestockSubmission) => void
@@ -110,6 +114,8 @@ export function StorefrontProductDetail({
   initialVariantId,
   onVariantChange,
   cart,
+  favorite,
+  rating,
   restock,
   locale,
   showPrice = true,
@@ -151,14 +157,7 @@ export function StorefrontProductDetail({
   const price = showPrice ? (
     // Announced as it changes with the choice, so a screen reader hears the new price.
     <div aria-live="polite">
-      <StorefrontPrice
-        priceCents={cents}
-        compareAtPriceCents={was}
-        locale={locale}
-        size="product"
-        showBadge={showBadge}
-        messages={messages}
-      />
+      <StorefrontPrice priceCents={cents} compareAtPriceCents={was} locale={locale} size="product" showBadge={showBadge} messages={messages} />
     </div>
   ) : undefined
 
@@ -187,6 +186,7 @@ export function StorefrontProductDetail({
             images={shownImages}
             name={name}
             badge={showPrice && showBadge ? <StorefrontDiscountBadge priceCents={cents} compareAtPriceCents={was} placement="photo" messages={messages} /> : undefined}
+            corner={favorite?.(variant?.id ?? null, "icon")}
             messages={messages}
           />
         </div>
@@ -195,6 +195,7 @@ export function StorefrontProductDetail({
           shopName={shopName}
           homeHref={homeHref}
           name={name}
+          rating={rating}
           price={price}
           picker={picker}
           description={description}
@@ -217,6 +218,7 @@ export function StorefrontProductDetail({
           orderHref={order}
           finishesOnWhatsApp={finishesOnWhatsApp}
           seller={seller}
+          favorite={favorite?.(variant?.id ?? null, "text")}
           messages={messages}
         />
       </article>

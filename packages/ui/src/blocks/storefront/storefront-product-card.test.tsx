@@ -84,6 +84,22 @@ describe("StorefrontProductCard", () => {
     expect(container.querySelector("a")).toHaveClass("after:absolute", "after:inset-0")
   })
 
+  it("draws the rating line under the name when the product has reviews, unless the shop hides it", () => {
+    const { rerender } = renderCard({ product: { ...product, rating: { average: 4.5, count: 12 } } })
+    expect(screen.getByText("Nota 4,5 de 5, 12 avaliações")).toBeInTheDocument()
+
+    rerender(<StorefrontProductCard product={{ ...product, rating: { average: 4.5, count: 12 } }} href="/lessari/produtos/bolsa-amora" locale="pt-BR" showRating={false} />)
+    expect(screen.queryByText(/avaliações/)).not.toBeInTheDocument()
+  })
+
+  it("puts the heart over the photo's corner, above the card's link", () => {
+    renderCard({ favorite: <button type="button">Curtir Bolsa Amora</button> })
+
+    const corner = screen.getByRole("button", { name: "Curtir Bolsa Amora" }).parentElement
+    expect(corner).toHaveClass("absolute", "z-10")
+    expect(corner?.parentElement).toHaveClass("aspect-[259/230]")
+  })
+
   it("passes through its photos when it has more than one, and draws the cover alone otherwise", () => {
     const { container, rerender } = renderCard({ product: { ...product, imageUrls: ["/1.jpg", "/2.jpg"] } })
     expect(container.querySelectorAll("img")).toHaveLength(2)

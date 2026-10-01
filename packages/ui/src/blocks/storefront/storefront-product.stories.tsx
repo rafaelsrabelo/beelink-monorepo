@@ -3,7 +3,9 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 // Lib
 import { ORDER_VARIANT_MARK } from "../../lib/variant-choice"
 
+import { StorefrontFavoriteButton } from "./storefront-favorite-button"
 import { StorefrontProductDetail } from "./storefront-product"
+import { StorefrontRating } from "./storefront-rating"
 import { BLOUSE_OPTIONS, BLOUSE_VARIANTS } from "./variant-choice-fixtures"
 
 const meta = {
@@ -51,6 +53,16 @@ export const SemWhatsapp: Story = {
  * what it loses is the button, not itself.
  */
 export const Esgotado: Story = { args: { soldOut: true } }
+
+/** Com o coração, como a 5b desenha: sobre a foto e, em palavras, no fim do quadro de compra. */
+export const ComCoracao: Story = {
+  args: { favorite: (_variantId, look) => <StorefrontFavoriteButton name="Blusa Amora" liked={look === "icon"} look={look} onToggle={() => {}} /> },
+}
+
+/** Com avaliações: a nota abaixo do título leva à seção "Avaliações de clientes", no fim da página. */
+export const ComNota: Story = {
+  args: { rating: <StorefrontRating average={4.7} count={128} locale="pt-BR" reviewsHref="#avaliacoes" size="product" /> },
+}
 
 /** Tamanho e cor: o preço, a foto e a mensagem mudam com a escolha, e M esgotado oferece o Avise-me. */
 export const ComVariacoes: Story = {

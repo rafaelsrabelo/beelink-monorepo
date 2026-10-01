@@ -178,6 +178,12 @@ model Product {
   /// leave it behind. Never read back to anyone.
   searchText String @default("")
 
+  /// The published reviews' count and the sum of their ratings (BEELINK-156): the card's rating line
+  /// reads a shelf's averages without reading a review. A cache, moved only by the reviews' writes in
+  /// their transaction, and never below zero (a CHECK).
+  reviewCount     Int @default(0)
+  reviewRatingSum Int @default(0)
+
   /// See ProductCategory.slugHistory. A product slug is derived from a name the shopkeeper will
   /// fix within the hour, and these links are shared on WhatsApp, where a 404 is the most visible
   /// failure this product can produce.
@@ -192,6 +198,12 @@ model Product {
   restockRequests RestockRequest[]
   /// Order lines that named this product; an order keeps its photograph when the product goes.
   orderItems      OrderItem[]
+  /// Shoppers who liked it (BEELINK-153); deleting the product takes their favourite with it.
+  favorites       CustomerFavorite[]
+  /// The e-mails its favourites owe (BEELINK-155).
+  favoriteNotices FavoriteNotice[]
+  /// What its customers said of it (BEELINK-156).
+  reviews         ProductReview[]
 
   @@unique([storeId, slug])
   /// Two shapes of read, two indexes: the whole shop's grid, and one category's.
@@ -351,6 +363,10 @@ model ProductVariant {
   restockRequests RestockRequest[]
   /// Order lines that named this variant; an order keeps its photograph when the variant goes.
   orderItems      OrderItem[]
+  /// Favourites that named this combination (BEELINK-153); it is archived rather than deleted under them.
+  favorites       CustomerFavorite[]
+  /// Reviews of it, by those who bought this combination (BEELINK-156).
+  reviews         ProductReview[]
 
   @@unique([storeId, sku])
   @@index([productId, position])

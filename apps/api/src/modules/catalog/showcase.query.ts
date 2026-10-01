@@ -15,6 +15,7 @@ import { SHOWCASE_LIMIT_DEFAULT, SHOWCASE_LIMIT_MAX } from '../page/page.constan
 import { CARD_PHOTOS_MAX } from './catalog.constants.js';
 import { cardOptionSelect, optionSummaryOf } from './catalog.mapper.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
+import { ratingOf } from './product-rating.js';
 
 /**
  * What a showcase's card needs, and nothing more: its first photos' addresses (up to
@@ -29,6 +30,8 @@ export const SHOWCASE_CARD_SELECT = {
   priceCents: true,
   compareAtPriceCents: true,
   maxPriceCents: true,
+  reviewCount: true,
+  reviewRatingSum: true,
   images: { select: { url: true }, orderBy: [{ position: 'asc' }, { id: 'asc' }], take: CARD_PHOTOS_MAX },
   category: { select: { slug: true } },
   _count: { select: { options: true } },
@@ -145,5 +148,6 @@ export function toShowcaseCard(row: ShowcaseCardRow): PublicProductCard {
     hasOptions: row._count.options > 0,
     imageUrls: row.images.map((image) => image.url),
     optionSummary: optionSummaryOf(row.options),
+    rating: ratingOf(row.reviewCount, row.reviewRatingSum),
   } satisfies PublicProductCard;
 }

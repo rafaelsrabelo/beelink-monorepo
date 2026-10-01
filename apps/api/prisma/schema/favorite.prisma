@@ -1,0 +1,70 @@
+/// A product a shopper liked at a shop (BEELINK-153), with what it cost then, so the shop can say it
+/// got cheaper. One per product: a heart on a card likes the product as a whole and cannot tell two
+/// rows of one product apart; the product's page may name the combination chosen there.
+///
+/// The shop is the customer's; the product is checked to be the same shop's when it is liked.
+model CustomerFavorite {
+  id         String          @id @default(uuid(7)) @db.Uuid
+  customerId String          @db.Uuid
+  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String          @db.Uuid
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// The combination chosen on the product's page; null for the product as a whole. A combination
+  /// that stops existing is archived, never deleted, and is ignored where the favourite is read.
+  /// NoAction and not SetNull: a null here would pass for a like of the whole product, and compare
+  /// the combination's price with the product's cheapest. Deleting the product still takes the
+  /// favourite, by its own cascade, before the statement's end checks this key.
+  variantId  String?         @db.Uuid
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: NoAction)
+  /// The combination's price when it was liked, or for one liked as a whole the cheapest combination
+  /// on sale, in stock or not. Whole cents, never negative (a CHECK in the migration). Liking the
+  /// same thing again keeps it; choosing another combination is a new like, with its own price and date.
+  likedPriceCents Int
+  likedAt         DateTime @default(now())
+  /// What the favourite last saw of its price and stock (BEELINK-155): born with the like, moved by
+  /// every write that touches the product's variants (`watchFavorites`). A price below it, on sale,
+  /// is a drop to tell; sold out here and not now is a return to tell. A price that rose is the new
+  /// mark, so a drop after it is a real one.
+  seenPriceCents  Int
+  seenSoldOut     Boolean  @default(false)
+
+  @@unique([customerId, productId])
+  /// The shopper's list, most recently liked first.
+  @@index([customerId, likedAt(sort: Desc)])
+  /// Who liked a product whose price dropped or whose stock came back (J16).
+  @@index([productId])
+  @@map("customer_favorites")
+}
+
+/// An e-mail a favourite owes its shopper (BEELINK-155): the product got cheaper, came back, or both.
+/// Written by the transaction that changed the product, sent after by `FavoriteNoticeMailer`, which
+/// reads everything again before sending — the favourite, the notice's preference, the account.
+///
+/// At most one is born per shopper and product every 7 days, counted by `createdAt`.
+model FavoriteNotice {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  customerId String   @db.Uuid
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String   @db.Uuid
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// The combination the favourite named when the notice was born; null for the product as a whole.
+  /// A value, not a key: the mailer compares it with the favourite's, and sends nothing when it moved.
+  variantId          String?   @db.Uuid
+  /// Today's price when the notice was born: what the e-mail says, whatever it is by the time it goes.
+  priceCents         Int
+  /// The price it was before, when it dropped; null when it only came back.
+  previousPriceCents Int?
+  backInStock        Boolean
+  attempts           Int       @default(0)
+  nextAttemptAt      DateTime  @default(now())
+  sentAt             DateTime?
+  createdAt          DateTime  @default(now())
+
+  /// The 7 days' rule: this shopper's latest notice of this product.
+  @@index([customerId, productId, createdAt(sort: Desc)])
+  /// The product's own, for its cascade.
+  @@index([productId])
+  /// The dispatcher's reading: what is still owed and may be tried again — nothing sent or given up.
+  @@index([nextAttemptAt], where: raw("(\"sentAt\" IS NULL) AND (attempts < 5)"), map: "favorite_notices_owed_idx")
+  @@map("favorite_notices")
+}

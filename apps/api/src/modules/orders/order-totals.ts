@@ -56,19 +56,3 @@ export function totalsOf(
   if (refusal) return refusal;
   return { subtotalCents, deliveryFeeCents: fee, discountCents, totalCents };
 }
-
-export interface ChosenValue {
-  optionName: string;
-  optionPosition: number;
-  valueName: string;
-}
-
-/** "Sabor: Uva · Peso: 300 g", in the product's own option order. Null for a product with no options. */
-export function variantLabelOf(values: readonly ChosenValue[]): string | null {
-  if (values.length === 0) return null;
-
-  return [...values]
-    .sort((a, b) => a.optionPosition - b.optionPosition)
-    .map((value) => `${value.optionName}: ${value.valueName}`)
-    .join(' · ');
-}

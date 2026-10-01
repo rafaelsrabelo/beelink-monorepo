@@ -8,7 +8,7 @@ import type { WebMessages } from "@/locales"
 import { errorSentenceOf } from "@/lib/error-sentence"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { signInOptionsAt } from "@/lib/storefront-data"
-import { BACK_KEY, EMAIL_CONFIRMED_KEY, PASSWORD_REPLACED_KEY, SIGNED_OUT_EVERYWHERE_KEY, paramOf, safeBackOf, type StorefrontRoutes } from "@/lib/storefront-routes"
+import { ACCOUNT_DELETED_KEY, BACK_KEY, EMAIL_CONFIRMED_KEY, PASSWORD_REPLACED_KEY, SIGNED_OUT_EVERYWHERE_KEY, paramOf, safeBackOf, type StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionPlace, SectionQuery } from "@/lib/storefront-section"
 
 export interface StorefrontSignInSectionProps {
@@ -54,7 +54,9 @@ export async function StorefrontSignInSection({ place, routes, query, errors }: 
               ? ui.storefront.passwordReplaced
               : paramOf(query[SIGNED_OUT_EVERYWHERE_KEY]) === "1"
                 ? ui.storefront.signedOutEverywhere
-                : null
+                : paramOf(query[ACCOUNT_DELETED_KEY]) === "1"
+                  ? ui.storefront.accountDeleted
+                  : null
         }
         {...(google ? { google: { href: googleHref, iconSrc: "/brand/google.svg" } } : {})}
         hrefs={{

@@ -1,3 +1,5 @@
+import type { ProductRatingSummary } from "./review.js";
+
 /**
  * Which words a shop's public URLs are built from. A closed union and not free text: every value a
  * shopkeeper could type would become a reserved word, so setting the product word to `blusas` would
@@ -164,6 +166,11 @@ export interface PublicProductCard {
    * without options. On the shelves and the showcases only.
    */
   optionSummary?: CardOptionSummary | null;
+  /**
+   * The published reviews' average and count (BEELINK-156), for the card's rating line; null while
+   * there is none. On the shelves, the showcases and the product's page.
+   */
+  rating?: ProductRatingSummary | null;
 }
 
 /** Whole cents, both ends included. */

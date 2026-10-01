@@ -168,6 +168,7 @@ export function DesignPreviewPane({
                   routes={routes}
                   showPrice={layout.showProductPrice ?? true}
                   showBadge={layout.showProductBadges ?? true}
+                  showRating={layout.showProductRating ?? true}
                   quickAdd={layout.showQuickAdd ?? true}
                   cartReachable={landing?.usesChrome ?? true}
                   linkComponent={InertLink}

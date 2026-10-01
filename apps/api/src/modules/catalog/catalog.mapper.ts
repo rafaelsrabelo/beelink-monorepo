@@ -16,6 +16,7 @@ import type {
 import type { ProductOptionOrderByWithRelationInput } from '../../generated/prisma/models/ProductOption.js';
 import { CARD_PHOTOS_MAX } from './catalog.constants.js';
 import { isSoldOut, ON_THE_SHELF_WHERE } from './catalog.visibility.js';
+import { ratingOf } from './product-rating.js';
 
 /**
  * A category carries a count the storefront uses to hide an empty one, and Prisma answers it under
@@ -182,6 +183,7 @@ export function toPublicProductCard(row: ProductCardRow): PublicProductCard {
     categorySlug: row.category?.slug ?? null,
     priceRange: { minCents: row.priceCents, maxCents: row.maxPriceCents },
     ...(row._count ? { hasOptions: row._count.options > 0 } : {}),
+    rating: ratingOf(row.reviewCount, row.reviewRatingSum),
   } satisfies PublicProductCard;
 }
 
