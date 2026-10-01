@@ -20,6 +20,11 @@ export const CASHBACK_BPS_MAX = 10_000;
 export const CASHBACK_VALIDITY_DAYS_MAX = 3650;
 /** R$ 1.000.000,00, the cap an order's own amounts have. */
 export const CASHBACK_AMOUNT_MAX_CENTS = 100_000_000;
+/**
+ * What one customer may hold at once, R$ 1.000.000,00 too: an adjustment past it is refused. Well
+ * inside the caches' 32-bit columns, which twenty-two adjustments of the largest size would overflow.
+ */
+export const CASHBACK_BALANCE_MAX_CENTS = 100_000_000;
 export const CASHBACK_REASON_MIN = 3;
 export const CASHBACK_REASON_MAX = 200;
 

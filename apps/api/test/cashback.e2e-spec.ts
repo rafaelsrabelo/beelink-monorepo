@@ -2,11 +2,11 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { ApiErrorBody, AuthSession, CashbackOverview, CashbackSettingsPayload, CustomerCashback, StoreCustomer, StoreCustomerDetail } from '@harness-monorepo/contracts';
+import type { ApiErrorBody, AuthSession, CashbackOverview, CashbackSettingsPayload, CustomerCashback, CustomerProfile, StoreCustomer, StoreCustomerDetail } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
-import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
+import { PASSWORD, newEmail, signUpAndSignIn, verifyEmailOf } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { clearInbox } from './support/mailpit.js';
 import { resetDatabase } from './support/reset-database.js';
@@ -45,7 +45,7 @@ describe("a shop's cashback: its rules and each customer's credit", () => {
     maria = await register({ name: 'Maria WhatsApp', phone: '(11) 97777-6666' });
   });
 
-  function call(method: 'GET' | 'POST' | 'PUT', url: string, session?: AuthSession, payload?: object) {
+  function call(method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, session?: AuthSession, payload?: object) {
     return app.inject({ method, url, headers: session ? { authorization: `Bearer ${session.accessToken}` } : {}, ...(payload ? { payload } : {}) });
   }
 
@@ -198,6 +198,16 @@ describe("a shop's cashback: its rules and each customer's credit", () => {
       await expectBooksToHold(maria.id);
     });
 
+    it('refuses a balance past what one customer may hold', async () => {
+      await adjust(maria.id, 100_000_000);
+
+      const response = await adjust(maria.id, 1);
+
+      expect(response.statusCode).toBe(409);
+      expect(errorOf(response)).toBe('CASHBACK_BALANCE_TOO_LARGE');
+      expect((await cashbackOf(maria.id)).balanceCents).toBe(100_000_000);
+    });
+
     it.each([
       ['nothing', { amountCents: 0, reason: 'Sem motivo bom' }],
       ['a fraction of a cent', { amountCents: 10.5, reason: 'Sem motivo bom' }],
@@ -258,6 +268,54 @@ describe("a shop's cashback: its rules and each customer's credit", () => {
       expect(cashback.balanceCents).toBe(1250);
       expect(cashback.entries.map((entry) => entry.amountCents).sort()).toEqual([1000, 250].sort());
       await expectBooksToHold(kept);
+    });
+
+    /**
+     * A merge holds the shop's row while it waits on the record it keeps; an adjustment of the record
+     * it removes, taken meanwhile, used to hold that record and reach for the shop's row: a deadlock,
+     * answered with a 500. It waits behind the merge now, and finds the record gone.
+     */
+    it('waits for a merge that removes the record, then answers that it is gone', async () => {
+      const other = await register({ name: 'Maria Outra', phone: '(11) 93333-2222' });
+      await adjust(maria.id, 1000);
+      let release = () => {};
+      const held = new Promise<void>((resolve) => (release = resolve));
+      // A third party holds the record the merge keeps, so the merge stops right after taking the shop's row.
+      const holding = prisma.$transaction(
+        async (tx) => {
+          await tx.$queryRaw`SELECT 1 FROM "customers" WHERE "id" = ${other.id}::uuid FOR UPDATE`;
+          await held;
+        },
+        { timeout: 20_000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const merging = call('POST', `/api/stores/lessari/customers/${other.id}/merge`, owner, { otherId: maria.id });
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const adjusting = adjust(maria.id, 500);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      release();
+      await holding;
+
+      const [merged, adjusted] = await Promise.all([merging, adjusting]);
+      expect(merged.statusCode).toBe(200);
+      expect(adjusted.statusCode).toBe(404);
+      expect(errorOf(adjusted)).toBe('CUSTOMER_NOT_FOUND');
+      expect((await cashbackOf(other.id)).balanceCents).toBe(1000);
+      await expectBooksToHold(other.id);
+    });
+
+    it("stays the shop's when the shopper deletes their account: what it gave them is its books", async () => {
+      const email = newEmail('cliente');
+      await call('POST', '/api/stores/lessari/customer/register', undefined, { name: 'Bia', email, password: PASSWORD });
+      await verifyEmailOf(app, email);
+      const shopper = (await call('POST', '/api/stores/lessari/customer/login', undefined, { email, password: PASSWORD })).json<AuthSession>();
+      const me = (await call('GET', '/api/stores/lessari/customer/me', shopper)).json<CustomerProfile>();
+      await adjust(me.id, 800, 'Brinde de boas-vindas');
+
+      expect((await call('DELETE', '/api/stores/lessari/customer/me', shopper, { password: PASSWORD })).statusCode).toBe(204);
+
+      expect((await cashbackOf(me.id)).entries.map((entry) => [entry.amountCents, entry.reason])).toEqual([[800, 'Brinde de boas-vindas']]);
     });
   });
 });

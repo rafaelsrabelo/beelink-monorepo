@@ -7,7 +7,7 @@ import type { CashbackOverview, CustomerCashback } from '@harness-monorepo/contr
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
-import { adjustCashback } from './cashback-ledger.js';
+import { adjustCashback, spendableAt } from './cashback-ledger.js';
 import { CASHBACK_EXPIRING_SOON_DAYS, CASHBACK_PAGE_SIZE, DAY_MS } from './cashback.constants.js';
 import { toCashbackCredit, toCashbackEntry, toCashbackSettings } from './cashback.mapper.js';
 import { spendingOrder } from './cashback-spending.js';
@@ -62,7 +62,7 @@ export class CashbackService {
     const [settings, owed, expiring] = await Promise.all([
       this.prisma.cashbackSettings.findUnique({ where: { storeId } }),
       this.prisma.customer.aggregate({ where: { storeId }, _sum: { cashbackBalanceCents: true, cashbackPendingCents: true } }),
-      this.prisma.cashbackCredit.aggregate({ where: { storeId, status: 'AVAILABLE', expiresAt: { lte: soon } }, _sum: { remainingCents: true } }),
+      this.prisma.cashbackCredit.aggregate({ where: { storeId, ...spendableAt(now), expiresAt: { gt: now, lte: soon } }, _sum: { remainingCents: true } }),
     ]);
 
     return {
@@ -77,10 +77,11 @@ export class CashbackService {
   }
 
   private async customerCashbackOf(customerId: string, page: number, pageSize: number): Promise<CustomerCashback> {
+    const now = new Date();
     const [customer, open, entries, total] = await Promise.all([
       this.prisma.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cashbackBalanceCents: true, cashbackPendingCents: true } }),
       this.prisma.cashbackCredit.findMany({
-        where: { customerId, OR: [{ status: 'PENDING' }, { status: 'AVAILABLE', remainingCents: { gt: 0 } }] },
+        where: { customerId, OR: [{ status: 'PENDING' }, spendableAt(now)] },
         include: ORDER_NUMBER,
       }),
       this.prisma.cashbackEntry.findMany({

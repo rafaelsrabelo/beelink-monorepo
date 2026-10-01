@@ -117,7 +117,7 @@ export class CustomerPrivacyService {
   }
 
   /**
-   * What the shopper kept for themselves goes. A record the shop's books name — an order, a review —
+   * What the shopper kept for themselves goes. A record the shop's books name — an order, a review, a cashback statement —
    * stays, down to a name and a phone; one they do not is deleted, with its cascades. Favourites
    * before their notices: a watch writing a notice holds its favourite's row, so waiting on that row
    * lets the notice land first and go with the rest.
@@ -126,10 +126,12 @@ export class CustomerPrivacyService {
     await lockCustomer(tx, customerId);
     const orders = await tx.order.count({ where: { customerId } });
     const reviews = await tx.productReview.count({ where: { customerId } });
+    // The shop's statement of what it gave them (BEELINK-238) is its books too, and its adjustments name who made them.
+    const cashback = await tx.cashbackEntry.count({ where: { customerId } });
 
     await tx.customerFavorite.deleteMany({ where: { customerId } });
     await tx.favoriteNotice.deleteMany({ where: { customerId } });
-    if (orders > 0 || reviews > 0) {
+    if (orders > 0 || reviews > 0 || cashback > 0) {
       // The orders keep where each one went; the saved addresses were the shopper's, not the books'.
       await tx.customerAddress.deleteMany({ where: { customerId } });
       await tx.customer.update({ where: { id: customerId }, data: FORGOTTEN });

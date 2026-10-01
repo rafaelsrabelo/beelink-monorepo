@@ -50,7 +50,7 @@ export class CustomerCashbackController {
   @ApiOperation({ summary: "Correct a customer's credit by hand, with a reason: positive gives, negative takes" })
   @ApiCreatedResponse({ type: CustomerCashbackResponse, description: "The customer's credit after it, the statement from its first page." })
   @ApiBadRequestResponse({ description: 'CASHBACK_ADJUSTMENT_INVALID' })
-  @ApiConflictResponse({ description: 'CASHBACK_BALANCE_INSUFFICIENT — it takes more than the customer has; nothing is written' })
+  @ApiConflictResponse({ description: 'CASHBACK_BALANCE_INSUFFICIENT — it takes more than the customer has · CASHBACK_BALANCE_TOO_LARGE — past R$ 1.000.000,00; nothing is written either way' })
   adjust(
     @Param('storeSlug') storeSlug: string,
     @Param('customerId') customerId: string,

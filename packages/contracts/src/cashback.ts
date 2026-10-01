@@ -114,4 +114,6 @@ export type CashbackErrorCode =
   /** An adjustment of 0, out of range, or with no reason. */
   | "CASHBACK_ADJUSTMENT_INVALID"
   /** An adjustment that takes more than the customer has: the balance never goes below zero. */
-  | "CASHBACK_BALANCE_INSUFFICIENT";
+  | "CASHBACK_BALANCE_INSUFFICIENT"
+  /** An adjustment that would take the balance past R$ 1.000.000,00. */
+  | "CASHBACK_BALANCE_TOO_LARGE";

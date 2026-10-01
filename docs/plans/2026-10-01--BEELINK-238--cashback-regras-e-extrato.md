@@ -74,3 +74,20 @@ Toda mudança passa por `src/modules/cashback/cashback-ledger.ts`, dentro de uma
 - Gerar crédito pelo pedido (U2), usar crédito no pedido (U3), vencer (U4).
 - Telas (U5, U6, U7).
 - A cópia dos dados do cliente com o extrato, e o aviso de saldo perdido ao excluir a conta (U2).
+
+## Adendo — revisão independente (01/10)
+
+1. **Ajuste durante a junção de dois cadastros travava o banco.** A junção trava a loja e depois o
+   cliente; o ajuste travava o cliente e, ao gravar o lote, esbarrava na loja. Resultado: deadlock e
+   erro 500. Agora todo lançamento passa por `lockLedger`, que trava na mesma ordem (a loja em
+   `FOR KEY SHARE`, que não segura pedidos nem outros ajustes, e depois o cliente) e relê o cadastro:
+   se a junção o removeu, a resposta é 404. Há um teste e2e da corrida, que falha sem a correção.
+2. **Excluir a conta apagava o extrato.** Um cadastro sem pedido nem avaliação era excluído, e o extrato
+   ia junto. Agora o extrato também mantém o cadastro, esquecido como os outros. Perder o saldo nesse
+   caso continua sendo o U2.
+3. **O saldo podia estourar a coluna** (32 bits) depois de muitos ajustes grandes. Um ajuste que leva o
+   saldo além de R$ 1.000.000,00 é recusado (409 `CASHBACK_BALANCE_TOO_LARGE`).
+4. **Lote vencido e ainda não varrido** não pode ser gasto, não aparece como próximo vencimento e não
+   conta como "vence em 30 dias". A varredura que o tira do saldo é o U4; até lá ele ainda conta no
+   saldo guardado.
+5. A recontagem faz as duas somas uma depois da outra (a transação usa uma conexão só).

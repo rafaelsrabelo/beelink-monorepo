@@ -1,12 +1,12 @@
 // Nest
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
 // Types
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { lockCustomer } from '../customers/customer-lock.js';
-import { CASHBACK_DEFAULTS, cashbackError, DAY_MS } from './cashback.constants.js';
+import { CASHBACK_BALANCE_MAX_CENTS, CASHBACK_DEFAULTS, cashbackError, DAY_MS } from './cashback.constants.js';
 import { expiryOf, takeFrom } from './cashback-spending.js';
 
 type Tx = Prisma.TransactionClient;
@@ -24,12 +24,36 @@ export async function validityOf(tx: Tx, storeId: string): Promise<number | null
   return settings ? settings.expiresAfterDays : CASHBACK_DEFAULTS.expiresAfterDays;
 }
 
+/**
+ * What a lot can still be spent at `now`: available, with something left, and not past its expiry —
+ * which the expiry's own sweep (U4) takes off the balance later, and nothing may spend meanwhile.
+ */
+export function spendableAt(now: Date) {
+  return { status: 'AVAILABLE', remainingCents: { gt: 0 }, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] } satisfies Prisma.CashbackCreditWhereInput;
+}
+
+/**
+ * The locks every change to a customer's credit takes, in the order every writer of the shop takes
+ * them: the shop's row, then the customer's. A merge holds the shop's row while it moves and deletes
+ * a record, so a change that locked the customer first would wait on the shop's row the lots' own
+ * foreign key reaches for, while the merge waits on the customer — a deadlock. `FOR KEY SHARE` is
+ * the least that orders it against the merge, and lets two changes, and orders being placed, run at
+ * once.
+ *
+ * Read again under them: the record may have been merged away since it was looked up. False when it
+ * is no longer this shop's.
+ */
+export async function lockLedger(tx: Tx, storeId: string, customerId: string): Promise<boolean> {
+  await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR KEY SHARE`;
+  await lockCustomer(tx, customerId);
+  return (await tx.customer.count({ where: { id: customerId, storeId } })) > 0;
+}
+
 /** The customer's two caches, read again from their lots. Under the customer's lock. */
 export async function recountCashback(tx: Tx, customerId: string): Promise<void> {
-  const [available, pending] = await Promise.all([
-    tx.cashbackCredit.aggregate({ where: { customerId, status: 'AVAILABLE' }, _sum: { remainingCents: true } }),
-    tx.cashbackCredit.aggregate({ where: { customerId, status: 'PENDING' }, _sum: { amountCents: true } }),
-  ]);
+  // One after the other: a transaction is one connection, and it runs one query at a time anyway.
+  const available = await tx.cashbackCredit.aggregate({ where: { customerId, status: 'AVAILABLE' }, _sum: { remainingCents: true } });
+  const pending = await tx.cashbackCredit.aggregate({ where: { customerId, status: 'PENDING' }, _sum: { amountCents: true } });
 
   await tx.customer.update({
     where: { id: customerId },
@@ -50,14 +74,21 @@ export interface Adjustment {
 /**
  * The shopkeeper's correction. In the customer's favour it is a lot of its own, usable at once and
  * expiring by the shop's rule as it is today; against them it takes from the lots in spending order,
- * and never more than they have — 409, nothing written.
+ * and never more than they have — 409, nothing written. A balance past `CASHBACK_BALANCE_MAX_CENTS`
+ * is refused too: past it, a typo, and the column's integer range not far behind.
  */
 export async function adjustCashback(tx: Tx, adjustment: Adjustment): Promise<void> {
   const { storeId, customerId, amountCents, reason, actorUserId, now } = adjustment;
   if (amountCents === 0) throw new BadRequestException(cashbackError('CASHBACK_ADJUSTMENT_INVALID', 'An adjustment moves the balance'));
-  await lockCustomer(tx, customerId);
+  if (!(await lockLedger(tx, storeId, customerId))) {
+    throw new NotFoundException({ errorCode: 'CUSTOMER_NOT_FOUND', message: 'No such customer in this shop' });
+  }
 
   if (amountCents > 0) {
+    const { cashbackBalanceCents } = await tx.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cashbackBalanceCents: true } });
+    if (cashbackBalanceCents + amountCents > CASHBACK_BALANCE_MAX_CENTS) {
+      throw new ConflictException(cashbackError('CASHBACK_BALANCE_TOO_LARGE', 'The balance would pass what one customer may hold'));
+    }
     const credit = await tx.cashbackCredit.create({
       data: {
         storeId,
@@ -74,7 +105,7 @@ export async function adjustCashback(tx: Tx, adjustment: Adjustment): Promise<vo
   } else {
     // Read after the lock: a lot spent or expired meanwhile is not taken twice.
     const lots = await tx.cashbackCredit.findMany({
-      where: { customerId, status: 'AVAILABLE', remainingCents: { gt: 0 } },
+      where: { customerId, ...spendableAt(now) },
       select: { id: true, remainingCents: true, expiresAt: true, createdAt: true },
     });
     const taken = takeFrom(lots, -amountCents);
