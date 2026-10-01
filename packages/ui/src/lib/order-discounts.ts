@@ -83,7 +83,7 @@ export function linePromotionOf(
 }
 
 /** Mirrors the wire's `CouponRefusalReason`. */
-export type CouponRefusalValue = "NOT_FOUND" | "EXPIRED" | "EXHAUSTED" | "INACTIVE" | "CUSTOMER_LIMIT" | "NOT_APPLICABLE" | "BELOW_MINIMUM"
+export type CouponRefusalValue = "NOT_FOUND" | "EXPIRED" | "EXHAUSTED" | "INACTIVE" | "CUSTOMER_LIMIT" | "NOT_FIRST_PURCHASE" | "NOT_APPLICABLE" | "BELOW_MINIMUM"
 
 /** A coupon the pricing did not take, as the wire tells it. */
 export interface CouponRefusal {

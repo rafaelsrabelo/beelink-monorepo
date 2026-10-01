@@ -72,6 +72,7 @@ describe("why a coupon is not taken", () => {
     expect(couponRefusalTextOf({ reason: "EXHAUSTED" }, delivery, text)).toBe("Esse cupom já foi usado o número máximo de vezes.")
     expect(couponRefusalTextOf({ reason: "INACTIVE" }, delivery, text)).toBe("Esse cupom não está valendo agora.")
     expect(couponRefusalTextOf({ reason: "CUSTOMER_LIMIT" }, delivery, text)).toBe("Você já usou esse cupom.")
+    expect(couponRefusalTextOf({ reason: "NOT_FIRST_PURCHASE" }, delivery, text)).toBe("Esse cupom vale só na primeira compra.")
   })
 
   it("says what the products have to add up to", () => {

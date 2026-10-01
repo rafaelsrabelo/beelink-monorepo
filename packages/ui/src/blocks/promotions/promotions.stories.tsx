@@ -10,8 +10,8 @@ import { categoryOptions, promotionRows, promotionValues } from "./promotions.fi
 const tabs = (
   <DiscountStatusTabs
     tabs={[
-      { key: "ALL", label: "Todas", count: 3, href: "#", active: true },
-      { key: "ACTIVE", label: "Ativas", count: 1, href: "#", active: false },
+      { key: "ALL", label: "Todas", count: 4, href: "#", active: true },
+      { key: "ACTIVE", label: "Ativas", count: 2, href: "#", active: false },
       { key: "SCHEDULED", label: "Agendadas", count: 1, href: "#", active: false },
       { key: "PAUSED", label: "Pausadas", count: 1, href: "#", active: false },
       { key: "ENDED", label: "Encerradas", count: 0, href: "#", active: false },
@@ -40,7 +40,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Três promoções: uma ativa, uma agendada e uma pausada. */
+/** Quatro promoções: duas ativas — uma delas só para a primeira compra —, uma agendada e uma pausada. */
 export const Lista: Story = {}
 
 /** A loja ainda não tem promoções. */
@@ -62,6 +62,15 @@ export const FormularioPorCategoria: Story = {
   render: () => (
     <div className="max-w-2xl">
       <PromotionForm value={{ ...promotionValues, scope: "CATEGORIES", kind: "FIXED", amount: "15,00", categoryIds: ["k1"] }} {...form} />
+    </div>
+  ),
+}
+
+/** Só na primeira compra: a ajuda sob a escolha diz o que conta como primeira compra. */
+export const FormularioPrimeiraCompra: Story = {
+  render: () => (
+    <div className="max-w-2xl">
+      <PromotionForm value={{ ...promotionValues, name: "Boas-vindas", scope: "CART", percent: "15", products: [], audience: "FIRST_PURCHASE" }} {...form} />
     </div>
   ),
 }

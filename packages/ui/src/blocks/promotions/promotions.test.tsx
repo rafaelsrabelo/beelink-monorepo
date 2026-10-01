@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
+import { DiscountAudienceField } from "./discount-audience-field"
 import { DiscountFailed } from "./discount-failed"
 import { DiscountListSkeleton } from "./discount-list-skeleton"
 import { DiscountStatusTabs } from "./discount-status-tabs"
@@ -39,7 +40,7 @@ describe("PromotionList", () => {
 
     expect(screen.getByText("10% no carrinho inteiro")).toBeInTheDocument()
     expect(screen.getByText("De 1 out 2026 a 15 out 2026")).toBeInTheDocument()
-    expect(screen.getByText("Ativa")).toBeInTheDocument()
+    expect(screen.getAllByText("Ativa")).toHaveLength(2)
     expect(screen.getByText("Agendada")).toBeInTheDocument()
     expect(screen.getByText("Pausada")).toBeInTheDocument()
 
@@ -49,6 +50,13 @@ describe("PromotionList", () => {
     expect(onToggle).toHaveBeenCalledWith(promotionRows[0])
     // One the owner switched off offers the way back on.
     expect(screen.getByRole("button", { name: "Religar a promoção Queima de estoque" })).toHaveTextContent("Religar")
+  })
+
+  it("marks the one that is for a first purchase only, beside what it takes off, and no other", () => {
+    render(<PromotionList rows={promotionRows} empty="none" onEdit={() => {}} onToggle={() => {}} />)
+
+    expect(screen.getByText("Boas-vindas").closest("li")).toHaveTextContent(/15% no carrinho inteiro\s*Primeira compra/)
+    expect(screen.getAllByText("Primeira compra")).toHaveLength(1)
   })
 
   it("holds every button while one pause is on its way", () => {
@@ -164,6 +172,20 @@ describe("PromotionForm", () => {
     expect(cart.onChange).toHaveBeenLastCalledWith({ ...cart.value, kind: "PERCENT" })
   })
 
+  it("asks who the promotion is for, and changes it with the rest of what was filled in", async () => {
+    const props = formProps()
+    const { container, rerender } = render(<PromotionForm {...props} />)
+
+    expect(screen.getByRole("button", { name: "Todos os clientes" })).toHaveAttribute("aria-pressed", "true")
+    await userEvent.click(screen.getByRole("button", { name: "Só na primeira compra" }))
+    expect(props.onChange).toHaveBeenLastCalledWith({ ...promotionValues, audience: "FIRST_PURCHASE" })
+
+    rerender(<PromotionForm {...formProps({ value: { ...promotionValues, audience: "FIRST_PURCHASE" } })} />)
+    expect(screen.getByRole("button", { name: "Só na primeira compra" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByText("Vale para quem ainda não tem nenhum pedido na loja. Pedido cancelado não conta.")).toBeInTheDocument()
+    await expectNoA11yViolations(container)
+  })
+
   it("says each field to correct and the refusal of the whole save, and sends or cancels", async () => {
     const props = formProps({ issues: { name: "Preencha este campo.", endsAt: "O fim precisa ser depois do início." }, error: "Um produto escolhido não é mais desta loja." })
     render(<PromotionForm {...props} />)
@@ -190,6 +212,57 @@ describe("PromotionForm", () => {
 
     const categories = render(<PromotionForm {...formProps({ value: { ...promotionValues, scope: "CATEGORIES" } })} />)
     await expectNoA11yViolations(categories.container)
+  })
+})
+
+describe("DiscountAudienceField", () => {
+  const help = "Vale para quem ainda não tem nenhum pedido na loja. Pedido cancelado não conta."
+
+  it("shows who it is for, and hands the other choice to the form", async () => {
+    const onChange = vi.fn()
+    render(<DiscountAudienceField audience="EVERYONE" onChange={onChange} />)
+
+    const choice = within(screen.getByRole("group", { name: "Para quem vale" }))
+    expect(choice.getByRole("button", { name: "Todos os clientes" })).toHaveAttribute("aria-pressed", "true")
+    expect(choice.getByRole("button", { name: "Só na primeira compra" })).toHaveAttribute("aria-pressed", "false")
+
+    await userEvent.click(choice.getByRole("button", { name: "Só na primeira compra" }))
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ audience: "FIRST_PURCHASE" })
+
+    // Pressing the chosen one again leaves it chosen: a discount is always for someone.
+    await userEvent.click(choice.getByRole("button", { name: "Todos os clientes" }))
+    expect(onChange).toHaveBeenCalledOnce()
+  })
+
+  it("says what counts as a first purchase once that is the choice, as the description of that option alone", async () => {
+    const { container, rerender } = render(<DiscountAudienceField audience="FIRST_PURCHASE" onChange={() => {}} />)
+
+    expect(screen.getByRole("button", { name: "Só na primeira compra" })).toHaveAccessibleDescription(help)
+    expect(screen.getByRole("button", { name: "Todos os clientes" })).not.toHaveAccessibleDescription()
+    await expectNoA11yViolations(container)
+
+    // Under "everyone" the sentence would read as what that choice means.
+    rerender(<DiscountAudienceField audience="EVERYONE" onChange={() => {}} />)
+    expect(screen.queryByText(help)).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Só na primeira compra" })).not.toHaveAccessibleDescription()
+    await expectNoA11yViolations(container)
+  })
+
+  /** A region born with its sentence is not announced: this one is there from the first draw, empty. */
+  it("has its live region in the page before the first purchase is chosen, so the sentence is heard arriving", () => {
+    const { container, rerender } = render(<DiscountAudienceField audience="EVERYONE" onChange={() => {}} />)
+    const region = container.querySelector("[aria-live='polite']")!
+    expect(region).toBeEmptyDOMElement()
+
+    rerender(<DiscountAudienceField audience="FIRST_PURCHASE" onChange={() => {}} />)
+    expect(container.querySelector("[aria-live='polite']")).toBe(region)
+    expect(region).toHaveTextContent(help)
+  })
+
+  it("waits while the form is being saved", () => {
+    render(<DiscountAudienceField audience="EVERYONE" onChange={() => {}} disabled />)
+
+    for (const button of screen.getAllByRole("button")) expect(button).toBeDisabled()
   })
 })
 
