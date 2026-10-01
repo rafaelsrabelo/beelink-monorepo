@@ -10,7 +10,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
-import { BeelinkMark } from "./beelink-mark"
+import { BeelinkLogo } from "./beelink-logo"
 import { LandingMenu } from "./landing-menu"
 import { LANDING_CONTAINER, LANDING_CTA } from "./landing-styles"
 
@@ -47,9 +47,8 @@ export function LandingHeader({ homeHref = "/", loginHref, signupHref, termsHref
 
   return (
     <header className={cn(LANDING_CONTAINER, "relative z-20 flex h-[76px] items-center gap-6 md:h-[92px] xl:gap-11")}>
-      <Link href={homeHref} aria-label={text.homeLabel} className="flex items-center gap-3">
-        <BeelinkMark className="size-8 md:size-10" />
-        <span className="text-2xl font-extrabold tracking-[-0.02em] md:text-[28px]">{text.brand}</span>
+      <Link href={homeHref} aria-label={text.homeLabel} className="flex shrink-0 items-center">
+        <BeelinkLogo className="h-9 md:h-11" />
       </Link>
       <nav aria-label={text.nav.label} className="hidden gap-[30px] text-[15px] font-medium whitespace-nowrap xl:flex">
         {sections.map(([href, label]) => (

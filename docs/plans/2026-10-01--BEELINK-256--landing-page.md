@@ -195,3 +195,19 @@ A fonte agora mora no repositório (`apps/web/src/components/landing/fonts/`) e 
 
 Geist (painel) e Figtree (vitrine) continuam vindo do Google no build. Não falharam até aqui; se
 falharem, a correção é a mesma.
+
+## Adendo — a logo oficial no topo, no rodapé, nas telas de conta e no painel (01/10)
+
+O Rafael entregou `logo-vertical.png`: a sacola com a marca e o nome "Beelink", em preto, com a marca e
+as alças vazadas.
+
+- A logo foi vetorizada (potrace) num caminho só, em `BeelinkLogo`. Toma a cor do texto, e os
+  vazados mostram o fundo: o creme da landing e o amarelo do painel.
+- **Onde:** topo e rodapé da landing, telas de conta e a barra do painel. No celular, a barra do
+  painel mostra só a sacola (`variant="icon"`, o mesmo desenho numa caixa mais estreita): ao lado do
+  menu, da busca, do sino e da loja, o nome não cabe.
+- O nome deixou de ser texto nesses lugares. As telas de conta não carregam mais a Plus Jakarta Sans.
+- `BeelinkBag` (a sacola redesenhada à mão no PR anterior) saiu: a barra do painel usa a logo oficial.
+  O ícone da aba e a imagem de compartilhamento continuam os gerados daquele desenho.
+- O símbolo antigo sem a sacola (`BeelinkMark`) continua dentro da página: no hub do hero, no
+  hexágono central, no banner do celular e na marca d'água da chamada final.
