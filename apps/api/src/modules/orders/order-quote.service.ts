@@ -19,8 +19,9 @@ type QuoteInput = Omit<PricingInput, 'lines' | 'lockCoupon'> & { items: readonly
 
 /**
  * What a cart would cost as an order (BEELINK-191), at each of the three doors: the visitor's cart,
- * the signed-in customer's checkout and the panel's sale. A read — nothing is reserved, the stock is
- * not checked and no coupon is used — over the same `priceOrder` a placement writes with.
+ * the signed-in customer's checkout and the panel's sale. Nothing is reserved, the stock is not
+ * checked, no coupon is used and no lock is taken — over the same `priceOrder` a placement writes
+ * with. The one row it may write is the shopper's own record at the shop, as any of their reads does.
  */
 @Injectable()
 export class OrderQuotes {

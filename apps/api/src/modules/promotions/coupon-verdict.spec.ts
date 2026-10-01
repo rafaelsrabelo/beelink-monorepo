@@ -9,6 +9,8 @@ const at = (iso: string) => new Date(iso);
 
 const coupon: VerdictCoupon = {
   kind: 'PERCENT',
+  percentBps: 1000,
+  amountCents: null,
   minSubtotalCents: 0,
   startsAt: at('2026-09-01T00:00:00.000Z'),
   endsAt: at('2026-11-01T00:00:00.000Z'),
@@ -17,13 +19,26 @@ const coupon: VerdictCoupon = {
   maxUsesPerCustomer: 1,
   usedCount: 3,
 };
-const context: CouponContext = { at: NOW, baseCents: 10000, fulfillment: 'DELIVERY', customerUses: 0 };
+const context: CouponContext = { at: NOW, baseCents: 10000, fulfillment: 'DELIVERY', deliveryFeeCents: null, customerUses: 0 };
+const FREE = { kind: 'FREE_SHIPPING', percentBps: null } as const;
 const reasonOf = (row: Partial<VerdictCoupon> | null, given: Partial<CouponContext> = {}) => couponRefusalOf(row && { ...coupon, ...row }, { ...context, ...given })?.reason ?? null;
 
 describe('couponRefusalOf', () => {
   it('takes a coupon that is running, has uses left and fits the cart', () => {
     expect(reasonOf({})).toBeNull();
-    expect(reasonOf({ kind: 'FREE_SHIPPING' })).toBeNull();
+    expect(reasonOf(FREE)).toBeNull();
+    expect(reasonOf(FREE, { deliveryFeeCents: 1200 })).toBeNull();
+  });
+
+  it('refuses one that would take nothing off, rather than spend its use', () => {
+    expect(reasonOf(FREE, { fulfillment: 'PICKUP', deliveryFeeCents: 0 })).toBe('NOT_APPLICABLE');
+    // A delivery already free has no fee to waive.
+    expect(reasonOf(FREE, { deliveryFeeCents: 0 })).toBe('NOT_APPLICABLE');
+    expect(reasonOf({}, { baseCents: 0 })).toBe('NOT_APPLICABLE');
+    // 10% of nine cents does not reach one.
+    expect(reasonOf({}, { baseCents: 9 })).toBe('NOT_APPLICABLE');
+    expect(reasonOf({}, { baseCents: 10 })).toBeNull();
+    expect(reasonOf({ kind: 'FIXED', percentBps: null, amountCents: 500 }, { baseCents: 1 })).toBeNull();
   });
 
   it('says why one is not taken', () => {
@@ -33,8 +48,6 @@ describe('couponRefusalOf', () => {
     expect(reasonOf({ isActive: false })).toBe('INACTIVE');
     expect(reasonOf({ startsAt: at('2026-10-02T00:00:00.000Z') })).toBe('INACTIVE');
     expect(reasonOf({}, { customerUses: 1 })).toBe('CUSTOMER_LIMIT');
-    expect(reasonOf({ kind: 'FREE_SHIPPING' }, { fulfillment: 'PICKUP' })).toBe('NOT_APPLICABLE');
-    expect(reasonOf({}, { baseCents: 0 })).toBe('NOT_APPLICABLE');
     expect(couponRefusalOf({ ...coupon, minSubtotalCents: 15000 }, context)).toEqual({ reason: 'BELOW_MINIMUM', minSubtotalCents: 15000 });
   });
 
@@ -54,8 +67,8 @@ describe('couponRefusalOf', () => {
   });
 
   it('waives a delivery fee whatever is left of the products, above its minimum', () => {
-    expect(reasonOf({ kind: 'FREE_SHIPPING' }, { baseCents: 0 })).toBeNull();
-    expect(reasonOf({ kind: 'FREE_SHIPPING', minSubtotalCents: 5000 }, { baseCents: 4000 })).toBe('BELOW_MINIMUM');
+    expect(reasonOf(FREE, { baseCents: 0 })).toBeNull();
+    expect(reasonOf({ ...FREE, minSubtotalCents: 5000 }, { baseCents: 4000 })).toBe('BELOW_MINIMUM');
   });
 });
 

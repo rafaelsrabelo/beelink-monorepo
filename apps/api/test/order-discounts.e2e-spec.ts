@@ -419,6 +419,9 @@ describe("an order's discounts", () => {
 
       const free = await register({ couponCode: 'FRETE', fulfillment: 'DELIVERY', deliveryFeeCents: 1500 });
       expect(free.json<Order>()).toMatchObject({ deliveryFeeCents: 1500, couponDiscountCents: 1500, discountCents: 1500, totalCents: 43970 });
+      // A delivery the shop already made free has no fee to waive: the coupon is not spent on it.
+      expect(refusalOf(await register({ couponCode: 'FRETE', fulfillment: 'DELIVERY' }))).toEqual(['ORDER_COUPON_REFUSED', 'NOT_APPLICABLE']);
+      expect(await usedOf('FRETE')).toBe(1);
 
       await promotion({ name: 'Loja toda', percentBps: 1000 });
       // 43970 − 4397 leaves 39573: a typed 39574 is one cent too many.

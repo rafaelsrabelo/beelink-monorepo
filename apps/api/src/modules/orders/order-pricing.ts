@@ -75,7 +75,7 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
     const stored = storedCodeOf(input.couponCode);
     const found = stored ? await couponByCode(db, storeId, stored, input.lockCoupon) : null;
     const customerUses = found && found.maxUsesPerCustomer !== null && input.customerId ? await customerUsesOf(db, found.id, input.customerId) : null;
-    refusal = couponRefusalOf(found, { at, baseCents, fulfillment, customerUses });
+    refusal = couponRefusalOf(found, { at, baseCents, fulfillment, deliveryFeeCents: fee, customerUses });
     coupon = refusal ? null : found;
     // Echoed in upper case either way, so the field shows what the shop would have stored.
     const code = found?.code ?? input.couponCode.trim().toUpperCase();

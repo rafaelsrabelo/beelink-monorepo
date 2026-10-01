@@ -27,10 +27,12 @@ import { CustomerOrderPageResponse, CustomerOrderResponse, CustomerReorderRespon
 import { CustomerOrderQuoteDto, OrderQuoteResponse } from './dto/order-quote.dto.js';
 import { OrderNumberPipe } from './order-number.pipe.js';
 import { OrderQuotes } from './order-quote.service.js';
-import { CUSTOMER_QUOTE_RATE_LIMIT } from './orders.constants.js';
 
 /** Keyed by address: a valid account does not get to fill a shop's panel from a script. */
 const rateLimit = { max: env.CUSTOMER_ORDER_RATE_LIMIT_MAX, timeWindow: env.CUSTOMER_ORDER_RATE_LIMIT_WINDOW };
+
+/** The quote says whether a coupon's code exists: a bucket of its own, so pricing never spends an order's. */
+const quoteRateLimit = { max: env.CUSTOMER_QUOTE_RATE_LIMIT_MAX, timeWindow: env.CUSTOMER_QUOTE_RATE_LIMIT_WINDOW };
 
 /**
  * A shopper's orders at a shop — their own, including those the shop registered for them. `@Public()`
@@ -97,7 +99,7 @@ export class CustomerOrdersController {
   }
 
   @Post('quote')
-  @RouteConfig({ rateLimit: CUSTOMER_QUOTE_RATE_LIMIT })
+  @RouteConfig({ rateLimit: quoteRateLimit })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "The cart as the shopper's order would be priced, and whether the coupon they typed is taken — with the reason when it is not" })
   @ApiOkResponse({ type: OrderQuoteResponse })

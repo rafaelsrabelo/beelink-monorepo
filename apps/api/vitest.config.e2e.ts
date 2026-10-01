@@ -26,6 +26,8 @@ export default defineConfig({
       STORE_WRITE_RATE_LIMIT_MAX: '1000',
       // And the cart's orders: a suite places more of them from one address than any shopper would.
       CUSTOMER_ORDER_RATE_LIMIT_MAX: '1000',
+      // And the checkout's quotes, for the same reason.
+      CUSTOMER_QUOTE_RATE_LIMIT_MAX: '1000',
       // And the shopper's messages: a suite writes more of them from one address than anyone would.
       CUSTOMER_MESSAGE_RATE_LIMIT_MAX: '1000',
       // Google's door switched on; its suite stands a fake Google in for the real one.

@@ -3,6 +3,7 @@ import type { OrderCouponRefusedDetails, OrderFulfillment } from '@harness-monor
 import type { CouponModel } from '../../generated/prisma/models.js';
 
 // App
+import { couponDiscountOf } from './discount-pricing.js';
 import { couponStatusOf } from './promotion-status.js';
 import { COUPON_CODE } from './promotions.constants.js';
 
@@ -18,11 +19,16 @@ export interface CouponContext {
   /** What is left of the products after the promotions: what the minimum is held against. */
   baseCents: number;
   fulfillment: OrderFulfillment;
+  /** The fee the order will have: null while a delivery's is not agreed, zero on a pick-up. */
+  deliveryFeeCents: number | null;
   /** This customer's orders that used it and were not cancelled; null when nobody is identified. */
   customerUses: number | null;
 }
 
-export type VerdictCoupon = Pick<CouponModel, 'kind' | 'minSubtotalCents' | 'startsAt' | 'endsAt' | 'isActive' | 'maxUses' | 'maxUsesPerCustomer' | 'usedCount'>;
+export type VerdictCoupon = Pick<
+  CouponModel,
+  'kind' | 'percentBps' | 'amountCents' | 'minSubtotalCents' | 'startsAt' | 'endsAt' | 'isActive' | 'maxUses' | 'maxUsesPerCustomer' | 'usedCount'
+>;
 
 export function couponRefusalOf(coupon: VerdictCoupon | null, context: CouponContext): OrderCouponRefusedDetails | null {
   if (!coupon) return { reason: 'NOT_FOUND' };
@@ -35,10 +41,20 @@ export function couponRefusalOf(coupon: VerdictCoupon | null, context: CouponCon
   if (coupon.maxUsesPerCustomer !== null && context.customerUses !== null && context.customerUses >= coupon.maxUsesPerCustomer) {
     return { reason: 'CUSTOMER_LIMIT' };
   }
-  // A pick-up has no fee to waive, and a cart the promotions already paid for has nothing to take.
-  if (coupon.kind === 'FREE_SHIPPING' ? context.fulfillment === 'PICKUP' : context.baseCents === 0) return { reason: 'NOT_APPLICABLE' };
+  if (takesNothing(coupon, context)) return { reason: 'NOT_APPLICABLE' };
   if (context.baseCents < coupon.minSubtotalCents) return { reason: 'BELOW_MINIMUM', minSubtotalCents: coupon.minSubtotalCents };
   return null;
+}
+
+/**
+ * A coupon that would take nothing off is refused rather than spent: a use for no discount is a use
+ * the customer lost. A free delivery has nothing to waive on a pick-up, nor on a delivery already
+ * free; one whose fee is not agreed yet is taken, and its discount follows the fee. A share or an
+ * amount takes nothing when the promotions left nothing, or left too little for it to reach a cent.
+ */
+function takesNothing(coupon: VerdictCoupon, context: CouponContext): boolean {
+  if (coupon.kind === 'FREE_SHIPPING') return context.fulfillment === 'PICKUP' || context.deliveryFeeCents === 0;
+  return couponDiscountOf(coupon, context.baseCents, context.deliveryFeeCents) === 0;
 }
 
 /**

@@ -155,3 +155,32 @@ O total do cliente não muda, e o uso do cupom passa a dizer quanto ele custou �
 - O cashback (Épico U), que entra neste mesmo cálculo no U3.
 - Recalcular o desconto de um pedido já gravado: o pedido é um fato, e só o frete combinado depois
   mexe no total.
+
+## Adendo da revisão (01/10)
+
+Um revisor de correção leu o diff. A aritmética (300 mil carrinhos sorteados), os limites sob
+corrida, o frete grátis e o isolamento entre lojas saíram limpos: nenhum `CHECK` alcançável, nenhum
+jeito de passar do limite do cupom. O que mudou:
+
+- **A prévia do cliente tem um limite próprio por IP:** `CUSTOMER_QUOTE_RATE_LIMIT_MAX`, 30 a cada 5
+  minutos. A decisão 3 dizia "sob o limite de pedidos por IP", e o código tinha 60 por minuto, o que
+  deixava testar 600 códigos em dez minutos. O limite de pedidos (10 a cada 10 minutos) seria curto
+  para um checkout que recalcula a cada mudança, e a prévia gastaria os pedidos do cliente. Isso
+  corrige a decisão 3.
+- **Um cupom que não tiraria nada é recusado (`NOT_APPLICABLE`), e não gasto.** São dois casos: o
+  frete grátis numa entrega que a loja já fez grátis (frete zero), e um percentual que não chega a
+  um centavo. Antes, o pedido levava o cupom, descontava zero e contava um uso. O frete grátis com o
+  frete ainda "a combinar" continua aceito (decisão 5). Isso corrige a decisão 2.
+
+O que fica como está, sabendo:
+
+- **`ORDER_DISCOUNT_TOO_LARGE` e `ORDER_TOTAL_TOO_LARGE` agora saem de dentro da transação,** depois
+  do estoque, do cliente e do endereço. Um corpo com dois defeitos responde o outro primeiro. É o
+  preço de calcular o desconto sob a trava; nada é gravado nos dois casos.
+- **A prévia do cliente pode criar o cadastro dele na loja,** como toda leitura do cliente já faz
+  (`shopperAt`). As outras duas prévias não gravam nada.
+- **Quem apaga a conta e abre outra volta a ter o limite por cliente inteiro.** É o limite de
+  qualquer regra por cliente, o mesmo que o plano do cashback aceita para a primeira compra.
+- **As promoções e as listas delas são lidas em comandos separados.** Uma edição do lojista
+  exatamente entre os dois poderia precificar um pedido com a regra velha e a lista nova. A janela é
+  de milissegundos, e fica aceita.
