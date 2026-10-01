@@ -604,6 +604,17 @@ export interface UiMessages {
     favoritesHintOff: string
     favoritesHintChange: string
     favoritesHintTurnOn: string
+    /** The account's front (6c, BEELINK-159): the purchases to rate and the favourites' rail. */
+    overviewReviewsTitle: string
+    overviewSeeAll: string
+    overviewReviewComment: string
+    quickRatingGroup: string
+    favoritesRailTitle: string
+    favoritesRailCountOne: string
+    favoritesRailCountMany: string
+    favoritesRailDroppedOne: string
+    favoritesRailDroppedMany: string
+    favoritesRailDrop: string
     /** Avaliar compras (6c, J18): the tab, its two sections, the stars, the form and what came of it. */
     orderReviewProduct: string
     reviewsPendingTitle: string
