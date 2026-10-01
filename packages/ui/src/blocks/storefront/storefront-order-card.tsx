@@ -27,6 +27,8 @@ export interface StorefrontOrderCardProps {
   /** Every line already in the shopper's words and language: the block formats nothing. */
   placedOn: string
   total: string
+  /** What was taken off, under the total — "Desconto de R$ 42,50 · cupom BEMVINDO10"; absent with nothing. */
+  saving?: string | null
   /** Who receives it, or the pick-up; null hides the column. */
   shipTo: string | null
   headline: string
@@ -52,11 +54,12 @@ const TONE = {
   cancelled: "text-shop-muted",
 } as const
 
-function Fact({ label, children }: { label: string; children: ReactNode }) {
+function Fact({ label, note, children }: { label: string; note?: string | null; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <span className="text-[11px] font-bold tracking-[0.04em] text-shop-muted uppercase">{label}</span>
       <span className="truncate text-sm font-semibold">{children}</span>
+      {note ? <span className="truncate text-xs font-semibold text-shop-positive-ink">{note}</span> : null}
     </div>
   )
 }
@@ -70,6 +73,7 @@ export function StorefrontOrderCard({
   number,
   placedOn,
   total,
+  saving,
   shipTo,
   headline,
   detail,
@@ -93,7 +97,9 @@ export function StorefrontOrderCard({
     >
       <header className="grid gap-3 border-b border-shop-line bg-shop-fill px-5 py-3.5 shop-md:grid-cols-[1fr_1fr_1fr_auto] shop-md:items-center shop-md:gap-6">
         <Fact label={text.orderPlacedOn}>{placedOn}</Fact>
-        <Fact label={text.orderTotalLabel}>{total}</Fact>
+        <Fact label={text.orderTotalLabel} note={saving}>
+          {total}
+        </Fact>
         {shipTo ? <Fact label={text.orderShipTo}>{shipTo}</Fact> : <div className="hidden shop-md:block" />}
         <div className="flex items-baseline gap-3 shop-md:flex-col shop-md:items-end shop-md:gap-0.5">
           <span className="text-sm font-bold">{format(text.orderNumber, { number: String(number) })}</span>

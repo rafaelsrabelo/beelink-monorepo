@@ -325,6 +325,10 @@ export interface CustomerOrderSummary {
   totalCents: number;
   /** Null while a delivery's fee is not agreed: the total then says "+ frete" beside it. */
   deliveryFeeCents: number | null;
+  /** Everything taken off — promotions, coupon and what the shop typed — as the card says it under the total (BEELINK-194). */
+  discountCents: number;
+  /** The coupon it took, as it was; null with none. */
+  coupon: OrderCoupon | null;
   /** Units across every line. */
   itemsCount: number;
   /** The first lines, as many as the card shows. */

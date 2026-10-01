@@ -15,6 +15,10 @@ const placed = {
   ],
   totalCents: 24970,
   deliveryFeeCents: 1000,
+  discountCents: 0,
+  promotionDiscountCents: 0,
+  couponDiscountCents: 0,
+  coupon: null,
   fulfillment: "DELIVERY" as const,
   deliveryAddress: {
     recipientName: "Rafael",
@@ -61,6 +65,21 @@ describe("the WhatsApp order", () => {
     expect(message).toContain("Total: R$ 249,70 + frete")
   })
 
+  /** BEELINK-194: the lines are at the catalogue's price, so what came off stands between them and the total. */
+  it("says what the promotion and the coupon took off, between the lines and the total", () => {
+    const discounted = { ...placed, totalCents: 20723, discountCents: 4247, promotionDiscountCents: 1499, couponDiscountCents: 2748, coupon: { code: "BEMVINDO10", kind: "PERCENT" as const } }
+    const message = orderMessageOf({ shopName: "Loja do Design", order: discounted, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
+
+    expect(message.split("\n").slice(4, 8)).toEqual(["", "Promoção: − R$ 14,99", "Cupom BEMVINDO10: − R$ 27,48", "Total: R$ 207,23"])
+  })
+
+  it("says a free delivery coupon in words, and a total with no '+ frete': the coupon waives whatever is agreed", () => {
+    const free = { ...placed, deliveryFeeCents: null, coupon: { code: "FRETEGRATIS", kind: "FREE_SHIPPING" as const } }
+    const message = orderMessageOf({ shopName: "Loja do Design", order: free, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
+
+    expect(message).toContain("Cupom FRETEGRATIS: Frete grátis\nTotal: R$ 249,70\n")
+  })
+
   it("says a pick-up is picked up, and writes no phone the shop does not have", () => {
     const message = orderMessageOf({
       shopName: "Loja",
@@ -91,6 +110,9 @@ describe("shopOrderMessageOf", () => {
     fulfillment: "DELIVERY" as const,
     deliveryFeeCents: 1000,
     discountCents: 500,
+    promotionDiscountCents: 0,
+    couponDiscountCents: 0,
+    coupon: null,
     totalCents: 10480,
     paymentMethod: "PIX" as const,
   }
@@ -109,6 +131,13 @@ describe("shopOrderMessageOf", () => {
         "Status: Em preparo",
       ].join("\n"),
     )
+  })
+
+  it("breaks the discount into the promotion, the coupon by its code and what the shop typed", () => {
+    const discounted = { ...order, discountCents: 2496, promotionDiscountCents: 998, couponDiscountCents: 998, coupon: { code: "BEMVINDO10", kind: "PERCENT" as const }, totalCents: 8484 }
+    const message = shopOrderMessageOf({ shopName: "Loja", order: discounted, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
+
+    expect(message.split("\n").slice(4, 9)).toEqual(["Entrega: R$ 10,00", "Promoção: − R$ 9,98", "Cupom BEMVINDO10: − R$ 9,98", "Desconto: − R$ 5,00", "Total: R$ 84,84"])
   })
 
   it("says a fee not agreed yet is to be agreed, and the total leaves it out", () => {

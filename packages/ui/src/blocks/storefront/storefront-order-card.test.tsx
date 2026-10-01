@@ -36,6 +36,15 @@ describe("StorefrontOrderCard", () => {
     expect(within(article).getByText("Qtd. 1 · + 1 item")).toBeInTheDocument()
   })
 
+  /** BEELINK-194: the list says what came off an order, and the coupon it took. */
+  it("says what was taken off under the total, and nothing there for an order with no discount", () => {
+    const { rerender } = render(<StorefrontOrderCard {...card} saving="Desconto de R$ 42,50 · cupom BEMVINDO10" />)
+    expect(screen.getByText("R$ 237,22 · Pix").nextElementSibling).toHaveTextContent("Desconto de R$ 42,50 · cupom BEMVINDO10")
+
+    rerender(<StorefrontOrderCard {...card} />)
+    expect(screen.getByText("R$ 237,22 · Pix").nextElementSibling).toBeNull()
+  })
+
   it("hides the recipient on a pick-up, and holds the actions given", () => {
     render(<StorefrontOrderCard {...card} shipTo={null} actions={<button type="button">Cancelar pedido</button>} />)
 

@@ -6,7 +6,7 @@ import type { StorefrontOrderNowProps } from "@harness-monorepo/ui/blocks/storef
 
 // UI
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
-import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
+import { customerTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
@@ -36,7 +36,7 @@ export function orderNowViewOf(order: CustomerOrder, others: number, context: Or
   const estimate = estimateOf(order)
 
   return {
-    eyebrow: format(text.accountInProgressEyebrow, { number: String(order.number), total: `${orderTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}` }),
+    eyebrow: format(text.accountInProgressEyebrow, { number: String(order.number), total: `${customerTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}` }),
     headline: orderStatusLineOf({ ...order, statusAt }, context).headline,
     destination:
       order.fulfillment === "PICKUP"

@@ -1,5 +1,7 @@
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
+import { discountLinesOf } from "@harness-monorepo/ui/lib/order-discounts"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
 import { defaultMessages } from "@harness-monorepo/ui/locales/index"
@@ -9,8 +11,10 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import type { OrderTotals, OrderTotalsRefusal } from "@harness-monorepo/ui/lib/order-form"
 
 export interface OrderSummaryProps {
-  /** `orderTotalsOf` over what is on screen; a refusal is said instead of a total. */
+  /** What is on screen as the API priced it — or the form's own sum until it answers; a refusal is said instead of a total. */
   totals: OrderTotals | OrderTotalsRefusal
+  /** The API is pricing what is on screen: the amounts shown are the ones before the last change. */
+  pricing?: boolean
   money: (cents: number) => string
   pending?: boolean
   /** Why the last save did not go through, in words. */
@@ -29,11 +33,21 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
 
 /**
  * What the order adds up to, and the button that registers it. The numbers are the ones the API
- * will write — it computes them the same way — so what the shopkeeper confirms is what is saved.
+ * will write, so what the shopkeeper confirms is what is saved: a promotion running on the day of
+ * the sale has its row, apart from what was typed as a discount.
  */
-export function OrderSummary({ totals, money, pending = false, error, messages = defaultMessages }: OrderSummaryProps) {
+export function OrderSummary({ totals, pricing = false, money, pending = false, error, messages = defaultMessages }: OrderSummaryProps) {
   const text = messages.orders.form
   const refusal = typeof totals === "string" ? (totals === "DISCOUNT_TOO_LARGE" ? text.discountTooLarge : text.totalTooLarge) : null
+  const promotionCents = typeof totals === "string" ? 0 : (totals.priced ?? []).reduce((sum, line) => sum + line.discountCents, 0)
+  const discounts =
+    typeof totals === "string"
+      ? []
+      : discountLinesOf(
+          { discountCents: promotionCents + totals.discountCents, promotionDiscountCents: promotionCents, couponDiscountCents: 0, coupon: null, items: totals.priced },
+          money,
+          messages.orders.discountRows,
+        )
 
   return (
     <section aria-labelledby="order-summary-title" className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-5 shadow-xs">
@@ -46,10 +60,12 @@ export function OrderSummary({ totals, money, pending = false, error, messages =
           {refusal}
         </p>
       ) : (
-        <dl className="flex flex-col gap-2">
+        <dl aria-busy={pricing || undefined} className={cn("flex flex-col gap-2 transition-opacity", pricing && "opacity-60")}>
           <Row label={text.subtotal} value={money(totals.subtotalCents)} />
           <Row label={text.fee} value={money(totals.deliveryFeeCents)} />
-          {totals.discountCents > 0 ? <Row label={text.discountLine} value={`− ${money(totals.discountCents)}`} /> : null}
+          {discounts.map((row) => (
+            <Row key={row.key} label={row.label} value={row.value} />
+          ))}
           <Row label={text.total} value={money(totals.totalCents)} strong />
         </dl>
       )}

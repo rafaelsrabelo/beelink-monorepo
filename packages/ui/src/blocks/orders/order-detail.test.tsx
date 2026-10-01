@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { OrderDetail } from "./order-detail"
-import { order } from "./order-detail.fixtures"
+import { discountedOrder, order } from "./order-detail.fixtures"
 import { nextStatusOf, otherStatusesOf } from "./order-status-actions"
 import type { OrderDetailView, OrderStatusValue } from "./order-types"
 
@@ -41,6 +41,35 @@ describe("OrderDetail", () => {
     expect(within(items).getByText("R$ 259,80")).toBeInTheDocument()
     expect(within(items).getByText("− R$ 5,00")).toBeInTheDocument()
     expect(within(items).getByText("R$ 289,70")).toBeInTheDocument()
+  })
+
+  /** BEELINK-194: what came off is said part by part, the coupon by its code. */
+  it("breaks the discount into the promotion, the coupon and what was typed, and says which line the promotion reached", () => {
+    render(<OrderDetail order={discountedOrder} {...props} />)
+
+    const items = screen.getByRole("region", { name: "Itens" })
+    const rows = [...items.querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+    expect(rows).toEqual([
+      ["Subtotal", "R$ 284,70"],
+      ["Entrega", "R$ 10,00"],
+      ["Promoção: Semana do Whey", "− R$ 25,98"],
+      ["Cupom BEMVINDO10", "− R$ 10,00"],
+      ["Desconto", "− R$ 5,00"],
+      ["Total", "R$ 253,72"],
+    ])
+    expect(within(items).getByText(/^Promoção: Semana do Whey \(− R\$\s25,98\)$/)).toBeInTheDocument()
+  })
+
+  it("says a free delivery coupon in words while the fee it waives is not agreed", () => {
+    render(
+      <OrderDetail
+        order={{ ...order, deliveryFeeCents: null, discountCents: 0, coupon: { code: "FRETEGRATIS", kind: "FREE_SHIPPING" }, totalCents: 28470 }}
+        {...props}
+      />,
+    )
+
+    const items = screen.getByRole("region", { name: "Itens" })
+    expect(within(items).getByText("Cupom FRETEGRATIS").nextElementSibling).toHaveTextContent("Frete grátis")
   })
 
   /** BEELINK-170: a fee not agreed reads "A combinar", and the total says it leaves the fee out. */

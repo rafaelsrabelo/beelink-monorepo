@@ -237,6 +237,25 @@ describe("the new order's details and summary", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("O desconto passa do valor do pedido.")
   })
 
+  /** BEELINK-194: the API prices the sale with the promotions of its day; the form's own sum knows none. */
+  it("shows the promotion the API priced the sale with, apart from the typed discount, and dims while it is priced again", () => {
+    const priced = { subtotalCents: 28470, deliveryFeeCents: 1000, discountCents: 500, totalCents: 26372, priced: [{ discountCents: 2598, promotionName: "Semana do Whey" }, { discountCents: 0, promotionName: null }] }
+    const { container, rerender } = render(<OrderSummary totals={priced} money={money} />)
+
+    const rows = [...container.querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+    expect(rows).toEqual([
+      ["Subtotal", "R$ 284,70"],
+      ["Entrega", "R$ 10,00"],
+      ["Promoção: Semana do Whey", "− R$ 25,98"],
+      ["Desconto", "− R$ 5,00"],
+      ["Total", "R$ 263,72"],
+    ])
+    expect(container.querySelector("dl")).not.toHaveAttribute("aria-busy")
+
+    rerender(<OrderSummary totals={priced} pricing money={money} />)
+    expect(container.querySelector("dl")).toHaveAttribute("aria-busy", "true")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <form>

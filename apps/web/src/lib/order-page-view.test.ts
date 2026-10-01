@@ -141,6 +141,44 @@ describe("an order's page, in the shopper's words", () => {
     expect(orderPaymentOf({ ...order, fulfillment: "PICKUP", discountCents: 0 }, context).rows.map((row) => row.label)).toEqual(["Subtotal"])
   })
 
+  /** BEELINK-194: what came off is told part by part, the coupon by its code — on the page and on the receipt, which read these rows. */
+  it("breaks the discount into the promotion, the coupon and what the shop took off, and names the line the promotion reached", () => {
+    const discounted: CustomerOrder = {
+      ...order,
+      items: [{ ...order.items[0]!, discountCents: 798, promotionName: "Semana do Whey" }, order.items[1]!],
+      deliveryFeeCents: 1000,
+      discountCents: 2216,
+      promotionDiscountCents: 798,
+      couponDiscountCents: 918,
+      coupon: { code: "BEMVINDO10", kind: "PERCENT" },
+      totalCents: 8764,
+    }
+
+    expect(orderPaymentOf(discounted, context).rows.map((row) => [row.label, row.value.replace(/\s/g, " "), row.positive ?? false])).toEqual([
+      ["Subtotal", "R$ 99,80", false],
+      ["Entrega", "R$ 10,00", false],
+      ["Promoção: Semana do Whey", "− R$ 7,98", true],
+      ["Cupom BEMVINDO10", "− R$ 9,18", true],
+      ["Desconto", "− R$ 5,00", true],
+    ])
+    const { items } = orderItemsOf(discounted, context)
+    // The line keeps the catalogue's price — the subtotal adds those up — and says what came off it.
+    expect(items[0]!.price.replace(/\s/g, " ")).toBe("R$ 79,80")
+    expect(items[0]!.meta.replace(/\s/g, " ")).toBe("Sabor: Uva · Qtd. 2 · R$ 39,90 cada · Promoção: Semana do Whey (− R$ 7,98)")
+    expect(items[1]!.meta).toBe("Qtd. 1")
+  })
+
+  it("says a free delivery coupon in words while its fee is not agreed, and a total with no '+ frete'", () => {
+    const free = orderPaymentOf({ ...order, deliveryFeeCents: null, discountCents: 0, coupon: { code: "FRETEGRATIS", kind: "FREE_SHIPPING" }, totalCents: 9980 }, context)
+
+    expect(free.rows.map((row) => [row.label, row.value])).toEqual([
+      ["Subtotal", expect.stringMatching(/99,80/)],
+      ["Entrega", "A combinar"],
+      ["Cupom FRETEGRATIS", "Frete grátis"],
+    ])
+    expect(free.total.replace(/\s/g, " ")).toBe("R$ 99,80")
+  })
+
   /** BEELINK-170: a fee not agreed is "a combinar", never "Grátis", and the total says it leaves the fee out. */
   it("says a delivery's fee is to be agreed, and the total '+ frete', while the shop has not told it", () => {
     const payment = orderPaymentOf({ ...order, deliveryFeeCents: null }, context)

@@ -95,6 +95,8 @@ describe("the account's front", () => {
       paymentMethod: "PIX",
       totalCents: 5000,
       deliveryFeeCents: 1000,
+      discountCents: 0,
+      coupon: null,
       itemsCount: 1,
       items: [],
       moreItems: 0,
