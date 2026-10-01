@@ -57,6 +57,63 @@ describe("StorefrontCart", () => {
     expect(screen.getByRole("complementary")).toContainElement(screen.getByRole("link", { name: "Fechar pedido" }))
   })
 
+  /** BEELINK-194: the promotion and the coupon each have their row, and the total is what is left. */
+  describe("priced with its discounts", () => {
+    const discounts = [
+      { key: "promotion", label: "Promoção: Semana do Whey", value: "− R$ 25,00" },
+      { key: "coupon", label: "Cupom BEMVINDO10", value: "− R$ 17,50" },
+    ]
+    const priced = [{ ...rows[0]!, unitPriceCents: 8750, lineTotalCents: 17500, wasCents: 20000, promotion: "Semana do Whey" }, rows[1]!]
+
+    it("says the subtotal, each discount on its own row, and the total under them", () => {
+      render(<StorefrontCart rows={priced} subtotalCents={20000} count={2} discounts={discounts} total="R$ 157,50 + frete" locale="pt-BR" continueHref="#" />)
+
+      const summary = screen.getByRole("complementary")
+      const pairs = [...summary.querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, money(row.querySelector("dd")!.textContent)])
+      expect(pairs).toEqual([
+        ["Subtotal (2 itens)", "R$ 200,00"],
+        ["Promoção: Semana do Whey", "− R$ 25,00"],
+        ["Cupom BEMVINDO10", "− R$ 17,50"],
+        ["Total", "R$ 157,50 + frete"],
+      ])
+    })
+
+    it("says which promotion took something off a line, and what the line cost before", () => {
+      render(<StorefrontCart rows={priced} subtotalCents={20000} count={2} discounts={discounts} total="R$ 157,50" locale="pt-BR" continueHref="#" />)
+
+      const line = screen.getByRole("link", { name: "Whey" }).closest("li")!
+      expect(line).toHaveTextContent("Promoção: Semana do Whey")
+      expect(money(line.querySelector("s")!.textContent)).toBe("De: R$ 200,00")
+      // The sold-out line is not ordered: nothing was taken off it.
+      expect(screen.getByRole("link", { name: "Whey Uva" }).closest("li")!.querySelector("s")).toBeNull()
+    })
+
+    it("is the subtotal alone with nothing taken off, as it always was", () => {
+      render(<StorefrontCart rows={rows} subtotalCents={17980} count={2} locale="pt-BR" continueHref="#" />)
+
+      expect(screen.getByRole("complementary").querySelectorAll("dl > div")).toHaveLength(1)
+      expect(screen.queryByText("Total")).not.toBeInTheDocument()
+    })
+
+    it("waits as a skeleton while it is priced for the first time, and dims while it is priced again", () => {
+      const { rerender } = render(<StorefrontCart rows={rows} subtotalCents={17980} count={2} pricing locale="pt-BR" continueHref="#" />)
+      const list = screen.getByRole("complementary").querySelector("dl")!
+      expect(list).toHaveAttribute("aria-busy", "true")
+      expect(list).not.toHaveTextContent("179,80")
+
+      rerender(<StorefrontCart rows={rows} subtotalCents={17980} count={2} discounts={discounts} total="R$ 137,30" stale locale="pt-BR" continueHref="#" />)
+      expect(list).toHaveAttribute("aria-busy", "true")
+      expect(list).toHaveClass("opacity-60")
+      expect(list).toHaveTextContent("137,30")
+    })
+
+    it("has no accessibility violations", async () => {
+      const { container } = render(<StorefrontCart rows={priced} subtotalCents={20000} count={2} discounts={discounts} total="R$ 157,50 + frete" locale="pt-BR" continueHref="#" />)
+
+      await expectNoA11yViolations(container)
+    })
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<StorefrontCart rows={rows} subtotalCents={17980} count={2} locale="pt-BR" continueHref="/loja/produtos" />)
 

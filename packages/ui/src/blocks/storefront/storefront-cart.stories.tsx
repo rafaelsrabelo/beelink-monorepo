@@ -28,5 +28,25 @@ export const ComItens: Story = {
   },
 }
 
+/** Com promoção e cupom: cada um na sua linha, e a linha do carrinho diz o que a promoção tirou. */
+export const ComDescontos: Story = {
+  args: {
+    subtotalCents: 25990,
+    count: 3,
+    discounts: [
+      { key: "promotion", label: "Promoção: Semana do Whey", value: "− R$ 25,00" },
+      { key: "coupon", label: "Cupom BEMVINDO10", value: "− R$ 23,49" },
+    ],
+    total: "R$ 211,41 + frete",
+    rows: [
+      { key: "whey", name: "100% Whey Protein Concentrado", href: "#", variantLabel: "Sabor: Chocolate · Peso: 900 g", imageUrl: null, unitPriceCents: 8750, qty: 2, lineTotalCents: 17500, wasCents: 20000, promotion: "Semana do Whey", available: true },
+      { key: "creatina", name: "Creatina Monohidratada", href: "#", variantLabel: null, imageUrl: null, unitPriceCents: 5990, qty: 1, lineTotalCents: 5990, available: true },
+    ],
+  },
+}
+
+/** A primeira cotação ainda não chegou: os valores esperam. */
+export const Cotando: Story = { args: { ...ComItens.args, pricing: true } }
+
 /** Vazio: uma frase e o caminho de volta. */
 export const Vazio: Story = { args: { rows: [], subtotalCents: 0, count: 0 } }
