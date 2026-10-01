@@ -19,14 +19,36 @@ import { brandFontStyle, jakarta } from "@/components/landing/brand-font"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { getMessages } from "@/lib/locale"
 import { serverEnv } from "@/lib/server-env"
+import { siteOrigin } from "@/lib/site-origin"
 
 /** The panel's own doors. A signed-in shopkeeper who follows either is sent on to the panel by the proxy. */
 const LOGIN = "/login"
 const SIGNUP = "/signup"
 
+/**
+ * The share image: Beelink's logo on the brand's ground, 1200×630. The name carries a version
+ * because WhatsApp keeps a preview by the image's address — a new picture under the old name is
+ * never fetched again.
+ */
+const SHARE_IMAGE = { path: "/brand/share-v1.png", width: 1200, height: 630 }
+
+/**
+ * What a search result and a link preview say of the landing: its title, its description and the
+ * logo. Every address is absolute — a preview is fetched from outside, and a relative `og:image`
+ * is no image.
+ */
 export async function generateMetadata(): Promise<Metadata> {
-  const { web } = await getMessages()
-  return { title: web.landing.title, description: web.landing.description }
+  const [{ web, ui, locale }, origin] = await Promise.all([getMessages(), siteOrigin()])
+  const { title, description, shareImageAlt } = web.landing
+  const image = { url: `${origin}${SHARE_IMAGE.path}`, width: SHARE_IMAGE.width, height: SHARE_IMAGE.height, alt: shareImageAlt }
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `${origin}/` },
+    openGraph: { type: "website", url: `${origin}/`, siteName: ui.landing.brand, title, description, locale: locale.replace("-", "_"), images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
+  }
 }
 
 /**
