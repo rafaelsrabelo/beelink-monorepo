@@ -1,0 +1,167 @@
+// Types
+import type { Coupon, CouponPayload, Promotion, PromotionPayload } from "@harness-monorepo/contracts"
+import type { CouponFormIssues, CouponFormValues, PromotionFormIssues, PromotionFormValues } from "@harness-monorepo/ui/lib/discount-form"
+import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// UI
+import { centsFrom, reaisFrom } from "@harness-monorepo/ui/lib/money"
+
+// App
+import { instantOf, shopInputOf } from "@/lib/shop-time"
+
+/**
+ * The crossing between what a promotion's or a coupon's form holds — strings, in the shopkeeper's
+ * units — and the wire: basis points, whole cents and instants. One place, both ways, and the place
+ * that says which fields to correct before anything is sent. The rules are the API's own
+ * (BEELINK-190); saying them here first spares a round trip, and the API still has the last word.
+ */
+
+type Issues = UiMessages["discounts"]["issues"]
+
+const PERCENT_BPS_MAX = 10_000
+const AMOUNT_MAX_CENTS = 100_000_000
+const COUPON_CODE = /^[A-Za-z0-9][A-Za-z0-9_-]{2,29}$/
+const WHOLE = /^\d{1,7}$/
+
+/** Basis points as the field shows a percentage: 1000 is "10", 1250 is "12,5". */
+export function percentFrom(bps: number | null): string {
+  return bps === null ? "" : String(bps / 100).replace(".", ",")
+}
+
+/**
+ * A percentage typed as a person types it into basis points. It is the money parser on purpose:
+ * "12,5" per cent is 1250 hundredths, exactly as "12,50" reais is 1250 cents.
+ */
+function bpsFrom(typed: string): number | null {
+  const bps = centsFrom(typed)
+  return bps !== null && bps >= 1 && bps <= PERCENT_BPS_MAX ? bps : null
+}
+
+function amountFrom(typed: string): number | null {
+  const cents = centsFrom(typed)
+  return cents !== null && cents >= 1 && cents <= AMOUNT_MAX_CENTS ? cents : null
+}
+
+/** A limit left blank is none; anything else is a whole number of at least one, up to `max`. */
+function limitFrom(typed: string, max: number): number | null | "invalid" {
+  const trimmed = typed.trim()
+  if (trimmed === "") return null
+  const limit = WHOLE.test(trimmed) ? Number(trimmed) : 0
+  return limit >= 1 && limit <= max ? limit : "invalid"
+}
+
+interface PeriodFields {
+  startsAt: string
+  endsAt: string
+}
+
+/** The two instants, or which of the two fields to correct. */
+function periodOf(value: PeriodFields, text: Issues): { startsAt: string; endsAt: string | null; issues: { startsAt?: string; endsAt?: string } } {
+  const startsAt = instantOf(value.startsAt)
+  const endsAt = value.endsAt === "" ? null : instantOf(value.endsAt)
+  const issues: { startsAt?: string; endsAt?: string } = {}
+  if (startsAt === null) issues.startsAt = text.date
+  if (value.endsAt !== "" && endsAt === null) issues.endsAt = text.date
+  else if (startsAt !== null && endsAt !== null && endsAt <= startsAt) issues.endsAt = text.endsBeforeStart
+  return { startsAt: startsAt ?? "", endsAt, issues }
+}
+
+/** A new promotion: a percentage off the whole cart, starting now. */
+export function emptyPromotion(now: Date): PromotionFormValues {
+  return { name: "", scope: "CART", kind: "PERCENT", percent: "", amount: "", startsAt: shopInputOf(now), endsAt: "", products: [], categoryIds: [] }
+}
+
+export function promotionFormOf(promotion: Promotion): PromotionFormValues {
+  return {
+    name: promotion.name,
+    scope: promotion.scope,
+    kind: promotion.discountKind,
+    percent: percentFrom(promotion.percentBps),
+    amount: reaisFrom(promotion.amountCents),
+    startsAt: shopInputOf(promotion.startsAt),
+    endsAt: promotion.endsAt ? shopInputOf(promotion.endsAt) : "",
+    products: promotion.products.map((product) => ({ id: product.id, name: product.name })),
+    categoryIds: promotion.categories.map((category) => category.id),
+  }
+}
+
+/**
+ * What the form sends, or the fields to correct. `active` is left out on purpose: the API keeps
+ * the switch as it is, so saving a paused promotion does not put it back on.
+ */
+export function promotionPayloadOf(value: PromotionFormValues, text: Issues): { payload: PromotionPayload } | { issues: PromotionFormIssues } {
+  const name = value.name.trim()
+  const percentBps = value.kind === "PERCENT" ? bpsFrom(value.percent) : null
+  const amountCents = value.kind === "FIXED" ? amountFrom(value.amount) : null
+  const period = periodOf(value, text)
+
+  const issues: PromotionFormIssues = {
+    ...(name === "" ? { name: text.required } : {}),
+    ...(value.kind === "PERCENT" && percentBps === null ? { percent: text.percent } : {}),
+    ...(value.kind === "FIXED" && amountCents === null ? { amount: text.amount } : {}),
+    ...(value.scope === "PRODUCTS" && value.products.length === 0 ? { products: text.products } : {}),
+    ...(value.scope === "CATEGORIES" && value.categoryIds.length === 0 ? { categories: text.categories } : {}),
+    ...period.issues,
+  }
+  if (Object.keys(issues).length > 0) return { issues }
+
+  return {
+    payload: {
+      name,
+      scope: value.scope,
+      discountKind: value.kind,
+      percentBps,
+      amountCents,
+      startsAt: period.startsAt,
+      endsAt: period.endsAt,
+      // Only the list its scope asks for: the other may still hold what was chosen before the scope changed.
+      productIds: value.scope === "PRODUCTS" ? value.products.map((product) => product.id) : [],
+      categoryIds: value.scope === "CATEGORIES" ? value.categoryIds : [],
+    },
+  }
+}
+
+/** A new coupon: a percentage, starting now, with no minimum and no limits. */
+export function emptyCoupon(now: Date): CouponFormValues {
+  return { code: "", kind: "PERCENT", percent: "", amount: "", minSubtotal: "", startsAt: shopInputOf(now), endsAt: "", maxUses: "", maxUsesPerCustomer: "" }
+}
+
+export function couponFormOf(coupon: Coupon): CouponFormValues {
+  return {
+    code: coupon.code,
+    kind: coupon.kind,
+    percent: percentFrom(coupon.percentBps),
+    amount: reaisFrom(coupon.amountCents),
+    minSubtotal: coupon.minSubtotalCents > 0 ? reaisFrom(coupon.minSubtotalCents) : "",
+    startsAt: shopInputOf(coupon.startsAt),
+    endsAt: coupon.endsAt ? shopInputOf(coupon.endsAt) : "",
+    maxUses: coupon.maxUses === null ? "" : String(coupon.maxUses),
+    maxUsesPerCustomer: coupon.maxUsesPerCustomer === null ? "" : String(coupon.maxUsesPerCustomer),
+  }
+}
+
+/** What the form sends, or the fields to correct; `active` is left out, as on a promotion. */
+export function couponPayloadOf(value: CouponFormValues, text: Issues): { payload: CouponPayload } | { issues: CouponFormIssues } {
+  const code = value.code.trim()
+  const percentBps = value.kind === "PERCENT" ? bpsFrom(value.percent) : null
+  const amountCents = value.kind === "FIXED" ? amountFrom(value.amount) : null
+  const minSubtotalCents = value.minSubtotal.trim() === "" ? 0 : centsFrom(value.minSubtotal)
+  const maxUses = limitFrom(value.maxUses, 1_000_000)
+  const maxUsesPerCustomer = limitFrom(value.maxUsesPerCustomer, 1000)
+  const period = periodOf(value, text)
+
+  const issues: CouponFormIssues = {
+    ...(code === "" ? { code: text.required } : COUPON_CODE.test(code) ? {} : { code: text.code }),
+    ...(value.kind === "PERCENT" && percentBps === null ? { percent: text.percent } : {}),
+    ...(value.kind === "FIXED" && amountCents === null ? { amount: text.amount } : {}),
+    ...(minSubtotalCents === null || minSubtotalCents > AMOUNT_MAX_CENTS ? { minSubtotal: text.amount } : {}),
+    ...(maxUses === "invalid" ? { maxUses: text.limit } : {}),
+    ...(maxUsesPerCustomer === "invalid" ? { maxUsesPerCustomer: text.limit } : {}),
+    ...period.issues,
+  }
+  if (Object.keys(issues).length > 0 || minSubtotalCents === null || maxUses === "invalid" || maxUsesPerCustomer === "invalid") return { issues }
+
+  return {
+    payload: { code, kind: value.kind, percentBps, amountCents, minSubtotalCents, startsAt: period.startsAt, endsAt: period.endsAt, maxUses, maxUsesPerCustomer },
+  }
+}
