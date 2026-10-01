@@ -361,6 +361,7 @@ export interface UiMessages {
     privacyLead: string
     privacyDownload: string
     privacyDownloadHint: string
+    privacyDownloadFailed: string
     privacyDelete: string
     privacyDeleteLead: string
     privacyDeletePassword: string
@@ -1813,6 +1814,8 @@ export interface UiMessages {
     noneYet: string
     noneClosed: string
     closed: string
+    /** The customer deleted their account (BEELINK-152): the order may still be on its way, and no answer reaches them. */
+    customerLeft: string
     sent: string
     read: string
     fromCustomer: string

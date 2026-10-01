@@ -6,6 +6,7 @@ import { verify } from '@node-rs/argon2';
 
 // Types
 import type { CustomerDataAccount, CustomerDataExport } from '@harness-monorepo/contracts';
+import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserModel } from '../../generated/prisma/models.js';
 
 // App
@@ -74,10 +75,11 @@ export class CustomerPrivacyService {
         email: account.email,
         emailVerifiedAt: account.emailVerifiedAt?.toISOString() ?? null,
         createdAt: account.createdAt.toISOString(),
-        signInWith: [...(account.passwordHash ? (['PASSWORD'] as const) : []), ...account.identities.map(() => 'GOOGLE' as const)],
+        signInWith: [...(account.passwordHash ? (['PASSWORD'] as const) : []), ...(account.identities.length > 0 ? (['GOOGLE'] as const) : [])],
         termsAccepted: account.legalAcceptances.map((row) => ({ version: row.version, via: row.via, acceptedAt: row.acceptedAt.toISOString() })),
       } satisfies CustomerDataAccount,
       profile: toCustomerProfile(record, user, addresses),
+      record: { createdAt: record.createdAt.toISOString(), claimedPhone: record.claimedPhone },
       orders: orders.map(toCustomerOrder),
       favorites: favorites.map(toCustomerFavorite),
       reviews: reviews.map(toCustomerReview),
@@ -92,23 +94,17 @@ export class CustomerPrivacyService {
    * review — stays the shop's, forgotten down to its name and phone; one they do not is deleted.
    */
   async deleteAccount(storeSlug: string, userId: string, dto: DeleteCustomerAccountDto): Promise<void> {
-    const { user, record } = await this.customers.shopperRecordAt(storeSlug, userId);
+    const { storeId, user } = await this.customers.shopperRecordAt(storeSlug, userId);
     await this.confirm(user, dto);
 
     const ended = await this.prisma.$transaction(async (tx) => {
-      await lockCustomer(tx, record.id);
-      const orders = await tx.order.count({ where: { customerId: record.id } });
-      const reviews = await tx.productReview.count({ where: { customerId: record.id } });
-
-      await tx.favoriteNotice.deleteMany({ where: { customerId: record.id } });
-      await tx.customerFavorite.deleteMany({ where: { customerId: record.id } });
-      if (orders > 0 || reviews > 0) {
-        // The orders keep where each one went; the saved addresses were the shopper's, not the books'.
-        await tx.customerAddress.deleteMany({ where: { customerId: record.id } });
-        await tx.customer.update({ where: { id: record.id }, data: FORGOTTEN });
-      } else {
-        await tx.customer.delete({ where: { id: record.id } });
-      }
+      // The shop's lock first, as placing an order and merging two records take it: an order placed
+      // meanwhile would hold a key-share on the record that its delete — or its account's unlinking —
+      // waits on, while the order's own books wait on this record's lock. One after the other instead.
+      await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
+      // Read again under it: a merge in the panel may have folded the record into another since.
+      const record = await tx.customer.findUnique({ where: { storeId_userId: { storeId, userId: user.id } }, select: { id: true } });
+      if (record) await this.forget(tx, record.id);
 
       const sessions = await tx.session.findMany({ where: { userId: user.id }, select: { id: true } });
       await tx.user.delete({ where: { id: user.id } });
@@ -118,6 +114,28 @@ export class CustomerPrivacyService {
     // The guard reads the session on every request, so the token stops opening anything now; a
     // socket's ticket was read once, at the door, and the socket has to be closed.
     this.realtime.endSessions(ended);
+  }
+
+  /**
+   * What the shopper kept for themselves goes. A record the shop's books name — an order, a review —
+   * stays, down to a name and a phone; one they do not is deleted, with its cascades. Favourites
+   * before their notices: a watch writing a notice holds its favourite's row, so waiting on that row
+   * lets the notice land first and go with the rest.
+   */
+  private async forget(tx: Prisma.TransactionClient, customerId: string): Promise<void> {
+    await lockCustomer(tx, customerId);
+    const orders = await tx.order.count({ where: { customerId } });
+    const reviews = await tx.productReview.count({ where: { customerId } });
+
+    await tx.customerFavorite.deleteMany({ where: { customerId } });
+    await tx.favoriteNotice.deleteMany({ where: { customerId } });
+    if (orders > 0 || reviews > 0) {
+      // The orders keep where each one went; the saved addresses were the shopper's, not the books'.
+      await tx.customerAddress.deleteMany({ where: { customerId } });
+      await tx.customer.update({ where: { id: customerId }, data: FORGOTTEN });
+    } else {
+      await tx.customer.delete({ where: { id: customerId } });
+    }
   }
 
   /** The same 403 as a password change for a wrong password; an e-mail that is not the account's has its own. */

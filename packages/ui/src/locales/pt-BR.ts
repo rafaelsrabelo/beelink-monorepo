@@ -271,6 +271,7 @@ export const ptBR: UiMessages = {
     privacyLead: "Seus dados ficam só com esta loja. Você pode baixar uma cópia ou excluir a conta quando quiser.",
     privacyDownload: "Baixar meus dados",
     privacyDownloadHint: "Um arquivo JSON com a sua conta, os seus pedidos, favoritos, avaliações e conversas.",
+    privacyDownloadFailed: "Não deu para gerar o arquivo agora. Tente de novo em instantes.",
     privacyDelete: "Excluir minha conta",
     privacyDeleteLead:
       "A conta deixa de existir e você sai de todos os aparelhos. Seus favoritos, endereços salvos, CPF e data de nascimento são apagados. Os pedidos continuam com a loja, com o nome e o endereço de cada compra, e as suas avaliações passam a aparecer como “Cliente”. Não dá para desfazer.",
@@ -1553,6 +1554,7 @@ export const ptBR: UiMessages = {
     noneYet: "Este pedido não tem conversa: o cliente não tem conta na loja para ler.",
     noneClosed: "Não houve conversa neste pedido.",
     closed: "O pedido terminou, e a conversa agora é só histórico.",
+    customerLeft: "O cliente excluiu a conta na loja, e a conversa agora é só histórico. Fale com ele pelo telefone do cadastro.",
     sent: "Enviada",
     read: "Lida",
     fromCustomer: "Cliente",

@@ -271,6 +271,7 @@ export const en: UiMessages = {
     privacyLead: "Your data stays with this shop alone. You can download a copy or delete the account whenever you like.",
     privacyDownload: "Download my data",
     privacyDownloadHint: "A JSON file with your account, orders, favourites, reviews and conversations.",
+    privacyDownloadFailed: "The file could not be made just now. Try again in a moment.",
     privacyDelete: "Delete my account",
     privacyDeleteLead:
       "The account stops existing and you are signed out of every device. Your favourites, saved addresses, CPF and birth date are erased. Your orders stay with the shop, with each purchase's name and address, and your reviews show as “Cliente”. This cannot be undone.",
@@ -1552,6 +1553,7 @@ export const en: UiMessages = {
     noneYet: "This order has no conversation: the customer has no account at the shop to read one.",
     noneClosed: "There was no conversation on this order.",
     closed: "The order is over, and its conversation is history now.",
+    customerLeft: "The customer deleted their account at the shop, and the conversation is history now. Reach them by the phone on their record.",
     sent: "Sent",
     read: "Read",
     fromCustomer: "Customer",

@@ -16,6 +16,8 @@ export interface StorefrontAccountPrivacyProps {
   deleteAction: string
   /** Carried through the post: this page, to come back to with a refusal, and the shop's sign-in. */
   hidden?: Readonly<Record<string, string>>
+  /** A copy that could not be made, already a sentence: said under its link. */
+  downloadError?: string | null
   /** A refused deletion, already a sentence: the confirmation comes back open with it. */
   error?: string | null
   messages?: UiMessages
@@ -33,7 +35,7 @@ const INPUT = "h-11 rounded-[10px] border border-shop-line-strong bg-shop-backgr
  * The link has no `download`: the handler sends the file as an attachment, and a session that ended
  * is sent to the sign-in instead — which `download` would have saved as a file.
  */
-export function StorefrontAccountPrivacy({ email, hasPassword, dataHref, deleteAction, hidden = {}, error, messages = defaultMessages }: StorefrontAccountPrivacyProps) {
+export function StorefrontAccountPrivacy({ email, hasPassword, dataHref, deleteAction, hidden = {}, downloadError, error, messages = defaultMessages }: StorefrontAccountPrivacyProps) {
   const text = messages.storefront
   const headingId = useId()
   const hintId = useId()
@@ -58,6 +60,11 @@ export function StorefrontAccountPrivacy({ email, hasPassword, dataHref, deleteA
         <span id={hintId} className="text-xs text-shop-muted">
           {text.privacyDownloadHint}
         </span>
+        {downloadError ? (
+          <p role="alert" className="mt-2 rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">
+            {downloadError}
+          </p>
+        ) : null}
       </div>
 
       <details open={Boolean(error)} className="border-t border-shop-line pt-5">

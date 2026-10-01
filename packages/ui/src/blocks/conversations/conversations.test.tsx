@@ -42,6 +42,12 @@ describe("the panel's conversations", () => {
     expect(screen.getByText(/só histórico/)).toBeInTheDocument()
     expect(screen.queryByText("resposta")).toBeNull()
 
+    // BEELINK-152: the customer deleted their account while the order was on its way.
+    rerender(<ConversationThread customer="Carla" order="Pedido nº 18" lines={lines} state="left" reply={<p>resposta</p>} />)
+    expect(screen.getByText(/O cliente excluiu a conta na loja/)).toBeInTheDocument()
+    expect(screen.getByRole("log")).toBeInTheDocument()
+    expect(screen.queryByText("resposta")).toBeNull()
+
     rerender(<ConversationThread customer="Carla" order="Pedido nº 18" lines={[]} state="empty" reply={<p>resposta</p>} />)
     expect(screen.getByText(/não tem conta na loja/)).toBeInTheDocument()
   })

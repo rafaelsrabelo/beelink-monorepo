@@ -2,7 +2,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
 // Types
-import type { AuthSession, CustomerDataExport, CustomerProfile, Order, ProductDetail, PublicProductReviews } from '@harness-monorepo/contracts';
+import type { AuthSession, CustomerDataExport, CustomerProfile, Order, ProductDetail, PublicProductReviews, ShopConversation } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
@@ -62,11 +62,16 @@ describe("a shopper's data at a shop: the copy, and the end of the account", () 
     await call('POST', '/api/stores/lessari/customer/addresses', shopper, ADDRESS);
     await call('PUT', `/api/stores/lessari/customer/favorites/${whey.id}`, shopper, {});
     const me = (await call('GET', '/api/stores/lessari/customer/me', shopper)).json<CustomerProfile>();
-    const order = (await call('POST', '/api/stores/lessari/orders', owner, { customer: { id: me.id }, items: [{ variantId: whey.variants[0]!.id, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX' })).json<Order>();
+    const order = await orderFor(me.id, 'Cliente pediu embrulho de presente');
     expect((await call('POST', `/api/stores/lessari/customer/orders/${order.number}/conversation/messages`, shopper, { body: 'Chega amanhã?' })).statusCode).toBe(201);
     await call('PATCH', `/api/stores/lessari/orders/${order.number}/status`, owner, { status: 'DELIVERED' });
     expect((await call('POST', '/api/stores/lessari/customer/reviews', shopper, { productId: whey.id, rating: 5, comment: 'Ótimo' })).statusCode).toBe(201);
     return { customerId: me.id, order };
+  }
+
+  async function orderFor(customerId: string, note?: string): Promise<Order> {
+    const items = [{ variantId: whey.variants[0]!.id, quantity: 1 }];
+    return (await call('POST', '/api/stores/lessari/orders', owner, { customer: { id: customerId }, items, fulfillment: 'PICKUP', paymentMethod: 'PIX', ...(note ? { note } : {}) })).json<Order>();
   }
 
   const remove = (payload: object, session = shopper) => call('DELETE', '/api/stores/lessari/customer/me', session, payload);
@@ -89,6 +94,9 @@ describe("a shopper's data at a shop: the copy, and the end of the account", () 
     expect(data.conversations[0]!.messages).toContainEqual(expect.objectContaining({ kind: 'MESSAGE', author: 'CUSTOMER', body: 'Chega amanhã?' }));
     // Never what opens the account.
     expect(response.payload).not.toMatch(/passwordHash|refreshToken|tokenHash/);
+    // The shop's own note on an order is the shop's, never the customer's to read.
+    expect(response.payload).not.toContain('embrulho de presente');
+    expect(data.record).toEqual({ createdAt: expect.any(String), claimedPhone: null });
 
     expect((await call('GET', '/api/stores/lessari/customer/me/data')).statusCode).toBe(401);
     expect((await call('GET', '/api/stores/outra/customer/me/data', shopper)).statusCode).toBe(401);
@@ -97,6 +105,9 @@ describe("a shopper's data at a shop: the copy, and the end of the account", () 
 
   it("ends the account given its password: the shop keeps the orders, forgetting the rest, and the review reads 'Cliente'", async () => {
     const { customerId, order } = await filledIn();
+    // An order still on its way, with the customer's question in its conversation.
+    const open = await orderFor(customerId);
+    await call('POST', `/api/stores/lessari/customer/orders/${open.number}/conversation/messages`, shopper, { body: 'Posso buscar hoje?' });
     const elsewhere = await signIn();
     const account = await prisma.user.findFirstOrThrow({ where: { email, storeId: { not: null } } });
 
@@ -125,8 +136,16 @@ describe("a shopper's data at a shop: the copy, and the end of the account", () 
     expect(await prisma.customerFavorite.count({ where: { customerId } })).toBe(0);
     const kept = await call('GET', `/api/stores/lessari/orders/${order.number}`, owner);
     expect(kept.statusCode).toBe(200);
-    expect(kept.json<Order>()).toMatchObject({ number: order.number, status: 'DELIVERED' });
+    expect(kept.json<Order>()).toMatchObject({ number: order.number, status: 'DELIVERED', note: 'Cliente pediu embrulho de presente' });
     expect(await prisma.orderMessage.count({ where: { conversation: { orderId: order.id }, author: 'CUSTOMER' } })).toBe(1);
+
+    // The open order's conversation is the shop's history now: it says so, and takes no answer.
+    const talk = (await call('GET', `/api/stores/lessari/orders/${open.number}/conversation`, owner)).json<ShopConversation>();
+    expect(talk.customer).toMatchObject({ name: 'Bia Souza', hasAccount: false });
+    expect(talk.messages).toContainEqual(expect.objectContaining({ kind: 'MESSAGE', body: 'Posso buscar hoje?' }));
+    const answer = await call('POST', `/api/stores/lessari/orders/${open.number}/conversation/messages`, owner, { body: 'Pode sim' });
+    expect(answer.statusCode).toBe(404);
+    expect(answer.json()).toMatchObject({ errorCode: 'ORDER_CONVERSATION_NOT_FOUND' });
 
     const reviews = (await call('GET', `/api/stores/lessari/products/${whey.id}/reviews`)).json<PublicProductReviews>();
     expect(reviews.reviews).toEqual([expect.objectContaining({ authorName: 'Cliente', rating: 5 })]);

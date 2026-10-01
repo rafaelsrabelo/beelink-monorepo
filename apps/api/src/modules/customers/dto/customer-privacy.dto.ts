@@ -5,7 +5,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 // Types
-import type { CustomerDataAccount, CustomerDataExport, CustomerSignInMethod, CustomerTermsAcceptance, DeleteCustomerAccountPayload, LegalAcceptanceChannel } from '@harness-monorepo/contracts';
+import type { CustomerDataAccount, CustomerDataExport, CustomerDataRecord, CustomerSignInMethod, CustomerTermsAcceptance, DeleteCustomerAccountPayload, LegalAcceptanceChannel } from '@harness-monorepo/contracts';
 
 // App
 import { PASSWORD_MAX_LENGTH } from '../../auth/auth.constants.js';
@@ -40,6 +40,11 @@ class CustomerDataAccountResponse implements CustomerDataAccount {
   @ApiProperty({ type: [CustomerTermsAcceptanceResponse] }) termsAccepted!: CustomerTermsAcceptanceResponse[];
 }
 
+class CustomerDataRecordResponse implements CustomerDataRecord {
+  @ApiProperty({ format: 'date-time' }) createdAt!: string;
+  @ApiProperty({ nullable: true, type: String }) claimedPhone!: string | null;
+}
+
 class CustomerDataShopResponse {
   @ApiProperty() name!: string;
   @ApiProperty() slug!: string;
@@ -50,6 +55,7 @@ export class CustomerDataExportResponse implements CustomerDataExport {
   @ApiProperty({ type: CustomerDataShopResponse }) shop!: CustomerDataShopResponse;
   @ApiProperty({ type: CustomerDataAccountResponse }) account!: CustomerDataAccountResponse;
   @ApiProperty({ type: CustomerProfileResponse }) profile!: CustomerProfileResponse;
+  @ApiProperty({ type: CustomerDataRecordResponse }) record!: CustomerDataRecordResponse;
   @ApiProperty({ type: [CustomerOrderResponse] }) orders!: CustomerOrderResponse[];
   @ApiProperty({ type: [CustomerFavoriteResponse] }) favorites!: CustomerFavoriteResponse[];
   @ApiProperty({ type: [CustomerReviewResponse] }) reviews!: CustomerReviewResponse[];

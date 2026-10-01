@@ -14,7 +14,7 @@ import { CustomerPrivacyService } from './customer-privacy.service.js';
 import { CurrentCustomer } from './customer.decorators.js';
 import { CustomerDataExportResponse, DeleteCustomerAccountDto } from './dto/customer-privacy.dto.js';
 
-/** Keyed by IP, as the password's door is: a confirmation is a password to guess. */
+/** Keyed by IP, as the password's door is: a confirmation is a password to guess, and the copy is every order at once. */
 const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMIT_WINDOW };
 
 /** "Baixar meus dados" and "Excluir minha conta" (BEELINK-152): the shopper's, behind their own door. */
@@ -29,8 +29,11 @@ export class CustomerPrivacyController {
   constructor(private readonly privacy: CustomerPrivacyService) {}
 
   @Get('data')
+  // Every order and conversation at once: the heaviest read a shopper can ask for.
+  @RouteConfig({ rateLimit })
   @ApiOperation({ summary: 'Everything this shop keeps about the shopper, in one file' })
   @ApiOkResponse({ type: CustomerDataExportResponse })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED' })
   exportData(@Param('storeSlug') storeSlug: string, @CurrentCustomer() customer: AuthenticatedCustomer): Promise<CustomerDataExport> {
     return this.privacy.exportOf(storeSlug, customer.userId);
   }

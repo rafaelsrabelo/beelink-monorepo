@@ -31,6 +31,14 @@ export interface CustomerDataAccount {
   termsAccepted: CustomerTermsAcceptance[];
 }
 
+/** What the profile does not show of the shop's record of them. */
+export interface CustomerDataRecord {
+  /** ISO-8601: when the shop first recorded them. */
+  createdAt: string;
+  /** A phone the shopper tried to save that another record of the shop had; null when none. */
+  claimedPhone: string | null;
+}
+
 /**
  * Everything a shop keeps about the signed-in shopper, in the shapes their account already reads it
  * in — "Baixar meus dados". Every order and conversation, never a page of them.
@@ -42,6 +50,7 @@ export interface CustomerDataExport {
   account: CustomerDataAccount;
   /** The shop's record of them: name, phone, CPF, birth date, saved addresses, notices by e-mail. */
   profile: CustomerProfile;
+  record: CustomerDataRecord;
   /** Most recent first. */
   orders: CustomerOrder[];
   /** Most recently liked first. */

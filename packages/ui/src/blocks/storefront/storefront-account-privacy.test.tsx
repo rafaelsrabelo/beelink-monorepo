@@ -69,6 +69,14 @@ describe("StorefrontAccountPrivacy", () => {
     expect(password).toHaveAccessibleDescription(/A senha não confere\./)
   })
 
+  it("says a copy that could not be made under its link, leaving the deletion folded", () => {
+    const { container } = render(privacy({ downloadError: "Não deu para gerar o arquivo agora. Tente de novo." }))
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Não deu para gerar o arquivo")
+    expect(container.querySelector("details")).not.toHaveAttribute("open")
+    expect(container.querySelector('input[name="password"]')).not.toHaveAttribute("aria-invalid")
+  })
+
   it("has no accessibility violations, folded or open", async () => {
     for (const error of [null, "Esse não é o e-mail da conta."]) {
       const { container, unmount } = render(privacy({ hasPassword: error === null, error }))

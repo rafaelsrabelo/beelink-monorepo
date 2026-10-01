@@ -50,7 +50,11 @@ describe("the shopper's copy of their data", () => {
 
     expect(landing.pathname).toBe("/loja/conta/perfil")
     expect(landing.hash).toBe("#privacidade")
-    expect(landing.searchParams.get("erro-privacidade")).toBe("UNKNOWN")
+    expect(landing.searchParams.get("erro-dados")).toBe("UNKNOWN")
+    expect(landing.searchParams.get("erro-privacidade")).toBeNull()
+
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ errorCode: "RATE_LIMITED" }, { status: 429 })))
+    expect(locationOf(await get()).searchParams.get("erro-dados")).toBe("RATE_LIMITED")
   })
 
   it("refuses a slug that is not one, and keeps every way back inside the shop", async () => {

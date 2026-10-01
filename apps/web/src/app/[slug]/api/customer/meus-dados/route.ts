@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 // App
-import { PRIVACY_ERROR_KEY } from "@/lib/account-privacy"
+import { DATA_ERROR_KEY } from "@/lib/account-privacy"
 import { callApi } from "@/lib/api"
 import { clientIpOf, publicOriginOf } from "@/lib/bff"
 import { clearCustomerSessionCookies, setCustomerSessionCookies } from "@/lib/customer-session-cookies"
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, { params }: RouteContext<"/[slug
     })
   } else {
     const back = pageOf("retorno")
-    back.searchParams.set(PRIVACY_ERROR_KEY, "UNKNOWN")
+    back.searchParams.set(DATA_ERROR_KEY, response?.status === 429 ? "RATE_LIMITED" : "UNKNOWN")
     answer = NextResponse.redirect(back, 303)
   }
   if (renewed) setCustomerSessionCookies(answer.cookies, slug, renewed)

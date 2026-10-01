@@ -7,7 +7,7 @@ import type { CustomerProfile } from "@harness-monorepo/contracts"
 import type { WebMessages } from "@/locales"
 
 // App
-import { PRIVACY_ERROR_KEY, privacyActionsOf, privacyErrorOf } from "@/lib/account-privacy"
+import { DATA_ERROR_KEY, PRIVACY_ERROR_KEY, downloadErrorOf, privacyActionsOf, privacyErrorOf } from "@/lib/account-privacy"
 import { paramOf } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 
@@ -26,6 +26,7 @@ export interface StorefrontPrivacySectionProps {
 /** The last of the profile tab (BEELINK-152): the shopper's copy of their data, and the end of their account. */
 export function StorefrontPrivacySection({ slug, accountHref, signInHref, profile, query, errors, messages }: StorefrontPrivacySectionProps) {
   const code = paramOf(query[PRIVACY_ERROR_KEY])
+  const failed = paramOf(query[DATA_ERROR_KEY])
   const carried = { retorno: `${accountHref}#privacidade`, entrada: signInHref }
   const actions = privacyActionsOf(slug)
 
@@ -37,6 +38,7 @@ export function StorefrontPrivacySection({ slug, accountHref, signInHref, profil
       dataHref={`${actions.data}?${new URLSearchParams(carried).toString()}`}
       deleteAction={actions.delete}
       hidden={carried}
+      downloadError={failed ? downloadErrorOf(failed, errors, messages) : null}
       error={code ? privacyErrorOf(code, errors, messages) : null}
       messages={messages}
     />

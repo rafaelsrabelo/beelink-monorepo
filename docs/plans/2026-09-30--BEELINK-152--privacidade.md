@@ -76,3 +76,33 @@
 - Apagar os pedidos: eles são os livros da loja.
 - Avisar o lojista por e-mail que um cliente excluiu a conta.
 - Um prazo de arrependimento (exclusão adiada).
+
+## Adendo da implementação e da revisão (30/09)
+
+- **O link "Baixar meus dados" não tem `download`.** O handler manda o arquivo como anexo. Com
+  `download`, uma sessão que acabou (redirecionada para Entrar) seria salva como arquivo.
+- **A falha do download tem a chave própria `?erro-dados`.** O aviso fica sob o link. Antes ele caía
+  em `?erro-privacidade`, que abria a exclusão com o campo marcado como inválido.
+- **A conversa de um pedido em andamento, depois da exclusão:**
+  - o painel não oferece mais resposta, porque a API recusa com `ORDER_CONVERSATION_NOT_FOUND`;
+  - `ConversationCustomer.hasAccount` diz isso ao painel, que mostra o estado `left`: "O cliente
+    excluiu a conta na loja…", e manda falar pelo telefone do cadastro;
+  - uma resposta enviada antes de o painel saber relê a conversa, como faz com uma conversa
+    encerrada.
+- **A exclusão trava a loja primeiro,** como fazer um pedido e juntar cadastros já fazem.
+  - Sem isso, um pedido feito no mesmo instante segura uma key-share no cadastro. Apagar o cadastro
+    ou desvincular a conta espera por ela, enquanto os livros do pedido esperam a trava do cadastro:
+    um deadlock.
+  - O cadastro é relido sob a trava, porque uma junção no painel pode tê-lo absorvido.
+  - Os favoritos saem antes dos avisos: um aviso sendo escrito segura a linha do favorito.
+- **Corridas que ficam, raras e de uma pessoa só:**
+  - um "Salvar" do perfil enviado de outro aparelho no mesmo instante pode devolver o CPF ao cadastro
+    já esquecido;
+  - uma edição de preço do lojista que avisa um favorito de quem está sendo excluído sem pedidos pode
+    falhar uma vez.
+- **O download também tem limite de tentativas,** o de Entrar. É a leitura mais pesada que um cliente
+  pode pedir.
+- **O arquivo ganhou `record`:** quando a loja registrou o cliente e o `claimedPhone`. `signInWith`
+  diz `GOOGLE` uma vez só.
+- **Ficaram de fora do arquivo** os pedidos de "avise-me" (por telefone) e os leads (por e-mail).
+  Eles não têm vínculo com a conta.

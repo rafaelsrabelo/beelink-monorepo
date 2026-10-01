@@ -22,5 +22,8 @@ export const Padrao: Story = {}
 /** Entrou pelo Google: confirma digitando o e-mail da conta. */
 export const PeloGoogle: Story = { args: { hasPassword: false } }
 
+/** O arquivo não pôde ser gerado: o aviso fica sob o link, e a exclusão continua dobrada. */
+export const DownloadFalhou: Story = { args: { downloadError: "Não deu para gerar o arquivo agora. Tente de novo." } }
+
 /** Voltou recusada: a confirmação aberta, com o motivo. */
 export const SenhaErrada: Story = { args: { error: "A senha não confere. Sua conta não foi excluída." } }
