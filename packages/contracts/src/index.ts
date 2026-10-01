@@ -10,6 +10,7 @@ export type * from "./favorite.js";
 export type * from "./leads.js";
 export type * from "./legal.js";
 export type * from "./order.js";
+export type * from "./order-quote.js";
 export type * from "./store.js";
 export type * from "./store-pages.js";
 export type * from "./page-versions.js";
