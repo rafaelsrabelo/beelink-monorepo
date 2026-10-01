@@ -70,7 +70,7 @@ export function AdminSearch({
       </label>
       <SearchIcon
         aria-hidden="true"
-        className="text-header-foreground/60 pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+        className="text-header-foreground/70 pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
       />
       <input
         ref={inputRef}
@@ -81,11 +81,11 @@ export function AdminSearch({
         aria-keyshortcuts="Control+K Meta+K"
         value={value}
         onChange={(event) => onValueChange?.(event.target.value)}
-        className="bg-header-field text-header-foreground placeholder:text-header-foreground/60 border-header-border hover:bg-header-field-hover focus-visible:ring-header-foreground/70 h-8 w-full rounded-lg border pr-16 pl-9 text-sm outline-none focus-visible:ring-2"
+        className="bg-header-field text-header-foreground placeholder:text-header-foreground/70 border-header-border hover:bg-header-field-hover focus-visible:ring-header-foreground/70 h-8 w-full rounded-lg border pr-16 pl-9 text-sm outline-none focus-visible:ring-2"
       />
       <kbd
         aria-hidden="true"
-        className="text-header-foreground/60 border-header-border pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border px-1.5 py-[3px] text-[11px] font-medium sm:block"
+        className="text-header-foreground/70 border-header-border pointer-events-none absolute top-1/2 right-2 hidden -translate-y-1/2 rounded border px-1.5 py-[3px] text-[11px] font-medium sm:block"
       >
         {apple ? text.searchShortcutApple : text.searchShortcut}
       </kbd>

@@ -1,7 +1,7 @@
 "use client"
 
 // React
-import type { ReactNode } from "react"
+import type { CSSProperties, ReactNode } from "react"
 
 // Libs
 import { MenuIcon, PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react"
@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { BeelinkBag } from "../landing/beelink-bag"
 
 export interface AdminHeaderProps {
   /** Where the brand returns to. The screen owns the route. */
@@ -33,7 +34,7 @@ export interface AdminHeaderProps {
 }
 
 /**
- * The one dark bar, across the top of the panel and over the sidebar.
+ * The one bar in the brand's yellow, across the top of the panel and over the sidebar.
  *
  * Three columns, and the middle one is the search. Below `lg` the grid collapses to
  * `auto 1fr auto` so the search keeps the room it has; above it the middle column is capped at
@@ -93,11 +94,12 @@ export function AdminHeader({
 
         <Link
           href={brandHref}
-          className="focus-visible:ring-header-foreground/70 flex items-center gap-2 rounded-md px-1 py-1 outline-none focus-visible:ring-2"
+          style={{ "--beelink-bag-ground": "var(--header)" } as CSSProperties}
+          className="focus-visible:ring-header-foreground/70 flex items-center gap-2 rounded-md px-1 py-0.5 outline-none focus-visible:ring-2"
         >
-          <span className="text-header-foreground hidden text-[15px] font-semibold tracking-tight sm:block">
-            {text.brand} 
-          </span>
+          {/* The icon stands for the name, which a reader still hears: the bar's ground is the icon's own. */}
+          <BeelinkBag className="text-header-foreground size-8" />
+          <span className="sr-only">{text.brand}</span>
         </Link>
       </div>
 

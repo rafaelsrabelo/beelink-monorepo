@@ -10,7 +10,7 @@ export interface AdminShellProps {
 }
 
 /**
- * The panel's frame: a fixed dark bar, a light rail under it, and the content beside the rail.
+ * The panel's frame: a fixed yellow bar, a light rail under it, and the content beside the rail.
  *
  * It holds no state and knows nothing about either part — whether the rail is open lives in the
  * screen, because the header's menu button and the rail itself both need it and neither owns the

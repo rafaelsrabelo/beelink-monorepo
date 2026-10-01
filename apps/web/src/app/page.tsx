@@ -26,11 +26,11 @@ const LOGIN = "/login"
 const SIGNUP = "/signup"
 
 /**
- * The share image: Beelink's logo on the brand's ground, 1200×630. The name carries a version
+ * The share image: Beelink's icon on the brand's yellow, 1200×630, centred so a square crop keeps it. The name carries a version
  * because WhatsApp keeps a preview by the image's address — a new picture under the old name is
  * never fetched again.
  */
-const SHARE_IMAGE = { path: "/brand/share-v1.png", width: 1200, height: 630 }
+const SHARE_IMAGE = { path: "/brand/share-v2.png", width: 1200, height: 630 }
 
 /**
  * What a search result and a link preview say of the landing: its title, its description and the

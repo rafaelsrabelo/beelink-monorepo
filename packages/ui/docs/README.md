@@ -56,6 +56,7 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/store/store-color-field` | `id`, `label`, `value`, `onChange`, `pickerSuffix` | Blocos/Loja/Campo de cor |
 | `blocks/store/store-color-preview` | `colors` | Blocos/Loja/Prévia das cores |
 | `blocks/landing/landing-shell` | `children` — the brand's ground and `--font-brand` | Blocos/Landing |
+| `blocks/landing/beelink-bag` | `className` — the icon, the bag with the mark; the panel's header draws it | Blocos/Landing → Ícone |
 | `blocks/landing/brand-lines` | `className` — the two yellow lines of the corner | Blocos/Landing → Linhas |
 | `blocks/landing/landing-header` | `loginHref`, `signupHref`, `termsHref`, `privacyHref`, `homeHref` | Blocos/Landing → Topo e hero |
 | `blocks/landing/landing-menu` | `label`, `sections`, `pages`, `signIn`, `createStore` — the header's links below `xl`, a `<details>` | Blocos/Landing → Topo no celular |

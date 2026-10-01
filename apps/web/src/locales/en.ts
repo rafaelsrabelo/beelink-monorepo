@@ -9,7 +9,7 @@ export const en: WebMessages = {
   landing: {
     title: "Beelink — Everything your e-commerce needs",
     description: "Online shop, checkout, chat, shipping and marketing in one place. Create your shop and start selling today.",
-    shareImageAlt: "Beelink logo",
+    shareImageAlt: "Beelink's icon: a shopping bag with the mark",
   },
   auth: {
     signupSuccessTitle: "Check your e-mail",

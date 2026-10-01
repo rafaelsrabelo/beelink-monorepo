@@ -2432,7 +2432,7 @@ export interface UiMessages {
   }
 
   /**
-   * The admin chrome: the dark bar across the top and the rail down the side.
+   * The admin chrome: the yellow bar across the top and the rail down the side.
    *
    * `searchShortcut` ships as two finished strings rather than a symbol the block picks apart,
    * because ⌘ on Windows is simply wrong and a dictionary cannot hold a function to choose. The
