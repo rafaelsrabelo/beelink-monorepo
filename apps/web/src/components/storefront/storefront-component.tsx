@@ -139,13 +139,7 @@ export function StorefrontComponent({
     }
 
     case "HEADING":
-      return (
-        <StorefrontHeading
-          title={component.title}
-          subtitle={component.subtitle}
-          align={component.align ?? defaultAlignOf(component.kind)}
-        />
-      )
+      return <StorefrontHeading title={component.title} subtitle={component.subtitle} align={component.align ?? defaultAlignOf(component.kind)} />
 
     case "TEXT": {
       const align = component.align ?? defaultAlignOf(component.kind)

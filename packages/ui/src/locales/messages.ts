@@ -154,6 +154,7 @@ export interface UiMessages {
     priceWas: string
     /** `{rating}` `{count}` — what a reader hears for the stars: "Nota 4,7 de 5, 128 avaliações". */
     ratingOf: string
+    ratingOfOne: string
     backToShop: string
     orderThis: string
     /**
@@ -616,8 +617,6 @@ export interface UiMessages {
     reviewInvalid: string
     /** The product page's reviews (D14, 5b): the summary, the histogram's rows and each review. */
     productReviewsTitle: string
-    /** `{rating}`, already in the reader's numbers. */
-    productReviewsOutOf: string
     productReviewsCountOne: string
     /** `{count}`. */
     productReviewsCountMany: string
@@ -632,6 +631,7 @@ export interface UiMessages {
     /** `{date}`. */
     productReviewsOn: string
     productReviewsNoneForRating: string
+    productReviewsNonePage: string
     reviewsEmpty: string
     reviewsEmptyCta: string
     /** The list could not be read: never shown as nothing to rate. */

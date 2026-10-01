@@ -32,10 +32,16 @@ export function StorefrontProductReview({ authorName, rating, comment, variantLa
         </span>
         <span className="text-sm font-semibold">{authorName}</span>
       </div>
-      <p className="flex items-center gap-0.5 text-shop-rating">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <StarIcon key={star} aria-hidden="true" className="size-4" fill={star <= rating ? "currentColor" : "none"} strokeWidth={1.4} />
-        ))}
+      {/* The number in text: the rating colour on white is under 3:1, so the stars only repeat it. */}
+      <p className="flex items-center gap-1.5">
+        <span aria-hidden="true" className="text-sm font-bold">
+          {rating}
+        </span>
+        <span aria-hidden="true" className="flex items-center gap-0.5 text-shop-rating">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <StarIcon key={star} className="size-4" fill={star <= rating ? "currentColor" : "none"} strokeWidth={1.4} />
+          ))}
+        </span>
         <span className="sr-only">{format(text.reviewRatedLabel, { rating: String(rating) })}</span>
       </p>
       <p className="text-[13px] text-shop-muted">

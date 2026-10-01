@@ -20,16 +20,18 @@ export interface StorefrontProductReviewsProps {
   allHref?: string
   /** The pages, when there is more than one. */
   pagination?: ReactNode
+  /** Why the list is empty: none with the rating chosen, or a page past the last. */
+  empty?: "rating" | "page"
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
 /** 5b's last section, `#avaliacoes`: the summary in a column of its own beside the reviews. */
-export function StorefrontProductReviews({ summary, reviews, allHref, pagination, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontProductReviewsProps) {
+export function StorefrontProductReviews({ summary, reviews, allHref, pagination, empty = "rating", linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontProductReviewsProps) {
   const text = messages.storefront
 
   return (
-    <section id={PRODUCT_REVIEWS_ID} aria-labelledby={`${PRODUCT_REVIEWS_ID}-title`} className="flex scroll-mt-24 flex-col gap-8 border-t border-shop-line pt-7 pb-12 shop-lg:flex-row shop-lg:gap-14">
+    <section id={PRODUCT_REVIEWS_ID} aria-labelledby={`${PRODUCT_REVIEWS_ID}-title`} className="flex scroll-mt-[calc(var(--shop-masthead-height,117px)+16px)] flex-col gap-8 border-t border-shop-line pt-7 pb-12 shop-lg:flex-row shop-lg:gap-14">
       <div className="flex shrink-0 flex-col gap-3 shop-lg:w-[300px]">
         <h2 id={`${PRODUCT_REVIEWS_ID}-title`} className="text-[22px] font-extrabold">
           {text.productReviewsTitle}
@@ -42,7 +44,7 @@ export function StorefrontProductReviews({ summary, reviews, allHref, pagination
             {text.productReviewsAll}
           </Link>
         ) : null}
-        {reviews.length > 0 ? reviews : <p className="text-sm text-shop-muted">{text.productReviewsNoneForRating}</p>}
+        {reviews.length > 0 ? reviews : <p className="text-sm text-shop-muted">{empty === "rating" ? text.productReviewsNoneForRating : text.productReviewsNonePage}</p>}
         {pagination}
       </div>
     </section>

@@ -34,4 +34,9 @@ describe("the product's reviews in its address", () => {
     ])
     expect(rows[0]!.href).toBe("/loja/produtos/whey?nota=5#avaliacoes")
   })
+
+  it("never reads 0% for a rating some reviews have", () => {
+    const reviews = { summary: { average: 5, count: 300, histogram: { 1: 1, 2: 0, 3: 0, 4: 0, 5: 299 } }, reviews: [], total: 300, page: 1, pageSize: 10 } satisfies PublicProductReviews
+    expect(summaryRowsOf(reviews, "/loja/produtos/whey", {}, undefined).map((row) => row.percent)).toEqual([100, 0, 0, 0, 1])
+  })
 })

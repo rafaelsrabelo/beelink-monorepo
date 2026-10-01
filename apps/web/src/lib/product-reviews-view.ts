@@ -1,5 +1,6 @@
 // Types
 import type { PublicProductReviews, PublicReviewListQuery, ReviewRating } from "@harness-monorepo/contracts"
+import { PRODUCT_REVIEWS_ID } from "@harness-monorepo/ui/blocks/storefront/storefront-product-reviews"
 import type { StorefrontReviewSummaryRow } from "@harness-monorepo/ui/blocks/storefront/storefront-review-summary"
 
 // App
@@ -8,7 +9,7 @@ import type { SectionQuery } from "./storefront-section"
 
 /** The reviews' place in the product's address: a rating and a page, beside the combination chosen. */
 export const PRODUCT_REVIEW_KEYS = { rating: "nota", page: "pagina-avaliacoes" } as const
-const ANCHOR = "#avaliacoes"
+const ANCHOR = `#${PRODUCT_REVIEWS_ID}`
 /** The API's own page ceiling (`REVIEWS_PAGE_MAX`). */
 const PAGE_MAX = 10_000
 
@@ -53,13 +54,14 @@ export function summaryRowsOf(reviews: PublicProductReviews, path: string, query
   const { count, histogram } = reviews.summary
   return ([5, 4, 3, 2, 1] as const).map((stars) => ({
     stars,
-    percent: count > 0 ? Math.round((histogram[stars] / count) * 100) : 0,
+    // A rating some reviews have never reads 0%, which would say none.
+    percent: histogram[stars] > 0 ? Math.max(1, Math.round((histogram[stars] / count) * 100)) : 0,
     href: productReviewsHrefOf(path, query, { rating: stars }),
     active: chosen === stars,
   }))
 }
 
-/** "30 set 2026", the day it was written, in the shop's time zone. */
+/** The day it was written — "30 de set. de 2026" — in the shop's time zone. */
 export function reviewDayOf(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "America/Sao_Paulo" }).format(new Date(iso))
 }

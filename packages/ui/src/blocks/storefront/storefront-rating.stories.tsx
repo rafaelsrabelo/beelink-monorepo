@@ -19,10 +19,13 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** No card: a média, as estrelas e a contagem como link. Os dados são exemplo até existirem avaliações. */
+/** A média, as estrelas e a contagem como link para a seção: o teclado chega nele, e o leitor ouve a nota. */
 export const NoCard: Story = {}
 
-/** Na página do produto: um pouco maior, a média em negrito. */
+/** Na página do produto, abaixo do título: um pouco maior, a média em negrito. */
 export const NoProduto: Story = { args: { size: "product" } }
 
+/** No card de produto, sem link: o card inteiro já leva à página. */
 export const Baixa: Story = { args: { average: 2.3, count: 4, reviewsHref: undefined } }
+
+export const UmaAvaliacao: Story = { args: { average: 5, count: 1, reviewsHref: undefined } }

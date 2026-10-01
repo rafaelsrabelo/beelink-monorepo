@@ -39,7 +39,8 @@ export function StorefrontReviewSummary({ average, count, rows, locale, linkComp
   return (
     <div className="flex flex-col gap-3">
       <StorefrontRating average={average} count={count} locale={locale} size="product" messages={messages} />
-      <p className="text-sm text-shop-muted">{count === 1 ? text.productReviewsCountOne : format(text.productReviewsCountMany, { count: String(count) })}</p>
+      {/* Drawn only: the rating above already says how many to a reader. */}
+      <p aria-hidden="true" className="text-sm text-shop-muted">{count === 1 ? text.productReviewsCountOne : format(text.productReviewsCountMany, { count: String(count) })}</p>
       <ul className="flex flex-col gap-1.5">
         {rows.map((row) => (
           <li key={row.stars}>

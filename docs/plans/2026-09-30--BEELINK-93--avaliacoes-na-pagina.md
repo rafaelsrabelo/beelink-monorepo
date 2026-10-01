@@ -57,3 +57,24 @@
 - Escrever a avaliação na página.
 - "Útil", denunciar, fotos e títulos.
 - Ordenar por relevância.
+
+## Adendo da revisão (30/09)
+
+- **Os links da seção mantêm a variação escolhida agora.** A seção é desenhada no servidor com o
+  endereço com que a página abriu, e escolher outra combinação só reescreve o endereço no lugar.
+  Então o histograma, "Todas as notas" e as páginas usam `ReviewLink`, que lê o `variant` ao
+  desenhar.
+- **A seção só é lida quando o produto tem avaliações** (`product.rating`). A maioria das páginas não
+  pede nada e não mostra um esqueleto que depois some.
+- **A âncora `#avaliacoes` para abaixo do cabeçalho fixo da loja** (`scroll-mt` com a altura dele).
+- **A nota do topo é um link de verdade.** Ele está na ordem do teclado e carrega a frase "Nota 4,7
+  de 5, 128 avaliações", que deixa de ser lida duas vezes. "1 avaliação" vai no singular.
+- **Cada avaliação mostra a nota em número** ao lado das estrelas, para quem não distingue as
+  cores.
+- **No histograma, uma nota que tem avaliações nunca mostra 0%:** o mínimo é 1%.
+- **O vazio depende do caso.** Com um filtro de nota, a frase diz que não há avaliação com aquela
+  nota. Sem filtro (uma página além da última), diz "Nenhuma avaliação nesta página."
+- **O que a revisão apontou e não procede:**
+  - o trilho de relacionados é compacto e não desenha a nota, então não falta a linha ali;
+  - a seção aparece mesmo com `showProductRating` desligado, de propósito: a loja esconde a nota
+    dos cards, e não o que os clientes escreveram na página do produto.

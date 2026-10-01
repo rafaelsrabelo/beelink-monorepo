@@ -234,10 +234,13 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         messages={ui}
       />
 
-      {/* 5b's last section, `#avaliacoes`, where the rating line under the title lands. */}
-      <Suspense fallback={<StorefrontProductReviewsSkeleton />}>
-        <ProductReviews slug={slug} productId={product.id} path={routes.product(product.slug)} query={query} locale="pt-BR" messages={ui} />
-      </Suspense>
+      {/* 5b's last section, `#avaliacoes`, where the rating line under the title lands — read only
+          for a product with reviews, so most pages ask nothing and keep no skeleton to collapse. */}
+      {product.rating ? (
+        <Suspense fallback={<StorefrontProductReviewsSkeleton />}>
+          <ProductReviews slug={slug} productId={product.id} path={routes.product(product.slug)} query={query} locale="pt-BR" messages={ui} />
+        </Suspense>
+      ) : null}
     </StorefrontFrame>
   )
 }

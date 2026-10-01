@@ -8,7 +8,7 @@ import { StorefrontProductReviews } from "@harness-monorepo/ui/blocks/storefront
 import { StorefrontReviewSummary } from "@harness-monorepo/ui/blocks/storefront/storefront-review-summary"
 
 // App
-import { AppLink } from "@/components/app-link"
+import { ReviewLink } from "./review-link"
 import { productReviewsAddressOf, productReviewsHrefOf, productReviewsQueryOf, reviewDayOf, summaryRowsOf } from "@/lib/product-reviews-view"
 import { pageCountOf, productReviewsAt } from "@/lib/storefront-data"
 import type { SectionQuery } from "@/lib/storefront-section"
@@ -37,13 +37,14 @@ export async function ProductReviews({ slug, productId, path, query, locale, mes
 
   return (
     <StorefrontProductReviews
-      summary={<StorefrontReviewSummary average={reviews.summary.average} count={reviews.summary.count} rows={summaryRowsOf(reviews, path, query, address.rating)} locale={locale} linkComponent={AppLink} messages={messages} />}
+      summary={<StorefrontReviewSummary average={reviews.summary.average} count={reviews.summary.count} rows={summaryRowsOf(reviews, path, query, address.rating)} locale={locale} linkComponent={ReviewLink} messages={messages} />}
       reviews={reviews.reviews.map((review) => (
         <StorefrontProductReview key={review.id} authorName={review.authorName} rating={review.rating} comment={review.comment} variantLabel={review.variantLabel} date={reviewDayOf(review.createdAt, locale)} messages={messages} />
       ))}
       {...(address.rating ? { allHref: productReviewsHrefOf(path, query, { rating: undefined }) } : {})}
-      pagination={pageCount > 1 ? <StorefrontPagination page={reviews.page} pageCount={pageCount} href={(page) => productReviewsHrefOf(path, query, { page })} linkComponent={AppLink} messages={messages} /> : undefined}
-      linkComponent={AppLink}
+      pagination={pageCount > 1 ? <StorefrontPagination page={reviews.page} pageCount={pageCount} href={(page) => productReviewsHrefOf(path, query, { page })} linkComponent={ReviewLink} messages={messages} /> : undefined}
+      empty={address.rating ? "rating" : "page"}
+      linkComponent={ReviewLink}
       messages={messages}
     />
   )
