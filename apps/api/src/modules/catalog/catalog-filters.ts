@@ -13,6 +13,7 @@ import type {
 import type { ProductVariantWhereInput } from '../../generated/prisma/models/ProductVariant.js';
 
 // App
+import { plainSale, type ShelfSale } from '../promotions/shelf-sale.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 /**
@@ -115,6 +116,8 @@ export function listingWhere(
   filters: ListingFilters,
   priceField: ProductFieldRefs['priceCents'],
   without?: FacetKey,
+  // What "on sale" means now: the two columns alone, unless a promotion is running.
+  sale: ShelfSale = plainSale(priceField),
 ): ProductWhereInput {
   const and: ProductWhereInput[] = [ON_THE_SHELF_WHERE];
 
@@ -136,10 +139,7 @@ export function listingWhere(
   }
 
   if (filters.discount && without !== 'discount') {
-    // The percent is a column the database keeps from the two prices, so a cut is one comparison.
-    and.push(
-      filters.discountMinPercent ? { discountPercent: { gte: filters.discountMinPercent } } : { compareAtPriceCents: { gt: priceField } },
-    );
+    and.push(filters.discountMinPercent ? sale.atLeast(filters.discountMinPercent) : sale.onSale);
   }
 
   const groups = filters.options.filter((group) => without !== `option:${optionKey(group.name)}`);

@@ -10,6 +10,8 @@ import type {
 } from '../../generated/prisma/models/Product.js';
 
 // App
+import type { PricingPromotion } from '../promotions/discount-pricing.js';
+import { promotedCard } from '../promotions/shelf-pricing.js';
 import { parseComponentItems } from '../page/component-items.schema.js';
 import { SHOWCASE_LIMIT_DEFAULT, SHOWCASE_LIMIT_MAX } from '../page/page.constants.js';
 import { CARD_PHOTOS_MAX } from './catalog.constants.js';
@@ -33,7 +35,9 @@ export const SHOWCASE_CARD_SELECT = {
   reviewCount: true,
   reviewRatingSum: true,
   images: { select: { url: true }, orderBy: [{ position: 'asc' }, { id: 'asc' }], take: CARD_PHOTOS_MAX },
-  category: { select: { slug: true } },
+  // The category and the one above it say which promotions reach the product.
+  categoryId: true,
+  category: { select: { slug: true, parentId: true } },
   _count: { select: { options: true } },
   options: cardOptionSelect,
 } satisfies ProductSelect;
@@ -65,6 +69,8 @@ export function showcaseQuery(
   storeId: string,
   showcase: ShowcaseRow,
   priceField: ProductFieldRefs['priceCents'],
+  // What "on sale" means now: with a promotion running, what it reaches too (BEELINK-193).
+  onSale: ProductWhereInput = { compareAtPriceCents: { gt: priceField } },
 ): { where: ProductWhereInput; orderBy: ProductOrderByWithRelationInput[]; take: number } | null {
   const take = Math.min(showcase.limit ?? SHOWCASE_LIMIT_DEFAULT, SHOWCASE_LIMIT_MAX);
   const shelf = { storeId, AND: [ON_THE_SHELF_WHERE] } satisfies ProductWhereInput;
@@ -97,7 +103,7 @@ export function showcaseQuery(
 
     case 'ON_SALE':
       return {
-        where: { ...shelf, compareAtPriceCents: { gt: priceField } },
+        where: { storeId, AND: [ON_THE_SHELF_WHERE, onSale] },
         orderBy: SHELF_ORDER,
         take,
       };
@@ -123,16 +129,17 @@ export function selectionOf(showcase: Pick<ShowcaseRow, 'items'>): string[] {
  * the shopkeeper's order, which Prisma cannot sort by; a product that left the shelf simply is not
  * among the rows and drops out.
  */
-export function shelfOf(showcase: ShowcaseRow, rows: readonly ShowcaseCardRow[]): PublicProductCard[] {
+export function shelfOf(showcase: ShowcaseRow, rows: readonly ShowcaseCardRow[], promotions: readonly PricingPromotion[] = []): PublicProductCard[] {
   const limit = Math.min(showcase.limit ?? SHOWCASE_LIMIT_DEFAULT, SHOWCASE_LIMIT_MAX);
+  const toCard = (row: ShowcaseCardRow) => promotedCard(toShowcaseCard(row), row, promotions);
 
-  if (showcase.source !== 'SELECTION') return rows.slice(0, limit).map(toShowcaseCard);
+  if (showcase.source !== 'SELECTION') return rows.slice(0, limit).map(toCard);
 
   const byId = new Map(rows.map((row) => [row.id, row]));
   return selectionOf(showcase)
     .flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []))
     .slice(0, limit)
-    .map(toShowcaseCard);
+    .map(toCard);
 }
 
 export function toShowcaseCard(row: ShowcaseCardRow): PublicProductCard {

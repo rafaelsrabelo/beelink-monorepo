@@ -9,6 +9,7 @@ import type {
   CatalogOptionFacet,
   PublicProductCard,
   PublicProductCategory,
+  StorefrontSort,
 } from '@harness-monorepo/contracts';
 import type { ProductWhereInput } from '../../generated/prisma/models/Product.js';
 
@@ -24,7 +25,10 @@ import {
   type FacetKey,
   type ListingFilters,
 } from './catalog-filters.js';
-import { productCardInclude, toShelfCard } from './catalog.mapper.js';
+import type { PricingPromotion } from '../promotions/discount-pricing.js';
+import { promotedCard, shelfPercentOf } from '../promotions/shelf-pricing.js';
+import { combinedDiscounts, runningShelfPromotions, shelfSaleOf, type ShelfSale } from '../promotions/shelf-sale.js';
+import { productCardInclude, toShelfCard, type ShelfCardRow } from './catalog.mapper.js';
 import { ON_THE_SHELF_WHERE } from './catalog.visibility.js';
 
 interface OptionCountRow {
@@ -65,29 +69,52 @@ export class StorefrontListingService {
     pageSize: number,
     categories: readonly PublicProductCategory[],
   ): Promise<StorefrontListing> {
-    filters = { ...filters, searchKey: await this.searchKeyOf(filters.search) };
-    const where = this.where(storeId, filters);
+    const priceField = this.prisma.product.fields.priceCents;
+    const [searchKey, promotions] = await Promise.all([this.searchKeyOf(filters.search), runningShelfPromotions(this.prisma, storeId, new Date())]);
+    filters = { ...filters, searchKey };
+    const sale = shelfSaleOf(promotions, await combinedDiscounts(this.prisma, storeId, promotions, priceField), priceField);
+    const where = this.where(storeId, filters, sale);
 
-    const [[rows, total], facets] = await Promise.all([
-      this.prisma.$transaction([
-        this.prisma.product.findMany({
-          where,
-          include: productCardInclude,
-          orderBy: orderByOf(filters.sort),
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-        }),
-        this.prisma.product.count({ where }),
-      ]),
-      this.facetsOf(storeId, filters, categories),
-    ]);
+    const [[rows, total], facets] = await Promise.all([this.pageOf(where, filters.sort, page, pageSize, promotions), this.facetsOf(storeId, filters, categories, sale)]);
 
     return {
-      products: rows.map(toShelfCard),
+      products: rows.map((row) => promotedCard(toShelfCard(row), row, promotions)),
       total,
       facets,
       applied: appliedOf(filters, categories, facets),
     };
+  }
+
+  /**
+   * One page of the shelf and how many it holds. Read in one transaction, so the pager never
+   * disagrees with its pages.
+   *
+   * "Maior desconto" with a promotion running is ordered here and not by the database: a promotion's
+   * discount is in no column to order by. The whole filtered shelf is read lean — a shop's shelf,
+   * not a marketplace's — ordered by the percent each card will print, and only the page's rows are
+   * read in full. Ties fall as the column's order breaks them: the shopkeeper's position, then the id.
+   */
+  private async pageOf(where: ProductWhereInput, sort: StorefrontSort, page: number, pageSize: number, promotions: readonly PricingPromotion[]): Promise<[ShelfCardRow[], number]> {
+    if (sort !== 'maior-desconto' || promotions.length === 0) {
+      return this.prisma.$transaction([
+        this.prisma.product.findMany({ where, include: productCardInclude, orderBy: orderByOf(sort), skip: (page - 1) * pageSize, take: pageSize }),
+        this.prisma.product.count({ where }),
+      ]);
+    }
+
+    const shelf = await this.prisma.product.findMany({
+      where,
+      select: { id: true, priceCents: true, compareAtPriceCents: true, position: true, categoryId: true, category: { select: { parentId: true } } },
+    });
+    const ids = shelf
+      .map((row) => ({ id: row.id, position: row.position, percent: shelfPercentOf(row, promotions, row.priceCents, row.compareAtPriceCents) }))
+      .sort((a, b) => b.percent - a.percent || a.position - b.position || (a.id < b.id ? -1 : 1))
+      .slice((page - 1) * pageSize, page * pageSize)
+      .map((row) => row.id);
+
+    const rows = await this.prisma.product.findMany({ where: { id: { in: ids } }, include: productCardInclude });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return [ids.flatMap((id) => byId.get(id) ?? []), shelf.length];
   }
 
   /** The term as the trigger writes the column: see `ListingFilters.searchKey`. */
@@ -99,33 +126,32 @@ export class StorefrontListingService {
     return row?.key || undefined;
   }
 
-  private where(storeId: string, filters: ListingFilters, without?: FacetKey): ProductWhereInput {
-    return listingWhere(storeId, filters, this.prisma.product.fields.priceCents, without);
+  private where(storeId: string, filters: ListingFilters, sale: ShelfSale, without?: FacetKey): ProductWhereInput {
+    return listingWhere(storeId, filters, this.prisma.product.fields.priceCents, without, sale);
   }
 
   private async facetsOf(
     storeId: string,
     filters: ListingFilters,
     categories: readonly PublicProductCategory[],
+    sale: ShelfSale,
   ): Promise<CatalogFacets> {
-    const withoutPrice = this.where(storeId, filters, 'price');
+    const withoutPrice = this.where(storeId, filters, sale, 'price');
 
-    const withoutDiscount = this.where(storeId, filters, 'discount');
+    const withoutDiscount = this.where(storeId, filters, sale, 'discount');
     const [byCategory, discount, price, options, ...cuts] = await Promise.all([
       this.prisma.product.groupBy({
         by: ['categoryId'],
-        where: this.where(storeId, filters, 'category'),
+        where: this.where(storeId, filters, sale, 'category'),
         _count: { _all: true },
       }),
-      this.prisma.product.count({
-        where: { AND: [this.where(storeId, filters, 'discount'), { compareAtPriceCents: { gt: this.prisma.product.fields.priceCents } }] },
-      }),
+      this.prisma.product.count({ where: { AND: [withoutDiscount, sale.onSale] } }),
       this.prisma.product.aggregate({ where: withoutPrice, _min: { priceCents: true }, _max: { priceCents: true } }),
-      this.optionFacetsOf(storeId, filters),
+      this.optionFacetsOf(storeId, filters, sale),
       // Each cut counted without the discount filter, as the discount itself is: choosing "20%
       // ou mais" must not make "10% ou mais" read as the same number.
       ...DISCOUNT_RANGES.map((minPercent) =>
-        this.prisma.product.count({ where: { AND: [withoutDiscount, { discountPercent: { gte: minPercent } }] } }),
+        this.prisma.product.count({ where: { AND: [withoutDiscount, sale.atLeast(minPercent)] } }),
       ),
     ]);
 
@@ -171,14 +197,14 @@ export class StorefrontListingService {
    * reshuffle itself as filters change. A filtered option counts without its own filter; the others
    * count under all of them.
    */
-  private async optionFacetsOf(storeId: string, filters: ListingFilters): Promise<CatalogOptionFacet[]> {
+  private async optionFacetsOf(storeId: string, filters: ListingFilters, sale: ShelfSale): Promise<CatalogOptionFacet[]> {
     const filtered = filters.options.map((group) => optionKey(group.name));
 
     const [universe, underAll, ...underEach] = await Promise.all([
       // Every value the shelf sells, sold out or not: a sold-out size is listed as unavailable.
       this.idsOf({ storeId, AND: [ON_THE_SHELF_WHERE] }).then((ids) => this.optionCounts(ids, false)),
-      this.idsOf(this.where(storeId, filters)).then((ids) => this.optionCounts(ids)),
-      ...filtered.map((key) => this.idsOf(this.where(storeId, filters, `option:${key}`)).then((ids) => this.optionCounts(ids))),
+      this.idsOf(this.where(storeId, filters, sale)).then((ids) => this.optionCounts(ids)),
+      ...filtered.map((key) => this.idsOf(this.where(storeId, filters, sale, `option:${key}`)).then((ids) => this.optionCounts(ids))),
     ]);
 
     const countsFor = (key: string) => underEach[filtered.indexOf(key)] ?? underAll;

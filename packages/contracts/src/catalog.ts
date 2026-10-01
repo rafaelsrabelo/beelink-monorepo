@@ -135,13 +135,21 @@ export interface PublicProductCard {
   /**
    * Whole cents, never a float and never a formatted string. The legacy kept reais, cents and
    * `"R$ 25,00"` in one column and decided between them by guessing at the size of the number.
+   *
+   * What is paid now: with a promotion running on the product (BEELINK-193), the promotional price.
    */
   priceCents: number;
   /**
    * What the price was before, when the shop is showing a discount. Null means no discount; the
    * storefront computes the percentage rather than storing it, so the two can never disagree.
+   * Under a promotion: the shop's own "de" when it has one, else the catalogue's price.
    */
   compareAtPriceCents: number | null;
+  /**
+   * The promotion that set the price, by the shopkeeper's name for it; null or absent with none.
+   * A fixed amount off the whole cart sets no product's price, and names none.
+   */
+  promotionName?: string | null;
   /** The first image, or null for a product whose photos are not in yet. */
   imageUrl: string | null;
   categorySlug: string | null;
