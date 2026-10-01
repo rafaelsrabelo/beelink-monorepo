@@ -5,7 +5,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
-import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
+import { customerTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
@@ -77,6 +77,17 @@ export function orderStatusLineOf(
   }
 }
 
+/**
+ * What came off the order, under the card's total (BEELINK-194): the whole discount, and the coupon
+ * it took. A coupon that took nothing yet — a free delivery whose fee is not agreed — is still named.
+ */
+export function orderSavingOf(order: Pick<CustomerOrderSummary, "discountCents" | "coupon">, { locale, messages }: Pick<OrderCardContext, "locale" | "messages">): string | null {
+  const text = messages.storefront
+  const value = formatCents(order.discountCents, locale, "BRL")
+  if (order.discountCents > 0) return order.coupon ? format(text.orderCardSavingCoupon, { value, code: order.coupon.code }) : format(text.orderCardSaving, { value })
+  return order.coupon ? format(text.orderCardCoupon, { code: order.coupon.code }) : null
+}
+
 /** The card's words, from the order as the API tells it: the block itself formats nothing. */
 export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardContext): Omit<StorefrontOrderCardProps, "actions" | "linkComponent" | "messages"> {
   const { routes, locale, messages } = context
@@ -85,7 +96,8 @@ export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardC
   return {
     number: order.number,
     placedOn: dayOf(order.placedAt, locale),
-    total: `${orderTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderCardTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}`,
+    total: `${customerTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderCardTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}`,
+    saving: orderSavingOf(order, context),
     shipTo: order.fulfillment === "PICKUP" ? text.orderPickupLabel : order.recipientName,
     ...orderStatusLineOf(order, context),
     items: order.items.map((item) => ({

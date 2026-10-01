@@ -17,6 +17,7 @@ import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { LeadsModule } from './modules/leads/leads.module.js';
 import { ConversationsModule } from './modules/conversations/conversations.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
+import { PromotionsModule } from './modules/promotions/promotions.module.js';
 import { RealtimeModule } from './modules/realtime/realtime.module.js';
 import { ReviewsModule } from './modules/reviews/reviews.module.js';
 import { StoresModule } from './modules/stores/stores.module.js';
@@ -54,6 +55,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     ConversationsModule,
     RealtimeModule,
     ReviewsModule,
+    PromotionsModule,
     UploadsModule,
   ],
   controllers: [HealthController],

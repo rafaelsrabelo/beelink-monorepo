@@ -54,6 +54,7 @@ export class CustomerOrdersService {
       paymentMethod: dto.paymentMethod,
       deliveryFeeCents: null,
       discountCents: 0,
+      couponCode: dto.couponCode ?? null,
       note: null,
       placedAt: new Date(),
       status: 'RECEIVED',

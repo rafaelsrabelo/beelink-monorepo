@@ -2,26 +2,20 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 // Types
-import type {
-  CreateOrderItemInput,
-  OrderActor,
-  OrderFulfillment,
-  OrderStatus,
-  OrderVariantInvalidDetails,
-  PaymentMethod,
-} from '@harness-monorepo/contracts';
+import type { CreateOrderItemInput, OrderActor, OrderFulfillment, OrderStatus, PaymentMethod } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
+import { redeemCoupon } from '../promotions/order-discounts.js';
 import { deliveryOf } from './order-delivery.js';
+import { readOrderLines } from './order-lines.js';
+import { couponRefused, priceOrder } from './order-pricing.js';
 import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
 import { takeStock } from './order-stock.js';
-import { variantLabelOf } from '../catalog/variant-label.js';
-import { totalsOf } from './order-totals.js';
 import { orderError } from './orders.constants.js';
 import { ORDER_INCLUDE } from './orders.mapper.js';
 
@@ -37,7 +31,10 @@ export interface Placement {
   paymentMethod: PaymentMethod;
   /** Null for a delivery whose fee the shop has not told yet. */
   deliveryFeeCents: number | null;
+  /** What the shopkeeper typed, beyond the promotions and the coupon; zero from the cart. */
   discountCents: number;
+  /** As it was typed; null is none. One that does not hold refuses the order. */
+  couponCode: string | null;
   note: string | null;
   placedAt: Date;
   /** The shopkeeper registers a sale they already agreed, `ACCEPTED`; a customer's order waits, `RECEIVED`. */
@@ -61,8 +58,13 @@ export type PlacedOrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCL
  *
  * One transaction first bumps the shop's order counter, which holds the shop's row until the
  * commit: two orders placed at once wait for each other, get consecutive numbers, and see each
- * other's effect on a customer's books and on the stock. A refusal anywhere inside takes the number,
- * the stock and a customer registered with it back together.
+ * other's effect on a customer's books, on the stock and on a coupon's uses. A refusal anywhere
+ * inside takes the number, the stock and a customer registered with it back together.
+ *
+ * The order is priced inside it (`priceOrder`), at the instant it is placed: the promotions running
+ * then, and the coupon read under its row's lock, so its limit is the one the use is written against.
+ * A first purchase is said under the customer's own lock (BEELINK-245): of two orders of one
+ * customer placed at once, the second reads the first, and only one is priced as a first purchase.
  */
 @Injectable()
 export class OrderPlacement {
@@ -78,14 +80,7 @@ export class OrderPlacement {
       throw new BadRequestException(orderError('ORDER_PAYMENT_NOT_ACCEPTED', 'The shop does not take that payment'));
     }
 
-    const lines = await this.linesOf(storeId, placement.items, placement.onSaleOnly);
-    const totals = totalsOf(lines, placement.fulfillment, placement.deliveryFeeCents, placement.discountCents);
-    if (totals === 'DISCOUNT_TOO_LARGE') {
-      throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount is larger than the order'));
-    }
-    if (totals === 'TOTAL_TOO_LARGE') {
-      throw new BadRequestException(orderError('ORDER_TOTAL_TOO_LARGE', 'A line or the order is past what one order may be'));
-    }
+    const lines = await readOrderLines(this.prisma, storeId, placement.items, placement.onSaleOnly);
 
     const placed = await this.prisma.$transaction(async (tx) => {
       const number = await this.nextNumber(tx, storeId);
@@ -93,6 +88,18 @@ export class OrderPlacement {
       await takeStock(tx, lines);
       const customerId = await placement.customerOf(tx);
       const delivery = await deliveryOf(tx, customerId, placement.fulfillment, placement.addressId);
+      const priced = await priceOrder(tx, {
+        storeId,
+        lines,
+        fulfillment: placement.fulfillment,
+        deliveryFeeCents: placement.deliveryFeeCents,
+        manualDiscountCents: placement.discountCents,
+        couponCode: placement.couponCode,
+        customer: { id: customerId },
+        at: placement.placedAt,
+        lock: true,
+      });
+      if (priced.refusal) throw couponRefused(priced.refusal);
 
       const order = await tx.order.create({
         data: {
@@ -103,18 +110,30 @@ export class OrderPlacement {
           fulfillment: placement.fulfillment,
           paymentMethod: placement.paymentMethod,
           ...delivery,
-          ...totals,
+          ...priced.totals,
+          promotionDiscountCents: priced.promotionDiscountCents,
+          couponDiscountCents: priced.couponDiscountCents,
+          couponCode: priced.coupon?.code ?? null,
+          couponKind: priced.coupon?.kind ?? null,
           note: placement.note,
           placedAt: placement.placedAt,
           stockTaken: true,
           items: {
-            create: lines.map((line, position) => ({ ...line, lineTotalCents: line.unitPriceCents * line.quantity, position })),
+            create: lines.map(({ categoryIds: _categories, ...line }, position) => ({
+              ...line,
+              lineTotalCents: line.unitPriceCents * line.quantity,
+              discountCents: priced.lineDiscounts[position]!.discountCents,
+              promotionId: priced.lineDiscounts[position]!.promotion?.id ?? null,
+              promotionName: priced.lineDiscounts[position]!.promotion?.name ?? null,
+              position,
+            })),
           },
           events: { create: { status, actor, userId } },
         },
         include: ORDER_INCLUDE,
       });
 
+      if (priced.coupon) await redeemCoupon(tx, priced.coupon.id, order.id, priced.couponDiscountCents);
       await refreshBooks(tx, customerId);
       // The conversation is born with the order, its first status the first line. Told now, whatever
       // day the shopkeeper dated the sale; not news to a customer who placed it themselves.
@@ -135,54 +154,5 @@ export class OrderPlacement {
     const [row] = await tx.$queryRaw<{ orderSequence: number }[]>`
       UPDATE "stores" SET "orderSequence" = "orderSequence" + 1 WHERE "id" = ${storeId}::uuid RETURNING "orderSequence"`;
     return row!.orderSequence;
-  }
-
-  /** The lines as they will be photographed: each variant read from this shop, and priced by it. */
-  private async linesOf(storeId: string, items: readonly CreateOrderItemInput[], onSaleOnly: boolean) {
-    const ids = items.map((item) => item.variantId);
-    if (new Set(ids).size !== ids.length) {
-      throw new BadRequestException(orderError('ORDER_ITEM_DUPLICATE', 'A variant appears on two lines'));
-    }
-
-    const variants = await this.prisma.productVariant.findMany({
-      // Another shop's, a combination that stopped existing and one not sold are all the same refusal.
-      where: { id: { in: ids }, storeId, archivedAt: null, isActive: true, ...(onSaleOnly ? { product: { status: 'ACTIVE' } } : {}) },
-      select: {
-        id: true,
-        productId: true,
-        priceCents: true,
-        sku: true,
-        product: { select: { name: true } },
-        values: { select: { option: { select: { name: true, position: true } }, value: { select: { name: true } } } },
-      },
-    });
-    if (variants.length !== ids.length) {
-      const found = new Set(variants.map((variant) => variant.id));
-      // Every line that cannot be sold, so a cart can say which of its products left the shop.
-      throw new BadRequestException({
-        ...orderError('ORDER_VARIANT_INVALID', 'A variant is not one this shop sells'),
-        details: { variantIds: ids.filter((id) => !found.has(id)) } satisfies OrderVariantInvalidDetails,
-      });
-    }
-
-    const byId = new Map(variants.map((variant) => [variant.id, variant]));
-    return items.map((item) => {
-      const variant = byId.get(item.variantId)!;
-      return {
-        productId: variant.productId,
-        variantId: variant.id,
-        productName: variant.product.name,
-        variantLabel: variantLabelOf(
-          variant.values.map((chosen) => ({
-            optionName: chosen.option.name,
-            optionPosition: chosen.option.position,
-            valueName: chosen.value.name,
-          })),
-        ),
-        sku: variant.sku,
-        unitPriceCents: variant.priceCents,
-        quantity: item.quantity,
-      };
-    });
   }
 }

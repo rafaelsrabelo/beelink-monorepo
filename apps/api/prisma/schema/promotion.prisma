@@ -1,0 +1,166 @@
+/// How a discount is stated — never inferred from the size of the number (docs/product/README.md,
+/// "Promotions and coupons").
+enum DiscountKind {
+  PERCENT
+  FIXED
+}
+
+/// What a promotion discounts: every line of the cart, or the products or categories it names.
+enum PromotionScope {
+  CART
+  PRODUCTS
+  CATEGORIES
+}
+
+/// A coupon discounts as a promotion does, or waives the delivery fee.
+enum CouponKind {
+  PERCENT
+  FIXED
+  FREE_SHIPPING
+}
+
+/// Who a promotion or a coupon is for (BEELINK-245): everyone, or only a customer on a first
+/// purchase — one with no order at the shop that stands. Which customers those are is read from
+/// their orders when one is priced, and never stored.
+enum DiscountAudience {
+  EVERYONE
+  FIRST_PURCHASE
+}
+
+/// A shop's promotion (BEELINK-190): a discount that applies by itself, for a period, over the cart or
+/// over named products or categories. Where it stands — scheduled, running, paused, ended — is read
+/// from the clock and never stored. An order photographs what it took, so an edit here never rewrites
+/// one that already happened.
+model Promotion {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// The shopkeeper's own name for it; the shop window may show it.
+  name  String         @db.VarChar(80)
+  scope PromotionScope
+
+  discountKind DiscountKind
+  /// Basis points, 1 to 10000 (1000 = 10.00%), on a PERCENT; null otherwise. Two columns and not one
+  /// `value`: a number that is cents or basis points by its neighbour is the ambiguity the catalogue's
+  /// `Cents` suffix exists to end. A CHECK ties each to the kind.
+  percentBps   Int?
+  /// Whole cents, 1 or more, on a FIXED; null otherwise.
+  amountCents  Int?
+
+  startsAt DateTime
+  /// Null runs until paused. After `startsAt`, by a CHECK.
+  endsAt   DateTime?
+  /// The shopkeeper's switch: false is paused, whatever the period says.
+  isActive Boolean   @default(true)
+
+  /// Who it is for. A FIRST_PURCHASE one prices an order, never the shop window: that is one page
+  /// for every visitor, and who is on a first purchase is known only once they are identified.
+  audience DiscountAudience @default(EVERYONE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The products of a PRODUCTS scope and the categories of a CATEGORIES one. One left with none —
+  /// every product it named was deleted — applies to nothing.
+  products   PromotionProduct[]
+  categories PromotionCategory[]
+  /// The order lines it took a discount off (BEELINK-191); each keeps its own photograph.
+  orderItems OrderItem[]
+
+  /// The panel's list, the newest first.
+  @@index([storeId, createdAt(sort: Desc)])
+  @@map("promotions")
+}
+
+/// A product a promotion names. Cascade both ways: deleting the product narrows the promotion.
+model PromotionProduct {
+  promotionId String    @db.Uuid
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  productId   String    @db.Uuid
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([promotionId, productId])
+  @@index([productId])
+  @@map("promotion_products")
+}
+
+/// A category a promotion names.
+model PromotionCategory {
+  promotionId String          @db.Uuid
+  promotion   Promotion       @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  categoryId  String          @db.Uuid
+  category    ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([promotionId, categoryId])
+  @@index([categoryId])
+  @@map("promotion_categories")
+}
+
+/// A shop's coupon (BEELINK-190): a code a customer types at checkout, for a discount or a free
+/// delivery, while it is valid and its limits hold.
+model Coupon {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Stored trimmed and in upper case, so the unique index means "whatever the case" without a
+  /// case-insensitive collation — the same choice as `Store.slug`. A–Z, 0–9, `-` and `_`.
+  code String     @db.VarChar(30)
+  kind CouponKind
+
+  /// As on Promotion; both null on a FREE_SHIPPING. A CHECK ties each to the kind.
+  percentBps  Int?
+  amountCents Int?
+
+  /// The cart's subtotal the coupon asks for. Zero asks for none: the two are one fact.
+  minSubtotalCents Int @default(0)
+
+  startsAt DateTime
+  /// Null never expires. After `startsAt`, by a CHECK.
+  endsAt   DateTime?
+
+  /// How many orders may use it, and how many of one customer's. Null is no limit.
+  maxUses            Int?
+  maxUsesPerCustomer Int?
+  /// How many uses count against `maxUses`: a cache of the redemptions, moved only by the transaction
+  /// that writes one, under this row's lock, so two orders at once never pass the limit together.
+  /// Never below zero (a CHECK).
+  usedCount          Int  @default(0)
+
+  isActive Boolean @default(true)
+
+  /// Who may use it, as on Promotion. A FIRST_PURCHASE one is refused to a customer with an order
+  /// that stands, whatever its limits say.
+  audience DiscountAudience @default(EVERYONE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  redemptions CouponRedemption[]
+
+  @@unique([storeId, code])
+  /// The panel's list, the newest first.
+  @@index([storeId, createdAt(sort: Desc)])
+  @@map("coupons")
+}
+
+/// One use of a coupon: the order it went into and what it took off. One per order — an order takes
+/// one coupon. It names no customer: the order does, so merging two records moves their uses with
+/// their orders.
+model CouponRedemption {
+  id       String @id @default(uuid(7)) @db.Uuid
+  couponId String @db.Uuid
+  coupon   Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  orderId  String @unique @db.Uuid
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// What the coupon took off this order, in whole cents — off the products or off the delivery fee.
+  discountCents Int
+
+  createdAt DateTime @default(now())
+
+  /// A coupon's uses, the most recent first.
+  @@index([couponId, createdAt(sort: Desc)])
+  @@map("coupon_redemptions")
+}

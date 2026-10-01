@@ -1,5 +1,5 @@
 // Nest
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import {
   ApiNotFoundResponse,
@@ -11,6 +11,7 @@ import {
 } from '@nestjs/swagger';
 
 // App
+import { PricesChangeInterceptor } from '../promotions/prices-change.interceptor.js';
 import { Public } from '../auth/auth.decorators.js';
 import { STOREFRONT_RATE_LIMIT } from '../stores/stores.constants.js';
 import { StoresService } from '../stores/stores.service.js';
@@ -32,6 +33,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * public read path caches by address, and a quote is a read.
  */
 @ApiTags('storefront')
+@UseInterceptors(PricesChangeInterceptor)
 @Controller('stores/:storeSlug/cart')
 export class StorefrontCartController {
   constructor(

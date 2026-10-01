@@ -35,8 +35,8 @@ import {
   ORDER_STATUSES,
   ORDERS_PAGE_MAX,
 } from '../orders.constants.js';
-import { OrderItemDto } from './order.dto.js';
-import { OrderDeliveryAddressResponse, OrderDeliveryResponse } from './order.response.js';
+import { couponCode, OrderItemDto } from './order.dto.js';
+import { OrderCouponResponse, OrderDeliveryAddressResponse, OrderDeliveryResponse } from './order.response.js';
 
 const SITUATIONS = Object.keys(CUSTOMER_ORDER_SITUATIONS) as CustomerOrderSituation[];
 const SIDES = ['CUSTOMER', 'SHOP'] as const satisfies readonly OrderPlacedBy[];
@@ -63,6 +63,9 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @IsOptional()
   @IsUUID('all')
   addressId?: string;
+
+  @couponCode
+  couponCode?: string | null;
 }
 
 export class CustomerOrderItemResponse implements CustomerOrderItem {
@@ -73,9 +76,11 @@ export class CustomerOrderItemResponse implements CustomerOrderItem {
   @ApiProperty({ nullable: true, type: String, example: 'Sabor: Uva · Peso: 300 g' }) variantLabel!: string | null;
   @ApiProperty({ nullable: true, type: String, description: "The combination's photo, else the product's first; null once the product is gone." })
   imageUrl!: string | null;
-  @ApiProperty({ description: 'Whole cents, as it was when the order was placed.' }) unitPriceCents!: number;
+  @ApiProperty({ description: "Whole cents: the catalogue's price when the order was placed, before any promotion." }) unitPriceCents!: number;
   @ApiProperty() quantity!: number;
   @ApiProperty() lineTotalCents!: number;
+  @ApiProperty({ description: 'What a promotion took off this line; zero with none.' }) discountCents!: number;
+  @ApiProperty({ nullable: true, type: String, description: "The promotion's name as it was." }) promotionName!: string | null;
 }
 
 export class CustomerOrderEventResponse implements CustomerOrderEvent {
@@ -95,7 +100,10 @@ export class CustomerOrderResponse implements CustomerOrder {
   @ApiProperty({ type: [CustomerOrderItemResponse] }) items!: CustomerOrderItemResponse[];
   @ApiProperty() subtotalCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
-  @ApiProperty() discountCents!: number;
+  @ApiProperty({ description: 'Everything taken off: the promotions, the coupon and what the shop took off by hand.' }) discountCents!: number;
+  @ApiProperty({ description: "The sum of the lines' promotion discounts." }) promotionDiscountCents!: number;
+  @ApiProperty({ description: 'What the coupon took off; on a free delivery, the fee.' }) couponDiscountCents!: number;
+  @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
   @ApiProperty({ type: [CustomerOrderEventResponse], description: 'Oldest first; never who set each status.' })
@@ -120,6 +128,8 @@ export class CustomerOrderSummaryResponse implements CustomerOrderSummary {
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
+  @ApiProperty({ description: 'Promotions, coupon and typed discount together.' }) discountCents!: number;
+  @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
   @ApiProperty({ description: 'Units across every line.' }) itemsCount!: number;
   @ApiProperty({ type: [CustomerOrderItemResponse], description: 'The first lines, as a card shows them.' }) items!: CustomerOrderItemResponse[];
   @ApiProperty({ description: 'Lines past those.' }) moreItems!: number;

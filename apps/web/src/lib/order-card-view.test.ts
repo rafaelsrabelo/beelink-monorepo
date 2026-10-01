@@ -36,10 +36,12 @@ const order: CustomerOrderSummary = {
   paymentMethod: "PIX",
   totalCents: 23722,
   deliveryFeeCents: 1000,
+  discountCents: 0,
+  coupon: null,
   itemsCount: 3,
   items: [
-    { productId: "p1", productSlug: "haze-300", productName: "Pré-Treino Haze", variantLabel: "Sabor: Uva", imageUrl: "https://img.test/haze.jpg", unitPriceCents: 11990, quantity: 1, lineTotalCents: 11990 },
-    { productId: null, productSlug: null, productName: "Creatina", variantLabel: null, imageUrl: null, unitPriceCents: 5866, quantity: 2, lineTotalCents: 11732 },
+    { productId: "p1", productSlug: "haze-300", productName: "Pré-Treino Haze", variantLabel: "Sabor: Uva", imageUrl: "https://img.test/haze.jpg", unitPriceCents: 11990, quantity: 1, lineTotalCents: 11990, discountCents: 0, promotionName: null },
+    { productId: null, productSlug: null, productName: "Creatina", variantLabel: null, imageUrl: null, unitPriceCents: 5866, quantity: 2, lineTotalCents: 11732, discountCents: 0, promotionName: null },
   ],
   moreItems: 1,
   placedAt: "2026-09-21T17:02:00.000Z",
@@ -61,6 +63,22 @@ describe("orderCardViewOf", () => {
   it("adds '+ frete a combinar' to the total while a delivery's fee is not agreed — not once the order is cancelled", () => {
     expect(orderCardViewOf({ ...order, deliveryFeeCents: null }, context).total.replace(/\s/g, " ")).toBe("R$ 237,22 + frete a combinar · Pix")
     expect(orderCardViewOf({ ...order, deliveryFeeCents: null, status: "CANCELLED", cancelledBy: "CUSTOMER" }, context).total.replace(/\s/g, " ")).toBe("R$ 237,22 · Pix")
+  })
+
+  /** BEELINK-194: the list says what came off each order, and the coupon it took. */
+  it("says what was taken off under the total, with the coupon's code — and nothing for an order with no discount", () => {
+    expect(orderCardViewOf(order, context).saving).toBeNull()
+    expect(orderCardViewOf({ ...order, discountCents: 2500 }, context).saving?.replace(/\s/g, " ")).toBe("Desconto de R$ 25,00")
+    expect(orderCardViewOf({ ...order, discountCents: 4250, coupon: { code: "BEMVINDO10", kind: "PERCENT" } }, context).saving?.replace(/\s/g, " ")).toBe(
+      "Desconto de R$ 42,50 · cupom BEMVINDO10",
+    )
+  })
+
+  it("names a free delivery coupon that took nothing yet, and drops '+ frete' from its total", () => {
+    const free = orderCardViewOf({ ...order, deliveryFeeCents: null, coupon: { code: "FRETEGRATIS", kind: "FREE_SHIPPING" } }, context)
+
+    expect(free.saving).toBe("Cupom FRETEGRATIS")
+    expect(free.total.replace(/\s/g, " ")).toBe("R$ 237,22 · Pix")
   })
 
   it("says a pick-up is picked up", () => {

@@ -1,5 +1,6 @@
 // Types
-import type { OrderStockShortage } from "@harness-monorepo/contracts"
+import type { CouponRefusalReason, OrderCouponRefusedDetails, OrderStockShortage } from "@harness-monorepo/contracts"
+import { couponRefusalTextOf } from "@harness-monorepo/ui/lib/order-discounts"
 import { format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -35,11 +36,28 @@ function variantIdsIn(details: unknown): string[] {
   return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : []
 }
 
+const COUPON_REFUSALS = ["NOT_FOUND", "EXPIRED", "EXHAUSTED", "INACTIVE", "CUSTOMER_LIMIT", "NOT_FIRST_PURCHASE", "NOT_APPLICABLE", "BELOW_MINIMUM"] as const satisfies readonly CouponRefusalReason[]
+
+/** Why the order's coupon was refused, as the API said it; null when the answer names no reason this app knows. */
+function couponRefusalIn(details: unknown): OrderCouponRefusedDetails | null {
+  if (typeof details !== "object" || details === null || !("reason" in details)) return null
+  const reason = COUPON_REFUSALS.find((known) => known === details.reason)
+  if (!reason) return null
+  const minimum = "minSubtotalCents" in details && typeof details.minSubtotalCents === "number" ? details.minSubtotalCents : undefined
+  return { reason, ...(minimum === undefined ? {} : { minSubtotalCents: minimum }) }
+}
+
+/** What a refusal's sentence is written with, beyond the cart's rows: how the order leaves, and money in the reader's language. */
+export interface CheckoutRefusalContext {
+  pickup: boolean
+  money: (cents: number) => string
+}
+
 /**
  * Why the cart's order was refused, in the shopper's words — never the panel's, which talk to the
  * shop — naming the lines the API named, as the cart shows them.
  */
-export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows: readonly CartRow[], text: UiMessages["storefront"]): string {
+export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows: readonly CartRow[], text: UiMessages["storefront"], context: CheckoutRefusalContext): string {
   const nameOf = (variantId: string) => {
     const row = rows.find((entry) => entry.orderVariantId === variantId)
     return row ? (row.variantLabel ? `${row.name} (${row.variantLabel})` : row.name) : null
@@ -57,6 +75,11 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
     case "ORDER_VARIANT_INVALID": {
       const names = variantIdsIn(details).flatMap((variantId) => nameOf(variantId) ?? [])
       return names.length ? format(text.checkoutProductGone, { items: names.join("; ") }) : text.checkoutProductGoneAny
+    }
+    // The coupon stopped holding between the price on screen and the order: said with the reason the field would give.
+    case "ORDER_COUPON_REFUSED": {
+      const refusal = couponRefusalIn(details)
+      return refusal ? format(text.checkoutCouponGone, { reason: couponRefusalTextOf(refusal, context, text) }) : text.checkoutFailed
     }
     case "ORDER_PAYMENT_NOT_ACCEPTED":
       return text.checkoutPaymentGone

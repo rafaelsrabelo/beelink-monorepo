@@ -7,6 +7,7 @@ import type {
   LeadErrorCode,
   ReviewErrorCode,
   OrderErrorCode,
+  PromotionErrorCode,
   ConversationErrorCode,
   StoreErrorCode,
   PageErrorCode,
@@ -170,6 +171,9 @@ export interface WebMessages {
       /** The shop's conversations with its customers (BEELINK-164). */
       conversations: string
       reviews: string
+      /** The shop's promotions and its coupons (BEELINK-192). */
+      promotions: string
+      coupons: string
       products: string
       customers: string
       categories: string
@@ -248,6 +252,7 @@ export interface WebMessages {
     | StoreErrorCode
     | LeadErrorCode
     | OrderErrorCode
+    | PromotionErrorCode
     | ConversationErrorCode
     | HttpFallbackErrorCode
     | WebErrorCode

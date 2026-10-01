@@ -1,5 +1,5 @@
 // Types
-import type { Order, OrderCustomer, OrderSummary } from '@harness-monorepo/contracts';
+import type { Order, OrderCoupon, OrderCustomer, OrderSummary } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -32,6 +32,11 @@ function toCustomer(customer: { id: string; name: string; phone: string | null }
   return { id: customer.id, name: customer.name, phone: customer.phone };
 }
 
+/** The coupon as the order photographed it; the two columns are set together or not at all. */
+export function toOrderCoupon(row: { couponCode: string | null; couponKind: OrderCoupon['kind'] | null }): OrderCoupon | null {
+  return row.couponCode !== null && row.couponKind !== null ? { code: row.couponCode, kind: row.couponKind } : null;
+}
+
 export function toOrder(row: OrderRow): Order {
   return {
     id: row.id,
@@ -51,10 +56,15 @@ export function toOrder(row: OrderRow): Order {
       unitPriceCents: item.unitPriceCents,
       quantity: item.quantity,
       lineTotalCents: item.lineTotalCents,
+      discountCents: item.discountCents,
+      promotionName: item.promotionName,
     })),
     subtotalCents: row.subtotalCents,
     deliveryFeeCents: row.deliveryFeeCents,
     discountCents: row.discountCents,
+    promotionDiscountCents: row.promotionDiscountCents,
+    couponDiscountCents: row.couponDiscountCents,
+    coupon: toOrderCoupon(row),
     totalCents: row.totalCents,
     note: row.note,
     placedAt: row.placedAt.toISOString(),
