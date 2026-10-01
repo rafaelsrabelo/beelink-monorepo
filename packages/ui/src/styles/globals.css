@@ -156,6 +156,27 @@
     --color-shop-on-verified: var(--shop-on-verified);
     --color-shop-verified-ink: var(--shop-verified-ink);
 
+    /*
+     * Beelink's own brand, as utilities: `bg-brand-yellow`, `text-brand-ink`. It dresses the
+     * product's public pages — the landing — and never a shop, whose colours are its own data.
+     */
+    --color-brand-ground: var(--brand-ground);
+    --color-brand-surface: var(--brand-surface);
+    --color-brand-ink: var(--brand-ink);
+    --color-brand-yellow: var(--brand-yellow);
+    --color-brand-text: var(--brand-text);
+    --color-brand-muted: var(--brand-muted);
+    --color-brand-line: var(--brand-line);
+    --color-brand-line-strong: var(--brand-line-strong);
+    --color-brand-sand: var(--brand-sand);
+    --color-brand-sand-soft: var(--brand-sand-soft);
+    --color-brand-ink-raised: var(--brand-ink-raised);
+    --color-brand-ink-line: var(--brand-ink-line);
+    --color-brand-on-ink: var(--brand-on-ink);
+    --color-brand-on-ink-text: var(--brand-on-ink-text);
+    --color-brand-on-ink-muted: var(--brand-on-ink-muted);
+    --color-brand-danger: var(--brand-danger);
+
     --spacing-header: var(--header-height);
     --spacing-sidebar: var(--sidebar-width);
     --spacing-sidebar-icon: var(--sidebar-width-icon);
@@ -297,6 +318,28 @@
     --shop-verified: oklch(0.470 0.143 37.3);          /* #9a3412 */
     --shop-verified-on-dark: oklch(0.786 0.111 47.5);  /* #f4a37a */
     --shop-on-verified: oklch(1 0 0);
+
+    /*
+     * Beelink's brand (BEELINK-256): a cream ground, one yellow and black, as the landing's design
+     * draws them. Two greys read on the cream — body text and the quieter one — and three on the
+     * black section, where the same greys would vanish.
+     */
+    --brand-ground: oklch(0.979 0.008 91.5);       /* #faf8f2 */
+    --brand-surface: oklch(1 0 0);                 /* #ffffff — a card on the cream */
+    --brand-ink: oklch(0.178 0 0);                 /* #111111 */
+    --brand-yellow: oklch(0.842 0.168 90.4);       /* #f5c518 */
+    --brand-text: oklch(0.409 0 0);                /* #4a4a4a */
+    --brand-muted: oklch(0.475 0 0);               /* #5c5c5c */
+    --brand-line: oklch(0.907 0.024 90.8);         /* #e6e0cf */
+    --brand-line-strong: oklch(0.870 0.022 92.5);  /* #d9d4c4 */
+    --brand-sand: oklch(0.934 0.026 92.4);         /* #efe9d6 */
+    --brand-sand-soft: oklch(0.946 0.017 91.6);    /* #f1ede1 */
+    --brand-ink-raised: oklch(0.231 0 0);          /* #1d1d1d — a card on the black */
+    --brand-ink-line: oklch(0.293 0 0);            /* #2c2c2c */
+    --brand-on-ink: oklch(1 0 0);
+    --brand-on-ink-text: oklch(0.870 0 0);         /* #d4d4d4 */
+    --brand-on-ink-muted: oklch(0.798 0 0);        /* #bdbdbd */
+    --brand-danger: oklch(0.500 0.182 29.5);       /* #b42318 — a field refused, as the shop window says a sale */
 
 }
 
