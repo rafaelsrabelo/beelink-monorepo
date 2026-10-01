@@ -42,7 +42,9 @@ export function safeBackOf(slug: string, raw: string | string[] | undefined | nu
 
   const home = `/${slug}`
   const value = typeof raw === "string" ? raw : ""
-  if (value !== home && (!value.startsWith(`${home}/`) || value.includes("//") || value.includes("\\"))) return home
+  // The front door with a query is the shop too: a heart on the home comes back as `/loja?curtir=…`.
+  const inShop = value === home || value.startsWith(`${home}/`) || value.startsWith(`${home}?`)
+  if (value !== home && (!inShop || value.includes("//") || value.includes("\\"))) return home
 
   // Resolved as the browser will resolve it: `/loja/../outra` is `/outra`, and so is `%2e%2e`.
   const resolved = URL.canParse(value, "http://shop.invalid") ? new URL(value, "http://shop.invalid").pathname : ""
@@ -327,6 +329,8 @@ export const EMAIL_CONFIRMED_KEY = "confirmado"
 export const PASSWORD_REPLACED_KEY = "senha-nova"
 /** The sign-in's notice after "Sair de todos os aparelhos" (BEELINK-150). */
 export const SIGNED_OUT_EVERYWHERE_KEY = "saiu"
+/** The sign-in's notice after "Excluir minha conta" (BEELINK-152). */
+export const ACCOUNT_DELETED_KEY = "conta-excluida"
 
 /** The cart's keys after "Comprar de novo": the order bought again, and whether reading it failed. */
 export const REORDERED_KEY = "repetido"

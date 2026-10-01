@@ -53,8 +53,8 @@ describe("orderCardViewOf", () => {
     expect(view).toMatchObject({ number: 12, placedOn: "21 de set. de 2026", shipTo: "Bia Cliente", moreItems: 1, tone: "progress" })
     expect(view.total.replace(/ /g, " ")).toBe("R$ 237,22 · Pix")
     expect(view.items).toEqual([
-      { name: "Pré-Treino Haze", href: "/loja/produtos/haze-300", imageUrl: "https://img.test/haze.jpg", meta: "Sabor: Uva · Qtd. 1" },
-      { name: "Creatina", href: null, imageUrl: null, meta: "Qtd. 2" },
+      { name: "Pré-Treino Haze", href: "/loja/produtos/haze-300", imageUrl: "https://img.test/haze.jpg", meta: "Sabor: Uva · Qtd. 1", reviewHref: null },
+      { name: "Creatina", href: null, imageUrl: null, meta: "Qtd. 2", reviewHref: null },
     ])
   })
 
@@ -69,6 +69,11 @@ describe("orderCardViewOf", () => {
 })
 
 describe("orderStatusLineOf", () => {
+  it("leads a delivered order's lines still on sale to their rating, and nothing else", () => {
+    const delivered = orderCardViewOf({ ...order, status: "DELIVERED" }, context)
+    expect(delivered.items.map((item) => item.reviewHref)).toEqual([`/loja/conta/avaliacoes?produto=${order.items[0]!.productId}#avaliar-${order.items[0]!.productId}`, null])
+  })
+
   it("names each status as the customer reads it, with when it was placed and by whom", () => {
     expect(orderStatusLineOf(order, context)).toEqual({
       headline: "Aguardando a loja confirmar",

@@ -56,6 +56,15 @@ describe("StorefrontOrderCard", () => {
     expect(track.compareDocumentPosition(screen.getByRole("button", { name: "Cancelar pedido" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it("leads each line of a delivered order to its rating, naming the product to a reader", () => {
+    const delivered = { ...card, tone: "done" as const, items: [{ ...card.items[0]!, reviewHref: "/loja/conta/avaliacoes?produto=p-1#avaliar-p-1" }, card.items[1]!] }
+    render(<StorefrontOrderCard {...delivered} />)
+
+    const link = screen.getByRole("link", { name: "Avaliar produto: Pré-Treino Haze Hardcore 300g" })
+    expect(link).toHaveAttribute("href", "/loja/conta/avaliacoes?produto=p-1#avaliar-p-1")
+    expect(screen.getAllByText("Avaliar produto")).toHaveLength(1)
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<StorefrontOrderCard {...card} detailsHref="#" trackHref="#" />)
     await expectNoA11yViolations(container)

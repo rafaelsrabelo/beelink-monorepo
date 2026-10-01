@@ -111,7 +111,9 @@ describe("the sign-in page's addresses", () => {
   it("follows a return path only inside the shop", () => {
     expect(safeBackOf("loja", "/loja/carrinho")).toBe("/loja/carrinho")
     expect(safeBackOf("loja", "/loja")).toBe("/loja")
-    for (const unsafe of ["https://evil.example", "//evil.example", "/lojaoutra", "/loja//x", "/loja/../outra", "/loja/%2e%2e/outra", "/loja/.%2E/outra", undefined]) {
+    // The front door with the product a heart asked to like on the way back.
+    expect(safeBackOf("loja", "/loja?curtir=p-1")).toBe("/loja?curtir=p-1")
+    for (const unsafe of ["https://evil.example", "//evil.example", "/lojaoutra", "/lojaoutra?x=1", "/loja?x=//evil.example", "/loja//x", "/loja/../outra", "/loja/%2e%2e/outra", "/loja/.%2E/outra", undefined]) {
       expect(safeBackOf("loja", unsafe)).toBe("/loja")
     }
   })

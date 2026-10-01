@@ -17,6 +17,8 @@ export interface StorefrontOrderTab {
 
 export interface StorefrontOrderTabsProps {
   tabs: readonly StorefrontOrderTab[]
+  /** What the row is called to a reader: Meus pedidos' by default, and Favoritos' filters (6g) say theirs. */
+  label?: string
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -25,11 +27,11 @@ export interface StorefrontOrderTabsProps {
  * Todos · Em andamento · Entregues · Cancelados, each with how many it holds. Links, not tabs: each
  * one is an address of its own, which the back button and a shared link both respect.
  */
-export function StorefrontOrderTabs({ tabs, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontOrderTabsProps) {
+export function StorefrontOrderTabs({ tabs, label, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontOrderTabsProps) {
   const text = messages.storefront
 
   return (
-    <nav aria-label={text.ordersFilterLabel} className="flex flex-wrap gap-2">
+    <nav aria-label={label ?? text.ordersFilterLabel} className="flex flex-wrap gap-2">
       {tabs.map((tab) => (
         <Link
           key={tab.href}

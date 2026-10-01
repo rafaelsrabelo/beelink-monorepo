@@ -119,6 +119,11 @@ describe("an order's page, in the shopper's words", () => {
     expect(items[1]).toMatchObject({ href: null, meta: "Qtd. 1" })
   })
 
+  it("leads a delivered order's lines still on sale to their rating, and nothing before delivery", () => {
+    expect(orderItemsOf({ ...order, status: "DELIVERED" }, context).items.map((item) => item.reviewHref)).toEqual(["/loja/conta/avaliacoes?produto=p1#avaliar-p1", null])
+    expect(orderItemsOf({ ...order, status: "OUT_FOR_DELIVERY" }, context).items.every((item) => item.reviewHref === null)).toBe(true)
+  })
+
   it("adds the sums that apply, and says the way of paying agreed — never approved", () => {
     const payment = orderPaymentOf(order, context)
 

@@ -27,6 +27,8 @@ function row(id: string): ShowcaseCardRow {
     priceCents: 100,
     compareAtPriceCents: null,
     maxPriceCents: 150,
+    reviewCount: 0,
+    reviewRatingSum: 0,
     images: [{ url: `/${id}.jpg` }],
     category: { slug: 'blusas' },
     _count: { options: 0 },
@@ -130,8 +132,14 @@ describe('shelfOf — the cards, in the order the showcase wants', () => {
         hasOptions: false,
         imageUrls: ['/p1.jpg'],
         optionSummary: null,
+        rating: null,
       },
     ]);
+  });
+
+  it("carries the published reviews' average to one decimal, and how many", () => {
+    const [card] = shelfOf(showcase(), [{ ...row('p1'), reviewCount: 3, reviewRatingSum: 13 }]);
+    expect(card?.rating).toEqual({ average: 4.3, count: 3 });
   });
 });
 

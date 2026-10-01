@@ -24,6 +24,8 @@ An **account** is how a person proves who they are. A shopkeeper has one, and it
 - A forgotten password is replaced through an e-mailed link, valid for 1 hour and usable once. Replacing the password ends every session of the account.
 - Whether an e-mail has an account is never revealed: "forgot password" and "resend confirmation" answer the same way for any address, and a wrong password reads the same as an unknown e-mail.
 - Every account is opened under **bee-link's terms of use**, having read its **privacy policy**, both public at the site's root. Opening one says so beside the button, whether it is a form or "Continuar com Google", and the account keeps a record of the version it accepted and when. Continuing with Google, or setting a password from an e-mailed link, records it too when the account has no record of the version in force, or when it is what proves the e-mail belongs to whoever holds the account. The texts carry one version, the day they took effect, and a new version is a new record, never an edit of the old one. The privacy policy says who answers for which data: the shopkeeper for their shop's customers, with bee-link as the one processing it for them, and bee-link for the shopkeepers' own accounts.
+- A customer may **take a copy** of everything their shop keeps about them — the account, the record, the addresses, the orders, the favourites, the reviews and the conversations — as one file, whenever they like.
+- A customer may **delete their account**, confirming it with the password, or with the e-mail typed again when the account was opened through Google and has none. Every session ends at once, and with the account goes everything the customer kept for themselves: favourites, saved addresses, CPF, birth date, notice preferences and the record of the terms accepted. The shop keeps its books: a customer it sold to stays on its list with a name and a phone, each order keeps the name and address it recorded, its conversation stays readable to the shop, and their reviews stay, signed "Cliente". A customer the shop never sold to leaves with the account. The same e-mail may open a new account there, which starts with nothing of the old one.
 
 ## Stores
 
@@ -70,9 +72,15 @@ A customer may be **linked to an account** — the shop's own, opened there — 
 
 The link is optional, and a customer without one is not a lesser customer. Shops carried over from the legacy product arrive with no e-mail on file at all.
 
-A signed-in customer keeps **favourites** at the shop: products they liked, one heart per product, with the combination they chose on its page when they chose one. A favourite remembers what it cost the day it was liked, which is how the shop can say it is cheaper now; being on sale or sold out is read from the shop as it is today. Liking it again changes nothing, and choosing another combination is a new like at today's price. A product the shop takes back to draft leaves the list until it returns, and one it deletes leaves for good.
+A signed-in customer keeps **favourites** at the shop: products they liked, one heart per product, with the combination they chose on its page when they chose one. A favourite remembers what it cost the day it was liked, which is how the shop can say it is cheaper now; being on sale or sold out is read from the shop as it is today. Liking it again changes nothing, and choosing another combination is a new like at today's price. A product the shop takes back to draft leaves the list until it returns, and one it deletes leaves for good. A customer who keeps the favourites' notice on is told by e-mail when a favourite gets cheaper while on sale, or comes back in stock — at most once per product in a week, in the shop's name, with the way to switch it off.
 
 **Buying requires a verified identity; reaching the checkout does not.** The shop window, the cart and the checkout form open for anyone, so the delivery fee is visible before anything is asked. What requires an account is **placing the order**, and for most people the account is what the purchase leaves behind rather than what it demanded up front.
+
+## Reviews
+
+A product's **reviews** come from the people the shop delivered it to. A customer rates a product they received — one to five stars, and a few words if they want — once, and may rewrite it later; the review keeps the combination they bought. It is published at once. The shopkeeper cannot edit a review, but may **hide** one from the shop window and publish it again; the customer still sees their own, marked hidden, and rewriting it does not bring it back.
+
+The shop window shows a product's average and how many reviews it has, how many of each rating, and the reviews themselves, newest first. It names each reviewer by their first name and an initial, and as "Cliente" once they no longer have an account.
 
 ## Orders
 

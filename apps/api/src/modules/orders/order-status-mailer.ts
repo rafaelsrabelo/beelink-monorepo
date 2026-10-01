@@ -1,100 +1,32 @@
 // Nest
-import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 // App
 import { env } from '../../shared/config/env.js';
 import { MailService } from '../../shared/mail/mail.service.js';
+import { ATTEMPTS_MAX, OutboxMailer, retryAtOf } from '../../shared/mail/outbox-mailer.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { isNotified } from './order-status-email.js';
 
-/** How many a sweep claims at once, and how many times one is tried before it is given up. */
-const BATCH = 20;
-export const ATTEMPTS_MAX = 5;
-/** How long a claimed row is this sweep's: far longer than a send may take (`MailService`'s timeouts). */
-const LEASE_MS = 10 * 60_000;
-/** Between sweeps: the one after a move sends at once; this one retries what failed. */
-const SWEEP_MS = 60_000;
-
-/** A timestamp as Prisma writes these columns: UTC wall time, no zone. */
-function wallTimeOf(date: Date): string {
-  return date.toISOString().replace('Z', '');
-}
-
 /**
  * Pays the e-mails orders' moves owe (`OrderStatusEmail`), apart from the moves (BEELINK-151): right
- * after one commits, and every minute for what failed. A row is claimed before it is sent — `FOR
- * UPDATE SKIP LOCKED`, and a lease far longer than any send — so two sweeps, or two processes, never
- * send it twice; a failed one waits 1, 2, 4, 8 minutes, and after the fifth try it is given up.
- * `sentAt` marks what is done: sent, or no longer worth sending.
+ * after one commits, and every minute for what failed — the claim, the lease and the retries are
+ * `OutboxMailer`'s.
  */
 @Injectable()
-export class OrderStatusMailer implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(OrderStatusMailer.name);
-  private timer: NodeJS.Timeout | null = null;
-  /** One sweep at a time in this process; a call meanwhile asks for one more once it ends. */
-  private sweeping = false;
-  private again = false;
+export class OrderStatusMailer extends OutboxMailer {
+  protected readonly logger = new Logger(OrderStatusMailer.name);
+  protected readonly table = 'order_status_emails';
 
   constructor(
-    private readonly prisma: PrismaService,
+    prisma: PrismaService,
     private readonly mail: MailService,
-  ) {}
-
-  onModuleInit(): void {
-    this.timer = setInterval(() => this.dispatch(), SWEEP_MS);
-    // A sweep in waiting is no reason for the process to stay up.
-    this.timer.unref();
+  ) {
+    super(prisma);
   }
 
-  onModuleDestroy(): void {
-    if (this.timer) clearInterval(this.timer);
-  }
-
-  /** Sends what is owed without anyone waiting on it: the move that asked has already answered. */
-  dispatch(): void {
-    if (this.sweeping) {
-      this.again = true;
-      return;
-    }
-    this.sweeping = true;
-    void (async () => {
-      try {
-        do {
-          this.again = false;
-          await this.flush();
-        } while (this.again);
-      } catch (error) {
-        this.logger.error({ err: error }, 'Could not send the order e-mails');
-      } finally {
-        this.sweeping = false;
-      }
-    })();
-  }
-
-  /** Claims what is owed and due, sends each, and answers how many went. */
-  async flush(): Promise<number> {
-    // This process's clock, not the database's: Prisma writes these columns from here, and a database
-    // clock a moment behind would leave a row written just now not yet due.
-    const now = new Date();
-    const claimed = await this.prisma.$queryRaw<{ id: string; attempts: number }[]>`
-      UPDATE "order_status_emails"
-      SET "attempts" = "attempts" + 1, "nextAttemptAt" = ${wallTimeOf(new Date(now.getTime() + LEASE_MS))}::timestamp
-      WHERE "id" IN (
-        SELECT "id" FROM "order_status_emails"
-        WHERE "sentAt" IS NULL AND "attempts" < ${ATTEMPTS_MAX} AND "nextAttemptAt" <= ${wallTimeOf(now)}::timestamp
-        ORDER BY "createdAt"
-        LIMIT ${BATCH}
-        FOR UPDATE SKIP LOCKED
-      )
-      RETURNING "id", "attempts"`;
-
-    let sent = 0;
-    for (const row of claimed) if (await this.send(row.id, row.attempts)) sent += 1;
-    return sent;
-  }
-
-  private async send(id: string, attempts: number): Promise<boolean> {
+  protected async send(id: string, attempts: number): Promise<boolean> {
     const row = await this.prisma.orderStatusEmail.findUnique({
       where: { id },
       select: {
@@ -137,7 +69,7 @@ export class OrderStatusMailer implements OnModuleInit, OnModuleDestroy {
 
     // Not sent: tried again after 1, 2, 4, 8 minutes — the lease given back early — or given up.
     if (attempts >= ATTEMPTS_MAX) this.logger.warn({ orderNumber: order.number, status: row.status }, 'Gave up on an order e-mail');
-    else await this.prisma.orderStatusEmail.update({ where: { id }, data: { nextAttemptAt: new Date(Date.now() + 60_000 * 2 ** (attempts - 1)) } });
+    else await this.prisma.orderStatusEmail.update({ where: { id }, data: { nextAttemptAt: retryAtOf(attempts) } });
     return false;
   }
 }

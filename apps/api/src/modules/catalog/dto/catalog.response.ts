@@ -81,6 +81,11 @@ export class CardOptionSummaryResponse implements CardOptionSummary {
   @ApiProperty({ example: 4 }) valueCount!: number;
 }
 
+export class ProductRatingSummaryResponse {
+  @ApiProperty({ example: 4.7, description: 'To one decimal.' }) average!: number;
+  @ApiProperty({ example: 38 }) count!: number;
+}
+
 export class PublicProductCardResponse implements PublicProductCard {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty({ example: 'blusa-feminina-tomara-que-caia' }) slug!: string;
@@ -110,6 +115,13 @@ export class PublicProductCardResponse implements PublicProductCard {
     description: 'The first option and how many values it offers ("4 sabores"); null without options. On the shelves and showcases only.',
   })
   optionSummary?: CardOptionSummaryResponse | null;
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    type: ProductRatingSummaryResponse,
+    description: "The published reviews' average and count; null while there is none. On the shelves, the showcases and the product's page.",
+  })
+  rating?: ProductRatingSummaryResponse | null;
 }
 
 export class PublicProductResponse extends PublicProductCardResponse implements PublicProduct {

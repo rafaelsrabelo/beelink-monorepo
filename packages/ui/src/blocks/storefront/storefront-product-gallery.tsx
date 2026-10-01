@@ -28,6 +28,8 @@ export interface StorefrontProductGalleryProps {
   name: string
   /** Over the photo's top-left corner: the discount, drawn by the page. */
   badge?: ReactNode
+  /** Over the photo's top-right corner: the heart, drawn by the page. */
+  corner?: ReactNode
   messages?: UiMessages
 }
 
@@ -56,7 +58,7 @@ function unzoom(event: PointerEvent<HTMLButtonElement>) {
  * show is state about looking, not about the shop, so it is never in the address. The page remounts
  * this with a new key when a choice changes the photos, so it opens on the first.
  */
-export function StorefrontProductGallery({ images, name, badge, messages = defaultMessages }: StorefrontProductGalleryProps) {
+export function StorefrontProductGallery({ images, name, badge, corner, messages = defaultMessages }: StorefrontProductGalleryProps) {
   const text = messages.storefront
   const strip = useRef<HTMLDivElement>(null)
   const shown = useSnapIndex(strip)
@@ -109,6 +111,7 @@ export function StorefrontProductGallery({ images, name, badge, messages = defau
             )}
           </div>
           {badge}
+          {corner ? <div className="absolute top-3 right-3">{corner}</div> : null}
         </div>
         {/* Only where a pointer hovers: on touch there is no hover, so it would not be true. */}
         {images.length > 0 ? <p className="hidden text-center text-xs text-shop-muted [@media(hover:hover)]:block">{text.galleryHint}</p> : null}
