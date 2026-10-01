@@ -176,6 +176,7 @@ export const ptBR: WebMessages = {
     CUSTOMER_NOT_FOUND: "Esse cliente não é desta loja. Busque ou cadastre o cliente.",
     CUSTOMER_MERGE_SELF: "Escolha outro cadastro para juntar com este.",
     CUSTOMER_MERGE_TWO_ACCOUNTS: "Os dois cadastros têm conta na loja, e duas contas não se juntam.",
+    CUSTOMER_DELETE_EMAIL_MISMATCH: "Esse não é o e-mail da conta. Sua conta não foi excluída.",
     ORDER_NOT_FOUND: "Esse pedido não existe nesta loja.",
     ORDER_CUSTOMER_NOT_FOUND: "Esse cliente não é mais desta loja. Escolha outro.",
     ORDER_ADDRESS_NOT_FOUND: "O endereço escolhido não está mais na conta. Escolha outro.",
