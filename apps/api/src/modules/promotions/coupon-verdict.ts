@@ -23,11 +23,17 @@ export interface CouponContext {
   deliveryFeeCents: number | null;
   /** This customer's orders that used it and were not cancelled; null when nobody is identified. */
   customerUses: number | null;
+  /**
+   * Whether no order of this customer's stands at the shop. Null when nobody is identified: a quote
+   * may come before its customer is chosen, and nobody is refused for what cannot be said yet — an
+   * order always has a customer.
+   */
+  firstPurchase: boolean | null;
 }
 
 export type VerdictCoupon = Pick<
   CouponModel,
-  'kind' | 'percentBps' | 'amountCents' | 'minSubtotalCents' | 'startsAt' | 'endsAt' | 'isActive' | 'maxUses' | 'maxUsesPerCustomer' | 'usedCount'
+  'kind' | 'percentBps' | 'amountCents' | 'minSubtotalCents' | 'startsAt' | 'endsAt' | 'isActive' | 'maxUses' | 'maxUsesPerCustomer' | 'usedCount' | 'audience'
 >;
 
 export function couponRefusalOf(coupon: VerdictCoupon | null, context: CouponContext): OrderCouponRefusedDetails | null {
@@ -41,6 +47,7 @@ export function couponRefusalOf(coupon: VerdictCoupon | null, context: CouponCon
   if (coupon.maxUsesPerCustomer !== null && context.customerUses !== null && context.customerUses >= coupon.maxUsesPerCustomer) {
     return { reason: 'CUSTOMER_LIMIT' };
   }
+  if (coupon.audience === 'FIRST_PURCHASE' && context.firstPurchase === false) return { reason: 'NOT_FIRST_PURCHASE' };
   if (takesNothing(coupon, context)) return { reason: 'NOT_APPLICABLE' };
   if (context.baseCents < coupon.minSubtotalCents) return { reason: 'BELOW_MINIMUM', minSubtotalCents: coupon.minSubtotalCents };
   return null;

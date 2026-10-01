@@ -9,6 +9,7 @@ import type {
   CouponRedemption,
   CouponRedemptionPage,
   CouponStatus,
+  DiscountAudience,
   DiscountKind,
   OrderStatus,
   Promotion,
@@ -20,7 +21,7 @@ import type {
 
 // App
 import { ORDER_STATUSES } from '../../orders/orders.constants.js';
-import { COUPON_KINDS, COUPON_STATUSES, DISCOUNT_KINDS, PROMOTION_SCOPES, PROMOTION_STATUSES } from '../promotions.constants.js';
+import { COUPON_KINDS, COUPON_STATUSES, DISCOUNT_AUDIENCES, DISCOUNT_KINDS, PROMOTION_SCOPES, PROMOTION_STATUSES } from '../promotions.constants.js';
 
 class PromotionTargetResponse implements PromotionTarget {
   @ApiProperty({ format: 'uuid' }) id!: string;
@@ -39,6 +40,7 @@ export class PromotionResponse implements Promotion {
   @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'Null runs until paused.' }) endsAt!: string | null;
   @ApiProperty({ description: "The owner's switch: false is paused." }) active!: boolean;
   @ApiProperty({ enum: PROMOTION_STATUSES, description: 'Read from the clock when answered.' }) status!: PromotionStatus;
+  @ApiProperty({ enum: DISCOUNT_AUDIENCES, description: 'Who it is for: FIRST_PURCHASE is a customer with no order at the shop that stands.' }) audience!: DiscountAudience;
   @ApiProperty({ type: [PromotionTargetResponse] }) products!: PromotionTargetResponse[];
   @ApiProperty({ type: [PromotionTargetResponse] }) categories!: PromotionTargetResponse[];
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
@@ -75,6 +77,7 @@ export class CouponResponse implements Coupon {
   @ApiProperty({ description: 'How many uses count against maxUses.' }) usedCount!: number;
   @ApiProperty() active!: boolean;
   @ApiProperty({ enum: COUPON_STATUSES, description: 'Read from the clock when answered.' }) status!: CouponStatus;
+  @ApiProperty({ enum: DISCOUNT_AUDIENCES, description: 'Who may use it: FIRST_PURCHASE is a customer with no order at the shop that stands.' }) audience!: DiscountAudience;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }

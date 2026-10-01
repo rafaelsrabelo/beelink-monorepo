@@ -96,3 +96,46 @@ A primeira cotação, feita no servidor, também passa a ser a do cliente quando
 O Rafael pediu para usar agentes em paralelo neste ticket. O contrato e este plano foram escritos
 antes. Depois, três frentes: a API, os blocos de `packages/ui` e, quando os blocos terminam, o
 `apps/web`. Por fim, uma revisão com verificação dos achados.
+
+## Adendo: o que a implementação decidiu (01/10)
+
+Os agentes que implementaram as três frentes tomaram decisões que o plano não fechava. Ficam
+registradas aqui, e valem:
+
+- **A trava do cliente é a que já existe** (`lockCustomer`, em `customers/customer-lock.ts`,
+  `FOR NO KEY UPDATE`), e não um `FOR UPDATE` novo: o comentário dela diz que `FOR UPDATE` travaria
+  com os avisos de favorito que a escrita de um produto insere. Um teste e2e com duas transações
+  prova que dois pedidos do mesmo cliente se enfileiram sem depender da trava da loja.
+- **O segundo de dois pedidos simultâneos é gravado com o preço de catálogo** (201), não recusado.
+  É o que "não levam as duas" quer dizer. Um cupom de primeira compra no segundo é recusado (409).
+- **Os pedidos do cliente só são lidos (e a linha dele só é travada) quando há um desconto de
+  primeira compra em jogo:** uma promoção dessas valendo na loja, ou o cupom digitado é desse público.
+  Um carrinho sem isso não custa nenhuma leitura a mais.
+- **Nada é anunciado quando a promoção de primeira compra não tiraria nada a mais** do carrinho (outra
+  promoção já dá o mesmo ou mais). O anúncio é a diferença entre as duas cotações, não o valor da
+  promoção. Conferido no navegador: um carrinho só com creatina (20%) não anuncia os 15%.
+- **Cotação do painel com telefone que a loja não tem** é precificada como primeira compra: o pedido
+  cadastraria esse cliente, e a cotação tem que dizer o que o pedido vai gravar. Sem cliente nenhum,
+  a promoção é anunciada como `UNIDENTIFIED` e o cupom não é recusado por isso.
+- **`audience: null` é 400**, como `active: null`; ausente é `EVERYONE`, no POST e no PUT. Por isso os
+  formulários do web sempre enviam o público.
+- **O campo "Para quem vale" usa botões de alternância**, como "Onde vale" e "Tipo de desconto" nos
+  mesmos formulários. A frase do que é primeira compra aparece só quando essa opção está escolhida,
+  numa região viva: sob "Todos os clientes" ela diria o contrário do escolhido.
+- **A marca nas listas** é um `Badge` secundário ao lado do resumo, não um `outline` (o badge de
+  situação, na linha de cima, já é `outline`).
+- **O anúncio no carrinho** usa a tinta da loja de fundo com a tinta da página por cima: medido no
+  navegador, a cor da marca sobre a própria tinta fica abaixo de 4,5:1. Ele some enquanto a primeira
+  cotação não chega e esmaece com as linhas de desconto.
+- **Quem pergunta faz parte da pergunta:** a chave de cache da cotação leva o id do cliente, e o
+  preço servido pela página só vale para quem a página leu. Dois clientes no mesmo navegador não
+  veem o preço um do outro.
+- **`NOT_FIRST_PURCHASE` é recusa definitiva:** o carrinho não pergunta de novo a cada mudança.
+
+Conferido no navegador em `loja-o3`: promoção "Boas-vindas" (15% no carrinho) e cupom `PRIMEIRA10`
+(10%), os dois "só na primeira compra", criados pelo formulário do painel. Visitante vê "Boas-vindas:
+− R$ 35,99 na sua primeira compra. Entre na sua conta para confirmar." já no HTML servido. Cliente
+nova: a linha "Promoção: Boas-vindas", o cupom aceito depois dela, o pedido #4 gravado com os dois.
+No carrinho seguinte dela e no da Marina (que já comprou): "Boas-vindas vale só na primeira compra."
+e o cupom recusado com "Esse cupom vale só na primeira compra."
+

@@ -1,9 +1,10 @@
 // Types
-import type { CouponKind, CouponStatus, DiscountKind, PricesChangeAtHeader, PromotionErrorCode, PromotionScope, PromotionStatus } from '@harness-monorepo/contracts';
+import type { CouponKind, CouponStatus, DiscountAudience, DiscountKind, PricesChangeAtHeader, PromotionErrorCode, PromotionScope, PromotionStatus } from '@harness-monorepo/contracts';
 
 export const DISCOUNT_KINDS = ['PERCENT', 'FIXED'] as const satisfies readonly DiscountKind[];
 export const COUPON_KINDS = ['PERCENT', 'FIXED', 'FREE_SHIPPING'] as const satisfies readonly CouponKind[];
 export const PROMOTION_SCOPES = ['CART', 'PRODUCTS', 'CATEGORIES'] as const satisfies readonly PromotionScope[];
+export const DISCOUNT_AUDIENCES = ['EVERYONE', 'FIRST_PURCHASE'] as const satisfies readonly DiscountAudience[];
 
 /** In the order a status is read: the first that holds is the one. */
 export const PROMOTION_STATUSES = ['ENDED', 'PAUSED', 'SCHEDULED', 'ACTIVE'] as const satisfies readonly PromotionStatus[];
