@@ -19,8 +19,6 @@ const mocks = vi.hoisted(() => ({
   search: new URLSearchParams(),
   coupons: vi.fn(),
   redemptions: vi.fn(),
-  save: vi.fn(),
-  saveState: { isPending: false, error: null as Error | null, reset: vi.fn() },
   toggle: vi.fn(),
   toggleState: { isPending: false, variables: undefined as { id: string } | undefined, error: null as Error | null },
 }))
@@ -30,7 +28,6 @@ vi.mock("next/navigation", () => ({ useRouter: () => router, useSearchParams: ()
 vi.mock("@/services/promotions/promotion-hooks", () => ({
   useCoupons: mocks.coupons,
   useCouponRedemptions: mocks.redemptions,
-  useSaveCoupon: () => ({ mutate: mocks.save, ...mocks.saveState }),
   useSetCouponActive: () => ({ mutate: mocks.toggle, ...mocks.toggleState }),
 }))
 
@@ -60,9 +57,8 @@ beforeEach(() => {
   mocks.search = new URLSearchParams()
   mocks.coupons.mockReturnValue({ data: page, isPending: false, isFetching: false, refetch: vi.fn() })
   mocks.redemptions.mockReturnValue({ data: uses, isPending: false, isFetching: false, refetch: vi.fn() })
-  mocks.save.mockReset()
   mocks.toggle.mockReset()
-  Object.assign(mocks.saveState, { isPending: false, error: null })
+  mocks.push.mockReset()
   Object.assign(mocks.toggleState, { isPending: false, variables: undefined, error: null })
 })
 
@@ -91,70 +87,26 @@ describe("CouponsScreen", () => {
     expect(mocks.toggle).toHaveBeenCalledWith({ id: "c2", active: true })
   })
 
-  it("creates a coupon: says the fields to correct first, then sends the body", async () => {
+  it("makes and changes a coupon on pages of their own, never in a form above the list", async () => {
+    mocks.search = new URLSearchParams("situacao=pausados")
     view()
-    await userEvent.click(screen.getByRole("button", { name: "Novo cupom" }))
-    const form = screen.getByRole("region", { name: "Novo cupom" })
 
-    await userEvent.type(within(form).getByLabelText("Código"), "bem vindo")
-    await userEvent.click(within(form).getByRole("button", { name: "Salvar" }))
-    expect(mocks.save).not.toHaveBeenCalled()
-    expect(within(form).getByText(/^Use de 3 a 30 letras/)).toBeInTheDocument()
-
-    await userEvent.clear(within(form).getByLabelText("Código"))
-    await userEvent.type(within(form).getByLabelText("Código"), "voltei15")
-    await userEvent.type(within(form).getByLabelText("Percentual (%)"), "15")
-    await userEvent.type(within(form).getByLabelText("Limite por cliente"), "1")
-    await userEvent.click(within(form).getByRole("button", { name: "Salvar" }))
-
-    expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { code: "voltei15", kind: "PERCENT", percentBps: 1500, minSubtotalCents: 0, maxUses: null, maxUsesPerCustomer: 1 } })
-    expect(mocks.save.mock.calls[0]?.[0].payload).not.toHaveProperty("active")
+    // A new one is the unfiltered list's first row: its page carries no status to go back to.
+    expect(screen.getByRole("link", { name: "Novo cupom" })).toHaveAttribute("href", "/admin/loja/coupons/new")
+    await userEvent.click(screen.getByRole("button", { name: "Editar o cupom FRETE" }))
+    expect(mocks.push).toHaveBeenCalledWith("/admin/loja/coupons/c2?situacao=pausados")
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
   })
 
   /** BEELINK-245. */
-  it("says who a coupon is for: marked on its row, chosen in the form and sent with it", async () => {
+  it("marks a coupon that is only for a first purchase on its row", () => {
     view()
     // One row is marked: the coupon for everyone says nothing.
     expect(within(screen.getByText("BEMVINDO10").closest("li")!).getByText("Primeira compra")).toBeInTheDocument()
     expect(screen.getAllByText("Primeira compra")).toHaveLength(1)
-
-    await userEvent.click(screen.getByRole("button", { name: "Novo cupom" }))
-    const form = screen.getByRole("region", { name: "Novo cupom" })
-    const audience = within(form).getByRole("group", { name: "Para quem vale" })
-    expect(within(audience).getByRole("button", { name: "Todos os clientes" })).toHaveAttribute("aria-pressed", "true")
-
-    await userEvent.type(within(form).getByLabelText("Código"), "primeira10")
-    await userEvent.type(within(form).getByLabelText("Percentual (%)"), "10")
-    await userEvent.click(within(audience).getByRole("button", { name: "Só na primeira compra" }))
-    await userEvent.click(within(form).getByRole("button", { name: "Salvar" }))
-
-    expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: null, payload: { code: "primeira10", percentBps: 1000, audience: "FIRST_PURCHASE" } })
   })
 
-  it("opens a coupon on the audience it was saved with", async () => {
-    view()
-    await userEvent.click(screen.getByRole("button", { name: "Editar o cupom BEMVINDO10" }))
-    const audience = within(screen.getByRole("region", { name: "Editar cupom" })).getByRole("group", { name: "Para quem vale" })
-
-    expect(within(audience).getByRole("button", { name: "Só na primeira compra" })).toHaveAttribute("aria-pressed", "true")
-  })
-
-  it("edits one with what it holds, and says the API's refusal as a sentence", async () => {
-    mocks.saveState.error = Object.assign(new Error("x"), { errorCode: "COUPON_CODE_TAKEN" })
-    view()
-    await userEvent.click(screen.getByRole("button", { name: "Editar o cupom BEMVINDO10" }))
-    const form = screen.getByRole("region", { name: "Editar cupom" })
-
-    expect(within(form).getByLabelText("Código")).toHaveValue("BEMVINDO10")
-    expect(within(form).getByLabelText("Pedido mínimo (R$)")).toHaveValue("50,00")
-    expect(within(form).getByLabelText("Limite de usos")).toHaveValue("100")
-    expect(within(form).getByText("Outro cupom da loja já tem esse código.")).toBeInTheDocument()
-
-    await userEvent.click(within(form).getByRole("button", { name: "Salvar" }))
-    expect(mocks.save.mock.calls[0]?.[0]).toMatchObject({ id: "c1", payload: { code: "BEMVINDO10", minSubtotalCents: 5000, maxUses: 100 } })
-  })
-
-  it("opens a coupon's uses where the form would be: each order a link, a cancelled one marked", async () => {
+  it("opens a coupon's uses above the list: each order a link, a cancelled one marked", async () => {
     view()
     // Closed, nothing is asked.
     expect(mocks.redemptions).not.toHaveBeenCalled()
@@ -167,12 +119,9 @@ describe("CouponsScreen", () => {
     // The panel opened above the list: the focus is in it, on its first control.
     expect(within(panel).getByRole("button", { name: "Fechar" })).toHaveFocus()
 
-    // Opening the form takes the uses' place, and closing them leaves the list alone.
-    await userEvent.click(screen.getByRole("button", { name: "Editar o cupom FRETE" }))
-    expect(screen.queryByRole("region", { name: "Usos do cupom BEMVINDO10" })).not.toBeInTheDocument()
-    expect(screen.getByRole("region", { name: "Editar cupom" })).toBeInTheDocument()
-
+    // Another coupon's uses take the place of the first one's, and closing them leaves the list alone.
     await userEvent.click(screen.getByRole("button", { name: "Ver os usos do cupom FRETE" }))
+    expect(screen.queryByRole("region", { name: "Usos do cupom BEMVINDO10" })).not.toBeInTheDocument()
     await userEvent.click(within(screen.getByRole("region", { name: "Usos do cupom FRETE" })).getByRole("button", { name: "Fechar" }))
     expect(screen.queryByRole("region", { name: /Usos do cupom/ })).not.toBeInTheDocument()
   })

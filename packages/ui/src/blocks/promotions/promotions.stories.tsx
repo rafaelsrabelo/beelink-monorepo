@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 import { DiscountFailed } from "./discount-failed"
+import { DiscountFormSkeleton } from "./discount-form-skeleton"
 import { DiscountListSkeleton } from "./discount-list-skeleton"
 import { DiscountStatusTabs } from "./discount-status-tabs"
 import { PromotionForm } from "./promotion-form"
@@ -53,6 +54,9 @@ export const Carregando: Story = { render: () => <DiscountListSkeleton /> }
 export const Falhou: Story = { render: () => <DiscountFailed onRetry={() => {}} /> }
 
 const form = { productQuery: "", onProductQueryChange: () => {}, productResults: [{ id: "w2", name: "Creatina 300g" }], categories: categoryOptions, onChange: () => {}, onSubmit: () => {}, onCancel: () => {} }
+
+/** O formulário enquanto a promoção é lida, na página dela. */
+export const FormularioCarregando: Story = { render: () => <div className="max-w-2xl"><DiscountFormSkeleton /></div> }
 
 /** O formulário com produtos escolhidos. */
 export const Formulario: Story = { render: () => <div className="max-w-2xl"><PromotionForm value={promotionValues} {...form} /></div> }

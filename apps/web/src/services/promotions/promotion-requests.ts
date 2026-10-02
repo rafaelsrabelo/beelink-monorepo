@@ -46,6 +46,10 @@ export function fetchPromotions(slug: string, query: PromotionListQuery = {}): P
   return ask(`${base(slug, "promotions")}${searchOf(query)}`)
 }
 
+export function fetchPromotion(slug: string, promotionId: string): Promise<Promotion> {
+  return ask(one(slug, "promotions", promotionId))
+}
+
 export function createPromotion(slug: string, payload: PromotionPayload): Promise<Promotion> {
   return ask(base(slug, "promotions"), "POST", payload)
 }
@@ -60,6 +64,10 @@ export function setPromotionActive(slug: string, promotionId: string, payload: S
 
 export function fetchCoupons(slug: string, query: CouponListQuery = {}): Promise<CouponPage> {
   return ask(`${base(slug, "coupons")}${searchOf(query)}`)
+}
+
+export function fetchCoupon(slug: string, couponId: string): Promise<Coupon> {
+  return ask(one(slug, "coupons", couponId))
 }
 
 export function createCoupon(slug: string, payload: CouponPayload): Promise<Coupon> {

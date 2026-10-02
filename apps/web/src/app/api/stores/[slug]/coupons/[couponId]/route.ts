@@ -7,6 +7,16 @@ import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
 
 type Context = RouteContext<"/api/stores/[slug]/coupons/[couponId]">
 
+/** One coupon, for the page that edits it. */
+export async function GET(request: NextRequest, context: Context): Promise<NextResponse> {
+  const refused = refuseCrossOrigin(request)
+  if (refused) return refused
+
+  const { slug, couponId } = await context.params
+  const { status, payload } = await forwardSignedIn(request, { path: `/stores/${slug}/coupons/${encodeURIComponent(couponId)}`, method: "GET" })
+  return NextResponse.json(payload, { status })
+}
+
 async function write(request: NextRequest, context: Context, method: "PUT" | "PATCH"): Promise<NextResponse> {
   const refused = refuseCrossOrigin(request)
   if (refused) return refused

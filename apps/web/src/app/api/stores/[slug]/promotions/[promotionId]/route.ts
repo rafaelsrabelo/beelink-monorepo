@@ -8,6 +8,16 @@ import { revalidateStore } from "@/lib/revalidate"
 
 type Context = RouteContext<"/api/stores/[slug]/promotions/[promotionId]">
 
+/** One promotion, for the page that edits it. */
+export async function GET(request: NextRequest, context: Context): Promise<NextResponse> {
+  const refused = refuseCrossOrigin(request)
+  if (refused) return refused
+
+  const { slug, promotionId } = await context.params
+  const { status, payload } = await forwardSignedIn(request, { path: `/stores/${slug}/promotions/${encodeURIComponent(promotionId)}`, method: "GET" })
+  return NextResponse.json(payload, { status })
+}
+
 /** A write on one promotion: a 2xx drops the shop's cache, since it changes what a visitor is charged. */
 async function write(request: NextRequest, context: Context, method: "PUT" | "PATCH"): Promise<NextResponse> {
   const refused = refuseCrossOrigin(request)
