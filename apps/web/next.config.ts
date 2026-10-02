@@ -21,6 +21,11 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   images: {
     /**
+     * AVIF first, for a browser that takes it: the brand's photos (`src/assets/images`) come out a
+     * fifth smaller than as WebP. It costs encoding time once per width, on the first request.
+     */
+    formats: ["image/avif", "image/webp"],
+    /**
      * Every product image the legacy bee-link ever uploaded lives here, and the migration moves
      * rows, never bytes: the URLs already in the database keep pointing at Cloudinary after cutover.
      */

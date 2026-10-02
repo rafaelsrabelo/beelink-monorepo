@@ -4,7 +4,8 @@ import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 
 // App
 import { AppLink } from "@/components/app-link"
-import { BRAND_PHOTOS } from "@/components/landing/landing-photos"
+import { BrandPhoto } from "@/components/landing/brand-photo"
+import posterWall from "@/assets/images/poster-wall.jpg"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { getMessages } from "@/lib/locale"
@@ -18,7 +19,7 @@ export default async function AuthLayout({ children }: LayoutProps<"/">) {
   const { locale, ui, web } = await getMessages()
 
   return (
-    <AuthShell photo={BRAND_PHOTOS.wall} linkComponent={AppLink} messages={ui}>
+    <AuthShell photo={<BrandPhoto image={posterWall} alt="" sizes="50vw" />} linkComponent={AppLink} messages={ui}>
       {children}
       {/* foreground/80 like the card's own footer: muted text on the ground fails contrast in the dark theme (4.34:1). */}
       <p className="text-center text-xs text-foreground/80">

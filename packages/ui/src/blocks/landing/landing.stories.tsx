@@ -13,20 +13,22 @@ import { LandingFaq } from "./landing-faq"
 import { LandingFooter } from "./landing-footer"
 import { LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
-import type { LandingPhoto } from "./landing-picture"
 import { LandingPosters } from "./landing-posters"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
 
 const hrefs = { loginHref: "#entrar", signupHref: "#criar", termsHref: "#termos", privacyHref: "#privacidade" }
 
-/** A stand-in for the brand's photographs, which the web serves from its own files. */
-function photo(seed: string, width: number, height: number): LandingPhoto {
-  const at = (w: number) => `https://picsum.photos/seed/${seed}/${w}/${Math.round((w * height) / width)}`
-  return { src: at(width), srcSet: `${at(640)} 640w, ${at(width)} ${width}w`, width, height }
+/** A stand-in for the brand's photographs, which the app draws with its own optimised image. */
+function photo(seed: string, width: number, height: number, alt = "") {
+  return <img src={`https://picsum.photos/seed/${seed}/${width}/${height}`} alt={alt} className="absolute inset-0 size-full object-cover" />
 }
 
-const photos = { courier: photo("beelink-moto", 1024, 1536), busStop: photo("beelink-ponto", 1024, 1280), wall: photo("beelink-muro", 1024, 1536) }
+const photos = {
+  courier: photo("beelink-moto", 1024, 1536),
+  busStop: photo("beelink-ponto", 1024, 1280, ptBR.landing.posters.busStopAlt),
+  wall: photo("beelink-muro", 1024, 1536, ptBR.landing.posters.wallAlt),
+}
 
 const meta = {
   title: "Blocos/Landing",

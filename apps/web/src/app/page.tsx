@@ -17,7 +17,10 @@ import { LandingSteps } from "@harness-monorepo/ui/blocks/landing/landing-steps"
 // App
 import { AppLink } from "@/components/app-link"
 import { brandFontStyle, jakarta } from "@/components/landing/brand-font"
-import { BRAND_PHOTOS } from "@/components/landing/landing-photos"
+import { BrandPhoto } from "@/components/landing/brand-photo"
+import courierStreet from "@/assets/images/courier-street.jpg"
+import posterBusStop from "@/assets/images/poster-bus-stop.jpg"
+import posterWall from "@/assets/images/poster-wall.jpg"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { getMessages } from "@/lib/locale"
 import { serverEnv } from "@/lib/server-env"
@@ -26,6 +29,9 @@ import { siteOrigin } from "@/lib/site-origin"
 /** The panel's own doors. A signed-in shopkeeper who follows either is sent on to the panel by the proxy. */
 const LOGIN = "/login"
 const SIGNUP = "/signup"
+
+/** The posters, two to a row from `md`, inside the page's 1440px column. */
+const POSTER_SIZES = "(min-width: 90rem) 620px, (min-width: 48rem) 45vw, 100vw"
 
 /**
  * The share image: Beelink's icon on the brand's yellow, 1200×630, centred so a square crop keeps it. The name carries a version
@@ -71,9 +77,19 @@ export default async function LandingPage() {
           <LandingBanners signupHref={SIGNUP} exampleHref={exampleHref} linkComponent={AppLink} messages={ui} />
           <LandingEcosystem messages={ui} />
           <LandingSteps messages={ui} />
-          <LandingCouriers photo={BRAND_PHOTOS.courier} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
+          <LandingCouriers
+            photo={<BrandPhoto image={courierStreet} alt="" sizes="(min-width: 80rem) 820px, 100vw" />}
+            termsHref={LEGAL_ROUTES.terms}
+            privacyHref={LEGAL_ROUTES.privacy}
+            linkComponent={AppLink}
+            messages={ui}
+          />
           <LandingFaq messages={ui} />
-          <LandingPosters busStop={BRAND_PHOTOS.busStop} wall={BRAND_PHOTOS.wall} messages={ui} />
+          <LandingPosters
+            busStop={<BrandPhoto image={posterBusStop} alt={ui.landing.posters.busStopAlt} sizes={POSTER_SIZES} />}
+            wall={<BrandPhoto image={posterWall} alt={ui.landing.posters.wallAlt} sizes={POSTER_SIZES} />}
+            messages={ui}
+          />
           <LandingCta signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
         </main>
         <LandingFooter termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} year={new Date().getFullYear()} linkComponent={AppLink} messages={ui} />

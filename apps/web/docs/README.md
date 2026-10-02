@@ -28,7 +28,7 @@ src/
 │   ├── app-shell.tsx           # sidebar, header, sign-out — the menu is built from the address
 │   ├── app-link.tsx            # next/link behind the design system's plain-string href
 │   ├── landing/brand-font.ts   # Plus Jakarta Sans, loaded by the landing alone
-│   ├── landing/landing-photos.ts # the brand's photos in public/brand/photos, one WebP per width
+│   ├── landing/brand-photo.tsx # next/image over a photo from src/assets/images — drop a file there, import it
 │   └── locale-switcher.tsx
 ├── lib/
 │   ├── api.ts                  # the session-bearing caller — `cache: "no-store"`
@@ -87,7 +87,7 @@ When the API cannot be reached, a refresh answers `unavailable` and the session 
 
 ## Configuration
 
-`next.config.ts` turns on `typedRoutes`, so `next typegen` writes the route union and the `PageProps` / `RouteContext` helpers; `type-check` runs the typegen before tsc for that reason. `images.remotePatterns` allows `res.cloudinary.com`, where every product image of the legacy bee-link lives and will keep living — the migration moves rows, not bytes.
+`next.config.ts` turns on `typedRoutes`, so `next typegen` writes the route union and the `PageProps` / `RouteContext` helpers; `type-check` runs the typegen before tsc for that reason. The brand's photos live in `src/assets/images` and are drawn with `BrandPhoto` (`next/image`, `fill`, blur placeholder): a static import is served as AVIF or WebP at the width the screen needs, under a hashed name cached for good, and the original never leaves the server — drop a file there and import it, nothing else. `images.formats` puts AVIF first. `images.remotePatterns` allows `res.cloudinary.com`, where every product image of the legacy bee-link lives and will keep living — the migration moves rows, not bytes.
 
 ## Language
 

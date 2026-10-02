@@ -8,14 +8,16 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { BeelinkLogo } from "../landing/beelink-logo"
 import { BrandLines } from "../landing/brand-lines"
-import { LandingPicture, type LandingPhoto } from "../landing/landing-picture"
 import { AnchorLink, type LinkComponent } from "./auth-link"
 
 export interface AuthShellProps {
   /** The site's root: the mark leads back to the landing page. */
   homeHref?: string
-  /** A photograph beside the form on a wide screen. None on a phone, where the form is the screen. */
-  photo?: LandingPhoto | null
+  /**
+   * A photograph beside the form on a wide screen, drawn to fill the box it is given — the app hands
+   * its own optimised image in. None on a phone, where the form is the screen.
+   */
+  photo?: ReactNode
   children: ReactNode
   linkComponent?: LinkComponent
   messages?: UiMessages
@@ -29,14 +31,14 @@ export interface AuthShellProps {
  * The brand's tokens are a light theme's. In the dark one the ground is the panel's own, and the
  * mark takes its text colour: a cream page around a dark card is neither theme.
  */
-export function AuthShell({ homeHref = "/", photo = null, children, linkComponent: Link = AnchorLink, messages = defaultMessages }: AuthShellProps) {
+export function AuthShell({ homeHref = "/", photo, children, linkComponent: Link = AnchorLink, messages = defaultMessages }: AuthShellProps) {
   return (
     <div className="flex min-h-svh bg-brand-ground dark:bg-muted">
       {photo ? (
         // Held at the screen's height while a long form scrolls beside it; `self-start`, or the row stretches it and it never sticks.
-        // Lazy although it is on the first screen: hidden on a phone, an eager one would be downloaded there for nothing.
+        // The inner box is the photo's: an image that fills its parent needs a relative one, and sticky is not.
         <div className="sticky top-0 hidden h-svh w-1/2 shrink-0 self-start overflow-hidden bg-brand-ink lg:block">
-          <LandingPicture photo={photo} alt="" sizes="50vw" className="size-full object-cover" />
+          <div className="relative size-full">{photo}</div>
         </div>
       ) : null}
       <div className="relative flex min-h-svh min-w-0 flex-1 flex-col items-center justify-center gap-6 overflow-x-clip p-6 md:p-10">

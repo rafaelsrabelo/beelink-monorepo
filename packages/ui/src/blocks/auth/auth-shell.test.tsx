@@ -37,16 +37,13 @@ describe("AuthShell", () => {
     expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe("")
   })
 
-  it("puts a photo beside the form on a wide screen, as a picture that says nothing to a reader", () => {
-    const photo = { src: "/foto-1024.webp", srcSet: "/foto-640.webp 640w, /foto-1024.webp 1024w", width: 1024, height: 1536 }
-    const { container } = render(<AuthShell photo={photo}>conteúdo</AuthShell>)
+  it("puts the photo it is handed beside the form, on a wide screen only", () => {
+    render(<AuthShell photo={<img src="/foto.jpg" alt="" />}>conteúdo</AuthShell>)
 
-    const picture = container.querySelector("img")
-    expect(picture).toHaveAttribute("alt", "")
-    expect(picture).toHaveAttribute("srcset", photo.srcSet)
-    // Hidden on a phone: a lazy picture that is never shown is never downloaded.
-    expect(picture).toHaveAttribute("loading", "lazy")
-    expect(picture?.parentElement).toHaveClass("hidden", "lg:block")
+    const panel = document.querySelector("img")?.parentElement?.parentElement
+    expect(panel).toHaveClass("hidden", "lg:block", "sticky")
+    // The image fills its parent: that box has to be positioned, and a sticky one is not.
+    expect(document.querySelector("img")?.parentElement).toHaveClass("relative", "size-full")
   })
 
   it("is the form alone when no photo is handed", () => {

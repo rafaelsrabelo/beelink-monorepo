@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Libs
 import { BanknoteIcon, CheckIcon, ClockIcon, MapPinIcon, TruckIcon, type LucideIcon } from "lucide-react"
 
@@ -11,13 +14,15 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import type { LinkComponent } from "../auth/auth-link"
 import { LandingCourierForm } from "./landing-courier-form"
-import { LandingPicture, type LandingPhoto } from "./landing-picture"
 import { LANDING_FOCUS_ON_INK } from "./landing-styles"
 import { LandingTitle } from "./landing-title"
 
 export interface LandingCouriersProps {
-  /** A courier on the road, under the section's lines; without one the section is black alone. */
-  photo?: LandingPhoto | null
+  /**
+   * A courier on the road, under the section's lines, drawn to fill the box it is given — the app
+   * hands its own optimised image in. Without one the section is black alone.
+   */
+  photo?: ReactNode
   termsHref: string
   privacyHref: string
   linkComponent?: LinkComponent
@@ -31,7 +36,7 @@ const PERK_ICONS: readonly LucideIcon[] = [MapPinIcon, CheckIcon, ClockIcon, Ban
  * the sign-up, and the form that starts it, over a courier on the road. The section is the design's; the couriers' app it
  * describes is still to come, which the form says for itself once filled in.
  */
-export function LandingCouriers({ photo = null, termsHref, privacyHref, linkComponent, messages = defaultMessages }: LandingCouriersProps) {
+export function LandingCouriers({ photo, termsHref, privacyHref, linkComponent, messages = defaultMessages }: LandingCouriersProps) {
   const text = messages.landing.couriers
 
   return (
@@ -41,7 +46,7 @@ export function LandingCouriers({ photo = null, termsHref, privacyHref, linkComp
           // Behind the form, fading into the black where the words are: the sentences stay on black.
           // The fade is the photo's own, not the section's: its edge starts in solid black, and no seam shows where it begins.
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 xl:inset-y-0 xl:right-0 xl:left-auto xl:h-full xl:w-[60%]">
-            <LandingPicture photo={photo} alt="" sizes="(min-width: 80rem) 820px, 100vw" className="size-full object-cover" />
+            {photo}
             <div className="absolute inset-0 bg-linear-to-b from-brand-ink via-brand-ink/60 to-brand-ink/30 xl:bg-linear-to-r xl:from-brand-ink xl:via-brand-ink/45 xl:to-brand-ink/15" />
           </div>
         ) : null}

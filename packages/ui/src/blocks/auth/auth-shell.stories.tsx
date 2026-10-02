@@ -26,12 +26,5 @@ export const Padrao: Story = {}
 
 /** Com a foto da marca ao lado, numa tela larga; no celular, só o formulário. */
 export const ComFoto: Story = {
-  args: {
-    photo: {
-      src: "https://picsum.photos/seed/beelink-auth/1024/1536",
-      srcSet: "https://picsum.photos/seed/beelink-auth/640/960 640w, https://picsum.photos/seed/beelink-auth/1024/1536 1024w",
-      width: 1024,
-      height: 1536,
-    },
-  },
+  args: { photo: <img src="https://picsum.photos/seed/beelink-auth/1024/1536" alt="" className="absolute inset-0 size-full object-cover" /> },
 }
