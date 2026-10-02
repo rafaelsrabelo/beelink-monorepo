@@ -6,6 +6,8 @@ import { StoresModule } from '../stores/stores.module.js';
 import { MelhorEnvioClient } from './melhor-envio/melhor-envio.client.js';
 import { MelhorEnvioCallbackController, MelhorEnvioController } from './melhor-envio/melhor-envio.controller.js';
 import { MelhorEnvioRefresher } from './melhor-envio/melhor-envio-refresher.js';
+import { MelhorEnvioSettingsController } from './melhor-envio/melhor-envio-settings.controller.js';
+import { MelhorEnvioSettingsService } from './melhor-envio/melhor-envio-settings.service.js';
 import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
 
 /**
@@ -16,8 +18,8 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  */
 @Module({
   imports: [StoresModule],
-  controllers: [MelhorEnvioController, MelhorEnvioCallbackController],
-  providers: [MelhorEnvioClient, MelhorEnvioService, MelhorEnvioRefresher],
-  exports: [MelhorEnvioService],
+  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController],
+  providers: [MelhorEnvioClient, MelhorEnvioService, MelhorEnvioRefresher, MelhorEnvioSettingsService],
+  exports: [MelhorEnvioService, MelhorEnvioSettingsService],
 })
 export class IntegrationsModule {}

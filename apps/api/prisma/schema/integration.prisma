@@ -59,3 +59,22 @@ model IntegrationOAuthState {
   @@index([expiresAt])
   @@map("integration_oauth_states")
 }
+
+/// How a shop ships by carrier (BEELINK-183): which Melhor Envio services it offers, how long it takes
+/// to post, and the parcel used for a product with no size. Apart from the connection, so connecting
+/// again keeps the shop's choices. None until first saved: then every service is offered.
+model MelhorEnvioSettings {
+  storeId      String   @id @db.Uuid
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  handlingDays Int      @default(1)
+  /// Melhor Envio's service ids. A service it starts offering later stays off until chosen.
+  serviceIds   Int[]
+  /// The default parcel, all four or none — in the product's units.
+  packageWeightGrams Int?
+  packageLengthMm    Int?
+  packageWidthMm     Int?
+  packageHeightMm    Int?
+  updatedAt    DateTime @updatedAt
+
+  @@map("melhor_envio_settings")
+}

@@ -68,9 +68,54 @@ export type IntegrationErrorCode =
   | "INTEGRATION_EXCHANGE_FAILED"
   | "INTEGRATION_UNREACHABLE"
   | "INTEGRATION_NOT_CONNECTED"
-  | "INTEGRATION_NEEDS_RECONNECT";
+  | "INTEGRATION_NEEDS_RECONNECT"
+  /** A carrier setting out of range: days past 30, a service id repeated, half a package. */
+  | "MELHOR_ENVIO_SETTINGS_INVALID";
 
 /** The `details` of an integration refusal raised after the state named the shop: where to send the browser back. */
 export interface IntegrationRefusalDetails {
   storeSlug: string;
+}
+
+/** A carrier's service the shop can offer: PAC, SEDEX, .Package… — by Melhor Envio's own id. */
+export interface MelhorEnvioShippingService {
+  id: number;
+  name: string;
+  /** The carrier, by name: Correios, Jadlog… */
+  company: string;
+}
+
+/** `GET /stores/:slug/integrations/melhor-envio/account`: read from Melhor Envio there and then, never kept. */
+export interface MelhorEnvioAccountOverview {
+  /** What the shop's wallet holds now, in cents. Labels are paid from it. */
+  balanceCents: number;
+  /** Every service Melhor Envio offers, by carrier then name. */
+  services: MelhorEnvioShippingService[];
+}
+
+/** A parcel's weight and size, in the product's own units: grams and millimetres. */
+export interface ShippingPackage {
+  weightGrams: number;
+  lengthMm: number;
+  widthMm: number;
+  heightMm: number;
+}
+
+/** `GET /stores/:slug/integrations/melhor-envio/settings`: how the shop ships by carrier. */
+export interface MelhorEnvioSettings {
+  /** How many days the shop takes to post an order, added to the carrier's time. */
+  handlingDays: number;
+  /** The services offered at checkout; null until first saved, and then every service is. */
+  serviceIds: number[] | null;
+  /** Used for a product with no size of its own; null with none. */
+  defaultPackage: ShippingPackage | null;
+  /** ISO-8601; null until first saved. */
+  updatedAt: string | null;
+}
+
+/** `PUT /stores/:slug/integrations/melhor-envio/settings`, whole. */
+export interface MelhorEnvioSettingsPayload {
+  handlingDays: number;
+  serviceIds: number[];
+  defaultPackage: ShippingPackage | null;
 }

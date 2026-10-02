@@ -73,6 +73,16 @@ export interface MelhorEnvioAccountInfo {
   email: string | null;
 }
 
+/** One of Melhor Envio's services, as the panel lists it. */
+export interface MelhorEnvioServiceInfo {
+  id: number;
+  name: string;
+  company: string;
+}
+
+/** Melhor Envio speaks reais in decimals; bee-link, cents. The one place the two meet. */
+export const centsOfReais = (reais: number): number => Math.round(reais * 100);
+
 /** Melhor Envio answered, and said no: the code or the refresh token is not good, or the access was revoked. */
 export class MelhorEnvioRefused extends Error {
   constructor(readonly status: number, detail: string) {
@@ -126,6 +136,25 @@ export class MelhorEnvioClient {
     const name = [body.firstname, body.lastname].filter((part): part is string => typeof part === 'string' && part.trim() !== '').join(' ').trim();
     if (typeof body.id !== 'string') throw new MelhorEnvioUnreachable('Melhor Envio answered the account request without an account');
     return { id: body.id, name: name || (typeof body.email === 'string' ? body.email : body.id), email: typeof body.email === 'string' ? body.email : null };
+  }
+
+  /** What the shop's wallet holds now, in cents. */
+  async balanceCents(config: MelhorEnvioConfig, accessToken: string): Promise<number> {
+    const body = (await this.call(config, '/api/v2/me/balance', { method: 'GET', headers: { authorization: `Bearer ${accessToken}` } })) as Record<string, unknown>;
+    if (typeof body.balance !== 'number') throw new MelhorEnvioUnreachable('Melhor Envio answered the balance request without a balance');
+    return centsOfReais(body.balance);
+  }
+
+  /** Every service Melhor Envio offers, by carrier then name; one it sends malformed is left out rather than failing the list. */
+  async services(config: MelhorEnvioConfig, accessToken: string): Promise<MelhorEnvioServiceInfo[]> {
+    const body = await this.call(config, '/api/v2/me/shipment/services', { method: 'GET', headers: { authorization: `Bearer ${accessToken}` } });
+    if (!Array.isArray(body)) throw new MelhorEnvioUnreachable('Melhor Envio answered the services request without a list');
+    return body
+      .flatMap((entry: unknown) => {
+        const service = (entry ?? {}) as { id?: unknown; name?: unknown; company?: { name?: unknown } };
+        return typeof service.id === 'number' && typeof service.name === 'string' && typeof service.company?.name === 'string' ? [{ id: service.id, name: service.name, company: service.company.name }] : [];
+      })
+      .sort((a, b) => a.company.localeCompare(b.company, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'));
   }
 
   private async token(config: MelhorEnvioConfig, body: Record<string, string>): Promise<MelhorEnvioTokens> {

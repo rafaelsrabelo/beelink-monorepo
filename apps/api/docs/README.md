@@ -98,6 +98,8 @@ Every route needs `Authorization: Bearer <access token>` unless it is marked pub
 | `POST` | `/api/stores/:slug/integrations/melhor-envio/authorize` | no | Melhor Envio's authorization page, with a ten-minute state for this person and shop | `200 IntegrationAuthorization` · `503 INTEGRATION_UNAVAILABLE` |
 | `POST` | `/api/integrations/melhor-envio/callback` | no | the code traded for the tokens, sealed; only the person who began the flow | `200 MelhorEnvioConnected` · `400 INTEGRATION_STATE_INVALID` · `400 INTEGRATION_EXCHANGE_FAILED` · `502 INTEGRATION_UNREACHABLE` |
 | `DELETE` | `/api/stores/:slug/integrations/melhor-envio` | no | disconnect: the tokens are deleted | `204` |
+| `GET` | `/api/stores/:slug/integrations/melhor-envio/account` | no | the wallet's balance and Melhor Envio's services, read there and then with the shop's token | `200 MelhorEnvioAccountOverview` · `409 INTEGRATION_NOT_CONNECTED` · `409 INTEGRATION_NEEDS_RECONNECT` · `502 INTEGRATION_UNREACHABLE` |
+| `GET` · `PUT` | `/api/stores/:slug/integrations/melhor-envio/settings` | no | the services offered, the days to post and the default parcel — every service until first saved | `200 MelhorEnvioSettings` · `400 MELHOR_ENVIO_SETTINGS_INVALID` |
 
 `GET /api/stores/mine` is declared above `GET /api/stores/:slug`: Nest matches in declaration order, and `mine` is on the reserved-slug list so no shop can occupy it either.
 

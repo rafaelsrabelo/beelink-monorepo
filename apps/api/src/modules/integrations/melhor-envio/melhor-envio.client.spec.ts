@@ -72,6 +72,25 @@ describe('MelhorEnvioClient', () => {
     await expect(client.exchange(config, 'the-code')).rejects.toBeInstanceOf(MelhorEnvioUnreachable);
   });
 
+  it("reads the wallet's balance in cents, and the services by carrier then name, dropping a malformed one", async () => {
+    let fetched = answer(200, { balance: 1624.9, reserved: 0, debts: 87 });
+    expect(await client.balanceCents(config, 'eyJ.access')).toBe(162490);
+    expect(sent(fetched).url).toBe('https://sandbox.melhorenvio.com.br/api/v2/me/balance');
+
+    fetched = answer(200, [
+      { id: 2, name: 'SEDEX', company: { id: 1, name: 'Correios' } },
+      { id: 3, name: '.Package', company: { id: 2, name: 'Jadlog' } },
+      { id: 1, name: 'PAC', company: { id: 1, name: 'Correios' } },
+      { id: 'x', name: 'Broken' },
+    ]);
+    expect(await client.services(config, 'eyJ.access')).toEqual([
+      { id: 1, name: 'PAC', company: 'Correios' },
+      { id: 2, name: 'SEDEX', company: 'Correios' },
+      { id: 3, name: '.Package', company: 'Jadlog' },
+    ]);
+    expect(sent(fetched).url).toBe('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/services');
+  });
+
   it("reads whose account it is, with the shop's bearer token", async () => {
     const fetched = answer(200, { id: '779f4d62', firstname: 'Rafael', lastname: 'Rabelo', email: 'loja@exemplo.com', document: '12345678900' });
 

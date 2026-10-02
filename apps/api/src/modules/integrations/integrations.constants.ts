@@ -18,6 +18,12 @@ export const RENEW_AHEAD_MS = 7 * DAY_MS;
 /** Melhor Envio's refresh token life, from the trade that gave it; the documentation gives no other point to count from. */
 export const MELHOR_ENVIO_REFRESH_LIFE_MS = 45 * DAY_MS;
 
+/** A month to post an order is already more than any shop means. */
+export const HANDLING_DAYS_MAX = 30;
+
+/** Melhor Envio offers a few dozen services; a list longer than this is not a choice. */
+export const SERVICE_IDS_MAX = 100;
+
 /** Connections renewed per pass of the routine; the rest wait for the next one. */
 export const RENEW_BATCH = 50;
 
