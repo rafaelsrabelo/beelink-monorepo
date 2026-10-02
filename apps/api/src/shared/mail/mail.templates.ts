@@ -90,6 +90,19 @@ export interface OrderStatusContent {
   status: NotifiedOrderStatus;
   /** A pick-up reads its moves as the shop window does: ready at the shop, picked up. */
   pickup: boolean;
+  /**
+   * On a delivery, the cashback it made usable (BEELINK-239), read when the e-mail is sent — an order
+   * cancelled since has none to tell of. Null otherwise.
+   */
+  cashback?: { amountCents: number; expiresAt: Date | null } | null;
+}
+
+/** "Você ganhou R$ 5,00 de cashback…", the date in the shops' own zone, as a calendar shows it. */
+function cashbackLineOf(cashback: NonNullable<OrderStatusContent['cashback']>): string {
+  const until = cashback.expiresAt
+    ? `, até ${new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' }).format(cashback.expiresAt)}`
+    : '';
+  return `Você ganhou ${brl(cashback.amountCents)} de cashback para usar nas próximas compras na loja${until}.`;
 }
 
 /** How each move reads — in the subject, after the order's number, and in the words. */
@@ -110,17 +123,18 @@ function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean): { subject: s
  * A customer's order moved: the shop's name on it, the way to the order at the shop, and — last —
  * the way to stop these notices, straight to the box that turns them off (`settingsUrl`).
  */
-export function orderStatusChanged({ name, shopName, number, status, pickup }: OrderStatusContent, url: string, settingsUrl: string): MailContent {
+export function orderStatusChanged({ name, shopName, number, status, pickup, cashback = null }: OrderStatusContent, url: string, settingsUrl: string): MailContent {
   const greeting = `Olá, ${name}!`;
   const { subject, said } = orderMoveOf(status, pickup);
   const line = `Seu pedido nº ${number} em ${shopName} ${said}.`;
+  const earned = cashback ? cashbackLineOf(cashback) : null;
   const why = 'Você recebe este aviso porque tem conta na loja. Para não receber mais, desmarque "Andamento dos pedidos" e salve';
   return {
     subject: `${shopName} — pedido nº ${number} ${subject}`,
-    text: `${greeting}\n\n${line}\n\nVeja o pedido:\n${url}\n\n${why}:\n${settingsUrl}`,
+    text: `${greeting}\n\n${line}${earned ? `\n\n${earned}` : ''}\n\nVeja o pedido:\n${url}\n\n${why}:\n${settingsUrl}`,
     html: layout(
       escapeHtml(greeting),
-      `<p style="margin:0">${escapeHtml(line)}</p>`,
+      `<p style="margin:0">${escapeHtml(line)}</p>${earned ? `<p style="margin:12px 0 0">${escapeHtml(earned)}</p>` : ''}`,
       'Ver pedido',
       url,
       escapeHtml(shopName),

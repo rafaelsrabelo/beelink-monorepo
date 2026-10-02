@@ -1,5 +1,5 @@
 // Types
-import type { CashbackCredit, CashbackEntry, CashbackSettings } from '@harness-monorepo/contracts';
+import type { CashbackCredit, CashbackEntry, CashbackSettings, ShopOrderCashback } from '@harness-monorepo/contracts';
 import type { CashbackCreditModel, CashbackEntryModel, CashbackSettingsModel } from '../../generated/prisma/models.js';
 
 // App
@@ -40,5 +40,24 @@ export function toCashbackEntry(row: CashbackEntryModel & OrderNumber): Cashback
     orderNumber: row.order?.number ?? null,
     reason: row.reason,
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/**
+ * An order's cashback as the shop reads it (BEELINK-239): what it earns, at the rate it was placed
+ * at, and where its lot stands. Null when it earns none. The customer's reading drops
+ * `unrecoveredCents`, which is the shop's business.
+ */
+export function toOrderCashback(row: { cashbackEarnedCents: number; cashbackRateBps: number | null; cashbackCredit: CashbackCreditModel | null }): ShopOrderCashback | null {
+  const lot = row.cashbackCredit;
+  if (row.cashbackRateBps === null || !lot) return null;
+  return {
+    earnedCents: row.cashbackEarnedCents,
+    rateBps: row.cashbackRateBps,
+    status: lot.status,
+    remainingCents: lot.remainingCents,
+    availableAt: lot.availableAt?.toISOString() ?? null,
+    expiresAt: lot.expiresAt?.toISOString() ?? null,
+    unrecoveredCents: lot.unrecoveredCents,
   };
 }

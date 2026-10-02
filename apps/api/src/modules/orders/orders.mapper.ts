@@ -3,6 +3,7 @@ import type { Order, OrderCoupon, OrderCustomer, OrderSummary } from '@harness-m
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
+import { toOrderCashback } from '../cashback/cashback.mapper.js';
 import { toDeliveryAddress } from './order-delivery.js';
 import { toShopDelivery } from './order-tracking.js';
 
@@ -17,6 +18,7 @@ export const ORDER_INCLUDE = {
   items: { orderBy: { position: 'asc' } },
   events: { orderBy: { createdAt: 'asc' } },
   delivery: true,
+  cashbackCredit: true,
 } as const satisfies Prisma.OrderInclude;
 
 /** What a row of the list is read with: the units, not the lines. */
@@ -65,6 +67,7 @@ export function toOrder(row: OrderRow): Order {
     promotionDiscountCents: row.promotionDiscountCents,
     couponDiscountCents: row.couponDiscountCents,
     coupon: toOrderCoupon(row),
+    cashback: toOrderCashback(row),
     totalCents: row.totalCents,
     note: row.note,
     placedAt: row.placedAt.toISOString(),

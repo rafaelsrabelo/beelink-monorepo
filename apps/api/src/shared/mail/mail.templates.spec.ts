@@ -109,6 +109,17 @@ describe("an order's move, told to its customer", () => {
     // The fine print after the button, never before it.
     expect(mail.html.indexOf(`href="${settings}"`)).toBeGreaterThan(mail.html.indexOf('Ver pedido'));
   });
+
+  /** BEELINK-239: a delivery makes the cashback usable, and the e-mail says how much and until when. */
+  it('tells the cashback a delivery made usable, until the day it expires in Brasília', () => {
+    // 02:59 UTC on the 31st is still the 30th in Brasília.
+    const mail = orderStatusChanged({ ...base, status: 'DELIVERED', cashback: { amountCents: 504, expiresAt: new Date('2026-10-31T02:59:00.000Z') } }, url, settings);
+
+    expect(mail.text).toContain('foi entregue.\n\nVocê ganhou R$\u00a05,04 de cashback para usar nas próximas compras na loja, até 30/10/2026.');
+    expect(mail.html).toContain('Você ganhou R$\u00a05,04 de cashback');
+    expect(orderStatusChanged({ ...base, status: 'DELIVERED', cashback: { amountCents: 100, expiresAt: null } }, url, settings).text).toContain('compras na loja.');
+    expect(orderStatusChanged({ ...base, status: 'DELIVERED' }, url, settings).text).not.toContain('cashback');
+  });
 });
 
 describe('escapeHtml', () => {

@@ -10,6 +10,8 @@ export interface OrderStatusNotice {
   at: Date;
   /** The customer's own doing — placing the order, cancelling it: told, but not as news to them. */
   seen: boolean;
+  /** On a delivery, the cashback it made usable (BEELINK-239); absent otherwise. */
+  cashbackCents?: number | null;
 }
 
 /**
@@ -20,7 +22,7 @@ export interface OrderStatusNotice {
  * Only for a customer with an account: one known only by an order has nowhere to read it. The
  * transaction's own event (`order.created`, `order.status`) is what makes both sides read it again.
  */
-export async function noteOrderStatus(tx: Tx, { order, status, at, seen }: OrderStatusNotice): Promise<void> {
+export async function noteOrderStatus(tx: Tx, { order, status, at, seen, cashbackCents = null }: OrderStatusNotice): Promise<void> {
   const customer = await tx.customer.findUnique({ where: { id: order.customerId }, select: { userId: true } });
   if (!customer?.userId) return;
 
@@ -31,5 +33,5 @@ export async function noteOrderStatus(tx: Tx, { order, status, at, seen }: Order
     update: { lastMessageAt: at },
     select: { id: true },
   });
-  await tx.orderMessage.create({ data: { conversationId: conversation.id, author: 'SYSTEM', status, body: '', createdAt: at, readAt: seen ? at : null } });
+  await tx.orderMessage.create({ data: { conversationId: conversation.id, author: 'SYSTEM', status, body: '', cashbackCents, createdAt: at, readAt: seen ? at : null } });
 }

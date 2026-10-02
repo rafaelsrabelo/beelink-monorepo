@@ -61,6 +61,11 @@ model Order {
   couponCode String?     @db.VarChar(30)
   couponKind CouponKind?
   totalCents       Int
+  /// The cashback it earns once delivered (BEELINK-239), photographed when placed with the rate it was
+  /// worked out at: a rule changed later applies to new orders only. 0, and a null rate, when it earns
+  /// nothing — the cashback off, the order under the minimum, or too little to make a cent.
+  cashbackEarnedCents Int  @default(0)
+  cashbackRateBps     Int?
 
   /// Where a delivery goes, photographed from the customer's record when the order is placed: the
   /// customer moving, or renaming themselves, never rewrites where an order went. Null on a pick-up,

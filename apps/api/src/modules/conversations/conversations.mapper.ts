@@ -30,7 +30,7 @@ export function toMessage(row: MessageRow): ConversationMessage {
   const readAt = row.readAt?.toISOString() ?? null;
   const createdAt = row.createdAt.toISOString();
   // The CHECK on the table holds a notice's status; the fallback only keeps the type honest.
-  if (row.author === 'SYSTEM') return { kind: 'STATUS', id: row.id, status: row.status ?? 'RECEIVED', createdAt, readAt };
+  if (row.author === 'SYSTEM') return { kind: 'STATUS', id: row.id, status: row.status ?? 'RECEIVED', cashbackCents: row.cashbackCents, createdAt, readAt };
   return { kind: 'MESSAGE', id: row.id, author: row.author, body: row.body, createdAt, readAt };
 }
 

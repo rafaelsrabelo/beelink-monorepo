@@ -9,12 +9,11 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { adjustCashback, spendableAt } from './cashback-ledger.js';
 import { CASHBACK_EXPIRING_SOON_DAYS, CASHBACK_PAGE_SIZE, DAY_MS } from './cashback.constants.js';
-import { toCashbackCredit, toCashbackEntry, toCashbackSettings } from './cashback.mapper.js';
-import { spendingOrder } from './cashback-spending.js';
+import { creditsOf, entriesOf } from './cashback-reads.js';
+import { toCashbackSettings } from './cashback.mapper.js';
 import type { CashbackAdjustmentDto, CashbackSettingsDto, CustomerCashbackQueryDto } from './dto/cashback.dto.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ORDER_NUMBER = { order: { select: { number: true } } } as const;
 
 /**
  * A shop's cashback as its owner keeps it (BEELINK-238): the rules, what they have run up, and each
@@ -77,44 +76,12 @@ export class CashbackService {
   }
 
   private async customerCashbackOf(customerId: string, page: number, pageSize: number): Promise<CustomerCashback> {
-    const now = new Date();
-    const [customer, open, entries, total] = await Promise.all([
-      this.prisma.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cashbackBalanceCents: true, cashbackPendingCents: true } }),
-      this.prisma.cashbackCredit.findMany({
-        where: { customerId, OR: [{ status: 'PENDING' }, spendableAt(now)] },
-        include: ORDER_NUMBER,
-      }),
-      this.prisma.cashbackEntry.findMany({
-        where: { customerId },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        include: ORDER_NUMBER,
-      }),
+    const [credits, entries, total] = await Promise.all([
+      creditsOf(this.prisma, customerId, new Date()),
+      entriesOf(this.prisma, customerId, { page, pageSize }),
       this.prisma.cashbackEntry.count({ where: { customerId } }),
     ]);
-
-    // Usable lots in the order they will be spent, then what waits on a delivery.
-    const available = spendingOrder(open.filter((lot) => lot.status === 'AVAILABLE'));
-    const pending = open.filter((lot) => lot.status === 'PENDING').sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    const first = available.find((lot) => lot.expiresAt !== null);
-    const nextExpiry = first?.expiresAt
-      ? {
-          amountCents: available.filter((lot) => lot.expiresAt?.getTime() === first.expiresAt?.getTime()).reduce((sum, lot) => sum + lot.remainingCents, 0),
-          expiresAt: first.expiresAt.toISOString(),
-        }
-      : null;
-
-    return {
-      balanceCents: customer.cashbackBalanceCents,
-      pendingCents: customer.cashbackPendingCents,
-      nextExpiry,
-      credits: [...available, ...pending].map(toCashbackCredit),
-      entries: entries.map(toCashbackEntry),
-      total,
-      page,
-      pageSize,
-    };
+    return { ...credits, entries, total, page, pageSize };
   }
 
   /** A customer of this shop's; another shop's, or none at all, is one answer. */

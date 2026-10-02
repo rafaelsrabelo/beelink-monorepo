@@ -53,11 +53,12 @@ export async function lockLedger(tx: Tx, storeId: string, customerId: string): P
 export async function recountCashback(tx: Tx, customerId: string): Promise<void> {
   // One after the other: a transaction is one connection, and it runs one query at a time anyway.
   const available = await tx.cashbackCredit.aggregate({ where: { customerId, status: 'AVAILABLE' }, _sum: { remainingCents: true } });
-  const pending = await tx.cashbackCredit.aggregate({ where: { customerId, status: 'PENDING' }, _sum: { amountCents: true } });
+  // A pending lot's `remainingCents` is what its delivery will pay out: all of it, less what an undone delivery could not take back.
+  const pending = await tx.cashbackCredit.aggregate({ where: { customerId, status: 'PENDING' }, _sum: { remainingCents: true } });
 
   await tx.customer.update({
     where: { id: customerId },
-    data: { cashbackBalanceCents: available._sum.remainingCents ?? 0, cashbackPendingCents: pending._sum.amountCents ?? 0 },
+    data: { cashbackBalanceCents: available._sum.remainingCents ?? 0, cashbackPendingCents: pending._sum.remainingCents ?? 0 },
   });
 }
 

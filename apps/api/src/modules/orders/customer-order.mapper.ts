@@ -1,5 +1,6 @@
 // Types
 import type {
+  OrderCashback,
   CustomerOrder,
   CustomerOrderItem,
   CustomerOrderSummary,
@@ -9,6 +10,7 @@ import type {
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
+import { toOrderCashback } from '../cashback/cashback.mapper.js';
 import { toDeliveryAddress } from './order-delivery.js';
 import { toCustomerDelivery } from './order-tracking.js';
 import { toOrderCoupon } from './orders.mapper.js';
@@ -34,6 +36,7 @@ export const CUSTOMER_ORDER_INCLUDE = {
   items: { orderBy: { position: 'asc' }, include: itemInclude },
   events: { orderBy: { createdAt: 'asc' }, select: { status: true, actor: true, createdAt: true } },
   delivery: true,
+  cashbackCredit: true,
 } as const satisfies Prisma.OrderInclude;
 
 type CustomerOrderRow = Prisma.OrderGetPayload<{ include: typeof CUSTOMER_ORDER_INCLUDE }>;
@@ -71,6 +74,14 @@ function sidesOf(status: OrderStatus, events: readonly EventRow[]): { placedBy: 
   return { placedBy: events[0] ? sideOf(events[0].actor) : 'SHOP', cancelledBy: cancelled ? sideOf(cancelled.actor) : null };
 }
 
+/** The order's cashback as its customer reads it: the shop's reading, less what the shop did not get back. */
+function customerCashbackOf(row: CustomerOrderRow): OrderCashback | null {
+  const cashback = toOrderCashback(row);
+  if (!cashback) return null;
+  const { unrecoveredCents: _shops, ...theirs } = cashback;
+  return theirs;
+}
+
 export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
   return {
     number: row.number,
@@ -86,6 +97,7 @@ export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
     promotionDiscountCents: row.promotionDiscountCents,
     couponDiscountCents: row.couponDiscountCents,
     coupon: toOrderCoupon(row),
+    cashback: customerCashbackOf(row),
     totalCents: row.totalCents,
     placedAt: row.placedAt.toISOString(),
     events: row.events.map((event) => ({ status: event.status, at: event.createdAt.toISOString() })),
@@ -108,6 +120,7 @@ export function toCustomerOrderSummary(row: CustomerOrderRow): CustomerOrderSumm
     deliveryFeeCents: row.deliveryFeeCents,
     discountCents: row.discountCents,
     coupon: toOrderCoupon(row),
+    cashback: customerCashbackOf(row),
     itemsCount: row.items.reduce((sum, item) => sum + item.quantity, 0),
     items: row.items.slice(0, CUSTOMER_ORDER_CARD_ITEMS).map(toItem),
     moreItems: Math.max(row.items.length - CUSTOMER_ORDER_CARD_ITEMS, 0),

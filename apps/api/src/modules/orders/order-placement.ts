@@ -7,6 +7,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { earningForOrder, holdOrderCashback } from '../cashback/cashback-orders.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
@@ -100,6 +101,15 @@ export class OrderPlacement {
         lock: true,
       });
       if (priced.refusal) throw couponRefused(priced.refusal);
+      // What it will earn, at the shop's rules as they are now (BEELINK-239).
+      const cashback = await earningForOrder(tx, storeId, {
+        subtotalCents: priced.totals.subtotalCents,
+        promotionDiscountCents: priced.promotionDiscountCents,
+        couponDiscountCents: priced.couponDiscountCents,
+        couponKind: priced.coupon?.kind ?? null,
+        manualDiscountCents: priced.manualDiscountCents,
+        cashbackUsedCents: 0,
+      });
 
       const order = await tx.order.create({
         data: {
@@ -115,6 +125,8 @@ export class OrderPlacement {
           couponDiscountCents: priced.couponDiscountCents,
           couponCode: priced.coupon?.code ?? null,
           couponKind: priced.coupon?.kind ?? null,
+          cashbackEarnedCents: cashback?.earnedCents ?? 0,
+          cashbackRateBps: cashback?.rateBps ?? null,
           note: placement.note,
           placedAt: placement.placedAt,
           stockTaken: true,
@@ -130,17 +142,19 @@ export class OrderPlacement {
           },
           events: { create: { status, actor, userId } },
         },
-        include: ORDER_INCLUDE,
+        select: { id: true },
       });
 
       if (priced.coupon) await redeemCoupon(tx, priced.coupon.id, order.id, priced.couponDiscountCents);
+      if (cashback) await holdOrderCashback(tx, { storeId, customerId, orderId: order.id, earnedCents: cashback.earnedCents, validityDays: cashback.validityDays });
       await refreshBooks(tx, customerId);
       // The conversation is born with the order, its first status the first line. Told now, whatever
       // day the shopkeeper dated the sale; not news to a customer who placed it themselves.
       await noteOrderStatus(tx, { order: { id: order.id, customerId }, status, at: new Date(), seen: actor === 'CUSTOMER' });
       // A sale the shopkeeper registers is born accepted, which the customer hears of like any move.
       const owed = await oweStatusEmail(tx, { order: { id: order.id, customerId }, status, byCustomer: actor === 'CUSTOMER' });
-      return { order, owed };
+      // Read once everything placing it did is written: its cashback's lot included.
+      return { order: await tx.order.findUniqueOrThrow({ where: { id: order.id }, include: ORDER_INCLUDE }), owed };
     });
     if (placed.owed) this.mailer.dispatch();
     return placed.order;

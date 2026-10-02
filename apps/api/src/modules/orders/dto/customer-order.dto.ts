@@ -24,6 +24,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { OrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
@@ -104,6 +105,7 @@ export class CustomerOrderResponse implements CustomerOrder {
   @ApiProperty({ description: "The sum of the lines' promotion discounts." }) promotionDiscountCents!: number;
   @ApiProperty({ description: 'What the coupon took off; on a free delivery, the fee.' }) couponDiscountCents!: number;
   @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
+  @ApiProperty({ type: OrderCashbackResponse, nullable: true, description: 'What it earns in cashback; null when it earns none.' }) cashback!: OrderCashbackResponse | null;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
   @ApiProperty({ type: [CustomerOrderEventResponse], description: 'Oldest first; never who set each status.' })
@@ -130,6 +132,7 @@ export class CustomerOrderSummaryResponse implements CustomerOrderSummary {
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
   @ApiProperty({ description: 'Promotions, coupon and typed discount together.' }) discountCents!: number;
   @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
+  @ApiProperty({ type: OrderCashbackResponse, nullable: true, description: 'What it earns in cashback; null when it earns none.' }) cashback!: OrderCashbackResponse | null;
   @ApiProperty({ description: 'Units across every line.' }) itemsCount!: number;
   @ApiProperty({ type: [CustomerOrderItemResponse], description: 'The first lines, as a card shows them.' }) items!: CustomerOrderItemResponse[];
   @ApiProperty({ description: 'Lines past those.' }) moreItems!: number;

@@ -21,6 +21,8 @@ enum CashbackEntryKind {
   EXPIRE
   /// The shopkeeper's correction, either way, with its reason.
   ADJUST
+  /// What was left when the customer deleted their account: the credit went with it (BEELINK-239).
+  FORFEIT
 }
 
 /// A shop's cashback rules (docs/product/README.md, "Cashback"). One row per shop, written the first
@@ -69,6 +71,14 @@ model CashbackCredit {
   availableAt DateTime?
   /// When what is left of it expires; null never does.
   expiresAt   DateTime?
+  /// The shop's validity when its order was placed, in days; null never expires. Kept because the
+  /// validity counts from the delivery, and a rule changed meanwhile applies to new orders only.
+  /// Null on a credit the shopkeeper gave, whose expiry is set at once.
+  validityDays Int?
+  /// What the customer had already spent of it when its order was undone — the balance stops at zero
+  /// (decided 01/10/2026), so this is what the shop did not get back. A delivery again pays it out
+  /// less this, and the panel shows it. 0 to `amountCents`, by a CHECK.
+  unrecoveredCents Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
