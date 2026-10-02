@@ -2879,6 +2879,61 @@ export interface UiMessages {
       unrecovered: string
     }
   }
+  /** The panel's Integrations (BEELINK-183): the shop's own accounts elsewhere — Melhor Envio now. */
+  integrations: {
+    title: string
+    intro: string
+    failed: string
+    retry: string
+    /** What came of a connection, on the way back from the third party. */
+    result: {
+      connected: string
+      /** By the code the way back carries; `UNKNOWN` for any other. */
+      errors: Record<"INTEGRATION_CANCELLED" | "INTEGRATION_STATE_INVALID" | "INTEGRATION_EXCHANGE_FAILED" | "INTEGRATION_UNREACHABLE" | "INTEGRATION_UNAVAILABLE" | "AUTH_UNAUTHENTICATED" | "UNKNOWN", string>
+    }
+    melhorEnvio: {
+      title: string
+      lead: string
+      unavailable: string
+      connect: string
+      reconnect: string
+      needsReconnect: string
+      connected: string
+      disconnectedBadge: string
+      needsReconnectBadge: string
+      sandbox: string
+      sandboxHint: string
+      account: string
+      balance: string
+      balanceHint: string
+      balanceFailed: string
+      disconnect: string
+      disconnectTitle: string
+      disconnectBody: string
+      disconnectConfirm: string
+      disconnectCancel: string
+      disconnectFailed: string
+    }
+    shipping: {
+      title: string
+      services: string
+      servicesHint: string
+      servicesFailed: string
+      handlingDays: string
+      handlingDaysHint: string
+      package: string
+      packageHint: string
+      weight: string
+      length: string
+      width: string
+      height: string
+      save: string
+      saving: string
+      saved: string
+      issues: { handlingDays: string; package: string; packageRange: string }
+      errors: Record<"MELHOR_ENVIO_SETTINGS_INVALID" | "UNKNOWN", string>
+    }
+  }
 }
 
 /** The two the product ships. `pt-BR` is the default; `en` is what the repository itself speaks. */

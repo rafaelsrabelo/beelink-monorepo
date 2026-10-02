@@ -76,6 +76,9 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/cashback/customer-cashback` | `cashback`, `money`, `date`, `onAdjust`, `adjustment`, `pager` — a customer's balance and statement | Blocos/Painel/Cashback → Na ficha do cliente |
 | `blocks/cashback/cashback-adjust-form` | `value`, `onChange`, `onSubmit`, `onCancel`, `issues`, `error` | Blocos/Painel/Cashback → Ajuste manual |
 | `blocks/cashback/order-cashback` | `cashback`, `money`, `date` — drawn by `orders/order-detail` | Blocos/Painel/Cashback → No pedido |
+| `blocks/integrations/melhor-envio-card` | `view` (`lib/integrations`), `connectHref`, `onDisconnect`, `disconnecting`, `disconnectError` — connect, whose account, the wallet, the reconnect warning; asks before disconnecting. "Conectar" is a plain `<a>`: a router link would prefetch a route that begins an authorization | Blocos/Painel/Integrações |
+| `blocks/integrations/shipping-settings-form` | `value`, `onChange`, `onSubmit`, `services` (`"loading"`, `"failed"` or the list), `issues`, `pending`, `error`, `saved` — services by carrier, days to post, default parcel | Blocos/Painel/Integrações |
+| `blocks/integrations/integrations-result` · `integrations-skeleton` · `integrations-failed` | `tone`, `message` · — · `onRetry` | Blocos/Painel/Integrações |
 
 `auth-link` is the default every block navigates with until an app passes `next/link`. It is one line, and its test is still
 the longest of the three it has: a link component that swallowed the extra props would drop the `aria-current` the sidebar
