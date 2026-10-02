@@ -215,6 +215,7 @@ export const en: WebMessages = {
     ORDER_CONVERSATION_NOT_FOUND: "This conversation has not started yet: the customer opens it.",
     ORDER_STOCK_INSUFFICIENT: "There is not enough stock for everything. Change the marked quantities.",
     ORDER_COUPON_REFUSED: "This coupon does not apply to this order.",
+    ORDER_CASHBACK_REFUSED: "Your cashback balance changed. Check the amount and try again.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Signing in with Google is not available right now. Use your e-mail and password.",
     GOOGLE_STATE_INVALID: "The Google sign-in expired or was already used. Try again.",
     GOOGLE_EXCHANGE_FAILED: "Google did not confirm the sign-in. Try again.",

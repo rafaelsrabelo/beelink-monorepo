@@ -79,6 +79,7 @@ function quoteOf(cart: CustomerOrderQuotePayload, over: Partial<OrderQuote> = {}
     promotionDiscountCents: 0,
     firstPurchase: null,
     cashback: null,
+    cashbackUse: null,
     coupon,
     couponDiscountCents,
     manualDiscountCents: 0,

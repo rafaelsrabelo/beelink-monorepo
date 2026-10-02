@@ -50,6 +50,7 @@ const quote: OrderQuote = {
   deliveryFeeCents: null,
   totalCents: 23490,
   cashback: null,
+  cashbackUse: null,
 }
 
 describe("the cart as its price is asked for", () => {

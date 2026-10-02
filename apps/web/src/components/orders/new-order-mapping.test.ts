@@ -111,6 +111,7 @@ describe("shownTotalsOf", () => {
     deliveryFeeCents: 1000,
     totalCents: 5200,
     cashback: null,
+    cashbackUse: null,
   }
 
   it("is the form's own sum until the API answered", () => {
