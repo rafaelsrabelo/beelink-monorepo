@@ -20,7 +20,6 @@ export const sampleConnectedCarriers: DeliveryCarriersView = { available: true, 
 /** OpenStreetMap's own tiles, which need no key — Storybook only. */
 export const sampleDeliveryMap: DeliveryMapView = {
   tileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-  attribution: "© OpenStreetMap",
   point: { latitude: -23.5614, longitude: -46.6559 },
   radiusMeters: 8000,
 }

@@ -48,7 +48,6 @@ export interface DeliveryCarriersView {
 /** The map beside the bands: the shop's point and how far it reaches. */
 export interface DeliveryMapView {
   tileUrl: string
-  attribution: string
   /** Null while the shop has no point: the card asks for the address instead of drawing a map. */
   point: StorePoint | null
   radiusMeters: number | null

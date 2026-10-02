@@ -40,6 +40,9 @@ export interface StoreMapProps {
   className?: string
 }
 
+/** MapTiler's licence asks for this visibly, and the free plan is the one that asks hardest. */
+export const MAP_ATTRIBUTION = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+
 /**
  * A pin drawn by us rather than Leaflet's own.
  *

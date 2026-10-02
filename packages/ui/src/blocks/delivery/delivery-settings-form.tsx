@@ -18,7 +18,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { LinkComponent } from "../auth/auth-link"
-import { StoreMap } from "../store/store-map"
+import { MAP_ATTRIBUTION, StoreMap } from "../store/store-map"
 import { DeliveryBandRows } from "./delivery-band-rows"
 import { DeliveryCarriers } from "./delivery-carriers"
 import { DeliveryModeCard } from "./delivery-mode-card"
@@ -109,7 +109,7 @@ export function DeliverySettingsForm({
             </div>
             <div className="flex flex-col gap-3">
               {map?.point ? (
-                <StoreMap tileUrl={map.tileUrl} attribution={map.attribution} point={map.point} fallbackCenter={map.point} radiusMeters={map.radiusMeters} label={text.own.mapLabel} className="h-64 lg:h-80" />
+                <StoreMap tileUrl={map.tileUrl} attribution={MAP_ATTRIBUTION} point={map.point} fallbackCenter={map.point} radiusMeters={map.radiusMeters} label={text.own.mapLabel} className="h-64 lg:h-80" />
               ) : map ? (
                 <p className="bg-muted rounded-lg px-3 py-2 text-sm">{text.own.noPoint}</p>
               ) : null}

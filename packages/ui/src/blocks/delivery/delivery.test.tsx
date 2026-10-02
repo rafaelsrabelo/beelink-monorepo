@@ -67,7 +67,7 @@ describe("DeliverySettingsForm", () => {
   })
 
   it("says the fee is agreed afterwards while there is no band, and asks for the address before a map", () => {
-    renderForm({ value: { ...sampleDeliveryValues, bands: [] }, previews: [], map: { tileUrl: "https://tiles.test/{z}/{x}/{y}.png", attribution: "©", point: null, radiusMeters: null } })
+    renderForm({ value: { ...sampleDeliveryValues, bands: [] }, previews: [], map: { tileUrl: "https://tiles.test/{z}/{x}/{y}.png", point: null, radiusMeters: null } })
 
     expect(screen.getByText("Sem faixas, o frete é combinado com o cliente depois do pedido.")).toBeInTheDocument()
     expect(screen.getByText(/Complete o endereço da loja na aba Endereço para ver o raio/)).toBeInTheDocument()
