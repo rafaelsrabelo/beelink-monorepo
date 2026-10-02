@@ -315,6 +315,8 @@ export const ptBR: UiMessages = {
     noticesOrdersHint: "Quando o pedido é confirmado, sai para entrega ou fica pronto, é entregue ou cancelado.",
     noticesFavorites: "Favoritos",
     noticesFavoritesHint: "Quando um favorito baixa de preço ou volta ao estoque.",
+    noticesCashback: "Cashback",
+    noticesCashbackHint: "Uma semana antes de o seu cashback vencer.",
     noticesOffers: "Ofertas e novidades",
     noticesOffersHint: "Promoções e lançamentos desta loja.",
     noticesOffersSince: "Você aceitou em {date}.",

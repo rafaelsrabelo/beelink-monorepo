@@ -410,6 +410,8 @@ export interface UiMessages {
     noticesOrdersHint: string
     noticesFavorites: string
     noticesFavoritesHint: string
+    noticesCashback: string
+    noticesCashbackHint: string
     noticesOffers: string
     noticesOffersHint: string
     noticesOffersSince: string

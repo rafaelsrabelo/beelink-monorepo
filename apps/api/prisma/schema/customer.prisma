@@ -31,6 +31,9 @@ model Customer {
   /// The shop's offers and news: off until the shopper says yes. `notifyOffersAt` is when they last
   /// chose either way — the consent's date, kept.
   notifyOffers    Boolean   @default(false)
+  /// Their cashback about to expire (BEELINK-241): on, since it is their own credit — a notice of
+  /// something they hold, never an offer.
+  notifyCashback  Boolean   @default(true)
   notifyOffersAt  DateTime?
   /// The shop's books on this customer, kept by the transaction that places or cancels an order so
   /// the list can filter and sort by them without reading the orders. Cancelled ones do not count.
