@@ -22,7 +22,7 @@ export function escapeHtml(value: string): string {
  * not the design system's tokens: a mail client reads no CSS variables and no stylesheet, only
  * inline styles.
  */
-function layout(title: string, body: string, actionLabel: string, actionUrl: string, brand?: string, footer?: string): string {
+export function layout(title: string, body: string, actionLabel: string, actionUrl: string, brand?: string, footer?: string): string {
   return `<!doctype html>
 <html lang="pt-BR">
   <body style="margin:0;padding:24px;background:#f4f4f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#18181b">
@@ -156,7 +156,7 @@ export interface FavoriteNoticeContent {
   backInStock: boolean;
 }
 
-function brl(cents: number): string {
+export function brl(cents: number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 

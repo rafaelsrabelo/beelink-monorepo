@@ -7,6 +7,9 @@ import { POST as adjust } from "../customers/[customerId]/cashback/adjustments/r
 import { GET as customerCashback } from "../customers/[customerId]/cashback/route"
 import { GET, PUT } from "./route"
 
+const mocks = vi.hoisted(() => ({ revalidateStore: vi.fn() }))
+vi.mock("@/lib/revalidate", () => ({ revalidateStore: mocks.revalidateStore }))
+
 type Fetched = (url: string, init?: RequestInit) => Promise<Response>
 
 function request(path: string, init: { method?: string; body?: object; origin?: string } = {}) {
@@ -22,6 +25,7 @@ const customer = { params: Promise.resolve({ slug: "loja", customerId: "c 1" }) 
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  mocks.revalidateStore.mockReset()
 })
 
 describe("the shop's cashback, for the panel (BEELINK-242)", () => {
@@ -37,6 +41,9 @@ describe("the shop's cashback, for the panel (BEELINK-242)", () => {
     expect((await PUT(request("/api/stores/loja/cashback", { method: "PUT", body: rules }), shop)).status).toBe(200)
     expect(fetched.mock.calls[1]?.[1]?.method).toBe("PUT")
     expect(JSON.parse(String(fetched.mock.calls[1]?.[1]?.body))).toEqual(rules)
+    // The shop window says the shop's cashback (BEELINK-243): saved, its cache goes; read, it stays.
+    expect(mocks.revalidateStore).toHaveBeenCalledOnce()
+    expect(mocks.revalidateStore).toHaveBeenCalledWith("loja")
   })
 
   it("reads a customer's credit with its page, and posts an adjustment, the id escaped", async () => {

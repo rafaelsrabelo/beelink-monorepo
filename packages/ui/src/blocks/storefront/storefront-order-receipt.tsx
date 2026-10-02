@@ -21,6 +21,8 @@ export interface StorefrontOrderReceiptProps {
   rows: readonly { label: string; value: string }[]
   total: string
   method: string
+  /** What the order earns in cashback, in words; none, and nothing is said (BEELINK-243). */
+  cashback?: string | null
   /** Said over the order when it did not stand — "Cancelado em …" — so the paper never reads as a sale. */
   note?: string | null
   /** The order's page, the way back from the document. It and "Imprimir" stay on the screen, never on the paper. */
@@ -43,6 +45,7 @@ export function StorefrontOrderReceipt({
   items,
   rows,
   total,
+  cashback = null,
   method,
   note,
   backHref,
@@ -118,6 +121,7 @@ export function StorefrontOrderReceipt({
         </dl>
 
         <p className="text-shop-muted">{method}</p>
+        {cashback ? <p className="font-semibold">{cashback}</p> : null}
         <p className="border-t border-shop-line pt-4 text-xs font-semibold text-shop-muted">{text.receiptNotInvoice}</p>
       </article>
     </div>

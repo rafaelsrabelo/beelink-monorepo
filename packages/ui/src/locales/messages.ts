@@ -410,6 +410,8 @@ export interface UiMessages {
     noticesOrdersHint: string
     noticesFavorites: string
     noticesFavoritesHint: string
+    noticesCashback: string
+    noticesCashbackHint: string
     noticesOffers: string
     noticesOffersHint: string
     noticesOffersSince: string
@@ -784,6 +786,18 @@ export interface UiMessages {
     conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
     /** A delivery's notice with the cashback it made usable (BEELINK-239): "{notice}", then "{amount}" — the punctuation between them is the copy's. */
     conversationCashback: string
+    /** The buy box (BEELINK-243): `{amount}`, the most the chosen price and quantity earn — the cart's discounts can only lower it. */
+    productCashback: string
+    /** The buy box, under the shop's minimum: `{rate}`, `{minimum}`. */
+    productCashbackFrom: string
+    /** The cart's summary: `{amount}` the order would earn. */
+    cartCashbackEarns: string
+    /** A visitor's cart, whose first-purchase promotion may lower it once identified: `{amount}`. */
+    cartCashbackEarnsUpTo: string
+    /** The cart's summary, under the minimum: `{amount}` missing, `{rate}`. */
+    cartCashbackMissing: string
+    /** An order's cashback, to its customer: `{amount}`, `{date}`. */
+    orderCashback: { PENDING: string; AVAILABLE: string; AVAILABLE_UNTIL: string; SPENT: string; VOIDED: string; EXPIRED: string }
     conversationFromYou: string
     conversationLabel: string
     conversationPlaceholder: string

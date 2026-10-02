@@ -131,6 +131,14 @@ describe("StorefrontCart", () => {
       expect(summary.querySelectorAll("dl > div")).toHaveLength(1)
     })
 
+    /** BEELINK-243: what the order would earn, under the totals, as the quote worked it out. */
+    it("says the cashback the order would earn, after the offer and before the way to close it", () => {
+      render(<StorefrontCart rows={rows} subtotalCents={17980} count={2} cashback="Você ganha R$ 8,99 de cashback com este pedido." locale="pt-BR" continueHref="#" checkout={<a href="#fechar">Fechar pedido</a>} />)
+
+      const line = within(screen.getByRole("complementary")).getByText("Você ganha R$ 8,99 de cashback com este pedido.")
+      expect(line.nextElementSibling).toBe(screen.getByRole("link", { name: "Fechar pedido" }))
+    })
+
     it("says quietly why one is not this customer's", () => {
       render(<StorefrontCart rows={rows} subtotalCents={17980} count={2} offer={closed} locale="pt-BR" continueHref="#" />)
 

@@ -35,7 +35,7 @@ const items = [
   { name: "Coqueteleira 700ml", href: null, imageUrl: null, meta: "Cor: Preta · Qtd. 1", price: "R$ 29,90" },
 ]
 
-function OrderPage({ status, pickup = false }: { status: StorefrontOrderStatusProps; pickup?: boolean }) {
+function OrderPage({ status, pickup = false, cashback = null }: { status: StorefrontOrderStatusProps; pickup?: boolean; cashback?: string | null }) {
   return (
     <StorefrontOrderLayout
       header={
@@ -65,6 +65,7 @@ function OrderPage({ status, pickup = false }: { status: StorefrontOrderStatusPr
             ]}
             total="R$ 237,22"
             method="Pagamento combinado com a loja: Pix"
+            cashback={cashback}
           />
           {pickup ? (
             <StorefrontOrderAddress title="Retirada na loja" lines={["Loja do Design"]} />
@@ -125,6 +126,11 @@ export const Retirada: Story = {
 /** Cancelado: quando e por quem, no lugar das etapas. */
 export const Cancelado: Story = { args: { status: { headline: "Cancelado em 22 de set. de 2026", detail: "Cancelado pela loja", tone: "cancelled", steps: null } } }
 
+/** O cashback do pedido no cartão de pagamento (BEELINK-243). */
+export const ComCashback: Story = {
+  args: { cashback: "Você vai ganhar R$ 11,86 de cashback quando o pedido for entregue." },
+}
+
 /** 6f: no celular a coluna vem antes do histórico e as etapas ficam em pé. */
 export const Celular: Story = { globals: { viewport: { value: "mobile1", isRotated: false } } }
 
@@ -146,6 +152,7 @@ export const Comprovante: Story = {
       ]}
       total="R$ 237,22"
       method="Pagamento combinado com a loja: Pix"
+      cashback="R$ 11,86 de cashback para usar até 30 de dez. de 2026."
       backHref="#"
     />
   ),

@@ -46,7 +46,7 @@ function renderLive() {
         showBadge
         showStock
         finishesOnWhatsApp={false}
-        seller={{ name: "Lessari", paymentMethods: ["PIX"] }}
+        seller={{ name: "Lessari", paymentMethods: ["PIX"], cashback: null }}
         restockCopy={copy}
         messages={ptBR}
       />

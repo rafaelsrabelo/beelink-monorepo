@@ -151,3 +151,48 @@ export type CashbackErrorCode =
   | "CASHBACK_BALANCE_INSUFFICIENT"
   /** An adjustment that would take the balance past R$ 1.000.000,00. */
   | "CASHBACK_BALANCE_TOO_LARGE";
+
+/**
+ * The shop's cashback as its shop window reads it (BEELINK-243): what comes back and from what order
+ * up, so a product's page says what it would earn. Null while the cashback is off. What an order
+ * earns exactly is the quote's (`QuotedCashback`).
+ */
+export interface PublicCashback {
+  rateBps: number;
+  minSubtotalCents: number;
+}
+
+/**
+ * What a cart would earn, as its quote answers it (BEELINK-243) — the same calculation the order
+ * makes when placed. `EARNS` with the cents; `BELOW_MINIMUM` with what is missing to reach the shop's
+ * minimum. Null when the shop's cashback is off, or the cart would earn less than a cent.
+ */
+export type QuotedCashback =
+  | { status: "EARNS"; earnedCents: number; rateBps: number }
+  | { status: "BELOW_MINIMUM"; missingCents: number; rateBps: number };
+
+/**
+ * The customer's cashback against a cart (BEELINK-240): what they have, the most this cart can take —
+ * the lesser of the balance and the shop's cap over the products after their discounts, never the
+ * delivery — and what the quote applied. Asked with `useCashback`, `appliedCents` is that most;
+ * without, 0, so the screen can offer it.
+ */
+export interface QuotedCashbackUse {
+  balanceCents: number;
+  maxCents: number;
+  appliedCents: number;
+  /** Why nothing can be used: they have no credit to spend, or the cart has nothing credit may pay for. Null when some can. */
+  unavailable: CashbackUnavailableReason | null;
+}
+
+export type CashbackUnavailableReason = "NO_BALANCE" | "NOTHING_TO_PAY";
+
+/**
+ * The `details` of `ORDER_CASHBACK_REFUSED`: the order asked to spend more credit than it can now — the
+ * balance moved, a lot expired, or the cart changed since it was quoted. `maxCents` is what it can
+ * spend now; the order is never placed with another amount.
+ */
+export interface OrderCashbackRefusedDetails {
+  requestedCents: number;
+  maxCents: number;
+}

@@ -115,8 +115,8 @@ describe("a customer hears by e-mail when their order moves", () => {
     await move(sale.number, 'DELIVERED');
     expect(await owed()).toEqual([]);
 
-    const off = await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: false, favorites: true, offers: false });
-    expect(off.json<CustomerNotifications>()).toEqual({ orders: false, favorites: true, offers: false, offersChosenAt: null });
+    const off = await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: false, favorites: true, cashback: true, offers: false });
+    expect(off.json<CustomerNotifications>()).toEqual({ orders: false, favorites: true, cashback: true, offers: false, offersChosenAt: null });
     const number = await placeFromCart();
     await move(number, 'ACCEPTED');
     expect(await owed()).toEqual([]);
@@ -181,23 +181,23 @@ describe("a customer hears by e-mail when their order moves", () => {
 
   it('keeps the notices the shopper chooses, and when they said yes or no to offers', async () => {
     const start = (await call('GET', '/api/stores/lessari/customer/me', shopper)).json<CustomerProfile>();
-    expect(start.notifications).toEqual({ orders: true, favorites: true, offers: false, offersChosenAt: null });
+    expect(start.notifications).toEqual({ orders: true, favorites: true, cashback: true, offers: false, offersChosenAt: null });
 
-    const yes = (await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: false, offers: true })).json<CustomerNotifications>();
-    expect(yes).toMatchObject({ orders: true, favorites: false, offers: true });
+    const yes = (await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: false, cashback: true, offers: true })).json<CustomerNotifications>();
+    expect(yes).toMatchObject({ orders: true, favorites: false, cashback: true, offers: true });
     expect(yes.offersChosenAt).not.toBeNull();
 
     // Saved again unchanged, the date stays; a no is a choice with its own date.
-    const again = (await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, offers: true })).json<CustomerNotifications>();
+    const again = (await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, cashback: true, offers: true })).json<CustomerNotifications>();
     expect(again.offersChosenAt).toBe(yes.offersChosenAt);
     await new Promise((resolve) => setTimeout(resolve, 5));
-    const no = (await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, offers: false })).json<CustomerNotifications>();
+    const no = (await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, cashback: true, offers: false })).json<CustomerNotifications>();
     expect(no.offers).toBe(false);
     expect(no.offersChosenAt).not.toBe(yes.offersChosenAt);
 
-    for (const payload of [{ orders: 'sim', favorites: true, offers: false }, { orders: true, favorites: true }, { orders: true, favorites: true, offers: false, email: 'x@y.z' }]) {
+    for (const payload of [{ orders: 'sim', favorites: true, cashback: true, offers: false }, { orders: true, favorites: true }, { orders: true, favorites: true, cashback: true, offers: false, email: 'x@y.z' }]) {
       expect((await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, payload)).statusCode, JSON.stringify(payload)).toBe(400);
     }
-    expect((await call('PUT', '/api/stores/lessari/customer/me/notifications', undefined, { orders: true, favorites: true, offers: true })).statusCode).toBe(401);
+    expect((await call('PUT', '/api/stores/lessari/customer/me/notifications', undefined, { orders: true, favorites: true, cashback: true, offers: true })).statusCode).toBe(401);
   });
 });

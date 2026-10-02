@@ -55,6 +55,7 @@ export class CustomerOrdersService {
       deliveryFeeCents: null,
       discountCents: 0,
       couponCode: dto.couponCode ?? null,
+      cashbackCents: dto.cashbackCents ?? 0,
       note: null,
       placedAt: new Date(),
       status: 'RECEIVED',

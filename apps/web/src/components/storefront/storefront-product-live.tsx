@@ -1,7 +1,7 @@
 "use client"
 
 // Types
-import type { PaymentMethod, PublicProductDetail } from "@harness-monorepo/contracts"
+import type { PaymentMethod, PublicCashback, PublicProductDetail } from "@harness-monorepo/contracts"
 
 // UI
 import { StorefrontProductDetail } from "@harness-monorepo/ui/blocks/storefront/storefront-product"
@@ -42,7 +42,8 @@ export interface StorefrontProductLiveProps {
   showStock: boolean
   /** The shop takes orders on WhatsApp, which the buy box says. */
   finishesOnWhatsApp: boolean
-  seller: { name: string; paymentMethods: readonly PaymentMethod[] }
+  /** Who sells it, and the shop's cashback while on (BEELINK-243). */
+  seller: { name: string; paymentMethods: readonly PaymentMethod[]; cashback: PublicCashback | null }
   restockCopy: RestockCopy
   messages: UiMessages
 }
