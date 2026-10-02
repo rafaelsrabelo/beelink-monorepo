@@ -1,3 +1,4 @@
+import type { QuotedCashback } from "./cashback.js";
 import type { CreateOrderItemInput, OrderCustomerInput, OrderFulfillment } from "./order.js";
 import type { CouponKind } from "./promotion.js";
 
@@ -98,6 +99,8 @@ export interface OrderQuote {
   /** Null on a delivery whose fee is not agreed yet; zero on a pick-up. */
   deliveryFeeCents: number | null;
   totalCents: number;
+  /** What it would earn in cashback once delivered (BEELINK-243); null while the shop's cashback is off. */
+  cashback: QuotedCashback | null;
 }
 
 /**
