@@ -108,7 +108,7 @@ describe('toPublicStore', () => {
       verifyEmail: 'confirmar-email',
       resetPassword: 'nova-senha',
       account: 'conta',
-      accountTabs: { orders: 'pedidos', favorites: 'favoritos', reviews: 'avaliacoes', profile: 'perfil', messages: 'conversas' },
+      accountTabs: { orders: 'pedidos', favorites: 'favoritos', reviews: 'avaliacoes', cashback: 'cashback', profile: 'perfil', messages: 'conversas' },
     });
   });
 
@@ -124,7 +124,7 @@ describe('toPublicStore', () => {
       verifyEmail: 'verify-email',
       resetPassword: 'reset-password',
       account: 'account',
-      accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', profile: 'profile', messages: 'messages' },
+      accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', cashback: 'cashback', profile: 'profile', messages: 'messages' },
     });
   });
 
