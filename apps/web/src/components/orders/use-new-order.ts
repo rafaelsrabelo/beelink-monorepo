@@ -22,9 +22,9 @@ import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { catalogKeys, useProduct, useProducts } from "@/services/catalog/catalog-hooks"
 import { fetchProduct } from "@/services/catalog/catalog-requests"
 import { customerKeys } from "@/services/customers/customer-hooks"
-import { useCreateOrder, useOrderQuote } from "@/services/orders/order-hooks"
+import { orderKeys, useCreateOrder, useOrderQuote } from "@/services/orders/order-hooks"
 import { OrderRequestError, shortagesOf } from "@/services/orders/order-requests"
-import { moneyOf, orderPayloadOf, productOptionOf, saleOf, shownTotalsOf, variantOptionsOf } from "./new-order-mapping"
+import { cashbackOfferOf, moneyOf, orderPayloadOf, productOptionOf, saleOf, shownTotalsOf, variantOptionsOf } from "./new-order-mapping"
 import { useDeliveryTo } from "./use-delivery-to"
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -58,6 +58,11 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     placedOn: "",
   })
   const [submitted, setSubmitted] = useState(false)
+  // Whose credit was ticked (BEELINK-244). Another customer chosen, or none, drops the tick for good,
+  // during the draw itself: the credit is not theirs, and coming back to the first one starts unticked.
+  const [spendingOf, setSpendingOf] = useState<string | null>(null)
+  if (spendingOf !== null && customer?.id !== spendingOf) setSpendingOf(null)
+  const spending = customer !== null && spendingOf === customer.id
   /** What changed on the order, for a screen reader: an added line happens away from the focus. */
   const [announcement, setAnnouncement] = useState("")
   /** The product being read; an answer for one the shopkeeper already left behind is ignored. */
@@ -106,7 +111,7 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   // The form's own sum: what is sent, and what refuses a typed amount before anything is asked.
   const own = orderTotalsOf(lines, details.fulfillment, feeCents ?? 0, discountCents ?? 0)
   const priceable = lines.length > 0 && feeCents !== null && discountCents !== null && typeof own !== "string" && today !== ""
-  const sale = priceable ? saleOf({ customerId: customer?.id ?? null, lines, fulfillment: details.fulfillment, deliveryFeeCents: feeCents ?? 0, discountCents: discountCents ?? 0, placedOn, today }) : null
+  const sale = priceable ? saleOf({ customerId: customer?.id ?? null, lines, fulfillment: details.fulfillment, deliveryFeeCents: feeCents ?? 0, discountCents: discountCents ?? 0, placedOn, today, useCashback: spending }) : null
   // Settled by what is asked, never by identity: a note typed is a new render and the same sale, and
   // another customer chosen is another sale.
   const saleKey = sale ? JSON.stringify(sale) : null
@@ -116,6 +121,9 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
   // The API's answer for what is on screen — not the last sale's, kept while this one is asked.
   const answered = sale !== null && settled && !quote.isPlaceholderData && !quote.isPending
   const totals = shownTotalsOf(own, sale ? (quote.data ?? null) : null, answered && quote.error instanceof OrderRequestError ? quote.error.errorCode : null)
+  // The price of this very sale: the credit an order takes is the one in it, never one kept from the sale before.
+  const quoted = answered && !quote.isError ? (quote.data ?? null) : null
+  const offer = customer && sale ? cashbackOfferOf(quote.data ?? null, spending) : null
 
   const issues: OrderDetailsIssues & { customer?: string; lines?: string } = {}
   if (feeCents === null) issues.deliveryFee = text.invalidMoney
@@ -133,9 +141,15 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     if (save.isPending || save.isSuccess) return true
     setSubmitted(true)
     if (Object.keys(issues).length || typeof totals === "string" || typeof own === "string" || !customer || !details.paymentMethod) return false
+    // With the customer's credit ticked the order takes the amount the summary shows: nothing goes
+    // out before that price is back, and a price that failed is asked again by the press.
+    if (spending && !quoted) {
+      if (quote.isError) void quote.refetch()
+      return false
+    }
 
     // The amounts typed, never the API's price of them: the order is priced again as it is written.
-    const payload = orderPayloadOf({ customerId: customer.id, lines, details: { ...details, placedOn }, paymentMethod: details.paymentMethod, totals: own, today })
+    const payload = orderPayloadOf({ customerId: customer.id, lines, details: { ...details, placedOn }, paymentMethod: details.paymentMethod, totals: own, cashbackCents: spending ? (quoted?.cashbackUse?.appliedCents ?? 0) : 0, today })
     save.mutate(payload, {
       onSuccess: (order) => router.push(`/admin/${slug}/orders/${order.number}` as Parameters<typeof router.push>[0]),
       // The stock moved since the products were read: each short line learns how many are left, and says so.
@@ -146,6 +160,8 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
         if (error instanceof OrderRequestError && error.errorCode === "ORDER_DELIVERY_ADDRESS_MISSING") {
           void queryClient.invalidateQueries({ queryKey: customerKeys.detail(slug, customer.id) })
         }
+        // The customer's credit moved since the sale was priced: it is priced again, and the summary shows what is left.
+        if (error instanceof OrderRequestError && error.errorCode === "ORDER_CASHBACK_REFUSED") void queryClient.invalidateQueries({ queryKey: orderKeys.quote(slug, sale) })
       },
     })
     return true
@@ -178,6 +194,10 @@ export function useNewOrder(slug: string, customer: OrderCustomerOption | null, 
     details: { value: { ...details, placedOn }, onChange: setDetails, today, deliveryTo },
     productError: detail.error ?? products.error,
     totals,
+    /** The chosen customer's credit, offered while they have some this sale takes; null otherwise. */
+    cashback: offer && customer ? { ...offer, checked: spending, onCheckedChange: (checked: boolean) => setSpendingOf(checked ? customer.id : null) } : null,
+    /** A save was tried with the credit ticked and its price could not be read: said by the summary, over the button. */
+    cashbackUnpriced: submitted && spending && answered && quote.isError,
     /** The sale is being priced: the amounts on screen are the ones before the last change. */
     pricing: sale !== null && !answered && !quote.isError,
     /** The API could not price it — out of reach, too many tries — and the summary says the total is the form's own. */

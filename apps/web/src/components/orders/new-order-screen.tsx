@@ -135,7 +135,8 @@ export function NewOrderScreen({ slug, customerId, messages, web }: NewOrderScre
             money={money}
             // Still disabled once saved: the page is on its way to the order, and a second press would be a second order.
             pending={order.save.isPending || order.save.isSuccess}
-            error={pageErrorCopy(order.save.error, web)}
+            error={order.cashbackUnpriced ? text.cashbackUnpriced : pageErrorCopy(order.save.error, web)}
+            cashback={order.cashback}
             messages={messages}
           />
         </div>
