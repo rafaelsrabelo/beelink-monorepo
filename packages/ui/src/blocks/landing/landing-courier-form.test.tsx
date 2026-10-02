@@ -61,7 +61,7 @@ describe("LandingCourierForm", () => {
     renderForm()
 
     expect(screen.getByRole("radio", { name: "Moto" })).toBeChecked()
-    expect(screen.getAllByRole("radio").map((radio) => radio.parentElement!.textContent)).toEqual(["Moto", "Bicicleta", "Carro", "A pé"])
+    expect(screen.getAllByRole("radio").map((radio) => radio.parentElement!.textContent)).toEqual(["Moto", "Bicicleta", "Carro", "Utilitário"])
     expect(screen.queryByText("Informe a cidade.")).not.toBeInTheDocument()
   })
 

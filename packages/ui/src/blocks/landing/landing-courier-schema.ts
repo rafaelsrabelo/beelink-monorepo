@@ -4,7 +4,7 @@ import { z } from "zod"
 // Locales
 import type { LandingVehicleValue, UiMessages } from "@harness-monorepo/ui/locales/messages"
 
-export const LANDING_VEHICLES = ["MOTORCYCLE", "BICYCLE", "CAR", "ON_FOOT"] as const satisfies readonly LandingVehicleValue[]
+export const LANDING_VEHICLES = ["MOTORCYCLE", "BICYCLE", "CAR", "VAN"] as const satisfies readonly LandingVehicleValue[]
 
 /**
  * A Brazilian mobile or landline as typed: ten or eleven digits with the area code, the country's 55

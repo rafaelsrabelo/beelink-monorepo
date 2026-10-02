@@ -12,7 +12,7 @@ import { LandingRail } from "./landing-rail"
  * reads, where it stands and the two scrolling methods are supplied by hand, and the observer is a
  * stub that fires once.
  */
-function renderRail({ at = 0, window = 600 }: { at?: number; window?: number } = {}) {
+function renderRail({ at = 0, window = 600, widths = [600, 600, 600] }: { at?: number; window?: number; widths?: readonly [number, number, number] } = {}) {
   const scrollTo = vi.fn()
 
   vi.stubGlobal(
@@ -25,10 +25,12 @@ function renderRail({ at = 0, window = 600 }: { at?: number; window?: number } =
       disconnect() {}
     },
   )
-  // Three banners of 600px, 1800px in all: a 600px window stops at each, a wider one runs out of row first.
+  // Three banners of 600px unless told otherwise, 1800px in all: a 600px window stops at each, a wider one runs out of row first.
   vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(window)
-  vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(1800)
-  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(600)
+  vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(widths.reduce((all, width) => all + width, 0))
+  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+    return widths[[...(this.parentElement?.children ?? [])].indexOf(this)] ?? 0
+  })
   vi.spyOn(HTMLElement.prototype, "scrollLeft", "get").mockReturnValue(at)
   Object.defineProperty(HTMLElement.prototype, "scrollTo", { value: scrollTo, configurable: true, writable: true })
 
@@ -117,6 +119,16 @@ describe("LandingRail", () => {
     const end = renderRail({ at: 600, window: 1200 })
     expect(end.dots()).toBe("○●")
     expect(screen.getByText("Página 2 de 2")).toBeInTheDocument()
+  })
+
+  /** The panel's banner is twice the others: a stride of the first banner's width would stop in the middle of it. */
+  it("stops at each banner's own start when one is wider than the rest", async () => {
+    const start = renderRail({ at: 600, widths: [600, 1200, 600] })
+    expect(start.dots()).toBe("○●○")
+
+    await userEvent.click(screen.getByRole("button", { name: "Próximo" }))
+
+    expect(start.scrollTo).toHaveBeenCalledWith({ left: 1800 })
   })
 
   it("has no accessibility violations", async () => {

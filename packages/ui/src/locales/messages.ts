@@ -2691,6 +2691,8 @@ export interface UiMessages {
     brand: string
     /** The logo's link, for a reader. */
     homeLabel: string
+    /** Around the signed-out forms: the way back to the landing, and the brand's photographs beside them — the carousel's name, and each dot's, `{current}` of `{total}`. */
+    auth: { back: string; label: string; position: string }
     nav: { label: string; solutions: string; ecosystem: string; how: string; couriers: string; faq: string }
     /** Names the button that opens the links on a narrow screen. */
     menu: string
@@ -2709,8 +2711,8 @@ export interface UiMessages {
       /** `{current}`, `{total}`: which banner is in view. */
       position: string
       store: { tag: string; title: string; text: string; points: readonly [string, string, string]; example: string }
-      /** The phone drawn in the middle banner: a picture, said once to a reader by `label`. */
-      phone: { label: string; shop: string; collection: string; order: string; orderDetail: string; out: string; outDetail: string }
+      /** The middle banner: the panel, in words and on a laptop — `alt` reads the photograph out. */
+      panel: { tag: string; title: string; text: string; alt: string }
       shipping: { tag: string; title: string; text: string; points: readonly [string, string, string]; cta: string }
     }
     ecosystem: { titleLight: string; titleStrong: string; text: string; kicker: string; kickerText: string }
@@ -2756,6 +2758,7 @@ export interface UiMessages {
       shopkeeper: readonly LandingQuestion[]
       courier: readonly LandingQuestion[]
     }
+    posters: { titleLight: string; titleStrong: string; busStopAlt: string; wallAlt: string }
     cta: { titleLight: string; titleStrong: string; courier: string }
     footer: {
       tagline: string
@@ -2778,7 +2781,7 @@ export type Locale = "pt-BR" | "en"
 export type LandingProductValue = "store" | "chat" | "checkout" | "shipping" | "marketing"
 
 /** How a courier delivers, as the landing's form offers it. */
-export type LandingVehicleValue = "MOTORCYCLE" | "BICYCLE" | "CAR" | "ON_FOOT"
+export type LandingVehicleValue = "MOTORCYCLE" | "BICYCLE" | "CAR" | "VAN"
 
 export interface LandingStep {
   title: string
