@@ -8,12 +8,13 @@ import type { Prisma } from '../../generated/prisma/client.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { earningForOrder, holdOrderCashback } from '../cashback/cashback-orders.js';
+import { redeemCashback } from '../cashback/cashback-redemption.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
 import { deliveryOf } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
-import { couponRefused, earningPartsOf, priceOrder } from './order-pricing.js';
+import { cashbackRefused, couponRefused, earningPartsOf, priceOrder } from './order-pricing.js';
 import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
 import { takeStock } from './order-stock.js';
@@ -36,6 +37,8 @@ export interface Placement {
   discountCents: number;
   /** As it was typed; null is none. One that does not hold refuses the order. */
   couponCode: string | null;
+  /** The customer's credit to spend, as the quote offered it; 0 is none. More than they can spend now refuses the order. */
+  cashbackCents: number;
   note: string | null;
   placedAt: Date;
   /** The shopkeeper registers a sale they already agreed, `ACCEPTED`; a customer's order waits, `RECEIVED`. */
@@ -99,10 +102,13 @@ export class OrderPlacement {
         customer: { id: customerId },
         at: placement.placedAt,
         lock: true,
+        cashback: placement.cashbackCents,
       });
       if (priced.refusal) throw couponRefused(priced.refusal);
+      if (priced.cashbackUse?.refusal) throw cashbackRefused(priced.cashbackUse.refusal);
+      const cashbackUsedCents = priced.cashbackUse?.appliedCents ?? 0;
       // What it will earn, at the shop's rules as they are now (BEELINK-239).
-      const cashback = await earningForOrder(tx, storeId, earningPartsOf(priced, 0));
+      const cashback = await earningForOrder(tx, storeId, earningPartsOf(priced, cashbackUsedCents));
 
       const order = await tx.order.create({
         data: {
@@ -139,6 +145,7 @@ export class OrderPlacement {
       });
 
       if (priced.coupon) await redeemCoupon(tx, priced.coupon.id, order.id, priced.couponDiscountCents);
+      if (cashbackUsedCents > 0) await redeemCashback(tx, { storeId, customerId, orderId: order.id, cents: cashbackUsedCents, now: new Date() });
       if (cashback) await holdOrderCashback(tx, { storeId, customerId, orderId: order.id, earnedCents: cashback.earnedCents, validityDays: cashback.validityDays });
       await refreshBooks(tx, customerId);
       // The conversation is born with the order, its first status the first line. Told now, whatever

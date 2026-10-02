@@ -15,6 +15,8 @@ import type {
   CustomerDataCashback,
   OrderCashback,
   PublicCashback,
+  QuotedCashbackUse,
+  CashbackUnavailableReason,
   ShopOrderCashback,
 } from '@harness-monorepo/contracts';
 
@@ -108,4 +110,11 @@ export class QuotedCashbackResponse {
   @ApiProperty({ required: false, description: 'On EARNS: what the cart would earn.' }) earnedCents?: number;
   @ApiProperty({ required: false, description: "On BELOW_MINIMUM: what is missing to reach the shop's minimum." }) missingCents?: number;
   @ApiProperty() rateBps!: number;
+}
+
+export class QuotedCashbackUseResponse implements QuotedCashbackUse {
+  @ApiProperty({ description: 'What the customer can spend now.' }) balanceCents!: number;
+  @ApiProperty({ description: "The most this cart can take: the shop's cap over the products after their discounts, never the delivery." }) maxCents!: number;
+  @ApiProperty({ description: 'What the quote applied: the most, when asked with useCashback; 0 otherwise.' }) appliedCents!: number;
+  @ApiProperty({ enum: ['NO_BALANCE', 'NOTHING_TO_PAY'], nullable: true, type: String }) unavailable!: CashbackUnavailableReason | null;
 }

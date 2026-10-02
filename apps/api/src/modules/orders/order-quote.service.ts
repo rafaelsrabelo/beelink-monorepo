@@ -48,7 +48,7 @@ export class OrderQuotes {
    */
   async forCustomer(storeSlug: string, userId: string, dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    return this.quote({ storeId, items: dto.items, onSaleOnly: true, fulfillment: dto.fulfillment, deliveryFeeCents: null, manualDiscountCents: 0, couponCode: dto.couponCode ?? null, customer: { id: customerId }, at: new Date() });
+    return this.quote({ storeId, items: dto.items, onSaleOnly: true, fulfillment: dto.fulfillment, deliveryFeeCents: null, manualDiscountCents: 0, couponCode: dto.couponCode ?? null, customer: { id: customerId }, at: new Date(), cashback: dto.useCashback ? 'MAX' : 'NONE' });
   }
 
   /** The panel's sale as registering it would price it — drafts included, at the day it was sold. */
@@ -62,6 +62,7 @@ export class OrderQuotes {
       deliveryFeeCents: dto.deliveryFeeCents ?? 0,
       manualDiscountCents: dto.discountCents ?? 0,
       couponCode: dto.couponCode ?? null,
+      cashback: dto.useCashback ? 'MAX' : 'NONE',
       customer: dto.customer ? await this.customerOf(storeId, dto.customer) : null,
       at: placedAtOf(dto.placedAt),
     });
@@ -73,6 +74,8 @@ export class OrderQuotes {
     // What it would earn, worked out as the order would be when placed (BEELINK-243).
     const rules = await this.prisma.cashbackSettings.findUnique({ where: { storeId: input.storeId } });
     const base = earningBaseOf(earningPartsOf(priced, 0));
+    // Earned on what is paid in money; the minimum held against the products before the credit (BEELINK-240).
+    const paid = base - (priced.cashbackUse?.appliedCents ?? 0);
 
     return {
       lines: lines.map((line, index) => ({
@@ -92,7 +95,8 @@ export class OrderQuotes {
       discountCents: priced.totals.discountCents,
       deliveryFeeCents: priced.totals.deliveryFeeCents,
       totalCents: priced.totals.totalCents,
-      cashback: quotedCashbackOf(rules, base),
+      cashback: quotedCashbackOf(rules, paid, base),
+      cashbackUse: priced.cashbackUse && { balanceCents: priced.cashbackUse.balanceCents, maxCents: priced.cashbackUse.maxCents, appliedCents: priced.cashbackUse.appliedCents, unavailable: priced.cashbackUse.unavailable },
     } satisfies OrderQuote;
   }
 

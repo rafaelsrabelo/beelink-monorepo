@@ -83,7 +83,9 @@ model CashbackCredit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  entries CashbackEntry[]
+  entries     CashbackEntry[]
+  /// What orders spent of it (BEELINK-240), to give back to it when one is cancelled.
+  redemptions CashbackRedemption[]
 
   /// What a customer can spend, in the order it is spent.
   @@index([customerId, status, expiresAt])
@@ -120,4 +122,23 @@ model CashbackEntry {
   /// The statement, the newest first.
   @@index([customerId, createdAt(sort: Desc)])
   @@map("cashback_entries")
+}
+
+/// What one order spent of one lot (BEELINK-240): a use takes from several lots, soonest to expire
+/// first, and a cancelled order gives each back what it took — so the credit returns with the
+/// validity it had. `returnedAt` is set once it was given back, so it is given back once.
+model CashbackRedemption {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  orderId     String         @db.Uuid
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  creditId    String         @db.Uuid
+  credit      CashbackCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  /// 1 or more, by a CHECK.
+  amountCents Int
+  createdAt   DateTime       @default(now())
+  returnedAt  DateTime?
+
+  @@unique([orderId, creditId])
+  @@index([creditId])
+  @@map("cashback_redemptions")
 }

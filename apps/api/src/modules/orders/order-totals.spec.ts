@@ -16,6 +16,7 @@ describe('totalsOf', () => {
       subtotalCents: 23970,
       deliveryFeeCents: 1000,
       discountCents: 500,
+      cashbackUsedCents: 0,
       totalCents: 24470,
     });
   });
@@ -35,5 +36,16 @@ describe('totalsOf', () => {
     expect(totalsOf([{ unitPriceCents: 60_000_000, quantity: 1 }, { unitPriceCents: 60_000_000, quantity: 1 }], 'PICKUP', 0, 0)).toBe('TOTAL_TOO_LARGE');
     expect(totalsOf([{ unitPriceCents: 100_000_000, quantity: 1 }], 'DELIVERY', 1, 0)).toBe('TOTAL_TOO_LARGE');
     expect(totalsOf([{ unitPriceCents: 100_000_000, quantity: 1 }], 'PICKUP', 0, 0)).toMatchObject({ totalCents: 100_000_000 });
+  });
+
+  /** BEELINK-240: the customer's credit comes off the total apart from the discount, and never the fee. */
+  it('takes the credit spent off the total, apart from the discount', () => {
+    expect(totalsOf([{ unitPriceCents: 10_000, quantity: 1 }], 'DELIVERY', 1_500, 1_000, 3_000)).toEqual({
+      subtotalCents: 10_000,
+      deliveryFeeCents: 1_500,
+      discountCents: 1_000,
+      cashbackUsedCents: 3_000,
+      totalCents: 7_500,
+    });
   });
 });

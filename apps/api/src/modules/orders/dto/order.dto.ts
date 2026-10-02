@@ -56,6 +56,15 @@ import {
 const lowerCase = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.toLowerCase() : value));
 
 /** A coupon's code as a person types it: blank is none, and whether it holds is the pricing's to say. */
+/** The customer's credit an order spends (BEELINK-240), as its quote offered it; the API checks it again as the order is written. */
+export const cashbackCents = applyDecorators(
+  ApiPropertyOptional({ minimum: 0, maximum: ORDER_AMOUNT_MAX_CENTS, description: "Whole cents of the customer's credit to spend, as the quote offered it; absent is none. More than they can spend now is ORDER_CASHBACK_REFUSED." }),
+  IsOptional(),
+  IsInt(),
+  Min(0),
+  Max(ORDER_AMOUNT_MAX_CENTS),
+);
+
 export const couponCode = applyDecorators(
   ApiPropertyOptional({ nullable: true, type: String, maxLength: ORDER_COUPON_CODE_MAX_LENGTH, example: 'BEMVINDO10', description: 'A coupon of the shop, in any case; blank is none.' }),
   IsOptional(),
@@ -143,6 +152,9 @@ export class CreateOrderDto {
 
   @couponCode
   couponCode?: string | null;
+
+  @cashbackCents
+  cashbackCents?: number;
 
   @ApiProperty({ enum: PAYMENT_METHODS })
   @IsIn(PAYMENT_METHODS)

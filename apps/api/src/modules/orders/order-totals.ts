@@ -14,6 +14,8 @@ export interface OrderTotals {
   /** Null while a delivery's fee is not agreed: the total leaves it out. */
   deliveryFeeCents: number | null;
   discountCents: number;
+  /** The customer's credit spent (BEELINK-240): off the total, apart from the discount. */
+  cashbackUsedCents: number;
   totalCents: number;
 }
 
@@ -44,15 +46,16 @@ export function totalsOf(
   fulfillment: OrderFulfillment,
   deliveryFeeCents: number | null,
   discountCents: number,
+  cashbackUsedCents = 0,
 ): OrderTotals | TotalsRefusal {
   if (lines.some((line) => line.unitPriceCents * line.quantity > ORDER_AMOUNT_MAX_CENTS)) return 'TOTAL_TOO_LARGE';
 
   const subtotalCents = lines.reduce((sum, line) => sum + line.unitPriceCents * line.quantity, 0);
   const fee = fulfillment === 'PICKUP' ? 0 : deliveryFeeCents;
-  const totalCents = subtotalCents + (fee ?? 0) - discountCents;
+  const totalCents = subtotalCents + (fee ?? 0) - discountCents - cashbackUsedCents;
 
   if (subtotalCents > ORDER_AMOUNT_MAX_CENTS) return 'TOTAL_TOO_LARGE';
   const refusal = totalRefusalOf(totalCents);
   if (refusal) return refusal;
-  return { subtotalCents, deliveryFeeCents: fee, discountCents, totalCents };
+  return { subtotalCents, deliveryFeeCents: fee, discountCents, cashbackUsedCents, totalCents };
 }
