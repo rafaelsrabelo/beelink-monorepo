@@ -80,6 +80,38 @@ export interface MelhorEnvioServiceInfo {
   company: string;
 }
 
+/** One product of a cart, as Melhor Envio measures it: whole centimetres, kilograms, reais. */
+export interface MelhorEnvioQuoteProduct {
+  id: string;
+  widthCm: number;
+  heightCm: number;
+  lengthCm: number;
+  weightKg: number;
+  /** What one unit is worth: what the carrier answers for if it is lost. */
+  insuranceReais: number;
+  quantity: number;
+}
+
+/** A cart to quote, from the shop's CEP to the customer's. Melhor Envio packs the products into volumes itself. */
+export interface MelhorEnvioQuoteRequest {
+  fromZipCode: string;
+  toZipCode: string;
+  products: readonly MelhorEnvioQuoteProduct[];
+  /** The services to ask about; null asks about every one. */
+  serviceIds: readonly number[] | null;
+}
+
+/** A service that takes the cart, at the shop's own account's price and time. */
+export interface MelhorEnvioQuotedService {
+  serviceId: number;
+  service: string;
+  company: string;
+  priceCents: number;
+  /** Business days from posting. */
+  daysFrom: number;
+  daysTo: number;
+}
+
 /** Melhor Envio speaks reais in decimals; bee-link, cents. The one place the two meet. */
 export const centsOfReais = (reais: number): number => Math.round(reais * 100);
 
@@ -94,6 +126,31 @@ export class MelhorEnvioRefused extends Error {
 export class MelhorEnvioUnreachable extends Error {}
 
 const TIMEOUT_MS = 10_000;
+/** A checkout waits on this one: past it, the list goes out with the shop's own options alone. */
+const QUOTE_TIMEOUT_MS = 4_000;
+
+const positive = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+
+/**
+ * One entry of a quote as bee-link reads it, or null when it is no offer: a service that does not take
+ * this cart arrives with an `error` and no price. The account's own figures first (`custom_*`) — its
+ * negotiated price and time — and Melhor Envio's general ones where it sent none.
+ */
+function quotedServiceOf(entry: unknown): MelhorEnvioQuotedService | null {
+  const service = (entry ?? {}) as Record<string, unknown> & { company?: { name?: unknown } };
+  if (service.error || typeof service.id !== 'number' || typeof service.name !== 'string' || typeof service.company?.name !== 'string') return null;
+
+  const price = Number.parseFloat(String(service.custom_price ?? service.price));
+  if (!Number.isFinite(price) || price < 0) return null;
+
+  const range = (service.custom_delivery_range ?? service.delivery_range ?? {}) as { min?: unknown; max?: unknown };
+  const days = service.custom_delivery_time ?? service.delivery_time;
+  const daysFrom = positive(range.min) ? range.min : days;
+  const daysTo = positive(range.max) ? range.max : days;
+  if (!positive(daysFrom) || !positive(daysTo) || daysFrom > daysTo) return null;
+
+  return { serviceId: service.id, service: service.name, company: service.company.name, priceCents: centsOfReais(price), daysFrom, daysTo };
+}
 
 function tokensOf(body: unknown): MelhorEnvioTokens {
   const answer = (body ?? {}) as Record<string, unknown>;
@@ -105,8 +162,8 @@ function tokensOf(body: unknown): MelhorEnvioTokens {
 }
 
 /**
- * Melhor Envio's side of a shop's connection: the authorization address, the two token trades and who
- * the account is. A provider of its own, so a test stands a fake Melhor Envio in its place, as Google's
+ * Melhor Envio's side of a shop's connection: the authorization address, the two token trades, who
+ * the account is, and what its carriers charge for a cart. A provider of its own, so a test stands a fake Melhor Envio in its place, as Google's
  * door does. Nothing here keeps or logs a token: the caller seals what it gets.
  */
 @Injectable()
@@ -157,17 +214,44 @@ export class MelhorEnvioClient {
       .sort((a, b) => a.company.localeCompare(b.company, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'));
   }
 
+  /**
+   * What each service charges to take a cart from the shop to an address (BEELINK-185), the services
+   * that refuse it left out. The products go as they are and Melhor Envio packs them: the volumes it
+   * assumed are its own estimate, which the shopkeeper checks against the real box when buying the label.
+   */
+  async quote(config: MelhorEnvioConfig, accessToken: string, request: MelhorEnvioQuoteRequest): Promise<MelhorEnvioQuotedService[]> {
+    const body = {
+      from: { postal_code: request.fromZipCode },
+      to: { postal_code: request.toZipCode },
+      products: request.products.map((product) => ({
+        id: product.id,
+        width: product.widthCm,
+        height: product.heightCm,
+        length: product.lengthCm,
+        weight: product.weightKg,
+        insurance_value: product.insuranceReais,
+        quantity: product.quantity,
+      })),
+      options: { receipt: false, own_hand: false },
+      ...(request.serviceIds ? { services: request.serviceIds.join(',') } : {}),
+    };
+    const answer = await this.call(config, '/api/v2/me/shipment/calculate', { method: 'POST', headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' }, body: JSON.stringify(body) }, QUOTE_TIMEOUT_MS);
+    if (!answer || typeof answer !== 'object') throw new MelhorEnvioUnreachable('Melhor Envio answered the quote without services');
+    // Asked about one service, it answers that one alone rather than a list of one.
+    return (Array.isArray(answer) ? answer : [answer]).flatMap((entry: unknown) => quotedServiceOf(entry) ?? []);
+  }
+
   private async token(config: MelhorEnvioConfig, body: Record<string, string>): Promise<MelhorEnvioTokens> {
     return tokensOf(await this.call(config, '/oauth/token', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
   }
 
   /** One request, answered: a 4xx is Melhor Envio's no; no answer, or a 5xx, is not knowing. */
-  private async call(config: MelhorEnvioConfig, path: string, init: { method: string; headers: Record<string, string>; body?: string }): Promise<unknown> {
+  private async call(config: MelhorEnvioConfig, path: string, init: { method: string; headers: Record<string, string>; body?: string }, timeoutMs = TIMEOUT_MS): Promise<unknown> {
     const response = await fetch(new URL(path, config.baseUrl), {
       method: init.method,
       headers: { accept: 'application/json', 'user-agent': config.userAgent, ...init.headers },
       body: init.body,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     }).catch((error: unknown) => {
       throw new MelhorEnvioUnreachable(error instanceof Error ? error.message : 'Melhor Envio did not answer');
     });

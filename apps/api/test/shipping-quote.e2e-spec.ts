@@ -35,7 +35,7 @@ function shopBody(slug: string) {
 const near = { upToMeters: 3000, feeCents: 500, windowFromMinutes: 30, windowToMinutes: 50 };
 const town = { upToMeters: 8000, feeCents: 900, windowFromMinutes: 40, windowToMinutes: 70 };
 const rules = { pickupEnabled: true, ownDeliveryEnabled: true, bands: [near, town], freeAboveCents: 15000, carriersEnabled: false };
-const pickup = { kind: 'PICKUP', feeCents: 0, window: null, freeAbove: false };
+const pickup = { kind: 'PICKUP', carrier: null, feeCents: 0, window: null, freeAbove: false };
 
 describe('the delivery quote (BEELINK-176)', () => {
   let app: NestFastifyApplication;
@@ -85,8 +85,9 @@ describe('the delivery quote (BEELINK-176)', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json<ShippingQuote>()).toEqual({
-      options: [{ kind: 'OWN_DELIVERY', feeCents: 500, window: { unit: 'MINUTES', from: 30, to: 50 }, freeAbove: false }, pickup],
+      options: [{ kind: 'OWN_DELIVERY', carrier: null, feeCents: 500, window: { unit: 'MINUTES', from: 30, to: 50 }, freeAbove: false }, pickup],
       ownDelivery: { status: 'QUOTED', distanceMeters: 2603 },
+      carriers: { status: 'OFF' },
       productsCents: 5000,
     });
     expect(geocoder.asked).toEqual([{ zipCode: '01310930', street: 'Rua Augusta', number: '1500', neighborhood: null, city: null, state: null }]);

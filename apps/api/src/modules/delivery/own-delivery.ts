@@ -12,7 +12,7 @@ export interface OwnDeliveryRead {
 
 const agreeLater = (reason: Extract<OwnDeliveryVerdict, { status: 'AGREE_LATER' }>['reason'], free: boolean): OwnDeliveryRead => ({
   verdict: { status: 'AGREE_LATER', reason },
-  option: { kind: 'OWN_DELIVERY', feeCents: free ? 0 : null, window: null, freeAbove: free },
+  option: { kind: 'OWN_DELIVERY', carrier: null, feeCents: free ? 0 : null, window: null, freeAbove: free },
 });
 
 /**
@@ -39,11 +39,11 @@ export function ownDeliveryOf(rules: DeliverySettings, shop: GeoPoint | null, de
   const waived = free && band.feeCents > 0;
   return {
     verdict: { status: 'QUOTED', distanceMeters: distance },
-    option: { kind: 'OWN_DELIVERY', feeCents: waived ? 0 : band.feeCents, window: { unit: 'MINUTES', from: band.windowFromMinutes, to: band.windowToMinutes }, freeAbove: waived },
+    option: { kind: 'OWN_DELIVERY', carrier: null, feeCents: waived ? 0 : band.feeCents, window: { unit: 'MINUTES', from: band.windowFromMinutes, to: band.windowToMinutes }, freeAbove: waived },
   };
 }
 
 /** Pickup at the shop, when it offers it: nothing to pay, nothing to wait for on the road. */
 export function pickupOf(rules: DeliverySettings): ShippingOption | null {
-  return rules.pickupEnabled ? { kind: 'PICKUP', feeCents: 0, window: null, freeAbove: false } : null;
+  return rules.pickupEnabled ? { kind: 'PICKUP', carrier: null, feeCents: 0, window: null, freeAbove: false } : null;
 }

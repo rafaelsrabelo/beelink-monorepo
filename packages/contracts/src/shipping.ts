@@ -1,9 +1,10 @@
+import type { CarrierGap } from "./catalog.js";
 import type { CreateOrderItemInput } from "./order.js";
 
 /**
  * What a shop offers to get a cart to an address (docs/plans BEELINK-176): its own delivery, priced
- * by the distance bands it set (BEELINK-175), and pickup — and, with BEELINK-185, the carriers of its
- * Melhor Envio account, in the same list. One quote, in the API, for the checkout, the product page
+ * by the distance bands it set (BEELINK-175), the carriers of its own Melhor Envio account
+ * (BEELINK-185), and pickup — in one list. One quote, in the API, for the checkout, the product page
  * and the panel: an order records the fee the API quoted, never one a page worked out.
  */
 
@@ -36,11 +37,21 @@ export interface ShippingWindow {
   to: number;
 }
 
-export type ShippingOptionKind = "PICKUP" | "OWN_DELIVERY";
+export type ShippingOptionKind = "PICKUP" | "OWN_DELIVERY" | "CARRIER";
+
+/** A carrier's service, as Melhor Envio names it: "Correios" and "SEDEX", "Jadlog" and ".Package". */
+export interface ShippingCarrier {
+  /** Melhor Envio's id for the service — what the label is bought with. */
+  serviceId: number;
+  service: string;
+  company: string;
+}
 
 /** One way to get this cart to this address, as the checkout lists it. */
 export interface ShippingOption {
   kind: ShippingOptionKind;
+  /** Whose service it is, on a `CARRIER`; null on the shop's own delivery and on a pickup. */
+  carrier: ShippingCarrier | null;
   /** Null: agreed with the shop after the order — see `OwnDeliveryVerdict`. Zero on a pickup and a free delivery. */
   feeCents: number | null;
   /** Null on a pickup and on a fee still to agree. */
@@ -68,10 +79,25 @@ export type OwnDeliveryVerdict =
   | { status: "OUT_OF_RANGE"; distanceMeters: number; radiusMeters: number }
   | { status: "QUOTED"; distanceMeters: number };
 
+/**
+ * The carriers for this cart and address, said apart from the list so the checkout — and the panel —
+ * can say why there are none. Only `QUOTED` puts any in the list, and it may still put none: no
+ * service of the shop's reaches the address.
+ */
+export type CarriersVerdict =
+  /** The shop does not sell by carrier: switched off, no account connected, or no service chosen. */
+  | { status: "OFF" }
+  | { status: "QUOTED" }
+  /** A product in the cart has no weight or no size, or the shop has no CEP to post from. */
+  | { status: "NOT_QUOTABLE"; reason: CarrierGap | "NO_ORIGIN" }
+  /** Melhor Envio did not answer in time, or no longer accepts the shop's connection: the rest of the list stands. */
+  | { status: "UNAVAILABLE" };
+
 export interface ShippingQuote {
-  /** In the order the checkout lists them: the shop's own delivery, then pickup. Empty: the shop offers nothing to this address. */
+  /** In the order the checkout lists them: the shop's own delivery, the carriers from the cheapest, then pickup. Empty: the shop offers nothing to this address. */
   options: ShippingOption[];
   ownDelivery: OwnDeliveryVerdict;
+  carriers: CarriersVerdict;
   /** What the products cost after promotions — what the free-delivery amount is measured against. */
   productsCents: number;
 }

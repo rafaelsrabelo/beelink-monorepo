@@ -99,4 +99,77 @@ describe('MelhorEnvioClient', () => {
     expect(url).toBe('https://sandbox.melhorenvio.com.br/api/v2/me');
     expect(headers).toMatchObject({ authorization: 'Bearer eyJ.access', 'user-agent': 'bee-link (contato@beecoders.net)' });
   });
+
+  describe('the quote of a cart (BEELINK-185)', () => {
+    const cart = { fromZipCode: '01310930', toZipCode: '30140071', products: [{ id: 'v1', lengthCm: 26, widthCm: 20, heightCm: 4, weightKg: 0.3, insuranceReais: 59.9, quantity: 2 }], serviceIds: [1, 2] };
+    const sedex = {
+      id: 2,
+      name: 'SEDEX',
+      price: '31.90',
+      custom_price: '27.45',
+      delivery_time: 3,
+      delivery_range: { min: 2, max: 3 },
+      custom_delivery_time: 4,
+      custom_delivery_range: { min: 3, max: 4 },
+      packages: [{ dimensions: { height: 8, width: 20, length: 26 }, weight: '0.60' }],
+      company: { id: 1, name: 'Correios' },
+    };
+
+    it("sends the products for Melhor Envio to pack, the services asked for, with the shop's token", async () => {
+      const fetched = answer(200, [sedex]);
+
+      await client.quote(config, 'eyJ.access', cart);
+
+      const { url, headers, body } = sent(fetched);
+      expect(url).toBe('https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate');
+      expect(headers).toMatchObject({ authorization: 'Bearer eyJ.access', 'content-type': 'application/json' });
+      expect(body).toEqual({
+        from: { postal_code: '01310930' },
+        to: { postal_code: '30140071' },
+        products: [{ id: 'v1', width: 20, height: 4, length: 26, weight: 0.3, insurance_value: 59.9, quantity: 2 }],
+        options: { receipt: false, own_hand: false },
+        services: '1,2',
+      });
+    });
+
+    it('asks about every service when the shop never chose', async () => {
+      const fetched = answer(200, [sedex]);
+
+      await client.quote(config, 'eyJ.access', { ...cart, serviceIds: null });
+
+      expect(sent(fetched).body).not.toHaveProperty('services');
+    });
+
+    it("reads the account's own price and time, in cents and business days", async () => {
+      answer(200, [sedex]);
+
+      expect(await client.quote(config, 'eyJ.access', cart)).toEqual([{ serviceId: 2, service: 'SEDEX', company: 'Correios', priceCents: 2745, daysFrom: 3, daysTo: 4 }]);
+    });
+
+    it("falls back to Melhor Envio's general price and single time where the account has none of its own", async () => {
+      answer(200, [{ id: 1, name: 'PAC', price: '18.20', delivery_time: 7, company: { name: 'Correios' } }]);
+
+      expect(await client.quote(config, 'eyJ.access', cart)).toEqual([{ serviceId: 1, service: 'PAC', company: 'Correios', priceCents: 1820, daysFrom: 7, daysTo: 7 }]);
+    });
+
+    it('leaves out a service that refuses the cart, and one sent with no price, without failing the others', async () => {
+      answer(200, [sedex, { id: 3, name: '.Package', error: 'Transportadora não atende este trecho.', company: { name: 'Jadlog' } }, { id: 4, name: '.Com', company: { name: 'Jadlog' } }]);
+
+      expect((await client.quote(config, 'eyJ.access', cart)).map((service) => service.service)).toEqual(['SEDEX']);
+    });
+
+    it('reads one service answered alone rather than in a list', async () => {
+      answer(200, sedex);
+
+      expect(await client.quote(config, 'eyJ.access', { ...cart, serviceIds: [2] })).toHaveLength(1);
+    });
+
+    it('tells no answer from a no', async () => {
+      answer(503, null);
+      await expect(client.quote(config, 'eyJ.access', cart)).rejects.toBeInstanceOf(MelhorEnvioUnreachable);
+
+      answer(401, { message: 'Unauthenticated.' });
+      await expect(client.quote(config, 'eyJ.access', cart)).rejects.toBeInstanceOf(MelhorEnvioRefused);
+    });
+  });
 });

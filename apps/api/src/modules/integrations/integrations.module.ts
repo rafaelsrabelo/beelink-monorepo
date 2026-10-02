@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 // App
 import { CarrierGapsService } from './carrier-gaps.service.js';
 import { StoresModule } from '../stores/stores.module.js';
+import { CarrierQuotes } from './melhor-envio/carrier-quote.service.js';
 import { MelhorEnvioClient } from './melhor-envio/melhor-envio.client.js';
 import { MelhorEnvioCallbackController, MelhorEnvioController } from './melhor-envio/melhor-envio.controller.js';
 import { MelhorEnvioRefresher } from './melhor-envio/melhor-envio-refresher.js';
@@ -16,12 +17,13 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  * Asaas next. What they gave the shop is sealed by `secret-vault.ts` and opened nowhere outside this
  * folder (gate `api/sealed-secret-in-integrations`). `MelhorEnvioService` is exported for the
  * shipping tickets, which reach Melhor Envio through its `accessTokenFor`; `CarrierGapsService` for the
- * catalogue, which says which products a carrier cannot quote.
+ * catalogue, which says which products a carrier cannot quote; `CarrierQuotes` for the shipping quote,
+ * which lists the carriers beside the shop's own delivery (BEELINK-185).
  */
 @Module({
   imports: [StoresModule],
   controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController],
-  providers: [MelhorEnvioClient, MelhorEnvioService, MelhorEnvioRefresher, MelhorEnvioSettingsService, CarrierGapsService],
-  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService],
+  providers: [MelhorEnvioClient, MelhorEnvioService, MelhorEnvioRefresher, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes],
+  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes],
 })
 export class IntegrationsModule {}
