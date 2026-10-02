@@ -94,7 +94,12 @@ export function StoreSettingsForm({
       </header>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="w-full justify-start overflow-x-auto">
+        {/*
+          Scrolls sideways on a narrow screen, with no bar: a classic scrollbar takes its height out of
+          the row and cuts the tabs, and `overflow-x-auto` turns the other axis to auto as well — the
+          row's content measures a pixel taller than the row, a thumb beside the last tab on a wide one.
+        */}
+        <TabsList className="no-scrollbar w-full justify-start overflow-x-auto">
           <TabsTrigger value="identity">{text.tabIdentity}</TabsTrigger>
           <TabsTrigger value="address">{text.tabAddress}</TabsTrigger>
           <TabsTrigger value="social">{text.tabSocial}</TabsTrigger>

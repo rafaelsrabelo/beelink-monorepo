@@ -92,10 +92,11 @@ export function DeliverySettingsForm({
             <div className="flex flex-col gap-4">
               <DeliveryBandRows rows={value.bands} onChange={(bands) => set({ bands })} issues={issues.bands} previews={previews} disabled={pending} messages={messages} />
               {value.bands.length === 0 ? <p className="text-muted-foreground text-sm">{text.own.noBands}</p> : null}
-              <Field data-invalid={issues.freeAbove ? true : undefined} className="max-w-64">
+              <Field data-invalid={issues.freeAbove ? true : undefined} className="max-w-md">
                 <FieldLabel htmlFor={`${id}-free`}>{text.own.freeAbove}</FieldLabel>
                 <Input
                   id={`${id}-free`}
+                  className="max-w-48"
                   inputMode="decimal"
                   placeholder="150,00"
                   value={value.freeAbove}
