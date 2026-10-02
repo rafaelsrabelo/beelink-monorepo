@@ -6,6 +6,7 @@ import type {
   DesignPublishProblemKind,
   ProductSource,
 } from "../blocks/design/design-types"
+import type { CashbackEntryKindValue } from "../lib/cashback"
 import type { CouponRefusalValue } from "../lib/order-discounts"
 import type { SectionCategory } from "../lib/section-registry"
 import type { LeadStatus } from "../blocks/leads/lead-types"
@@ -252,6 +253,14 @@ export interface UiMessages {
     couponTooMany: string
     /** A coupon in force whose check did not come back: the order waits for it, or for its removal. */
     couponUnchecked: string
+    /** `{amount}`: the checkout's box, with what the shopper can spend now (BEELINK-244). */
+    cashbackUse: string
+    /** `{amount}`: the most this cart takes, when it is less than the balance. */
+    cashbackUseCapped: string
+    /** The cart has nothing credit may pay for: the discounts took the products to nothing. */
+    cashbackUseNothing: string
+    /** The box is ticked and the cart's price with it did not come back: the order waits for it, or for the box. */
+    cashbackUseUnchecked: string
     /** Adding to the cart (F3), on a card and on the product page. */
     addToCart: string
     addedToCart: string
@@ -398,6 +407,8 @@ export interface UiMessages {
     privacyDownloadFailed: string
     privacyDelete: string
     privacyDeleteLead: string
+    /** `{amount}`: what deleting the account takes from the shopper's cashback (BEELINK-244). */
+    privacyDeleteCashback: string
     privacyDeletePassword: string
     privacyDeleteEmail: string
     privacyDeleteSubmit: string
@@ -503,8 +514,39 @@ export interface UiMessages {
     accountOrders: string
     accountFavorites: string
     accountReviews: string
+    accountCashback: string
     accountProfile: string
     accountMessages: string
+    /** The account's cashback tab (BEELINK-244). */
+    accountCashbackTab: {
+      balance: string
+      pending: string
+      pendingHint: string
+      /** `{amount}`, `{date}`: the soonest part of the balance to expire. */
+      nextExpiry: string
+      noExpiry: string
+      howToUse: string
+      /** `{rate}`: the shop's rule, while its cashback is on. */
+      earns: string
+      /** `{rate}`, `{minimum}`. */
+      earnsFrom: string
+      credits: string
+      /** `{number}`. */
+      order: string
+      /** A credit the shopkeeper gave, from no order. */
+      shopCredit: string
+      /** `{left}`, `{amount}`: a credit partly spent. */
+      left: string
+      /** `{date}`. */
+      expiresOn: string
+      neverExpires: string
+      waitsDelivery: string
+      statement: string
+      empty: string
+      emptyStatement: string
+      kinds: Record<CashbackEntryKindValue, string>
+      failed: string
+    }
     /** The header's account menu (J21): its heading's link to the front, and the profile in the shopper's words. */
     accountMenuOverview: string
     accountMenuProfile: string
@@ -1654,6 +1696,8 @@ export interface UiMessages {
       coupon: string
       /** What the shopkeeper typed. */
       manual: string
+      /** The customer's credit spent on the order: its own row, after the discounts. */
+      cashback: string
       /** A free-delivery coupon's value while the fee is not agreed, in place of an amount. */
       freeDelivery: string
       /** `{name}`, `{value}`: under a line a promotion took something off. */
@@ -1748,6 +1792,10 @@ export interface UiMessages {
       totalTooLarge: string
       /** The API could not price the sale: the total on screen is the form's own, without the day's promotions. */
       unpriced: string
+      /** `{amount}`: the box that spends the chosen customer's cashback on the sale (BEELINK-244). */
+      cashbackUse: string
+      /** `{amount}`: the most this sale takes, when it is less than the customer's balance. */
+      cashbackCapped: string
       invalidMoney: string
       missingCustomer: string
       missingItems: string

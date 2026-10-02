@@ -108,3 +108,14 @@ export const EntregaSemEndereco: Story = {
 export const DescontoAlto: Story = {
   render: () => <OrderSummary totals="DISCOUNT_TOO_LARGE" money={money} />,
 }
+
+/** BEELINK-244: o cliente escolhido tem cashback, e o pedido aceita só parte dele. */
+export const ComCashbackDoCliente: Story = {
+  render: () => (
+    <OrderSummary
+      totals={{ subtotalCents: 28470, deliveryFeeCents: 1000, discountCents: 0, totalCents: 24470, priced: [], cashbackUsedCents: 5000 }}
+      cashback={{ balanceCents: 8000, cappedCents: 5000, checked: true, onCheckedChange: () => {} }}
+      money={money}
+    />
+  ),
+}

@@ -1,10 +1,15 @@
+// React
+import { useId } from "react"
+
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
+import { Checkbox } from "@harness-monorepo/ui/components/checkbox"
+import { Field, FieldDescription, FieldLabel } from "@harness-monorepo/ui/components/field"
 import { discountLinesOf } from "@harness-monorepo/ui/lib/order-discounts"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
@@ -21,7 +26,20 @@ export interface OrderSummaryProps {
   pending?: boolean
   /** Why the last save did not go through, in words. */
   error?: string
+  /**
+   * The chosen customer's cashback (BEELINK-244), offered while they have some: ticked, the sale is
+   * priced with the most of it the sale takes. Null with no customer chosen, or none to spend.
+   */
+  cashback?: OrderSummaryCashback | null
   messages?: UiMessages
+}
+
+export interface OrderSummaryCashback {
+  balanceCents: number
+  /** The most this sale takes, when it is less than the balance; null when it takes all of it. */
+  cappedCents: number | null
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
 }
 
 function Row({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
@@ -38,15 +56,16 @@ function Row({ label, value, strong = false }: { label: string; value: string; s
  * will write, so what the shopkeeper confirms is what is saved: a promotion running on the day of
  * the sale has its row, apart from what was typed as a discount.
  */
-export function OrderSummary({ totals, pricing = false, unpriced = false, money, pending = false, error, messages = defaultMessages }: OrderSummaryProps) {
+export function OrderSummary({ totals, pricing = false, unpriced = false, money, pending = false, error, cashback = null, messages = defaultMessages }: OrderSummaryProps) {
   const text = messages.orders.form
+  const cashbackId = useId()
   const refusal = typeof totals === "string" ? (totals === "DISCOUNT_TOO_LARGE" ? text.discountTooLarge : text.totalTooLarge) : null
   const promotionCents = typeof totals === "string" ? 0 : (totals.priced ?? []).reduce((sum, line) => sum + line.discountCents, 0)
   const discounts =
     typeof totals === "string"
       ? []
       : discountLinesOf(
-          { discountCents: promotionCents + totals.discountCents, promotionDiscountCents: promotionCents, couponDiscountCents: 0, coupon: null, items: totals.priced },
+          { discountCents: promotionCents + totals.discountCents, promotionDiscountCents: promotionCents, couponDiscountCents: 0, coupon: null, items: totals.priced, cashbackUsedCents: totals.cashbackUsedCents },
           money,
           messages.orders.discountRows,
         )
@@ -56,6 +75,16 @@ export function OrderSummary({ totals, pricing = false, unpriced = false, money,
       <h2 id="order-summary-title" className="font-semibold">
         {text.summary}
       </h2>
+
+      {cashback ? (
+        <Field orientation="horizontal">
+          <Checkbox id={cashbackId} checked={cashback.checked} onCheckedChange={(next: boolean | "indeterminate") => cashback.onCheckedChange(next === true)} disabled={pending} />
+          <div className="flex flex-col gap-1">
+            <FieldLabel htmlFor={cashbackId}>{format(text.cashbackUse, { amount: money(cashback.balanceCents) })}</FieldLabel>
+            {cashback.checked && cashback.cappedCents !== null ? <FieldDescription>{format(text.cashbackCapped, { amount: money(cashback.cappedCents) })}</FieldDescription> : null}
+          </div>
+        </Field>
+      ) : null}
 
       {typeof totals === "string" ? (
         <p role="alert" className="text-destructive text-sm">
