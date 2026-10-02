@@ -1,4 +1,5 @@
 import type { AuthSession, EmailPayload, RegisterPayload } from "./auth.js";
+import type { CustomerCashbackTotals } from "./cashback.js";
 
 /**
  * A shopper's own door into a shop (docs/product/README.md, "Accounts" and "Customers").
@@ -94,6 +95,8 @@ export interface CustomerProfile {
   hasPassword: boolean;
   /** Which notices by e-mail the shopper takes from this shop (BEELINK-151). */
   notifications: CustomerNotifications;
+  /** Their cashback at this shop (BEELINK-244): what the menu and the account's deletion say; the statement is its own read. */
+  cashback: CustomerCashbackTotals;
 }
 
 /** A shopper's notices by e-mail at one shop (BEELINK-151). */
