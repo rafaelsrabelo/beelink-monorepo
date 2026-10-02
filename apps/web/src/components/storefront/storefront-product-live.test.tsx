@@ -47,6 +47,7 @@ function renderLive() {
         showStock
         finishesOnWhatsApp={false}
         seller={{ name: "Lessari", paymentMethods: ["PIX"] }}
+        cashback={null}
         restockCopy={copy}
         messages={ptBR}
       />

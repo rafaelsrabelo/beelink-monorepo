@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, QuotedFirstPurchase } from "@harness-monorepo/contracts"
+import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, QuotedCashback, QuotedFirstPurchase } from "@harness-monorepo/contracts"
 import type { StorefrontCartOffer } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -67,12 +67,22 @@ export interface CartPricing {
   lines: ReadonlyMap<string, PricedCartLine>
   /** A first-purchase promotion the cart would get and did not (BEELINK-245): in none of the amounts above. Null with none. */
   offer: StorefrontCartOffer | null
+  /** What the order would earn in cashback, or what is missing to earn it (BEELINK-243), in words. Null while the shop's is off. */
+  cashback: string | null
 }
 
 export interface CartPricingContext {
   fulfillment: OrderFulfillment
   locale: string
   messages: UiMessages
+}
+
+/** What the cart would earn in cashback, as the quote worked it out; below the shop's minimum, what is missing. */
+function cashbackOf(cashback: QuotedCashback | null, money: (cents: number) => string, locale: string, text: UiMessages["storefront"]): string | null {
+  if (!cashback) return null
+  if (cashback.status === "EARNS") return format(text.cartCashbackEarns, { amount: money(cashback.earnedCents) })
+  const rate = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 }).format(cashback.rateBps / 10_000)
+  return format(text.cartCashbackMissing, { amount: money(cashback.missingCents), rate })
 }
 
 /**
@@ -100,7 +110,7 @@ function offerOf(firstPurchase: QuotedFirstPurchase | null, money: (cents: numbe
  * the stepper at once instead of waiting for the answer.
  */
 export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfillment, locale, messages }: CartPricingContext): CartPricing {
-  if (!quote) return { subtotalCents: view.subtotalCents, discounts: [], total: null, lines: new Map(), offer: null }
+  if (!quote) return { subtotalCents: view.subtotalCents, discounts: [], total: null, lines: new Map(), offer: null, cashback: null }
 
   const money = (cents: number) => formatCents(cents, locale, "BRL")
   const coupon = quote.coupon?.status === "APPLIED" ? { code: quote.coupon.code, kind: quote.coupon.kind } : null
@@ -132,5 +142,5 @@ export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfil
     lines.set(rowKeyOf(row), { lineTotalCents, wasCents: before > lineTotalCents ? before : null, promotion: line.promotion?.name ?? null })
   }
 
-  return { subtotalCents: quote.subtotalCents, discounts, total, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront) }
+  return { subtotalCents: quote.subtotalCents, discounts, total, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront), cashback: cashbackOf(quote.cashback, money, locale, messages.storefront) }
 }

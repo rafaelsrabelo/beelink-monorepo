@@ -181,6 +181,7 @@ export function StorefrontCartLive({
         discounts={pricing.discounts}
         total={pricing.total}
         offer={pricing.offer}
+        cashback={pricing.cashback}
         pricing={pricing.pricing}
         stale={pricing.stale}
         locale={locale}
