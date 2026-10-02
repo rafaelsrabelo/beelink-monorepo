@@ -11,7 +11,7 @@ import { accountTabOf, type StorefrontRoutes } from "./storefront-routes"
  * The tabs that exist. Each ticket of the area appends its own: a tab listed here before its page
  * is built would be a menu entry that opens nothing.
  */
-export const DELIVERED_ACCOUNT_TABS: readonly StorefrontAccountTab[] = ["orders", "favorites", "reviews", "profile", "messages"]
+export const DELIVERED_ACCOUNT_TABS: readonly StorefrontAccountTab[] = ["orders", "favorites", "reviews", "cashback", "profile", "messages"]
 
 /** The tab a third segment under the account opens, or null: a word of a tab not delivered opens nothing. */
 export function deliveredAccountTabOf(segment: string, routeWords: StorefrontRouteWords): StorefrontAccountTab | null {
@@ -19,9 +19,25 @@ export function deliveredAccountTabOf(segment: string, routeWords: StorefrontRou
   return tab && DELIVERED_ACCOUNT_TABS.includes(tab) ? tab : null
 }
 
-/** The area's menu: the overview, then each delivered tab in the design's order, with its count when it has one. */
-export function accountMenuOf(routes: StorefrontRoutes, counts: Partial<Record<StorefrontAccountTab, number>> = {}): StorefrontAccountMenuItem[] {
-  return [{ key: "overview", href: routes.account() }, ...DELIVERED_ACCOUNT_TABS.map((tab) => ({ key: tab, href: routes.accountTab(tab), count: counts[tab] ?? null }))]
+/**
+ * The area's menu: the overview, then each delivered tab in the design's order, with its count when
+ * it has one — less the tabs that have nothing to say to this shopper, which still open by address.
+ */
+export function accountMenuOf(
+  routes: StorefrontRoutes,
+  counts: Partial<Record<StorefrontAccountTab, number>> = {},
+  hidden: readonly StorefrontAccountTab[] = [],
+): StorefrontAccountMenuItem[] {
+  const listed = DELIVERED_ACCOUNT_TABS.filter((tab) => !hidden.includes(tab))
+  return [{ key: "overview", href: routes.account() }, ...listed.map((tab) => ({ key: tab, href: routes.accountTab(tab), count: counts[tab] ?? null }))]
+}
+
+/**
+ * The tabs the menu leaves out for this shopper (BEELINK-244): cashback, while the shop gives none and
+ * they have none there — credit already given is still theirs once the shop switches it off.
+ */
+export function hiddenAccountTabsOf(shopGivesCashback: boolean, shopper: Pick<CustomerProfile, "cashback">): StorefrontAccountTab[] {
+  return shopGivesCashback || shopper.cashback.balanceCents > 0 || shopper.cashback.pendingCents > 0 ? [] : ["cashback"]
 }
 
 /** Where "Sair" posts, from the area's menu and from the header's. */
@@ -46,6 +62,7 @@ export function accountTabTitleOf(tab: StorefrontAccountTab, text: UiMessages["s
     orders: text.accountOrders,
     favorites: text.accountFavorites,
     reviews: text.accountReviews,
+    cashback: text.accountCashback,
     profile: text.accountProfile,
     messages: text.accountMessages,
   }

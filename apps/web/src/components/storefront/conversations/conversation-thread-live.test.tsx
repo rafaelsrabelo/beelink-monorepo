@@ -14,7 +14,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 import { conversationKeys } from "@/services/conversations/conversation-keys"
 import { ConversationThreadLive } from "./conversation-thread-live"
 
-const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } }
+const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
 const at = "2026-09-29T13:00:00.000Z"
 
 function conversationWith(unread: number, extra: CustomerConversation["messages"] = []): CustomerConversation {
