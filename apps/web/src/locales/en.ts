@@ -58,6 +58,7 @@ export const en: WebMessages = {
       conversations: "Conversations",
       reviews: "Reviews",
       promotions: "Promotions",
+      cashback: "Cashback",
       coupons: "Coupons",
       customers: "Customers",
       categories: "Categories",
