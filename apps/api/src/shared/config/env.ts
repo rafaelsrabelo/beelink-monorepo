@@ -128,11 +128,42 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: blankAsAbsent(z.string().min(1)),
   GOOGLE_CLIENT_SECRET: blankAsAbsent(z.string().min(1)),
   GOOGLE_REDIRECT_URI: blankAsAbsent(z.url()),
+
+  /**
+   * Melhor Envio (BEELINK-182): bee-link's one app there, which each shop authorizes on its own
+   * account. Optional as a group: without it the panel says shipping by carrier is not set up here and
+   * the API refuses its routes with INTEGRATION_UNAVAILABLE.
+   *
+   * `MELHOR_ENVIO_REDIRECT_URI` is the web's `/api/integrations/melhor-envio/callback`, registered once
+   * in the app, for every shop. `MELHOR_ENVIO_CONTACT_EMAIL` goes in the User-Agent, which Melhor
+   * Envio refuses a request without.
+   */
+  MELHOR_ENVIO_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+  MELHOR_ENVIO_CLIENT_ID: blankAsAbsent(z.string().min(1)),
+  MELHOR_ENVIO_CLIENT_SECRET: blankAsAbsent(z.string().min(1)),
+  MELHOR_ENVIO_REDIRECT_URI: blankAsAbsent(z.url()),
+  MELHOR_ENVIO_CONTACT_EMAIL: z.email().default('contato@beecoders.net'),
+
+  /**
+   * Seals what a shop's third parties gave it — Melhor Envio's tokens, the Asaas key — at rest: 32
+   * random bytes in base64 (`openssl rand -base64 32`). Losing it loses every connection, which then
+   * has to be made again; leaking it with a database dump hands over every shop's access.
+   */
+  INTEGRATIONS_SECRET_KEY: blankAsAbsent(
+    z.string().refine((value) => Buffer.from(value, 'base64').length === 32, 'INTEGRATIONS_SECRET_KEY must be 32 bytes in base64'),
+  ),
 }).refine(
   // All three or none: half of it is a deployment that shows the button and fails at the callback.
   (value) => [value.GOOGLE_CLIENT_ID, value.GOOGLE_CLIENT_SECRET, value.GOOGLE_REDIRECT_URI].every((part) => part === undefined) ||
     [value.GOOGLE_CLIENT_ID, value.GOOGLE_CLIENT_SECRET, value.GOOGLE_REDIRECT_URI].every((part) => part !== undefined),
   { message: 'GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI go together: set all three or none', path: ['GOOGLE_CLIENT_ID'] },
+).refine(
+  // Same reason; and an app with nowhere to seal its tokens could connect a shop and keep nothing.
+  (value) => {
+    const parts = [value.MELHOR_ENVIO_CLIENT_ID, value.MELHOR_ENVIO_CLIENT_SECRET, value.MELHOR_ENVIO_REDIRECT_URI];
+    return parts.every((part) => part === undefined) || (parts.every((part) => part !== undefined) && value.INTEGRATIONS_SECRET_KEY !== undefined);
+  },
+  { message: 'MELHOR_ENVIO_CLIENT_ID, MELHOR_ENVIO_CLIENT_SECRET and MELHOR_ENVIO_REDIRECT_URI go together, with INTEGRATIONS_SECRET_KEY: set all four or none of the three', path: ['MELHOR_ENVIO_CLIENT_ID'] },
 );
 
 /**

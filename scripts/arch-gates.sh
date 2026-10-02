@@ -92,6 +92,15 @@ gate "api/env-through-schema" \
   "process\.env" \
   --exclude-dir=config --exclude-dir=generated
 
+# What a shop's third parties gave it — Melhor Envio's tokens, the Asaas key — is sealed at rest, and
+# opened in one folder: a dump that leaks reads nothing, and a log line or an answer elsewhere cannot
+# carry it by accident. The Prisma client is generated and names every column.
+gate "api/sealed-secret-in-integrations" \
+  "A shop's sealed third-party access (secretSealed) and the vault that opens it are read only under src/modules/integrations (apps/api/AGENTS.md, BEELINK-182)." \
+  "apps/api/src" \
+  "secretSealed|secret-vault" \
+  --exclude-dir=integrations --exclude-dir=generated
+
 gate "web/no-fetch-in-components" \
   "Components never call fetch — a service function plus a TanStack Query hook does, and packages/ui blocks take data through props (docs/ai-rules/state-and-data.md)." \
   "apps/web/src/components packages/ui/src" \

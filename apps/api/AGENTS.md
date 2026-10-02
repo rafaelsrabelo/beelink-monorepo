@@ -16,6 +16,7 @@
 6. **Validation is explicit.** The global `ValidationPipe` runs `whitelist`, `forbidNonWhitelisted` and `transform` — and **not** `enableImplicitConversion`, which coerces *after* a `@Transform` runs, so `Boolean('false')` quietly becomes `true`. Numbers and dates declare `@Type(() => Number)` / `@Type(() => Date)`.
 7. **The database is reached through `PrismaService`** — one client, injected. A schema change ships its migration (`prisma migrate dev --name <what>`) in the same PR.
 8. **Errors answer one shape**, `ApiErrorBody`: `{ statusCode, errorCode, message }`. `errorCode` is a stable string clients switch on.
+9. **A shop's third-party access is sealed, and opened in one folder.** What Melhor Envio or Asaas gave a shop lives in `StoreIntegration.secretSealed`, sealed by `modules/integrations/secret-vault.ts` (AES-256-GCM, bound to the shop and the party) under `INTEGRATIONS_SECRET_KEY`. Nothing outside `src/modules/integrations` reads the field or the vault, and nothing logs what it opens. Gate: `api/sealed-secret-in-integrations`.
 
 ## Commands
 
