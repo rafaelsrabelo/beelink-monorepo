@@ -65,9 +65,43 @@ export interface CashbackCredit {
  * What a line of the statement records. `EARN` is a credit becoming usable (its order delivered);
  * `REDEEM`, credit spent on an order; `REVERSAL`, an undone order taking back what it earned
  * (negative) or giving back what was spent on it (positive); `EXPIRE`, what was left of a lot when it
- * ran out; `ADJUST`, the shopkeeper's correction, either way.
+ * ran out; `ADJUST`, the shopkeeper's correction, either way; `FORFEIT`, what was left when the
+ * customer deleted their account.
  */
-export type CashbackEntryKind = "EARN" | "REDEEM" | "REVERSAL" | "EXPIRE" | "ADJUST";
+export type CashbackEntryKind = "EARN" | "REDEEM" | "REVERSAL" | "EXPIRE" | "ADJUST" | "FORFEIT";
+
+/**
+ * What an order earns in cashback (BEELINK-239) and where that credit stands: pending until the order
+ * is delivered, then usable until spent or expired; void once the order was cancelled. Null on an
+ * order that earns nothing.
+ */
+export interface OrderCashback {
+  /** Worked out when the order was placed, at `rateBps`, and never changed after. */
+  earnedCents: number;
+  rateBps: number;
+  status: CashbackCreditStatus;
+  /** While pending, what the delivery will make usable; once usable, what is left to spend. */
+  remainingCents: number;
+  /** ISO-8601; null until delivered. */
+  availableAt: string | null;
+  /** ISO-8601; null until delivered, and on a credit that never expires. */
+  expiresAt: string | null;
+}
+
+/** As the shop reads it: also what the customer had spent of it when the order was undone, which the balance did not take back. */
+export interface ShopOrderCashback extends OrderCashback {
+  unrecoveredCents: number;
+}
+
+/** The customer's credit at the shop in their data's copy: every line of the statement, never a page of it. */
+export interface CustomerDataCashback {
+  balanceCents: number;
+  pendingCents: number;
+  /** The lots still worth something, as the statement's reader sees them. */
+  credits: CashbackCredit[];
+  /** The newest first. */
+  entries: CashbackEntry[];
+}
 
 export interface CashbackEntry {
   id: string;

@@ -1,6 +1,7 @@
 /* ── orders: what a shop sold, as a fact about the past ───────────────────── */
 
 // Types
+import type { OrderCashback, ShopOrderCashback } from "./cashback.js";
 import type { CustomerAddress } from "./customer.js";
 import type { CouponKind } from "./promotion.js";
 import type { PaymentMethod } from "./store.js";
@@ -138,6 +139,8 @@ export interface Order {
   /** What the coupon took off — on a free delivery, the fee, and zero while the fee is not agreed. */
   couponDiscountCents: number;
   coupon: OrderCoupon | null;
+  /** The cashback it earns and where that credit stands (BEELINK-239); null when it earns none. */
+  cashback: ShopOrderCashback | null;
   totalCents: number;
   note: string | null;
   /** When it was sold, ISO-8601 — which may be before it was registered. */
@@ -301,6 +304,8 @@ export interface CustomerOrder {
   /** What the coupon took off — on a free delivery, the fee, and zero while the fee is not agreed. */
   couponDiscountCents: number;
   coupon: OrderCoupon | null;
+  /** The cashback it earns: pending until delivered, then usable (BEELINK-239); null when it earns none. */
+  cashback: OrderCashback | null;
   totalCents: number;
   /** ISO-8601. */
   placedAt: string;
@@ -329,6 +334,8 @@ export interface CustomerOrderSummary {
   discountCents: number;
   /** The coupon it took, as it was; null with none. */
   coupon: OrderCoupon | null;
+  /** The cashback it earns, as the card says it; null when it earns none. */
+  cashback: OrderCashback | null;
   /** Units across every line. */
   itemsCount: number;
   /** The first lines, as many as the card shows. */

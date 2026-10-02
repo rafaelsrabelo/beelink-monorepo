@@ -26,6 +26,8 @@ export interface ConversationStatusNotice {
   kind: "STATUS";
   id: string;
   status: OrderStatus;
+  /** On a delivery's notice, the cashback it made usable (BEELINK-239), as it was then; null otherwise. */
+  cashbackCents: number | null;
   /** ISO-8601. */
   createdAt: string;
   /** When the customer read it; null while they have not. ISO-8601. */

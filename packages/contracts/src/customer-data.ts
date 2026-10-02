@@ -1,3 +1,4 @@
+import type { CustomerDataCashback } from "./cashback.js";
 import type { CustomerProfile } from "./customer.js";
 import type { CustomerFavorite } from "./favorite.js";
 import type { CustomerConversation } from "./conversation.js";
@@ -59,6 +60,8 @@ export interface CustomerDataExport {
   reviews: CustomerReview[];
   /** One per order that has one, by its order's number, most recent first. */
   conversations: CustomerConversation[];
+  /** Their cashback at the shop (BEELINK-239): the balance, what is pending, and the whole statement. */
+  cashback: CustomerDataCashback;
 }
 
 /**
