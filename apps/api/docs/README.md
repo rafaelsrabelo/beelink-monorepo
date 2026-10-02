@@ -28,6 +28,7 @@ src/
 │   │   ├── store-categories.{controller,service}.ts   # the platform's taxonomy of shops
 │   │   ├── store-color-presets.{controller,constants}.ts  # the six palettes, as data
 │   │   └── dto/                            # bodies in, Swagger shapes out
+│   ├── integrations/           # a shop's own accounts at Melhor Envio (and Asaas): the sealed vault, the OAuth flow, the renewal routine
 │   └── users/                  # GET /users/me
 └── shared/
     ├── config/env.ts           # the only reader of process.env
@@ -65,6 +66,10 @@ Every variable is declared in [../.env.example](../.env.example) and validated i
 | `STORE_WRITE_RATE_LIMIT_MAX` | `20` | per IP, per window, on `POST /stores` and `PUT /stores/:slug` |
 | `STORE_WRITE_RATE_LIMIT_WINDOW` | `1 minute` | |
 | `TRUST_PROXY` | `loopback` | whose `x-forwarded-for` is believed |
+| `MELHOR_ENVIO_ENV` | `sandbox` | `sandbox` · `production` — which Melhor Envio the app talks to |
+| `MELHOR_ENVIO_CLIENT_ID`, `MELHOR_ENVIO_CLIENT_SECRET`, `MELHOR_ENVIO_REDIRECT_URI` | — | bee-link's app at Melhor Envio; all three or none, and then `INTEGRATIONS_SECRET_KEY` too |
+| `MELHOR_ENVIO_CONTACT_EMAIL` | `contato@beecoders.net` | sent in the `User-Agent`, which Melhor Envio requires |
+| `INTEGRATIONS_SECRET_KEY` | — | 32 bytes in base64; seals each shop's third-party access (`modules/integrations/secret-vault.ts`) |
 
 ## Endpoints
 
@@ -89,6 +94,10 @@ Every route needs `Authorization: Bearer <access token>` unless it is marked pub
 | `PUT` | `/api/stores/:slug` | no | replace what the panel edits — a full body, not a patch | `200 Store` · `400` on `slug`/`latitude`/`longitude` · `403 STORE_FORBIDDEN` · `404 STORE_NOT_FOUND` |
 | `GET` | `/api/store-categories` | no | the platform's taxonomy of shops, by name | `200 StoreCategory[]` |
 | `GET` | `/api/store-color-presets` | no | the six palettes the panel applies in one click | `200 StoreColorPreset[]` |
+| `GET` | `/api/stores/:slug/integrations/melhor-envio` | no | the shop's Melhor Envio connection, and whether this deployment can make one | `200 MelhorEnvioConnection` · `403 STORE_FORBIDDEN` |
+| `POST` | `/api/stores/:slug/integrations/melhor-envio/authorize` | no | Melhor Envio's authorization page, with a ten-minute state for this person and shop | `200 IntegrationAuthorization` · `503 INTEGRATION_UNAVAILABLE` |
+| `POST` | `/api/integrations/melhor-envio/callback` | no | the code traded for the tokens, sealed; only the person who began the flow | `200 MelhorEnvioConnected` · `400 INTEGRATION_STATE_INVALID` · `400 INTEGRATION_EXCHANGE_FAILED` · `502 INTEGRATION_UNREACHABLE` |
+| `DELETE` | `/api/stores/:slug/integrations/melhor-envio` | no | disconnect: the tokens are deleted | `204` |
 
 `GET /api/stores/mine` is declared above `GET /api/stores/:slug`: Nest matches in declaration order, and `mine` is on the reserved-slug list so no shop can occupy it either.
 
