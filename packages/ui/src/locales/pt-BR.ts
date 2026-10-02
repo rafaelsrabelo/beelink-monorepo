@@ -2379,6 +2379,12 @@ export const ptBR: UiMessages = {
         { question: "Como recebo pelos serviços?", answer: "A forma e a frequência do repasse serão publicadas aqui antes de o cadastro abrir." },
       ],
     },
+    posters: {
+      titleLight: "Sua loja vai",
+      titleStrong: "mais longe",
+      busStopAlt: "Pôster da Beelink num ponto de ônibus: “Seu e-commerce conectado para ir mais longe.” Entregas mais rápidas, mais segurança, mais vendas.",
+      wallAlt: "Pôster da Beelink num muro: “Seu e-commerce mais longe, com quem entende.” Um lojista sorri diante do notebook, entre caixas de pedidos.",
+    },
     cta: { titleLight: "Seu e-commerce", titleStrong: "começa hoje.", courier: "Quero ser entregador" },
     footer: {
       tagline: "O ecossistema para o seu e-commerce.",

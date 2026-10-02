@@ -13,10 +13,20 @@ import { LandingFaq } from "./landing-faq"
 import { LandingFooter } from "./landing-footer"
 import { LandingHeader } from "./landing-header"
 import { LandingHero } from "./landing-hero"
+import type { LandingPhoto } from "./landing-picture"
+import { LandingPosters } from "./landing-posters"
 import { LandingShell } from "./landing-shell"
 import { LandingSteps } from "./landing-steps"
 
 const hrefs = { loginHref: "#entrar", signupHref: "#criar", termsHref: "#termos", privacyHref: "#privacidade" }
+
+/** A stand-in for the brand's photographs, which the web serves from its own files. */
+function photo(seed: string, width: number, height: number): LandingPhoto {
+  const at = (w: number) => `https://picsum.photos/seed/${seed}/${w}/${Math.round((w * height) / width)}`
+  return { src: at(width), srcSet: `${at(640)} 640w, ${at(width)} ${width}w`, width, height }
+}
+
+const photos = { courier: photo("beelink-moto", 1024, 1536), busStop: photo("beelink-ponto", 1024, 1280), wall: photo("beelink-muro", 1024, 1536) }
 
 const meta = {
   title: "Blocos/Landing",
@@ -38,8 +48,9 @@ export const Pagina: Story = {
         <LandingBanners signupHref={hrefs.signupHref} exampleHref="#loja-de-exemplo" />
         <LandingEcosystem />
         <LandingSteps />
-        <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
+        <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
         <LandingFaq />
+        <LandingPosters busStop={photos.busStop} wall={photos.wall} />
         <LandingCta signupHref={hrefs.signupHref} />
       </main>
       <LandingFooter termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} year={2026} />
@@ -87,12 +98,22 @@ export const Passos: Story = {
   ),
 }
 
-/** A seção preta, com o formulário. Ele valida e não envia nada: o cadastro ainda não está aberto. */
+/** A seção preta, com o formulário sobre a foto do entregador. Ele valida e não envia nada: o cadastro ainda não está aberto. */
 export const Entregadores: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0 py-10">
-      <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
+      <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
+    </LandingShell>
+  ),
+}
+
+/** Os pôsteres da marca, lado a lado, antes da chamada final. */
+export const Posteres: Story = {
+  args: { children: null },
+  render: () => (
+    <LandingShell className="min-h-0">
+      <LandingPosters busStop={photos.busStop} wall={photos.wall} />
     </LandingShell>
   ),
 }

@@ -2378,6 +2378,12 @@ export const en: UiMessages = {
         { question: "How am I paid for the deliveries?", answer: "How and how often couriers are paid will be published here before the sign-up opens." },
       ],
     },
+    posters: {
+      titleLight: "Your shop goes",
+      titleStrong: "further",
+      busStopAlt: "Beelink poster at a bus stop: “Your e-commerce, connected to go further.” Faster deliveries, more security, more sales.",
+      wallAlt: "Beelink poster on a wall: “Your e-commerce further, with those who understand it.” A shopkeeper smiles at a laptop among boxes of orders.",
+    },
     cta: { titleLight: "Your e-commerce", titleStrong: "starts today.", courier: "I want to be a courier" },
     footer: {
       tagline: "The ecosystem for your e-commerce.",

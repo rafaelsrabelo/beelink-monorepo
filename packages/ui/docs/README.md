@@ -31,7 +31,7 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/auth/reset-password-form` | `onSubmit`, `pending`, `error` | Blocos/Autenticação/Nova senha |
 | `blocks/auth/verify-email-status` | `state`, `onResend`, `resent` | Blocos/Autenticação/Confirmação de e-mail |
 | `blocks/auth/auth-card` | `title`, `description`, `error`, `footer` | Blocos/Autenticação/Moldura |
-| `blocks/auth/auth-shell` | `homeHref`, `children` — the landing's ground and Beelink's mark around the signed-out screens | Blocos/Autenticação/Fundo |
+| `blocks/auth/auth-shell` | `homeHref`, `photo`, `children` — the landing's ground and Beelink's mark around the signed-out screens; with a `photo`, a wide screen splits in two | Blocos/Autenticação/Fundo |
 | `blocks/auth/auth-link` | `href`, plus whatever a primitive injects | Blocos/Autenticação/Link injetado |
 | `blocks/dashboard/app-sidebar` | `user`, `onSignOut`, `navMain`, `activeHref` | Blocos/Painel/Barra lateral |
 | `blocks/dashboard/nav-main` | `items`, `activeHref`, `linkComponent` | Blocos/Painel/Navegação principal |
@@ -64,9 +64,11 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/landing/landing-banners` | `signupHref`, `exampleHref` (over `landing-rail` and `landing-phone-banner`) | Blocos/Landing → Banners |
 | `blocks/landing/landing-ecosystem` | — | Blocos/Landing → Ecossistema |
 | `blocks/landing/landing-steps` | — | Blocos/Landing → Passos |
-| `blocks/landing/landing-couriers` | `termsHref`, `privacyHref` (holds `landing-courier-form`) | Blocos/Landing → Entregadores |
+| `blocks/landing/landing-couriers` | `photo`, `termsHref`, `privacyHref` (holds `landing-courier-form`; the photo fades under it) | Blocos/Landing → Entregadores |
 | `blocks/landing/landing-courier-form` | `termsHref`, `privacyHref`, `text` (its own slice of the dictionary) — validates, sends nothing | Blocos/Landing → Formulário do entregador |
 | `blocks/landing/landing-faq` | — | Blocos/Landing → Perguntas |
+| `blocks/landing/landing-posters` | `busStop`, `wall` — the brand's two posters, read out by what they say | Blocos/Landing → Pôsteres |
+| `blocks/landing/landing-picture` | `photo` (`src`, `srcSet`, `width`, `height`), `alt`, `sizes` — a brand photo, one file per width, lazy | Blocos/Landing → Pôsteres |
 | `blocks/landing/landing-cta` | `signupHref` | Blocos/Landing → Chamada e rodapé |
 | `blocks/landing/landing-footer` | `termsHref`, `privacyHref`, `year` | Blocos/Landing → Chamada e rodapé |
 

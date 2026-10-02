@@ -10,12 +10,14 @@ import { LandingFaq } from "@harness-monorepo/ui/blocks/landing/landing-faq"
 import { LandingFooter } from "@harness-monorepo/ui/blocks/landing/landing-footer"
 import { LandingHeader } from "@harness-monorepo/ui/blocks/landing/landing-header"
 import { LandingHero } from "@harness-monorepo/ui/blocks/landing/landing-hero"
+import { LandingPosters } from "@harness-monorepo/ui/blocks/landing/landing-posters"
 import { LandingShell } from "@harness-monorepo/ui/blocks/landing/landing-shell"
 import { LandingSteps } from "@harness-monorepo/ui/blocks/landing/landing-steps"
 
 // App
 import { AppLink } from "@/components/app-link"
 import { brandFontStyle, jakarta } from "@/components/landing/brand-font"
+import { BRAND_PHOTOS } from "@/components/landing/landing-photos"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { getMessages } from "@/lib/locale"
 import { serverEnv } from "@/lib/server-env"
@@ -69,8 +71,9 @@ export default async function LandingPage() {
           <LandingBanners signupHref={SIGNUP} exampleHref={exampleHref} linkComponent={AppLink} messages={ui} />
           <LandingEcosystem messages={ui} />
           <LandingSteps messages={ui} />
-          <LandingCouriers termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
+          <LandingCouriers photo={BRAND_PHOTOS.courier} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
           <LandingFaq messages={ui} />
+          <LandingPosters busStop={BRAND_PHOTOS.busStop} wall={BRAND_PHOTOS.wall} messages={ui} />
           <LandingCta signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
         </main>
         <LandingFooter termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} year={new Date().getFullYear()} linkComponent={AppLink} messages={ui} />

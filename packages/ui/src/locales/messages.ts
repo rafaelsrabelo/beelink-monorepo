@@ -2756,6 +2756,7 @@ export interface UiMessages {
       shopkeeper: readonly LandingQuestion[]
       courier: readonly LandingQuestion[]
     }
+    posters: { titleLight: string; titleStrong: string; busStopAlt: string; wallAlt: string }
     cta: { titleLight: string; titleStrong: string; courier: string }
     footer: {
       tagline: string

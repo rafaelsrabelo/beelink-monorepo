@@ -4,20 +4,21 @@ import { withParts } from "@harness-monorepo/ui/lib/text-parts"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { BRAND_PHOTOS } from "@/components/landing/landing-photos"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
 import { getMessages } from "@/lib/locale"
 
 /**
  * The frame every signed-out screen shares: the landing's ground with Beelink's logo over the card,
- * which leads back to the landing. The card itself comes from the design system; under it,
+ * which leads back to the landing, and the brand's black poster beside it on a wide screen. The card itself comes from the design system; under it,
  * bee-link's terms and privacy policy (BEELINK-171), on signing in as much as on signing up.
  */
 export default async function AuthLayout({ children }: LayoutProps<"/">) {
   const { locale, ui, web } = await getMessages()
 
   return (
-    <AuthShell linkComponent={AppLink} messages={ui}>
+    <AuthShell photo={BRAND_PHOTOS.wall} linkComponent={AppLink} messages={ui}>
       {children}
       {/* foreground/80 like the card's own footer: muted text on the ground fails contrast in the dark theme (4.34:1). */}
       <p className="text-center text-xs text-foreground/80">

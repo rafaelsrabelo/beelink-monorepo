@@ -28,6 +28,7 @@ src/
 │   ├── app-shell.tsx           # sidebar, header, sign-out — the menu is built from the address
 │   ├── app-link.tsx            # next/link behind the design system's plain-string href
 │   ├── landing/brand-font.ts   # Plus Jakarta Sans, loaded by the landing alone
+│   ├── landing/landing-photos.ts # the brand's photos in public/brand/photos, one WebP per width
 │   └── locale-switcher.tsx
 ├── lib/
 │   ├── api.ts                  # the session-bearing caller — `cache: "no-store"`
