@@ -24,7 +24,7 @@ const DAYS_MAX = 3650
 const WHOLE = /^\d{1,4}$/
 const REASON_MIN = 3
 const REASON_MAX = 200
-/** The order the example is worked on: R$ 100,00, a round sum anyone multiplies in their head. */
+/** The order the example is worked on: R$ 100,00, a round sum anyone multiplies in their head — or the minimum, when that is more. */
 const EXAMPLE_ORDER_CENTS = 10_000
 
 /** A percentage typed as a person types it, read as basis points: "2,5" is 250. The strict parser refuses what it would have to guess. */
@@ -70,15 +70,29 @@ export function cashbackPayloadOf(value: CashbackSettingsFormValues, text: Text[
 }
 
 /**
- * What the rules as typed give on an order of R$ 100,00, in words — worked out as the API works it,
- * rounded down to the cent. Rules that do not hold yet give the off sentence rather than a wrong sum.
+ * What the rules as typed give on an order, in words — worked out as the API works it, rounded down to
+ * the cent. The order is R$ 100,00, or the minimum when that is more: an example under the minimum
+ * would promise what the API pays nothing on. A rate that does not hold yet asks for one rather than
+ * show a wrong sum.
  */
 export function cashbackExampleOf(value: CashbackSettingsFormValues, money: (cents: number) => string, text: Text["settings"]): string {
+  if (!value.enabled) return text.exampleOff
   const rateBps = bpsFrom(value.rate)
-  if (!value.enabled || rateBps === null) return text.exampleOff
-  const earned = Math.floor((EXAMPLE_ORDER_CENTS * rateBps) / BPS_MAX)
+  if (rateBps === null) return text.exampleRateMissing
+  const minimum = value.minimum.trim() === "" ? 0 : centsFromStrict(value.minimum)
+  const orderCents = minimum !== null && minimum > EXAMPLE_ORDER_CENTS && minimum <= AMOUNT_MAX_CENTS ? minimum : EXAMPLE_ORDER_CENTS
+  const earned = Math.floor((orderCents * rateBps) / BPS_MAX)
   const days = value.validity === "DAYS" ? daysFrom(value.validityDays) : null
-  return `${format(text.example, { order: money(EXAMPLE_ORDER_CENTS), earned: money(earned) })}${days === null ? "" : format(text.exampleValidity, { days: String(days) })}.`
+  return `${format(text.example, { order: money(orderCents), earned: money(earned) })}${days === null ? "" : format(text.exampleValidity, { days: String(days) })}.`
+}
+
+/**
+ * A reason's length as the API counts it (class-validator's `isLength`): code points, less the
+ * variation selectors that only pick how a character is drawn — "❤️" is one. Counted any other way, a
+ * reason the form lets through comes back refused with no field to point at.
+ */
+function reasonLengthOf(reason: string): number {
+  return [...reason].filter((char) => char !== "\uFE0F" && char !== "\uFE0E").length
 }
 
 export const EMPTY_ADJUSTMENT: CashbackAdjustmentFormValues = { direction: "GIVE", amount: "", reason: "" }
@@ -88,7 +102,8 @@ export function adjustmentPayloadOf(value: CashbackAdjustmentFormValues, text: T
   const cents = centsFromStrict(value.amount)
   const amountHolds = cents !== null && cents >= 1 && cents <= AMOUNT_MAX_CENTS
   const reason = value.reason.trim()
-  const reasonHolds = [...reason].length >= REASON_MIN && [...reason].length <= REASON_MAX
+  // The API's maximum counts code points; its minimum, `reasonLengthOf`. Both hold or it asks again.
+  const reasonHolds = reasonLengthOf(reason) >= REASON_MIN && [...reason].length <= REASON_MAX
 
   if (!amountHolds || !reasonHolds) return { issues: { ...(amountHolds ? {} : { amount: text.amount }), ...(reasonHolds ? {} : { reason: text.reason }) } }
   return { payload: { amountCents: value.direction === "TAKE" ? -cents : cents, reason } }

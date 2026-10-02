@@ -39,9 +39,15 @@ describe("the cashback rules' form (BEELINK-242)", () => {
 
   it("works the example out as the API does, rounded down, with the validity when there is one", () => {
     expect(cashbackExampleOf(typed, money, text.settings)).toBe("Num pedido de R$ 100,00, o cliente ganha R$ 5,00 de cashback, para usar em até 90 dias depois da entrega.")
-    expect(cashbackExampleOf({ ...typed, rate: "0,333", validity: "NONE" }, money, text.settings)).toBe(text.settings.exampleOff)
+    // On with no rate that holds: asked for, never told it is off.
+    expect(cashbackExampleOf({ ...typed, rate: "0,333", validity: "NONE" }, money, text.settings)).toBe(text.settings.exampleRateMissing)
     expect(cashbackExampleOf({ ...typed, rate: "3,33", validity: "NONE" }, money, text.settings)).toBe("Num pedido de R$ 100,00, o cliente ganha R$ 3,33 de cashback.")
     expect(cashbackExampleOf({ ...typed, enabled: false }, money, text.settings)).toBe(text.settings.exampleOff)
+  })
+
+  /** An order of R$ 100,00 under a R$ 150,00 minimum earns nothing at the API: the example never promises it. */
+  it("works the example on the minimum when the minimum is above R$ 100,00", () => {
+    expect(cashbackExampleOf({ ...typed, minimum: "150,00", validity: "NONE" }, money, text.settings)).toBe("Num pedido de R$ 150,00, o cliente ganha R$ 7,50 de cashback.")
   })
 })
 
@@ -53,6 +59,12 @@ describe("the adjustment's form", () => {
 
   it("asks for an amount and a reason of three characters or more", () => {
     expect(adjustmentPayloadOf({ direction: "GIVE", amount: "0", reason: "ok" }, text.issues)).toEqual({ issues: { amount: text.issues.amount, reason: text.issues.reason } })
+  })
+
+  /** Counted as the API counts it: the selector that draws the heart in colour is no character. */
+  it("counts a reason as the API does, so one it refuses is never sent", () => {
+    expect(adjustmentPayloadOf({ direction: "GIVE", amount: "1", reason: "a❤️" }, text.issues)).toEqual({ issues: { reason: text.issues.reason } })
+    expect(adjustmentPayloadOf({ direction: "GIVE", amount: "1", reason: "ok❤️" }, text.issues)).toEqual({ payload: { amountCents: 100, reason: "ok❤️" } })
   })
 })
 

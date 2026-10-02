@@ -8,6 +8,7 @@ import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, OrderPage, OrderQuote, OrderStatus, ShopOrderQuotePayload } from "@harness-monorepo/contracts"
 
 // App
+import { cashbackKeys } from "../cashback/cashback-keys"
 import { catalogKeys } from "../catalog/catalog-hooks"
 import { customerKeys } from "../customers/customer-hooks"
 import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, quoteOrder, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
@@ -79,6 +80,8 @@ export function useUpdateOrderStatus(slug: string, number: number): UseMutationR
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }),
         queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+        // A delivery makes its cashback usable, and leaving it or cancelling takes it back (BEELINK-239).
+        queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
         // A cancelled order gives its counted lines back to the stock the catalogue shows.
         ...(order.status === "CANCELLED" ? [queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) })] : []),
       ])
@@ -87,7 +90,7 @@ export function useUpdateOrderStatus(slug: string, number: number): UseMutationR
   })
 }
 
-/** A new order changes the shop's list and its customer's books; both are read again. */
+/** A new order changes the shop's list, its customer's books and their cashback; all are read again. */
 export function useCreateOrder(slug: string): UseMutationResult<Order, Error, CreateOrderPayload> {
   const queryClient = useQueryClient()
   return useMutation({
@@ -96,6 +99,8 @@ export function useCreateOrder(slug: string): UseMutationResult<Order, Error, Cr
       Promise.all([
         queryClient.invalidateQueries({ queryKey: orderKeys.store(slug) }),
         queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+        // What it will earn is pending on its customer's cashback, and on what the shop owes.
+        queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
         // Placing it took its counted lines off the stock the catalogue shows.
         queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) }),
       ]),

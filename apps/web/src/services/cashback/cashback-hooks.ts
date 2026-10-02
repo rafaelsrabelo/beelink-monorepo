@@ -27,11 +27,18 @@ export function useCustomerCashback(slug: string, customerId: string, page: numb
   return useQuery({ queryKey: cashbackKeys.customer(slug, customerId, page), queryFn: () => fetchCustomerCashback(slug, customerId, page), placeholderData: (previous) => previous })
 }
 
-/** Adjusted: every page of the customer's statement and what the shop owes are read again, since both moved. */
+/**
+ * Adjusted: the answer is the statement's first page as it now stands, written into the cache — the
+ * screen goes there, and an old first page would show the balance from before for a moment. Every
+ * other page and what the shop owes are read again, since both moved.
+ */
 export function useAdjustCashback(slug: string, customerId: string): UseMutationResult<CustomerCashback, Error, CashbackAdjustmentPayload> {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: CashbackAdjustmentPayload) => adjustCustomerCashback(slug, customerId, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
+    onSuccess: (first) => {
+      queryClient.setQueryData(cashbackKeys.customer(slug, customerId, 1), first)
+      return queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) })
+    },
   })
 }

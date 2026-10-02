@@ -39,3 +39,19 @@
 
 - O que a vitrine e o checkout mostram ao cliente (U6, U7).
 - Coluna de saldo na lista de clientes.
+
+## Adendo — revisão independente (01/10)
+
+1. **Saldo velho na tela depois de entregar um pedido ou juntar cadastros** (até um minuto). Registrar
+   pedido, mudar status e juntar cadastros agora recarregam o cashback da loja.
+2. **O exemplo prometia cashback abaixo do pedido mínimo.** Com mínimo acima de R$ 100,00, o exemplo é
+   calculado sobre o mínimo. Com o cashback ligado e o percentual inválido, pede o percentual em vez de
+   dizer que está desligado.
+3. **O cartão do pedido dizia "disponível" para um crédito já gasto ou vencido.** Agora diz quanto resta,
+   que o cliente já usou tudo, ou "Vencido" quando passou da data (mesmo antes da varredura do U4).
+4. Depois de um ajuste feito na página 2 do extrato, a página 1 aparecia por um instante com o saldo
+   antigo. A resposta do ajuste já é a página 1 e entra direto no cache.
+5. O motivo do ajuste é contado como a API conta (o seletor de cor do emoji não é caractere), e o
+   campo não corta mais o texto por conta própria.
+6. Acessibilidade: o interruptor é descrito pela frase de ajuda; o título do cartão usa `useId`;
+   testes com axe para a falha e o esqueleto. Teste novo do envio do ajuste na ficha do cliente.

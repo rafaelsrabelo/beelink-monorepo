@@ -79,10 +79,10 @@ export function CashbackSettingsForm({ value, onChange, onSubmit, issues = {}, e
       </h2>
 
       <Field orientation="horizontal">
-        <Switch id={`${id}-enabled`} checked={value.enabled} disabled={pending} onCheckedChange={(enabled: boolean) => set({ enabled })} />
+        <Switch id={`${id}-enabled`} checked={value.enabled} disabled={pending} aria-describedby={`${id}-enabled-help`} onCheckedChange={(enabled: boolean) => set({ enabled })} />
         <FieldContent>
           <FieldLabel htmlFor={`${id}-enabled`}>{text.enabled}</FieldLabel>
-          <FieldDescription>{text.enabledHelp}</FieldDescription>
+          <FieldDescription id={`${id}-enabled-help`}>{text.enabledHelp}</FieldDescription>
         </FieldContent>
       </Field>
 

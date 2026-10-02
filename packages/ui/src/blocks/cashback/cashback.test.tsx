@@ -12,6 +12,7 @@ import { CashbackAdjustForm } from "./cashback-adjust-form"
 import { CashbackFailed } from "./cashback-failed"
 import { CashbackOwed } from "./cashback-owed"
 import { CashbackSettingsForm } from "./cashback-settings-form"
+import { CashbackSkeleton } from "./cashback-skeleton"
 import { customer, owed, settings } from "./cashback.fixtures"
 import { CustomerCashback } from "./customer-cashback"
 import { OrderCashback } from "./order-cashback"
@@ -39,6 +40,7 @@ describe("CashbackSettingsForm", () => {
 
     await userEvent.click(screen.getByRole("switch", { name: "Cashback ligado" }))
     expect(onChange).toHaveBeenLastCalledWith({ ...settings, enabled: false })
+    expect(screen.getByRole("switch", { name: "Cashback ligado" })).toHaveAccessibleDescription(/O crédito já dado continua valendo/)
     await userEvent.type(screen.getByLabelText("Quanto volta (%)"), "0")
     expect(onChange).toHaveBeenLastCalledWith({ ...settings, rate: "50" })
     await userEvent.click(screen.getByRole("button", { name: "Sem validade" }))
@@ -121,13 +123,28 @@ describe("CashbackAdjustForm", () => {
 describe("OrderCashback", () => {
   it("says what the order earns, at its rate, and until when it is usable", async () => {
     const { container } = render(
-      <OrderCashback cashback={{ earnedCents: 500, rateBps: 550, status: "AVAILABLE", remainingCents: 500, availableAt: "2026-10-01", expiresAt: "2026-12-30T12:00:00.000Z", unrecoveredCents: 0 }} money={money} date={date} />,
+      <OrderCashback cashback={{ earnedCents: 500, rateBps: 550, status: "AVAILABLE", remainingCents: 500, availableAt: "2026-10-01", expiresAt: "2026-12-30T12:00:00.000Z", unrecoveredCents: 0 }} money={money} date={date} now={new Date("2026-11-01T12:00:00.000Z")} />,
     )
 
     expect(screen.getByRole("heading", { name: "Cashback" }).nextElementSibling).toHaveTextContent("R$ 5,00")
     expect(screen.getByText("Gera 5,5% de cashback")).toBeInTheDocument()
     expect(screen.getByText("Disponível para o cliente · Vale até 2026-12-30")).toBeInTheDocument()
     await expectNoA11yViolations(container)
+  })
+
+  it("says what is left once the customer spent part, that all was spent, and expired once past its day", () => {
+    const usable = { earnedCents: 500, rateBps: 500, status: "AVAILABLE" as const, remainingCents: 200, availableAt: "2026-10-01", expiresAt: "2026-12-30T12:00:00.000Z", unrecoveredCents: 0 }
+    const now = new Date("2026-11-01T12:00:00.000Z")
+    const { rerender } = render(<OrderCashback cashback={usable} money={money} date={date} now={now} />)
+    expect(screen.getByText("Restam R$ 2,00 para o cliente usar.")).toBeInTheDocument()
+
+    rerender(<OrderCashback cashback={{ ...usable, remainingCents: 0 }} money={money} date={date} now={now} />)
+    expect(screen.getByText("O cliente já usou todo este crédito.")).toBeInTheDocument()
+    expect(screen.queryByText(/Vale até/)).not.toBeInTheDocument()
+
+    rerender(<OrderCashback cashback={usable} money={money} date={date} now={new Date("2027-01-01T00:00:00.000Z")} />)
+    expect(screen.getByText("Vencido")).toBeInTheDocument()
+    expect(screen.queryByText(/Restam/)).not.toBeInTheDocument()
   })
 
   /** Decided on 01/10/2026: the balance stops at zero; the shop is told what it did not get back. */
@@ -139,10 +156,20 @@ describe("OrderCashback", () => {
   })
 })
 
+describe("CashbackSkeleton", () => {
+  it("holds the screen's places and says nothing to a reader", async () => {
+    const { container } = render(<CashbackSkeleton />)
+
+    expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true")
+    await expectNoA11yViolations(container)
+  })
+})
+
 describe("CashbackFailed", () => {
   it("says the read failed, in the language it is handed, and asks again", async () => {
     const onRetry = vi.fn()
-    render(<CashbackFailed onRetry={onRetry} messages={en} />)
+    const { container } = render(<CashbackFailed onRetry={onRetry} messages={en} />)
+    await expectNoA11yViolations(container)
 
     expect(screen.getByRole("alert")).toHaveTextContent("Could not load the cashback.")
     await userEvent.click(screen.getByRole("button", { name: "Try again" }))

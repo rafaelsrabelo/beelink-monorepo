@@ -2809,6 +2809,8 @@ export interface UiMessages {
       /** Appended to the example: `{days}`. */
       exampleValidity: string
       exampleOff: string
+      /** The switch is on and the rate does not hold yet. */
+      exampleRateMissing: string
       save: string
       saving: string
       saved: string
@@ -2852,6 +2854,10 @@ export interface UiMessages {
       statuses: { PENDING: string; AVAILABLE: string; VOIDED: string; EXPIRED: string }
       /** `{date}`. */
       availableUntil: string
+      /** `{amount}`: what is left of a usable credit the customer spent part of. */
+      left: string
+      /** A usable credit the customer spent all of. */
+      spent: string
       /** `{amount}`: what the customer had spent of it when the order was undone. */
       unrecovered: string
     }

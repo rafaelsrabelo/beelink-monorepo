@@ -88,7 +88,6 @@ export function CashbackAdjustForm({ value, onChange, onSubmit, onCancel, issues
         <Textarea
           id={`${id}-reason`}
           rows={2}
-          maxLength={200}
           placeholder={text.reasonPlaceholder}
           value={value.reason}
           disabled={pending}
