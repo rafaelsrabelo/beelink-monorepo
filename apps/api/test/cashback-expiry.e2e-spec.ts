@@ -63,7 +63,8 @@ describe('credit expires by itself, and its customer is told a week before (BEEL
   const give = (amountCents: number) => call('POST', `/api/stores/lessari/customers/${me.id}/cashback/adjustments`, owner, { amountCents, reason: 'Crédito de teste' });
   const cashback = () => call('GET', `/api/stores/lessari/customers/${me.id}/cashback`, owner).then((response) => response.json<CustomerCashback>());
   const inDays = (days: number) => new Date(Date.now() + days * DAY);
-  const inbox = async () => (await (await fetch(`${MAILPIT}/api/v1/messages`)).json()) as { total: number };
+  // By subject: signing a new account up mails it a confirmation, which is not what is counted here.
+  const expiryMails = async () => ((await (await fetch(`${MAILPIT}/api/v1/search?${new URLSearchParams({ query: 'subject:"vence em"' }).toString()}`)).json()) as { messages: unknown[] }).messages.length;
 
   describe('the expiry', () => {
     it('takes what is left of an expired lot off the balance, with a line on the statement — once', async () => {
@@ -124,23 +125,59 @@ describe('credit expires by itself, and its customer is told a week before (BEEL
       expect(await prisma.cashbackExpiryNotice.count()).toBe(0);
     });
 
-    it('sends nothing when the customer turned the notice off, or spent the credit meanwhile', async () => {
+    /** What the sweep owes, its own dispatch may be sending already: what is done is read once `sentAt` says so. */
+    const settled = () => vi.waitFor(async () => expect(await prisma.cashbackExpiryNotice.count({ where: { sentAt: null } })).toBe(0));
+
+    it('sends nothing to a customer who turned the notice off, and does not try again', async () => {
       await call('PUT', '/api/stores/lessari/cashback', owner, { ...RULES, expiresAfterDays: 5 });
       await give(1_250);
       await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, cashback: false, offers: false });
 
       await sweeper.sweep(new Date());
       await mailer.flush();
+      await settled();
 
-      expect((await inbox()).total).toBe(0);
-      expect(await prisma.cashbackExpiryNotice.count({ where: { sentAt: { not: null } } })).toBe(1);
+      expect(await prisma.cashbackExpiryNotice.count()).toBe(1);
+      expect(await expiryMails()).toBe(0);
     });
 
-    it('turns the notice off and on again from the shopper\'s notices', async () => {
-      const off = await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, cashback: false, offers: false });
+    it('sends nothing for credit spent after the notice was owed', async () => {
+      await call('PUT', '/api/stores/lessari/cashback', owner, { ...RULES, expiresAfterDays: 5 });
+      await give(1_250);
+      // Owed as a sweep owes it, then spent before it goes.
+      const lot = await prisma.cashbackCredit.findFirstOrThrow({ where: { customerId: me.id } });
+      await prisma.cashbackExpiryNotice.create({ data: { creditId: lot.id } });
+      await give(-1_250);
 
-      expect(off.json()).toMatchObject({ cashback: false });
+      await mailer.flush();
+      await settled();
+
+      expect(await expiryMails()).toBe(0);
+    });
+
+    it('sends nothing to an account whose e-mail was never confirmed', async () => {
+      await call('PUT', '/api/stores/lessari/cashback', owner, { ...RULES, expiresAfterDays: 5 });
+      const unconfirmed = newEmail('sem-confirmar');
+      await call('POST', '/api/stores/lessari/customer/register', undefined, { name: 'Caio', email: unconfirmed, password: PASSWORD });
+      const record = await prisma.customer.findFirstOrThrow({ where: { user: { email: unconfirmed } } });
+      await call('POST', `/api/stores/lessari/customers/${record.id}/cashback/adjustments`, owner, { amountCents: 500, reason: 'Crédito de teste' });
+
+      await sweeper.sweep(new Date());
+      await mailer.flush();
+      await settled();
+
+      expect(await prisma.cashbackExpiryNotice.count()).toBe(1);
+      expect(await expiryMails()).toBe(0);
+    });
+
+    it("turns the notice off and on again from the shopper's notices", async () => {
+      const choose = (cashback: boolean) => call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, cashback, offers: false });
+
+      expect((await choose(false)).json()).toMatchObject({ cashback: false });
       expect((await call('GET', '/api/stores/lessari/customer/me', shopper)).json<CustomerProfile>().notifications).toMatchObject({ cashback: false });
+      expect((await choose(true)).json()).toMatchObject({ cashback: true });
+      // A form drawn before the box existed says nothing of it: the choice stays as it was.
+      expect((await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, offers: false })).json()).toMatchObject({ cashback: true });
     });
   });
 });

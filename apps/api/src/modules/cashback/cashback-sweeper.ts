@@ -74,18 +74,26 @@ export class CashbackSweeper implements OnModuleInit, OnModuleDestroy {
 
     let count = 0;
     for (const { storeId, customerId } of due) {
-      count += await this.prisma.$transaction(async (tx) => {
-        if (!(await lockLedger(tx, storeId, customerId))) return 0;
-        const lots = await tx.cashbackCredit.findMany({ where: { customerId, status: 'AVAILABLE', remainingCents: { gt: 0 }, expiresAt: { lte: now } }, select: { id: true, remainingCents: true } });
-        for (const lot of lots) {
-          await tx.cashbackCredit.update({ where: { id: lot.id }, data: { status: 'EXPIRED', remainingCents: 0 } });
-          await tx.cashbackEntry.create({ data: { storeId, customerId, kind: 'EXPIRE', amountCents: -lot.remainingCents, creditId: lot.id, createdAt: now } });
-        }
-        await recountCashback(tx, customerId);
-        return lots.length;
+      // One customer's failure is theirs alone: the others' credit still expires this minute.
+      count += await this.expireFor(storeId, customerId, now).catch((error: unknown) => {
+        this.logger.error({ err: error, customerId }, "Could not expire a customer's cashback");
+        return 0;
       });
     }
     return count;
+  }
+
+  private expireFor(storeId: string, customerId: string, now: Date): Promise<number> {
+    return this.prisma.$transaction(async (tx) => {
+      if (!(await lockLedger(tx, storeId, customerId))) return 0;
+      const lots = await tx.cashbackCredit.findMany({ where: { customerId, status: 'AVAILABLE', remainingCents: { gt: 0 }, expiresAt: { lte: now } }, select: { id: true, remainingCents: true } });
+      for (const lot of lots) {
+        await tx.cashbackCredit.update({ where: { id: lot.id }, data: { status: 'EXPIRED', remainingCents: 0 } });
+        await tx.cashbackEntry.create({ data: { storeId, customerId, kind: 'EXPIRE', amountCents: -lot.remainingCents, creditId: lot.id, createdAt: now } });
+      }
+      await recountCashback(tx, customerId);
+      return lots.length;
+    });
   }
 
   /** Lots inside the week before their expiry with no notice yet get one; the unique index keeps it to one per lot. */
