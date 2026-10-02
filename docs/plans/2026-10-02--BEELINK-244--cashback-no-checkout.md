@@ -75,3 +75,24 @@
 - Digitar um valor parcial de cashback.
 - Um resumo do cashback na Visão geral de Minha conta.
 - O fluxo de novo aceite dos Termos para contas existentes.
+
+## Adendo — o que a tela decidiu ao ser ligada (02/10)
+
+A parte web foi feita numa segunda sessão, sobre os commits de contracts, API e ui. O que não estava
+escrito acima:
+
+- **O valor do pedido é o da resposta desta tela.** No carrinho e no painel, o `cashbackCents` enviado
+  é o `appliedCents` da cotação do carrinho como ele está agora. Uma cotação guardada do carrinho
+  anterior, ou uma que falhou, não serve: o botão espera, e um novo toque pergunta de novo.
+- **A caixa do carrinho continua na tela enquanto o preço é recalculado**, lida da última resposta,
+  para não piscar a cada "+". Ela some para o visitante e para quem não tem saldo.
+- **Pedido recusado por saldo alterado** (`ORDER_CASHBACK_REFUSED`): a tela diz que o saldo mudou e
+  cota de novo; a caixa continua marcada, já com o valor que sobrou.
+- **No painel, trocar de cliente desmarca a caixa de vez.** O crédito não é do outro cliente, e voltar
+  ao primeiro começa desmarcado.
+- **A caixa do painel some quando o pedido não aceita cashback**, mas fica se já estava marcada, para
+  poder ser desmarcada.
+- **O aviso de exclusão de conta soma o saldo e o pendente**: a exclusão anula os dois.
+- **A aba abre pelo endereço mesmo fora do menu.** Quem não tem crédito lê que não tem.
+- **A linha "Cashback usado" no pedido do painel** precisou do campo `cashbackUsedCents` em
+  `OrderDetailView`: o bloco lia só os campos de desconto.
