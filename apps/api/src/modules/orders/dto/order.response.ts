@@ -22,6 +22,7 @@ import type {
 
 // App
 import { ShopOrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
+import { ShippingWindowResponse } from '../../delivery/dto/delivery.response.js';
 import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import { ORDER_DELIVERY_KINDS, ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
@@ -114,6 +115,8 @@ export class OrderResponse implements Order {
   @ApiProperty({ type: [OrderEventResponse], description: 'Oldest first.' }) events!: OrderEventResponse[];
   @ApiProperty({ type: OrderDeliveryResponse, nullable: true, description: 'Null on a pick-up, and on a delivery nobody told yet.' })
   delivery!: OrderDeliveryResponse | null;
+  @ApiProperty({ type: ShippingWindowResponse, nullable: true, description: 'The window the quote gave when the order was placed; null on a pick-up, a fee agreed afterwards and a sale registered in the panel.' })
+  deliveryWindow!: ShippingWindowResponse | null;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
 }
 

@@ -17,6 +17,12 @@ enum OrderFulfillment {
 
 /// Who set a status: the shopkeeper, or the customer placing the order from the cart. The courier
 /// app comes later.
+/// What an order's quoted window counts in: minutes for the shop's own delivery, business days for a carrier.
+enum ShippingWindowUnit {
+  MINUTES
+  BUSINESS_DAYS
+}
+
 enum OrderActor {
   SHOPKEEPER
   CUSTOMER
@@ -48,6 +54,12 @@ model Order {
   /// delivery, which is zero (BEELINK-170); a CHECK keeps null to deliveries. Typed by the
   /// shopkeeper until the delivery module computes it.
   deliveryFeeCents Int? @default(0)
+  /// When the quote said a delivery would arrive, as the order was placed (BEELINK-178): all three or
+  /// none. Apart from `OrderDelivery`, which is what the shopkeeper tells afterwards — this is the
+  /// promise the customer read at checkout.
+  deliveryWindowUnit ShippingWindowUnit?
+  deliveryWindowFrom Int?
+  deliveryWindowTo   Int?
   /// Everything taken off the order: the promotions, the coupon and what the shopkeeper typed.
   /// `totalCents = subtotalCents + deliveryFeeCents − discountCents`, as before the first two existed.
   discountCents    Int @default(0)

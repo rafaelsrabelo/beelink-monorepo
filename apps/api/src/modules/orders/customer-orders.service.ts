@@ -12,6 +12,7 @@ import { CUSTOMER_ORDER_INCLUDE, toCustomerOrder, toCustomerOrderSummary } from 
 import type { ListCustomerOrdersDto, PlaceCustomerOrderDto } from './dto/customer-order.dto.js';
 import { settleCancellation } from './order-cancellation.js';
 import { OrderPlacement } from './order-placement.js';
+import { OrderShipping } from './order-shipping.js';
 import { reorderOf } from './order-reorder.js';
 import { CUSTOMER_ORDER_SITUATIONS, CUSTOMER_ORDERS_PAGE_SIZE, CUSTOMER_ORDERS_PAGE_SIZE_MAX, orderError } from './orders.constants.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
@@ -34,25 +35,29 @@ export class CustomerOrdersService {
     private readonly prisma: PrismaService,
     private readonly customers: CustomersService,
     private readonly placement: OrderPlacement,
+    private readonly shipping: OrderShipping,
     private readonly realtime: RealtimePublisher,
   ) {}
 
   /**
    * The cart as an order of the shopper's record at this shop: priced, checked against the stock and
    * the shop's payments, and waiting for the shop — `RECEIVED`, the shopper's own word on it. A
-   * delivery's fee is the shop's to tell: not agreed (null), never a free delivery, until the product
-   * computes one.
+   * delivery goes at the fee and the window the shop's rules quote to its address now (BEELINK-178);
+   * where they quote none, the fee is the shop's to tell: not agreed (null), never a free delivery.
    */
   async place(storeSlug: string, userId: string, dto: PlaceCustomerOrderDto): Promise<CustomerOrder> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
+    const addressId = dto.addressId?.toLowerCase() ?? null;
+    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, shownFeeCents: dto.deliveryFeeCents });
 
     const placed = await this.placement.place({
       storeId,
       items: dto.items,
       fulfillment: dto.fulfillment,
-      addressId: dto.addressId?.toLowerCase() ?? null,
+      addressId,
       paymentMethod: dto.paymentMethod,
-      deliveryFeeCents: null,
+      deliveryFeeCents: terms.deliveryFeeCents,
+      deliveryWindow: terms.window,
       discountCents: 0,
       couponCode: dto.couponCode ?? null,
       cashbackCents: dto.cashbackCents ?? 0,

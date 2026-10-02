@@ -7,8 +7,8 @@ import type { ShippingDestination, ShippingOption, ShippingQuote, ShippingQuoteP
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { CarrierQuotes, type CarrierCartItem, type CarrierQuoteRead } from '../integrations/melhor-envio/carrier-quote.service.js';
-import { readOrderLines } from '../orders/order-lines.js';
-import { priceOrder } from '../orders/order-pricing.js';
+import { readOrderLines, type OrderLine } from '../orders/order-lines.js';
+import { priceOrder, type PricedOrder } from '../orders/order-pricing.js';
 import { StoresService } from '../stores/stores.service.js';
 import { DeliveryService } from './delivery.service.js';
 import { DestinationGeocoder, type Destination } from './destination-geocoder.js';
@@ -28,9 +28,21 @@ function destinationOf(input: ShippingDestination): Destination {
 }
 
 /** The cart as the shop prices it: the products after promotions, and each line as a carrier insures it. */
-interface PricedCart {
+export interface PricedCart {
   productsCents: number;
   items: CarrierCartItem[];
+}
+
+/**
+ * A cart priced, as the shipping quote reads it: the products' total after promotions is what a free
+ * delivery is measured against, and each line's paid unit is what a carrier insures.
+ */
+export function pricedCartOf(lines: readonly OrderLine[], priced: Pick<PricedOrder, 'lineDiscounts' | 'totals' | 'promotionDiscountCents'>): PricedCart {
+  const items = lines.map((line, index) => {
+    const paidCents = line.unitPriceCents * line.quantity - priced.lineDiscounts[index]!.discountCents;
+    return { variantId: line.variantId, quantity: line.quantity, unitValueCents: Math.round(paidCents / line.quantity) };
+  });
+  return { productsCents: priced.totals.subtotalCents - priced.promotionDiscountCents, items };
 }
 
 const NO_CARRIERS: CarrierQuoteRead = { verdict: { status: 'OFF' }, options: [] };
@@ -61,8 +73,13 @@ export class ShippingQuotes {
   }
 
   private async quote(storeId: string, payload: ShippingQuotePayload, onSaleOnly: boolean): Promise<ShippingQuote> {
-    const [rules, shop, cart] = await Promise.all([this.delivery.forStore(storeId), this.shopPoint(storeId), this.pricedCart(storeId, payload, onSaleOnly)]);
-    const destination = destinationOf(payload.destination);
+    return this.forCart(storeId, payload.destination, await this.pricedCart(storeId, payload, onSaleOnly));
+  }
+
+  /** The same quote for a cart its caller priced already — an order being quoted or placed (BEELINK-178), priced as its customer's. */
+  async forCart(storeId: string, to: ShippingDestination, cart: PricedCart): Promise<ShippingQuote> {
+    const [rules, shop] = await Promise.all([this.delivery.forStore(storeId), this.shopPoint(storeId)]);
+    const destination = destinationOf(to);
     const measured = rules.ownDeliveryEnabled && rules.bands.length > 0 && shop !== null;
 
     const [point, carriers] = await Promise.all([
@@ -80,17 +97,10 @@ export class ShippingQuotes {
     return row.latitude !== null && row.longitude !== null ? { latitude: row.latitude.toNumber(), longitude: row.longitude.toNumber() } : null;
   }
 
-  /**
-   * The cart after the shop's promotions, as the cart page reads it: the products' total is what a
-   * free delivery is measured against, and each line's paid unit is what a carrier insures.
-   */
+  /** The cart after the shop's promotions, as a visitor's cart reads them. */
   private async pricedCart(storeId: string, payload: ShippingQuotePayload, onSaleOnly: boolean): Promise<PricedCart> {
     const lines = await readOrderLines(this.prisma, storeId, payload.items, onSaleOnly);
     const priced = await priceOrder(this.prisma, { storeId, lines, fulfillment: 'DELIVERY', deliveryFeeCents: null, manualDiscountCents: 0, couponCode: null, customer: null, at: new Date(), lock: false });
-    const items = lines.map((line, index) => {
-      const paidCents = line.unitPriceCents * line.quantity - priced.lineDiscounts[index]!.discountCents;
-      return { variantId: line.variantId, quantity: line.quantity, unitValueCents: Math.round(paidCents / line.quantity) };
-    });
-    return { productsCents: priced.totals.subtotalCents - priced.promotionDiscountCents, items };
+    return pricedCartOf(lines, priced);
   }
 }

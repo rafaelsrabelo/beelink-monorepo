@@ -2,11 +2,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 // Types
-import type { CreateOrderItemInput, OrderQuote } from '@harness-monorepo/contracts';
+import type { CreateOrderItemInput, OrderQuote, ShippingQuote } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { CustomersService } from '../customers/customers.service.js';
+import { pricedCartOf } from '../delivery/shipping-quote.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { OrderCustomerDto } from './dto/order.dto.js';
 import type { CartQuoteDto, CustomerOrderQuoteDto, ShopOrderQuoteDto } from './dto/order-quote.dto.js';
@@ -14,9 +15,15 @@ import { readOrderLines } from './order-lines.js';
 import { placedAtOf } from './order-placed-at.js';
 import { earningBaseOf, quotedCashbackOf } from '../cashback/cashback-earning.js';
 import { earningPartsOf, priceOrder, type PricingCustomer, type PricingInput } from './order-pricing.js';
+import { deliveryTermsOf, OrderShipping } from './order-shipping.js';
 import { orderError } from './orders.constants.js';
 
-type QuoteInput = Omit<PricingInput, 'lines' | 'lock'> & { items: readonly CreateOrderItemInput[]; onSaleOnly: boolean };
+type QuoteInput = Omit<PricingInput, 'lines' | 'lock'> & {
+  items: readonly CreateOrderItemInput[];
+  onSaleOnly: boolean;
+  /** Whose saved address the shop's ways to deliver are quoted to — the one chosen, else their default; absent quotes none. */
+  shippingTo?: { customerId: string; addressId: string | null };
+};
 
 /**
  * What a cart would cost as an order (BEELINK-191), at each of the three doors: the visitor's cart,
@@ -31,6 +38,7 @@ export class OrderQuotes {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly customers: CustomersService,
+    private readonly shipping: OrderShipping,
   ) {}
 
   /**
@@ -48,7 +56,19 @@ export class OrderQuotes {
    */
   async forCustomer(storeSlug: string, userId: string, dto: CustomerOrderQuoteDto): Promise<OrderQuote> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    return this.quote({ storeId, items: dto.items, onSaleOnly: true, fulfillment: dto.fulfillment, deliveryFeeCents: null, manualDiscountCents: 0, couponCode: dto.couponCode ?? null, customer: { id: customerId }, at: new Date(), cashback: dto.useCashback ? 'MAX' : 'NONE' });
+    return this.quote({
+      storeId,
+      items: dto.items,
+      onSaleOnly: true,
+      fulfillment: dto.fulfillment,
+      deliveryFeeCents: null,
+      manualDiscountCents: 0,
+      couponCode: dto.couponCode ?? null,
+      customer: { id: customerId },
+      at: new Date(),
+      cashback: dto.useCashback ? 'MAX' : 'NONE',
+      shippingTo: { customerId, addressId: dto.addressId?.toLowerCase() ?? null },
+    });
   }
 
   /** The panel's sale as registering it would price it — drafts included, at the day it was sold. */
@@ -68,9 +88,15 @@ export class OrderQuotes {
     });
   }
 
-  private async quote({ items, onSaleOnly, ...input }: QuoteInput): Promise<OrderQuote> {
+  private async quote({ items, onSaleOnly, shippingTo, ...input }: QuoteInput): Promise<OrderQuote> {
     const lines = await readOrderLines(this.prisma, input.storeId, items, onSaleOnly);
-    const priced = await priceOrder(this.prisma, { ...input, lines, lock: false });
+    const unshipped = await priceOrder(this.prisma, { ...input, lines, lock: false });
+    // The shop's ways to deliver, quoted to the customer's address whichever way the cart leaves: the
+    // checkout says them beside the pick-up. On a delivery, the fee of the way it goes by is priced in.
+    const shipping: ShippingQuote | null = shippingTo ? await this.shipping.quoteFor(input.storeId, shippingTo.customerId, shippingTo.addressId, pricedCartOf(lines, unshipped)) : null;
+    const feeCents = shipping && input.fulfillment === 'DELIVERY' ? (deliveryTermsOf(shipping)?.deliveryFeeCents ?? null) : null;
+    // Priced again with the fee: a free-delivery coupon takes it off, and the total carries it.
+    const priced = feeCents === null ? unshipped : await priceOrder(this.prisma, { ...input, deliveryFeeCents: feeCents, lines, lock: false });
     // What it would earn, worked out as the order would be when placed (BEELINK-243).
     const rules = await this.prisma.cashbackSettings.findUnique({ where: { storeId: input.storeId } });
     const base = earningBaseOf(earningPartsOf(priced, 0));
@@ -94,6 +120,7 @@ export class OrderQuotes {
       manualDiscountCents: priced.manualDiscountCents,
       discountCents: priced.totals.discountCents,
       deliveryFeeCents: priced.totals.deliveryFeeCents,
+      shipping,
       totalCents: priced.totals.totalCents,
       cashback: quotedCashbackOf(rules, paid, base),
       cashbackUse: priced.cashbackUse && { balanceCents: priced.cashbackUse.balanceCents, maxCents: priced.cashbackUse.maxCents, appliedCents: priced.cashbackUse.appliedCents, unavailable: priced.cashbackUse.unavailable },

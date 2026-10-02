@@ -52,6 +52,8 @@ export class OrdersService {
       addressId: null,
       paymentMethod: dto.paymentMethod,
       deliveryFeeCents: dto.deliveryFeeCents ?? 0,
+      // The shopkeeper types the fee of a sale registered here; nothing was quoted.
+      deliveryWindow: null,
       discountCents: dto.discountCents ?? 0,
       couponCode: dto.couponCode ?? null,
       cashbackCents: dto.cashbackCents ?? 0,

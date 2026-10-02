@@ -1,7 +1,7 @@
 // Nest
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 
 // Types
 import type {
@@ -25,12 +25,14 @@ import type {
 
 // App
 import { OrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
+import { ShippingWindowResponse } from '../../delivery/dto/delivery.response.js';
 import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
   CUSTOMER_ORDER_SITUATIONS,
   CUSTOMER_ORDERS_PAGE_SIZE,
   CUSTOMER_ORDERS_PAGE_SIZE_MAX,
+  ORDER_AMOUNT_MAX_CENTS,
   ORDER_FULFILLMENTS,
   ORDER_ITEMS_MAX,
   ORDER_STATUSES,
@@ -70,6 +72,14 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
 
   @cashbackCents
   cashbackCents?: number;
+
+  @ApiPropertyOptional({ nullable: true, type: Number, minimum: 0, description: 'The delivery fee the quote showed, null for one agreed afterwards: a different fee now is ORDER_SHIPPING_CHANGED. Absent is not checked.' })
+  // Null is a fee the quote said is agreed afterwards, and so is sent; only a number is held to its range.
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsInt()
+  @Min(0)
+  @Max(ORDER_AMOUNT_MAX_CENTS)
+  deliveryFeeCents?: number | null;
 }
 
 export class CustomerOrderItemResponse implements CustomerOrderItem {
@@ -116,6 +126,8 @@ export class CustomerOrderResponse implements CustomerOrder {
   events!: CustomerOrderEventResponse[];
   @ApiProperty({ type: OrderDeliveryResponse, nullable: true, description: 'Who brings it and when, once the shop told; null on a pick-up.' })
   delivery!: OrderDeliveryResponse | null;
+  @ApiProperty({ type: ShippingWindowResponse, nullable: true, description: 'The window the quote gave when the order was placed; null on a pick-up and on a fee agreed afterwards.' })
+  deliveryWindow!: ShippingWindowResponse | null;
 }
 
 export class CustomerOrderEstimateResponse {

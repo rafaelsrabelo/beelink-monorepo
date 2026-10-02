@@ -3,7 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsInt, IsISO8601, IsObject, IsOptional, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsInt, IsISO8601, IsObject, IsOptional, IsUUID, Max, Min, ValidateNested } from 'class-validator';
 
 // Types
 import type {
@@ -23,6 +23,7 @@ import type {
 
 // App
 import { QuotedCashbackResponse, QuotedCashbackUseResponse } from '../../cashback/dto/cashback.response.js';
+import { ShippingQuoteResponse } from '../../delivery/dto/delivery.response.js';
 import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
 import { ORDER_AMOUNT_MAX_CENTS, ORDER_FULFILLMENTS, ORDER_ITEMS_MAX } from '../orders.constants.js';
 import { couponCode, OrderCustomerDto, OrderItemDto } from './order.dto.js';
@@ -61,6 +62,11 @@ export class CustomerCartQuoteDto implements CustomerCartQuotePayload {
   @IsIn(ORDER_FULFILLMENTS)
   fulfillment!: OrderFulfillment;
 
+  @ApiPropertyOptional({ format: 'uuid', description: "The saved address a delivery would go to; absent, the customer's default. The shop's ways to get there are quoted either way." })
+  @IsOptional()
+  @IsUUID('all')
+  addressId?: string;
+
   @ApiPropertyOptional({ description: 'Apply the most of the customer\'s credit the cart can take (BEELINK-240). Absent is not to.' })
   @IsOptional()
   @IsBoolean()
@@ -80,6 +86,11 @@ export class CustomerOrderQuoteDto implements CustomerOrderQuotePayload {
   @ApiProperty({ enum: ORDER_FULFILLMENTS })
   @IsIn(ORDER_FULFILLMENTS)
   fulfillment!: OrderFulfillment;
+
+  @ApiPropertyOptional({ format: 'uuid', description: "The saved address a delivery would go to; absent, the customer's default. The shop's ways to get there are quoted either way." })
+  @IsOptional()
+  @IsUUID('all')
+  addressId?: string;
 
   @couponCode
   couponCode?: string | null;
@@ -183,7 +194,8 @@ export class OrderQuoteResponse implements Omit<OrderQuote, 'coupon'> {
   @ApiProperty() couponDiscountCents!: number;
   @ApiProperty({ description: 'What the shopkeeper typed; zero from the cart.' }) manualDiscountCents!: number;
   @ApiProperty({ description: 'Promotions, coupon and typed discount together.' }) discountCents!: number;
-  @ApiProperty({ type: Number, nullable: true, description: "Null on a delivery whose fee is not agreed yet; zero on a pick-up." }) deliveryFeeCents!: number | null;
+  @ApiProperty({ type: Number, nullable: true, description: "Zero on a pick-up; on a delivery, the fee of the shop's own delivery to the address asked about — null while there is none to say." }) deliveryFeeCents!: number | null;
+  @ApiProperty({ type: ShippingQuoteResponse, nullable: true, description: "The shop's ways to get this cart to the address asked about; null with no address to quote to." }) shipping!: ShippingQuoteResponse | null;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ type: QuotedCashbackResponse, nullable: true, description: 'What it would earn once delivered; null while the cashback is off.' }) cashback!: QuotedCashback | null;
   @ApiProperty({ type: QuotedCashbackUseResponse, nullable: true, description: "The customer's credit against the cart; the total is already less what was applied. Null on a visitor's cart." }) cashbackUse!: QuotedCashbackUseResponse | null;

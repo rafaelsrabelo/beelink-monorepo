@@ -2,7 +2,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 // Types
-import type { CreateOrderItemInput, OrderActor, OrderFulfillment, OrderStatus, PaymentMethod } from '@harness-monorepo/contracts';
+import type { CreateOrderItemInput, OrderActor, OrderFulfillment, OrderStatus, PaymentMethod, ShippingWindow } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -13,7 +13,7 @@ import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { lockCustomer } from '../customers/customer-lock.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
-import { deliveryOf } from './order-delivery.js';
+import { deliveryOf, deliveryWindowColumnsOf } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
 import { cashbackRefused, couponRefused, earningPartsOf, priceOrder } from './order-pricing.js';
 import { oweStatusEmail } from './order-status-email.js';
@@ -34,6 +34,8 @@ export interface Placement {
   paymentMethod: PaymentMethod;
   /** Null for a delivery whose fee the shop has not told yet. */
   deliveryFeeCents: number | null;
+  /** When the quote said a delivery would arrive (BEELINK-178); null where nothing was quoted. */
+  deliveryWindow: ShippingWindow | null;
   /** What the shopkeeper typed, beyond the promotions and the coupon; zero from the cart. */
   discountCents: number;
   /** As it was typed; null is none. One that does not hold refuses the order. */
@@ -127,6 +129,7 @@ export class OrderPlacement {
           fulfillment: placement.fulfillment,
           paymentMethod: placement.paymentMethod,
           ...delivery,
+          ...deliveryWindowColumnsOf(placement.fulfillment === 'DELIVERY' ? placement.deliveryWindow : null),
           ...priced.totals,
           promotionDiscountCents: priced.promotionDiscountCents,
           couponDiscountCents: priced.couponDiscountCents,
