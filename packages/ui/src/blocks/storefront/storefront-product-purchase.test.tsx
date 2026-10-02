@@ -31,6 +31,20 @@ function renderBox(over: Partial<StorefrontProductPurchaseProps> = {}) {
 const box = () => screen.getByRole("region", { name: "Comprar" })
 
 describe("StorefrontProductPurchase", () => {
+  /** BEELINK-243: the box says what the chosen price earns at the shop's rule, or from what order up it earns. */
+  it("says the cashback the chosen price earns, and under the minimum, from what order up", () => {
+    const earning = renderBox({ priceCents: 10_000, cashback: { rateBps: 500, minSubtotalCents: 0 } })
+    expect(screen.getByText(/^Ganhe/).textContent?.replace(/\s/g, " ")).toBe("Ganhe R$ 5,00 de cashback nesta compra")
+    earning.unmount()
+
+    const under = renderBox({ priceCents: 4_000, cashback: { rateBps: 500, minSubtotalCents: 15_000 } })
+    expect(screen.getByText(/^Ganhe/).textContent?.replace(/\s/g, " ")).toBe("Ganhe 5% de cashback em pedidos a partir de R$ 150,00")
+    under.unmount()
+
+    renderBox({ cashback: null })
+    expect(screen.queryByText(/cashback/)).not.toBeInTheDocument()
+  })
+
   it("draws 5b's box: the price, 'Em estoque', how many, the two pills, the notice and who sells it", () => {
     renderBox()
 

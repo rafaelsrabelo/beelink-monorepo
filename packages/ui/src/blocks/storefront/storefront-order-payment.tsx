@@ -18,11 +18,13 @@ export interface StorefrontOrderPaymentProps {
   total: string
   /** How it was agreed, as a label: the shop charges, never the platform, so nothing is ever "approved". */
   method: string
+  /** What the order earns in cashback and where that credit stands (BEELINK-243), in words; none, and nothing is said. */
+  cashback?: string | null
   messages?: UiMessages
 }
 
-/** What the order cost (6e): the sums, the total, and the way of paying agreed with the shop. */
-export function StorefrontOrderPayment({ rows, total, method, messages = defaultMessages }: StorefrontOrderPaymentProps) {
+/** What the order cost (6e): the sums, the total, the way of paying agreed with the shop, and the cashback it earns. */
+export function StorefrontOrderPayment({ rows, total, method, cashback = null, messages = defaultMessages }: StorefrontOrderPaymentProps) {
   const text = messages.storefront
 
   return (
@@ -41,6 +43,7 @@ export function StorefrontOrderPayment({ rows, total, method, messages = default
         </div>
       </dl>
       <p className="text-[13px] text-shop-muted">{method}</p>
+      {cashback ? <p className="text-[13px] font-semibold text-shop-positive-ink">{cashback}</p> : null}
     </section>
   )
 }

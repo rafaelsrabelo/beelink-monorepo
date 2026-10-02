@@ -44,6 +44,9 @@ describe("StorefrontOrderCard", () => {
     // Never cut short, as the facts above it are: the code is the end of the sentence.
     expect(saving).not.toHaveClass("truncate")
 
+    rerender(<StorefrontOrderCard {...card} cashback="Você vai ganhar R$ 5,00 de cashback quando o pedido for entregue." />)
+    expect(screen.getByText("Você vai ganhar R$ 5,00 de cashback quando o pedido for entregue.")).toBeInTheDocument()
+
     rerender(<StorefrontOrderCard {...card} />)
     expect(screen.getByText("R$ 237,22 · Pix").nextElementSibling).toBeNull()
   })

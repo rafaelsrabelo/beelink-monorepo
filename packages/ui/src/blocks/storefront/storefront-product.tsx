@@ -28,6 +28,7 @@ import { StorefrontProductGallery, type StorefrontProductImage } from "./storefr
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
 import type { LinkComponent } from "../auth/auth-link"
 import { StorefrontProductInfo } from "./storefront-product-info"
+import type { ShopCashbackRule } from "@harness-monorepo/ui/lib/cashback"
 import { StorefrontProductPurchase } from "./storefront-product-purchase"
 import { StorefrontVariantPicker } from "./storefront-variant-picker"
 
@@ -92,6 +93,8 @@ export interface StorefrontProductDetailProps {
   finishesOnWhatsApp?: boolean
   /** "Vendido por" and "Pagamento", under the buy box's buttons. */
   seller?: { name: string; paymentMethods: readonly PaymentMethod[] }
+  /** The shop's cashback while on (BEELINK-243), for the buy box to say what the chosen price earns. */
+  cashback?: ShopCashbackRule | null
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -129,6 +132,7 @@ export function StorefrontProductDetail({
   showStock,
   finishesOnWhatsApp,
   seller,
+  cashback = null,
   linkComponent,
   messages = defaultMessages,
 }: StorefrontProductDetailProps) {
@@ -226,6 +230,7 @@ export function StorefrontProductDetail({
           orderHref={order}
           finishesOnWhatsApp={finishesOnWhatsApp}
           seller={seller}
+          cashback={cashback}
           favorite={favorite?.(variant?.id ?? null, "text")}
           messages={messages}
         />

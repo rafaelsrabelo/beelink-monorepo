@@ -71,3 +71,47 @@ export interface OrderCashbackView {
   expiresAt: string | null
   unrecoveredCents: number
 }
+
+/** A shop's cashback as its shop window reads it. Mirrors `PublicCashback`. */
+export interface ShopCashbackRule {
+  rateBps: number
+  minSubtotalCents: number
+}
+
+/**
+ * What a price earns at a shop's rule, rounded down to the cent as the API rounds an order's
+ * (BEELINK-243). Null when the price is under the shop's minimum — an order of that product alone
+ * earns nothing — and when the share is under a cent.
+ */
+export function earnedOnPrice(priceCents: number, rule: ShopCashbackRule): number | null {
+  if (priceCents < rule.minSubtotalCents) return null
+  const earned = Math.floor((priceCents * rule.rateBps) / 10_000)
+  return earned > 0 ? earned : null
+}
+
+/** An order's cashback as its customer reads it. Mirrors `OrderCashback`. */
+export interface CustomerOrderCashbackView {
+  earnedCents: number
+  status: CashbackCreditStatusValue
+  remainingCents: number
+  expiresAt: string | null
+}
+
+/**
+ * An order's cashback in one sentence for its customer (BEELINK-243): what they will earn once it is
+ * delivered, what they can spend and until when, that they spent it, that it expired, or that it was
+ * taken back. A lot past its day reads as expired before the API's sweep marks it.
+ */
+export function customerCashbackLineOf(
+  cashback: CustomerOrderCashbackView | null,
+  { money, date, now, text }: { money: (cents: number) => string; date: (iso: string) => string; now: Date; text: { PENDING: string; AVAILABLE: string; AVAILABLE_UNTIL: string; SPENT: string; VOIDED: string; EXPIRED: string } },
+): string | null {
+  if (!cashback) return null
+  const expired = cashback.status === "EXPIRED" || (cashback.status === "AVAILABLE" && cashback.expiresAt !== null && new Date(cashback.expiresAt) <= now)
+  if (expired) return text.EXPIRED
+  if (cashback.status === "VOIDED") return text.VOIDED
+  if (cashback.status === "PENDING") return text.PENDING.replace("{amount}", money(cashback.remainingCents))
+  if (cashback.remainingCents === 0) return text.SPENT
+  const amount = money(cashback.remainingCents)
+  return cashback.expiresAt ? text.AVAILABLE_UNTIL.replace("{amount}", amount).replace("{date}", date(cashback.expiresAt)) : text.AVAILABLE.replace("{amount}", amount)
+}
