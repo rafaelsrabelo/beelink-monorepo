@@ -95,6 +95,9 @@ export function StorefrontCheckoutChoices({
   const delivering = value.fulfillment === "DELIVERY"
   const delivers = shipping?.delivery !== false
   const picksUp = shipping?.pickup !== false
+  // What a delivery costs, inside its own choice: read beside the pick-up before either is chosen. With
+  // no quote, the fee agreed afterwards is said only once a delivery is what was chosen, as it was.
+  const feeNote = !chosen || shipping?.unreachable ? null : shipping ? shipping.deliveryNote : delivering ? text.checkoutFeeLater : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -116,8 +119,15 @@ export function StorefrontCheckoutChoices({
                 <span className="break-words text-xs text-shop-muted">
                   {chosen ? format(text.checkoutDeliverTo, { address: chosen.line }) : text.checkoutNoAddress}
                 </span>
+                {feeNote ? <span className="break-words text-xs font-medium">{feeNote}</span> : null}
               </span>
             </label>
+            {/* A shop that does not reach the address is news the shopper has to hear, before the addresses to choose another from. */}
+            {delivering && chosen && shipping?.unreachable ? (
+              <p role="status" className="rounded-[10px] border border-shop-line bg-shop-fill px-3 py-2 text-xs font-medium">
+                {shipping.deliveryNote}
+              </p>
+            ) : null}
             {delivering && addresses.length > 1 ? (
               <fieldset className="ml-7 flex flex-col gap-2">
                 <legend className="mb-1 text-xs font-semibold">{text.checkoutAddressChoose}</legend>
@@ -158,12 +168,6 @@ export function StorefrontCheckoutChoices({
           </label>
         ) : null}
         {!delivers && !picksUp ? <p role="status" className="text-sm">{text.checkoutNoWay}</p> : null}
-        {delivers && delivering && chosen ? (
-          // A shop that does not reach the address is news the shopper has to hear; a fee is read where it stands.
-          <p role={shipping?.unreachable ? "status" : undefined} className={shipping?.unreachable ? "rounded-[10px] border border-shop-line bg-shop-fill px-3 py-2 text-xs font-medium" : "text-xs text-shop-muted"}>
-            {shipping?.deliveryNote ?? text.checkoutFeeLater}
-          </p>
-        ) : null}
       </fieldset>
 
       <fieldset disabled={disabled} className="flex flex-col gap-2">
