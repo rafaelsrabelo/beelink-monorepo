@@ -32,6 +32,20 @@ describe("bee-link's legal texts (BEELINK-171)", () => {
     }
   })
 
+  /** BEELINK-244: cashback is the shop's credit, not money — and the shop keeps the balance and its statement. */
+  it("say what cashback is and is not in the terms, and that the shop keeps it in the policy", () => {
+    const cashback = legalTexts.terms.sections.find((section) => section.heading === "Cashback das lojas")
+    const said = cashback?.blocks.map((block) => (block.kind === "paragraph" ? block.text : block.items.join(" "))).join(" ") ?? ""
+
+    expect(said).toMatch(/crédito concedido pela loja, e não dinheiro/)
+    expect(said).toMatch(/vale só na loja que o concedeu/)
+    expect(said).toMatch(/não pode ser sacado, trocado por dinheiro nem transferido/)
+    expect(said).toMatch(/vence e deixa de existir/)
+
+    const kept = legalTexts.privacy.sections.find((section) => section.heading === "Dados dos clientes das lojas")
+    expect(JSON.stringify(kept)).toMatch(/o seu cashback na loja[^"]*o saldo[^"]*o extrato/)
+  })
+
   it("say, in the terms and the policy alike, the three moments an account accepts them", () => {
     expect(legalTexts.terms.intro.join(" ")).toMatch(/Continuar com Google[\s\S]*define uma senha pelo link/)
     expect(legalTexts.privacy.intro.join(" ")).toMatch(/criar uma conta, ou ao definir uma senha pelo link/)
