@@ -10,7 +10,7 @@ const meta = {
   component: StorefrontAccountNotices,
   parameters: { layout: "padded" },
   decorators: [(Story) => <div style={shopPaletteStyle(sampleColorPresets[2]!.colors)}>{Story()}</div>],
-  args: { email: "rafael@exemplo.com", notices: { orders: true, favorites: true, offers: false }, action: "#" },
+  args: { email: "rafael@exemplo.com", notices: { orders: true, favorites: true, cashback: true, offers: false }, action: "#" },
 } satisfies Meta<typeof StorefrontAccountNotices>
 
 export default meta
@@ -20,7 +20,7 @@ type Story = StoryObj<typeof meta>
 export const Padrao: Story = {}
 
 /** Aceitou ofertas, com a data. */
-export const ComOfertas: Story = { args: { notices: { orders: true, favorites: false, offers: true }, offersSince: "29/09/2026" } }
+export const ComOfertas: Story = { args: { notices: { orders: true, favorites: false, cashback: true, offers: true }, offersSince: "29/09/2026" } }
 
 /** Depois de salvar. */
 export const Salvo: Story = { args: { notice: "Pronto, seus avisos foram salvos." } }

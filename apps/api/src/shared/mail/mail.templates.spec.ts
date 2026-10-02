@@ -1,4 +1,5 @@
 // App
+import { cashbackExpiring } from './cashback-expiring.template.js';
 import { emailVerification, escapeHtml, favoriteNotice, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
 
 describe('leadReceived — a stranger’s words in the owner’s inbox', () => {
@@ -119,6 +120,18 @@ describe("an order's move, told to its customer", () => {
     expect(mail.html).toContain('Você ganhou R$\u00a05,04 de cashback');
     expect(orderStatusChanged({ ...base, status: 'DELIVERED', cashback: { amountCents: 100, expiresAt: null } }, url, settings).text).toContain('compras na loja.');
     expect(orderStatusChanged({ ...base, status: 'DELIVERED' }, url, settings).text).not.toContain('cashback');
+  });
+});
+
+describe("a customer's cashback about to expire (BEELINK-241)", () => {
+  it('says how much, where and until when — the day in Brasília — the way back, and how to stop it', () => {
+    // 01:30 UTC on the 10th is still the 9th in Brasília.
+    const mail = cashbackExpiring({ name: 'Bia', shopName: 'Mutante & Cia', amountCents: 1250, expiresAt: new Date('2026-10-10T01:30:00.000Z') }, 'http://localhost:3000/mutante', 'http://localhost:3000/mutante/conta/perfil#avisos');
+
+    expect(mail.subject).toBe('Mutante & Cia — seu cashback de R$\u00a012,50 vence em 09/10/2026');
+    expect(mail.text).toContain('Você tem R$\u00a012,50 de cashback em Mutante & Cia, que vence em 09/10/2026.');
+    expect(mail.html).toContain('href="http://localhost:3000/mutante"');
+    expect(mail.text).toMatch(/desmarque "Cashback" e salve:\n.*perfil#avisos$/);
   });
 });
 

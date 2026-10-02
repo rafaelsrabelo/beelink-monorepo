@@ -107,6 +107,7 @@ export class OrderResponse implements Order {
   @ApiProperty({ description: 'What the coupon took off; on a free delivery, the fee.' }) couponDiscountCents!: number;
   @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
   @ApiProperty({ type: ShopOrderCashbackResponse, nullable: true, description: 'What it earns in cashback, and where that credit stands; null when it earns none.' }) cashback!: ShopOrderCashbackResponse | null;
+  @ApiProperty({ description: "The customer's credit it spent, taken off the total apart from the discount." }) cashbackUsedCents!: number;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ nullable: true, type: String }) note!: string | null;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;

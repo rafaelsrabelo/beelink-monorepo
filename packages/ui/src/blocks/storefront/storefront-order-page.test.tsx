@@ -53,6 +53,16 @@ function page() {
 }
 
 describe("an order's page", () => {
+  /** BEELINK-243: the payment card says where the order's cashback stands, under how it was paid. */
+  it("says the order's cashback under the way it was paid, and nothing without one", async () => {
+    const { container, rerender } = render(<StorefrontOrderPayment rows={[{ label: "Subtotal", value: "R$ 99,80" }]} total="R$ 99,80" method="Pagamento combinado com a loja: Pix" cashback="Você vai ganhar R$ 4,99 de cashback quando o pedido for entregue." />)
+    expect(screen.getByText("Pagamento combinado com a loja: Pix").nextElementSibling).toHaveTextContent("Você vai ganhar R$ 4,99 de cashback quando o pedido for entregue.")
+    await expectNoA11yViolations(container)
+
+    rerender(<StorefrontOrderPayment rows={[{ label: "Subtotal", value: "R$ 99,80" }]} total="R$ 99,80" method="Pagamento combinado com a loja: Pix" />)
+    expect(screen.getByText("Pagamento combinado com a loja: Pix").nextElementSibling).toBeNull()
+  })
+
   it("titles the order, says who placed it, and trails back to the list", () => {
     render(header)
 

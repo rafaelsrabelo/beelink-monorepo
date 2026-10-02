@@ -68,6 +68,7 @@ export function toOrder(row: OrderRow): Order {
     couponDiscountCents: row.couponDiscountCents,
     coupon: toOrderCoupon(row),
     cashback: toOrderCashback(row),
+    cashbackUsedCents: row.cashbackUsedCents,
     totalCents: row.totalCents,
     note: row.note,
     placedAt: row.placedAt.toISOString(),

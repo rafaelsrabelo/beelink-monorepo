@@ -14,6 +14,9 @@ import type {
   CustomerCashback,
   CustomerDataCashback,
   OrderCashback,
+  PublicCashback,
+  QuotedCashbackUse,
+  CashbackUnavailableReason,
   ShopOrderCashback,
 } from '@harness-monorepo/contracts';
 
@@ -94,4 +97,24 @@ export class CustomerDataCashbackResponse implements CustomerDataCashback {
   @ApiProperty() pendingCents!: number;
   @ApiProperty({ type: [CashbackCreditResponse] }) credits!: CashbackCreditResponse[];
   @ApiProperty({ type: [CashbackEntryResponse] }) entries!: CashbackEntryResponse[];
+}
+
+export class PublicCashbackResponse implements PublicCashback {
+  @ApiProperty({ example: 500, description: 'Basis points of the products paid for.' }) rateBps!: number;
+  @ApiProperty({ description: 'The products after discounts an order must reach to earn.' }) minSubtotalCents!: number;
+}
+
+/** The two shapes of `QuotedCashback` in one, as Swagger draws a union. */
+export class QuotedCashbackResponse {
+  @ApiProperty({ enum: ['EARNS', 'BELOW_MINIMUM'] }) status!: 'EARNS' | 'BELOW_MINIMUM';
+  @ApiProperty({ required: false, description: 'On EARNS: what the cart would earn.' }) earnedCents?: number;
+  @ApiProperty({ required: false, description: "On BELOW_MINIMUM: what is missing to reach the shop's minimum." }) missingCents?: number;
+  @ApiProperty() rateBps!: number;
+}
+
+export class QuotedCashbackUseResponse implements QuotedCashbackUse {
+  @ApiProperty({ description: 'What the customer can spend now.' }) balanceCents!: number;
+  @ApiProperty({ description: "The most this cart can take: the shop's cap over the products after their discounts, never the delivery." }) maxCents!: number;
+  @ApiProperty({ description: 'What the quote applied: the most, when asked with useCashback; 0 otherwise.' }) appliedCents!: number;
+  @ApiProperty({ enum: ['NO_BALANCE', 'NOTHING_TO_PAY'], nullable: true, type: String }) unavailable!: CashbackUnavailableReason | null;
 }

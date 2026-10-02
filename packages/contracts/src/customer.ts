@@ -102,16 +102,20 @@ export interface CustomerNotifications {
   orders: boolean;
   /** A favourite that got cheaper or came back in stock. On by default: the shopper chose the favourite. */
   favorites: boolean;
+  /** Their cashback about to expire (BEELINK-241). On by default: it is their own credit, never an offer. */
+  cashback: boolean;
   /** The shop's offers and news. Off until the shopper says yes. */
   offers: boolean;
   /** ISO-8601: when the shopper last chose about offers, either way — the consent's date; null while they never did. */
   offersChosenAt: string | null;
 }
 
-/** The shopper's notices, all three, as the "Avisos" form sends them. */
+/** The shopper's notices, all of them, as the "Avisos" form sends them. */
 export interface UpdateCustomerNotificationsPayload {
   orders: boolean;
   favorites: boolean;
+  /** Absent leaves the choice as it is: a form drawn before the box existed says nothing of it (BEELINK-241). */
+  cashback?: boolean;
   offers: boolean;
 }
 

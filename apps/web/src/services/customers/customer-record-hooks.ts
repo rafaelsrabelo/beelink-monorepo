@@ -8,6 +8,7 @@ import type { UseMutationResult } from "@tanstack/react-query"
 import type { MergeStoreCustomerPayload, StoreCustomerDetail, UpdateStoreCustomerPayload } from "@harness-monorepo/contracts"
 
 // App
+import { cashbackKeys } from "../cashback/cashback-keys"
 import { orderKeys } from "../orders/order-hooks"
 import { customerKeys } from "./customer-hooks"
 import { mergeStoreCustomer, updateStoreCustomer } from "./customer-requests"
@@ -31,6 +32,8 @@ export function useUpdateStoreCustomer(
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: customerKeys.lists(slug) }),
         queryClient.invalidateQueries({ queryKey: orderKeys.store(slug) }),
+        // The two statements are one now (BEELINK-238), under the kept record.
+        queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
       ])
     },
   })

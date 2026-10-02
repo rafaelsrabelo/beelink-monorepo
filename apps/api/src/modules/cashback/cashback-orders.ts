@@ -22,7 +22,7 @@ type Tx = Prisma.TransactionClient;
  */
 export async function earningForOrder(tx: Tx, storeId: string, parts: EarningParts): Promise<{ earnedCents: number; rateBps: number; validityDays: number | null } | null> {
   const rules = await tx.cashbackSettings.findUnique({ where: { storeId } });
-  const earning = earningOf(rules, earningBaseOf(parts));
+  const earning = earningOf(rules, earningBaseOf(parts), earningBaseOf({ ...parts, cashbackUsedCents: 0 }));
   return earning && rules ? { ...earning, validityDays: rules.expiresAfterDays } : null;
 }
 

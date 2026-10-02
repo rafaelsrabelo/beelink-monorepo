@@ -38,6 +38,16 @@ export const Padrao: Story = {}
 /** Combinação esgotada: "Esgotado", a frase e "Avise-me" no lugar dos botões. */
 export const Esgotado: Story = { args: { available: false } }
 
+/** Com o cashback da loja ligado: "até", sobre o preço vezes a quantidade (BEELINK-243). */
+export const ComCashback: Story = {
+  args: { seller: { name: "Mutante Suplementos", paymentMethods: ["PIX", "CREDIT_CARD"], cashback: { rateBps: 500, minSubtotalCents: 0 } } },
+}
+
+/** Abaixo do pedido mínimo do cashback: a partir de qual valor o pedido ganha. */
+export const CashbackComMinimo: Story = {
+  args: { seller: { name: "Mutante Suplementos", paymentMethods: ["PIX", "CREDIT_CARD"], cashback: { rateBps: 500, minSubtotalCents: 50_000 } } },
+}
+
 /** Loja sem WhatsApp: sem o aviso de onde o pedido termina. */
 export const SemWhatsApp: Story = { args: { finishesOnWhatsApp: false } }
 

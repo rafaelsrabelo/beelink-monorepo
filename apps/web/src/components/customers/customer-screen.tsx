@@ -22,6 +22,7 @@ import { addressLineOf } from "@/lib/customer-address"
 import { birthDateLineOf, cpfLineOf } from "@/lib/customer-identity"
 import { customerWhatsappHref } from "@/lib/whatsapp-customer"
 import { useStore } from "@/services/stores/store-hooks"
+import { CustomerCashbackSection } from "./customer-cashback-section"
 import { CustomerScreenSkeleton } from "./customer-screen-skeleton"
 import { useCustomerMerge } from "./use-customer-merge"
 import { useCustomerRecord } from "./use-customer-record"
@@ -36,8 +37,8 @@ export interface CustomerScreenProps {
 
 /**
  * Everything the shop knows of one customer on one page: who they are and how to reach them, their
- * figures, every order they made — each leading to it — a new order already made out to them, and
- * the WhatsApp message for where they stand. Their details are corrected here, in their card, and
+ * figures, their cashback, every order they made — each leading to it — a new order already made out
+ * to them, and the WhatsApp message for where they stand. Their details are corrected here, in their card, and
  * another record of the same person is merged into one from here.
  */
 export function CustomerScreen({ slug, customerId, locale, messages, web }: CustomerScreenProps) {
@@ -114,7 +115,7 @@ export function CustomerScreen({ slug, customerId, locale, messages, web }: Cust
 
       {/* The details come first to be read, and sit in the side column where there is one. */}
       <div className="grid items-start gap-6 @4xl/main:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="@4xl/main:col-start-2 @4xl/main:row-start-1">
+        <div className="flex flex-col gap-6 @4xl/main:col-start-2 @4xl/main:row-start-1">
           <CustomerProfile
             customer={customer}
             addressLine={addressLineOf(customer.address)}
@@ -123,6 +124,7 @@ export function CustomerScreen({ slug, customerId, locale, messages, web }: Cust
             {...view.profile}
             messages={messages}
           />
+          <CustomerCashbackSection slug={slug} customerId={customer.id} locale={locale} messages={messages} />
         </div>
         <div ref={historyTop} className="flex min-w-0 scroll-mt-4 flex-col gap-3 @4xl/main:col-start-1 @4xl/main:row-start-1">
           {view.history.error ? (

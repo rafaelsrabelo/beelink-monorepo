@@ -20,6 +20,13 @@ const receipt: StorefrontOrderReceiptProps = {
 }
 
 describe("StorefrontOrderReceipt", () => {
+  /** BEELINK-243: the receipt says what the order earns in cashback, under how it was paid. */
+  it("says the order's cashback under the way it was paid", () => {
+    render(<StorefrontOrderReceipt {...receipt} cashback="R$ 2,00 de cashback para usar até 30/12/2026." />)
+
+    expect(screen.getByText("Pagamento combinado com a loja: Pix").nextElementSibling).toHaveTextContent("R$ 2,00 de cashback para usar até 30/12/2026.")
+  })
+
   it("says who sold what to whom, for how much, and that it is not a tax invoice", () => {
     render(<StorefrontOrderReceipt {...receipt} />)
 

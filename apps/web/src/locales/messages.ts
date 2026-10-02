@@ -180,6 +180,7 @@ export interface WebMessages {
       reviews: string
       /** The shop's promotions and its coupons (BEELINK-192). */
       promotions: string
+      cashback: string
       coupons: string
       products: string
       customers: string

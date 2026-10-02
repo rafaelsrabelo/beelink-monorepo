@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { OrderDetail } from "./order-detail"
-import { discountedOrder, order } from "./order-detail.fixtures"
+import { cashbackOrder, discountedOrder, order } from "./order-detail.fixtures"
 import { nextStatusOf, otherStatusesOf } from "./order-status-actions"
 import type { OrderDetailView, OrderStatusValue } from "./order-types"
 
@@ -28,6 +28,16 @@ describe("the order's next step", () => {
   it("offers every other open status by hand, a pick-up's without 'out for delivery'", () => {
     expect(otherStatusesOf("ACCEPTED", "DELIVERY")).toEqual(["RECEIVED", "OUT_FOR_DELIVERY", "DELIVERED"])
     expect(otherStatusesOf("ACCEPTED", "PICKUP")).toEqual(["RECEIVED", "DELIVERED"])
+  })
+})
+
+describe("an order's cashback on its page (BEELINK-242)", () => {
+  it("draws a card with what it earns, only when it earns something", () => {
+    const { rerender } = render(<OrderDetail order={cashbackOrder} {...props} />)
+    expect(screen.getByRole("region", { name: "Cashback" })).toHaveTextContent("Disponível para o cliente")
+
+    rerender(<OrderDetail order={order} {...props} />)
+    expect(screen.queryByRole("region", { name: "Cashback" })).not.toBeInTheDocument()
   })
 })
 

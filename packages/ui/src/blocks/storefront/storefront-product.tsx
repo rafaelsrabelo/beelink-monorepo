@@ -22,13 +22,12 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { PaymentMethod } from "../store/store-types"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
 import type { LinkComponent } from "../auth/auth-link"
 import { StorefrontProductInfo } from "./storefront-product-info"
-import { StorefrontProductPurchase } from "./storefront-product-purchase"
+import { StorefrontProductPurchase, type StorefrontSeller } from "./storefront-product-purchase"
 import { StorefrontVariantPicker } from "./storefront-variant-picker"
 
 export type { StorefrontProductImage } from "./storefront-product-gallery"
@@ -91,7 +90,7 @@ export interface StorefrontProductDetailProps {
   /** The shop takes orders on WhatsApp, which the buy box says. */
   finishesOnWhatsApp?: boolean
   /** "Vendido por" and "Pagamento", under the buy box's buttons. */
-  seller?: { name: string; paymentMethods: readonly PaymentMethod[] }
+  seller?: StorefrontSeller
   linkComponent?: LinkComponent
   messages?: UiMessages
 }

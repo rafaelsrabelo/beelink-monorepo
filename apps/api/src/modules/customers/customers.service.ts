@@ -127,7 +127,7 @@ export class CustomersService {
   }
 
   /**
-   * The shopper's notices by e-mail (BEELINK-151), all three at once. Saying yes or no to offers
+   * The shopper's notices by e-mail (BEELINK-151), all of them at once. Saying yes or no to offers
    * keeps when it was said — the consent's date — and saving it again unchanged does not move it.
    */
   async updateNotifications(storeSlug: string, userId: string, dto: UpdateCustomerNotificationsDto): Promise<CustomerNotifications> {
@@ -138,6 +138,7 @@ export class CustomersService {
       data: {
         notifyOrders: dto.orders,
         notifyFavorites: dto.favorites,
+        notifyCashback: dto.cashback,
         notifyOffers: dto.offers,
         ...(dto.offers !== record.notifyOffers ? { notifyOffersAt: new Date() } : {}),
       },

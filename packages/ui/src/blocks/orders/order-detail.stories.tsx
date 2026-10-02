@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { OrderDeliveryCard } from "./order-delivery-card"
 import { OrderFeeCard } from "./order-fee-card"
 import { OrderDetail } from "./order-detail"
-import { order } from "./order-detail.fixtures"
+import { cashbackOrder, order } from "./order-detail.fixtures"
 
 const meta = {
   title: "Blocks/Orders/OrderDetail",
@@ -46,6 +46,9 @@ export const OutraPessoaRecebe: Story = {
 }
 
 export const Cancelado: Story = { args: { order: { ...order, status: "CANCELLED" } } }
+
+/** Entregue, com o cashback que gerou: disponível para o cliente até uma data. */
+export const ComCashback: Story = { args: { order: cashbackOrder } }
 
 export const SemCelular: Story = { args: { order: { ...order, customer: { ...order.customer, phone: null } }, whatsappHref: null } }
 
