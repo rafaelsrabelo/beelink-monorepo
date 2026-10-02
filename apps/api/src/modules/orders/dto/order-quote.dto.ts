@@ -7,6 +7,7 @@ import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsISO8601, IsObject, 
 
 // Types
 import type {
+  QuotedCashback,
   CartQuotePayload,
   CouponKind,
   CouponRefusalReason,
@@ -21,6 +22,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { QuotedCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
 import { ORDER_AMOUNT_MAX_CENTS, ORDER_FULFILLMENTS, ORDER_ITEMS_MAX } from '../orders.constants.js';
 import { couponCode, OrderCustomerDto, OrderItemDto } from './order.dto.js';
@@ -168,4 +170,5 @@ export class OrderQuoteResponse implements Omit<OrderQuote, 'coupon'> {
   @ApiProperty({ description: 'Promotions, coupon and typed discount together.' }) discountCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: "Null on a delivery whose fee is not agreed yet; zero on a pick-up." }) deliveryFeeCents!: number | null;
   @ApiProperty() totalCents!: number;
+  @ApiProperty({ type: QuotedCashbackResponse, nullable: true, description: 'What it would earn once delivered; null while the cashback is off.' }) cashback!: QuotedCashback | null;
 }

@@ -12,6 +12,7 @@ import type { OrderCustomerDto } from './dto/order.dto.js';
 import type { CartQuoteDto, CustomerOrderQuoteDto, ShopOrderQuoteDto } from './dto/order-quote.dto.js';
 import { readOrderLines } from './order-lines.js';
 import { placedAtOf } from './order-placed-at.js';
+import { earningBaseOf, quotedCashbackOf } from '../cashback/cashback-earning.js';
 import { priceOrder, type PricingCustomer, type PricingInput } from './order-pricing.js';
 import { orderError } from './orders.constants.js';
 
@@ -69,6 +70,16 @@ export class OrderQuotes {
   private async quote({ items, onSaleOnly, ...input }: QuoteInput): Promise<OrderQuote> {
     const lines = await readOrderLines(this.prisma, input.storeId, items, onSaleOnly);
     const priced = await priceOrder(this.prisma, { ...input, lines, lock: false });
+    // What it would earn, worked out as the order would be when placed (BEELINK-243).
+    const rules = await this.prisma.cashbackSettings.findUnique({ where: { storeId: input.storeId } });
+    const base = earningBaseOf({
+      subtotalCents: priced.totals.subtotalCents,
+      promotionDiscountCents: priced.promotionDiscountCents,
+      couponDiscountCents: priced.couponDiscountCents,
+      couponKind: priced.coupon?.kind ?? null,
+      manualDiscountCents: priced.manualDiscountCents,
+      cashbackUsedCents: 0,
+    });
 
     return {
       lines: lines.map((line, index) => ({
@@ -88,6 +99,7 @@ export class OrderQuotes {
       discountCents: priced.totals.discountCents,
       deliveryFeeCents: priced.totals.deliveryFeeCents,
       totalCents: priced.totals.totalCents,
+      cashback: quotedCashbackOf(rules, base),
     } satisfies OrderQuote;
   }
 

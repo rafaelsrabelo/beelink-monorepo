@@ -1,5 +1,5 @@
 // Types
-import type { CouponKind } from '@harness-monorepo/contracts';
+import type { CouponKind, QuotedCashback } from '@harness-monorepo/contracts';
 
 /** The parts of an order its cashback is worked out from. */
 export interface EarningParts {
@@ -39,4 +39,16 @@ export function earningOf(rules: EarningRules | null, baseCents: number): { earn
   if (!rules?.enabled || baseCents < rules.minSubtotalCents) return null;
   const earnedCents = Math.floor((baseCents * rules.rateBps) / 10_000);
   return earnedCents > 0 ? { earnedCents, rateBps: rules.rateBps } : null;
+}
+
+/**
+ * What a cart would earn, as its quote says it (BEELINK-243): the same `earningOf` the order is placed
+ * with, and below the minimum, what is missing to reach it. Null with the cashback off, and with a
+ * share under a cent.
+ */
+export function quotedCashbackOf(rules: EarningRules | null, baseCents: number): QuotedCashback | null {
+  if (!rules?.enabled) return null;
+  if (baseCents < rules.minSubtotalCents) return { status: 'BELOW_MINIMUM', missingCents: rules.minSubtotalCents - baseCents, rateBps: rules.rateBps };
+  const earning = earningOf(rules, baseCents);
+  return earning && { status: 'EARNS', ...earning };
 }

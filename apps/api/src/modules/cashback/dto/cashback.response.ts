@@ -14,6 +14,7 @@ import type {
   CustomerCashback,
   CustomerDataCashback,
   OrderCashback,
+  PublicCashback,
   ShopOrderCashback,
 } from '@harness-monorepo/contracts';
 
@@ -94,4 +95,17 @@ export class CustomerDataCashbackResponse implements CustomerDataCashback {
   @ApiProperty() pendingCents!: number;
   @ApiProperty({ type: [CashbackCreditResponse] }) credits!: CashbackCreditResponse[];
   @ApiProperty({ type: [CashbackEntryResponse] }) entries!: CashbackEntryResponse[];
+}
+
+export class PublicCashbackResponse implements PublicCashback {
+  @ApiProperty({ example: 500, description: 'Basis points of the products paid for.' }) rateBps!: number;
+  @ApiProperty({ description: 'The products after discounts an order must reach to earn.' }) minSubtotalCents!: number;
+}
+
+/** The two shapes of `QuotedCashback` in one, as Swagger draws a union. */
+export class QuotedCashbackResponse {
+  @ApiProperty({ enum: ['EARNS', 'BELOW_MINIMUM'] }) status!: 'EARNS' | 'BELOW_MINIMUM';
+  @ApiProperty({ required: false, description: 'On EARNS: what the cart would earn.' }) earnedCents?: number;
+  @ApiProperty({ required: false, description: "On BELOW_MINIMUM: what is missing to reach the shop's minimum." }) missingCents?: number;
+  @ApiProperty() rateBps!: number;
 }
