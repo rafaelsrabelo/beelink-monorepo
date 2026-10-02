@@ -1,5 +1,6 @@
 // App
-import { cashbackExpiring, emailVerification, escapeHtml, favoriteNotice, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
+import { cashbackExpiring } from './cashback-expiring.template.js';
+import { emailVerification, escapeHtml, favoriteNotice, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
 
 describe('leadReceived — a stranger’s words in the owner’s inbox', () => {
   const content = {

@@ -13,7 +13,8 @@ import type { Lead } from '@harness-monorepo/contracts';
 import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
-import { cashbackExpiring, emailVerification, favoriteNotice, leadReceived, orderStatusChanged, passwordReset, type CashbackExpiringContent, type FavoriteNoticeContent, type OrderStatusContent } from './mail.templates.js';
+import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
+import { emailVerification, favoriteNotice, leadReceived, orderStatusChanged, passwordReset, type FavoriteNoticeContent, type OrderStatusContent } from './mail.templates.js';
 
 /** What a lead's e-mail needs beyond the lead: who to greet, and which site's panel to point at. */
 export interface LeadReceivedMail {

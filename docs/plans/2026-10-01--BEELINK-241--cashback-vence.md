@@ -57,3 +57,26 @@
   um por lote.
 - O aviso, na exclusão de conta, do valor que o cliente perde (U7).
 - Push e WhatsApp.
+
+## Adendo — 02/10, depois da revisão
+
+1. **Teste instável (corrigido).**
+   - O que acontecia: a varredura dispara o envio em segundo plano, então o `flush()` do teste às vezes
+     não encontrava nada e conferia `sentAt` antes do envio de fundo gravar. Falhava 2 vezes em 10.
+   - A correção: os testes esperam a fila esvaziar. Também ganharam os casos de crédito gasto antes do
+     envio e de e-mail nunca confirmado. 10 de 10 rodadas passaram.
+2. **Um cliente com erro não trava a rodada.** Antes, se o vencimento de um cliente falhasse, o resto do
+   lote parava e os avisos não eram gerados. Agora a falha fica registrada no log e a rodada segue.
+3. **Formulário aberto antes do deploy.** Uma página de Avisos aberta antes da caixa "Cashback" existir,
+   e salva depois, desligava o aviso sem o cliente ver.
+   - Agora `cashback` é opcional no contrato, e ausente quer dizer "deixa como está".
+   - O formulário novo marca que ofereceu a caixa (`offered=cashback`), então só ele pode dizer não.
+4. **Arquivo de modelos de e-mail.** O e-mail de cashback foi para um arquivo próprio
+   (`cashback-expiring.template.ts`), e `mail.templates.ts` voltou a ter menos de 250 linhas.
+5. **Já resolvido no U3.** Cancelar antes da varredura trazia de volta crédito vencido. Agora o resto do
+   lote mantém o próprio prazo e a varredura o vence.
+6. **Para decidir (produto):**
+   - Um lote que venceu e depois tem o pedido de origem cancelado não registra a diferença que o lojista
+     não recuperou, porque o lote já está `EXPIRED`.
+   - Lojas com validade de 1 a 7 dias mandam o aviso de vencimento logo na entrega, junto com o e-mail
+     de entregue, que já traz a data.
