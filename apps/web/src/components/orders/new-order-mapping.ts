@@ -51,6 +51,8 @@ export interface OrderPayloadInput {
   paymentMethod: PaymentMethod
   /** What the summary showed: its fee and discount are the ones sent. */
   totals: OrderTotals
+  /** The customer's credit the sale was priced with (BEELINK-244), as the quote applied it; zero spends none. */
+  cashbackCents?: number
   /** `yyyy-mm-dd`, the shopkeeper's today. */
   today: string
 }
@@ -67,6 +69,8 @@ export interface SaleInput {
   placedOn: string
   /** `yyyy-mm-dd`, the shopkeeper's today. */
   today: string
+  /** Price it with the most of the chosen customer's credit it takes (BEELINK-244). Asked of the price alone: the order names the amount. */
+  useCashback?: boolean
 }
 
 /**
@@ -80,7 +84,7 @@ export interface SaleInput {
  */
 export function saleOf(input: SaleInput & { customerId: string }): ShopOrderQuotePayload & Pick<CreateOrderPayload, "customer">
 export function saleOf(input: SaleInput): ShopOrderQuotePayload
-export function saleOf({ customerId, lines, fulfillment, deliveryFeeCents, discountCents, placedOn, today }: SaleInput): ShopOrderQuotePayload {
+export function saleOf({ customerId, lines, fulfillment, deliveryFeeCents, discountCents, placedOn, today, useCashback = false }: SaleInput): ShopOrderQuotePayload {
   const day = placedOn || today
 
   return {
@@ -90,18 +94,42 @@ export function saleOf({ customerId, lines, fulfillment, deliveryFeeCents, disco
     ...(deliveryFeeCents ? { deliveryFeeCents } : {}),
     ...(discountCents ? { discountCents } : {}),
     ...(day && day !== today ? { placedAt: new Date(`${day}T12:00:00`).toISOString() } : {}),
+    // Credit is somebody's: without a customer there is none to ask about.
+    ...(useCashback && customerId ? { useCashback: true } : {}),
   }
 }
 
-/** The order as the API takes it: what prices the sale — its customer among it — how it is paid and what was said. */
-export function orderPayloadOf({ customerId, lines, details, paymentMethod, totals, today }: OrderPayloadInput): CreateOrderPayload {
+/**
+ * The order as the API takes it: what prices the sale — its customer among it — how it is paid and
+ * what was said. Of the customer's credit it carries the amount quoted, never "the most": the API
+ * refuses the order rather than write it at another price than the summary showed.
+ */
+export function orderPayloadOf({ customerId, lines, details, paymentMethod, totals, cashbackCents = 0, today }: OrderPayloadInput): CreateOrderPayload {
   const note = details.note.trim()
 
   return {
     ...saleOf({ customerId, lines, fulfillment: details.fulfillment, deliveryFeeCents: totals.deliveryFeeCents, discountCents: totals.discountCents, placedOn: details.placedOn, today }),
     paymentMethod,
+    ...(cashbackCents > 0 ? { cashbackCents } : {}),
     ...(note ? { note } : {}),
   }
+}
+
+/** The chosen customer's credit as the summary offers it: what they have, and the most this sale takes when that is less. */
+export interface CashbackOffer {
+  balanceCents: number
+  cappedCents: number | null
+}
+
+/**
+ * Whether the summary offers the customer's cashback (BEELINK-244), read from the sale's own price:
+ * only to a customer with credit, on a sale that takes some of it. Once ticked the box stays while
+ * the sale takes none — a discount typed since took it all — or there would be nothing left to untick.
+ */
+export function cashbackOfferOf(quote: OrderQuote | null, ticked: boolean): CashbackOffer | null {
+  const use = quote?.cashbackUse
+  if (!use || use.balanceCents <= 0 || (use.maxCents <= 0 && !ticked)) return null
+  return { balanceCents: use.balanceCents, cappedCents: use.maxCents < use.balanceCents ? use.maxCents : null }
 }
 
 /**
@@ -123,5 +151,7 @@ export function shownTotalsOf(own: OrderTotals | OrderTotalsRefusal, quote: Orde
     discountCents: quote.manualDiscountCents,
     totalCents: quote.totalCents,
     priced: quote.lines.map((line) => ({ discountCents: line.discountCents, promotionName: line.promotion?.name ?? null })),
+    // Out of the API's total already: its row says where the difference went.
+    cashbackUsedCents: quote.cashbackUse?.appliedCents || undefined,
   }
 }

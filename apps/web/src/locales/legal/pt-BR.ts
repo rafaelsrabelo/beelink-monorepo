@@ -16,11 +16,11 @@ export interface LegalTexts {
  * keeps or shares is a new version of these texts, with a new `version`.
  */
 export const legalTexts = {
-  version: "2026-09-30",
+  version: "2026-10-02",
   terms: {
     lang: "pt-BR",
     title: "Termos de uso",
-    effective: "Vigente desde 30 de setembro de 2026",
+    effective: "Vigente desde 2 de outubro de 2026",
     intro: [
       "Estes Termos de uso são as regras para usar o bee-link. Eles explicam o que a plataforma faz, o que ela não faz e o que se espera de cada pessoa que a usa.",
       "Eles valem para dois públicos: o lojista, que cria uma conta no painel para publicar a sua loja, e o cliente, que cria uma conta numa loja para comprar dela. Quando uma regra vale só para um dos dois, o texto diz.",
@@ -96,6 +96,31 @@ export const legalTexts = {
           {
             kind: "paragraph",
             text: "O cliente pode cancelar pelo bee-link um pedido que ainda está como \"recebido\". Depois que a loja o aceita, só ela pode cancelá-lo no sistema. Isso descreve apenas como o pedido é registrado: não limita os direitos do cliente perante a loja, como o direito de arrependimento previsto no Código de Defesa do Consumidor.",
+          },
+        ],
+      },
+      {
+        heading: "Cashback das lojas",
+        blocks: [
+          {
+            kind: "paragraph",
+            text: "Uma loja pode oferecer cashback: uma parte do valor dos produtos de um pedido volta para o cliente como crédito para usar em compras futuras na mesma loja. É a loja que decide se oferece cashback, a porcentagem, o valor mínimo do pedido, o prazo de validade do crédito e quanto de cada pedido pode ser pago com ele. A loja pode mudar essas regras, e a mudança vale para os pedidos seguintes.",
+          },
+          {
+            kind: "paragraph",
+            text: "O cashback é um crédito concedido pela loja, e não dinheiro. Ele vale só na loja que o concedeu e não pode ser sacado, trocado por dinheiro nem transferido para outra pessoa ou para outra loja. O bee-link só registra o saldo e o extrato: não recebe, não guarda e não paga nenhum valor.",
+          },
+          {
+            kind: "paragraph",
+            text: "O crédito de um pedido fica pendente até o pedido ser entregue, e só então pode ser usado. Se a loja definiu um prazo de validade, ele conta a partir da entrega, e o crédito que não for usado até o fim do prazo vence e deixa de existir. O cliente pode receber um aviso por e-mail antes do vencimento.",
+          },
+          {
+            kind: "paragraph",
+            text: "Se um pedido for cancelado, o crédito que ele gerou é retirado, e o crédito que o cliente usou nele volta ao saldo, com pelo menos 7 dias para ser usado. A loja também pode ajustar o saldo de um cliente, para mais ou para menos, e cada ajuste aparece no extrato.",
+          },
+          {
+            kind: "paragraph",
+            text: "O cliente vê o saldo, os créditos com a validade de cada um e o extrato em \"Minha conta\". Quando o cliente exclui a sua conta na loja, perde o saldo que tiver nela.",
           },
         ],
       },
@@ -335,7 +360,7 @@ export const legalTexts = {
   privacy: {
     lang: "pt-BR",
     title: "Política de privacidade",
-    effective: "Vigente desde 30 de setembro de 2026",
+    effective: "Vigente desde 2 de outubro de 2026",
     intro: [
       "Esta Política de privacidade explica quais dados pessoais o bee-link trata, para quê, com quem os compartilha, por quanto tempo os guarda e como você exerce os seus direitos, conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, a LGPD).",
       "Ela vale para os lojistas, para os clientes das lojas e para quem visita uma loja sem criar conta. Ao criar uma conta, ou ao definir uma senha pelo link enviado por e-mail, você declara que leu esta Política.",
@@ -404,14 +429,15 @@ export const legalTexts = {
               "até 10 endereços de entrega, cada um com o nome que você der a ele e quem recebe ali;",
               "os seus pedidos: itens, valores, formas de entrega e de pagamento, o endereço e quem recebe como eram no momento da compra, o histórico de andamento, os dados de envio, como o código de rastreio, e a observação interna que a loja pode anotar, que você não vê;",
               "as conversas dos pedidos: cada mensagem, quem a escreveu, quando e quando foi lida;",
-              "as suas escolhas de avisos por e-mail, sobre o andamento dos pedidos, favoritos e ofertas da loja; só a escolha de receber ofertas é um consentimento, e o bee-link guarda a data em que você a fez;",
+              "as suas escolhas de avisos por e-mail, sobre o andamento dos pedidos, favoritos, cashback perto de vencer e ofertas da loja; só a escolha de receber ofertas é um consentimento, e o bee-link guarda a data em que você a fez;",
               "um resumo das suas compras na loja, como o número de pedidos e o valor total;",
+              "o seu cashback na loja, quando ela oferece: o saldo, o que está pendente, cada crédito com a sua validade e o extrato do que entrou e saiu, com os ajustes que a loja fez e o motivo que ela anotou, que você não vê no extrato;",
               "a data em que você confirmou o e-mail, as sessões abertas e o registro de cada aceite dos Termos de uso, com a versão, a data e a forma do aceite.",
             ],
           },
           {
             kind: "paragraph",
-            text: "Ao criar a conta, o seu nome e o seu e-mail já aparecem para a loja, mesmo antes da primeira compra. No painel, a loja vê o seu nome, e-mail, celular, CPF, data de nascimento, endereço padrão, pedidos e conversas. Ela nunca vê a sua senha nem as suas sessões.",
+            text: "Ao criar a conta, o seu nome e o seu e-mail já aparecem para a loja, mesmo antes da primeira compra. No painel, a loja vê o seu nome, e-mail, celular, CPF, data de nascimento, endereço padrão, pedidos, conversas e o saldo e o extrato do seu cashback. Ela nunca vê a sua senha nem as suas sessões.",
           },
           {
             kind: "paragraph",
@@ -634,7 +660,7 @@ export const legalTexts = {
           },
           {
             kind: "paragraph",
-            text: "Na sua conta numa loja, em \"Minha conta\", você já pode ver os seus pedidos e conversas, corrigir nome, celular, CPF, data de nascimento e endereços, mudar os avisos por e-mail, trocar a senha e sair de todos os aparelhos. O e-mail, que é o seu login, não muda pela tela.",
+            text: "Na sua conta numa loja, em \"Minha conta\", você já pode ver os seus pedidos, conversas e cashback, corrigir nome, celular, CPF, data de nascimento e endereços, mudar os avisos por e-mail, trocar a senha e sair de todos os aparelhos. O e-mail, que é o seu login, não muda pela tela.",
           },
           {
             kind: "paragraph",

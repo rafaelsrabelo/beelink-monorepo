@@ -2,10 +2,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { CashbackOverview, CustomerCashback } from '@harness-monorepo/contracts';
+import type { CashbackOverview, CustomerCashback, ShopperCashback } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { CustomersService } from '../customers/customers.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import { adjustCashback, spendableAt } from './cashback-ledger.js';
 import { CASHBACK_EXPIRING_SOON_DAYS, CASHBACK_PAGE_SIZE, DAY_MS } from './cashback.constants.js';
@@ -24,6 +25,7 @@ export class CashbackService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
+    private readonly customers: CustomersService,
   ) {}
 
   async overview(storeSlug: string, userId: string): Promise<CashbackOverview> {
@@ -43,6 +45,16 @@ export class CashbackService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const id = await this.customerIdOf(storeId, customerId);
     return this.customerCashbackOf(id, query.page ?? 1, query.pageSize ?? CASHBACK_PAGE_SIZE);
+  }
+
+  /**
+   * The signed-in shopper's own credit (BEELINK-244), read as the panel reads it — less the reason of
+   * an adjustment, which the shopkeeper wrote for the shop's books.
+   */
+  async mine(storeSlug: string, userId: string, query: CustomerCashbackQueryDto): Promise<ShopperCashback> {
+    const { customerId } = await this.customers.shopperAt(storeSlug, userId);
+    const read = await this.customerCashbackOf(customerId, query.page ?? 1, query.pageSize ?? CASHBACK_PAGE_SIZE);
+    return { ...read, entries: read.entries.map(({ reason: _reason, ...entry }) => entry) };
   }
 
   /** The shopkeeper's correction, and the customer's credit after it — the first page of the statement, where it now stands. */

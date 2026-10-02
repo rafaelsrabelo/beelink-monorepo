@@ -18,6 +18,8 @@ import type {
   QuotedCashbackUse,
   CashbackUnavailableReason,
   ShopOrderCashback,
+  ShopperCashback,
+  ShopperCashbackEntry,
 } from '@harness-monorepo/contracts';
 
 // App
@@ -74,6 +76,25 @@ export class CustomerCashbackResponse implements CustomerCashback {
   @ApiProperty({ nullable: true, type: CashbackNextExpiryResponse }) nextExpiry!: CashbackNextExpiryResponse | null;
   @ApiProperty({ type: [CashbackCreditResponse] }) credits!: CashbackCreditResponse[];
   @ApiProperty({ type: [CashbackEntryResponse] }) entries!: CashbackEntryResponse[];
+  @ApiProperty() total!: number;
+  @ApiProperty() page!: number;
+  @ApiProperty() pageSize!: number;
+}
+
+export class ShopperCashbackEntryResponse implements ShopperCashbackEntry {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty({ enum: CASHBACK_ENTRY_KINDS }) kind!: CashbackEntryKind;
+  @ApiProperty({ description: 'Signed, never 0.' }) amountCents!: number;
+  @ApiProperty({ nullable: true, type: Number }) orderNumber!: number | null;
+  @ApiProperty({ format: 'date-time' }) createdAt!: string;
+}
+
+export class ShopperCashbackResponse implements ShopperCashback {
+  @ApiProperty({ description: 'What the shopper can spend now.' }) balanceCents!: number;
+  @ApiProperty({ description: 'What their undelivered orders will earn.' }) pendingCents!: number;
+  @ApiProperty({ nullable: true, type: CashbackNextExpiryResponse }) nextExpiry!: CashbackNextExpiryResponse | null;
+  @ApiProperty({ type: [CashbackCreditResponse] }) credits!: CashbackCreditResponse[];
+  @ApiProperty({ type: [ShopperCashbackEntryResponse], description: "The statement's page, without the shopkeeper's reasons." }) entries!: ShopperCashbackEntryResponse[];
   @ApiProperty() total!: number;
   @ApiProperty() page!: number;
   @ApiProperty() pageSize!: number;

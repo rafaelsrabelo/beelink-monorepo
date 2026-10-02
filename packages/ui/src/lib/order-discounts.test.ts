@@ -40,6 +40,17 @@ describe("an order's discount, part by part", () => {
     ])
   })
 
+  /** BEELINK-244: the credit is not a discount — it never counts in `discountCents` — and has its own row, last. */
+  it("says the customer's credit spent last, apart from what was typed as a discount", () => {
+    const order: DiscountParts = { ...none, discountCents: 500, cashbackUsedCents: 1250 }
+
+    expect(discountLinesOf(order, money, rows)).toEqual([
+      { key: "manual", label: "Desconto", value: "− R$ 5,00" },
+      { key: "cashback", label: "Cashback usado", value: "− R$ 12,50" },
+    ])
+    expect(discountRowsOf({ ...none, cashbackUsedCents: 0 })).toEqual([])
+  })
+
   it("names the promotion only when one took it all: several are 'Promoções', and no lines is 'Promoção'", () => {
     const two = { ...none, discountCents: 900, promotionDiscountCents: 900, items: [{ discountCents: 500, promotionName: "Whey" }, { discountCents: 400, promotionName: "Creatina" }] }
     const shared = { ...none, discountCents: 900, promotionDiscountCents: 900, items: [{ discountCents: 500, promotionName: "Loja toda" }, { discountCents: 400, promotionName: "Loja toda" }] }

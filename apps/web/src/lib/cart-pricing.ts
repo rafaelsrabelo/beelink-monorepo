@@ -15,13 +15,14 @@ import { orderItemsOf, rowKeyOf, type CartRow, type CartView } from "./cart-view
 import { checkoutAddressesOf } from "./saved-address"
 
 /**
- * The cart as its price is asked for (BEELINK-194): what can be ordered now, how it would leave and
- * the coupon typed. The lines are sorted, so one cart is one question however its lines were added
- * — the page that served the first price and the browser that follows it ask the same one.
+ * The cart as its price is asked for (BEELINK-194): what can be ordered now, how it would leave, the
+ * coupon typed and whether the shopper's cashback pays for it (BEELINK-244). The lines are sorted,
+ * so one cart is one question however its lines were added — the page that served the first price
+ * and the browser that follows it ask the same one.
  */
-export function cartQuoteOf(rows: readonly CartRow[], fulfillment: OrderFulfillment, couponCode: string | null): CustomerOrderQuotePayload {
+export function cartQuoteOf(rows: readonly CartRow[], fulfillment: OrderFulfillment, couponCode: string | null, useCashback = false): CustomerOrderQuotePayload {
   const items = orderItemsOf(rows).sort((a, b) => (a.variantId < b.variantId ? -1 : a.variantId > b.variantId ? 1 : 0))
-  return { items, fulfillment, ...(couponCode ? { couponCode } : {}) }
+  return { items, fulfillment, ...(couponCode ? { couponCode } : {}), ...(useCashback ? { useCashback } : {}) }
 }
 
 /** Whether two questions are the same one. Both come from `cartQuoteOf`, so their fields are in one order. */
@@ -70,6 +71,19 @@ export interface CartPricing {
   offer: StorefrontCartOffer | null
   /** What the order would earn in cashback, or what is missing to earn it (BEELINK-243), in words. Null while the shop's is off. */
   cashback: string | null
+}
+
+/** The shopper's cashback against this cart (BEELINK-244), as the last price said it. */
+export interface CartCreditHandle {
+  /** What they can spend now. */
+  balanceCents: number
+  /** The most this cart takes of it. */
+  maxCents: number
+  /** The cart has nothing credit may pay for. */
+  nothingToPay: boolean
+  /** "Usar meu cashback" is ticked. */
+  checked: boolean
+  toggle: (checked: boolean) => void
 }
 
 export interface CartPricingContext {
@@ -126,6 +140,7 @@ export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfil
       couponDiscountCents: quote.couponDiscountCents,
       coupon,
       items: quote.lines.map((line) => ({ discountCents: line.discountCents, promotionName: line.promotion?.name ?? null })),
+      cashbackUsedCents: quote.cashbackUse?.appliedCents,
     },
     money,
     messages.orders.discountRows,

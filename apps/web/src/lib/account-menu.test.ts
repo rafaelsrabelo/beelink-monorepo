@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { accountContactOf, accountMenuOf, accountTabTitleOf, deliveredAccountTabOf, headerAccountMenuOf, phoneLineOf } from "./account-menu"
+import { accountContactOf, accountMenuOf, accountTabTitleOf, deliveredAccountTabOf, headerAccountMenuOf, hiddenAccountTabsOf, phoneLineOf } from "./account-menu"
 import { storefrontRoutes } from "./storefront-routes"
 
 const routes = storefrontRoutes({
@@ -17,7 +17,7 @@ const routes = storefrontRoutes({
     cart: "carrinho",
     signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha",
     account: "conta",
-    accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" },
+    accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" },
   },
 })
 
@@ -41,10 +41,22 @@ describe("the account's menu", () => {
       { key: "orders", href: "/loja/conta/pedidos", count: 2 },
       { key: "favorites", href: "/loja/conta/favoritos", count: 12 },
       { key: "reviews", href: "/loja/conta/avaliacoes", count: 3 },
+      { key: "cashback", href: "/loja/conta/cashback", count: null },
       { key: "profile", href: "/loja/conta/perfil", count: null },
       { key: "messages", href: "/loja/conta/conversas", count: null },
     ])
     expect(accountTabTitleOf("profile", ptBR.storefront)).toBe("Perfil e endereços")
+  })
+
+  /** BEELINK-244: a shop that gives none, to a shopper who has none, has no cashback to show. */
+  it("leaves the cashback tab out while the shop gives none and the shopper has none there", () => {
+    const none = { cashback: { balanceCents: 0, pendingCents: 0 } }
+
+    expect(hiddenAccountTabsOf(false, none)).toEqual(["cashback"])
+    expect(hiddenAccountTabsOf(true, none)).toEqual([])
+    // Switched off with credit still owed: it is theirs to see and to spend.
+    expect(hiddenAccountTabsOf(false, { cashback: { balanceCents: 0, pendingCents: 470 } })).toEqual([])
+    expect(accountMenuOf(routes, {}, ["cashback"]).map((item) => item.key)).not.toContain("cashback")
   })
 
   it("opens a delivered tab by its word, and nothing for a tab still to come or a word that is none", () => {
@@ -55,7 +67,7 @@ describe("the account's menu", () => {
       cart: "carrinho",
       signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha",
       account: "conta",
-      accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" },
+      accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" },
     }
     expect(deliveredAccountTabOf("perfil", routeWords)).toBe("profile")
     expect(deliveredAccountTabOf("pedidos", routeWords)).toBe("orders")

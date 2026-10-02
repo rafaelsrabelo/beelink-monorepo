@@ -75,6 +75,7 @@ export class StorefrontAccountTabsResponse {
   @ApiProperty({ example: 'pedidos' }) orders!: string;
   @ApiProperty({ example: 'favoritos' }) favorites!: string;
   @ApiProperty({ example: 'avaliacoes' }) reviews!: string;
+  @ApiProperty({ example: 'cashback' }) cashback!: string;
   @ApiProperty({ example: 'perfil' }) profile!: string;
   @ApiProperty({ example: 'conversas' }) messages!: string;
 }
