@@ -10,13 +10,7 @@ import type { FieldErrors } from "react-hook-form"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@harness-monorepo/ui/components/card"
+import { Card, CardContent } from "@harness-monorepo/ui/components/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@harness-monorepo/ui/components/tabs"
 
 // Locales
@@ -25,7 +19,6 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { StoreAddressFields } from "./store-address-fields"
-import { StoreAppearanceFields } from "./store-appearance-fields"
 import { StoreCustomersFields } from "./store-customers-fields"
 import { StoreIdentityFields } from "./store-identity-fields"
 import { StorePaymentMethodsFields } from "./store-payment-methods-fields"
@@ -38,24 +31,26 @@ const TAB_OF_SLICE = {
   identity: "identity",
   address: "address",
   social: "social",
-  appearance: "appearance",
   paymentMethods: "payment",
   customers: "customers",
 } as const satisfies Record<keyof StoreSettingsValues, string>
 
-export type { StoreSettingsFormProps } from "./store-settings-form.types"
+export type { StoreSettingsExtraTab, StoreSettingsFormProps } from "./store-settings-form.types"
 
 /**
- * Everything the panel edits about a shop, in one form over six tabs and one save — the legacy
+ * Everything the panel edits about a shop, in one form over five tabs and one save — the legacy
  * panel's single "Salvar alterações", and the shape `PUT /stores/:slug` replaces whole. The tabs
  * are panels of this form, not forms of their own: a partial save would clear what another tab holds.
+ *
+ * `extraTabs` sit in the same row and save through their own route (BEELINK-177): they are drawn
+ * outside this `<form>`, because a form inside a form is invalid HTML and its submit would post both.
+ * The look of the shop is design mode's, not a tab here.
  */
 export function StoreSettingsForm({
   slug,
   defaultValues,
   onSubmit,
   categories,
-  colorPresets,
   onZipCodeLookup,
   zipCodeLookupPending,
   onAddressSearch,
@@ -68,6 +63,7 @@ export function StoreSettingsForm({
   imageUploadPending,
   pending = false,
   error,
+  extraTabs = [],
   messages = defaultMessages,
 }: StoreSettingsFormProps) {
   const text = messages.store.settings
@@ -88,32 +84,40 @@ export function StoreSettingsForm({
     }
   }
 
-  return (
-    <form noValidate onSubmit={form.handleSubmit(onSubmit, openFirstRefusedTab)}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{text.title}</CardTitle>
-          <CardDescription>{text.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          {error ? (
-            <p
-              role="alert"
-              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {error}
-            </p>
-          ) : null}
+  const onStoreTab = !extraTabs.some((extra) => extra.value === tab)
 
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="w-full overflow-x-auto">
-              <TabsTrigger value="identity">{text.tabIdentity}</TabsTrigger>
-              <TabsTrigger value="address">{text.tabAddress}</TabsTrigger>
-              <TabsTrigger value="social">{text.tabSocial}</TabsTrigger>
-              <TabsTrigger value="appearance">{text.tabAppearance}</TabsTrigger>
-              <TabsTrigger value="payment">{text.tabPayment}</TabsTrigger>
-              <TabsTrigger value="customers">{text.tabCustomers}</TabsTrigger>
-            </TabsList>
+  return (
+    <div className="flex w-full flex-col gap-4">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold">{text.title}</h1>
+        <p className="text-sm text-muted-foreground">{text.description}</p>
+      </header>
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="identity">{text.tabIdentity}</TabsTrigger>
+          <TabsTrigger value="address">{text.tabAddress}</TabsTrigger>
+          <TabsTrigger value="social">{text.tabSocial}</TabsTrigger>
+          <TabsTrigger value="payment">{text.tabPayment}</TabsTrigger>
+          <TabsTrigger value="customers">{text.tabCustomers}</TabsTrigger>
+          {extraTabs.map((extra) => (
+            <TabsTrigger key={extra.value} value={extra.value}>
+              {extra.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <form noValidate hidden={!onStoreTab} onSubmit={form.handleSubmit(onSubmit, openFirstRefusedTab)}>
+          <Card>
+            <CardContent className="flex flex-col gap-6">
+              {error ? (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {error}
+                </p>
+              ) : null}
 
             <TabsContent value="identity" className="pt-4">
               <Controller
@@ -175,26 +179,6 @@ export function StoreSettingsForm({
               />
             </TabsContent>
 
-            <TabsContent value="appearance" className="pt-4">
-              <Controller
-                control={form.control}
-                name="appearance"
-                render={({ field }) => (
-                  <StoreAppearanceFields
-                    value={field.value}
-                    onChange={field.onChange}
-                    errors={errors.appearance}
-                    colorErrors={errors.appearance?.colors}
-                    presets={colorPresets}
-                    onBannerUpload={onImageUpload}
-                    bannerUploadPending={imageUploadPending}
-                    disabled={pending}
-                    messages={messages}
-                  />
-                )}
-              />
-            </TabsContent>
-
             <TabsContent value="payment" className="pt-4">
               <Controller
                 control={form.control}
@@ -226,24 +210,27 @@ export function StoreSettingsForm({
                 )}
               />
             </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/*
-        The same foot the create form grew, for the same reason: a save button beside the title is
-        beside nothing it saves. The tabs stay — editing is random access, and a shopkeeper who
-        opens the panel to change one colour should not walk through four screens to reach it — but
-        where the decision lives is the same in both, because it is the same decision.
+          {/*
+            The same foot the create form grew, for the same reason: a save button beside the title is
+            beside nothing it saves. Outside the Card: `Card` is `overflow-hidden`, and a clipping
+            ancestor turns `position: sticky` into `position: static` with nothing in the DOM to say why.
+          */}
+          <div className="sticky bottom-0 mt-4 flex items-center justify-end gap-3 rounded-lg border border-border bg-card px-6 py-4 shadow-sm">
+            <Button type="submit" disabled={pending}>
+              {pending ? text.saving : text.save}
+            </Button>
+          </div>
+        </form>
 
-        Outside the Card: `Card` is `overflow-hidden`, and a clipping ancestor turns
-        `position: sticky` into `position: static` with nothing in the DOM to say why.
-      */}
-      <div className="sticky bottom-0 mt-4 flex items-center justify-end gap-3 rounded-lg border border-border bg-card px-6 py-4 shadow-sm">
-        <Button type="submit" disabled={pending}>
-          {pending ? text.saving : text.save}
-        </Button>
-      </div>
-    </form>
+        {extraTabs.map((extra) => (
+          <TabsContent key={extra.value} value={extra.value}>
+            {extra.content}
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
   )
 }

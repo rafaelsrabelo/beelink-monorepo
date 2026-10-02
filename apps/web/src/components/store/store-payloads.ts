@@ -65,7 +65,7 @@ function localPhone(stored: string): string {
   return isBrazilianWithCountryCode ? digits.slice(2) : digits
 }
 
-/** The shop as the panel's five tabs show it. */
+/** The shop as the panel's tabs show it. */
 export function toSettingsValues(store: Store): StoreSettingsValues {
   return {
     identity: {
@@ -91,14 +91,6 @@ export function toSettingsValues(store: Store): StoreSettingsValues {
       spotify: store.socialNetworks.spotify ?? "",
       youtube: store.socialNetworks.youtube ?? "",
     },
-    appearance: {
-      layoutType: store.layoutType,
-      bannerImageUrl: store.bannerImageUrl ?? "",
-      // The one key of `layoutSettings` the panel offers. A shop carried over from the legacy blob
-      // may not carry it at all, and the storefront's own default for a missing key is the grid.
-      cardLayout: store.layoutSettings.cardLayout ?? "grid",
-      colors: store.colors,
-    },
     paymentMethods: store.paymentMethods,
     customers: { inactiveAfterDays: store.inactiveAfterDays },
   }
@@ -108,14 +100,9 @@ export function toSettingsValues(store: Store): StoreSettingsValues {
  * What the one save posts. PUT replaces the shop whole, so every field the panel owns is sent and
  * a blank one clears what was stored.
  *
- * The shop it was read from is an argument for one reason: `layoutSettings` holds around twenty
- * presentation switches and the panel offers exactly one of them, so a replacement that left the
- * blob out would clear what a row carried over from the legacy still holds.
- *
- * Which is why `cardLayout` is merged over the echo rather than sent on its own: the spread keeps
- * every key this form has never heard of, and the one key the appearance tab owns wins. The API's
- * parser validates the blob key by key and drops nothing it recognises, so what goes out whole
- * comes back whole.
+ * The look of the shop — layout, banner, colours and the `layoutSettings` blob — has no tab here:
+ * design mode edits it (BEELINK-177). It is echoed back as the shop was read, so a replacement never
+ * clears it; the shop it was read from is an argument for exactly that.
  */
 export function toUpdatePayload(store: Store, values: StoreSettingsValues): UpdateStorePayload {
   return {
@@ -123,13 +110,13 @@ export function toUpdatePayload(store: Store, values: StoreSettingsValues): Upda
     type: values.identity.type,
     description: orNull(values.identity.description),
     logoUrl: orNull(values.identity.logoUrl),
-    bannerImageUrl: orNull(values.appearance.bannerImageUrl),
+    bannerImageUrl: store.bannerImageUrl,
     categoryId: orNull(values.identity.categoryId),
-    layoutType: values.appearance.layoutType,
-    colors: values.appearance.colors,
+    layoutType: store.layoutType,
+    colors: store.colors,
     socialNetworks: toSocialPayload(values.social),
     address: toAddressPayload(values.address),
-    layoutSettings: { ...store.layoutSettings, cardLayout: values.appearance.cardLayout },
+    layoutSettings: store.layoutSettings,
     paymentMethods: values.paymentMethods,
     inactiveAfterDays: values.customers.inactiveAfterDays,
   } satisfies UpdateStorePayload

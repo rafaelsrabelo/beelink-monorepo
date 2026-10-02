@@ -9,11 +9,7 @@ import { en } from "../../locales/en"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { StoreSettingsForm } from "./store-settings-form"
-import {
-  sampleColorPresets,
-  sampleStoreCategories,
-  sampleStoreSettingsValues,
-} from "./store.fixtures"
+import { sampleStoreCategories, sampleStoreSettingsValues } from "./store.fixtures"
 
 function renderForm(overrides: Partial<Parameters<typeof StoreSettingsForm>[0]> = {}) {
   const onSubmit = vi.fn()
@@ -23,7 +19,6 @@ function renderForm(overrides: Partial<Parameters<typeof StoreSettingsForm>[0]> 
       defaultValues={sampleStoreSettingsValues}
       onSubmit={onSubmit}
       categories={sampleStoreCategories}
-      colorPresets={sampleColorPresets}
       {...overrides}
     />,
   )
@@ -121,7 +116,22 @@ describe("StoreSettingsForm", () => {
     renderForm({ messages: en })
 
     expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument()
-    expect(screen.getByRole("tab", { name: "Appearance" })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Payment" })).toBeInTheDocument()
+  })
+
+  it("leaves the look of the shop to design mode: there is no Appearance tab", () => {
+    renderForm()
+
+    expect(screen.queryByRole("tab", { name: "Aparência" })).not.toBeInTheDocument()
+  })
+
+  it("opens a tab the screen owns beside the shop's own, and hides the shop's save there", async () => {
+    renderForm({ extraTabs: [{ value: "delivery", label: "Entrega", content: <p>Como a loja entrega.</p> }] })
+
+    await userEvent.click(screen.getByRole("tab", { name: "Entrega" }))
+
+    expect(screen.getByText("Como a loja entrega.")).toBeVisible()
+    expect(screen.queryByRole("button", { name: "Salvar alterações" })).not.toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {
@@ -131,8 +141,7 @@ describe("StoreSettingsForm", () => {
         defaultValues={sampleStoreSettingsValues}
         onSubmit={vi.fn()}
         categories={sampleStoreCategories}
-        colorPresets={sampleColorPresets}
-        error="Não foi possível salvar as alterações. Tente novamente."
+          error="Não foi possível salvar as alterações. Tente novamente."
       />,
     )
 

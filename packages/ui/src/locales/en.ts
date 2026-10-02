@@ -2164,7 +2164,6 @@ export const en: UiMessages = {
       tabIdentity: "Basics",
       tabAddress: "Address",
       tabSocial: "Social networks",
-      tabAppearance: "Appearance",
       tabPayment: "Payment",
       tabCustomers: "Customers",
       save: "Save changes",

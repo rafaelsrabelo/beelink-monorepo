@@ -2165,7 +2165,6 @@ export const ptBR: UiMessages = {
       tabIdentity: "Informações básicas",
       tabAddress: "Endereço",
       tabSocial: "Redes sociais",
-      tabAppearance: "Aparência",
       tabPayment: "Pagamento",
       tabCustomers: "Clientes",
       save: "Salvar alterações",

@@ -76,12 +76,6 @@ export const sampleStoreSettingsValues: StoreSettingsValues = {
     spotify: "",
     youtube: "",
   },
-  appearance: {
-    layoutType: "DEFAULT",
-    bannerImageUrl: "",
-    cardLayout: "grid",
-    colors: sampleStoreColors,
-  },
   paymentMethods: ["MONEY", "PIX"],
   customers: { inactiveAfterDays: 60 },
 }

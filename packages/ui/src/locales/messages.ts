@@ -2588,7 +2588,6 @@ export interface UiMessages {
       tabIdentity: string
       tabAddress: string
       tabSocial: string
-      tabAppearance: string
       tabPayment: string
       tabCustomers: string
       save: string

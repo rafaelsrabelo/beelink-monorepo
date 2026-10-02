@@ -20,7 +20,7 @@ import { mapTileUrl, pointOf } from "@/services/addresses/map-tiles"
 import type { Point } from "@/services/addresses/map-tiles"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { useZipCodeLookup } from "@/services/cep/cep-hooks"
-import { useStore, useStoreCategories, useStoreColorPresets, useUpdateStore } from "@/services/stores/store-hooks"
+import { useStore, useStoreCategories, useUpdateStore } from "@/services/stores/store-hooks"
 import { useImageUpload } from "@/services/uploads/upload-hooks"
 
 export interface StoreSettingsScreenProps {
@@ -30,17 +30,14 @@ export interface StoreSettingsScreenProps {
 }
 
 /**
- * The panel's one form over five tabs. Everything the tabs cannot do for themselves is handed in
- * as a callback: the postcode lookup, the image upload and the palettes. A block reaches nothing —
- * it is the screen that owns a request, which is what keeps every tab renderable in Storybook.
- *
- * The palettes are not waited for here, unlike on the create screen: this shop already has its own
- * four colours, so a palette list that has not arrived costs the one-click row and nothing else.
+ * The panel's one form over its tabs, at the panel's full width. Everything the tabs cannot do for
+ * themselves is handed in as a callback: the postcode lookup and the image upload. A block reaches
+ * nothing — it is the screen that owns a request, which is what keeps every tab renderable in
+ * Storybook. The Delivery tab saves on its own (BEELINK-177), so it is handed in whole.
  */
 export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps) {
   const store = useStore(slug)
   const categories = useStoreCategories()
-  const presets = useStoreColorPresets()
   const update = useUpdateStore(slug)
   const zipCode = useZipCodeLookup()
   // The block reports every keystroke; this is where it stops being one request each.
@@ -60,7 +57,7 @@ export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps)
   const current = store.data
 
   return (
-    <div className="flex w-full max-w-5xl flex-col gap-4">
+    <div className="flex w-full flex-col gap-4">
       {update.isSuccess ? (
         <p role="status" className="text-sm text-muted-foreground">
           {web.stores.settings.saved}
@@ -70,7 +67,6 @@ export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps)
         slug={current.slug}
         defaultValues={toSettingsValues(current)}
         categories={categories.data ?? []}
-        colorPresets={presets.data}
         onZipCodeLookup={zipCode.lookup}
         onAddressSearch={setAddressQuery}
         suggestions={addresses.suggestions}
