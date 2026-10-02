@@ -32,8 +32,8 @@ export interface StorefrontAccountNoticesProps {
 
 /**
  * Which e-mails a shopper takes from the shop (BEELINK-151), as 6h draws its notices: their orders'
- * progress, their favourites, the shop's offers. One plain form of boxes to tick, saved all at once —
- * a box left unticked is a no.
+ * progress, their favourites, their cashback about to expire (BEELINK-241), the shop's offers. One
+ * plain form of boxes to tick, saved all at once — a box left unticked is a no.
  */
 export function StorefrontAccountNotices({
   email,
@@ -79,6 +79,8 @@ export function StorefrontAccountNotices({
         {Object.entries(hidden).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
         ))}
+        {/* The box left unticked sends nothing, as a form drawn before it existed does: this says it was there. */}
+        <input type="hidden" name="offered" value="cashback" />
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-1 text-sm text-shop-muted">{format(text.noticesLead, { email })}</legend>
           {options.map((option) => {

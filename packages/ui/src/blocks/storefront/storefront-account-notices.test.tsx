@@ -20,13 +20,15 @@ function notices(props: Partial<StorefrontAccountNoticesProps> = {}) {
 }
 
 describe("StorefrontAccountNotices", () => {
-  it("draws the three notices as boxes to tick, as the shopper left them, each saying what it sends", () => {
+  it("draws the four notices as boxes to tick, as the shopper left them, each saying what it sends", () => {
     const { container } = render(notices())
 
     expect(screen.getByRole("heading", { name: "Avisos por e-mail" })).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Escolha o que esta loja pode mandar para bia@exemplo.com." })).toBeInTheDocument()
     expect(screen.getByRole("checkbox", { name: "Andamento dos pedidos" })).toBeChecked()
     expect(screen.getByRole("checkbox", { name: "Favoritos" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Cashback" })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: "Cashback" })).toHaveAccessibleDescription("Uma semana antes de o seu cashback vencer.")
     expect(screen.getByRole("checkbox", { name: "Ofertas e novidades" })).not.toBeChecked()
     expect(screen.getByRole("checkbox", { name: "Favoritos" })).toHaveAccessibleDescription("Quando um favorito baixa de preço ou volta ao estoque.")
     expect(container.querySelector("form")).toHaveAttribute("action", "/loja/api/customer/avisos")

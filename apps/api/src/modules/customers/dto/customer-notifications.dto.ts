@@ -1,8 +1,8 @@
 // Nest
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
-import { IsBoolean } from 'class-validator';
+import { IsBoolean, IsOptional } from 'class-validator';
 
 // Types
 import type { CustomerNotifications, UpdateCustomerNotificationsPayload } from '@harness-monorepo/contracts';
@@ -11,7 +11,7 @@ import type { CustomerNotifications, UpdateCustomerNotificationsPayload } from '
 export class UpdateCustomerNotificationsDto implements UpdateCustomerNotificationsPayload {
   @ApiProperty({ description: "The orders' progress: accepted, on its way or ready, delivered, cancelled." }) @IsBoolean() orders!: boolean;
   @ApiProperty({ description: 'A favourite that got cheaper or came back in stock.' }) @IsBoolean() favorites!: boolean;
-  @ApiProperty({ description: 'Their cashback about to expire (BEELINK-241).' }) @IsBoolean() cashback!: boolean;
+  @ApiPropertyOptional({ description: 'Their cashback about to expire (BEELINK-241); absent leaves it as it is.' }) @IsOptional() @IsBoolean() cashback?: boolean;
   @ApiProperty({ description: "The shop's offers and news. Changing it keeps the date." }) @IsBoolean() offers!: boolean;
 }
 

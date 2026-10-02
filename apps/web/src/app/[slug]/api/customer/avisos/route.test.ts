@@ -24,7 +24,7 @@ describe("the shopper's notices by e-mail", () => {
     const fetched = vi.fn(async () => Response.json({ orders: true, favorites: false, cashback: false, offers: true, offersChosenAt: "2026-09-29T12:00:00.000Z" }))
     vi.stubGlobal("fetch", fetched)
 
-    const landing = locationOf(await post({ ...here, orders: "1", offers: "1" }))
+    const landing = locationOf(await post({ ...here, offered: "cashback", orders: "1", offers: "1" }))
     const [url, init] = (fetched.mock.calls[0] ?? []) as unknown as [string, RequestInit]
 
     expect(url).toContain("/stores/loja/customer/me/notifications")
@@ -34,6 +34,17 @@ describe("the shopper's notices by e-mail", () => {
     expect(landing.pathname).toBe("/loja/conta/perfil")
     expect(landing.hash).toBe("#avisos")
     expect(landing.searchParams.get("aviso")).toBe("avisos-salvos")
+  })
+
+  /** A page drawn before the cashback box existed, saved after it did: what it never showed stays as it was. */
+  it("leaves the cashback choice alone when the form did not offer it", async () => {
+    const fetched = vi.fn(async () => Response.json({ orders: true, favorites: true, cashback: true, offers: false, offersChosenAt: null }))
+    vi.stubGlobal("fetch", fetched)
+
+    await post({ ...here, orders: "1", favorites: "1" })
+    const [, init] = (fetched.mock.calls[0] ?? []) as unknown as [string, RequestInit]
+
+    expect(JSON.parse(String(init.body))).toEqual({ orders: true, favorites: true, offers: false })
   })
 
   it("says a refusal on the notices, and sends a session that ended to the sign-in", async () => {

@@ -114,7 +114,8 @@ export interface CustomerNotifications {
 export interface UpdateCustomerNotificationsPayload {
   orders: boolean;
   favorites: boolean;
-  cashback: boolean;
+  /** Absent leaves the choice as it is: a form drawn before the box existed says nothing of it (BEELINK-241). */
+  cashback?: boolean;
   offers: boolean;
 }
 
