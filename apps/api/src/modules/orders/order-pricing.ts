@@ -57,6 +57,11 @@ export interface PricingInput {
    * apply it — or the amount a placement was shown. Absent is none.
    */
   cashback?: CashbackWant;
+  /**
+   * The clock credit's expiry is read against — never `at`, which the panel may set in the past. A
+   * placement passes the instant it spends at, so the lots it counts are the ones it takes. Absent is now.
+   */
+  now?: Date;
 }
 
 export interface PricedOrder {
@@ -135,7 +140,7 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
     manualDiscountCents: input.manualDiscountCents,
     cashbackUsedCents: 0,
   });
-  const cashbackUse = customer ? await cashbackUseOf(db, { storeId, customerId: customer.id, productsCents, want: input.cashback ?? 'NONE', lock: input.lock }) : null;
+  const cashbackUse = customer ? await cashbackUseOf(db, { storeId, customerId: customer.id, productsCents, want: input.cashback ?? 'NONE', lock: input.lock, now: input.now ?? new Date() }) : null;
 
   const totals = totalsOf(lines, fulfillment, fee, promotionDiscountCents + couponDiscountCents + input.manualDiscountCents, cashbackUse?.appliedCents ?? 0);
   if (totals === 'DISCOUNT_TOO_LARGE') {

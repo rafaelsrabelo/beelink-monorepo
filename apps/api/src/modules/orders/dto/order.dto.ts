@@ -55,7 +55,6 @@ import {
 /** A UUID in the case Postgres answers it in, so an id sent in capitals still matches its row. */
 const lowerCase = Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.toLowerCase() : value));
 
-/** A coupon's code as a person types it: blank is none, and whether it holds is the pricing's to say. */
 /** The customer's credit an order spends (BEELINK-240), as its quote offered it; the API checks it again as the order is written. */
 export const cashbackCents = applyDecorators(
   ApiPropertyOptional({ minimum: 0, maximum: ORDER_AMOUNT_MAX_CENTS, description: "Whole cents of the customer's credit to spend, as the quote offered it; absent is none. More than they can spend now is ORDER_CASHBACK_REFUSED." }),
@@ -65,6 +64,7 @@ export const cashbackCents = applyDecorators(
   Max(ORDER_AMOUNT_MAX_CENTS),
 );
 
+/** A coupon's code as a person types it: blank is none, and whether it holds is the pricing's to say. */
 export const couponCode = applyDecorators(
   ApiPropertyOptional({ nullable: true, type: String, maxLength: ORDER_COUPON_CODE_MAX_LENGTH, example: 'BEMVINDO10', description: 'A coupon of the shop, in any case; blank is none.' }),
   IsOptional(),

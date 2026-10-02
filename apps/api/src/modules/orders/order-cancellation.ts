@@ -22,7 +22,6 @@ export async function settleCancellation(
   if (order.stockTaken) await returnStock(tx, order.id);
   await releaseCoupon(tx, order.id);
   const now = new Date();
-  // What it spent goes back first (BEELINK-240), then what it earned is taken back.
   await returnCashback(tx, order.id, now);
   await revokeOrderCashback(tx, order.id, 'CANCELLED', now);
 }

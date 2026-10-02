@@ -29,19 +29,20 @@ export interface CashbackUse {
  * new credit, and what the shop already owes is still the customer's to spend.
  *
  * A placement asks with `lock`, so the lots it reads are the ones it spends: the shop's row, then the
- * customer's, as every change to a customer's credit takes them. Expiry is read against the clock,
- * never against the day a sale is dated: the panel may date a sale in the past, and credit that
- * expired since is not spent.
+ * customer's, as every change to a customer's credit takes them. Expiry is read at `now` — the
+ * clock, never the day a sale is dated: the panel may date a sale in the past, and credit that
+ * expired since is not spent. A placement spends at that same instant, so a lot that expires in
+ * between is neither counted nor taken.
  */
 export async function cashbackUseOf(
   db: Tx,
-  input: { storeId: string; customerId: string | null; productsCents: number; want: CashbackWant; lock: boolean },
+  input: { storeId: string; customerId: string | null; productsCents: number; want: CashbackWant; lock: boolean; now: Date },
 ): Promise<CashbackUse> {
-  const { storeId, customerId, productsCents, want, lock } = input;
+  const { storeId, customerId, productsCents, want, lock, now } = input;
   if (lock && customerId) await lockLedger(db, storeId, customerId);
 
   const [lots, rules] = await Promise.all([
-    customerId ? db.cashbackCredit.findMany({ where: { customerId, ...spendableAt(new Date()) }, select: { remainingCents: true } }) : [],
+    customerId ? db.cashbackCredit.findMany({ where: { customerId, ...spendableAt(now) }, select: { remainingCents: true } }) : [],
     db.cashbackSettings.findUnique({ where: { storeId }, select: { maxRedeemBps: true } }),
   ]);
   const balanceCents = lots.reduce((sum, lot) => sum + lot.remainingCents, 0);
@@ -83,8 +84,9 @@ export async function redeemCashback(tx: Tx, use: { storeId: string; customerId:
 
 /**
  * The order was cancelled: what it spent goes back to the lots it came from (`returnedLotOf`) — with
- * the validity each had and at least seven days — and the statement says how much is credit again.
- * Each use is given back once (`returnedAt`).
+ * the validity each had and at least seven days, in a lot of its own when the lot's remainder must
+ * keep a shorter one — and the statement says how much is credit again. Each use is given back once
+ * (`returnedAt`).
  */
 export async function returnCashback(tx: Tx, orderId: string, now: Date): Promise<void> {
   const uses = await tx.cashbackRedemption.findMany({ where: { orderId, returnedAt: null }, select: { id: true, creditId: true, amountCents: true, credit: { select: { storeId: true, customerId: true } } } });
@@ -98,8 +100,14 @@ export async function returnCashback(tx: Tx, orderId: string, now: Date): Promis
     const back = returnedLotOf(lot, use.amountCents, now, DAY_MS);
     await tx.cashbackCredit.update({
       where: { id: lot.id },
-      data: { status: back.status, remainingCents: back.remainingCents, unrecoveredCents: back.unrecoveredCents, expiresAt: back.expiresAt },
+      data: { status: back.lot.status, remainingCents: back.lot.remainingCents, unrecoveredCents: back.lot.unrecoveredCents, expiresAt: back.lot.expiresAt },
     });
+    if (back.split) {
+      // No order earned it: the order it was spent on is the statement's REVERSAL line.
+      await tx.cashbackCredit.create({
+        data: { storeId: lot.storeId, customerId: lot.customerId, status: 'AVAILABLE', amountCents: back.split.amountCents, remainingCents: back.split.amountCents, availableAt: now, expiresAt: back.split.expiresAt, createdAt: now },
+      });
+    }
     await tx.cashbackRedemption.update({ where: { id: use.id }, data: { returnedAt: now } });
     credited += back.creditedCents;
   }

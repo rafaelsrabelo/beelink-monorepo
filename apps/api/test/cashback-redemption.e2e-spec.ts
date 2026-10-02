@@ -220,5 +220,86 @@ describe('an order spends the customer\'s cashback (BEELINK-240)', () => {
       expect((await cashback()).balanceCents).toBe(0);
       await expectBooksToHold();
     });
+
+    /** Found in review: a cent spent and cancelled carried the whole lot a week further, week after week. */
+    it('gives the week only to what returns: the rest of the lot keeps its own day', async () => {
+      await give(10_000);
+      const tomorrow = new Date(Date.now() + DAY);
+      await prisma.cashbackCredit.updateMany({ where: { customerId: me.id }, data: { expiresAt: tomorrow } });
+      const order = (await place(1)).json<CustomerOrder>();
+
+      expect((await call('POST', `/api/stores/lessari/customer/orders/${order.number}/cancel`, shopper)).statusCode).toBe(200);
+
+      const lots = await prisma.cashbackCredit.findMany({ where: { customerId: me.id, status: 'AVAILABLE' }, orderBy: { createdAt: 'asc' } });
+      expect(lots.map((lot) => [lot.remainingCents, lot.expiresAt])).toEqual([
+        [9_999, tomorrow],
+        [1, expect.any(Date)],
+      ]);
+      expect(lots[1]!.expiresAt!.getTime()).toBeGreaterThan(Date.now() + 6 * DAY);
+      expect((await cashback()).balanceCents).toBe(10_000);
+      await expectBooksToHold();
+    });
+
+    it('never brings back credit that expired meanwhile', async () => {
+      await give(10_000);
+      const order = (await place(1)).json<CustomerOrder>();
+      await prisma.cashbackCredit.updateMany({ where: { customerId: me.id }, data: { expiresAt: new Date(Date.now() - DAY) } });
+
+      await call('POST', `/api/stores/lessari/customer/orders/${order.number}/cancel`, shopper);
+
+      // The cent it spent is back for a week; what was left of the lot stays expired, for the sweep.
+      expect((await quote(false)).cashbackUse).toMatchObject({ balanceCents: 1 });
+    });
+
+    it('gives a pending lot back what was spent of it, and its delivery pays all of it out again', async () => {
+      const first = (await place(0, 2)).json<CustomerOrder>();
+      await call('PATCH', `/api/stores/lessari/orders/${first.number}/status`, owner, { status: 'DELIVERED' });
+      // 200,00 × 5% = 10,00 earned; 6,00 of it spent, and then its order goes back.
+      const second = (await place(600)).json<CustomerOrder>();
+      await call('PATCH', `/api/stores/lessari/orders/${first.number}/status`, owner, { status: 'PREPARING' });
+
+      await call('PATCH', `/api/stores/lessari/orders/${second.number}/status`, owner, { status: 'CANCELLED' });
+      await call('PATCH', `/api/stores/lessari/orders/${first.number}/status`, owner, { status: 'DELIVERED' });
+
+      expect((await call('GET', `/api/stores/lessari/orders/${first.number}`, owner)).json<Order>().cashback).toMatchObject({ status: 'AVAILABLE', remainingCents: 1_000, unrecoveredCents: 0 });
+      expect((await cashback()).balanceCents).toBe(1_000);
+      await expectBooksToHold();
+    });
+
+    it('gives the credit back to the record a merge kept', async () => {
+      const walkIn = (await call('POST', '/api/stores/lessari/customers', owner, { name: 'Bia Balcão', phone: '(11) 93333-2222' })).json<{ id: string }>();
+      await call('POST', `/api/stores/lessari/customers/${walkIn.id}/cashback/adjustments`, owner, { amountCents: 3_000, reason: 'Crédito de teste' });
+      const sale = (await call('POST', '/api/stores/lessari/orders', owner, { customer: { id: walkIn.id }, items: [{ variantId: whey, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX', cashbackCents: 3_000 })).json<Order>();
+      expect((await call('POST', `/api/stores/lessari/customers/${me.id}/merge`, owner, { otherId: walkIn.id })).statusCode).toBeLessThan(300);
+
+      await call('PATCH', `/api/stores/lessari/orders/${sale.number}/status`, owner, { status: 'CANCELLED' });
+
+      expect((await cashback()).balanceCents).toBe(3_000);
+      await expectBooksToHold();
+    });
+  });
+
+  describe('the panel', () => {
+    it("keeps the credit off the total when the delivery's fee is agreed later", async () => {
+      await give(20_000);
+      await call('PATCH', `/api/stores/lessari/customers/${me.id}`, owner, { address: { zipCode: '01310-930', street: 'Av. Paulista', number: '1000', city: 'São Paulo', state: 'SP' } });
+      const sale = { customer: { id: me.id }, items: [{ variantId: whey, quantity: 1 }], fulfillment: 'DELIVERY', deliveryFeeCents: 1_500, paymentMethod: 'PIX', cashbackCents: 5_000 };
+      const placed = (await call('POST', '/api/stores/lessari/orders', owner, sale)).json<Order>();
+      expect(placed.totalCents).toBe(6_500);
+
+      const agreed = await call('PUT', `/api/stores/lessari/orders/${placed.number}/delivery-fee`, owner, { deliveryFeeCents: 500 });
+
+      expect(agreed.json<Order>()).toMatchObject({ deliveryFeeCents: 500, cashbackUsedCents: 5_000, totalCents: 5_500 });
+    });
+
+    it('refuses credit for somebody the sale would register, and registers nobody', async () => {
+      const before = await prisma.customer.count();
+
+      const refused = await call('POST', '/api/stores/lessari/orders', owner, { customer: { name: 'Novo', phone: '(11) 94444-5555' }, items: [{ variantId: whey, quantity: 1 }], fulfillment: 'PICKUP', paymentMethod: 'PIX', cashbackCents: 100 });
+
+      expect(refused.statusCode).toBe(409);
+      expect(refused.json<ApiErrorBody & { details: object }>()).toMatchObject({ errorCode: 'ORDER_CASHBACK_REFUSED', details: { requestedCents: 100, maxCents: 0 } });
+      expect(await prisma.customer.count()).toBe(before);
+    });
   });
 });

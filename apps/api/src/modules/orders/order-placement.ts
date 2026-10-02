@@ -88,6 +88,8 @@ export class OrderPlacement {
     const lines = await readOrderLines(this.prisma, storeId, placement.items, placement.onSaleOnly);
 
     const placed = await this.prisma.$transaction(async (tx) => {
+      // One instant for the credit it counts and the credit it spends.
+      const now = new Date();
       const number = await this.nextNumber(tx, storeId);
       const customerId = await placement.customerOf(tx);
       // The customer's row before the products', the order a like and a cancellation take them in:
@@ -108,6 +110,7 @@ export class OrderPlacement {
         at: placement.placedAt,
         lock: true,
         cashback: placement.cashbackCents,
+        now,
       });
       if (priced.refusal) throw couponRefused(priced.refusal);
       if (priced.cashbackUse?.refusal) throw cashbackRefused(priced.cashbackUse.refusal);
@@ -150,7 +153,7 @@ export class OrderPlacement {
       });
 
       if (priced.coupon) await redeemCoupon(tx, priced.coupon.id, order.id, priced.couponDiscountCents);
-      if (cashbackUsedCents > 0) await redeemCashback(tx, { storeId, customerId, orderId: order.id, cents: cashbackUsedCents, now: new Date() });
+      if (cashbackUsedCents > 0) await redeemCashback(tx, { storeId, customerId, orderId: order.id, cents: cashbackUsedCents, now });
       if (cashback) await holdOrderCashback(tx, { storeId, customerId, orderId: order.id, earnedCents: cashback.earnedCents, validityDays: cashback.validityDays });
       await refreshBooks(tx, customerId);
       // The conversation is born with the order, its first status the first line. Told now, whatever
