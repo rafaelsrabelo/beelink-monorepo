@@ -20,7 +20,7 @@ const routes = storefrontRoutes({
     cart: "carrinho",
     signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha",
     account: "conta",
-    accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" },
+    accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" },
   },
 })
 const context = { routes, locale: "pt-BR", messages: ptBR }
@@ -141,6 +141,19 @@ describe("an order's page, in the shopper's words", () => {
     expect(payment.method).toBe("Pagamento combinado com a loja: Pix")
     // A pick-up has no delivery to add, and no discount is no line.
     expect(orderPaymentOf({ ...order, fulfillment: "PICKUP", discountCents: 0 }, context).rows.map((row) => row.label)).toEqual(["Subtotal"])
+  })
+
+  /** BEELINK-244: the credit spent is the last row, apart from the discounts — on the page and on the receipt, which read these rows. */
+  it("says the cashback used on a row of its own, after what came off", () => {
+    const paid: CustomerOrder = { ...order, deliveryFeeCents: 1000, discountCents: 500, promotionDiscountCents: 0, couponDiscountCents: 0, coupon: null, cashbackUsedCents: 1500, totalCents: 8980 }
+
+    expect(orderPaymentOf(paid, context).rows.map((row) => [row.label, row.value.replace(/\s/g, " ")])).toEqual([
+      ["Subtotal", "R$ 99,80"],
+      ["Entrega", "R$ 10,00"],
+      ["Desconto", "− R$ 5,00"],
+      ["Cashback usado", "− R$ 15,00"],
+    ])
+    expect(orderPaymentOf({ ...paid, cashbackUsedCents: 0 }, context).rows.map((row) => row.label)).not.toContain("Cashback usado")
   })
 
   /** BEELINK-194: what came off is told part by part, the coupon by its code — on the page and on the receipt, which read these rows. */

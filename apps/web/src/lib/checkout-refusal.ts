@@ -81,6 +81,9 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
       const refusal = couponRefusalIn(details)
       return refusal ? format(text.checkoutCouponGone, { reason: couponRefusalTextOf(refusal, context, text) }) : text.checkoutFailed
     }
+    // Their credit moved between the price on screen and the order — spent elsewhere, or a part of it expired: the cart is priced again.
+    case "ORDER_CASHBACK_REFUSED":
+      return text.checkoutCashbackGone
     case "ORDER_PAYMENT_NOT_ACCEPTED":
       return text.checkoutPaymentGone
     case "ORDER_DELIVERY_ADDRESS_MISSING":
