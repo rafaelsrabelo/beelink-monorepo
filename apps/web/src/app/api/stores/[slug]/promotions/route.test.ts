@@ -3,10 +3,10 @@ import { NextRequest } from "next/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
-import { PATCH as switchCoupon, PUT as replaceCoupon } from "../coupons/[couponId]/route"
+import { GET as readCoupon, PATCH as switchCoupon, PUT as replaceCoupon } from "../coupons/[couponId]/route"
 import { GET as redemptions } from "../coupons/[couponId]/redemptions/route"
 import { GET as coupons, POST as createCoupon } from "../coupons/route"
-import { PATCH, PUT } from "./[promotionId]/route"
+import { GET as readPromotion, PATCH, PUT } from "./[promotionId]/route"
 import { GET, POST } from "./route"
 
 const mocks = vi.hoisted(() => ({ revalidateStore: vi.fn() }))
@@ -43,6 +43,17 @@ describe("the shop's promotions, for the panel", () => {
     expect(mocks.revalidateStore).not.toHaveBeenCalled()
   })
 
+  it("reads one, for the page that edits it, as the owner and dropping nothing", async () => {
+    const fetched = vi.fn<Fetched>(async () => Response.json({ id: "p1" }))
+    vi.stubGlobal("fetch", fetched)
+
+    expect((await readPromotion(request("/api/stores/loja/promotions/p1"), promotion)).status).toBe(200)
+    expect(fetched.mock.calls[0]?.[1]?.method).toBe("GET")
+    expect(String(fetched.mock.calls[0]?.[0])).toMatch(/\/stores\/loja\/promotions\/p1$/)
+    expect(new Headers(fetched.mock.calls[0]?.[1]?.headers).get("authorization")).toBe("Bearer owner-access")
+    expect(mocks.revalidateStore).not.toHaveBeenCalled()
+  })
+
   it("creates, replaces and pauses one, dropping the shop window's cache each time", async () => {
     const fetched = vi.fn<Fetched>(async () => Response.json({ id: "p1" }, { status: 201 }))
     vi.stubGlobal("fetch", fetched)
@@ -75,16 +86,18 @@ describe("the shop's promotions, for the panel", () => {
     vi.stubGlobal("fetch", fetched)
     expect((await GET(request("/api/stores/loja/promotions", { origin: "https://outro.site" }), shop)).status).toBe(403)
     expect((await PATCH(request("/api/stores/loja/promotions/p1", { method: "PATCH", body: { active: false }, origin: "https://outro.site" }), promotion)).status).toBe(403)
+    expect((await readPromotion(request("/api/stores/loja/promotions/p1", { origin: "https://outro.site" }), promotion)).status).toBe(403)
     expect(fetched).not.toHaveBeenCalled()
   })
 })
 
 describe("the shop's coupons, for the panel", () => {
-  it("pages them, creates, replaces and pauses one, and reads its uses — never touching the shop window's cache", async () => {
+  it("pages them, reads, creates, replaces and pauses one, and reads its uses — never touching the shop window's cache", async () => {
     const fetched = vi.fn<Fetched>(async () => Response.json({ id: "c1" }))
     vi.stubGlobal("fetch", fetched)
 
     await coupons(request("/api/stores/loja/coupons?status=EXHAUSTED"), shop)
+    await readCoupon(request("/api/stores/loja/coupons/c1"), coupon)
     await createCoupon(request("/api/stores/loja/coupons", { method: "POST", body: { code: "BEMVINDO10" } }), shop)
     await replaceCoupon(request("/api/stores/loja/coupons/c1", { method: "PUT", body: { code: "VOLTEI15" } }), coupon)
     await switchCoupon(request("/api/stores/loja/coupons/c1", { method: "PATCH", body: { active: false } }), coupon)
@@ -92,12 +105,13 @@ describe("the shop's coupons, for the panel", () => {
 
     expect(fetched.mock.calls.map((call) => [call[1]?.method, String(call[0]).replace(/^.*\/stores/, "/stores")])).toEqual([
       ["GET", "/stores/loja/coupons?status=EXHAUSTED"],
+      ["GET", "/stores/loja/coupons/c1"],
       ["POST", "/stores/loja/coupons"],
       ["PUT", "/stores/loja/coupons/c1"],
       ["PATCH", "/stores/loja/coupons/c1"],
       ["GET", "/stores/loja/coupons/c1/redemptions?page=2"],
     ])
-    expect(JSON.parse(String(fetched.mock.calls[2]?.[1]?.body))).toEqual({ code: "VOLTEI15" })
+    expect(JSON.parse(String(fetched.mock.calls[3]?.[1]?.body))).toEqual({ code: "VOLTEI15" })
     expect(mocks.revalidateStore).not.toHaveBeenCalled()
   })
 
@@ -105,6 +119,7 @@ describe("the shop's coupons, for the panel", () => {
     const fetched = vi.fn()
     vi.stubGlobal("fetch", fetched)
     expect((await redemptions(request("/api/stores/loja/coupons/c1/redemptions", { origin: "https://outro.site" }), coupon)).status).toBe(403)
+    expect((await readCoupon(request("/api/stores/loja/coupons/c1", { origin: "https://outro.site" }), coupon)).status).toBe(403)
     expect(fetched).not.toHaveBeenCalled()
   })
 })

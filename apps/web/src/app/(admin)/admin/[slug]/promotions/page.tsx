@@ -2,7 +2,7 @@
 import { PromotionsScreen } from "@/components/promotions/promotions-screen"
 import { getMessages } from "@/lib/locale"
 
-/** The shop's promotions (BEELINK-192). A thin page over a client screen, like every other one in the panel. */
+/** The shop's promotions (BEELINK-192), as a list; `new` and `<id>` are the pages that make and change one. */
 export default async function PromotionsPage({ params }: PageProps<"/admin/[slug]/promotions">) {
   const { slug } = await params
   const { ui, web, locale } = await getMessages()

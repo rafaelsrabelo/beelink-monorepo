@@ -54,6 +54,19 @@ export function couponsHrefOf(slug: string, address: DiscountAddress<CouponStatu
   return hrefOf(`/admin/${slug}/coupons`, COUPON_WORDS, address, next)
 }
 
+/**
+ * One promotion's page, carrying the list's address: saving it, or leaving it, goes back to the
+ * status and the page it was opened from. A new one carries none — it is the unfiltered list's
+ * first row, and under a status it would be saved and nowhere to be seen.
+ */
+export function promotionHrefOf(slug: string, promotionId: string, address: DiscountAddress<PromotionStatus>): string {
+  return hrefOf(`/admin/${slug}/promotions/${encodeURIComponent(promotionId)}`, PROMOTION_WORDS, address, { page: address.page })
+}
+
+export function couponHrefOf(slug: string, couponId: string, address: DiscountAddress<CouponStatus>): string {
+  return hrefOf(`/admin/${slug}/coupons/${encodeURIComponent(couponId)}`, COUPON_WORDS, address, { page: address.page })
+}
+
 /** What the API is asked, from the address. */
 export function discountQueryOf<S extends string>(address: DiscountAddress<S>): { status?: S; page?: number } {
   return { ...(address.status ? { status: address.status } : {}), ...(address.page > 1 ? { page: address.page } : {}) }

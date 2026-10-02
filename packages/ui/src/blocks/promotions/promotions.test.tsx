@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest"
 import { expectNoA11yViolations } from "../../test/a11y"
 import { DiscountAudienceField } from "./discount-audience-field"
 import { DiscountFailed } from "./discount-failed"
+import { DiscountFormSkeleton } from "./discount-form-skeleton"
 import { DiscountListSkeleton } from "./discount-list-skeleton"
 import { DiscountStatusTabs } from "./discount-status-tabs"
 import { PromotionForm, type PromotionFormProps } from "./promotion-form"
@@ -266,7 +267,7 @@ describe("DiscountAudienceField", () => {
   })
 })
 
-describe("DiscountFailed and DiscountListSkeleton", () => {
+describe("DiscountFailed and the skeletons", () => {
   it("says the read failed and asks again; the skeleton is hidden from readers", async () => {
     const onRetry = vi.fn()
     const failed = render(<DiscountFailed onRetry={onRetry} />)
@@ -278,5 +279,9 @@ describe("DiscountFailed and DiscountListSkeleton", () => {
     const { container } = render(<DiscountListSkeleton />)
     expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true")
     await expectNoA11yViolations(container)
+
+    const form = render(<DiscountFormSkeleton />)
+    expect(form.container.firstElementChild).toHaveAttribute("aria-hidden", "true")
+    await expectNoA11yViolations(form.container)
   })
 })
