@@ -2,7 +2,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 
 // Types
-import type { CreateOrderItemInput, OrderFulfillment, OrderShippingChangedDetails, OrderShippingUnavailableDetails, ShippingQuote, ShippingWindow } from '@harness-monorepo/contracts';
+import type { CreateOrderItemInput, OrderFulfillment, OrderShippingChangedDetails, OrderShippingChoice, OrderShippingUnavailableDetails, ShippingCarrier, ShippingQuote, ShippingWindow } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
@@ -18,17 +18,23 @@ export interface DeliveryTerms {
   /** Null: agreed with the shop after the order. */
   deliveryFeeCents: number | null;
   window: ShippingWindow | null;
+  /** Whose service brings it (BEELINK-186); null on the shop's own delivery. */
+  carrier: ShippingCarrier | null;
 }
 
-const AGREED_LATER: DeliveryTerms = { deliveryFeeCents: null, window: null };
+const AGREED_LATER: DeliveryTerms = { deliveryFeeCents: null, window: null, carrier: null };
 
 /**
- * The terms of the way a delivery goes by, read from the quote: the shop's own delivery. Null when
- * the shop does not deliver to that address — past its last band, or switched off.
+ * The terms of the way a delivery goes by, read from the quote: the carrier's service chosen
+ * (BEELINK-186), else the shop's own delivery. Null when the quote does not offer that way to the
+ * address — past the shop's last band, switched off, or a service that no longer takes the cart.
  */
-export function deliveryTermsOf(quote: ShippingQuote): DeliveryTerms | null {
-  const own = quote.options.find((option) => option.kind === 'OWN_DELIVERY');
-  return own ? { deliveryFeeCents: own.feeCents, window: own.window } : null;
+export function deliveryTermsOf(quote: ShippingQuote, choice: OrderShippingChoice | undefined): DeliveryTerms | null {
+  const option =
+    choice?.kind === 'CARRIER'
+      ? quote.options.find((each) => each.kind === 'CARRIER' && each.carrier?.serviceId === choice.serviceId)
+      : quote.options.find((each) => each.kind === 'OWN_DELIVERY');
+  return option ? { deliveryFeeCents: option.feeCents, window: option.window, carrier: option.carrier } : null;
 }
 
 function shippingUnavailable(message: string, details: OrderShippingUnavailableDetails): ConflictException {
@@ -37,9 +43,10 @@ function shippingUnavailable(message: string, details: OrderShippingUnavailableD
 
 /**
  * How a customer's order leaves the shop (BEELINK-178): the shop's ways to get the cart to one of
- * their saved addresses, for the checkout to show, and the fee and the window the order is written
- * with. Decided before the order's transaction — placing an address on the map is a call to a third
- * party, and the transaction holds the shop's row.
+ * their saved addresses, for the checkout to show, and the fee, the window and the carrier
+ * (BEELINK-186) the order is written with. Decided before the order's transaction — placing an
+ * address on the map and asking Melhor Envio are calls to third parties, and the transaction holds
+ * the shop's row.
  */
 @Injectable()
 export class OrderShipping {
@@ -71,7 +78,15 @@ export class OrderShipping {
    * delivery it does not make to that address, refuses the order; so does a fee that is not the one
    * the customer was shown — the order is never placed at another price.
    */
-  async forPlacement(input: { storeId: string; customerId: string; fulfillment: OrderFulfillment; addressId: string | null; items: readonly CreateOrderItemInput[]; shownFeeCents: number | null | undefined }): Promise<DeliveryTerms> {
+  async forPlacement(input: {
+    storeId: string;
+    customerId: string;
+    fulfillment: OrderFulfillment;
+    addressId: string | null;
+    items: readonly CreateOrderItemInput[];
+    choice: OrderShippingChoice | undefined;
+    shownFeeCents: number | null | undefined;
+  }): Promise<DeliveryTerms> {
     const { storeId, customerId } = input;
     if (input.fulfillment === 'PICKUP') {
       const rules = await this.delivery.forStore(storeId);
@@ -86,8 +101,8 @@ export class OrderShipping {
     // Nowhere to quote to: the order's own transaction says which address is missing.
     if (!quote) return AGREED_LATER;
 
-    const terms = deliveryTermsOf(quote);
-    if (!terms) throw shippingUnavailable('The shop does not deliver to that address', { ownDelivery: quote.ownDelivery, carriers: quote.carriers });
+    const terms = deliveryTermsOf(quote, input.choice);
+    if (!terms) throw shippingUnavailable('The shop does not deliver to that address that way', { ownDelivery: quote.ownDelivery, carriers: quote.carriers });
     if (input.shownFeeCents !== undefined && input.shownFeeCents !== terms.deliveryFeeCents) {
       const details: OrderShippingChangedDetails = { deliveryFeeCents: terms.deliveryFeeCents };
       throw new ConflictException({ ...orderError('ORDER_SHIPPING_CHANGED', 'The delivery fee is not the one the quote showed'), details });

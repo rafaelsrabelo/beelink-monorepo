@@ -2,7 +2,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 // Types
-import type { CreateOrderItemInput, OrderQuote, ShippingQuote } from '@harness-monorepo/contracts';
+import type { CreateOrderItemInput, OrderQuote, OrderShippingChoice, ShippingQuote } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
@@ -21,8 +21,8 @@ import { orderError } from './orders.constants.js';
 type QuoteInput = Omit<PricingInput, 'lines' | 'lock'> & {
   items: readonly CreateOrderItemInput[];
   onSaleOnly: boolean;
-  /** Whose saved address the shop's ways to deliver are quoted to — the one chosen, else their default; absent quotes none. */
-  shippingTo?: { customerId: string; addressId: string | null };
+  /** Whose saved address the shop's ways to deliver are quoted to — the one chosen, else their default — and the way asked about; absent quotes none. */
+  shippingTo?: { customerId: string; addressId: string | null; choice: OrderShippingChoice | undefined };
 };
 
 /**
@@ -67,7 +67,7 @@ export class OrderQuotes {
       customer: { id: customerId },
       at: new Date(),
       cashback: dto.useCashback ? 'MAX' : 'NONE',
-      shippingTo: { customerId, addressId: dto.addressId?.toLowerCase() ?? null },
+      shippingTo: { customerId, addressId: dto.addressId?.toLowerCase() ?? null, choice: dto.shipping },
     });
   }
 
@@ -94,7 +94,7 @@ export class OrderQuotes {
     // The shop's ways to deliver, quoted to the customer's address whichever way the cart leaves: the
     // checkout says them beside the pick-up. On a delivery, the fee of the way it goes by is priced in.
     const shipping: ShippingQuote | null = shippingTo ? await this.shipping.quoteFor(input.storeId, shippingTo.customerId, shippingTo.addressId, pricedCartOf(lines, unshipped)) : null;
-    const feeCents = shipping && input.fulfillment === 'DELIVERY' ? (deliveryTermsOf(shipping)?.deliveryFeeCents ?? null) : null;
+    const feeCents = shipping && input.fulfillment === 'DELIVERY' ? (deliveryTermsOf(shipping, shippingTo?.choice)?.deliveryFeeCents ?? null) : null;
     // Priced again with the fee: a free-delivery coupon takes it off, and the total carries it.
     const priced = feeCents === null ? unshipped : await priceOrder(this.prisma, { ...input, deliveryFeeCents: feeCents, lines, lock: false });
     // What it would earn, worked out as the order would be when placed (BEELINK-243).

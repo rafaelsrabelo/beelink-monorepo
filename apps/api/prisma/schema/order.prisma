@@ -204,6 +204,9 @@ model OrderDelivery {
   carrier      String? @db.VarChar(60)
   /// "SEDEX", "PAC".
   service      String? @db.VarChar(60)
+  /// Melhor Envio's id for the service, on a delivery the customer chose at checkout (BEELINK-186):
+  /// what its label is bought with. Null on a delivery the shopkeeper told by hand.
+  carrierServiceId Int?
   trackingCode String? @db.VarChar(60)
   trackingUrl  String? @db.VarChar(500)
   /// The window it should arrive in, as days of the shop's calendar: both or neither.

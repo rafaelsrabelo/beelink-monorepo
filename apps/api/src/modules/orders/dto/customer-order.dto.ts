@@ -18,6 +18,7 @@ import type {
   CustomerOrderSummary,
   OrderFulfillment,
   OrderPlacedBy,
+  OrderShippingChoice,
   OrderStatus,
   PaymentMethod,
   PlaceCustomerOrderPayload,
@@ -38,7 +39,7 @@ import {
   ORDER_STATUSES,
   ORDERS_PAGE_MAX,
 } from '../orders.constants.js';
-import { cashbackCents, couponCode, OrderItemDto } from './order.dto.js';
+import { cashbackCents, couponCode, OrderItemDto, shippingChoice } from './order.dto.js';
 import { OrderCouponResponse, OrderDeliveryAddressResponse, OrderDeliveryResponse } from './order.response.js';
 
 const SITUATIONS = Object.keys(CUSTOMER_ORDER_SITUATIONS) as CustomerOrderSituation[];
@@ -72,6 +73,9 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
 
   @cashbackCents
   cashbackCents?: number;
+
+  @shippingChoice
+  shipping?: OrderShippingChoice;
 
   @ApiPropertyOptional({ nullable: true, type: Number, minimum: 0, description: 'The delivery fee the quote showed, null for one agreed afterwards: a different fee now is ORDER_SHIPPING_CHANGED. Absent is not checked.' })
   // Null is a fee the quote said is agreed afterwards, and so is sent; only a number is held to its range.

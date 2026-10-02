@@ -48,7 +48,7 @@ export class CustomerOrdersService {
   async place(storeSlug: string, userId: string, dto: PlaceCustomerOrderDto): Promise<CustomerOrder> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
     const addressId = dto.addressId?.toLowerCase() ?? null;
-    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, shownFeeCents: dto.deliveryFeeCents });
+    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents });
 
     const placed = await this.placement.place({
       storeId,
@@ -58,6 +58,7 @@ export class CustomerOrdersService {
       paymentMethod: dto.paymentMethod,
       deliveryFeeCents: terms.deliveryFeeCents,
       deliveryWindow: terms.window,
+      deliveryCarrier: terms.carrier,
       discountCents: 0,
       couponCode: dto.couponCode ?? null,
       cashbackCents: dto.cashbackCents ?? 0,

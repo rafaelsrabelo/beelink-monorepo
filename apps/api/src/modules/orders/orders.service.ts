@@ -54,6 +54,7 @@ export class OrdersService {
       deliveryFeeCents: dto.deliveryFeeCents ?? 0,
       // The shopkeeper types the fee of a sale registered here; nothing was quoted.
       deliveryWindow: null,
+      deliveryCarrier: null,
       discountCents: dto.discountCents ?? 0,
       couponCode: dto.couponCode ?? null,
       cashbackCents: dto.cashbackCents ?? 0,
@@ -192,6 +193,8 @@ export class OrdersService {
       trackingUrl: dto.trackingUrl ?? null,
       estimateFrom: from ? new Date(`${from}T00:00:00.000Z`) : null,
       estimateTo: to ? new Date(`${to}T00:00:00.000Z`) : null,
+      // The service chosen at checkout stays with a delivery that is still a carrier's: its label is bought with it (BEELINK-186).
+      ...(dto.kind === 'CARRIER' ? {} : { carrierServiceId: null }),
     };
     // Top-level, on the unique order id: Postgres's own INSERT … ON CONFLICT. Nested under the order,
     // Prisma reads then writes, and two first saves at once would both insert.
