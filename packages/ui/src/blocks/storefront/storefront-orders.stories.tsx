@@ -126,6 +126,16 @@ type Story = StoryObj<typeof meta>
 /** 6d: aguardando a loja, entregue e cancelado. */
 export const Lista: Story = {}
 
+/** Pedidos com cashback: o pendente até a entrega, e o disponível depois (BEELINK-243). */
+export const ComCashback: Story = {
+  args: {
+    cards: [
+      { ...received, cashback: "Você vai ganhar R$ 12,49 de cashback quando o pedido for entregue." },
+      { ...delivered, cashback: "R$ 8,20 de cashback para usar até 30 de dez. de 2026." },
+    ],
+  },
+}
+
 /** Nunca pediu aqui: uma frase e a porta para as compras. */
 export const SemPedidos: Story = { render: () => <StorefrontOrdersEmpty variant="none" href="#" /> }
 

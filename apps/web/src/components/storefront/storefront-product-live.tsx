@@ -42,9 +42,8 @@ export interface StorefrontProductLiveProps {
   showStock: boolean
   /** The shop takes orders on WhatsApp, which the buy box says. */
   finishesOnWhatsApp: boolean
-  seller: { name: string; paymentMethods: readonly PaymentMethod[] }
-  /** The shop's cashback while on (BEELINK-243). */
-  cashback: PublicCashback | null
+  /** Who sells it, and the shop's cashback while on (BEELINK-243). */
+  seller: { name: string; paymentMethods: readonly PaymentMethod[]; cashback: PublicCashback | null }
   restockCopy: RestockCopy
   messages: UiMessages
 }
@@ -70,7 +69,6 @@ export function StorefrontProductLive({
   showStock,
   finishesOnWhatsApp,
   seller,
-  cashback,
   restockCopy,
   messages,
 }: StorefrontProductLiveProps) {
@@ -130,7 +128,6 @@ export function StorefrontProductLive({
       showStock={showStock}
       finishesOnWhatsApp={finishesOnWhatsApp}
       seller={seller}
-      cashback={cashback}
       messages={messages}
     />
   )

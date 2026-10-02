@@ -29,7 +29,11 @@ describe("customerCashbackLineOf", () => {
   })
 
   it("says it was spent, reversed or expired — expired once past its day, before any sweep", () => {
-    expect(customerCashbackLineOf({ ...lot, remainingCents: 0 }, options)).toBe("Você já usou o cashback deste pedido.")
+    expect(customerCashbackLineOf({ ...lot, remainingCents: 0 }, options)).toBe("Não resta saldo do cashback deste pedido.")
+    // Spent to the last cent, it stays so once its day passes: such a lot is never swept.
+    expect(customerCashbackLineOf({ ...lot, remainingCents: 0, expiresAt: "2026-10-30T12:00:00.000Z" }, options)).toBe("Não resta saldo do cashback deste pedido.")
+    // Waiting on a delivery again with nothing to pay out: never "you will earn R$ 0,00".
+    expect(customerCashbackLineOf({ ...lot, status: "PENDING", remainingCents: 0, expiresAt: null }, options)).toBe("Não resta saldo do cashback deste pedido.")
     expect(customerCashbackLineOf({ ...lot, status: "VOIDED", remainingCents: 0 }, options)).toBe("O cashback deste pedido foi estornado.")
     expect(customerCashbackLineOf({ ...lot, expiresAt: "2026-10-30T12:00:00.000Z" }, options)).toBe("O cashback deste pedido venceu.")
     expect(customerCashbackLineOf(null, options)).toBeNull()

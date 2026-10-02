@@ -31,17 +31,24 @@ function renderBox(over: Partial<StorefrontProductPurchaseProps> = {}) {
 const box = () => screen.getByRole("region", { name: "Comprar" })
 
 describe("StorefrontProductPurchase", () => {
-  /** BEELINK-243: the box says what the chosen price earns at the shop's rule, or from what order up it earns. */
-  it("says the cashback the chosen price earns, and under the minimum, from what order up", () => {
-    const earning = renderBox({ priceCents: 10_000, cashback: { rateBps: 500, minSubtotalCents: 0 } })
-    expect(screen.getByText(/^Ganhe/).textContent?.replace(/\s/g, " ")).toBe("Ganhe R$ 5,00 de cashback nesta compra")
+  /** BEELINK-243: "up to" on the price times the quantity — the cart's discounts can only lower it, and the cart says the exact amount. */
+  it("says the most the purchase earns, on the quantity chosen, and from what order up under the minimum", async () => {
+    const seller = { name: "Mutante Suplementos", paymentMethods: ["PIX"] as const }
+    const earning = renderBox({ priceCents: 10_000, seller: { ...seller, cashback: { rateBps: 500, minSubtotalCents: 0 } } })
+    expect(screen.getByText(/^Ganhe/).textContent?.replace(/\s/g, " ")).toBe("Ganhe até R$ 5,00 de cashback nesta compra")
+    await userEvent.selectOptions(screen.getAllByRole("combobox")[0]!, "3")
+    expect(screen.getByText(/^Ganhe/).textContent?.replace(/\s/g, " ")).toBe("Ganhe até R$ 15,00 de cashback nesta compra")
     earning.unmount()
 
-    const under = renderBox({ priceCents: 4_000, cashback: { rateBps: 500, minSubtotalCents: 15_000 } })
+    const under = renderBox({ priceCents: 4_000, seller: { ...seller, cashback: { rateBps: 500, minSubtotalCents: 15_000 } } })
     expect(screen.getByText(/^Ganhe/).textContent?.replace(/\s/g, " ")).toBe("Ganhe 5% de cashback em pedidos a partir de R$ 150,00")
     under.unmount()
 
-    renderBox({ cashback: null })
+    // Nothing can be bought, so nothing is earned; and a shop with the cashback off says nothing.
+    const soldOut = renderBox({ available: false, seller: { ...seller, cashback: { rateBps: 500, minSubtotalCents: 0 } } })
+    expect(screen.queryByText(/cashback/)).not.toBeInTheDocument()
+    soldOut.unmount()
+    renderBox({ seller: { ...seller, cashback: null } })
     expect(screen.queryByText(/cashback/)).not.toBeInTheDocument()
   })
 

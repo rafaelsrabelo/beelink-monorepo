@@ -7,6 +7,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { CouponModel } from '../../generated/prisma/models.js';
 
 // App
+import type { EarningParts } from '../cashback/cashback-earning.js';
 import { couponRefusalOf, storedCodeOf } from '../promotions/coupon-verdict.js';
 import { couponDiscountOf, firstPurchaseOfferOf, forEveryone, promotionDiscountsOf, type LineDiscount, type PricingPromotion } from '../promotions/discount-pricing.js';
 import { couponByCode, customerUsesOf, firstPurchaseOf, runningPromotions } from '../promotions/order-discounts.js';
@@ -137,6 +138,21 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
     verdict,
     refusal,
     coupon,
+  };
+}
+
+/**
+ * What an order's cashback is worked out from, as it was priced (BEELINK-243): one reading for the
+ * quote and the placement, so what the cart promised is what the order records.
+ */
+export function earningPartsOf(priced: PricedOrder, cashbackUsedCents: number): EarningParts {
+  return {
+    subtotalCents: priced.totals.subtotalCents,
+    promotionDiscountCents: priced.promotionDiscountCents,
+    couponDiscountCents: priced.couponDiscountCents,
+    couponKind: priced.coupon?.kind ?? null,
+    manualDiscountCents: priced.manualDiscountCents,
+    cashbackUsedCents,
   };
 }
 

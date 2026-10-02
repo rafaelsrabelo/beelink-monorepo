@@ -1,10 +1,11 @@
 // Types
-import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, QuotedCashback, QuotedFirstPurchase } from "@harness-monorepo/contracts"
+import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, QuotedFirstPurchase } from "@harness-monorepo/contracts"
 import type { StorefrontCartOffer } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
+import { ratePercentOf } from "@harness-monorepo/ui/lib/cashback"
 import { discountLinesOf, type DiscountLine } from "@harness-monorepo/ui/lib/order-discounts"
 import { customerTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { format } from "@harness-monorepo/ui/locales/index"
@@ -77,12 +78,16 @@ export interface CartPricingContext {
   messages: UiMessages
 }
 
-/** What the cart would earn in cashback, as the quote worked it out; below the shop's minimum, what is missing. */
-function cashbackOf(cashback: QuotedCashback | null, money: (cents: number) => string, locale: string, text: UiMessages["storefront"]): string | null {
+/**
+ * What the cart would earn in cashback, as the quote worked it out; below the shop's minimum, what is
+ * missing. A visitor's cart is priced without the first-purchase promotion they may get once
+ * identified, which can only lower it: theirs is said as "up to".
+ */
+function cashbackOf(quote: OrderQuote, money: (cents: number) => string, locale: string, text: UiMessages["storefront"]): string | null {
+  const cashback = quote.cashback
   if (!cashback) return null
-  if (cashback.status === "EARNS") return format(text.cartCashbackEarns, { amount: money(cashback.earnedCents) })
-  const rate = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 }).format(cashback.rateBps / 10_000)
-  return format(text.cartCashbackMissing, { amount: money(cashback.missingCents), rate })
+  if (cashback.status === "EARNS") return format(quote.firstPurchase?.status === "UNIDENTIFIED" ? text.cartCashbackEarnsUpTo : text.cartCashbackEarns, { amount: money(cashback.earnedCents) })
+  return format(text.cartCashbackMissing, { amount: money(cashback.missingCents), rate: ratePercentOf(cashback.rateBps, locale) })
 }
 
 /**
@@ -142,5 +147,5 @@ export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfil
     lines.set(rowKeyOf(row), { lineTotalCents, wasCents: before > lineTotalCents ? before : null, promotion: line.promotion?.name ?? null })
   }
 
-  return { subtotalCents: quote.subtotalCents, discounts, total, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront), cashback: cashbackOf(quote.cashback, money, locale, messages.storefront) }
+  return { subtotalCents: quote.subtotalCents, discounts, total, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront), cashback: cashbackOf(quote, money, locale, messages.storefront) }
 }

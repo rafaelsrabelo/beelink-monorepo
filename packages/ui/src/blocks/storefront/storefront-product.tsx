@@ -22,14 +22,12 @@ import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { PaymentMethod } from "../store/store-types"
 import { StorefrontDiscountBadge, StorefrontPrice } from "./storefront-price"
 import { StorefrontProductGallery, type StorefrontProductImage } from "./storefront-product-gallery"
 import { StorefrontRestockDialog, type RestockSubmission } from "./storefront-restock-dialog"
 import type { LinkComponent } from "../auth/auth-link"
 import { StorefrontProductInfo } from "./storefront-product-info"
-import type { ShopCashbackRule } from "@harness-monorepo/ui/lib/cashback"
-import { StorefrontProductPurchase } from "./storefront-product-purchase"
+import { StorefrontProductPurchase, type StorefrontSeller } from "./storefront-product-purchase"
 import { StorefrontVariantPicker } from "./storefront-variant-picker"
 
 export type { StorefrontProductImage } from "./storefront-product-gallery"
@@ -92,9 +90,7 @@ export interface StorefrontProductDetailProps {
   /** The shop takes orders on WhatsApp, which the buy box says. */
   finishesOnWhatsApp?: boolean
   /** "Vendido por" and "Pagamento", under the buy box's buttons. */
-  seller?: { name: string; paymentMethods: readonly PaymentMethod[] }
-  /** The shop's cashback while on (BEELINK-243), for the buy box to say what the chosen price earns. */
-  cashback?: ShopCashbackRule | null
+  seller?: StorefrontSeller
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -132,7 +128,6 @@ export function StorefrontProductDetail({
   showStock,
   finishesOnWhatsApp,
   seller,
-  cashback = null,
   linkComponent,
   messages = defaultMessages,
 }: StorefrontProductDetailProps) {
@@ -230,7 +225,6 @@ export function StorefrontProductDetail({
           orderHref={order}
           finishesOnWhatsApp={finishesOnWhatsApp}
           seller={seller}
-          cashback={cashback}
           favorite={favorite?.(variant?.id ?? null, "text")}
           messages={messages}
         />

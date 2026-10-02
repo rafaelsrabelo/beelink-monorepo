@@ -1,3 +1,6 @@
+// Locales
+import { format } from "@harness-monorepo/ui/locales/index"
+
 /**
  * The panel's cashback as its blocks read it (BEELINK-242). They mirror the wire's shapes in
  * `packages/contracts/src/cashback.ts`; this package does not import them, so a screen hands its
@@ -99,19 +102,27 @@ export interface CustomerOrderCashbackView {
 
 /**
  * An order's cashback in one sentence for its customer (BEELINK-243): what they will earn once it is
- * delivered, what they can spend and until when, that they spent it, that it expired, or that it was
- * taken back. A lot past its day reads as expired before the API's sweep marks it.
+ * delivered, what they can spend and until when, that nothing is left of it, that it expired, or that
+ * it was taken back.
+ *
+ * In this order: taken back, then nothing left — a lot spent to the last cent stays so, and is never
+ * swept, so it must not turn "expired" once its day passes — then expired, read from the date before
+ * the API's sweep marks it, then pending and usable.
  */
 export function customerCashbackLineOf(
   cashback: CustomerOrderCashbackView | null,
   { money, date, now, text }: { money: (cents: number) => string; date: (iso: string) => string; now: Date; text: { PENDING: string; AVAILABLE: string; AVAILABLE_UNTIL: string; SPENT: string; VOIDED: string; EXPIRED: string } },
 ): string | null {
   if (!cashback) return null
-  const expired = cashback.status === "EXPIRED" || (cashback.status === "AVAILABLE" && cashback.expiresAt !== null && new Date(cashback.expiresAt) <= now)
-  if (expired) return text.EXPIRED
   if (cashback.status === "VOIDED") return text.VOIDED
-  if (cashback.status === "PENDING") return text.PENDING.replace("{amount}", money(cashback.remainingCents))
   if (cashback.remainingCents === 0) return text.SPENT
+  if (cashback.status === "EXPIRED" || (cashback.status === "AVAILABLE" && cashback.expiresAt !== null && new Date(cashback.expiresAt) <= now)) return text.EXPIRED
   const amount = money(cashback.remainingCents)
-  return cashback.expiresAt ? text.AVAILABLE_UNTIL.replace("{amount}", amount).replace("{date}", date(cashback.expiresAt)) : text.AVAILABLE.replace("{amount}", amount)
+  if (cashback.status === "PENDING") return format(text.PENDING, { amount })
+  return cashback.expiresAt ? format(text.AVAILABLE_UNTIL, { amount, date: date(cashback.expiresAt) }) : format(text.AVAILABLE, { amount })
+}
+
+/** A rate in basis points as the reader's percentage: 500 is "5%", 250 is "2,5%" in pt-BR. */
+export function ratePercentOf(rateBps: number, locale: string): string {
+  return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 }).format(rateBps / 10_000)
 }

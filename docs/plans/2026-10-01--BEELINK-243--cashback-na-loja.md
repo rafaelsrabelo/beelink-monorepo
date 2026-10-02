@@ -37,3 +37,23 @@
 ## Fora de escopo
 
 - Usar o saldo no checkout e o extrato em Minha conta (U7).
+
+## Adendo — revisão independente (02/10)
+
+Nada bloqueante. Corrigido:
+
+1. **A página do produto prometia um valor exato** ("Ganhe R$ 6,49") calculado sobre uma unidade,
+   ignorando a quantidade e o que o carrinho pode descontar (promoção de primeira compra, cupom). Uma
+   promessa exata de valor obriga a loja (CDC, art. 30). Agora é **"Ganhe até R$ X"**, sobre o preço
+   vezes a quantidade escolhida, e só aparece quando o produto pode ser comprado. O valor exato é o do
+   carrinho.
+2. **A frase do pedido para o cliente** dizia "venceu" para um crédito já usado até o fim depois da data,
+   e "você vai ganhar R$ 0,00" para um pendente sem nada a pagar. A ordem dos casos mudou, e o texto de
+   "acabou" ficou neutro ("Não resta saldo do cashback deste pedido."), porque o saldo pode ter saído por
+   ajuste do lojista.
+3. **O carrinho do visitante** é calculado sem a promoção de primeira compra, que só vale depois de ele
+   entrar na conta: o valor dele aparece como "até".
+4. A regra da loja viaja junto com os dados do vendedor, para o bloco do produto (que já passava de 250
+   linhas) não crescer. Histórias novas no Storybook para cada estado; teste do cartão de pagamento.
+5. Uma função só (`earningPartsOf`) monta as partes do ganho para o orçamento e para a gravação, e testes
+   e2e comparam o orçamento com o pedido gravado no checkout com cupom e na venda do painel com desconto.

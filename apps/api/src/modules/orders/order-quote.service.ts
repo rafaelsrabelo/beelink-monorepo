@@ -13,7 +13,7 @@ import type { CartQuoteDto, CustomerOrderQuoteDto, ShopOrderQuoteDto } from './d
 import { readOrderLines } from './order-lines.js';
 import { placedAtOf } from './order-placed-at.js';
 import { earningBaseOf, quotedCashbackOf } from '../cashback/cashback-earning.js';
-import { priceOrder, type PricingCustomer, type PricingInput } from './order-pricing.js';
+import { earningPartsOf, priceOrder, type PricingCustomer, type PricingInput } from './order-pricing.js';
 import { orderError } from './orders.constants.js';
 
 type QuoteInput = Omit<PricingInput, 'lines' | 'lock'> & { items: readonly CreateOrderItemInput[]; onSaleOnly: boolean };
@@ -72,14 +72,7 @@ export class OrderQuotes {
     const priced = await priceOrder(this.prisma, { ...input, lines, lock: false });
     // What it would earn, worked out as the order would be when placed (BEELINK-243).
     const rules = await this.prisma.cashbackSettings.findUnique({ where: { storeId: input.storeId } });
-    const base = earningBaseOf({
-      subtotalCents: priced.totals.subtotalCents,
-      promotionDiscountCents: priced.promotionDiscountCents,
-      couponDiscountCents: priced.couponDiscountCents,
-      couponKind: priced.coupon?.kind ?? null,
-      manualDiscountCents: priced.manualDiscountCents,
-      cashbackUsedCents: 0,
-    });
+    const base = earningBaseOf(earningPartsOf(priced, 0));
 
     return {
       lines: lines.map((line, index) => ({

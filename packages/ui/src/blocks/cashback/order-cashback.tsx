@@ -6,7 +6,7 @@ import { defaultLocale, defaultMessages, format } from "@harness-monorepo/ui/loc
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import type { OrderCashbackView } from "@harness-monorepo/ui/lib/cashback"
+import { ratePercentOf, type OrderCashbackView } from "@harness-monorepo/ui/lib/cashback"
 
 export interface OrderCashbackProps {
   cashback: OrderCashbackView
@@ -32,7 +32,7 @@ export function OrderCashback({ cashback, money, date, now = new Date(), locale 
   // A lot past its expiry stays AVAILABLE until the API's sweep takes it: it reads as what it is.
   const expired = cashback.status === "EXPIRED" || (cashback.status === "AVAILABLE" && cashback.expiresAt !== null && new Date(cashback.expiresAt) <= now)
   const usable = cashback.status === "AVAILABLE" && !expired
-  const rate = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 }).format(cashback.rateBps / 10_000)
+  const rate = ratePercentOf(cashback.rateBps, locale)
 
   return (
     <section aria-labelledby={titleId} className="bg-shell-surface border-shell-border flex flex-col gap-2 rounded-xl border p-4 shadow-xs">

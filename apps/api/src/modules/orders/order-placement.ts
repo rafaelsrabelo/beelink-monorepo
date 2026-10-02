@@ -13,7 +13,7 @@ import { refreshBooks } from '../customers/customer-books.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
 import { deliveryOf } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
-import { couponRefused, priceOrder } from './order-pricing.js';
+import { couponRefused, earningPartsOf, priceOrder } from './order-pricing.js';
 import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
 import { takeStock } from './order-stock.js';
@@ -102,14 +102,7 @@ export class OrderPlacement {
       });
       if (priced.refusal) throw couponRefused(priced.refusal);
       // What it will earn, at the shop's rules as they are now (BEELINK-239).
-      const cashback = await earningForOrder(tx, storeId, {
-        subtotalCents: priced.totals.subtotalCents,
-        promotionDiscountCents: priced.promotionDiscountCents,
-        couponDiscountCents: priced.couponDiscountCents,
-        couponKind: priced.coupon?.kind ?? null,
-        manualDiscountCents: priced.manualDiscountCents,
-        cashbackUsedCents: 0,
-      });
+      const cashback = await earningForOrder(tx, storeId, earningPartsOf(priced, 0));
 
       const order = await tx.order.create({
         data: {
