@@ -5,7 +5,7 @@ import type {
   StoreCategory as WireStoreCategory,
 } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
-import type { StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
+import type { CashbackSettingsModel, StoreCategoryModel, StoreModel } from '../../generated/prisma/models.js';
 
 // App
 import { readPageDocument, servedSectionsOf, type SectionShape } from '../page/page-document.js';
@@ -26,6 +26,8 @@ export type StoreRow = StoreModel & {
   /** The home's last published version, or none: its document is what `/<slug>` is served. */
   pageVersions: { document: Prisma.JsonValue }[];
   pages: { slug: string | null; title: string }[];
+  /** Its cashback rules (BEELINK-243); none until first saved. */
+  cashbackSettings: CashbackSettingsModel | null;
 };
 
 /** The one query shape the store mappers accept, so a call site cannot forget the include. */
@@ -47,6 +49,7 @@ export const storeInclude = {
     orderBy: { createdAt: 'asc' },
     select: { slug: true, title: true },
   },
+  cashbackSettings: true,
 } as const;
 
 /** The home's bands a visitor is served, from its last published version. None before the first. */
@@ -111,6 +114,8 @@ export function toPublicStore(
     },
     layoutSettings: parseLayoutSettings(row.layoutSettings),
     paymentMethods: row.paymentMethods,
+    // Only while on: a shop window says what comes back, never that nothing does.
+    cashback: row.cashbackSettings?.enabled ? { rateBps: row.cashbackSettings.rateBps, minSubtotalCents: row.cashbackSettings.minSubtotalCents } : null,
     // Resolved here, where the shop's slug and its route words are already in hand: a banner
     // stores what it points at, never where it lives.
     sections: sections.map((section) =>

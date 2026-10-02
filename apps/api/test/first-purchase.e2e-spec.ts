@@ -180,6 +180,10 @@ describe('a first purchase', () => {
         discountCents: OFF,
         deliveryFeeCents: 0,
         totalCents: 37373,
+        // The shop's cashback is off: a quote says nothing of it (BEELINK-243).
+        cashback: null,
+        // A shopper with no credit has nothing to spend on it (BEELINK-240).
+        cashbackUse: { balanceCents: 0, maxCents: 0, appliedCents: 0, unavailable: 'NO_BALANCE' },
       });
       expect(await checkoutQuote()).toEqual(mine);
 

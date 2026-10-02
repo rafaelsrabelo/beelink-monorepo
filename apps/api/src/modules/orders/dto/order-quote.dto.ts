@@ -3,10 +3,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsISO8601, IsObject, IsOptional, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsInt, IsISO8601, IsObject, IsOptional, Max, Min, ValidateNested } from 'class-validator';
 
 // Types
 import type {
+  QuotedCashback,
   CartQuotePayload,
   CouponKind,
   CouponRefusalReason,
@@ -21,6 +22,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { QuotedCashbackResponse, QuotedCashbackUseResponse } from '../../cashback/dto/cashback.response.js';
 import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
 import { ORDER_AMOUNT_MAX_CENTS, ORDER_FULFILLMENTS, ORDER_ITEMS_MAX } from '../orders.constants.js';
 import { couponCode, OrderCustomerDto, OrderItemDto } from './order.dto.js';
@@ -58,6 +60,11 @@ export class CustomerCartQuoteDto implements CustomerCartQuotePayload {
   @ApiProperty({ enum: ORDER_FULFILLMENTS })
   @IsIn(ORDER_FULFILLMENTS)
   fulfillment!: OrderFulfillment;
+
+  @ApiPropertyOptional({ description: 'Apply the most of the customer\'s credit the cart can take (BEELINK-240). Absent is not to.' })
+  @IsOptional()
+  @IsBoolean()
+  useCashback?: boolean;
 }
 
 /** The signed-in customer's cart, with the coupon they typed. */
@@ -76,6 +83,11 @@ export class CustomerOrderQuoteDto implements CustomerOrderQuotePayload {
 
   @couponCode
   couponCode?: string | null;
+
+  @ApiPropertyOptional({ description: 'Apply the most of the customer\'s credit the cart can take (BEELINK-240). Absent is not to.' })
+  @IsOptional()
+  @IsBoolean()
+  useCashback?: boolean;
 }
 
 /** The panel's sale before it is registered: what of `CreateOrderDto` prices it. */
@@ -118,6 +130,11 @@ export class ShopOrderQuoteDto implements Omit<ShopOrderQuotePayload, 'customer'
 
   @couponCode
   couponCode?: string | null;
+
+  @ApiPropertyOptional({ description: 'Apply the most of the customer\'s credit the cart can take (BEELINK-240). Absent is not to.' })
+  @IsOptional()
+  @IsBoolean()
+  useCashback?: boolean;
 
   @ApiPropertyOptional({ format: 'date-time', description: 'When it was sold; absent is now. Promotions and the coupon are read at it.' })
   @IsOptional()
@@ -168,4 +185,6 @@ export class OrderQuoteResponse implements Omit<OrderQuote, 'coupon'> {
   @ApiProperty({ description: 'Promotions, coupon and typed discount together.' }) discountCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: "Null on a delivery whose fee is not agreed yet; zero on a pick-up." }) deliveryFeeCents!: number | null;
   @ApiProperty() totalCents!: number;
+  @ApiProperty({ type: QuotedCashbackResponse, nullable: true, description: 'What it would earn once delivered; null while the cashback is off.' }) cashback!: QuotedCashback | null;
+  @ApiProperty({ type: QuotedCashbackUseResponse, nullable: true, description: "The customer's credit against the cart; the total is already less what was applied. Null on a visitor's cart." }) cashbackUse!: QuotedCashbackUseResponse | null;
 }

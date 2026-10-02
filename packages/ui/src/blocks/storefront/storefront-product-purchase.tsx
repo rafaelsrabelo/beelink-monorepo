@@ -4,10 +4,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 // UI
+import { earnedOnPrice, ratePercentOf, type ShopCashbackRule } from "@harness-monorepo/ui/lib/cashback"
 import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
@@ -15,9 +16,16 @@ import { WhatsAppIcon } from "../store/store-brand-icons"
 import type { PaymentMethod } from "../store/store-types"
 import { BUY_PILL, StorefrontBuyActions } from "./storefront-buy-actions"
 import { StorefrontBuyBar } from "./storefront-buy-bar"
-import { StorefrontPrice } from "./storefront-price"
+import { formatCents, StorefrontPrice } from "./storefront-price"
 import { StorefrontProductBuy } from "./storefront-product-buy"
 import { StorefrontSellerTable } from "./storefront-seller-table"
+
+/** Who sells it — and, while the shop's cashback is on, the rule (BEELINK-243), for the box to say what the purchase earns. */
+export interface StorefrontSeller {
+  name: string
+  paymentMethods: readonly PaymentMethod[]
+  cashback?: ShopCashbackRule | null
+}
 
 export interface StorefrontProductPurchaseProps {
   name: string
@@ -42,10 +50,21 @@ export interface StorefrontProductPurchaseProps {
   orderHref?: string
   /** The shop takes its orders on WhatsApp, which the box says under the buttons. */
   finishesOnWhatsApp?: boolean
-  seller?: { name: string; paymentMethods: readonly PaymentMethod[] }
+  seller?: StorefrontSeller
   /** Last in the box, as 5b draws it: the web's "Adicionar aos favoritos". */
   favorite?: ReactNode
   messages?: UiMessages
+}
+
+/**
+ * What the purchase earns at the shop's rule, as "up to": the box knows the price and the quantity,
+ * not the order — a first-purchase promotion, a coupon or a discount on the cart can only lower it,
+ * and the cart says the exact amount. Under the minimum, from what order up it earns.
+ */
+function cashbackLineOf(totalCents: number, rule: ShopCashbackRule, locale: string, text: UiMessages["storefront"]): string {
+  const earned = earnedOnPrice(totalCents, rule)
+  if (earned !== null) return format(text.productCashback, { amount: formatCents(earned, locale, "BRL") })
+  return format(text.productCashbackFrom, { rate: ratePercentOf(rule.rateBps, locale), minimum: formatCents(rule.minSubtotalCents, locale, "BRL") })
 }
 
 /**
@@ -116,6 +135,7 @@ export function StorefrontProductPurchase({
     <>
       <StorefrontProductBuy messages={messages}>
         {showPrice ? <StorefrontPrice priceCents={priceCents} compareAtPriceCents={compareAtPriceCents} locale={locale} size="buyBox" messages={messages} /> : null}
+        {showPrice && available && seller?.cashback ? <p className="text-sm font-semibold text-shop-positive-ink">{cashbackLineOf(priceCents * qty, seller.cashback, locale, text)}</p> : null}
 
         {available ? (
           showStock ? <p className="text-lg leading-[1.2] font-bold text-shop-positive-ink">{text.inStock}</p> : null

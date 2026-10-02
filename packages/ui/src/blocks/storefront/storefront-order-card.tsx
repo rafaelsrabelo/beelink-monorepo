@@ -29,6 +29,8 @@ export interface StorefrontOrderCardProps {
   total: string
   /** What was taken off, under the total — "Desconto de R$ 42,50 · cupom BEMVINDO10"; absent with nothing. */
   saving?: string | null
+  /** What the order earns in cashback and where that credit stands, in words (BEELINK-243); none, and nothing is said. */
+  cashback?: string | null
   /** Who receives it, or the pick-up; null hides the column. */
   shipTo: string | null
   headline: string
@@ -75,6 +77,7 @@ export function StorefrontOrderCard({
   placedOn,
   total,
   saving,
+  cashback = null,
   shipTo,
   headline,
   detail,
@@ -116,6 +119,7 @@ export function StorefrontOrderCard({
         <div className="flex flex-col gap-0.5">
           <p className={cn("text-lg font-extrabold", TONE[tone])}>{headline}</p>
           {detail ? <p className="text-sm text-shop-muted">{detail}</p> : null}
+          {cashback ? <p className="text-sm font-semibold text-shop-positive-ink">{cashback}</p> : null}
         </div>
 
         <ul className="flex flex-col gap-3">

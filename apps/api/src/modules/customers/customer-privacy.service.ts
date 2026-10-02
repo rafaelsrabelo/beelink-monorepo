@@ -10,6 +10,8 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { UserModel } from '../../generated/prisma/models.js';
 
 // App
+import { forfeitCashback } from '../cashback/cashback-orders.js';
+import { creditsOf, entriesOf } from '../cashback/cashback-reads.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { toCustomerConversation } from '../conversations/conversations.mapper.js';
 import { favoriteInclude, toCustomerFavorite } from '../favorites/favorite-reading.js';
@@ -29,6 +31,7 @@ const FORGOTTEN = {
   claimedPhone: null,
   notifyOrders: true,
   notifyFavorites: true,
+  notifyCashback: true,
   notifyOffers: false,
   notifyOffersAt: null,
 } as const;
@@ -51,7 +54,7 @@ export class CustomerPrivacyService {
     const { storeId, shopName, user, record } = await this.customers.shopperRecordAt(storeSlug, userId);
     const customerId = record.id;
 
-    const [account, addresses, orders, favorites, reviews, talked] = await Promise.all([
+    const [account, addresses, orders, favorites, reviews, talked, credits, entries] = await Promise.all([
       this.prisma.user.findUniqueOrThrow({
         where: { id: user.id },
         include: { identities: { select: { provider: true } }, legalAcceptances: { orderBy: { acceptedAt: 'asc' } } },
@@ -65,6 +68,8 @@ export class CustomerPrivacyService {
         orderBy: [{ placedAt: 'desc' }, { number: 'desc' }],
         select: { number: true, status: true, fulfillment: true, conversation: { select: { messages: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } } } },
       }),
+      creditsOf(this.prisma, customerId, new Date()),
+      entriesOf(this.prisma, customerId),
     ]);
 
     return {
@@ -84,6 +89,7 @@ export class CustomerPrivacyService {
       favorites: favorites.map(toCustomerFavorite),
       reviews: reviews.map(toCustomerReview),
       conversations: talked.map((order) => toCustomerConversation(order, order.conversation?.messages ?? [])),
+      cashback: { balanceCents: credits.balanceCents, pendingCents: credits.pendingCents, credits: credits.credits, entries },
     } satisfies CustomerDataExport;
   }
 
@@ -104,7 +110,7 @@ export class CustomerPrivacyService {
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
       // Read again under it: a merge in the panel may have folded the record into another since.
       const record = await tx.customer.findUnique({ where: { storeId_userId: { storeId, userId: user.id } }, select: { id: true } });
-      if (record) await this.forget(tx, record.id);
+      if (record) await this.forget(tx, storeId, record.id);
 
       const sessions = await tx.session.findMany({ where: { userId: user.id }, select: { id: true } });
       await tx.user.delete({ where: { id: user.id } });
@@ -117,19 +123,23 @@ export class CustomerPrivacyService {
   }
 
   /**
-   * What the shopper kept for themselves goes. A record the shop's books name — an order, a review —
+   * What the shopper kept for themselves goes. A record the shop's books name — an order, a review, a cashback statement —
    * stays, down to a name and a phone; one they do not is deleted, with its cascades. Favourites
    * before their notices: a watch writing a notice holds its favourite's row, so waiting on that row
    * lets the notice land first and go with the rest.
    */
-  private async forget(tx: Prisma.TransactionClient, customerId: string): Promise<void> {
+  private async forget(tx: Prisma.TransactionClient, storeId: string, customerId: string): Promise<void> {
     await lockCustomer(tx, customerId);
+    // Their credit goes with the account (BEELINK-239), told by a line of the shop's statement.
+    await forfeitCashback(tx, storeId, customerId, new Date());
     const orders = await tx.order.count({ where: { customerId } });
     const reviews = await tx.productReview.count({ where: { customerId } });
+    // The shop's statement of what it gave them (BEELINK-238) is its books too, and its adjustments name who made them.
+    const cashback = await tx.cashbackEntry.count({ where: { customerId } });
 
     await tx.customerFavorite.deleteMany({ where: { customerId } });
     await tx.favoriteNotice.deleteMany({ where: { customerId } });
-    if (orders > 0 || reviews > 0) {
+    if (orders > 0 || reviews > 0 || cashback > 0) {
       // The orders keep where each one went; the saved addresses were the shopper's, not the books'.
       await tx.customerAddress.deleteMany({ where: { customerId } });
       await tx.customer.update({ where: { id: customerId }, data: FORGOTTEN });

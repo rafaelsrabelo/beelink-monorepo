@@ -8,6 +8,7 @@ import type { StorefrontOrderStatusProps } from "@harness-monorepo/ui/blocks/sto
 import type { StorefrontOrderTrackingProps } from "@harness-monorepo/ui/blocks/storefront/storefront-order-tracking"
 
 // UI
+import { customerCashbackLineOf } from "@harness-monorepo/ui/lib/cashback"
 import { discountLinesOf, linePromotionOf } from "@harness-monorepo/ui/lib/order-discounts"
 import { customerTotalText, feeLineOf } from "@harness-monorepo/ui/lib/order-total"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
@@ -15,7 +16,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { zipCodeOf } from "./customer-address"
-import { momentOf, orderStatusLineOf, type OrderCardContext } from "./order-card-view"
+import { dayOf, momentOf, orderStatusLineOf, type OrderCardContext } from "./order-card-view"
 import { estimateLineOf } from "./order-estimate"
 import { orderStepsOf } from "./order-steps"
 import { reviewHrefOf } from "./review-view"
@@ -184,7 +185,12 @@ export function orderPaymentOf(order: CustomerOrder, { locale, messages }: Pick<
         ]),
     ...discountLinesOf(order, money, messages.orders.discountRows).map(({ label, value }) => ({ label, value, positive: true })),
   ]
-  return { rows, total: customerTotalText(money(order.totalCents), order, text.orderTotalPlusFee), method: format(text.orderPaymentAgreed, { method: messages.orders.payments[order.paymentMethod] }) }
+  return {
+    rows,
+    total: customerTotalText(money(order.totalCents), order, text.orderTotalPlusFee),
+    method: format(text.orderPaymentAgreed, { method: messages.orders.payments[order.paymentMethod] }),
+    cashback: customerCashbackLineOf(order.cashback, { money, date: (iso) => dayOf(iso, locale), now: new Date(), text: text.orderCashback }),
+  }
 }
 
 /** Where it goes — who receives it, then the address line by line — or the shop it is picked up at. Null for a delivery that recorded none. */

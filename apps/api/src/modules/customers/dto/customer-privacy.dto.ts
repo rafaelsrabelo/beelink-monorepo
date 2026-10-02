@@ -8,6 +8,7 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 import type { CustomerDataAccount, CustomerDataExport, CustomerDataRecord, CustomerSignInMethod, CustomerTermsAcceptance, DeleteCustomerAccountPayload, LegalAcceptanceChannel } from '@harness-monorepo/contracts';
 
 // App
+import { CustomerDataCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { PASSWORD_MAX_LENGTH } from '../../auth/auth.constants.js';
 import { CustomerConversationResponse } from '../../conversations/dto/conversation.dto.js';
 import { CustomerFavoriteResponse } from '../../favorites/dto/favorite.dto.js';
@@ -60,4 +61,5 @@ export class CustomerDataExportResponse implements CustomerDataExport {
   @ApiProperty({ type: [CustomerFavoriteResponse] }) favorites!: CustomerFavoriteResponse[];
   @ApiProperty({ type: [CustomerReviewResponse] }) reviews!: CustomerReviewResponse[];
   @ApiProperty({ type: [CustomerConversationResponse] }) conversations!: CustomerConversationResponse[];
+  @ApiProperty({ type: CustomerDataCashbackResponse }) cashback!: CustomerDataCashbackResponse;
 }

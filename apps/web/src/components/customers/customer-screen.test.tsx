@@ -25,6 +25,8 @@ const mocks = vi.hoisted(() => ({
   reset: vi.fn(),
   merge: vi.fn(),
   mergeMutate: vi.fn(),
+  cashback: vi.fn(),
+  adjust: vi.fn(),
 }))
 
 vi.mock("next/navigation", () => ({
@@ -35,6 +37,10 @@ vi.mock("@/services/customers/customer-hooks", () => ({ useStoreCustomer: mocks.
 vi.mock("@/services/customers/customer-record-hooks", () => ({ useUpdateStoreCustomer: mocks.update, useMergeStoreCustomer: mocks.merge }))
 vi.mock("@/services/orders/order-hooks", () => ({ useOrders: mocks.orders }))
 vi.mock("@/services/stores/store-hooks", () => ({ useStore: () => ({ data: { name: "Loja do Design" } }) }))
+vi.mock("@/services/cashback/cashback-hooks", () => ({
+  useCustomerCashback: mocks.cashback,
+  useAdjustCashback: () => ({ mutate: mocks.adjust, reset: vi.fn(), isPending: false, error: null }),
+}))
 
 const ID = "0199aaaa-bbbb-7ccc-8ddd-eeeeffff0001"
 
@@ -76,6 +82,13 @@ function saving(over: object = {}) {
 }
 
 beforeEach(() => {
+  // BEELINK-242: the record's cashback, read apart from the record.
+  mocks.cashback.mockReturnValue({
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    data: { balanceCents: 750, pendingCents: 0, nextExpiry: null, credits: [], entries: [{ id: "e1", kind: "EARN", amountCents: 750, orderNumber: 14, reason: null, createdAt: "2026-09-21T10:00:00.000Z" }], total: 1, page: 1, pageSize: 20 },
+  })
   mocks.search = new URLSearchParams()
   mocks.record.mockReturnValue({ data: caio, error: null, isPending: false })
   mocks.orders.mockReturnValue({ data: history, error: null, isFetching: false })
@@ -92,6 +105,15 @@ function renderScreen() {
 }
 
 describe("CustomerScreen", () => {
+  it("shows the customer's cashback beside their details: the balance and the statement", () => {
+    renderScreen()
+
+    const cashback = screen.getByRole("region", { name: "Cashback" })
+    expect(within(cashback).getByText("Saldo").nextElementSibling?.textContent?.replace(/\s/g, " ")).toBe("R$ 7,50")
+    expect(within(cashback).getByText("Ganho")).toBeInTheDocument()
+    expect(within(cashback).getByRole("button", { name: "Ajustar saldo" })).toBeInTheDocument()
+  })
+
   it("shows who the customer is, where they stand and their figures, the average ticket to the cent", () => {
     renderScreen()
 

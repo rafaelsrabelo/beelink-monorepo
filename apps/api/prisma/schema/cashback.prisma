@@ -1,0 +1,164 @@
+/// Where a credit lot stands (BEELINK-238). Pending until its order is delivered; available from then,
+/// until it is spent, expires or its order is undone.
+enum CashbackCreditStatus {
+  PENDING
+  AVAILABLE
+  VOIDED
+  EXPIRED
+}
+
+/// What a line of a customer's cashback statement records. A line is never edited: a mistake is
+/// answered by another line.
+enum CashbackEntryKind {
+  /// A pending credit became available — its order was delivered.
+  EARN
+  /// Credit spent on an order.
+  REDEEM
+  /// An earned credit taken back — its order was cancelled or left delivered — or a spent one given
+  /// back, by the order it was spent on being cancelled. The sign says which.
+  REVERSAL
+  /// What was left of a lot when its validity ran out.
+  EXPIRE
+  /// The shopkeeper's correction, either way, with its reason.
+  ADJUST
+  /// What was left when the customer deleted their account: the credit went with it (BEELINK-239).
+  FORFEIT
+}
+
+/// A shop's cashback rules (docs/product/README.md, "Cashback"). One row per shop, written the first
+/// time the shopkeeper saves them; a shop without one reads the defaults the API states, switched off.
+/// A change applies to orders placed from then on: a lot keeps the validity it was given, and an order
+/// the rate it was placed at.
+model CashbackSettings {
+  storeId String @id @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  enabled          Boolean @default(false)
+  /// Basis points of what the customer paid for the products, 1 to 10000 (500 = 5.00%), by a CHECK.
+  rateBps          Int
+  /// Days a credit stays usable once available, 1 to 3650; null never expires.
+  expiresAfterDays Int?
+  /// The products' total, after discounts, an order must reach to earn; 0 is any order.
+  minSubtotalCents Int     @default(0)
+  /// Basis points of an order's products, after discounts, that credit may pay for, 1 to 10000.
+  maxRedeemBps     Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cashback_settings")
+}
+
+/// A lot of credit: what one order earned, or what the shopkeeper gave by hand. Its state; the
+/// statement is its history. What is left of it is spent soonest-expiring first, and it is what an
+/// expiry or an undone order takes from.
+model CashbackCredit {
+  id         String               @id @default(uuid(7)) @db.Uuid
+  storeId    String               @db.Uuid
+  store      Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customerId String               @db.Uuid
+  customer   Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// The order that earns it; null for a credit the shopkeeper gave. One lot per order, by the unique
+  /// index: an order delivered twice, or by two people at once, reopens its lot and never makes another.
+  orderId    String?              @unique @db.Uuid
+  order      Order?               @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  status     CashbackCreditStatus
+  /// What it is worth, 1 or more.
+  amountCents    Int
+  /// What is left to spend, 0 to `amountCents`, by a CHECK. Counts towards the balance only while AVAILABLE.
+  remainingCents Int
+  /// When it became usable; null while pending.
+  availableAt DateTime?
+  /// When what is left of it expires; null never does.
+  expiresAt   DateTime?
+  /// The shop's validity when its order was placed, in days; null never expires. Kept because the
+  /// validity counts from the delivery, and a rule changed meanwhile applies to new orders only.
+  /// Null on a credit the shopkeeper gave, whose expiry is set at once.
+  validityDays Int?
+  /// What the customer had already spent of it when its order was undone — the balance stops at zero
+  /// (decided 01/10/2026), so this is what the shop did not get back. A delivery again pays it out
+  /// less this, and the panel shows it. 0 to `amountCents`, by a CHECK.
+  unrecoveredCents Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries     CashbackEntry[]
+  /// What orders spent of it (BEELINK-240), to give back to it when one is cancelled.
+  redemptions CashbackRedemption[]
+  /// The e-mail owed before it expires (BEELINK-241); one per lot, ever.
+  expiryNotice CashbackExpiryNotice?
+
+  /// What a customer can spend, in the order it is spent.
+  @@index([customerId, status, expiresAt])
+  /// What the shop owes, and what expires soon.
+  @@index([storeId, status, expiresAt])
+  @@map("cashback_credits")
+}
+
+/// One line of a customer's cashback statement. Only ever inserted. Its amounts add up to the
+/// customer's available balance — a pending credit is not on it until its order is delivered.
+model CashbackEntry {
+  id         String            @id @default(uuid(7)) @db.Uuid
+  storeId    String            @db.Uuid
+  store      Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customerId String            @db.Uuid
+  customer   Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  kind       CashbackEntryKind
+  /// Signed, never 0: what it added to the balance, or took from it.
+  amountCents Int
+  /// The lot it touched; null for a use, which touches several.
+  creditId   String?         @db.Uuid
+  credit     CashbackCredit? @relation(fields: [creditId], references: [id], onDelete: SetNull)
+  /// The order it came from.
+  orderId    String?         @db.Uuid
+  order      Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  /// Why the shopkeeper adjusted, in their words. Only on an ADJUST.
+  reason     String?         @db.VarChar(200)
+  /// Who adjusted. Kept for the shop's own record, never shown to the customer.
+  actorUserId String?        @db.Uuid
+  actor       User?          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  /// The statement, the newest first.
+  @@index([customerId, createdAt(sort: Desc)])
+  @@map("cashback_entries")
+}
+
+/// What one order spent of one lot (BEELINK-240): a use takes from several lots, soonest to expire
+/// first, and a cancelled order gives each back what it took — so the credit returns with the
+/// validity it had. `returnedAt` is set once it was given back, so it is given back once.
+model CashbackRedemption {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  orderId     String         @db.Uuid
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  creditId    String         @db.Uuid
+  credit      CashbackCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  /// 1 or more, by a CHECK.
+  amountCents Int
+  createdAt   DateTime       @default(now())
+  returnedAt  DateTime?
+
+  @@unique([orderId, creditId])
+  @@index([creditId])
+  @@map("cashback_redemptions")
+}
+
+/// The e-mail a lot owes its customer before it expires (BEELINK-241): one per lot, by the unique
+/// index, written by the sweep that finds it inside the window and paid by `CashbackExpiryMailer`, an
+/// outbox like the others. What it says is read when it is sent: a lot spent or taken back since owes
+/// nothing.
+model CashbackExpiryNotice {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  creditId      String         @unique @db.Uuid
+  credit        CashbackCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  attempts      Int            @default(0)
+  nextAttemptAt DateTime       @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime       @default(now())
+
+  /// What the outbox claims: owed and due.
+  @@index([sentAt, nextAttemptAt])
+  @@map("cashback_expiry_notices")
+}

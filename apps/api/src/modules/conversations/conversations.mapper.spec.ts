@@ -12,6 +12,7 @@ const message = (author: 'CUSTOMER' | 'SHOP', readAt: Date | null) => ({
   userId: 'u1',
   body: 'Oi',
   status: null,
+  cashbackCents: null,
   createdAt: at,
   readAt,
 });
@@ -22,6 +23,7 @@ const notice = (status: 'ACCEPTED' | 'OUT_FOR_DELIVERY', readAt: Date | null) =>
   userId: null,
   body: '',
   status,
+  cashbackCents: null,
   createdAt: at,
   readAt,
 });
@@ -58,6 +60,7 @@ describe('the conversation, as each side reads it', () => {
       kind: 'STATUS',
       id: 'SYSTEM-OUT_FOR_DELIVERY',
       status: 'OUT_FOR_DELIVERY',
+      cashbackCents: null,
       createdAt: '2026-09-29T12:00:00.000Z',
       readAt: null,
     });

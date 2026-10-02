@@ -67,8 +67,8 @@ describe("the conversations' tab", () => {
       customer: { id: "c", name: "Carla", hasAccount: true },
       unread: 0,
       messages: [
-        { kind: "STATUS", id: "1", status: "RECEIVED", createdAt: at, readAt: at },
-        { kind: "STATUS", id: "2", status: "ACCEPTED", createdAt: at, readAt: null },
+        { kind: "STATUS", id: "1", status: "RECEIVED", cashbackCents: null, createdAt: at, readAt: at },
+        { kind: "STATUS", id: "2", status: "ACCEPTED", cashbackCents: null, createdAt: at, readAt: null },
       ],
     } as ShopConversation
 
@@ -77,5 +77,17 @@ describe("the conversations' tab", () => {
       [true, false, "Pedido aceito"],
     ])
     expect(shopConversationStateOf(conversation)).toBe("open")
+  })
+
+  /** BEELINK-239: the shop reads what its customer was told they earned, as a sentence of its own. */
+  it("tells the cashback a delivery made usable after its notice", () => {
+    const delivered = {
+      order: { number: 18, status: "DELIVERED", fulfillment: "PICKUP", open: false },
+      customer: { id: "c", name: "Carla", hasAccount: true },
+      unread: 0,
+      messages: [{ kind: "STATUS", id: "1", status: "DELIVERED", cashbackCents: 500, createdAt: at, readAt: null }],
+    } as ShopConversation
+
+    expect(shopConversationLinesOf(delivered, context)[0]?.body.replace(/\s/g, " ")).toBe("Pedido retirado na loja. O cliente ganhou R$ 5,00 de cashback.")
   })
 })

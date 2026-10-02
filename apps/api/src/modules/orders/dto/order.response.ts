@@ -21,6 +21,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { ShopOrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import { ORDER_DELIVERY_KINDS, ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
@@ -105,6 +106,8 @@ export class OrderResponse implements Order {
   @ApiProperty({ description: "The sum of the lines' promotion discounts." }) promotionDiscountCents!: number;
   @ApiProperty({ description: 'What the coupon took off; on a free delivery, the fee.' }) couponDiscountCents!: number;
   @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
+  @ApiProperty({ type: ShopOrderCashbackResponse, nullable: true, description: 'What it earns in cashback, and where that credit stands; null when it earns none.' }) cashback!: ShopOrderCashbackResponse | null;
+  @ApiProperty({ description: "The customer's credit it spent, taken off the total apart from the discount." }) cashbackUsedCents!: number;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ nullable: true, type: String }) note!: string | null;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;

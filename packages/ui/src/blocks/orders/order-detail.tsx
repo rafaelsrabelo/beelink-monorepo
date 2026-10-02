@@ -11,6 +11,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { formatCents } from "../storefront/storefront-price"
+import { OrderCashback } from "../cashback/order-cashback"
 import { OrderFacts } from "./order-facts"
 import { OrderHistory } from "./order-history"
 import { OrderItems } from "./order-items"
@@ -62,6 +63,7 @@ export function OrderDetail({
   const money = (cents: number) => formatCents(cents, locale, currency)
   const date = new Intl.DateTimeFormat(locale, { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
   const when = (iso: string) => date.format(new Date(iso))
+  const day = (iso: string) => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso))
 
   return (
     <div className="flex flex-col gap-6">
@@ -100,6 +102,7 @@ export function OrderDetail({
         </div>
         <div className="flex flex-col gap-6">
           {delivery}
+          {order.cashback ? <OrderCashback cashback={order.cashback} money={money} date={day} locale={locale} messages={messages} /> : null}
           <OrderFacts
             order={order}
             deliveryLine={deliveryLine}

@@ -20,6 +20,13 @@ interface ConversationContext {
   messages: UiMessages
 }
 
+/** A delivery's notice with the cashback it made usable (BEELINK-239), in the reader's money: one sentence of the copy's, which owns the punctuation between them. */
+export function noticeWithCashback(notice: string, cashbackCents: number | null, cashbackText: string, locale: string): string {
+  if (!cashbackCents) return notice
+  const amount = new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" }).format(cashbackCents / 100)
+  return format(cashbackText, { notice, amount })
+}
+
 /** The list's rows, in the API's order: those still taking messages first. */
 export function conversationRowsOf(summaries: readonly CustomerConversationSummary[], { routes, locale, messages }: ConversationContext & { routes: StorefrontRoutes }): StorefrontConversationRow[] {
   const text = messages.storefront
@@ -53,7 +60,7 @@ export function conversationLinesOf(conversation: CustomerConversation, { locale
           id: message.id,
           mine: false,
           notice: true,
-          body: text.conversationNotices[statusNoticeKeyOf(message.status, conversation.order.fulfillment)],
+          body: noticeWithCashback(text.conversationNotices[statusNoticeKeyOf(message.status, conversation.order.fulfillment)], message.cashbackCents, text.conversationCashback, locale),
           when: momentOf(message.createdAt, locale),
         }
       : {

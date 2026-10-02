@@ -3,6 +3,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { CustomerModel } from '../../generated/prisma/models.js';
 
 // App
+import { moveCashback } from '../cashback/cashback-ledger.js';
 import { countOut } from '../reviews/review-books.js';
 import { lockCustomer } from './customer-lock.js';
 import { refreshBooks } from './customer-books.js';
@@ -37,7 +38,7 @@ async function moveReviews(tx: Tx, keptId: string, goneId: string): Promise<void
 }
 
 /**
- * The other record's orders and addresses moved to the kept one, which fills a phone, a CPF or a
+ * The other record's orders, addresses and cashback moved to the kept one, which fills a phone, a CPF or a
  * birth date it lacks and reads its books again; then the other is gone. Under the shop's row lock,
  * the one an order takes, so an order placed meanwhile is either moved with the rest or refused as
  * for a customer no longer there — never left pointing at a deleted row.
@@ -57,6 +58,8 @@ export async function mergeInto(tx: Tx, kept: CustomerModel, gone: CustomerModel
     SET "customerId" = ${kept.id}::uuid, "isDefault" = "isDefault" AND NOT ${keptHasDefault}::boolean
     WHERE "customerId" = ${gone.id}::uuid`;
   await moveReviews(tx, kept.id, gone.id);
+  // Their credit is one person's too (BEELINK-238): the statements join, and the balances add up.
+  await moveCashback(tx, kept.id, gone.id);
   // Gone before the kept one takes its phone: the index would refuse the two holding it at once.
   await tx.customer.delete({ where: { id: gone.id } });
 

@@ -68,7 +68,7 @@ describe("an order's conversation", () => {
     expect(born.statusCode).toBe(200);
     expect(born.json<CustomerConversation>()).toEqual({
       order: { number: 1, status: 'RECEIVED', fulfillment: 'PICKUP', open: true },
-      messages: [{ kind: 'STATUS', id: expect.any(String), status: 'RECEIVED', createdAt: expect.any(String), readAt: expect.any(String) }],
+      messages: [{ kind: 'STATUS', id: expect.any(String), status: 'RECEIVED', cashbackCents: null, createdAt: expect.any(String), readAt: expect.any(String) }],
       unread: 0,
     });
 
@@ -160,7 +160,7 @@ describe("an order's conversation", () => {
     await prisma.orderConversation.deleteMany({ where: { order: { number: 2 } } });
     await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'ACCEPTED' });
     const later = (await call('GET', mine(2), shopper)).json<CustomerConversation>();
-    expect(later.messages).toEqual([{ kind: 'STATUS', id: expect.any(String), status: 'ACCEPTED', createdAt: expect.any(String), readAt: null }]);
+    expect(later.messages).toEqual([{ kind: 'STATUS', id: expect.any(String), status: 'ACCEPTED', cashbackCents: null, createdAt: expect.any(String), readAt: null }]);
   });
 
   it('closes when the order is over, and stays readable to both sides', async () => {

@@ -33,6 +33,8 @@ model User {
   pageVersions StorePageVersion[]
   /// Each version of bee-link's terms this account accepted (BEELINK-171).
   legalAcceptances LegalAcceptance[]
+  /// The cashback adjustments this shopkeeper made (BEELINK-238).
+  cashbackAdjustments CashbackEntry[]
 
   @@unique([storeId, email])
   // The composite above leaves bee-link's accounts unconstrained — Postgres counts every null

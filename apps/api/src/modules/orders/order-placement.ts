@@ -7,12 +7,15 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { earningForOrder, holdOrderCashback } from '../cashback/cashback-orders.js';
+import { redeemCashback } from '../cashback/cashback-redemption.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
+import { lockCustomer } from '../customers/customer-lock.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
 import { deliveryOf } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
-import { couponRefused, priceOrder } from './order-pricing.js';
+import { cashbackRefused, couponRefused, earningPartsOf, priceOrder } from './order-pricing.js';
 import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
 import { takeStock } from './order-stock.js';
@@ -35,6 +38,8 @@ export interface Placement {
   discountCents: number;
   /** As it was typed; null is none. One that does not hold refuses the order. */
   couponCode: string | null;
+  /** The customer's credit to spend, as the quote offered it; 0 is none. More than they can spend now refuses the order. */
+  cashbackCents: number;
   note: string | null;
   placedAt: Date;
   /** The shopkeeper registers a sale they already agreed, `ACCEPTED`; a customer's order waits, `RECEIVED`. */
@@ -83,10 +88,16 @@ export class OrderPlacement {
     const lines = await readOrderLines(this.prisma, storeId, placement.items, placement.onSaleOnly);
 
     const placed = await this.prisma.$transaction(async (tx) => {
+      // One instant for the credit it counts and the credit it spends.
+      const now = new Date();
       const number = await this.nextNumber(tx, storeId);
+      const customerId = await placement.customerOf(tx);
+      // The customer's row before the products', the order a like and a cancellation take them in:
+      // a like holding the customer while it waits on a product this order holds would otherwise
+      // deadlock against the order's own writes to the customer — their books, their credit.
+      await lockCustomer(tx, customerId);
       // Before the order is written: a line the stock cannot cover refuses the whole order.
       await takeStock(tx, lines);
-      const customerId = await placement.customerOf(tx);
       const delivery = await deliveryOf(tx, customerId, placement.fulfillment, placement.addressId);
       const priced = await priceOrder(tx, {
         storeId,
@@ -98,8 +109,14 @@ export class OrderPlacement {
         customer: { id: customerId },
         at: placement.placedAt,
         lock: true,
+        cashback: placement.cashbackCents,
+        now,
       });
       if (priced.refusal) throw couponRefused(priced.refusal);
+      if (priced.cashbackUse?.refusal) throw cashbackRefused(priced.cashbackUse.refusal);
+      const cashbackUsedCents = priced.cashbackUse?.appliedCents ?? 0;
+      // What it will earn, at the shop's rules as they are now (BEELINK-239).
+      const cashback = await earningForOrder(tx, storeId, earningPartsOf(priced, cashbackUsedCents));
 
       const order = await tx.order.create({
         data: {
@@ -115,6 +132,8 @@ export class OrderPlacement {
           couponDiscountCents: priced.couponDiscountCents,
           couponCode: priced.coupon?.code ?? null,
           couponKind: priced.coupon?.kind ?? null,
+          cashbackEarnedCents: cashback?.earnedCents ?? 0,
+          cashbackRateBps: cashback?.rateBps ?? null,
           note: placement.note,
           placedAt: placement.placedAt,
           stockTaken: true,
@@ -130,17 +149,20 @@ export class OrderPlacement {
           },
           events: { create: { status, actor, userId } },
         },
-        include: ORDER_INCLUDE,
+        select: { id: true },
       });
 
       if (priced.coupon) await redeemCoupon(tx, priced.coupon.id, order.id, priced.couponDiscountCents);
+      if (cashbackUsedCents > 0) await redeemCashback(tx, { storeId, customerId, orderId: order.id, cents: cashbackUsedCents, now });
+      if (cashback) await holdOrderCashback(tx, { storeId, customerId, orderId: order.id, earnedCents: cashback.earnedCents, validityDays: cashback.validityDays });
       await refreshBooks(tx, customerId);
       // The conversation is born with the order, its first status the first line. Told now, whatever
       // day the shopkeeper dated the sale; not news to a customer who placed it themselves.
       await noteOrderStatus(tx, { order: { id: order.id, customerId }, status, at: new Date(), seen: actor === 'CUSTOMER' });
       // A sale the shopkeeper registers is born accepted, which the customer hears of like any move.
       const owed = await oweStatusEmail(tx, { order: { id: order.id, customerId }, status, byCustomer: actor === 'CUSTOMER' });
-      return { order, owed };
+      // Read once everything placing it did is written: its cashback's lot included.
+      return { order: await tx.order.findUniqueOrThrow({ where: { id: order.id }, include: ORDER_INCLUDE }), owed };
     });
     if (placed.owed) this.mailer.dispatch();
     return placed.order;

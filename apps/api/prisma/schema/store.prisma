@@ -157,6 +157,10 @@ model Store {
   productReviews    ProductReview[]
   promotions        Promotion[]
   coupons           Coupon[]
+  /// Its cashback rules (BEELINK-238); none until first saved.
+  cashbackSettings  CashbackSettings?
+  cashbackCredits   CashbackCredit[]
+  cashbackEntries   CashbackEntry[]
   restockRequests   RestockRequest[]
   sections          StoreSection[]
   pages             StorePage[]

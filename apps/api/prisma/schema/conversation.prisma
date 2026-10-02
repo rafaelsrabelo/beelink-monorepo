@@ -43,6 +43,9 @@ model OrderMessage {
   body      String       @db.VarChar(2000)
   /// The status a notice tells of: set exactly when `author` is SYSTEM (a CHECK holds it).
   status    OrderStatus?
+  /// On a delivery's notice, the cashback it made usable (BEELINK-239): told as it was then, like
+  /// the status itself. Null on every other message.
+  cashbackCents Int?
   createdAt DateTime     @default(now())
   /// When the other side read it; null while they have not.
   readAt    DateTime?
