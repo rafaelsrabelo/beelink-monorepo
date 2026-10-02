@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Types
 import type {
+  CarrierGap,
   CardOptionSummary,
   PriceRange,
   Product,
@@ -166,6 +167,8 @@ export class ProductPageResponse implements ProductPage {
   @ApiProperty({ description: 'How many match the filter, across every page.' }) total!: number;
   @ApiProperty({ description: '1-based.' }) page!: number;
   @ApiProperty() pageSize!: number;
+  @ApiProperty({ type: 'object', additionalProperties: { type: 'string', enum: ['NO_WEIGHT', 'NO_SIZE'] }, nullable: true, description: 'Null with no Melhor Envio connection; else what a carrier lacks to quote each product on the page, by id.' })
+  carrierGaps!: Record<string, CarrierGap> | null;
 }
 
 /**
