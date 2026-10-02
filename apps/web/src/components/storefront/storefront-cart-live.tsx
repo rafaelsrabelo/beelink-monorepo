@@ -99,7 +99,7 @@ export function StorefrontCartLive({
   const [sent, setSent] = useState<{ number: number; href: string | null } | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
-  const { addresses, choice, setChoice, pricing, shipping, blocked } = useCartCheckout({ slug, view, shopper, paymentMethods, deliverTo, served, arrivedWith: coupon, locale, messages })
+  const { addresses, choice, setChoice, pricing, shipping, blocked, sent: leaving } = useCartCheckout({ slug, view, shopper, paymentMethods, deliverTo, served, arrivedWith: coupon, locale, messages })
   // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
   const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
 
@@ -132,10 +132,9 @@ export function StorefrontCartLive({
         items: orderItemsOf(view.rows),
         fulfillment: choice.fulfillment,
         paymentMethod: choice.paymentMethod,
-        ...(choice.fulfillment === "DELIVERY" && choice.addressId ? { addressId: choice.addressId } : {}),
+        // Where a delivery goes, the carrier it goes by and the fee the summary shows: the API quotes again, and refuses the order at any other (BEELINK-178).
+        ...leaving,
         ...(pricing.orderCoupon ? { couponCode: pricing.orderCoupon } : {}),
-        // The fee the summary shows: the API quotes again, and refuses the order at any other (BEELINK-178).
-        ...(pricing.deliveryFeeCents !== undefined ? { deliveryFeeCents: pricing.deliveryFeeCents } : {}),
       },
       {
         onSuccess: (order) => {

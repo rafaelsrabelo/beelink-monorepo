@@ -315,6 +315,18 @@ export interface UiMessages {
     windowHoursOne: string
     windowDays: string
     windowDaysOne: string
+    /** A carrier's window (BEELINK-186): a range, several days alike ({count}), and a single day. */
+    windowBusinessDays: string
+    windowBusinessDaysOne: string
+    windowBusinessDay: string
+    /** The ways to deliver, when there are several to choose among (BEELINK-186). */
+    checkoutWayChoose: string
+    checkoutWayOwn: string
+    /** {fee} {window} */
+    checkoutCarrierArrives: string
+    checkoutNoDeliveryHere: string
+    /** {window} — on an order that goes by carrier. */
+    orderWindowCarrier: string
     /** {window} — on an order, when the quote said it would arrive. */
     orderWindowOwn: string
     checkoutPayment: string

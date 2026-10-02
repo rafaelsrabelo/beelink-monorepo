@@ -18,6 +18,8 @@ export interface StorefrontCheckoutChoice {
   fulfillment: CheckoutFulfillment
   /** The saved address a delivery goes to; null before there is one to go to. */
   addressId: string | null
+  /** The way a delivery goes by, among `shipping.ways`; null takes the first of them. */
+  wayId: string | null
   /** Null until the shopper picks one — a shop takes several, and none is theirs to assume. */
   paymentMethod: PaymentMethod | null
 }
@@ -27,14 +29,26 @@ export interface StorefrontCheckoutChoice {
  * what the wire's `ShippingQuote` holds; the screen reads it and this block never sees a contract.
  */
 export interface StorefrontCheckoutShipping {
-  /** The shop brings orders itself at all. Off, there is no delivery to choose. */
+  /** The shop delivers at all — itself, or by carrier. Off, there is no delivery to choose. */
   delivery: boolean
   /** The shop hands orders over at its counter. Off, there is no pick-up to choose. */
   pickup: boolean
-  /** What delivering to the chosen address costs and when it arrives — or why the shop does not go there. */
-  deliveryNote: string
-  /** The shop does not reach the chosen address: `deliveryNote` says so, and no order goes there. */
-  unreachable: boolean
+  /** The ways to get the order to the chosen address (BEELINK-186): the shop's own delivery and each carrier's service. */
+  ways: readonly StorefrontCheckoutWay[]
+  /**
+   * Under the delivery choice. With one way, what it costs and when it arrives; with none, why — the
+   * shop does not reach the address; null with several, which are listed to choose among.
+   */
+  note: string | null
+}
+
+/** One way to deliver, as the checkout lists it. */
+export interface StorefrontCheckoutWay {
+  id: string
+  /** "Entrega da loja", "Correios · SEDEX". */
+  title: string
+  /** "R$ 27,45 · chega em 3–4 dias úteis". */
+  detail: string
 }
 
 /** A saved address a delivery can go to, as the cart offers it. */
@@ -75,8 +89,10 @@ const RADIO = "mt-0.5 size-4 shrink-0 accent-shop-primary"
  * delivery goes to one of the shopper's saved addresses, chosen here when there are several; with
  * none, it is off and says where to add one. Under the address, what the shop's rules quote to it
  * (BEELINK-178): the fee and the window, a fee agreed afterwards, or that the shop does not go
- * there — said at once, with the other addresses still to choose from. A way the shop switched off
- * is not offered. Nothing is charged here: the payment is a label the shop and the shopper settle by.
+ * there — said at once, with the other addresses still to choose from. With several ways to get
+ * there — the shop's own delivery, each carrier (BEELINK-186) — they are listed to choose among. A
+ * way the shop switched off is not offered. Nothing is charged here: the payment is a label the
+ * shop and the shopper settle by.
  */
 export function StorefrontCheckoutChoices({
   value,
@@ -97,7 +113,10 @@ export function StorefrontCheckoutChoices({
   const picksUp = shipping?.pickup !== false
   // What a delivery costs, inside its own choice: read beside the pick-up before either is chosen. With
   // no quote, the fee agreed afterwards is said only once a delivery is what was chosen, as it was.
-  const feeNote = !chosen || shipping?.unreachable ? null : shipping ? shipping.deliveryNote : delivering ? text.checkoutFeeLater : null
+  const ways = shipping?.ways ?? []
+  const unreachable = shipping !== null && ways.length === 0
+  const way = ways.find((each) => each.id === value.wayId) ?? ways[0] ?? null
+  const feeNote = !chosen || unreachable ? null : shipping ? shipping.note : delivering ? text.checkoutFeeLater : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -123,9 +142,9 @@ export function StorefrontCheckoutChoices({
               </span>
             </label>
             {/* A shop that does not reach the address is news the shopper has to hear, before the addresses to choose another from. */}
-            {delivering && chosen && shipping?.unreachable ? (
+            {delivering && chosen && unreachable && shipping?.note ? (
               <p role="status" className="rounded-[10px] border border-shop-line bg-shop-fill px-3 py-2 text-xs font-medium">
-                {shipping.deliveryNote}
+                {shipping.note}
               </p>
             ) : null}
             {delivering && addresses.length > 1 ? (
@@ -153,6 +172,20 @@ export function StorefrontCheckoutChoices({
                 {chosen ? text.checkoutAddAnotherAddress : text.checkoutAddAddress}
               </Link>
             )}
+            {delivering && chosen && ways.length > 1 ? (
+              <fieldset className="ml-7 flex flex-col gap-2">
+                <legend className="mb-1 text-xs font-semibold">{text.checkoutWayChoose}</legend>
+                {ways.map((each) => (
+                  <label key={each.id} className={OPTION}>
+                    <input type="radio" name={`${id}-way`} className={RADIO} checked={way?.id === each.id} onChange={() => onChange({ ...value, wayId: each.id })} />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="font-medium break-words">{each.title}</span>
+                      <span className="break-words text-xs text-shop-muted">{each.detail}</span>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            ) : null}
           </>
         ) : null}
         {picksUp ? (

@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, QuotedFirstPurchase, ShippingQuote } from "@harness-monorepo/contracts"
+import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, OrderShippingChoice, QuotedFirstPurchase, ShippingQuote } from "@harness-monorepo/contracts"
 import type { StorefrontCartOffer } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -16,13 +16,20 @@ import { checkoutAddressesOf } from "./saved-address"
 
 /**
  * The cart as its price is asked for (BEELINK-194): what can be ordered now, how it would leave, the
- * saved address a delivery would go to (BEELINK-178) and the coupon typed. The lines are sorted, so
- * one cart is one question however its lines were added — the page that served the first price and
- * the browser that follows it ask the same one.
+ * saved address a delivery would go to (BEELINK-178), the carrier it would go by when one was picked
+ * (BEELINK-186) and the coupon typed. The lines are sorted, so one cart is one question however its
+ * lines were added — the page that served the first price and the browser that follows it ask the
+ * same one.
  */
-export function cartQuoteOf(rows: readonly CartRow[], fulfillment: OrderFulfillment, couponCode: string | null, addressId: string | null = null): CustomerOrderQuotePayload {
+export function cartQuoteOf(
+  rows: readonly CartRow[],
+  fulfillment: OrderFulfillment,
+  couponCode: string | null,
+  addressId: string | null = null,
+  shipping: OrderShippingChoice | null = null,
+): CustomerOrderQuotePayload {
   const items = orderItemsOf(rows).sort((a, b) => (a.variantId < b.variantId ? -1 : a.variantId > b.variantId ? 1 : 0))
-  return { items, fulfillment, ...(addressId ? { addressId } : {}), ...(couponCode ? { couponCode } : {}) }
+  return { items, fulfillment, ...(addressId ? { addressId } : {}), ...(shipping ? { shipping } : {}), ...(couponCode ? { couponCode } : {}) }
 }
 
 /** Whether two questions are the same one. Both come from `cartQuoteOf`, so their fields are in one order. */

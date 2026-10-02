@@ -1,6 +1,6 @@
 // Libs
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Types
@@ -967,5 +967,29 @@ describe("the cart's delivery, as the shop quotes it", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("O frete mudou enquanto você fechava o pedido. Confira o novo valor e envie de novo."))
     expect(tab.close).toHaveBeenCalled()
     await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders/quote")).toHaveLength(1))
+  })
+
+  /** BEELINK-186: the shop's own delivery and the carriers of its Melhor Envio, to choose among. */
+  it("lists the carriers beside the shop's own delivery, prices the cart with the one picked, and sends the order by it", async () => {
+    const sedex = { kind: "CARRIER", carrier: { serviceId: 2, service: "SEDEX", company: "Correios" }, feeCents: 2745, window: { unit: "BUSINESS_DAYS", from: 3, to: 4 }, freeAbove: false } as const
+    const withCarriers = shipping({ options: [own, sedex, pickup], carriers: { status: "QUOTED" } })
+    // The fee the totals carry is the one of the way asked about.
+    const priced = (cart: CustomerOrderQuotePayload) => (cart.shipping?.kind === "CARRIER" ? { deliveryFeeCents: 2745, totalCents: 14725, shipping: withCarriers } : { ...quoted, shipping: withCarriers })
+    const fetched = network({ quote: (cart) => Response.json(quoteOf(cart, priced(cart))) })
+    openedTab()
+    renderCart(false, bia, { served: servedFor(false, bia, { ...quoted, shipping: withCarriers }) })
+
+    const ways = screen.getByRole("group", { name: "Forma de envio" })
+    expect(within(ways).getByRole("radio", { name: /Entrega da loja/ })).toBeChecked()
+    fireEvent.click(within(ways).getByRole("radio", { name: /Correios · SEDEX/ }))
+
+    await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"], ["Entrega", "R$ 27,45"], ["Total", "R$ 147,25"]]))
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", addressId: "a1", shipping: { kind: "CARRIER", serviceId: 2 } }])
+
+    await waitFor(() => expect(placeButton()).toBeEnabled())
+    fireEvent.click(placeButton())
+
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toEqual({ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", shipping: { kind: "CARRIER", serviceId: 2 }, deliveryFeeCents: 2745 })
   })
 })

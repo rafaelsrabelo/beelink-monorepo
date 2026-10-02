@@ -206,6 +206,7 @@ export function orderHandoverOf(order: CustomerOrder, shop: OrderShop, { message
   const zip = zipCodeOf(address.zipCode)
   const area = [address.neighborhood, place, zip ? `CEP ${zip}` : null].filter(Boolean).join(" — ")
   // What the checkout promised (BEELINK-178), where the customer reads where it goes.
-  const quoted = order.deliveryWindow ? windowText(order.deliveryWindow, text) : null
-  return { title: text.accountAddress, lines: [address.recipientName, street, area, quoted ? format(text.orderWindowOwn, { window: quoted }) : null].filter((line): line is string => Boolean(line)) }
+  const window = order.deliveryWindow
+  const quoted = window ? format(window.unit === "MINUTES" ? text.orderWindowOwn : text.orderWindowCarrier, { window: windowText(window, text) }) : null
+  return { title: text.accountAddress, lines: [address.recipientName, street, area, quoted].filter((line): line is string => Boolean(line)) }
 }

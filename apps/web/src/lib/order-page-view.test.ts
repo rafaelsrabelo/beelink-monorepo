@@ -210,6 +210,8 @@ describe("an order's page, in the shopper's words", () => {
   /** BEELINK-178: the window the checkout promised stays with where the order goes. */
   it("says the window the checkout quoted, under the address", () => {
     expect(orderHandoverOf({ ...order, deliveryWindow: { unit: "MINUTES", from: 30, to: 50 } }, shop, context)?.lines.at(-1)).toBe("Chega em 30–50 min depois de sair da loja")
+    // A carrier's (BEELINK-186) counts business days, and from the posting rather than from the shop's door.
+    expect(orderHandoverOf({ ...order, deliveryWindow: { unit: "BUSINESS_DAYS", from: 3, to: 4 } }, shop, context)?.lines.at(-1)).toBe("Prazo de entrega cotado: 3–4 dias úteis")
   })
 
   it("says the window it should arrive in once the shop told it, and how it comes", () => {

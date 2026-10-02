@@ -10,7 +10,7 @@ import { WhatsAppIcon } from "../store/store-brand-icons"
 import type { PaymentMethod } from "../store/store-types"
 import { StorefrontCheckoutChoices, type StorefrontCheckoutAddress, type StorefrontCheckoutChoice, type StorefrontCheckoutShipping } from "./storefront-checkout-choices"
 
-export type { CheckoutFulfillment, StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutShipping } from "./storefront-checkout-choices"
+export type { CheckoutFulfillment, StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutShipping, StorefrontCheckoutWay } from "./storefront-checkout-choices"
 
 export interface StorefrontCheckoutCustomer {
   /** Name and phone, a line each — only the ones on file; the addresses are `addresses`. */
