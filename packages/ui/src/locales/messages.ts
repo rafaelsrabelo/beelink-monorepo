@@ -782,7 +782,7 @@ export interface UiMessages {
     conversationFromShop: string
     /** A status notice in the conversation (BEELINK-236), by status — PICKED_UP is a pick-up's DELIVERED. */
     conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
-    /** After a delivery's notice, the cashback it made usable (BEELINK-239): "{amount}". */
+    /** A delivery's notice with the cashback it made usable (BEELINK-239): "{notice}", then "{amount}" — the punctuation between them is the copy's. */
     conversationCashback: string
     conversationFromYou: string
     conversationLabel: string
@@ -2033,7 +2033,7 @@ export interface UiMessages {
     fromCustomer: string
     /** A status notice, as the shop reads what its customer was told (BEELINK-236). */
     notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
-    /** After a delivery's notice, the cashback its customer was told they earned: "{amount}". */
+    /** A delivery's notice with the cashback its customer was told they earned: "{notice}", "{amount}". The shop's notices end with no full stop. */
     noticeCashback: string
     fromShop: string
     replyLabel: string

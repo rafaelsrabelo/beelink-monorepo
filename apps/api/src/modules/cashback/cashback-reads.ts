@@ -23,7 +23,7 @@ export async function creditsOf(
   now: Date,
 ): Promise<{ balanceCents: number; pendingCents: number; credits: CashbackCredit[]; nextExpiry: { amountCents: number; expiresAt: string } | null }> {
   const customer = await db.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cashbackBalanceCents: true, cashbackPendingCents: true } });
-  const open = await db.cashbackCredit.findMany({ where: { customerId, OR: [{ status: 'PENDING' }, spendableAt(now)] }, include: ORDER_NUMBER });
+  const open = await db.cashbackCredit.findMany({ where: { customerId, OR: [{ status: 'PENDING', remainingCents: { gt: 0 } }, spendableAt(now)] }, include: ORDER_NUMBER });
 
   const available = spendingOrder(open.filter((lot) => lot.status === 'AVAILABLE'));
   const pending = open.filter((lot) => lot.status === 'PENDING').sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());

@@ -86,6 +86,10 @@ export async function releaseOrderCashback(tx: Tx, orderId: string, now: Date): 
 export async function revokeOrderCashback(tx: Tx, orderId: string, outcome: 'BACK' | 'CANCELLED', now: Date): Promise<void> {
   const lot = await lockedLotOf(tx, orderId);
   if (!lot || lot.status === 'VOIDED' || lot.status === 'EXPIRED') return;
+  // Past its expiry and not swept yet (U4): taken back to wait again, a delivery would pay it out
+  // anew, with a new validity — expired credit revived by moving the order back and forth. It is
+  // left for the sweep; a cancellation still takes back what is left.
+  if (outcome === 'BACK' && lot.status === 'AVAILABLE' && lot.expiresAt !== null && lot.expiresAt <= now) return;
 
   if (lot.status === 'PENDING') {
     if (outcome === 'CANCELLED') await tx.cashbackCredit.update({ where: { id: lot.id }, data: { status: 'VOIDED', remainingCents: 0 } });

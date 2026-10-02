@@ -55,3 +55,26 @@ O cashback usado entra na base no U3, que é quem cria o uso.
 ## Fora de escopo
 
 - Usar crédito no pedido (U3), vencer (U4), telas do painel e da loja (U5, U6, U7).
+
+## Adendo — revisão independente (01/10)
+
+Nada bloqueante; corrigido:
+
+1. **No painel, o aviso e a frase do cashback saíam colados** ("Pedido entregue O cliente ganhou…"),
+   porque os avisos do lojista não têm ponto final. A frase agora é um modelo do dicionário que recebe o
+   aviso (`{notice}`) e cuida da pontuação. Teste do lado do lojista com valor.
+2. O Swagger da conversa ganhou o `cashbackCents`.
+3. **Crédito vencido e ainda não varrido revivia** se o pedido saísse de entregue e voltasse: virava
+   pendente e, na entrega seguinte, saía com validade nova. Agora, nesse caso, o lote fica para a
+   varredura do U4; um cancelamento ainda tira o que resta.
+4. Um lote pendente que não vai pagar nada (o cliente gastou tudo antes de o pedido voltar) não aparece
+   mais na lista de créditos nem na cópia dos dados.
+5. Testes novos: o cliente cancelando o próprio pedido; cancelar depois de o cliente gastar (a diferença
+   fica no lote); entregar depois de a conta ser excluída (nada é pago); ganho com promoção pelo cálculo
+   real.
+
+### Para o U3
+
+O pedido mínimo para ganhar é comparado com os produtos depois de promoção, cupom e desconto do lojista.
+Quando o U3 incluir o cashback usado na base do ganho, o mínimo deve continuar olhando o valor **antes**
+do cashback usado: usar crédito não pode tirar o pedido do mínimo. Decisão minha, registrada no plano do U3.

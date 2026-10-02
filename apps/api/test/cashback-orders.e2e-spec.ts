@@ -113,7 +113,8 @@ describe('an order earns cashback: pending when placed, usable once delivered, t
       await expectBooksToHold(order.customer.id);
     });
 
-    it('credits once, however many times or by however many people it is delivered', async () => {
+    /** The second of two is refused as the same move, under the shop's row lock; the lot is reopened, never made again. */
+    it('credits once when two people deliver it at once', async () => {
       const order = await sale();
 
       const answers = await Promise.all([move(1, 'DELIVERED'), move(1, 'DELIVERED')]);
@@ -150,6 +151,29 @@ describe('an order earns cashback: pending when placed, usable once delivered, t
       await expectBooksToHold(order.customer.id);
     });
 
+    it('keeps what the customer had spent when a delivered order is cancelled: what the shop did not get back', async () => {
+      const order = await sale();
+      await move(1, 'DELIVERED');
+      await call('POST', `/api/stores/lessari/customers/${order.customer.id}/cashback/adjustments`, owner, { amountCents: -500, reason: 'Gasto no balcão' });
+
+      const cancelled = (await move(1, 'CANCELLED')).json<Order>();
+
+      expect(cancelled.cashback).toMatchObject({ status: 'VOIDED', remainingCents: 0, unrecoveredCents: 500 });
+      // Nothing was left to take back: no line of nothing.
+      expect((await cashbackOf(order.customer.id)).entries.map((entry) => entry.kind)).toEqual(['ADJUST', 'EARN']);
+      await expectBooksToHold(order.customer.id);
+    });
+
+    it('never lists a lot left with nothing to pay out', async () => {
+      const order = await sale();
+      await move(1, 'DELIVERED');
+      await call('POST', `/api/stores/lessari/customers/${order.customer.id}/cashback/adjustments`, owner, { amountCents: -500, reason: 'Gasto no balcão' });
+
+      await move(1, 'PREPARING');
+
+      expect(await cashbackOf(order.customer.id)).toMatchObject({ balanceCents: 0, pendingCents: 0, credits: [] });
+    });
+
     /**
      * Decided on 01/10/2026: the balance stops at zero. What the customer spent before the order left
      * *delivered* is kept as what the shop did not get back, and a delivery again pays out the rest only.
@@ -178,6 +202,12 @@ describe('an order earns cashback: pending when placed, usable once delivered, t
       ]);
       await expectBooksToHold(order.customer.id);
     });
+  });
+
+  it('earns on the price after a promotion, as the checkout priced it', async () => {
+    await call('POST', '/api/stores/lessari/promotions', owner, { name: 'Semana', scope: 'CART', discountKind: 'PERCENT', percentBps: 1000, startsAt: new Date(Date.now() - DAY).toISOString() });
+
+    expect((await sale()).cashback).toMatchObject({ earnedCents: 450, rateBps: 500 });
   });
 
   describe('told to the customer', () => {
@@ -211,6 +241,27 @@ describe('an order earns cashback: pending when placed, usable once delivered, t
       expect(conversation.messages[0]).toMatchObject({ kind: 'STATUS', status: 'RECEIVED', cashbackCents: null });
       const mail = await waitForMessage(email, 10_000, 'retirado');
       expect(mail.Text).toContain('Você ganhou R$ 5,00 de cashback para usar nas próximas compras na loja, até ');
+    });
+
+    it("goes when the customer cancels their own order while it waits", async () => {
+      const { session, me } = await shopper();
+      const placed = await placeAs(session);
+
+      expect((await call('POST', `/api/stores/lessari/customer/orders/${placed.number}/cancel`, session)).statusCode).toBe(200);
+
+      expect(await cashbackOf(me.id)).toMatchObject({ balanceCents: 0, pendingCents: 0, credits: [], entries: [] });
+      expect((await orderOf(placed.number)).cashback).toMatchObject({ status: 'VOIDED' });
+    });
+
+    it('pays out nothing for an order delivered after its customer deleted their account', async () => {
+      const { session, me } = await shopper();
+      const placed = await placeAs(session);
+      await call('DELETE', '/api/stores/lessari/customer/me', session, { password: PASSWORD });
+
+      const delivered = (await move(placed.number, 'DELIVERED')).json<Order>();
+
+      expect(delivered.cashback).toMatchObject({ status: 'VOIDED' });
+      expect(await cashbackOf(me.id)).toMatchObject({ balanceCents: 0, entries: [] });
     });
 
     it('in the copy of their data, and lost with the account — told by a line of the statement', async () => {
