@@ -54,6 +54,7 @@ export class OrdersService {
       deliveryFeeCents: dto.deliveryFeeCents ?? 0,
       discountCents: dto.discountCents ?? 0,
       couponCode: dto.couponCode ?? null,
+      cashbackCents: dto.cashbackCents ?? 0,
       note: dto.note?.length ? dto.note : null,
       placedAt,
       // Registered by the shopkeeper, who already agreed the sale: accepted, not received.

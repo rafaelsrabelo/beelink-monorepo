@@ -32,11 +32,15 @@ export function earningBaseOf(parts: EarningParts): number {
 
 /**
  * What an order earns, and the rate it was worked out at: the rate over the base, rounded down to
- * the cent. Null when it earns nothing — the cashback off, the base under the shop's minimum, or a
+ * the cent. Null when it earns nothing — the cashback off, the order under the shop's minimum, or a
  * share smaller than a cent — so the order records no rate and no lot is made.
+ *
+ * The minimum is held against `productsCents`, the products before any credit was spent on them:
+ * spending credit never takes an order under the minimum (BEELINK-240). The share is of `baseCents`,
+ * what was paid in money.
  */
-export function earningOf(rules: EarningRules | null, baseCents: number): { earnedCents: number; rateBps: number } | null {
-  if (!rules?.enabled || baseCents < rules.minSubtotalCents) return null;
+export function earningOf(rules: EarningRules | null, baseCents: number, productsCents: number = baseCents): { earnedCents: number; rateBps: number } | null {
+  if (!rules?.enabled || productsCents < rules.minSubtotalCents) return null;
   const earnedCents = Math.floor((baseCents * rules.rateBps) / 10_000);
   return earnedCents > 0 ? { earnedCents, rateBps: rules.rateBps } : null;
 }
@@ -46,9 +50,9 @@ export function earningOf(rules: EarningRules | null, baseCents: number): { earn
  * with, and below the minimum, what is missing to reach it. Null with the cashback off, and with a
  * share under a cent.
  */
-export function quotedCashbackOf(rules: EarningRules | null, baseCents: number): QuotedCashback | null {
+export function quotedCashbackOf(rules: EarningRules | null, baseCents: number, productsCents: number = baseCents): QuotedCashback | null {
   if (!rules?.enabled) return null;
-  if (baseCents < rules.minSubtotalCents) return { status: 'BELOW_MINIMUM', missingCents: rules.minSubtotalCents - baseCents, rateBps: rules.rateBps };
-  const earning = earningOf(rules, baseCents);
+  if (productsCents < rules.minSubtotalCents) return { status: 'BELOW_MINIMUM', missingCents: rules.minSubtotalCents - productsCents, rateBps: rules.rateBps };
+  const earning = earningOf(rules, baseCents, productsCents);
   return earning && { status: 'EARNS', ...earning };
 }

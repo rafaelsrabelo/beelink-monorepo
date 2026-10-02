@@ -64,3 +64,12 @@ describe('quotedCashbackOf', () => {
     expect(quotedCashbackOf({ ...ON, rateBps: 1 }, 99)).toBeNull();
   });
 });
+
+/** BEELINK-240: credit spent earns nothing, and never takes the order under the minimum. */
+describe('earning on an order that spent credit', () => {
+  it('earns on what was paid in money, and holds the minimum against the products before the credit', () => {
+    // R$ 100,00 of products, R$ 30,00 of it paid with credit, a R$ 80,00 minimum.
+    expect(earningOf({ ...ON, minSubtotalCents: 8_000 }, 7_000, 10_000)).toEqual({ earnedCents: 350, rateBps: 500 });
+    expect(quotedCashbackOf({ ...ON, minSubtotalCents: 8_000 }, 7_000, 10_000)).toEqual({ status: 'EARNS', earnedCents: 350, rateBps: 500 });
+  });
+});

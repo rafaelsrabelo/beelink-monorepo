@@ -164,12 +164,12 @@ describe("a favourite's notice by e-mail", () => {
     const whey = await addProduct({ name: 'Whey', slug: 'whey', priceCents: 10000 });
     await like(whey.id);
 
-    await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: false, offers: false });
+    await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: false, cashback: true, offers: false });
     await edit(whey.id, { priceCents: 9000 });
     expect(await notices()).toEqual([]);
     expect(await prisma.customerFavorite.findFirst({ select: { seenPriceCents: true } })).toEqual({ seenPriceCents: 9000 });
 
-    await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, offers: false });
+    await call('PUT', '/api/stores/lessari/customer/me/notifications', shopper, { orders: true, favorites: true, cashback: true, offers: false });
     await edit(whey.id, { status: 'DRAFT', priceCents: 8000 });
     expect(await notices()).toEqual([]);
     expect(await prisma.customerFavorite.findFirst({ select: { seenPriceCents: true } })).toEqual({ seenPriceCents: 9000 });

@@ -45,6 +45,7 @@ const order: CustomerOrder = {
   couponDiscountCents: 0,
   coupon: null,
   cashback: null,
+  cashbackUsedCents: 0,
   totalCents: 9480,
   placedAt: "2026-09-28T17:02:00.000Z",
   events: [

@@ -1,4 +1,4 @@
-import type { QuotedCashback } from "./cashback.js";
+import type { QuotedCashback, QuotedCashbackUse } from "./cashback.js";
 import type { CreateOrderItemInput, OrderCustomerInput, OrderFulfillment } from "./order.js";
 import type { CouponKind } from "./promotion.js";
 
@@ -101,6 +101,11 @@ export interface OrderQuote {
   totalCents: number;
   /** What it would earn in cashback once delivered (BEELINK-243); null while the shop's cashback is off. */
   cashback: QuotedCashback | null;
+  /**
+   * The customer's credit against this cart (BEELINK-240): what they have and the most it can take.
+   * `totalCents` is already less what was applied. Null on a visitor's cart.
+   */
+  cashbackUse: QuotedCashbackUse | null;
 }
 
 /**
@@ -111,6 +116,8 @@ export interface OrderQuote {
 export interface CustomerCartQuotePayload {
   items: CreateOrderItemInput[];
   fulfillment: OrderFulfillment;
+  /** Apply the most of their credit this cart can take (BEELINK-240). Absent is not to. */
+  useCashback?: boolean;
 }
 
 /** The visitor's cart, priced with the shop's promotions. No coupon: that takes a signed-in customer. */
@@ -126,6 +133,8 @@ export interface CustomerOrderQuotePayload {
   fulfillment: OrderFulfillment;
   /** In any case; blank is none. */
   couponCode?: string | null;
+  /** Apply the most of their credit this cart can take (BEELINK-240). Absent is not to. */
+  useCashback?: boolean;
 }
 
 /** The panel's sale before it is registered: the body of `CreateOrderPayload` that prices it. */
@@ -142,6 +151,8 @@ export interface ShopOrderQuotePayload {
   deliveryFeeCents?: number;
   discountCents?: number;
   couponCode?: string | null;
+  /** Apply the most of the customer's credit the sale can take (BEELINK-240). Absent is not to. */
+  useCashback?: boolean;
   /** ISO-8601; absent is now. Promotions and the coupon's validity are read at this instant. */
   placedAt?: string;
 }

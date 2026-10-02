@@ -6,10 +6,11 @@ import type { CustomerAddressModel, CustomerModel, UserModel } from '../../gener
 import { dayOf } from '../../shared/http/birth-date.js';
 import { addressPartsOf, toSavedAddress } from './customer-addresses.js';
 
-export function toNotifications(customer: Pick<CustomerModel, 'notifyOrders' | 'notifyFavorites' | 'notifyOffers' | 'notifyOffersAt'>): CustomerNotifications {
+export function toNotifications(customer: Pick<CustomerModel, 'notifyOrders' | 'notifyFavorites' | 'notifyCashback' | 'notifyOffers' | 'notifyOffersAt'>): CustomerNotifications {
   return {
     orders: customer.notifyOrders,
     favorites: customer.notifyFavorites,
+    cashback: customer.notifyCashback,
     offers: customer.notifyOffers,
     offersChosenAt: customer.notifyOffersAt?.toISOString() ?? null,
   } satisfies CustomerNotifications;

@@ -66,6 +66,10 @@ model Order {
   /// nothing — the cashback off, the order under the minimum, or too little to make a cent.
   cashbackEarnedCents Int  @default(0)
   cashbackRateBps     Int?
+  /// The customer's credit it spent (BEELINK-240): taken off the total like a discount, but not one —
+  /// a discount is margin the shop gives up now, credit is an old debt being paid, and the books keep
+  /// the two apart. Never more than the products after their discounts, never the delivery.
+  cashbackUsedCents   Int  @default(0)
 
   /// Where a delivery goes, photographed from the customer's record when the order is placed: the
   /// customer moving, or renaming themselves, never rewrites where an order went. Null on a pick-up,
@@ -106,6 +110,8 @@ model Order {
   /// The credit it earns (BEELINK-238), once there is one.
   cashbackCredit  CashbackCredit?
   cashbackEntries CashbackEntry[]
+  /// The lots its credit came from, when it spent any.
+  cashbackRedemptions CashbackRedemption[]
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])

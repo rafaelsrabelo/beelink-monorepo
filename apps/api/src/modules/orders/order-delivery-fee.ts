@@ -26,7 +26,7 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
 
     const current = await tx.order.findUnique({
       where: { storeId_number: { storeId, number } },
-      select: { id: true, status: true, fulfillment: true, customerId: true, subtotalCents: true, discountCents: true, couponKind: true, couponDiscountCents: true },
+      select: { id: true, status: true, fulfillment: true, customerId: true, subtotalCents: true, discountCents: true, couponKind: true, couponDiscountCents: true, cashbackUsedCents: true },
     });
     if (!current) throw new NotFoundException(orderError('ORDER_NOT_FOUND', `No order #${number} in this shop`));
     if (current.fulfillment === 'PICKUP') {
@@ -42,7 +42,8 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
     const couponDiscountCents = waived ? deliveryFeeCents : current.couponDiscountCents;
     const discountCents = current.discountCents - current.couponDiscountCents + couponDiscountCents;
     // Lowering a fee can leave a discount bigger than what is paid, as a placement would refuse it.
-    const totalCents = current.subtotalCents + deliveryFeeCents - discountCents;
+    // The credit it spent stays off: it paid for products, never the fee (BEELINK-240).
+    const totalCents = current.subtotalCents + deliveryFeeCents - discountCents - current.cashbackUsedCents;
     const refusal = totalRefusalOf(totalCents);
     if (refusal === 'TOTAL_TOO_LARGE') {
       throw new BadRequestException(orderError('ORDER_TOTAL_TOO_LARGE', 'The order would pass what one order may be'));

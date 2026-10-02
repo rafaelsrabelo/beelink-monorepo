@@ -36,7 +36,7 @@ import {
   ORDER_STATUSES,
   ORDERS_PAGE_MAX,
 } from '../orders.constants.js';
-import { couponCode, OrderItemDto } from './order.dto.js';
+import { cashbackCents, couponCode, OrderItemDto } from './order.dto.js';
 import { OrderCouponResponse, OrderDeliveryAddressResponse, OrderDeliveryResponse } from './order.response.js';
 
 const SITUATIONS = Object.keys(CUSTOMER_ORDER_SITUATIONS) as CustomerOrderSituation[];
@@ -67,6 +67,9 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
 
   @couponCode
   couponCode?: string | null;
+
+  @cashbackCents
+  cashbackCents?: number;
 }
 
 export class CustomerOrderItemResponse implements CustomerOrderItem {
@@ -106,6 +109,7 @@ export class CustomerOrderResponse implements CustomerOrder {
   @ApiProperty({ description: 'What the coupon took off; on a free delivery, the fee.' }) couponDiscountCents!: number;
   @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
   @ApiProperty({ type: OrderCashbackResponse, nullable: true, description: 'What it earns in cashback; null when it earns none.' }) cashback!: OrderCashbackResponse | null;
+  @ApiProperty({ description: 'Their credit it spent, taken off the total apart from the discount.' }) cashbackUsedCents!: number;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ format: 'date-time' }) placedAt!: string;
   @ApiProperty({ type: [CustomerOrderEventResponse], description: 'Oldest first; never who set each status.' })
@@ -133,6 +137,7 @@ export class CustomerOrderSummaryResponse implements CustomerOrderSummary {
   @ApiProperty({ description: 'Promotions, coupon and typed discount together.' }) discountCents!: number;
   @ApiProperty({ type: OrderCouponResponse, nullable: true, description: 'The coupon the order took, as it was.' }) coupon!: OrderCouponResponse | null;
   @ApiProperty({ type: OrderCashbackResponse, nullable: true, description: 'What it earns in cashback; null when it earns none.' }) cashback!: OrderCashbackResponse | null;
+  @ApiProperty({ description: 'Their credit it spent, taken off the total apart from the discount.' }) cashbackUsedCents!: number;
   @ApiProperty({ description: 'Units across every line.' }) itemsCount!: number;
   @ApiProperty({ type: [CustomerOrderItemResponse], description: 'The first lines, as a card shows them.' }) items!: CustomerOrderItemResponse[];
   @ApiProperty({ description: 'Lines past those.' }) moreItems!: number;
