@@ -2325,6 +2325,9 @@ export interface UiMessages {
        * when the truth was no.
        */
       statusSoldOut: string
+      /** Under a product's name, for a shop that ships by carrier (BEELINK-184). */
+      carrierNoWeight: string
+      carrierNoSize: string
       /** Opens the product's own page on the shop window. */
       view: string
       /** Said instead, on a draft: it has no public page to open. */

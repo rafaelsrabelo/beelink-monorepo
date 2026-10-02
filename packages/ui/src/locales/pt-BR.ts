@@ -1982,6 +1982,8 @@ export const ptBR: UiMessages = {
       statusActive: "Ativo",
       statusDraft: "Rascunho",
       statusSoldOut: "Esgotado",
+      carrierNoWeight: "Sem peso: não é cotado por transportadora",
+      carrierNoSize: "Sem medidas: defina a embalagem padrão em Integrações",
       view: "Ver na loja",
       viewDraft: "Rascunho não tem página na loja",
       originLabel: "Fabricação",

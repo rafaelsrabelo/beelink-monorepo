@@ -1981,6 +1981,8 @@ export const en: UiMessages = {
       statusActive: "Active",
       statusDraft: "Draft",
       statusSoldOut: "Sold out",
+      carrierNoWeight: "No weight: carriers cannot quote it",
+      carrierNoSize: "No size: set the default parcel in Integrations",
       view: "View in the shop",
       viewDraft: "A draft has no page in the shop",
       originLabel: "Made by",
