@@ -21,7 +21,7 @@ afterEach(() => {
 
 describe("the shopper's notices by e-mail", () => {
   it("saves a ticked box as a yes and an unticked one as a no, and comes back to the notices, saying so", async () => {
-    const fetched = vi.fn(async () => Response.json({ orders: true, favorites: false, offers: true, offersChosenAt: "2026-09-29T12:00:00.000Z" }))
+    const fetched = vi.fn(async () => Response.json({ orders: true, favorites: false, cashback: false, offers: true, offersChosenAt: "2026-09-29T12:00:00.000Z" }))
     vi.stubGlobal("fetch", fetched)
 
     const landing = locationOf(await post({ ...here, orders: "1", offers: "1" }))
@@ -29,7 +29,8 @@ describe("the shopper's notices by e-mail", () => {
 
     expect(url).toContain("/stores/loja/customer/me/notifications")
     expect(init.method).toBe("PUT")
-    expect(JSON.parse(String(init.body))).toEqual({ orders: true, favorites: false, offers: true })
+    // The cashback box left unticked is a no, as the others are (BEELINK-241).
+    expect(JSON.parse(String(init.body))).toEqual({ orders: true, favorites: false, cashback: false, offers: true })
     expect(landing.pathname).toBe("/loja/conta/perfil")
     expect(landing.hash).toBe("#avisos")
     expect(landing.searchParams.get("aviso")).toBe("avisos-salvos")

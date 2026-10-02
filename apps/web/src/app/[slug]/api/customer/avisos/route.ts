@@ -37,7 +37,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
     refusal.searchParams.set(NOTICES_ERROR_KEY, "UNKNOWN")
     return NextResponse.redirect(refusal, 303)
   }
-  const body = { orders: form.has("orders"), favorites: form.has("favorites"), offers: form.has("offers") } satisfies UpdateCustomerNotificationsPayload
+  const body = { orders: form.has("orders"), favorites: form.has("favorites"), cashback: form.has("cashback"), offers: form.has("offers") } satisfies UpdateCustomerNotificationsPayload
 
   const answered = await callAsShopper(request, slug, (accessToken) =>
     callApi({ path: `/stores/${encodeURIComponent(slug)}/customer/me/notifications`, method: "PUT", body, accessToken, clientIp: clientIpOf(request) }).catch(() => null),
