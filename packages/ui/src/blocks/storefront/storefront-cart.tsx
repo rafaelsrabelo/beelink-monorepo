@@ -42,6 +42,8 @@ export interface StorefrontCartProps {
   total?: string | null
   /** A first-purchase offer that is in none of the amounts above, said under them; none, and nothing is said. */
   offer?: StorefrontCartOffer | null
+  /** What the order would earn in cashback, or what is missing to earn it (BEELINK-243), in words; none, and nothing is said. */
+  cashback?: string | null
   /** The cart is being priced for the first time: the amounts wait as a skeleton rather than show a sum about to change. */
   pricing?: boolean
   /** The cart changed and is being priced again: the amounts on screen are the ones before the change. */
@@ -85,6 +87,7 @@ export function StorefrontCart({
   discounts = [],
   total = null,
   offer = null,
+  cashback = null,
   pricing = false,
   stale = false,
   locale,
@@ -156,6 +159,7 @@ export function StorefrontCart({
         </dl>
         {/* It comes from the same pricing as the rows above: it waits and dims with them. */}
         {offer && !pricing ? <p className={cn("text-sm break-words transition-opacity", OFFER_TONE[offer.tone], stale && "opacity-60")}>{offer.text}</p> : null}
+        {cashback && !pricing ? <p className={cn("text-sm font-semibold break-words text-shop-positive-ink transition-opacity", stale && "opacity-60")}>{cashback}</p> : null}
         {checkout}
       </aside>
     </div>

@@ -410,6 +410,8 @@ export interface UiMessages {
     noticesOrdersHint: string
     noticesFavorites: string
     noticesFavoritesHint: string
+    noticesCashback: string
+    noticesCashbackHint: string
     noticesOffers: string
     noticesOffersHint: string
     noticesOffersSince: string
@@ -782,6 +784,20 @@ export interface UiMessages {
     conversationFromShop: string
     /** A status notice in the conversation (BEELINK-236), by status — PICKED_UP is a pick-up's DELIVERED. */
     conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
+    /** A delivery's notice with the cashback it made usable (BEELINK-239): "{notice}", then "{amount}" — the punctuation between them is the copy's. */
+    conversationCashback: string
+    /** The buy box (BEELINK-243): `{amount}`, the most the chosen price and quantity earn — the cart's discounts can only lower it. */
+    productCashback: string
+    /** The buy box, under the shop's minimum: `{rate}`, `{minimum}`. */
+    productCashbackFrom: string
+    /** The cart's summary: `{amount}` the order would earn. */
+    cartCashbackEarns: string
+    /** A visitor's cart, whose first-purchase promotion may lower it once identified: `{amount}`. */
+    cartCashbackEarnsUpTo: string
+    /** The cart's summary, under the minimum: `{amount}` missing, `{rate}`. */
+    cartCashbackMissing: string
+    /** An order's cashback, to its customer: `{amount}`, `{date}`. */
+    orderCashback: { PENDING: string; AVAILABLE: string; AVAILABLE_UNTIL: string; SPENT: string; VOIDED: string; EXPIRED: string }
     conversationFromYou: string
     conversationLabel: string
     conversationPlaceholder: string
@@ -2031,6 +2047,8 @@ export interface UiMessages {
     fromCustomer: string
     /** A status notice, as the shop reads what its customer was told (BEELINK-236). */
     notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
+    /** A delivery's notice with the cashback its customer was told they earned: "{notice}", "{amount}". The shop's notices end with no full stop. */
+    noticeCashback: string
     fromShop: string
     replyLabel: string
     replyPlaceholder: string
@@ -2767,6 +2785,95 @@ export interface UiMessages {
       privacy: string
       /** `{year}`. */
       rights: string
+    }
+  }
+  /**
+   * The shop's cashback in the panel (BEELINK-242): its rules, what it owes, a customer's credit and
+   * its statement, the shopkeeper's adjustment and an order's credit. Amounts arrive formatted.
+   */
+  cashback: {
+    title: string
+    intro: string
+    owed: {
+      title: string
+      available: string
+      availableHelp: string
+      pending: string
+      pendingHelp: string
+      /** `{days}`. */
+      expiringSoon: string
+    }
+    settings: {
+      title: string
+      enabled: string
+      enabledHelp: string
+      rate: string
+      rateHelp: string
+      validity: string
+      validityNone: string
+      validityDays: string
+      /** The unit after the days field. */
+      days: string
+      minimum: string
+      minimumHelp: string
+      maxRedeem: string
+      maxRedeemHelp: string
+      /** `{order}`, `{earned}`. */
+      example: string
+      /** Appended to the example: `{days}`. */
+      exampleValidity: string
+      exampleOff: string
+      /** The switch is on and the rate does not hold yet. */
+      exampleRateMissing: string
+      save: string
+      saving: string
+      saved: string
+    }
+    /** What the form refuses before it asks, by field. */
+    issues: { rate: string; validityDays: string; minimum: string; maxRedeem: string; amount: string; reason: string }
+    /** The API's refusals, by its codes. */
+    errors: { CASHBACK_SETTINGS_INVALID: string; CASHBACK_ADJUSTMENT_INVALID: string; CASHBACK_BALANCE_INSUFFICIENT: string; CASHBACK_BALANCE_TOO_LARGE: string; CUSTOMER_NOT_FOUND: string; UNKNOWN: string }
+    failed: string
+    retry: string
+    customer: {
+      title: string
+      balance: string
+      pending: string
+      /** `{amount}`, `{date}`. */
+      nextExpiry: string
+      noExpiry: string
+      statement: string
+      empty: string
+      /** `{number}`. */
+      order: string
+      adjust: string
+    }
+    entryKinds: { EARN: string; REDEEM: string; REVERSAL: string; EXPIRE: string; ADJUST: string; FORFEIT: string }
+    adjust: {
+      title: string
+      direction: string
+      give: string
+      take: string
+      amount: string
+      reason: string
+      reasonPlaceholder: string
+      submit: string
+      submitting: string
+      cancel: string
+    }
+    order: {
+      title: string
+      /** `{rate}`. */
+      earned: string
+      statuses: { PENDING: string; AVAILABLE: string; VOIDED: string; EXPIRED: string }
+      /** `{date}`. */
+      availableUntil: string
+      /** `{amount}`: what is left of a usable credit the customer spent part of. */
+      left: string
+      /** A usable credit the customer spent all of. */
+      spent: string
+      /** `{amount}`: what the customer had spent of it when the order was undone. */
+      unrecovered: string
     }
   }
 }

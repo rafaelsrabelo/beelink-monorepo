@@ -69,6 +69,11 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/landing/landing-faq` | — | Blocos/Landing → Perguntas |
 | `blocks/landing/landing-cta` | `signupHref` | Blocos/Landing → Chamada e rodapé |
 | `blocks/landing/landing-footer` | `termsHref`, `privacyHref`, `year` | Blocos/Landing → Chamada e rodapé |
+| `blocks/cashback/cashback-settings-form` | `value`, `onChange`, `onSubmit`, `issues`, `example`, `pending`, `error`, `saved` — the rules as typed (`lib/cashback`) | Blocos/Painel/Cashback |
+| `blocks/cashback/cashback-owed` | `owed`, `money` — what the shop owes in credit | Blocos/Painel/Cashback |
+| `blocks/cashback/customer-cashback` | `cashback`, `money`, `date`, `onAdjust`, `adjustment`, `pager` — a customer's balance and statement | Blocos/Painel/Cashback → Na ficha do cliente |
+| `blocks/cashback/cashback-adjust-form` | `value`, `onChange`, `onSubmit`, `onCancel`, `issues`, `error` | Blocos/Painel/Cashback → Ajuste manual |
+| `blocks/cashback/order-cashback` | `cashback`, `money`, `date` — drawn by `orders/order-detail` | Blocos/Painel/Cashback → No pedido |
 
 `auth-link` is the default every block navigates with until an app passes `next/link`. It is one line, and its test is still
 the longest of the three it has: a link component that swallowed the extra props would drop the `aria-current` the sidebar

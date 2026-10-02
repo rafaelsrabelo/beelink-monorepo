@@ -315,7 +315,11 @@ describe("a shop's cashback: its rules and each customer's credit", () => {
 
       expect((await call('DELETE', '/api/stores/lessari/customer/me', shopper, { password: PASSWORD })).statusCode).toBe(204);
 
-      expect((await cashbackOf(me.id)).entries.map((entry) => [entry.amountCents, entry.reason])).toEqual([[800, 'Brinde de boas-vindas']]);
+      // The record and its statement stay; the credit went with the account (BEELINK-239).
+      expect((await cashbackOf(me.id)).entries.map((entry) => [entry.kind, entry.amountCents, entry.reason])).toEqual([
+        ['FORFEIT', -800, null],
+        ['ADJUST', 800, 'Brinde de boas-vindas'],
+      ]);
     });
   });
 });

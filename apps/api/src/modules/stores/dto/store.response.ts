@@ -18,6 +18,7 @@ import type {
 } from '@harness-monorepo/contracts';
 
 // App
+import { PublicCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { PublicSectionResponse } from '../../page/dto/page.response.js';
 import { PAYMENT_METHODS, STORE_LAYOUT_TYPES, STORE_TYPES } from '../stores.constants.js';
 
@@ -127,6 +128,9 @@ export class PublicStoreResponse implements PublicStore {
 
   @ApiProperty({ enum: PAYMENT_METHODS, isArray: true, minItems: 1 })
   paymentMethods!: PaymentMethod[];
+
+  @ApiProperty({ type: PublicCashbackResponse, nullable: true, description: 'Its cashback while switched on; null while off.' })
+  cashback!: PublicCashbackResponse | null;
 
   @ApiProperty({ type: [PublicSectionResponse], description: "The blocks the landing page is made of, in order." })
   sections!: PublicSectionResponse[];

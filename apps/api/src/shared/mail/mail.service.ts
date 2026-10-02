@@ -13,6 +13,7 @@ import type { Lead } from '@harness-monorepo/contracts';
 import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
+import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
 import { emailVerification, favoriteNotice, leadReceived, orderStatusChanged, passwordReset, type FavoriteNoticeContent, type OrderStatusContent } from './mail.templates.js';
 
 /** What a lead's e-mail needs beyond the lead: who to greet, and which site's panel to point at. */
@@ -81,6 +82,11 @@ export class MailService implements OnApplicationBootstrap {
   /** A favourite got cheaper or came back (BEELINK-155); answers whether it went, for its outbox. */
   async sendFavoriteNotice(to: string, content: FavoriteNoticeContent, url: string, settingsUrl: string): Promise<boolean> {
     return this.send(to, favoriteNotice(content, url, settingsUrl), content.shopName);
+  }
+
+  /** A customer's cashback about to expire (BEELINK-241); answers whether it went, for its outbox. */
+  async sendCashbackExpiring(to: string, content: CashbackExpiringContent, url: string, settingsUrl: string): Promise<boolean> {
+    return this.send(to, cashbackExpiring(content, url, settingsUrl), content.shopName);
   }
 
   /** One per lead, to the site's owner. The visitor's words travel escaped — see `leadReceived`. */

@@ -61,6 +61,7 @@ src/
 | `/create-store` | signed in | one tabbed form, not the legacy's five steps — and it posts the address, the handles and the palette the wizard collected and then dropped |
 | `/admin/[slug]` | the owner | that shop's panel home |
 | `/admin/[slug]/store` | the owner | the settings: five tabs, one save, one `PUT` |
+| `/admin/[slug]/cashback` | the owner | the cashback rules, with what they give on an order of R$ 100,00, and what the shop owes in credit (BEELINK-242); a customer's credit is on their record |
 
 Both forms are `react-hook-form` inside a `packages/ui` block, and every request they need is a callback the screen hands in: the palettes, the postcode lookup and the image upload. That is what keeps `web/no-fetch-in-components` at zero while a tab still offers a button that reaches the network.
 

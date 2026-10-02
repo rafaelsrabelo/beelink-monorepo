@@ -50,6 +50,16 @@ export const PrimeiraCompraAnunciada: Story = {
   args: { ...ComItens.args, offer: { tone: "open", text: "Boas-vindas: − R$ 26,97 na sua primeira compra. Entre na sua conta para confirmar." } },
 }
 
+/** O cashback que o pedido renderia, calculado pela API (BEELINK-243). */
+export const ComCashback: Story = {
+  args: { ...ComItens.args, cashback: "Você ganha R$ 8,99 de cashback com este pedido, para usar nas próximas compras." },
+}
+
+/** Abaixo do pedido mínimo da loja: quanto falta para ganhar. */
+export const CashbackFaltaPouco: Story = {
+  args: { ...ComItens.args, cashback: "Faltam R$ 20,10 para ganhar 5% de cashback." },
+}
+
 /** Cliente que já comprou na loja: a frase diz por que a promoção não é dele. */
 export const PrimeiraCompraJaFeita: Story = {
   args: { ...ComItens.args, offer: { tone: "closed", text: "Boas-vindas vale só na primeira compra." } },

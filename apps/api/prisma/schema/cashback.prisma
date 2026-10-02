@@ -21,6 +21,8 @@ enum CashbackEntryKind {
   EXPIRE
   /// The shopkeeper's correction, either way, with its reason.
   ADJUST
+  /// What was left when the customer deleted their account: the credit went with it (BEELINK-239).
+  FORFEIT
 }
 
 /// A shop's cashback rules (docs/product/README.md, "Cashback"). One row per shop, written the first
@@ -69,11 +71,23 @@ model CashbackCredit {
   availableAt DateTime?
   /// When what is left of it expires; null never does.
   expiresAt   DateTime?
+  /// The shop's validity when its order was placed, in days; null never expires. Kept because the
+  /// validity counts from the delivery, and a rule changed meanwhile applies to new orders only.
+  /// Null on a credit the shopkeeper gave, whose expiry is set at once.
+  validityDays Int?
+  /// What the customer had already spent of it when its order was undone — the balance stops at zero
+  /// (decided 01/10/2026), so this is what the shop did not get back. A delivery again pays it out
+  /// less this, and the panel shows it. 0 to `amountCents`, by a CHECK.
+  unrecoveredCents Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  entries CashbackEntry[]
+  entries     CashbackEntry[]
+  /// What orders spent of it (BEELINK-240), to give back to it when one is cancelled.
+  redemptions CashbackRedemption[]
+  /// The e-mail owed before it expires (BEELINK-241); one per lot, ever.
+  expiryNotice CashbackExpiryNotice?
 
   /// What a customer can spend, in the order it is spent.
   @@index([customerId, status, expiresAt])
@@ -110,4 +124,41 @@ model CashbackEntry {
   /// The statement, the newest first.
   @@index([customerId, createdAt(sort: Desc)])
   @@map("cashback_entries")
+}
+
+/// What one order spent of one lot (BEELINK-240): a use takes from several lots, soonest to expire
+/// first, and a cancelled order gives each back what it took — so the credit returns with the
+/// validity it had. `returnedAt` is set once it was given back, so it is given back once.
+model CashbackRedemption {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  orderId     String         @db.Uuid
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  creditId    String         @db.Uuid
+  credit      CashbackCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  /// 1 or more, by a CHECK.
+  amountCents Int
+  createdAt   DateTime       @default(now())
+  returnedAt  DateTime?
+
+  @@unique([orderId, creditId])
+  @@index([creditId])
+  @@map("cashback_redemptions")
+}
+
+/// The e-mail a lot owes its customer before it expires (BEELINK-241): one per lot, by the unique
+/// index, written by the sweep that finds it inside the window and paid by `CashbackExpiryMailer`, an
+/// outbox like the others. What it says is read when it is sent: a lot spent or taken back since owes
+/// nothing.
+model CashbackExpiryNotice {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  creditId      String         @unique @db.Uuid
+  credit        CashbackCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  attempts      Int            @default(0)
+  nextAttemptAt DateTime       @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime       @default(now())
+
+  /// What the outbox claims: owed and due.
+  @@index([sentAt, nextAttemptAt])
+  @@map("cashback_expiry_notices")
 }

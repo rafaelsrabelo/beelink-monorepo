@@ -2,11 +2,13 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 
 // Types
-import type { OrderCouponRefusedDetails, OrderFulfillment, QuotedCoupon, QuotedFirstPurchase } from '@harness-monorepo/contracts';
+import type { OrderCashbackRefusedDetails, OrderCouponRefusedDetails, OrderFulfillment, QuotedCoupon, QuotedFirstPurchase } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { CouponModel } from '../../generated/prisma/models.js';
 
 // App
+import { earningBaseOf, type EarningParts } from '../cashback/cashback-earning.js';
+import { cashbackUseOf, type CashbackUse, type CashbackWant } from '../cashback/cashback-redemption.js';
 import { couponRefusalOf, storedCodeOf } from '../promotions/coupon-verdict.js';
 import { couponDiscountOf, firstPurchaseOfferOf, forEveryone, promotionDiscountsOf, type LineDiscount, type PricingPromotion } from '../promotions/discount-pricing.js';
 import { couponByCode, customerUsesOf, firstPurchaseOf, runningPromotions } from '../promotions/order-discounts.js';
@@ -50,6 +52,16 @@ export interface PricingInput {
    * pricing: what keeps that from ever crossing is the shop's row, which every placement holds first.
    */
   lock: boolean;
+  /**
+   * The customer's credit to spend (BEELINK-240): none, the most the cart takes — a quote asked to
+   * apply it — or the amount a placement was shown. Absent is none.
+   */
+  cashback?: CashbackWant;
+  /**
+   * The clock credit's expiry is read against — never `at`, which the panel may set in the past. A
+   * placement passes the instant it spends at, so the lots it counts are the ones it takes. Absent is now.
+   */
+  now?: Date;
 }
 
 export interface PricedOrder {
@@ -67,6 +79,8 @@ export interface PricedOrder {
   refusal: OrderCouponRefusedDetails | null;
   /** The coupon taken, to write its use; null with none, and with one refused. */
   coupon: Pick<CouponModel, 'id' | 'code' | 'kind'> | null;
+  /** The customer's credit against the order, and what it spends — already off `totals.totalCents`. Null with nobody identified. */
+  cashbackUse: CashbackUse | null;
 }
 
 /**
@@ -94,8 +108,7 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
   const found = stored ? await couponByCode(db, storeId, stored, input.lock) : null;
 
   // The customer's orders are read only when a discount for a first purchase reaches the cart: one
-  // that does not costs no look at them, and a placement takes no lock on its customer. Somebody the
-  // order would register has none to read.
+  // that does not costs no look at them. Somebody the order would register has none to read.
   const asked = promotions.some((promotion) => promotion.audience === 'FIRST_PURCHASE' && reachesTheCart(promotion)) || found?.audience === 'FIRST_PURCHASE';
   const onFirstPurchase = !asked || !customer ? null : customer.id === null || (await firstPurchaseOf(db, customer.id, input.lock));
 
@@ -118,7 +131,18 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
   }
   const couponDiscountCents = coupon ? couponDiscountOf(coupon, baseCents, fee) : 0;
 
-  const totals = totalsOf(lines, fulfillment, fee, promotionDiscountCents + couponDiscountCents + input.manualDiscountCents);
+  // Credit comes last, over what is left of the products: never the delivery (BEELINK-240).
+  const productsCents = earningBaseOf({
+    subtotalCents,
+    promotionDiscountCents,
+    couponDiscountCents,
+    couponKind: coupon?.kind ?? null,
+    manualDiscountCents: input.manualDiscountCents,
+    cashbackUsedCents: 0,
+  });
+  const cashbackUse = customer ? await cashbackUseOf(db, { storeId, customerId: customer.id, productsCents, want: input.cashback ?? 'NONE', lock: input.lock, now: input.now ?? new Date() }) : null;
+
+  const totals = totalsOf(lines, fulfillment, fee, promotionDiscountCents + couponDiscountCents + input.manualDiscountCents, cashbackUse?.appliedCents ?? 0);
   if (totals === 'DISCOUNT_TOO_LARGE') {
     throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount is larger than the order'));
   }
@@ -137,7 +161,28 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
     verdict,
     refusal,
     coupon,
+    cashbackUse,
   };
+}
+
+/**
+ * What an order's cashback is worked out from, as it was priced (BEELINK-243): one reading for the
+ * quote and the placement, so what the cart promised is what the order records.
+ */
+export function earningPartsOf(priced: PricedOrder, cashbackUsedCents: number): EarningParts {
+  return {
+    subtotalCents: priced.totals.subtotalCents,
+    promotionDiscountCents: priced.promotionDiscountCents,
+    couponDiscountCents: priced.couponDiscountCents,
+    couponKind: priced.coupon?.kind ?? null,
+    manualDiscountCents: priced.manualDiscountCents,
+    cashbackUsedCents,
+  };
+}
+
+/** An order does not go through spending another amount of credit than the customer was shown (BEELINK-240). */
+export function cashbackRefused(details: OrderCashbackRefusedDetails): ConflictException {
+  return new ConflictException({ ...orderError('ORDER_CASHBACK_REFUSED', 'The credit asked for is more than the customer can spend now'), details });
 }
 
 /** An order does not go through with a coupon that does not hold: the customer asked for that price. */

@@ -65,9 +65,43 @@ export interface CashbackCredit {
  * What a line of the statement records. `EARN` is a credit becoming usable (its order delivered);
  * `REDEEM`, credit spent on an order; `REVERSAL`, an undone order taking back what it earned
  * (negative) or giving back what was spent on it (positive); `EXPIRE`, what was left of a lot when it
- * ran out; `ADJUST`, the shopkeeper's correction, either way.
+ * ran out; `ADJUST`, the shopkeeper's correction, either way; `FORFEIT`, what was left when the
+ * customer deleted their account.
  */
-export type CashbackEntryKind = "EARN" | "REDEEM" | "REVERSAL" | "EXPIRE" | "ADJUST";
+export type CashbackEntryKind = "EARN" | "REDEEM" | "REVERSAL" | "EXPIRE" | "ADJUST" | "FORFEIT";
+
+/**
+ * What an order earns in cashback (BEELINK-239) and where that credit stands: pending until the order
+ * is delivered, then usable until spent or expired; void once the order was cancelled. Null on an
+ * order that earns nothing.
+ */
+export interface OrderCashback {
+  /** Worked out when the order was placed, at `rateBps`, and never changed after. */
+  earnedCents: number;
+  rateBps: number;
+  status: CashbackCreditStatus;
+  /** While pending, what the delivery will make usable; once usable, what is left to spend. */
+  remainingCents: number;
+  /** ISO-8601; null until delivered. */
+  availableAt: string | null;
+  /** ISO-8601; null until delivered, and on a credit that never expires. */
+  expiresAt: string | null;
+}
+
+/** As the shop reads it: also what the customer had spent of it when the order was undone, which the balance did not take back. */
+export interface ShopOrderCashback extends OrderCashback {
+  unrecoveredCents: number;
+}
+
+/** The customer's credit at the shop in their data's copy: every line of the statement, never a page of it. */
+export interface CustomerDataCashback {
+  balanceCents: number;
+  pendingCents: number;
+  /** The lots still worth something, as the statement's reader sees them. */
+  credits: CashbackCredit[];
+  /** The newest first. */
+  entries: CashbackEntry[];
+}
 
 export interface CashbackEntry {
   id: string;
@@ -117,3 +151,48 @@ export type CashbackErrorCode =
   | "CASHBACK_BALANCE_INSUFFICIENT"
   /** An adjustment that would take the balance past R$ 1.000.000,00. */
   | "CASHBACK_BALANCE_TOO_LARGE";
+
+/**
+ * The shop's cashback as its shop window reads it (BEELINK-243): what comes back and from what order
+ * up, so a product's page says what it would earn. Null while the cashback is off. What an order
+ * earns exactly is the quote's (`QuotedCashback`).
+ */
+export interface PublicCashback {
+  rateBps: number;
+  minSubtotalCents: number;
+}
+
+/**
+ * What a cart would earn, as its quote answers it (BEELINK-243) — the same calculation the order
+ * makes when placed. `EARNS` with the cents; `BELOW_MINIMUM` with what is missing to reach the shop's
+ * minimum. Null when the shop's cashback is off, or the cart would earn less than a cent.
+ */
+export type QuotedCashback =
+  | { status: "EARNS"; earnedCents: number; rateBps: number }
+  | { status: "BELOW_MINIMUM"; missingCents: number; rateBps: number };
+
+/**
+ * The customer's cashback against a cart (BEELINK-240): what they have, the most this cart can take —
+ * the lesser of the balance and the shop's cap over the products after their discounts, never the
+ * delivery — and what the quote applied. Asked with `useCashback`, `appliedCents` is that most;
+ * without, 0, so the screen can offer it.
+ */
+export interface QuotedCashbackUse {
+  balanceCents: number;
+  maxCents: number;
+  appliedCents: number;
+  /** Why nothing can be used: they have no credit to spend, or the cart has nothing credit may pay for. Null when some can. */
+  unavailable: CashbackUnavailableReason | null;
+}
+
+export type CashbackUnavailableReason = "NO_BALANCE" | "NOTHING_TO_PAY";
+
+/**
+ * The `details` of `ORDER_CASHBACK_REFUSED`: the order asked to spend more credit than it can now — the
+ * balance moved, a lot expired, or the cart changed since it was quoted. `maxCents` is what it can
+ * spend now; the order is never placed with another amount.
+ */
+export interface OrderCashbackRefusedDetails {
+  requestedCents: number;
+  maxCents: number;
+}

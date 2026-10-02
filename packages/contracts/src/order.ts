@@ -1,6 +1,7 @@
 /* ── orders: what a shop sold, as a fact about the past ───────────────────── */
 
 // Types
+import type { OrderCashback, ShopOrderCashback } from "./cashback.js";
 import type { CustomerAddress } from "./customer.js";
 import type { CouponKind } from "./promotion.js";
 import type { PaymentMethod } from "./store.js";
@@ -138,6 +139,10 @@ export interface Order {
   /** What the coupon took off — on a free delivery, the fee, and zero while the fee is not agreed. */
   couponDiscountCents: number;
   coupon: OrderCoupon | null;
+  /** The cashback it earns and where that credit stands (BEELINK-239); null when it earns none. */
+  cashback: ShopOrderCashback | null;
+  /** The customer's credit it spent (BEELINK-240), taken off the total apart from `discountCents`. */
+  cashbackUsedCents: number;
   totalCents: number;
   note: string | null;
   /** When it was sold, ISO-8601 — which may be before it was registered. */
@@ -210,6 +215,11 @@ export interface CreateOrderPayload {
   discountCents?: number;
   /** A coupon of the shop, in any case; one that does not hold refuses the order (`ORDER_COUPON_REFUSED`). */
   couponCode?: string | null;
+  /**
+   * The customer's credit to spend, in cents, as the quote offered it (BEELINK-240). More than they can
+   * spend now refuses the order (`ORDER_CASHBACK_REFUSED`) rather than place it at another price.
+   */
+  cashbackCents?: number;
   paymentMethod: PaymentMethod;
   note?: string;
   /** ISO-8601; absent is now. The past is allowed, the future is not. */
@@ -236,6 +246,8 @@ export interface PlaceCustomerOrderPayload {
   addressId?: string;
   /** A coupon of the shop, in any case; one that does not hold refuses the order (`ORDER_COUPON_REFUSED`). */
   couponCode?: string | null;
+  /** Their credit to spend, in cents, as the quote offered it (BEELINK-240); more than they can spend now is `ORDER_CASHBACK_REFUSED`. */
+  cashbackCents?: number;
 }
 
 /** One line as its customer reads it: what was bought, at the price of that moment. */
@@ -301,6 +313,10 @@ export interface CustomerOrder {
   /** What the coupon took off — on a free delivery, the fee, and zero while the fee is not agreed. */
   couponDiscountCents: number;
   coupon: OrderCoupon | null;
+  /** The cashback it earns: pending until delivered, then usable (BEELINK-239); null when it earns none. */
+  cashback: OrderCashback | null;
+  /** Their credit it spent (BEELINK-240), taken off the total apart from `discountCents`. */
+  cashbackUsedCents: number;
   totalCents: number;
   /** ISO-8601. */
   placedAt: string;
@@ -329,6 +345,10 @@ export interface CustomerOrderSummary {
   discountCents: number;
   /** The coupon it took, as it was; null with none. */
   coupon: OrderCoupon | null;
+  /** The cashback it earns, as the card says it; null when it earns none. */
+  cashback: OrderCashback | null;
+  /** Their credit it spent (BEELINK-240). */
+  cashbackUsedCents: number;
   /** Units across every line. */
   itemsCount: number;
   /** The first lines, as many as the card shows. */
@@ -436,7 +456,9 @@ export type OrderErrorCode =
   /** A counted combination with fewer left than the order asks for. Its `details` are `OrderStockDetails`. */
   | "ORDER_STOCK_INSUFFICIENT"
   /** The coupon sent with the order does not hold. Its `details` are `OrderCouponRefusedDetails`. */
-  | "ORDER_COUPON_REFUSED";
+  | "ORDER_COUPON_REFUSED"
+  /** It asked to spend more credit than the customer can now. Its `details` are `OrderCashbackRefusedDetails`. */
+  | "ORDER_CASHBACK_REFUSED";
 
 /** One line the stock cannot cover: the combination, and how many the shop has of it. */
 export interface OrderStockShortage {

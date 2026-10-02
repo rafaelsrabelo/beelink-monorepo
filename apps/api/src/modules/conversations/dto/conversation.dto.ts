@@ -78,6 +78,7 @@ export class ConversationMessageResponse {
   @ApiPropertyOptional({ enum: AUTHORS, description: 'On a MESSAGE.' }) author?: ConversationAuthor;
   @ApiPropertyOptional({ description: 'On a MESSAGE: plain text, never drawn as HTML.' }) body?: string;
   @ApiPropertyOptional({ enum: ORDER_STATUSES, description: 'On a STATUS: the status the order moved to; each side words it.' }) status?: OrderStatus;
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'On a STATUS: the cashback a delivery made usable (BEELINK-239); null on every other move.' }) cashbackCents?: number | null;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
   @ApiProperty({ format: 'date-time', nullable: true, type: String, description: 'When the other side read it — the customer, for a STATUS.' }) readAt!: string | null;
 }

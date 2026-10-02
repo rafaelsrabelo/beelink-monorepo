@@ -49,6 +49,8 @@ const quote: OrderQuote = {
   discountCents: 2500,
   deliveryFeeCents: null,
   totalCents: 23490,
+  cashback: null,
+  cashbackUse: null,
 }
 
 describe("the cart as its price is asked for", () => {
@@ -90,7 +92,7 @@ describe("the cart as the API priced it", () => {
   it("reads as the shelf prices it while there is no price: one subtotal, no row, no line touched", () => {
     const view = viewOf([row({}), creatine])
 
-    expect(cartPricingOf(null, view, context)).toEqual({ subtotalCents: 23490, discounts: [], total: null, lines: new Map(), offer: null })
+    expect(cartPricingOf(null, view, context)).toEqual({ subtotalCents: 23490, discounts: [], total: null, lines: new Map(), offer: null, cashback: null })
   })
 
   it("says the subtotal before the promotion, what came off, the total, and the line the promotion reached", () => {
@@ -182,5 +184,16 @@ describe("the cart's first-purchase offer", () => {
     const offered = cartPricingOf({ ...quote, firstPurchase: { status: "UNIDENTIFIED", promotionName: "Boas-vindas", discountCents: 2349 } }, view, context)
     expect(spaced(offered.total)).toBe("R$ 234,90 + frete")
     expect(offered.discounts.map((line) => line.label)).toEqual(["Promoção: Semana do Whey"])
+  })
+
+  /** BEELINK-243: what the order would earn, as the quote worked it out; below the minimum, what is missing. */
+  it("says the cashback the cart would earn, and what is missing below the shop's minimum", () => {
+    const view = viewOf([row({}), creatine])
+    const earns = cartPricingOf({ ...quote, cashback: { status: "EARNS", earnedCents: 1174, rateBps: 500 } }, view, context)
+    expect(earns.cashback?.replace(/\s/g, " ")).toBe("Você ganha R$ 11,74 de cashback com este pedido, para usar nas próximas compras.")
+
+    const short = cartPricingOf({ ...quote, cashback: { status: "BELOW_MINIMUM", missingCents: 2510, rateBps: 500 } }, view, context)
+    expect(short.cashback?.replace(/\s/g, " ")).toBe("Faltam R$ 25,10 para ganhar 5% de cashback.")
+    expect(cartPricingOf(quote, view, context).cashback).toBeNull()
   })
 })

@@ -7,7 +7,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { ShopperConversationError } from "@/services/conversations/conversation-requests"
 import { conversationRefusalOf } from "./conversation-refusal"
-import { conversationLinesOf, conversationRowsOf, messageLengthOf, unreadOf } from "./conversation-view"
+import { conversationLinesOf, conversationRowsOf, messageLengthOf, noticeWithCashback, unreadOf } from "./conversation-view"
 import { storefrontRoutes } from "./storefront-routes"
 
 const routes = storefrontRoutes({
@@ -63,9 +63,9 @@ describe("a conversation's lines", () => {
         order: { number: 18, status: "DELIVERED", fulfillment: "PICKUP", open: false },
         unread: 1,
         messages: [
-          { kind: "STATUS", id: "1", status: "RECEIVED", createdAt: at, readAt: at },
+          { kind: "STATUS", id: "1", status: "RECEIVED", cashbackCents: null, createdAt: at, readAt: at },
           { kind: "MESSAGE", id: "2", author: "CUSTOMER", body: "Posso buscar hoje?", createdAt: at, readAt: at },
-          { kind: "STATUS", id: "3", status: "DELIVERED", createdAt: at, readAt: null },
+          { kind: "STATUS", id: "3", status: "DELIVERED", cashbackCents: null, createdAt: at, readAt: null },
         ],
       },
       context,
@@ -76,6 +76,14 @@ describe("a conversation's lines", () => {
       [false, "Posso buscar hoje?", "Lida"],
       [true, "Pedido retirado na loja.", null],
     ])
+  })
+
+  /** BEELINK-239: a delivery's notice says the cashback it made usable, in the shopper's money. */
+  it("tells the cashback a delivery made usable after its notice, and nothing when there was none", () => {
+    expect(noticeWithCashback("Pedido entregue.", 504, ptBR.storefront.conversationCashback, "pt-BR").replace(/\s/g, " ")).toBe(
+      "Pedido entregue. Você ganhou R$ 5,04 de cashback para usar nas próximas compras.",
+    )
+    expect(noticeWithCashback("Pedido entregue.", null, ptBR.storefront.conversationCashback, "pt-BR")).toBe("Pedido entregue.")
   })
 
   it("preview a move as its words, with no 'Você:'", () => {

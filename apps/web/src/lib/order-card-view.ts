@@ -4,6 +4,7 @@ import type { StorefrontOrderCardProps } from "@harness-monorepo/ui/blocks/store
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
+import { customerCashbackLineOf } from "@harness-monorepo/ui/lib/cashback"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { customerTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { format } from "@harness-monorepo/ui/locales/index"
@@ -98,6 +99,7 @@ export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardC
     placedOn: dayOf(order.placedAt, locale),
     total: `${customerTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderCardTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}`,
     saving: orderSavingOf(order, context),
+    cashback: customerCashbackLineOf(order.cashback, { money: (cents) => formatCents(cents, locale, "BRL"), date: (iso) => dayOf(iso, locale), now: new Date(), text: text.orderCashback }),
     shipTo: order.fulfillment === "PICKUP" ? text.orderPickupLabel : order.recipientName,
     ...orderStatusLineOf(order, context),
     items: order.items.map((item) => ({

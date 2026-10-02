@@ -27,6 +27,7 @@ export const order: OrderDetailView = {
   promotionDiscountCents: 0,
   couponDiscountCents: 0,
   coupon: null,
+  cashback: null,
   totalCents: 28970,
   note: "Entregar depois das 18h",
   placedAt: "2026-09-25T14:30:00.000Z",
@@ -44,4 +45,11 @@ export const discountedOrder: OrderDetailView = {
   couponDiscountCents: 1000,
   coupon: { code: "BEMVINDO10", kind: "FIXED" },
   totalCents: 25372,
+}
+
+/** Delivered, earning 5% of the products after their discounts — 243,72 × 5% = 12,18 — usable until late October. */
+export const cashbackOrder: OrderDetailView = {
+  ...discountedOrder,
+  status: "DELIVERED",
+  cashback: { earnedCents: 1218, rateBps: 500, status: "AVAILABLE", remainingCents: 1218, availableAt: "2026-09-26T10:00:00.000Z", expiresAt: "2026-10-26T10:00:00.000Z", unrecoveredCents: 0 },
 }

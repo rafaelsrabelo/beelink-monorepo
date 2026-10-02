@@ -18,6 +18,7 @@ import { oweStatusEmail } from './order-status-email.js';
 import { OrderStatusMailer } from './order-status-mailer.js';
 import { orderError, ORDERS_PAGE_SIZE, ORDERS_PAGE_SIZE_MAX } from './orders.constants.js';
 import { ORDER_INCLUDE, ORDER_SUMMARY_INCLUDE, toOrder, toOrderSummary } from './orders.mapper.js';
+import { releaseOrderCashback, revokeOrderCashback } from '../cashback/cashback-orders.js';
 import { isOpen } from '../conversations/conversations.constants.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { RealtimePublisher } from '../realtime/realtime-publisher.js';
@@ -53,6 +54,7 @@ export class OrdersService {
       deliveryFeeCents: dto.deliveryFeeCents ?? 0,
       discountCents: dto.discountCents ?? 0,
       couponCode: dto.couponCode ?? null,
+      cashbackCents: dto.cashbackCents ?? 0,
       note: dto.note?.length ? dto.note : null,
       placedAt,
       // Registered by the shopkeeper, who already agreed the sale: accepted, not received.
@@ -137,16 +139,18 @@ export class OrdersService {
         throw new ConflictException(orderError('ORDER_STATUS_UNCHANGED', `The order is already ${status}`));
       }
 
-      const order = await tx.order.update({
-        where: { id: current.id },
-        data: { status, events: { create: { status, actor: 'SHOPKEEPER', userId } } },
-        include: ORDER_INCLUDE,
-      });
+      await tx.order.update({ where: { id: current.id }, data: { status, events: { create: { status, actor: 'SHOPKEEPER', userId } } } });
+      const now = new Date();
       if (status === 'CANCELLED') await settleCancellation(tx, current);
+      // The cashback follows the delivery (BEELINK-239): made usable by it, taken back by leaving it.
+      else if (current.status === 'DELIVERED') await revokeOrderCashback(tx, current.id, 'BACK', now);
+      const cashbackCents = status === 'DELIVERED' ? await releaseOrderCashback(tx, current.id, now) : null;
       // Told to the customer in the conversation, before a move that closes it: the last line is why.
-      await noteOrderStatus(tx, { order: current, status, at: new Date(), seen: false });
+      await noteOrderStatus(tx, { order: current, status, at: now, seen: false, cashbackCents });
       const owed = await oweStatusEmail(tx, { order: current, status, byCustomer: false });
       const conversation = await tx.orderConversation.count({ where: { orderId: current.id } });
+      // Read once everything the move did is written: its cashback included.
+      const order = await tx.order.findUniqueOrThrow({ where: { id: current.id }, include: ORDER_INCLUDE });
       return { order, owed, customerId: current.customerId, closes: conversation > 0 && isOpen(current.status) && !isOpen(status) };
     });
     if (moved.owed) this.mailer.dispatch();

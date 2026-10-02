@@ -1,3 +1,4 @@
+import type { PublicCashback } from "./cashback.js";
 import type { PublicPageLink } from "./store-pages.js";
 import type { PublicSection } from "./page.js";
 import type { StorefrontRouteWords } from "./catalog.js";
@@ -187,6 +188,8 @@ export interface PublicStore {
   layoutSettings: StoreLayoutSettings;
   /** Never empty: the checkout has nothing to offer a customer otherwise. */
   paymentMethods: PaymentMethod[];
+  /** Its cashback while switched on (BEELINK-243); null while off. */
+  cashback: PublicCashback | null;
   /**
    * The bands the landing page is made of, in the shopkeeper's order, already resolved.
    *

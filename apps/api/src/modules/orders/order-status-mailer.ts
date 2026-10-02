@@ -37,6 +37,7 @@ export class OrderStatusMailer extends OutboxMailer {
           select: {
             number: true,
             fulfillment: true,
+            cashbackCredit: { select: { status: true, remainingCents: true, expiresAt: true } },
             store: { select: { name: true, slug: true, routeVocabulary: true } },
             customer: { select: { name: true, user: { select: { email: true, emailVerifiedAt: true } } } },
           },
@@ -54,10 +55,13 @@ export class OrderStatusMailer extends OutboxMailer {
 
     const { order } = row;
     const words = ROUTE_WORDS[order.store.routeVocabulary];
+    // Read now, not at the move: a delivery undone since is told of without credit it no longer gave.
+    const lot = order.cashbackCredit;
+    const cashback = row.status === 'DELIVERED' && lot?.status === 'AVAILABLE' && lot.remainingCents > 0 ? { amountCents: lot.remainingCents, expiresAt: lot.expiresAt } : null;
     const account = `${env.WEB_URL}/${order.store.slug}/${words.account}`;
     const went = await this.mail.sendOrderStatus(
       user.email,
-      { name: order.customer.name, shopName: order.store.name, number: order.number, status: row.status, pickup: order.fulfillment === 'PICKUP' },
+      { name: order.customer.name, shopName: order.store.name, number: order.number, status: row.status, pickup: order.fulfillment === 'PICKUP', cashback },
       `${account}/${words.accountTabs.orders}/${order.number}`,
       // Straight to the box that turns these off, in the shop's own words.
       `${account}/${words.accountTabs.profile}#avisos`,

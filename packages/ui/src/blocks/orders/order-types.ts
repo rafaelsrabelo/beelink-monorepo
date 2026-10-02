@@ -1,6 +1,9 @@
 import type { CouponKindValue } from "@harness-monorepo/ui/lib/order-discounts"
 import type { OrderFulfillmentValue, OrderPaymentValue } from "@harness-monorepo/ui/lib/order-form"
 
+// Block
+import type { OrderCashbackView } from "@harness-monorepo/ui/lib/cashback"
+
 /** Mirrors the wire's `OrderStatus`; this package imports no contracts. */
 export type OrderStatusValue = "RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
 
@@ -75,6 +78,8 @@ export interface OrderDetailView {
   couponDiscountCents: number
   /** The coupon it took, as it was. */
   coupon: { code: string; kind: CouponKindValue } | null
+  /** What it earns in cashback, and where that credit stands (BEELINK-242); null when it earns none. */
+  cashback: OrderCashbackView | null
   totalCents: number
   note: string | null
   /** ISO-8601. */
