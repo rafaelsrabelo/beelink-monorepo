@@ -31,6 +31,7 @@ const FORGOTTEN = {
   claimedPhone: null,
   notifyOrders: true,
   notifyFavorites: true,
+  notifyCashback: true,
   notifyOffers: false,
   notifyOffersAt: null,
 } as const;

@@ -86,6 +86,8 @@ model CashbackCredit {
   entries     CashbackEntry[]
   /// What orders spent of it (BEELINK-240), to give back to it when one is cancelled.
   redemptions CashbackRedemption[]
+  /// The e-mail owed before it expires (BEELINK-241); one per lot, ever.
+  expiryNotice CashbackExpiryNotice?
 
   /// What a customer can spend, in the order it is spent.
   @@index([customerId, status, expiresAt])
@@ -141,4 +143,22 @@ model CashbackRedemption {
   @@unique([orderId, creditId])
   @@index([creditId])
   @@map("cashback_redemptions")
+}
+
+/// The e-mail a lot owes its customer before it expires (BEELINK-241): one per lot, by the unique
+/// index, written by the sweep that finds it inside the window and paid by `CashbackExpiryMailer`, an
+/// outbox like the others. What it says is read when it is sent: a lot spent or taken back since owes
+/// nothing.
+model CashbackExpiryNotice {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  creditId      String         @unique @db.Uuid
+  credit        CashbackCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  attempts      Int            @default(0)
+  nextAttemptAt DateTime       @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime       @default(now())
+
+  /// What the outbox claims: owed and due.
+  @@index([sentAt, nextAttemptAt])
+  @@map("cashback_expiry_notices")
 }
