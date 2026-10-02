@@ -215,7 +215,7 @@ export const ptBR: WebMessages = {
     ORDER_CONVERSATION_NOT_FOUND: "Esta conversa ainda não começou: quem abre é o cliente.",
     ORDER_STOCK_INSUFFICIENT: "Não há estoque para tudo. Ajuste as quantidades marcadas.",
     ORDER_COUPON_REFUSED: "Este cupom não vale para este pedido.",
-    ORDER_CASHBACK_REFUSED: "Seu saldo de cashback mudou. Confira o valor e tente de novo.",
+    ORDER_CASHBACK_REFUSED: "Esse valor de cashback não está mais disponível para este pedido. Confira o valor e tente de novo.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Entrar com Google não está disponível agora. Entre com e-mail e senha.",
     GOOGLE_STATE_INVALID: "O login com Google expirou ou já foi usado. Tente de novo.",
     GOOGLE_EXCHANGE_FAILED: "O Google não confirmou o login. Tente de novo.",

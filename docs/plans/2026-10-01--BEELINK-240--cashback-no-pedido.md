@@ -56,3 +56,30 @@
 - As telas (U7): o checkout com "Usar meu cashback", Minha conta, comprovante, WhatsApp e o registrar
   pedido do painel.
 - O vencimento automático (U4).
+
+## Adendo — 02/10, depois da revisão
+
+1. **Deadlock entre curtir e fechar pedido (corrigido).**
+   - O pedido travava o produto (estoque) e depois o cliente, para o histórico de compras e o crédito.
+     A curtida trava na ordem inversa: primeiro o cliente, depois o produto. Com o mesmo cliente
+     curtindo o mesmo produto que estava pedindo, um dos dois quebrava com 500.
+   - O problema já existia antes, pelo histórico de compras; o U3 só antecipou a trava do cliente.
+   - Agora o pedido trava o cliente antes do estoque. Um teste de corrida reproduz o problema e passa
+     com a correção.
+2. **Devolução estendia o lote inteiro (corrigido).**
+   - O mínimo de 7 dias valia para o lote todo, não só para o valor devolvido. Gastar 1 centavo e
+     cancelar estendia o resto do lote; repetido toda semana, o crédito nunca vencia. Também trazia de
+     volta o resto de um lote que já tinha vencido.
+   - Agora só o valor devolvido ganha a semana. Ele volta para o próprio lote quando a validade do lote
+     já passa da semana, ou quando o lote não tem mais nada. Nos outros casos, vira um lote próprio,
+     sem pedido de origem: aparece como crédito da loja, e o extrato mostra o estorno com o número do
+     pedido.
+3. **Um relógio só por pedido.** O saldo é conferido e gasto no mesmo instante, então um lote que
+   vence entre a conferência e o débito não vira erro 500.
+4. **Texto da recusa.** `ORDER_CASHBACK_REFUSED` passa a servir para o cliente e para o lojista, e
+   também para o caso em que o teto do carrinho baixou.
+5. **Testes acrescentados:**
+   - taxa de entrega combinada depois, com crédito no pedido;
+   - cliente avulso no painel pedindo crédito;
+   - devolução para um lote pendente;
+   - cancelamento depois de juntar dois cadastros.
