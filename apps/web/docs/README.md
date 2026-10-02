@@ -63,6 +63,7 @@ src/
 | `/admin/[slug]` | the owner | that shop's panel home |
 | `/admin/[slug]/store` | the owner | the settings: five tabs, one save, one `PUT` |
 | `/admin/[slug]/cashback` | the owner | the cashback rules, with what they give on an order of R$ 100,00, and what the shop owes in credit (BEELINK-242); a customer's credit is on their record |
+| `/admin/[slug]/integrations` | the owner | the shop's Melhor Envio account — connect, whose account, the wallet, reconnect, disconnect — and, connected, how it ships by carrier: services, days to post, default parcel (BEELINK-183). The way back from Melhor Envio lands here with `?conectado=` or `?erro=` |
 
 Both forms are `react-hook-form` inside a `packages/ui` block, and every request they need is a callback the screen hands in: the palettes, the postcode lookup and the image upload. That is what keeps `web/no-fetch-in-components` at zero while a tab still offers a button that reaches the network.
 
@@ -74,6 +75,7 @@ Both forms are `react-hook-form` inside a `packages/ui` block, and every request
 | `/api/stores/[slug]/integrations/melhor-envio` | admin | the shop's Melhor Envio connection (`GET`) and disconnecting it (`DELETE`, the API's 204 answered as 200) — BEELINK-182 |
 | `/api/stores/[slug]/integrations/melhor-envio/connect` | admin, **a link** | asks the API for the authorization page and sends the browser there (303), remembering the shop in `bl_integration_return` on `/api/integrations` only. Origin-checked, not JSON-checked: a followed link sends no JSON header |
 | `/api/integrations/melhor-envio/callback` | admin | Melhor Envio's one fixed return address, for every shop: hands the code and the state to the API with the owner's session, then lands on `/admin/<slug>/integrations?conectado=…` or `?erro=<code>` — the page itself is N2's |
+| `/api/stores/[slug]/integrations/melhor-envio/account` · `/settings` | admin | the wallet and Melhor Envio's services, read there and then; the carrier settings (`GET`, `PUT`) — BEELINK-183 |
 
 `src/proxy.ts` runs on an allow-list: `/dashboard`, `/admin`, `/create-store`, and the five auth screens, each with its subtree. Everything else is public and reaches its page without a redirect, which is what will let `/<slug>` be served anonymously and indexed. On the paths it does match, it redirects on the presence of a cookie and refreshes an expired access token before the page renders. It also takes the panel's route handlers under `/api` — save `session`, `auth`, `customer` and `storefront` — when a panel refresh cookie is there, and renews the pair three minutes before the access token runs out or once it has, so a panel left open keeps working (BEELINK-169). It never grants access: the API checks the bearer token on every call.
 

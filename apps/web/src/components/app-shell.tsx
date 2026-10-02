@@ -8,21 +8,7 @@ import type { ComponentProps, ReactNode } from "react"
 import { usePathname } from "next/navigation"
 
 // Libs
-import {
-  CoinsIcon,
-  HomeIcon,
-  InboxIcon,
-  LayoutTemplateIcon,
-  MessageCircleIcon,
-  PackageIcon,
-  PercentIcon,
-  SettingsIcon,
-  ShoppingBagIcon,
-  StarIcon,
-  TagsIcon,
-  TicketIcon,
-  UsersIcon,
-} from "lucide-react"
+import { CoinsIcon, HomeIcon, InboxIcon, LayoutTemplateIcon, MessageCircleIcon, PackageIcon, PercentIcon, PlugIcon, SettingsIcon, ShoppingBagIcon, StarIcon, TagsIcon, TicketIcon, UsersIcon } from "lucide-react"
 
 // Types
 import type { User } from "@harness-monorepo/contracts"
@@ -192,6 +178,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
                   item(nav.promotions, "/promotions", <PercentIcon />, "prefix"),
                   item(nav.coupons, "/coupons", <TicketIcon />, "prefix"),
                   item(nav.cashback, "/cashback", <CoinsIcon />, "prefix"),
+                  item(nav.integrations, "/integrations", <PlugIcon />, "prefix"),
                   item(nav.customers, "/customers", <UsersIcon />, "prefix"),
                   { ...item(nav.reviews, "/reviews", <StarIcon />, "prefix"), ...unseenBadge },
                 ]
