@@ -53,6 +53,19 @@ describe("OrderDetail", () => {
     expect(within(items).getByText("R$ 289,70")).toBeInTheDocument()
   })
 
+  /** BEELINK-244: the customer's credit is the last row before the total, which is already less it. */
+  it("says the cashback the customer used on a row of its own, after the discounts", () => {
+    render(<OrderDetail order={{ ...order, cashbackUsedCents: 1500, totalCents: 27470 }} {...props} />)
+
+    const items = screen.getByRole("region", { name: "Itens" })
+    const rows = [...items.querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+    expect(rows.slice(-3)).toEqual([
+      ["Desconto", "− R$ 5,00"],
+      ["Cashback usado", "− R$ 15,00"],
+      ["Total", "R$ 274,70"],
+    ])
+  })
+
   /** BEELINK-194: what came off is said part by part, the coupon by its code. */
   it("breaks the discount into the promotion, the coupon and what was typed, and says which line the promotion reached", () => {
     render(<OrderDetail order={discountedOrder} {...props} />)

@@ -324,6 +324,8 @@ export interface UiMessages {
     checkoutFailed: string
     /** `{reason}`: a sentence of `couponRefusals`, for an order refused over its coupon. */
     checkoutCouponGone: string
+    /** The shopper's cashback moved between the price on screen and the order (BEELINK-244): the cart was priced again. */
+    checkoutCashbackGone: string
     /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
     checkoutSignInPrompt: string
     checkoutSignIn: string
@@ -1796,6 +1798,8 @@ export interface UiMessages {
       cashbackUse: string
       /** `{amount}`: the most this sale takes, when it is less than the customer's balance. */
       cashbackCapped: string
+      /** The box is ticked and the sale's price with it could not be read: the order waits for it, or for the box. */
+      cashbackUnpriced: string
       invalidMoney: string
       missingCustomer: string
       missingItems: string

@@ -80,6 +80,8 @@ export interface OrderDetailView {
   coupon: { code: string; kind: CouponKindValue } | null
   /** What it earns in cashback, and where that credit stands (BEELINK-242); null when it earns none. */
   cashback: OrderCashbackView | null
+  /** The customer's credit spent on it (BEELINK-244): out of `totalCents` already, and no part of `discountCents`. */
+  cashbackUsedCents: number
   totalCents: number
   note: string | null
   /** ISO-8601. */
