@@ -8,6 +8,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
+import { noticeWithCashback } from "./conversation-view"
 import { momentOf } from "./order-card-view"
 import { statusNoticeKeyOf } from "./status-notice"
 
@@ -85,7 +86,7 @@ export function shopConversationLinesOf(conversation: ShopConversation, { locale
           id: message.id,
           mine: false,
           notice: true,
-          body: text.notices[statusNoticeKeyOf(message.status, conversation.order.fulfillment)],
+          body: noticeWithCashback(text.notices[statusNoticeKeyOf(message.status, conversation.order.fulfillment)], message.cashbackCents, text.noticeCashback, locale),
           when: momentOf(message.createdAt, locale),
         }
       : {

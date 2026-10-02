@@ -40,6 +40,7 @@ const order: CustomerOrder = {
   promotionDiscountCents: 0,
   couponDiscountCents: 0,
   coupon: null,
+  cashback: null,
   totalCents: 23722,
   placedAt: "2026-09-27T17:02:00.000Z",
   events: [
@@ -97,6 +98,7 @@ describe("the account's front", () => {
       deliveryFeeCents: 1000,
       discountCents: 0,
       coupon: null,
+      cashback: null,
       itemsCount: 1,
       items: [],
       moreItems: 0,

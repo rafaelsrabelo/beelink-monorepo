@@ -67,8 +67,8 @@ describe("the conversations' tab", () => {
       customer: { id: "c", name: "Carla", hasAccount: true },
       unread: 0,
       messages: [
-        { kind: "STATUS", id: "1", status: "RECEIVED", createdAt: at, readAt: at },
-        { kind: "STATUS", id: "2", status: "ACCEPTED", createdAt: at, readAt: null },
+        { kind: "STATUS", id: "1", status: "RECEIVED", cashbackCents: null, createdAt: at, readAt: at },
+        { kind: "STATUS", id: "2", status: "ACCEPTED", cashbackCents: null, createdAt: at, readAt: null },
       ],
     } as ShopConversation
 

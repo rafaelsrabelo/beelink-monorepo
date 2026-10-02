@@ -38,6 +38,7 @@ const order: CustomerOrderSummary = {
   deliveryFeeCents: 1000,
   discountCents: 0,
   coupon: null,
+  cashback: null,
   itemsCount: 3,
   items: [
     { productId: "p1", productSlug: "haze-300", productName: "Pré-Treino Haze", variantLabel: "Sabor: Uva", imageUrl: "https://img.test/haze.jpg", unitPriceCents: 11990, quantity: 1, lineTotalCents: 11990, discountCents: 0, promotionName: null },

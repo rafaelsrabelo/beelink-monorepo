@@ -782,6 +782,8 @@ export interface UiMessages {
     conversationFromShop: string
     /** A status notice in the conversation (BEELINK-236), by status — PICKED_UP is a pick-up's DELIVERED. */
     conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
+    /** After a delivery's notice, the cashback it made usable (BEELINK-239): "{amount}". */
+    conversationCashback: string
     conversationFromYou: string
     conversationLabel: string
     conversationPlaceholder: string
@@ -2031,6 +2033,8 @@ export interface UiMessages {
     fromCustomer: string
     /** A status notice, as the shop reads what its customer was told (BEELINK-236). */
     notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
+    /** After a delivery's notice, the cashback its customer was told they earned: "{amount}". */
+    noticeCashback: string
     fromShop: string
     replyLabel: string
     replyPlaceholder: string
