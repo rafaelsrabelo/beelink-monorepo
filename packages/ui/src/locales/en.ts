@@ -315,6 +315,8 @@ export const en: UiMessages = {
     noticesOrdersHint: "When the order is confirmed, sent out or ready, delivered or cancelled.",
     noticesFavorites: "Favourites",
     noticesFavoritesHint: "When a favourite gets cheaper or is back in stock.",
+    noticesCashback: "Cashback",
+    noticesCashbackHint: "A week before your cashback expires.",
     noticesOffers: "Offers and news",
     noticesOffersHint: "This shop's deals and new arrivals.",
     noticesOffersSince: "You said yes on {date}.",

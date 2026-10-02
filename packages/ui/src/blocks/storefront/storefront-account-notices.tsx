@@ -9,6 +9,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 export interface StorefrontNotices {
   orders: boolean
   favorites: boolean
+  cashback: boolean
   offers: boolean
 }
 
@@ -49,6 +50,7 @@ export function StorefrontAccountNotices({
   const options: { name: keyof StorefrontNotices; label: string; hint: string }[] = [
     { name: "orders", label: text.noticesOrders, hint: text.noticesOrdersHint },
     { name: "favorites", label: text.noticesFavorites, hint: text.noticesFavoritesHint },
+    { name: "cashback", label: text.noticesCashback, hint: text.noticesCashbackHint },
     { name: "offers", label: text.noticesOffers, hint: text.noticesOffersHint },
   ]
 

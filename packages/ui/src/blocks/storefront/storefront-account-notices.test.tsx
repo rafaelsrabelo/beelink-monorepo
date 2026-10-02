@@ -11,7 +11,7 @@ function notices(props: Partial<StorefrontAccountNoticesProps> = {}) {
   return (
     <StorefrontAccountNotices
       email="bia@exemplo.com"
-      notices={{ orders: true, favorites: true, offers: false }}
+      notices={{ orders: true, favorites: true, cashback: true, offers: false }}
       action="/loja/api/customer/avisos"
       hidden={{ retorno: "/loja/conta/perfil#avisos" }}
       {...props}
@@ -41,7 +41,7 @@ describe("StorefrontAccountNotices", () => {
   })
 
   it("says when the shopper said yes to offers", () => {
-    render(notices({ notices: { orders: true, favorites: true, offers: true }, offersSince: "29/09/2026" }))
+    render(notices({ notices: { orders: true, favorites: true, cashback: true, offers: true }, offersSince: "29/09/2026" }))
 
     expect(screen.getByRole("checkbox", { name: "Ofertas e novidades" })).toHaveAccessibleDescription("Promoções e lançamentos desta loja. Você aceitou em 29/09/2026.")
   })
