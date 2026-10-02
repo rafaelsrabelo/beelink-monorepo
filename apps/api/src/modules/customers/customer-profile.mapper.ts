@@ -29,5 +29,6 @@ export function toCustomerProfile(customer: CustomerModel, user: Pick<UserModel,
     addresses: addresses.map(toSavedAddress),
     hasPassword: user.passwordHash !== null,
     notifications: toNotifications(customer),
+    cashback: { balanceCents: customer.cashbackBalanceCents, pendingCents: customer.cashbackPendingCents },
   } satisfies CustomerProfile;
 }

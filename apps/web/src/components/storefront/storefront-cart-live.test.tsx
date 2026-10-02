@@ -42,7 +42,7 @@ const bia: CustomerProfile = {
   address: { zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: null, city: "São Paulo", state: "SP" },
   addresses: [],
   hasPassword: true,
-  notifications: { orders: true, favorites: true, cashback: true, offers: false, offersChosenAt: null },
+  notifications: { orders: true, favorites: true, cashback: true, offers: false, offersChosenAt: null }, cashback: { balanceCents: 0, pendingCents: 0 },
 }
 bia.addresses = [{ id: "a1", label: "Casa", recipientName: null, ...bia.address, isDefault: true }]
 const work = { id: "a2", label: "Trabalho", recipientName: "Recepção", ...bia.address, street: "Av. Faria Lima", number: "3477", isDefault: false }
@@ -893,5 +893,151 @@ describe("the cart's first purchase", () => {
     // No change of the cart makes it a first purchase: asked about once, on arrival.
     expect(bodiesTo(fetched, "/loja/api/orders/quote").map((body) => body.couponCode)).toEqual(["BEMVINDO10", undefined])
     expect(screen.getByRole("alert")).toHaveTextContent("Esse cupom vale só na primeira compra.")
+  })
+})
+
+describe("the cart's cashback", () => {
+  const variantId = blusa.variants[0]!.id
+  const blusas = (quantity: number) => [{ variantId, quantity }]
+  /** Bia's cart as the API prices it with her credit: R$ 15,00 to spend, the cart taking `maxCents` of it once she asks. */
+  const withCredit = (cart: CustomerOrderQuotePayload, { balanceCents = 1500, maxCents = balanceCents }: { balanceCents?: number; maxCents?: number } = {}): OrderQuote => {
+    const priced = quoteOf(cart)
+    const appliedCents = cart.useCashback ? maxCents : 0
+    return { ...priced, totalCents: priced.totalCents - appliedCents, cashbackUse: { balanceCents, maxCents, appliedCents, unavailable: null } }
+  }
+  const servedWithCredit = (credit?: Parameters<typeof withCredit>[1]): ServedQuote => {
+    const served = servedFor(false, bia)
+    return { ...served, quote: withCredit(served.cart, credit) }
+  }
+  // The amount is written with the no-break space a currency takes: matched as any space.
+  const box = (amount = "15,00") => screen.getByRole("checkbox", { name: new RegExp(`^Usar meu cashback \\(R\\$\\s${amount} disponíveis\\)$`) })
+  const summaryRows = () =>
+    [...screen.getByRole("complementary").querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+  const placeButton = () => screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" })
+
+  it("offers the shopper's credit unticked, prices the cart with it once ticked, and places the order with the amount the totals show", async () => {
+    const fetched = network({ quote: (cart) => Response.json(withCredit(cart)) })
+    openedTab()
+    renderCart(false, bia, { served: servedWithCredit() })
+
+    // Spending it is their choice: nothing is taken off until they ask.
+    expect(box()).not.toBeChecked()
+    expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]])
+
+    fireEvent.click(box())
+
+    await waitFor(() =>
+      expect(summaryRows()).toEqual([
+        ["Subtotal (2 itens)", "R$ 119,80"],
+        ["Cashback usado", "− R$ 15,00"],
+        ["Total", "R$ 104,80 + frete"],
+      ]),
+    )
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", useCashback: true }])
+
+    fireEvent.click(placeButton())
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Pedido #12 feito!"))
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", cashbackCents: 1500 }])
+  })
+
+  it("says how much this cart takes when it is less than the balance, and sends that much", async () => {
+    const fetched = network({ quote: (cart) => Response.json(withCredit(cart, { maxCents: 900 })) })
+    openedTab()
+    renderCart(false, bia, { served: servedWithCredit({ maxCents: 900 }) })
+
+    fireEvent.click(box())
+
+    await waitFor(() => expect(summaryRows()).toContainEqual(["Cashback usado", "− R$ 9,00"]))
+    expect(screen.getByText(/^Este pedido aceita até R\$\s9,00 de cashback\. O resto continua no seu saldo\.$/)).toBeInTheDocument()
+
+    fireEvent.click(placeButton())
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toMatchObject({ cashbackCents: 900 })
+  })
+
+  it("holds the order while the price with the credit is asked, and sends none it did not read", async () => {
+    let answer: (response: Response) => void = () => {}
+    const fetched = network({ quote: (cart) => (cart.useCashback ? (new Promise<Response>((resolve) => (answer = resolve)) as unknown as Response) : Response.json(withCredit(cart))) })
+    openedTab()
+    renderCart(false, bia, { served: servedWithCredit() })
+
+    fireEvent.click(box())
+    await waitFor(() => expect(placeButton()).toBeDisabled())
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
+
+    answer(Response.json(withCredit({ items: blusas(2), fulfillment: "DELIVERY", useCashback: true })))
+    await waitFor(() => expect(placeButton()).toBeEnabled())
+    expect(summaryRows()).toContainEqual(["Cashback usado", "− R$ 15,00"])
+  })
+
+  it("unticked again, takes the credit out of the totals and of the order", async () => {
+    const fetched = network({ quote: (cart) => Response.json(withCredit(cart)) })
+    openedTab()
+    renderCart(false, bia, { served: servedWithCredit() })
+    fireEvent.click(box())
+    await waitFor(() => expect(summaryRows()).toContainEqual(["Cashback usado", "− R$ 15,00"]))
+
+    fireEvent.click(box())
+    await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"]]))
+
+    fireEvent.click(placeButton())
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).not.toHaveProperty("cashbackCents")
+  })
+
+  it("says the balance moved when the order is refused over it, and prices the cart again with what is left", async () => {
+    let left = 1500
+    network({
+      order: () => {
+        left = 400
+        return Response.json({ statusCode: 409, errorCode: "ORDER_CASHBACK_REFUSED", message: "x", details: { requestedCents: 1500, maxCents: 400 } }, { status: 409 })
+      },
+      quote: (cart) => Response.json(withCredit(cart, { balanceCents: left })),
+    })
+    const tab = openedTab()
+    renderCart(false, bia, { served: servedWithCredit() })
+    fireEvent.click(box())
+    await waitFor(() => expect(summaryRows()).toContainEqual(["Cashback usado", "− R$ 15,00"]))
+
+    fireEvent.click(placeButton())
+
+    await waitFor(() => expect(screen.getByText("Seu saldo de cashback mudou e o pedido não foi feito. Atualizamos o valor: confira o total e faça o pedido de novo.")).toBeInTheDocument())
+    expect(tab.close).toHaveBeenCalled()
+    await waitFor(() => expect(summaryRows()).toContainEqual(["Cashback usado", "− R$ 4,00"]))
+    expect(box("4,00")).toBeChecked()
+  })
+
+  it("sends no order while the price with the credit could not be read: the press asks again, and says what to do", async () => {
+    let down = false
+    const fetched = network({ quote: (cart) => (down ? Response.json({ statusCode: 502, errorCode: "UNKNOWN", message: "x" }, { status: 502 }) : Response.json(withCredit(cart))) })
+    openedTab()
+    renderCart(false, bia, { served: servedWithCredit() })
+    fireEvent.click(box())
+    await waitFor(() => expect(summaryRows()).toContainEqual(["Cashback usado", "− R$ 15,00"]))
+
+    down = true
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar a quantidade de Blusa" }))
+    await waitFor(() => expect(placeButton()).toBeEnabled())
+    fireEvent.click(placeButton())
+
+    await waitFor(() => expect(screen.getByText(/O cashback ainda não foi conferido\./)).toBeInTheDocument())
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
+  })
+
+  it("offers nothing to a visitor, nor to a shopper with no credit to spend", () => {
+    const { unmount } = renderCart(false, null)
+    expect(screen.queryByRole("checkbox")).toBeNull()
+    unmount()
+
+    renderCart(false, bia, { served: { ...servedFor(false, bia), quote: { ...servedFor(false, bia).quote, cashbackUse: { balanceCents: 0, maxCents: 0, appliedCents: 0, unavailable: "NO_BALANCE" } } } })
+    expect(screen.queryByRole("checkbox")).toBeNull()
+  })
+
+  it("keeps the box off, and says why, on a cart the discounts took to nothing", () => {
+    const served = servedFor(false, bia)
+    renderCart(false, bia, { served: { ...served, quote: { ...served.quote, cashbackUse: { balanceCents: 1500, maxCents: 0, appliedCents: 0, unavailable: "NOTHING_TO_PAY" } } } })
+
+    expect(box()).toBeDisabled()
+    expect(screen.getByText("Não sobra valor de produtos neste pedido para pagar com cashback.")).toBeInTheDocument()
   })
 })

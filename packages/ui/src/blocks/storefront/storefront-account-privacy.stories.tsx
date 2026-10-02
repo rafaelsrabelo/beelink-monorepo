@@ -27,3 +27,6 @@ export const DownloadFalhou: Story = { args: { downloadError: "Não deu para ger
 
 /** Voltou recusada: a confirmação aberta, com o motivo. */
 export const SenhaErrada: Story = { args: { error: "A senha não confere. Sua conta não foi excluída." } }
+
+/** O cliente tem cashback: o aviso de exclusão diz quanto ele perde. */
+export const ComCashback: Story = { args: { cashbackLost: "R$ 12,50" } }

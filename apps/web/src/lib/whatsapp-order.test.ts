@@ -73,6 +73,15 @@ describe("the WhatsApp order", () => {
     expect(message.split("\n").slice(4, 8)).toEqual(["", "Promoção: − R$ 14,99", "Cupom BEMVINDO10: − R$ 27,48", "Total: R$ 207,23"])
   })
 
+  /** BEELINK-244: the customer's credit is its own line, after the discounts — the total under it is already less it. */
+  it("says the cashback used on its own line, after the coupon and before the total", () => {
+    const paid = { ...placed, totalCents: 21222, discountCents: 2748, promotionDiscountCents: 0, couponDiscountCents: 2748, coupon: { code: "BEMVINDO10", kind: "PERCENT" as const }, cashbackUsedCents: 1000 }
+    const message = orderMessageOf({ shopName: "Loja do Design", order: paid, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
+
+    expect(message).toContain("Cupom BEMVINDO10: − R$ 27,48\nCashback usado: − R$ 10,00\nTotal: R$ 212,22\n")
+    expect(orderMessageOf({ shopName: "Loja do Design", order: placed, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR })).not.toContain("Cashback usado")
+  })
+
   it("says a free delivery coupon in words, and a total with no '+ frete': the coupon waives whatever is agreed", () => {
     const free = { ...placed, deliveryFeeCents: null, coupon: { code: "FRETEGRATIS", kind: "FREE_SHIPPING" as const } }
     const message = orderMessageOf({ shopName: "Loja do Design", order: free, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")

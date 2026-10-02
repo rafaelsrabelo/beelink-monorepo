@@ -104,6 +104,25 @@ describe("the cart's price", () => {
     expect(response.cookies.get("bl_shopper_refresh")?.value).toBe("")
   })
 
+  /** BEELINK-244: credit is somebody's — asked for at either of the shopper's doors, and never at the visitor's. */
+  it("asks for the shopper's cashback at their own doors, with a code or without, and never for a visitor", async () => {
+    const fetched = vi.fn(async () => Response.json(priced, { status: 200 }))
+    vi.stubGlobal("fetch", fetched)
+
+    await post({ items, fulfillment: "DELIVERY", useCashback: true }, { cookie: "bl_shopper_access=shopper-access" })
+    await post({ items, fulfillment: "DELIVERY", couponCode: "BEMVINDO10", useCashback: true }, { cookie: "bl_shopper_access=shopper-access" })
+    // Anything but `true` is not asking: the doors refuse a field they do not know the shape of.
+    await post({ items, fulfillment: "DELIVERY", useCashback: "yes" }, { cookie: "bl_shopper_access=shopper-access" })
+    await post({ items, fulfillment: "DELIVERY", useCashback: true })
+
+    expect(fetched.mock.calls.map((call) => [urlOf(call).replace(/^.*\/stores\/loja/, ""), bodyOf(call)])).toEqual([
+      ["/customer/cart/quote", { items, fulfillment: "DELIVERY", useCashback: true }],
+      ["/customer/orders/quote", { items, fulfillment: "DELIVERY", couponCode: "BEMVINDO10", useCashback: true }],
+      ["/customer/cart/quote", { items, fulfillment: "DELIVERY" }],
+      ["/cart/quote", { items, fulfillment: "DELIVERY" }],
+    ])
+  })
+
   it("takes a code to the shopper's own door, with their session", async () => {
     const withCoupon = { ...priced, coupon: { status: "APPLIED", code: "BEMVINDO10", kind: "PERCENT" }, couponDiscountCents: 1750, discountCents: 4250, totalCents: 15750 }
     const fetched = vi.fn(async () => Response.json(withCoupon, { status: 200 }))

@@ -78,6 +78,16 @@ describe("the cart as its price is asked for", () => {
     expect(sameCart(plain, cartQuoteOf([row({ qty: 3 })], "DELIVERY", null))).toBe(false)
   })
 
+  /** BEELINK-244: the box ticked is another question — and unticked, the very one the page was served the answer to. */
+  it("asks for the shopper's cashback only when the box is ticked", () => {
+    const plain = cartQuoteOf([row({})], "DELIVERY", null)
+
+    expect(cartQuoteOf([row({})], "DELIVERY", null, false)).toEqual(plain)
+    expect(plain).not.toHaveProperty("useCashback")
+    expect(cartQuoteOf([row({})], "DELIVERY", "BEMVINDO10", true)).toMatchObject({ couponCode: "BEMVINDO10", useCashback: true })
+    expect(sameCart(plain, cartQuoteOf([row({})], "DELIVERY", null, true))).toBe(false)
+  })
+
   it("starts on a delivery only for a shopper with somewhere to deliver", () => {
     const address = { id: "a1", label: null, recipientName: null, zipCode: "01310-930", street: "Av. Paulista", number: "1000", complement: null, neighborhood: null, city: "São Paulo", state: "SP", isDefault: true }
     const shopper = { name: "Bia", addresses: [address] } as Pick<CustomerProfile, "name" | "addresses">

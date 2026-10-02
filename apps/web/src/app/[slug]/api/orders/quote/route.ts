@@ -28,7 +28,8 @@ async function answerOf(response: Response): Promise<NextResponse> {
  * first-purchase promotion applies to them or says why it does not, so their price is not anyone's.
  * A code goes to the door that answers about codes, with their session, because whether a code
  * exists is told only to an identified customer — and that door counts its calls apart, so a cart
- * that only changes quantities never spends them.
+ * that only changes quantities never spends them. Their cashback (BEELINK-244) is asked for at
+ * either of their two doors, and never at the visitor's: credit is somebody's.
  *
  * A session that is gone refuses a code. It never refuses a price: the cookies are cleared and the
  * cart is priced as a visitor's, since a cart is priced for anyone — the page learns of the session
@@ -52,6 +53,9 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   // Named field by field: the doors without a code refuse a body that carries anything else.
   const withoutCode = { items: cart.items, fulfillment: cart.fulfillment }
 
+  // Their credit, when the box is ticked: `true` and nothing else, since the doors refuse what they do not know.
+  const asShopper = cart.useCashback === true ? { ...withoutCode, useCashback: true } : withoutCode
+
   const asVisitor = async () => {
     const priced = await callApi({ path: `${shop}/cart/quote`, body: withoutCode, clientIp }).catch(() => null)
     return priced ? answerOf(priced) : refusal(502, "UNKNOWN", "The shop could not be reached")
@@ -62,7 +66,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const priced = await callAsShopper(request, slug, (accessToken) =>
     callApi({
       path: couponCode === null ? `${shop}/customer/cart/quote` : `${shop}/customer/orders/quote`,
-      body: couponCode === null ? withoutCode : { ...withoutCode, couponCode },
+      body: couponCode === null ? asShopper : { ...asShopper, couponCode },
       accessToken,
       clientIp,
     }).catch(() => null),

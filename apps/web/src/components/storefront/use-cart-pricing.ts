@@ -19,7 +19,7 @@ import { couponRefusalTextOf } from "@harness-monorepo/ui/lib/order-discounts"
 
 // App
 import { pathWithCoupon } from "@/lib/cart-coupon"
-import { cartPricingOf, cartQuoteOf, sameCart, type CartPricing, type ServedQuote } from "@/lib/cart-pricing"
+import { cartPricingOf, cartQuoteOf, sameCart, type CartCreditHandle, type CartPricing, type ServedQuote } from "@/lib/cart-pricing"
 import type { CartView } from "@/lib/cart-view"
 import { useDebouncedValue } from "@/services/addresses/use-debounced-value"
 import { storefrontKeys, useAnsweredCartQuote, useCartQuote } from "@/services/storefront/storefront-hooks"
@@ -72,9 +72,15 @@ export interface CartPricingHandle extends CartPricing {
   orderCoupon: string | null
   /** Why the order cannot go out yet over its coupon: a code is still being checked, or the check failed. */
   couponBlock: "checking" | "failed" | null
+  /** The shopper's credit to offer; null for a visitor, and for a shopper with none to spend. */
+  credit: CartCreditHandle | null
+  /** What goes with the order: the credit the totals on screen took, and no other. Zero with the box unticked. */
+  orderCashbackCents: number
+  /** Why the order cannot go out yet over its credit: the price with it is still being asked, or the asking failed. */
+  creditBlock: "checking" | "failed" | null
   /** Asks for the price again, whatever is kept: an order was refused over what it said. */
   recheck: () => void
-  /** The order went out with it: the coupon leaves the address, so the next cart starts without one. */
+  /** The order went out with them: the coupon leaves the address and the box is unticked, so the next cart starts without either. */
   forget: () => void
 }
 
@@ -100,6 +106,10 @@ function isCartRefusal(error: unknown): boolean {
  *
  * The coupon in force is this page's own state, written through to the page's address (`cart-coupon.ts`)
  * so a reload, and the trip to add an address, come back with it.
+ *
+ * The shopper's cashback (BEELINK-244) is a box, unticked on arrival: ticked, the cart is asked about
+ * with it, and the order takes what that answer applied — never an amount from an answer kept from
+ * before, which is the cart of a moment ago.
  */
 export function useCartPricing({ slug, view, fulfillment, shopperId, served, arrivedWith, locale, messages }: CartPricingInput): CartPricingHandle {
   const text = messages.storefront
@@ -118,15 +128,18 @@ export function useCartPricing({ slug, view, fulfillment, shopperId, served, arr
     window.history.replaceState(null, "", pathWithCoupon(`${window.location.pathname}${window.location.search}`, code))
   }, [])
   const coupon = shopperId ? kept : null
+  // Credit is somebody's: a session that ended under a ticked box asks as a visitor, without it.
+  const [spending, setSpending] = useState(false)
+  const useCredit = shopperId !== null && spending
   const dead = coupon !== null && settledBy?.couponCode === coupon && settled?.status === "REFUSED" ? settled : null
   // What the price is asked with: the coupon in force, unless it was refused for good.
   const asked = dead ? null : coupon
 
   // The quantities settle before they are asked about; how it leaves and the coupon are one press each.
   const rows = useDebouncedValue(view.rows, QUANTITY_DEBOUNCE_MS)
-  const cart = useMemo(() => cartQuoteOf(rows, fulfillment, asked), [rows, fulfillment, asked])
+  const cart = useMemo(() => cartQuoteOf(rows, fulfillment, asked, useCredit), [rows, fulfillment, asked, useCredit])
   // By what is asked, not by identity: a page read again hands over the same cart as new rows.
-  const settling = useMemo(() => !sameCart(cartQuoteOf(view.rows, fulfillment, asked), cart), [view.rows, fulfillment, asked, cart])
+  const settling = useMemo(() => !sameCart(cartQuoteOf(view.rows, fulfillment, asked, useCredit), cart), [view.rows, fulfillment, asked, useCredit, cart])
   const quote = useCartQuote(slug, shopperId, cart, served)
   const signedOut = quote.error instanceof ShopperOrderError && quote.error.errorCode === "AUTH_UNAUTHENTICATED"
   const context = { pickup: fulfillment === "PICKUP", money: (cents: number) => formatCents(cents, locale, "BRL") }
@@ -134,12 +147,12 @@ export function useCartPricing({ slug, view, fulfillment, shopperId, served, arr
 
   const applying = useMutation({
     mutationFn: async (code: string): Promise<OrderQuote> => {
-      const cartNow = cartQuoteOf(view.rows, fulfillment, code)
+      const cartNow = cartQuoteOf(view.rows, fulfillment, code, useCredit)
       const answer = await quoteCart(slug, cartNow)
       if (answer.coupon?.status === "APPLIED") {
         // Kept here, before the mutation settles: the price just read is the one the cart reads next,
         // under the code as the shop stores it, and the field hands over to the coupon in one draw.
-        queryClient.setQueryData(storefrontKeys.quote(slug, shopperId, cartQuoteOf(view.rows, fulfillment, answer.coupon.code)), answer)
+        queryClient.setQueryData(storefrontKeys.quote(slug, shopperId, cartQuoteOf(view.rows, fulfillment, answer.coupon.code, useCredit)), answer)
         setCoupon(answer.coupon.code)
       }
       return answer
@@ -179,6 +192,13 @@ export function useCartPricing({ slug, view, fulfillment, shopperId, served, arr
       : applying.data
         ? (refusalOf(applying.data.coupon) ?? (applying.data.coupon ? null : text.couponFailed))
         : null
+  // The credit the order may take is the one in the answer to this very cart — never one kept on
+  // screen from the cart before it, nor one read before a failed asking.
+  const answered = useCredit && quote.data && !quote.isPlaceholderData && !settling && !quote.isError ? quote.data : null
+  const creditBlock = !useCredit || answered || cartRefused ? null : errored ? "failed" : "checking"
+  // Offered from the last answer, kept while the cart is priced again: the box does not blink at every press of "+".
+  const offered = shopperId !== null && !quote.isError ? quote.data?.cashbackUse : null
+
   // Nothing orderable is nothing to price: the answer kept from the cart before it is not this cart's.
   const priced = cart.items.length === 0 || unanswered ? null : (quote.data ?? null)
 
@@ -205,7 +225,16 @@ export function useCartPricing({ slug, view, fulfillment, shopperId, served, arr
     // force: the order is refused for that cart, and should it go through, the API decides the coupon.
     orderCoupon: verdict?.status === "APPLIED" || (asked !== null && cartRefused) ? asked : null,
     couponBlock,
+    credit:
+      offered && offered.balanceCents > 0
+        ? { balanceCents: offered.balanceCents, maxCents: offered.maxCents, nothingToPay: offered.unavailable === "NOTHING_TO_PAY", checked: useCredit, toggle: setSpending }
+        : null,
+    orderCashbackCents: answered?.cashbackUse?.appliedCents ?? 0,
+    creditBlock,
     recheck: () => void queryClient.invalidateQueries({ queryKey: storefrontKeys.quotes(slug) }),
-    forget: () => setCoupon(null),
+    forget: () => {
+      setCoupon(null)
+      setSpending(false)
+    },
   }
 }

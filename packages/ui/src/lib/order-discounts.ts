@@ -16,6 +16,8 @@ export interface DiscountParts {
   coupon: { code: string; kind: CouponKindValue } | null
   /** The lines, read for the promotion's name; without them the row says "Promoção" alone. */
   items?: readonly { discountCents: number; promotionName: string | null }[]
+  /** The customer's credit spent on it (BEELINK-240): not a discount — the shop paying back what it owed — so never part of `discountCents`. */
+  cashbackUsedCents?: number
 }
 
 export type DiscountRow =
@@ -24,11 +26,13 @@ export type DiscountRow =
   /** A free delivery takes the fee: zero while that is not agreed, and the row then says so in words. */
   | { kind: "coupon"; cents: number; code: string; freeDelivery: boolean }
   | { kind: "manual"; cents: number }
+  | { kind: "cashback"; cents: number }
 
 /**
  * An order's discount, a row per part, in the order it was taken: promotions, then the coupon, then
- * what the shopkeeper typed (BEELINK-194). The one reading of it, so the cart, the customer's order,
- * its receipt, the panel and the WhatsApp messages cannot break it down differently.
+ * what the shopkeeper typed (BEELINK-194) — and last the customer's credit, which pays for what the
+ * discounts left (BEELINK-244). The one reading of it, so the cart, the customer's order, its
+ * receipt, the panel and the WhatsApp messages cannot break it down differently.
  *
  * A coupon has its row even at zero: a free delivery whose fee is not agreed yet took nothing so
  * far, and the customer still has to read that it is on the order.
@@ -46,6 +50,7 @@ export function discountRowsOf(order: DiscountParts): DiscountRow[] {
   }
   const manualCents = order.discountCents - order.promotionDiscountCents - order.couponDiscountCents
   if (manualCents > 0) rows.push({ kind: "manual", cents: manualCents })
+  if (order.cashbackUsedCents) rows.push({ kind: "cashback", cents: order.cashbackUsedCents })
 
   return rows
 }
@@ -68,6 +73,8 @@ export function discountLinesOf(order: DiscountParts, money: (cents: number) => 
         return { key: row.kind, label: format(text.coupon, { code: row.code }), value: row.freeDelivery && row.cents === 0 ? text.freeDelivery : `− ${money(row.cents)}` }
       case "manual":
         return { key: row.kind, label: text.manual, value: `− ${money(row.cents)}` }
+      case "cashback":
+        return { key: row.kind, label: text.cashback, value: `− ${money(row.cents)}` }
     }
   })
 }

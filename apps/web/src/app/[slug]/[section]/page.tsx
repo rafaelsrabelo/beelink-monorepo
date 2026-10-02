@@ -143,6 +143,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           activeOrders={activeOrders}
           favorites={favorites}
           pendingReviews={pendingReviews}
+          shopGivesCashback={store.cashback !== null}
           query={query}
           messages={ui}
         />

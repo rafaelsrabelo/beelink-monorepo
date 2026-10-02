@@ -112,7 +112,7 @@ export function StorefrontAccountSection({ slug, accountHref, signInHref, profil
       <StorefrontAddressesSection slug={slug} accountHref={accountHref} profile={profile} query={gone} errors={errors} messages={messages} />
       <StorefrontNoticesSection slug={slug} accountHref={accountHref} signInHref={signInHref} profile={profile} query={query} errors={errors} messages={messages} />
       <StorefrontSecuritySection slug={slug} accountHref={accountHref} signInHref={signInHref} profile={profile} query={query} errors={errors} messages={messages} />
-      <StorefrontPrivacySection slug={slug} accountHref={accountHref} signInHref={signInHref} profile={profile} query={query} errors={errors} messages={messages} />
+      <StorefrontPrivacySection slug={slug} accountHref={accountHref} signInHref={signInHref} profile={profile} query={query} locale="pt-BR" errors={errors} messages={messages} />
     </div>
   )
 }

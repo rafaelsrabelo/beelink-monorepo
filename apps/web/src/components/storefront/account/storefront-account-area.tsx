@@ -15,7 +15,7 @@ import { StorefrontOverviewSkeleton } from "@harness-monorepo/ui/blocks/storefro
 
 // App
 import { AppLink } from "@/components/app-link"
-import { accountContactOf, accountMenuOf, accountTabTitleOf, customerSignOutActionOf } from "@/lib/account-menu"
+import { accountContactOf, accountMenuOf, accountTabTitleOf, customerSignOutActionOf, hiddenAccountTabsOf } from "@/lib/account-menu"
 import { accountDetailsViewOf } from "@/lib/account-overview"
 import type { StorefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
@@ -35,6 +35,8 @@ export interface StorefrontAccountAreaProps {
   favorites?: number
   /** How many delivered products wait for a rating, beside Avaliar compras (J18). */
   pendingReviews?: number
+  /** The shop gives cashback now: its tab is listed even to a shopper who has none yet (BEELINK-244). */
+  shopGivesCashback: boolean
   /** The front's address: what a rating sent from it came back with. A tab reads its own. */
   query?: SectionQuery
   /** Beside a tab's title: its search and filters. */
@@ -48,12 +50,12 @@ export interface StorefrontAccountAreaProps {
  * tabs delivered. The front tells what the shopper would come to check — the order on its way, their
  * details, what to rate and their favourites — and leaves the way to each tab to the menu beside it.
  */
-export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders, favorites, pendingReviews, query = {}, tools, children, messages }: StorefrontAccountAreaProps) {
+export function StorefrontAccountArea({ slug, routes, shopper, tab, activeOrders, favorites, pendingReviews, shopGivesCashback, query = {}, tools, children, messages }: StorefrontAccountAreaProps) {
   const text = messages.storefront
   const menu = (
     <StorefrontAccountMenu
       shopper={{ name: shopper.name, contact: accountContactOf(shopper) }}
-      items={accountMenuOf(routes, { orders: activeOrders, favorites, reviews: pendingReviews })}
+      items={accountMenuOf(routes, { orders: activeOrders, favorites, reviews: pendingReviews }, hiddenAccountTabsOf(shopGivesCashback, shopper))}
       current={tab ?? "overview"}
       signOutAction={customerSignOutActionOf(slug)}
       linkComponent={AppLink}

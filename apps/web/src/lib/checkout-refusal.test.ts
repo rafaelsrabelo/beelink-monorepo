@@ -36,6 +36,15 @@ describe("checkoutRefusalOf", () => {
     )
   })
 
+  /** BEELINK-244: the credit was spent elsewhere, or a part of it expired, between the price on screen and the order. */
+  it("says the cashback balance moved, and that the amount was updated", () => {
+    expect(checkoutRefusalOf({ errorCode: "ORDER_CASHBACK_REFUSED", details: { requestedCents: 1500, maxCents: 400 } }, rows, text, context)).toBe(
+      "Seu saldo de cashback mudou e o pedido não foi feito. Atualizamos o valor: confira o total e faça o pedido de novo.",
+    )
+    // The page asks the cart's price again for this one: what it read of the shopper has not moved.
+    expect(rereadsTheCart("ORDER_CASHBACK_REFUSED")).toBe(false)
+  })
+
   /** BEELINK-194: the coupon ran out between the price on screen and the order. */
   it("says why the order's coupon was not taken, with the reason the coupon field would give", () => {
     expect(checkoutRefusalOf({ errorCode: "ORDER_COUPON_REFUSED", details: { reason: "EXHAUSTED" } }, rows, text, context)).toBe(
