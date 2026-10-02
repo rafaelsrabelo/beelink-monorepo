@@ -211,3 +211,29 @@ as alças vazadas.
   O ícone da aba e a imagem de compartilhamento continuam os gerados daquele desenho.
 - O símbolo antigo sem a sacola (`BeelinkMark`) continua dentro da página: no hub do hero, no
   hexágono central, no banner do celular e na marca d'água da chamada final.
+
+## Adendo — as fotos da marca: banners com foto, carrossel nas telas de conta (02/10)
+
+Ajustes pedidos pelo Rafael depois de ver as fotos na página:
+
+- **Banners com a foto no fundo.** Os três banners de "Soluções" têm uma foto atrás do texto, sob um
+  véu da cor do próprio banner, mais forte onde o texto está: a caixa, o celular e o caminhão no
+  amarelo da loja (`parcel-phone-truck.jpg`, recortado do pôster do ponto de ônibus), o painel no
+  notebook no do meio, o entregador no de entregas.
+- **Banner do painel.** Deixou de ser só a foto: tem selo, título e descrição
+  (`landing.banners.panel`). De `xl` em diante tem a largura de dois banners (mais o vão entre
+  eles), com a foto ao lado do texto, surgindo da esquerda; abaixo disso a foto fica na parte de
+  cima e se desfaz no texto. A fileira passou a contar as paradas pelo começo de cada banner, já que
+  eles não têm mais a mesma largura.
+- **Sem o card subindo.** Os banners não se mexem mais sob o ponteiro. O que responde é a foto, que
+  aproxima (6%) dentro da moldura — e não aproxima para quem pediu menos movimento. Os cartões do
+  hub e dos passos continuam subindo; o pedido foi sobre os banners.
+- **Formulário do entregador.** "A pé" saiu. No lugar entrou "Utilitário" (`VAN`), o carro de
+  entrega com baú. As opções são moto, bicicleta, carro e utilitário.
+- **Telas de conta.** A foto ao lado do formulário virou um carrossel (`blocks/auth/auth-photos`)
+  com três fotos da marca: o pôster no muro, o entregador e o pôster no ponto de ônibus. Sem setas;
+  as bolinhas embaixo mostram qual está na tela e levam a qualquer uma. Passa sozinho a cada 6
+  segundos, para sob o ponteiro e com o foco numa bolinha, e não passa sozinho para quem pediu menos
+  movimento. No celular continua só o formulário.
+- **Voltar para a landing.** As telas de conta ganharam "Voltar para o site" no alto, acima da
+  logo, que já levava para lá: nem todo mundo sabe que uma logo é um link.

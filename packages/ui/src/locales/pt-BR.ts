@@ -2260,6 +2260,7 @@ export const ptBR: UiMessages = {
   landing: {
     brand: "Beelink",
     homeLabel: "Beelink, início",
+    auth: { back: "Voltar para o site", label: "Fotos da Beelink", position: "Foto {current} de {total}" },
     nav: { label: "Principal", solutions: "Soluções", ecosystem: "Ecossistema", how: "Como funciona", couriers: "Para entregadores", faq: "Perguntas" },
     menu: "Menu",
     signIn: "Entrar",
@@ -2293,14 +2294,11 @@ export const ptBR: UiMessages = {
         points: ["Vitrine pronta em minutos", "Pix, cartão e o que você aceitar", "Pedidos direto no seu WhatsApp"],
         example: "Ver uma loja de exemplo",
       },
-      phone: {
-        label: "Exemplo de loja no celular",
-        shop: "Sua Loja",
-        collection: "Coleção nova",
-        order: "Novo pedido",
-        orderDetail: "nº 1042 · R$ 338,00",
-        out: "Saiu para entrega",
-        outDetail: "chega em ~35 min",
+      panel: {
+        tag: "Painel Beelink",
+        title: "Sua loja inteira num painel só",
+        text: "Pedidos, produtos, clientes e conversas no mesmo lugar, no computador e no celular.",
+        alt: "O painel da Beelink num notebook: pedidos e receita do dia, vendas dos últimos sete dias e os pedidos recentes.",
       },
       shipping: {
         tag: "Beelink Envios",
@@ -2350,7 +2348,7 @@ export const ptBR: UiMessages = {
         city: "Cidade onde quer entregar",
         cityPlaceholder: "Ex.: Fortaleza/CE",
         vehicle: "Como você entrega?",
-        vehicles: { MOTORCYCLE: "Moto", BICYCLE: "Bicicleta", CAR: "Carro", ON_FOOT: "A pé" },
+        vehicles: { MOTORCYCLE: "Moto", BICYCLE: "Bicicleta", CAR: "Carro", VAN: "Utilitário" },
         consent: "Li e aceito os {terms} e a {privacy}.",
         terms: "termos de uso",
         privacy: "política de privacidade",

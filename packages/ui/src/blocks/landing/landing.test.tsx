@@ -20,6 +20,11 @@ import { LandingSteps } from "./landing-steps"
 import { LandingTitle } from "./landing-title"
 
 const hrefs = { loginHref: "/login", signupHref: "/signup", termsHref: "/termos", privacyHref: "/privacidade" }
+const photos = {
+  store: <img src="/loja.jpg" alt="" />,
+  panel: <img src="/painel.jpg" alt="O painel no notebook" />,
+  shipping: <img src="/entrega.jpg" alt="" />,
+}
 
 // jsdom has no ResizeObserver, and the banners' row watches its own size.
 beforeEach(() => {
@@ -42,7 +47,7 @@ function Page() {
       <LandingHeader {...hrefs} />
       <main>
         <LandingHero signupHref={hrefs.signupHref} />
-        <LandingBanners signupHref={hrefs.signupHref} />
+        <LandingBanners signupHref={hrefs.signupHref} photos={photos} />
         <LandingEcosystem />
         <LandingSteps />
         <LandingCouriers termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
@@ -142,22 +147,54 @@ describe("LandingHero", () => {
 })
 
 describe("LandingBanners", () => {
-  it("holds the shop's banner, the phone as one picture, and the deliveries' banner", () => {
-    render(<LandingBanners signupHref="/signup" />)
+  it("holds the shop's banner, the panel's photo it is handed, and the deliveries' banner", () => {
+    render(<LandingBanners signupHref="/signup" photos={photos} />)
 
     const row = screen.getByRole("group", { name: "Destaques" })
     expect(within(row).getAllByRole("listitem").filter((item) => item.parentElement?.parentElement === row)).toHaveLength(3)
     expect(within(row).getByRole("heading", { level: 3, name: "Sua loja no ar hoje mesmo." })).toBeInTheDocument()
-    expect(within(row).getByRole("img", { name: "Exemplo de loja no celular" })).toBeInTheDocument()
+    expect(within(row).getByRole("heading", { level: 3, name: "Sua loja inteira num painel só" })).toBeInTheDocument()
+    expect(within(row).getByText("Pedidos, produtos, clientes e conversas no mesmo lugar, no computador e no celular.")).toBeInTheDocument()
     expect(within(row).getByRole("link", { name: "Criar minha loja" })).toHaveAttribute("href", "/signup")
     expect(within(row).getByRole("link", { name: "Quero ser entregador" })).toHaveAttribute("href", "#entregadores")
   })
 
+  /** No banner rises any more: what answers the pointer is the photograph behind its words, inside a frame that clips it and stands still. */
+  it("lays a photo behind each banner's words, and brings it closer under the pointer instead of moving the banner", () => {
+    const { container } = render(<LandingBanners signupHref="/signup" photos={photos} />)
+
+    const banners = [...container.querySelectorAll("article")]
+    expect(banners.map((banner) => banner.querySelector("img")?.getAttribute("src"))).toEqual(["/loja.jpg", "/painel.jpg", "/entrega.jpg"])
+    for (const banner of banners) {
+      expect(banner).toHaveClass("group", "relative", "isolate", "overflow-hidden")
+      expect(banner.className).not.toContain("translate-y")
+      const picture = banner.querySelector("img")?.parentElement
+      expect(picture).toHaveClass("transition-transform", "motion-safe:group-hover:scale-[1.06]")
+      // Under the words, and under a scrim of the banner's own ground.
+      expect(picture?.parentElement).toHaveClass("absolute", "-z-10", "overflow-hidden")
+      expect(picture?.nextElementSibling?.className).toMatch(/bg-linear-to-/)
+    }
+  })
+
+  it("gives the panel twice the room on a wide screen, its photo beside its words", () => {
+    render(<LandingBanners signupHref="/signup" photos={photos} />)
+
+    const banner = screen.getByRole("img", { name: "O painel no notebook" }).closest("article")
+    expect(banner?.parentElement?.className).toContain("xl:w-[min(1218px,calc(100vw-8rem))]")
+    expect(banner?.firstElementChild).toHaveClass("inset-x-0", "top-0", "xl:left-[30%]", "xl:h-full")
+  })
+
+  it("names the panel in the language it is handed", () => {
+    render(<LandingBanners signupHref="/signup" photos={photos} messages={en} />)
+
+    expect(screen.getByRole("heading", { level: 3, name: "Your whole shop in one panel" })).toBeInTheDocument()
+  })
+
   it("offers an example shop only when there is one to offer", () => {
-    const { rerender } = render(<LandingBanners signupHref="/signup" />)
+    const { rerender } = render(<LandingBanners signupHref="/signup" photos={photos} />)
     expect(screen.queryByRole("link", { name: "Ver uma loja de exemplo" })).not.toBeInTheDocument()
 
-    rerender(<LandingBanners signupHref="/signup" exampleHref="/loja-exemplo" />)
+    rerender(<LandingBanners signupHref="/signup" exampleHref="/loja-exemplo" photos={photos} />)
     expect(screen.getByRole("link", { name: "Ver uma loja de exemplo" })).toHaveAttribute("href", "/loja-exemplo")
   })
 })
@@ -206,7 +243,7 @@ describe("LandingCouriers", () => {
   ])("shows nothing the design marked as still to confirm, in %s", (_, messages) => {
     const { container } = render(
       <>
-        <LandingBanners signupHref="/signup" messages={messages} />
+        <LandingBanners signupHref="/signup" photos={photos} messages={messages} />
         <LandingCouriers termsHref="/termos" privacyHref="/privacidade" messages={messages} />
         <LandingFaq messages={messages} />
         <LandingFooter termsHref="/termos" privacyHref="/privacidade" year={2026} messages={messages} />

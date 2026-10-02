@@ -24,7 +24,15 @@ type Story = StoryObj<typeof meta>
 /** O fundo da landing e a marca sobre o cartão. No tema escuro, o fundo é o do painel. */
 export const Padrao: Story = {}
 
-/** Com a foto da marca ao lado, numa tela larga; no celular, só o formulário. */
+/** A stand-in for the brand's photographs, which the app draws with its own optimised image. */
+const photo = (seed: string) => <img key={seed} src={`https://picsum.photos/seed/beelink-${seed}/1024/1536`} alt="" className="absolute inset-0 size-full object-cover" />
+
+/** Com uma foto da marca ao lado, numa tela larga; no celular, só o formulário. */
 export const ComFoto: Story = {
-  args: { photo: <img src="https://picsum.photos/seed/beelink-auth/1024/1536" alt="" className="absolute inset-0 size-full object-cover" /> },
+  args: { photos: [photo("auth")] },
+}
+
+/** Com duas ou mais, elas passam como um carrossel, sem setas e com as bolinhas embaixo. */
+export const ComFotos: Story = {
+  args: { photos: ["muro", "moto", "ponto"].map(photo) },
 }

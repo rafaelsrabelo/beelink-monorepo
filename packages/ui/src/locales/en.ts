@@ -2259,6 +2259,7 @@ export const en: UiMessages = {
   landing: {
     brand: "Beelink",
     homeLabel: "Beelink, home",
+    auth: { back: "Back to the site", label: "Beelink’s photos", position: "Photo {current} of {total}" },
     nav: { label: "Main", solutions: "Solutions", ecosystem: "Ecosystem", how: "How it works", couriers: "For couriers", faq: "Questions" },
     menu: "Menu",
     signIn: "Sign in",
@@ -2292,14 +2293,11 @@ export const en: UiMessages = {
         points: ["A shop window ready in minutes", "Pix, card and whatever you take", "Orders straight to your WhatsApp"],
         example: "See an example shop",
       },
-      phone: {
-        label: "An example shop on a phone",
-        shop: "Your Shop",
-        collection: "New collection",
-        order: "New order",
-        orderDetail: "no. 1042 · R$ 338.00",
-        out: "Out for delivery",
-        outDetail: "arrives in ~35 min",
+      panel: {
+        tag: "Beelink Panel",
+        title: "Your whole shop in one panel",
+        text: "Orders, products, customers and conversations in the same place, on a computer and on a phone.",
+        alt: "Beelink’s panel on a laptop: the day’s orders and revenue, the last seven days’ sales and the recent orders.",
       },
       shipping: {
         tag: "Beelink Shipping",
@@ -2349,7 +2347,7 @@ export const en: UiMessages = {
         city: "City where you want to deliver",
         cityPlaceholder: "E.g. Fortaleza/CE",
         vehicle: "How do you deliver?",
-        vehicles: { MOTORCYCLE: "Motorbike", BICYCLE: "Bicycle", CAR: "Car", ON_FOOT: "On foot" },
+        vehicles: { MOTORCYCLE: "Motorbike", BICYCLE: "Bicycle", CAR: "Car", VAN: "Van" },
         consent: "I have read and accept the {terms} and the {privacy}.",
         terms: "terms of use",
         privacy: "privacy policy",

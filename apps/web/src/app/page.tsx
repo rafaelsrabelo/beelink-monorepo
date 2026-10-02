@@ -19,6 +19,9 @@ import { AppLink } from "@/components/app-link"
 import { brandFontStyle, jakarta } from "@/components/landing/brand-font"
 import { BrandPhoto } from "@/components/landing/brand-photo"
 import courierStreet from "@/assets/images/courier-street.jpg"
+import courierSunny from "@/assets/images/courier-sunny.jpg"
+import panelLaptop from "@/assets/images/panel-laptop.jpg"
+import parcelPhoneTruck from "@/assets/images/parcel-phone-truck.jpg"
 import posterBusStop from "@/assets/images/poster-bus-stop.jpg"
 import posterWall from "@/assets/images/poster-wall.jpg"
 import { LEGAL_ROUTES } from "@/lib/legal-routes"
@@ -29,6 +32,14 @@ import { siteOrigin } from "@/lib/site-origin"
 /** The panel's own doors. A signed-in shopkeeper who follows either is sent on to the panel by the proxy. */
 const LOGIN = "/login"
 const SIGNUP = "/signup"
+
+/**
+ * A banner's photo in the "Soluções" row is drawn about 600px wide at every width: a phone's banner
+ * is narrower, but taller than the photo is, and the photo is cut to cover it. The panel's banner is
+ * the wide one from `xl`, its photo over 70% of it.
+ */
+const BANNER_SIZES = "600px"
+const WIDE_BANNER_SIZES = `(min-width: 80rem) 860px, ${BANNER_SIZES}`
 
 /** The posters, two to a row from `md`, inside the page's 1440px column. */
 const POSTER_SIZES = "(min-width: 90rem) 620px, (min-width: 48rem) 45vw, 100vw"
@@ -74,7 +85,17 @@ export default async function LandingPage() {
         <LandingHeader loginHref={LOGIN} signupHref={SIGNUP} termsHref={LEGAL_ROUTES.terms} privacyHref={LEGAL_ROUTES.privacy} linkComponent={AppLink} messages={ui} />
         <main>
           <LandingHero signupHref={SIGNUP} linkComponent={AppLink} messages={ui} />
-          <LandingBanners signupHref={SIGNUP} exampleHref={exampleHref} linkComponent={AppLink} messages={ui} />
+          <LandingBanners
+            signupHref={SIGNUP}
+            exampleHref={exampleHref}
+            photos={{
+              store: <BrandPhoto image={parcelPhoneTruck} alt="" sizes={BANNER_SIZES} />,
+              panel: <BrandPhoto image={panelLaptop} alt={ui.landing.banners.panel.alt} sizes={WIDE_BANNER_SIZES} />,
+              shipping: <BrandPhoto image={courierSunny} alt="" sizes={BANNER_SIZES} />,
+            }}
+            linkComponent={AppLink}
+            messages={ui}
+          />
           <LandingEcosystem messages={ui} />
           <LandingSteps messages={ui} />
           <LandingCouriers

@@ -34,17 +34,20 @@ const ARROW = "flex size-[52px] items-center justify-center rounded-full"
  * screen shows two banners and a half at once, so its row ends before the third one's start is
  * reached — three banners, and two places to stop. The dots and the arrows count these, not the
  * banners: a dot that can never light and an arrow that lands between two stops are the same mistake.
+ *
+ * Each banner's start is the widths before it, added up: the banners are not all one width.
  */
 function stopsOf(track: HTMLElement): number[] {
-  const first = track.querySelector("li")
-  const row = first?.parentElement
-  if (!first || !row) return [0]
+  const row = track.querySelector("li")?.parentElement
+  if (!row) return [0]
 
   const end = Math.max(0, track.scrollWidth - track.clientWidth)
-  const stride = first.offsetWidth + (Number.parseFloat(getComputedStyle(row).columnGap) || 0)
+  const gap = Number.parseFloat(getComputedStyle(row).columnGap) || 0
   const stops = [0]
-  for (let at = 1; at < row.children.length; at++) {
-    const stop = Math.min(end, at * stride)
+  let start = 0
+  for (const banner of [...row.children].slice(0, -1)) {
+    start += (banner as HTMLElement).offsetWidth + gap
+    const stop = Math.min(end, start)
     // Sub-pixel layout: two stops a hair apart are one.
     if (stop > (stops.at(-1) ?? 0) + 4) stops.push(stop)
   }

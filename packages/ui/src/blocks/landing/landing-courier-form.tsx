@@ -5,7 +5,7 @@ import { useId, useState } from "react"
 
 // Libs
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowRightIcon, BikeIcon, CarIcon, FootprintsIcon, MotorbikeIcon, type LucideIcon } from "lucide-react"
+import { ArrowRightIcon, BikeIcon, CarIcon, MotorbikeIcon, TruckIcon, type LucideIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 
 // UI
@@ -31,7 +31,7 @@ export interface LandingCourierFormProps {
   text: UiMessages["landing"]["couriers"]["form"]
 }
 
-const VEHICLE_ICON: Record<LandingVehicleValue, LucideIcon> = { MOTORCYCLE: MotorbikeIcon, BICYCLE: BikeIcon, CAR: CarIcon, ON_FOOT: FootprintsIcon }
+const VEHICLE_ICON: Record<LandingVehicleValue, LucideIcon> = { MOTORCYCLE: MotorbikeIcon, BICYCLE: BikeIcon, CAR: CarIcon, VAN: TruckIcon }
 const FIELD = "flex flex-col gap-1.5"
 const INPUT = "h-[52px] rounded-[14px] border-[1.5px] border-brand-line-strong bg-brand-surface px-4 text-base font-normal aria-invalid:border-brand-danger"
 const REFUSAL = "text-[13px] font-semibold text-brand-danger"

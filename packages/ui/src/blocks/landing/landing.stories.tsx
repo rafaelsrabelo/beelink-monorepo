@@ -30,6 +30,12 @@ const photos = {
   wall: photo("beelink-muro", 1024, 1536, ptBR.landing.posters.wallAlt),
 }
 
+const bannerPhotos = {
+  store: photo("beelink-loja", 710, 368),
+  panel: photo("beelink-painel", 1672, 941, ptBR.landing.banners.panel.alt),
+  shipping: photo("beelink-entrega", 1214, 1295),
+}
+
 const meta = {
   title: "Blocos/Landing",
   component: LandingShell,
@@ -47,7 +53,7 @@ export const Pagina: Story = {
       <LandingHeader {...hrefs} />
       <main>
         <LandingHero signupHref={hrefs.signupHref} />
-        <LandingBanners signupHref={hrefs.signupHref} exampleHref="#loja-de-exemplo" />
+        <LandingBanners signupHref={hrefs.signupHref} exampleHref="#loja-de-exemplo" photos={bannerPhotos} />
         <LandingEcosystem />
         <LandingSteps />
         <LandingCouriers photo={photos.courier} termsHref={hrefs.termsHref} privacyHref={hrefs.privacyHref} />
@@ -76,7 +82,7 @@ export const Banners: Story = {
   args: { children: null },
   render: () => (
     <LandingShell className="min-h-0">
-      <LandingBanners signupHref={hrefs.signupHref} />
+      <LandingBanners signupHref={hrefs.signupHref} photos={bannerPhotos} />
     </LandingShell>
   ),
 }
