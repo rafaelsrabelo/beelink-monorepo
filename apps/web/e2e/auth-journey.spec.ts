@@ -63,7 +63,7 @@ test.describe("a person's first day", () => {
     })
 
     await test.step("signs out, and the dashboard stops answering", async () => {
-      await page.getByRole("button", { name: /Ana Souza/ }).click()
+      await page.getByRole("button", { name: "Trocar de loja" }).click()
       await page.getByRole("menuitem", { name: "Sair" }).click()
 
       await expect(page).toHaveURL(/\/login$/)
