@@ -10,6 +10,7 @@ import { en } from "@harness-monorepo/ui/locales/index"
 import { expectNoA11yViolations } from "../../test/a11y"
 import { DeliveryBandRows } from "./delivery-band-rows"
 import { DeliveryCarriers } from "./delivery-carriers"
+import { DeliverySettingsFailed } from "./delivery-settings-failed"
 import { DeliverySettingsForm, type DeliverySettingsFormProps } from "./delivery-settings-form"
 import { DeliverySettingsSkeleton } from "./delivery-settings-skeleton"
 import { sampleConnectedCarriers, sampleDeliveryPreviews, sampleDeliveryValues } from "./delivery.fixtures"
@@ -162,6 +163,18 @@ describe("DeliverySettingsSkeleton", () => {
     const { container } = render(<DeliverySettingsSkeleton />)
 
     expect(screen.getByRole("status")).toHaveTextContent("Carregando as regras de entrega")
+    await expectNoA11yViolations(container)
+  })
+})
+
+describe("DeliverySettingsFailed", () => {
+  it("says the rules could not be read, and asks again", async () => {
+    const onRetry = vi.fn()
+    const { container } = render(<DeliverySettingsFailed onRetry={onRetry} />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar as regras de entrega.")
+    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+    expect(onRetry).toHaveBeenCalledOnce()
     await expectNoA11yViolations(container)
   })
 })

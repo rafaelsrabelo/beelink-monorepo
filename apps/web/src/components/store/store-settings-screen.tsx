@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import type { WebMessages } from "@/locales"
 
 // App
+import { StoreDeliveryTab } from "@/components/store/store-delivery-tab"
 import { StoreErrorAlert } from "@/components/store/store-error-alert"
 import { firstStoreErrorCopy, storeErrorCopy } from "@/components/store/store-error-copy"
 import { toSettingsValues, toUpdatePayload } from "@/components/store/store-payloads"
@@ -25,6 +26,7 @@ import { useImageUpload } from "@/services/uploads/upload-hooks"
 
 export interface StoreSettingsScreenProps {
   slug: string
+  locale: string
   ui: UiMessages
   web: WebMessages
 }
@@ -35,7 +37,7 @@ export interface StoreSettingsScreenProps {
  * nothing — it is the screen that owns a request, which is what keeps every tab renderable in
  * Storybook. The Delivery tab saves on its own (BEELINK-177), so it is handed in whole.
  */
-export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps) {
+export function StoreSettingsScreen({ slug, locale, ui, web }: StoreSettingsScreenProps) {
   const store = useStore(slug)
   const categories = useStoreCategories()
   const update = useUpdateStore(slug)
@@ -80,6 +82,7 @@ export function StoreSettingsScreen({ slug, ui, web }: StoreSettingsScreenProps)
         pending={update.isPending}
         error={firstStoreErrorCopy([update.error, image.error, zipCode.error], web)}
         messages={ui}
+        extraTabs={[{ value: "delivery", label: ui.delivery.tab, content: <StoreDeliveryTab store={current} locale={locale} messages={ui} /> }]}
         onSubmit={(values) => {
           // A lookup that failed ten minutes ago is not what a save is refused for. The card has
           // one place for a sentence, so the older failures are cleared before a new one can arrive.

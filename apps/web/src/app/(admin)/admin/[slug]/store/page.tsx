@@ -7,11 +7,11 @@ import { requireUser } from "@/lib/session"
 export default async function StoreSettingsPage({ params }: PageProps<"/admin/[slug]/store">) {
   await requireUser()
   const { slug } = await params
-  const { ui, web } = await getMessages()
+  const { ui, web, locale } = await getMessages()
 
   return (
     <div className="px-4 lg:px-6">
-      <StoreSettingsScreen slug={slug} ui={ui} web={web} />
+      <StoreSettingsScreen slug={slug} locale={locale} ui={ui} web={web} />
     </div>
   )
 }
