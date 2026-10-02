@@ -54,6 +54,7 @@ const order: CustomerOrder = {
     { status: "PREPARING", at: "2026-09-29T12:00:00.000Z" },
   ],
   delivery: null,
+  deliveryWindow: null,
 }
 
 describe("an order's page, in the shopper's words", () => {
@@ -204,6 +205,11 @@ describe("an order's page, in the shopper's words", () => {
     })
     expect(orderHandoverOf({ ...order, fulfillment: "PICKUP", deliveryAddress: null }, shop, context)).toEqual({ title: "Retirada na loja", lines: ["Loja do Design"] })
     expect(orderHandoverOf({ ...order, deliveryAddress: null }, shop, context)).toBeNull()
+  })
+
+  /** BEELINK-178: the window the checkout promised stays with where the order goes. */
+  it("says the window the checkout quoted, under the address", () => {
+    expect(orderHandoverOf({ ...order, deliveryWindow: { unit: "MINUTES", from: 30, to: 50 } }, shop, context)?.lines.at(-1)).toBe("Chega em 30–50 min depois de sair da loja")
   })
 
   it("says the window it should arrive in once the shop told it, and how it comes", () => {

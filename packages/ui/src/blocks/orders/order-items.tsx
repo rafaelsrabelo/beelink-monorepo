@@ -1,16 +1,17 @@
 // Locales
-import { defaultMessages } from "@harness-monorepo/ui/locales/index"
+import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { discountLinesOf, linePromotionOf } from "@harness-monorepo/ui/lib/order-discounts"
 import { feeLineOf, orderTotalText } from "@harness-monorepo/ui/lib/order-total"
+import { windowText } from "@harness-monorepo/ui/lib/shipping"
 import type { OrderDetailView } from "./order-types"
 
 export interface OrderItemsProps {
   order: Pick<
     OrderDetailView,
-    "items" | "subtotalCents" | "deliveryFeeCents" | "discountCents" | "promotionDiscountCents" | "couponDiscountCents" | "coupon" | "totalCents" | "fulfillment" | "status"
+    "items" | "subtotalCents" | "deliveryFeeCents" | "deliveryWindow" | "discountCents" | "promotionDiscountCents" | "couponDiscountCents" | "coupon" | "totalCents" | "fulfillment" | "status"
   >
   money: (cents: number) => string
   messages?: UiMessages
@@ -36,6 +37,8 @@ export function OrderItems({ order, money, messages = defaultMessages }: OrderIt
   const text = messages.orders.detail
   const fee = feeLineOf(order)
   const discounts = discountLinesOf(order, money, messages.orders.discountRows)
+  // What the checkout promised (BEELINK-178): the shopkeeper reads it where the fee is.
+  const quoted = order.deliveryWindow ? windowText(order.deliveryWindow, messages.storefront) : null
 
   return (
     <section aria-labelledby="order-items-title" className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
@@ -65,6 +68,7 @@ export function OrderItems({ order, money, messages = defaultMessages }: OrderIt
       <dl className="flex flex-col gap-2">
         <Row label={text.subtotal} value={money(order.subtotalCents)} />
         {fee !== null ? <Row label={text.fee} value={fee === "toAgree" ? text.feeToAgree : money(fee.cents)} /> : null}
+        {fee !== null && quoted ? <Row label={text.quotedWindow} value={format(text.quotedWindowValue, { window: quoted })} /> : null}
         {discounts.map((row) => (
           <Row key={row.key} label={row.label} value={row.value} />
         ))}

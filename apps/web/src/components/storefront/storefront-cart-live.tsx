@@ -19,12 +19,11 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import { useCart } from "./cart-provider"
-import { useCartPricing } from "./use-cart-pricing"
-import { useCheckoutChoice } from "./use-checkout-choice"
+import { useCartCheckout } from "./use-cart-checkout"
 import { waysBackWithCoupon } from "@/lib/cart-coupon"
 import type { ServedQuote } from "@/lib/cart-pricing"
 import { cartViewOf, orderItemsOf, rowKeyOf } from "@/lib/cart-view"
-import { checkoutRefusalOf, rereadsTheCart } from "@/lib/checkout-refusal"
+import { checkoutRefusalOf, REPRICED, rereadsTheCart } from "@/lib/checkout-refusal"
 import { isReachable } from "@/lib/customer-address"
 import { orderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
 import { usePlaceShopperOrder } from "@/services/storefront/storefront-hooks"
@@ -94,14 +93,13 @@ export function StorefrontCartLive({
   const remove = useCart((cart) => cart.remove)
   const clear = useCart((cart) => cart.clear)
   const placing = usePlaceShopperOrder(slug)
-  const { addresses, choice, setChoice } = useCheckoutChoice(shopper, paymentMethods, deliverTo)
   // What the last press on the button found missing, before anything was sent.
-  const [asked, setAsked] = useState<"payment" | "coupon" | null>(null)
+  const [asked, setAsked] = useState<"payment" | "coupon" | "shipping" | null>(null)
   // The order once placed, and the WhatsApp link opened with its number.
   const [sent, setSent] = useState<{ number: number; href: string | null } | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
   const byKey = useMemo(() => new Map(view.rows.map((row) => [rowKeyOf(row), row])), [view.rows])
-  const pricing = useCartPricing({ slug, view, fulfillment: choice.fulfillment, shopperId: shopper?.id ?? null, served, arrivedWith: coupon, locale, messages })
+  const { addresses, choice, setChoice, pricing, shipping, blocked } = useCartCheckout({ slug, view, shopper, paymentMethods, deliverTo, served, arrivedWith: coupon, locale, messages })
   // Each way out of the cart that comes back to it — to sign in, to change details, to add an address — takes the coupon along.
   const ways = useMemo(() => waysBackWithCoupon(identityHrefs, pricing.carried), [identityHrefs, pricing.carried])
 
@@ -114,6 +112,8 @@ export function StorefrontCartLive({
 
   function place() {
     if (!shopper) return
+    // The shop does not reach the address, or hands nothing over now: nothing is sent to be refused.
+    if (blocked) return setAsked("shipping")
     if (!choice.paymentMethod) return setAsked("payment")
     // A coupon in force whose check did not come back: the order would go out at a price nobody
     // read. The press asks for it again; the button waits for the answer.
@@ -134,6 +134,8 @@ export function StorefrontCartLive({
         paymentMethod: choice.paymentMethod,
         ...(choice.fulfillment === "DELIVERY" && choice.addressId ? { addressId: choice.addressId } : {}),
         ...(pricing.orderCoupon ? { couponCode: pricing.orderCoupon } : {}),
+        // The fee the summary shows: the API quotes again, and refuses the order at any other (BEELINK-178).
+        ...(pricing.deliveryFeeCents !== undefined ? { deliveryFeeCents: pricing.deliveryFeeCents } : {}),
       },
       {
         onSuccess: (order) => {
@@ -146,17 +148,18 @@ export function StorefrontCartLive({
         },
         onError: (error) => {
           tab?.close()
+          if (!(error instanceof ShopperOrderError)) return
           // The session, the shopper's record or the shop's payments moved: the page reads them again.
-          if (error instanceof ShopperOrderError && rereadsTheCart(error.errorCode)) router.refresh()
-          // The coupon stopped holding since it was priced: the cart is priced again, and says so itself.
-          if (error instanceof ShopperOrderError && error.errorCode === "ORDER_COUPON_REFUSED") pricing.recheck()
+          if (rereadsTheCart(error.errorCode)) router.refresh()
+          // The coupon, or the delivery's fee, stopped holding since it was priced: the cart is priced again, and says so itself.
+          if (REPRICED.has(error.errorCode)) pricing.recheck()
         },
       },
     )
   }
 
   // Said only while it still holds: a payment since chosen, or a coupon since checked, takes its sentence away.
-  const missing = asked === "payment" && !choice.paymentMethod ? text.checkoutChoosePayment : asked === "coupon" && pricing.couponBlock === "failed" ? text.couponUnchecked : null
+  const missing = asked === "shipping" ? blocked : asked === "payment" && !choice.paymentMethod ? text.checkoutChoosePayment : asked === "coupon" && pricing.couponBlock === "failed" ? text.couponUnchecked : null
   const refusal = placing.error
     ? checkoutRefusalOf(placing.error instanceof ShopperOrderError ? placing.error : { errorCode: "UNKNOWN" }, view.rows, text, {
         pickup: choice.fulfillment === "PICKUP",
@@ -179,6 +182,7 @@ export function StorefrontCartLive({
         subtotalCents={pricing.subtotalCents}
         count={view.count}
         discounts={pricing.discounts}
+        delivery={pricing.delivery}
         total={pricing.total}
         offer={pricing.offer}
         cashback={pricing.cashback}
@@ -218,11 +222,12 @@ export function StorefrontCartLive({
               paymentMethods={paymentMethods}
               choice={choice}
               onChoiceChange={(next) => changed(() => setChoice(next))}
+              shipping={shipping}
               onPlace={place}
               pending={placing.isPending}
               error={missing ?? refusal}
-              // Nothing to order, or the coupon in force is being checked against the cart as it is now.
-              disabled={view.count === 0 || pricing.couponBlock === "checking"}
+              // Nothing to order, or what the order goes with — its coupon, a delivery's fee — is still being priced.
+              disabled={view.count === 0 || pricing.couponBlock === "checking" || (choice.fulfillment === "DELIVERY" && pricing.stale)}
               messages={messages}
             />
           </>

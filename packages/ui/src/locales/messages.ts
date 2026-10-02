@@ -213,6 +213,9 @@ export interface UiMessages {
     cartSubtotal: string
     /** The summary's last row, said once something was taken off. */
     cartTotal: string
+    /** The delivery fee's row in the cart's summary (BEELINK-178). */
+    cartDelivery: string
+    cartDeliveryFree: string
     /** `{name}` `{value}` — a first-purchase promotion a visitor's cart would get, announced until they sign in (BEELINK-245). */
     cartFirstPurchaseOpen: string
     /** `{value}` — the same when several would apply, and none is named. */
@@ -294,6 +297,26 @@ export interface UiMessages {
     checkoutNoAddress: string
     /** Until the product computes a fee, the shop tells it. */
     checkoutFeeLater: string
+    /** {fee} {window} — under the delivery choice, once the shop's rules quote one (BEELINK-178). */
+    checkoutDeliveryArrives: string
+    checkoutDeliveryFree: string
+    checkoutDeliveryFreeAbove: string
+    /** {distance} {radius} */
+    checkoutOutOfRange: string
+    checkoutOutOfRangePickup: string
+    checkoutOutOfRangeAddress: string
+    checkoutNoWay: string
+    checkoutShippingUnavailable: string
+    checkoutShippingChanged: string
+    /** A window in words: {from} {to}, or {count} when both ends are the same. */
+    windowMinutes: string
+    windowMinutesOne: string
+    windowHours: string
+    windowHoursOne: string
+    windowDays: string
+    windowDaysOne: string
+    /** {window} — on an order, when the quote said it would arrive. */
+    orderWindowOwn: string
     checkoutPayment: string
     checkoutChoosePayment: string
     /**
@@ -1813,6 +1836,9 @@ export interface UiMessages {
       whatsappFee: string
       /** A delivery's fee not agreed yet (BEELINK-170): on the order, in its message, and the form that tells it. */
       feeToAgree: string
+      /** What the checkout promised the customer (BEELINK-178): the row's label, and its value with {window}. */
+      quotedWindow: string
+      quotedWindowValue: string
       whatsappFeeToAgree: string
       feeFormTitle: string
       feeFormHint: string

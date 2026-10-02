@@ -8,9 +8,9 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { WhatsAppIcon } from "../store/store-brand-icons"
 import type { PaymentMethod } from "../store/store-types"
-import { StorefrontCheckoutChoices, type StorefrontCheckoutAddress, type StorefrontCheckoutChoice } from "./storefront-checkout-choices"
+import { StorefrontCheckoutChoices, type StorefrontCheckoutAddress, type StorefrontCheckoutChoice, type StorefrontCheckoutShipping } from "./storefront-checkout-choices"
 
-export type { CheckoutFulfillment, StorefrontCheckoutAddress, StorefrontCheckoutChoice } from "./storefront-checkout-choices"
+export type { CheckoutFulfillment, StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutShipping } from "./storefront-checkout-choices"
 
 export interface StorefrontCheckoutCustomer {
   /** Name and phone, a line each — only the ones on file; the addresses are `addresses`. */
@@ -39,6 +39,8 @@ export interface StorefrontCheckoutProps {
   paymentMethods: readonly PaymentMethod[]
   choice: StorefrontCheckoutChoice
   onChoiceChange: (choice: StorefrontCheckoutChoice) => void
+  /** What the shop's delivery rules quote to the chosen address; null while nobody knows. */
+  shipping?: StorefrontCheckoutShipping | null
   /** Places the order; the page opens WhatsApp itself once the order has its number. */
   onPlace: () => void
   /** The order is on its way to the shop: nothing is pressed twice. */
@@ -67,6 +69,7 @@ export function StorefrontCheckout({
   paymentMethods,
   choice,
   onChoiceChange,
+  shipping = null,
   onPlace,
   pending = false,
   error,
@@ -118,6 +121,7 @@ export function StorefrontCheckout({
         addresses={customer.addresses}
         addHref={customer.addAddressHref}
         paymentMethods={paymentMethods}
+        shipping={shipping}
         disabled={pending}
         linkComponent={Link}
         messages={messages}

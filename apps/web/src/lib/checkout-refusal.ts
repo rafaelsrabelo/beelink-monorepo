@@ -20,6 +20,9 @@ export interface CheckoutRefusal {
  */
 const REREAD = new Set(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_ADDRESS_NOT_FOUND", "ORDER_PAYMENT_NOT_ACCEPTED"])
 
+/** The refusals after which the cart is priced again: the coupon or the delivery's fee it was sent with no longer holds. */
+export const REPRICED: ReadonlySet<string> = new Set(["ORDER_COUPON_REFUSED", "ORDER_SHIPPING_UNAVAILABLE", "ORDER_SHIPPING_CHANGED"])
+
 export function rereadsTheCart(errorCode: string): boolean {
   return REREAD.has(errorCode)
 }
@@ -87,6 +90,11 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
       return text.checkoutAddressGone
     case "ORDER_ADDRESS_NOT_FOUND":
       return text.checkoutAddressChosenGone
+    // The shop's delivery rules moved since the cart was priced: it is priced again, and says what stands now.
+    case "ORDER_SHIPPING_UNAVAILABLE":
+      return text.checkoutShippingUnavailable
+    case "ORDER_SHIPPING_CHANGED":
+      return text.checkoutShippingChanged
     case "AUTH_UNAUTHENTICATED":
       return text.checkoutSignedOut
     case "RATE_LIMITED":

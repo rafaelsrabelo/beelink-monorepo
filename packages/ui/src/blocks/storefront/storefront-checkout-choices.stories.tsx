@@ -37,3 +37,25 @@ export const VariosEnderecos: Story = {
 
 /** Sem endereço salvo: a entrega fica indisponível, com o caminho para cadastrar. */
 export const SemEndereco: Story = { args: { addresses: [], value: { fulfillment: "PICKUP", addressId: null, paymentMethod: null } } }
+
+/** A loja tem faixas de entrega: o frete e a janela aparecem sob o endereço (BEELINK-178). */
+export const FreteCotado: Story = {
+  args: { shipping: { delivery: true, pickup: true, deliveryNote: "R$ 5,00 · chega em 30–50 min depois de sair da loja", unreachable: false } },
+}
+
+/** O endereço fica fora do raio da loja: dito na hora, com a retirada ainda oferecida. */
+export const ForaDoRaio: Story = {
+  args: {
+    shipping: {
+      delivery: true,
+      pickup: true,
+      deliveryNote: "A loja não entrega neste endereço: ele fica a 10,8 km, e a entrega vai até 8 km. Escolha outro endereço ou retire na loja.",
+      unreachable: true,
+    },
+  },
+}
+
+/** A loja só entrega: a retirada não é oferecida. */
+export const SoEntrega: Story = {
+  args: { shipping: { delivery: true, pickup: false, deliveryNote: "Frete grátis nesta compra · chega em 40–70 min depois de sair da loja", unreachable: false } },
+}

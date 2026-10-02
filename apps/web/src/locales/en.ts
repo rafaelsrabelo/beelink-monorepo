@@ -217,6 +217,8 @@ export const en: WebMessages = {
     ORDER_STOCK_INSUFFICIENT: "There is not enough stock for everything. Change the marked quantities.",
     ORDER_COUPON_REFUSED: "This coupon does not apply to this order.",
     ORDER_CASHBACK_REFUSED: "That cashback amount is no longer available for this order. Check the amount and try again.",
+    ORDER_SHIPPING_UNAVAILABLE: "The shop does not hand the order over that way to this address.",
+    ORDER_SHIPPING_CHANGED: "The delivery fee changed since it was quoted. Check the new amount.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Signing in with Google is not available right now. Use your e-mail and password.",
     GOOGLE_STATE_INVALID: "The Google sign-in expired or was already used. Try again.",
     GOOGLE_EXCHANGE_FAILED: "Google did not confirm the sign-in. Try again.",
