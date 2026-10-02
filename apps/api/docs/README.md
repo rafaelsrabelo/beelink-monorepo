@@ -28,7 +28,7 @@ src/
 │   │   ├── store-categories.{controller,service}.ts   # the platform's taxonomy of shops
 │   │   ├── store-color-presets.{controller,constants}.ts  # the six palettes, as data
 │   │   └── dto/                            # bodies in, Swagger shapes out
-│   ├── delivery/               # how a shop gets an order out: pickup, its own delivery by distance bands, carriers
+│   ├── delivery/               # how a shop gets an order out: the rules (pickup, own delivery by distance bands, carriers) and their quote to an address
 │   ├── integrations/           # a shop's own accounts at Melhor Envio (and Asaas): the sealed vault, the OAuth flow, the renewal routine
 │   └── users/                  # GET /users/me
 └── shared/
@@ -102,6 +102,8 @@ Every route needs `Authorization: Bearer <access token>` unless it is marked pub
 | `GET` | `/api/stores/:slug/integrations/melhor-envio/account` | no | the wallet's balance and Melhor Envio's services, read there and then with the shop's token | `200 MelhorEnvioAccountOverview` · `409 INTEGRATION_NOT_CONNECTED` · `409 INTEGRATION_NEEDS_RECONNECT` · `502 INTEGRATION_UNREACHABLE` |
 | `GET` · `PUT` | `/api/stores/:slug/integrations/melhor-envio/settings` | no | the services offered, the days to post and the default parcel — every service until first saved | `200 MelhorEnvioSettings` · `400 MELHOR_ENVIO_SETTINGS_INVALID` |
 | `GET` · `PUT` | `/api/stores/:slug/delivery` | no | pickup, the shop's own delivery by distance bands (the last band is the radius), free above, carriers — the defaults until first saved | `200 DeliverySettings` · `400 DELIVERY_SETTINGS_INVALID` |
+| `POST` | `/api/stores/:slug/delivery/quote` | no | the panel's quote for a sale it registers: drafts included | `200 ShippingQuote` · `400 SHIPPING_DESTINATION_INVALID` · `403 STORE_FORBIDDEN` |
+| `POST` | `/api/stores/:slug/shipping/quote` | yes | the shop window's ways to get a cart to an address — own delivery by straight-line distance to the geocoded address (MapTiler, else Nominatim; remembered by CEP and number), then pickup | `200 ShippingQuote` · `400 SHIPPING_DESTINATION_INVALID` · `400 ORDER_VARIANT_INVALID` · `404 STORE_NOT_FOUND` · `429` |
 
 `GET /api/stores/mine` is declared above `GET /api/stores/:slug`: Nest matches in declaration order, and `mine` is on the reserved-slug list so no shop can occupy it either.
 
