@@ -13,6 +13,7 @@ import { AddressesModule } from './modules/addresses/addresses.module.js';
 import { PageModule } from './modules/page/page.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { CustomersModule } from './modules/customers/customers.module.js';
+import { DeliveryModule } from './modules/delivery/delivery.module.js';
 import { FavoritesModule } from './modules/favorites/favorites.module.js';
 import { IntegrationsModule } from './modules/integrations/integrations.module.js';
 import { LeadsModule } from './modules/leads/leads.module.js';
@@ -59,6 +60,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     ReviewsModule,
     PromotionsModule,
     CashbackModule,
+    DeliveryModule,
     IntegrationsModule,
     UploadsModule,
   ],

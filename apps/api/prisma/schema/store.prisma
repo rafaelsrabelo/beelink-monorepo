@@ -181,6 +181,8 @@ model Store {
   integrations      StoreIntegration[]
   /// How it ships by carrier through Melhor Envio (BEELINK-183); none until first saved.
   melhorEnvioSettings MelhorEnvioSettings?
+  /// How it gets an order to its customer (BEELINK-175); none until first saved.
+  deliverySettings DeliverySettings?
 
   @@index([ownerId])
   @@index([categoryId])
