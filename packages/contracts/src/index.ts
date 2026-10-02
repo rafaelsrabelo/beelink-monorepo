@@ -20,4 +20,5 @@ export type * from "./page-versions.js";
 export type * from "./promotion.js";
 export type * from "./realtime.js";
 export type * from "./review.js";
+export type * from "./shipping.js";
 export type * from "./user.js";
