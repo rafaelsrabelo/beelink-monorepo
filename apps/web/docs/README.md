@@ -74,7 +74,7 @@ Both forms are `react-hook-form` inside a `packages/ui` block, and every request
 
 ## Session
 
-The browser never holds a token. `POST /api/session` calls the API, keeps both tokens in `httpOnly` cookies (`bl_access`, `bl_refresh`, `SameSite=Lax`, `Secure` in production) and answers only the user. Every handler refuses a cross-origin request and forwards the caller's address, so the API's per-IP rate limit sees people rather than this server.
+The browser never holds a token. `POST /api/session` calls the API, keeps both tokens in `httpOnly` cookies (`bl_access`, `bl_refresh`, `SameSite=Lax`, `Secure` in production) and answers only the user. Every handler refuses a cross-origin request and forwards the caller's address, so the API's per-IP rate limit sees people rather than this server. Signing in and signing out are full page loads (`src/lib/start-over.ts`), never the router's: the query cache and every store outlive a client-side navigation, and the next person on the tab was shown the last one's shops.
 
 When the API cannot be reached, a refresh answers `unavailable` and the session is left alone — an outage is not a sign-out.
 

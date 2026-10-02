@@ -5,7 +5,7 @@ import { useState } from "react"
 import type { ComponentProps, ReactNode } from "react"
 
 // Next
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 
 // Libs
 import {
@@ -44,6 +44,7 @@ import type { Prefs } from "@/lib/prefs"
 import { AppLink } from "@/components/app-link"
 import { LocaleSwitcher } from "@/components/locale-switcher"
 import { PREFS_COOKIE, PREFS_MAX_AGE } from "@/lib/prefs"
+import { startOver } from "@/lib/start-over"
 import { useSignOut } from "@/services/auth/auth-hooks"
 import { useMyStores } from "@/services/stores/store-hooks"
 import { PanelNotifications } from "@/components/panel-notifications"
@@ -61,7 +62,6 @@ export interface AppShellProps {
 }
 
 export function AppShell({ user, ui, web, locale, prefs, children }: AppShellProps) {
-  const router = useRouter()
   const pathname = usePathname()
   const signOut = useSignOut()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -157,9 +157,7 @@ export function AppShell({ user, ui, web, locale, prefs, children }: AppShellPro
               createHref="/create-store"
               user={{ name: user.name, email: user.email }}
               signingOut={signOut.isPending}
-              onSignOut={() =>
-                signOut.mutate(undefined, { onSuccess: () => router.replace("/login") })
-              }
+              onSignOut={() => signOut.mutate(undefined, { onSuccess: () => startOver("/login") })}
               localeSlot={<LocaleSwitcher locale={locale} messages={web} />}
               linkComponent={AppLink}
               messages={ui}
