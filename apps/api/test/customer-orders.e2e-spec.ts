@@ -113,6 +113,7 @@ describe("a shopper's order from the cart", () => {
       [
         'cancelledBy',
         'cashback',
+        'cashbackUsedCents',
         'coupon',
         'couponDiscountCents',
         'delivery',
