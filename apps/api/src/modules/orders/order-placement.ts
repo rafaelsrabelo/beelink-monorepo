@@ -11,6 +11,7 @@ import { earningForOrder, holdOrderCashback } from '../cashback/cashback-orders.
 import { redeemCashback } from '../cashback/cashback-redemption.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
+import { lockCustomer } from '../customers/customer-lock.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
 import { deliveryOf } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
@@ -88,9 +89,13 @@ export class OrderPlacement {
 
     const placed = await this.prisma.$transaction(async (tx) => {
       const number = await this.nextNumber(tx, storeId);
+      const customerId = await placement.customerOf(tx);
+      // The customer's row before the products', the order a like and a cancellation take them in:
+      // a like holding the customer while it waits on a product this order holds would otherwise
+      // deadlock against the order's own writes to the customer — their books, their credit.
+      await lockCustomer(tx, customerId);
       // Before the order is written: a line the stock cannot cover refuses the whole order.
       await takeStock(tx, lines);
-      const customerId = await placement.customerOf(tx);
       const delivery = await deliveryOf(tx, customerId, placement.fulfillment, placement.addressId);
       const priced = await priceOrder(tx, {
         storeId,

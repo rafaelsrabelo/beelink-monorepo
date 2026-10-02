@@ -156,6 +156,21 @@ describe("a shopper's order from the cart", () => {
     expect(record.totalSpentCents).toBe(25170n);
   });
 
+  /** A like takes the customer's row, then the product's: an order taking them the other way round deadlocked against it. */
+  it('places an order while the same shopper likes what it takes off the stock', async () => {
+    await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 50 } });
+    const product = (await prisma.productVariant.findUniqueOrThrow({ where: { id: whey } })).productId;
+
+    // The like starts a little later each round, so one lands between the order's two locks.
+    for (let delayMs = 0; delayMs <= 40; delayMs += 2) {
+      const [placed, liked] = await Promise.all([
+        place({ items: [{ variantId: whey, quantity: 1 }] }),
+        new Promise((resolve) => setTimeout(resolve, delayMs)).then(() => call('PUT', `/api/stores/lessari/customer/favorites/${product}`, shopper, {})),
+      ]);
+      expect([placed.statusCode, liked.statusCode]).toEqual([201, 204]);
+    }
+  });
+
   it('shares the numbering and the stock with the orders the panel registers, and the shop accepts it there', async () => {
     await prisma.productVariant.update({ where: { id: whey }, data: { trackStock: true, stockQuantity: 5 } });
     await call('POST', '/api/stores/lessari/orders', owner, {

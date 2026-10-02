@@ -103,8 +103,7 @@ export async function priceOrder(db: Prisma.TransactionClient, input: PricingInp
   const found = stored ? await couponByCode(db, storeId, stored, input.lock) : null;
 
   // The customer's orders are read only when a discount for a first purchase reaches the cart: one
-  // that does not costs no look at them, and a placement takes no lock on its customer. Somebody the
-  // order would register has none to read.
+  // that does not costs no look at them. Somebody the order would register has none to read.
   const asked = promotions.some((promotion) => promotion.audience === 'FIRST_PURCHASE' && reachesTheCart(promotion)) || found?.audience === 'FIRST_PURCHASE';
   const onFirstPurchase = !asked || !customer ? null : customer.id === null || (await firstPurchaseOf(db, customer.id, input.lock));
 
