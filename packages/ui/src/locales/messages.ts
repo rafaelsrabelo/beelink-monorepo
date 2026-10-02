@@ -2882,6 +2882,79 @@ export interface UiMessages {
     }
   }
   /** The panel's Integrations (BEELINK-183): the shop's own accounts elsewhere — Melhor Envio now. */
+  /** The store settings' Delivery tab (BEELINK-177): how the shop gets an order to its customer. */
+  delivery: {
+    tab: string
+    intro: string
+    on: string
+    off: string
+    pickup: {
+      title: string
+      description: string
+      /** {address} */
+      address: string
+      noAddress: string
+    }
+    own: {
+      title: string
+      description: string
+      noBands: string
+      straightLine: string
+      noPoint: string
+      mapLabel: string
+      freeAbove: string
+      freeAboveHelp: string
+    }
+    bands: {
+      legend: string
+      upTo: string
+      fee: string
+      windowFrom: string
+      windowTo: string
+      add: string
+      /** {index} */
+      remove: string
+      /** {max} */
+      max: string
+    }
+    carriers: {
+      title: string
+      description: string
+      unavailable: string
+      disconnected: string
+      connect: string
+      /** {name} */
+      connected: string
+      needsReconnect: string
+      reconnect: string
+      manage: string
+      sandbox: string
+    }
+    save: string
+    saving: string
+    saved: string
+    loading: string
+    failed: string
+    retry: string
+    /** {distance} {fee} {from} {to} */
+    preview: string
+    free: string
+    issues: {
+      /** {index} */
+      band: string
+      /** {index} {previous} */
+      order: string
+      /** {index} */
+      window: string
+      /** {index} */
+      range: string
+      freeAbove: string
+    }
+    errors: {
+      DELIVERY_SETTINGS_INVALID: string
+      UNKNOWN: string
+    }
+  }
   integrations: {
     title: string
     intro: string

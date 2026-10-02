@@ -78,6 +78,8 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/integrations/melhor-envio-card` | `view` (`lib/integrations`), `connectHref`, `onDisconnect`, `disconnecting`, `disconnectError` — connect, whose account, the wallet, the reconnect warning; asks before disconnecting. "Conectar" is a plain `<a>`: a router link would prefetch a route that begins an authorization | Blocos/Painel/Integrações |
 | `blocks/integrations/shipping-settings-form` | `value`, `onChange`, `onSubmit`, `services` (`"loading"`, `"failed"` or the list), `issues`, `pending`, `error`, `saved` — services by carrier, days to post, default parcel | Blocos/Painel/Integrações |
 | `blocks/integrations/integrations-result` · `integrations-skeleton` · `integrations-failed` | `tone`, `message` · — · `onRetry` | Blocos/Painel/Integrações |
+| `blocks/delivery/delivery-settings-form` | `value`, `onChange`, `onSubmit`, `issues`, `previews`, `pickupAddress`, `map` (`lib/delivery`), `carriers`, `connectHref`, `manageHref`, `linkComponent`, `pending`, `error`, `saved` — the store settings' Delivery tab: pickup, own delivery by distance bands with the radius on the map, carriers; its own save | Blocos/Entrega/Aba Entrega |
+| `blocks/delivery/delivery-mode-card` · `delivery-band-rows` · `delivery-carriers` · `delivery-settings-skeleton` | `title`, `checked`, `onCheckedChange`, `children` · `rows`, `onChange`, `issues`, `previews` · `view`, `connectHref`, `manageHref` · — | Blocos/Entrega |
 
 `auth-link` is the default every block navigates with until an app passes `next/link`. It is one line, and its test is still
 the longest of the three it has: a link component that swallowed the extra props would drop the `aria-current` the sidebar

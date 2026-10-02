@@ -30,6 +30,11 @@ export interface StoreMapProps {
   fallbackCenter: StorePoint
   fallbackZoom?: number
   pointZoom?: number
+  /**
+   * How far the shop delivers (BEELINK-177): drawn as a circle around the point, and the map frames
+   * it. Null or absent draws none.
+   */
+  radiusMeters?: number | null
   /** What a screen reader calls the map. */
   label: string
   className?: string
@@ -83,6 +88,7 @@ export function StoreMap({
   fallbackCenter,
   fallbackZoom = 4,
   pointZoom = 16,
+  radiusMeters = null,
   label,
   className,
 }: StoreMapProps) {
@@ -90,6 +96,7 @@ export function StoreMap({
   const leaflet = useRef<typeof Leaflet | null>(null)
   const map = useRef<Leaflet.Map | null>(null)
   const marker = useRef<Leaflet.Marker | null>(null)
+  const circle = useRef<Leaflet.Circle | null>(null)
   /** Only so the effect below re-runs once the map exists; a ref alone would not wake it. */
   const [drawn, setDrawn] = useState(false)
 
@@ -121,6 +128,7 @@ export function StoreMap({
       map.current?.remove()
       map.current = null
       marker.current = null
+      circle.current = null
       setDrawn(false)
     }
     // Created once. The tile URL changing would mean a different provider mid-session, which does
@@ -133,6 +141,9 @@ export function StoreMap({
     const current = map.current
     if (!L || !current) return
 
+    circle.current?.remove()
+    circle.current = null
+
     if (!point) {
       marker.current?.remove()
       marker.current = null
@@ -144,8 +155,16 @@ export function StoreMap({
     if (marker.current) marker.current.setLatLng(position)
     else marker.current = L.marker(position, { icon: pinIcon(L), keyboard: false }).addTo(current)
 
+    if (radiusMeters) {
+      // Painted by class: an SVG presentation attribute takes no `var()`, and a literal colour is
+      // what `web/no-hex-colors` exists to stop.
+      circle.current = L.circle(position, { radius: radiusMeters, className: "fill-primary stroke-primary", fillOpacity: 0.12, weight: 2 }).addTo(current)
+      current.flyToBounds(circle.current.getBounds(), { duration: 0.6, padding: [16, 16] })
+      return
+    }
+
     current.flyTo(position, pointZoom, { duration: 0.6 })
-  }, [point, pointZoom, drawn])
+  }, [point, pointZoom, radiusMeters, drawn])
 
   return (
     <div
