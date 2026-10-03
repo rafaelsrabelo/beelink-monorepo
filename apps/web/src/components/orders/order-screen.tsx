@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import type { WebMessages } from "@/locales"
 import { AppLink } from "@/components/app-link"
 import { OrderConversationSection } from "@/components/conversations/order-conversation-section"
+import { OrderLabelSection } from "@/components/orders/order-label-section"
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { addressLineOf } from "@/lib/customer-address"
 import { shopOrderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
@@ -91,6 +92,8 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
                   messages={messages}
                 />
               ) : null}
+              {/* A carrier chosen at checkout carries the service its label is bought with (BEELINK-187). */}
+              {current.delivery?.kind === "CARRIER" ? <OrderLabelSection slug={slug} number={current.number} locale={defaultLocale} messages={messages} /> : null}
             <OrderDeliveryCard
               delivery={current.delivery}
               onSave={(next) => delivery.mutate(next)}
