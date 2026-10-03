@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, QuotedFirstPurchase } from "@harness-monorepo/contracts"
+import type { CustomerOrderQuotePayload, CustomerProfile, OrderFulfillment, OrderQuote, OrderShippingChoice, QuotedFirstPurchase, ShippingQuote } from "@harness-monorepo/contracts"
 import type { StorefrontCartOffer } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -14,15 +14,35 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import { orderItemsOf, rowKeyOf, type CartRow, type CartView } from "./cart-view"
 import { checkoutAddressesOf } from "./saved-address"
 
+/** What else the price of a cart depends on, besides its lines, how it leaves and the coupon. */
+export interface CartQuoteExtras {
+  addressId?: string | null
+  shipping?: OrderShippingChoice | null
+  useCashback?: boolean
+}
+
 /**
  * The cart as its price is asked for (BEELINK-194): what can be ordered now, how it would leave, the
- * coupon typed and whether the shopper's cashback pays for it (BEELINK-244). The lines are sorted,
- * so one cart is one question however its lines were added — the page that served the first price
- * and the browser that follows it ask the same one.
+ * saved address a delivery would go to (BEELINK-178), the carrier it would go by when one was picked
+ * (BEELINK-186), the coupon typed and whether the shopper's cashback pays for it (BEELINK-244). The
+ * lines are sorted, so one cart is one question however its lines were added — the page that served
+ * the first price and the browser that follows it ask the same one.
  */
-export function cartQuoteOf(rows: readonly CartRow[], fulfillment: OrderFulfillment, couponCode: string | null, useCashback = false): CustomerOrderQuotePayload {
+export function cartQuoteOf(
+  rows: readonly CartRow[],
+  fulfillment: OrderFulfillment,
+  couponCode: string | null,
+  { addressId = null, shipping = null, useCashback = false }: CartQuoteExtras = {},
+): CustomerOrderQuotePayload {
   const items = orderItemsOf(rows).sort((a, b) => (a.variantId < b.variantId ? -1 : a.variantId > b.variantId ? 1 : 0))
-  return { items, fulfillment, ...(couponCode ? { couponCode } : {}), ...(useCashback ? { useCashback } : {}) }
+  return {
+    items,
+    fulfillment,
+    ...(addressId ? { addressId } : {}),
+    ...(shipping ? { shipping } : {}),
+    ...(couponCode ? { couponCode } : {}),
+    ...(useCashback ? { useCashback } : {}),
+  }
 }
 
 /** Whether two questions are the same one. Both come from `cartQuoteOf`, so their fields are in one order. */
@@ -63,7 +83,13 @@ export interface CartPricing {
   /** The products before any promotion; the shelf's own sum while the cart has no price from the API. */
   subtotalCents: number
   discounts: DiscountLine[]
-  /** What is left to pay, in words; null with nothing taken off, when the subtotal already says it. */
+  /** The delivery's fee as the shop's rules quote it (BEELINK-178), in words; null on a pick-up and on a fee agreed afterwards. */
+  delivery: string | null
+  /** The fee itself, as the order is sent with it: null for one agreed afterwards. Undefined while the cart has no price. */
+  deliveryFeeCents: number | null | undefined
+  /** The shop's ways to get the cart to the address asked about; null with no address, or no price yet. */
+  shipping: ShippingQuote | null
+  /** What is left to pay, in words; null with nothing taken off or added, when the subtotal already says it. */
   total: string | null
   /** By the row's key. A row with no entry reads as the shelf prices it. */
   lines: ReadonlyMap<string, PricedCartLine>
@@ -129,7 +155,7 @@ function offerOf(firstPurchase: QuotedFirstPurchase | null, money: (cents: numbe
  * the stepper at once instead of waiting for the answer.
  */
 export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfillment, locale, messages }: CartPricingContext): CartPricing {
-  if (!quote) return { subtotalCents: view.subtotalCents, discounts: [], total: null, lines: new Map(), offer: null, cashback: null }
+  if (!quote) return { subtotalCents: view.subtotalCents, discounts: [], delivery: null, deliveryFeeCents: undefined, shipping: null, total: null, lines: new Map(), offer: null, cashback: null }
 
   const money = (cents: number) => formatCents(cents, locale, "BRL")
   const coupon = quote.coupon?.status === "APPLIED" ? { code: quote.coupon.code, kind: quote.coupon.kind } : null
@@ -145,7 +171,9 @@ export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfil
     money,
     messages.orders.discountRows,
   )
-  const total = discounts.length
+  const fee = fulfillment === "DELIVERY" ? quote.deliveryFeeCents : null
+  const delivery = fee === null ? null : fee === 0 ? messages.storefront.cartDeliveryFree : money(fee)
+  const total = discounts.length || delivery
     ? customerTotalText(money(quote.totalCents), { fulfillment, deliveryFeeCents: quote.deliveryFeeCents, coupon }, messages.storefront.orderTotalPlusFee)
     : null
 
@@ -162,5 +190,5 @@ export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfil
     lines.set(rowKeyOf(row), { lineTotalCents, wasCents: before > lineTotalCents ? before : null, promotion: line.promotion?.name ?? null })
   }
 
-  return { subtotalCents: quote.subtotalCents, discounts, total, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront), cashback: cashbackOf(quote, money, locale, messages.storefront) }
+  return { subtotalCents: quote.subtotalCents, discounts, delivery, deliveryFeeCents: fulfillment === "DELIVERY" ? quote.deliveryFeeCents : undefined, shipping: quote.shipping, total, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront), cashback: cashbackOf(quote, money, locale, messages.storefront) }
 }

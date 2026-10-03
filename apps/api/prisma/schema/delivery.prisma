@@ -1,0 +1,33 @@
+/// How a shop gets an order to its customer (BEELINK-175): pickup, its own delivery by distance bands,
+/// and carriers through its Melhor Envio account — each switched on apart. None until first saved: the
+/// shop then reads pickup and its own delivery on, with no bands, and carriers off.
+model DeliverySettings {
+  storeId            String   @id @db.Uuid
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  pickupEnabled      Boolean
+  ownDeliveryEnabled Boolean
+  /// The products' subtotal from which the shop's own delivery is free; null never is.
+  freeAboveCents     Int?
+  carriersEnabled    Boolean
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  bands DeliveryBand[]
+
+  @@map("delivery_settings")
+}
+
+/// One step of the shop's own delivery. Replaced whole on every save, in the save's transaction; the
+/// last one, by `upToMeters`, is the shop's radius — there is no radius column to disagree with it.
+model DeliveryBand {
+  id                String           @id @default(uuid(7)) @db.Uuid
+  storeId           String           @db.Uuid
+  settings          DeliverySettings @relation(fields: [storeId], references: [storeId], onDelete: Cascade)
+  upToMeters        Int
+  feeCents          Int
+  windowFromMinutes Int
+  windowToMinutes   Int
+
+  @@unique([storeId, upToMeters])
+  @@map("delivery_bands")
+}

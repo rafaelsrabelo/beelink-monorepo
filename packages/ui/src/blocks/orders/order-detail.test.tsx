@@ -53,6 +53,15 @@ describe("OrderDetail", () => {
     expect(within(items).getByText("R$ 289,70")).toBeInTheDocument()
   })
 
+  /** BEELINK-178: the window the checkout promised, where the fee is read. */
+  it("says the window quoted to the customer under the fee, and nothing where none was quoted", () => {
+    const { rerender } = render(<OrderDetail order={{ ...order, deliveryWindow: { unit: "MINUTES", from: 30, to: 50 } }} {...props} />)
+    expect(within(screen.getByRole("region", { name: "Itens" })).getByText("30–50 min depois de sair da loja")).toBeInTheDocument()
+
+    rerender(<OrderDetail order={order} {...props} />)
+    expect(within(screen.getByRole("region", { name: "Itens" })).queryByText("Prazo cotado ao cliente")).toBeNull()
+  })
+
   /** BEELINK-244: the customer's credit is the last row before the total, which is already less it. */
   it("says the cashback the customer used on a row of its own, after the discounts", () => {
     render(<OrderDetail order={{ ...order, cashbackUsedCents: 1500, totalCents: 27470 }} {...props} />)

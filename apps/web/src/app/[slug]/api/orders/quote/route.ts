@@ -53,8 +53,15 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   // Named field by field: the doors without a code refuse a body that carries anything else.
   const withoutCode = { items: cart.items, fulfillment: cart.fulfillment }
 
-  // Their credit, when the box is ticked: `true` and nothing else, since the doors refuse what they do not know.
-  const asShopper = cart.useCashback === true ? { ...withoutCode, useCashback: true } : withoutCode
+  // The saved address a delivery would go to (BEELINK-178), the way it would go by (BEELINK-186) and
+  // their credit when the box is ticked (BEELINK-244) are a shopper's: their doors alone take them. The
+  // credit as `true` and nothing else, since the doors refuse what they do not know.
+  const asShopper = {
+    ...withoutCode,
+    ...(typeof cart.addressId === "string" ? { addressId: cart.addressId } : {}),
+    ...(typeof cart.shipping === "object" && cart.shipping !== null ? { shipping: cart.shipping } : {}),
+    ...(cart.useCashback === true ? { useCashback: true } : {}),
+  }
 
   const asVisitor = async () => {
     const priced = await callApi({ path: `${shop}/cart/quote`, body: withoutCode, clientIp }).catch(() => null)

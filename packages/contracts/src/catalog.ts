@@ -448,12 +448,23 @@ export interface ProductListQuery {
  */
 export type ProductStockFilter = "IN_STOCK" | "OUT_OF_STOCK" | "UNTRACKED";
 
+/**
+ * Why a carrier cannot quote a product (BEELINK-184): an active variant with no weight, or one with no
+ * size while the shop has no default parcel. The product still sells, by local delivery and pick-up.
+ */
+export type CarrierGap = "NO_WEIGHT" | "NO_SIZE";
+
 /** One page of the panel's list, and what it is a page of. `total` counts the filter, not the page. */
 export interface ProductPage {
   products: Product[];
   total: number;
   page: number;
   pageSize: number;
+  /**
+   * Null while the shop has no Melhor Envio connection — it ships by no carrier, and nothing is
+   * missing. Connected, the products on this page a carrier cannot quote, by id; the others are absent.
+   */
+  carrierGaps: Record<string, CarrierGap> | null;
 }
 
 export interface CreateProductCategoryPayload {

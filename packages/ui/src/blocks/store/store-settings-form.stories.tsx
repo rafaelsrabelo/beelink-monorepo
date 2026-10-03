@@ -3,11 +3,7 @@ import { fn } from "storybook/test"
 
 import { en } from "../../locales/en"
 import { StoreSettingsForm } from "./store-settings-form"
-import {
-  sampleColorPresets,
-  sampleStoreCategories,
-  sampleStoreSettingsValues,
-} from "./store.fixtures"
+import { sampleStoreCategories, sampleStoreSettingsValues } from "./store.fixtures"
 
 const meta = {
   title: "Blocos/Loja/Configurações da loja",
@@ -20,7 +16,6 @@ const meta = {
     onZipCodeLookup: fn(async () => null),
     onImageUpload: fn(async () => "https://res.cloudinary.com/demo/image/upload/sample.jpg"),
     categories: sampleStoreCategories,
-    colorPresets: sampleColorPresets,
   },
 } satisfies Meta<typeof StoreSettingsForm>
 
@@ -51,4 +46,9 @@ export const SemWhatsapp: Story = {
 
 export const EmIngles: Story = {
   args: { messages: en },
+}
+
+/** A tab the screen owns whole, beside the shop's own: it saves through its own route. */
+export const ComAbaExtra: Story = {
+  args: { extraTabs: [{ value: "delivery", label: "Entrega", content: <p>Como a loja entrega.</p> }] },
 }

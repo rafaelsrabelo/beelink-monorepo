@@ -48,6 +48,7 @@ function quoteOf(sale: ShopOrderQuotePayload): OrderQuote {
     manualDiscountCents: 0,
     discountCents: 0,
     deliveryFeeCents: 0,
+    shipping: null,
     totalCents: 5000 - appliedCents,
     cashback: null,
     cashbackUse: { balanceCents, maxCents: balanceCents, appliedCents, unavailable: balanceCents ? null : "NO_BALANCE" },

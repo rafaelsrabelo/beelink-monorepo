@@ -139,6 +139,15 @@ services:
       - GOOGLE_CLIENT_SECRET
       - GOOGLE_REDIRECT_URI
 
+      # Melhor Envio, each shop on its own account (BEELINK-182). The three app variables go together,
+      # with INTEGRATIONS_SECRET_KEY; the redirect URI is https://<WEB_DOMAIN>/api/integrations/melhor-envio/callback.
+      - MELHOR_ENVIO_ENV
+      - MELHOR_ENVIO_CLIENT_ID
+      - MELHOR_ENVIO_CLIENT_SECRET
+      - MELHOR_ENVIO_REDIRECT_URI
+      - MELHOR_ENVIO_CONTACT_EMAIL
+      - INTEGRATIONS_SECRET_KEY
+
       - AUTH_RATE_LIMIT_MAX
       - AUTH_RATE_LIMIT_WINDOW
       - STORE_WRITE_RATE_LIMIT_MAX

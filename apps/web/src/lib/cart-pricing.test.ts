@@ -48,6 +48,7 @@ const quote: OrderQuote = {
   manualDiscountCents: 0,
   discountCents: 2500,
   deliveryFeeCents: null,
+  shipping: null,
   totalCents: 23490,
   cashback: null,
   cashbackUse: null,
@@ -82,10 +83,10 @@ describe("the cart as its price is asked for", () => {
   it("asks for the shopper's cashback only when the box is ticked", () => {
     const plain = cartQuoteOf([row({})], "DELIVERY", null)
 
-    expect(cartQuoteOf([row({})], "DELIVERY", null, false)).toEqual(plain)
+    expect(cartQuoteOf([row({})], "DELIVERY", null, { useCashback: false })).toEqual(plain)
     expect(plain).not.toHaveProperty("useCashback")
-    expect(cartQuoteOf([row({})], "DELIVERY", "BEMVINDO10", true)).toMatchObject({ couponCode: "BEMVINDO10", useCashback: true })
-    expect(sameCart(plain, cartQuoteOf([row({})], "DELIVERY", null, true))).toBe(false)
+    expect(cartQuoteOf([row({})], "DELIVERY", "BEMVINDO10", { useCashback: true })).toMatchObject({ couponCode: "BEMVINDO10", useCashback: true })
+    expect(sameCart(plain, cartQuoteOf([row({})], "DELIVERY", null, { useCashback: true }))).toBe(false)
   })
 
   it("starts on a delivery only for a shopper with somewhere to deliver", () => {
@@ -102,7 +103,7 @@ describe("the cart as the API priced it", () => {
   it("reads as the shelf prices it while there is no price: one subtotal, no row, no line touched", () => {
     const view = viewOf([row({}), creatine])
 
-    expect(cartPricingOf(null, view, context)).toEqual({ subtotalCents: 23490, discounts: [], total: null, lines: new Map(), offer: null, cashback: null })
+    expect(cartPricingOf(null, view, context)).toEqual({ subtotalCents: 23490, discounts: [], delivery: null, deliveryFeeCents: undefined, shipping: null, total: null, lines: new Map(), offer: null, cashback: null })
   })
 
   it("says the subtotal before the promotion, what came off, the total, and the line the promotion reached", () => {
@@ -140,6 +141,20 @@ describe("the cart as the API priced it", () => {
     expect(priced.discounts.at(-1)).toEqual({ key: "coupon", label: "Cupom FRETEGRATIS", value: "Frete grátis" })
     expect(spaced(priced.total)).toBe("R$ 234,90")
     expect(spaced(cartPricingOf({ ...quote, deliveryFeeCents: 0 }, view, { ...context, fulfillment: "PICKUP" }).total)).toBe("R$ 234,90")
+  })
+
+  /** BEELINK-178: the fee the shop's rules quote has its row, and the total carries it. */
+  it("says a delivery's quoted fee on its own row and in the total, free in words, and none on a pick-up", () => {
+    const view = viewOf([row({}), creatine])
+    const plain = { ...quote, discountCents: 0, promotionDiscountCents: 0, lines: quote.lines.map((line) => ({ ...line, discountCents: 0, promotion: null })) }
+
+    const priced = cartPricingOf({ ...plain, deliveryFeeCents: 500, totalCents: 26490 }, view, context)
+    expect([spaced(priced.delivery), priced.deliveryFeeCents, spaced(priced.total)]).toEqual(["R$ 5,00", 500, "R$ 264,90"])
+
+    expect(cartPricingOf({ ...plain, deliveryFeeCents: 0, totalCents: 25990 }, view, context).delivery).toBe("Grátis")
+    // A fee agreed afterwards has no row; the order is still sent saying so.
+    expect(cartPricingOf({ ...plain, deliveryFeeCents: null, totalCents: 25990 }, view, context)).toMatchObject({ delivery: null, deliveryFeeCents: null, total: null })
+    expect(cartPricingOf({ ...plain, deliveryFeeCents: 0, totalCents: 25990 }, view, { ...context, fulfillment: "PICKUP" })).toMatchObject({ delivery: null, deliveryFeeCents: undefined, total: null })
   })
 
   /** The price on screen may be the cart's of a moment ago: a line whose quantity moved follows the stepper at once. */

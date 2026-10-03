@@ -13,7 +13,8 @@ const placed = {
     { productId: "p1", productSlug: "camiseta-preta", productName: "Camiseta preta", variantLabel: null, imageUrl: null, unitPriceCents: 4990, quantity: 2, lineTotalCents: 9980, discountCents: 0, promotionName: null },
     { productId: "p2", productSlug: "whey", productName: "Whey", variantLabel: "Peso: 900g · Sabor: Chocolate", imageUrl: null, unitPriceCents: 14990, quantity: 1, lineTotalCents: 14990, discountCents: 0, promotionName: null },
   ],
-  totalCents: 24970,
+  // The lines add up to R$ 249,70; the delivery the checkout quoted is R$ 10,00 on top (BEELINK-178).
+  totalCents: 25970,
   deliveryFeeCents: 1000,
   discountCents: 0,
   promotionDiscountCents: 0,
@@ -50,7 +51,8 @@ describe("the WhatsApp order", () => {
         "2× Camiseta preta — R$ 99,80",
         "1× Whey (Peso: 900g · Sabor: Chocolate) — R$ 149,90",
         "",
-        "Total: R$ 249,70",
+        "Entrega: R$ 10,00",
+        "Total: R$ 259,70",
         "Endereço: Av. Paulista, 1000 — Bela Vista — São Paulo/SP — CEP 01310-930",
         "Pagamento: Pix",
         "Nome: Rafael",
@@ -60,17 +62,18 @@ describe("the WhatsApp order", () => {
   })
 
   it("writes the total '+ frete' while the delivery's fee is not agreed", () => {
-    const message = orderMessageOf({ shopName: "Loja do Design", order: { ...placed, deliveryFeeCents: null }, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
+    const message = orderMessageOf({ shopName: "Loja do Design", order: { ...placed, deliveryFeeCents: null, totalCents: 24970 }, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
 
     expect(message).toContain("Total: R$ 249,70 + frete")
+    expect(message).not.toContain("Entrega:")
   })
 
   /** BEELINK-194: the lines are at the catalogue's price, so what came off stands between them and the total. */
   it("says what the promotion and the coupon took off, between the lines and the total", () => {
-    const discounted = { ...placed, totalCents: 20723, discountCents: 4247, promotionDiscountCents: 1499, couponDiscountCents: 2748, coupon: { code: "BEMVINDO10", kind: "PERCENT" as const } }
+    const discounted = { ...placed, totalCents: 21723, discountCents: 4247, promotionDiscountCents: 1499, couponDiscountCents: 2748, coupon: { code: "BEMVINDO10", kind: "PERCENT" as const } }
     const message = orderMessageOf({ shopName: "Loja do Design", order: discounted, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
 
-    expect(message.split("\n").slice(4, 8)).toEqual(["", "Promoção: − R$ 14,99", "Cupom BEMVINDO10: − R$ 27,48", "Total: R$ 207,23"])
+    expect(message.split("\n").slice(4, 9)).toEqual(["", "Entrega: R$ 10,00", "Promoção: − R$ 14,99", "Cupom BEMVINDO10: − R$ 27,48", "Total: R$ 217,23"])
   })
 
   /** BEELINK-244: the customer's credit is its own line, after the discounts — the total under it is already less it. */
@@ -83,7 +86,7 @@ describe("the WhatsApp order", () => {
   })
 
   it("says a free delivery coupon in words, and a total with no '+ frete': the coupon waives whatever is agreed", () => {
-    const free = { ...placed, deliveryFeeCents: null, coupon: { code: "FRETEGRATIS", kind: "FREE_SHIPPING" as const } }
+    const free = { ...placed, deliveryFeeCents: null, totalCents: 24970, coupon: { code: "FRETEGRATIS", kind: "FREE_SHIPPING" as const } }
     const message = orderMessageOf({ shopName: "Loja do Design", order: free, customer: { name: "Rafael", phone: null }, locale: "pt-BR", messages: ptBR }).replace(/\u00a0/g, " ")
 
     expect(message).toContain("Cupom FRETEGRATIS: Frete grátis\nTotal: R$ 249,70\n")

@@ -103,7 +103,7 @@ export function useRestockRequest(slug: string): UseMutationResult<void, Error, 
 export function useCartQuote(slug: string, shopperId: string | null, cart: CustomerOrderQuotePayload, served: ServedQuote | null): UseQueryResult<OrderQuote, Error> {
   const mine = served?.shopperId === shopperId ? served : null
   // In `cartQuoteOf`'s own order, which is what makes two questions comparable.
-  const servedWithoutCoupon = mine && sameCart(mine.cart, { items: cart.items, fulfillment: cart.fulfillment }) ? mine.quote : undefined
+  const servedWithoutCoupon = mine && sameCart(mine.cart, { items: cart.items, fulfillment: cart.fulfillment, ...(cart.addressId ? { addressId: cart.addressId } : {}), ...(cart.shipping ? { shipping: cart.shipping } : {}) }) ? mine.quote : undefined
 
   return useQuery({
     queryKey: storefrontKeys.quote(slug, shopperId, cart),

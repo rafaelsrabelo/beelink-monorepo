@@ -1,0 +1,131 @@
+/// The third parties a shop connects its own account to (BEELINK-182).
+enum IntegrationProvider {
+  MELHOR_ENVIO
+  ASAAS
+}
+
+/// Where a connection stands. A shop with no row is disconnected.
+enum IntegrationStatus {
+  CONNECTED
+  /// The third party refused the access it gave: revoked, or left unrenewed past its life. Only the
+  /// shopkeeper authorizing again mends it.
+  NEEDS_RECONNECT
+}
+
+/// A shop's connection to its own account at a third party: what that party gave bee-link to act with,
+/// sealed, and who the account is. One per shop and party.
+model StoreIntegration {
+  id       String              @id @default(uuid(7)) @db.Uuid
+  storeId  String              @db.Uuid
+  store    Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  provider IntegrationProvider
+  status   IntegrationStatus   @default(CONNECTED)
+
+  /// The access itself, as JSON — `{ accessToken, refreshToken }` for Melhor Envio, `{ apiKey }` for
+  /// Asaas — sealed with AES-256-GCM under INTEGRATIONS_SECRET_KEY, bound to this shop and party.
+  /// Read and written only under src/modules/integrations (gate `api/sealed-secret-in-integrations`).
+  secretSealed String
+
+  /// When the access in hand runs out, and when the means to renew it does. Null for a key that does not.
+  accessExpiresAt  DateTime?
+  refreshExpiresAt DateTime?
+  lastRefreshedAt  DateTime?
+  /// What went wrong last, in the party's words, for the logs and the panel; null once it worked again.
+  lastError        String?
+
+  /// Whose account it is, as the party names it — shown, never used to act.
+  accountId    String?
+  accountName  String?
+  accountEmail String?
+
+  connectedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([storeId, provider])
+  @@index([provider, status, accessExpiresAt])
+  @@map("store_integrations")
+}
+
+/// A connection the shopkeeper began and the party has not sent back yet: one use, ten minutes, and
+/// tied to the shop and the person who began it — the browser coming back must be theirs.
+model IntegrationOAuthState {
+  state     String              @id
+  provider  IntegrationProvider
+  storeId   String              @db.Uuid
+  userId    String              @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime            @default(now())
+
+  @@index([expiresAt])
+  @@map("integration_oauth_states")
+}
+
+/// How a shop ships by carrier (BEELINK-183): which Melhor Envio services it offers, how long it takes
+/// to post, and the parcel used for a product with no size. Apart from the connection, so connecting
+/// again keeps the shop's choices. None until first saved: then every service is offered.
+model MelhorEnvioSettings {
+  storeId      String   @id @db.Uuid
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  handlingDays Int      @default(1)
+  /// Melhor Envio's service ids. A service it starts offering later stays off until chosen.
+  serviceIds   Int[]
+  /// The default parcel, all four or none — in the product's units.
+  packageWeightGrams Int?
+  packageLengthMm    Int?
+  packageWidthMm     Int?
+  packageHeightMm    Int?
+  /// Who sends the labels (BEELINK-187): the shop's CPF or CNPJ, digits only; none, and no label is bought.
+  senderDocument      String? @db.VarChar(14)
+  /// The shop's state registration, for a commercial shipment with an invoice.
+  senderStateRegister String? @db.VarChar(20)
+  updatedAt    DateTime @updatedAt
+
+  @@map("melhor_envio_settings")
+}
+
+/// Where an order's label stands at Melhor Envio (BEELINK-187).
+enum OrderLabelStatus {
+  IN_CART
+  PAID
+  GENERATED
+  CANCELLED
+}
+
+/// An order's shipping label, bought from the shop's own Melhor Envio wallet: one per order, for one
+/// box. Buying again after a cancellation replaces it. `providerId` is Melhor Envio's id for it, which
+/// every later step — pay, generate, print, track, cancel — is asked with.
+model OrderLabel {
+  orderId    String           @id @db.Uuid
+  order      Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId    String           @db.Uuid
+  providerId String           @db.VarChar(64)
+  protocol   String?          @db.VarChar(60)
+  status     OrderLabelStatus
+  priceCents Int
+  weightGrams Int
+  lengthMm    Int
+  widthMm     Int
+  heightMm    Int
+  /// The NF-e's key on a commercial shipment; null went with a declaration of contents.
+  invoiceKey   String?   @db.Char(44)
+  trackingCode String?   @db.VarChar(60)
+  createdAt    DateTime  @default(now())
+  paidAt       DateTime?
+  generatedAt  DateTime?
+  cancelledAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  @@index([storeId, status])
+  @@map("order_labels")
+}
+
+/// A third party's event already applied (BEELINK-188): its key is what makes a second delivery of it —
+/// a webhook retried, or the periodic check reaching the same fact — a no-op.
+model IntegrationEvent {
+  key       String              @id @db.VarChar(120)
+  provider  IntegrationProvider
+  createdAt DateTime            @default(now())
+
+  @@index([createdAt])
+  @@map("integration_events")
+}

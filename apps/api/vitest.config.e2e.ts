@@ -34,6 +34,11 @@ export default defineConfig({
       GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com',
       GOOGLE_CLIENT_SECRET: 'test-secret',
       GOOGLE_REDIRECT_URI: 'http://localhost:3000/api/customer/google/callback',
+      // Melhor Envio's door switched on, the same way: its suite stands a fake Melhor Envio in.
+      MELHOR_ENVIO_CLIENT_ID: 'test-melhor-envio-app',
+      MELHOR_ENVIO_CLIENT_SECRET: 'test-melhor-envio-secret',
+      MELHOR_ENVIO_REDIRECT_URI: 'http://localhost:3000/api/integrations/melhor-envio/callback',
+      INTEGRATIONS_SECRET_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
     },
   },
 });

@@ -30,7 +30,7 @@ import { pendingReviewsAt } from "@/lib/customer-reviews"
 import { OVERVIEW_FAVORITES } from "@/lib/overview-parts"
 import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
-import { ADDRESS_KEY, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
+import { ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
 import { shopperAt } from "@/lib/shopper"
 import { catalogueAt } from "@/lib/storefront-data"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
@@ -90,8 +90,12 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
   const [cart, shopper] = await Promise.all([place.section.kind === "cart" ? cartAt(store.slug) : null, shopperAt(store.slug)])
   // And its totals, priced by the API as the order would be (BEELINK-194) and for whoever is reading
-  // (BEELINK-245): the promotions' rows are in the HTML too.
-  const served = cart ? await cartQuoteAt(store.slug, cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null), shopper?.id ?? null) : null
+  // (BEELINK-245): the promotions' rows are in the HTML too — and to the address a delivery would go
+  // to (BEELINK-178), so the fee is as well.
+  const deliverTo = paramOf(query[DELIVER_TO_KEY]) ?? null
+  const served = cart
+    ? await cartQuoteAt(store.slug, cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null }), shopper?.id ?? null)
+    : null
   // The menu's counts, read together on the area's own front: each is its own call to the API. The
   // favourites' page is the rail's too, so the front reads it once.
   const [inProgress, liked, toRate] =
@@ -170,7 +174,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
             editHref: `${routes.accountTab("profile")}?${BACK_KEY}=${encodeURIComponent(routes.cart())}`,
             addAddressHref: `${routes.accountTab("profile")}?${new URLSearchParams({ [ADDRESS_KEY]: NEW_ADDRESS, [BACK_KEY]: routes.cart() }).toString()}`,
           }}
-          deliverTo={paramOf(query[DELIVER_TO_KEY]) ?? null}
+          deliverTo={deliverTo}
           arrival={reorderNotice ? <StorefrontReorderNotice {...reorderNotice} messages={ui} /> : undefined}
           served={served}
           coupon={couponIn(paramOf(query[COUPON_KEY]))}

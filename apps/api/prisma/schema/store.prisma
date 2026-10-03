@@ -177,6 +177,12 @@ model Store {
   accounts          User[]            @relation("StoreAccounts")
   /// The Google accounts tied to them (G5).
   accountIdentities AccountIdentity[]
+  /// Its own accounts at the third parties that act in its name (BEELINK-182): Melhor Envio, Asaas.
+  integrations      StoreIntegration[]
+  /// How it ships by carrier through Melhor Envio (BEELINK-183); none until first saved.
+  melhorEnvioSettings MelhorEnvioSettings?
+  /// How it gets an order to its customer (BEELINK-175); none until first saved.
+  deliverySettings DeliverySettings?
 
   @@index([ownerId])
   @@index([categoryId])

@@ -11,6 +11,7 @@ import type { StorefrontOrderTrackingProps } from "@harness-monorepo/ui/blocks/s
 import { customerCashbackLineOf } from "@harness-monorepo/ui/lib/cashback"
 import { discountLinesOf, linePromotionOf } from "@harness-monorepo/ui/lib/order-discounts"
 import { customerTotalText, feeLineOf } from "@harness-monorepo/ui/lib/order-total"
+import { windowText } from "@harness-monorepo/ui/lib/shipping"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import { format } from "@harness-monorepo/ui/locales/index"
 
@@ -204,5 +205,8 @@ export function orderHandoverOf(order: CustomerOrder, shop: OrderShop, { message
   const place = [address.city, address.state].filter(Boolean).join("/")
   const zip = zipCodeOf(address.zipCode)
   const area = [address.neighborhood, place, zip ? `CEP ${zip}` : null].filter(Boolean).join(" — ")
-  return { title: text.accountAddress, lines: [address.recipientName, street, area].filter(Boolean) }
+  // What the checkout promised (BEELINK-178), where the customer reads where it goes.
+  const window = order.deliveryWindow
+  const quoted = window ? format(window.unit === "MINUTES" ? text.orderWindowOwn : text.orderWindowCarrier, { window: windowText(window, text) }) : null
+  return { title: text.accountAddress, lines: [address.recipientName, street, area, quoted].filter((line): line is string => Boolean(line)) }
 }

@@ -1,6 +1,6 @@
 // Libs
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Types
@@ -12,6 +12,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 // App
 import { CART_COOKIE, decodeCart } from "@/lib/cart-cookie"
 import { cartQuoteOf, firstFulfillmentOf, type ServedQuote } from "@/lib/cart-pricing"
+import { checkoutAddressesOf, checkoutAddressIdOf } from "@/lib/saved-address"
 import { cartViewOf } from "@/lib/cart-view"
 import { CartProvider } from "./cart-provider"
 import { StorefrontCartLive, type StorefrontCartLiveProps } from "./storefront-cart-live"
@@ -85,6 +86,7 @@ function quoteOf(cart: CustomerOrderQuotePayload, over: Partial<OrderQuote> = {}
     manualDiscountCents: 0,
     discountCents: couponDiscountCents,
     deliveryFeeCents: cart.fulfillment === "PICKUP" ? 0 : null,
+    shipping: null,
     totalCents: subtotalCents - couponDiscountCents,
     ...over,
   }
@@ -92,9 +94,9 @@ function quoteOf(cart: CustomerOrderQuotePayload, over: Partial<OrderQuote> = {}
 
 const cartLines = (goneOnArrival: boolean) => [{ productId: blusa.id, variantId: null, qty: 2 }, ...(goneOnArrival ? [{ productId: gone, variantId: null, qty: 1 }] : [])]
 
-/** The price the page was served with, asked as the page asks it: this cart, before any coupon, for whoever reads it. */
+/** The price the page was served with, asked as the page asks it: this cart, before any coupon, for whoever reads it, to their default address. */
 function servedFor(goneOnArrival: boolean, shopper: CustomerProfile | null, over: Partial<OrderQuote> = {}): ServedQuote {
-  const cart = cartQuoteOf(cartViewOf(cartLines(goneOnArrival), [blusa]).rows, firstFulfillmentOf(shopper), null)
+  const cart = cartQuoteOf(cartViewOf(cartLines(goneOnArrival), [blusa]).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), null) : null })
   return { shopperId: shopper?.id ?? null, cart, quote: quoteOf(cart, over), at: Date.now() }
 }
 
@@ -207,8 +209,8 @@ describe("StorefrontCartLive", () => {
 
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Pedido #12 feito!"))
     expect(fetched).toHaveBeenCalledWith("/loja/api/orders", expect.objectContaining({ method: "POST" }))
-    // No coupon was typed: the order names none.
-    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([{ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1" }])
+    // No coupon was typed: the order names none. It carries the fee the summary showed — none agreed yet (BEELINK-178).
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([{ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", deliveryFeeCents: null }])
     // The page was served with its price: nothing asked for it again.
     expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([])
     // Opened in the press, with no way back to this page, then pointed at the message with the number.
@@ -405,7 +407,7 @@ describe("the cart's price and its coupon", () => {
     await applyCoupon(" bemvindo10 ")
 
     await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
-    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", couponCode: "bemvindo10" }])
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", addressId: "a1", couponCode: "bemvindo10" }])
     expect(summaryRows()).toEqual([
       ["Subtotal (2 itens)", "R$ 119,80"],
       ["Cupom BEMVINDO10", "− R$ 11,98"],
@@ -419,7 +421,7 @@ describe("the cart's price and its coupon", () => {
 
     fireEvent.click(placeButton())
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Pedido #12 feito!"))
-    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", couponCode: "BEMVINDO10" }])
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", couponCode: "BEMVINDO10", deliveryFeeCents: null }])
     expect(bodiesTo(fetched, "/loja/api/orders/quote")).toHaveLength(1)
     // The coupon went out with the order: the next cart starts without it.
     expect(window.location.search).toBe("")
@@ -479,7 +481,7 @@ describe("the cart's price and its coupon", () => {
     fireEvent.click(placeButton())
 
     await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
-    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toEqual({ items: blusas(1), fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1" })
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toEqual({ items: blusas(1), fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", deliveryFeeCents: null })
   })
 
   it("takes a coupon off, back to the field and the totals without it", async () => {
@@ -555,7 +557,7 @@ describe("the cart's price and its coupon", () => {
     expect(screen.getByRole("complementary").querySelector("dl")).toHaveAttribute("aria-busy", "true")
     expect(screen.getByRole("link", { name: "Blusa" }).closest("li")).toHaveTextContent(/R\$\s239,60/)
 
-    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(4), fulfillment: "DELIVERY" }]))
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(4), fulfillment: "DELIVERY", addressId: "a1" }]))
     await waitFor(() => expect(screen.getByRole("complementary").querySelector("dl")).not.toHaveAttribute("aria-busy"))
   })
 
@@ -567,7 +569,8 @@ describe("the cart's price and its coupon", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
 
     await waitFor(() => expect(summaryRows()[2]).toEqual(["Total", "R$ 107,82"]))
-    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "PICKUP" }])
+    // The address goes with a pick-up too: the delivery beside it says what it would cost.
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "PICKUP", addressId: "a1" }])
   })
 
   it("waits as a skeleton when the page came without a price, and reads as the shelf prices it when none can be asked", async () => {
@@ -606,7 +609,7 @@ describe("the cart's price and its coupon", () => {
     expect(placeButton()).toBeDisabled()
 
     await waitFor(() => expect(screen.getByText("Cupom BEMVINDO10 aplicado.")).toBeInTheDocument())
-    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", couponCode: "BEMVINDO10" }])
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", addressId: "a1", couponCode: "BEMVINDO10" }])
     expect(summaryRows()[1]).toEqual(["Cupom BEMVINDO10", "− R$ 11,98"])
     expect(placeButton()).toBeEnabled()
   })
@@ -896,6 +899,121 @@ describe("the cart's first purchase", () => {
   })
 })
 
+/** BEELINK-178: the shop's delivery rules arrive with the cart's price, and decide what can be chosen. */
+describe("the cart's delivery, as the shop quotes it", () => {
+  const pickup = { kind: "PICKUP", carrier: null, feeCents: 0, window: null, freeAbove: false } as const
+  const own = { kind: "OWN_DELIVERY", carrier: null, feeCents: 500, window: { unit: "MINUTES", from: 30, to: 50 }, freeAbove: false } as const
+  const shipping = (over: Partial<NonNullable<OrderQuote["shipping"]>>): OrderQuote["shipping"] => ({ options: [own, pickup], ownDelivery: { status: "QUOTED", distanceMeters: 2603 }, carriers: { status: "OFF" }, productsCents: 11980, ...over })
+  const quoted: Partial<OrderQuote> = { deliveryFeeCents: 500, totalCents: 12480, shipping: shipping({}) }
+  const outOfRange: Partial<OrderQuote> = { shipping: shipping({ options: [pickup], ownDelivery: { status: "OUT_OF_RANGE", distanceMeters: 10828, radiusMeters: 8000 } }) }
+  const summaryRows = () =>
+    [...screen.getByRole("complementary").querySelectorAll("dl > div")].map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent!.replace(/\s/g, " ")])
+  const placeButton = () => screen.getByRole("button", { name: "Fechar pedido pelo WhatsApp" })
+
+  it("says the fee and the window under the address, the fee on its row, and sends the order with the fee shown", async () => {
+    const fetched = network()
+    openedTab()
+    renderCart(false, bia, { served: servedFor(false, bia, quoted) })
+
+    expect(screen.getByText("R$ 5,00 · chega em 30–50 min depois de sair da loja")).toBeInTheDocument()
+    expect(summaryRows()).toEqual([
+      ["Subtotal (2 itens)", "R$ 119,80"],
+      ["Entrega", "R$ 5,00"],
+      ["Total", "R$ 124,80"],
+    ])
+
+    fireEvent.click(placeButton())
+
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toMatchObject({ fulfillment: "DELIVERY", addressId: "a1", deliveryFeeCents: 500 })
+  })
+
+  it("says at once that the shop does not reach the address, sends nothing there, and takes a pick-up instead", async () => {
+    const fetched = network({ quote: (cart) => Response.json(quoteOf(cart, outOfRange)) })
+    openedTab()
+    renderCart(false, bia, { served: servedFor(false, bia, outOfRange) })
+
+    expect(screen.getByRole("status")).toHaveTextContent("A loja não entrega neste endereço: ele fica a 10,8 km, e a entrega vai até 8 km. Escolha outro endereço ou retire na loja.")
+    fireEvent.click(placeButton())
+    expect(screen.getByRole("alert")).toHaveTextContent(/A loja não entrega neste endereço/)
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
+
+    fireEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
+    await waitFor(() => expect(placeButton()).toBeEnabled())
+    fireEvent.click(placeButton())
+
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toEqual({ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "PICKUP", paymentMethod: "PIX" })
+  })
+
+  it("offers only the ways the shop switched on: a pick-up alone for a shop that does not deliver", async () => {
+    const pickupOnly: Partial<OrderQuote> = { shipping: shipping({ options: [pickup], ownDelivery: { status: "OFF" } }) }
+    const fetched = network({ quote: (cart) => Response.json(quoteOf(cart, pickupOnly)) })
+    renderCart(false, bia, { served: servedFor(false, bia, pickupOnly) })
+
+    expect(screen.queryByRole("radio", { name: /Receber em casa/ })).toBeNull()
+    expect(screen.getByRole("radio", { name: "Retirar na loja" })).toBeChecked()
+    // The cart is priced again as the pick-up it now is.
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders/quote").at(-1)).toMatchObject({ fulfillment: "PICKUP" }))
+  })
+
+  it("prices the cart again when the order is refused over a fee that moved, and says so", async () => {
+    const fetched = network({ order: () => Response.json({ statusCode: 409, errorCode: "ORDER_SHIPPING_CHANGED", message: "moved", details: { deliveryFeeCents: 700 } }, { status: 409 }) })
+    const tab = openedTab()
+    renderCart(false, bia, { served: servedFor(false, bia, quoted) })
+
+    fireEvent.click(placeButton())
+
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("O frete mudou enquanto você fechava o pedido. Confira o novo valor e envie de novo."))
+    expect(tab.close).toHaveBeenCalled()
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders/quote")).toHaveLength(1))
+  })
+
+  /** BEELINK-186: the shop's own delivery and the carriers of its Melhor Envio, to choose among. */
+  it("lists the carriers beside the shop's own delivery, prices the cart with the one picked, and sends the order by it", async () => {
+    const sedex = { kind: "CARRIER", carrier: { serviceId: 2, service: "SEDEX", company: "Correios" }, feeCents: 2745, window: { unit: "BUSINESS_DAYS", from: 3, to: 4 }, freeAbove: false } as const
+    const withCarriers = shipping({ options: [own, sedex, pickup], carriers: { status: "QUOTED" } })
+    // The fee the totals carry is the one of the way asked about.
+    const priced = (cart: CustomerOrderQuotePayload) => (cart.shipping?.kind === "CARRIER" ? { deliveryFeeCents: 2745, totalCents: 14725, shipping: withCarriers } : { ...quoted, shipping: withCarriers })
+    const fetched = network({ quote: (cart) => Response.json(quoteOf(cart, priced(cart))) })
+    openedTab()
+    renderCart(false, bia, { served: servedFor(false, bia, { ...quoted, shipping: withCarriers }) })
+
+    const ways = screen.getByRole("group", { name: "Forma de envio" })
+    expect(within(ways).getByRole("radio", { name: /Entrega da loja/ })).toBeChecked()
+    fireEvent.click(within(ways).getByRole("radio", { name: /Correios · SEDEX/ }))
+
+    await waitFor(() => expect(summaryRows()).toEqual([["Subtotal (2 itens)", "R$ 119,80"], ["Entrega", "R$ 27,45"], ["Total", "R$ 147,25"]]))
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", addressId: "a1", shipping: { kind: "CARRIER", serviceId: 2 } }])
+
+    await waitFor(() => expect(placeButton()).toBeEnabled())
+    // A carrier asks for the CPF of who receives it, which Bia's record does not have (BEELINK-187).
+    fireEvent.click(placeButton())
+    expect(screen.getByRole("alert")).toHaveTextContent("Para enviar por transportadora, informe um CPF válido, com 11 dígitos.")
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
+
+    fireEvent.change(screen.getByLabelText("CPF de quem recebe"), { target: { value: "529.982.247-25" } })
+    fireEvent.click(placeButton())
+
+    await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toEqual({
+      items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }],
+      fulfillment: "DELIVERY",
+      paymentMethod: "PIX",
+      addressId: "a1",
+      shipping: { kind: "CARRIER", serviceId: 2 },
+      deliveryFeeCents: 2745,
+      recipientDocument: "52998224725",
+    })
+  })
+
+  it("asks no CPF of a shopper whose record has one, nor for the shop's own delivery", () => {
+    renderCart(false, { ...bia, cpf: "52998224725" }, { served: servedFor(false, bia, { ...quoted, shipping: shipping({ options: [own, pickup] }) }) })
+
+    expect(screen.queryByLabelText("CPF de quem recebe")).toBeNull()
+  })
+})
+
 describe("the cart's cashback", () => {
   const variantId = blusa.variants[0]!.id
   const blusas = (quantity: number) => [{ variantId, quantity }]
@@ -933,11 +1051,11 @@ describe("the cart's cashback", () => {
         ["Total", "R$ 104,80 + frete"],
       ]),
     )
-    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", useCashback: true }])
+    expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", addressId: "a1", useCashback: true }])
 
     fireEvent.click(placeButton())
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Pedido #12 feito!"))
-    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", cashbackCents: 1500 }])
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([{ items: blusas(2), fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", deliveryFeeCents: null, cashbackCents: 1500 }])
   })
 
   it("says how much this cart takes when it is less than the balance, and sends that much", async () => {
