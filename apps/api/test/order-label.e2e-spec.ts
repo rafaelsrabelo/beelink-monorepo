@@ -259,8 +259,15 @@ describe("an order's shipping label (BEELINK-187)", () => {
 
     await prisma.customer.updateMany({ data: { cpf: null } });
     const variantId = (await prisma.productVariant.findFirstOrThrow()).id;
-    const refused = await call('POST', '/api/stores/lessari/customer/orders', shopper, { items: [{ variantId, quantity: 1 }], fulfillment: 'DELIVERY', paymentMethod: 'PIX', shipping: { kind: 'CARRIER', serviceId: 2 } });
+    const order = { items: [{ variantId, quantity: 1 }], fulfillment: 'DELIVERY', paymentMethod: 'PIX', shipping: { kind: 'CARRIER', serviceId: 2 } };
+    const refused = await call('POST', '/api/stores/lessari/customer/orders', shopper, order);
     expect(refused.json()).toMatchObject({ statusCode: 400, errorCode: 'ORDER_RECIPIENT_DOCUMENT_MISSING' });
+
+    // Typed at checkout, a CPF goes on the order and on the customer's record, so it is asked once.
+    expect((await call('POST', '/api/stores/lessari/customer/orders', shopper, { ...order, recipientDocument: '111.111.111-11' })).json()).toMatchObject({ statusCode: 400, errorCode: 'CUSTOMER_CPF_INVALID' });
+    expect((await call('POST', '/api/stores/lessari/customer/orders', shopper, { ...order, recipientDocument: '390.533.447-05' })).statusCode).toBe(201);
+    expect((await prisma.customer.findFirstOrThrow({ where: { name: 'Bia Cliente' } })).cpf).toBe('39053344705');
+    expect((await prisma.order.findFirstOrThrow({ where: { number: 2 } })).deliveryDocument).toBe('39053344705');
   });
 
   it('keeps the sender saved when the settings are saved without it, and refuses one that is no CPF or CNPJ', async () => {

@@ -1,6 +1,6 @@
 // Nest
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsInt, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateIf, ValidateNested } from 'class-validator';
 
 // Types
@@ -27,6 +27,7 @@ import type {
 // App
 import { OrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { ShippingWindowResponse } from '../../delivery/dto/delivery.response.js';
+import { cpfDigitsOf, IsCpf } from '../../../shared/http/cpf.js';
 import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
@@ -76,6 +77,12 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
 
   @shippingChoice
   shipping?: OrderShippingChoice;
+
+  @ApiPropertyOptional({ type: String, example: '529.982.247-25', description: "The CPF of who receives a carrier's delivery, when the customer's record has none: kept on it." })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => cpfDigitsOf(value))
+  @IsCpf({ context: { errorCode: 'CUSTOMER_CPF_INVALID' } })
+  recipientDocument?: string;
 
   @ApiPropertyOptional({ nullable: true, type: Number, minimum: 0, description: 'The delivery fee the quote showed, null for one agreed afterwards: a different fee now is ORDER_SHIPPING_CHANGED. Absent is not checked.' })
   // Null is a fee the quote said is agreed afterwards, and so is sent; only a number is held to its range.

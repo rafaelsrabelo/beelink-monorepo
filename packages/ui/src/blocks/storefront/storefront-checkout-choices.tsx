@@ -74,6 +74,8 @@ export interface StorefrontCheckoutChoicesProps {
    * address, a price still being asked — and both ways are offered with the fee agreed afterwards.
    */
   shipping?: StorefrontCheckoutShipping | null
+  /** The CPF of who receives a carrier's delivery, asked when the record has none (BEELINK-187); null asks for none. */
+  recipientDocument?: { value: string; onChange: (value: string) => void } | null
   disabled?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
@@ -101,6 +103,7 @@ export function StorefrontCheckoutChoices({
   addHref,
   paymentMethods,
   shipping = null,
+  recipientDocument = null,
   disabled = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
@@ -185,6 +188,26 @@ export function StorefrontCheckoutChoices({
                   </label>
                 ))}
               </fieldset>
+            ) : null}
+            {delivering && chosen && recipientDocument ? (
+              <div className="ml-7 flex flex-col gap-1 text-xs">
+                <label htmlFor={`${id}-document`} className="font-semibold">
+                  {text.checkoutRecipientDocument}
+                </label>
+                <input
+                  id={`${id}-document`}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="000.000.000-00"
+                  value={recipientDocument.value}
+                  aria-describedby={`${id}-document-hint`}
+                  onChange={(event) => recipientDocument.onChange(event.target.value)}
+                  className="h-10 rounded-[10px] border border-shop-line bg-shop-background px-3 text-sm"
+                />
+                <span id={`${id}-document-hint`} className="text-shop-muted">
+                  {text.checkoutRecipientDocumentHint}
+                </span>
+              </div>
             ) : null}
           </>
         ) : null}

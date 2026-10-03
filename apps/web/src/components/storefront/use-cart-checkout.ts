@@ -36,8 +36,10 @@ export interface CartCheckoutHandle extends CheckoutChoiceHandle {
   shipping: StorefrontCheckoutShipping | null
   /** Why no order can go out the way chosen — the shop does not reach the address, or hands nothing over now — in words; null when one can. */
   blocked: string | null
-  /** How the order leaves, as it is sent: the address and the carrier of a delivery, and the fee the summary shows for it. */
-  sent: Pick<PlaceCustomerOrderPayload, "addressId" | "shipping" | "deliveryFeeCents">
+  /** How the order leaves, as it is sent: the address and the carrier of a delivery, the fee the summary shows for it, and the CPF typed for a carrier. */
+  sent: Pick<PlaceCustomerOrderPayload, "addressId" | "shipping" | "deliveryFeeCents" | "recipientDocument">
+  /** The CPF of who receives a carrier's delivery, asked while the shopper's record has none (BEELINK-187); null asks for none. */
+  recipientDocument: { value: string; onChange: (value: string) => void } | null
 }
 
 /**
@@ -50,6 +52,7 @@ export interface CartCheckoutHandle extends CheckoutChoiceHandle {
 export function useCartCheckout({ slug, view, shopper, paymentMethods, deliverTo, served, arrivedWith, locale, messages }: CartCheckoutInput): CartCheckoutHandle {
   const text = messages.storefront
   const [ways, setWays] = useState<CheckoutWays | null>(null)
+  const [cpf, setCpf] = useState("")
   const { addresses, choice, setChoice } = useCheckoutChoice(shopper, paymentMethods, deliverTo, ways)
   const delivering = choice.fulfillment === "DELIVERY"
   const carrier = useMemo(() => (delivering ? shippingChoiceOf(choice.wayId) : null), [delivering, choice.wayId])
@@ -60,9 +63,24 @@ export function useCartCheckout({ slug, view, shopper, paymentMethods, deliverTo
   const ids = shipping?.ways.map((way) => way.id) ?? []
   if (shipping && (ways?.delivery !== shipping.delivery || ways?.pickup !== shipping.pickup || ways.ids.join() !== ids.join())) setWays({ delivery: shipping.delivery, pickup: shipping.pickup, ids })
 
-  const blocked = shipping && !shipping.delivery && !shipping.pickup ? text.checkoutNoWay : delivering && shipping && shipping.ways.length === 0 ? shipping.note : null
+  // A carrier's label is bought with the CPF of who receives it: asked here while the record has none, checked for its length.
+  const askCpf = carrier !== null && shopper !== null && !shopper.cpf
+  const cpfDigits = cpf.replace(/\D/g, "")
+  const blocked =
+    shipping && !shipping.delivery && !shipping.pickup
+      ? text.checkoutNoWay
+      : delivering && shipping && shipping.ways.length === 0
+        ? shipping.note
+        : askCpf && cpfDigits.length !== 11
+          ? text.checkoutRecipientDocumentIssue
+          : null
   const sent = delivering
-    ? { ...(choice.addressId ? { addressId: choice.addressId } : {}), ...(carrier ? { shipping: carrier } : {}), ...(pricing.deliveryFeeCents !== undefined ? { deliveryFeeCents: pricing.deliveryFeeCents } : {}) }
+    ? {
+        ...(choice.addressId ? { addressId: choice.addressId } : {}),
+        ...(carrier ? { shipping: carrier } : {}),
+        ...(pricing.deliveryFeeCents !== undefined ? { deliveryFeeCents: pricing.deliveryFeeCents } : {}),
+        ...(askCpf ? { recipientDocument: cpfDigits } : {}),
+      }
     : {}
-  return { addresses, choice, setChoice, pricing, shipping, blocked, sent }
+  return { addresses, choice, setChoice, pricing, shipping, blocked, sent, recipientDocument: askCpf ? { value: cpf, onChange: setCpf } : null }
 }

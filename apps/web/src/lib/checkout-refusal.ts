@@ -95,6 +95,10 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
       return text.checkoutShippingUnavailable
     case "ORDER_SHIPPING_CHANGED":
       return text.checkoutShippingChanged
+    // A carrier's label needs a CPF of who receives it, and a real one (BEELINK-187).
+    case "ORDER_RECIPIENT_DOCUMENT_MISSING":
+    case "CUSTOMER_CPF_INVALID":
+      return text.checkoutRecipientDocumentIssue
     case "AUTH_UNAUTHENTICATED":
       return text.checkoutSignedOut
     case "RATE_LIMITED":

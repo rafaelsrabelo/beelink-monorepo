@@ -50,7 +50,7 @@ export class CustomerOrdersService {
     const addressId = dto.addressId?.toLowerCase() ?? null;
     const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents });
     // A carrier's label is bought with the CPF of who receives it (BEELINK-187): the checkout asks for it first.
-    const deliveryDocument = terms.carrier ? await this.recipientDocumentOf(customerId) : null;
+    const deliveryDocument = terms.carrier ? await this.recipientDocumentOf(customerId, dto.recipientDocument) : null;
 
     const placed = await this.placement.place({
       storeId,
@@ -77,10 +77,13 @@ export class CustomerOrdersService {
     return this.read(storeId, customerId, placed.number);
   }
 
-  private async recipientDocumentOf(customerId: string): Promise<string> {
+  /** The customer's CPF on file, else the one typed at checkout — which is kept on their record, so it is asked once. */
+  private async recipientDocumentOf(customerId: string, typed: string | undefined): Promise<string> {
     const { cpf } = await this.prisma.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cpf: true } });
-    if (!cpf) throw new BadRequestException(orderError('ORDER_RECIPIENT_DOCUMENT_MISSING', 'A carrier needs the CPF of who receives the order'));
-    return cpf;
+    if (cpf) return cpf;
+    if (!typed) throw new BadRequestException(orderError('ORDER_RECIPIENT_DOCUMENT_MISSING', 'A carrier needs the CPF of who receives the order'));
+    await this.prisma.customer.update({ where: { id: customerId }, data: { cpf: typed } });
+    return typed;
   }
 
   async list(storeSlug: string, userId: string, query: ListCustomerOrdersDto = {}): Promise<CustomerOrderPage> {

@@ -325,6 +325,10 @@ export interface UiMessages {
     /** {fee} {window} */
     checkoutCarrierArrives: string
     checkoutNoDeliveryHere: string
+    /** The CPF of who receives a carrier's delivery, asked once (BEELINK-187). */
+    checkoutRecipientDocument: string
+    checkoutRecipientDocumentHint: string
+    checkoutRecipientDocumentIssue: string
     /** {window} — on an order that goes by carrier. */
     orderWindowCarrier: string
     /** {window} — on an order, when the quote said it would arrive. */

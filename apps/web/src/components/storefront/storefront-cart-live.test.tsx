@@ -987,9 +987,29 @@ describe("the cart's delivery, as the shop quotes it", () => {
     expect(bodiesTo(fetched, "/loja/api/orders/quote")).toEqual([{ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", addressId: "a1", shipping: { kind: "CARRIER", serviceId: 2 } }])
 
     await waitFor(() => expect(placeButton()).toBeEnabled())
+    // A carrier asks for the CPF of who receives it, which Bia's record does not have (BEELINK-187).
+    fireEvent.click(placeButton())
+    expect(screen.getByRole("alert")).toHaveTextContent("Para enviar por transportadora, informe um CPF válido, com 11 dígitos.")
+    expect(bodiesTo(fetched, "/loja/api/orders")).toEqual([])
+
+    fireEvent.change(screen.getByLabelText("CPF de quem recebe"), { target: { value: "529.982.247-25" } })
     fireEvent.click(placeButton())
 
     await waitFor(() => expect(bodiesTo(fetched, "/loja/api/orders")).toHaveLength(1))
-    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toEqual({ items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }], fulfillment: "DELIVERY", paymentMethod: "PIX", addressId: "a1", shipping: { kind: "CARRIER", serviceId: 2 }, deliveryFeeCents: 2745 })
+    expect(bodiesTo(fetched, "/loja/api/orders")[0]).toEqual({
+      items: [{ variantId: blusa.variants[0]!.id, quantity: 2 }],
+      fulfillment: "DELIVERY",
+      paymentMethod: "PIX",
+      addressId: "a1",
+      shipping: { kind: "CARRIER", serviceId: 2 },
+      deliveryFeeCents: 2745,
+      recipientDocument: "52998224725",
+    })
+  })
+
+  it("asks no CPF of a shopper whose record has one, nor for the shop's own delivery", () => {
+    renderCart(false, { ...bia, cpf: "52998224725" }, { served: servedFor(false, bia, { ...quoted, shipping: shipping({ options: [own, pickup] }) }) })
+
+    expect(screen.queryByLabelText("CPF de quem recebe")).toBeNull()
   })
 })
