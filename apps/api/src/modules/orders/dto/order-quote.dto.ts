@@ -16,6 +16,7 @@ import type {
   OrderFulfillment,
   OrderQuote,
   OrderQuoteLine,
+  OrderShippingChoice,
   QuotedCoupon,
   QuotedFirstPurchase,
   ShopOrderQuotePayload,
@@ -26,7 +27,7 @@ import { QuotedCashbackResponse, QuotedCashbackUseResponse } from '../../cashbac
 import { ShippingQuoteResponse } from '../../delivery/dto/delivery.response.js';
 import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
 import { ORDER_AMOUNT_MAX_CENTS, ORDER_FULFILLMENTS, ORDER_ITEMS_MAX } from '../orders.constants.js';
-import { couponCode, OrderCustomerDto, OrderItemDto } from './order.dto.js';
+import { couponCode, OrderCustomerDto, OrderItemDto, shippingChoice } from './order.dto.js';
 
 const COUPON_VERDICTS = ['APPLIED', 'REFUSED'] as const satisfies readonly QuotedCoupon['status'][];
 const COUPON_REFUSALS = ['NOT_FOUND', 'EXPIRED', 'EXHAUSTED', 'INACTIVE', 'CUSTOMER_LIMIT', 'NOT_FIRST_PURCHASE', 'NOT_APPLICABLE', 'BELOW_MINIMUM'] as const satisfies readonly CouponRefusalReason[];
@@ -67,6 +68,9 @@ export class CustomerCartQuoteDto implements CustomerCartQuotePayload {
   @IsUUID('all')
   addressId?: string;
 
+  @shippingChoice
+  shipping?: OrderShippingChoice;
+
   @ApiPropertyOptional({ description: 'Apply the most of the customer\'s credit the cart can take (BEELINK-240). Absent is not to.' })
   @IsOptional()
   @IsBoolean()
@@ -91,6 +95,9 @@ export class CustomerOrderQuoteDto implements CustomerOrderQuotePayload {
   @IsOptional()
   @IsUUID('all')
   addressId?: string;
+
+  @shippingChoice
+  shipping?: OrderShippingChoice;
 
   @couponCode
   couponCode?: string | null;

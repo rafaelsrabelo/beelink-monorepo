@@ -9,7 +9,10 @@ export interface ShippingWindowValue {
   to: number
 }
 
-type Text = Pick<UiMessages["storefront"], "windowMinutes" | "windowMinutesOne" | "windowHours" | "windowHoursOne" | "windowDays" | "windowDaysOne">
+type Text = Pick<
+  UiMessages["storefront"],
+  "windowMinutes" | "windowMinutesOne" | "windowHours" | "windowHoursOne" | "windowDays" | "windowDaysOne" | "windowBusinessDays" | "windowBusinessDaysOne" | "windowBusinessDay"
+>
 
 /** Past these, a shop that set its bands in minutes meant hours, and then days. */
 const HOURS_FROM_MINUTES = 120
@@ -30,9 +33,14 @@ export function minutesWindowText(from: number, to: number, text: Text): string 
   return spanOf(Math.floor(from / per), Math.ceil(to / per), range, one)
 }
 
-/** A quoted window in words; null for one this version has no words for yet — a carrier's, in business days. */
-export function windowText(window: ShippingWindowValue, text: Text): string | null {
-  return window.unit === "MINUTES" ? minutesWindowText(window.from, window.to, text) : null
+/** A carrier's window in words (BEELINK-186): "3–4 dias úteis", "5 dias úteis", "1 dia útil". */
+export function businessDaysWindowText(from: number, to: number, text: Text): string {
+  return from === to && to === 1 ? text.windowBusinessDay : spanOf(from, to, text.windowBusinessDays, text.windowBusinessDaysOne)
+}
+
+/** A quoted window in words, whichever it counts in. */
+export function windowText(window: ShippingWindowValue, text: Text): string {
+  return window.unit === "MINUTES" ? minutesWindowText(window.from, window.to, text) : businessDaysWindowText(window.from, window.to, text)
 }
 
 /** "2,6 km", "800 m": a distance as a person says it. */

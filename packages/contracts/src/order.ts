@@ -14,7 +14,8 @@ export type OrderStatus = "RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIV
 export type OrderFulfillment = "DELIVERY" | "PICKUP";
 
 /** Who set a status: the shopkeeper, or the customer placing it from the cart; the courier later. */
-export type OrderActor = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM";
+/** Who moved an order: `CARRIER` is a carrier telling Melhor Envio it posted or delivered it (BEELINK-188). */
+export type OrderActor = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER";
 
 /**
  * One line, photographed when the order was placed: a price change or a deleted product never
@@ -236,6 +237,12 @@ export interface UpdateOrderStatusPayload {
 /* ── the customer's side: an order placed from the shop's cart ──────────────── */
 
 /**
+ * The way a delivery goes by, among the shipping quote's (BEELINK-186): the shop's own delivery, or
+ * one of the carriers' services, by Melhor Envio's id for it.
+ */
+export type OrderShippingChoice = { kind: "OWN_DELIVERY" } | { kind: "CARRIER"; serviceId: number };
+
+/**
  * The cart as its signed-in customer places it: the lines, how it leaves and how it is paid. The
  * prices and the totals are the API's. A delivery goes to the saved address chosen, or to the
  * default without one (`ORDER_DELIVERY_ADDRESS_MISSING` when there is nowhere to go). It starts
@@ -251,6 +258,14 @@ export interface PlaceCustomerOrderPayload {
   couponCode?: string | null;
   /** Their credit to spend, in cents, as the quote offered it (BEELINK-240); more than they can spend now is `ORDER_CASHBACK_REFUSED`. */
   cashbackCents?: number;
+  /** The way a delivery goes by (BEELINK-186); absent, the shop's own delivery. One the quote no longer offers is `ORDER_SHIPPING_UNAVAILABLE`. Ignored on a pick-up. */
+  shipping?: OrderShippingChoice;
+  /**
+   * The CPF of who receives a carrier's delivery, asked at checkout when the customer's record has
+   * none (BEELINK-187): kept on their record, and on the order. One that is not a CPF is
+   * `CUSTOMER_CPF_INVALID`; none on a carrier's order of a record with none, `ORDER_RECIPIENT_DOCUMENT_MISSING`.
+   */
+  recipientDocument?: string;
   /**
    * The delivery fee the quote showed (BEELINK-178), null for one agreed afterwards. The API quotes
    * again as it places the order: a different fee refuses it (`ORDER_SHIPPING_CHANGED`) rather than
@@ -473,7 +488,9 @@ export type OrderErrorCode =
   /** The shop does not hand this order over the way it asks — no pick-up, or no delivery to that address. Its `details` are `OrderShippingUnavailableDetails`. */
   | "ORDER_SHIPPING_UNAVAILABLE"
   /** The delivery fee is not the one the quote showed. Its `details` are `OrderShippingChangedDetails`. */
-  | "ORDER_SHIPPING_CHANGED";
+  | "ORDER_SHIPPING_CHANGED"
+  /** A carrier needs the CPF of who receives it, and the customer has none on their record (BEELINK-187). */
+  | "ORDER_RECIPIENT_DOCUMENT_MISSING";
 
 /** The `details` of `ORDER_SHIPPING_UNAVAILABLE`: what the quote says of each way now; both absent on a pick-up the shop does not offer. */
 export interface OrderShippingUnavailableDetails {

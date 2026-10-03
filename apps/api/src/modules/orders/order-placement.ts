@@ -2,7 +2,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 // Types
-import type { CreateOrderItemInput, OrderActor, OrderFulfillment, OrderStatus, PaymentMethod, ShippingWindow } from '@harness-monorepo/contracts';
+import type { CreateOrderItemInput, OrderActor, OrderFulfillment, OrderStatus, PaymentMethod, ShippingCarrier, ShippingWindow } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -13,6 +13,7 @@ import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { lockCustomer } from '../customers/customer-lock.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
+import { businessDaysAfter } from './business-days.js';
 import { deliveryOf, deliveryWindowColumnsOf } from './order-delivery.js';
 import { readOrderLines } from './order-lines.js';
 import { cashbackRefused, couponRefused, earningPartsOf, priceOrder } from './order-pricing.js';
@@ -36,6 +37,10 @@ export interface Placement {
   deliveryFeeCents: number | null;
   /** When the quote said a delivery would arrive (BEELINK-178); null where nothing was quoted. */
   deliveryWindow: ShippingWindow | null;
+  /** The carrier's service a delivery goes by, as the customer chose it (BEELINK-186); null on the shop's own and on a sale registered in the panel. */
+  deliveryCarrier: ShippingCarrier | null;
+  /** The CPF of who receives a carrier's delivery, as their record held it (BEELINK-187); null otherwise. */
+  deliveryDocument?: string | null;
   /** What the shopkeeper typed, beyond the promotions and the coupon; zero from the cart. */
   discountCents: number;
   /** As it was typed; null is none. One that does not hold refuses the order. */
@@ -59,6 +64,23 @@ export interface Placement {
 }
 
 export type PlacedOrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
+
+/**
+ * The delivery record a carrier chosen at checkout starts with (BEELINK-186): who brings it, the
+ * service its label is bought with, and the days it should arrive between — its window in business
+ * days counted from the day of the order. The shopkeeper adds the tracking to the same record.
+ */
+function carrierDeliveryOf(carrier: ShippingCarrier, window: ShippingWindow | null, placedAt: Date) {
+  const days = window?.unit === 'BUSINESS_DAYS' ? window : null;
+  return {
+    kind: 'CARRIER' as const,
+    carrier: carrier.company.slice(0, 60),
+    service: carrier.service.slice(0, 60),
+    carrierServiceId: carrier.serviceId,
+    estimateFrom: days ? businessDaysAfter(placedAt, days.from) : null,
+    estimateTo: days ? businessDaysAfter(placedAt, days.to) : null,
+  };
+}
 
 /**
  * Writing an order — the panel's and the cart's alike, so both refuse the same things.
@@ -101,6 +123,7 @@ export class OrderPlacement {
       // Before the order is written: a line the stock cannot cover refuses the whole order.
       await takeStock(tx, lines);
       const delivery = await deliveryOf(tx, customerId, placement.fulfillment, placement.addressId);
+      const delivering = placement.fulfillment === 'DELIVERY';
       const priced = await priceOrder(tx, {
         storeId,
         lines,
@@ -129,7 +152,8 @@ export class OrderPlacement {
           fulfillment: placement.fulfillment,
           paymentMethod: placement.paymentMethod,
           ...delivery,
-          ...deliveryWindowColumnsOf(placement.fulfillment === 'DELIVERY' ? placement.deliveryWindow : null),
+          ...deliveryWindowColumnsOf(delivering ? placement.deliveryWindow : null),
+          deliveryDocument: delivering && placement.deliveryCarrier ? (placement.deliveryDocument ?? null) : null,
           ...priced.totals,
           promotionDiscountCents: priced.promotionDiscountCents,
           couponDiscountCents: priced.couponDiscountCents,
@@ -155,6 +179,7 @@ export class OrderPlacement {
         select: { id: true },
       });
 
+      if (delivering && placement.deliveryCarrier) await tx.orderDelivery.create({ data: { orderId: order.id, ...carrierDeliveryOf(placement.deliveryCarrier, placement.deliveryWindow, placement.placedAt) } });
       if (priced.coupon) await redeemCoupon(tx, priced.coupon.id, order.id, priced.couponDiscountCents);
       if (cashbackUsedCents > 0) await redeemCashback(tx, { storeId, customerId, orderId: order.id, cents: cashbackUsedCents, now });
       if (cashback) await holdOrderCashback(tx, { storeId, customerId, orderId: order.id, earnedCents: cashback.earnedCents, validityDays: cashback.validityDays });

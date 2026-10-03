@@ -15,6 +15,8 @@ import { checkoutAddressesOf } from "@/lib/saved-address"
 export interface CheckoutWays {
   delivery: boolean
   pickup: boolean
+  /** The ways to deliver to the chosen address, in the order the checkout lists them (BEELINK-186). */
+  ids: readonly string[]
 }
 
 export interface CheckoutChoiceHandle {
@@ -37,6 +39,7 @@ export function useCheckoutChoice(shopper: CustomerProfile | null, paymentMethod
     fulfillment: firstFulfillmentOf(shopper),
     addressId: deliverTo,
     paymentMethod: paymentMethods.length === 1 ? paymentMethods[0]! : null,
+    wayId: null,
   }))
   const address = addresses.find((each) => each.id === picked.addressId) ?? addresses[0] ?? null
   const delivers = address !== null && ways?.delivery !== false
@@ -47,6 +50,8 @@ export function useCheckoutChoice(shopper: CustomerProfile | null, paymentMethod
     choice: {
       fulfillment: delivers && (picked.fulfillment === "DELIVERY" || !picksUp) ? "DELIVERY" : "PICKUP",
       addressId: address?.id ?? null,
+      // The first way stands until another is picked, and for one the shop no longer offers to this address.
+      wayId: ways ? (ways.ids.find((id) => id === picked.wayId) ?? ways.ids[0] ?? null) : null,
       paymentMethod:
         picked.paymentMethod && paymentMethods.includes(picked.paymentMethod)
           ? picked.paymentMethod

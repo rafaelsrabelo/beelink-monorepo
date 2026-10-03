@@ -1,5 +1,5 @@
 // Nest
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
 import type { CustomerOrder, CustomerOrderPage, CustomerOrderSituation, CustomerReorder, OrderStatus } from '@harness-monorepo/contracts';
@@ -48,7 +48,9 @@ export class CustomerOrdersService {
   async place(storeSlug: string, userId: string, dto: PlaceCustomerOrderDto): Promise<CustomerOrder> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
     const addressId = dto.addressId?.toLowerCase() ?? null;
-    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, shownFeeCents: dto.deliveryFeeCents });
+    const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents });
+    // A carrier's label is bought with the CPF of who receives it (BEELINK-187): the checkout asks for it first.
+    const deliveryDocument = terms.carrier ? await this.recipientDocumentOf(customerId, dto.recipientDocument) : null;
 
     const placed = await this.placement.place({
       storeId,
@@ -58,6 +60,8 @@ export class CustomerOrdersService {
       paymentMethod: dto.paymentMethod,
       deliveryFeeCents: terms.deliveryFeeCents,
       deliveryWindow: terms.window,
+      deliveryCarrier: terms.carrier,
+      deliveryDocument,
       discountCents: 0,
       couponCode: dto.couponCode ?? null,
       cashbackCents: dto.cashbackCents ?? 0,
@@ -71,6 +75,15 @@ export class CustomerOrdersService {
     });
     this.realtime.publish({ storeId, customerId }, { type: 'order.created', orderNumber: placed.number, placedBy: 'CUSTOMER' });
     return this.read(storeId, customerId, placed.number);
+  }
+
+  /** The customer's CPF on file, else the one typed at checkout — which is kept on their record, so it is asked once. */
+  private async recipientDocumentOf(customerId: string, typed: string | undefined): Promise<string> {
+    const { cpf } = await this.prisma.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cpf: true } });
+    if (cpf) return cpf;
+    if (!typed) throw new BadRequestException(orderError('ORDER_RECIPIENT_DOCUMENT_MISSING', 'A carrier needs the CPF of who receives the order'));
+    await this.prisma.customer.update({ where: { id: customerId }, data: { cpf: typed } });
+    return typed;
   }
 
   async list(storeSlug: string, userId: string, query: ListCustomerOrdersDto = {}): Promise<CustomerOrderPage> {

@@ -143,13 +143,16 @@ describe('MelhorEnvioClient', () => {
     it("reads the account's own price and time, in cents and business days", async () => {
       answer(200, [sedex]);
 
-      expect(await client.quote(config, 'eyJ.access', cart)).toEqual([{ serviceId: 2, service: 'SEDEX', company: 'Correios', priceCents: 2745, daysFrom: 3, daysTo: 4 }]);
+      expect(await client.quote(config, 'eyJ.access', cart)).toEqual([
+        // The box Melhor Envio packed the cart in, in grams and millimetres (BEELINK-187).
+        { serviceId: 2, service: 'SEDEX', company: 'Correios', priceCents: 2745, daysFrom: 3, daysTo: 4, packages: [{ weightGrams: 600, lengthMm: 260, widthMm: 200, heightMm: 80 }] },
+      ]);
     });
 
     it("falls back to Melhor Envio's general price and single time where the account has none of its own", async () => {
       answer(200, [{ id: 1, name: 'PAC', price: '18.20', delivery_time: 7, company: { name: 'Correios' } }]);
 
-      expect(await client.quote(config, 'eyJ.access', cart)).toEqual([{ serviceId: 1, service: 'PAC', company: 'Correios', priceCents: 1820, daysFrom: 7, daysTo: 7 }]);
+      expect(await client.quote(config, 'eyJ.access', cart)).toEqual([{ serviceId: 1, service: 'PAC', company: 'Correios', priceCents: 1820, daysFrom: 7, daysTo: 7, packages: [] }]);
     });
 
     it('leaves out a service that refuses the cart, and one sent with no price, without failing the others', async () => {
@@ -170,6 +173,85 @@ describe('MelhorEnvioClient', () => {
 
       answer(401, { message: 'Unauthenticated.' });
       await expect(client.quote(config, 'eyJ.access', cart)).rejects.toBeInstanceOf(MelhorEnvioRefused);
+    });
+  });
+
+  describe('the label (BEELINK-187)', () => {
+    const party = { name: 'Loja Lessari', phone: '11999998888', email: 'loja@lessari.com.br', document: '11222333000181', stateRegister: null, street: 'Rua Augusta', number: '1500', complement: null, district: 'Consolação', city: 'São Paulo', state: 'SP', zipCode: '01310930' };
+    const request = {
+      serviceId: 2,
+      from: party,
+      to: { ...party, name: 'Bia Cliente', document: '52998224725', email: null, complement: 'apto 12', zipCode: '30140071' },
+      products: [{ name: 'Blusa', quantity: 2, unitReais: 59.9 }],
+      volume: { lengthCm: 26, widthCm: 20, heightCm: 8, weightKg: 0.6 },
+      insuranceReais: 119.8,
+      invoiceKey: null,
+      tag: '#12',
+    };
+    const ID = '9b5c4ad3-6f0e-4b7a-9d4c-0d6a4b0c8f11';
+
+    it('puts the label in the cart: the shop as a company, the customer as a person, one box, a declaration of contents', async () => {
+      const fetched = answer(201, { id: ID, protocol: 'ORD-202610020001', price: 27.45, status: 'pending' });
+
+      expect(await client.addToCart(config, 'eyJ.access', request)).toEqual({ id: ID, protocol: 'ORD-202610020001', priceCents: 2745 });
+      const { url, body } = sent(fetched);
+      expect(url).toBe('https://sandbox.melhorenvio.com.br/api/v2/me/cart');
+      expect(body).toMatchObject({
+        service: 2,
+        from: { name: 'Loja Lessari', company_document: '11222333000181', address: 'Rua Augusta', number: '1500', district: 'Consolação', city: 'São Paulo', state_abbr: 'SP', country_id: 'BR', postal_code: '01310930' },
+        to: { name: 'Bia Cliente', document: '52998224725', complement: 'apto 12', postal_code: '30140071' },
+        products: [{ name: 'Blusa', quantity: 2, unitary_value: 59.9 }],
+        volumes: [{ height: 8, width: 20, length: 26, weight: 0.6 }],
+        options: { insurance_value: 119.8, non_commercial: true, receipt: false, own_hand: false, tags: [{ tag: '#12', url: null }] },
+      });
+      expect((body as { to: object }).to).not.toHaveProperty('company_document');
+      expect((body as { options: object }).options).not.toHaveProperty('invoice');
+    });
+
+    it('sends the invoice on a commercial shipment', async () => {
+      const fetched = answer(201, { id: ID, protocol: null, price: '27.45' });
+
+      await client.addToCart(config, 'eyJ.access', { ...request, invoiceKey: '3'.repeat(44) });
+
+      expect(sent(fetched).body).toMatchObject({ options: { non_commercial: false, invoice: { key: '3'.repeat(44) } } });
+    });
+
+    it("says Melhor Envio's own words when it refuses a label", async () => {
+      answer(422, { message: 'The given data was invalid.', errors: { 'to.document': ['O campo to.document é obrigatório.'] } });
+
+      await expect(client.addToCart(config, 'eyJ.access', request)).rejects.toMatchObject({ status: 422, reason: 'O campo to.document é obrigatório.' });
+    });
+
+    it('pays, generates, prints at a public address, tracks and cancels — each by the label id', async () => {
+      let fetched = answer(200, { purchase: { id: 'p1', status: 'paid' } });
+      await client.checkout(config, 'eyJ.access', ID);
+      expect(sent(fetched)).toMatchObject({ url: 'https://sandbox.melhorenvio.com.br/api/v2/me/shipment/checkout', body: { orders: [ID] } });
+
+      fetched = answer(200, { [ID]: { status: true, message: 'Envio gerado com sucesso' } });
+      expect(await client.generate(config, 'eyJ.access', ID)).toEqual({ generated: true, message: 'Envio gerado com sucesso' });
+
+      fetched = answer(200, { url: 'https://sandbox.melhorenvio.com.br/imprimir/ixQLaqqjmb2E' });
+      expect(await client.print(config, 'eyJ.access', ID)).toBe('https://sandbox.melhorenvio.com.br/imprimir/ixQLaqqjmb2E');
+      expect(sent(fetched).body).toEqual({ mode: 'public', orders: [ID] });
+
+      answer(200, { [ID]: { id: ID, status: 'released', tracking: null, melhorenvio_tracking: 'ME23002OWZ7BR' } });
+      expect(await client.tracking(config, 'eyJ.access', ID)).toEqual({ status: 'released', trackingCode: 'ME23002OWZ7BR' });
+
+      answer(200, { [ID]: { cancellable: true, time: 0 } });
+      expect(await client.cancellable(config, 'eyJ.access', ID)).toBe(true);
+
+      fetched = answer(200, { [ID]: { canceled: true } });
+      expect(await client.cancel(config, 'eyJ.access', ID, 'Pedido cancelado')).toBe(true);
+      expect(sent(fetched).body).toEqual({ order: { id: ID, reason_id: '2', description: 'Pedido cancelado' } });
+    });
+
+    it('takes a label out of the cart, which answers with nothing', async () => {
+      const fetched = vi.fn(async (_url: URL, _init?: RequestInit) => new Response(null, { status: 204 }));
+      vi.stubGlobal('fetch', fetched);
+
+      await client.removeFromCart(config, 'eyJ.access', ID);
+
+      expect(String(fetched.mock.calls[0]?.[0])).toBe(`https://sandbox.melhorenvio.com.br/api/v2/me/cart/${ID}`);
     });
   });
 });

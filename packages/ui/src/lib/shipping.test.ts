@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // Block
-import { distanceText, minutesWindowText } from "./shipping"
+import { businessDaysWindowText, distanceText, minutesWindowText, windowText } from "./shipping"
 
 const text = ptBR.storefront
 
@@ -20,6 +20,19 @@ describe("a quoted window in words (BEELINK-178)", () => {
     expect(minutesWindowText(120, 120, text)).toBe("2 h")
     expect(minutesWindowText(1440, 4320, text)).toBe("1–3 dias")
     expect(minutesWindowText(2880, 2880, text)).toBe("2 dias")
+  })
+})
+
+describe("a carrier's window in words (BEELINK-186)", () => {
+  it("speaks business days: a range, several alike, and one", () => {
+    expect(businessDaysWindowText(3, 4, text)).toBe("3–4 dias úteis")
+    expect(businessDaysWindowText(5, 5, text)).toBe("5 dias úteis")
+    expect(businessDaysWindowText(1, 1, text)).toBe("1 dia útil")
+  })
+
+  it("reads a window by what it counts in", () => {
+    expect(windowText({ unit: "BUSINESS_DAYS", from: 3, to: 4 }, text)).toBe("3–4 dias úteis")
+    expect(windowText({ unit: "MINUTES", from: 30, to: 50 }, text)).toBe("30–50 min")
   })
 })
 

@@ -219,6 +219,7 @@ export const ptBR: WebMessages = {
     ORDER_CASHBACK_REFUSED: "Esse valor de cashback não está mais disponível para este pedido. Confira o valor e tente de novo.",
     ORDER_SHIPPING_UNAVAILABLE: "A loja não entrega desse jeito para este endereço.",
     ORDER_SHIPPING_CHANGED: "O frete mudou desde que foi cotado. Confira o novo valor.",
+    ORDER_RECIPIENT_DOCUMENT_MISSING: "Pedido por transportadora precisa do CPF de quem recebe.",
     GOOGLE_SIGN_IN_UNAVAILABLE: "Entrar com Google não está disponível agora. Entre com e-mail e senha.",
     GOOGLE_STATE_INVALID: "O login com Google expirou ou já foi usado. Tente de novo.",
     GOOGLE_EXCHANGE_FAILED: "O Google não confirmou o login. Tente de novo.",

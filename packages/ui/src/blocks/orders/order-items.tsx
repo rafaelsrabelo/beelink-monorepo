@@ -38,7 +38,8 @@ export function OrderItems({ order, money, messages = defaultMessages }: OrderIt
   const fee = feeLineOf(order)
   const discounts = discountLinesOf(order, money, messages.orders.discountRows)
   // What the checkout promised (BEELINK-178): the shopkeeper reads it where the fee is.
-  const quoted = order.deliveryWindow ? windowText(order.deliveryWindow, messages.storefront) : null
+  const window = order.deliveryWindow
+  const quoted = !window ? null : window.unit === "MINUTES" ? format(text.quotedWindowValue, { window: windowText(window, messages.storefront) }) : windowText(window, messages.storefront)
 
   return (
     <section aria-labelledby="order-items-title" className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
@@ -68,7 +69,7 @@ export function OrderItems({ order, money, messages = defaultMessages }: OrderIt
       <dl className="flex flex-col gap-2">
         <Row label={text.subtotal} value={money(order.subtotalCents)} />
         {fee !== null ? <Row label={text.fee} value={fee === "toAgree" ? text.feeToAgree : money(fee.cents)} /> : null}
-        {fee !== null && quoted ? <Row label={text.quotedWindow} value={format(text.quotedWindowValue, { window: quoted })} /> : null}
+        {fee !== null && quoted ? <Row label={text.quotedWindow} value={quoted} /> : null}
         {discounts.map((row) => (
           <Row key={row.key} label={row.label} value={row.value} />
         ))}

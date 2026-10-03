@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 // Types
-import type { CouponRefusalReason, CustomerOrderQuotePayload, OrderFulfillment, OrderQuote, QuotedCoupon } from "@harness-monorepo/contracts"
+import type { CouponRefusalReason, CustomerOrderQuotePayload, OrderFulfillment, OrderQuote, OrderShippingChoice, QuotedCoupon } from "@harness-monorepo/contracts"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // UI
@@ -34,6 +34,8 @@ export interface CartPricingInput {
   fulfillment: OrderFulfillment
   /** The saved address a delivery would go to (BEELINK-178): the shop's ways to get there are priced with the cart. Null for a visitor, and with none saved. */
   addressId: string | null
+  /** The carrier a delivery would go by, once one was picked (BEELINK-186): its fee is in the totals. Null goes by the shop's own. */
+  shipping: OrderShippingChoice | null
   /**
    * Who is asking: the signed-in shopper's id, or null for a visitor. A coupon is a shopper's — a
    * visitor's cart is priced without one — and so is a price, since a first-purchase promotion is.
@@ -103,7 +105,7 @@ function isCartRefusal(error: unknown): boolean {
  * The coupon in force is this page's own state, written through to the page's address (`cart-coupon.ts`)
  * so a reload, and the trip to add an address, come back with it.
  */
-export function useCartPricing({ slug, view, fulfillment, addressId, shopperId, served, arrivedWith, locale, messages }: CartPricingInput): CartPricingHandle {
+export function useCartPricing({ slug, view, fulfillment, addressId, shipping, shopperId, served, arrivedWith, locale, messages }: CartPricingInput): CartPricingHandle {
   const text = messages.storefront
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -126,9 +128,9 @@ export function useCartPricing({ slug, view, fulfillment, addressId, shopperId, 
 
   // The quantities settle before they are asked about; how it leaves and the coupon are one press each.
   const rows = useDebouncedValue(view.rows, QUANTITY_DEBOUNCE_MS)
-  const cart = useMemo(() => cartQuoteOf(rows, fulfillment, asked, addressId), [rows, fulfillment, asked, addressId])
+  const cart = useMemo(() => cartQuoteOf(rows, fulfillment, asked, addressId, shipping), [rows, fulfillment, asked, addressId, shipping])
   // By what is asked, not by identity: a page read again hands over the same cart as new rows.
-  const settling = useMemo(() => !sameCart(cartQuoteOf(view.rows, fulfillment, asked, addressId), cart), [view.rows, fulfillment, asked, addressId, cart])
+  const settling = useMemo(() => !sameCart(cartQuoteOf(view.rows, fulfillment, asked, addressId, shipping), cart), [view.rows, fulfillment, asked, addressId, shipping, cart])
   const quote = useCartQuote(slug, shopperId, cart, served)
   const signedOut = quote.error instanceof ShopperOrderError && quote.error.errorCode === "AUTH_UNAUTHENTICATED"
   const context = { pickup: fulfillment === "PICKUP", money: (cents: number) => formatCents(cents, locale, "BRL") }
@@ -136,12 +138,12 @@ export function useCartPricing({ slug, view, fulfillment, addressId, shopperId, 
 
   const applying = useMutation({
     mutationFn: async (code: string): Promise<OrderQuote> => {
-      const cartNow = cartQuoteOf(view.rows, fulfillment, code, addressId)
+      const cartNow = cartQuoteOf(view.rows, fulfillment, code, addressId, shipping)
       const answer = await quoteCart(slug, cartNow)
       if (answer.coupon?.status === "APPLIED") {
         // Kept here, before the mutation settles: the price just read is the one the cart reads next,
         // under the code as the shop stores it, and the field hands over to the coupon in one draw.
-        queryClient.setQueryData(storefrontKeys.quote(slug, shopperId, cartQuoteOf(view.rows, fulfillment, answer.coupon.code, addressId)), answer)
+        queryClient.setQueryData(storefrontKeys.quote(slug, shopperId, cartQuoteOf(view.rows, fulfillment, answer.coupon.code, addressId, shipping)), answer)
         setCoupon(answer.coupon.code)
       }
       return answer

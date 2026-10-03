@@ -1,5 +1,5 @@
 import type { QuotedCashback, QuotedCashbackUse } from "./cashback.js";
-import type { CreateOrderItemInput, OrderCustomerInput, OrderFulfillment } from "./order.js";
+import type { CreateOrderItemInput, OrderCustomerInput, OrderFulfillment, OrderShippingChoice } from "./order.js";
 import type { CouponKind } from "./promotion.js";
 import type { ShippingQuote } from "./shipping.js";
 
@@ -98,9 +98,10 @@ export interface OrderQuote {
   /** Promotions, coupon and typed discount together: what the order records as its discount. */
   discountCents: number;
   /**
-   * Zero on a pick-up. On a delivery, the fee of the way it goes by (BEELINK-178) — the shop's own
-   * delivery, as `shipping` quotes it to the address asked about — and null while there is none to
-   * say: a fee the shop agrees afterwards, an address the shop does not deliver to, or no address.
+   * Zero on a pick-up. On a delivery, the fee of the way it goes by (BEELINK-178) — the one asked
+   * about, else the shop's own delivery — as `shipping` quotes it to the address, and null while
+   * there is none to say: a fee the shop agrees afterwards, a way the quote does not offer to that
+   * address, or no address.
    */
   deliveryFeeCents: number | null;
   /**
@@ -129,6 +130,8 @@ export interface CustomerCartQuotePayload {
   fulfillment: OrderFulfillment;
   /** The saved address a delivery would go to; absent, the customer's default. The shop's ways to get there are quoted either way. */
   addressId?: string;
+  /** The way a delivery would go by (BEELINK-186), whose fee the totals carry; absent, the shop's own delivery. */
+  shipping?: OrderShippingChoice;
   /** Apply the most of their credit this cart can take (BEELINK-240). Absent is not to. */
   useCashback?: boolean;
 }
@@ -146,6 +149,8 @@ export interface CustomerOrderQuotePayload {
   fulfillment: OrderFulfillment;
   /** The saved address a delivery would go to; absent, the customer's default. The shop's ways to get there are quoted either way. */
   addressId?: string;
+  /** The way a delivery would go by (BEELINK-186), whose fee the totals carry; absent, the shop's own delivery. */
+  shipping?: OrderShippingChoice;
   /** In any case; blank is none. */
   couponCode?: string | null;
   /** Apply the most of their credit this cart can take (BEELINK-240). Absent is not to. */

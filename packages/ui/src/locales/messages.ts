@@ -315,6 +315,22 @@ export interface UiMessages {
     windowHoursOne: string
     windowDays: string
     windowDaysOne: string
+    /** A carrier's window (BEELINK-186): a range, several days alike ({count}), and a single day. */
+    windowBusinessDays: string
+    windowBusinessDaysOne: string
+    windowBusinessDay: string
+    /** The ways to deliver, when there are several to choose among (BEELINK-186). */
+    checkoutWayChoose: string
+    checkoutWayOwn: string
+    /** {fee} {window} */
+    checkoutCarrierArrives: string
+    checkoutNoDeliveryHere: string
+    /** The CPF of who receives a carrier's delivery, asked once (BEELINK-187). */
+    checkoutRecipientDocument: string
+    checkoutRecipientDocumentHint: string
+    checkoutRecipientDocumentIssue: string
+    /** {window} — on an order that goes by carrier. */
+    orderWindowCarrier: string
     /** {window} — on an order, when the quote said it would arrive. */
     orderWindowOwn: string
     checkoutPayment: string
@@ -1657,6 +1673,61 @@ export interface UiMessages {
   }
   /** The panel's orders: the list, and later the order and its form. */
   orders: {
+    /** An order's shipping label, bought from the shop's Melhor Envio wallet (BEELINK-187). */
+    label: {
+      title: string
+      /** {carrier} */
+      intro: string
+      balance: string
+      balanceUnknown: string
+      volume: string
+      volumeHint: string
+      weight: string
+      length: string
+      width: string
+      height: string
+      invoiceKey: string
+      invoiceKeyHint: string
+      buy: string
+      buying: string
+      retry: string
+      generate: string
+      print: string
+      printing: string
+      cancel: string
+      cancelling: string
+      cancelConfirmTitle: string
+      cancelConfirmText: string
+      cancelConfirm: string
+      keep: string
+      /** {price} {date} */
+      statusInCart: string
+      statusPaid: string
+      statusGenerated: string
+      statusCancelled: string
+      protocol: string
+      tracking: string
+      trackingPending: string
+      blockersTitle: string
+      blockers: Record<"NOT_CARRIER" | "ORDER_CANCELLED" | "NOT_CONNECTED" | "NO_SENDER_DOCUMENT" | "NO_ORIGIN" | "NO_RECIPIENT_DOCUMENT" | "RECIPIENT_ADDRESS_INCOMPLETE", string>
+      openIntegrations: string
+      openStore: string
+      openWallet: string
+      issues: { volume: string; invoiceKey: string }
+      errors: {
+        /** {balance} {price} */
+        LABEL_BALANCE_INSUFFICIENT: string
+        /** {reason} */
+        LABEL_REFUSED: string
+        LABEL_NOT_CANCELLABLE: string
+        LABEL_NOT_AVAILABLE: string
+        LABEL_INVALID: string
+        LABEL_NOT_GENERATED: string
+        INTEGRATION_NOT_CONNECTED: string
+        INTEGRATION_UNREACHABLE: string
+        UNKNOWN: string
+      }
+    }
     title: string
     description: string
     /** The way to register one, from the list's header and its empty state. */
@@ -1820,7 +1891,7 @@ export interface UiMessages {
       deliveryClear: string
       deliverySaved: string
       deliveryNeeded: string
-      actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM", string>
+      actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER", string>
       markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
       statusLabel: string
       moreStatuses: string
@@ -3031,7 +3102,13 @@ export interface UiMessages {
       save: string
       saving: string
       saved: string
-      issues: { handlingDays: string; package: string; packageRange: string }
+      /** Who sends the labels (BEELINK-187). */
+      sender: string
+      senderHint: string
+      senderDocument: string
+      senderStateRegister: string
+      senderStateRegisterHint: string
+      issues: { handlingDays: string; package: string; packageRange: string; senderDocument: string }
       errors: Record<"MELHOR_ENVIO_SETTINGS_INVALID" | "UNKNOWN", string>
     }
   }

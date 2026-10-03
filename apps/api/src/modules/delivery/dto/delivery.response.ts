@@ -27,7 +27,7 @@ export class ShippingWindowResponse implements ShippingWindow {
   @ApiProperty() to!: number;
 }
 
-class ShippingCarrierResponse implements ShippingCarrier {
+export class ShippingCarrierResponse implements ShippingCarrier {
   @ApiProperty({ description: "Melhor Envio's id for the service." }) serviceId!: number;
   @ApiProperty({ example: 'SEDEX' }) service!: string;
   @ApiProperty({ example: 'Correios' }) company!: string;
