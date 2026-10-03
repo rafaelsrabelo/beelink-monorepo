@@ -45,6 +45,11 @@ export const ComDescontos: Story = {
   },
 }
 
+/** A loja cota o frete pela distância (BEELINK-178): a entrega tem a sua linha, e o total a soma. */
+export const ComFrete: Story = {
+  args: { ...ComItens.args, delivery: "R$ 5,00", total: "R$ 184,80" },
+}
+
 /** Visitante: a promoção de primeira compra é anunciada com o valor, e só entra no total quando ele se identifica. */
 export const PrimeiraCompraAnunciada: Story = {
   args: { ...ComItens.args, offer: { tone: "open", text: "Boas-vindas: − R$ 26,97 na sua primeira compra. Entre na sua conta para confirmar." } },

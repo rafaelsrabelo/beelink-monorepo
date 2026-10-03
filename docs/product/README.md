@@ -109,6 +109,10 @@ A store decides whether it delivers, how far, and what it charges. The fee follo
 
 An estimated arrival is a **window** (from–to), because a single number is a promise the product cannot keep.
 
+A store combines the ways it hands an order over — **pickup** at the shop, its **own delivery**, and **carriers** through its own Melhor Envio account — and each is switched on or off apart. Carriers are quoted with the shop's own account, at its own prices, and the labels are bought from its own wallet: Beelink never resells freight.
+
+The fee is quoted in one place. What the cart shows, what the checkout shows and what the order records are the same quote, read again at the moment the order is placed: a fee that changed since the customer read it refuses the order rather than place it at another price. Where the store set no band, or an address cannot be placed on the map, the fee is **agreed afterwards** — said in words, never as zero, which is a free delivery.
+
 ## Promotions and coupons
 
 A store runs **promotions** — a discount over the whole cart, or over named products or categories, for a period the shopkeeper sets. A discount is either a percentage or a fixed amount, and which one it is, is stated rather than inferred. A period has a start and may have no end: it then runs until the shopkeeper pauses it.

@@ -72,14 +72,6 @@ describe("toSettingsValues", () => {
     expect(values.social.whatsapp).toBe("")
     expect(values.address.city).toBe("")
   })
-
-  it("lifts cardLayout out of the layout blob, and falls back for a row carried over without it", () => {
-    expect(toSettingsValues(STORE).appearance.cardLayout).toBe("grid")
-
-    const horizontal = { ...STORE, layoutSettings: { ...STORE.layoutSettings, cardLayout: "horizontal" as const } }
-
-    expect(toSettingsValues(horizontal).appearance.cardLayout).toBe("horizontal")
-  })
 })
 
 describe("toUpdatePayload", () => {
@@ -94,17 +86,10 @@ describe("toUpdatePayload", () => {
     expect(toUpdatePayload(STORE, values).layoutSettings).toMatchObject(STORE.layoutSettings)
   })
 
-  it("merges the one layout key the appearance tab owns over the echo, dropping none of the rest", () => {
-    const payload = toUpdatePayload(STORE, {
-      ...values,
-      appearance: { ...values.appearance, cardLayout: "horizontal" },
-    })
+  it("echoes the look of the shop as it was read: design mode edits it, not a tab here", () => {
+    const payload = toUpdatePayload(STORE, values)
 
-    expect(payload.layoutSettings).toEqual({
-      showBanner: true,
-      productsPerRow: 3,
-      cardLayout: "horizontal",
-    })
+    expect(payload).toMatchObject({ layoutType: STORE.layoutType, bannerImageUrl: STORE.bannerImageUrl, colors: STORE.colors })
   })
 
   it("strips the masks the fields accept and upper-cases the UF", () => {
@@ -160,7 +145,7 @@ describe("toCreatePayload", () => {
   it("carries the palette the appearance tab opened on, when the form had one to send", () => {
     // Taken from the fixture rather than written out: a palette is four hex literals, and
     // `web/no-hex-colors` scans this tree with no exemption for a test file.
-    const colors = values.appearance.colors
+    const colors = STORE.colors
     const payload = toCreatePayload({
       slug: "doces-da-ana",
       identity: values.identity,

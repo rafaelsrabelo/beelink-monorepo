@@ -32,6 +32,8 @@ export function shippingFormOf(settings: MelhorEnvioSettings, serviceIds: readon
     length: parcel ? cm(parcel.lengthMm) : "",
     width: parcel ? cm(parcel.widthMm) : "",
     height: parcel ? cm(parcel.heightMm) : "",
+    senderDocument: settings.senderDocument ?? "",
+    senderStateRegister: settings.senderStateRegister ?? "",
   }
 }
 
@@ -51,12 +53,18 @@ export function shippingPayloadOf(value: ShippingSettingsFormValues, text: UiMes
     else if (weightGrams > PACKAGE_GRAMS_MAX || sizes.some((size) => (size ?? 0) > PACKAGE_MM_MAX)) issues.package = text.packageRange
   }
 
-  if (issues.handlingDays || issues.package) return { issues }
+  // The check digits are the API's to read; the length is said here, before anything is sent.
+  const document = value.senderDocument.replace(/\D/g, "")
+  if (document && document.length !== 11 && document.length !== 14) issues.senderDocument = text.senderDocument
+
+  if (issues.handlingDays || issues.package || issues.senderDocument) return { issues }
   return {
     payload: {
       handlingDays: days ?? 0,
       serviceIds: [...value.serviceIds],
       defaultPackage: none ? null : { weightGrams: weightGrams!, lengthMm: lengthMm!, widthMm: widthMm!, heightMm: heightMm! },
+      senderDocument: document || null,
+      senderStateRegister: value.senderStateRegister.trim() || null,
     },
   }
 }

@@ -22,7 +22,7 @@ function checkout(props: Partial<StorefrontCheckoutProps> = {}) {
       customer={customer}
       signIn={signIn}
       paymentMethods={["PIX", "MONEY"]}
-      choice={{ fulfillment: "DELIVERY", addressId: "a1", paymentMethod: "PIX" }}
+      choice={{ fulfillment: "DELIVERY", addressId: "a1", paymentMethod: "PIX", wayId: null }}
       onChoiceChange={() => {}}
       onPlace={() => {}}
       {...props}
