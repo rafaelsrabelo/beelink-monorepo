@@ -1,5 +1,5 @@
 // Types
-import type { CustomerOrderSituation, OrderDeliveryKind, OrderErrorCode, OrderFulfillment, OrderStatus } from '@harness-monorepo/contracts';
+import type { CustomerOrderSituation, OrderDeliveryKind, OrderErrorCode, OrderFulfillment, OrderShippingChoice, OrderStatus } from '@harness-monorepo/contracts';
 
 export const ORDER_STATUSES = [
   'RECEIVED',
@@ -11,6 +11,7 @@ export const ORDER_STATUSES = [
 ] as const satisfies readonly OrderStatus[];
 
 export const ORDER_FULFILLMENTS = ['DELIVERY', 'PICKUP'] as const satisfies readonly OrderFulfillment[];
+export const SHIPPING_CHOICE_KINDS = ['OWN_DELIVERY', 'CARRIER'] as const satisfies readonly OrderShippingChoice['kind'][];
 
 export const ORDER_DELIVERY_KINDS = ['OWN', 'CARRIER'] as const satisfies readonly OrderDeliveryKind[];
 

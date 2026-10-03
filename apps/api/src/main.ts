@@ -14,6 +14,8 @@ import { setupSwagger } from './shared/swagger/setup-swagger.js';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, createFastifyAdapter(), {
     bufferLogs: true,
+    // Melhor Envio signs its webhooks over the bytes that arrived (BEELINK-188): those bytes are kept beside the parsed body.
+    rawBody: true,
   });
 
   app.useLogger(app.get(Logger));

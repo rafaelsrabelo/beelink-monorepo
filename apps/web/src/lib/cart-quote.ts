@@ -37,7 +37,8 @@ export async function cartQuoteAt(slug: string, cart: CustomerOrderQuotePayload,
   const clientIp = (await headers()).get("x-forwarded-for")
   const response = await callApi({
     path: shopperId ? `${shop}/customer/cart/quote` : `${shop}/cart/quote`,
-    body: { items: cart.items, fulfillment: cart.fulfillment },
+    // The address is a shopper's: the visitor's door takes none, and refuses a body that names one.
+    body: { items: cart.items, fulfillment: cart.fulfillment, ...(shopperId && cart.addressId ? { addressId: cart.addressId } : {}) },
     accessToken,
     clientIp,
   }).catch(() => null)

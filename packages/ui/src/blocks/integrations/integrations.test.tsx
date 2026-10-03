@@ -81,6 +81,19 @@ describe("MelhorEnvioCard", () => {
 })
 
 describe("ShippingSettingsForm", () => {
+  /** BEELINK-187: the shop sends the labels, and the carrier asks for its document. */
+  it("edits the labels' sender, and says what is wrong with the document under it", async () => {
+    const onChange = vi.fn()
+    const { container } = render(<ShippingSettingsForm value={{ ...shipping, senderDocument: "" }} onChange={onChange} onSubmit={() => {}} services={services} issues={{ senderDocument: "Informe o CPF (11 dígitos) ou o CNPJ (14 dígitos)." }} />)
+
+    const document = screen.getByLabelText("CPF ou CNPJ")
+    expect(document).toHaveAccessibleDescription("Informe o CPF (11 dígitos) ou o CNPJ (14 dígitos).")
+    await userEvent.type(document, "1")
+    expect(onChange).toHaveBeenLastCalledWith({ ...shipping, senderDocument: "1" })
+    expect(screen.getByLabelText("Inscrição estadual")).toHaveAccessibleDescription(/ISENTO/)
+    await expectNoA11yViolations(container)
+  })
+
   it("switches each service by carrier, and edits the days and the parcel, reporting the whole value", async () => {
     const onChange = vi.fn()
     const { container } = render(<ShippingSettingsForm value={shipping} onChange={onChange} onSubmit={() => {}} services={services} />)

@@ -39,7 +39,7 @@ describe("the shop's own delivery to an address (BEELINK-176)", () => {
     const read = ownDeliveryOf(rules, SHOP, NEAR, 5000);
 
     expect(read.verdict).toEqual({ status: 'QUOTED', distanceMeters: distanceMeters(SHOP, NEAR) });
-    expect(read.option).toEqual({ kind: 'OWN_DELIVERY', feeCents: 500, window: { unit: 'MINUTES', from: 30, to: 50 }, freeAbove: false });
+    expect(read.option).toEqual({ kind: 'OWN_DELIVERY', carrier: null, feeCents: 500, window: { unit: 'MINUTES', from: 30, to: 50 }, freeAbove: false });
   });
 
   it('waives the fee once the products reach the free-delivery amount, and says why', () => {
@@ -62,18 +62,18 @@ describe("the shop's own delivery to an address (BEELINK-176)", () => {
   it('agrees the fee later with no band — free above the amount still holds, since the shop delivers anywhere', () => {
     const noBands = { ...rules, bands: [], radiusMeters: null };
 
-    expect(ownDeliveryOf(noBands, SHOP, NEAR, 5000)).toEqual({ verdict: { status: 'AGREE_LATER', reason: 'NO_BANDS' }, option: { kind: 'OWN_DELIVERY', feeCents: null, window: null, freeAbove: false } });
+    expect(ownDeliveryOf(noBands, SHOP, NEAR, 5000)).toEqual({ verdict: { status: 'AGREE_LATER', reason: 'NO_BANDS' }, option: { kind: 'OWN_DELIVERY', carrier: null, feeCents: null, window: null, freeAbove: false } });
     expect(ownDeliveryOf(noBands, null, null, 15000).option).toMatchObject({ feeCents: 0, freeAbove: true });
   });
 
   it('agrees the fee later, never free, when the shop or the address is off the map', () => {
-    expect(ownDeliveryOf(rules, null, NEAR, 50000)).toEqual({ verdict: { status: 'AGREE_LATER', reason: 'SHOP_UNPLACED' }, option: { kind: 'OWN_DELIVERY', feeCents: null, window: null, freeAbove: false } });
+    expect(ownDeliveryOf(rules, null, NEAR, 50000)).toEqual({ verdict: { status: 'AGREE_LATER', reason: 'SHOP_UNPLACED' }, option: { kind: 'OWN_DELIVERY', carrier: null, feeCents: null, window: null, freeAbove: false } });
     expect(ownDeliveryOf(rules, SHOP, null, 50000).verdict).toEqual({ status: 'AGREE_LATER', reason: 'ADDRESS_UNPLACED' });
   });
 
   it('is no option while switched off, and pickup is one while on', () => {
     expect(ownDeliveryOf({ ...rules, ownDeliveryEnabled: false }, SHOP, NEAR, 5000)).toEqual({ verdict: { status: 'OFF' }, option: null });
-    expect(pickupOf(rules)).toEqual({ kind: 'PICKUP', feeCents: 0, window: null, freeAbove: false });
+    expect(pickupOf(rules)).toEqual({ kind: 'PICKUP', carrier: null, feeCents: 0, window: null, freeAbove: false });
     expect(pickupOf({ ...rules, pickupEnabled: false })).toBeNull();
   });
 });
