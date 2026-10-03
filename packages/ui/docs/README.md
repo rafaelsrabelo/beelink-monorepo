@@ -80,6 +80,7 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/integrations/integrations-result` · `integrations-skeleton` · `integrations-failed` | `tone`, `message` · — · `onRetry` | Blocos/Painel/Integrações |
 | `blocks/delivery/delivery-settings-form` | `value`, `onChange`, `onSubmit`, `issues`, `previews`, `pickupAddress`, `map` (`lib/delivery`), `carriers`, `connectHref`, `manageHref`, `linkComponent`, `pending`, `error`, `saved` — the store settings' Delivery tab: pickup, own delivery by distance bands with the radius on the map, carriers; its own save | Blocos/Entrega/Aba Entrega |
 | `blocks/delivery/delivery-mode-card` · `delivery-band-rows` · `delivery-carriers` · `delivery-settings-skeleton` | `title`, `checked`, `onCheckedChange`, `children` · `rows`, `onChange`, `issues`, `previews` · `view`, `connectHref`, `manageHref` · — | Blocos/Entrega |
+| `blocks/orders/order-label-card` · `order-label-form` | `view` (`lib/label`), `value`, `onChange`, `onBuy`, `onPrint`, `onCancel`, `issues`, `pending`, `error`, `linkComponent` — an order's shipping label (BEELINK-187): what stands in the way, the box and the invoice key, the wallet, then its tracking, print and a cancel asked twice | Blocos/Pedidos/Etiqueta de envio |
 
 `auth-link` is the default every block navigates with until an app passes `next/link`. It is one line, and its test is still
 the longest of the three it has: a link component that swallowed the extra props would drop the `aria-current` the sidebar
