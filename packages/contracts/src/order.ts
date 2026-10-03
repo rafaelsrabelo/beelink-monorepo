@@ -14,7 +14,8 @@ export type OrderStatus = "RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIV
 export type OrderFulfillment = "DELIVERY" | "PICKUP";
 
 /** Who set a status: the shopkeeper, or the customer placing it from the cart; the courier later. */
-export type OrderActor = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM";
+/** Who moved an order: `CARRIER` is a carrier telling Melhor Envio it posted or delivered it (BEELINK-188). */
+export type OrderActor = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER";
 
 /**
  * One line, photographed when the order was placed: a price change or a deleted product never

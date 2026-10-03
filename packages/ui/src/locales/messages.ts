@@ -1891,7 +1891,7 @@ export interface UiMessages {
       deliveryClear: string
       deliverySaved: string
       deliveryNeeded: string
-      actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM", string>
+      actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER", string>
       markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
       statusLabel: string
       moreStatuses: string

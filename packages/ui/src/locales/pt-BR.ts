@@ -1616,7 +1616,7 @@ export const ptBR: UiMessages = {
       deliveryClear: "Remover",
       deliverySaved: "Entrega salva.",
       deliveryNeeded: "O pedido saiu para entrega: diga quem entrega e quando chega.",
-      actors: { SHOPKEEPER: "pela loja", CUSTOMER: "pelo cliente", SYSTEM: "pelo sistema" },
+      actors: { SHOPKEEPER: "pela loja", CUSTOMER: "pelo cliente", SYSTEM: "pelo sistema", CARRIER: "pela transportadora" },
       markAs: {
         RECEIVED: "Marcar como recebido",
         ACCEPTED: "Marcar como aceito",

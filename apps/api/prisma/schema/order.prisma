@@ -27,6 +27,8 @@ enum OrderActor {
   SHOPKEEPER
   CUSTOMER
   SYSTEM
+  /// A carrier, as Melhor Envio tells of a label posted or delivered (BEELINK-188).
+  CARRIER
 }
 
 /// An order: a fact about the past, in the shop that sold it (docs/product/README.md, "Orders").

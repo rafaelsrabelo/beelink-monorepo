@@ -27,6 +27,6 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
   imports: [StoresModule],
   controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController],
   providers: [MelhorEnvioClient, MelhorEnvioService, MelhorEnvioRefresher, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, OrderLabels],
-  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes],
+  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient],
 })
 export class IntegrationsModule {}

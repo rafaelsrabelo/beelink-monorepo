@@ -118,3 +118,14 @@ model OrderLabel {
   @@index([storeId, status])
   @@map("order_labels")
 }
+
+/// A third party's event already applied (BEELINK-188): its key is what makes a second delivery of it —
+/// a webhook retried, or the periodic check reaching the same fact — a no-op.
+model IntegrationEvent {
+  key       String              @id @db.VarChar(120)
+  provider  IntegrationProvider
+  createdAt DateTime            @default(now())
+
+  @@index([createdAt])
+  @@map("integration_events")
+}
