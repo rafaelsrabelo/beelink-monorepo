@@ -48,10 +48,12 @@ export type OrderLabelBlocker =
   | "NOT_CONNECTED"
   /** The shop's CPF or CNPJ is not set in Integrations. */
   | "NO_SENDER_DOCUMENT"
-  /** The shop has no CEP or no street to post from. */
+  /** The shop's address lacks the street, number, neighbourhood, city, UF or CEP to post from. */
   | "NO_ORIGIN"
   /** The order has no CPF of who receives it. */
-  | "NO_RECIPIENT_DOCUMENT";
+  | "NO_RECIPIENT_DOCUMENT"
+  /** The order's address has no number, no neighbourhood or no CEP, which a label needs. */
+  | "RECIPIENT_ADDRESS_INCOMPLETE";
 
 /** `GET /stores/:slug/orders/:number/label`: the label, if any, and what buying one needs. */
 export interface OrderLabelOverview {

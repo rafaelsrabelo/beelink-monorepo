@@ -80,7 +80,8 @@ describe('a carrier chosen at checkout (BEELINK-186)', () => {
     await call('POST', '/api/stores/lessari/customer/register', undefined, { name: 'Bia Cliente', email, password: PASSWORD });
     await verifyEmailOf(app, email);
     shopper = (await call('POST', '/api/stores/lessari/customer/login', undefined, { email, password: PASSWORD })).json<AuthSession>();
-    await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777' });
+    // A carrier's label is bought with the CPF of who receives it (BEELINK-187).
+    await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777', cpf: '529.982.247-25' });
     await call('POST', '/api/stores/lessari/customer/addresses', shopper, home);
   });
 
