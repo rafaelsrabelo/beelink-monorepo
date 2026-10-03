@@ -16,4 +16,4 @@ export const services: ShippingServiceView[] = [
   { id: 4, name: ".Com", company: "Jadlog" },
 ]
 
-export const shipping: ShippingSettingsFormValues = { serviceIds: [1, 2, 3], handlingDays: "1", weight: "500", length: "20", width: "15", height: "10" }
+export const shipping: ShippingSettingsFormValues = { serviceIds: [1, 2, 3], handlingDays: "1", weight: "500", length: "20", width: "15", height: "10", senderDocument: "11222333000181", senderStateRegister: "" }

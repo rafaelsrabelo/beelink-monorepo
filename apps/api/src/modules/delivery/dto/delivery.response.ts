@@ -21,13 +21,13 @@ export class DeliverySettingsResponse implements DeliverySettings {
   @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'Null until first saved: the defaults.' }) updatedAt!: string | null;
 }
 
-class ShippingWindowResponse implements ShippingWindow {
+export class ShippingWindowResponse implements ShippingWindow {
   @ApiProperty({ enum: ['MINUTES', 'BUSINESS_DAYS'] }) unit!: ShippingWindow['unit'];
   @ApiProperty() from!: number;
   @ApiProperty() to!: number;
 }
 
-class ShippingCarrierResponse implements ShippingCarrier {
+export class ShippingCarrierResponse implements ShippingCarrier {
   @ApiProperty({ description: "Melhor Envio's id for the service." }) serviceId!: number;
   @ApiProperty({ example: 'SEDEX' }) service!: string;
   @ApiProperty({ example: 'Correios' }) company!: string;

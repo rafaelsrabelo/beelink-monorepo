@@ -23,7 +23,7 @@ vi.mock("@/services/integrations/integration-hooks", () => ({
 }))
 
 const connected: MelhorEnvioConnection = { available: true, environment: "SANDBOX", status: "CONNECTED", account: { name: "Loja Lessari", email: null }, connectedAt: "2026-10-02T12:00:00.000Z", accessExpiresAt: "2026-11-01T12:00:00.000Z" }
-const never: MelhorEnvioSettings = { handlingDays: 1, serviceIds: null, defaultPackage: null, updatedAt: null }
+const never: MelhorEnvioSettings = { handlingDays: 1, serviceIds: null, defaultPackage: null, senderDocument: null, senderStateRegister: null, updatedAt: null }
 const services = [
   { id: 1, name: "PAC", company: "Correios" },
   { id: 2, name: "SEDEX", company: "Correios" },
@@ -66,7 +66,7 @@ describe("IntegrationsScreen (BEELINK-183)", () => {
     await userEvent.type(screen.getByLabelText("Dias para postar"), "3")
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }))
 
-    expect(mutate).toHaveBeenCalledWith({ handlingDays: 3, serviceIds: [1], defaultPackage: null }, expect.anything())
+    expect(mutate).toHaveBeenCalledWith({ handlingDays: 3, serviceIds: [1], defaultPackage: null, senderDocument: null, senderStateRegister: null }, expect.anything())
   })
 
   it("refuses a half parcel before sending anything, and says the API's refusal", async () => {
