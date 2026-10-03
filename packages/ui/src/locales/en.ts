@@ -1615,7 +1615,7 @@ export const en: UiMessages = {
       deliveryClear: "Remove",
       deliverySaved: "Delivery saved.",
       deliveryNeeded: "The order is out for delivery: say who brings it and when it arrives.",
-      actors: { SHOPKEEPER: "by the shop", CUSTOMER: "by the customer", SYSTEM: "by the system" },
+      actors: { SHOPKEEPER: "by the shop", CUSTOMER: "by the customer", SYSTEM: "by the system", CARRIER: "by the carrier" },
       markAs: {
         RECEIVED: "Mark as received",
         ACCEPTED: "Mark as accepted",

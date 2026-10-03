@@ -2,7 +2,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { Order, OrderPage } from '@harness-monorepo/contracts';
+import type { Order, OrderPage, OrderStatus } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -29,6 +29,9 @@ type Tx = Prisma.TransactionClient;
  * A shop's orders, as its owner registers and moves them. Placing one is `OrderPlacement`'s, which
  * the cart shares; a status change takes the same lock of the shop's row, so the two never interleave.
  */
+/** The statuses an order moves through towards its delivery, in order: a carrier only moves it forward. */
+const CARRIER_ORDER: readonly OrderStatus[] = ['RECEIVED', 'ACCEPTED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -125,7 +128,33 @@ export class OrdersService {
   /** Any status to any other, except out of `CANCELLED`, which is final. */
   async updateStatus(storeSlug: string, userId: string, number: number, { status }: UpdateOrderStatusDto): Promise<Order> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const moved = await this.move(storeId, number, status, { actor: 'SHOPKEEPER', userId });
+    if (!moved) throw new ConflictException(orderError('ORDER_STATUS_UNCHANGED', `The order is already ${status}`));
+    return moved;
+  }
 
+  /**
+   * A carrier's word on an order (BEELINK-188): posted is out for delivery, delivered is delivered.
+   * Only ever forward — a "posted" that arrives after the "delivered" moves nothing — and never out of
+   * a cancellation. Null when it moved nothing.
+   */
+  async moveByCarrier(storeId: string, number: number, status: Extract<OrderStatus, 'OUT_FOR_DELIVERY' | 'DELIVERED'>): Promise<Order | null> {
+    return this.move(storeId, number, status, { actor: 'CARRIER', userId: null }, (current) => CARRIER_ORDER.indexOf(current) >= 0 && CARRIER_ORDER.indexOf(current) < CARRIER_ORDER.indexOf(status));
+  }
+
+  /**
+   * One move of an order's status, whoever makes it: under the shop's row lock, with what the move
+   * owes — the stock back on a cancellation, the cashback after the delivery, the line in the
+   * conversation, the customer's e-mail — and both sides told once it is committed. Null when the
+   * order already stands there, or `allowed` says it does not move from where it stands.
+   */
+  private async move(
+    storeId: string,
+    number: number,
+    status: OrderStatus,
+    by: { actor: 'SHOPKEEPER' | 'CARRIER'; userId: string | null },
+    allowed: (current: OrderStatus) => boolean = () => true,
+  ): Promise<Order | null> {
     const moved = await this.prisma.$transaction(async (tx) => {
       // The same row lock as a new order takes, so a status change and a placement never interleave.
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
@@ -138,11 +167,9 @@ export class OrdersService {
       if (current.status === 'CANCELLED') {
         throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change status'));
       }
-      if (current.status === status) {
-        throw new ConflictException(orderError('ORDER_STATUS_UNCHANGED', `The order is already ${status}`));
-      }
+      if (current.status === status || !allowed(current.status)) return null;
 
-      await tx.order.update({ where: { id: current.id }, data: { status, events: { create: { status, actor: 'SHOPKEEPER', userId } } } });
+      await tx.order.update({ where: { id: current.id }, data: { status, events: { create: { status, actor: by.actor, userId: by.userId } } } });
       const now = new Date();
       if (status === 'CANCELLED') await settleCancellation(tx, current);
       // The cashback follows the delivery (BEELINK-239): made usable by it, taken back by leaving it.
@@ -156,6 +183,7 @@ export class OrdersService {
       const order = await tx.order.findUniqueOrThrow({ where: { id: current.id }, include: ORDER_INCLUDE });
       return { order, owed, customerId: current.customerId, closes: conversation > 0 && isOpen(current.status) && !isOpen(status) };
     });
+    if (!moved) return null;
     if (moved.owed) this.mailer.dispatch();
 
     // Told once the change is committed: both sides read the order again, and a conversation it

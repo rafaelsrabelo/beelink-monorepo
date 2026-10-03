@@ -26,7 +26,7 @@ export interface OrderListItem {
 }
 
 /** Who set a status. Mirrors the wire's `OrderActor`. */
-export type OrderActorValue = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM"
+export type OrderActorValue = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER"
 
 /** One line as it was photographed when the order was placed. */
 export interface OrderDetailItem {
