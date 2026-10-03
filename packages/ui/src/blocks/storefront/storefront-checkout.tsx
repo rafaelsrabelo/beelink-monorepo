@@ -8,9 +8,9 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import { WhatsAppIcon } from "../store/store-brand-icons"
 import type { PaymentMethod } from "../store/store-types"
-import { StorefrontCheckoutChoices, type StorefrontCheckoutAddress, type StorefrontCheckoutChoice } from "./storefront-checkout-choices"
+import { StorefrontCheckoutChoices, type StorefrontCheckoutAddress, type StorefrontCheckoutChoice, type StorefrontCheckoutChoicesProps, type StorefrontCheckoutShipping } from "./storefront-checkout-choices"
 
-export type { CheckoutFulfillment, StorefrontCheckoutAddress, StorefrontCheckoutChoice } from "./storefront-checkout-choices"
+export type { CheckoutFulfillment, StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutShipping, StorefrontCheckoutWay } from "./storefront-checkout-choices"
 
 export interface StorefrontCheckoutCustomer {
   /** Name and phone, a line each — only the ones on file; the addresses are `addresses`. */
@@ -39,6 +39,10 @@ export interface StorefrontCheckoutProps {
   paymentMethods: readonly PaymentMethod[]
   choice: StorefrontCheckoutChoice
   onChoiceChange: (choice: StorefrontCheckoutChoice) => void
+  /** What the shop's delivery rules quote to the chosen address; null while nobody knows. */
+  shipping?: StorefrontCheckoutShipping | null
+  /** The CPF of who receives a carrier's delivery, asked when the record has none; null asks for none. */
+  recipientDocument?: StorefrontCheckoutChoicesProps["recipientDocument"]
   /** Places the order; the page opens WhatsApp itself once the order has its number. */
   onPlace: () => void
   /** The order is on its way to the shop: nothing is pressed twice. */
@@ -67,6 +71,8 @@ export function StorefrontCheckout({
   paymentMethods,
   choice,
   onChoiceChange,
+  shipping = null,
+  recipientDocument = null,
   onPlace,
   pending = false,
   error,
@@ -118,6 +124,8 @@ export function StorefrontCheckout({
         addresses={customer.addresses}
         addHref={customer.addAddressHref}
         paymentMethods={paymentMethods}
+        shipping={shipping}
+        recipientDocument={recipientDocument}
         disabled={pending}
         linkComponent={Link}
         messages={messages}

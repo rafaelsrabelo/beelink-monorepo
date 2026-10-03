@@ -25,7 +25,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { StoreAddressValues } from "./store-schemas"
-import { StoreMap } from "./store-map"
+import { MAP_ATTRIBUTION, StoreMap } from "./store-map"
 import type { FieldIssues, StoreAddressSuggestion, StorePoint, StoreZipCodeAddress } from "./store-types"
 
 export interface StoreAddressFieldsProps {
@@ -75,8 +75,6 @@ export interface StoreAddressFieldsProps {
  */
 const BRAZIL: StorePoint = { latitude: -14.235, longitude: -51.9253 }
 
-/** MapTiler's licence asks for this visibly, and the free plan is the one that asks hardest. */
-const MAP_ATTRIBUTION = '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
 /** Where the shop is. A visitor never sees it; the delivery radius is measured from it. */
 export function StoreAddressFields({

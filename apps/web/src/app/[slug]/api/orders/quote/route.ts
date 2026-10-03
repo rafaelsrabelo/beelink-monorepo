@@ -52,6 +52,14 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   // Named field by field: the doors without a code refuse a body that carries anything else.
   const withoutCode = { items: cart.items, fulfillment: cart.fulfillment }
 
+  // The saved address a delivery would go to (BEELINK-178), and the way it would go by (BEELINK-186),
+  // are a shopper's: their doors alone take them.
+  const asShopper = {
+    ...withoutCode,
+    ...(typeof cart.addressId === "string" ? { addressId: cart.addressId } : {}),
+    ...(typeof cart.shipping === "object" && cart.shipping !== null ? { shipping: cart.shipping } : {}),
+  }
+
   const asVisitor = async () => {
     const priced = await callApi({ path: `${shop}/cart/quote`, body: withoutCode, clientIp }).catch(() => null)
     return priced ? answerOf(priced) : refusal(502, "UNKNOWN", "The shop could not be reached")
@@ -62,7 +70,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/[slu
   const priced = await callAsShopper(request, slug, (accessToken) =>
     callApi({
       path: couponCode === null ? `${shop}/customer/cart/quote` : `${shop}/customer/orders/quote`,
-      body: couponCode === null ? withoutCode : { ...withoutCode, couponCode },
+      body: couponCode === null ? asShopper : { ...asShopper, couponCode },
       accessToken,
       clientIp,
     }).catch(() => null),

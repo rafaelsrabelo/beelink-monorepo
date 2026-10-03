@@ -19,6 +19,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -29,6 +30,7 @@ import type {
   OrderDeliveryPayload,
   OrderFulfillment,
   OrderListQuery,
+  OrderShippingChoice,
   OrderStatus,
   PaymentMethod,
   UpdateOrderStatusPayload,
@@ -50,6 +52,7 @@ import {
   ORDERS_PAGE_MAX,
   ORDERS_PAGE_SIZE,
   ORDERS_PAGE_SIZE_MAX,
+  SHIPPING_CHOICE_KINDS,
 } from '../orders.constants.js';
 
 /** A UUID in the case Postgres answers it in, so an id sent in capitals still matches its row. */
@@ -115,6 +118,31 @@ export class OrderItemDto implements CreateOrderItemInput {
   @Max(ORDER_QUANTITY_MAX)
   quantity!: number;
 }
+
+/** The way a delivery goes by: the shop's own, or a carrier's service by Melhor Envio's id (BEELINK-186). */
+export class OrderShippingChoiceDto {
+  @ApiProperty({ enum: SHIPPING_CHOICE_KINDS })
+  @IsIn(SHIPPING_CHOICE_KINDS)
+  kind!: OrderShippingChoice['kind'];
+
+  @ApiPropertyOptional({ minimum: 1, description: "Melhor Envio's service id; required on a CARRIER." })
+  @ValidateIf((choice: OrderShippingChoiceDto) => choice.kind === 'CARRIER')
+  @IsInt()
+  @Min(1)
+  serviceId?: number;
+}
+
+/**
+ * A delivery's way on a body: validated by `OrderShippingChoiceDto`, and read as the contract's
+ * union — a CARRIER that passed has its `serviceId`.
+ */
+export const shippingChoice = applyDecorators(
+  ApiPropertyOptional({ type: () => OrderShippingChoiceDto, description: "The way a delivery goes by, among the shipping quote's; absent, the shop's own delivery." }),
+  IsOptional(),
+  IsObject(),
+  ValidateNested(),
+  Type(() => OrderShippingChoiceDto),
+);
 
 /** What the panel sends. No price anywhere: the API reads each variant's. */
 export class CreateOrderDto {

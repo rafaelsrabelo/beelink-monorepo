@@ -29,11 +29,13 @@ export interface ApiCall {
    * to keep in step with the first, and the pair would disagree inside a quarter.
    */
   rawBody?: { stream: ReadableStream<Uint8Array>; contentType: string }
+  /** Headers a third party signed its request with, carried as they came (BEELINK-188). */
+  headers?: Record<string, string>
 }
 
 /** Only the server talks to the API; everything the browser sends passes through a route handler. */
-export async function callApi({ path, method = "POST", body, accessToken, clientIp, pageRevision, rawBody }: ApiCall): Promise<Response> {
-  const headers: Record<string, string> = {}
+export async function callApi({ path, method = "POST", body, accessToken, clientIp, pageRevision, rawBody, headers: carried }: ApiCall): Promise<Response> {
+  const headers: Record<string, string> = { ...carried }
   if (accessToken) headers.authorization = `Bearer ${accessToken}`
   if (clientIp) headers["x-forwarded-for"] = clientIp
   if (pageRevision) headers[PAGE_REVISION_HEADER] = pageRevision

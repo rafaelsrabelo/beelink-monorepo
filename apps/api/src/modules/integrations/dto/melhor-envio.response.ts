@@ -60,5 +60,7 @@ export class MelhorEnvioSettingsResponse implements MelhorEnvioSettings {
   @ApiProperty() handlingDays!: number;
   @ApiProperty({ type: [Number], nullable: true, description: 'Null until first saved: every service is offered.' }) serviceIds!: number[] | null;
   @ApiProperty({ type: ShippingPackageResponse, nullable: true }) defaultPackage!: ShippingPackage | null;
+  @ApiProperty({ nullable: true, type: String, description: "The shop's CPF or CNPJ as the labels' sender, digits only." }) senderDocument!: string | null;
+  @ApiProperty({ nullable: true, type: String }) senderStateRegister!: string | null;
   @ApiProperty({ nullable: true, type: String, format: 'date-time' }) updatedAt!: string | null;
 }

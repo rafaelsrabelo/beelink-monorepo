@@ -109,7 +109,7 @@ describe("a shop's carrier settings and its Melhor Envio wallet (BEELINK-183)", 
   });
 
   it('starts from the defaults — every service, a day to post, no parcel — and keeps what is saved, whole', async () => {
-    expect((await call('GET', settings, owner)).json<MelhorEnvioSettings>()).toEqual({ handlingDays: 1, serviceIds: null, defaultPackage: null, updatedAt: null });
+    expect((await call('GET', settings, owner)).json<MelhorEnvioSettings>()).toEqual({ handlingDays: 1, serviceIds: null, defaultPackage: null, senderDocument: null, senderStateRegister: null, updatedAt: null });
 
     const saved = await call('PUT', settings, owner, { handlingDays: 2, serviceIds: [2, 1], defaultPackage: parcel });
 

@@ -69,7 +69,9 @@ export type IntegrationErrorCode =
   | "INTEGRATION_UNREACHABLE"
   | "INTEGRATION_NOT_CONNECTED"
   | "INTEGRATION_NEEDS_RECONNECT"
-  /** A carrier setting out of range: days past 30, a service id repeated, half a package. */
+  /** A webhook whose signature is missing or not the app's (BEELINK-188). */
+  | "INTEGRATION_SIGNATURE_INVALID"
+  /** A carrier setting out of range: days past 30, a service id repeated, half a package, a document that is no CPF or CNPJ. */
   | "MELHOR_ENVIO_SETTINGS_INVALID";
 
 /** The `details` of an integration refusal raised after the state named the shop: where to send the browser back. */
@@ -109,6 +111,10 @@ export interface MelhorEnvioSettings {
   serviceIds: number[] | null;
   /** Used for a product with no size of its own; null with none. */
   defaultPackage: ShippingPackage | null;
+  /** Who sends the labels (BEELINK-187): the shop's CPF (11 digits) or CNPJ (14). Null until told — no label is bought without it. */
+  senderDocument: string | null;
+  /** The shop's state registration, for a commercial shipment with an invoice; null with none. */
+  senderStateRegister: string | null;
   /** ISO-8601; null until first saved. */
   updatedAt: string | null;
 }
@@ -118,4 +124,7 @@ export interface MelhorEnvioSettingsPayload {
   handlingDays: number;
   serviceIds: number[];
   defaultPackage: ShippingPackage | null;
+  /** Digits, with or without the mask; a CPF or a CNPJ whose check digits hold. Absent keeps what is saved. */
+  senderDocument?: string | null;
+  senderStateRegister?: string | null;
 }

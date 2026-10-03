@@ -54,6 +54,15 @@ export function cepDigitsOf(zipCode: string | null | undefined): string | null {
   return digits.length === 8 ? digits : null
 }
 
+/**
+ * The address a delivery goes to before the shopper picks another: the one just saved on the way from
+ * the cart, when it is theirs, else the default. The page that serves the cart's first price and the
+ * cart that follows it ask about the same one.
+ */
+export function checkoutAddressIdOf(addresses: readonly StorefrontCheckoutAddress[], deliverTo: string | null): string | null {
+  return (addresses.find((address) => address.id === deliverTo) ?? addresses[0])?.id ?? null
+}
+
 /** The saved addresses a delivery can go to — a street and a city, the API's rule — as the cart offers them, the default first. */
 export function checkoutAddressesOf(shopper: Pick<CustomerProfile, "name" | "addresses">): StorefrontCheckoutAddress[] {
   return shopper.addresses

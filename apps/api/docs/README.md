@@ -28,6 +28,7 @@ src/
 │   │   ├── store-categories.{controller,service}.ts   # the platform's taxonomy of shops
 │   │   ├── store-color-presets.{controller,constants}.ts  # the six palettes, as data
 │   │   └── dto/                            # bodies in, Swagger shapes out
+│   ├── delivery/               # how a shop gets an order out: the rules (pickup, own delivery by distance bands, carriers) and their quote to an address
 │   ├── integrations/           # a shop's own accounts at Melhor Envio (and Asaas): the sealed vault, the OAuth flow, the renewal routine
 │   └── users/                  # GET /users/me
 └── shared/
@@ -99,7 +100,13 @@ Every route needs `Authorization: Bearer <access token>` unless it is marked pub
 | `POST` | `/api/integrations/melhor-envio/callback` | no | the code traded for the tokens, sealed; only the person who began the flow | `200 MelhorEnvioConnected` · `400 INTEGRATION_STATE_INVALID` · `400 INTEGRATION_EXCHANGE_FAILED` · `502 INTEGRATION_UNREACHABLE` |
 | `DELETE` | `/api/stores/:slug/integrations/melhor-envio` | no | disconnect: the tokens are deleted | `204` |
 | `GET` | `/api/stores/:slug/integrations/melhor-envio/account` | no | the wallet's balance and Melhor Envio's services, read there and then with the shop's token | `200 MelhorEnvioAccountOverview` · `409 INTEGRATION_NOT_CONNECTED` · `409 INTEGRATION_NEEDS_RECONNECT` · `502 INTEGRATION_UNREACHABLE` |
-| `GET` · `PUT` | `/api/stores/:slug/integrations/melhor-envio/settings` | no | the services offered, the days to post and the default parcel — every service until first saved | `200 MelhorEnvioSettings` · `400 MELHOR_ENVIO_SETTINGS_INVALID` |
+| `GET` · `PUT` | `/api/stores/:slug/integrations/melhor-envio/settings` | no | the services offered, the days to post, the default parcel and the shop as the labels' sender (CPF or CNPJ, state registration) — every service until first saved | `200 MelhorEnvioSettings` · `400 MELHOR_ENVIO_SETTINGS_INVALID` |
+| `GET` · `POST` · `DELETE` | `/api/stores/:slug/orders/:number/label` | no | an order's shipping label from the shop's own Melhor Envio wallet: what buying one needs, the wallet and the box Melhor Envio would pack it in; buy — into the cart, paid from the balance, generated, its tracking on the order — carrying on from where it stopped; cancel while Melhor Envio allows it | `200 OrderLabelOverview` · `400 LABEL_INVALID` · `409 LABEL_NOT_AVAILABLE` · `409 LABEL_BALANCE_INSUFFICIENT` · `409 LABEL_REFUSED` · `409 LABEL_NOT_CANCELLABLE` · `502 INTEGRATION_UNREACHABLE` |
+| `POST` | `/api/integrations/melhor-envio/webhook` | yes | Melhor Envio telling of a label: posted moves the order out for delivery, delivered delivers it — forward only, by the carrier — with its tracking; a cancelled label is mirrored. Signed with the app's secret (`X-ME-Signature`); once per label and status | `200 { result }` · `401 INTEGRATION_SIGNATURE_INVALID` |
+| `POST` | `/api/stores/:slug/orders/:number/label/print` | no | the generated label's PDF, at a public address made there and then | `200 OrderLabelPrint` · `404 LABEL_NOT_FOUND` · `409 LABEL_NOT_GENERATED` |
+| `GET` · `PUT` | `/api/stores/:slug/delivery` | no | pickup, the shop's own delivery by distance bands (the last band is the radius), free above, carriers — the defaults until first saved | `200 DeliverySettings` · `400 DELIVERY_SETTINGS_INVALID` |
+| `POST` | `/api/stores/:slug/delivery/quote` | no | the panel's quote for a sale it registers: drafts included | `200 ShippingQuote` · `400 SHIPPING_DESTINATION_INVALID` · `403 STORE_FORBIDDEN` |
+| `POST` | `/api/stores/:slug/shipping/quote` | yes | the shop window's ways to get a cart to an address — own delivery by straight-line distance to the geocoded address (MapTiler, else Nominatim; remembered by CEP and number), the carriers of the shop's Melhor Envio (its token, its services, its days to post; remembered ten minutes per cart; left out, never failing, when Melhor Envio does not answer in 4 s), then pickup | `200 ShippingQuote` · `400 SHIPPING_DESTINATION_INVALID` · `400 ORDER_VARIANT_INVALID` · `404 STORE_NOT_FOUND` · `429` |
 
 `GET /api/stores/mine` is declared above `GET /api/stores/:slug`: Nest matches in declaration order, and `mine` is on the reserved-slug list so no shop can occupy it either.
 
