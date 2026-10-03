@@ -27,5 +27,7 @@ import { OrdersService } from './orders.service.js';
   imports: [StoresModule, CustomersModule, AuthModule, RealtimePublisherModule, DeliveryModule],
   controllers: [OrdersController, CustomerOrdersController, CartQuoteController, CustomerCartQuoteController],
   providers: [OrdersService, CustomerOrdersService, OrderPlacement, OrderQuotes, OrderShipping, OrderStatusMailer],
+  // For a carrier moving an order along (BEELINK-188).
+  exports: [OrdersService],
 })
 export class OrdersModule {}

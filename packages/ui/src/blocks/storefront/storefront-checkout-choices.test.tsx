@@ -136,6 +136,18 @@ describe("StorefrontCheckoutChoices", () => {
       expect(screen.queryByRole("group", { name: "Forma de envio" })).toBeNull()
     })
 
+    /** BEELINK-187: a carrier's label is bought with the CPF of who receives it. */
+    it("asks the CPF of who receives it when the screen asks for it, and hands back what is typed", async () => {
+      const onDocument = vi.fn()
+      const { container } = render(choices({ value: { fulfillment: "DELIVERY", addressId: "a1", paymentMethod: null, wayId: "CARRIER:2" }, shipping: several, recipientDocument: { value: "", onChange: onDocument } }))
+
+      const field = screen.getByLabelText("CPF de quem recebe")
+      expect(field).toHaveAccessibleDescription(/fica guardado no seu cadastro/)
+      await userEvent.type(field, "5")
+      expect(onDocument).toHaveBeenLastCalledWith("5")
+      await expectNoA11yViolations(container)
+    })
+
     it("says a single carrier inside the delivery choice, with nothing to choose among", () => {
       render(choices({ shipping: { ...several, ways: [sedex], note: "Correios · SEDEX — R$ 27,45 · chega em 3–4 dias úteis" } }))
 

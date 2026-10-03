@@ -133,6 +133,32 @@ export function ShippingSettingsForm({ value, onChange, onSubmit, services, issu
         </FieldContent>
       </FieldSet>
 
+      <FieldSet className="flex flex-col gap-3">
+        <FieldLegend variant="label">{text.sender}</FieldLegend>
+        <FieldDescription>{text.senderHint}</FieldDescription>
+        <div className="grid max-w-xl gap-3 sm:grid-cols-2">
+          <Field data-invalid={issues.senderDocument ? true : undefined}>
+            <FieldLabel htmlFor={`${id}-document`}>{text.senderDocument}</FieldLabel>
+            <Input
+              id={`${id}-document`}
+              inputMode="numeric"
+              autoComplete="off"
+              value={value.senderDocument}
+              disabled={pending}
+              aria-invalid={issues.senderDocument ? true : undefined}
+              aria-describedby={issues.senderDocument ? `${id}-document-error` : undefined}
+              onChange={(event) => set({ senderDocument: event.target.value })}
+            />
+            {issues.senderDocument ? <FieldError id={`${id}-document-error`}>{issues.senderDocument}</FieldError> : null}
+          </Field>
+          <Field>
+            <FieldLabel htmlFor={`${id}-register`}>{text.senderStateRegister}</FieldLabel>
+            <Input id={`${id}-register`} autoComplete="off" value={value.senderStateRegister} disabled={pending} aria-describedby={`${id}-register-help`} onChange={(event) => set({ senderStateRegister: event.target.value })} />
+            <FieldDescription id={`${id}-register-help`}>{text.senderStateRegisterHint}</FieldDescription>
+          </Field>
+        </div>
+      </FieldSet>
+
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>
           {pending ? text.saving : text.save}

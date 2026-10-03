@@ -13,8 +13,8 @@ import { createTestApp } from './support/create-test-app.js';
 import { clearInbox } from './support/mailpit.js';
 import { resetDatabase } from './support/reset-database.js';
 
-const SEDEX: MelhorEnvioQuotedService = { serviceId: 2, service: 'SEDEX', company: 'Correios', priceCents: 2745, daysFrom: 2, daysTo: 3 };
-const PAC: MelhorEnvioQuotedService = { serviceId: 1, service: 'PAC', company: 'Correios', priceCents: 1820, daysFrom: 6, daysTo: 8 };
+const SEDEX: MelhorEnvioQuotedService = { serviceId: 2, service: 'SEDEX', company: 'Correios', priceCents: 2745, daysFrom: 2, daysTo: 3, packages: [] };
+const PAC: MelhorEnvioQuotedService = { serviceId: 1, service: 'PAC', company: 'Correios', priceCents: 1820, daysFrom: 6, daysTo: 8, packages: [] };
 
 /** Melhor Envio for a checkout: any code connects, and the carriers answer what `offers` says. */
 class FakeMelhorEnvio {
@@ -80,7 +80,8 @@ describe('a carrier chosen at checkout (BEELINK-186)', () => {
     await call('POST', '/api/stores/lessari/customer/register', undefined, { name: 'Bia Cliente', email, password: PASSWORD });
     await verifyEmailOf(app, email);
     shopper = (await call('POST', '/api/stores/lessari/customer/login', undefined, { email, password: PASSWORD })).json<AuthSession>();
-    await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777' });
+    // A carrier's label is bought with the CPF of who receives it (BEELINK-187).
+    await call('PATCH', '/api/stores/lessari/customer/me', shopper, { phone: '(11) 98888-7777', cpf: '529.982.247-25' });
     await call('POST', '/api/stores/lessari/customer/addresses', shopper, home);
   });
 

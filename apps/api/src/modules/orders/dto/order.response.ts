@@ -27,7 +27,7 @@ import { COUPON_KINDS } from '../../promotions/promotions.constants.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import { ORDER_DELIVERY_KINDS, ORDER_FULFILLMENTS, ORDER_STATUSES } from '../orders.constants.js';
 
-const ORDER_ACTORS = ['SHOPKEEPER', 'CUSTOMER', 'SYSTEM'] as const satisfies readonly OrderActor[];
+const ORDER_ACTORS = ['SHOPKEEPER', 'CUSTOMER', 'SYSTEM', 'CARRIER'] as const satisfies readonly OrderActor[];
 
 /**
  * The shapes out, for Swagger. Each `implements` its contract type, so a field added to the wire

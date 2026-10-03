@@ -27,6 +27,8 @@ enum OrderActor {
   SHOPKEEPER
   CUSTOMER
   SYSTEM
+  /// A carrier, as Melhor Envio tells of a label posted or delivered (BEELINK-188).
+  CARRIER
 }
 
 /// An order: a fact about the past, in the shop that sold it (docs/product/README.md, "Orders").
@@ -60,6 +62,9 @@ model Order {
   deliveryWindowUnit ShippingWindowUnit?
   deliveryWindowFrom Int?
   deliveryWindowTo   Int?
+  /// The CPF of who receives a carrier's delivery, photographed as the order was placed (BEELINK-187):
+  /// its label is bought with it, whatever the customer's record says later.
+  deliveryDocument   String? @db.VarChar(14)
   /// Everything taken off the order: the promotions, the coupon and what the shopkeeper typed.
   /// `totalCents = subtotalCents + deliveryFeeCents − discountCents`, as before the first two existed.
   discountCents    Int @default(0)
@@ -111,6 +116,8 @@ model Order {
   events OrderEvent[]
   /// Who delivers it and when it should arrive — a delivery's alone, never a pick-up's.
   delivery OrderDelivery?
+  /// Its shipping label, once the shopkeeper buys one (BEELINK-187).
+  label    OrderLabel?
   /// The customer's conversation with the shop about it, once they wrote (BEELINK-160).
   conversation OrderConversation?
   /// The e-mails its moves owe the customer (BEELINK-151).

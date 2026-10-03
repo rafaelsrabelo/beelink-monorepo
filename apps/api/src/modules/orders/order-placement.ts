@@ -39,6 +39,8 @@ export interface Placement {
   deliveryWindow: ShippingWindow | null;
   /** The carrier's service a delivery goes by, as the customer chose it (BEELINK-186); null on the shop's own and on a sale registered in the panel. */
   deliveryCarrier: ShippingCarrier | null;
+  /** The CPF of who receives a carrier's delivery, as their record held it (BEELINK-187); null otherwise. */
+  deliveryDocument?: string | null;
   /** What the shopkeeper typed, beyond the promotions and the coupon; zero from the cart. */
   discountCents: number;
   /** As it was typed; null is none. One that does not hold refuses the order. */
@@ -151,6 +153,7 @@ export class OrderPlacement {
           paymentMethod: placement.paymentMethod,
           ...delivery,
           ...deliveryWindowColumnsOf(delivering ? placement.deliveryWindow : null),
+          deliveryDocument: delivering && placement.deliveryCarrier ? (placement.deliveryDocument ?? null) : null,
           ...priced.totals,
           promotionDiscountCents: priced.promotionDiscountCents,
           couponDiscountCents: priced.couponDiscountCents,

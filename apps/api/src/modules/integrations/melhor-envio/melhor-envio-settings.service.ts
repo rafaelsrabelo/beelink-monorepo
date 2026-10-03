@@ -13,7 +13,7 @@ import { melhorEnvioConfig, MelhorEnvioClient, MelhorEnvioUnreachable } from './
 import { MelhorEnvioService } from './melhor-envio.service.js';
 
 /** What a shop that never saved its carrier settings ships with: every service, a day to post, no default parcel. */
-const DEFAULTS: MelhorEnvioSettings = { handlingDays: 1, serviceIds: null, defaultPackage: null, updatedAt: null };
+const DEFAULTS: MelhorEnvioSettings = { handlingDays: 1, serviceIds: null, defaultPackage: null, senderDocument: null, senderStateRegister: null, updatedAt: null };
 
 function settingsOf(row: MelhorEnvioSettingsModel | null): MelhorEnvioSettings {
   if (!row) return DEFAULTS;
@@ -22,6 +22,8 @@ function settingsOf(row: MelhorEnvioSettingsModel | null): MelhorEnvioSettings {
     handlingDays: row.handlingDays,
     serviceIds: row.serviceIds,
     defaultPackage: weightGrams !== null && lengthMm !== null && widthMm !== null && heightMm !== null ? { weightGrams, lengthMm, widthMm, heightMm } : null,
+    senderDocument: row.senderDocument,
+    senderStateRegister: row.senderStateRegister,
     updatedAt: row.updatedAt.toISOString(),
   };
 }
@@ -72,6 +74,9 @@ export class MelhorEnvioSettingsService {
       packageLengthMm: parcel?.lengthMm ?? null,
       packageWidthMm: parcel?.widthMm ?? null,
       packageHeightMm: parcel?.heightMm ?? null,
+      // Absent keeps what is saved: the panel's form may not hold the sender yet.
+      ...(payload.senderDocument !== undefined ? { senderDocument: payload.senderDocument } : {}),
+      ...(payload.senderStateRegister !== undefined ? { senderStateRegister: payload.senderStateRegister } : {}),
     };
     return settingsOf(await this.prisma.melhorEnvioSettings.upsert({ where: { storeId }, create: { storeId, ...data }, update: data }));
   }
