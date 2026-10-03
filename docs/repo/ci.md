@@ -28,7 +28,7 @@ The local mirror of CI. It runs **every** step even after one fails, then summar
 | `changes` | always | decides which workspaces the change touches |
 | `gates` | always | `arch-gates` + `docs-gate` — seconds, and they cover every workspace |
 | `web` | web or packages changed | type-check · lint · build |
-| `api` | api or packages changed | Prisma generate · type-check · lint · test · build |
+| `api` | api or packages changed | type-check · lint · test · build, after one Prisma generate |
 | `mobile` | mobile or packages changed | type-check · lint · `expo-doctor` |
 | `e2e` | api or web changed | API e2e against a real Postgres and Mailpit, then Playwright through a real browser |
 | `changeset` | mobile changed | a PR touching the app must add a changeset — the app's version is its OTA runtime |
@@ -42,6 +42,15 @@ Turborepo's strict env mode passes a task only the variables a `turbo.json` task
 A turbo task's cache key holds its own package's files and the tasks it `dependsOn`, and nothing else. With `"type-check": {}`, a change to `packages/contracts` left the web's key unchanged, so `pnpm ci-check` replayed yesterday's green for a web that no longer compiled. It was measured on BEELINK-52: a field added to `PublicComponent` broke four web files, and `turbo type-check` answered from cache.
 
 `transit` is turbo's documented transit node. It does no work, and `"dependsOn": ["^transit"]` chains it through every internal dependency, so a task that depends on it is re-run when any package it imports changes. `build` needs no transit because `^build` already is one.
+
+### Why a task that writes files runs once, before the tasks that read them
+
+The `web` and `api` jobs run `type-check lint test build` in **one** turbo call, so a package's tasks run side by side. Two of them used to write where the others read, and `main` went red on the race, not on the code:
+
+- every API script began with `prisma generate`, and the generator deletes and rewrites `src/generated/prisma`. Two at once failed with `EEXIST: mkdir …/generated/prisma/models`.
+- `next build` empties `.next`, while the web's `type-check` was reading `.next/types/routes.d.ts`, which `next typegen` had just written: `ENOENT`.
+
+So `generate` is its own task (the API's `prisma generate`), and `type-check`, `test` and `build` depend on it; the scripts themselves no longer generate. `build` also waits for `type-check`, so `next build` never clears `.next` under a running `tsc`. A script called outside turbo — the API image, the e2e job — runs `generate` first itself. `pnpm ci-check` never saw either race: it calls each task in a turbo run of its own.
 
 ### Why jobs are filtered inside the workflow, not with `on.paths`
 

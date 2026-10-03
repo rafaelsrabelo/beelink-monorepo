@@ -29,7 +29,10 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     throw new AuthRequestError(errorCode)
   }
 
-  return response.status === 204 ? (undefined as T) : ((await response.json()) as T)
+  // Forgot-password and resend-verification answer 202 with no body, and the route handler passes
+  // that on as it came: a success is read for a body only when there is one.
+  const text = await response.text()
+  return (text ? JSON.parse(text) : undefined) as T
 }
 
 export function signIn(values: { email: string; password: string }): Promise<User> {
