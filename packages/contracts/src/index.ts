@@ -10,6 +10,7 @@ export type * from "./delivery.js";
 export type * from "./error.js";
 export type * from "./favorite.js";
 export type * from "./integration.js";
+export type * from "./label.js";
 export type * from "./leads.js";
 export type * from "./legal.js";
 export type * from "./order.js";

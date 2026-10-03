@@ -481,7 +481,9 @@ export type OrderErrorCode =
   /** The shop does not hand this order over the way it asks — no pick-up, or no delivery to that address. Its `details` are `OrderShippingUnavailableDetails`. */
   | "ORDER_SHIPPING_UNAVAILABLE"
   /** The delivery fee is not the one the quote showed. Its `details` are `OrderShippingChangedDetails`. */
-  | "ORDER_SHIPPING_CHANGED";
+  | "ORDER_SHIPPING_CHANGED"
+  /** A carrier needs the CPF of who receives it, and the customer has none on their record (BEELINK-187). */
+  | "ORDER_RECIPIENT_DOCUMENT_MISSING";
 
 /** The `details` of `ORDER_SHIPPING_UNAVAILABLE`: what the quote says of each way now; both absent on a pick-up the shop does not offer. */
 export interface OrderShippingUnavailableDetails {
