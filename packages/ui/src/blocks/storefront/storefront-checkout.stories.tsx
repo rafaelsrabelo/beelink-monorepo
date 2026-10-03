@@ -23,7 +23,7 @@ const meta = {
     signIn: { signInHref: "#", signUpHref: "#" },
     customer: null,
     paymentMethods: ["PIX", "MONEY", "CREDIT_CARD"],
-    choice: { fulfillment: "DELIVERY", addressId: "casa", paymentMethod: "PIX" },
+    choice: { fulfillment: "DELIVERY", addressId: "casa", paymentMethod: "PIX", wayId: null },
     onChoiceChange: () => {},
     onPlace: () => {},
   },

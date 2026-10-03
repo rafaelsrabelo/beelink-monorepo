@@ -49,12 +49,15 @@ export function orderMessageOf({ shopName, order, customer, locale, messages }: 
     }),
   )
   const address = order.deliveryAddress ? addressLineOf(order.deliveryAddress) : null
+  // The fee the checkout quoted (BEELINK-178): without its line, the items add up to less than the total under them.
+  const fee = order.fulfillment === "DELIVERY" && order.deliveryFeeCents !== null ? order.deliveryFeeCents : null
 
   return [
     format(text.orderGreeting, { number: String(order.number), shop: shopName }),
     "",
     ...lines,
     "",
+    ...(fee === null ? [] : [format(messages.orders.detail.whatsappFee, { value: fee === 0 ? text.orderFree : money(fee) })]),
     ...discountMessageLines(order, money, messages.orders.discountRows),
     // A delivery's fee not agreed yet stays out of the total: "+ frete" says so (BEELINK-170).
     format(text.orderTotal, { total: customerTotalText(money(order.totalCents), order, text.orderTotalPlusFee) }),

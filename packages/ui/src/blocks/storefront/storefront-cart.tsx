@@ -38,7 +38,9 @@ export interface StorefrontCartProps {
   count: number
   /** What is taken off, under the subtotal; none, and the summary is the subtotal alone. */
   discounts?: readonly StorefrontCartDiscount[]
-  /** What is left to pay, in words — "R$ 157,50 + frete". Said under a discount; the subtotal says it otherwise. */
+  /** The delivery's fee as the shop's rules quote it (BEELINK-178), in words — "R$ 5,00", "Grátis"; none on a pick-up and on a fee agreed afterwards. */
+  delivery?: string | null
+  /** What is left to pay, in words — "R$ 157,50 + frete". Said under a discount or a fee; the subtotal says it otherwise. */
   total?: string | null
   /** A first-purchase offer that is in none of the amounts above, said under them; none, and nothing is said. */
   offer?: StorefrontCartOffer | null
@@ -76,8 +78,8 @@ const OFFER_TONE: Record<StorefrontCartOffer["tone"], string> = {
  * the way out. Empty, it is a sentence and a way back to the shelf — never a checkout with nothing
  * in it.
  *
- * The amounts are the API's (BEELINK-194): a promotion and a coupon each have their row, and the
- * block adds nothing up — two sums of one cart are two totals to disagree. A first-purchase offer
+ * The amounts are the API's (BEELINK-194): the delivery's fee, a promotion and a coupon each have
+ * their row, and the block adds nothing up — two sums of one cart are two totals to disagree. A first-purchase offer
  * (BEELINK-245) is a sentence under those rows and never one of them: what it names was not taken off.
  */
 export function StorefrontCart({
@@ -85,6 +87,7 @@ export function StorefrontCart({
   subtotalCents,
   count,
   discounts = [],
+  delivery = null,
   total = null,
   offer = null,
   cashback = null,
@@ -142,6 +145,12 @@ export function StorefrontCart({
               <dd className={cn("tabular-nums", total ? "text-sm font-semibold" : "text-xl font-extrabold")}>{formatCents(subtotalCents, locale, "BRL")}</dd>
             )}
           </div>
+          {delivery && !pricing ? (
+            <div className="flex items-baseline justify-between gap-4 text-sm">
+              <dt>{text.cartDelivery}</dt>
+              <dd className="shrink-0 font-semibold tabular-nums">{delivery}</dd>
+            </div>
+          ) : null}
           {pricing
             ? null
             : discounts.map((row) => (

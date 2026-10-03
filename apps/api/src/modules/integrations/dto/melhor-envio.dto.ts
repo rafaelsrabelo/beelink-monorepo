@@ -1,14 +1,15 @@
 // Nest
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Libs
-import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayUnique, IsArray, IsDefined, IsInt, IsObject, IsString, Length, Max, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsDefined, IsInt, IsObject, IsOptional, IsString, Length, Matches, Max, Min, ValidateIf, ValidateNested } from 'class-validator';
 
 // Types
 import type { IntegrationErrorCode, MelhorEnvioCallbackPayload, MelhorEnvioSettingsPayload, ShippingPackage } from '@harness-monorepo/contracts';
 
 // App
+import { documentDigitsOf, IsCpfOrCnpj } from '../../../shared/http/cnpj.js';
 import { PARCEL_GRAMS_MAX, PARCEL_MM_MAX } from '../../catalog/catalog.constants.js';
 import { HANDLING_DAYS_MAX, SERVICE_IDS_MAX } from '../integrations.constants.js';
 
@@ -76,4 +77,19 @@ export class MelhorEnvioSettingsDto implements MelhorEnvioSettingsPayload {
   @ValidateNested()
   @Type(() => ShippingPackageDto)
   defaultPackage!: ShippingPackageDto | null;
+
+  @ApiPropertyOptional({ nullable: true, type: String, example: '11.222.333/0001-81', description: "The shop's CPF or CNPJ, as the labels' sender; absent keeps what is saved, null clears it." })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' && value.trim() === '' ? null : documentDigitsOf(value)))
+  @ValidateIf((_, value) => value !== null)
+  @IsCpfOrCnpj(answering)
+  senderDocument?: string | null;
+
+  @ApiPropertyOptional({ nullable: true, type: String, example: 'ISENTO', description: "The shop's state registration; absent keeps what is saved." })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toUpperCase() || null : value))
+  @ValidateIf((_, value) => value !== null)
+  @IsString(answering)
+  @Matches(/^(ISENTO|[0-9.\-/]{2,20})$/, answering)
+  senderStateRegister?: string | null;
 }

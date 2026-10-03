@@ -2,7 +2,7 @@
 import { BadRequestException } from '@nestjs/common';
 
 // Types
-import type { OrderDeliveryAddress, OrderFulfillment } from '@harness-monorepo/contracts';
+import type { OrderDeliveryAddress, OrderFulfillment, ShippingWindow } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
@@ -95,6 +95,22 @@ export async function deliveryOf(tx: Tx, customerId: string, fulfillment: OrderF
     throw new BadRequestException(orderError('ORDER_DELIVERY_ADDRESS_MISSING', 'The customer has no street and city to deliver to'));
   }
   return columns;
+}
+
+/** The window an order was quoted, as its own columns hold it: all three or none. */
+export interface DeliveryWindowColumns {
+  deliveryWindowUnit: ShippingWindow['unit'] | null;
+  deliveryWindowFrom: number | null;
+  deliveryWindowTo: number | null;
+}
+
+export function deliveryWindowColumnsOf(window: ShippingWindow | null): DeliveryWindowColumns {
+  return { deliveryWindowUnit: window?.unit ?? null, deliveryWindowFrom: window?.from ?? null, deliveryWindowTo: window?.to ?? null };
+}
+
+export function toDeliveryWindow(row: DeliveryWindowColumns): ShippingWindow | null {
+  if (row.deliveryWindowUnit === null || row.deliveryWindowFrom === null || row.deliveryWindowTo === null) return null;
+  return { unit: row.deliveryWindowUnit, from: row.deliveryWindowFrom, to: row.deliveryWindowTo };
 }
 
 /** The columns back as the wire's address; null when they were never written. */

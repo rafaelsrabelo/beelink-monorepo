@@ -1,5 +1,6 @@
 import type { CouponKindValue } from "@harness-monorepo/ui/lib/order-discounts"
 import type { OrderFulfillmentValue, OrderPaymentValue } from "@harness-monorepo/ui/lib/order-form"
+import type { ShippingWindowValue } from "@harness-monorepo/ui/lib/shipping"
 
 // Block
 import type { OrderCashbackView } from "@harness-monorepo/ui/lib/cashback"
@@ -25,7 +26,7 @@ export interface OrderListItem {
 }
 
 /** Who set a status. Mirrors the wire's `OrderActor`. */
-export type OrderActorValue = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM"
+export type OrderActorValue = "SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER"
 
 /** One line as it was photographed when the order was placed. */
 export interface OrderDetailItem {
@@ -72,6 +73,8 @@ export interface OrderDetailView {
   subtotalCents: number
   /** Null while a delivery's fee is not agreed (BEELINK-170); zero is a free delivery. */
   deliveryFeeCents: number | null
+  /** The window the checkout quoted (BEELINK-178); null or absent where nothing was. */
+  deliveryWindow?: ShippingWindowValue | null
   /** Everything taken off; the two below are its named parts, and the rest is what the shopkeeper typed. */
   discountCents: number
   promotionDiscountCents: number
