@@ -13,7 +13,8 @@ import { configureApp, createFastifyAdapter } from '../../src/app.setup.js';
 export async function createTestApp(adjust?: (builder: TestingModuleBuilder) => TestingModuleBuilder): Promise<NestFastifyApplication> {
   const builder = Test.createTestingModule({ imports: [AppModule] });
   const moduleRef = await (adjust ? adjust(builder) : builder).compile();
-  const app = moduleRef.createNestApplication<NestFastifyApplication>(createFastifyAdapter());
+  // Kept as main.ts keeps it: a webhook's signature is read over the bytes that arrived.
+  const app = moduleRef.createNestApplication<NestFastifyApplication>(createFastifyAdapter(), { rawBody: true });
 
   await configureApp(app);
   await app.init();

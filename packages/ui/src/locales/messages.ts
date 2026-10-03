@@ -213,6 +213,9 @@ export interface UiMessages {
     cartSubtotal: string
     /** The summary's last row, said once something was taken off. */
     cartTotal: string
+    /** The delivery fee's row in the cart's summary (BEELINK-178). */
+    cartDelivery: string
+    cartDeliveryFree: string
     /** `{name}` `{value}` — a first-purchase promotion a visitor's cart would get, announced until they sign in (BEELINK-245). */
     cartFirstPurchaseOpen: string
     /** `{value}` — the same when several would apply, and none is named. */
@@ -294,6 +297,42 @@ export interface UiMessages {
     checkoutNoAddress: string
     /** Until the product computes a fee, the shop tells it. */
     checkoutFeeLater: string
+    /** {fee} {window} — under the delivery choice, once the shop's rules quote one (BEELINK-178). */
+    checkoutDeliveryArrives: string
+    checkoutDeliveryFree: string
+    checkoutDeliveryFreeAbove: string
+    /** {distance} {radius} */
+    checkoutOutOfRange: string
+    checkoutOutOfRangePickup: string
+    checkoutOutOfRangeAddress: string
+    checkoutNoWay: string
+    checkoutShippingUnavailable: string
+    checkoutShippingChanged: string
+    /** A window in words: {from} {to}, or {count} when both ends are the same. */
+    windowMinutes: string
+    windowMinutesOne: string
+    windowHours: string
+    windowHoursOne: string
+    windowDays: string
+    windowDaysOne: string
+    /** A carrier's window (BEELINK-186): a range, several days alike ({count}), and a single day. */
+    windowBusinessDays: string
+    windowBusinessDaysOne: string
+    windowBusinessDay: string
+    /** The ways to deliver, when there are several to choose among (BEELINK-186). */
+    checkoutWayChoose: string
+    checkoutWayOwn: string
+    /** {fee} {window} */
+    checkoutCarrierArrives: string
+    checkoutNoDeliveryHere: string
+    /** The CPF of who receives a carrier's delivery, asked once (BEELINK-187). */
+    checkoutRecipientDocument: string
+    checkoutRecipientDocumentHint: string
+    checkoutRecipientDocumentIssue: string
+    /** {window} — on an order that goes by carrier. */
+    orderWindowCarrier: string
+    /** {window} — on an order, when the quote said it would arrive. */
+    orderWindowOwn: string
     checkoutPayment: string
     checkoutChoosePayment: string
     /**
@@ -1634,6 +1673,61 @@ export interface UiMessages {
   }
   /** The panel's orders: the list, and later the order and its form. */
   orders: {
+    /** An order's shipping label, bought from the shop's Melhor Envio wallet (BEELINK-187). */
+    label: {
+      title: string
+      /** {carrier} */
+      intro: string
+      balance: string
+      balanceUnknown: string
+      volume: string
+      volumeHint: string
+      weight: string
+      length: string
+      width: string
+      height: string
+      invoiceKey: string
+      invoiceKeyHint: string
+      buy: string
+      buying: string
+      retry: string
+      generate: string
+      print: string
+      printing: string
+      cancel: string
+      cancelling: string
+      cancelConfirmTitle: string
+      cancelConfirmText: string
+      cancelConfirm: string
+      keep: string
+      /** {price} {date} */
+      statusInCart: string
+      statusPaid: string
+      statusGenerated: string
+      statusCancelled: string
+      protocol: string
+      tracking: string
+      trackingPending: string
+      blockersTitle: string
+      blockers: Record<"NOT_CARRIER" | "ORDER_CANCELLED" | "NOT_CONNECTED" | "NO_SENDER_DOCUMENT" | "NO_ORIGIN" | "NO_RECIPIENT_DOCUMENT" | "RECIPIENT_ADDRESS_INCOMPLETE", string>
+      openIntegrations: string
+      openStore: string
+      openWallet: string
+      issues: { volume: string; invoiceKey: string }
+      errors: {
+        /** {balance} {price} */
+        LABEL_BALANCE_INSUFFICIENT: string
+        /** {reason} */
+        LABEL_REFUSED: string
+        LABEL_NOT_CANCELLABLE: string
+        LABEL_NOT_AVAILABLE: string
+        LABEL_INVALID: string
+        LABEL_NOT_GENERATED: string
+        INTEGRATION_NOT_CONNECTED: string
+        INTEGRATION_UNREACHABLE: string
+        UNKNOWN: string
+      }
+    }
     title: string
     description: string
     /** The way to register one, from the list's header and its empty state. */
@@ -1797,7 +1891,7 @@ export interface UiMessages {
       deliveryClear: string
       deliverySaved: string
       deliveryNeeded: string
-      actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM", string>
+      actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER", string>
       markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
       statusLabel: string
       moreStatuses: string
@@ -1813,6 +1907,9 @@ export interface UiMessages {
       whatsappFee: string
       /** A delivery's fee not agreed yet (BEELINK-170): on the order, in its message, and the form that tells it. */
       feeToAgree: string
+      /** What the checkout promised the customer (BEELINK-178): the row's label, and its value with {window}. */
+      quotedWindow: string
+      quotedWindowValue: string
       whatsappFeeToAgree: string
       feeFormTitle: string
       feeFormHint: string
@@ -2325,6 +2422,9 @@ export interface UiMessages {
        * when the truth was no.
        */
       statusSoldOut: string
+      /** Under a product's name, for a shop that ships by carrier (BEELINK-184). */
+      carrierNoWeight: string
+      carrierNoSize: string
       /** Opens the product's own page on the shop window. */
       view: string
       /** Said instead, on a draft: it has no public page to open. */
@@ -2585,7 +2685,6 @@ export interface UiMessages {
       tabIdentity: string
       tabAddress: string
       tabSocial: string
-      tabAppearance: string
       tabPayment: string
       tabCustomers: string
       save: string
@@ -2880,6 +2979,79 @@ export interface UiMessages {
     }
   }
   /** The panel's Integrations (BEELINK-183): the shop's own accounts elsewhere — Melhor Envio now. */
+  /** The store settings' Delivery tab (BEELINK-177): how the shop gets an order to its customer. */
+  delivery: {
+    tab: string
+    intro: string
+    on: string
+    off: string
+    pickup: {
+      title: string
+      description: string
+      /** {address} */
+      address: string
+      noAddress: string
+    }
+    own: {
+      title: string
+      description: string
+      noBands: string
+      straightLine: string
+      noPoint: string
+      mapLabel: string
+      freeAbove: string
+      freeAboveHelp: string
+    }
+    bands: {
+      legend: string
+      upTo: string
+      fee: string
+      windowFrom: string
+      windowTo: string
+      add: string
+      /** {index} */
+      remove: string
+      /** {max} */
+      max: string
+    }
+    carriers: {
+      title: string
+      description: string
+      unavailable: string
+      disconnected: string
+      connect: string
+      /** {name} */
+      connected: string
+      needsReconnect: string
+      reconnect: string
+      manage: string
+      sandbox: string
+    }
+    save: string
+    saving: string
+    saved: string
+    loading: string
+    failed: string
+    retry: string
+    /** {distance} {fee} {from} {to} */
+    preview: string
+    free: string
+    issues: {
+      /** {index} */
+      band: string
+      /** {index} {previous} */
+      order: string
+      /** {index} */
+      window: string
+      /** {index} */
+      range: string
+      freeAbove: string
+    }
+    errors: {
+      DELIVERY_SETTINGS_INVALID: string
+      UNKNOWN: string
+    }
+  }
   integrations: {
     title: string
     intro: string
@@ -2930,7 +3102,13 @@ export interface UiMessages {
       save: string
       saving: string
       saved: string
-      issues: { handlingDays: string; package: string; packageRange: string }
+      /** Who sends the labels (BEELINK-187). */
+      sender: string
+      senderHint: string
+      senderDocument: string
+      senderStateRegister: string
+      senderStateRegisterHint: string
+      issues: { handlingDays: string; package: string; packageRange: string; senderDocument: string }
       errors: Record<"MELHOR_ENVIO_SETTINGS_INVALID" | "UNKNOWN", string>
     }
   }

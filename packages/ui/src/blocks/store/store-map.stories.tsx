@@ -39,3 +39,8 @@ export const SemEndereco: Story = {}
 export const ComEndereco: Story = {
   args: { point: { latitude: -3.7269, longitude: -38.5527 } },
 }
+
+/** How far the shop delivers (BEELINK-177): the circle of its last band, and the map framed on it. */
+export const ComRaioDeEntrega: Story = {
+  args: { ...ComEndereco.args, radiusMeters: 3000 },
+}

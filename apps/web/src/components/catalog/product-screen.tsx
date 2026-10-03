@@ -216,14 +216,11 @@ export function ProductScreen({ slug, messages }: ProductScreenProps) {
               // the eye must not point at a 404. A sold-out product does still have one.
               viewHref:
                 product.status === "DRAFT" || !routes ? null : routes.product(product.slug),
+              // What a carrier lacks to quote it (BEELINK-184); the API says nothing for a shop with no carrier.
+              carrierGap: products.data?.carrierGaps?.[product.id] ?? null,
             }))}
             onEdit={(productId) => router.push(`/admin/${slug}/products/${productId}`)}
-            onDelete={(productId) =>
-            setPendingDelete({
-              id: productId,
-              name: rows.find((row) => row.id === productId)?.name ?? "",
-            })
-          }
+            onDelete={(productId) => setPendingDelete({ id: productId, name: rows.find((row) => row.id === productId)?.name ?? "" })}
             busyId={remove.isPending ? remove.variables : null}
             {...(filtered
               ? { emptyTitle: text.filters.noResults, emptyHint: text.filters.noResultsHint }

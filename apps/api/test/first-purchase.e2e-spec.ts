@@ -179,6 +179,8 @@ describe('a first purchase', () => {
         manualDiscountCents: 0,
         discountCents: OFF,
         deliveryFeeCents: 0,
+        // Nowhere to quote a delivery to: this shopper saved no address (BEELINK-178).
+        shipping: null,
         totalCents: 37373,
         // The shop's cashback is off: a quote says nothing of it (BEELINK-243).
         cashback: null,

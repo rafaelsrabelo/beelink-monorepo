@@ -12,6 +12,6 @@ import { StoresService } from './stores.service.js';
 @Module({
   controllers: [StoresController, StoreCategoriesController, StoreColorPresetsController],
   providers: [StoresService, StoreCategoriesService, StoreGeocoder],
-  exports: [StoresService],
+  exports: [StoresService, StoreGeocoder],
 })
 export class StoresModule {}

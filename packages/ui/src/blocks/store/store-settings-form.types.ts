@@ -1,3 +1,6 @@
+// React
+import type { ReactNode } from "react"
+
 // Locales
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -6,7 +9,6 @@ import type { StoreSettingsValues } from "./store-schemas"
 import type {
   StoreAddressSuggestion,
   StoreCategoryOption,
-  StoreColorPreset,
   StorePoint,
   StoreZipCodeAddress,
 } from "./store-types"
@@ -17,7 +19,6 @@ export interface StoreSettingsFormProps {
   defaultValues: StoreSettingsValues
   onSubmit: (values: StoreSettingsValues) => void | Promise<void>
   categories: StoreCategoryOption[]
-  colorPresets?: StoreColorPreset[]
   /**
    * Asked to fill the address from the postcode, and its answer is used — `void` here is what made
    * the lookup run, resolve, and discard what it found, with no complaint from the compiler.
@@ -42,5 +43,14 @@ export interface StoreSettingsFormProps {
   pending?: boolean
   /** A sentence the reader can act on. The screen turns an API errorCode into it. */
   error?: string
+  /** Tabs beside the shop's own that save through their own route, drawn outside this form. */
+  extraTabs?: readonly StoreSettingsExtraTab[]
   messages?: UiMessages
+}
+
+/** A tab the screen owns whole — its content, its request, its save (BEELINK-177). */
+export interface StoreSettingsExtraTab {
+  value: string
+  label: string
+  content: ReactNode
 }

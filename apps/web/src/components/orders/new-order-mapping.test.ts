@@ -109,6 +109,7 @@ describe("shownTotalsOf", () => {
     manualDiscountCents: 300,
     discountCents: 800,
     deliveryFeeCents: 1000,
+    shipping: null,
     totalCents: 5200,
     cashback: null,
     cashbackUse: null,

@@ -19,6 +19,9 @@ import {
 import { defaultLocale, defaultMessages } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
+// Block
+import { ProductNameCell } from "./product-name-cell"
+
 export interface ProductTableItem {
   id: string
   name: string
@@ -44,6 +47,8 @@ export interface ProductTableItem {
    * so an eye pointing at it would open a 404.
    */
   viewHref?: string | null
+  /** What a carrier lacks to quote it (BEELINK-184): said under the name. Null or absent says nothing. */
+  carrierGap?: "NO_WEIGHT" | "NO_SIZE" | null
 }
 
 export interface ProductTableProps {
@@ -150,14 +155,7 @@ export function ProductTable({
               </TableCell>
 
               <TableCell>
-                <div className="flex items-center gap-3">
-                  <span className="bg-muted flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md">
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt="" aria-hidden="true" className="size-full object-cover" />
-                    ) : null}
-                  </span>
-                  <span className="min-w-0 truncate font-medium">{product.name}</span>
-                </div>
+                <ProductNameCell name={product.name} imageUrl={product.imageUrl} carrierGap={product.carrierGap} messages={messages} />
               </TableCell>
 
               <TableCell>
