@@ -59,3 +59,73 @@ model IntegrationOAuthState {
   @@index([expiresAt])
   @@map("integration_oauth_states")
 }
+
+/// How a shop ships by carrier (BEELINK-183): which Melhor Envio services it offers, how long it takes
+/// to post, and the parcel used for a product with no size. Apart from the connection, so connecting
+/// again keeps the shop's choices. None until first saved: then every service is offered.
+model MelhorEnvioSettings {
+  storeId      String   @id @db.Uuid
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  handlingDays Int      @default(1)
+  /// Melhor Envio's service ids. A service it starts offering later stays off until chosen.
+  serviceIds   Int[]
+  /// The default parcel, all four or none — in the product's units.
+  packageWeightGrams Int?
+  packageLengthMm    Int?
+  packageWidthMm     Int?
+  packageHeightMm    Int?
+  /// Who sends the labels (BEELINK-187): the shop's CPF or CNPJ, digits only; none, and no label is bought.
+  senderDocument      String? @db.VarChar(14)
+  /// The shop's state registration, for a commercial shipment with an invoice.
+  senderStateRegister String? @db.VarChar(20)
+  updatedAt    DateTime @updatedAt
+
+  @@map("melhor_envio_settings")
+}
+
+/// Where an order's label stands at Melhor Envio (BEELINK-187).
+enum OrderLabelStatus {
+  IN_CART
+  PAID
+  GENERATED
+  CANCELLED
+}
+
+/// An order's shipping label, bought from the shop's own Melhor Envio wallet: one per order, for one
+/// box. Buying again after a cancellation replaces it. `providerId` is Melhor Envio's id for it, which
+/// every later step — pay, generate, print, track, cancel — is asked with.
+model OrderLabel {
+  orderId    String           @id @db.Uuid
+  order      Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId    String           @db.Uuid
+  providerId String           @db.VarChar(64)
+  protocol   String?          @db.VarChar(60)
+  status     OrderLabelStatus
+  priceCents Int
+  weightGrams Int
+  lengthMm    Int
+  widthMm     Int
+  heightMm    Int
+  /// The NF-e's key on a commercial shipment; null went with a declaration of contents.
+  invoiceKey   String?   @db.Char(44)
+  trackingCode String?   @db.VarChar(60)
+  createdAt    DateTime  @default(now())
+  paidAt       DateTime?
+  generatedAt  DateTime?
+  cancelledAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  @@index([storeId, status])
+  @@map("order_labels")
+}
+
+/// A third party's event already applied (BEELINK-188): its key is what makes a second delivery of it —
+/// a webhook retried, or the periodic check reaching the same fact — a no-op.
+model IntegrationEvent {
+  key       String              @id @db.VarChar(120)
+  provider  IntegrationProvider
+  createdAt DateTime            @default(now())
+
+  @@index([createdAt])
+  @@map("integration_events")
+}

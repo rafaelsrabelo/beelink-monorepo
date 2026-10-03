@@ -50,6 +50,7 @@ const order: CustomerOrder = {
     { status: "PREPARING", at: "2026-09-28T12:00:00.000Z" },
   ],
   delivery: null,
+  deliveryWindow: null,
 }
 
 describe("the account's front", () => {

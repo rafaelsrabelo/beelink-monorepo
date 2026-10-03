@@ -57,6 +57,14 @@ describe("StorefrontCart", () => {
     expect(screen.getByRole("complementary")).toContainElement(screen.getByRole("link", { name: "Fechar pedido" }))
   })
 
+  /** BEELINK-178: the delivery's fee has its row, and the total stands under it. */
+  it("says the delivery's fee on its own row, with the total under it", () => {
+    render(<StorefrontCart rows={rows} subtotalCents={17980} count={2} delivery="R$ 5,00" total="R$ 184,80" locale="pt-BR" continueHref="#" />)
+
+    const summary = screen.getByRole("complementary")
+    expect(money(summary.querySelector("dl")?.textContent ?? null)).toBe("Subtotal (2 itens)R$ 179,80EntregaR$ 5,00TotalR$ 184,80")
+  })
+
   /** BEELINK-194: the promotion and the coupon each have their row, and the total is what is left. */
   describe("priced with its discounts", () => {
     const discounts = [

@@ -68,9 +68,63 @@ export type IntegrationErrorCode =
   | "INTEGRATION_EXCHANGE_FAILED"
   | "INTEGRATION_UNREACHABLE"
   | "INTEGRATION_NOT_CONNECTED"
-  | "INTEGRATION_NEEDS_RECONNECT";
+  | "INTEGRATION_NEEDS_RECONNECT"
+  /** A webhook whose signature is missing or not the app's (BEELINK-188). */
+  | "INTEGRATION_SIGNATURE_INVALID"
+  /** A carrier setting out of range: days past 30, a service id repeated, half a package, a document that is no CPF or CNPJ. */
+  | "MELHOR_ENVIO_SETTINGS_INVALID";
 
 /** The `details` of an integration refusal raised after the state named the shop: where to send the browser back. */
 export interface IntegrationRefusalDetails {
   storeSlug: string;
+}
+
+/** A carrier's service the shop can offer: PAC, SEDEX, .Package… — by Melhor Envio's own id. */
+export interface MelhorEnvioShippingService {
+  id: number;
+  name: string;
+  /** The carrier, by name: Correios, Jadlog… */
+  company: string;
+}
+
+/** `GET /stores/:slug/integrations/melhor-envio/account`: read from Melhor Envio there and then, never kept. */
+export interface MelhorEnvioAccountOverview {
+  /** What the shop's wallet holds now, in cents. Labels are paid from it. */
+  balanceCents: number;
+  /** Every service Melhor Envio offers, by carrier then name. */
+  services: MelhorEnvioShippingService[];
+}
+
+/** A parcel's weight and size, in the product's own units: grams and millimetres. */
+export interface ShippingPackage {
+  weightGrams: number;
+  lengthMm: number;
+  widthMm: number;
+  heightMm: number;
+}
+
+/** `GET /stores/:slug/integrations/melhor-envio/settings`: how the shop ships by carrier. */
+export interface MelhorEnvioSettings {
+  /** How many days the shop takes to post an order, added to the carrier's time. */
+  handlingDays: number;
+  /** The services offered at checkout; null until first saved, and then every service is. */
+  serviceIds: number[] | null;
+  /** Used for a product with no size of its own; null with none. */
+  defaultPackage: ShippingPackage | null;
+  /** Who sends the labels (BEELINK-187): the shop's CPF (11 digits) or CNPJ (14). Null until told — no label is bought without it. */
+  senderDocument: string | null;
+  /** The shop's state registration, for a commercial shipment with an invoice; null with none. */
+  senderStateRegister: string | null;
+  /** ISO-8601; null until first saved. */
+  updatedAt: string | null;
+}
+
+/** `PUT /stores/:slug/integrations/melhor-envio/settings`, whole. */
+export interface MelhorEnvioSettingsPayload {
+  handlingDays: number;
+  serviceIds: number[];
+  defaultPackage: ShippingPackage | null;
+  /** Digits, with or without the mask; a CPF or a CNPJ whose check digits hold. Absent keeps what is saved. */
+  senderDocument?: string | null;
+  senderStateRegister?: string | null;
 }

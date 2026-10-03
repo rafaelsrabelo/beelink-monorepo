@@ -119,6 +119,7 @@ describe("a shopper's order from the cart", () => {
         'delivery',
         'deliveryAddress',
         'deliveryFeeCents',
+        'deliveryWindow',
         'discountCents',
         'events',
         'fulfillment',

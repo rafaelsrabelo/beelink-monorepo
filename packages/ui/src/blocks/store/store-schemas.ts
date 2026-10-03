@@ -5,7 +5,7 @@ import { z } from "zod"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
-import { PAYMENT_METHODS, STORE_CARD_LAYOUTS, STORE_LAYOUT_TYPES, STORE_TYPES } from "./store-types"
+import { PAYMENT_METHODS, STORE_TYPES } from "./store-types"
 
 type ValidationMessages = UiMessages["validation"]
 
@@ -90,19 +90,6 @@ export function createStoreColorsSchema(messages: ValidationMessages) {
   })
 }
 
-export function createStoreAppearanceSchema(messages: ValidationMessages) {
-  return z.object({
-    layoutType: z.enum(STORE_LAYOUT_TYPES),
-    bannerImageUrl: optionalUrl(messages),
-    /**
-     * Lifted out of the `layoutSettings` JSON so the panel can offer it at all. The screen echoes
-     * the rest of that blob back untouched and merges this one key over it.
-     */
-    cardLayout: z.enum(STORE_CARD_LAYOUTS),
-    colors: createStoreColorsSchema(messages),
-  })
-}
-
 /**
  * What `POST /api/stores` accepts, which is less than the settings form edits: the layout, the
  * banner and the payment methods are not part of `CreateStorePayload`, and the shop opens on the
@@ -142,7 +129,7 @@ export function createStoreCreateSchema(messages: ValidationMessages) {
 }
 
 /**
- * One form, six tabs, one save — the legacy panel's single "Salvar alterações" over six tabs, and
+ * One form, five tabs, one save — the legacy panel's single "Salvar alterações" over its tabs, and
  * the shape `PUT /api/stores/:slug` replaces whole. Blank means absent; the screen maps an empty
  * string to the payload's `null`.
  */
@@ -152,7 +139,6 @@ export function createStoreSettingsSchema(messages: ValidationMessages) {
       identity: createStoreIdentitySchema(messages),
       address: createStoreAddressSchema(messages),
       social: createStoreSocialSchema(messages),
-      appearance: createStoreAppearanceSchema(messages),
       // A checkout with no payment method cannot complete an order. The legacy panel only warned.
       paymentMethods: z.array(z.enum(PAYMENT_METHODS)).min(1, messages.paymentMethodsMin),
       customers: z.object({
@@ -169,6 +155,5 @@ export function createStoreSettingsSchema(messages: ValidationMessages) {
 export type StoreIdentityValues = z.infer<ReturnType<typeof createStoreIdentitySchema>>
 export type StoreAddressValues = z.infer<ReturnType<typeof createStoreAddressSchema>>
 export type StoreSocialValues = z.infer<ReturnType<typeof createStoreSocialSchema>>
-export type StoreAppearanceValues = z.infer<ReturnType<typeof createStoreAppearanceSchema>>
 export type StoreSettingsValues = z.infer<ReturnType<typeof createStoreSettingsSchema>>
 export type StoreCreateValues = z.infer<ReturnType<typeof createStoreCreateSchema>>

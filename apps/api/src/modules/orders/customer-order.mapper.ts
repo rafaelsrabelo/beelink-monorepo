@@ -11,7 +11,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { toOrderCashback } from '../cashback/cashback.mapper.js';
-import { toDeliveryAddress } from './order-delivery.js';
+import { toDeliveryAddress, toDeliveryWindow } from './order-delivery.js';
 import { toCustomerDelivery } from './order-tracking.js';
 import { toOrderCoupon } from './orders.mapper.js';
 
@@ -103,6 +103,7 @@ export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
     placedAt: row.placedAt.toISOString(),
     events: row.events.map((event) => ({ status: event.status, at: event.createdAt.toISOString() })),
     delivery: row.delivery ? toCustomerDelivery(row.delivery) : null,
+    deliveryWindow: toDeliveryWindow(row),
   } satisfies CustomerOrder;
 }
 

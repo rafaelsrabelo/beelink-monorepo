@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 
 // App
+import { IntegrationsModule } from '../integrations/integrations.module.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { CatalogSlugService } from './catalog-slug.service.js';
 import { ProductCategoriesController } from './product-categories.controller.js';
@@ -20,10 +21,11 @@ import { RestockRequestsService } from './restock-requests.service.js';
  *
  * It imports StoresModule for `StoresService.ownedStoreId` rather than re-deriving who owns what —
  * the ownership rule has one place to be right, which is the whole reason that method is public.
- * PrismaModule is global, so it is not listed.
+ * IntegrationsModule says which products a carrier cannot quote (BEELINK-184). PrismaModule is
+ * global, so it is not listed.
  */
 @Module({
-  imports: [StoresModule],
+  imports: [StoresModule, IntegrationsModule],
   controllers: [StorefrontController, StorefrontCartController, ProductCategoriesController, ProductsController, RestockRequestsController],
   providers: [
     CatalogSlugService,

@@ -77,25 +77,4 @@ describe("createStoreSettingsSchema", () => {
     expect(result.success).toBe(false)
     expect(result.error?.issues[0]?.message).toBe(ptBR.validation.paymentMethodsMin)
   })
-
-  it("refuses a colour that is not six hexadecimal digits, the only shape the storefront paints", () => {
-    const appearance = sampleStoreSettingsValues.appearance
-    const result = settings.safeParse({
-      ...sampleStoreSettingsValues,
-      appearance: { ...appearance, colors: { ...appearance.colors, primary: "azul" } },
-    })
-
-    expect(result.success).toBe(false)
-  })
-
-  it("carries the product card style, so the panel's control is not dropped on save", () => {
-    const appearance = sampleStoreSettingsValues.appearance
-    const result = settings.safeParse({
-      ...sampleStoreSettingsValues,
-      appearance: { ...appearance, cardLayout: "horizontal" },
-    })
-
-    expect(result.success).toBe(true)
-    expect(result.data?.appearance.cardLayout).toBe("horizontal")
-  })
 })

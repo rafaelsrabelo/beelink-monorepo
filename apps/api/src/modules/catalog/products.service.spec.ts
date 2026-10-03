@@ -2,7 +2,11 @@
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { StoresService } from '../stores/stores.service.js';
 import type { CatalogSlugService } from './catalog-slug.service.js';
+import type { CarrierGapsService } from '../integrations/carrier-gaps.service.js';
 import type { ProductRow } from './catalog.mapper.js';
+
+/** A shop with no carrier: the list says nothing is missing. */
+const noCarrier = { gapsOf: async () => null } as unknown as CarrierGapsService;
 
 // App
 import { PRODUCTS_PAGE_SIZE_MAX } from './catalog.constants.js';
@@ -39,7 +43,7 @@ function build(page: ProductRow[], total: number) {
     $transaction: transaction,
   } as unknown as PrismaService;
 
-  const service = new ProductsService(prisma, {} as StoresService, {} as CatalogSlugService);
+  const service = new ProductsService(prisma, {} as StoresService, {} as CatalogSlugService, noCarrier);
 
   return { service, findMany, count, transaction };
 }
@@ -83,6 +87,7 @@ describe('ProductsService.list — the panel, filtered', () => {
         { product: { findMany: built.findMany, count: built.count }, $transaction: built.transaction } as never,
         stores,
         {} as CatalogSlugService,
+        noCarrier,
       ),
     };
   }

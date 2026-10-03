@@ -17,6 +17,7 @@ import type { ProductWhereInput } from '../../generated/prisma/models/Product.js
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
+import { CarrierGapsService } from '../integrations/carrier-gaps.service.js';
 import { catalogError, CatalogSlugService } from './catalog-slug.service.js';
 import {
   PRODUCTS_ADMIN_PAGE_SIZE,
@@ -53,6 +54,7 @@ export class ProductsService {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly slugs: CatalogSlugService,
+    private readonly carrier: CarrierGapsService,
   ) {}
 
   /**
@@ -125,7 +127,9 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
-    return { products: rows.map(toProduct), total, page, pageSize };
+    // What a carrier could not quote on this page (BEELINK-184); null for a shop with no carrier.
+    const carrierGaps = await this.carrier.gapsOf(storeId, rows.map((row) => row.id));
+    return { products: rows.map(toProduct), total, page, pageSize, carrierGaps };
   }
 
   /**
