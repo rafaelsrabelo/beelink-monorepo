@@ -101,6 +101,14 @@ export interface MelhorEnvioQuoteRequest {
   serviceIds: readonly number[] | null;
 }
 
+/** A box as Melhor Envio packed a cart into it: grams and millimetres, bee-link's own units. */
+export interface MelhorEnvioPackage {
+  weightGrams: number;
+  lengthMm: number;
+  widthMm: number;
+  heightMm: number;
+}
+
 /** A service that takes the cart, at the shop's own account's price and time. */
 export interface MelhorEnvioQuotedService {
   serviceId: number;
@@ -110,15 +118,73 @@ export interface MelhorEnvioQuotedService {
   /** Business days from posting. */
   daysFrom: number;
   daysTo: number;
+  /** The boxes Melhor Envio assumed for the cart (BEELINK-187); empty when it sent none. */
+  packages: MelhorEnvioPackage[];
+}
+
+/** One end of a label: who sends it, or who receives it. */
+export interface MelhorEnvioParty {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  /** A CPF, or a CNPJ — 11 or 14 digits. */
+  document: string;
+  stateRegister: string | null;
+  street: string;
+  number: string;
+  complement: string | null;
+  district: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+/** A label to put in Melhor Envio's cart (BEELINK-187): one box, for one service. */
+export interface MelhorEnvioCartRequest {
+  serviceId: number;
+  from: MelhorEnvioParty;
+  to: MelhorEnvioParty;
+  /** What goes in the box, for the declaration of contents. */
+  products: readonly { name: string; quantity: number; unitReais: number }[];
+  volume: { lengthCm: number; widthCm: number; heightCm: number; weightKg: number };
+  insuranceReais: number;
+  /** The NF-e's 44-digit key on a commercial shipment; null sends a declaration of contents. */
+  invoiceKey: string | null;
+  /** The order's number at the shop, shown on Melhor Envio's side to find it. */
+  tag: string;
+}
+
+/** A label in the cart: what every later step is asked with, and what it costs. */
+export interface MelhorEnvioCartItem {
+  id: string;
+  protocol: string | null;
+  priceCents: number;
+}
+
+/** Where a label stands at Melhor Envio, and its tracking code once there is one. */
+export interface MelhorEnvioTracking {
+  status: string;
+  trackingCode: string | null;
 }
 
 /** Melhor Envio speaks reais in decimals; bee-link, cents. The one place the two meet. */
 export const centsOfReais = (reais: number): number => Math.round(reais * 100);
 
+/**
+ * What Melhor Envio said when it refused: the first of a validation's own words — "O campo to.document
+ * é obrigatório." — else its message.
+ */
+function wordsOf(answer: unknown): string {
+  if (!answer || typeof answer !== 'object') return 'no reason given';
+  const { error, message, errors } = answer as Record<string, unknown>;
+  const first = errors && typeof errors === 'object' ? Object.values(errors as Record<string, unknown>).flat().find((each): each is string => typeof each === 'string') : undefined;
+  return first ?? (typeof error === 'string' ? error : typeof message === 'string' ? message : 'no reason given');
+}
+
 /** Melhor Envio answered, and said no: the code or the refresh token is not good, or the access was revoked. */
 export class MelhorEnvioRefused extends Error {
-  constructor(readonly status: number, detail: string) {
-    super(`Melhor Envio refused (${status}): ${detail}`);
+  constructor(readonly status: number, readonly reason: string) {
+    super(`Melhor Envio refused (${status}): ${reason}`);
   }
 }
 
@@ -149,7 +215,45 @@ function quotedServiceOf(entry: unknown): MelhorEnvioQuotedService | null {
   const daysTo = positive(range.max) ? range.max : days;
   if (!positive(daysFrom) || !positive(daysTo) || daysFrom > daysTo) return null;
 
-  return { serviceId: service.id, service: service.name, company: service.company.name, priceCents: centsOfReais(price), daysFrom, daysTo };
+  return { serviceId: service.id, service: service.name, company: service.company.name, priceCents: centsOfReais(price), daysFrom, daysTo, packages: packagesOf(service.packages) };
+}
+
+/** The boxes a quote assumed, in grams and millimetres; one sent malformed is left out. */
+function packagesOf(raw: unknown): MelhorEnvioPackage[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry: unknown) => {
+    const box = (entry ?? {}) as { weight?: unknown; dimensions?: { height?: unknown; width?: unknown; length?: unknown } };
+    const kg = Number.parseFloat(String(box.weight));
+    const [height, width, length] = [box.dimensions?.height, box.dimensions?.width, box.dimensions?.length].map((cm) => Number(cm));
+    if (![kg, height, width, length].every((value) => Number.isFinite(value) && value! > 0)) return [];
+    return [{ weightGrams: Math.round(kg * 1000), lengthMm: Math.round(length! * 10), widthMm: Math.round(width! * 10), heightMm: Math.round(height! * 10) }];
+  });
+}
+
+/** A party as Melhor Envio's cart reads it: a CPF goes as `document`, a CNPJ as `company_document`. */
+function partyOf(party: MelhorEnvioParty) {
+  return {
+    name: party.name,
+    ...(party.phone ? { phone: party.phone } : {}),
+    ...(party.email ? { email: party.email } : {}),
+    ...(party.document.length === 14 ? { company_document: party.document } : { document: party.document }),
+    ...(party.stateRegister ? { state_register: party.stateRegister } : {}),
+    address: party.street,
+    number: party.number,
+    ...(party.complement ? { complement: party.complement } : {}),
+    district: party.district,
+    city: party.city,
+    state_abbr: party.state,
+    country_id: 'BR',
+    postal_code: party.zipCode,
+  };
+}
+
+/** The entry an answer keyed by label id holds for one label, or an empty one. */
+function entryFor(answer: unknown, id: string): Record<string, unknown> {
+  const keyed = (answer ?? {}) as Record<string, unknown>;
+  const entry = keyed[id];
+  return entry && typeof entry === 'object' ? (entry as Record<string, unknown>) : {};
 }
 
 function tokensOf(body: unknown): MelhorEnvioTokens {
@@ -241,6 +345,76 @@ export class MelhorEnvioClient {
     return (Array.isArray(answer) ? answer : [answer]).flatMap((entry: unknown) => quotedServiceOf(entry) ?? []);
   }
 
+  /** A label into Melhor Envio's cart (BEELINK-187): nothing is paid yet, and it can still be taken out. */
+  async addToCart(config: MelhorEnvioConfig, accessToken: string, request: MelhorEnvioCartRequest): Promise<MelhorEnvioCartItem> {
+    const body = {
+      service: request.serviceId,
+      from: partyOf(request.from),
+      to: partyOf(request.to),
+      products: request.products.map((product) => ({ name: product.name, quantity: product.quantity, unitary_value: product.unitReais })),
+      volumes: [{ height: request.volume.heightCm, width: request.volume.widthCm, length: request.volume.lengthCm, weight: request.volume.weightKg }],
+      options: {
+        insurance_value: request.insuranceReais,
+        receipt: false,
+        own_hand: false,
+        reverse: false,
+        non_commercial: request.invoiceKey === null,
+        ...(request.invoiceKey ? { invoice: { key: request.invoiceKey } } : {}),
+        platform: 'Beelink',
+        tags: [{ tag: request.tag, url: null }],
+      },
+    };
+    const answer = (await this.call(config, '/api/v2/me/cart', this.posting(accessToken, body))) as Record<string, unknown> | null;
+    const price = Number.parseFloat(String(answer?.price));
+    if (typeof answer?.id !== 'string' || !Number.isFinite(price)) throw new MelhorEnvioUnreachable('Melhor Envio answered the cart without a label');
+    return { id: answer.id, protocol: typeof answer.protocol === 'string' ? answer.protocol : null, priceCents: centsOfReais(price) };
+  }
+
+  /** A label out of the cart, before it is paid. */
+  async removeFromCart(config: MelhorEnvioConfig, accessToken: string, id: string): Promise<void> {
+    await this.call(config, `/api/v2/me/cart/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { authorization: `Bearer ${accessToken}` } });
+  }
+
+  /** The label paid from the shop's wallet. */
+  async checkout(config: MelhorEnvioConfig, accessToken: string, id: string): Promise<void> {
+    await this.call(config, '/api/v2/me/shipment/checkout', this.posting(accessToken, { orders: [id] }));
+  }
+
+  /** The label generated — the carrier is told of it — or Melhor Envio's reason not to. */
+  async generate(config: MelhorEnvioConfig, accessToken: string, id: string): Promise<{ generated: boolean; message: string | null }> {
+    const entry = entryFor(await this.call(config, '/api/v2/me/shipment/generate', this.posting(accessToken, { orders: [id] })), id);
+    return { generated: entry.status === true, message: typeof entry.message === 'string' ? entry.message : null };
+  }
+
+  /** The label's PDF at a public address: the shopkeeper need not be signed in at Melhor Envio to open it. */
+  async print(config: MelhorEnvioConfig, accessToken: string, id: string): Promise<string> {
+    const answer = (await this.call(config, '/api/v2/me/shipment/print', this.posting(accessToken, { mode: 'public', orders: [id] }))) as Record<string, unknown> | null;
+    if (typeof answer?.url !== 'string') throw new MelhorEnvioUnreachable('Melhor Envio answered the print without an address');
+    return answer.url;
+  }
+
+  /** Whether Melhor Envio still allows cancelling the label: not once posted, nor once a carrier was told of a pickup. */
+  async cancellable(config: MelhorEnvioConfig, accessToken: string, id: string): Promise<boolean> {
+    return entryFor(await this.call(config, '/api/v2/me/shipment/cancellable', this.posting(accessToken, { orders: [id] })), id).cancellable === true;
+  }
+
+  /** The label cancelled; its value goes back to the wallet. Reason 2 is the one Melhor Envio asks integrations for. */
+  async cancel(config: MelhorEnvioConfig, accessToken: string, id: string, description: string): Promise<boolean> {
+    const answer = await this.call(config, '/api/v2/me/shipment/cancel', this.posting(accessToken, { order: { id, reason_id: '2', description } }));
+    return entryFor(answer, id).canceled === true;
+  }
+
+  /** Where the label stands, and its tracking code once the carrier gave one. */
+  async tracking(config: MelhorEnvioConfig, accessToken: string, id: string): Promise<MelhorEnvioTracking> {
+    const entry = entryFor(await this.call(config, '/api/v2/me/shipment/tracking', this.posting(accessToken, { orders: [id] })), id);
+    const code = [entry.tracking, entry.melhorenvio_tracking].find((each): each is string => typeof each === 'string' && each.trim() !== '');
+    return { status: typeof entry.status === 'string' ? entry.status : 'unknown', trackingCode: code ?? null };
+  }
+
+  private posting(accessToken: string, body: object) {
+    return { method: 'POST', headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' }, body: JSON.stringify(body) };
+  }
+
   private async token(config: MelhorEnvioConfig, body: Record<string, string>): Promise<MelhorEnvioTokens> {
     return tokensOf(await this.call(config, '/oauth/token', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
   }
@@ -260,8 +434,7 @@ export class MelhorEnvioClient {
     if (response.status >= 500) throw new MelhorEnvioUnreachable(`Melhor Envio failed (${response.status})`);
     if (!response.ok) {
       // Its error's words, never the request's: a refused token request carries the secret in its body.
-      const words = answer && typeof answer === 'object' ? ((answer as Record<string, unknown>).error ?? (answer as Record<string, unknown>).message) : null;
-      throw new MelhorEnvioRefused(response.status, typeof words === 'string' ? words : 'no reason given');
+      throw new MelhorEnvioRefused(response.status, wordsOf(answer));
     }
     return answer;
   }

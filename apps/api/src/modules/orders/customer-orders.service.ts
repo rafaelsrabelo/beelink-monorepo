@@ -1,5 +1,5 @@
 // Nest
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
 import type { CustomerOrder, CustomerOrderPage, CustomerOrderSituation, CustomerReorder, OrderStatus } from '@harness-monorepo/contracts';
@@ -49,6 +49,8 @@ export class CustomerOrdersService {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
     const addressId = dto.addressId?.toLowerCase() ?? null;
     const terms = await this.shipping.forPlacement({ storeId, customerId, fulfillment: dto.fulfillment, addressId, items: dto.items, choice: dto.shipping, shownFeeCents: dto.deliveryFeeCents });
+    // A carrier's label is bought with the CPF of who receives it (BEELINK-187): the checkout asks for it first.
+    const deliveryDocument = terms.carrier ? await this.recipientDocumentOf(customerId) : null;
 
     const placed = await this.placement.place({
       storeId,
@@ -59,6 +61,7 @@ export class CustomerOrdersService {
       deliveryFeeCents: terms.deliveryFeeCents,
       deliveryWindow: terms.window,
       deliveryCarrier: terms.carrier,
+      deliveryDocument,
       discountCents: 0,
       couponCode: dto.couponCode ?? null,
       cashbackCents: dto.cashbackCents ?? 0,
@@ -72,6 +75,12 @@ export class CustomerOrdersService {
     });
     this.realtime.publish({ storeId, customerId }, { type: 'order.created', orderNumber: placed.number, placedBy: 'CUSTOMER' });
     return this.read(storeId, customerId, placed.number);
+  }
+
+  private async recipientDocumentOf(customerId: string): Promise<string> {
+    const { cpf } = await this.prisma.customer.findUniqueOrThrow({ where: { id: customerId }, select: { cpf: true } });
+    if (!cpf) throw new BadRequestException(orderError('ORDER_RECIPIENT_DOCUMENT_MISSING', 'A carrier needs the CPF of who receives the order'));
+    return cpf;
   }
 
   async list(storeSlug: string, userId: string, query: ListCustomerOrdersDto = {}): Promise<CustomerOrderPage> {
