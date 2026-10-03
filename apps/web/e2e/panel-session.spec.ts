@@ -48,6 +48,9 @@ test.describe("a panel left open", () => {
 
   test("with the session over, signs in again and comes back to the page it was on", async ({ page, request, context }) => {
     const email = await signedUpAndIn(page, request)
+    // Off the dashboard first: a call of its own finding the session gone would send the tab to sign
+    // in for the dashboard, racing the visit to /create-store this test is about.
+    await page.goto("about:blank")
     await context.clearCookies({ name: "bl_access" })
     await context.clearCookies({ name: "bl_refresh" })
 
