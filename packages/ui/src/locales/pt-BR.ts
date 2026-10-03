@@ -2657,10 +2657,16 @@ export const ptBR: UiMessages = {
       save: "Salvar",
       saving: "Salvando…",
       saved: "Escolhas salvas.",
+      sender: "Remetente das etiquetas",
+      senderHint: "As etiquetas saem em nome da loja, com o endereço dela. A transportadora exige o documento de quem envia.",
+      senderDocument: "CPF ou CNPJ",
+      senderStateRegister: "Inscrição estadual",
+      senderStateRegisterHint: "Opcional. Só para envio com nota fiscal; use ISENTO se a loja não tiver.",
       issues: {
         handlingDays: "Informe de 0 a 30 dias.",
         package: "Preencha o peso e as três medidas, ou deixe os quatro vazios.",
         packageRange: "O peso vai até 30.000 g e cada medida até 200 cm.",
+        senderDocument: "Informe o CPF (11 dígitos) ou o CNPJ (14 dígitos).",
       },
       errors: {
         MELHOR_ENVIO_SETTINGS_INVALID: "Alguma escolha está fora do permitido. Confira os campos.",

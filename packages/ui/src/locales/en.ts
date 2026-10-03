@@ -2656,10 +2656,16 @@ export const en: UiMessages = {
       save: "Save",
       saving: "Saving…",
       saved: "Choices saved.",
+      sender: "Labels' sender",
+      senderHint: "Labels go out in the shop's name, from its address. The carrier asks for the sender's document.",
+      senderDocument: "CPF or CNPJ",
+      senderStateRegister: "State registration",
+      senderStateRegisterHint: "Optional. Only for shipments with an invoice; use ISENTO if the shop has none.",
       issues: {
         handlingDays: "Enter 0 to 30 days.",
         package: "Fill in the weight and the three sizes, or leave all four empty.",
         packageRange: "The weight goes up to 30,000 g and each size up to 200 cm.",
+        senderDocument: "Enter the CPF (11 digits) or the CNPJ (14 digits).",
       },
       errors: {
         MELHOR_ENVIO_SETTINGS_INVALID: "A choice is out of range. Check the fields.",

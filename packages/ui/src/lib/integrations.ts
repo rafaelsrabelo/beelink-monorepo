@@ -38,10 +38,14 @@ export interface ShippingSettingsFormValues {
   length: string
   width: string
   height: string
+  /** Who sends the labels (BEELINK-187): the shop's CPF or CNPJ, as typed. */
+  senderDocument: string
+  /** The shop's state registration, as typed; empty is none. */
+  senderStateRegister: string
 }
 
 /** What the form refuses, by field, in words. */
-export type ShippingSettingsIssues = Partial<Record<"handlingDays" | "package", string>>
+export type ShippingSettingsIssues = Partial<Record<"handlingDays" | "package" | "senderDocument", string>>
 
 /** The services, grouped by carrier in the order they came: the form draws one list per carrier. */
 export function servicesByCompany(services: readonly ShippingServiceView[]): { company: string; services: ShippingServiceView[] }[] {

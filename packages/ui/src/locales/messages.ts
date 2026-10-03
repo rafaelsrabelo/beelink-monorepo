@@ -3043,7 +3043,13 @@ export interface UiMessages {
       save: string
       saving: string
       saved: string
-      issues: { handlingDays: string; package: string; packageRange: string }
+      /** Who sends the labels (BEELINK-187). */
+      sender: string
+      senderHint: string
+      senderDocument: string
+      senderStateRegister: string
+      senderStateRegisterHint: string
+      issues: { handlingDays: string; package: string; packageRange: string; senderDocument: string }
       errors: Record<"MELHOR_ENVIO_SETTINGS_INVALID" | "UNKNOWN", string>
     }
   }
