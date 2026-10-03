@@ -3,14 +3,14 @@ import { NextResponse, type NextRequest } from "next/server"
 
 // App
 import { forwardSignedIn, publicOriginOf } from "@/lib/bff"
-import { clearIntegrationReturn, integrationReturnOf, integrationsPageOf, INTEGRATION_RETURN_COOKIE } from "@/lib/integration-return"
+import { clearIntegrationReturn, integrationReturnOf, melhorEnvioPageOf, INTEGRATION_RETURN_COOKIE } from "@/lib/integration-return"
 
 /**
  * Where Melhor Envio sends every shop's owner back (BEELINK-182) — one fixed address, registered once
  * in bee-link's app there. It arrives with the panel's session: the API takes the code and the state
  * only from the person who began the flow, and answers with the shop it was for.
  *
- * Whatever came of it, the browser lands on that shop's integrations page, which says so.
+ * Whatever came of it, the browser lands on that shop's Melhor Envio page, which says so.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const query = request.nextUrl.searchParams
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const remembered = request.cookies.get(INTEGRATION_RETURN_COOKIE)?.value
 
   const land = (slug: string | null, result: { connected: string } | { error: string }) => {
-    const answer = NextResponse.redirect(new URL(integrationsPageOf(slug, result), origin), 303)
+    const answer = NextResponse.redirect(new URL(melhorEnvioPageOf(slug, result), origin), 303)
     clearIntegrationReturn(answer.cookies)
     return answer
   }

@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server"
 
 // App
 import { forwardSignedIn, publicOriginOf, refuseForeignOrigin } from "@/lib/bff"
-import { integrationsPageOf, setIntegrationReturn } from "@/lib/integration-return"
+import { integrationPagesOf } from "@/lib/integration-pages"
+import { melhorEnvioPageOf, setIntegrationReturn } from "@/lib/integration-return"
 import { signInHrefOf } from "@/lib/panel-return"
 
 /**
@@ -22,11 +23,11 @@ export async function GET(request: NextRequest, context: RouteContext<"/api/stor
   const origin = publicOriginOf(request)
   const { status, payload } = await forwardSignedIn(request, { path: `/stores/${encodeURIComponent(slug)}/integrations/melhor-envio/authorize`, method: "POST" })
 
-  if (status === 401) return NextResponse.redirect(new URL(signInHrefOf(`/admin/${slug}/integrations`), origin), 303)
+  if (status === 401) return NextResponse.redirect(new URL(signInHrefOf(integrationPagesOf(slug).melhorEnvio), origin), 303)
   const url = typeof payload === "object" && payload !== null && "url" in payload && typeof payload.url === "string" ? payload.url : null
   if (status !== 200 || !url) {
     const code = typeof payload === "object" && payload !== null && "errorCode" in payload ? String(payload.errorCode) : "UNKNOWN"
-    return NextResponse.redirect(new URL(integrationsPageOf(slug, { error: code }), origin), 303)
+    return NextResponse.redirect(new URL(melhorEnvioPageOf(slug, { error: code }), origin), 303)
   }
 
   const answer = NextResponse.redirect(url, 303)

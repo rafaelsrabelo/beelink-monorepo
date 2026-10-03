@@ -80,6 +80,13 @@ describe("MelhorEnvioCard", () => {
   })
 })
 
+describe("MelhorEnvioCard as its own page", () => {
+  it("is the page's title where it stands for the page", () => {
+    render(<MelhorEnvioCard view={connected} connectHref={CONNECT} onDisconnect={vi.fn()} headingAs="h1" />)
+    expect(screen.getByRole("heading", { level: 1, name: "Melhor Envio" })).toBeInTheDocument()
+  })
+})
+
 describe("ShippingSettingsForm", () => {
   /** BEELINK-187: the shop sends the labels, and the carrier asks for its document. */
   it("edits the labels' sender, and says what is wrong with the document under it", async () => {

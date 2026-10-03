@@ -11,6 +11,7 @@ import type { OrderLabelFormValues, OrderLabelIssues } from "@harness-monorepo/u
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { integrationPagesOf } from "@/lib/integration-pages"
 import { AppLink } from "@/components/app-link"
 import { labelCardViewOf, labelErrorOf, labelFormOf, labelPayloadOf } from "@/lib/order-label-form"
 import { useBuyOrderLabel, useCancelOrderLabel, useOrderLabel, usePrintOrderLabel } from "@/services/orders/label-hooks"
@@ -60,7 +61,7 @@ export function OrderLabelSection({ slug, number, locale, messages }: OrderLabel
       view={labelCardViewOf(overview.data, text, {
         money,
         date: (iso) => new Date(iso).toLocaleDateString(locale),
-        integrationsHref: `/admin/${encodeURIComponent(slug)}/integrations`,
+        integrationsHref: integrationPagesOf(slug).melhorEnvio,
         storeHref: `/admin/${encodeURIComponent(slug)}/store`,
       })}
       value={value}

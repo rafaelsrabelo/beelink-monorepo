@@ -2709,6 +2709,20 @@ export const en: UiMessages = {
     intro: "The shop's own accounts elsewhere, which bee-link uses on its behalf.",
     failed: "The integrations could not be loaded.",
     retry: "Try again",
+    newIntegration: "New integration",
+    list: {
+      empty: "No integration connected.",
+      emptyHint: "Connect a service for the shop to use on its behalf, such as Melhor Envio to sell to other cities.",
+      open: "Set up",
+      openLabel: "Set up {name}",
+      account: "Account: {name}",
+    },
+    catalog: {
+      intro: "Choose the service the shop will use. Each one asks for the shop's own account there.",
+      connected: "Already connected",
+      open: "Set up",
+      openLabel: "Set up {name}",
+    },
     result: {
       connected: "Melhor Envio connected. Choose below how the shop ships.",
       errors: {

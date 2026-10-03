@@ -1,6 +1,9 @@
 // Next
 import type { NextResponse } from "next/server"
 
+// App
+import { integrationPagesOf } from "./integration-pages"
+
 type CookieJar = NextResponse["cookies"]
 
 /**
@@ -30,9 +33,12 @@ export function integrationReturnOf(...candidates: (string | undefined | null)[]
   return candidates.find(isSlug) ?? null
 }
 
-/** The panel's integrations page, saying what came of the connection; the panel's front with no shop to go back to. */
-export function integrationsPageOf(slug: string | null, result: { connected: string } | { error: string }): string {
+/**
+ * Melhor Envio's own page in the panel, saying what came of the connection: connected, the settings
+ * are right below. The panel's front with no shop to go back to.
+ */
+export function melhorEnvioPageOf(slug: string | null, result: { connected: string } | { error: string }): string {
   if (!slug) return "/admin"
   const query = new URLSearchParams("connected" in result ? { [INTEGRATION_RESULT_KEYS.connected]: result.connected } : { [INTEGRATION_RESULT_KEYS.error]: result.error })
-  return `/admin/${slug}/integrations?${query.toString()}`
+  return `${integrationPagesOf(slug).melhorEnvio}?${query.toString()}`
 }

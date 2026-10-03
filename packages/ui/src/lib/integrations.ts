@@ -21,6 +21,35 @@ export interface MelhorEnvioCardView {
   wallet: WalletView
 }
 
+/**
+ * The third parties the panel can offer, by the wire's name. Mirrors the part of `IntegrationProvider`
+ * that is built: Asaas joins when the panel can take its key.
+ */
+export type IntegrationProviderValue = "MELHOR_ENVIO"
+
+/** A connection the shop has, as the Integrations list shows it: one it made, working or to mend. */
+export interface IntegrationRowView {
+  provider: IntegrationProviderValue
+  status: "CONNECTED" | "NEEDS_RECONNECT"
+  /** Whose account on the other side, as it names itself. */
+  account: string | null
+  /** The sandbox simulates what it does: said on the list too. */
+  sandbox: boolean
+  /** The integration's own page. */
+  href: string
+}
+
+/** A third party the shop can connect, as the new integration's page offers it. */
+export interface IntegrationOptionView {
+  provider: IntegrationProviderValue
+  /** Not set up on this deployment; there to connect; or connected already, and then its page is the way on. */
+  state: "unavailable" | "available" | "connected"
+  /** Where connecting begins: the third party's own authorization, so a plain link and never prefetched. */
+  connectHref: string
+  /** The integration's own page. */
+  href: string
+}
+
 /** A carrier's service, to switch on or off. Mirrors `MelhorEnvioShippingService`. */
 export interface ShippingServiceView {
   id: number

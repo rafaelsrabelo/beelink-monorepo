@@ -2710,6 +2710,20 @@ export const ptBR: UiMessages = {
     intro: "As contas da loja em outros serviços, que o bee-link usa em nome dela.",
     failed: "Não foi possível carregar as integrações.",
     retry: "Tentar de novo",
+    newIntegration: "Nova integração",
+    list: {
+      empty: "Nenhuma integração conectada.",
+      emptyHint: "Conecte um serviço para a loja usar em nome dela, como o Melhor Envio para vender para outras cidades.",
+      open: "Configurar",
+      openLabel: "Configurar {name}",
+      account: "Conta: {name}",
+    },
+    catalog: {
+      intro: "Escolha o serviço que a loja vai usar. Cada um pede a conta da loja nele.",
+      connected: "Já conectado",
+      open: "Configurar",
+      openLabel: "Configurar {name}",
+    },
     result: {
       connected: "Melhor Envio conectado. Escolha abaixo como a loja envia.",
       errors: {
