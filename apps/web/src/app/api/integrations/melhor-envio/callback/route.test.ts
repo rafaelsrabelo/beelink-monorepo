@@ -58,11 +58,11 @@ describe("the shop's Melhor Envio connection, for the panel (BEELINK-182)", () =
     expect((await connect(request("/api/stores/lessari/integrations/melhor-envio/connect", { origin: "https://evil.test" }), shop)).status).toBe(403)
 
     const signedOut = await connect(request("/api/stores/lessari/integrations/melhor-envio/connect", { cookie: "" }), shop)
-    expect(signedOut.headers.get("location")).toBe("http://localhost:3000/login?voltar=%2Fadmin%2Flessari%2Fintegrations")
+    expect(signedOut.headers.get("location")).toBe("http://localhost:3000/login?voltar=%2Fadmin%2Flessari%2Fintegrations%2Fmelhor-envio")
 
     stub(() => Response.json({ statusCode: 503, errorCode: "INTEGRATION_UNAVAILABLE", message: "x" }, { status: 503 }))
     const unavailable = await connect(request("/api/stores/lessari/integrations/melhor-envio/connect"), shop)
-    expect(unavailable.headers.get("location")).toBe("http://localhost:3000/admin/lessari/integrations?erro=INTEGRATION_UNAVAILABLE")
+    expect(unavailable.headers.get("location")).toBe("http://localhost:3000/admin/lessari/integrations/melhor-envio?erro=INTEGRATION_UNAVAILABLE")
   })
 })
 
@@ -78,7 +78,7 @@ describe("Melhor Envio's way back (BEELINK-182)", () => {
     expect(JSON.parse(String(fetched.mock.calls[0]?.[1]?.body))).toEqual({ code: "c1", state: "s1" })
     expect(new Headers(fetched.mock.calls[0]?.[1]?.headers).get("authorization")).toBe("Bearer owner-access")
     expect(answer.status).toBe(303)
-    expect(answer.headers.get("location")).toBe("http://localhost:3000/admin/lessari/integrations?conectado=melhor-envio")
+    expect(answer.headers.get("location")).toBe("http://localhost:3000/admin/lessari/integrations/melhor-envio?conectado=melhor-envio")
     expect(answer.cookies.get("bl_integration_return")?.value).toBe("")
   })
 
@@ -87,13 +87,13 @@ describe("Melhor Envio's way back (BEELINK-182)", () => {
 
     const answer = await back("?code=c1&state=s1", "bl_access=owner-access")
 
-    expect(answer.headers.get("location")).toBe("http://localhost:3000/admin/lessari/integrations?erro=INTEGRATION_EXCHANGE_FAILED")
+    expect(answer.headers.get("location")).toBe("http://localhost:3000/admin/lessari/integrations/melhor-envio?erro=INTEGRATION_EXCHANGE_FAILED")
   })
 
   it("says the shopkeeper cancelled, asking the API nothing; and with no shop to go back to, lands on the panel", async () => {
     const fetched = stub(() => Response.json({}))
 
-    expect((await back("?error=access_denied&state=s1")).headers.get("location")).toBe("http://localhost:3000/admin/lessari/integrations?erro=INTEGRATION_CANCELLED")
+    expect((await back("?error=access_denied&state=s1")).headers.get("location")).toBe("http://localhost:3000/admin/lessari/integrations/melhor-envio?erro=INTEGRATION_CANCELLED")
     expect(fetched).not.toHaveBeenCalled()
 
     stub(() => Response.json({ statusCode: 400, errorCode: "INTEGRATION_STATE_INVALID", message: "x" }, { status: 400 }))

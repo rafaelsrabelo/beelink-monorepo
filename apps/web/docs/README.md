@@ -63,7 +63,9 @@ src/
 | `/admin/[slug]` | the owner | that shop's panel home |
 | `/admin/[slug]/store` | the owner | the settings: five tabs, one save, one `PUT` |
 | `/admin/[slug]/cashback` | the owner | the cashback rules, with what they give on an order of R$ 100,00, and what the shop owes in credit (BEELINK-242); a customer's credit is on their record |
-| `/admin/[slug]/integrations` | the owner | the shop's Melhor Envio account — connect, whose account, the wallet, reconnect, disconnect — and, connected, how it ships by carrier: services, days to post, default parcel (BEELINK-183). The way back from Melhor Envio lands here with `?conectado=` or `?erro=` |
+| `/admin/[slug]/integrations` | the owner | the shop's integrations as a list — what it connected, working or to mend, each leading to its own page — and "Nova integração" |
+| `/admin/[slug]/integrations/new` | the owner | what there is to connect, a card each; one already connected leads to its page |
+| `/admin/[slug]/integrations/melhor-envio` | the owner | the shop's Melhor Envio account — connect, whose account, the wallet, reconnect, disconnect — and, connected, how it ships by carrier: services, days to post, default parcel (BEELINK-183). The way back from Melhor Envio lands here with `?conectado=` or `?erro=` |
 
 Both forms are `react-hook-form` inside a `packages/ui` block, and every request they need is a callback the screen hands in: the palettes, the postcode lookup and the image upload. That is what keeps `web/no-fetch-in-components` at zero while a tab still offers a button that reaches the network.
 
@@ -74,7 +76,7 @@ Both forms are `react-hook-form` inside a `packages/ui` block, and every request
 | `/api/uploads` | signed in | answers **501 `UPLOAD_NOT_CONFIGURED`** today. Where bytes are stored is a separate decision; when it lands it replaces this one handler and nothing above it — `uploadImage()`, the hook, the field and the sentence are finished |
 | `/api/stores/[slug]/integrations/melhor-envio` | admin | the shop's Melhor Envio connection (`GET`) and disconnecting it (`DELETE`, the API's 204 answered as 200) — BEELINK-182 |
 | `/api/stores/[slug]/integrations/melhor-envio/connect` | admin, **a link** | asks the API for the authorization page and sends the browser there (303), remembering the shop in `bl_integration_return` on `/api/integrations` only. Origin-checked, not JSON-checked: a followed link sends no JSON header |
-| `/api/integrations/melhor-envio/callback` | admin | Melhor Envio's one fixed return address, for every shop: hands the code and the state to the API with the owner's session, then lands on `/admin/<slug>/integrations?conectado=…` or `?erro=<code>` — the page itself is N2's |
+| `/api/integrations/melhor-envio/callback` | admin | Melhor Envio's one fixed return address, for every shop: hands the code and the state to the API with the owner's session, then lands on `/admin/<slug>/integrations/melhor-envio?conectado=…` or `?erro=<code>` |
 | `/api/integrations/melhor-envio/webhook` | public, **not** origin-checked | Melhor Envio telling of a label (BEELINK-188): the bytes go to the API as they arrived, with `X-ME-Signature` beside them — the signature is over those bytes, so the body is never parsed here. The API refuses what the app did not sign |
 | `/api/stores/[slug]/integrations/melhor-envio/account` · `/settings` | admin | the wallet and Melhor Envio's services, read there and then; the carrier settings (`GET`, `PUT`) — BEELINK-183 |
 

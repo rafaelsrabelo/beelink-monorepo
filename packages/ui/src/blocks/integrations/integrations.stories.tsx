@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
+import { IntegrationCatalog } from "./integration-catalog"
+import { IntegrationList } from "./integration-list"
 import { IntegrationsFailed } from "./integrations-failed"
 import { IntegrationsResult } from "./integrations-result"
 import { IntegrationsSkeleton } from "./integrations-skeleton"
-import { connected, services, shipping } from "./integrations.fixtures"
+import { connected, melhorEnvioOption, melhorEnvioRow, services, shipping } from "./integrations.fixtures"
 import { MelhorEnvioCard } from "./melhor-envio-card"
 import { ShippingSettingsForm } from "./shipping-settings-form"
 
@@ -82,6 +84,35 @@ export const CarregandoEFalha: Story = {
     <div className="flex max-w-3xl flex-col gap-6">
       <IntegrationsSkeleton />
       <IntegrationsFailed onRetry={noop} />
+    </div>
+  ),
+}
+
+/** A lista das integrações da loja: cada uma leva à sua própria página. */
+export const Lista: Story = {
+  render: () => (
+    <div className="max-w-3xl">
+      <IntegrationList rows={[melhorEnvioRow, { ...melhorEnvioRow, status: "NEEDS_RECONNECT", sandbox: false }]} newHref="#nova" />
+    </div>
+  ),
+}
+
+/** A loja ainda sem nenhuma integração: a lista leva à página de conectar uma. */
+export const ListaVazia: Story = {
+  render: () => (
+    <div className="max-w-3xl">
+      <IntegrationList rows={[]} newHref="#nova" />
+    </div>
+  ),
+}
+
+/** Nova integração: o que há para conectar; um serviço já conectado leva à página dele. */
+export const NovaIntegracao: Story = {
+  render: () => (
+    <div className="flex max-w-3xl flex-col gap-6">
+      <IntegrationCatalog options={[melhorEnvioOption]} />
+      <IntegrationCatalog options={[{ ...melhorEnvioOption, state: "connected" }]} />
+      <IntegrationCatalog options={[{ ...melhorEnvioOption, state: "unavailable" }]} />
     </div>
   ),
 }

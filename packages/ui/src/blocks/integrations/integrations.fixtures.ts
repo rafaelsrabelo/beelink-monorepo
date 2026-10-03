@@ -1,5 +1,5 @@
 // Block
-import type { MelhorEnvioCardView, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
+import type { IntegrationOptionView, IntegrationRowView, MelhorEnvioCardView, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
 
 export const connected: MelhorEnvioCardView = {
   available: true,
@@ -17,3 +17,12 @@ export const services: ShippingServiceView[] = [
 ]
 
 export const shipping: ShippingSettingsFormValues = { serviceIds: [1, 2, 3], handlingDays: "1", weight: "500", length: "20", width: "15", height: "10", senderDocument: "11222333000181", senderStateRegister: "" }
+
+export const melhorEnvioRow: IntegrationRowView = { provider: "MELHOR_ENVIO", status: "CONNECTED", account: "Loja Lessari", sandbox: true, href: "/admin/lessari/integrations/melhor-envio" }
+
+export const melhorEnvioOption: IntegrationOptionView = {
+  provider: "MELHOR_ENVIO",
+  state: "available",
+  connectHref: "/api/stores/lessari/integrations/melhor-envio/connect",
+  href: "/admin/lessari/integrations/melhor-envio",
+}

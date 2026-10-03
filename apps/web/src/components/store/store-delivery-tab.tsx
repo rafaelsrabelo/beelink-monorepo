@@ -15,6 +15,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import type { Store } from "@harness-monorepo/contracts"
 
 // App
+import { integrationPagesOf } from "@/lib/integration-pages"
 import { AppLink } from "@/components/app-link"
 import { deliveryCarriersOf, deliveryErrorOf, deliveryFormOf, deliveryPayloadOf, deliveryPreviewsOf, deliveryRadiusOf, pickupAddressOf } from "@/lib/delivery-form"
 import { mapTileUrl, pointOf } from "@/services/addresses/map-tiles"
@@ -73,7 +74,7 @@ export function StoreDeliveryTab({ store, locale, messages }: StoreDeliveryTabPr
       map={tileUrl ? { tileUrl, point: pointOf(store), radiusMeters: deliveryRadiusOf(value) } : null}
       carriers={deliveryCarriersOf(connection.data)}
       connectHref={melhorEnvioConnectHref(store.slug)}
-      manageHref={`/admin/${encodeURIComponent(store.slug)}/integrations`}
+      manageHref={integrationPagesOf(store.slug).melhorEnvio}
       linkComponent={AppLink}
       pending={save.isPending}
       error={save.error ? deliveryErrorOf(save.error instanceof DeliveryError ? save.error.errorCode : "UNKNOWN", text.errors) : undefined}

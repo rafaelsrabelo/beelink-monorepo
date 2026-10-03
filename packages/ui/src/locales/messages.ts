@@ -3109,6 +3109,12 @@ export interface UiMessages {
     intro: string
     failed: string
     retry: string
+    /** The way to the page that adds one, and that page's own title. */
+    newIntegration: string
+    /** The shop's connections, one row each. */
+    list: { empty: string; emptyHint: string; open: string; openLabel: string; account: string }
+    /** The third parties there are to connect. */
+    catalog: { intro: string; connected: string; open: string; openLabel: string }
     /** What came of a connection, on the way back from the third party. */
     result: {
       connected: string
