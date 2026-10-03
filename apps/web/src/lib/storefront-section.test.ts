@@ -16,7 +16,7 @@ import { LISTING_PAGE_SIZE, canonicalOf, headingOf, isShelf, listingAskOf, pageH
 const store = {
   slug: "loja",
   name: "Loja",
-  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", profile: "perfil", messages: "conversas" } },
+  routeWords: { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } },
 } as unknown as PublicStore
 
 const category = (slug: string, parentSlug: string | null = null) =>

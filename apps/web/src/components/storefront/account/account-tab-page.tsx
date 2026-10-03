@@ -25,6 +25,7 @@ import { navigationAt, shopAt } from "@/lib/storefront-data"
 import { conversationOrderOf, sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 import type { SectionQuery } from "@/lib/storefront-section"
 import { AccountConversations } from "../conversations/account-conversations"
+import { CashbackTab } from "./cashback-tab"
 import { FavoritesTab } from "./favorites-tab"
 import { FavoritesToolbar } from "./favorites-toolbar"
 import { OrdersTab } from "./orders-tab"
@@ -110,6 +111,7 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
         activeOrders={inProgress?.counts.ACTIVE}
         favorites={liked?.counts.ALL}
         pendingReviews={toRate?.length}
+        shopGivesCashback={store.cashback !== null}
         tools={
           tab === "orders" ? (
             <Suspense fallback={<StorefrontOrdersToolbarSkeleton />}>
@@ -135,6 +137,11 @@ export async function AccountTabPage({ slug, section, item, query }: AccountTabP
         ) : tab === "reviews" ? (
           <Suspense fallback={<StorefrontReviewsSkeleton />}>
             <ReviewsTab slug={store.slug} routes={routes} query={query} locale="pt-BR" errors={web.errors} messages={ui} />
+          </Suspense>
+        ) : tab === "cashback" ? (
+          // By its address the tab opens for anyone signed in, listed in the menu or not: one with no credit reads that they have none.
+          <Suspense fallback={<StorefrontAccountSkeleton />}>
+            <CashbackTab slug={store.slug} routes={routes} query={query} rule={store.cashback} locale="pt-BR" messages={ui} />
           </Suspense>
         ) : tab === "messages" ? (
           <AccountConversations key={conversationOrderOf(query) ?? "list"} slug={store.slug} routeWords={store.routeWords} initialOrder={conversationOrderOf(query)} messages={ui} />

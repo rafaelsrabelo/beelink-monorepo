@@ -56,7 +56,7 @@ export interface StorefrontRouteWords {
 }
 
 /** The tabs of the shopper's page, in the order its menu lists them. */
-export type StorefrontAccountTab = "orders" | "favorites" | "reviews" | "profile" | "messages";
+export type StorefrontAccountTab = "orders" | "favorites" | "reviews" | "cashback" | "profile" | "messages";
 
 /**
  * The shopkeeper's own taxonomy of what they sell — the second URL segment, `/lessari/blusas`.

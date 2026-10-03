@@ -6,7 +6,7 @@ import { Transform } from 'class-transformer';
 import { IsOptional, IsString, Matches, MaxLength, MinLength, ValidateIf } from 'class-validator';
 
 // Types
-import type { CustomerAddress, UpdateCustomerProfilePayload } from '@harness-monorepo/contracts';
+import type { CustomerAddress, CustomerCashbackTotals, UpdateCustomerProfilePayload } from '@harness-monorepo/contracts';
 
 // App
 import { IsBirthDate } from '../../../shared/http/birth-date.js';
@@ -91,6 +91,11 @@ export class CustomerAddressResponse implements CustomerAddress {
   @ApiProperty({ nullable: true, type: String }) state!: string | null;
 }
 
+export class CustomerCashbackTotalsResponse implements CustomerCashbackTotals {
+  @ApiProperty({ description: 'Usable now.' }) balanceCents!: number;
+  @ApiProperty({ description: 'Waiting on orders still to be delivered.' }) pendingCents!: number;
+}
+
 export class CustomerProfileResponse {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
@@ -102,4 +107,5 @@ export class CustomerProfileResponse {
   @ApiProperty({ type: [CustomerSavedAddressResponse], description: 'Every saved address, the default first, then the newest.' }) addresses!: CustomerSavedAddressResponse[];
   @ApiProperty({ description: 'Whether the account has a password; one opened through Google has none until it creates one.' }) hasPassword!: boolean;
   @ApiProperty({ type: CustomerNotificationsResponse }) notifications!: CustomerNotificationsResponse;
+  @ApiProperty({ type: CustomerCashbackTotalsResponse, description: 'Their cashback at this shop; the statement is `GET /customer/cashback`.' }) cashback!: CustomerCashbackTotalsResponse;
 }

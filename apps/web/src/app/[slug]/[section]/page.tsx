@@ -94,7 +94,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // to (BEELINK-178), so the fee is as well.
   const deliverTo = paramOf(query[DELIVER_TO_KEY]) ?? null
   const served = cart
-    ? await cartQuoteAt(store.slug, cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null), shopper?.id ?? null)
+    ? await cartQuoteAt(store.slug, cartQuoteOf(cartViewOf(cart.lines, cart.products).rows, firstFulfillmentOf(shopper), null, { addressId: shopper ? checkoutAddressIdOf(checkoutAddressesOf(shopper), deliverTo) : null }), shopper?.id ?? null)
     : null
   // The menu's counts, read together on the area's own front: each is its own call to the API. The
   // favourites' page is the rail's too, so the front reads it once.
@@ -147,6 +147,7 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           activeOrders={activeOrders}
           favorites={favorites}
           pendingReviews={pendingReviews}
+          shopGivesCashback={store.cashback !== null}
           query={query}
           messages={ui}
         />

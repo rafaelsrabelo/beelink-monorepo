@@ -12,12 +12,12 @@ import type { CustomerProfile, PaymentMethod, PublicProductDetail } from "@harne
 // UI
 import { StorefrontCart } from "@harness-monorepo/ui/blocks/storefront/storefront-cart"
 import { StorefrontCheckout } from "@harness-monorepo/ui/blocks/storefront/storefront-checkout"
-import { StorefrontCoupon } from "@harness-monorepo/ui/blocks/storefront/storefront-coupon"
 import { StorefrontOrderSent } from "@harness-monorepo/ui/blocks/storefront/storefront-order-sent"
 import { formatCents } from "@harness-monorepo/ui/blocks/storefront/storefront-price"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
+import { CartPriceControls } from "./cart-price-controls"
 import { useCart } from "./cart-provider"
 import { useCartCheckout } from "./use-cart-checkout"
 import { waysBackWithCoupon } from "@/lib/cart-coupon"
@@ -66,7 +66,8 @@ export interface StorefrontCartLiveProps {
  *
  * Placing the order asks the API first: the order exists — numbered, priced by the API, in the
  * shop's panel — before the shop's WhatsApp opens with that number. The cart is emptied only then.
- * It carries the coupon the summary shows as applied, and no other.
+ * It carries the coupon the summary shows as applied, and no other — and of the shopper's cashback,
+ * the amount on the summary's own row (BEELINK-244).
  */
 export function StorefrontCartLive({
   slug,
@@ -94,7 +95,7 @@ export function StorefrontCartLive({
   const clear = useCart((cart) => cart.clear)
   const placing = usePlaceShopperOrder(slug)
   // What the last press on the button found missing, before anything was sent.
-  const [asked, setAsked] = useState<"payment" | "coupon" | "shipping" | null>(null)
+  const [asked, setAsked] = useState<"payment" | "coupon" | "credit" | "shipping" | null>(null)
   // The order once placed, and the WhatsApp link opened with its number.
   const [sent, setSent] = useState<{ number: number; href: string | null } | null>(null)
   const view = useMemo(() => cartViewOf(lines, products), [lines, products])
@@ -115,11 +116,11 @@ export function StorefrontCartLive({
     // The shop does not reach the address, or hands nothing over now: nothing is sent to be refused.
     if (blocked) return setAsked("shipping")
     if (!choice.paymentMethod) return setAsked("payment")
-    // A coupon in force whose check did not come back: the order would go out at a price nobody
-    // read. The press asks for it again; the button waits for the answer.
-    if (pricing.couponBlock) {
+    // A coupon in force, or credit ticked, whose price did not come back: the order would go out at
+    // a price nobody read. The press asks for it again; the button waits for the answer.
+    if (pricing.couponBlock || pricing.creditBlock) {
       pricing.recheck()
-      return setAsked("coupon")
+      return setAsked(pricing.couponBlock ? "coupon" : "credit")
     }
     setAsked(null)
 
@@ -135,6 +136,7 @@ export function StorefrontCartLive({
         // Where a delivery goes, the carrier it goes by and the fee the summary shows: the API quotes again, and refuses the order at any other (BEELINK-178).
         ...leaving,
         ...(pricing.orderCoupon ? { couponCode: pricing.orderCoupon } : {}),
+        ...(pricing.orderCashbackCents > 0 ? { cashbackCents: pricing.orderCashbackCents } : {}),
       },
       {
         onSuccess: (order) => {
@@ -150,7 +152,7 @@ export function StorefrontCartLive({
           if (!(error instanceof ShopperOrderError)) return
           // The session, the shopper's record or the shop's payments moved: the page reads them again.
           if (rereadsTheCart(error.errorCode)) router.refresh()
-          // The coupon, or the delivery's fee, stopped holding since it was priced: the cart is priced again, and says so itself.
+          // The coupon, the delivery's fee or the credit stopped holding since it was priced: the cart is priced again, and says so itself.
           if (REPRICED.has(error.errorCode)) pricing.recheck()
         },
       },
@@ -158,7 +160,8 @@ export function StorefrontCartLive({
   }
 
   // Said only while it still holds: a payment since chosen, or a coupon since checked, takes its sentence away.
-  const missing = asked === "shipping" ? blocked : asked === "payment" && !choice.paymentMethod ? text.checkoutChoosePayment : asked === "coupon" && pricing.couponBlock === "failed" ? text.couponUnchecked : null
+  const unchecked = asked === "coupon" && pricing.couponBlock === "failed" ? text.couponUnchecked : asked === "credit" && pricing.creditBlock === "failed" ? text.cashbackUseUnchecked : null
+  const missing = asked === "shipping" ? blocked : asked === "payment" && !choice.paymentMethod ? text.checkoutChoosePayment : unchecked
   const refusal = placing.error
     ? checkoutRefusalOf(placing.error instanceof ShopperOrderError ? placing.error : { errorCode: "UNKNOWN" }, view.rows, text, {
         pickup: choice.fulfillment === "PICKUP",
@@ -192,18 +195,7 @@ export function StorefrontCartLive({
         notice={goneOnArrival ? messages.storefront.cartGone : null}
         checkout={
           <>
-            <StorefrontCoupon
-              signedOut={!shopper}
-              applied={pricing.coupon.applied}
-              holding={pricing.coupon.holding}
-              pending={pricing.coupon.pending}
-              error={pricing.coupon.error}
-              onApply={(code) => changed(() => pricing.coupon.apply(code))}
-              onRemove={() => changed(pricing.coupon.remove)}
-              onEdit={pricing.coupon.edit}
-              disabled={placing.isPending || view.count === 0}
-              messages={messages}
-            />
+            <CartPriceControls pricing={pricing} signedOut={!shopper} disabled={placing.isPending || view.count === 0} onChange={changed} locale={locale} messages={messages} />
             <StorefrontCheckout
               channel={whatsapp ? "whatsapp" : "shop"}
               customer={
@@ -226,8 +218,8 @@ export function StorefrontCartLive({
               onPlace={place}
               pending={placing.isPending}
               error={missing ?? refusal}
-              // Nothing to order, or what the order goes with — its coupon, a delivery's fee — is still being priced.
-              disabled={view.count === 0 || pricing.couponBlock === "checking" || (choice.fulfillment === "DELIVERY" && pricing.stale)}
+              // Nothing to order, or what the order goes with — its coupon, the credit ticked, a delivery's fee — is still being priced.
+              disabled={view.count === 0 || pricing.couponBlock === "checking" || pricing.creditBlock === "checking" || (choice.fulfillment === "DELIVERY" && pricing.stale)}
               messages={messages}
             />
           </>

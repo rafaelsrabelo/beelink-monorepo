@@ -23,7 +23,7 @@
 | Command | What it does |
 |---|---|
 | `pnpm --filter api dev` | watch mode on `:3001` |
-| `pnpm --filter api test` | Vitest unit tests |
+| `pnpm turbo test --filter=api` | Vitest unit tests, after `prisma generate` — `pnpm --filter api test` alone uses the client already generated |
 | `pnpm --filter api test:e2e` | e2e against real Postgres and Mailpit (`pnpm stack:up` first) |
 | `pnpm --filter api exec prisma migrate dev` | create and apply migrations. It does **not** seed — see below |
 | `pnpm --filter api db:seed` | the seed, and the only thing that runs it. Platform data only, upserted on its slug; safe to repeat |

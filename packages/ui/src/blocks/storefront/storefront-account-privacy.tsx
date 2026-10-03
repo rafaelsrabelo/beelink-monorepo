@@ -14,6 +14,8 @@ export interface StorefrontAccountPrivacyProps {
   dataHref: string
   /** Where the deletion posts. */
   deleteAction: string
+  /** What deleting the account takes from the shopper's cashback, in money; null with none (BEELINK-244). */
+  cashbackLost?: string | null
   /** Carried through the post: this page, to come back to with a refusal, and the shop's sign-in. */
   hidden?: Readonly<Record<string, string>>
   /** A copy that could not be made, already a sentence: said under its link. */
@@ -35,7 +37,7 @@ const INPUT = "h-11 rounded-[10px] border border-shop-line-strong bg-shop-backgr
  * The link has no `download`: the handler sends the file as an attachment, and a session that ended
  * is sent to the sign-in instead — which `download` would have saved as a file.
  */
-export function StorefrontAccountPrivacy({ email, hasPassword, dataHref, deleteAction, hidden = {}, downloadError, error, messages = defaultMessages }: StorefrontAccountPrivacyProps) {
+export function StorefrontAccountPrivacy({ email, hasPassword, dataHref, deleteAction, cashbackLost = null, hidden = {}, downloadError, error, messages = defaultMessages }: StorefrontAccountPrivacyProps) {
   const text = messages.storefront
   const headingId = useId()
   const hintId = useId()
@@ -75,6 +77,7 @@ export function StorefrontAccountPrivacy({ email, hasPassword, dataHref, deleteA
           ))}
           <p id={leadId} className="text-sm text-shop-muted">
             {text.privacyDeleteLead}
+            {cashbackLost ? ` ${format(text.privacyDeleteCashback, { amount: cashbackLost })}` : null}
           </p>
           {error ? (
             <p id={errorId} role="alert" className="rounded-[10px] border border-shop-sale-ink/30 px-4 py-3 text-sm text-shop-sale-ink">

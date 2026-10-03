@@ -11,7 +11,7 @@ import type { OrderDetailView } from "./order-types"
 export interface OrderItemsProps {
   order: Pick<
     OrderDetailView,
-    "items" | "subtotalCents" | "deliveryFeeCents" | "deliveryWindow" | "discountCents" | "promotionDiscountCents" | "couponDiscountCents" | "coupon" | "totalCents" | "fulfillment" | "status"
+    "items" | "subtotalCents" | "deliveryFeeCents" | "deliveryWindow" | "discountCents" | "promotionDiscountCents" | "couponDiscountCents" | "coupon" | "cashbackUsedCents" | "totalCents" | "fulfillment" | "status"
   >
   money: (cents: number) => string
   messages?: UiMessages

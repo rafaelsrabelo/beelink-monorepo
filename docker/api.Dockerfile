@@ -28,7 +28,8 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch
 COPY . .
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --offline --frozen-lockfile --filter "api..."
-RUN pnpm --filter api build
+# `build` only reads the Prisma client — under turbo, `generate` writes it first — so the image generates it here.
+RUN pnpm --filter api generate && pnpm --filter api build
 # --legacy: pnpm 10 refuses a plain deploy unless workspace packages are injected, and the API has
 # no workspace package at runtime — contracts is types only, a devDependency.
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \

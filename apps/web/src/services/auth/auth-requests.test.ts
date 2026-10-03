@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
-import { AuthRequestError, signIn, signOut } from "./auth-requests"
+import { AuthRequestError, forgotPassword, resendVerification, signIn, signOut } from "./auth-requests"
 
 function answerWith(status: number, body?: unknown): void {
   vi.stubGlobal(
@@ -47,5 +47,13 @@ describe("auth requests", () => {
 
     await expect(signOut()).resolves.toBeUndefined()
     expect(fetch).toHaveBeenCalledWith("/api/session", expect.objectContaining({ method: "DELETE" }))
+  })
+
+  it("takes the 202 with no body the e-mailing calls answer as the success it is", async () => {
+    answerWith(202)
+    await expect(forgotPassword("ana@exemplo.com")).resolves.toBeUndefined()
+
+    answerWith(202)
+    await expect(resendVerification("ana@exemplo.com")).resolves.toBeUndefined()
   })
 })

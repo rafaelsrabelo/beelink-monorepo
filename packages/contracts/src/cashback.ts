@@ -133,6 +133,25 @@ export interface CustomerCashback {
   pageSize: number;
 }
 
+/**
+ * A line of the statement as its customer reads it (BEELINK-244): without the shopkeeper's reason for an
+ * adjustment, written for the shop's own books — nobody told them the customer would read it.
+ */
+export type ShopperCashbackEntry = Omit<CashbackEntry, "reason">;
+
+/** `GET /stores/:slug/customer/cashback`: the signed-in customer's own credit at the shop, and one page of its history. */
+export interface ShopperCashback extends Omit<CustomerCashback, "entries"> {
+  entries: ShopperCashbackEntry[];
+}
+
+/** What a customer's record holds of their credit, as their profile carries it: enough to say it, not to spend it. */
+export interface CustomerCashbackTotals {
+  /** Usable now. */
+  balanceCents: number;
+  /** Waiting on orders still to be delivered. */
+  pendingCents: number;
+}
+
 /** What `POST /stores/:slug/customers/:id/cashback/adjustments` takes. */
 export interface CashbackAdjustmentPayload {
   /** Signed, never 0, up to R$ 1.000.000,00 either way: positive gives credit, negative takes it. */

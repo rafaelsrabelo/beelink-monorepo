@@ -1,5 +1,5 @@
 // Libs
-import { HeartIcon, HouseIcon, LogOutIcon, MessageCircleIcon, PackageIcon, StarIcon, UserRoundIcon } from "lucide-react"
+import { CoinsIcon, HeartIcon, HouseIcon, LogOutIcon, MessageCircleIcon, PackageIcon, StarIcon, UserRoundIcon } from "lucide-react"
 
 // UI
 import { cn } from "@harness-monorepo/ui/lib/utils"
@@ -12,7 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 
 /** The area's pages, in the design's order (6c). The overview is the area's own front. */
-export type AccountMenuKey = "overview" | "orders" | "favorites" | "reviews" | "profile" | "messages"
+export type AccountMenuKey = "overview" | "orders" | "favorites" | "reviews" | "cashback" | "profile" | "messages"
 
 export interface StorefrontAccountMenuItem {
   key: AccountMenuKey
@@ -37,6 +37,7 @@ const ICONS = {
   orders: PackageIcon,
   favorites: HeartIcon,
   reviews: StarIcon,
+  cashback: CoinsIcon,
   profile: UserRoundIcon,
   messages: MessageCircleIcon,
 } as const
@@ -63,6 +64,7 @@ export function StorefrontAccountMenu({ shopper, items, current, signOutAction, 
     orders: text.accountOrders,
     favorites: text.accountFavorites,
     reviews: text.accountReviews,
+    cashback: text.accountCashback,
     profile: text.accountProfile,
     messages: text.accountMessages,
   }

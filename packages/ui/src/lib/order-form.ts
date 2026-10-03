@@ -115,6 +115,8 @@ export interface OrderTotals {
    * With it, the total is the API's own: the lines' discounts are already out of it.
    */
   priced?: readonly { discountCents: number; promotionName: string | null }[]
+  /** The customer's credit the API applied (BEELINK-244), out of the total already; absent until it answered. */
+  cashbackUsedCents?: number
 }
 
 export type OrderTotalsRefusal = "DISCOUNT_TOO_LARGE" | "TOTAL_TOO_LARGE"

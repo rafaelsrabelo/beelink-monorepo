@@ -28,6 +28,7 @@ export const order: OrderDetailView = {
   couponDiscountCents: 0,
   coupon: null,
   cashback: null,
+  cashbackUsedCents: 0,
   totalCents: 28970,
   note: "Entregar depois das 18h",
   placedAt: "2026-09-25T14:30:00.000Z",

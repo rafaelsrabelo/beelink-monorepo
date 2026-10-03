@@ -1,5 +1,5 @@
 // Libs
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
@@ -254,6 +254,22 @@ describe("the new order's details and summary", () => {
 
     rerender(<OrderSummary totals={priced} pricing money={money} />)
     expect(container.querySelector("dl")).toHaveAttribute("aria-busy", "true")
+  })
+
+  /** BEELINK-244: the chosen customer's credit, offered while they have some, and its row once the API applied it. */
+  it("offers the customer's cashback, says the most the sale takes, and shows what was applied apart from the discount", () => {
+    const onCheckedChange = vi.fn()
+    const totals = { subtotalCents: 28470, deliveryFeeCents: 1000, discountCents: 500, totalCents: 23970, priced: [], cashbackUsedCents: 5000 }
+    const { container, rerender } = render(<OrderSummary totals={totals} cashback={{ balanceCents: 8000, cappedCents: 5000, checked: false, onCheckedChange }} money={money} />)
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Usar o cashback do cliente \(R\$\s80,00 disponíveis\)$/ }))
+    expect(onCheckedChange).toHaveBeenCalledWith(true)
+    expect(screen.queryByText(/aceita até/)).not.toBeInTheDocument()
+
+    rerender(<OrderSummary totals={totals} cashback={{ balanceCents: 8000, cappedCents: 5000, checked: true, onCheckedChange }} money={money} />)
+    expect(screen.getByText(/^Este pedido aceita até R\$\s50,00 de cashback\. O resto continua no saldo do cliente\.$/)).toBeInTheDocument()
+    const rows = [...container.querySelectorAll("dl > div")].map((row) => row.querySelector("dt")!.textContent)
+    expect(rows).toEqual(["Subtotal", "Entrega", "Desconto", "Cashback usado", "Total"])
   })
 
   /** From the review: a sum that knows no promotion, shown as if it were the API's, is the old mistake on the error path. */

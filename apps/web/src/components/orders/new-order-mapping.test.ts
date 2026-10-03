@@ -6,7 +6,7 @@ import type { OrderQuote, ProductDetail } from "@harness-monorepo/contracts"
 import type { OrderDetailsValues } from "@harness-monorepo/ui/lib/order-form"
 
 // App
-import { canonicalPhoneOf, moneyOf, orderPayloadOf, saleOf, shownTotalsOf, variantOptionsOf } from "./new-order-mapping"
+import { canonicalPhoneOf, cashbackOfferOf, moneyOf, orderPayloadOf, saleOf, shownTotalsOf, variantOptionsOf } from "./new-order-mapping"
 
 const details: OrderDetailsValues = { fulfillment: "DELIVERY", deliveryFee: "10", paymentMethod: "PIX", discount: "", note: "  ", placedOn: "" }
 const totals = { subtotalCents: 5000, deliveryFeeCents: 1000, discountCents: 0, totalCents: 6000 }
@@ -96,6 +96,20 @@ describe("saleOf", () => {
     expect(saleOf({ ...sale, customerId: "c1" })).toMatchObject({ customer: { id: "c1" } })
     expect(JSON.stringify(saleOf({ ...sale, customerId: "c1" }))).not.toBe(JSON.stringify(saleOf({ ...sale, customerId: "c2" })))
   })
+
+  /** BEELINK-244: the price is asked with "the most"; the order names the amount that answer applied. */
+  it("asks the price with the chosen customer's cashback, and sends the order the amount quoted — never the question", () => {
+    expect(saleOf({ ...sale, customerId: "c1", useCashback: true })).toMatchObject({ customer: { id: "c1" }, useCashback: true })
+    expect(saleOf({ ...sale, customerId: "c1" })).not.toHaveProperty("useCashback")
+    // Credit is somebody's: nobody chosen, nothing to ask about.
+    expect(saleOf({ ...sale, useCashback: true })).not.toHaveProperty("useCashback")
+
+    const order = orderPayloadOf({ customerId: "c1", lines, details, paymentMethod: "PIX", totals, cashbackCents: 1500, today: "2026-09-25" })
+    expect(order).toMatchObject({ cashbackCents: 1500 })
+    expect(order).not.toHaveProperty("useCashback")
+    expect(orderPayloadOf({ customerId: "c1", lines, details, paymentMethod: "PIX", totals, today: "2026-09-25" })).not.toHaveProperty("cashbackCents")
+    expect(orderPayloadOf({ customerId: "c1", lines, details, paymentMethod: "PIX", totals, cashbackCents: 0, today: "2026-09-25" })).not.toHaveProperty("cashbackCents")
+  })
 })
 
 describe("shownTotalsOf", () => {
@@ -138,6 +152,34 @@ describe("shownTotalsOf", () => {
 
   it("keeps the form's own refusal, whatever the API said of an older sale", () => {
     expect(shownTotalsOf("DISCOUNT_TOO_LARGE", quote, null)).toBe("DISCOUNT_TOO_LARGE")
+  })
+
+  /** BEELINK-244: the credit is out of the API's total already, and has its own row. */
+  it("carries the customer's cashback the API applied, and none while it applied none", () => {
+    const withCredit = { ...quote, totalCents: 3700, cashbackUse: { balanceCents: 1500, maxCents: 1500, appliedCents: 1500, unavailable: null } }
+
+    expect(shownTotalsOf(totals, withCredit, null)).toMatchObject({ totalCents: 3700, cashbackUsedCents: 1500 })
+    expect(shownTotalsOf(totals, { ...withCredit, cashbackUse: { ...withCredit.cashbackUse, appliedCents: 0 } }, null)).not.toMatchObject({ cashbackUsedCents: expect.anything() })
+  })
+
+  describe("cashbackOfferOf", () => {
+    const use = { balanceCents: 1500, maxCents: 1500, appliedCents: 0, unavailable: null }
+
+    it("offers the customer's balance, and the most the sale takes when that is less", () => {
+      expect(cashbackOfferOf({ ...quote, cashbackUse: use }, false)).toEqual({ balanceCents: 1500, cappedCents: null })
+      expect(cashbackOfferOf({ ...quote, cashbackUse: { ...use, maxCents: 900 } }, false)).toEqual({ balanceCents: 1500, cappedCents: 900 })
+    })
+
+    it("offers nothing before a price, to nobody identified, to a customer with no credit, or on a sale that takes none", () => {
+      expect(cashbackOfferOf(null, false)).toBeNull()
+      expect(cashbackOfferOf(quote, false)).toBeNull()
+      expect(cashbackOfferOf({ ...quote, cashbackUse: { balanceCents: 0, maxCents: 0, appliedCents: 0, unavailable: "NO_BALANCE" } }, false)).toBeNull()
+      expect(cashbackOfferOf({ ...quote, cashbackUse: { ...use, maxCents: 0, unavailable: "NOTHING_TO_PAY" } }, false)).toBeNull()
+    })
+
+    it("keeps a ticked box on a sale that stopped taking any, so it can be unticked", () => {
+      expect(cashbackOfferOf({ ...quote, cashbackUse: { ...use, maxCents: 0, unavailable: "NOTHING_TO_PAY" } }, true)).toEqual({ balanceCents: 1500, cappedCents: 0 })
+    })
   })
 })
 

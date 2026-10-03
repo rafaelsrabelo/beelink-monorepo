@@ -31,6 +31,16 @@ describe("StorefrontAccountPrivacy", () => {
     expect(download).toHaveAccessibleDescription(/Um arquivo JSON/)
   })
 
+  /** BEELINK-244: the credit is the account's, and goes with it. */
+  it("says what the shopper's cashback loses with the account, and nothing when they have none", () => {
+    const { rerender } = render(privacy({ cashbackLost: "R$ 12,50" }))
+    expect(screen.getByText(/Você também perde R\$ 12,50 de cashback nesta loja\./, { selector: "p" })).toBeInTheDocument()
+
+    rerender(privacy())
+
+    expect(screen.queryByText(/de cashback nesta loja/)).toBeNull()
+  })
+
   it("keeps the deletion folded, and confirms it with the password, saying what is kept and what goes", () => {
     const { container } = render(privacy())
 

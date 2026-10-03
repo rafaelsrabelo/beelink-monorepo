@@ -20,8 +20,8 @@ export interface CheckoutRefusal {
  */
 const REREAD = new Set(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_ADDRESS_NOT_FOUND", "ORDER_PAYMENT_NOT_ACCEPTED"])
 
-/** The refusals after which the cart is priced again: the coupon or the delivery's fee it was sent with no longer holds. */
-export const REPRICED: ReadonlySet<string> = new Set(["ORDER_COUPON_REFUSED", "ORDER_SHIPPING_UNAVAILABLE", "ORDER_SHIPPING_CHANGED"])
+/** The refusals after which the cart is priced again: the coupon, the delivery's fee or the credit it was sent with no longer holds. */
+export const REPRICED: ReadonlySet<string> = new Set(["ORDER_COUPON_REFUSED", "ORDER_SHIPPING_UNAVAILABLE", "ORDER_SHIPPING_CHANGED", "ORDER_CASHBACK_REFUSED"])
 
 export function rereadsTheCart(errorCode: string): boolean {
   return REREAD.has(errorCode)
@@ -84,6 +84,9 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
       const refusal = couponRefusalIn(details)
       return refusal ? format(text.checkoutCouponGone, { reason: couponRefusalTextOf(refusal, context, text) }) : text.checkoutFailed
     }
+    // Their credit moved between the price on screen and the order — spent elsewhere, or a part of it expired: the cart is priced again.
+    case "ORDER_CASHBACK_REFUSED":
+      return text.checkoutCashbackGone
     case "ORDER_PAYMENT_NOT_ACCEPTED":
       return text.checkoutPaymentGone
     case "ORDER_DELIVERY_ADDRESS_MISSING":
