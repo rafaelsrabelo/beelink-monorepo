@@ -95,6 +95,19 @@ export interface OrderStatusContent {
    * cancelled since has none to tell of. Null otherwise.
    */
   cashback?: { amountCents: number; expiresAt: Date | null } | null;
+  /**
+   * On leaving with a carrier (BEELINK-258), who carries it and how to follow it, read when the
+   * e-mail is sent — the link already the one the customer's order shows. Null for the shop's own
+   * delivery and a pick-up, which read as they always did.
+   */
+  shipment?: OrderShipment | null;
+}
+
+export interface OrderShipment {
+  carrier: string | null;
+  service: string | null;
+  trackingCode: string | null;
+  trackingUrl: string | null;
 }
 
 /** "Você ganhou R$ 5,00 de cashback…", the date in the shops' own zone, as a calendar shows it. */
@@ -105,13 +118,38 @@ function cashbackLineOf(cashback: NonNullable<OrderStatusContent['cashback']>): 
   return `Você ganhou ${brl(cashback.amountCents)} de cashback para usar nas próximas compras na loja${until}.`;
 }
 
+/** "pela transportadora Correios (SEDEX)", with whichever of the two was told. */
+function carriedByOf({ carrier, service }: OrderShipment): string {
+  const name = carrier && service ? `${carrier} (${service})` : (carrier ?? service);
+  return name ? `pela transportadora ${name}` : 'pela transportadora';
+}
+
+const TRACKING_LINK = 'Ver no site da transportadora';
+
+/**
+ * How to follow a shipment, in the order page's own words: its code, else where the code will be.
+ * The link only when https: Melhor Envio's is saved as it came, and an inbox has no React to stop a
+ * `javascript:` one.
+ */
+function trackingOf({ trackingCode, trackingUrl }: OrderShipment): { text: string; html: string } {
+  const link = trackingUrl?.startsWith('https://') ? trackingUrl : null;
+  const code = trackingCode ? `Código de rastreio: ${trackingCode}` : link ? null : 'O código de rastreio aparece no pedido assim que for informado.';
+  return {
+    text: [code, link ? `${TRACKING_LINK}:\n${link}` : null].filter(Boolean).join('\n'),
+    html:
+      (code ? `<p style="margin:12px 0 0">${escapeHtml(code)}</p>` : '') +
+      (link ? `<p style="margin:12px 0 0"><a href="${escapeHtml(link)}" style="color:#52525b">${TRACKING_LINK}</a></p>` : ''),
+  };
+}
+
 /** How each move reads — in the subject, after the order's number, and in the words. */
-function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean): { subject: string; said: string } {
+function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean, shipped: OrderShipment | null): { subject: string; said: string } {
   switch (status) {
     case 'ACCEPTED':
       return { subject: 'confirmado', said: 'foi confirmado' };
     case 'OUT_FOR_DELIVERY':
-      return pickup ? { subject: 'pronto para retirar', said: 'está pronto para retirar' } : { subject: 'saiu para entrega', said: 'saiu para entrega' };
+      if (pickup) return { subject: 'pronto para retirar', said: 'está pronto para retirar' };
+      return shipped ? { subject: 'enviado', said: `foi enviado ${carriedByOf(shipped)}` } : { subject: 'saiu para entrega', said: 'saiu para entrega' };
     case 'DELIVERED':
       return pickup ? { subject: 'retirado', said: 'foi retirado na loja' } : { subject: 'entregue', said: 'foi entregue' };
     case 'CANCELLED':
@@ -123,18 +161,21 @@ function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean): { subject: s
  * A customer's order moved: the shop's name on it, the way to the order at the shop, and — last —
  * the way to stop these notices, straight to the box that turns them off (`settingsUrl`).
  */
-export function orderStatusChanged({ name, shopName, number, status, pickup, cashback = null }: OrderStatusContent, url: string, settingsUrl: string): MailContent {
+export function orderStatusChanged({ name, shopName, number, status, pickup, cashback = null, shipment = null }: OrderStatusContent, url: string, settingsUrl: string): MailContent {
   const greeting = `Olá, ${name}!`;
-  const { subject, said } = orderMoveOf(status, pickup);
+  // Only leaving is told as sent; a pick-up ready at the shop has nobody carrying it.
+  const shipped = status === 'OUT_FOR_DELIVERY' && !pickup ? shipment : null;
+  const { subject, said } = orderMoveOf(status, pickup, shipped);
   const line = `Seu pedido nº ${number} em ${shopName} ${said}.`;
   const earned = cashback ? cashbackLineOf(cashback) : null;
+  const tracking = shipped ? trackingOf(shipped) : null;
   const why = 'Você recebe este aviso porque tem conta na loja. Para não receber mais, desmarque "Andamento dos pedidos" e salve';
   return {
     subject: `${shopName} — pedido nº ${number} ${subject}`,
-    text: `${greeting}\n\n${line}${earned ? `\n\n${earned}` : ''}\n\nVeja o pedido:\n${url}\n\n${why}:\n${settingsUrl}`,
+    text: `${greeting}\n\n${line}${earned ? `\n\n${earned}` : ''}${tracking ? `\n\n${tracking.text}` : ''}\n\nVeja o pedido:\n${url}\n\n${why}:\n${settingsUrl}`,
     html: layout(
       escapeHtml(greeting),
-      `<p style="margin:0">${escapeHtml(line)}</p>${earned ? `<p style="margin:12px 0 0">${escapeHtml(earned)}</p>` : ''}`,
+      `<p style="margin:0">${escapeHtml(line)}</p>${earned ? `<p style="margin:12px 0 0">${escapeHtml(earned)}</p>` : ''}${tracking?.html ?? ''}`,
       'Ver pedido',
       url,
       escapeHtml(shopName),
