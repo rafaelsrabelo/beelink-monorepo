@@ -72,7 +72,11 @@ export type IntegrationErrorCode =
   /** A webhook whose signature is missing or not the app's (BEELINK-188). */
   | "INTEGRATION_SIGNATURE_INVALID"
   /** A carrier setting out of range: days past 30, a service id repeated, half a package, a document that is no CPF or CNPJ. */
-  | "MELHOR_ENVIO_SETTINGS_INVALID";
+  | "MELHOR_ENVIO_SETTINGS_INVALID"
+  /** An API key the third party refused, or one no key could be: missing, blank, with spaces (BEELINK-202). */
+  | "INTEGRATION_KEY_INVALID"
+  /** An API key from the other environment: a sandbox key on production, or the reverse (BEELINK-202). */
+  | "INTEGRATION_KEY_WRONG_ENVIRONMENT";
 
 /** The `details` of an integration refusal raised after the state named the shop: where to send the browser back. */
 export interface IntegrationRefusalDetails {
