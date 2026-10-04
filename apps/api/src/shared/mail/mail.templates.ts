@@ -1,3 +1,6 @@
+// Types
+import type { OrderDelivery } from '@harness-monorepo/contracts';
+
 /** The product speaks pt-BR (docs/product). Identifiers and comments stay in English. */
 export interface MailContent {
   subject: string;
@@ -103,12 +106,7 @@ export interface OrderStatusContent {
   shipment?: OrderShipment | null;
 }
 
-export interface OrderShipment {
-  carrier: string | null;
-  service: string | null;
-  trackingCode: string | null;
-  trackingUrl: string | null;
-}
+export type OrderShipment = Pick<OrderDelivery, 'carrier' | 'service' | 'trackingCode' | 'trackingUrl'>;
 
 /** "Você ganhou R$ 5,00 de cashback…", the date in the shops' own zone, as a calendar shows it. */
 function cashbackLineOf(cashback: NonNullable<OrderStatusContent['cashback']>): string {
