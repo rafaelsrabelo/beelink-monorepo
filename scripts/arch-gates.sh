@@ -101,6 +101,15 @@ gate "api/sealed-secret-in-integrations" \
   "secretSealed|secret-vault" \
   --exclude-dir=integrations --exclude-dir=generated
 
+# Inside that folder, the Asaas key — which creates charges in a shop's own account — is opened in its
+# own: nothing else under integrations names the party, so nothing else can seal or open its secret.
+# Specs are left out: the vault's own proves a value sealed for one party does not open for another.
+gate "api/asaas-secret-in-asaas" \
+  "Only src/modules/integrations/asaas seals or opens a shop's Asaas key; nothing else under integrations names the ASAAS party (apps/api/AGENTS.md, BEELINK-202)." \
+  "apps/api/src/modules/integrations" \
+  "['\"]ASAAS['\"]" \
+  --exclude-dir=asaas --exclude='*.spec.ts'
+
 gate "web/no-fetch-in-components" \
   "Components never call fetch — a service function plus a TanStack Query hook does, and packages/ui blocks take data through props (docs/ai-rules/state-and-data.md)." \
   "apps/web/src/components packages/ui/src" \
