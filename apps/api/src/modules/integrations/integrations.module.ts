@@ -2,6 +2,10 @@
 import { Module } from '@nestjs/common';
 
 // App
+import { AsaasClient } from './asaas/asaas.client.js';
+import { AsaasController } from './asaas/asaas.controller.js';
+import { AsaasConnectionService } from './asaas/asaas-connection.service.js';
+import { AsaasHttpClient } from './asaas/asaas-http.client.js';
 import { CarrierGapsService } from './carrier-gaps.service.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { CarrierQuotes } from './melhor-envio/carrier-quote.service.js';
@@ -21,12 +25,23 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  * shipping tickets, which reach Melhor Envio through its `accessTokenFor`; `CarrierGapsService` for the
  * catalogue, which says which products a carrier cannot quote; `CarrierQuotes` for the shipping quote,
  * which lists the carriers beside the shop's own delivery (BEELINK-185). An order's label is bought
- * from the shop's wallet here too (BEELINK-187).
+ * from the shop's wallet here too (BEELINK-187). A shop's Asaas account is connected with its own
+ * key (BEELINK-202), through `AsaasClient` — a port, bound here to Asaas over HTTP.
  */
 @Module({
   imports: [StoresModule],
-  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController],
-  providers: [MelhorEnvioClient, MelhorEnvioService, MelhorEnvioRefresher, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, OrderLabels],
+  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController],
+  providers: [
+    MelhorEnvioClient,
+    MelhorEnvioService,
+    MelhorEnvioRefresher,
+    MelhorEnvioSettingsService,
+    CarrierGapsService,
+    CarrierQuotes,
+    OrderLabels,
+    { provide: AsaasClient, useClass: AsaasHttpClient },
+    AsaasConnectionService,
+  ],
   exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient],
 })
 export class IntegrationsModule {}

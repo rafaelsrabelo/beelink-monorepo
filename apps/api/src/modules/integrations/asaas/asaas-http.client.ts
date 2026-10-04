@@ -18,7 +18,7 @@ function refusalOf(answer: unknown): { code: string | null; reason: string } {
 
 /**
  * Asaas over HTTP: `access_token` carries the shop's key, and the `User-Agent` names bee-link, which
- * Asaas requires. A 4xx is Asaas's no; a 5xx, a network failure or ten seconds of silence is not knowing.
+ * Asaas requires. A 4xx is Asaas's no; a 5xx, a 429, a network failure or ten seconds of silence is not knowing.
  */
 @Injectable()
 export class AsaasHttpClient extends AsaasClient {
@@ -69,7 +69,8 @@ export class AsaasHttpClient extends AsaasClient {
     });
 
     const answer: unknown = await response.json().catch(() => null);
-    if (response.status >= 500) throw new AsaasUnreachable(`Asaas failed (${response.status})`);
+    // Too many requests decides nothing about the key either: later, the same call may pass.
+    if (response.status >= 500 || response.status === 429) throw new AsaasUnreachable(`Asaas failed (${response.status})`);
     if (!response.ok) {
       const { code, reason } = refusalOf(answer);
       // Asaas's words, never the request's — and the key cut out should they ever echo it.

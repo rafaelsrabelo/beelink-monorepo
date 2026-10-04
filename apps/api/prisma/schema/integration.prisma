@@ -12,6 +12,18 @@ enum IntegrationStatus {
   NEEDS_RECONNECT
 }
 
+/// Where a webhook registered at a shop's own account stands (BEELINK-202).
+enum IntegrationWebhookState {
+  /// Registered, and the party sends to it.
+  REGISTERED
+  /// Not registered: this deployment's web is not public https (development).
+  SKIPPED
+  /// The party stopped sending after repeated failures; connecting again resumes it.
+  PAUSED
+  /// The party refused the registration, or did not answer it; connecting again retries.
+  ERROR
+}
+
 /// A shop's connection to its own account at a third party: what that party gave bee-link to act with,
 /// sealed, and who the account is. One per shop and party.
 model StoreIntegration {
@@ -37,6 +49,17 @@ model StoreIntegration {
   accountId    String?
   accountName  String?
   accountEmail String?
+  /// The account's CPF or CNPJ, already masked (BEELINK-202): the panel shows which account it is, and
+  /// nothing needs it whole.
+  accountDocument String? @db.VarChar(20)
+
+  /// The webhook bee-link registered at the shop's own account (Asaas, BEELINK-202) and where it stands.
+  /// Null for a party whose webhook is the app's, registered once for every shop (Melhor Envio).
+  webhookId    String?                  @db.VarChar(64)
+  webhookState IntegrationWebhookState?
+  /// SHA-256, in hex, of the token the webhook sends back — the token itself is sealed with the key. How
+  /// the receiver finds the shop without opening every shop's seal.
+  webhookTokenHash String? @unique @db.Char(64)
 
   connectedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt

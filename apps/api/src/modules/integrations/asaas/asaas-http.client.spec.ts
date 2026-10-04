@@ -90,6 +90,8 @@ describe('AsaasHttpClient', () => {
 
     answer(503, { message: 'down' });
     await expect(client.account(config, KEY)).rejects.toBeInstanceOf(AsaasUnreachable);
+    answer(429, { errors: [{ code: 'too_many_requests', description: 'Limite excedido' }] });
+    await expect(client.account(config, KEY)).rejects.toBeInstanceOf(AsaasUnreachable);
 
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('fetch failed'))));
     await expect(client.deleteWebhook(config, KEY, 'wh_01')).rejects.toBeInstanceOf(AsaasUnreachable);
