@@ -49,6 +49,15 @@ bee-link has **one app** at Melhor Envio, and each shop authorizes it on its own
 - **`INTEGRATIONS_SECRET_KEY` is set once and kept.** It seals every shop's tokens. A new key, or a lost one, leaves the stored tokens unreadable, and every shop has to connect again. Keep it out of any backup that travels with the database.
 - **The credentials live in Dokploy's Environment**, never in the repository.
 
+## Asaas
+
+bee-link has **no app** at Asaas: each shop pastes its own account's API key (BEELINK-202), the charges are created in that account, and the money never passes through bee-link. The key is sealed under the same `INTEGRATIONS_SECRET_KEY`, so connecting needs it set.
+
+- **`ASAAS_ENV=production` in production.** It defaults to `sandbox`, where nothing is really charged. It decides the address (`api.asaas.com` or `api-sandbox.asaas.com`) and which keys a shop may paste: `$aact_prod_…` in production, `$aact_hmlg_…` in the sandbox. Switching it disconnects nothing on its own; each shop connects again with a key of the new environment.
+- **`ASAAS_CONTACT_EMAIL`** names bee-link in the `User-Agent`, which Asaas requires, and is the address Asaas warns when a shop's webhook queue pauses. It defaults to `contato@beecoders.net`.
+- **The webhook is registered by bee-link, one per shop**, in the shop's own account, when it connects: `https://<WEB_DOMAIN>/api/integrations/asaas/webhook`, built from `WEB_URL`. Nothing is registered by hand. With a `WEB_URL` that is not public https (development) none is registered, and payments are found by the reconciliation alone.
+- **The receiver ships before the connection does.** A webhook registered with nobody answering it fails, and Asaas pauses its queue after 15 failures in a row. BEELINK-202 (connecting) goes to production only together with BEELINK-206 (the receiver).
+
 ## Constraints
 
 - **HTTPS only.** Session cookies are `Secure` in production; over plain HTTP the browser drops them and nobody signs in.

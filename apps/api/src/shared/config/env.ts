@@ -145,6 +145,15 @@ const envSchema = z.object({
   MELHOR_ENVIO_CONTACT_EMAIL: z.email().default('contato@beecoders.net'),
 
   /**
+   * Asaas (BEELINK-202): each shop connects its own account by pasting its API key, so there is no
+   * app of bee-link's to configure — only which Asaas this deployment talks to. A key from the other
+   * environment is refused. `ASAAS_CONTACT_EMAIL` goes in the User-Agent, which Asaas requires, and
+   * receives Asaas's notices about the webhooks bee-link registers (a paused queue).
+   */
+  ASAAS_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+  ASAAS_CONTACT_EMAIL: z.email().default('contato@beecoders.net'),
+
+  /**
    * Seals what a shop's third parties gave it — Melhor Envio's tokens, the Asaas key — at rest: 32
    * random bytes in base64 (`openssl rand -base64 32`). Losing it loses every connection, which then
    * has to be made again; leaking it with a database dump hands over every shop's access.
