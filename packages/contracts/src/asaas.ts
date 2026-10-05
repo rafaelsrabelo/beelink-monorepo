@@ -64,7 +64,7 @@ export interface AsaasSettings {
   maxInstallments: number;
   /** Paying on delivery or at pickup, settled between the shop and the customer: what a shop with no Asaas does. */
   offline: boolean;
-  /** ISO-8601; null until first saved, and then these are the defaults: Pix and card in full, and paying on delivery. */
+  /** ISO-8601; null until first saved. What is read until then are the defaults: Pix and card in full, and paying on delivery. */
   updatedAt: string | null;
 }
 
