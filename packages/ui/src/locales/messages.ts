@@ -3178,6 +3178,31 @@ export interface UiMessages {
       /** A key of the other environment, by the one this deployment takes. */
       wrongEnvironment: Record<"SANDBOX" | "PRODUCTION", string>
     }
+    /** How the shop is paid once its Asaas is connected (BEELINK-203). */
+    payments: {
+      title: string
+      intro: string
+      pix: string
+      pixHint: string
+      card: string
+      cardHint: string
+      installments: string
+      installmentsHint: string
+      /** One instalment: the card in full. */
+      installmentsOnce: string
+      /** {count} */
+      installmentsUpTo: string
+      offline: string
+      offlineHint: string
+      save: string
+      saving: string
+      saved: string
+      /** Read out, never shown, while the choices are read. */
+      loading: string
+      failed: string
+      issues: { none: string }
+      errors: Record<"ASAAS_SETTINGS_INVALID" | "UNKNOWN", string>
+    }
     shipping: {
       title: string
       services: string

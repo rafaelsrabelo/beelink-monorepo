@@ -41,6 +41,19 @@ export interface AsaasCardView {
   signUpHref: string
 }
 
+/** As far as a shop's choice of instalments goes: the API's own bound, the one every card brand takes at Asaas. */
+export const PAYMENT_INSTALLMENTS_MAX = 12
+
+/** How the shop is paid, as the form edits it: switches and a number, nothing typed. Mirrors `AsaasSettingsPayload`. */
+export interface PaymentSettingsFormValues {
+  pix: boolean
+  card: boolean
+  /** 1 to `PAYMENT_INSTALLMENTS_MAX`; 1 is in full. Kept while `card` is off. */
+  maxInstallments: number
+  /** Paying on delivery or at pickup, settled between the shop and the customer. */
+  offline: boolean
+}
+
 /** The third parties the panel can offer, by the wire's name. Mirrors `IntegrationProvider`. */
 export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS"
 

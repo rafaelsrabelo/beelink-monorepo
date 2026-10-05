@@ -1,5 +1,5 @@
 // Block
-import type { AsaasCardView, IntegrationOptionView, IntegrationRowView, MelhorEnvioCardView, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
+import type { AsaasCardView, IntegrationOptionView, IntegrationRowView, MelhorEnvioCardView, PaymentSettingsFormValues, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
 
 export const connected: MelhorEnvioCardView = {
   available: true,
@@ -51,3 +51,5 @@ export const asaasConnected: AsaasCardView = {
 }
 
 export const asaasDisconnected: AsaasCardView = { ...asaasConnected, status: "DISCONNECTED", account: null, webhook: null, connectedAt: null }
+
+export const payments: PaymentSettingsFormValues = { pix: true, card: true, maxInstallments: 3, offline: true }
