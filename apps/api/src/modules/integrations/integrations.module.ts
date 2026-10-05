@@ -6,6 +6,8 @@ import { AsaasClient } from './asaas/asaas.client.js';
 import { AsaasController } from './asaas/asaas.controller.js';
 import { AsaasConnectionService } from './asaas/asaas-connection.service.js';
 import { AsaasHttpClient } from './asaas/asaas-http.client.js';
+import { AsaasSettingsController } from './asaas/asaas-settings.controller.js';
+import { AsaasSettingsService } from './asaas/asaas-settings.service.js';
 import { CarrierGapsService } from './carrier-gaps.service.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { CarrierQuotes } from './melhor-envio/carrier-quote.service.js';
@@ -26,11 +28,12 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  * catalogue, which says which products a carrier cannot quote; `CarrierQuotes` for the shipping quote,
  * which lists the carriers beside the shop's own delivery (BEELINK-185). An order's label is bought
  * from the shop's wallet here too (BEELINK-187). A shop's Asaas account is connected with its own
- * key (BEELINK-202), through `AsaasClient` — a port, bound here to Asaas over HTTP.
+ * key (BEELINK-202), through `AsaasClient` — a port, bound here to Asaas over HTTP — and how the shop
+ * is paid through it is kept beside the connection (BEELINK-203).
  */
 @Module({
   imports: [StoresModule],
-  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController],
+  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController, AsaasSettingsController],
   providers: [
     MelhorEnvioClient,
     MelhorEnvioService,
@@ -41,6 +44,7 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
     OrderLabels,
     { provide: AsaasClient, useClass: AsaasHttpClient },
     AsaasConnectionService,
+    AsaasSettingsService,
   ],
   exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient],
 })

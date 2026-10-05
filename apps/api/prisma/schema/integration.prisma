@@ -106,6 +106,25 @@ model MelhorEnvioSettings {
   @@map("melhor_envio_settings")
 }
 
+/// How a shop is paid once its Asaas account is connected (BEELINK-203): Pix, credit card and in up to
+/// how many instalments, and whether paying on delivery or at pickup stays. Apart from the connection,
+/// so connecting again keeps the shop's choices. None until first saved: then the defaults below hold.
+model AsaasSettings {
+  storeId String  @id @db.Uuid
+  store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  pix     Boolean @default(true)
+  card    Boolean @default(true)
+  /// The most instalments a card payment splits into, 1 to 12 by a CHECK; 1 is in full. Interest-free
+  /// to the customer — the instalment fee is the shop's, so going past 1 is the shop's choice.
+  maxInstallments Int @default(1)
+  /// Paying on delivery or at pickup, settled between the shop and the customer. One of the three is
+  /// always on, by a CHECK.
+  offline   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@map("asaas_settings")
+}
+
 /// Where an order's label stands at Melhor Envio (BEELINK-187).
 enum OrderLabelStatus {
   IN_CART
