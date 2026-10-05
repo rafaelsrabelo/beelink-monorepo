@@ -21,6 +21,26 @@ export interface MelhorEnvioCardView {
   wallet: WalletView
 }
 
+/** Where the webhook bee-link registered at a shop's own account stands. Mirrors `IntegrationWebhookState`. */
+export type IntegrationWebhookStateValue = "REGISTERED" | "SKIPPED" | "PAUSED" | "ERROR"
+
+/** The Asaas card. Mirrors `AsaasConnection`, with the address the screen worked out for its environment. */
+export interface AsaasCardView {
+  /** This deployment can seal a key; without that there is nothing to connect. */
+  available: boolean
+  status: IntegrationStatusValue
+  /** The sandbox charges nobody: said, so nobody takes a test payment for money. */
+  sandbox: boolean
+  /** The document is already masked; null when Asaas gave none. */
+  account: { name: string; document: string | null } | null
+  /** Null while disconnected. */
+  webhook: IntegrationWebhookStateValue | null
+  /** Which connection this is: it changes with every key connected. Null while disconnected. */
+  connectedAt: string | null
+  /** Where an Asaas account is opened, for a shopkeeper who has none: the sandbox's own site, or Asaas's. */
+  signUpHref: string
+}
+
 /** The third parties the panel can offer, by the wire's name. Mirrors `IntegrationProvider`. */
 export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS"
 

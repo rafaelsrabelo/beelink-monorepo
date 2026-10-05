@@ -3138,7 +3138,46 @@ export interface UiMessages {
       disconnectCancel: string
       disconnectFailed: string
     }
-    asaas: IntegrationProviderMessages
+    asaas: IntegrationProviderMessages & {
+      disconnectedBadge: string
+      /** Said in the card itself: on a phone the badge's hint cannot be hovered. */
+      sandboxNote: string
+      keyLabel: string
+      keyPlaceholder: string
+      /** Where a key is created at Asaas, and what bee-link does with it. */
+      keyHint: string
+      showKey: string
+      hideKey: string
+      connectSubmit: string
+      connecting: string
+      noAccount: string
+      signUp: string
+      /** Read out after a link that opens another tab. */
+      newTab: string
+      needsReconnect: string
+      reconnectSubmit: string
+      account: string
+      /** The shop's payment notices: the webhook at its account. */
+      webhook: string
+      webhookStates: Record<"REGISTERED" | "SKIPPED" | "PAUSED" | "ERROR", string>
+      webhookHints: Record<"REGISTERED" | "SKIPPED" | "PAUSED" | "ERROR", string>
+      replaceKey: string
+      replaceLabel: string
+      replaceSubmit: string
+      replaceCancel: string
+      /** Over the page once a key was taken, there and then. */
+      connectedNotice: string
+      disconnect: string
+      disconnectTitle: string
+      disconnectBody: string
+      disconnectConfirm: string
+      disconnectCancel: string
+      disconnectFailed: string
+      /** By the API's code; `UNKNOWN` for any other. */
+      errors: Record<"INTEGRATION_KEY_INVALID" | "INTEGRATION_UNREACHABLE" | "RATE_LIMITED" | "UNKNOWN", string>
+      /** A key of the other environment, by the one this deployment takes. */
+      wrongEnvironment: Record<"SANDBOX" | "PRODUCTION", string>
+    }
     shipping: {
       title: string
       services: string

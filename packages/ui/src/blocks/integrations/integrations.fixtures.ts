@@ -1,5 +1,5 @@
 // Block
-import type { IntegrationOptionView, IntegrationRowView, MelhorEnvioCardView, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
+import type { AsaasCardView, IntegrationOptionView, IntegrationRowView, MelhorEnvioCardView, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
 
 export const connected: MelhorEnvioCardView = {
   available: true,
@@ -38,3 +38,16 @@ export const asaasOption: IntegrationOptionView = {
   connectBy: "page",
   href: "/admin/lessari/integrations/asaas",
 }
+
+/** A shop connected in the sandbox. No fixture holds a key: the card takes none as a prop. */
+export const asaasConnected: AsaasCardView = {
+  available: true,
+  status: "CONNECTED",
+  sandbox: true,
+  account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" },
+  webhook: "REGISTERED",
+  connectedAt: "2026-10-05T12:00:00.000Z",
+  signUpHref: "https://sandbox.asaas.com",
+}
+
+export const asaasDisconnected: AsaasCardView = { ...asaasConnected, status: "DISCONNECTED", account: null, webhook: null, connectedAt: null }
