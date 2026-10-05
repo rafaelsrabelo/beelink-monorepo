@@ -1,7 +1,7 @@
 // UI
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 
-/** The Integrations page while it is read: the Melhor Envio card and the settings under it, in their places. */
+/** An integration's own page while its connection is read: the card and the settings under it, in their places. */
 export function IntegrationsSkeleton() {
   return (
     <div aria-hidden="true" className="flex flex-col gap-6">

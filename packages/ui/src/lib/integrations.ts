@@ -1,10 +1,10 @@
 /**
  * The panel's Integrations as its blocks read them (BEELINK-183). They mirror the wire's shapes in
- * `packages/contracts/src/integration.ts`; this package does not import them, so a screen hands its
- * data over and the blocks never learn where it came from.
+ * `packages/contracts/src/integration.ts` and `asaas.ts`; this package does not import them, so a
+ * screen hands its data over and the blocks never learn where it came from.
  */
 
-/** Where the shop's Melhor Envio connection stands. Mirrors `IntegrationStatus`. */
+/** Where a shop's connection to a third party stands. Mirrors `IntegrationStatus`. */
 export type IntegrationStatusValue = "DISCONNECTED" | "CONNECTED" | "NEEDS_RECONNECT"
 
 /** The wallet, as the card says it: read, still being read, or not readable now — never a zero in its place. */
@@ -21,11 +21,8 @@ export interface MelhorEnvioCardView {
   wallet: WalletView
 }
 
-/**
- * The third parties the panel can offer, by the wire's name. Mirrors the part of `IntegrationProvider`
- * that is built: Asaas joins when the panel can take its key.
- */
-export type IntegrationProviderValue = "MELHOR_ENVIO"
+/** The third parties the panel can offer, by the wire's name. Mirrors `IntegrationProvider`. */
+export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS"
 
 /** A connection the shop has, as the Integrations list shows it: one it made, working or to mend. */
 export interface IntegrationRowView {
@@ -44,8 +41,14 @@ export interface IntegrationOptionView {
   provider: IntegrationProviderValue
   /** Not set up on this deployment; there to connect; or connected already, and then its page is the way on. */
   state: "unavailable" | "available" | "connected"
-  /** Where connecting begins: the third party's own authorization, so a plain link and never prefetched. */
+  /** Where connecting begins. */
   connectHref: string
+  /**
+   * What following `connectHref` does. `authorization`: fetching the address already begins the third
+   * party's authorization, so it is a plain anchor and never prefetched. `page`: it is the
+   * integration's own page, where the shop's key is typed, and goes through the app's link.
+   */
+  connectBy: "authorization" | "page"
   /** The integration's own page. */
   href: string
 }

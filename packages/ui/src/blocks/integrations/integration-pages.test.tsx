@@ -7,9 +7,13 @@ import { en } from "@harness-monorepo/ui/locales/index"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
+import type { LinkComponent } from "../auth/auth-link"
 import { IntegrationCatalog } from "./integration-catalog"
 import { IntegrationList } from "./integration-list"
-import { melhorEnvioOption, melhorEnvioRow } from "./integrations.fixtures"
+import { asaasOption, asaasRow, melhorEnvioOption, melhorEnvioRow } from "./integrations.fixtures"
+
+/** The app's link, as a test can tell it from a plain anchor. */
+const AppLink: LinkComponent = ({ href, ...props }) => <a href={href} data-app-link="" {...props} />
 
 describe("IntegrationList", () => {
   it("lists the shop's connections, each leading to its own page", async () => {
@@ -49,6 +53,20 @@ describe("IntegrationList", () => {
     render(<IntegrationList rows={[melhorEnvioRow]} newHref="/new" messages={en} />)
     expect(screen.getByRole("link", { name: "Set up Melhor Envio" })).toBeInTheDocument()
   })
+
+  /** BEELINK-203: each provider is named, drawn and explained by its own slice of the copy. */
+  it("lists Asaas beside Melhor Envio, each with its own name, account, sandbox and page", async () => {
+    const { container } = render(<IntegrationList rows={[melhorEnvioRow, { ...asaasRow, status: "NEEDS_RECONNECT" }]} newHref="/nova" />)
+
+    const [melhorEnvio, asaas] = screen.getAllByRole("listitem")
+    expect(within(melhorEnvio!).getByText("Sandbox")).toHaveAttribute("title", "Ambiente de testes do Melhor Envio: as etiquetas são simuladas.")
+    expect(within(asaas!).getByText("Asaas")).toBeInTheDocument()
+    expect(within(asaas!).getByText("Precisa reconectar")).toBeInTheDocument()
+    expect(within(asaas!).getByText("Sandbox")).toHaveAttribute("title", "Ambiente de testes do Asaas: nada é cobrado de verdade.")
+    expect(within(asaas!).getByText("Conta: Lessari Moda LTDA")).toBeInTheDocument()
+    expect(within(asaas!).getByRole("link", { name: "Configurar Asaas" })).toHaveAttribute("href", "/admin/lessari/integrations/asaas")
+    await expectNoA11yViolations(container)
+  })
 })
 
 describe("IntegrationCatalog", () => {
@@ -73,5 +91,33 @@ describe("IntegrationCatalog", () => {
 
     expect(screen.getByText("O Melhor Envio ainda não está configurado nesta instalação.")).toBeInTheDocument()
     expect(screen.queryByRole("link")).toBeNull()
+  })
+
+  /**
+   * BEELINK-203: fetching Melhor Envio's way in begins an authorization, so a router link — which
+   * prefetches — must never hold it. Asaas's way in is only its own page, where the key is typed.
+   */
+  it("offers Asaas through the app's link to its own page, and keeps an authorization on a plain anchor", async () => {
+    const { container } = render(<IntegrationCatalog options={[melhorEnvioOption, asaasOption]} linkComponent={AppLink} />)
+
+    expect(screen.getByRole("heading", { level: 2, name: "Asaas" })).toBeInTheDocument()
+    const asaas = screen.getByRole("link", { name: "Conectar Asaas" })
+    expect(asaas).toHaveAttribute("href", "/admin/lessari/integrations/asaas")
+    expect(asaas).toHaveAttribute("data-app-link")
+    expect(screen.getByRole("link", { name: "Conectar Melhor Envio" })).not.toHaveAttribute("data-app-link")
+    await expectNoA11yViolations(container)
+  })
+
+  it("leads a connected Asaas to its page, and says when this installation cannot seal a key", () => {
+    const { rerender } = render(<IntegrationCatalog options={[{ ...asaasOption, state: "connected" }]} />)
+    expect(screen.queryByRole("link", { name: "Conectar Asaas" })).toBeNull()
+    expect(screen.getByRole("link", { name: "Configurar Asaas" })).toHaveAttribute("href", "/admin/lessari/integrations/asaas")
+
+    rerender(<IntegrationCatalog options={[{ ...asaasOption, state: "unavailable" }]} />)
+    expect(screen.getByText("O Asaas ainda não está configurado nesta instalação.")).toBeInTheDocument()
+    expect(screen.queryByRole("link")).toBeNull()
+
+    rerender(<IntegrationCatalog options={[asaasOption]} messages={en} />)
+    expect(screen.getByRole("link", { name: "Connect Asaas" })).toBeInTheDocument()
   })
 })

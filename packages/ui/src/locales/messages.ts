@@ -3108,6 +3108,8 @@ export interface UiMessages {
     title: string
     intro: string
     failed: string
+    /** A connection could not be read while another was: said beside the rows of those that were. */
+    failedSome: string
     retry: string
     /** The way to the page that adds one, and that page's own title. */
     newIntegration: string
@@ -3121,18 +3123,10 @@ export interface UiMessages {
       /** By the code the way back carries; `UNKNOWN` for any other. */
       errors: Record<"INTEGRATION_CANCELLED" | "INTEGRATION_STATE_INVALID" | "INTEGRATION_EXCHANGE_FAILED" | "INTEGRATION_UNREACHABLE" | "INTEGRATION_UNAVAILABLE" | "AUTH_UNAUTHENTICATED" | "UNKNOWN", string>
     }
-    melhorEnvio: {
-      title: string
-      lead: string
-      unavailable: string
-      connect: string
+    melhorEnvio: IntegrationProviderMessages & {
       reconnect: string
       needsReconnect: string
-      connected: string
       disconnectedBadge: string
-      needsReconnectBadge: string
-      sandbox: string
-      sandboxHint: string
       account: string
       balance: string
       balanceHint: string
@@ -3144,6 +3138,7 @@ export interface UiMessages {
       disconnectCancel: string
       disconnectFailed: string
     }
+    asaas: IntegrationProviderMessages
     shipping: {
       title: string
       services: string
@@ -3170,6 +3165,23 @@ export interface UiMessages {
       errors: Record<"MELHOR_ENVIO_SETTINGS_INVALID" | "UNKNOWN", string>
     }
   }
+}
+
+/**
+ * What every third party says of itself wherever the Integrations pages list or offer it. Each
+ * provider's slice holds at least this, so the list and the catalogue read any of them alike.
+ */
+export interface IntegrationProviderMessages {
+  title: string
+  /** What connecting gives the shop. */
+  lead: string
+  unavailable: string
+  /** The way in, on the catalogue: names the provider, since several cards share the page. */
+  connect: string
+  connected: string
+  needsReconnectBadge: string
+  sandbox: string
+  sandboxHint: string
 }
 
 /** The two the product ships. `pt-BR` is the default; `en` is what the repository itself speaks. */

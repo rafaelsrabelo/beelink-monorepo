@@ -22,8 +22,9 @@ export interface IntegrationCatalogProps {
  * The third parties a shop can connect, a card each: what it gives, and the way in. One already
  * connected leads to its own page instead of connecting twice.
  *
- * "Conectar" is a plain anchor, never the app's link: a router link prefetches its address, and this
- * one begins an authorization at the third party the moment it is fetched.
+ * Where "Conectar" begins an authorization at the third party it is a plain anchor, never the app's
+ * link: a router link prefetches its address, and that address begins the authorization the moment
+ * it is fetched. Where it is only the integration's own page, it is the app's link like any other.
  */
 export function IntegrationCatalog({ options, linkComponent: Link = AnchorLink, messages = defaultMessages }: IntegrationCatalogProps) {
   const text = messages.integrations.catalog
@@ -46,10 +47,14 @@ export function IntegrationCatalog({ options, linkComponent: Link = AnchorLink, 
             <div className="mt-auto">
               {option.state === "unavailable" ? (
                 <p className="bg-muted rounded-lg px-3 py-2 text-sm">{provider.unavailable}</p>
-              ) : option.state === "available" ? (
+              ) : option.state === "available" && option.connectBy === "authorization" ? (
                 <a href={option.connectHref} className={cn(buttonVariants(), "self-start")}>
                   {provider.connect}
                 </a>
+              ) : option.state === "available" ? (
+                <Link href={option.connectHref} className={cn(buttonVariants())}>
+                  {provider.connect}
+                </Link>
               ) : (
                 // Through `cn`, as `Button` does: raw, the base's transparent border outranks the outline's.
                 <Link href={option.href} aria-label={format(text.openLabel, { name: provider.title })} className={cn(buttonVariants({ variant: "outline" }))}>

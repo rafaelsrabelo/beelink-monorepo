@@ -20,5 +20,5 @@ export function integrationRowsOf(connection: MelhorEnvioConnection, pages: { me
 /** What there is to connect, and how far the shop is with each. */
 export function integrationOptionsOf(connection: MelhorEnvioConnection, pages: { melhorEnvio: string }, connectHref: string): IntegrationOptionView[] {
   const state = !connection.available ? "unavailable" : connection.status === "DISCONNECTED" ? "available" : "connected"
-  return [{ provider: "MELHOR_ENVIO", state, connectHref, href: pages.melhorEnvio }]
+  return [{ provider: "MELHOR_ENVIO", state, connectHref, connectBy: "authorization", href: pages.melhorEnvio }]
 }

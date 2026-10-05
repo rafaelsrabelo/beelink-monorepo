@@ -24,5 +24,17 @@ export const melhorEnvioOption: IntegrationOptionView = {
   provider: "MELHOR_ENVIO",
   state: "available",
   connectHref: "/api/stores/lessari/integrations/melhor-envio/connect",
+  connectBy: "authorization",
   href: "/admin/lessari/integrations/melhor-envio",
+}
+
+export const asaasRow: IntegrationRowView = { provider: "ASAAS", status: "CONNECTED", account: "Lessari Moda LTDA", sandbox: true, href: "/admin/lessari/integrations/asaas" }
+
+/** Connecting Asaas is typing a key on its own page: both ways lead there. */
+export const asaasOption: IntegrationOptionView = {
+  provider: "ASAAS",
+  state: "available",
+  connectHref: "/admin/lessari/integrations/asaas",
+  connectBy: "page",
+  href: "/admin/lessari/integrations/asaas",
 }
