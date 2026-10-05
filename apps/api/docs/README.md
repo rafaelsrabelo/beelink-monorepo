@@ -29,7 +29,7 @@ src/
 │   │   ├── store-color-presets.{controller,constants}.ts  # the six palettes, as data
 │   │   └── dto/                            # bodies in, Swagger shapes out
 │   ├── delivery/               # how a shop gets an order out: the rules (pickup, own delivery by distance bands, carriers) and their quote to an address
-│   ├── integrations/           # a shop's own accounts at Melhor Envio (and Asaas): the sealed vault, the OAuth flow, the renewal routine
+│   ├── integrations/           # a shop's own accounts at Melhor Envio and Asaas: the sealed vault; Melhor Envio's OAuth flow and renewal routine; `asaas/` — the pasted key, checked and sealed, and the shop's webhook
 │   └── users/                  # GET /users/me
 └── shared/
     ├── config/env.ts           # the only reader of process.env
@@ -70,6 +70,8 @@ Every variable is declared in [../.env.example](../.env.example) and validated i
 | `MELHOR_ENVIO_ENV` | `sandbox` | `sandbox` · `production` — which Melhor Envio the app talks to |
 | `MELHOR_ENVIO_CLIENT_ID`, `MELHOR_ENVIO_CLIENT_SECRET`, `MELHOR_ENVIO_REDIRECT_URI` | — | bee-link's app at Melhor Envio; all three or none, and then `INTEGRATIONS_SECRET_KEY` too |
 | `MELHOR_ENVIO_CONTACT_EMAIL` | `contato@beecoders.net` | sent in the `User-Agent`, which Melhor Envio requires |
+| `ASAAS_ENV` | `sandbox` | `sandbox` · `production` — which Asaas a shop's key is for; a key of the other one is refused |
+| `ASAAS_CONTACT_EMAIL` | `contato@beecoders.net` | sent in the `User-Agent`, which Asaas requires; also where Asaas warns of a shop's paused webhook |
 | `INTEGRATIONS_SECRET_KEY` | — | 32 bytes in base64; seals each shop's third-party access (`modules/integrations/secret-vault.ts`) |
 
 ## Endpoints
@@ -104,6 +106,7 @@ Every route needs `Authorization: Bearer <access token>` unless it is marked pub
 | `GET` · `POST` · `DELETE` | `/api/stores/:slug/orders/:number/label` | no | an order's shipping label from the shop's own Melhor Envio wallet: what buying one needs, the wallet and the box Melhor Envio would pack it in; buy — into the cart, paid from the balance, generated, its tracking on the order — carrying on from where it stopped; cancel while Melhor Envio allows it | `200 OrderLabelOverview` · `400 LABEL_INVALID` · `409 LABEL_NOT_AVAILABLE` · `409 LABEL_BALANCE_INSUFFICIENT` · `409 LABEL_REFUSED` · `409 LABEL_NOT_CANCELLABLE` · `502 INTEGRATION_UNREACHABLE` |
 | `POST` | `/api/integrations/melhor-envio/webhook` | yes | Melhor Envio telling of a label: posted moves the order out for delivery, delivered delivers it — forward only, by the carrier — with its tracking; a cancelled label is mirrored. Signed with the app's secret (`X-ME-Signature`); once per label and status | `200 { result }` · `401 INTEGRATION_SIGNATURE_INVALID` |
 | `POST` | `/api/stores/:slug/orders/:number/label/print` | no | the generated label's PDF, at a public address made there and then | `200 OrderLabelPrint` · `404 LABEL_NOT_FOUND` · `409 LABEL_NOT_GENERATED` |
+| `GET` · `POST` · `DELETE` | `/api/stores/:slug/integrations/asaas` | no | the shop's own Asaas account: whose it is (document masked) and its webhook's state — never the key; connect, or replace, with the API key the owner pastes — refused by its prefix when it is the other environment's, checked at Asaas, sealed, and the shop's webhook registered at its account (skipped where the web is not public https), under the auth routes' per-IP limit; disconnect — the webhook removed, the key deleted | `200 AsaasConnection` · `204` · `400 INTEGRATION_KEY_INVALID` · `400 INTEGRATION_KEY_WRONG_ENVIRONMENT` · `403 STORE_FORBIDDEN` · `429` · `502 INTEGRATION_UNREACHABLE` · `503 INTEGRATION_UNAVAILABLE` |
 | `GET` · `PUT` | `/api/stores/:slug/delivery` | no | pickup, the shop's own delivery by distance bands (the last band is the radius), free above, carriers — the defaults until first saved | `200 DeliverySettings` · `400 DELIVERY_SETTINGS_INVALID` |
 | `POST` | `/api/stores/:slug/delivery/quote` | no | the panel's quote for a sale it registers: drafts included | `200 ShippingQuote` · `400 SHIPPING_DESTINATION_INVALID` · `403 STORE_FORBIDDEN` |
 | `POST` | `/api/stores/:slug/shipping/quote` | yes | the shop window's ways to get a cart to an address — own delivery by straight-line distance to the geocoded address (MapTiler, else Nominatim; remembered by CEP and number), the carriers of the shop's Melhor Envio (its token, its services, its days to post; remembered ten minutes per cart; left out, never failing, when Melhor Envio does not answer in 4 s), then pickup | `200 ShippingQuote` · `400 SHIPPING_DESTINATION_INVALID` · `400 ORDER_VARIANT_INVALID` · `404 STORE_NOT_FOUND` · `429` |

@@ -178,3 +178,34 @@ Não há chave de sandbox neste ambiente: nada disso foi tentado contra o Asaas 
   do bee-link na mesma conta Asaas recebem cada evento duas vezes, uma com o token de cada loja.
 - **Q4/Q5:** `AsaasConnectionService` deve expor a chave aberta só dentro da pasta `asaas/` (gate
   `api/asaas-secret-in-asaas`).
+
+## Acréscimos de 05/10/2026: a revisão antes do PR
+
+A leitura do diff inteiro, antes de abrir o PR, mudou quatro coisas. Nenhuma altera a Definição de
+Pronto.
+
+1. **A chave é só ASCII visível.** O DTO aceitava qualquer coisa sem espaço. Uma chave colada com
+   um caractere invisível (um espaço de largura zero, por exemplo) passava, o `fetch` falhava ao
+   montar o cabeçalho e o lojista lia "o Asaas não respondeu" (502), quando o certo é "essa chave
+   não vale, cole de novo". Agora a chave tem de casar com `[\x21-\x7e]+`; o resto responde
+   `INTEGRATION_KEY_INVALID` sem chamar o Asaas. Nenhuma chave de verdade fica de fora: um
+   cabeçalho HTTP não leva outra coisa.
+2. **O cliente HTTP não repete as palavras do `fetch`.** Quando um cabeçalho não pode ser enviado,
+   o `fetch` do Node diz qual, com o valor (`Headers.append: "<a chave>" is an invalid header
+   value`), e essa frase ia para a mensagem do `AsaasUnreachable`. Nenhum caminho de hoje chegava
+   lá (o único caractere que provoca isso é o NUL, que o `ApiValidationPipe` já recusa), mas a
+   porta promete que um erro nunca leva a chave. A falha agora é descrita só pelo nome e pelo
+   código (`TypeError, ECONNREFUSED`, `TimeoutError`), o que também diz mais do que o "fetch
+   failed" de antes quando vai parar no `lastError`.
+3. **Os mapas de superfície** não tinham o Asaas. `apps/api/docs/README.md` ganhou as duas
+   variáveis e a linha da rota; `apps/web/docs/README.md`, a linha do handler do BFF.
+4. **O limite por IP (decisão 12) ganhou teste.** O e2e confere que o `POST` responde sob o limite
+   das rotas de autenticação e que o `GET` não tem limite.
+
+**A base do PR é a `main`.** O briefing previa a pilha N8 → M5 → D3 → Q1. O N8 já entrou na `main`
+(PR #196), o M5 e o D3 não começaram, e o Q1 só depende do N1 (BEELINK-182), que está na `main`. A
+branch recebeu a `main` por merge.
+
+**Limite conhecido:** uma conta com CNPJ alfanumérico (o formato novo da Receita) fica sem documento
+no estado da conexão. O cliente tira tudo que não é dígito, sobram menos de 14, e a máscara não
+mostra nada; o nome da conta continua aparecendo. Quem mostra o documento é o Q2.
