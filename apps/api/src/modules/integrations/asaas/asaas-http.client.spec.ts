@@ -93,8 +93,16 @@ describe('AsaasHttpClient', () => {
     answer(429, { errors: [{ code: 'too_many_requests', description: 'Limite excedido' }] });
     await expect(client.account(config, KEY)).rejects.toBeInstanceOf(AsaasUnreachable);
 
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('fetch failed'))));
-    await expect(client.deleteWebhook(config, KEY, 'wh_01')).rejects.toBeInstanceOf(AsaasUnreachable);
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('fetch failed', { cause: Object.assign(new Error('refused'), { code: 'ECONNREFUSED' }) }))));
+    const unanswered = await client.deleteWebhook(config, KEY, 'wh_01').catch((error: unknown) => error);
+    expect(unanswered).toBeInstanceOf(AsaasUnreachable);
+    expect(String(unanswered)).toContain('TypeError, ECONNREFUSED');
+
+    // fetch names a header it cannot send, value and all: only the failure's name is kept.
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError(`Headers.append: "${KEY}" is an invalid header value.`))));
+    const unsent = await client.account(config, KEY).catch((error: unknown) => error);
+    expect(unsent).toBeInstanceOf(AsaasUnreachable);
+    expect(String(unsent)).not.toContain(KEY);
 
     answer(200, {});
     await expect(client.account(config, KEY)).rejects.toBeInstanceOf(AsaasUnreachable);

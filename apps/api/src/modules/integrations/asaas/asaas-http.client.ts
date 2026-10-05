@@ -16,6 +16,13 @@ function refusalOf(answer: unknown): { code: string | null; reason: string } {
   return { code: filled(first?.code) ? first.code : null, reason: filled(first?.description) ? first.description : 'no reason given' };
 }
 
+/** Why no answer came, by the failure's name and code alone: fetch's own words repeat a header it could not send — the key. */
+function failureOf(error: unknown): string {
+  if (!(error instanceof Error)) return 'unknown failure';
+  const code = (error.cause as { code?: unknown } | undefined)?.code;
+  return typeof code === 'string' ? `${error.name}, ${code}` : error.name;
+}
+
 /**
  * Asaas over HTTP: `access_token` carries the shop's key, and the `User-Agent` names bee-link, which
  * Asaas requires. A 4xx is Asaas's no; a 5xx, a 429, a network failure or ten seconds of silence is not knowing.
@@ -65,7 +72,7 @@ export class AsaasHttpClient extends AsaasClient {
     if (body) init.body = JSON.stringify(body);
 
     const response = await fetch(`${config.baseUrl}${path}`, init).catch((error: unknown) => {
-      throw new AsaasUnreachable(error instanceof Error ? error.message : 'Asaas did not answer');
+      throw new AsaasUnreachable(`Asaas did not answer (${failureOf(error)})`);
     });
 
     const answer: unknown = await response.json().catch(() => null);
