@@ -4,7 +4,7 @@ import type { AsaasConfig } from './asaas.config.js';
 /** Whose account a key opens, as Asaas's commercial information names it. */
 export interface AsaasAccountInfo {
   name: string;
-  /** The CPF or CNPJ, digits only; null when Asaas sent none. Masked before it is kept. */
+  /** The CPF or CNPJ with its punctuation taken out — digits, and the capital letters a newer CNPJ may hold; null when Asaas sent none. Masked before it is kept. */
   document: string | null;
 }
 

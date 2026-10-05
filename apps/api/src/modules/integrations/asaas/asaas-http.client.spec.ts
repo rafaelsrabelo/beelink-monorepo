@@ -49,6 +49,15 @@ describe('AsaasHttpClient', () => {
     expect(await client.account(config, KEY)).toEqual({ name: 'Maria Lessari', document: null });
   });
 
+  /** A CNPJ issued since July 2026 may hold letters: dropped with the punctuation, the account would read as having no document. */
+  it('keeps the letters of a newer CNPJ, capital, whichever way Asaas writes it', async () => {
+    answer(200, { personType: 'JURIDICA', name: 'Lessari', cpfCnpj: '12.abc.345/01de-35' });
+    expect((await client.account(config, KEY)).document).toBe('12ABC34501DE35');
+
+    answer(200, { personType: 'JURIDICA', name: 'Lessari', cpfCnpj: '12ABC34501DE35' });
+    expect((await client.account(config, KEY)).document).toBe('12ABC34501DE35');
+  });
+
   it('registers the webhook, active and in order, with the token and the payment events, and answers its id', async () => {
     const fetched = answer(200, { id: 'wh_01', hasAuthToken: true });
     const webhook = { name: 'bee-link (lessari)', url: config.webhookUrl!, email: 'contato@beecoders.net', authToken: 'a'.repeat(43) };

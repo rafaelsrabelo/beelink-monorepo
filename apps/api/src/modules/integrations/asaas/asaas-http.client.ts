@@ -35,8 +35,9 @@ export class AsaasHttpClient extends AsaasClient {
     const name = [body?.tradingName, body?.companyName, body?.name].find(filled);
     if (!name) throw new AsaasUnreachable('Asaas answered the account request without a name');
 
-    const digits = typeof body?.cpfCnpj === 'string' ? body.cpfCnpj.replace(/\D/g, '') : '';
-    return { name: name.trim(), document: digits || null };
+    // Letters are kept: a CNPJ issued since July 2026 may hold them in its first twelve places.
+    const document = typeof body?.cpfCnpj === 'string' ? body.cpfCnpj.replace(/[^0-9a-z]/gi, '').toUpperCase() : '';
+    return { name: name.trim(), document: document || null };
   }
 
   async createWebhook(config: AsaasConfig, apiKey: string, webhook: AsaasWebhookRequest): Promise<string> {
