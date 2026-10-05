@@ -76,7 +76,9 @@ export type IntegrationErrorCode =
   /** An API key the third party refused, or one no key could be: missing, blank, with spaces (BEELINK-202). */
   | "INTEGRATION_KEY_INVALID"
   /** An API key from the other environment: a sandbox key on production, or the reverse (BEELINK-202). */
-  | "INTEGRATION_KEY_WRONG_ENVIRONMENT";
+  | "INTEGRATION_KEY_WRONG_ENVIRONMENT"
+  /** A way of being paid out of range: instalments that are no whole number from 1 to 12, a switch that is no boolean, or every way off (BEELINK-203). */
+  | "ASAAS_SETTINGS_INVALID";
 
 /** The `details` of an integration refusal raised after the state named the shop: where to send the browser back. */
 export interface IntegrationRefusalDetails {
