@@ -12,6 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { AppLink } from "@/components/app-link"
 import { integrationOptionsOf, integrationPagesOf } from "@/lib/integration-pages"
+import { useAsaasConnection } from "@/services/integrations/asaas-hooks"
 import { useMelhorEnvioConnection } from "@/services/integrations/integration-hooks"
 import { melhorEnvioConnectHref } from "@/services/integrations/integration-requests"
 
@@ -20,11 +21,18 @@ export interface NewIntegrationScreenProps {
   messages: UiMessages
 }
 
-/** Adding an integration: what there is to connect, a card each. Connected, each is set up on its own page. */
+/**
+ * Adding an integration: what there is to connect, a card each. Connected, each is set up on its own
+ * page. A provider whose connection could not be read is left out and said so, beside the others.
+ */
 export function NewIntegrationScreen({ slug, messages }: NewIntegrationScreenProps) {
   const text = messages.integrations
   const pages = integrationPagesOf(slug)
-  const connection = useMelhorEnvioConnection(slug)
+  const melhorEnvio = useMelhorEnvioConnection(slug)
+  const asaas = useAsaasConnection(slug)
+  const failed = [melhorEnvio, asaas].filter((connection) => connection.isError)
+  const reading = melhorEnvio.isPending || asaas.isPending
+  const options = integrationOptionsOf({ melhorEnvio: melhorEnvio.data, asaas: asaas.data }, pages, melhorEnvioConnectHref(slug))
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">
@@ -40,15 +48,17 @@ export function NewIntegrationScreen({ slug, messages }: NewIntegrationScreenPro
         <p className="text-muted-foreground text-sm">{text.catalog.intro}</p>
       </header>
 
-      {connection.isError ? (
-        <IntegrationsFailed onRetry={() => void connection.refetch()} messages={messages} />
-      ) : connection.data ? (
-        <IntegrationCatalog options={integrationOptionsOf(connection.data, pages, melhorEnvioConnectHref(slug))} linkComponent={AppLink} messages={messages} />
-      ) : (
+      {reading ? (
         <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2">
           <Skeleton className="h-48 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
         </div>
-      )}
+      ) : options.length > 0 ? (
+        <IntegrationCatalog options={options} linkComponent={AppLink} messages={messages} />
+      ) : null}
+      {failed.length > 0 ? (
+        <IntegrationsFailed onRetry={() => failed.forEach((connection) => void connection.refetch())} message={failed.length === 1 ? text.failedSome : undefined} messages={messages} />
+      ) : null}
     </div>
   )
 }
