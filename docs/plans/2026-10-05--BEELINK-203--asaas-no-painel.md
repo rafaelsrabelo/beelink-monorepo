@@ -214,3 +214,84 @@ Nada disso foi tentado com uma conta de verdade: não há chave de sandbox neste
   API recusa ou se as pendentes são canceladas antes.
 - **A frase do cartão fala do checkout.** "O cliente paga no checkout" só é verdade com o Q4. A
   pilha entra na `main` junta (decisão 17 do briefing).
+
+## Acréscimos de 05/10/2026: o que mudou enquanto o ticket era feito
+
+Nada abaixo muda a Definição de Pronto. É o que o plano não previa, ou previa de outro jeito.
+
+1. **O campo da chave é não controlado.** O plano dizia que a chave ficaria no estado do componente
+   (decisão 6). Feito assim, a chave ia parar no HTML da página: o React 19.2.3 copia o valor de um
+   input controlado para o atributo `value`, e um teste de sonda mostrou a chave digitada tanto em
+   `getAttribute("value")` quanto no `innerHTML`. O campo ficou sem `value`: a chave existe só dentro
+   do próprio campo, e o componente guarda apenas "algo foi digitado" e "mostrar ou esconder". O envio
+   lê o campo por `ref`, que é o que `docs/ai-rules/state-and-data.md` pede para campo de formulário.
+   Um teste do bloco confere que o atributo não existe e que o HTML não contém o que foi digitado.
+   Ao enviar, a chave volta a ficar escondida.
+2. **Doze parcelas é o teto de qualquer bandeira.** A documentação do Asaas
+   (`docs/criar-uma-cobranca-parcelada`, 04/08/2026) diz: "até 21 parcelas para cartões Visa e
+   Mastercard; até 12 parcelas para as demais bandeiras". Com o limite de 12 do épico, a loja nunca
+   oferece um parcelamento que o cartão do cliente não aceite.
+3. **Uma recusa não sobrevive ao formulário em que foi dita.** A frase da recusa vem de fora do
+   cartão. Depois de "Cancelar" em "Trocar a chave", ela continuava lá e recebia o campo vazio na vez
+   seguinte. O cartão passou a avisar a tela (`onReplaceCancel`), que esquece a recusa. Tentar outra
+   chave também apaga o aviso de um desconectar que tinha falhado antes.
+4. **O `useConnectAsaas` espera a conexão ser lida de novo antes de terminar.** A invalidação é
+   devolvida no `onSuccess` do hook, como o desconectar do Melhor Envio já fazia. Sem isso, o cartão
+   voltaria a mostrar o campo da chave por um instante entre a resposta do `POST` e a nova leitura.
+5. **Blocos e frases a mais.** `asaas-account-facts.tsx` (a conta e os avisos de pagamento) saiu do
+   cartão para manter um componente por arquivo. `integrations.failedSome` é a frase da leitura que
+   falhou ao lado de outra que deu certo. A frase da lista vazia passou a citar o Asaas.
+6. **O e2e confere as duas `CHECK`** da tabela, além das recusas da API.
+7. **A seleção das parcelas tem largura própria.** Vista no painel, ela ocupava a largura inteira do
+   campo para uma escolha de poucas palavras.
+
+### O que foi visto no navegador
+
+Com a API na 3501 e o web na 3500, uma conta e uma loja criadas pelo fluxo normal
+(`dev-203@teste.dev`, loja `loja-dev-203`), a 1280 px e a 390 px de largura:
+
+- **Desconectada:** `$aact_prod_qualquercoisa` responde na hora com a frase do ambiente errado.
+  `$aact_hmlg_qualquercoisa` foi de verdade ao sandbox do Asaas (825 ms) e voltou com a frase da chave
+  inválida. Com cinco tentativas no mesmo minuto, a sexta respondeu `429`, com a frase das muitas
+  tentativas. Enquanto a chave é conferida, o campo fica travado e o botão diz "Conectando…". Depois
+  de cada recusa, o foco volta para o campo.
+- **O segredo:** depois de dez tentativas, a chave digitada não estava na URL, em storage, em cookie
+  nem no HTML da página, só no próprio campo. O log da API e o do web não tinham nenhuma ocorrência
+  de `aact`.
+- **Conectada, com uma linha gravada à mão em `store_integrations`:** a conta, o documento mascarado,
+  o selo de sandbox e os quatro estados dos avisos (`SKIPPED`, `ERROR`, `PAUSED` e `REGISTERED`,
+  trocados por `UPDATE`). O `lastError` gravado no banco não aparece na página. "Trocar a chave" abre
+  o campo com o foco nele, uma chave recusada deixa a conta como estava, e "Cancelar" devolve o foco
+  ao botão. As formas aceitas foram salvas (`PUT` com 200 e "Formas de pagamento salvas."), lidas de
+  novo depois de recarregar e mantidas depois de desconectar e conectar de novo. Com as três
+  desligadas, a frase aparece e "Salvar" não manda nenhum `PUT`. "Desconectar" abre a confirmação com
+  o foco em "Manter conectado", e Enter mantém a conexão.
+- **Precisa reconectar** (`UPDATE` no status): o aviso, a conta, o campo e "Conectar de novo", sem o
+  formulário das formas. Desconectar a partir desse estado também funciona.
+- **Lista e "Nova integração":** a linha do Asaas com a conta e o selo; a lista vazia; "Conectar
+  Asaas" leva à página sem recarregar o documento. Com a leitura do Asaas respondendo 500 (forjado no
+  navegador), a lista mostrou só o aviso de falha, sem dizer que a loja não tem nada conectado, e
+  "Tentar de novo" trouxe a lista.
+- **Storybook:** o build passa, com 16 stories do Asaas.
+
+### O que não deu para exercitar
+
+- **Conectar de verdade.** Não há chave que o Asaas aceite neste ambiente. A passagem de
+  "desconectada" para "conectada" sem recarregar foi vista com a resposta do `POST` forjada no
+  navegador e a linha gravada à mão: o aviso "Asaas conectado", o cartão trocado, as formas aceitas e
+  o foco em "Trocar a chave" apareceram, e a leitura seguinte foi a da API de verdade. Trocar a chave
+  com sucesso só foi coberto por teste.
+- **O webhook cadastrado de verdade** (`REGISTERED` vindo do Asaas) e a fila pausada.
+- **A lista com as duas integrações ao mesmo tempo:** neste ambiente o Melhor Envio não está
+  configurado. Ficou nos testes e na story.
+- **Gerenciadores de senha.** Os atributos estão no campo; nenhum gerenciador foi instalado para ver
+  se ele deixa mesmo de oferecer o salvamento.
+
+### Para os próximos tickets (acréscimo)
+
+- **Q4: as frases do formulário descrevem o checkout que ainda não existe.** "QR Code ou Pix copia e
+  cola, sem sair da loja" e "a página segura do Asaas, que abre em outra aba" são as decisões 5 e 6 do
+  briefing. Se o Q4 mudar o comportamento, as frases estão em `integrations.payments`, em
+  `packages/ui/src/locales/`.
+- **Q3 e Q4: o 12 está em dois lugares.** `INSTALLMENTS_MAX`, no DTO da API, e
+  `PAYMENT_INSTALLMENTS_MAX`, em `packages/ui/src/lib/integrations.ts`. O contrato só leva tipos.
