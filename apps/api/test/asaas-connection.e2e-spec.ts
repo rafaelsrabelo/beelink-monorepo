@@ -116,13 +116,20 @@ describe("a shop's Asaas connection (BEELINK-202)", () => {
     const production = await connect('$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZm');
     expect([production.statusCode, production.json<{ errorCode: string }>().errorCode]).toEqual([400, 'INTEGRATION_KEY_WRONG_ENVIRONMENT']);
 
-    for (const payload of [{}, { apiKey: '' }, { apiKey: '$aact_hmlg_with a space inside it' }, { apiKey: 42 }]) {
+    // The last one is a key Asaas knows with a zero-width space copied along: no header could carry it.
+    for (const payload of [{}, { apiKey: '' }, { apiKey: '$aact_hmlg_with a space inside it' }, { apiKey: 42 }, { apiKey: `${KEY}​` }]) {
       const response = await call('POST', '/api/stores/lessari/integrations/asaas', owner, payload);
       expect([response.statusCode, response.json<{ errorCode: string }>().errorCode]).toEqual([400, 'INTEGRATION_KEY_INVALID']);
     }
 
     expect(await rows()).toEqual([]);
     expect(asaas.calls).toEqual(['account']);
+  });
+
+  /** Connecting presents a credential: without a limit the route would test leaked keys against Asaas from bee-link's address. */
+  it("counts a connect against the auth routes' limit per address, and a read against none", async () => {
+    expect(Number((await connect(KEY)).headers['x-ratelimit-limit'])).toBe(1000);
+    expect((await read()).headers['x-ratelimit-limit']).toBeUndefined();
   });
 
   it('disconnects: the key is deleted, and the shop reads disconnected again', async () => {

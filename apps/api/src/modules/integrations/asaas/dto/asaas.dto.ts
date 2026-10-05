@@ -16,6 +16,8 @@ export class AsaasConnectDto implements AsaasConnectPayload {
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   @IsString(answering)
   @Length(16, 512, answering)
-  @Matches(/^\S+$/, answering)
+  // Visible ASCII only: an invisible character copied along with the key cannot travel in a header,
+  // and the request failing on it would read as Asaas not answering instead of a key to paste again.
+  @Matches(/^[\x21-\x7e]+$/, answering)
   apiKey!: string;
 }
