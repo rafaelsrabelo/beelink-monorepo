@@ -97,18 +97,21 @@ export function PaymentSettingsForm({ value, onChange, onSubmit, issue, pending 
                 {way.key === "card" && value.card ? (
                   <Field className="max-w-md">
                     <FieldLabel htmlFor={`${id}-installments`}>{text.installments}</FieldLabel>
-                    <Select value={String(value.maxInstallments)} onValueChange={(next: string | null) => next && onChange({ ...value, maxInstallments: Number(next) })} disabled={pending}>
-                      <SelectTrigger id={`${id}-installments`} aria-describedby={`${id}-installments-help`} className="w-48">
-                        <SelectValue>{(selected: string) => upTo(Number(selected))}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {INSTALLMENTS.map((count) => (
-                          <SelectItem key={count} value={String(count)}>
-                            {upTo(count)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {/* A cell of its own: a field stretches its children, and the choice is a few words wide. */}
+                    <div>
+                      <Select value={String(value.maxInstallments)} onValueChange={(next: string | null) => next && onChange({ ...value, maxInstallments: Number(next) })} disabled={pending}>
+                        <SelectTrigger id={`${id}-installments`} aria-describedby={`${id}-installments-help`} className="w-48">
+                          <SelectValue>{(selected: string) => upTo(Number(selected))}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INSTALLMENTS.map((count) => (
+                            <SelectItem key={count} value={String(count)}>
+                              {upTo(count)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <FieldDescription id={`${id}-installments-help`}>{text.installmentsHint}</FieldDescription>
                   </Field>
                 ) : null}
