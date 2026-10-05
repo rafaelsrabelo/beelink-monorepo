@@ -295,3 +295,16 @@ Com a API na 3501 e o web na 3500, uma conta e uma loja criadas pelo fluxo norma
   `packages/ui/src/locales/`.
 - **Q3 e Q4: o 12 está em dois lugares.** `INSTALLMENTS_MAX`, no DTO da API, e
   `PAYMENT_INSTALLMENTS_MAX`, em `packages/ui/src/lib/integrations.ts`. O contrato só leva tipos.
+
+### Acessibilidade com as cores de verdade (acréscimo)
+
+Os testes dos blocos rodam o axe no jsdom, que não julga contraste. Com a página de pé, o axe
+(WCAG 2.1 A e AA) passou pelo cartão e pelo formulário em cinco estados: desconectada, com recusa,
+conectada com o webhook em erro, trocando a chave e com todas as formas desligadas. Nenhum bloco
+novo foi apontado.
+
+A única violação é anterior a este ticket: o link de volta "← Integrações" tem contraste de 4,42:1
+(`muted-foreground`, #737373, sobre o fundo do painel, #f7f7f7; o mínimo é 4,5:1). A classe veio
+como estava da página do Melhor Envio para `integration-frame.tsx`, e o mesmo link existe em outras
+cinco telas do painel. O token `shell-muted` (#616161) passaria. Trocar é decisão do design system,
+para todas as telas de uma vez, e ficou fora deste ticket.
