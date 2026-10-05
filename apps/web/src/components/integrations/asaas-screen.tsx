@@ -41,9 +41,15 @@ export function AsaasScreen({ slug, messages }: AsaasScreenProps) {
       <AsaasCard
         headingAs="h1"
         view={asaasCardOf(connection.data)}
-        onConnect={asaas.connect}
+        onConnect={(apiKey) => {
+          if (disconnect.isError) disconnect.reset()
+          asaas.connect(apiKey)
+        }}
         connecting={asaas.isPending}
         connectError={asaas.refusal ? asaasConnectErrorOf(asaas.refusal, connection.data.environment, text.asaas) : undefined}
+        onReplaceCancel={() => {
+          if (asaas.refusal) asaas.forget()
+        }}
         onDisconnect={() => disconnect.mutate(undefined, { onSuccess: asaas.forget })}
         disconnecting={disconnect.isPending}
         disconnectError={disconnect.isError ? text.asaas.disconnectFailed : undefined}

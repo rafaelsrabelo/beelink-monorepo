@@ -32,6 +32,7 @@ const defaults: AsaasSettings = { pix: true, card: true, maxInstallments: 1, off
 const connect = vi.fn()
 const forget = vi.fn()
 const disconnect = vi.fn()
+const resetDisconnect = vi.fn()
 const save = vi.fn()
 const resetSave = vi.fn()
 
@@ -49,7 +50,7 @@ interface State {
 function with_(state: State) {
   mocks.connection.mockReturnValue({ isPending: false, isError: false, data: state.connection ?? connected })
   mocks.connect.mockReturnValue({ connect, isPending: state.connecting ?? false, refusal: state.refusal ?? null, connected: state.justConnected ?? false, forget })
-  mocks.disconnect.mockReturnValue({ mutate: disconnect, isPending: false, isError: state.disconnectFailed ?? false })
+  mocks.disconnect.mockReturnValue({ mutate: disconnect, reset: resetDisconnect, isPending: false, isError: state.disconnectFailed ?? false })
   mocks.settings.mockReturnValue(state.settings ?? { isPending: false, isError: false, data: defaults })
   mocks.save.mockReturnValue({ mutate: save, reset: resetSave, isPending: false, error: state.saveError ?? null, isSuccess: state.saved ?? false })
 }
@@ -57,7 +58,7 @@ function with_(state: State) {
 const view = (slug = "loja") => render(<AsaasScreen slug={slug} messages={ui} />)
 
 beforeEach(() => {
-  for (const mock of [connect, forget, disconnect, save, resetSave, mocks.settings]) mock.mockReset()
+  for (const mock of [connect, forget, disconnect, resetDisconnect, save, resetSave, mocks.settings]) mock.mockReset()
   with_({})
 })
 
@@ -164,11 +165,36 @@ describe("AsaasScreen (BEELINK-203), connected", () => {
     expect(forget).toHaveBeenCalledOnce()
   })
 
-  it("says when the disconnect did not go through", () => {
+  it("says when the disconnect did not go through, until another key is tried", async () => {
     with_({ disconnectFailed: true })
     view()
-
     expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível desconectar agora. Tente de novo.")
+
+    await userEvent.click(screen.getByRole("button", { name: "Trocar a chave" }))
+    await userEvent.type(screen.getByLabelText("Nova chave de API"), TYPED)
+    await userEvent.click(screen.getByRole("button", { name: "Conectar com a nova chave" }))
+
+    expect(resetDisconnect).toHaveBeenCalledOnce()
+    expect(connect).toHaveBeenCalledExactlyOnceWith(TYPED)
+  })
+
+  /** A refusal belongs to the try it answered: left behind, it would greet the next, empty form. */
+  it("forgets a refusal said in a replacement that was left without sending, and only then", async () => {
+    with_({ refusal: "INTEGRATION_UNREACHABLE" })
+    const { unmount } = view()
+    await userEvent.click(screen.getByRole("button", { name: "Trocar a chave" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("O Asaas não respondeu. Tente de novo em instantes.")
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    expect(forget).toHaveBeenCalledOnce()
+    unmount()
+
+    // Nothing was refused: leaving the form takes nothing back — not that the shop had just connected.
+    with_({ justConnected: true })
+    view()
+    await userEvent.click(screen.getByRole("button", { name: "Trocar a chave" }))
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    expect(forget).toHaveBeenCalledOnce()
+    expect(screen.getByRole("status")).toHaveTextContent("Asaas conectado.")
   })
 })
 
