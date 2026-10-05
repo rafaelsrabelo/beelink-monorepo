@@ -121,6 +121,65 @@ describe("an order's move, told to its customer", () => {
     expect(orderStatusChanged({ ...base, status: 'DELIVERED', cashback: { amountCents: 100, expiresAt: null } }, url, settings).text).toContain('compras na loja.');
     expect(orderStatusChanged({ ...base, status: 'DELIVERED' }, url, settings).text).not.toContain('cashback');
   });
+
+  /** BEELINK-258: leaving with a carrier is told as sent, with who carries it and how to follow it. */
+  describe('leaving with a carrier', () => {
+    const correios = { carrier: 'Correios', service: 'SEDEX', trackingCode: 'AB123456789BR', trackingUrl: 'https://rastreamento.correios.com.br/app/index.php' };
+
+    it('says sent, by which carrier and service, with the code and the link to follow it', () => {
+      const mail = orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', shipment: correios }, url, settings);
+
+      expect(mail.subject).toBe('Mutante & Cia — pedido nº 12 enviado');
+      expect(mail.text).toContain(
+        'Seu pedido nº 12 em Mutante & Cia foi enviado pela transportadora Correios (SEDEX).\n\nCódigo de rastreio: AB123456789BR\nVer no site da transportadora:\nhttps://rastreamento.correios.com.br/app/index.php\n\nVeja o pedido:',
+      );
+      expect(mail.html).toContain('<p style="margin:12px 0 0">Código de rastreio: AB123456789BR</p>');
+      expect(mail.html).toContain('<a href="https://rastreamento.correios.com.br/app/index.php" style="color:#52525b">Ver no site da transportadora</a>');
+      expect(mail.text).not.toContain('saiu para entrega');
+    });
+
+    it('says what it was told: a carrier without its service, none at all, a link without a code', () => {
+      expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', shipment: { ...correios, service: null } }, url, settings).text).toContain('foi enviado pela transportadora Correios.');
+      expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', shipment: { ...correios, carrier: null, service: null } }, url, settings).text).toContain('foi enviado pela transportadora.');
+
+      const linkOnly = orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', shipment: { ...correios, trackingCode: null } }, url, settings);
+      expect(linkOnly.text).toContain('Ver no site da transportadora:\nhttps://rastreamento.correios.com.br');
+      expect(linkOnly.text).not.toContain('Código de rastreio');
+    });
+
+    it('with no code yet, says where it will be — the e-mail is not sent again when it comes', () => {
+      const mail = orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', shipment: { ...correios, trackingCode: null, trackingUrl: null } }, url, settings);
+
+      expect(mail.subject).toBe('Mutante & Cia — pedido nº 12 enviado');
+      expect(mail.text).toContain('pela transportadora Correios (SEDEX).\n\nO código de rastreio aparece no pedido assim que for informado.\n\nVeja o pedido:');
+      expect(mail.text).not.toContain('Ver no site');
+    });
+
+    it('escapes what the shop or the carrier typed, and links only to https', () => {
+      const typed = { carrier: 'Loggi <b>', service: 'Expresso & Cia', trackingCode: '<script>1</script>', trackingUrl: 'https://track.example/?a=1&b="2"' };
+      const mail = orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', shipment: typed }, url, settings);
+      expect(mail.html).toContain('pela transportadora Loggi &lt;b&gt; (Expresso &amp; Cia).');
+      expect(mail.html).toContain('Código de rastreio: &lt;script&gt;1&lt;/script&gt;');
+      expect(mail.html).toContain('href="https://track.example/?a=1&amp;b=&quot;2&quot;"');
+      expect(mail.html).not.toContain('<script>');
+
+      for (const trackingUrl of ['javascript:alert(1)', 'http://track.example/1', 'track.example/1']) {
+        const unsafe = orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', shipment: { ...typed, trackingUrl } }, url, settings);
+        expect(unsafe.html, trackingUrl).not.toContain(trackingUrl);
+        expect(unsafe.text, trackingUrl).not.toContain('Ver no site');
+      }
+    });
+
+    it('leaves a pick-up and every other move as they read', () => {
+      const shipment = correios;
+      expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', pickup: true, shipment }, url, settings).text).toContain('está pronto para retirar.\n\nVeja o pedido:');
+      for (const status of ['ACCEPTED', 'DELIVERED', 'CANCELLED'] as const) {
+        const told = orderStatusChanged({ ...base, status, shipment }, url, settings);
+        expect(told, status).toEqual(orderStatusChanged({ ...base, status }, url, settings));
+      }
+      expect(orderStatusChanged({ ...base, status: 'OUT_FOR_DELIVERY', shipment: null }, url, settings).subject).toBe('Mutante & Cia — pedido nº 12 saiu para entrega');
+    });
+  });
 });
 
 describe("a customer's cashback about to expire (BEELINK-241)", () => {

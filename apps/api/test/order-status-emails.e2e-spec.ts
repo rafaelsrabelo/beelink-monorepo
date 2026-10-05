@@ -97,6 +97,27 @@ describe("a customer hears by e-mail when their order moves", () => {
     ]);
   });
 
+  /** BEELINK-258: what the shopkeeper told of the delivery, read when the e-mail goes. */
+  it('tells a carrier’s delivery as sent, with the carrier, the code and the Correios’ page for a code of theirs; the shop’s own as on its way', async () => {
+    const shipped = await placeFromCart();
+    const told = await call('PUT', `/api/stores/lessari/orders/${shipped}/delivery`, owner, { kind: 'CARRIER', carrier: 'Correios', service: 'PAC', trackingCode: 'AB123456789BR' });
+    expect(told.statusCode).toBe(200);
+    await move(shipped, 'OUT_FOR_DELIVERY');
+
+    const sent = await waitForMessage(email, 10_000, 'enviado');
+    expect(sent.Subject).toBe(`lessari — pedido nº ${shipped} enviado`);
+    expect(sent.Text).toContain(`Seu pedido nº ${shipped} em lessari foi enviado pela transportadora Correios (PAC).`);
+    // SMTP carries the text's lines as CRLF.
+    expect(sent.Text.replaceAll('\r\n', '\n')).toContain('Código de rastreio: AB123456789BR\nVer no site da transportadora:\nhttps://rastreamento.correios.com.br/app/index.php');
+
+    const own = await placeFromCart();
+    await call('PUT', `/api/stores/lessari/orders/${own}/delivery`, owner, { kind: 'OWN', carrier: null, service: null, trackingCode: null, trackingUrl: null });
+    await move(own, 'OUT_FOR_DELIVERY');
+    const onItsWay = await waitForMessage(email, 10_000, 'saiu para entrega');
+    expect(onItsWay.Subject).toBe(`lessari — pedido nº ${own} saiu para entrega`);
+    expect(onItsWay.Text).not.toContain('rastreio');
+  });
+
   it('reads a pick-up as the shop window does, and a cancel by the shop is told, one by the customer not', async () => {
     const pickup = await placeFromCart('PICKUP');
     await move(pickup, 'OUT_FOR_DELIVERY');

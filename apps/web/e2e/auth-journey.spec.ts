@@ -98,6 +98,9 @@ test.describe("a person's first day", () => {
     const signedInCookies = await context.cookies()
 
     await test.step("asks for a new password", async () => {
+      // Off the panel before its session goes: a panel call that finds it gone sends the tab to
+      // sign in on its own (BEELINK-169), and that navigation would cut the next one short.
+      await page.goto("about:blank")
       await context.clearCookies()
       await page.goto("/forgot-password")
       await page.getByLabel("E-mail").fill(email)

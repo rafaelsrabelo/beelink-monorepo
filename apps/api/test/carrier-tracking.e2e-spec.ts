@@ -123,8 +123,25 @@ describe('a carrier moving an order along (BEELINK-188)', () => {
     expect(moved.status).toBe('OUT_FOR_DELIVERY');
     expect(moved.events.at(-1)).toMatchObject({ status: 'OUT_FOR_DELIVERY', actor: 'CARRIER' });
     expect(moved.delivery).toMatchObject({ kind: 'CARRIER', trackingCode: 'ME23002OWZ7BR', trackingUrl: 'https://www.melhorrastreio.com.br/rastreio/ME23002OWZ7BR' });
-    // The customer hears of it as of any move, and reads the tracking on their order.
-    expect((await waitForMessage(shopperEmail)).Subject).toMatch(/saiu para entrega/i);
+    // The customer hears of it as sent, by whom, and how to follow it, without opening the order (BEELINK-258).
+    const sent = await waitForMessage(shopperEmail);
+    // SMTP carries the text's lines as CRLF.
+    const text = sent.Text.replaceAll('\r\n', '\n');
+    expect(sent.Subject).toBe('Loja Lessari — pedido nº 1 enviado');
+    expect(text).toContain('Seu pedido nº 1 em Loja Lessari foi enviado pela transportadora Correios (SEDEX).');
+    expect(text).toContain('Código de rastreio: ME23002OWZ7BR\nVer no site da transportadora:\nhttps://www.melhorrastreio.com.br/rastreio/ME23002OWZ7BR');
+    expect(sent.HTML).toContain('href="https://www.melhorrastreio.com.br/rastreio/ME23002OWZ7BR"');
+  });
+
+  it('sends the e-mail once, with the tracking there is when it goes: a code that comes later is read on the order', async () => {
+    await webhook('order.posted', { status: 'posted' });
+    const sent = await waitForMessage(shopperEmail, 10_000, 'enviado');
+    expect(sent.Text.replaceAll('\r\n', '\n')).toContain('foi enviado pela transportadora Correios (SEDEX).\n\nO código de rastreio aparece no pedido assim que for informado.');
+
+    // The code arriving later — with the same event sent again — lands on the order, and owes no second e-mail.
+    expect((await webhook('order.posted', { status: 'posted', tracking: 'ME23002OWZ7BR' })).json()).toEqual({ result: 'DUPLICATE' });
+    expect((await order()).delivery).toMatchObject({ trackingCode: 'ME23002OWZ7BR' });
+    expect(await prisma.orderStatusEmail.findMany({ select: { status: true, sentAt: true } })).toEqual([{ status: 'OUT_FOR_DELIVERY', sentAt: expect.any(Date) }]);
   });
 
   it('delivers the order when the carrier does, and never moves it back for a "posted" that arrives late', async () => {
