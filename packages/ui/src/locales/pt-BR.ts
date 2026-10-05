@@ -2781,7 +2781,7 @@ export const ptBR: UiMessages = {
       noAccount: "Ainda não tem conta?",
       signUp: "Criar conta no Asaas",
       newTab: "(abre em nova aba)",
-      needsReconnect: "O Asaas parou de aceitar a chave desta loja. Ela pode ter sido desabilitada, excluída ou ter expirado. Cole uma chave que valha para a loja voltar a receber pelo site.",
+      needsReconnect: "O Asaas parou de aceitar a chave desta loja. Ela pode ter sido desabilitada, excluída ou ter expirado. Para a loja voltar a receber pelo site, cole abaixo uma chave que esteja valendo.",
       reconnectSubmit: "Conectar de novo",
       account: "Conta",
       webhook: "Avisos de pagamento",

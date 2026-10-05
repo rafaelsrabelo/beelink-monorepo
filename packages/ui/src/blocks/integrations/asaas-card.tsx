@@ -39,6 +39,8 @@ export interface AsaasCardProps {
   connecting?: boolean
   /** Why the last key was refused, in words. */
   connectError?: string
+  /** The replacement was left without sending: a refusal said in it has nothing left to be about. */
+  onReplaceCancel?: () => void
   onDisconnect: () => void
   disconnecting?: boolean
   /** Why the last disconnect did not go through, in words. */
@@ -57,7 +59,7 @@ export interface AsaasCardProps {
  * on: the moment another connection takes its place the form is closed and what was typed in it is
  * gone, with nothing for the screen to reset.
  */
-export function AsaasCard({ view, onConnect, connecting = false, connectError, onDisconnect, disconnecting = false, disconnectError, headingAs: Heading = "h2", messages = defaultMessages }: AsaasCardProps) {
+export function AsaasCard({ view, onConnect, connecting = false, connectError, onReplaceCancel, onDisconnect, disconnecting = false, disconnectError, headingAs: Heading = "h2", messages = defaultMessages }: AsaasCardProps) {
   const text = messages.integrations.asaas
   const id = useId()
   const body = useRef<HTMLDivElement>(null)
@@ -67,6 +69,11 @@ export function AsaasCard({ view, onConnect, connecting = false, connectError, o
   const keyed = view.status !== "CONNECTED" || replacing
   const badge = { DISCONNECTED: text.disconnectedBadge, CONNECTED: text.connected, NEEDS_RECONNECT: text.needsReconnectBadge }[view.status]
   useFocusOnSwap(keyed ? "key" : "account", body)
+
+  function leaveReplacement() {
+    setReplacingAt(null)
+    onReplaceCancel?.()
+  }
 
   return (
     <section aria-labelledby={`${id}-title`} className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs sm:p-6">
@@ -106,7 +113,7 @@ export function AsaasCard({ view, onConnect, connecting = false, connectError, o
               error={connectError}
               label={replacing ? text.replaceLabel : undefined}
               submitLabel={replacing ? text.replaceSubmit : view.status === "NEEDS_RECONNECT" ? text.reconnectSubmit : undefined}
-              onCancel={replacing ? () => setReplacingAt(null) : undefined}
+              onCancel={replacing ? leaveReplacement : undefined}
               messages={messages}
             />
           ) : null}

@@ -2780,7 +2780,7 @@ export const en: UiMessages = {
       noAccount: "No account yet?",
       signUp: "Open an Asaas account",
       newTab: "(opens in a new tab)",
-      needsReconnect: "Asaas stopped accepting this shop's key. It may have been disabled, deleted or have expired. Paste a key that holds for the shop to take payment on the site again.",
+      needsReconnect: "Asaas stopped accepting this shop's key. It may have been disabled, deleted or have expired. For the shop to take payment on the site again, paste below a key that still holds.",
       reconnectSubmit: "Connect again",
       account: "Account",
       webhook: "Payment notices",

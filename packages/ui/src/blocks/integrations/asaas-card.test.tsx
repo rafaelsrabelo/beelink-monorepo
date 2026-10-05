@@ -143,6 +143,19 @@ describe("AsaasCard, connected", () => {
     expect(onConnect).toHaveBeenCalledExactlyOnceWith(TYPED)
   })
 
+  /** A refusal belongs to the try it answered: left behind, it would greet the next, empty form. */
+  it("says when the replacement is left, so a refusal said in it can be forgotten", async () => {
+    const onReplaceCancel = vi.fn()
+    show(asaasConnected, { onReplaceCancel, connectError: "O Asaas não respondeu. Tente de novo em instantes." })
+
+    await userEvent.click(screen.getByRole("button", { name: "Trocar a chave" }))
+    expect(screen.getByRole("alert")).toHaveTextContent("O Asaas não respondeu.")
+    expect(onReplaceCancel).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }))
+    expect(onReplaceCancel).toHaveBeenCalledOnce()
+  })
+
   /** The form belongs to the connection it was opened on: nothing has to tell the card the key was taken. */
   it("closes the replacement, with what was typed in it, once another connection takes this one's place", async () => {
     const { again, container } = show(asaasConnected)
