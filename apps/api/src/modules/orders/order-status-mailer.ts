@@ -8,6 +8,7 @@ import { ATTEMPTS_MAX, OutboxMailer, retryAtOf } from '../../shared/mail/outbox-
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { isNotified } from './order-status-email.js';
+import { toCustomerDelivery } from './order-tracking.js';
 
 /**
  * Pays the e-mails orders' moves owe (`OrderStatusEmail`), apart from the moves (BEELINK-151): right
@@ -37,6 +38,7 @@ export class OrderStatusMailer extends OutboxMailer {
           select: {
             number: true,
             fulfillment: true,
+            delivery: true,
             cashbackCredit: { select: { status: true, remainingCents: true, expiresAt: true } },
             store: { select: { name: true, slug: true, routeVocabulary: true } },
             customer: { select: { name: true, user: { select: { email: true, emailVerifiedAt: true } } } },
@@ -58,10 +60,12 @@ export class OrderStatusMailer extends OutboxMailer {
     // Read now, not at the move: a delivery undone since is told of without credit it no longer gave.
     const lot = order.cashbackCredit;
     const cashback = row.status === 'DELIVERED' && lot?.status === 'AVAILABLE' && lot.remainingCents > 0 ? { amountCents: lot.remainingCents, expiresAt: lot.expiresAt } : null;
+    // Read when it goes, too (BEELINK-258): a code told between the move and the send rides along; one told later is read on the order.
+    const shipment = row.status === 'OUT_FOR_DELIVERY' && order.delivery?.kind === 'CARRIER' ? toCustomerDelivery(order.delivery) : null;
     const account = `${env.WEB_URL}/${order.store.slug}/${words.account}`;
     const went = await this.mail.sendOrderStatus(
       user.email,
-      { name: order.customer.name, shopName: order.store.name, number: order.number, status: row.status, pickup: order.fulfillment === 'PICKUP', cashback },
+      { name: order.customer.name, shopName: order.store.name, number: order.number, status: row.status, pickup: order.fulfillment === 'PICKUP', cashback, shipment },
       `${account}/${words.accountTabs.orders}/${order.number}`,
       // Straight to the box that turns these off, in the shop's own words.
       `${account}/${words.accountTabs.profile}#avisos`,
