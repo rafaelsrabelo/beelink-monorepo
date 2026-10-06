@@ -62,3 +62,7 @@ Prévia do modelo na criação da loja; modelo na criação de site (continua `s
 8. **Um modelo novo no catálogo precisa de três lugares**: a entrada na API, o nome e a descrição nos locales do `packages/ui`, e um ícone em `landing-template-picker.tsx` ou `store-opening-template.tsx`. Sem os dois últimos ele é deixado de fora das telas, em silêncio, por desenho (um cartão sem nome não é escolha). Não há teste que avise que os três estão desalinhados.
 9. **O defeito do botão "Continuar" → "Criar loja"** (acima) foi corrigido sem teste automático. Um teste de navegador (Playwright) da criação de loja o cobriria; a suíte e2e do web não foi rodada no W5 nem no W7.
 10. **Tema escuro, inglês no navegador, leitor de tela e Storybook** não foram exercitados no W4, no W5 nem no W7: há testes com axe e stories que compilam.
+
+## Acréscimo: as quatro criações no navegador
+
+Depois da lista acima, a criação foi repetida cruzando as larguras: `w7-capa-grande` (1280 px, "Vitrine com capa", `"template":"vitrine-com-capa"` no corpo) e `w7-padrao-celular` (390 px, sem abrir a escolha, sem `template`). Com as duas anteriores, há uma loja com a página padrão e uma com modelo em cada largura. As cinco lojas `w7-*` ficaram no banco de desenvolvimento.
