@@ -9,7 +9,7 @@ import type { AsaasCardView, PaymentSettingsFormValues } from "@harness-monorepo
 
 // Block
 import { AsaasCard } from "./asaas-card"
-import { asaasConnected, asaasDisconnected, payments } from "./integrations.fixtures"
+import { ASAAS_LOGO, asaasConnected, asaasDisconnected, payments } from "./integrations.fixtures"
 import { IntegrationsResult } from "./integrations-result"
 import { PaymentSettingsForm } from "./payment-settings-form"
 
@@ -20,7 +20,7 @@ const meta = {
   title: "Blocos/Painel/Integrações/Asaas",
   component: AsaasCard,
   decorators: [(Story) => <div className="max-w-3xl">{Story()}</div>],
-  args: { view: asaasConnected, onConnect: noop, onDisconnect: noop },
+  args: { view: asaasConnected, logoSrc: ASAAS_LOGO, onConnect: noop, onDisconnect: noop },
 } satisfies Meta<typeof AsaasCard>
 
 export default meta
@@ -113,7 +113,7 @@ function Live() {
   return (
     <div className="flex flex-col gap-6">
       {connected ? <IntegrationsResult tone="done" message="Asaas conectado. Escolha abaixo as formas de pagamento da loja." /> : null}
-      <AsaasCard view={view} onConnect={connect} connecting={connecting} onDisconnect={() => setView(asaasDisconnected)} />
+      <AsaasCard view={view} logoSrc={ASAAS_LOGO} onConnect={connect} connecting={connecting} onDisconnect={() => setView(asaasDisconnected)} />
       {connected ? <PaymentSettingsForm value={chosen} onChange={setChosen} onSubmit={noop} issue={none ? NONE_ON : undefined} /> : null}
     </div>
   )

@@ -12,7 +12,7 @@ import { en } from "@harness-monorepo/ui/locales/index"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { AsaasCard, type AsaasCardProps } from "./asaas-card"
-import { asaasConnected, asaasDisconnected } from "./integrations.fixtures"
+import { ASAAS_LOGO, asaasConnected, asaasDisconnected } from "./integrations.fixtures"
 
 /** Typed by the tests, and nobody's key. */
 const TYPED = "$aact_hmlg_chave-de-teste"
@@ -20,8 +20,8 @@ const TYPED = "$aact_hmlg_chave-de-teste"
 function show(view: AsaasCardView, props: Partial<AsaasCardProps> = {}) {
   const onConnect = vi.fn()
   const onDisconnect = vi.fn()
-  const result = render(<AsaasCard view={view} onConnect={onConnect} onDisconnect={onDisconnect} {...props} />)
-  const again = (next: AsaasCardView, more: Partial<AsaasCardProps> = {}) => result.rerender(<AsaasCard view={next} onConnect={onConnect} onDisconnect={onDisconnect} {...props} {...more} />)
+  const result = render(<AsaasCard view={view} logoSrc={ASAAS_LOGO} onConnect={onConnect} onDisconnect={onDisconnect} {...props} />)
+  const again = (next: AsaasCardView, more: Partial<AsaasCardProps> = {}) => result.rerender(<AsaasCard view={next} logoSrc={ASAAS_LOGO} onConnect={onConnect} onDisconnect={onDisconnect} {...props} {...more} />)
   return { ...result, again, onConnect, onDisconnect }
 }
 

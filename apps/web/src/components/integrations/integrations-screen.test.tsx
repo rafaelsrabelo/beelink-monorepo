@@ -1,5 +1,5 @@
 // Libs
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -24,92 +24,102 @@ const read = (data: object) => ({ isPending: false, isError: false, data })
 const reading = { isPending: true, isError: false }
 const unread = (refetch = vi.fn()) => ({ isPending: false, isError: true, refetch })
 
+const card = (name: string) => within(screen.getByRole("article", { name }))
+const view = () => render(<IntegrationsScreen slug="mutante" messages={ui} />)
+
 beforeEach(() => {
   mocks.connection.mockReturnValue(read(connected))
   mocks.asaas.mockReturnValue(read(asaasNever))
 })
 
 describe("IntegrationsScreen", () => {
-  it("lists what the shop connected, each leading to its own page, and offers to add another", () => {
-    render(<IntegrationsScreen slug="mutante" messages={ui} />)
+  it("shows every integration there is on one page, connected or not, under each brand's own mark", () => {
+    const { container } = view()
 
     expect(screen.getByRole("heading", { level: 1, name: "Integrações" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Nova integração" })).toHaveAttribute("href", "/admin/mutante/integrations/new")
-    expect(screen.getByText("Conta: Mutante Suplementos")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Configurar Melhor Envio" })).toHaveAttribute("href", "/admin/mutante/integrations/melhor-envio")
-    // Asaas was never connected: it is not on the list, and adding it is the other page's.
-    expect(screen.queryByRole("link", { name: "Configurar Asaas" })).toBeNull()
-    // A list, not a form: nothing is set up here.
+    expect(mocks.connection).toHaveBeenCalledWith("mutante")
+    expect(mocks.asaas).toHaveBeenCalledWith("mutante")
+    expect(screen.getAllByRole("article")).toHaveLength(2)
+    expect([...container.querySelectorAll("img")].map((mark) => mark.getAttribute("src"))).toEqual(["/brand/integrations/melhor-envio-icon.png", "/brand/integrations/asaas-icon.png"])
+    // One page: nothing leads to a second one to add an integration, and no list is ever empty.
+    expect(screen.queryByRole("link", { name: "Nova integração" })).toBeNull()
+    expect(container.querySelector("a[href$='/integrations/new']")).toBeNull()
+  })
+
+  it("marks the connected one, with its account, leading to its page", () => {
+    view()
+
+    expect(card("Melhor Envio").getByText("Conectado")).toHaveAttribute("data-variant", "success")
+    expect(card("Melhor Envio").getByText("Conta: Mutante Suplementos")).toBeInTheDocument()
+    expect(card("Melhor Envio").getByRole("link", { name: "Configurar Melhor Envio" })).toHaveAttribute("href", "/admin/mutante/integrations/melhor-envio")
+    expect(card("Melhor Envio").queryByText("Sandbox")).toBeNull()
+  })
+
+  /** The key is typed on Asaas's own page: the list only leads there. */
+  it("connects from the page: Asaas through its own page, Melhor Envio through the route that leaves for its authorization", () => {
+    mocks.connection.mockReturnValue(read({ ...connected, status: "DISCONNECTED", account: null }))
+    view()
+
+    expect(card("Asaas").getByRole("link", { name: "Conectar Asaas" })).toHaveAttribute("href", "/admin/mutante/integrations/asaas")
+    expect(card("Asaas").getByText("Sandbox")).toHaveAttribute("title", "Ambiente de testes do Asaas: nada é cobrado de verdade.")
+    expect(card("Melhor Envio").getByRole("link", { name: "Conectar Melhor Envio" })).toHaveAttribute("href", "/api/stores/mutante/integrations/melhor-envio/connect")
+    expect(screen.queryByText("Conectado")).toBeNull()
     expect(screen.queryByRole("textbox")).toBeNull()
   })
 
-  /** BEELINK-203: both connections are asked for, each of its own shop. */
-  it("lists Asaas once the shop connected it, with its account and the sandbox, leading to its page", () => {
-    mocks.asaas.mockReturnValue(read(asaasConnected))
-    render(<IntegrationsScreen slug="mutante" messages={ui} />)
-
-    expect(mocks.asaas).toHaveBeenCalledWith("mutante")
-    expect(screen.getAllByRole("listitem")).toHaveLength(2)
-    expect(screen.getByText("Conta: Mutante Suplementos LTDA")).toBeInTheDocument()
-    expect(screen.getByText("Sandbox")).toHaveAttribute("title", "Ambiente de testes do Asaas: nada é cobrado de verdade.")
-    expect(screen.getByRole("link", { name: "Configurar Asaas" })).toHaveAttribute("href", "/admin/mutante/integrations/asaas")
-  })
-
-  it("keeps one a third party stopped accepting on the list, to be mended", () => {
+  it("warns of one a third party stopped accepting, and offers to connect it again", () => {
     mocks.connection.mockReturnValue(read({ ...connected, status: "NEEDS_RECONNECT" }))
     mocks.asaas.mockReturnValue(read({ ...asaasConnected, status: "NEEDS_RECONNECT" }))
-    render(<IntegrationsScreen slug="mutante" messages={ui} />)
+    view()
 
     expect(screen.getAllByText("Precisa reconectar")).toHaveLength(2)
+    expect(card("Melhor Envio").getByRole("link", { name: "Reconectar Melhor Envio" })).toHaveAttribute("href", "/api/stores/mutante/integrations/melhor-envio/connect")
+    expect(card("Asaas").getByRole("link", { name: "Reconectar Asaas" })).toHaveAttribute("href", "/admin/mutante/integrations/asaas")
+    expect(card("Asaas").getByText("Conta: Mutante Suplementos LTDA")).toBeInTheDocument()
   })
 
-  it("says a shop that connected nothing has nothing, and leads to adding one", () => {
-    mocks.connection.mockReturnValue(read({ ...connected, status: "DISCONNECTED", account: null }))
-    render(<IntegrationsScreen slug="mutante" messages={ui} />)
+  it("says one is not set up on this installation, and still offers the other", () => {
+    mocks.connection.mockReturnValue(read({ ...connected, available: false, status: "DISCONNECTED", account: null }))
+    view()
 
-    expect(screen.getByText("Nenhuma integração conectada.")).toBeInTheDocument()
-    expect(screen.getAllByRole("link", { name: "Nova integração" })).toHaveLength(2)
+    expect(card("Melhor Envio").getByText("O Melhor Envio ainda não está configurado nesta instalação.")).toBeInTheDocument()
+    expect(card("Melhor Envio").queryByRole("link")).toBeNull()
+    expect(card("Asaas").getByRole("link", { name: "Conectar Asaas" })).toBeInTheDocument()
   })
 
-  it("holds the list's place while either connection is read", () => {
+  it("holds one card's place while its connection is read, without holding back the other", () => {
     mocks.asaas.mockReturnValue(reading)
-    render(<IntegrationsScreen slug="mutante" messages={ui} />)
+    view()
 
-    expect(screen.queryByText("Conta: Mutante Suplementos")).toBeNull()
-    expect(screen.queryByText("Nenhuma integração conectada.")).toBeNull()
+    expect(screen.getByRole("article", { name: "Asaas" })).toHaveAttribute("aria-busy", "true")
+    expect(card("Asaas").queryByRole("link")).toBeNull()
+    expect(card("Melhor Envio").getByText("Conta: Mutante Suplementos")).toBeInTheDocument()
     expect(screen.queryByRole("alert")).toBeNull()
   })
 
-  it("offers to read again when neither connection could be read", async () => {
+  /** One read failing does not hide what the other brought, and is never a shop that connected nothing. */
+  it("says a read that failed in that card alone, and reads only that one again", async () => {
+    const [melhorEnvio, asaas] = [vi.fn(), vi.fn()]
+    mocks.connection.mockReturnValue({ ...read(connected), refetch: melhorEnvio })
+    mocks.asaas.mockReturnValue(unread(asaas))
+    view()
+
+    expect(card("Melhor Envio").getByRole("link", { name: "Configurar Melhor Envio" })).toBeInTheDocument()
+    expect(screen.getAllByRole("alert")).toHaveLength(1)
+    expect(card("Asaas").getByRole("alert")).toHaveTextContent("Não foi possível carregar esta integração.")
+    expect(card("Asaas").queryByText("Não conectado")).toBeNull()
+    await userEvent.click(card("Asaas").getByRole("button", { name: "Tentar de novo: Asaas" }))
+    expect([melhorEnvio, asaas].map((refetch) => refetch.mock.calls.length)).toEqual([0, 1])
+  })
+
+  it("offers each to be read again when neither could be", async () => {
     const [melhorEnvio, asaas] = [vi.fn(), vi.fn()]
     mocks.connection.mockReturnValue(unread(melhorEnvio))
     mocks.asaas.mockReturnValue(unread(asaas))
-    render(<IntegrationsScreen slug="mutante" messages={ui} />)
+    view()
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar as integrações.")
-    expect(screen.queryByText("Nenhuma integração conectada.")).toBeNull()
-    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
-    expect([melhorEnvio, asaas].map((refetch) => refetch.mock.calls.length)).toEqual([1, 1])
-  })
-
-  /** BEELINK-203: one read failing does not hide what the other brought. */
-  it("shows the connection that was read beside the one that could not be, and reads only that one again", async () => {
-    const refetch = vi.fn()
-    mocks.asaas.mockReturnValue(unread(refetch))
-    render(<IntegrationsScreen slug="mutante" messages={ui} />)
-
-    expect(screen.getByRole("link", { name: "Configurar Melhor Envio" })).toBeInTheDocument()
-    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar todas as integrações.")
-    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
-    expect(refetch).toHaveBeenCalledOnce()
-  })
-
-  /** A read that failed is not a shop with nothing connected: it may well be connected. */
-  it("never says the shop connected nothing while one of the reads is missing", () => {
-    mocks.connection.mockReturnValue(unread())
-    render(<IntegrationsScreen slug="mutante" messages={ui} />)
-
-    expect(screen.queryByText("Nenhuma integração conectada.")).toBeNull()
-    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar todas as integrações.")
+    expect(screen.getAllByRole("alert")).toHaveLength(2)
+    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo: Melhor Envio" }))
+    expect([melhorEnvio, asaas].map((refetch) => refetch.mock.calls.length)).toEqual([1, 0])
   })
 })

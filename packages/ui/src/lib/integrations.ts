@@ -57,24 +57,24 @@ export interface PaymentSettingsFormValues {
 /** The third parties the panel can offer, by the wire's name. Mirrors `IntegrationProvider`. */
 export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS"
 
-/** A connection the shop has, as the Integrations list shows it: one it made, working or to mend. */
-export interface IntegrationRowView {
-  provider: IntegrationProviderValue
-  status: "CONNECTED" | "NEEDS_RECONNECT"
+/** Where a card's connection stands once it was read. */
+export interface IntegrationCardConnection {
+  /** Not set up on this deployment; there to connect; working; or one the third party stopped accepting. */
+  state: "unavailable" | "disconnected" | "connected" | "needsReconnect"
   /** Whose account on the other side, as it names itself. */
   account: string | null
   /** The sandbox simulates what it does: said on the list too. */
   sandbox: boolean
-  /** The integration's own page. */
-  href: string
 }
 
-/** A third party the shop can connect, as the new integration's page offers it. */
-export interface IntegrationOptionView {
+/** A third party on the Integrations page, as its card shows it: connected or not, it is always there. */
+export interface IntegrationCardView {
   provider: IntegrationProviderValue
-  /** Not set up on this deployment; there to connect; or connected already, and then its page is the way on. */
-  state: "unavailable" | "available" | "connected"
-  /** Where connecting begins. */
+  /** The brand's own mark, as a file the app serves: this package reads no `public/`. */
+  logoSrc: string
+  /** The integration's own page. */
+  href: string
+  /** Where connecting, or connecting again, begins. */
   connectHref: string
   /**
    * What following `connectHref` does. `authorization`: fetching the address already begins the third
@@ -82,8 +82,8 @@ export interface IntegrationOptionView {
    * integration's own page, where the shop's key is typed, and goes through the app's link.
    */
   connectBy: "authorization" | "page"
-  /** The integration's own page. */
-  href: string
+  /** Still being read, a read that failed, or where it stands. Each card's own: one never waits on another. */
+  connection: "loading" | "failed" | IntegrationCardConnection
 }
 
 /** A carrier's service, to switch on or off. Mirrors `MelhorEnvioShippingService`. */

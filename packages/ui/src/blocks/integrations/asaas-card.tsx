@@ -4,7 +4,7 @@
 import { useId, useRef, useState } from "react"
 
 // Libs
-import { CreditCardIcon, ExternalLinkIcon, TriangleAlertIcon } from "lucide-react"
+import { CheckIcon, ExternalLinkIcon, TriangleAlertIcon } from "lucide-react"
 
 // UI
 import {
@@ -30,9 +30,12 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AsaasAccountFacts } from "./asaas-account-facts"
 import { AsaasKeyForm } from "./asaas-key-form"
+import { IntegrationLogo } from "./integration-logo"
 
 export interface AsaasCardProps {
   view: AsaasCardView
+  /** The brand's own mark, as a file the app serves. */
+  logoSrc: string
   /** Connects with the key typed, or replaces the one connected. The key is handed over once and kept by no prop. */
   onConnect: (apiKey: string) => void
   /** Asaas is being asked about the key, which takes seconds. */
@@ -59,7 +62,7 @@ export interface AsaasCardProps {
  * on: the moment another connection takes its place the form is closed and what was typed in it is
  * gone, with nothing for the screen to reset.
  */
-export function AsaasCard({ view, onConnect, connecting = false, connectError, onReplaceCancel, onDisconnect, disconnecting = false, disconnectError, headingAs: Heading = "h2", messages = defaultMessages }: AsaasCardProps) {
+export function AsaasCard({ view, logoSrc, onConnect, connecting = false, connectError, onReplaceCancel, onDisconnect, disconnecting = false, disconnectError, headingAs: Heading = "h2", messages = defaultMessages }: AsaasCardProps) {
   const text = messages.integrations.asaas
   const id = useId()
   const body = useRef<HTMLDivElement>(null)
@@ -78,13 +81,16 @@ export function AsaasCard({ view, onConnect, connecting = false, connectError, o
   return (
     <section aria-labelledby={`${id}-title`} className="bg-shell-surface border-shell-border flex flex-col gap-4 rounded-xl border p-4 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="bg-muted flex size-10 items-center justify-center rounded-lg">
-          <CreditCardIcon aria-hidden="true" className="size-5" />
-        </span>
+        <IntegrationLogo src={logoSrc} />
         <Heading id={`${id}-title`} className={Heading === "h1" ? "text-2xl font-semibold" : "font-semibold"}>
           {text.title}
         </Heading>
-        {view.available ? <Badge variant={view.status === "CONNECTED" ? "default" : view.status === "NEEDS_RECONNECT" ? "destructive" : "outline"}>{badge}</Badge> : null}
+        {view.available ? (
+          <Badge variant={view.status === "CONNECTED" ? "success" : view.status === "NEEDS_RECONNECT" ? "destructive" : "outline"}>
+            {view.status === "CONNECTED" ? <CheckIcon aria-hidden="true" /> : null}
+            {badge}
+          </Badge>
+        ) : null}
         {view.available && view.sandbox ? (
           <Badge variant="secondary" title={text.sandboxHint}>
             {text.sandbox}

@@ -199,6 +199,8 @@
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -238,6 +240,11 @@
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
+    /* Something that went well and still stands — an integration connected. A tinted fill and its
+       own ink, 7.0:1 between them; never the shop window's --shop-positive, which is a full green
+       under white text. */
+    --success: oklch(0.95 0.052 157);              /* #d3fae1 */
+    --success-foreground: oklch(0.42 0.105 157);   /* #005d35 */
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
@@ -363,6 +370,8 @@
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
+    --success: oklch(0.32 0.07 157);               /* #083d24 */
+    --success-foreground: oklch(0.87 0.13 158);    /* #84eeb3 — 8.7:1 on the fill */
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);

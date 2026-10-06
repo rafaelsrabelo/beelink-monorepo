@@ -10,7 +10,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 import { AsaasPayments } from "@/components/integrations/asaas-payments"
 import { IntegrationFrame } from "@/components/integrations/integration-frame"
 import { asaasCardOf, asaasConnectErrorOf } from "@/lib/asaas-form"
-import { integrationPagesOf } from "@/lib/integration-pages"
+import { INTEGRATION_LOGOS, integrationPagesOf } from "@/lib/integration-pages"
 import { useAsaasConnection, useConnectAsaas, useDisconnectAsaas } from "@/services/integrations/asaas-hooks"
 
 export interface AsaasScreenProps {
@@ -40,6 +40,7 @@ export function AsaasScreen({ slug, messages }: AsaasScreenProps) {
     <IntegrationFrame back={back} result={asaas.connected ? { tone: "done", message: text.asaas.connectedNotice } : null}>
       <AsaasCard
         headingAs="h1"
+        logoSrc={INTEGRATION_LOGOS.ASAAS}
         view={asaasCardOf(connection.data)}
         onConnect={(apiKey) => {
           if (disconnect.isError) disconnect.reset()
