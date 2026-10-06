@@ -43,6 +43,24 @@ describe('AsaasHttpClient', () => {
     expect(headers).toMatchObject({ access_token: KEY, 'user-agent': 'bee-link (contato@beecoders.net)', 'content-type': 'application/json', accept: 'application/json' });
   });
 
+  it("reads whether the account is approved from the verdict on the whole registration, and takes a word it does not know for no verdict (BEELINK-278)", async () => {
+    const fetched = answer(200, { id: 'acc_1', commercialInfo: 'APPROVED', bankAccountInfo: 'APPROVED', documentation: 'AWAITING_APPROVAL', general: 'AWAITING_APPROVAL' });
+
+    expect(await client.approval(config, KEY)).toBe('AWAITING_APPROVAL');
+    expect(sent(fetched)).toMatchObject({ url: 'https://api-sandbox.asaas.com/v3/myAccount/status/', method: 'GET', headers: { access_token: KEY } });
+
+    for (const general of ['PENDING', 'APPROVED', 'REJECTED'] as const) {
+      answer(200, { general });
+      expect(await client.approval(config, KEY)).toBe(general);
+    }
+    for (const body of [{ general: 'UNDER_SOMETHING_NEW' }, { general: null }, {}, null]) {
+      answer(200, body);
+      expect(await client.approval(config, KEY)).toBeNull();
+    }
+    answer(503, {});
+    await expect(client.approval(config, KEY)).rejects.toBeInstanceOf(AsaasUnreachable);
+  });
+
   it('names a person by the name on file, and leaves the document out when Asaas sent none', async () => {
     answer(200, { personType: 'FISICA', name: 'Maria Lessari', companyName: null, tradingName: ' ', cpfCnpj: null });
 

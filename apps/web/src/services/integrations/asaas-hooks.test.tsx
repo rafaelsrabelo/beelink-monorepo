@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import type { AsaasConnection, AsaasSettings } from "@harness-monorepo/contracts"
 
 // App
-import { useAsaasConnection, useAsaasSettings, useConnectAsaas, useDisconnectAsaas, useSaveAsaasSettings } from "./asaas-hooks"
+import { useAsaasConnection, useAsaasSettings, useConnectAsaas, useDisconnectAsaas, useRecheckAsaasApproval, useSaveAsaasSettings } from "./asaas-hooks"
 import { integrationKeys } from "./integration-keys"
 
 type Fetched = (url: string, init?: RequestInit) => Promise<Response>
@@ -17,7 +17,7 @@ type Fetched = (url: string, init?: RequestInit) => Promise<Response>
 const KEY = "$aact_hmlg_chave-de-teste"
 const CONNECTION = "/api/stores/loja/integrations/asaas"
 
-const disconnected: AsaasConnection = { available: true, environment: "SANDBOX", status: "DISCONNECTED", account: null, webhook: null, connectedAt: null }
+const disconnected: AsaasConnection = { available: true, environment: "SANDBOX", status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 const connected: AsaasConnection = { ...disconnected, status: "CONNECTED", account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" }, webhook: "SKIPPED", connectedAt: "2026-10-05T12:00:00.000Z" }
 const settings: AsaasSettings = { pix: true, card: true, maxInstallments: 1, offline: true, updatedAt: null }
 
@@ -175,5 +175,35 @@ describe("the rest of the shop's Asaas", () => {
 
     expect(methodsOf(fetched)).toEqual([`GET ${CONNECTION}/settings`, `PUT ${CONNECTION}/settings`])
     expect(JSON.parse(String(fetched.mock.calls[1]?.[1]?.body))).toEqual({ pix: true, card: true, maxInstallments: 6, offline: false })
+  })
+
+  /** BEELINK-278: the answer is the connection itself, so the card and the notice change with no second read. */
+  it("asks Asaas again whether the account is approved, and keeps the answer as the connection", async () => {
+    const waiting: AsaasConnection = { ...connected, approval: "AWAITING_APPROVAL", approvalCheckedAt: "2026-10-06T12:00:00.000Z" }
+    const approved: AsaasConnection = { ...connected, approval: "APPROVED", approvalCheckedAt: "2026-10-06T21:40:00.000Z" }
+    const fetched = vi.fn<Fetched>(async (_url, init) => Response.json(init?.method === "POST" ? approved : waiting))
+    vi.stubGlobal("fetch", fetched)
+    const { wrapper } = mount()
+    const { result } = renderHook(() => ({ connection: useAsaasConnection("loja"), recheck: useRecheckAsaasApproval("loja") }), { wrapper })
+    await waitFor(() => expect(result.current.connection.data?.approval).toBe("AWAITING_APPROVAL"))
+
+    act(() => result.current.recheck.mutate())
+    await waitFor(() => expect(result.current.connection.data).toEqual(approved))
+
+    expect(methodsOf(fetched)).toEqual([`GET ${CONNECTION}`, `POST ${CONNECTION}/approval`])
+  })
+
+  it("keeps the connection as it was read when Asaas does not answer the asking, and says so by the API's code", async () => {
+    const waiting: AsaasConnection = { ...connected, approval: "AWAITING_APPROVAL", approvalCheckedAt: "2026-10-06T12:00:00.000Z" }
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async (_url, init) => (init?.method === "POST" ? Response.json({ statusCode: 502, errorCode: "INTEGRATION_UNREACHABLE", message: "x" }, { status: 502 }) : Response.json(waiting))))
+    const { wrapper } = mount()
+    const { result } = renderHook(() => ({ connection: useAsaasConnection("loja"), recheck: useRecheckAsaasApproval("loja") }), { wrapper })
+    await waitFor(() => expect(result.current.connection.isSuccess).toBe(true))
+
+    act(() => result.current.recheck.mutate())
+    await waitFor(() => expect(result.current.recheck.isError).toBe(true))
+
+    expect(result.current.recheck.error).toMatchObject({ errorCode: "INTEGRATION_UNREACHABLE" })
+    expect(result.current.connection.data).toEqual(waiting)
   })
 })

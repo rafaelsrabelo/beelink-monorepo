@@ -11,7 +11,7 @@ import type { AsaasConnectPayload, AsaasConnection, AsaasSettings, AsaasSettings
 
 // App
 import { integrationKeys } from "./integration-keys"
-import { connectAsaas, disconnectAsaas, fetchAsaasConnection, fetchAsaasSettings, IntegrationError, saveAsaasSettings } from "./integration-requests"
+import { connectAsaas, disconnectAsaas, fetchAsaasConnection, fetchAsaasSettings, IntegrationError, recheckAsaasApproval, saveAsaasSettings } from "./integration-requests"
 
 export function useAsaasConnection(slug: string): UseQueryResult<AsaasConnection> {
   return useQuery({ queryKey: integrationKeys.asaasConnection(slug), queryFn: () => fetchAsaasConnection(slug) })
@@ -71,6 +71,18 @@ export function useDisconnectAsaas(slug: string): UseMutationResult<object, Erro
   return useMutation({
     mutationFn: () => disconnectAsaas(slug),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: integrationKeys.asaasConnection(slug) }),
+  })
+}
+
+/**
+ * Asks Asaas again whether it approved the account (BEELINK-278). The answer is the connection as it
+ * now stands, written straight into the cache: the card, the notice and the list read the same one.
+ */
+export function useRecheckAsaasApproval(slug: string): UseMutationResult<AsaasConnection, Error, void> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => recheckAsaasApproval(slug),
+    onSuccess: (connection) => queryClient.setQueryData(integrationKeys.asaasConnection(slug), connection),
   })
 }
 

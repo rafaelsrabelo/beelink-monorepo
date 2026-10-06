@@ -1,3 +1,6 @@
+// Types
+import type { AsaasAccountApproval } from '@harness-monorepo/contracts';
+
 // App
 import type { AsaasConfig } from './asaas.config.js';
 
@@ -182,6 +185,13 @@ export class AsaasOutcomeUnknown extends AsaasUnreachable {}
 export abstract class AsaasClient {
   /** Who the key belongs to — and so whether it is a key at all. */
   abstract account(config: AsaasConfig, apiKey: string): Promise<AsaasAccountInfo>;
+
+  /**
+   * Asaas's verdict on the account's whole registration (BEELINK-278) — `general`, of
+   * `GET /v3/myAccount/status` — or null when it answered a word bee-link does not know: one Asaas
+   * adds later decides nothing. No answer is thrown, as everywhere.
+   */
+  abstract approval(config: AsaasConfig, apiKey: string): Promise<AsaasAccountApproval | null>;
 
   /** A webhook registered at the account, sending `ASAAS_WEBHOOK_EVENTS` in order; answers its id. */
   abstract createWebhook(config: AsaasConfig, apiKey: string, webhook: AsaasWebhookRequest): Promise<string>;

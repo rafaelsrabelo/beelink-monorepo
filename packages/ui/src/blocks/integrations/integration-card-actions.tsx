@@ -48,7 +48,8 @@ export function IntegrationCardActions({ card, onRetry, linkComponent: Link = An
       {text.configure}
     </Link>
   )
-  if (connection.state === "connected") return configure
+  // One to be approved is mended at the third party: its own page says how, and nothing is connected again.
+  if (connection.state === "connected" || connection.state === "unapproved") return configure
 
   const mending = connection.state === "needsReconnect"
   const wayIn = { "aria-label": mending ? format(text.reconnectLabel, { name: provider.title }) : provider.connect, className: cn(buttonVariants()), children: mending ? text.reconnect : text.connect }

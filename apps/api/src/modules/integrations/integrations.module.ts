@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 
 // App
 import { AsaasAcceptance } from './asaas/asaas-acceptance.js';
+import { AsaasApproval } from './asaas/asaas-approval.service.js';
 import { AsaasCharges } from './asaas/asaas-charges.service.js';
 import { AsaasClient } from './asaas/asaas.client.js';
 import { AsaasController } from './asaas/asaas.controller.js';
@@ -37,7 +38,8 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  * exported for the payments (BEELINK-204): what a shop takes now, and its charges by the shop's id —
  * neither takes nor answers a key. For the shop's webhook (BEELINK-206): `AsaasWebhookDoor` says whose
  * token a request carries, `AsaasWebhookKeeper` keeps the webhook sending and the key in use, and
- * `AsaasConnectionService` is exported for its `beforeKeyLeaves` alone.
+ * `AsaasConnectionService` is exported for its `beforeKeyLeaves` alone. `AsaasApproval` is exported for
+ * the payments too (BEELINK-278): a charge Asaas refused makes it ask whether the account is approved.
  */
 @Module({
   imports: [StoresModule],
@@ -54,10 +56,11 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
     AsaasConnectionService,
     AsaasSettingsService,
     AsaasAcceptance,
+    AsaasApproval,
     AsaasCharges,
     AsaasWebhookDoor,
     AsaasWebhookKeeper,
   ],
-  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasCharges, AsaasConnectionService, AsaasWebhookDoor, AsaasWebhookKeeper],
+  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasApproval, AsaasCharges, AsaasConnectionService, AsaasWebhookDoor, AsaasWebhookKeeper],
 })
 export class IntegrationsModule {}

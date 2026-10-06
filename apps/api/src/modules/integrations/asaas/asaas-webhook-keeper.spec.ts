@@ -9,6 +9,7 @@ import type { AsaasConfig } from './asaas.config.js';
 import { AsaasWithoutCharges } from '../../../../test/support/asaas-stub.js';
 import { seal } from '../secret-vault.js';
 import { AsaasRefused, AsaasUnreachable, type AsaasAccountInfo, type AsaasWebhookRequest, type AsaasWebhookStanding } from './asaas.client.js';
+import { AsaasApproval } from './asaas-approval.service.js';
 import { AsaasWebhookKeeper } from './asaas-webhook-keeper.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -88,7 +89,7 @@ function build(over: Record<string, unknown> = {}) {
     store: { findUniqueOrThrow: vi.fn(async () => ({ slug: 'lessari' })) },
   } as unknown as PrismaService;
   const asaas = new FakeAsaas();
-  return { keeper: new AsaasWebhookKeeper(prisma, asaas), asaas, config, row: () => row, states };
+  return { keeper: new AsaasWebhookKeeper(prisma, asaas, new AsaasApproval(prisma, asaas)), asaas, config, row: () => row, states };
 }
 
 describe('AsaasWebhookKeeper (BEELINK-206)', () => {
@@ -156,6 +157,38 @@ describe('AsaasWebhookKeeper (BEELINK-206)', () => {
     silent.asaas.failing.account = new AsaasUnreachable('Asaas failed (503)');
     await expect(silent.keeper.probe(STORE)).rejects.toBeInstanceOf(AsaasUnreachable);
     expect(silent.row()).toMatchObject({ status: 'CONNECTED' });
+  });
+
+  describe("whether Asaas approved the account, asked on the same look (BEELINK-278)", () => {
+    it('writes what Asaas says now, and when: an account approved since is charged with nothing done by the shop', async () => {
+      const { keeper, asaas, row } = build({ accountApproval: 'AWAITING_APPROVAL', accountApprovalCheckedAt: new Date('2026-10-05T12:00:00Z') });
+      asaas.approved = 'APPROVED';
+
+      await keeper.checkDue(NOW);
+
+      expect(row()).toMatchObject({ accountApproval: 'APPROVED', accountApprovalCheckedAt: NOW, webhookCheckedAt: NOW });
+    });
+
+    it('reads it for a shop connected before it was ever read, and writes it though the webhook could not be mended', async () => {
+      const { keeper, asaas, row } = build();
+      asaas.approved = 'REJECTED';
+      asaas.failing.webhook = new AsaasUnreachable('Asaas failed (503)');
+
+      await keeper.checkDue(NOW);
+
+      expect(row()).toMatchObject({ accountApproval: 'REJECTED', accountApprovalCheckedAt: NOW, webhookCheckedAt: NOW, status: 'CONNECTED' });
+    });
+
+    it('keeps what was last read when Asaas does not answer, and looks at the webhook all the same', async () => {
+      const checked = new Date('2026-10-05T12:00:00Z');
+      const { keeper, asaas, row } = build({ accountApproval: 'AWAITING_APPROVAL', accountApprovalCheckedAt: checked });
+      asaas.approved = new AsaasUnreachable('Asaas failed (503)');
+
+      await keeper.checkDue(NOW);
+
+      expect(asaas.calls).toEqual(['webhook']);
+      expect(row()).toMatchObject({ accountApproval: 'AWAITING_APPROVAL', accountApprovalCheckedAt: checked, webhookCheckedAt: NOW });
+    });
   });
 
   it('does nothing where no key can be opened', async () => {

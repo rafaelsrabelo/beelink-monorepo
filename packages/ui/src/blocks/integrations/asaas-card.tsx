@@ -56,7 +56,8 @@ export interface AsaasCardProps {
 /**
  * The shop's Asaas account in the panel's Integrations (BEELINK-203): what connecting gives, the
  * field its API key is pasted into, whose account is connected and where its payment notices stand,
- * and the warning when Asaas stopped accepting the key.
+ * and the warning when Asaas stopped accepting the key. An account Asaas has not approved
+ * (BEELINK-278) is badged as such, never as connected: what it means is `AsaasApprovalNotice`'s to say.
  *
  * Replacing the key shows the same field again. That form belongs to the connection it was opened
  * on: the moment another connection takes its place the form is closed and what was typed in it is
@@ -70,7 +71,9 @@ export function AsaasCard({ view, logoSrc, onConnect, connecting = false, connec
   const [replacingAt, setReplacingAt] = useState<string | null>(null)
   const replacing = view.status === "CONNECTED" && replacingAt !== null && replacingAt === view.connectedAt
   const keyed = view.status !== "CONNECTED" || replacing
-  const badge = { DISCONNECTED: text.disconnectedBadge, CONNECTED: text.connected, NEEDS_RECONNECT: text.needsReconnectBadge }[view.status]
+  // Connected, and charged nothing: never drawn as the green of a shop that is paid.
+  const unapproved = view.status === "CONNECTED" && view.approval !== null && view.approval !== "APPROVED" ? view.approval : null
+  const badge = unapproved ? text.approval.badge[unapproved] : { DISCONNECTED: text.disconnectedBadge, CONNECTED: text.connected, NEEDS_RECONNECT: text.needsReconnectBadge }[view.status]
   useFocusOnSwap(keyed ? "key" : "account", body)
 
   function leaveReplacement() {
@@ -86,8 +89,8 @@ export function AsaasCard({ view, logoSrc, onConnect, connecting = false, connec
           {text.title}
         </Heading>
         {view.available ? (
-          <Badge variant={view.status === "CONNECTED" ? "success" : view.status === "NEEDS_RECONNECT" ? "destructive" : "outline"}>
-            {view.status === "CONNECTED" ? <CheckIcon aria-hidden="true" /> : null}
+          <Badge variant={unapproved ? "destructive" : view.status === "CONNECTED" ? "success" : view.status === "NEEDS_RECONNECT" ? "destructive" : "outline"}>
+            {view.status === "CONNECTED" && !unapproved ? <CheckIcon aria-hidden="true" /> : null}
             {badge}
           </Badge>
         ) : null}

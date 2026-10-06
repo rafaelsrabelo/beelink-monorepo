@@ -13,11 +13,12 @@ import { ptBR as ui } from "@harness-monorepo/ui/locales/pt-BR"
 import { IntegrationError } from "@/services/integrations/integration-requests"
 import { AsaasScreen } from "./asaas-screen"
 
-const mocks = vi.hoisted(() => ({ connection: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), settings: vi.fn(), save: vi.fn() }))
+const mocks = vi.hoisted(() => ({ connection: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), recheck: vi.fn(), settings: vi.fn(), save: vi.fn() }))
 vi.mock("@/services/integrations/asaas-hooks", () => ({
   useAsaasConnection: mocks.connection,
   useConnectAsaas: mocks.connect,
   useDisconnectAsaas: mocks.disconnect,
+  useRecheckAsaasApproval: mocks.recheck,
   useAsaasSettings: mocks.settings,
   useSaveAsaasSettings: mocks.save,
 }))
@@ -25,7 +26,7 @@ vi.mock("@/services/integrations/asaas-hooks", () => ({
 /** Typed by the tests, and nobody's key. */
 const TYPED = "$aact_hmlg_chave-de-teste"
 
-const never: AsaasConnection = { available: true, environment: "SANDBOX", status: "DISCONNECTED", account: null, webhook: null, connectedAt: null }
+const never: AsaasConnection = { available: true, environment: "SANDBOX", status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 const connected: AsaasConnection = { ...never, status: "CONNECTED", account: { name: "Loja Teste LTDA", document: "**.222.333/0001-**" }, webhook: "SKIPPED", connectedAt: "2026-10-05T12:00:00.000Z" }
 const defaults: AsaasSettings = { pix: true, card: true, maxInstallments: 1, offline: true, updatedAt: null }
 
@@ -35,6 +36,8 @@ const disconnect = vi.fn()
 const resetDisconnect = vi.fn()
 const save = vi.fn()
 const resetSave = vi.fn()
+const recheck = vi.fn()
+const resetRecheck = vi.fn()
 
 interface State {
   connection?: AsaasConnection
@@ -45,12 +48,24 @@ interface State {
   saveError?: Error | null
   saved?: boolean
   disconnectFailed?: boolean
+  /** What came of asking Asaas again: still being asked, the connection it answered, or the API's code. */
+  rechecked?: "pending" | AsaasConnection | IntegrationError
 }
 
 function with_(state: State) {
   mocks.connection.mockReturnValue({ isPending: false, isError: false, data: state.connection ?? connected })
   mocks.connect.mockReturnValue({ connect, isPending: state.connecting ?? false, refusal: state.refusal ?? null, connected: state.justConnected ?? false, forget })
   mocks.disconnect.mockReturnValue({ mutate: disconnect, reset: resetDisconnect, isPending: false, isError: state.disconnectFailed ?? false })
+  const asked = state.rechecked
+  mocks.recheck.mockReturnValue({
+    mutate: recheck,
+    reset: resetRecheck,
+    isPending: asked === "pending",
+    isSuccess: typeof asked === "object" && !(asked instanceof Error),
+    isError: asked instanceof Error,
+    data: typeof asked === "object" && !(asked instanceof Error) ? asked : undefined,
+    error: asked instanceof Error ? asked : null,
+  })
   mocks.settings.mockReturnValue(state.settings ?? { isPending: false, isError: false, data: defaults })
   mocks.save.mockReturnValue({ mutate: save, reset: resetSave, isPending: false, error: state.saveError ?? null, isSuccess: state.saved ?? false })
 }
@@ -58,7 +73,7 @@ function with_(state: State) {
 const view = (slug = "loja") => render(<AsaasScreen slug={slug} messages={ui} />)
 
 beforeEach(() => {
-  for (const mock of [connect, forget, disconnect, resetDisconnect, save, resetSave, mocks.settings]) mock.mockReset()
+  for (const mock of [connect, forget, disconnect, resetDisconnect, save, resetSave, recheck, resetRecheck, mocks.settings]) mock.mockReset()
   with_({})
 })
 
@@ -288,5 +303,85 @@ describe("AsaasScreen (BEELINK-203), while the connection is read", () => {
     expect(screen.getByRole("link", { name: "Integrações" })).toHaveAttribute("href", "/admin/loja/integrations")
     await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
     expect(refetch).toHaveBeenCalledOnce()
+  })
+})
+
+describe("AsaasScreen, of an account Asaas has not approved (BEELINK-278)", () => {
+  const waiting: AsaasConnection = { ...connected, approval: "AWAITING_APPROVAL", approvalCheckedAt: "2026-10-06T21:40:00.000Z" }
+  const notice = () => screen.getByRole("region", { name: "A sua conta no Asaas está em análise" })
+
+  it("says so over the card, with what it means and what to do, and never as connected", () => {
+    with_({ connection: waiting })
+    view()
+
+    expect(within(notice()).getByText(/o pagamento pelo site \(Pix e cartão\) fica desligado/)).toBeInTheDocument()
+    expect(within(notice()).getByText(/A loja continua vendendo como antes: o pagamento é combinado direto com o cliente/)).toBeInTheDocument()
+    expect(within(notice()).getByText("Última verificação: 06/10/2026, 18:40")).toBeInTheDocument()
+    const card = within(screen.getByRole("region", { name: "Asaas" }))
+    expect(card.getByText("Conta em análise")).toBeInTheDocument()
+    expect(card.queryByText("Conectado")).toBeNull()
+    // The shop's choices are kept, and hold from the approval on.
+    expect(screen.getByRole("switch", { name: "Pix" })).toBeChecked()
+  })
+
+  it("tells a rejected account, and a registration left incomplete, apart from one under review", () => {
+    with_({ connection: { ...waiting, approval: "REJECTED" } })
+    const { unmount } = view()
+    expect(screen.getByRole("region", { name: "O Asaas recusou o cadastro da sua conta" })).toBeInTheDocument()
+    unmount()
+
+    with_({ connection: { ...waiting, approval: "PENDING" } })
+    view()
+    expect(screen.getByRole("region", { name: "Falta completar o cadastro da sua conta no Asaas" })).toBeInTheDocument()
+  })
+
+  it("says nothing of it for an approved account, one whose approval is not known, or a key to be reconnected", () => {
+    for (const connection of [{ ...waiting, approval: "APPROVED" as const }, { ...waiting, approval: null }, { ...waiting, status: "NEEDS_RECONNECT" as const }]) {
+      with_({ connection })
+      const { unmount } = view()
+      expect(screen.queryByRole("button", { name: "Verificar de novo" })).toBeNull()
+      unmount()
+    }
+  })
+
+  it("asks Asaas again, held while it answers, and says when nothing changed or the asking failed", async () => {
+    with_({ connection: waiting })
+    const { unmount } = view()
+    await userEvent.click(screen.getByRole("button", { name: "Verificar de novo" }))
+    expect(recheck).toHaveBeenCalledOnce()
+    unmount()
+
+    with_({ connection: waiting, rechecked: "pending" })
+    const asking = view()
+    expect(screen.getByRole("button", { name: "Verificando…" })).toBeDisabled()
+    asking.unmount()
+
+    with_({ connection: waiting, rechecked: waiting })
+    const same = view()
+    expect(within(notice()).getByRole("status")).toHaveTextContent("O Asaas ainda não aprovou a conta.")
+    same.unmount()
+
+    with_({ connection: waiting, rechecked: new IntegrationError("INTEGRATION_UNREACHABLE") })
+    view()
+    expect(within(notice()).getByRole("alert")).toHaveTextContent("O Asaas não respondeu. Tente de novo em instantes.")
+  })
+
+  it("says the account was approved once Asaas says so, and is a connected shop from then on", () => {
+    const approved: AsaasConnection = { ...waiting, approval: "APPROVED" }
+    with_({ connection: approved, rechecked: approved })
+    view()
+
+    expect(screen.getByRole("status")).toHaveTextContent("Conta aprovada pelo Asaas. A loja já pode receber pelo site.")
+    expect(screen.queryByRole("button", { name: "Verificar de novo" })).toBeNull()
+    expect(within(screen.getByRole("region", { name: "Asaas" })).getByText("Conectado")).toBeInTheDocument()
+  })
+
+  /** Connecting an account still under review must not be celebrated as a shop that is now paid. */
+  it("does not say the shop is connected and ready when the key just taken is of an unapproved account", () => {
+    with_({ connection: waiting, justConnected: true })
+    view()
+
+    expect(screen.queryByText("Asaas conectado. Escolha abaixo as formas de pagamento da loja.")).toBeNull()
+    expect(notice()).toBeInTheDocument()
   })
 })

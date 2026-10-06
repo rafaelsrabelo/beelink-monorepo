@@ -13,6 +13,7 @@ import type { AsaasConfig } from './asaas.config.js';
 import { AsaasWithoutCharges } from '../../../../test/support/asaas-stub.js';
 import { open, seal } from '../secret-vault.js';
 import { AsaasRefused, AsaasUnreachable, type AsaasAccountInfo, type AsaasWebhookRequest } from './asaas.client.js';
+import { AsaasApproval } from './asaas-approval.service.js';
 import { AsaasConnectionService } from './asaas-connection.service.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -92,7 +93,7 @@ function build(existing: Row | null = null) {
   const prisma = { ...tx, $transaction: vi.fn(async (work: (client: typeof tx) => unknown) => work(tx)) } as unknown as PrismaService;
   const stores = { ownedStoreId: vi.fn().mockResolvedValue(STORE) } as unknown as StoresService;
   const asaas = new FakeAsaas();
-  return { service: new AsaasConnectionService(prisma, stores, asaas), asaas, tx, row: () => row };
+  return { service: new AsaasConnectionService(prisma, stores, asaas, new AsaasApproval(prisma, asaas)), asaas, tx, row: () => row };
 }
 
 /** What a connection made with `apiKey` left in the row, sealed for this shop. */
@@ -146,7 +147,7 @@ describe('AsaasConnectionService', () => {
 
       const connection = await service.connect('lessari', 'owner', { apiKey: SANDBOX_KEY });
 
-      expect(connection).toEqual({ available: true, environment: 'SANDBOX', status: 'CONNECTED', account: { name: 'Lessari', document: '**.222.333/0001-**' }, webhook: 'SKIPPED', connectedAt: expect.any(String) });
+      expect(connection).toEqual({ available: true, environment: 'SANDBOX', status: 'CONNECTED', account: { name: 'Lessari', document: '**.222.333/0001-**' }, webhook: 'SKIPPED', approval: 'APPROVED', approvalCheckedAt: expect.any(String), connectedAt: expect.any(String) });
       expect(JSON.stringify(connection)).not.toContain(SANDBOX_KEY);
       expect(asaas.calls).toEqual(['account']);
 
@@ -204,6 +205,19 @@ describe('AsaasConnectionService', () => {
       expect(sealedIn(deployment.config!, row()).apiKey).toBe(SANDBOX_KEY);
     });
 
+    it("keeps whether Asaas approved the account, and connects all the same when it has not or does not say (BEELINK-278)", async () => {
+      const waiting = build();
+      waiting.asaas.approved = 'AWAITING_APPROVAL';
+      expect(await waiting.service.connect('lessari', 'owner', { apiKey: SANDBOX_KEY })).toMatchObject({ status: 'CONNECTED', approval: 'AWAITING_APPROVAL', approvalCheckedAt: expect.any(String) });
+      expect(waiting.row()).toMatchObject({ accountApproval: 'AWAITING_APPROVAL', accountApprovalCheckedAt: expect.any(Date) });
+
+      // Not known is written as such over what a key replaced had been read as.
+      const silent = build({ ...connectedRow(deployment.config!, OLD_KEY, null), accountApproval: 'REJECTED', accountApprovalCheckedAt: new Date('2026-10-01T12:00:00Z') });
+      silent.asaas.approved = new AsaasUnreachable('Asaas failed (503)');
+      expect(await silent.service.connect('lessari', 'owner', { apiKey: SANDBOX_KEY })).toMatchObject({ status: 'CONNECTED', approval: null, approvalCheckedAt: null });
+      expect(silent.row()).toMatchObject({ accountApproval: null, accountApprovalCheckedAt: null });
+    });
+
     it('refuses to connect where there is nowhere to seal a key, and says so when read', async () => {
       deployment.config = null;
       const { service, asaas } = build();
@@ -211,7 +225,7 @@ describe('AsaasConnectionService', () => {
       const refused = await service.connect('lessari', 'owner', { apiKey: SANDBOX_KEY }).catch((error: unknown) => error);
       expect([statusOf(refused), codeOf(refused)]).toEqual([503, 'INTEGRATION_UNAVAILABLE']);
       expect(asaas.calls).toEqual([]);
-      expect(await service.connection('lessari', 'owner')).toEqual({ available: false, environment: 'SANDBOX', status: 'DISCONNECTED', account: null, webhook: null, connectedAt: null });
+      expect(await service.connection('lessari', 'owner')).toEqual({ available: false, environment: 'SANDBOX', status: 'DISCONNECTED', account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null });
     });
   });
 
@@ -220,7 +234,7 @@ describe('AsaasConnectionService', () => {
 
     const connection = await service.connection('lessari', 'owner');
 
-    expect(connection).toEqual({ available: true, environment: 'SANDBOX', status: 'CONNECTED', account: { name: 'Lessari', document: '***.456.789-**' }, webhook: 'REGISTERED', connectedAt: '2026-10-01T12:00:00.000Z' });
+    expect(connection).toEqual({ available: true, environment: 'SANDBOX', status: 'CONNECTED', account: { name: 'Lessari', document: '***.456.789-**' }, webhook: 'REGISTERED', approval: null, approvalCheckedAt: null, connectedAt: '2026-10-01T12:00:00.000Z' });
     expect(JSON.stringify(connection)).not.toMatch(/aact|old-token/);
   });
 

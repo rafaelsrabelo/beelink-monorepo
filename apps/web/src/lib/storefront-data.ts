@@ -38,9 +38,11 @@ export const NO_ONLINE_PAYMENTS: StorefrontPaymentOptions = { online: null, offl
 /**
  * How the shop's checkout is paid (BEELINK-205): what it charges online now, and whether paying on
  * delivery stands. Under `storeTag`: the panel's handlers that connect, disconnect and save the
- * Asaas choices drop it. A shop whose key Asaas refused changes with no write from the panel — the
- * answer kept is then wrong until its minute closes, and an order placed in it is refused by the
- * API, which is what makes the page read again.
+ * Asaas choices drop it, and so does the one that asks Asaas again whether the account is approved
+ * (BEELINK-278). A shop whose key Asaas refused, or whose account the API's daily look found
+ * approved or no longer, changes with no write from the panel — the answer kept is then wrong until
+ * its minute closes, and an order placed in it is refused by the API, which is what makes the page
+ * read again.
  *
  * A read that failed is the checkout of before: a shop must not stop selling because this did not answer.
  */

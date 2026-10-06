@@ -8,7 +8,8 @@ import { ASAAS_MINIMUM_CHARGE_CENTS, ASAAS_MINIMUM_INSTALLMENT_CENTS } from '../
 /**
  * What a shop's checkout offers (BEELINK-205), from the very reading an order is refused by: the
  * checkout must never offer what placing would refuse. A shop whose Asaas is not in good standing
- * sells as before it — its own labels, and nothing charged. Of the account itself nothing is said.
+ * sells as before it — its own labels, and nothing charged — and so does one whose account Asaas has
+ * not approved (BEELINK-278): `connected` is false of both. Of the account itself nothing is said.
  */
 export function paymentOptionsOf(takes: Pick<AsaasAcceptanceOf, 'connected' | 'pix' | 'card' | 'maxInstallments' | 'offline'>): StorefrontPaymentOptions {
   if (!takes.connected) return { online: null, offline: true };

@@ -1,3 +1,6 @@
+// Types
+import type { AsaasAccountApproval } from '@harness-monorepo/contracts';
+
 // App
 import {
   AsaasClient,
@@ -45,6 +48,9 @@ const PAID = new Set(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
  * past what is left of it, a Pix at once and a card pending until `concludeRefunds` — a plan across
  * its instalments, in order. `refundOutside` is the shop refunding at Asaas's own panel, and
  * `denyRefunds` Asaas cancelling what it had taken. `refunded` is every refund it was asked for.
+ *
+ * Whether the account is approved (BEELINK-278) is `approved` — an `Error` there is Asaas not
+ * answering it. An account not approved has its charges refused in the words the real one uses.
  */
 export class FakeAsaas extends AsaasClient {
   readonly calls: Call[] = [];
@@ -56,6 +62,9 @@ export class FakeAsaas extends AsaasClient {
   readonly keeping: Keeping[] = [];
   /** Thrown by every call that keeps the webhook or reads the account, while set. */
   keyError: unknown = null;
+  approved: AsaasAccountApproval | null | Error = 'APPROVED';
+  /** Counted apart from `keeping`: it is asked beside every other look at the account. */
+  approvalsAsked = 0;
   /** Whether the listing of an order's charges carries their refunds: the reference does not say, so both are stood. A read by id always does. */
   listsRefunds = true;
   /** When a Pix code ends; null leaves it to the charge's due day. */
@@ -73,6 +82,8 @@ export class FakeAsaas extends AsaasClient {
     this.webhooks.length = 0;
     this.keeping.length = 0;
     this.keyError = null;
+    this.approved = 'APPROVED';
+    this.approvalsAsked = 0;
     this.accountInfo = { name: 'Lessari', document: '11222333000181' };
     this.pixExpiresAt = null;
     this.listsRefunds = true;
@@ -129,6 +140,13 @@ export class FakeAsaas extends AsaasClient {
     return { ...this.accountInfo };
   }
 
+  async approval(): Promise<AsaasAccountApproval | null> {
+    this.approvalsAsked += 1;
+    if (this.keyError) throw this.keyError;
+    if (this.approved instanceof Error) throw this.approved;
+    return this.approved;
+  }
+
   async createWebhook(_config: AsaasConfig, _apiKey: string, webhook: AsaasWebhookRequest): Promise<string> {
     this.keep('createWebhook');
     const id = `wh_${this.webhooks.length + 1}`;
@@ -182,6 +200,7 @@ export class FakeAsaas extends AsaasClient {
 
   async createCharge(_config: AsaasConfig, _apiKey: string, request: AsaasChargeRequest): Promise<AsaasCharge> {
     await this.enter('createCharge');
+    if (this.approved !== 'APPROVED' && this.approved !== null && !(this.approved instanceof Error)) throw new AsaasRefused(400, 'invalid_billingType', 'O Pix não está disponível no momento. Para utilizá-lo, sua conta precisa estar aprovada.');
     if (!this.customers.some((customer) => customer.id === request.customerId && !customer.deleted)) throw new AsaasRefused(400, 'invalid_customer', 'Customer inválido ou não informado.');
     this.requests.push(request);
 

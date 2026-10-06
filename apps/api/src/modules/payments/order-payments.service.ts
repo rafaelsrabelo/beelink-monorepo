@@ -9,6 +9,7 @@ import type { OrderPaymentModel } from '../../generated/prisma/models.js';
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { AsaasAcceptance, type AsaasAcceptanceOf } from '../integrations/asaas/asaas-acceptance.js';
+import { AsaasApproval } from '../integrations/asaas/asaas-approval.service.js';
 import { AsaasCharges, AsaasStoreUnavailable } from '../integrations/asaas/asaas-charges.service.js';
 import { AsaasConnectionService } from '../integrations/asaas/asaas-connection.service.js';
 import { AsaasOutcomeUnknown, AsaasRefused, AsaasThrottled, AsaasUnreachable } from '../integrations/asaas/asaas.client.js';
@@ -63,6 +64,7 @@ export class OrderPayments implements OnModuleInit {
     private readonly heard: PaymentSync,
     private readonly news: PaymentNews,
     private readonly connection: AsaasConnectionService,
+    private readonly approval: AsaasApproval,
   ) {}
 
   onModuleInit(): void {
@@ -412,6 +414,9 @@ export class OrderPayments implements OnModuleInit {
     }
     if (error instanceof AsaasRefused) {
       this.logger.warn({ storeId, orderId: want.orderId, reason: error.message }, 'Asaas refused a request about a charge');
+      // An account Asaas has not approved has every Pix and card refused (BEELINK-278). Asaas is asked
+      // rather than its sentence read: found unapproved, the checkout stops offering what this order was refused.
+      await this.approval.hear(storeId);
       return new BadGatewayException(paymentError('PAYMENT_REFUSED', 'The charge could not be made'));
     }
     if (error instanceof AsaasUnreachable) {

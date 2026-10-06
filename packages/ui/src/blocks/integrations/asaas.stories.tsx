@@ -8,6 +8,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import type { AsaasCardView, PaymentSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
 
 // Block
+import { AsaasApprovalNotice } from "./asaas-approval-notice"
 import { AsaasCard } from "./asaas-card"
 import { ASAAS_LOGO, asaasConnected, asaasDisconnected, payments } from "./integrations.fixtures"
 import { IntegrationsResult } from "./integrations-result"
@@ -56,6 +57,41 @@ export const AvisosDePagamento: Story = {
 
 /** O Asaas parou de aceitar a chave: o aviso, a conta que estava ligada e o campo para uma chave nova. */
 export const PrecisaReconectar: Story = { args: { view: { ...asaasConnected, status: "NEEDS_RECONNECT", webhook: "REGISTERED" } } }
+
+/**
+ * Conectada, mas o Asaas ainda analisa a conta: o selo deixa de ser o verde, e o aviso diz que o
+ * pagamento pelo site fica desligado até a aprovação e que a loja segue vendendo como antes.
+ */
+export const ContaEmAnalise: Story = {
+  render: (args) => (
+    <div className="flex flex-col gap-6">
+      <AsaasApprovalNotice approval="AWAITING_APPROVAL" checkedAt="06/10/2026, 18:40" onRecheck={noop} />
+      <AsaasCard {...args} view={{ ...asaasConnected, sandbox: false, approval: "AWAITING_APPROVAL" }} />
+    </div>
+  ),
+}
+
+/** As três situações de uma conta não aprovada: cadastro incompleto, em análise e recusada. */
+export const ContaNaoAprovada: Story = {
+  render: () => (
+    <div className="flex flex-col gap-6">
+      {(["PENDING", "AWAITING_APPROVAL", "REJECTED"] as const).map((approval) => (
+        <AsaasApprovalNotice key={approval} approval={approval} onRecheck={noop} />
+      ))}
+    </div>
+  ),
+}
+
+/** "Verificar de novo": perguntando ao Asaas, a resposta de que nada mudou, e o Asaas que não respondeu. */
+export const ContaVerificandoDeNovo: Story = {
+  render: () => (
+    <div className="flex flex-col gap-6">
+      <AsaasApprovalNotice approval="AWAITING_APPROVAL" onRecheck={noop} rechecking />
+      <AsaasApprovalNotice approval="AWAITING_APPROVAL" checkedAt="06/10/2026, 18:42" onRecheck={noop} unchanged />
+      <AsaasApprovalNotice approval="AWAITING_APPROVAL" onRecheck={noop} error="O Asaas não respondeu. Tente de novo em instantes." />
+    </div>
+  ),
+}
 
 /** Uma conta de pessoa física, em produção, cujo documento o Asaas não informou. */
 export const ContaSemDocumento: Story = { args: { view: { ...asaasConnected, sandbox: false, account: { name: "Maria Lessari", document: null } } } }

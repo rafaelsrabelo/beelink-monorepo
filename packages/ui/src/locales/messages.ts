@@ -3406,6 +3406,9 @@ export interface UiMessages {
       reconnectLabel: string
       /** {name} */
       account: string
+      /** A connection whose account the third party has not approved (BEELINK-278): the badge, and what it means for the shop. */
+      unapprovedBadge: string
+      unapprovedCard: string
       /** This card's connection could not be read; the others stand. */
       failed: string
       /** {name} */
@@ -3487,6 +3490,25 @@ export interface UiMessages {
       errors: Record<"INTEGRATION_KEY_INVALID" | "INTEGRATION_UNREACHABLE" | "RATE_LIMITED" | "UNKNOWN", string>
       /** A key of the other environment, by the one this deployment takes. */
       wrongEnvironment: Record<"SANDBOX" | "PRODUCTION", string>
+      /** An account Asaas has not approved (BEELINK-278): connected, and charged nothing until it is. */
+      approval: {
+        badge: Record<"PENDING" | "AWAITING_APPROVAL" | "REJECTED", string>
+        title: Record<"PENDING" | "AWAITING_APPROVAL" | "REJECTED", string>
+        /** What the shopkeeper does about it, by where the account stands. */
+        body: Record<"PENDING" | "AWAITING_APPROVAL" | "REJECTED", string>
+        /** What it means for the shop, whichever the standing: nothing paid on the site, and selling as before. */
+        meanwhile: string
+        recheck: string
+        rechecking: string
+        /** {when} */
+        checkedAt: string
+        /** Asked again, and Asaas said the same. */
+        still: string
+        /** Over the page once Asaas was asked again and said approved. */
+        approvedNotice: string
+        /** By the API's code; `UNKNOWN` for any other. */
+        recheckErrors: Record<"INTEGRATION_UNREACHABLE" | "RATE_LIMITED" | "UNKNOWN", string>
+      }
     }
     /** How the shop is paid once its Asaas is connected (BEELINK-203). */
     payments: {

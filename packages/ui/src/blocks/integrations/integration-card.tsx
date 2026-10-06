@@ -62,6 +62,8 @@ export function IntegrationCard({ card, onRetry, linkComponent, messages = defau
                 </Badge>
               ) : read.state === "needsReconnect" ? (
                 <Badge variant="destructive">{provider.needsReconnectBadge}</Badge>
+              ) : read.state === "unapproved" ? (
+                <Badge variant="destructive">{text.unapprovedBadge}</Badge>
               ) : (
                 <Badge variant="outline">{provider.disconnectedBadge}</Badge>
               )}
@@ -87,6 +89,11 @@ export function IntegrationCard({ card, onRetry, linkComponent, messages = defau
         <div role="alert" className="border-destructive/30 bg-destructive/10 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm">
           <TriangleAlertIcon aria-hidden="true" className="text-destructive mt-0.5 size-4 shrink-0" />
           <span>{provider.needsReconnectCard}</span>
+        </div>
+      ) : read?.state === "unapproved" ? (
+        <div role="alert" className="border-destructive/30 bg-destructive/10 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm">
+          <TriangleAlertIcon aria-hidden="true" className="text-destructive mt-0.5 size-4 shrink-0" />
+          <span>{text.unapprovedCard}</span>
         </div>
       ) : null}
       {offered && read.account ? <p className="truncate text-sm font-medium">{format(text.account, { name: read.account })}</p> : null}

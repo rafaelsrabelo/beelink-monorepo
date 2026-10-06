@@ -208,6 +208,39 @@ describe("AsaasCard, connected", () => {
   })
 })
 
+describe("AsaasCard, of an account Asaas has not approved (BEELINK-278)", () => {
+  it("is badged by where the account stands, never as connected, and keeps everything a connected one offers", async () => {
+    const { container, again } = show({ ...asaasConnected, approval: "AWAITING_APPROVAL" })
+
+    expect(within(card()).getByText("Conta em análise")).toBeInTheDocument()
+    expect(within(card()).queryByText("Conectado")).toBeNull()
+    expect(screen.getByRole("button", { name: "Trocar a chave" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Desconectar" })).toBeInTheDocument()
+    await expectNoA11yViolations(container)
+
+    again({ ...asaasConnected, approval: "PENDING" })
+    expect(within(card()).getByText("Cadastro incompleto")).toBeInTheDocument()
+    again({ ...asaasConnected, approval: "REJECTED" })
+    expect(within(card()).getByText("Conta recusada")).toBeInTheDocument()
+  })
+
+  it("is connected when approved, and when the approval is not known", () => {
+    const { again } = show({ ...asaasConnected, approval: "APPROVED" })
+    expect(within(card()).getByText("Conectado")).toBeInTheDocument()
+
+    again({ ...asaasConnected, approval: null })
+    expect(within(card()).getByText("Conectado")).toBeInTheDocument()
+  })
+
+  /** A key Asaas stopped accepting is the thing to mend first: the approval is not what the badge says then. */
+  it("says a key to be reconnected before anything of the approval", () => {
+    show({ ...asaasConnected, status: "NEEDS_RECONNECT", approval: "AWAITING_APPROVAL" })
+
+    expect(within(card()).getByText("Precisa reconectar")).toBeInTheDocument()
+    expect(within(card()).queryByText("Conta em análise")).toBeNull()
+  })
+})
+
 describe("AsaasCard, as the connection changes under it", () => {
   it("puts the focus on what replaced the key once connected, and back on the key once disconnected", async () => {
     const { again } = show(asaasDisconnected)
