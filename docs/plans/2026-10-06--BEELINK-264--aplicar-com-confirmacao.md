@@ -36,3 +36,22 @@ A galeria mostra os modelos e a prévia de cada um, mas escolher um só o mostra
 ## Fora do escopo
 
 Escolher modelo ao criar a loja e "Nova landing" lendo o catálogo (W7); desfazer um modelo aplicado (o histórico de versões restaura o que estava publicado; o rascunho anterior não publicado se perde, e a confirmação diz isso).
+
+## Acréscimos durante a implementação
+
+- **Decisão 6, um detalhe do Next.** `history.replaceState` tem de receber `null` como estado. Recebendo de volta o estado do próprio Next (`window.history.state`), o roteador toma a chamada por uma dele, não atualiza o endereço que guarda, e o `router.refresh()` seguinte devolve `?templates=1` ao endereço. Visto no navegador: a galeria reabria a cada recarga.
+- **Decisão 7, a gaveta.** A 390 px a aba Páginas mora numa gaveta; aberta a galeria por ali, a gaveta ficava por cima do editor depois de aplicar, escondendo o aviso. A aba agora avisa a tela (`onTemplatesOpen`), que fecha a gaveta.
+- **A leitura do rascunho só é pedida com a galeria aberta** (`usePageDraft(open ? slug : "")`): no editor ela já está em cache pela barra, mas a galeria fechada não deve pedir nada.
+
+## O que foi visto no navegador
+
+- Inicial de `loja-modelos` com barra de aviso e conteúdo publicado: aplicar "Vitrine com capa" manda `POST …/apply-template` com `x-page-revision: 2` e `{"template":"vitrine-com-capa"}`; a barra de aviso continua a primeira faixa; a barra do editor passa a "Alterações não publicadas"; a vitrine pública, lida em outra aba, não muda. Publicar pelo botão do aviso: o aviso some e a vitrine pública passa a mostrar a capa.
+- Landing: "Lançamento de produto" fica com "Usar este modelo" desabilitado e "Escolha um produto para usar este modelo." até o produto ser escolhido; depois, o corpo leva `productId`.
+- Duas abas na mesma landing: a segunda aplica "Em branco"; a primeira, com "Coleção ou categoria" e "Bolsa tiracolo" escolhidos, recebe 409, o diálogo "Outra aba alterou esta página" aparece sozinho na tela; depois de "Recarregar" a galeria reabre com o modelo e o produto escolhidos, o endereço volta a ser só `?page=…`, e aplicar de novo funciona.
+- `loja-vazia`: "Por categorias" aplica; o aviso lista "Todos os produtos, em Faixa 2: a vitrine não tem produtos para mostrar."
+- A 390 px o título do modelo na prévia grande é cortado ("Ofer…") para caber ao lado de "Voltar aos modelos" e "Usar este modelo". O nome inteiro está no cartão e na confirmação.
+
+## Para o próximo ticket (W7)
+
+- `TemplateApplyDialog` e `TemplateAppliedNotice` não dependem do editor; a criação de loja não precisa deles (não há rascunho a substituir).
+- O que a loja nova recebe na abertura não passa por `apply-template`: é `store-opening.ts`.
