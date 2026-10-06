@@ -2987,7 +2987,7 @@ export const ptBR: UiMessages = {
         title: "BeeFlow",
         summary: "O WhatsApp da loja trabalhando sozinho: avisos de pedido, cupons e promoções, e atendimento automático.",
         banner: {
-          alt: "BeeFlow, da Beelink: “Seu WhatsApp trabalhando por você!” Automatize as notificações da sua loja e mantenha seus clientes informados pelo WhatsApp: status do pedido, cupons e promoções, avisos importantes e atendimento automático. Ativação por apenas R$ 39,90.",
+          alt: "Beelink no WhatsApp: a abelha da Beelink ao lado de um celular com as mensagens que o cliente recebe — pedido confirmado, pedido em rota de entrega e um cupom de desconto. Status do pedido, cupons e promoções, avisos importantes e atendimento automático.",
           link: "Conheça o BeeFlow em Integrações",
         },
       },

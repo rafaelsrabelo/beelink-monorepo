@@ -34,8 +34,8 @@ describe("ShopHomeScreen", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Mutante Suplementos" })).toBeInTheDocument()
     expect(banner()).toHaveAttribute("href", "/admin/mutante/integrations")
-    // The price is drawn in the artwork, so it is read out with it.
-    expect(banner()).toHaveAccessibleName(/Ativação por apenas R\$ 39,90\./)
+    // What the artwork draws is read out with it.
+    expect(banner()).toHaveAccessibleName(/Beelink no WhatsApp/)
     const cards = screen.getByRole("list")
     expect(banner().compareDocumentPosition(cards) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     // The banner was asked for, not a notice to dismiss.
@@ -46,7 +46,7 @@ describe("ShopHomeScreen", () => {
     mocks.store.mockReturnValue(reading)
     const { container, rerender } = render(<ShopHomeScreen slug="mutante" ui={ui} web={web} />)
     expect(screen.queryByRole("link")).toBeNull()
-    expect(container.querySelector("[data-slot='skeleton'].aspect-video")).not.toBeNull()
+    expect(container.querySelector("[data-slot='skeleton'][class*='aspect-[2103/748]']")).not.toBeNull()
 
     mocks.store.mockReturnValue(read({ name: "Mutante Suplementos", type: "ECOMMERCE", logoUrl: null }))
     mocks.products.mockReturnValue(reading)

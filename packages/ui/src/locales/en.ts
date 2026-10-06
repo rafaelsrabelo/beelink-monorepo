@@ -2986,7 +2986,7 @@ export const en: UiMessages = {
         title: "BeeFlow",
         summary: "The shop's WhatsApp working on its own: order updates, coupons and promotions, and automatic replies.",
         banner: {
-          alt: "BeeFlow, by Beelink: “Your WhatsApp working for you!” Automate your shop's notifications and keep your customers informed over WhatsApp: order status, coupons and promotions, important notices and automatic replies. Activation for only R$ 39.90.",
+          alt: "Beelink on WhatsApp: Beelink's bee beside a phone showing the messages a customer receives — order confirmed, order out for delivery and a discount coupon. Order status, coupons and promotions, important notices and automatic replies.",
           link: "See BeeFlow in Integrations",
         },
       },
