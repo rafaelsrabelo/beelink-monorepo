@@ -50,6 +50,20 @@ model Order {
   fulfillment OrderFulfillment
   /// A label for how the two of them settle it; nothing is charged by the product.
   paymentMethod PaymentMethod
+  /// Where it is paid (BEELINK-204). OFFLINE: the method above is a label, as before. ONLINE: charged
+  /// at the shop's Asaas account, by PIX or CREDIT_CARD only (a CHECK), in `payments`.
+  paymentChannel      OrderPaymentChannel @default(OFFLINE)
+  /// The instalments the customer chose, 1 unless it is an online card (a CHECK): kept here because an
+  /// order may wait for its charge — a fee not agreed yet, Asaas not answering.
+  paymentInstallments Int                 @default(1)
+  /// Held, until this instant, by the one request talking to Asaas about this order's charge: taken
+  /// under the shop's row lock and before any call, so two never create two charges. One that ran out
+  /// without being cleared is a talk that ended nobody knows how — the next lists Asaas before creating.
+  paymentClaimedUntil DateTime?
+  /// Until when an order charged online waits to be paid (BEELINK-206): three days after its total
+  /// closed — placed with it, or the shop agreeing the fee. Past it, unpaid, the order is cancelled.
+  /// Null offline, and while the fee is not agreed.
+  paymentDueAt        DateTime?
 
   subtotalCents    Int
   /// Zero on a pick-up. Null on a delivery whose fee is not agreed yet — "a combinar", never a free
@@ -131,11 +145,18 @@ model Order {
   cashbackEntries CashbackEntry[]
   /// The lots its credit came from, when it spent any.
   cashbackRedemptions CashbackRedemption[]
+  /// Its charges at Asaas, when it is paid online (BEELINK-204): every attempt, one alive at a time.
+  payments OrderPayment[]
+  strayPayments OrderStrayPayment[]
+  paidNotice OrderPaidNotice?
+  /// Money of its payment given back, or being given back (BEELINK-208).
+  refunds OrderRefund[]
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])
   @@index([storeId, status])
   @@index([customerId, placedAt])
+  @@index([paymentDueAt])
   @@map("orders")
 }
 

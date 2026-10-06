@@ -93,7 +93,7 @@ export class CustomerOrdersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancel an order the shop has not accepted yet; its stock goes back' })
   @ApiOkResponse({ type: CustomerOrderResponse })
-  @ApiConflictResponse({ description: 'ORDER_NOT_CANCELLABLE — accepted or further along: the shop cancels it now · ORDER_CANCELLED — already cancelled' })
+  @ApiConflictResponse({ description: 'ORDER_NOT_CANCELLABLE — accepted or further along: the shop cancels it now · ORDER_CANCELLED — already cancelled · ORDER_PAID — a paid order is not cancelled until it is refunded' })
   cancel(
     @Param('storeSlug') storeSlug: string,
     @CurrentCustomer() customer: AuthenticatedCustomer,
@@ -116,12 +116,12 @@ export class CustomerOrdersController {
   @Post()
   @RouteConfig({ rateLimit })
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Place the cart as the shopper's order; it starts received, numbered and priced here" })
+  @ApiOperation({ summary: "Place the cart as the shopper's order; it starts received, numbered and priced here — and, paid online, charged at the shop's Asaas account once it is written" })
   @ApiCreatedResponse({ type: CustomerOrderResponse })
   @ApiBadRequestResponse({
-    description: 'ORDER_DELIVERY_ADDRESS_MISSING · ORDER_ADDRESS_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED · ORDER_TOTAL_TOO_LARGE',
+    description: 'ORDER_DELIVERY_ADDRESS_MISSING · ORDER_ADDRESS_NOT_FOUND · ORDER_VARIANT_INVALID · ORDER_ITEM_DUPLICATE · ORDER_PAYMENT_NOT_ACCEPTED — the channel, the way or the instalments are not what the shop takes now · ORDER_PAYER_DOCUMENT_MISSING · ORDER_TOTAL_TOO_LARGE',
   })
-  @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT — `details` is `OrderStockDetails` · ORDER_COUPON_REFUSED — `details` is `OrderCouponRefusedDetails`' })
+  @ApiConflictResponse({ description: 'ORDER_STOCK_INSUFFICIENT — `details` is `OrderStockDetails` · ORDER_COUPON_REFUSED — `details` is `OrderCouponRefusedDetails` · ORDER_PAYMENT_BELOW_MINIMUM — `details` is `OrderPaymentBelowMinimumDetails`' })
   @ApiTooManyRequestsResponse({ description: 'Too many orders from this address' })
   place(
     @Param('storeSlug') storeSlug: string,

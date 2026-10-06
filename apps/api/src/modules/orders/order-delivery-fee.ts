@@ -7,6 +7,8 @@ import type { Prisma } from '../../generated/prisma/client.js';
 // App
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { refreshBooks } from '../customers/customer-books.js';
+import { refusePaidOrder } from '../payments/payment-guards.js';
+import { paymentDueAtOf } from '../payments/payments.constants.js';
 import { totalRefusalOf } from './order-totals.js';
 import { orderError } from './orders.constants.js';
 import { ORDER_INCLUDE } from './orders.mapper.js';
@@ -26,7 +28,7 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
 
     const current = await tx.order.findUnique({
       where: { storeId_number: { storeId, number } },
-      select: { id: true, status: true, fulfillment: true, customerId: true, subtotalCents: true, discountCents: true, couponKind: true, couponDiscountCents: true, cashbackUsedCents: true },
+      select: { id: true, status: true, fulfillment: true, customerId: true, paymentChannel: true, subtotalCents: true, discountCents: true, couponKind: true, couponDiscountCents: true, cashbackUsedCents: true },
     });
     if (!current) throw new NotFoundException(orderError('ORDER_NOT_FOUND', `No order #${number} in this shop`));
     if (current.fulfillment === 'PICKUP') {
@@ -35,6 +37,9 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
     if (current.status === 'CANCELLED') {
       throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change'));
     }
+
+    // The charge was paid at the total as it was (BEELINK-204).
+    await refusePaidOrder(tx, current.id);
 
     // A free-delivery coupon takes the fee off, whatever it turns out to be: its discount follows
     // the fee, and so does the use on the coupon's list.
@@ -52,7 +57,8 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
       throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount would be larger than the order'));
     }
 
-    const order = await tx.order.update({ where: { id: current.id }, data: { deliveryFeeCents, couponDiscountCents, discountCents, totalCents }, include: ORDER_INCLUDE });
+    // A total closed now is paid within three days of now, whatever stood before (BEELINK-206).
+    const order = await tx.order.update({ where: { id: current.id }, data: { deliveryFeeCents, couponDiscountCents, discountCents, totalCents, ...(current.paymentChannel === 'ONLINE' ? { paymentDueAt: paymentDueAtOf(new Date()) } : {}) }, include: ORDER_INCLUDE });
     if (waived) await tx.couponRedemption.updateMany({ where: { orderId: current.id }, data: { discountCents: couponDiscountCents } });
     await refreshBooks(tx, current.customerId);
     return order;

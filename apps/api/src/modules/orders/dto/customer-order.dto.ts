@@ -17,6 +17,8 @@ import type {
   CustomerOrderSituation,
   CustomerOrderSummary,
   OrderFulfillment,
+  OrderPaymentChannel,
+  OrderCancelledBy,
   OrderPlacedBy,
   OrderShippingChoice,
   OrderStatus,
@@ -28,6 +30,7 @@ import type {
 import { OrderCashbackResponse } from '../../cashback/dto/cashback.response.js';
 import { ShippingWindowResponse } from '../../delivery/dto/delivery.response.js';
 import { cpfDigitsOf, IsCpf } from '../../../shared/http/cpf.js';
+import { ORDER_PAYMENT_CHANNELS, OrderPaymentBriefResponse, OrderPaymentResponse } from '../../payments/dto/payment.response.js';
 import { blankToNull, trim } from '../../stores/dto/store-fields.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
@@ -36,6 +39,7 @@ import {
   CUSTOMER_ORDERS_PAGE_SIZE_MAX,
   ORDER_AMOUNT_MAX_CENTS,
   ORDER_FULFILLMENTS,
+  ORDER_INSTALLMENTS_MAX,
   ORDER_ITEMS_MAX,
   ORDER_STATUSES,
   ORDERS_PAGE_MAX,
@@ -45,6 +49,7 @@ import { OrderCouponResponse, OrderDeliveryAddressResponse, OrderDeliveryRespons
 
 const SITUATIONS = Object.keys(CUSTOMER_ORDER_SITUATIONS) as CustomerOrderSituation[];
 const SIDES = ['CUSTOMER', 'SHOP'] as const satisfies readonly OrderPlacedBy[];
+const CANCELLERS = [...SIDES, 'SYSTEM'] as const satisfies readonly OrderCancelledBy[];
 
 /** The cart as the shopper sends it: no price, no customer, no address — the API has them. */
 export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
@@ -64,6 +69,18 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @IsIn(PAYMENT_METHODS)
   paymentMethod!: PaymentMethod;
 
+  @ApiPropertyOptional({ enum: ORDER_PAYMENT_CHANNELS, default: 'OFFLINE', description: "ONLINE is charged at the shop's Asaas account, by PIX or CREDIT_CARD only; what the shop does not take now is ORDER_PAYMENT_NOT_ACCEPTED." })
+  @IsOptional()
+  @IsIn(ORDER_PAYMENT_CHANNELS)
+  paymentChannel?: OrderPaymentChannel;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: ORDER_INSTALLMENTS_MAX, default: 1, description: "How many instalments an online card is paid in, up to the shop's most; each of at least Asaas's least (ORDER_PAYMENT_BELOW_MINIMUM)." })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(ORDER_INSTALLMENTS_MAX)
+  installments?: number;
+
   @ApiPropertyOptional({ format: 'uuid', description: "One of the shopper's saved addresses; ignored on a pick-up. Another's is ORDER_ADDRESS_NOT_FOUND." })
   @IsOptional()
   @IsUUID('all')
@@ -78,7 +95,7 @@ export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
   @shippingChoice
   shipping?: OrderShippingChoice;
 
-  @ApiPropertyOptional({ type: String, example: '529.982.247-25', description: "The CPF of who receives a carrier's delivery, when the customer's record has none: kept on it." })
+  @ApiPropertyOptional({ type: String, example: '529.982.247-25', description: "The customer's CPF, when their record has none: a carrier's label is bought with it and an online payment is charged to it. Kept on the record." })
   @IsOptional()
   @Transform(({ value }: { value: unknown }) => cpfDigitsOf(value))
   @IsCpf({ context: { errorCode: 'CUSTOMER_CPF_INVALID' } })
@@ -117,11 +134,15 @@ export class CustomerOrderResponse implements CustomerOrder {
   @ApiProperty({ description: 'Sequential within the shop.' }) number!: number;
   @ApiProperty({ enum: ORDER_STATUSES }) status!: OrderStatus;
   @ApiProperty({ enum: SIDES, description: 'The customer from the cart, or the shop from its panel.' }) placedBy!: OrderPlacedBy;
-  @ApiProperty({ enum: SIDES, nullable: true, description: 'On a cancelled order; null on any other.' }) cancelledBy!: OrderPlacedBy | null;
+  @ApiProperty({ enum: CANCELLERS, nullable: true, description: 'On a cancelled order; null on any other. SYSTEM is bee-link itself, for want of payment.' }) cancelledBy!: OrderCancelledBy | null;
   @ApiProperty({ enum: ORDER_FULFILLMENTS }) fulfillment!: OrderFulfillment;
   @ApiProperty({ type: OrderDeliveryAddressResponse, nullable: true, description: 'Null on a pick-up.' })
   deliveryAddress!: OrderDeliveryAddressResponse | null;
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
+  @ApiProperty({ enum: ORDER_PAYMENT_CHANNELS, description: 'OFFLINE is settled between the shop and the customer; ONLINE is charged at Asaas.' }) paymentChannel!: OrderPaymentChannel;
+  @ApiProperty({ minimum: 1, maximum: 12, description: 'The instalments they chose; 1 unless it is an online card.' }) installments!: number;
+  @ApiProperty({ type: OrderPaymentResponse, nullable: true, description: 'Its charge: the one standing, else the last tried. Null offline, and online while it has none.' })
+  payment!: OrderPaymentResponse | null;
   @ApiProperty({ type: [CustomerOrderItemResponse] }) items!: CustomerOrderItemResponse[];
   @ApiProperty() subtotalCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
@@ -150,11 +171,13 @@ export class CustomerOrderSummaryResponse implements CustomerOrderSummary {
   @ApiProperty() number!: number;
   @ApiProperty({ enum: ORDER_STATUSES }) status!: OrderStatus;
   @ApiProperty({ enum: SIDES }) placedBy!: OrderPlacedBy;
-  @ApiProperty({ enum: SIDES, nullable: true }) cancelledBy!: OrderPlacedBy | null;
+  @ApiProperty({ enum: CANCELLERS, nullable: true }) cancelledBy!: OrderCancelledBy | null;
   @ApiProperty({ format: 'date-time', description: 'When it reached the status it is in.' }) statusAt!: string;
   @ApiProperty({ enum: ORDER_FULFILLMENTS }) fulfillment!: OrderFulfillment;
   @ApiProperty({ nullable: true, type: String }) recipientName!: string | null;
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
+  @ApiProperty({ enum: ORDER_PAYMENT_CHANNELS, description: 'OFFLINE is settled between the shop and the customer; ONLINE is charged at Asaas.' }) paymentChannel!: OrderPaymentChannel;
+  @ApiProperty({ type: OrderPaymentBriefResponse, nullable: true }) payment!: OrderPaymentBriefResponse | null;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
   @ApiProperty({ description: 'Promotions, coupon and typed discount together.' }) discountCents!: number;

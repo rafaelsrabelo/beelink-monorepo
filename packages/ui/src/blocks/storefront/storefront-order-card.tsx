@@ -10,6 +10,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { PAYMENT_STATUS_TONE, type StorefrontOrderPaymentStatus } from "./storefront-order-payment"
 
 export interface StorefrontOrderCardItem {
   name: string
@@ -31,6 +32,10 @@ export interface StorefrontOrderCardProps {
   saving?: string | null
   /** What the order earns in cashback and where that credit stands, in words (BEELINK-243); none, and nothing is said. */
   cashback?: string | null
+  /** Where its online payment stands (BEELINK-205), under the headline; absent on an order settled with the shop. */
+  payment?: StorefrontOrderPaymentStatus | null
+  /** The payment screen, while there is something to pay: "Pagar agora", the card's first action. */
+  payHref?: string | null
   /** Who receives it, or the pick-up; null hides the column. */
   shipTo: string | null
   headline: string
@@ -56,6 +61,9 @@ const TONE = {
   cancelled: "text-shop-muted",
 } as const
 
+const PRIMARY_ACTION = "flex h-10 items-center rounded-full bg-shop-primary px-4 text-sm font-bold text-shop-on-primary hover:opacity-90"
+const SECONDARY_ACTION = "flex h-10 items-center rounded-full border border-shop-line-strong bg-shop-background px-4 text-sm font-bold hover:bg-shop-fill"
+
 function Fact({ label, note, children }: { label: string; note?: string | null; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
@@ -78,6 +86,8 @@ export function StorefrontOrderCard({
   total,
   saving,
   cashback = null,
+  payment = null,
+  payHref = null,
   shipTo,
   headline,
   detail,
@@ -119,6 +129,7 @@ export function StorefrontOrderCard({
         <div className="flex flex-col gap-0.5">
           <p className={cn("text-lg font-extrabold", TONE[tone])}>{headline}</p>
           {detail ? <p className="text-sm text-shop-muted">{detail}</p> : null}
+          {payment ? <p className={cn("text-sm font-bold", PAYMENT_STATUS_TONE[payment.tone])}>{payment.label}</p> : null}
           {cashback ? <p className="text-sm font-semibold text-shop-positive-ink">{cashback}</p> : null}
         </div>
 
@@ -156,10 +167,18 @@ export function StorefrontOrderCard({
           ))}
         </ul>
 
-        {trackHref || actions ? (
+        {payHref || trackHref || actions ? (
           <div className="flex flex-wrap gap-2 pt-1">
+            {payHref ? (
+              <Link href={payHref} className={PRIMARY_ACTION}>
+                {text.orderPayNow}
+                {/* Every card says the same words: the number tells a reader which order. */}
+                <span className="sr-only">: {format(text.orderNumber, { number: String(number) })}</span>
+              </Link>
+            ) : null}
             {trackHref ? (
-              <Link href={trackHref} className="flex h-10 items-center rounded-full bg-shop-primary px-4 text-sm font-bold text-shop-on-primary hover:opacity-90">
+              // Paying comes first while it is owed: following the order steps back to an outline.
+              <Link href={trackHref} className={payHref ? SECONDARY_ACTION : PRIMARY_ACTION}>
                 {text.accountTrackOrder}
               </Link>
             ) : null}

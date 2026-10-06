@@ -1,10 +1,10 @@
 /**
  * The panel's Integrations as its blocks read them (BEELINK-183). They mirror the wire's shapes in
- * `packages/contracts/src/integration.ts`; this package does not import them, so a screen hands its
- * data over and the blocks never learn where it came from.
+ * `packages/contracts/src/integration.ts` and `asaas.ts`; this package does not import them, so a
+ * screen hands its data over and the blocks never learn where it came from.
  */
 
-/** Where the shop's Melhor Envio connection stands. Mirrors `IntegrationStatus`. */
+/** Where a shop's connection to a third party stands. Mirrors `IntegrationStatus`. */
 export type IntegrationStatusValue = "DISCONNECTED" | "CONNECTED" | "NEEDS_RECONNECT"
 
 /** The wallet, as the card says it: read, still being read, or not readable now — never a zero in its place. */
@@ -21,11 +21,41 @@ export interface MelhorEnvioCardView {
   wallet: WalletView
 }
 
-/**
- * The third parties the panel can offer, by the wire's name. Mirrors the part of `IntegrationProvider`
- * that is built: Asaas joins when the panel can take its key.
- */
-export type IntegrationProviderValue = "MELHOR_ENVIO"
+/** Where the webhook bee-link registered at a shop's own account stands. Mirrors `IntegrationWebhookState`. */
+export type IntegrationWebhookStateValue = "REGISTERED" | "SKIPPED" | "PAUSED" | "ERROR"
+
+/** The Asaas card. Mirrors `AsaasConnection`, with the address the screen worked out for its environment. */
+export interface AsaasCardView {
+  /** This deployment can seal a key; without that there is nothing to connect. */
+  available: boolean
+  status: IntegrationStatusValue
+  /** The sandbox charges nobody: said, so nobody takes a test payment for money. */
+  sandbox: boolean
+  /** The document is already masked; null when Asaas gave none. */
+  account: { name: string; document: string | null } | null
+  /** Null while disconnected. */
+  webhook: IntegrationWebhookStateValue | null
+  /** Which connection this is: it changes with every key connected. Null while disconnected. */
+  connectedAt: string | null
+  /** Where an Asaas account is opened, for a shopkeeper who has none: the sandbox's own site, or Asaas's. */
+  signUpHref: string
+}
+
+/** As far as a shop's choice of instalments goes: the API's own bound, the one every card brand takes at Asaas. */
+export const PAYMENT_INSTALLMENTS_MAX = 12
+
+/** How the shop is paid, as the form edits it: switches and a number, nothing typed. Mirrors `AsaasSettingsPayload`. */
+export interface PaymentSettingsFormValues {
+  pix: boolean
+  card: boolean
+  /** 1 to `PAYMENT_INSTALLMENTS_MAX`; 1 is in full. Kept while `card` is off. */
+  maxInstallments: number
+  /** Paying on delivery or at pickup, settled between the shop and the customer. */
+  offline: boolean
+}
+
+/** The third parties the panel can offer, by the wire's name. Mirrors `IntegrationProvider`. */
+export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS"
 
 /** A connection the shop has, as the Integrations list shows it: one it made, working or to mend. */
 export interface IntegrationRowView {
@@ -44,8 +74,14 @@ export interface IntegrationOptionView {
   provider: IntegrationProviderValue
   /** Not set up on this deployment; there to connect; or connected already, and then its page is the way on. */
   state: "unavailable" | "available" | "connected"
-  /** Where connecting begins: the third party's own authorization, so a plain link and never prefetched. */
+  /** Where connecting begins. */
   connectHref: string
+  /**
+   * What following `connectHref` does. `authorization`: fetching the address already begins the third
+   * party's authorization, so it is a plain anchor and never prefetched. `page`: it is the
+   * integration's own page, where the shop's key is typed, and goes through the app's link.
+   */
+  connectBy: "authorization" | "page"
   /** The integration's own page. */
   href: string
 }

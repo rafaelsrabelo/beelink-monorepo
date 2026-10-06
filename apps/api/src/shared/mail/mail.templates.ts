@@ -104,6 +104,8 @@ export interface OrderStatusContent {
    * delivery and a pick-up, which read as they always did.
    */
   shipment?: OrderShipment | null;
+  /** On a cancellation: bee-link's own, of an order charged online that nobody paid in time (BEELINK-207). */
+  unpaid?: boolean;
 }
 
 export type OrderShipment = Pick<OrderDelivery, 'carrier' | 'service' | 'trackingCode' | 'trackingUrl'>;
@@ -140,6 +142,8 @@ function trackingOf({ trackingCode, trackingUrl }: OrderShipment): { text: strin
   };
 }
 
+const UNPAID_REASON = 'O pagamento não foi identificado dentro do prazo, e por isso o pedido foi cancelado automaticamente. Se você já pagou, fale com a loja. Para comprar, é só fazer um novo pedido.';
+
 /** How each move reads — in the subject, after the order's number, and in the words. */
 function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean, shipped: OrderShipment | null): { subject: string; said: string } {
   switch (status) {
@@ -159,15 +163,17 @@ function orderMoveOf(status: NotifiedOrderStatus, pickup: boolean, shipped: Orde
  * A customer's order moved: the shop's name on it, the way to the order at the shop, and — last —
  * the way to stop these notices, straight to the box that turns them off (`settingsUrl`).
  */
-export function orderStatusChanged({ name, shopName, number, status, pickup, cashback = null, shipment = null }: OrderStatusContent, url: string, settingsUrl: string): MailContent {
+export function orderStatusChanged({ name, shopName, number, status, pickup, cashback = null, shipment = null, unpaid = false }: OrderStatusContent, url: string, settingsUrl: string): MailContent {
   const greeting = `Olá, ${name}!`;
   // Only leaving is told as sent; a pick-up ready at the shop has nobody carrying it.
   const shipped = status === 'OUT_FOR_DELIVERY' && !pickup ? shipment : null;
   const { subject, said } = orderMoveOf(status, pickup, shipped);
-  const line = `Seu pedido nº ${number} em ${shopName} ${said}.`;
+  const why = 'Você recebe este aviso porque tem conta na loja. Para não receber mais, desmarque "Andamento dos pedidos" e salve';
+  // Why, when nobody at the shop decided it: the customer would otherwise ask the shop.
+  const reason = status === 'CANCELLED' && unpaid ? ` ${UNPAID_REASON}` : '';
+  const line = `Seu pedido nº ${number} em ${shopName} ${said}.${reason}`;
   const earned = cashback ? cashbackLineOf(cashback) : null;
   const tracking = shipped ? trackingOf(shipped) : null;
-  const why = 'Você recebe este aviso porque tem conta na loja. Para não receber mais, desmarque "Andamento dos pedidos" e salve';
   return {
     subject: `${shopName} — pedido nº ${number} ${subject}`,
     text: `${greeting}\n\n${line}${earned ? `\n\n${earned}` : ''}${tracking ? `\n\n${tracking.text}` : ''}\n\nVeja o pedido:\n${url}\n\n${why}:\n${settingsUrl}`,

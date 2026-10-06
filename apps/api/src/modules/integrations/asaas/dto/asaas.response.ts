@@ -2,7 +2,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 // Types
-import type { AsaasAccount, AsaasConnection, AsaasEnvironment, IntegrationStatus, IntegrationWebhookState } from '@harness-monorepo/contracts';
+import type { AsaasAccount, AsaasConnection, AsaasEnvironment, AsaasSettings, IntegrationStatus, IntegrationWebhookState } from '@harness-monorepo/contracts';
 
 const ENVIRONMENTS = ['SANDBOX', 'PRODUCTION'] as const satisfies readonly AsaasEnvironment[];
 const STATUSES = ['DISCONNECTED', 'CONNECTED', 'NEEDS_RECONNECT'] as const satisfies readonly IntegrationStatus[];
@@ -20,4 +20,12 @@ export class AsaasConnectionResponse implements AsaasConnection {
   @ApiProperty({ type: AsaasAccountResponse, nullable: true }) account!: AsaasAccount | null;
   @ApiProperty({ enum: WEBHOOK_STATES, nullable: true, description: 'SKIPPED: the web is not public https here, so none was registered.' }) webhook!: IntegrationWebhookState | null;
   @ApiProperty({ nullable: true, type: String, format: 'date-time' }) connectedAt!: string | null;
+}
+
+export class AsaasSettingsResponse implements AsaasSettings {
+  @ApiProperty() pix!: boolean;
+  @ApiProperty() card!: boolean;
+  @ApiProperty({ minimum: 1, maximum: 12, description: '1 is in full.' }) maxInstallments!: number;
+  @ApiProperty({ description: 'Paying on delivery or at pickup.' }) offline!: boolean;
+  @ApiProperty({ nullable: true, type: String, format: 'date-time', description: 'Null until first saved: the defaults.' }) updatedAt!: string | null;
 }

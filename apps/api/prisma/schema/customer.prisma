@@ -59,6 +59,8 @@ model Customer {
   reviews   ProductReview[]
   cashbackCredits CashbackCredit[]
   cashbackEntries CashbackEntry[]
+  /// Who they are at the shop's Asaas account, once charged there (BEELINK-204).
+  asaasCustomer   AsaasCustomer?
 
   @@unique([storeId, userId])
   @@unique([storeId, phone])

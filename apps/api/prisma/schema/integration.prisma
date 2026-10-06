@@ -18,7 +18,7 @@ enum IntegrationWebhookState {
   REGISTERED
   /// Not registered: this deployment's web is not public https (development).
   SKIPPED
-  /// The party stopped sending after repeated failures; connecting again resumes it.
+  /// The party stopped sending after repeated failures; the daily check resumes it (BEELINK-206).
   PAUSED
   /// The party refused the registration, or did not answer it; connecting again retries.
   ERROR
@@ -60,6 +60,9 @@ model StoreIntegration {
   /// SHA-256, in hex, of the token the webhook sends back — the token itself is sealed with the key. How
   /// the receiver finds the shop without opening every shop's seal.
   webhookTokenHash String? @unique @db.Char(64)
+  /// When the webhook was last looked at in the shop's account (BEELINK-206): once a day, which also
+  /// keeps the key in use — Asaas disables one left idle for three months.
+  webhookCheckedAt DateTime?
 
   connectedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -104,6 +107,25 @@ model MelhorEnvioSettings {
   updatedAt    DateTime @updatedAt
 
   @@map("melhor_envio_settings")
+}
+
+/// How a shop is paid once its Asaas account is connected (BEELINK-203): Pix, credit card and in up to
+/// how many instalments, and whether paying on delivery or at pickup stays. Apart from the connection,
+/// so connecting again keeps the shop's choices. None until first saved: then the defaults below hold.
+model AsaasSettings {
+  storeId String  @id @db.Uuid
+  store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  pix     Boolean @default(true)
+  card    Boolean @default(true)
+  /// The most instalments a card payment splits into, 1 to 12 by a CHECK; 1 is in full. Interest-free
+  /// to the customer — the instalment fee is the shop's, so going past 1 is the shop's choice.
+  maxInstallments Int @default(1)
+  /// Paying on delivery or at pickup, settled between the shop and the customer. One of the three is
+  /// always on, by a CHECK.
+  offline   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+
+  @@map("asaas_settings")
 }
 
 /// Where an order's label stands at Melhor Envio (BEELINK-187).

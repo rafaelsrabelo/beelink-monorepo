@@ -91,6 +91,8 @@ export interface CartPricing {
   shipping: ShippingQuote | null
   /** What is left to pay, in words; null with nothing taken off or added, when the subtotal already says it. */
   total: string | null
+  /** What is left to pay, as the API priced it (BEELINK-205): what an online payment would charge. Null while the cart has no price. */
+  totalCents: number | null
   /** By the row's key. A row with no entry reads as the shelf prices it. */
   lines: ReadonlyMap<string, PricedCartLine>
   /** A first-purchase promotion the cart would get and did not (BEELINK-245): in none of the amounts above. Null with none. */
@@ -155,7 +157,7 @@ function offerOf(firstPurchase: QuotedFirstPurchase | null, money: (cents: numbe
  * the stepper at once instead of waiting for the answer.
  */
 export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfillment, locale, messages }: CartPricingContext): CartPricing {
-  if (!quote) return { subtotalCents: view.subtotalCents, discounts: [], delivery: null, deliveryFeeCents: undefined, shipping: null, total: null, lines: new Map(), offer: null, cashback: null }
+  if (!quote) return { subtotalCents: view.subtotalCents, discounts: [], delivery: null, deliveryFeeCents: undefined, shipping: null, total: null, totalCents: null, lines: new Map(), offer: null, cashback: null }
 
   const money = (cents: number) => formatCents(cents, locale, "BRL")
   const coupon = quote.coupon?.status === "APPLIED" ? { code: quote.coupon.code, kind: quote.coupon.kind } : null
@@ -190,5 +192,5 @@ export function cartPricingOf(quote: OrderQuote | null, view: CartView, { fulfil
     lines.set(rowKeyOf(row), { lineTotalCents, wasCents: before > lineTotalCents ? before : null, promotion: line.promotion?.name ?? null })
   }
 
-  return { subtotalCents: quote.subtotalCents, discounts, delivery, deliveryFeeCents: fulfillment === "DELIVERY" ? quote.deliveryFeeCents : undefined, shipping: quote.shipping, total, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront), cashback: cashbackOf(quote, money, locale, messages.storefront) }
+  return { subtotalCents: quote.subtotalCents, discounts, delivery, deliveryFeeCents: fulfillment === "DELIVERY" ? quote.deliveryFeeCents : undefined, shipping: quote.shipping, total, totalCents: quote.totalCents, lines, offer: offerOf(quote.firstPurchase, money, messages.storefront), cashback: cashbackOf(quote, money, locale, messages.storefront) }
 }

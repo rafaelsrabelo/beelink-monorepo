@@ -179,4 +179,12 @@ describe("the page's other states", () => {
     expect(container.querySelector("[aria-hidden='true']")).not.toBeNull()
     await expectNoA11yViolations(container)
   })
+
+  /** BEELINK-203: one connection unread beside another that was read is not "the integrations" failing. */
+  it("says what could not be read in the words it is handed", () => {
+    render(<IntegrationsFailed onRetry={() => {}} message="Não foi possível carregar todas as integrações." />)
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar todas as integrações.")
+    expect(screen.queryByText("Não foi possível carregar as integrações.")).toBeNull()
+  })
 })

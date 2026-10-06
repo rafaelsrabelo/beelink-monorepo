@@ -10,6 +10,7 @@ import { customerTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
+import { holdsMoney, orderPaymentLabelOf } from "./order-payment-label"
 import { reviewHrefOf } from "./review-view"
 import type { StorefrontRoutes } from "./storefront-routes"
 import { estimateLineOf } from "./order-estimate"
@@ -37,11 +38,19 @@ export function isOrderInProgress(status: CustomerOrderSummary["status"]): boole
 
 /**
  * What a shopper can do with an order besides following it: cancel it while the shop has not
- * accepted it (J2), buy it again once it ended (J6), and nothing while it is on its way.
+ * accepted it (J2), buy it again once it ended (J6), and nothing while it is on its way. An order
+ * whose payment holds money is not cancelled from here (BEELINK-205): the API refuses it until the
+ * money is given back, so the button is not offered.
  */
-export function orderActionOf(status: CustomerOrderSummary["status"]): "cancel" | "reorder" | null {
-  if (status === "RECEIVED") return "cancel"
+export function orderActionOf(status: CustomerOrderSummary["status"], payment: CustomerOrderSummary["payment"] = null): "cancel" | "reorder" | null {
+  if (status === "RECEIVED") return holdsMoney(payment) ? null : "cancel"
   return isOrderInProgress(status) ? null : "reorder"
+}
+
+/** Who cancelled it, in the shopper's words: bee-link itself cancels for want of payment alone (BEELINK-208). */
+export function cancelledByText(cancelledBy: CustomerOrderSummary["cancelledBy"], text: UiMessages["storefront"]): string {
+  if (cancelledBy === "SYSTEM") return text.orderCancelledBySystem
+  return cancelledBy === "CUSTOMER" ? text.orderCancelledByYou : text.orderCancelledByShop
 }
 
 /**
@@ -72,7 +81,7 @@ export function orderStatusLineOf(
     case "CANCELLED":
       return {
         headline: format(text.orderStatusCancelled, { date: dayOf(order.statusAt, locale) }),
-        detail: `${order.cancelledBy === "CUSTOMER" ? text.orderCancelledByYou : text.orderCancelledByShop} · ${placed}`,
+        detail: `${cancelledByText(order.cancelledBy, text)} · ${placed}`,
         tone: "cancelled",
       }
   }
@@ -89,10 +98,15 @@ export function orderSavingOf(order: Pick<CustomerOrderSummary, "discountCents" 
   return order.coupon ? format(text.orderCardCoupon, { code: order.coupon.code }) : null
 }
 
-/** The card's words, from the order as the API tells it: the block itself formats nothing. */
-export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardContext): Omit<StorefrontOrderCardProps, "actions" | "linkComponent" | "messages"> {
+/**
+ * The card's words, from the order as the API tells it: the block itself formats nothing. An order
+ * charged online says where its payment stands, and leads to the payment screen while there is
+ * something to pay (BEELINK-205).
+ */
+export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardContext, now: Date = new Date()): Omit<StorefrontOrderCardProps, "actions" | "linkComponent" | "messages"> {
   const { routes, locale, messages } = context
   const text = messages.storefront
+  const paid = orderPaymentLabelOf(order, text, now)
 
   return {
     number: order.number,
@@ -100,6 +114,8 @@ export function orderCardViewOf(order: CustomerOrderSummary, context: OrderCardC
     total: `${customerTotalText(formatCents(order.totalCents, locale, "BRL"), order, text.orderCardTotalPlusFee)} · ${messages.orders.payments[order.paymentMethod]}`,
     saving: orderSavingOf(order, context),
     cashback: customerCashbackLineOf(order.cashback, { money: (cents) => formatCents(cents, locale, "BRL"), date: (iso) => dayOf(iso, locale), now: new Date(), text: text.orderCashback }),
+    payment: paid ? { label: paid.label, tone: paid.tone } : null,
+    payHref: paid?.payable ? routes.accountOrder(order.number, { payment: true }) : null,
     shipTo: order.fulfillment === "PICKUP" ? text.orderPickupLabel : order.recipientName,
     ...orderStatusLineOf(order, context),
     items: order.items.map((item) => ({

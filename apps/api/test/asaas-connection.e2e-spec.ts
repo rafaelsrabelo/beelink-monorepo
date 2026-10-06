@@ -8,6 +8,7 @@ import type { AsaasConnection, AuthSession } from '@harness-monorepo/contracts';
 import { AsaasClient, AsaasRefused, type AsaasAccountInfo, type AsaasWebhookRequest } from '../src/modules/integrations/asaas/asaas.client.js';
 import type { AsaasConfig } from '../src/modules/integrations/asaas/asaas.config.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { AsaasWithoutCharges } from './support/asaas-stub.js';
 import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { resetDatabase } from './support/reset-database.js';
@@ -16,7 +17,7 @@ const KEY = '$aact_hmlg_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OjAwMDAwM
 const OTHER_KEY = '$aact_hmlg_111NjY2ZjZkZjU3MzM3YjQ4NDFiNTE3ZmI0MmQ2ZTA6OjAwMDAwMDAwMDAwMDAwMDAwMDA';
 
 /** Asaas, as far as a connection can tell: two keys it knows, and every call it was asked. */
-class FakeAsaas extends AsaasClient {
+class FakeAsaas extends AsaasWithoutCharges {
   readonly calls: string[] = [];
 
   async account(_config: AsaasConfig, apiKey: string): Promise<AsaasAccountInfo> {

@@ -56,7 +56,7 @@ describe("one order's conversation, live", () => {
   /** BEELINK-236: a move is news to the shopper, and seeing it reads it. */
   it("marks a new status notice read once it shows", async () => {
     const fetched = vi.fn(async (url: string) =>
-      Response.json(url.endsWith("/read") ? conversationWith(0) : conversationWith(1, [{ kind: "STATUS", id: "n1", status: "OUT_FOR_DELIVERY", cashbackCents: null, createdAt: at, readAt: null }])),
+      Response.json(url.endsWith("/read") ? conversationWith(0) : conversationWith(1, [{ kind: "STATUS", id: "n1", status: "OUT_FOR_DELIVERY", unpaid: false, cashbackCents: null, createdAt: at, readAt: null }])),
     )
     vi.stubGlobal("fetch", fetched)
 

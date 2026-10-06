@@ -65,6 +65,12 @@ export interface OrderStatusActionsProps {
   status: OrderStatusValue
   fulfillment: OrderFulfillmentValue
   onChange: (status: OrderStatusValue) => void
+  /**
+   * Cancelling takes more than a yes: an order that holds its customer's money is cancelled with
+   * its refund, which has a screen of its own (BEELINK-208). Given, "cancel" goes there instead of
+   * asking here.
+   */
+  onCancel?: () => void
   pending?: boolean
   messages?: UiMessages
 }
@@ -78,7 +84,7 @@ export interface OrderStatusActionsProps {
  * next step, a cancelled order has no controls — the focus goes to this block instead, and the new
  * status is said. Only after a press here: an order that moves in another tab moves no one's focus.
  */
-export function OrderStatusActions({ number, status, fulfillment, onChange, pending = false, messages = defaultMessages }: OrderStatusActionsProps) {
+export function OrderStatusActions({ number, status, fulfillment, onChange, onCancel, pending = false, messages = defaultMessages }: OrderStatusActionsProps) {
   const text = messages.orders.detail
   const [confirming, setConfirming] = useState(false)
   const [said, setSaid] = useState("")
@@ -131,7 +137,7 @@ export function OrderStatusActions({ number, status, fulfillment, onChange, pend
                 </DropdownMenuGroup>
               ) : null}
               {others.length ? <DropdownMenuSeparator /> : null}
-              <DropdownMenuItem variant="destructive" onClick={() => setConfirming(true)}>
+              <DropdownMenuItem variant="destructive" onClick={() => (onCancel ? onCancel() : setConfirming(true))}>
                 {text.cancel}
               </DropdownMenuItem>
             </DropdownMenuContent>

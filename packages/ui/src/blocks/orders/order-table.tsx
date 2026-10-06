@@ -7,6 +7,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import type { LinkComponent } from "../auth/auth-link"
+import { OrderPaymentCell } from "./order-payment-cell"
 import { OrderStatusBadge } from "./order-status-badge"
 import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import type { OrderListItem } from "./order-types"
@@ -42,7 +43,7 @@ export function OrderTable({ orders, hrefOf, money, when, linkComponent: Link, m
             <TableHead>{text.customer}</TableHead>
             <TableHead className="w-24">{text.items}</TableHead>
             <TableHead className="w-32 text-right">{text.total}</TableHead>
-            <TableHead className="w-40">{text.payment}</TableHead>
+            <TableHead className="w-44">{text.payment}</TableHead>
             <TableHead className="w-40">{text.status}</TableHead>
           </TableRow>
         </TableHeader>
@@ -70,7 +71,9 @@ export function OrderTable({ orders, hrefOf, money, when, linkComponent: Link, m
               </TableCell>
               <TableCell className="text-muted-foreground">{itemsLabel(order.itemsCount, messages)}</TableCell>
               <TableCell className="text-right font-medium tabular-nums">{orderTotalText(money(order.totalCents), order, messages.orders.totalPlusFee)}</TableCell>
-              <TableCell className="text-muted-foreground">{text.payments[order.paymentMethod]}</TableCell>
+              <TableCell className="text-muted-foreground">
+                <OrderPaymentCell order={order} messages={messages} />
+              </TableCell>
               <TableCell>
                 <OrderStatusBadge status={order.status} messages={messages} />
               </TableCell>
