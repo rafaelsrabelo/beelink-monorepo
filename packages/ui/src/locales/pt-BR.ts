@@ -2331,6 +2331,16 @@ export const ptBR: UiMessages = {
       stepDone: "concluído",
       submit: "Criar loja",
       submitting: "Criando…",
+      openingPage: {
+        heading: "Página inicial",
+        hint: "Sua loja abre com a página padrão, a não ser que você escolha um modelo. Dá para trocar depois, no modo design.",
+        choose: "Escolher outro modelo (opcional)",
+        legend: "Modelo da página inicial",
+        defaultTitle: "Página padrão",
+        defaultDescription: "As vantagens da loja e uma vitrine com todos os produtos.",
+        emptyShopNote:
+          "Uma loja nova ainda não tem produtos: o modelo abre com o que dá para mostrar agora. Depois de cadastrar produtos, aplique o modelo de novo pelo modo design para ele se completar.",
+      },
     },
     image: {
       dropCta: "Clique ou arraste a imagem aqui",

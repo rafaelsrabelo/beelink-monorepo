@@ -44,7 +44,8 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/store/store-card` | `store`, `panelHref`, `storefrontHref` | Blocos/Loja/Cartão da loja |
 | `blocks/store/store-empty-state` | `createHref` | Blocos/Loja/Sem lojas |
 | `blocks/store/store-list-skeleton` | `count` | Blocos/Loja/Esqueleto da lista |
-| `blocks/store/store-create-form` | `defaultValues`, `onSubmit`, `categories`, `colorPresets`, `onZipCodeLookup`, `onImageUpload`, `pending`, `error` | Blocos/Loja/Criar loja |
+| `blocks/store/store-create-form` | `defaultValues`, `onSubmit`, `categories`, `colorPresets`, `onZipCodeLookup`, `onImageUpload`, `openingTemplates` (`templates`, `state`, `onRetry`), `onShopKindChange`, `pending`, `error` | Blocos/Loja/Criar loja |
+| `blocks/store/store-opening-template` | `value` ("" is the default page), `onChange`, `templates` (`id`, `recommended`), `state` (`loading`, `failed`, `ready`), `onRetry`, `disabled` — the home a new shop opens with (BEELINK-266): folded away, the default page first and chosen, then the catalogue's models in the API's order. No preview: the shop does not exist yet. The create form draws it on its last step, for a shop only | Blocos/Loja/Modelo da página inicial |
 | `blocks/store/store-settings-form` | `slug`, `defaultValues`, `onSubmit`, `categories`, `onZipCodeLookup`, `onImageUpload`, `pending`, `error`, `extraTabs` | Blocos/Loja/Configurações da loja |
 | `blocks/store/store-settings-skeleton` | — | Blocos/Loja/Esqueleto das configurações |
 | `blocks/store/store-identity-fields` | `value`, `onChange`, `slug`, `onSlugChange`, `slugError`, `categories`, `onLogoUpload`, `errors` | Blocos/Loja/Aba informações básicas |

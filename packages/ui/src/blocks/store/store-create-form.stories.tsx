@@ -5,6 +5,7 @@ import { en } from "../../locales/en"
 import { StoreCreateForm } from "./store-create-form"
 import {
   sampleColorPresets,
+  sampleOpeningTemplates,
   sampleStoreCategories,
   sampleStoreCreateValues,
 } from "./store.fixtures"
@@ -62,4 +63,21 @@ export const SemEnvioDeImagem: Story = {
 
 export const EmIngles: Story = {
   args: { messages: en },
+}
+
+/**
+ * With the catalogue's models wired in: walk to the last step, where "Página inicial" offers the
+ * default page, chosen, and the models a shop's home may open with.
+ */
+export const ComModelosDePaginaInicial: Story = {
+  args: {
+    defaultValues: {
+      ...sampleStoreCreateValues,
+      slug: "doces-da-ana",
+      identity: { ...sampleStoreCreateValues.identity, name: "Doces da Ana" },
+      social: { ...sampleStoreCreateValues.social, whatsapp: "11999998888" },
+    },
+    openingTemplates: { templates: sampleOpeningTemplates, state: "ready" },
+    onShopKindChange: fn(),
+  },
 }

@@ -2782,6 +2782,20 @@ export interface UiMessages {
       stepDone: string
       submit: string
       submitting: string
+      /** The home a new shop opens with: its default page, or a model of the catalogue. Shops only. */
+      openingPage: {
+        heading: string
+        /** What happens when nothing is picked. */
+        hint: string
+        /** What opens the choices, which start folded away. */
+        choose: string
+        /** The radio group's name. */
+        legend: string
+        defaultTitle: string
+        defaultDescription: string
+        /** Under the choices: a shop with no product opens a model nearly bare, and how it fills in. */
+        emptyShopNote: string
+      }
     }
     image: {
       /**

@@ -2330,6 +2330,16 @@ export const en: UiMessages = {
       stepDone: "done",
       submit: "Create shop",
       submitting: "Creating…",
+      openingPage: {
+        heading: "Home page",
+        hint: "Your shop opens with the default page unless you pick a template. You can change it later, in design mode.",
+        choose: "Pick another template (optional)",
+        legend: "Home page template",
+        defaultTitle: "Default page",
+        defaultDescription: "The shop's benefits and a showcase of every product.",
+        emptyShopNote:
+          "A new shop has no products yet: the template opens with what there is to show now. Once you have added products, apply the template again in design mode to fill it in.",
+      },
     },
     image: {
       dropCta: "Click or drag the image here",
