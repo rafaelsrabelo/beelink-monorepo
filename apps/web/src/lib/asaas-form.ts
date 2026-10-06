@@ -33,8 +33,9 @@ export function asaasCardOf(connection: AsaasConnection): AsaasCardView {
  * Why a key was refused, in words. A key of the other environment is told which one this deployment
  * takes; own keys only, so a code that names a member of `Object` reads as any unknown one.
  */
-export function asaasConnectErrorOf(code: string, environment: AsaasEnvironment, text: Pick<AsaasText, "errors" | "wrongEnvironment">): string {
+export function asaasConnectErrorOf(code: string, environment: AsaasEnvironment, text: Pick<AsaasText, "errors" | "wrongEnvironment" | "unavailable">): string {
   if (code === "INTEGRATION_KEY_WRONG_ENVIRONMENT") return text.wrongEnvironment[environment]
+  if (code === "INTEGRATION_UNAVAILABLE") return text.unavailable
   return Object.hasOwn(text.errors, code) ? text.errors[code as keyof AsaasText["errors"]] : text.errors.UNKNOWN
 }
 

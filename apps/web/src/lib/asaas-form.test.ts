@@ -51,9 +51,10 @@ describe("asaasConnectErrorOf", () => {
   })
 
   it("says something went wrong for an installation that cannot connect and for any other word, however it is spelled", () => {
-    for (const code of ["INTEGRATION_UNAVAILABLE", "UNKNOWN", "SOMETHING_NEW", "constructor", "toString", "__proto__", ""]) {
+    for (const code of ["UNKNOWN", "SOMETHING_NEW", "constructor", "toString", "__proto__", ""]) {
       expect(asaasConnectErrorOf(code, "SANDBOX", text.asaas)).toBe(text.asaas.errors.UNKNOWN)
     }
+    expect(asaasConnectErrorOf("INTEGRATION_UNAVAILABLE", "SANDBOX", text.asaas)).toBe(text.asaas.unavailable)
   })
 })
 

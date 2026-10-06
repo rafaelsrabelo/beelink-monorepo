@@ -308,3 +308,9 @@ A única violação é anterior a este ticket: o link de volta "← Integraçõe
 como estava da página do Melhor Envio para `integration-frame.tsx`, e o mesmo link existe em outras
 cinco telas do painel. O token `shell-muted` (#616161) passaria. Trocar é decisão do design system,
 para todas as telas de uma vez, e ficou fora deste ticket.
+
+## Acréscimo de 05/10/2026: a revisão do orquestrador
+
+- **`INTEGRATION_UNAVAILABLE` ganhou a frase própria ao conectar.** O ticket a listava entre as recusas com frase, e ela caía em "Algo deu errado". Agora diz que o Asaas ainda não está configurado nesta instalação, a mesma frase do cartão indisponível.
+- **Conferido de novo, fora do agente:** `ci-check`, o e2e inteiro da API (685), o build, a migration sem diferença para o schema, e a tela usada no navegador (as duas recusas, salvar e recarregar as formas, tudo desligado sem chamar a API, trocar a chave, desconectar, 390 px). Nenhuma chave em atributo, URL, storage ou log.
+- **A revisão por lentes ficou incompleta:** só as lentes de contrato e de simplicidade rodaram até o fim; as outras cinco pararam no limite de uso da sessão. Ficam como sugestão, sem mexer agora: gravar a resposta do `POST` no cache em vez de reler a conexão, e extrair o que o cartão do Asaas copia do cartão do Melhor Envio.

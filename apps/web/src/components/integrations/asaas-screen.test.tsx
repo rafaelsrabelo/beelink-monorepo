@@ -236,7 +236,7 @@ describe("AsaasScreen (BEELINK-203), yet to connect", () => {
     ["INTEGRATION_KEY_WRONG_ENVIRONMENT", "PRODUCTION", "Essa chave não é de produção. Esta instalação só aceita chaves de produção do Asaas, que começam com $aact_prod_."],
     ["INTEGRATION_UNREACHABLE", "SANDBOX", "O Asaas não respondeu. Tente de novo em instantes."],
     ["RATE_LIMITED", "SANDBOX", "Muitas tentativas. Espere um minuto e tente de novo."],
-    ["INTEGRATION_UNAVAILABLE", "SANDBOX", "Algo deu errado ao conectar. Tente de novo."],
+    ["INTEGRATION_UNAVAILABLE", "SANDBOX", "O Asaas ainda não está configurado nesta instalação."],
     ["SOMETHING_NEW", "SANDBOX", "Algo deu errado ao conectar. Tente de novo."],
   ] as const)("says %s on a %s installation in its own words, under the key", (refusal, environment, sentence) => {
     with_({ connection: { ...never, environment }, refusal })
