@@ -44,3 +44,31 @@ Um modelo só é gravado na criação de uma página. O lojista que já tem a p�
 ## Fora do escopo
 
 A prévia (W3), a galeria e a confirmação na tela (W4/W5), modelos novos de inicial (W6), escolher modelo ao criar a loja (W7). O BFF do web continua para o W4.
+
+## Para os próximos tickets
+
+### W3 — a prévia
+
+`templateDocument(db, { storeId, page }, { template, productId, categoryId })` (`page-template-choice.ts`) devolve o `PageDocument` que aplicar gravaria, já com as recusas, a barra de aviso mantida, a vitrine garantida e os ids do formulário. Não grava nada: é só leitura. A prévia é resolver `servedSectionsOf(document)` com `lookupsOf` e `toPublicSection`, como `LandingReadService` faz com uma versão. Não repita as recusas.
+
+### W4 e W5 — a galeria e o botão de aplicar
+
+```
+POST /api/stores/:slug/pages/:pageId/apply-template
+x-page-revision: <a revisão que o editor leu>          (opcional, como nas outras escritas)
+{ "template": "lancamento", "productId": "<uuid>" }    (ApplyTemplatePayload)
+→ 200 PageDraft                                         (a mesma forma de GET …/draft; revision = a enviada + 1)
+```
+
+- `pageId` é obrigatório aqui, inclusive para a inicial (o editor já o tem em `PageDraft.page.id`).
+- A resposta substitui o rascunho que o editor tem em memória: faixas, blocos e revisão. `hasUnpublishedChanges` vem `true`.
+- Erros para a tela tratar: `409 PAGE_DRAFT_STALE` (recarregar), `400 PAGE_PRODUCT_REQUIRED` (pedir o produto), `400 PAGE_PRODUCT_INVALID`, `400 PAGE_TEMPLATE_UNAVAILABLE`. As palavras já estão em `apps/web/src/locales`, inclusive as dos dois códigos de categoria.
+- A confirmação "isto substitui o rascunho inteiro" é da tela (decisão 1 do épico); a API não pede.
+- Depois de aplicar, os ids das faixas e dos blocos são novos, menos o da barra de aviso e o do formulário de contato. Seleção e foco guardados por id no editor deixam de valer.
+
+### W6 — modelo de página inicial para loja online
+
+- Um modelo sem `PRODUCTS` ganha a vitrine padrão no fim (`arrangedDocument`). Se o modelo quiser a vitrine em outro lugar, traga a sua.
+- Um modelo que traga `ANNOUNCEMENT` só a grava numa inicial que ainda não tem barra.
+- `page-template-arrange.spec.ts` já percorre todo modelo do catálogo em toda página em que ele vale e confere as regras da página; o modelo novo entra sem editar o teste.
+- O primeiro modelo com `needs: ['CATEGORY']` torna alcançáveis `PAGE_CATEGORY_REQUIRED` e `PAGE_CATEGORY_INVALID` pela rota: acrescente o e2e junto.
