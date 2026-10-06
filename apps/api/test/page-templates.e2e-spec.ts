@@ -137,12 +137,13 @@ describe('page templates — the models a page may be arranged with', () => {
       ]);
     });
 
-    it('offers a shop’s home none yet, with or without the home named', async () => {
+    it('offers a shop’s home the four of its own, with or without the home named', async () => {
       await shop('lessari');
       const [home] = (await call('GET', '/api/stores/lessari/pages', owner)).json<StorePage[]>();
+      const four = ['vitrine-com-capa', 'por-categorias', 'ofertas', 'catalogo-enxuto'];
 
-      expect(await offered('/api/stores/lessari/page-templates')).toEqual([]);
-      expect(await offered(`/api/stores/lessari/page-templates?pageId=${home!.id}`)).toEqual([]);
+      expect((await offered('/api/stores/lessari/page-templates')).map((template) => template.id)).toEqual(four);
+      expect((await offered(`/api/stores/lessari/page-templates?pageId=${home!.id}`)).map((template) => template.id)).toEqual(four);
     });
 
     it('offers a site’s home its own model, and its landing a blank page only', async () => {

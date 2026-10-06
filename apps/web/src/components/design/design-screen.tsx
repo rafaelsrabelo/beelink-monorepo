@@ -20,6 +20,7 @@ import { DesignPanel, type DesignPanelTab } from "./design-panel"
 import { DesignScreenBar } from "./design-screen-bar"
 import { DesignScreenDialogs } from "./design-screen-dialogs"
 import { LivePreviewPane } from "./live-preview-pane"
+import { TemplateApplied } from "./template-applied"
 import { applyComponentOrder, applyOrder, labelOf, orderedIdsOf, takenKindsOf } from "./design-draft"
 import { arrangementOf, shelvesOf } from "./design-draft-preview"
 import { resolvedOnServer, unavailableKindsOf } from "./design-kinds"
@@ -133,7 +134,7 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
         takenKinds={takenKinds}
         unavailableKinds={unavailableKinds}
         shelves={shelves}
-        gallery={{ store, categories, colors: palette }}
+        gallery={{ store, categories, colors: palette, year }}
         page={page.page}
         messages={messages}
         web={web}
@@ -155,6 +156,7 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
             web={web}
           />
         }
+        notice={<TemplateApplied slug={slug} page={page.page} draft={draft} messages={messages} />}
         structure={
           <DesignPanel
             bands={bands}
@@ -183,7 +185,7 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
             paletteChanged={paletteChanged}
             savingColours={saveColors.isPending}
             onSaveColours={() => saveColors.mutate(palette)}
-            pages={<DesignPagesTab slug={slug} currentId={pageId} onNavigate={guard.onLeave} messages={messages} web={web} />}
+            pages={<DesignPagesTab slug={slug} currentId={pageId} onNavigate={guard.onLeave} go={guard.go} onTemplatesOpen={() => selection.setStructureOpen(false)} messages={messages} web={web} />}
             messages={messages}
           />
         }

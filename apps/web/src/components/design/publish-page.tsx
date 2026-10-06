@@ -7,19 +7,18 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 // Types
-import type { PageProblem, Section, StorePage } from "@harness-monorepo/contracts"
+import type { StorePage } from "@harness-monorepo/contracts"
 
 // UI
-import { bandLabelOf } from "@harness-monorepo/ui/blocks/design/band-label"
-import { DesignPublishDialog, type DesignPublishProblem } from "@harness-monorepo/ui/blocks/design/design-publish-dialog"
+import { DesignPublishDialog } from "@harness-monorepo/ui/blocks/design/design-publish-dialog"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
 import type { WebMessages } from "@/locales"
 import { usePageProblems, usePublishPage } from "@/services/page/page-draft-hooks"
 import { useDesignPages } from "@/stores/design-pages"
-import { labelOf } from "./design-draft"
 import { pageErrorCopy } from "./page-error-copy"
+import { namedProblems } from "./page-problems"
 import type { useDesignDraft } from "./use-design-draft"
 
 export interface PublishPageProps {
@@ -28,20 +27,6 @@ export interface PublishPageProps {
   draft: Pick<ReturnType<typeof useDesignDraft>, "publish" | "saving" | "saved">
   messages: UiMessages
   web: WebMessages
-}
-
-/** Each problem named as the structure column names things: the block's label, and its band's. */
-function namedProblems(problems: readonly PageProblem[], saved: readonly Section[], messages: UiMessages): DesignPublishProblem[] {
-  return problems.map((problem) => {
-    const index = saved.findIndex((section) => section.id === problem.sectionId)
-    const component = saved[index]?.components.find((row) => row.id === problem.componentId)
-
-    return {
-      kind: problem.kind,
-      blockName: component ? labelOf(component.kind, component.title, messages) : "—",
-      bandName: bandLabelOf(saved[index]?.name, index + 1, messages),
-    }
-  })
 }
 
 /**
@@ -71,6 +56,8 @@ export function PublishPage({ slug, page, draft, messages, web }: PublishPagePro
         {
           onSuccess: () => {
             dismiss()
+            // "Falta publicar", said after a model was applied, is no longer true.
+            useDesignPages.getState().dismissApplied()
             router.refresh()
           },
         },

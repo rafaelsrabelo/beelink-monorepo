@@ -3,6 +3,7 @@ import type { PageKind, StoreType } from '@harness-monorepo/contracts';
 import type { TemplateSubject } from './template-catalog.js';
 
 // App
+import { EMPTY_SHOP, type ShopStock } from './home-templates.js';
 import { componentItemsFor } from './component-items.schema.js';
 import { DISPLAYS_OF_KIND } from './page.constants.js';
 import { promisesOf } from './page-seed.js';
@@ -11,8 +12,17 @@ import { PAGE_TEMPLATES, shopSubject, TEMPLATE_IDS, templateOf, templatesFor } f
 const PRODUCT = { id: '0199e000-0000-7000-8000-000000000001', name: 'Whey Baunilha 900 g', description: 'Proteína isolada.', imageUrl: 'https://cdn.example/whey.png' };
 const CATEGORY = { id: '0199d000-0000-7000-8000-000000000001', name: 'Proteínas', description: 'Para depois do treino', imageUrl: null };
 
+/** A shop with everything a home model reads: pictures, a sale, categories. */
+const STOCK: ShopStock = {
+  name: 'Lessari',
+  products: 12,
+  pictured: [{ id: PRODUCT.id, name: PRODUCT.name, imageUrl: PRODUCT.imageUrl }],
+  onSale: { count: 2, first: { id: PRODUCT.id, name: PRODUCT.name, imageUrl: PRODUCT.imageUrl } },
+  categories: [{ id: CATEGORY.id, name: CATEGORY.name }],
+};
+
 function subject(over: Partial<TemplateSubject> = {}): TemplateSubject {
-  return { title: 'Minha página', product: PRODUCT, category: CATEGORY, promises: promisesOf(['PIX', 'MONEY']), saleEndsAt: '2026-09-30T02:00:00.000Z', ...over };
+  return { title: 'Minha página', product: PRODUCT, category: CATEGORY, promises: promisesOf(['PIX', 'MONEY']), saleEndsAt: '2026-09-30T02:00:00.000Z', shop: STOCK, ...over };
 }
 
 /** Every shop a model may meet, down to the one with nothing: no product, no picture, no category, no promise. */
@@ -21,7 +31,7 @@ const SUBJECTS: [string, TemplateSubject][] = [
   ['no picture', subject({ product: { ...PRODUCT, imageUrl: null } })],
   ['no category', subject({ category: null })],
   ['nothing to promise', subject({ promises: [] })],
-  ['no product at all', subject({ product: null, category: null, promises: [] })],
+  ['no product at all', subject({ product: null, category: null, promises: [], shop: EMPTY_SHOP })],
 ];
 
 const PAGE_KINDS: PageKind[] = ['HOME', 'LANDING'];
@@ -37,7 +47,7 @@ describe('the catalogue', () => {
   it('names each model once', () => {
     expect(new Set(TEMPLATE_IDS).size).toBe(TEMPLATE_IDS.length);
     expect(PAGE_TEMPLATES.map((template) => template.id)).toEqual(TEMPLATE_IDS);
-    expect(TEMPLATE_IDS).toEqual(['servicos-b2b', 'lancamento', 'promocao-relampago', 'colecao', 'em-branco']);
+    expect(TEMPLATE_IDS).toEqual(['servicos-b2b', 'lancamento', 'promocao-relampago', 'colecao', 'em-branco', 'vitrine-com-capa', 'por-categorias', 'ofertas', 'catalogo-enxuto']);
   });
 
   it.each(PAGE_TEMPLATES)('$id says where it applies, and suggests itself only to categories that exist', (template) => {
@@ -84,6 +94,26 @@ describe('the catalogue', () => {
     },
   );
 
+  it('gives a shop’s home four models that ask the shopkeeper for nothing and read the shop instead', () => {
+    for (const id of ['vitrine-com-capa', 'por-categorias', 'ofertas', 'catalogo-enxuto'] as const) {
+      expect(templateOf(id)).toMatchObject({ pageKinds: ['HOME'], storeTypes: ['ECOMMERCE'], needs: [], readsShop: true });
+    }
+    expect(PAGE_TEMPLATES.filter((template) => template.readsShop).map((template) => template.id)).toEqual(['vitrine-com-capa', 'por-categorias', 'ofertas', 'catalogo-enxuto']);
+  });
+
+  // The home of a shop that sells has a showcase and one strip at most: a model brings the first and never the second.
+  it.each(PAGE_TEMPLATES.filter((template) => template.pageKinds.includes('HOME') && template.storeTypes.includes('ECOMMERCE')))(
+    '$id, which a shop’s home may be arranged with, always brings a showcase and never the strip',
+    (template) => {
+      for (const [, of] of SUBJECTS) {
+        const kinds = template.bands(of).flatMap((band) => band.components.map((component) => component.kind));
+
+        expect(kinds).toContain('PRODUCTS');
+        expect(kinds).not.toContain('ANNOUNCEMENT');
+      }
+    },
+  );
+
   it('points a product model at the product or the category it was given, and at no other id', () => {
     for (const template of PAGE_TEMPLATES.filter((entry) => entry.needs.includes('PRODUCT'))) {
       const written = JSON.stringify(template.bands(subject()));
@@ -103,6 +133,7 @@ describe('shopSubject', () => {
       category: null,
       promises: promisesOf(['PIX']),
       saleEndsAt: '2026-10-09T12:00:00.000Z',
+      shop: EMPTY_SHOP,
     });
   });
 });
@@ -128,9 +159,18 @@ describe('templatesFor', () => {
     expect(templatesFor('LANDING', 'INSTITUTIONAL', null).map((template) => template.id)).toEqual(['em-branco']);
   });
 
-  it('offers a shop’s landing the four it always could, and its home none yet', () => {
+  it('offers a shop’s landing the four it always could, and its home four of its own', () => {
     expect(templatesFor('LANDING', 'ECOMMERCE', null).map((template) => template.id)).toEqual(['lancamento', 'promocao-relampago', 'colecao', 'em-branco']);
-    expect(templatesFor('HOME', 'ECOMMERCE', null)).toEqual([]);
+    expect(templatesFor('HOME', 'ECOMMERCE', null).map((template) => template.id)).toEqual(['vitrine-com-capa', 'por-categorias', 'ofertas', 'catalogo-enxuto']);
+  });
+
+  it('puts the home model suggested for the shop’s category first', () => {
+    expect(templatesFor('HOME', 'ECOMMERCE', 'padaria').map((template) => [template.id, template.recommended])).toEqual([
+      ['ofertas', true],
+      ['vitrine-com-capa', false],
+      ['por-categorias', false],
+      ['catalogo-enxuto', false],
+    ]);
   });
 
   it('puts the ones suggested for the shop’s category first, and hides none', () => {

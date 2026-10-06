@@ -2,23 +2,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 // Types
-import type { PagePreview, PublicLanding, PublicSection } from '@harness-monorepo/contracts';
-import type { RouteVocabulary } from '../../generated/prisma/enums.js';
+import type { PagePreview, PublicLanding } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
-import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { StoresService } from '../stores/stores.service.js';
-import { readPageDocument, servedSectionsOf, type SectionShape } from './page-document.js';
+import { readPageDocument, servedSectionsOf } from './page-document.js';
 import { pageFor } from './page-scope.js';
-import { lookupsOf } from './page-resolve.js';
-import { toPublicSection } from './page-public.mapper.js';
+import { servedSections, SHOP_WORDS } from './page-resolve.js';
 import { sectionInclude } from './page.mapper.js';
 import { pageError } from './page.rules.js';
 import { toStorePage } from './pages.mapper.js';
-
-/** What a band's links are built from: the shop's address and the words its routes use. */
-const SHOP_WORDS = { id: true, slug: true, routeVocabulary: true } as const;
 
 /**
  * A page's bands as a visitor is served them: a published landing to anyone, any page to its owner.
@@ -57,7 +51,7 @@ export class LandingReadService {
       title: page.title,
       usesChrome: page.usesChrome,
       seo: { title: page.seoTitle, description: page.seoDescription, imageUrl: page.seoImageUrl },
-      sections: await this.sectionsOf(page.store, servedSectionsOf(readPageDocument(version.document))),
+      sections: await servedSections(this.prisma, page.store, servedSectionsOf(readPageDocument(version.document))),
     } satisfies PublicLanding;
   }
 
@@ -79,17 +73,6 @@ export class LandingReadService {
       orderBy: [{ position: 'asc' }, { id: 'asc' }],
     });
 
-    return { page: toStorePage(page), sections: await this.sectionsOf(store, rows) } satisfies PagePreview;
-  }
-
-  /** The shown bands, resolved: a draft's rows or a version's document, read by the same mapper. */
-  private async sectionsOf(
-    store: { id: string; slug: string; routeVocabulary: RouteVocabulary },
-    sections: readonly SectionShape[],
-  ): Promise<PublicSection[]> {
-    const lookups = await lookupsOf(this.prisma, store.id, sections);
-    const words = ROUTE_WORDS[store.routeVocabulary];
-
-    return sections.map((section) => toPublicSection(section, store.slug, words, lookups));
+    return { page: toStorePage(page), sections: await servedSections(this.prisma, store, rows) } satisfies PagePreview;
   }
 }

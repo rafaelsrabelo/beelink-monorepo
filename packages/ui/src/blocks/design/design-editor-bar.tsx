@@ -4,7 +4,7 @@
 import type { MouseEvent, ReactNode } from "react"
 
 // Libs
-import { ArrowLeftIcon, ExternalLinkIcon, ListTreeIcon, SlidersHorizontalIcon } from "lucide-react"
+import { ArrowLeftIcon, ExternalLinkIcon, LayoutTemplateIcon, ListTreeIcon, SlidersHorizontalIcon } from "lucide-react"
 
 // UI
 import { Button } from "@harness-monorepo/ui/components/button"
@@ -51,6 +51,8 @@ export interface DesignEditorBarProps {
   /** Open the side columns as drawers; the buttons only exist where the columns do not fit. */
   onOpenStructure: () => void
   onOpenInspector: () => void
+  /** Opens the gallery of whole-page models. Without it the bar offers none. */
+  onOpenTemplates?: () => void
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
@@ -84,6 +86,7 @@ export function DesignEditorBar({
   shopHref,
   onOpenStructure,
   onOpenInspector,
+  onOpenTemplates,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
 }: DesignEditorBarProps) {
@@ -130,6 +133,12 @@ export function DesignEditorBar({
       </div>
 
       <div className="ml-auto flex min-w-0 items-center justify-end gap-1.5">
+        {onOpenTemplates ? (
+          <Button type="button" variant="ghost" className={cn("px-2", ON_DARK)} onClick={onOpenTemplates}>
+            <LayoutTemplateIcon aria-hidden="true" className="size-4" />
+            <span className="sr-only xl:not-sr-only">{messages.design.templateGallery.open}</span>
+          </Button>
+        ) : null}
         <Button type="button" variant="ghost" className={cn("px-2 lg:hidden", ON_DARK)} onClick={onOpenStructure}>
           <ListTreeIcon aria-hidden="true" className="size-4" />
           <span className="sr-only xl:not-sr-only">{text.structure}</span>

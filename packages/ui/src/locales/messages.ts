@@ -1148,6 +1148,72 @@ export interface UiMessages {
       opensInNewTab: string
     }
     /** The gallery a block is added from. */
+    /** The gallery of whole-page models, opened from the editor's bar. */
+    templateGallery: {
+      /** The bar's entry. */
+      open: string
+      title: string
+      description: string
+      /** The cards, named for a screen reader. */
+      listLabel: string
+      /** The switch that keeps only the models suggested for the shop's category. */
+      recommendedOnly: string
+      recommended: string
+      needsProduct: string
+      view: string
+      /** The button's name for a screen reader: `{name}` is the model's. */
+      viewNamed: string
+      selected: string
+      loading: string
+      loadingPreview: string
+      previewFailed: string
+      retry: string
+      /** On a card whose model is built around a product, until one is chosen. */
+      chooseProduct: string
+      /** On a card whose model asks for something this gallery cannot choose. */
+      previewUnavailable: string
+      product: string
+      productPlaceholder: string
+      productEmpty: string
+      productHint: string
+      empty: string
+      failed: string
+      /** In the large preview's place, before a model is chosen. */
+      largeHint: string
+      /** The large preview, named: `{name}` is the model's. */
+      previewOf: string
+      back: string
+      apply: string
+      /** Beside the button, while the chosen model is built around a product and none is chosen. */
+      applyNeedsProduct: string
+      /** Beside the button, for a model that asks for something this gallery cannot choose. */
+      applyUnavailable: string
+    }
+    /** The question before a model replaces a page's draft. */
+    templateApply: {
+      /** `{name}` is the model's. */
+      title: string
+      /** `{page}` is the page's name. */
+      replaces: string
+      shopUnchanged: string
+      /** Said only when the draft holds changes the shop does not serve yet. */
+      unpublishedLost: string
+      cancel: string
+      confirm: string
+      applying: string
+      /** When the API refused with a code the screen has no sentence for. */
+      failed: string
+    }
+    /** The line the editor shows once a model is in the draft. */
+    templateApplied: {
+      /** `{name}` is the model's. */
+      applied: string
+      /** Above the page's problems, when the model left any. */
+      problemsTitle: string
+      checking: string
+      publish: string
+      dismiss: string
+    }
     gallery: {
       title: string
       description: string
@@ -1358,9 +1424,21 @@ export interface UiMessages {
         template: string
         /**
          * Every model of the API's catalogue, by its id: the API answers ids and these are their words.
-         * The dialog draws the four a landing is made from; "servicos-b2b" is a site's home.
+         * The dialog draws the four a landing is made from; "servicos-b2b" is a site's home, and the
+         * last four are a shop's.
          */
-        templates: Record<"servicos-b2b" | "lancamento" | "promocao-relampago" | "colecao" | "em-branco", { title: string; description: string }>
+        templates: Record<
+          | "servicos-b2b"
+          | "lancamento"
+          | "promocao-relampago"
+          | "colecao"
+          | "em-branco"
+          | "vitrine-com-capa"
+          | "por-categorias"
+          | "ofertas"
+          | "catalogo-enxuto",
+          { title: string; description: string }
+        >
         /** Under the templates on a site, which sells no product. */
         siteBlankOnly: string
         product: string
@@ -2704,6 +2782,20 @@ export interface UiMessages {
       stepDone: string
       submit: string
       submitting: string
+      /** The home a new shop opens with: its default page, or a model of the catalogue. Shops only. */
+      openingPage: {
+        heading: string
+        /** What happens when nothing is picked. */
+        hint: string
+        /** What opens the choices, which start folded away. */
+        choose: string
+        /** The radio group's name. */
+        legend: string
+        defaultTitle: string
+        defaultDescription: string
+        /** Under the choices: a shop with no product opens a model nearly bare, and how it fills in. */
+        emptyShopNote: string
+      }
     }
     image: {
       /**

@@ -9,7 +9,21 @@ import type { LandingTemplateId, PageKind } from "./store-pages.js";
  * is created with a `PageTemplateId`, a landing with a `LandingTemplateId`. A model added to the
  * catalogue alone — one a page is rearranged with, and no payload creates anything from — joins here.
  */
-export type TemplateId = PageTemplateId | LandingTemplateId;
+export type TemplateId = PageTemplateId | LandingTemplateId | HomeTemplateId;
+
+/**
+ * The models a shop's home is rearranged with. Filled from the shop itself — its newest products, its
+ * sales, its categories, its promises — so none asks the shopkeeper for anything. No payload creates
+ * a page from one: a shop still opens with its default page.
+ */
+export type HomeTemplateId = "vitrine-com-capa" | "por-categorias" | "ofertas" | "catalogo-enxuto";
+
+/**
+ * The models a store may open with: a site's, or one of a shop's home. `CreateStorePayload.template`
+ * is typed by it. One that is not for the store's type is not refused: the store opens as it would
+ * have with none — a shop with its default page, a site with its first model.
+ */
+export type OpeningTemplateId = PageTemplateId | HomeTemplateId;
 
 /** What a model is built around, which the shop has to name before the model can be arranged. */
 export type TemplateNeed = "PRODUCT" | "CATEGORY";
@@ -30,6 +44,37 @@ export interface PageTemplateSummary {
   recommended: boolean;
   /** Empty when the model is arranged from the shop alone. */
   needs: TemplateNeed[];
+}
+
+/**
+ * What the gallery of one shop is asked with, as a query. `pageId` names a page that exists — the
+ * home when none is named. `kind` asks instead for a page that does not exist yet: the models a new
+ * page of that kind would open with ("Nova landing"). `pageId` wins when both are sent.
+ */
+export interface PageTemplatesQuery {
+  pageId?: string;
+  kind?: PageKind;
+}
+
+/**
+ * What the models a store may open with are asked with, before the store exists: its type, and the
+ * category picked for it, which only orders the answer (`recommended`). Answered with the home's
+ * models for that type, as `PageTemplateSummary[]`.
+ */
+export interface OpeningTemplatesQuery {
+  storeType: StoreType;
+  categoryId?: string;
+}
+
+/**
+ * What a model's preview is asked with, as a query: the page it would be arranged on — the home when
+ * none is named — and what it is built around. Answered with a `PagePreview`: the page as it is, and
+ * the bands the model would leave on it, as a visitor would be served them. Nothing is written.
+ */
+export interface TemplatePreviewQuery {
+  pageId?: string;
+  productId?: string;
+  categoryId?: string;
 }
 
 /**

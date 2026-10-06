@@ -61,6 +61,7 @@ export function DesignScreenBar({
 }: DesignScreenBarProps) {
   const openNew = useDesignPages((state) => state.openNew)
   const openPublish = useDesignPages((state) => state.openPublish)
+  const openTemplates = useDesignPages((state) => state.openTemplates)
   const pages = usePages(slug)
   const saved = usePageDraft(slug, page.id)
   const homeTitle = messages.design.frame.homePage
@@ -69,7 +70,6 @@ export function DesignScreenBar({
   const links = pageRowsOf(slug, pages.data ?? [], homeTitle).filter((row) => row.status !== "ARCHIVED")
 
   const errorOf = (error: Error | null) => (error ? (pageErrorCopy(error, web) ?? messages.design.pages.publishFailed) : null)
-
 
   return (
     <DesignEditorBar
@@ -100,6 +100,7 @@ export function DesignScreenBar({
       shopHref={shopHrefOf(slug, page)}
       onOpenStructure={onOpenStructure}
       onOpenInspector={onOpenInspector}
+      onOpenTemplates={openTemplates}
       linkComponent={AppLink}
       messages={messages}
     />
