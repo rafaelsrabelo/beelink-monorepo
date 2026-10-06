@@ -45,6 +45,8 @@ describe("MetaPixelGuide", () => {
       "O bee-link não tem como conferir o ID com a Meta. Copie e cole o número, em vez de digitar.",
       // BEELINK-271: true before the storefront loads the pixel, and after — and it promises no event.
       "Com um ID salvo, quem visita a sua loja vê um aviso de cookies e escolhe aceitar ou recusar. O pixel só vale para quem aceitar.",
+      // BEELINK-272: what the shop window sends now, to whom it applies, and what it does not send yet.
+      "De quem aceita, a loja envia à Meta as páginas e os produtos vistos, as buscas, os favoritos, o que vai para o carrinho e a chegada ao checkout. As compras ainda não são enviadas.",
     ])
   })
 

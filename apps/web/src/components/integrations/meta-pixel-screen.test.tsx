@@ -157,11 +157,24 @@ describe("MetaPixelScreen, where to find the ID", () => {
     expect(screen.getByText(/Os relatórios e a criação dos anúncios continuam na Meta/)).toBeInTheDocument()
   })
 
-  /** After this ticket the ID is only saved: the shop window sends nothing until a later ticket of the epic. Nothing here may say otherwise. */
-  it.each([["pt-BR", ui], ["en", en]] as const)("promises nowhere, in %s, that anything is being sent to Meta", (_name, messages) => {
-    const said = JSON.stringify(messages.integrations.metaPixel)
+  /**
+   * Until BEELINK-272 the ID was only saved, and nothing here could speak of sending. The shop
+   * window now sends a visitor's path — after their yes, and not the purchase yet (X6). So the rule
+   * is no longer silence: a sentence may speak of sending only beside the acceptance it depends on,
+   * and none may say the shop is measuring or tracking as a standing fact.
+   */
+  it.each([["pt-BR", ui], ["en", en]] as const)("speaks of sending to Meta, in %s, only for visitors who accept — and never as measuring under way", (_name, messages) => {
+    const sentences = (value: unknown): string[] => (typeof value === "string" ? [value] : Object.values(value as object).flatMap(sentences))
+    const said = sentences(messages.integrations.metaPixel)
+    const ofSending = said.filter((sentence) => /envia|enviad|\bsends?\b|\bsent\b|sending/i.test(sentence))
 
-    expect(said).not.toMatch(/enviando|enviad[oa]s?|já envia|está medindo|já mede|sending|is sent|being sent|is measuring|is tracking/i)
+    expect(ofSending).toEqual([messages.integrations.metaPixel.guide.notes.events])
+    for (const sentence of ofSending) expect(sentence).toMatch(/aceita|accept/i)
+    expect(said.join(" ")).not.toMatch(/enviando|já envia|está medindo|já mede|is sending|being sent|is measuring|is tracking/i)
+  })
+
+  it.each([["pt-BR", ui, /compras ainda não são enviadas/i], ["en", en, /purchases are not sent yet/i]] as const)("says, in %s, that purchases are not sent yet", (_name, messages, notYet) => {
+    expect(messages.integrations.metaPixel.guide.notes.events).toMatch(notYet)
   })
 
   it("loads nothing of Meta's: no script, no frame, and no image from another site", () => {

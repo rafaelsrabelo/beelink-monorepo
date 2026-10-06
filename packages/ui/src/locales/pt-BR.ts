@@ -3179,6 +3179,7 @@ export const ptBR: UiMessages = {
           reports: "Os relatórios e a criação dos anúncios continuam na Meta: o bee-link não mostra o resultado dos anúncios.",
           unchecked: "O bee-link não tem como conferir o ID com a Meta. Copie e cole o número, em vez de digitar.",
           consent: "Com um ID salvo, quem visita a sua loja vê um aviso de cookies e escolhe aceitar ou recusar. O pixel só vale para quem aceitar.",
+          events: "De quem aceita, a loja envia à Meta as páginas e os produtos vistos, as buscas, os favoritos, o que vai para o carrinho e a chegada ao checkout. As compras ainda não são enviadas.",
         },
       },
     },
