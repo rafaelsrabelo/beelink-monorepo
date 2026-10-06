@@ -2,10 +2,9 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 
 // Types
-import type { PageSlugAvailability, PaymentMethod, StorePage } from '@harness-monorepo/contracts';
+import type { PageSlugAvailability, StorePage } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { CreateLandingDto, UpdatePageDto } from './dto/pages.dto.js';
-import type { PageTemplate, TemplateSubject } from './template-catalog.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
@@ -14,9 +13,10 @@ import { writeBands } from './page-bands-write.js';
 import { freezePage } from './page-freeze.js';
 import { pageSlugOf } from './page-slug.js';
 import { pageFor } from './page-scope.js';
+import { refuseUnavailable, subjectOf } from './page-template-choice.js';
 import { PageRules, pageError } from './page.rules.js';
 import { toStorePage } from './pages.mapper.js';
-import { shopSubject, templateOf } from './template-catalog.js';
+import { templateOf } from './template-catalog.js';
 
 /** Postgres' unique violation, as Prisma reports it: the address was taken between the check and the write. */
 function isTaken(error: unknown): boolean {
@@ -61,14 +61,12 @@ export class PagesService {
     });
 
     const template = templateOf(dto.template);
-    if (!template.storeTypes.includes(store.type)) {
-      throw new BadRequestException(pageError('PAGE_TEMPLATE_UNAVAILABLE', 'Este modelo é de loja; um site começa em branco.'));
-    }
+    refuseUnavailable(template, 'LANDING', store.type);
 
     const { slug, valid } = pageSlugOf(dto.slug ?? dto.title);
     if (!valid) throw new BadRequestException(pageError('PAGE_SLUG_INVALID', 'Use letras e números no endereço.'));
 
-    const subject = await this.subjectOf(storeId, template, dto, store.paymentMethods);
+    const subject = await subjectOf(this.prisma, storeId, template, dto, store.paymentMethods);
 
     try {
       const row = await this.prisma.$transaction(async (tx) => {
@@ -172,47 +170,5 @@ export class PagesService {
     });
 
     if (taken) throw new ConflictException(pageError('PAGE_SLUG_TAKEN', TAKEN));
-  }
-
-  /**
-   * What the template fills its bands from, read before the write. The product is this shop's or it
-   * is refused as not there — the same answer a foreign product gets from a showcase.
-   */
-  private async subjectOf(
-    storeId: string,
-    template: PageTemplate,
-    dto: CreateLandingDto,
-    paymentMethods: readonly PaymentMethod[],
-  ): Promise<TemplateSubject> {
-    // Now, and not a clock the caller hands in: a sale's end is the moment the page is made plus three days.
-    const blank = shopSubject(dto.title, paymentMethods, new Date());
-    if (!template.needs.includes('PRODUCT')) return blank;
-    if (!dto.productId) {
-      throw new BadRequestException(pageError('PAGE_PRODUCT_REQUIRED', 'Escolha o produto da página.'));
-    }
-
-    const product = await this.prisma.product.findFirst({
-      where: { id: dto.productId, storeId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        images: { orderBy: [{ position: 'asc' }, { id: 'asc' }], take: 1, select: { url: true } },
-        category: { select: { id: true, name: true, description: true, imageUrl: true, isActive: true } },
-      },
-    });
-
-    if (!product) throw new BadRequestException(pageError('PAGE_PRODUCT_INVALID', 'Esse produto não é desta loja.'));
-
-    const { category } = product;
-
-    return {
-      ...blank,
-      product: { id: product.id, name: product.name, description: product.description, imageUrl: product.images[0]?.url ?? null },
-      // A hidden category is not a collection anybody can browse: the page is built around the product instead.
-      category: category?.isActive
-        ? { id: category.id, name: category.name, description: category.description, imageUrl: category.imageUrl }
-        : null,
-    };
   }
 }
