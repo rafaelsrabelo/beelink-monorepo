@@ -38,3 +38,31 @@ A API lista os modelos de uma página e desenha a prévia de cada um com os dado
 ## Fora do escopo
 
 Aplicar o modelo e a confirmação (W5); escolher modelo ao criar a loja (W7); trocar o dispositivo da prévia grande dentro da galeria.
+
+## O que foi visto no navegador
+
+- Com o `IntersectionObserver` de verdade, abrir a galeria numa loja de quatro modelos pede duas prévias (os dois cartões na tela); as outras duas só saem quando a lista rola até elas. Numa landing, nenhum modelo de produto é pedido antes de o produto ser escolhido.
+- O foco fica no diálogo: Tab dá a volta pelos botões dos cartões e pelo "Fechar". Esc fecha e devolve o foco a "Modelos" na barra.
+- **Loja vazia:** os quatro modelos se parecem (o nome da loja, as vantagens e a vitrine sem produto, que a loja não desenha). O cartão mostra um espaço em branco onde a vitrine entraria. Não é erro da galeria: é o que a loja serviria. Fica registrado para o W7.
+
+## Para os próximos tickets
+
+### W5 — aplicar o modelo escolhido
+
+O ponto de encaixe é a prop `onApply` de `TemplateGallery` (`packages/ui/src/blocks/design/template-gallery.tsx`), que `apps/web/src/components/design/page-templates.tsx` ainda não passa. Passando-a, o bloco desenha "Usar este modelo" no cabeçalho da prévia grande e chama `onApply(template)`; `applying` desabilita o botão enquanto a escrita está fora.
+
+Em `page-templates.tsx` já estão à mão: `page.id` (a página aberta), `selectedId` (o modelo) e `productId` (o produto, para os modelos com `needsProduct`). Falta:
+
+1. O handler do BFF `POST /api/stores/[slug]/pages/[pageId]/apply-template`, repassando o cabeçalho `x-page-revision` como o de restaurar (`versions/[versionId]/restore/route.ts`). Não revalida nada: aplicar não publica.
+2. O request com `draftWrite` (`services/page/draft-write.ts`), como `restoreVersion`: a escrita entra na fila das outras e leva a revisão que a aba leu.
+3. A confirmação "isto substitui o rascunho inteiro" antes de chamar (decisão 1 do épico). Um diálogo de alerta sobre a galeria; `design-delete-confirm.tsx` é o molde.
+4. Depois do `200`: a resposta é o `PageDraft` novo. Atualize o que o editor lê (as chaves de `sectionKeys.store(slug)` e a leitura do servidor, com `router.refresh()`, como `page-history.tsx` faz depois de restaurar), feche a galeria e limpe a seleção do editor: os ids das faixas e dos blocos mudaram, menos o da barra de aviso e o do formulário de contato.
+5. Erros: `409 PAGE_DRAFT_STALE` já tem o seu diálogo (`draft-conflict.tsx`); `PAGE_PRODUCT_REQUIRED`, `PAGE_PRODUCT_INVALID` e `PAGE_TEMPLATE_UNAVAILABLE` têm frase em `apps/web/src/locales` (`pageErrorCopy`).
+
+Um modelo com `askable: false` (pede categoria; nenhum hoje) não deve poder ser aplicado por esta tela: desabilite o botão para ele.
+
+A prévia que o lojista viu é o que será gravado, salvo o que mudar na loja entre os dois cliques. As prévias ficam em cache por um minuto (`PREVIEW_STALE_MS`); depois de aplicar, invalide `templateKeys.all`, porque a prévia de um modelo depende do rascunho (a barra de aviso e o formulário que ele mantém).
+
+### W7 — modelo ao criar a loja
+
+`TemplateGallery` não depende do editor: recebe a lista, a seleção e `renderPreview`. Para a criação da loja falta de onde tirar a prévia (a rota de prévia pede uma loja que já existe).

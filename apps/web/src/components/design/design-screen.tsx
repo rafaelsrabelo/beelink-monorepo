@@ -133,7 +133,7 @@ export function DesignScreen({ store, categories, page, year, messages, web }: D
         takenKinds={takenKinds}
         unavailableKinds={unavailableKinds}
         shelves={shelves}
-        gallery={{ store, categories, colors: palette }}
+        gallery={{ store, categories, colors: palette, year }}
         page={page.page}
         messages={messages}
         web={web}
