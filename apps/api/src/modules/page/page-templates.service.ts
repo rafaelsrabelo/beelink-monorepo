@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 
 // Types
-import type { PagePreview, PageTemplateSummary, TemplatePreviewQuery } from '@harness-monorepo/contracts';
+import type { OpeningTemplatesQuery, PagePreview, PageTemplatesQuery, PageTemplateSummary, TemplatePreviewQuery } from '@harness-monorepo/contracts';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
@@ -22,16 +22,31 @@ export class PageTemplatesService {
     private readonly stores: StoresService,
   ) {}
 
-  /** For the page named, or the home when none is: the catalogue narrowed to its kind and the store's type. */
-  async list(storeSlug: string, userId: string, pageId?: string): Promise<PageTemplateSummary[]> {
+  /**
+   * For the page named, or the home when none is: the catalogue narrowed to its kind and the store's
+   * type. `kind` with no page asks about one that does not exist yet — a landing about to be made —
+   * and no page is read for it.
+   */
+  async list(storeSlug: string, userId: string, { pageId, kind }: PageTemplatesQuery = {}): Promise<PageTemplateSummary[]> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const page = await pageFor(this.prisma, storeId, pageId);
+    const pageKind = !pageId && kind ? kind : (await pageFor(this.prisma, storeId, pageId)).kind;
     const store = await this.prisma.store.findUniqueOrThrow({
       where: { id: storeId },
       select: { type: true, category: { select: { slug: true } } },
     });
 
-    return templatesFor(page.kind, store.type, store.category?.slug ?? null);
+    return templatesFor(pageKind, store.type, store.category?.slug ?? null);
+  }
+
+  /**
+   * The models a store of this type may open its home with, before the store exists. The category is
+   * the one picked in the form: it orders the answer and hides nothing, so one that names no row is
+   * not a refusal — it suggests nothing.
+   */
+  async opening({ storeType, categoryId }: OpeningTemplatesQuery): Promise<PageTemplateSummary[]> {
+    const category = categoryId ? await this.prisma.storeCategory.findUnique({ where: { id: categoryId }, select: { slug: true } }) : null;
+
+    return templatesFor('HOME', storeType, category?.slug ?? null);
   }
 
   /**
