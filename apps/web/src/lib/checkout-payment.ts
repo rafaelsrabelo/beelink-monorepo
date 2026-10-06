@@ -111,3 +111,13 @@ export function paymentPayloadOf(held: Required<PickedPayment>, plan: CheckoutPa
   if (held.paymentChannel === "OFFLINE") return { paymentMethod: held.paymentMethod }
   return { paymentMethod: held.paymentMethod, paymentChannel: "ONLINE", ...(held.installments > 1 ? { installments: held.installments } : {}) }
 }
+
+/**
+ * Whether the product page says the order is finished on the shop's WhatsApp. True only of a shop
+ * that has one and charges nothing online: where Pix or card is taken, the order is paid on the
+ * site and opens no WhatsApp, and the sentence sent shoppers looking for a conversation that never
+ * comes — whether or not paying on delivery is still offered beside it.
+ */
+export function finishesOnWhatsAppOf(whatsapp: string | null | undefined, options: StorefrontPaymentOptions): boolean {
+  return Boolean(whatsapp) && options.online === null
+}
