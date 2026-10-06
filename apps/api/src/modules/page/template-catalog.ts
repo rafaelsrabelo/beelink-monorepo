@@ -1,16 +1,20 @@
 // Types
 import type { PageKind, PageTemplateSummary, PaymentMethod, StoreType, TemplateId, TemplateNeed } from '@harness-monorepo/contracts';
-import type { LandingSubject } from './landing-templates.js';
+import type { HomeSubject, ShopStock } from './home-templates.js';
 import type { SeededBand } from './page-seed.js';
 
 // App
+import { EMPTY_SHOP, homeBands, homeCoverImageOf } from './home-templates.js';
 import { coverImageOf, landingBands } from './landing-templates.js';
 import { saleEndOf } from './page-countdown.js';
 import { promisesOf } from './page-seed.js';
 import { templatePage } from './page-templates.js';
 
-/** What a model fills its bands from, read from the shop before anything is written. One shape for every model. */
-export type TemplateSubject = LandingSubject;
+/**
+ * What a model fills its bands from, read from the shop before anything is written. One shape for
+ * every model: `shop` is the stock a home model arranges from, and an empty one to every other.
+ */
+export type TemplateSubject = HomeSubject;
 
 /** A model: where it applies, what it asks for, and the bands it arranges. */
 export interface PageTemplate {
@@ -21,12 +25,17 @@ export interface PageTemplate {
   recommendedFor: readonly string[];
   /** What the shopkeeper has to name before it can be arranged — not everything it reads. */
   needs: readonly TemplateNeed[];
+  /** Whether it arranges from the shop's stock (`TemplateSubject.shop`), which is then read for it. */
+  readsShop: boolean;
   bands(subject: TemplateSubject): SeededBand[];
   /** The picture its cover draws, which a shared link shows. */
   coverImage(subject: TemplateSubject): string | null;
 }
 
-const SHOP_LANDING = { pageKinds: ['LANDING'], storeTypes: ['ECOMMERCE'], needs: ['PRODUCT'] } as const;
+const SHOP_LANDING = { pageKinds: ['LANDING'], storeTypes: ['ECOMMERCE'], needs: ['PRODUCT'], readsShop: false } as const;
+
+/** Arranged from the shop alone: nothing for the shopkeeper to name. */
+const SHOP_HOME = { pageKinds: ['HOME'], storeTypes: ['ECOMMERCE'], needs: [], readsShop: true } as const;
 
 /**
  * Every model, in the order the gallery offers them.
@@ -45,6 +54,7 @@ const TEMPLATES: Record<TemplateId, Omit<PageTemplate, 'id'>> = {
     storeTypes: ['INSTITUTIONAL'],
     recommendedFor: ['servicos'],
     needs: [],
+    readsShop: false,
     bands: () => templatePage('servicos-b2b'),
     coverImage: () => null,
   },
@@ -73,7 +83,32 @@ const TEMPLATES: Record<TemplateId, Omit<PageTemplate, 'id'>> = {
     storeTypes: ['ECOMMERCE', 'INSTITUTIONAL'],
     recommendedFor: [],
     needs: [],
+    readsShop: false,
     bands: (subject) => landingBands('em-branco', subject),
+    coverImage: () => null,
+  },
+  'vitrine-com-capa': {
+    ...SHOP_HOME,
+    recommendedFor: ['moda', 'beleza', 'casa-e-decoracao', 'eletronicos'],
+    bands: (subject) => homeBands('vitrine-com-capa', subject),
+    coverImage: (subject) => homeCoverImageOf('vitrine-com-capa', subject),
+  },
+  'por-categorias': {
+    ...SHOP_HOME,
+    recommendedFor: ['mercado', 'petshop', 'suplementos', 'saude'],
+    bands: (subject) => homeBands('por-categorias', subject),
+    coverImage: () => null,
+  },
+  ofertas: {
+    ...SHOP_HOME,
+    recommendedFor: ['alimentacao', 'padaria', 'doces-e-bolos', 'bebidas'],
+    bands: (subject) => homeBands('ofertas', subject),
+    coverImage: (subject) => homeCoverImageOf('ofertas', subject),
+  },
+  'catalogo-enxuto': {
+    ...SHOP_HOME,
+    recommendedFor: ['outros'],
+    bands: (subject) => homeBands('catalogo-enxuto', subject),
     coverImage: () => null,
   },
 };
@@ -90,9 +125,10 @@ export function templateOf(id: TemplateId): PageTemplate {
  * The subject of a page made with no product picked: the shop's own promises and a title.
  *
  * `now` is the caller's clock, read once: a flash sale's end is counted from the moment the page is made.
+ * `shop` is the stock a home model arranges from; whoever asks for no such model leaves it empty.
  */
-export function shopSubject(title: string, paymentMethods: readonly PaymentMethod[], now: Date): TemplateSubject {
-  return { title, product: null, category: null, promises: promisesOf(paymentMethods), saleEndsAt: saleEndOf(now) };
+export function shopSubject(title: string, paymentMethods: readonly PaymentMethod[], now: Date, shop: ShopStock = EMPTY_SHOP): TemplateSubject {
+  return { title, product: null, category: null, promises: promisesOf(paymentMethods), saleEndsAt: saleEndOf(now), shop };
 }
 
 /**

@@ -9,7 +9,14 @@ import type { LandingTemplateId, PageKind } from "./store-pages.js";
  * is created with a `PageTemplateId`, a landing with a `LandingTemplateId`. A model added to the
  * catalogue alone — one a page is rearranged with, and no payload creates anything from — joins here.
  */
-export type TemplateId = PageTemplateId | LandingTemplateId;
+export type TemplateId = PageTemplateId | LandingTemplateId | HomeTemplateId;
+
+/**
+ * The models a shop's home is rearranged with. Filled from the shop itself — its newest products, its
+ * sales, its categories, its promises — so none asks the shopkeeper for anything. No payload creates
+ * a page from one: a shop still opens with its default page.
+ */
+export type HomeTemplateId = "vitrine-com-capa" | "por-categorias" | "ofertas" | "catalogo-enxuto";
 
 /** What a model is built around, which the shop has to name before the model can be arranged. */
 export type TemplateNeed = "PRODUCT" | "CATEGORY";

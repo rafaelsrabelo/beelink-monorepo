@@ -36,3 +36,7 @@ O catálogo não tem nenhum modelo para a página inicial de uma loja online: a 
 ## Fora do escopo
 
 A galeria (W4), o botão de aplicar (W5), escolher modelo ao criar a loja (W7), imagens que não sejam da loja.
+
+## Acréscimos durante a implementação
+
+- **Decisão 7, corrigida ao ver as rotas ao vivo.** O corte de "mais de quatro produtos" ainda repetia a loja inteira: numa loja de sete produtos, "Novidades" (até oito) e "Todos os produtos" desenhavam os mesmos sete. A faixa de novidades só entra quando a loja tem **mais produtos do que ela desenha** (mais de oito).
