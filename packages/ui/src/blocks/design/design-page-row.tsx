@@ -40,15 +40,17 @@ export interface DesignPageRowProps {
   onNavigate?: (event: MouseEvent<HTMLAnchorElement>) => void
   onStatus?: (id: string, status: DesignPageLink["status"]) => void
   onSettings?: (id: string) => void
+  /** The gallery of whole-page models, for this page. Not offered on an archived one. */
+  onTemplates?: (id: string) => void
   busy?: boolean
   linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
 /**
- * One page: a link to edit it, what it is called and where it lives, and — on a landing — a menu to
- * put it up, take it down or look at it in the shop. The home has no menu: it is the shop's own
- * address, always up, and nothing here changes it.
+ * One page: a link to edit it, what it is called and where it lives, and a menu — on a landing, to
+ * put it up, take it down or look at it in the shop; on both, the way to the models. The home's
+ * menu holds nothing else: it is the shop's own address, always up, and no status here changes it.
  */
 export function DesignPageRow({
   page,
@@ -56,6 +58,7 @@ export function DesignPageRow({
   onNavigate,
   onStatus,
   onSettings,
+  onTemplates,
   busy = false,
   linkComponent: Link = AnchorLink,
   messages = defaultMessages,
@@ -63,6 +66,7 @@ export function DesignPageRow({
   const text = messages.design.pages
   const Icon = page.kind === "HOME" ? HouseIcon : FileTextIcon
   const landing = page.kind === "LANDING"
+  const templates = onTemplates && page.status !== "ARCHIVED" ? onTemplates : null
 
   return (
     <li className={cn("flex items-center gap-1 rounded-lg border", current ? "border-primary bg-primary/5" : "border-border")}>
@@ -85,7 +89,7 @@ export function DesignPageRow({
         </span>
       </Link>
 
-      {landing ? (
+      {landing || templates ? (
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label={format(text.actions, { page: page.title })}
@@ -95,20 +99,21 @@ export function DesignPageRow({
             <MoreHorizontalIcon aria-hidden="true" className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
-            {onSettings ? <DropdownMenuItem onClick={() => onSettings(page.id)}>{text.settings}</DropdownMenuItem> : null}
-            {onStatus && page.status !== "PUBLISHED" ? (
+            {templates ? <DropdownMenuItem onClick={() => templates(page.id)}>{messages.design.templateGallery.open}</DropdownMenuItem> : null}
+            {landing && onSettings ? <DropdownMenuItem onClick={() => onSettings(page.id)}>{text.settings}</DropdownMenuItem> : null}
+            {landing && onStatus && page.status !== "PUBLISHED" ? (
               <DropdownMenuItem onClick={() => onStatus(page.id, "PUBLISHED")}>{text.publish}</DropdownMenuItem>
             ) : null}
-            {onStatus && page.status === "PUBLISHED" ? (
+            {landing && onStatus && page.status === "PUBLISHED" ? (
               <DropdownMenuItem onClick={() => onStatus(page.id, "DRAFT")}>{text.unpublish}</DropdownMenuItem>
             ) : null}
-            {onStatus && page.status === "ARCHIVED" ? (
+            {landing && onStatus && page.status === "ARCHIVED" ? (
               <DropdownMenuItem onClick={() => onStatus(page.id, "DRAFT")}>{text.restore}</DropdownMenuItem>
             ) : null}
-            {onStatus && page.status !== "ARCHIVED" ? (
+            {landing && onStatus && page.status !== "ARCHIVED" ? (
               <DropdownMenuItem onClick={() => onStatus(page.id, "ARCHIVED")}>{text.archive}</DropdownMenuItem>
             ) : null}
-            {page.shopHref ? (
+            {landing && page.shopHref ? (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem render={<Link href={page.shopHref} target="_blank" rel="noreferrer" />} className="gap-2">

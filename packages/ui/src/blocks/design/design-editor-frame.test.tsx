@@ -57,6 +57,13 @@ describe("DesignEditorFrame", () => {
     expect(screen.getByRole("complementary", { name: "Painel de edição" })).toHaveTextContent("os campos do bloco")
   })
 
+  it("draws a notice under the bar, when the screen has one to give", () => {
+    screenIs(true)
+    renderFrame({ notice: <p>Modelo aplicado</p> })
+
+    expect(screen.getByText("Modelo aplicado")).toBeInTheDocument()
+  })
+
   it("keeps the side columns in drawers on a narrow screen, each drawn once", () => {
     screenIs(false)
     const { rerender } = renderFrame()

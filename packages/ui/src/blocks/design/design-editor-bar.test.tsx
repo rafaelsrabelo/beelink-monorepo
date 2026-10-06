@@ -123,4 +123,16 @@ describe("DesignEditorBar", () => {
     const { container } = renderBar({ unpublished: true })
     await expectNoA11yViolations(container)
   })
+
+  it("opens the gallery of models from its own entry, and offers none where the screen has no gallery", async () => {
+    const onOpenTemplates = vi.fn()
+    const { unmount } = renderBar({ onOpenTemplates })
+
+    await userEvent.click(screen.getByRole("button", { name: "Modelos" }))
+    expect(onOpenTemplates).toHaveBeenCalledTimes(1)
+
+    unmount()
+    renderBar()
+    expect(screen.queryByRole("button", { name: "Modelos" })).not.toBeInTheDocument()
+  })
 })

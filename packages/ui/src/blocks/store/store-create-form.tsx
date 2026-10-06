@@ -32,6 +32,7 @@ import {
   createStoreCreateSchema,
   type StoreCreateValues,
 } from "./store-schemas";
+import { StoreOpeningTemplate, type OpeningTemplateOption } from "./store-opening-template";
 import { slugify } from "./store-slug";
 import { StoreSocialFields } from "./store-social-fields";
 import type {
@@ -49,6 +50,7 @@ const STEP_OF_SLICE = {
   address: "address",
   social: "social",
   colors: "appearance",
+  homeTemplate: "appearance",
 } as const satisfies Record<keyof StoreCreateValues, string>;
 
 type StepName = (typeof STEP_OF_SLICE)[keyof typeof STEP_OF_SLICE];
@@ -66,7 +68,7 @@ const SLICES_OF_STEP: Record<StepName, Array<keyof StoreCreateValues>> = {
   identity: ["slug", "identity"],
   address: ["address"],
   social: ["social"],
-  appearance: ["colors"],
+  appearance: ["colors", "homeTemplate"],
 };
 
 /**
@@ -115,6 +117,17 @@ export interface StoreCreateFormProps {
   /** One callback for every image, as in the settings form — one upload endpoint serves both. */
   onImageUpload?: (file: File) => Promise<string>;
   imageUploadPending?: boolean;
+  /**
+   * The models a shop's home may open with, for the last step's optional choice. Without it the
+   * form offers none, and every shop opens with its default page.
+   */
+  openingTemplates?: {
+    templates: readonly OpeningTemplateOption[];
+    state: "loading" | "failed" | "ready";
+    onRetry?: () => void;
+  };
+  /** The type and the category as they are picked, for the screen to ask for those models with. */
+  onShopKindChange?: (kind: { type: StoreCreateValues["identity"]["type"]; categoryId: string }) => void;
   pending?: boolean;
   /** A sentence the reader can act on. The screen turns an API errorCode into it. */
   error?: string;
@@ -156,6 +169,8 @@ export function StoreCreateForm({
   mapTileUrl,
   onImageUpload,
   imageUploadPending,
+  openingTemplates,
+  onShopKindChange,
   pending = false,
   error,
   messages = defaultMessages,
@@ -331,6 +346,9 @@ export function StoreCreateForm({
                           slugField.onChange(slug);
                         }}
                         onChange={(identity) => {
+                          if (identity.type !== field.value.type || identity.categoryId !== field.value.categoryId) {
+                            onShopKindChange?.({ type: identity.type, categoryId: identity.categoryId });
+                          }
                           field.onChange(identity);
                           if (!slugTouched) {
                             slugField.onChange(slugify(identity.name));
@@ -389,7 +407,7 @@ export function StoreCreateForm({
           ) : null}
 
           {step === "appearance" ? (
-            <div className="pt-2">
+            <div className="flex flex-col gap-6 pt-2">
               <Controller
                 control={form.control}
                 name="colors"
@@ -404,6 +422,24 @@ export function StoreCreateForm({
                   />
                 )}
               />
+              {/* A site opens from its own model; only a shop has a home to choose. */}
+              {openingTemplates && values.identity.type === "ECOMMERCE" ? (
+                <Controller
+                  control={form.control}
+                  name="homeTemplate"
+                  render={({ field }) => (
+                    <StoreOpeningTemplate
+                      value={field.value}
+                      onChange={field.onChange}
+                      templates={openingTemplates.templates}
+                      state={openingTemplates.state}
+                      onRetry={openingTemplates.onRetry}
+                      disabled={pending}
+                      messages={messages}
+                    />
+                  )}
+                />
+              ) : null}
             </div>
           ) : null}
         </CardContent>
@@ -435,12 +471,19 @@ export function StoreCreateForm({
             </Button>
           ) : null}
 
+          {/*
+            Keyed apart, so the two are never one DOM node. Unkeyed, React turned the "Continuar"
+            being clicked into this submit button before the click had finished — the step change
+            is flushed inside the click — and the browser then submitted the form with it: the
+            shop was created on arriving at the last step, which nobody ever got to use.
+          */}
           {isLast ? (
-            <Button type="submit" disabled={pending || !ready}>
+            <Button key="create" type="submit" disabled={pending || !ready}>
               {pending ? text.submitting : text.submit}
             </Button>
           ) : (
             <Button
+              key="next"
               type="button"
               disabled={pending || !ready}
               onClick={() => void next()}

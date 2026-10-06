@@ -135,6 +135,8 @@ export const ptBR: WebMessages = {
     PAGE_TEMPLATE_UNAVAILABLE: "Esse modelo não está disponível para esta loja.",
     PAGE_PRODUCT_REQUIRED: "Escolha o produto principal da página.",
     PAGE_PRODUCT_INVALID: "Esse produto não é desta loja. Escolha outro.",
+    PAGE_CATEGORY_REQUIRED: "Escolha a categoria principal da página.",
+    PAGE_CATEGORY_INVALID: "Essa categoria não é desta loja ou está escondida. Escolha outra.",
     PAGE_DRAFT_STALE: "Outra aba alterou esta página. Recarregue para ver o que mudou.",
     PAGE_REVISION_INVALID: "Esta aba ficou para trás. Recarregue a página.",
     PAGE_VERSION_NOT_FOUND: "Essa versão não existe mais.",

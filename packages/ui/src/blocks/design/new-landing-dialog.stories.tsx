@@ -4,7 +4,7 @@ import { useState } from "react"
 import { fn } from "storybook/test"
 
 // Block
-import { LANDING_TEMPLATES } from "./landing-template-picker"
+import { SHOP_LANDINGS } from "./landing-template.fixtures"
 import { emptyNewLanding, NewLandingDialog, type NewLandingValue } from "./new-landing-dialog"
 
 const products = [
@@ -23,7 +23,7 @@ const meta = {
     onChange: fn(),
     addressPrefix: "/mutante/lp/",
     addressState: "idle",
-    templates: LANDING_TEMPLATES,
+    templates: SHOP_LANDINGS,
     products,
     productsState: "ready",
     onSubmit: fn(),
@@ -49,4 +49,12 @@ export const Preenchido: Story = {
 
 export const EnderecoOcupado: Story = {
   args: { value: { ...emptyNewLanding("em-branco"), title: "Ofertas" }, addressState: "taken" },
+}
+
+/** A lista de modelos ainda não chegou: cartões cinza, e "Criar página" espera. */
+export const ModelosCarregando: Story = { args: { value: { ...emptyNewLanding(), title: "Ofertas" }, templates: [], templatesState: "loading" } }
+
+/** A lista de modelos não pôde ser lida. */
+export const ModelosFalharam: Story = {
+  args: { value: { ...emptyNewLanding(), title: "Ofertas" }, templates: [], templatesState: "failed", onRetryTemplates: fn() },
 }
