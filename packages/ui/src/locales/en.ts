@@ -1165,6 +1165,7 @@ export const en: UiMessages = {
         addressInvalid: "Use letters and numbers, at least two of them.",
         template: "Template",
         templates: {
+          "servicos-b2b": { title: "Services for businesses", description: "An introduction, the services, about the company, how it works, questions and a contact form." },
           lancamento: { title: "Product launch", description: "A cover with the product, why to buy it, the product for sale and what is new." },
           "promocao-relampago": { title: "Flash sale", description: "The product on sale up front, more deals from the shop and its promises." },
           colecao: { title: "Collection or category", description: "The product's whole category, with a cover and the shop's promises." },

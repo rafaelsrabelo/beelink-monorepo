@@ -1166,6 +1166,7 @@ export const ptBR: UiMessages = {
         addressInvalid: "Use letras e números, com pelo menos duas letras.",
         template: "Modelo",
         templates: {
+          "servicos-b2b": { title: "Serviços para empresas", description: "Apresentação, serviços, sobre a empresa, como funciona, dúvidas e formulário de contato." },
           lancamento: { title: "Lançamento de produto", description: "Capa com o produto, por que comprar, o produto à venda e as novidades." },
           "promocao-relampago": { title: "Promoção relâmpago", description: "O produto em oferta em destaque, mais ofertas da loja e as vantagens." },
           colecao: { title: "Coleção ou categoria", description: "A categoria do produto inteira, com capa e as vantagens da loja." },

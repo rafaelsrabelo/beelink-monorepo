@@ -1356,7 +1356,11 @@ export interface UiMessages {
         addressTaken: string
         addressInvalid: string
         template: string
-        templates: Record<"lancamento" | "promocao-relampago" | "colecao" | "em-branco", { title: string; description: string }>
+        /**
+         * Every model of the API's catalogue, by its id: the API answers ids and these are their words.
+         * The dialog draws the four a landing is made from; "servicos-b2b" is a site's home.
+         */
+        templates: Record<"servicos-b2b" | "lancamento" | "promocao-relampago" | "colecao" | "em-branco", { title: string; description: string }>
         /** Under the templates on a site, which sells no product. */
         siteBlankOnly: string
         product: string
