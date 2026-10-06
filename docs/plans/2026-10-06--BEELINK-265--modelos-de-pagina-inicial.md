@@ -40,3 +40,16 @@ A galeria (W4), o botão de aplicar (W5), escolher modelo ao criar a loja (W7), 
 ## Acréscimos durante a implementação
 
 - **Decisão 7, corrigida ao ver as rotas ao vivo.** O corte de "mais de quatro produtos" ainda repetia a loja inteira: numa loja de sete produtos, "Novidades" (até oito) e "Todos os produtos" desenhavam os mesmos sete. A faixa de novidades só entra quando a loja tem **mais produtos do que ela desenha** (mais de oito).
+
+## Para os próximos tickets
+
+### W4 — a galeria
+
+- Para a inicial de uma loja online, `GET …/page-templates` responde quatro modelos, todos com `needs: []`: a prévia é pedida sem `productId`. O seletor de produto só aparece numa landing.
+- Nome e descrição estão em `design.pages.form.templates[id]` nos locales do `packages/ui`, com os dos outros modelos.
+- Numa loja vazia a prévia de cada um é quase a mesma (o nome da loja, as vantagens e uma vitrine sem produto). A galeria deve dizer isso de algum jeito, ou ao menos não parecer quebrada: a vitrine vazia não desenha nada na loja.
+
+### W7 — modelo ao criar a loja
+
+- Na criação a loja não tem produto: qualquer um dos quatro grava o nome e a vitrine, quase a página padrão. Vale aplicar o modelo depois do primeiro produto, ou guardar a escolha, em vez de gravar as faixas no ato.
+- `shopSubject(title, paymentMethods, now, shop)` aceita o estoque; `shopStockOf(tx, storeId, now)` o lê.
