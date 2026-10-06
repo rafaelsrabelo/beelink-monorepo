@@ -1,4 +1,5 @@
 // Block
+import { paidAfterCancelled, paidPix, pendingPix } from "./order-payment.fixtures"
 import type { OrderDetailView } from "./order-types"
 
 export const order: OrderDetailView = {
@@ -54,3 +55,12 @@ export const cashbackOrder: OrderDetailView = {
   status: "DELIVERED",
   cashback: { earnedCents: 1218, rateBps: 500, status: "AVAILABLE", remainingCents: 1218, availableAt: "2026-09-26T10:00:00.000Z", expiresAt: "2026-10-26T10:00:00.000Z", unrecoveredCents: 0 },
 }
+
+/** Charged online and paid by Pix (BEELINK-207). */
+export const paidOnlineOrder: OrderDetailView = { ...order, paymentChannel: "ONLINE", payment: paidPix }
+
+/** Charged online, its Pix still to be paid. */
+export const awaitingOnlineOrder: OrderDetailView = { ...order, status: "RECEIVED", paymentChannel: "ONLINE", payment: pendingPix }
+
+/** Cancelled, and paid afterwards: the money is the shop's to give back. */
+export const paidAfterCancelledOrder: OrderDetailView = { ...order, status: "CANCELLED", paymentChannel: "ONLINE", payment: paidAfterCancelled }

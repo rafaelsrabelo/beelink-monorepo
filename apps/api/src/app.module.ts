@@ -10,6 +10,7 @@ import { HealthController } from './health.controller.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard.js';
 import { AddressesModule } from './modules/addresses/addresses.module.js';
+import { PaymentEventsModule } from './modules/payment-events/payment-events.module.js';
 import { PageModule } from './modules/page/page.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { CustomersModule } from './modules/customers/customers.module.js';
@@ -41,7 +42,8 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
           env.NODE_ENV === 'development'
             ? { target: 'pino-pretty', options: { singleLine: true } }
             : undefined,
-        redact: ['req.headers.authorization', 'req.headers.cookie'],
+        // A webhook's token is a secret of its shop as much as a session's is of its person (BEELINK-206).
+        redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["asaas-access-token"]'],
       },
     }),
     PrismaModule,
@@ -63,6 +65,7 @@ import { PrismaModule } from './shared/prisma/prisma.module.js';
     CashbackModule,
     DeliveryModule,
     CarrierTrackingModule,
+    PaymentEventsModule,
     IntegrationsModule,
     UploadsModule,
   ],

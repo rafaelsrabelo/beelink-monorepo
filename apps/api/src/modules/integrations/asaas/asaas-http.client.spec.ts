@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // App
-import { AsaasOutcomeUnknown, AsaasRefused, AsaasUnreachable } from './asaas.client.js';
+import { ASAAS_WEBHOOK_EVENTS, AsaasOutcomeUnknown, AsaasRefused, AsaasThrottled, AsaasUnreachable } from './asaas.client.js';
 import type { AsaasConfig } from './asaas.config.js';
 import { AsaasHttpClient } from './asaas-http.client.js';
 
@@ -79,6 +79,49 @@ describe('AsaasHttpClient', () => {
     await expect(client.deleteWebhook(config, KEY, 'wh_01')).resolves.toBeUndefined();
   });
 
+  /** One webhook takes any event: the charge's own, and those of the account's keys (BEELINK-206). */
+  it('asks for every event the receiver reads — the risk review, the capture, a change, a receipt undone, and a key that stopped working', async () => {
+    const fetched = answer(200, { id: 'wh_01' });
+    await client.createWebhook(config, KEY, { name: 'n', url: 'u', email: 'e', authToken: 'a'.repeat(43) });
+
+    const { events } = sent(fetched).body as { events: string[] };
+    expect(events).toEqual([...ASAAS_WEBHOOK_EVENTS]);
+    expect(events).toEqual(expect.arrayContaining(['PAYMENT_AWAITING_RISK_ANALYSIS', 'PAYMENT_APPROVED_BY_RISK_ANALYSIS', 'PAYMENT_AUTHORIZED', 'PAYMENT_RECEIVED_IN_CASH_UNDONE', 'PAYMENT_UPDATED', 'ACCESS_TOKEN_DISABLED', 'ACCESS_TOKEN_DELETED', 'ACCESS_TOKEN_EXPIRED']));
+    expect(new Set(events).size).toBe(events.length);
+  });
+
+  it('reads where a webhook stands, answers none for one the account does not hold, and sets one going again', async () => {
+    const read = answer(200, { id: 'wh_01', enabled: true, interrupted: true, penalizedRequestsCount: 15, somethingNew: 1 });
+    expect(await client.webhook(config, KEY, 'wh_01')).toEqual({ enabled: true, interrupted: true });
+    expect([sent(read).url, sent(read).method]).toEqual(['https://api-sandbox.asaas.com/v3/webhooks/wh_01', 'GET']);
+
+    answer(200, { id: 'wh_01' });
+    expect(await client.webhook(config, KEY, 'wh_01')).toEqual({ enabled: true, interrupted: false });
+    answer(404, { errors: [{ code: 'not_found', description: 'Webhook não encontrado.' }] });
+    expect(await client.webhook(config, KEY, 'wh_01')).toBeNull();
+    answer(401, { errors: [{ code: 'invalid_access_token', description: 'A chave de API fornecida é inválida' }] });
+    await expect(client.webhook(config, KEY, 'wh_01')).rejects.toMatchObject({ status: 401 });
+
+    const resumed = answer(200, { id: 'wh_01', interrupted: false });
+    await client.resumeWebhook(config, KEY, 'wh_01');
+    expect([sent(resumed).url, sent(resumed).method, sent(resumed).body]).toEqual(['https://api-sandbox.asaas.com/v3/webhooks/wh_01', 'PUT', { enabled: true, interrupted: false }]);
+  });
+
+  it('says when Asaas asked to wait, by the seconds in RateLimit-Reset — and leaves the time out when it names none it can read', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ errors: [] }, { status: 429, headers: { 'RateLimit-Reset': '120' } })));
+    const before = Date.now();
+    const throttled = (await client.account(config, KEY).catch((error: unknown) => error)) as AsaasThrottled;
+    expect(throttled).toBeInstanceOf(AsaasThrottled);
+    expect(throttled).toBeInstanceOf(AsaasUnreachable);
+    expect(throttled.retryAt!.getTime()).toBeGreaterThanOrEqual(before + 120_000);
+    expect(throttled.retryAt!.getTime()).toBeLessThan(before + 125_000);
+
+    for (const header of [{}, { 'RateLimit-Reset': 'soon' }, { 'RateLimit-Reset': '-5' }] as Record<string, string>[]) {
+      vi.stubGlobal('fetch', vi.fn(async () => Response.json({}, { status: 429, headers: header })));
+      expect(((await client.account(config, KEY).catch((error: unknown) => error)) as AsaasThrottled).retryAt).toBeNull();
+    }
+  });
+
   it('talks to production at its own address', async () => {
     const fetched = answer(200, { name: 'Lessari' });
 
@@ -149,7 +192,7 @@ describe('AsaasHttpClient', () => {
     it('creates a charge in full with the value in reais, the due day and the order as its reference — and no callback', async () => {
       const fetched = answer(200, paymentBody);
 
-      expect(await client.createCharge(config, KEY, request)).toEqual({ id: 'pay_080225913252', status: 'PENDING', deleted: false, billingType: 'PIX', valueCents: 5990, dueDate: '2026-10-07', invoiceUrl: 'https://sandbox.asaas.com/i/080225913252', installmentId: null, installmentNumber: null, externalReference: 'order-1' });
+      expect(await client.createCharge(config, KEY, request)).toEqual({ id: 'pay_080225913252', status: 'PENDING', deleted: false, billingType: 'PIX', valueCents: 5990, dueDate: '2026-10-07', invoiceUrl: 'https://sandbox.asaas.com/i/080225913252', installmentId: null, installmentNumber: null, externalReference: 'order-1', refunds: [] });
       const { url, method, headers, body } = sent(fetched);
       expect([url, method]).toEqual(['https://api-sandbox.asaas.com/v3/payments', 'POST']);
       expect(headers).toMatchObject({ access_token: KEY });
@@ -171,6 +214,12 @@ describe('AsaasHttpClient', () => {
       await expect(client.createCharge(config, KEY, request)).rejects.toBeInstanceOf(AsaasOutcomeUnknown);
       answer(200, {});
       await expect(client.createCharge(config, KEY, request)).rejects.toBeInstanceOf(AsaasOutcomeUnknown);
+
+      // A 429 is turned away before anything is done: nothing was made, and the wait is told.
+      answer(429, { errors: [] });
+      const throttled = await client.createCharge(config, KEY, request).catch((error: unknown) => error);
+      expect(throttled).toBeInstanceOf(AsaasThrottled);
+      expect(throttled).not.toBeInstanceOf(AsaasOutcomeUnknown);
 
       answer(400, { errors: [{ code: 'invalid_customer', description: `Customer inválido para a chave ${KEY}.` }] });
       const refused = await client.createCharge(config, KEY, request).catch((error: unknown) => error);
@@ -211,7 +260,7 @@ describe('AsaasHttpClient', () => {
 
     it('keeps only an https invoice link, and does not break on what Asaas leaves out', async () => {
       answer(200, { id: 'pay_1', invoiceUrl: 'javascript:alert(1)' });
-      expect(await client.charge(config, KEY, 'pay_1')).toEqual({ id: 'pay_1', status: 'UNKNOWN', deleted: false, billingType: 'UNDEFINED', valueCents: 0, dueDate: '', invoiceUrl: null, installmentId: null, installmentNumber: null, externalReference: null });
+      expect(await client.charge(config, KEY, 'pay_1')).toEqual({ id: 'pay_1', status: 'UNKNOWN', deleted: false, billingType: 'UNDEFINED', valueCents: 0, dueDate: '', invoiceUrl: null, installmentId: null, installmentNumber: null, externalReference: null, refunds: [] });
     });
 
     it('removes a charge, and a whole plan, taking one already gone as gone and a refusal as a refusal', async () => {
@@ -254,6 +303,8 @@ describe('AsaasHttpClient', () => {
         () => client.deleteCharge(config, KEY, 'pay_1'),
         () => client.deleteInstallment(config, KEY, 'ins_1'),
         () => client.pixQrCode(config, KEY, 'pay_1'),
+        () => client.refund(config, KEY, { id: 'pay_1', installmentId: null }, { valueCents: 1000, description: 'Defeito' }),
+        () => client.refundsOf(config, KEY, { id: 'pay_1', installmentId: 'ins_1' }),
       ];
       for (const call of calls) {
         answer(401, { errors: [{ code: 'invalid_access_token', description: `A chave ${KEY} é inválida` }] });
@@ -266,6 +317,68 @@ describe('AsaasHttpClient', () => {
         expect(unsent).toBeInstanceOf(AsaasUnreachable);
         expect(String(unsent)).not.toContain(KEY);
       }
+    });
+  });
+
+  describe('refunding (BEELINK-208)', () => {
+    const paid = { object: 'payment', id: 'pay_1', status: 'RECEIVED', value: 59.9, billingType: 'PIX' };
+
+    it('refunds a charge with the amount in reais and the reason, and answers its refunds as Asaas lists them', async () => {
+      const fetched = answer(200, { ...paid, refunds: [{ dateCreated: '2026-10-06 10:00:00', status: 'DONE', value: 19.9, description: 'Defeito' }, { status: 'CANCELLED', value: 5 }, { value: 1.1 }, { status: 'PENDING' }] });
+
+      expect(await client.refund(config, KEY, { id: 'pay_1', installmentId: null }, { valueCents: 1990, description: 'Defeito' })).toEqual({
+        whole: false,
+        // One with no status is not money back; one with no amount is nothing to count.
+        refunds: [{ status: 'DONE', valueCents: 1990 }, { status: 'CANCELLED', valueCents: 500 }, { status: 'UNKNOWN', valueCents: 110 }],
+      });
+      const { url, method, body } = sent(fetched);
+      expect([url, method]).toEqual(['https://api-sandbox.asaas.com/v3/payments/pay_1/refund', 'POST']);
+      expect(body).toEqual({ value: 19.9, description: 'Defeito' });
+    });
+
+    it('refunds a plan as the one thing it is: by the plan, with the amount and no description', async () => {
+      const fetched = answer(200, { object: 'installment', id: 'ins_1', refunds: [{ status: 'PENDING', value: 30, paymentId: 'pay_1' }] });
+
+      expect(await client.refund(config, KEY, { id: 'pay_1', installmentId: 'ins_1' }, { valueCents: 3000, description: 'Defeito' })).toEqual({ whole: false, refunds: [{ status: 'PENDING', valueCents: 3000 }] });
+      const { url, method, body } = sent(fetched);
+      expect([url, method]).toEqual(['https://api-sandbox.asaas.com/v3/installments/ins_1/refund', 'POST']);
+      expect(body).toEqual({ value: 30 });
+    });
+
+    it('says a charge Asaas calls refunded is whole, and reads `refunds: null` as none', async () => {
+      answer(200, { ...paid, status: 'REFUNDED', refunds: null });
+
+      expect(await client.refund(config, KEY, { id: 'pay_1', installmentId: null }, { valueCents: 5990, description: 'Defeito' })).toEqual({ whole: true, refunds: [] });
+    });
+
+    it("keeps Asaas's refusal — the balance — and does not know what a silence did", async () => {
+      answer(400, { errors: [{ code: 'invalid_action', description: 'Saldo insuficiente para realizar o estorno.' }] });
+      const refused = await client.refund(config, KEY, { id: 'pay_1', installmentId: null }, { valueCents: 5990, description: 'x' }).catch((error: unknown) => error);
+      expect(refused).toMatchObject({ status: 400, code: 'invalid_action', reason: 'Saldo insuficiente para realizar o estorno.' });
+      expect(refused).toBeInstanceOf(AsaasRefused);
+
+      answer(502, {});
+      await expect(client.refund(config, KEY, { id: 'pay_1', installmentId: null }, { valueCents: 5990, description: 'x' })).rejects.toBeInstanceOf(AsaasOutcomeUnknown);
+      // A 429 turned the request away before anything was done.
+      answer(429, {});
+      const throttled = await client.refund(config, KEY, { id: 'pay_1', installmentId: null }, { valueCents: 5990, description: 'x' }).catch((error: unknown) => error);
+      expect(throttled).toBeInstanceOf(AsaasThrottled);
+      expect(throttled).not.toBeInstanceOf(AsaasOutcomeUnknown);
+    });
+
+    it("reads a charge's refunds, and a plan's, by its id; none such is null, and an answer with no id is not an answer", async () => {
+      const one = answer(200, { ...paid, refunds: [{ status: 'DONE', value: 10 }] });
+      expect(await client.refundsOf(config, KEY, { id: 'pay_1', installmentId: null })).toEqual({ whole: false, refunds: [{ status: 'DONE', valueCents: 1000 }] });
+      expect([sent(one).url, sent(one).method]).toEqual(['https://api-sandbox.asaas.com/v3/payments/pay_1', 'GET']);
+
+      const plan = answer(200, { object: 'installment', id: 'ins_1', refunds: [] });
+      expect(await client.refundsOf(config, KEY, { id: 'pay_1', installmentId: 'ins_1' })).toEqual({ whole: false, refunds: [] });
+      expect(sent(plan).url).toBe('https://api-sandbox.asaas.com/v3/installments/ins_1');
+
+      answer(404, { errors: [{ code: 'not_found', description: 'Not found' }] });
+      expect(await client.refundsOf(config, KEY, { id: 'pay_9', installmentId: null })).toBeNull();
+      answer(200, {});
+      await expect(client.refundsOf(config, KEY, { id: 'pay_1', installmentId: null })).rejects.toBeInstanceOf(AsaasUnreachable);
     });
   });
 });

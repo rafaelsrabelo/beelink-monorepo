@@ -43,14 +43,16 @@ const PAID_AND_UNSETTLED = new Set(['REFUND_REQUESTED', 'REFUND_IN_PROGRESS', 'C
 
 /**
  * What Asaas's word makes of a charge that stands at `current` — null for one bee-link first hears of.
- * A status that says nothing new leaves it where it stands; a charge first heard of in one is taken
- * as paid when the word is of money that was paid, and as pending when the word is unknown.
+ * A word of money that was paid and is in dispute or on its way back leaves a paid charge where it
+ * stands, and makes paid one that was not yet; a word nobody knows leaves the charge as it is, and
+ * one first heard of in it pending.
  */
 export function statusSaidBy(asaasStatus: string, current: OrderPaymentStatus | null): OrderPaymentStatus {
   const said = SAID[asaasStatus];
   if (said) return said;
-  if (current) return current;
-  return PAID_AND_UNSETTLED.has(asaasStatus) ? 'CONFIRMED' : 'PENDING';
+  // Money on its way back was paid first: a charge still waiting here missed that news, and is paid.
+  if (PAID_AND_UNSETTLED.has(asaasStatus)) return current && wasPaid(current) ? current : 'CONFIRMED';
+  return current ?? 'PENDING';
 }
 
 /**

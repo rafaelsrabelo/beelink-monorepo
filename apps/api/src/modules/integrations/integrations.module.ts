@@ -10,6 +10,8 @@ import { AsaasConnectionService } from './asaas/asaas-connection.service.js';
 import { AsaasHttpClient } from './asaas/asaas-http.client.js';
 import { AsaasSettingsController } from './asaas/asaas-settings.controller.js';
 import { AsaasSettingsService } from './asaas/asaas-settings.service.js';
+import { AsaasWebhookDoor } from './asaas/asaas-webhook-door.js';
+import { AsaasWebhookKeeper } from './asaas/asaas-webhook-keeper.js';
 import { CarrierGapsService } from './carrier-gaps.service.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { CarrierQuotes } from './melhor-envio/carrier-quote.service.js';
@@ -33,7 +35,9 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  * key (BEELINK-202), through `AsaasClient` — a port, bound here to Asaas over HTTP — and how the shop
  * is paid through it is kept beside the connection (BEELINK-203). `AsaasAcceptance` and `AsaasCharges` are
  * exported for the payments (BEELINK-204): what a shop takes now, and its charges by the shop's id —
- * neither takes nor answers a key.
+ * neither takes nor answers a key. For the shop's webhook (BEELINK-206): `AsaasWebhookDoor` says whose
+ * token a request carries, `AsaasWebhookKeeper` keeps the webhook sending and the key in use, and
+ * `AsaasConnectionService` is exported for its `beforeKeyLeaves` alone.
  */
 @Module({
   imports: [StoresModule],
@@ -51,7 +55,9 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
     AsaasSettingsService,
     AsaasAcceptance,
     AsaasCharges,
+    AsaasWebhookDoor,
+    AsaasWebhookKeeper,
   ],
-  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasCharges],
+  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasCharges, AsaasConnectionService, AsaasWebhookDoor, AsaasWebhookKeeper],
 })
 export class IntegrationsModule {}

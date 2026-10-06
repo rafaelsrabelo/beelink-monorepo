@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { OrderList } from "./order-list"
-import { orders } from "./orders.fixtures"
+import { onlineOrders, orders } from "./orders.fixtures"
 
 const hrefOf = (number: number) => `/admin/loja/orders/${number}`
 
@@ -23,6 +23,27 @@ describe("OrderList", () => {
     expect(first).toHaveTextContent("Pix")
     expect(first).toHaveTextContent("Em preparo")
     expect(within(table).getAllByRole("row")[2]).toHaveTextContent("1 item")
+  })
+
+  /** BEELINK-207: an order charged online says where its money stands; one settled with the shop never does. */
+  it("says where the money of an order charged online stands, in the table and on the cards", () => {
+    render(<OrderList orders={onlineOrders} hrefOf={hrefOf} newHref="/admin/loja/orders/new" />)
+
+    const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1)
+    expect(rows[0]).toHaveTextContent("PixPago")
+    expect(rows[1]).toHaveTextContent("Cartão de créditoAguardando pagamento")
+    // No charge made yet is the same wait to the shop.
+    expect(rows[2]).toHaveTextContent("PixAguardando pagamento")
+    expect(rows[3]).toHaveTextContent("PixPagoPagamento a resolver")
+    expect(rows[4]).toHaveTextContent("PixEstornado")
+    expect(rows[5]).toHaveTextContent("Dinheiro")
+    expect(rows[5]).not.toHaveTextContent(/Pago|Aguardando/)
+
+    const cards = screen.getAllByRole("listitem")
+    expect(cards[0]).toHaveTextContent("Pago")
+    expect(cards[1]).toHaveTextContent("Aguardando pagamento")
+    expect(cards[3]).toHaveTextContent("Pagamento a resolver")
+    expect(cards[5]).not.toHaveTextContent(/Pago|Aguardando/)
   })
 
   it("opens an order at its own page, the link named in full", () => {
@@ -58,7 +79,7 @@ describe("OrderList", () => {
     expect(screen.getByRole("link", { name: "Registrar pedido" })).toHaveAttribute("href", "/admin/loja/orders/new")
 
     rerender(<OrderList orders={[]} filtered hrefOf={hrefOf} newHref="/admin/loja/orders/new" />)
-    expect(screen.getByText("Nenhum pedido com essa busca ou esse status.")).toBeInTheDocument()
+    expect(screen.getByText("Nenhum pedido com essa busca ou esses filtros.")).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Registrar pedido" })).not.toBeInTheDocument()
   })
 

@@ -68,7 +68,7 @@ describe("an order's conversation", () => {
     expect(born.statusCode).toBe(200);
     expect(born.json<CustomerConversation>()).toEqual({
       order: { number: 1, status: 'RECEIVED', fulfillment: 'PICKUP', open: true },
-      messages: [{ kind: 'STATUS', id: expect.any(String), status: 'RECEIVED', cashbackCents: null, createdAt: expect.any(String), readAt: expect.any(String) }],
+      messages: [{ kind: 'STATUS', id: expect.any(String), status: 'RECEIVED', unpaid: false, cashbackCents: null, createdAt: expect.any(String), readAt: expect.any(String) }],
       unread: 0,
     });
 
@@ -117,7 +117,7 @@ describe("an order's conversation", () => {
     await move('PREPARING');
 
     const read = (await call('GET', mine(), shopper)).json<CustomerConversation>();
-    expect(read.messages.map((line) => (line.kind === 'STATUS' ? line.status : line.body))).toEqual(['RECEIVED', 'ACCEPTED', 'PREPARING']);
+    expect(read.messages.map((line) => (line.kind === 'STATUS' ? line.status : line.kind === 'MESSAGE' ? line.body : line.kind))).toEqual(['RECEIVED', 'ACCEPTED', 'PREPARING']);
     expect(read.unread).toBe(2);
     // The header's balloon counts them from the list.
     const [row] = (await call('GET', '/api/stores/lessari/customer/conversations', shopper)).json<CustomerConversationSummary[]>();
@@ -160,7 +160,7 @@ describe("an order's conversation", () => {
     await prisma.orderConversation.deleteMany({ where: { order: { number: 2 } } });
     await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'ACCEPTED' });
     const later = (await call('GET', mine(2), shopper)).json<CustomerConversation>();
-    expect(later.messages).toEqual([{ kind: 'STATUS', id: expect.any(String), status: 'ACCEPTED', cashbackCents: null, createdAt: expect.any(String), readAt: null }]);
+    expect(later.messages).toEqual([{ kind: 'STATUS', id: expect.any(String), status: 'ACCEPTED', unpaid: false, cashbackCents: null, createdAt: expect.any(String), readAt: null }]);
   });
 
   it('closes when the order is over, and stays readable to both sides', async () => {
@@ -192,7 +192,7 @@ describe("an order's conversation", () => {
     await call('POST', `${shops(1)}/messages`, owner, { body: 'Resposta dois' });
 
     const list = (await call('GET', '/api/stores/lessari/customer/conversations', shopper)).json<CustomerConversationSummary[]>();
-    const last = (row: CustomerConversationSummary) => (row.lastMessage.kind === 'STATUS' ? row.lastMessage.status : `${row.lastMessage.author}: ${row.lastMessage.body}`);
+    const last = (row: CustomerConversationSummary) => (row.lastMessage.kind === 'STATUS' ? row.lastMessage.status : row.lastMessage.kind === 'MESSAGE' ? `${row.lastMessage.author}: ${row.lastMessage.body}` : row.lastMessage.kind);
     // Order 2 is newer, but over: the open one comes first. Each row counts what the shopper has not
     // read — the shop's answers, and the shop's cancel of order 2.
     expect(list.map((row) => [row.order.number, row.order.open, last(row), row.unread])).toEqual([

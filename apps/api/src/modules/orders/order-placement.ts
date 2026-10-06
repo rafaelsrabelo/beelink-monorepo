@@ -11,6 +11,7 @@ import { earningForOrder, holdOrderCashback } from '../cashback/cashback-orders.
 import { redeemCashback } from '../cashback/cashback-redemption.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { belowMinimumOf } from '../payments/payment-terms.js';
+import { paymentDueAtOf } from '../payments/payments.constants.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { lockCustomer } from '../customers/customer-lock.js';
 import { redeemCoupon } from '../promotions/order-discounts.js';
@@ -172,6 +173,8 @@ export class OrderPlacement {
           paymentMethod: placement.paymentMethod,
           paymentChannel: online ? 'ONLINE' : 'OFFLINE',
           paymentInstallments: installments,
+          // A total closed at the checkout is paid within three days of it (BEELINK-206).
+          paymentDueAt: online && priced.totals.deliveryFeeCents !== null ? paymentDueAtOf(new Date()) : null,
           ...delivery,
           ...deliveryWindowColumnsOf(delivering ? placement.deliveryWindow : null),
           deliveryDocument: delivering && placement.deliveryCarrier ? (placement.deliveryDocument ?? null) : null,

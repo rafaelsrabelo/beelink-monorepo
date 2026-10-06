@@ -30,6 +30,7 @@ import type {
   OrderDeliveryPayload,
   OrderFulfillment,
   OrderListQuery,
+  OrderPaymentFilter,
   OrderShippingChoice,
   OrderStatus,
   PaymentMethod,
@@ -39,6 +40,8 @@ import type {
 // App
 import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import { blankToNull, normaliseWhatsapp, trim } from '../../stores/dto/store-fields.dto.js';
+import { ORDER_PAYMENT_FILTERS } from '../../payments/dto/payment.response.js';
+import { OrderCancellationRefundDto } from '../../payments/dto/refund-order.dto.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
   ORDER_AMOUNT_MAX_CENTS,
@@ -205,6 +208,12 @@ export class UpdateOrderStatusDto implements UpdateOrderStatusPayload {
   @ApiProperty({ enum: ORDER_STATUSES })
   @IsIn(ORDER_STATUSES)
   status!: OrderStatus;
+
+  @ApiPropertyOptional({ type: OrderCancellationRefundDto, description: 'On a cancellation of an order that holds its customer\'s money (BEELINK-208): the refund of all that is left, asked of Asaas first. Without it such a cancellation answers ORDER_PAID.' })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OrderCancellationRefundDto)
+  refund?: OrderCancellationRefundDto;
 }
 
 /** How the panel asks for a page. Absent means all, so a bare `GET` is the first page of everything. */
@@ -214,6 +223,15 @@ export class ListOrdersDto implements OrderListQuery {
   @blankToNull
   @IsIn(ORDER_STATUSES)
   status?: OrderStatus;
+
+  @ApiPropertyOptional({
+    enum: ORDER_PAYMENT_FILTERS,
+    description: 'By where the money stands (BEELINK-207): PAID holds the customer\'s money; PENDING is charged online, not cancelled and never paid; PAID_UNSEEN is paid and not opened since; STRAY has money it did not ask for.',
+  })
+  @IsOptional()
+  @blankToNull
+  @IsIn(ORDER_PAYMENT_FILTERS)
+  payment?: OrderPaymentFilter;
 
   @ApiPropertyOptional({ description: 'An order number, a customer name, or digits of their phone.' })
   @IsOptional()

@@ -24,7 +24,7 @@ const PATH = "/loja/api/orders/14/payment"
 /** Past TanStack's wait before a first retry. */
 const RETRY_MS = 1_500
 
-const pix = (over: Partial<CustomerOrderPayment> = {}): CustomerOrderPayment => ({ status: "PENDING", method: "PIX", installments: 1, amountCents: 5990, refundedCents: 0, expiresAt: LATER, paidAt: null, pix: { payload: "00020101-PIX", image: "aGk=", expiresAt: LATER }, invoiceUrl: null, ...over })
+const pix = (over: Partial<CustomerOrderPayment> = {}): CustomerOrderPayment => ({ status: "PENDING", method: "PIX", installments: 1, amountCents: 5990, refundedCents: 0, refundingCents: 0, refunds: [], expiresAt: LATER, paidAt: null, pix: { payload: "00020101-PIX", image: "aGk=", expiresAt: LATER }, invoiceUrl: null, ...over })
 const card = (over: Partial<CustomerOrderPayment> = {}): CustomerOrderPayment => pix({ method: "CREDIT_CARD", installments: 3, amountCents: 23970, pix: null, invoiceUrl: "https://www.asaas.com/i/abc", ...over })
 /** An answer with no stream under it: a real `Response` hands its body over on the real clock, which these tests hold still. */
 const reply = (status: number, body: unknown) => ({ ok: status < 400, status, json: async () => body }) as Response

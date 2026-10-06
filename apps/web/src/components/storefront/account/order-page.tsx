@@ -25,7 +25,7 @@ import { StorefrontFrame } from "@/components/storefront/storefront-frame"
 import { customerOrderAt } from "@/lib/customer-orders"
 import { getMessages } from "@/lib/locale"
 import { isOrderInProgress, orderActionOf } from "@/lib/order-card-view"
-import { orderPaymentLabelOf } from "@/lib/order-payment-label"
+import { holdsMoney, orderPaymentLabelOf } from "@/lib/order-payment-label"
 import { fullMomentOf, orderHandoverOf, orderHistoryOf, orderItemsOf, orderPaymentOf, orderPlacedLineOf, orderStatusViewOf, orderTrackingOf } from "@/lib/order-page-view"
 import { reorderActionOf } from "@/lib/reorder-view"
 import { shopperAt } from "@/lib/shopper"
@@ -169,6 +169,8 @@ export async function OrderPage({ query, ...params }: OrderPageProps) {
             <>
               <OrderTalkLive number={order.number} href={routes.accountConversation(order.number)} messages={ui} />
               {orderActionOf(order.status, order.payment) === "cancel" ? <OrderCancelLive slug={store.slug} number={order.number} messages={ui} /> : null}
+              {/* Paid, and so not theirs to cancel (BEELINK-208): the shop is who gives the money back. */}
+              {order.status === "RECEIVED" && holdsMoney(order.payment) ? <p className="basis-full text-[13px] text-shop-muted">{ui.storefront.orderCancelPaidHint}</p> : null}
             </>
           ) : undefined,
         })}
