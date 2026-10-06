@@ -11,8 +11,8 @@ const pages = integrationPagesOf("lessari")
 const CONNECT = "/api/stores/lessari/integrations/melhor-envio/connect"
 
 const melhorEnvio: MelhorEnvioConnection = { available: true, environment: "SANDBOX", status: "CONNECTED", account: { name: "Loja Lessari", email: null }, connectedAt: "2026-10-02T12:00:00.000Z", accessExpiresAt: "2026-11-01T12:00:00.000Z" }
-const asaas: AsaasConnection = { available: true, environment: "PRODUCTION", status: "CONNECTED", account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" }, webhook: "REGISTERED", connectedAt: "2026-10-05T12:00:00.000Z" }
-const asaasNever: AsaasConnection = { ...asaas, status: "DISCONNECTED", account: null, webhook: null, connectedAt: null }
+const asaas: AsaasConnection = { available: true, environment: "PRODUCTION", status: "CONNECTED", account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" }, webhook: "REGISTERED", approval: "APPROVED", approvalCheckedAt: "2026-10-05T12:00:00.000Z", connectedAt: "2026-10-05T12:00:00.000Z" }
+const asaasNever: AsaasConnection = { ...asaas, status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 
 const connectionsOf = (reads: Parameters<typeof integrationCardsOf>[0]) => integrationCardsOf(reads, pages, CONNECT).map((card) => card.connection)
 
@@ -65,5 +65,23 @@ describe("integrationCardsOf", () => {
   it("keeps the card of a connection still being read, or whose read failed, beside the one that was read", () => {
     expect(connectionsOf({ melhorEnvio: "loading", asaas })).toEqual(["loading", { state: "connected", account: "Lessari Moda LTDA", sandbox: false }])
     expect(connectionsOf({ melhorEnvio: "failed", asaas: "loading" })).toEqual(["failed", "loading"])
+  })
+})
+
+describe("integrationCardsOf, of an Asaas account not approved (BEELINK-278)", () => {
+  const asaasCard = (read: AsaasConnection) => connectionsOf({ melhorEnvio, asaas: read })[1]
+
+  it("is never a connected card: nothing is charged of it, whichever way it stands", () => {
+    for (const approval of ["PENDING", "AWAITING_APPROVAL", "REJECTED"] as const) expect(asaasCard({ ...asaas, approval })).toEqual({ state: "unapproved", account: "Lessari Moda LTDA", sandbox: false })
+  })
+
+  it("is connected when approved, and when the approval is not known", () => {
+    expect(asaasCard(asaas)).toMatchObject({ state: "connected" })
+    expect(asaasCard({ ...asaas, approval: null, approvalCheckedAt: null })).toMatchObject({ state: "connected" })
+  })
+
+  it("says a key to be reconnected, and a deployment that cannot connect, before anything of the approval", () => {
+    expect(asaasCard({ ...asaas, status: "NEEDS_RECONNECT", approval: "REJECTED" })).toMatchObject({ state: "needsReconnect" })
+    expect(asaasCard({ ...asaas, available: false, approval: "REJECTED" })).toMatchObject({ state: "unavailable" })
   })
 })

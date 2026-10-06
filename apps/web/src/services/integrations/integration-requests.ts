@@ -66,6 +66,11 @@ export function connectAsaas(slug: string, payload: AsaasConnectPayload): Promis
   return ask(asaas(slug), "POST", payload)
 }
 
+/** Asaas asked again, now, whether it approved the account: the connection as it then stands. */
+export function recheckAsaasApproval(slug: string): Promise<AsaasConnection> {
+  return ask(`${asaas(slug)}/approval`, "POST", {})
+}
+
 export function disconnectAsaas(slug: string): Promise<object> {
   return ask(asaas(slug), "DELETE")
 }

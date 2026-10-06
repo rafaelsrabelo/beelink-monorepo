@@ -1,6 +1,6 @@
 // Types
 import type { AsaasConnection, AsaasEnvironment, AsaasSettings, AsaasSettingsPayload } from "@harness-monorepo/contracts"
-import type { AsaasCardView, PaymentSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
+import type { AsaasCardView, AsaasUnapprovedValue, PaymentSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 type AsaasText = UiMessages["integrations"]["asaas"]
@@ -24,9 +24,30 @@ export function asaasCardOf(connection: AsaasConnection): AsaasCardView {
     sandbox: connection.environment === "SANDBOX",
     account: connection.account,
     webhook: connection.webhook,
+    approval: connection.approval,
     connectedAt: connection.connectedAt,
     signUpHref: SIGN_UP[connection.environment],
   }
+}
+
+/**
+ * How a connection stands as Asaas's verdict on its account goes (BEELINK-278): the standing of one
+ * read as not approved, which is charged nothing; null of any other — approved, not known, or a key
+ * that is not in good standing, which is the thing to mend first.
+ */
+export function asaasUnapprovedOf(connection: Pick<AsaasConnection, "status" | "approval">): AsaasUnapprovedValue | null {
+  return connection.status === "CONNECTED" && connection.approval !== null && connection.approval !== "APPROVED" ? connection.approval : null
+}
+
+/** When Asaas was last asked, as the shop's country reads it. */
+export function approvalCheckedAtOf(iso: string | null, locale = "pt-BR"): string | undefined {
+  if (!iso) return undefined
+  return new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }).format(new Date(iso))
+}
+
+/** Why asking Asaas again did not go through, in words. */
+export function approvalRecheckErrorOf(code: string, text: AsaasText["approval"]["recheckErrors"]): string {
+  return Object.hasOwn(text, code) ? text[code as keyof typeof text] : text.UNKNOWN
 }
 
 /**

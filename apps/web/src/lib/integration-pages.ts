@@ -38,12 +38,15 @@ export function connectionReadOf<T>(query: { data?: T; isError: boolean; isFetch
   return query.data ?? (query.isError && !query.isFetching ? "failed" : "loading")
 }
 
-type Connection = Pick<MelhorEnvioConnection, "available" | "status" | "environment"> & { account: { name: string } | null }
+/** `approval` is Asaas's alone (BEELINK-278): its account connects before Asaas approved it, and is charged nothing until then. */
+type Connection = Pick<MelhorEnvioConnection, "available" | "status" | "environment"> & { account: { name: string } | null; approval?: AsaasConnection["approval"] }
 
 function cardConnectionOf(read: ConnectionRead<Connection>): IntegrationCardView["connection"] {
   if (read === "loading" || read === "failed") return read
   const states = { DISCONNECTED: "disconnected", CONNECTED: "connected", NEEDS_RECONNECT: "needsReconnect" } satisfies Record<Connection["status"], IntegrationCardConnection["state"]>
-  return { state: read.available ? states[read.status] : "unavailable", account: read.account?.name ?? null, sandbox: read.environment === "SANDBOX" }
+  // Not known is not unapproved: only an account read as such loses the green.
+  const unapproved = read.status === "CONNECTED" && read.approval != null && read.approval !== "APPROVED"
+  return { state: !read.available ? "unavailable" : unapproved ? "unapproved" : states[read.status], account: read.account?.name ?? null, sandbox: read.environment === "SANDBOX" }
 }
 
 /**

@@ -9,10 +9,10 @@ import { en } from "@harness-monorepo/ui/locales/en"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { asaasCardOf, asaasConnectErrorOf, paymentErrorOf, paymentFormOf, paymentPayloadOf } from "./asaas-form"
+import { approvalCheckedAtOf, approvalRecheckErrorOf, asaasCardOf, asaasConnectErrorOf, asaasUnapprovedOf, paymentErrorOf, paymentFormOf, paymentPayloadOf } from "./asaas-form"
 
 const text = ptBR.integrations
-const connection: AsaasConnection = { available: true, environment: "SANDBOX", status: "CONNECTED", account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" }, webhook: "REGISTERED", connectedAt: "2026-10-05T12:00:00.000Z" }
+const connection: AsaasConnection = { available: true, environment: "SANDBOX", status: "CONNECTED", account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" }, webhook: "REGISTERED", approval: "APPROVED", approvalCheckedAt: "2026-10-06T21:40:00.000Z", connectedAt: "2026-10-05T12:00:00.000Z" }
 const saved: AsaasSettings = { pix: true, card: false, maxInstallments: 6, offline: true, updatedAt: "2026-10-05T12:00:00.000Z" }
 
 describe("asaasCardOf", () => {
@@ -23,6 +23,7 @@ describe("asaasCardOf", () => {
       sandbox: true,
       account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" },
       webhook: "REGISTERED",
+      approval: "APPROVED",
       connectedAt: "2026-10-05T12:00:00.000Z",
       signUpHref: "https://sandbox.asaas.com",
     })
@@ -30,10 +31,32 @@ describe("asaasCardOf", () => {
 
   /** Asaas's documentation names the sandbox's own site for a test account, and no address for one in production. */
   it("sends whoever has no account to the site of the environment this installation talks to", () => {
-    const never: AsaasConnection = { ...connection, status: "DISCONNECTED", account: null, webhook: null, connectedAt: null }
+    const never: AsaasConnection = { ...connection, status: "DISCONNECTED", account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null }
 
     expect(asaasCardOf(never).signUpHref).toBe("https://sandbox.asaas.com")
     expect(asaasCardOf({ ...never, environment: "PRODUCTION" })).toMatchObject({ sandbox: false, signUpHref: "https://www.asaas.com" })
+  })
+})
+
+describe("an account Asaas has not approved (BEELINK-278)", () => {
+  it("is one read as anything but approved, of a key in good standing — never one not known", () => {
+    for (const approval of ["PENDING", "AWAITING_APPROVAL", "REJECTED"] as const) expect(asaasUnapprovedOf({ status: "CONNECTED", approval })).toBe(approval)
+    expect(asaasUnapprovedOf({ status: "CONNECTED", approval: "APPROVED" })).toBeNull()
+    expect(asaasUnapprovedOf({ status: "CONNECTED", approval: null })).toBeNull()
+    expect(asaasUnapprovedOf({ status: "NEEDS_RECONNECT", approval: "REJECTED" })).toBeNull()
+    expect(asaasUnapprovedOf({ status: "DISCONNECTED", approval: null })).toBeNull()
+  })
+
+  it("says when Asaas was last asked by Brasília's clock, and nothing when it never was", () => {
+    expect(approvalCheckedAtOf("2026-10-06T21:40:00.000Z")).toBe("06/10/2026, 18:40")
+    expect(approvalCheckedAtOf(null)).toBeUndefined()
+  })
+
+  it("says in words why asking again did not go through, any unknown code as one sentence", () => {
+    const errors = text.asaas.approval.recheckErrors
+    expect(approvalRecheckErrorOf("INTEGRATION_UNREACHABLE", errors)).toBe(errors.INTEGRATION_UNREACHABLE)
+    expect(approvalRecheckErrorOf("RATE_LIMITED", errors)).toBe(errors.RATE_LIMITED)
+    expect(approvalRecheckErrorOf("toString", errors)).toBe(errors.UNKNOWN)
   })
 })
 
