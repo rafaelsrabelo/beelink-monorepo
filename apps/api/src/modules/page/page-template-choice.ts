@@ -2,13 +2,17 @@
 import { BadRequestException } from '@nestjs/common';
 
 // Types
-import type { PageKind, PaymentMethod, StoreType } from '@harness-monorepo/contracts';
+import type { ApplyTemplatePayload, PageKind, PaymentMethod, StoreType } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
+import type { PageDocument } from './page-document.js';
+import type { PageInScope } from './page-scope.js';
 import type { PageTemplate, TemplateSubject } from './template-catalog.js';
 
 // App
+import { sectionInclude } from './page.mapper.js';
+import { arrangedDocument } from './page-template-arrange.js';
 import { pageError } from './page.rules.js';
-import { shopSubject } from './template-catalog.js';
+import { shopSubject, templateOf } from './template-catalog.js';
 
 /*
   A model chosen for a page: whether it may be, and what it is filled from. One place for the three
@@ -88,4 +92,30 @@ export async function subjectOf(
   }
 
   return subject;
+}
+
+/**
+ * The draft a model would leave on a page, as one document, with nothing written: refused where the
+ * model does not apply, filled from the shop, and arranged around what the page keeps.
+ *
+ * Applying restores this document into the draft; the preview resolves it as the shop would be served.
+ * Under a transaction the caller has locked, every read here is of rows no other write is changing.
+ */
+export async function templateDocument(
+  db: Prisma.TransactionClient,
+  scope: { storeId: string; page: PageInScope },
+  choice: ApplyTemplatePayload,
+): Promise<PageDocument> {
+  const { storeId, page } = scope;
+  const [store, { title }, draft] = await Promise.all([
+    db.store.findUniqueOrThrow({ where: { id: storeId }, select: { type: true, paymentMethods: true } }),
+    db.storePage.findUniqueOrThrow({ where: { id: page.id }, select: { title: true } }),
+    db.storeSection.findMany({ where: { pageId: page.id }, include: sectionInclude, orderBy: [{ position: 'asc' }, { id: 'asc' }] }),
+  ]);
+
+  const template = templateOf(choice.template);
+  refuseUnavailable(template, page.kind, store.type);
+  const subject = await subjectOf(db, storeId, template, { title, productId: choice.productId, categoryId: choice.categoryId }, store.paymentMethods);
+
+  return arrangedDocument(template.bands(subject), { pageKind: page.kind, storeType: store.type, draft });
 }
