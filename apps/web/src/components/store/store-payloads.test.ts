@@ -25,6 +25,7 @@ const STORE: Store = {
   layoutSettings: { showBanner: true, productsPerRow: 3 },
   paymentMethods: ["MONEY", "PIX"],
   cashback: null,
+  metaPixelId: null,
   address: {
     street: null,
     number: null,

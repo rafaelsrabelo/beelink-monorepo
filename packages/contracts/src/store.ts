@@ -191,6 +191,12 @@ export interface PublicStore {
   /** Its cashback while switched on (BEELINK-243); null while off. */
   cashback: PublicCashback | null;
   /**
+   * The shop's Meta Pixel ID (BEELINK-269), digits only; null with none saved. Public on purpose —
+   * any page that loads a pixel shows its ID — and the only thing of the pixel a shop gives: the
+   * storefront passes it to Meta's library as an argument, and never writes it into a script.
+   */
+  metaPixelId: string | null;
+  /**
    * The bands the landing page is made of, in the shopkeeper's order, already resolved.
    *
    * They ride here and not on `StorefrontCatalog` because the home fetches the shop first and

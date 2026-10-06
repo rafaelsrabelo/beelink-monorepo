@@ -2,7 +2,7 @@
 import type { StoreRow } from './store.mapper.js';
 
 // App
-import { toPublicStore, toStore } from './store.mapper.js';
+import { storeInclude, toPublicStore, toStore } from './store.mapper.js';
 
 const row = {
   id: '0199a0f1-0000-7000-8000-000000000001',
@@ -16,6 +16,7 @@ const row = {
   categoryId: '0199a0f1-0000-7000-8000-0000000000c1',
   pageVersions: [],
   pages: [],
+  integrations: [],
   category: {
     id: '0199a0f1-0000-7000-8000-0000000000c1',
     slug: 'alimentacao',
@@ -126,6 +127,17 @@ describe('toPublicStore', () => {
       account: 'account',
       accountTabs: { orders: 'orders', favorites: 'favorites', reviews: 'reviews', cashback: 'cashback', profile: 'profile', messages: 'messages' },
     });
+  });
+
+  it("carries the shop's Meta Pixel ID, and null while the shop saved none (BEELINK-269)", () => {
+    expect(toPublicStore(row).metaPixelId).toBeNull();
+    expect(toPublicStore({ ...row, integrations: [{ pixelId: '1234567890123456' }] } as unknown as StoreRow).metaPixelId).toBe('1234567890123456');
+    expect(toPublicStore({ ...row, integrations: [{ pixelId: null }] } as unknown as StoreRow).metaPixelId).toBeNull();
+  });
+
+  /** What Melhor Envio or Asaas gave the shop is sealed: the public read asks for the pixel's row, and for its ID alone. */
+  it("reads the pixel's ID and nothing else of an integration's row", () => {
+    expect(storeInclude.integrations).toEqual({ where: { provider: 'META_PIXEL' }, select: { pixelId: true } });
   });
 
   it('keeps the owner, the address, the coordinates and the timestamps off the storefront', () => {
