@@ -39,7 +39,8 @@ export function decodeConsent(raw: string | undefined): ConsentChoice | null {
  * shop had a pixel is not a yes to a shop that has none.
  */
 export function marketingAllowed(store: Pick<PublicStore, "metaPixelId">, choice: ConsentChoice | null): boolean {
-  return store.metaPixelId !== null && choice === "granted"
+  // Truthy and not `!== null`: an answer kept from before the field existed has none, and that is no pixel.
+  return Boolean(store.metaPixelId) && choice === "granted"
 }
 
 /** The `Set-Cookie` a page writes: scoped to the shop, so two shops on one domain keep two answers. */

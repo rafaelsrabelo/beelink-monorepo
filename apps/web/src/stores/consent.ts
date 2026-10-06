@@ -11,6 +11,8 @@ export interface ConsentState {
   asking: boolean
   /** True once an answer was given on this page, so it can be said aloud; a choice read from the cookie is not news. */
   answered: boolean
+  /** How many times the visitor asked for the choice on this page: each one sends the focus to the strip. */
+  asks: number
   accept: () => void
   refuse: () => void
   /** The way back to the choice, from the footer. */
@@ -38,9 +40,10 @@ export function createConsentStore(slug: string, initial: ConsentChoice | null) 
       choice: initial,
       asking: initial === null,
       answered: false,
+      asks: 0,
       accept: () => commit("granted"),
       refuse: () => commit("denied"),
-      ask: () => set({ asking: true, answered: false }),
+      ask: () => set((state) => ({ asking: true, answered: false, asks: state.asks + 1 })),
     }
   })
 }

@@ -58,7 +58,7 @@ describe("the consent store", () => {
     const store = createConsentStore("loja", "granted")
 
     store.getState().ask()
-    expect(store.getState()).toMatchObject({ choice: "granted", asking: true })
+    expect(store.getState()).toMatchObject({ choice: "granted", asking: true, asks: 1 })
 
     store.getState().refuse()
     expect(store.getState()).toMatchObject({ choice: "denied", asking: false })
