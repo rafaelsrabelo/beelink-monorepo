@@ -51,6 +51,18 @@ describe("/api/stores/[slug]/page-templates", () => {
     expect((spy.mock.calls[0]?.[1]?.headers as Record<string, string>).authorization).toBe("Bearer access-token")
   })
 
+  it("lists the models of a page about to be made, by its kind", async () => {
+    const spy = answer(200, [{ id: "em-branco", recommended: false, needs: [] }])
+
+    await listed("?kind=LANDING&extra=1")
+    await listed("?kind=")
+
+    expect(spy.mock.calls.map(([url]) => url)).toEqual([
+      `http://api.test/api/stores/${SLUG}/page-templates?kind=LANDING`,
+      `http://api.test/api/stores/${SLUG}/page-templates`,
+    ])
+  })
+
   it("previews a model on the page and around the product named, passing on nothing else", async () => {
     const spy = answer(200, { page: { id: PAGE }, sections: [] })
 

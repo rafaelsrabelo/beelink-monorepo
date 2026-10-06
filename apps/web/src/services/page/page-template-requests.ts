@@ -1,5 +1,13 @@
 // Types
-import type { ApplyTemplatePayload, PageDraft, PagePreview, PageTemplateSummary, TemplatePreviewQuery } from "@harness-monorepo/contracts"
+import type {
+  ApplyTemplatePayload,
+  OpeningTemplatesQuery,
+  PageDraft,
+  PageKind,
+  PagePreview,
+  PageTemplateSummary,
+  TemplatePreviewQuery,
+} from "@harness-monorepo/contracts"
 
 // App
 import { draftWrite } from "./draft-write"
@@ -10,6 +18,20 @@ const templatesPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}
 /** The models this page may be arranged with, the ones suggested for the shop's category first. */
 export function fetchPageTemplates(slug: string, pageId: string): Promise<PageTemplateSummary[]> {
   return call<PageTemplateSummary[]>(`${templatesPath(slug)}?${new URLSearchParams({ pageId }).toString()}`, { method: "GET" })
+}
+
+/** The models a page of this kind would open with in this shop, before the page exists: what "Nova landing" offers. */
+export function fetchNewPageTemplates(slug: string, kind: PageKind): Promise<PageTemplateSummary[]> {
+  return call<PageTemplateSummary[]>(`${templatesPath(slug)}?${new URLSearchParams({ kind }).toString()}`, { method: "GET" })
+}
+
+/**
+ * The models the home of a store not created yet may open with. The category is the one picked in
+ * the create form, and only orders the answer; none picked is left out.
+ */
+export function fetchOpeningTemplates({ storeType, categoryId }: OpeningTemplatesQuery): Promise<PageTemplateSummary[]> {
+  const asked = new URLSearchParams({ storeType, ...(categoryId ? { categoryId } : {}) })
+  return call<PageTemplateSummary[]>(`/api/page-templates?${asked.toString()}`, { method: "GET" })
 }
 
 /**

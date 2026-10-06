@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 // App
 import { PageRequestError } from "./page-call"
 import { useDraftRevision } from "@/stores/draft-revision"
-import { applyTemplate, fetchPageTemplates, fetchTemplatePreview } from "./page-template-requests"
+import { applyTemplate, fetchNewPageTemplates, fetchOpeningTemplates, fetchPageTemplates, fetchTemplatePreview } from "./page-template-requests"
 
 const PAGE = "0199f000-0000-7000-8000-000000000002"
 const PRODUCT = "0199e000-0000-7000-8000-000000000001"
@@ -32,6 +32,31 @@ describe("fetchPageTemplates", () => {
 
     expect(await fetchPageTemplates("loja da ana", PAGE)).toEqual([{ id: "ofertas" }])
     expect(calls).toEqual([`GET /api/stores/loja%20da%20ana/page-templates?pageId=${PAGE}`])
+  })
+})
+
+describe("fetchNewPageTemplates", () => {
+  it("asks for the models of a page that does not exist yet, by its kind", async () => {
+    const calls = answer(200, [{ id: "em-branco" }])
+
+    expect(await fetchNewPageTemplates("loja da ana", "LANDING")).toEqual([{ id: "em-branco" }])
+    expect(calls).toEqual(["GET /api/stores/loja%20da%20ana/page-templates?kind=LANDING"])
+  })
+})
+
+describe("fetchOpeningTemplates", () => {
+  it("asks by the type of store, and by its category only when one is picked", async () => {
+    const calls = answer(200, [])
+
+    await fetchOpeningTemplates({ storeType: "ECOMMERCE" })
+    await fetchOpeningTemplates({ storeType: "ECOMMERCE", categoryId: "" })
+    await fetchOpeningTemplates({ storeType: "INSTITUTIONAL", categoryId: "cat-1" })
+
+    expect(calls).toEqual([
+      "GET /api/page-templates?storeType=ECOMMERCE",
+      "GET /api/page-templates?storeType=ECOMMERCE",
+      "GET /api/page-templates?storeType=INSTITUTIONAL&categoryId=cat-1",
+    ])
   })
 })
 
