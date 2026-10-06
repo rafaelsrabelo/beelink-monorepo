@@ -24,3 +24,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const payload: unknown = await response.json().catch(() => null)
   return NextResponse.json(payload ?? {}, { status: response.status })
 }
+
+/**
+ * Melhor Envio's own check as the webhook is registered: it asks the address before it saves it, and
+ * not with a POST. Unanswered, the registration is refused there with "E-WBH-0002 … status inválido
+ * 405" and the webhook cannot be created at all. It says nothing and reaches nothing: the API is
+ * told only of what was signed, by the POST above. Next answers HEAD from this one too.
+ */
+export function GET(): NextResponse {
+  return NextResponse.json({})
+}

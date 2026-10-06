@@ -8,7 +8,7 @@ const callApi = vi.hoisted(() => vi.fn())
 vi.mock("@/lib/api", () => ({ callApi }))
 
 // App
-import { POST } from "./route"
+import { GET, POST } from "./route"
 
 afterEach(() => callApi.mockReset())
 
@@ -34,5 +34,14 @@ describe("Melhor Envio's webhook through the web (BEELINK-188)", () => {
 
     callApi.mockRejectedValueOnce(new Error("down"))
     expect((await POST(new NextRequest("https://link.beecoders.net/api/integrations/melhor-envio/webhook", { method: "POST", body }))).status).toBe(502)
+  })
+
+  // Melhor Envio asks the address before it saves the webhook, and refuses a 405 with E-WBH-0002.
+  it("answers Melhor Envio's check of the address without telling the API anything", async () => {
+    const response = GET()
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({})
+    expect(callApi).not.toHaveBeenCalled()
   })
 })
