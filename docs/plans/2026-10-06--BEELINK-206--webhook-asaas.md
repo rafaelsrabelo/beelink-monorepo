@@ -318,3 +318,45 @@ conexão selada de verdade pelo cofre, com uma chave de mentira e um token conhe
   que o Asaas manda os eventos de um parcelamento.
 - **A rotina rodando sozinha por dias:** os passos foram chamados nos testes com o relógio que cada
   um nomeia; o `setInterval` de um minuto rodou só enquanto a API esteve de pé na verificação.
+
+## Acréscimos de 06/10/2026: a revisão antes da entrega
+
+Uma leitura independente do diff, feita contra as garantias e sem conhecer o desenho, não achou
+defeito grave e apontou dez pontos. O que mudou por causa dela:
+
+1. **Depois de trocar de conta, "conferido no Asaas" queria dizer a conta nova.** Uma cobrança
+   pendente que sobrou na conta antiga (o prazo de 20 s acabou, o Asaas falhou) não era achada com a
+   chave nova, a linha virava `CANCELLED` e o pedido era cancelado por falta de pagamento, mesmo que
+   o cliente tivesse pago o Pix antigo. Agora uma linha criada **antes** da conexão atual cuja
+   cobrança a chave não acha não é dada como sumida: `PaymentSync` responde `unsettled`, e o pedido
+   não é cancelado sozinho. A loja cancela à mão se quiser.
+2. **Cartão em análise manual do Asaas** (`AWAITING_RISK_ANALYSIS`) também é `unsettled`: o pedido
+   não é cancelado enquanto o Asaas analisa.
+3. **Uma cobrança ouvida pela primeira vez já em estorno ou chargeback** ficava `PENDING` (a linha
+   existia e a palavra "não dizia nada"), e o pedido podia ser cancelado com dinheiro pago. Agora
+   essas palavras fazem de uma linha ainda não paga uma paga (`CONFIRMED`); numa já paga, nada muda.
+4. **Evento de loja com a chave recusada** gastava as 8 tentativas em duas horas. Agora espera a
+   reconexão, de hora em hora, sem gastar tentativa, por até 14 dias (o tempo que o próprio Asaas
+   guardaria o evento).
+5. **A rotina e o disparo do receptor** varriam os eventos ao mesmo tempo no mesmo processo. A
+   rotina passa pelo mesmo `dispatch`. O lote caiu para 10 e a posse subiu para 10 minutos.
+6. **Duas réplicas da API** perguntavam ao Asaas em dobro na reconciliação. `pushCheck` agora só
+   deixa perguntar quem conseguiu empurrar a vez.
+7. **`release` com duas cobranças pagas** tentava gravar a segunda como a do pedido e batia no índice
+   único (o erro ia para `lastError`). Agora a que o pedido já conta fica, e a outra vira `stray`.
+8. **Conta renomeada no Asaas** contava como outra conta, e as pendentes eram apagadas. "Mesma
+   conta" passou a ser o documento; o nome só decide quando nenhum dos dois lados tem documento.
+
+O que a revisão apontou e fica como está, com dono:
+
+- **Caudas sem fim.** Uma cobrança pendente num pedido já saído para entrega, ou de uma conta que a
+  loja deixou, é conferida a cada 12 horas para sempre; um pedido não pago de loja desconectada tem
+  o prazo empurrado de hora em hora para sempre. Custam pouco. O Q6, que dá ao painel a tela do
+  pagamento, é onde a loja resolve esses casos.
+- **Dois processos e o `429`.** A memória do `429` é por processo, e o cancelamento automático não
+  disputa a vez: duas réplicas conferem o mesmo pedido duas vezes (o resultado é o mesmo).
+- **A checagem diária pode registrar um webhook a mais** se a resposta de um registro se perder (o
+  id não fica guardado). Os eventos chegariam duas vezes; se o Asaas der ids diferentes a cada
+  webhook, cada um custa uma leitura. Só o sandbox diz.
+- **Um corpo que não é JSON** responde `400` do Fastify antes do receptor. O Asaas só manda JSON.
+- **Uma remoção em curso no instante em que a chave troca** pode reler a cobrança com a chave nova.

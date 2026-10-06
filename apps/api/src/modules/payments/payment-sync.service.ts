@@ -8,13 +8,14 @@ import type { OrderPaymentModel } from '../../generated/prisma/models.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { AsaasAcceptance } from '../integrations/asaas/asaas-acceptance.js';
 import { AsaasCharges } from '../integrations/asaas/asaas-charges.service.js';
 import type { AsaasCharge } from '../integrations/asaas/asaas.client.js';
 import { isPaidPlan, methodOfPlan, plansOf, type ChargePlan } from './charge-plan.js';
 import { applyCharge, cancelRows, noteStray } from './payment-facts.js';
 import { PaymentNews } from './payment-news.js';
 import { shownPaymentOf } from './payment.mapper.js';
-import { holdsMoney, isLive, wasPaid } from './payment-status.js';
+import { holdsMoney, inReview, isLive, wasPaid } from './payment-status.js';
 import { isOnlineMethod } from './payment-terms.js';
 
 /** What hearing Asaas about an order's charges came to. */
@@ -25,11 +26,17 @@ export interface PaymentHeard {
   paid: boolean;
   /** What the order shows moved, or money arrived that it did not ask for. */
   changed: boolean;
+  /**
+   * Nobody can say the order is unpaid: its card is in Asaas's manual review, or its charge was made
+   * at an account the shop has left since, which the key in hand does not open. Such an order is
+   * not cancelled for want of payment.
+   */
+  unsettled: boolean;
   /** A charge still to be paid stands at Asaas that the order no longer wants — beside a paid one, or on a cancelled order: `OrderPayments.release` takes it out. */
   leftovers: boolean;
 }
 
-const NOTHING: PaymentHeard = { status: null, paid: false, changed: false, leftovers: false };
+const NOTHING: PaymentHeard = { status: null, paid: false, changed: false, unsettled: false, leftovers: false };
 
 const waits = (row: OrderPaymentModel) => row.status === 'PENDING' || row.status === 'OVERDUE';
 const names = (plan: ChargePlan, row: OrderPaymentModel) => plan.id === row.providerId || (plan.installmentId !== null && plan.installmentId === row.providerInstallmentId);
@@ -63,6 +70,7 @@ export class PaymentSync {
   constructor(
     private readonly prisma: PrismaService,
     private readonly charges: AsaasCharges,
+    private readonly acceptance: AsaasAcceptance,
     private readonly news: PaymentNews,
   ) {}
 
@@ -73,12 +81,17 @@ export class PaymentSync {
 
     // The rows as they stood before Asaas was asked: only these may be given up on by what it says.
     const listed = plansOf(await this.charges.find(storeId, orderId));
+    const { connectedAt } = await this.acceptance.of(storeId);
     const gone: string[] = [];
+    let unreachable = false;
     for (const row of order.payments) {
       if (!waits(row) || listed.some((plan) => names(plan, row))) continue;
       const charge = await this.charges.read(storeId, row.providerId!);
-      if (!charge || charge.deleted) gone.push(row.id);
-      else listed.push(planOfRow(charge, row));
+      if (charge && !charge.deleted) listed.push(planOfRow(charge, row));
+      // Not found, of a charge made before the connection in hand: it may stand, and be paid, at the
+      // account the shop left — this key cannot tell. It is neither written as gone nor as anything.
+      else if (!charge && (!connectedAt || row.createdAt < connectedAt)) unreachable = true;
+      else gone.push(row.id);
     }
 
     const now = new Date();
@@ -115,11 +128,12 @@ export class PaymentSync {
       }
       const status = shownPaymentOf(after)?.status ?? null;
       const unwanted = current.status === 'CANCELLED' || after.some((row) => wasPaid(row.status));
-      return { status, paid: held !== null, changed: status !== before || stray !== null, leftovers: unwanted && listed.some((plan) => !isPaidPlan(plan)), stray };
+      const reviewed = after.some((row) => waits(row) && inReview(row.providerStatus));
+      return { status, paid: held !== null, changed: status !== before || stray !== null, unsettled: unreachable || reviewed, leftovers: unwanted && listed.some((plan) => !isPaidPlan(plan)), stray };
     });
 
     if (heard.changed) await this.news.tell(storeId, orderId, heard.stray);
-    return { status: heard.status, paid: heard.paid, changed: heard.changed, leftovers: heard.leftovers };
+    return { status: heard.status, paid: heard.paid, changed: heard.changed, unsettled: heard.unsettled, leftovers: heard.leftovers };
   }
 
   private strayOf(tx: Prisma.TransactionClient, order: { id: string; storeId: string; method: 'PIX' | 'CREDIT_CARD' }, plan: ChargePlan, reason: StrayPaymentReason, now: Date): Promise<boolean> {

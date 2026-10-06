@@ -116,10 +116,16 @@ type Db = Pick<Tx, 'orderPayment'>;
 
 /**
  * A waiting charge about to be asked about by the reconciliation (BEELINK-206): counted, and its next
- * turn pushed before Asaas answers — one that keeps failing waits longer too.
+ * turn pushed before Asaas answers — one that keeps failing waits longer too. Answers whether the
+ * turn was this caller's to take.
  */
-export async function pushCheck(db: Db, row: { id: string; checks: number }, now: Date): Promise<void> {
-  await db.orderPayment.updateMany({ where: { id: row.id, status: { in: ['PENDING', 'OVERDUE'] } }, data: { checks: { increment: 1 }, nextCheckAt: nextCheckAfter(row.checks + 1, now) } });
+export async function pushCheck(db: Db, row: { id: string; checks: number }, now: Date): Promise<boolean> {
+  // Only while it is still due: of two processes on the same pass, one takes the turn and asks.
+  const { count } = await db.orderPayment.updateMany({
+    where: { id: row.id, status: { in: ['PENDING', 'OVERDUE'] }, OR: [{ nextCheckAt: null }, { nextCheckAt: { lte: now } }] },
+    data: { checks: { increment: 1 }, nextCheckAt: nextCheckAfter(row.checks + 1, now) },
+  });
+  return count > 0;
 }
 
 /** Asaas asked for time at a shop's account: none of the shop's waiting charges is due before it. */

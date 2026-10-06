@@ -46,7 +46,11 @@ export class PaymentRoutine implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     const now = new Date();
     try {
-      await this.step('work the Asaas events', () => this.events.flush());
+      // Through the same door as a delivery's dispatch: one sweep at a time in this process.
+      await this.step('work the Asaas events', async () => {
+        this.events.dispatch();
+        await this.events.settled();
+      });
       await this.step('reconcile the waiting charges', () => this.reconciliation.checkDue(now));
       await this.step('cancel the unpaid orders', () => this.unpaid.cancelDue(now));
       await this.step("check the shops' Asaas webhooks", () => this.keeper.checkDue(now));

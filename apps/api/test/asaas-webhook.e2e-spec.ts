@@ -256,6 +256,17 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       expect(await shop.rows()).toMatchObject([{ status: 'PENDING', paidAt: null }]);
     });
 
+    it('takes for paid a charge first heard of with its money already in dispute or on its way back', async () => {
+      await shop.place();
+      asaas.pay(charge().id, 'REFUND_REQUESTED');
+
+      await deliver(eventOf('evt_r', 'PAYMENT_REFUND_IN_PROGRESS', { id: charge().id }));
+
+      const [row] = await shop.rows();
+      expect(row).toMatchObject({ status: 'CONFIRMED', providerStatus: 'REFUND_REQUESTED' });
+      expect(row!.paidAt).toBeInstanceOf(Date);
+    });
+
     it('keeps a refund and a chargeback as far as this ticket goes: refunded is said, a dispute leaves the money held', async () => {
       await shop.place();
       asaas.pay(charge().id, 'CONFIRMED');
@@ -316,6 +327,21 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: 'ORDER_ALREADY_PAID' }]);
     });
 
+    it('keeps the second of two paid charges as a stray when a cancellation finds both, and the first as the payment', async () => {
+      await shop.place();
+      asaas.pay(charge().id);
+      await deliver(eventOf('evt_1', 'PAYMENT_RECEIVED', { id: charge().id }));
+      asaas.payments.push({ ...charge(), id: 'pay_segunda', status: 'RECEIVED' });
+
+      // The shop's cancel is refused — the order is paid — and nothing here breaks on the second charge.
+      const refused = await shop.call('PATCH', '/api/stores/lessari/orders/1/status', shop.owner, { status: 'CANCELLED' });
+      expect(refused.statusCode).toBe(409);
+      await deliver(eventOf('evt_2', 'PAYMENT_RECEIVED', { id: 'pay_segunda', externalReference: await shop.orderId() }));
+
+      expect(await shop.rows()).toMatchObject([{ status: 'RECEIVED', providerId: charge().id, lastError: null }]);
+      expect(await prisma.orderStrayPayment.findMany()).toMatchObject([{ providerId: 'pay_segunda', reason: 'ORDER_ALREADY_PAID' }]);
+    });
+
     it('takes a charge still waiting out of Asaas once another of the same order is paid', async () => {
       await shop.place();
       asaas.payments.push({ ...charge(), id: 'pay_outra', status: 'RECEIVED' });
@@ -357,6 +383,10 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       const response = await deliver(eventOf('evt_1', 'PAYMENT_RECEIVED', { id: charge().id }));
       expect(response.json()).toEqual({ result: 'RECORDED' });
       expect(await shop.rows()).toMatchObject([{ status: 'PENDING' }]);
+      // Waiting for the reconnection spends none of its tries.
+      const [parked] = await eventRows();
+      expect(parked).toMatchObject({ attempts: 0, processedAt: null });
+      expect(parked!.nextAttemptAt.getTime()).toBeGreaterThan(Date.now() + 30 * 60_000);
 
       await prisma.storeIntegration.updateMany({ data: { status: 'CONNECTED' } });
       await prisma.asaasEvent.updateMany({ data: { nextAttemptAt: new Date(Date.now() - 1000) } });

@@ -52,7 +52,7 @@ export class PaymentReconciliation {
     let asked = 0;
     for (const row of due) {
       if (resting.has(row.storeId)) continue;
-      await pushCheck(this.prisma, row, now);
+      if (!(await pushCheck(this.prisma, row, now))) continue;
       asked += 1;
       try {
         const unwanted = row.order.status === 'CANCELLED' || row.order.deliveryFeeCents === null || row.order.totalCents !== row.amountCents;

@@ -274,6 +274,26 @@ describe('what the clock does about an online payment (BEELINK-206)', () => {
       expect(await unpaid.cancelDue(new Date(now.getTime() + 4 * HOUR_MS))).toBe(1);
     });
 
+    it('is not cancelled while its card is under Asaas’s review, nor while its charge stands at an account the shop left', async () => {
+      await shop.place({ paymentMethod: 'CREDIT_CARD' });
+      charge().status = 'AWAITING_RISK_ANALYSIS';
+      expect(await unpaid.cancelDue(past())).toBe(0);
+      expect((await order()).status).toBe('RECEIVED');
+
+      // Another account connected, and the charge left behind at the first: the key in hand finds nothing.
+      charge().status = 'PENDING';
+      asaas.failing('deleteCharge', unreachable());
+      asaas.accountInfo = { name: 'Outra Conta', document: '98765432000110' };
+      await shop.connect();
+      const left = asaas.payments.splice(0);
+      await prisma.order.updateMany({ data: { paymentDueAt: new Date() } });
+
+      expect(await unpaid.cancelDue(past())).toBe(0);
+      expect((await order()).status).toBe('RECEIVED');
+      // Nor is its row written as gone: it may be paid there.
+      expect(await shop.rows()).toMatchObject([{ status: 'PENDING', providerId: left[0]!.id }]);
+    });
+
     it('is cancelled though the shop accepted it, and left to the shop once it is out for delivery', async () => {
       await shop.place();
       await shop.place();

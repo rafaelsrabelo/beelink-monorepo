@@ -4,6 +4,9 @@ export const ASAAS_EVENT_BATCH = 10;
 export const ASAAS_EVENT_ATTEMPTS_MAX = 8;
 /** How long a claimed event is one sweep's: longer than a whole batch may take, each event hearing Asaas and removing a charge at the client's ten seconds a call. */
 export const ASAAS_EVENT_LEASE_MS = 10 * 60_000;
+/** How long an event of a shop whose key does not open waits between looks, and for how long in all: Asaas holds an undelivered one fourteen days. */
+export const ASAAS_EVENT_PARKED_MS = 60 * 60_000;
+export const ASAAS_EVENT_WAIT_MAX_MS = 14 * 24 * 60 * 60_000;
 /** How long a done event is kept to tell a second delivery by. */
 export const ASAAS_EVENT_KEEP_MS = 30 * 24 * 60 * 60_000;
 

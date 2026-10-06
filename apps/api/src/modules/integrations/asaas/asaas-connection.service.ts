@@ -47,6 +47,12 @@ export type KeyLeavingListener = (storeId: string, deadline: Date) => Promise<vo
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
+/** The same account under another key: by its document — a name is changed at will — and by the name only when neither has a document. */
+function sameAccount(row: StoreIntegrationModel, account: { name: string; document: string | null }): boolean {
+  const masked = maskedDocumentOf(account.document);
+  return row.accountDocument || masked ? row.accountDocument === masked : row.accountName === account.name;
+}
+
 function connectionOf(row: StoreIntegrationModel | null): AsaasConnection {
   return {
     available: asaasConfig() !== null,
@@ -104,7 +110,7 @@ export class AsaasConnectionService {
     // Another account's key: what waits to be paid at the one being left is taken out of it first.
     // The same account under a new key keeps its charges — they are reached with the new one.
     const standing = await this.prisma.storeIntegration.findUnique({ where: { storeId_provider: { storeId, provider: PROVIDER } } });
-    if (standing && (standing.accountDocument !== maskedDocumentOf(account.document) || standing.accountName !== account.name)) await this.keyLeaves(storeId);
+    if (standing && !sameAccount(standing, account)) await this.keyLeaves(storeId);
 
     const row = await this.exclusively(storeId, async (tx) => {
       const previous = await tx.storeIntegration.findUnique({ where: { storeId_provider: { storeId, provider: PROVIDER } } });

@@ -7,11 +7,12 @@ import { Injectable, Logger } from '@nestjs/common';
 // App
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { AsaasStoreUnavailable } from '../integrations/asaas/asaas-charges.service.js';
 import { AsaasThrottled } from '../integrations/asaas/asaas.client.js';
 import { AsaasWebhookKeeper } from '../integrations/asaas/asaas-webhook-keeper.js';
 import { OrderPayments } from '../payments/order-payments.service.js';
 import { PaymentSync } from '../payments/payment-sync.service.js';
-import { ASAAS_EVENT_ATTEMPTS_MAX, ASAAS_EVENT_BATCH, ASAAS_EVENT_KEEP_MS, ASAAS_EVENT_LEASE_MS, KEY_EVENTS, retryAtOf } from './payment-events.constants.js';
+import { ASAAS_EVENT_ATTEMPTS_MAX, ASAAS_EVENT_BATCH, ASAAS_EVENT_KEEP_MS, ASAAS_EVENT_LEASE_MS, ASAAS_EVENT_PARKED_MS, ASAAS_EVENT_WAIT_MAX_MS, KEY_EVENTS, retryAtOf } from './payment-events.constants.js';
 
 /** What came of a delivery: written to be read, written before, or about nothing of bee-link's. */
 export type AsaasEventReceipt = 'RECORDED' | 'DUPLICATE' | 'IGNORED';
@@ -127,7 +128,13 @@ export class AsaasEvents {
         done += 1;
       } catch (error) {
         const reason = (error instanceof Error ? error.message : 'Unknown failure').slice(0, 500);
-        const last = attempts >= ASAAS_EVENT_ATTEMPTS_MAX;
+        // A shop whose key does not open is not Asaas failing: the event waits for the reconnection,
+        // an hour at a time and without spending its tries — for as long as Asaas itself would hold it.
+        if (error instanceof AsaasStoreUnavailable && Date.now() - row.createdAt.getTime() < ASAAS_EVENT_WAIT_MAX_MS) {
+          await this.prisma.asaasEvent.update({ where: { id }, data: { attempts: { decrement: 1 }, nextAttemptAt: new Date(Date.now() + ASAAS_EVENT_PARKED_MS), lastError: reason } });
+          continue;
+        }
+        const last = attempts >= ASAAS_EVENT_ATTEMPTS_MAX || error instanceof AsaasStoreUnavailable;
         this.logger[last ? 'error' : 'warn']({ storeId: row.storeId, event: row.event, eventId: row.eventId, attempts, reason }, last ? 'Gave up on an Asaas event' : 'Could not work an Asaas event: it is tried again');
         // Asaas's own wait, when it named one, is not asked ahead of.
         const waited = error instanceof AsaasThrottled && error.retryAt && error.retryAt > retryAtOf(attempts) ? error.retryAt : retryAtOf(attempts);
@@ -144,6 +151,7 @@ export class AsaasEvents {
   }
 
   private async work(row: { storeId: string; event: string; orderId: string | null }): Promise<void> {
+    // The probe does nothing for a connection already marked: the news it brought is known.
     if (KEY_EVENTS.has(row.event)) return this.keeper.probe(row.storeId);
     if (!row.orderId) return;
     const heard = await this.heard.sync(row.storeId, row.orderId);

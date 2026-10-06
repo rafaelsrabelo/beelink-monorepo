@@ -20,7 +20,8 @@ const TOKEN_MAX = 255;
  * The shop is found by the token's SHA-256 — an index, so no shop's seal is opened to look — and
  * then the token itself is compared with the one sealed for that shop, in constant time: a guess
  * learns nothing from how long the answer took. A connection that needs reconnecting is still the
- * shop's: its events are recorded, and read once the key is good again.
+ * shop's: its events are recorded, and wait for the key to be good again — as long as Asaas itself
+ * would have held them.
  */
 @Injectable()
 export class AsaasWebhookDoor {

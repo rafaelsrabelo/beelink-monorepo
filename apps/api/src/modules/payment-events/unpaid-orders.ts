@@ -10,6 +10,9 @@ import { PAID_STATUSES } from '../payments/payment-status.js';
 import { PaymentSync } from '../payments/payment-sync.service.js';
 import { UNPAID_BATCH, UNPAID_RETRY_MS } from './payment-events.constants.js';
 
+/** The order cannot be said unpaid right now: it is left, and looked at again. */
+class PaymentUnsettled extends Error {}
+
 /**
  * An order charged online that nobody paid (BEELINK-206): three days after its total closed
  * (`Order.paymentDueAt`) it is cancelled — the stock, the coupon and the cashback go back, and its
@@ -17,7 +20,8 @@ import { UNPAID_BATCH, UNPAID_RETRY_MS } from './payment-events.constants.js';
  *
  * Only after Asaas was heard, here and now, to hold no payment for it: `PaymentSync` must succeed.
  * With Asaas silent, asking for time, or the shop's key not opening, the order is left as it is and
- * looked at again in an hour — a payment nobody could see is never cancelled over. An order the
+ * looked at again in an hour — a payment nobody could see is never cancelled over. The same goes for
+ * a card Asaas is reviewing by hand, and for a charge made at an account the shop has left since. An order the
  * shop accepted is cancelled like one it has not: accepting holds nothing. One out for delivery or
  * delivered is not: its goods are gone, and whether it was paid is between the shop and the customer.
  */
@@ -45,7 +49,9 @@ export class UnpaidOrders {
     for (const order of due) {
       try {
         if (resting.has(order.storeId)) throw new AsaasStoreUnavailable("The shop's Asaas account could not be asked this pass");
-        if ((await this.heard.sync(order.storeId, order.id)).paid) continue;
+        const heard = await this.heard.sync(order.storeId, order.id);
+        if (heard.paid) continue;
+        if (heard.unsettled) throw new PaymentUnsettled('Nobody can say yet that the order is unpaid: its card is under review, or its charge is at an account the shop left');
         if (await this.orders.cancelUnpaid(order.storeId, order.number, now)) cancelled += 1;
       } catch (error) {
         // Cancelled by someone else meanwhile: nothing is left to do.

@@ -169,15 +169,21 @@ export class OrderPayments implements OnModuleInit {
       const rows = new Map(order.payments.map((row) => [row.providerId, row]));
 
       const listed = plansOf(await this.charges.find(storeId, orderId));
-      let paid: ChargePlan | null = null;
+      const paidPlans: ChargePlan[] = [];
       let fitting: ChargePlan | null = null;
       for (const plan of listed) {
         const row = rows.get(plan.id);
-        if (isPaidPlan(plan)) paid = plan;
+        if (isPaidPlan(plan)) paidPlans.push(plan);
         // A total set again to what it was leaves its charge as good as before — one bee-link has not given up on.
         else if (!fitting && plan.totalCents === wanted && (!row || isLive(row.status))) fitting = plan;
-        else paid = (await this.removeOrPaid(storeId, plan)) ?? paid;
+        else {
+          const found = await this.removeOrPaid(storeId, plan);
+          if (found) paidPlans.push(found);
+        }
       }
+      // The one the order already counts as its payment stays so; any other paid one is money it did not ask for.
+      const paid = paidPlans.find((plan) => wasPaid(rows.get(plan.id)?.status ?? 'PENDING')) ?? paidPlans[0] ?? null;
+      const second = paidPlans.filter((plan) => plan !== paid);
       // Nothing waits beside money that arrived.
       if (paid && fitting) await this.removeOrPaid(storeId, fitting);
       if (paid) this.logger.error({ storeId, orderId, chargeId: paid.id }, 'A paid charge stands on an order that was cancelled or changed');
@@ -190,7 +196,9 @@ export class OrderPayments implements OnModuleInit {
         if (kept) await applyCharge(tx, { id: orderId, storeId, method }, kept, now);
         // Money for an order that no longer stands: kept for the shop to settle (BEELINK-206).
         const first = strayed !== null && (await noteStray(tx, { orderId, storeId, providerId: strayed.id, method: methodOfPlan(strayed, method), amountCents: strayed.totalCents }, 'ORDER_CANCELLED', now));
-        return first ? 'ORDER_CANCELLED' : null;
+        let again = false;
+        for (const plan of second) again = (await noteStray(tx, { orderId, storeId, providerId: plan.id, method: methodOfPlan(plan, method), amountCents: plan.totalCents }, 'ORDER_ALREADY_PAID', now)) || again;
+        return first ? 'ORDER_CANCELLED' : again ? 'ORDER_ALREADY_PAID' : null;
       });
       if (paid) await this.news.tell(storeId, orderId, stray);
     } catch (error) {
