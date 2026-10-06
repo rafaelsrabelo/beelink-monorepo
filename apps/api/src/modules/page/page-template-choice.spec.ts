@@ -3,8 +3,8 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { PageTemplate } from './template-catalog.js';
 
 // App
-import { refuseUnavailable, subjectOf } from './page-template-choice.js';
-import { templateOf } from './template-catalog.js';
+import { refuseUnavailable, subjectOf, templateIdOf } from './page-template-choice.js';
+import { TEMPLATE_IDS, templateOf } from './template-catalog.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
 const PRODUCT = '0199e000-0000-7000-8000-000000000001';
@@ -52,6 +52,15 @@ describe('whether a model may be arranged on a page', () => {
     ['a home’s model on a landing', 'servicos-b2b', 'LANDING', 'INSTITUTIONAL'],
   ] as const)('refuses %s', (_name, id, pageKind, storeType) => {
     expect(() => refuseUnavailable(templateOf(id), pageKind, storeType)).toThrow(expect.objectContaining(refusal('PAGE_TEMPLATE_UNAVAILABLE')));
+  });
+});
+
+describe('a model named in an address', () => {
+  it('reads every id the catalogue has, and refuses any other as a model that is not available', () => {
+    for (const id of TEMPLATE_IDS) expect(templateIdOf(id)).toBe(id);
+    for (const value of ['nao-existe', '', 'LANCAMENTO', 'constructor']) {
+      expect(() => templateIdOf(value)).toThrow(expect.objectContaining(refusal('PAGE_TEMPLATE_UNAVAILABLE')));
+    }
   });
 });
 

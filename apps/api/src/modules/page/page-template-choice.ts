@@ -2,7 +2,7 @@
 import { BadRequestException } from '@nestjs/common';
 
 // Types
-import type { ApplyTemplatePayload, PageKind, PaymentMethod, StoreType } from '@harness-monorepo/contracts';
+import type { ApplyTemplatePayload, PageKind, PaymentMethod, StoreType, TemplateId } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { PageDocument } from './page-document.js';
 import type { PageInScope } from './page-scope.js';
@@ -12,7 +12,7 @@ import type { PageTemplate, TemplateSubject } from './template-catalog.js';
 import { sectionInclude } from './page.mapper.js';
 import { arrangedDocument } from './page-template-arrange.js';
 import { pageError } from './page.rules.js';
-import { shopSubject, templateOf } from './template-catalog.js';
+import { shopSubject, TEMPLATE_IDS, templateOf } from './template-catalog.js';
 
 /*
   A model chosen for a page: whether it may be, and what it is filled from. One place for the three
@@ -25,6 +25,16 @@ export interface TemplateChoice {
   title: string;
   productId?: string | null;
   categoryId?: string | null;
+}
+
+/**
+ * A model's id read from an address, where no DTO has checked it. One that names no model is refused
+ * as a body's is: not available, by the same code.
+ */
+export function templateIdOf(value: string): TemplateId {
+  const id = TEMPLATE_IDS.find((known) => known === value);
+  if (!id) throw new BadRequestException(pageError('PAGE_TEMPLATE_UNAVAILABLE', 'Esse modelo não existe.'));
+  return id;
 }
 
 /** A model is arranged only on the kind of page, in the kind of store, its catalogue entry names. */

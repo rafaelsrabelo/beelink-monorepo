@@ -33,3 +33,41 @@ O lojista só descobre como um modelo fica na loja dele depois de aplicá-lo, e 
 ## Fora do escopo
 
 A galeria e o desenho da prévia (W4), o botão de aplicar e a confirmação (W5), modelos novos (W6), modelo na criação da loja (W7). O BFF do web fica com o W4.
+
+## Para os próximos tickets
+
+### W4 — a galeria com a prévia
+
+**O que chamar**
+
+```
+GET /api/stores/:slug/page-templates/:id/preview?pageId=<uuid>&productId=<uuid>&categoryId=<uuid>
+→ 200 PagePreview   { page: StorePage, sections: PublicSection[] }
+```
+
+- `:id` é o `id` de um item de `GET /api/stores/:slug/page-templates?pageId=` (W1).
+- `pageId`: a página em que o modelo seria aplicado. Sem ele, a inicial. Mande sempre o da página aberta no editor.
+- `productId`: mande quando `needs` do modelo (na listagem do W1) tiver `PRODUCT`. `categoryId`: quando tiver `CATEGORY` (nenhum modelo pede ainda). Um modelo que não pede ignora os dois. **Não mande a chave vazia** (`?productId=`): é recusada como id inválido.
+- Os tipos da query (`TemplatePreviewQuery`) e da resposta (`PagePreview`) estão em `@harness-monorepo/contracts`. Falta o handler do BFF em `apps/web` e a chave do TanStack Query; a chave tem de incluir o modelo, a página e o produto.
+
+**O que recebe**
+
+- `PagePreview` é **exatamente** a forma de `GET …/pages/:pageId/preview`, que o canvas do editor já desenha (`design-preview.tsx`): `sections` entra no renderizador real sem conversão. Produtos, preços, promoções, estoque e endereços vêm resolvidos de hoje.
+- `page` é a página de verdade, sem mudança (título, `usesChrome`, status). Use `usesChrome` para decidir a moldura.
+- Na inicial, `sections[0]` é a barra de aviso da loja, se ela tem uma: é a de verdade, e continua lá depois de aplicar.
+- Uma faixa que o modelo grava escondida (as vantagens de uma loja sem forma de pagamento) **não vem**: a prévia é o que o visitante veria. Depois de aplicar, ela aparece no editor como faixa escondida.
+- **Os ids de `sections` e de `components` são inventados a cada chamada.** Sirva-se deles só como `key` de uma renderização; não guarde, não mande de volta, não use para editar. O formulário de contato da prévia não deve enviar nada: desenhe-o sem ação.
+- A contagem regressiva de "promocao-relampago" muda a cada chamada (é contada a partir de agora). Não compare duas respostas por igualdade.
+
+**Erros para a tela tratar** (as palavras já estão em `apps/web/src/locales`)
+
+- `400 PAGE_PRODUCT_REQUIRED`: o modelo precisa de um produto e nenhum foi mandado. É o estado "escolha um produto para ver a prévia", não um erro para o usuário. Uma loja sem produto nunca sai dele: ofereça "em-branco" ou o caminho para cadastrar um produto.
+- `400 PAGE_PRODUCT_INVALID`: o produto foi apagado ou é de outra loja. Peça outro.
+- `400 PAGE_TEMPLATE_UNAVAILABLE`: o modelo não vale para esta página ou não existe. Não acontece se a galeria vier da listagem do W1 com o mesmo `pageId`.
+- `404 PAGE_NOT_FOUND`: a página sumiu.
+
+**Depois da prévia, aplicar** é `POST …/pages/:pageId/apply-template` com `{ template, productId }` e o `x-page-revision` do rascunho (plano do W2). O que a prévia mostrou é o que será gravado: as duas rotas montam o documento pela mesma função (`templateDocument`), e o e2e "shows what applying then writes" compara as duas.
+
+### W6 — modelos novos
+
+Um modelo novo aparece na prévia sem tocar em nada daqui. Se ele desenhar um tipo de bloco que resolve algo novo, é `lookupsOf` (`page-resolve.ts`) que muda, para a vitrine e para a prévia ao mesmo tempo.
