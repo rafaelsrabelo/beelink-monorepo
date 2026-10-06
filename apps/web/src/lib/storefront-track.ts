@@ -17,15 +17,28 @@ export interface TrackInput {
  * own: the shop has a pixel, the visitor said yes here, and the page is not one whose address holds
  * a token. Only then is the event given an id and sent — to this shop's pixel, by name.
  *
+ * A page is told before anything that happens on it, and once: whichever event comes first from a
+ * path brings the page's view with it, and a page view asked for a path already told is not sent
+ * again. That holds whatever order the page's effects run in, and however often they do.
+ *
  * An event refused is dropped, never kept for later: what a visitor did before saying yes is not
  * told once they do. A second destination — the shop's own record of the event — is a second line
- * at the end of this function.
+ * in `send`.
  */
 export function createTrack({ pixelId, allowed, quietPaths }: TrackInput): Track {
+  let page: string | null = null
+
   return (event, options) => {
     if (!allowed || !pixelId) return
-    if (isQuietPath(window.location.pathname, quietPaths)) return
 
-    sendToMetaPixel(pixelId, metaEventOf(event), options?.id ?? newEventId())
+    const pathname = window.location.pathname
+    if (isQuietPath(pathname, quietPaths)) return
+
+    const send: Track = (told, as) => sendToMetaPixel(pixelId, metaEventOf(told), as?.id ?? newEventId())
+    if (page !== pathname) {
+      page = pathname
+      send({ name: "PageView" })
+    }
+    if (event.name !== "PageView") send(event, options)
   }
 }

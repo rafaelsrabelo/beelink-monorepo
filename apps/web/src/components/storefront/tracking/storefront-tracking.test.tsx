@@ -54,7 +54,19 @@ function shop({ slug, pixelId, choice = null }: Shop, page = <TrackView event={{
   )
 }
 
-const calls = () => (window.fbq?.queue ?? []).map((call) => [...call])
+/**
+ * Everything the library was told, in order. It "arrives" the first time a test looks: it takes
+ * what waited in Meta's queue and answers every call from then on, as the real one does.
+ */
+let heard: unknown[][] = []
+function calls(): unknown[][] {
+  const fbq = window.fbq
+  if (fbq && !fbq.callMethod) {
+    heard.push(...fbq.queue.splice(0).map((call) => [...call]))
+    fbq.callMethod = (...args) => void heard.push(args)
+  }
+  return heard
+}
 /** Every event sent, as `pixel id · event name`, in order. */
 const sent = () => calls().filter(([command]) => command === "trackSingle").map(([, pixelId, name]) => `${pixelId} · ${name}`)
 const library = () => screen.queryByTestId("pixel-library")
@@ -67,6 +79,7 @@ function at(pathname: string) {
 beforeEach(() => at("/loja-a"))
 
 afterEach(() => {
+  heard = []
   delete window.fbq
   delete window._fbq
   for (const slug of ["loja-a", "loja-b"]) document.cookie = `${CONSENT_COOKIE}=; Path=/${slug}; Max-Age=0`
@@ -94,8 +107,7 @@ describe("StorefrontTracking, at a yes", () => {
     await userEvent.click(screen.getByRole("button", { name: "Aceitar" }))
 
     expect(library()).toHaveAttribute("data-src", "https://connect.facebook.net/en_US/fbevents.js")
-    expect(calls().slice(0, 4)).toEqual([
-      ["consent", "grant"],
+    expect(calls().slice(0, 3)).toEqual([
       ["set", "autoConfig", false, PIXEL_A],
       ["init", PIXEL_A],
       ["set", "trackSingleOnly", true, PIXEL_A],
@@ -157,6 +169,17 @@ describe("StorefrontTracking, page views", () => {
 })
 
 describe("StorefrontTracking, a yes taken back", () => {
+  it("goes from one shop that said yes to another that did, with the library never shut in between", async () => {
+    const tab = render(shop({ slug: "loja-a", pixelId: PIXEL_A, choice: "granted" }))
+    calls()
+
+    at("/loja-b")
+    await act(async () => tab.rerender(shop({ slug: "loja-b", pixelId: PIXEL_B, choice: "granted" })))
+
+    expect(calls().map(([command]) => command)).not.toContain("consent")
+    expect(sent().slice(2)).toEqual([`${PIXEL_B} · PageView`, `${PIXEL_B} · ViewContent`])
+  })
+
   it("stops sending at the click and revokes the library's consent, with no reload", async () => {
     render(shop({ slug: "loja-a", pixelId: PIXEL_A, choice: "granted" }))
     const before = sent().length
@@ -180,8 +203,9 @@ describe("StorefrontTracking, a yes taken back", () => {
     document.cookie = "_fbp=; Path=/; Max-Age=0"
   })
 
-  it("grants again before anything else when the visitor says yes once more", async () => {
+  it("grants again before anything else when the visitor says yes once more, and tells where they are as at any yes", async () => {
     render(shop({ slug: "loja-a", pixelId: PIXEL_A, choice: "granted" }))
+    calls()
 
     await userEvent.click(screen.getByRole("button", { name: "Cookies" }))
     await userEvent.click(screen.getByRole("button", { name: "Recusar" }))
@@ -190,7 +214,7 @@ describe("StorefrontTracking, a yes taken back", () => {
     await userEvent.click(screen.getByRole("button", { name: "Comprar" }))
 
     const after = calls().slice(calls().findIndex(([, action]) => action === "revoke"))
-    expect(after.map(([command, second, third]) => (command === "trackSingle" ? `${second} · ${third}` : `${command} ${second}`))).toEqual(["consent revoke", "consent grant", `${PIXEL_A} · AddToCart`])
+    expect(after.map(([command, second, third]) => (command === "trackSingle" ? `${second} · ${third}` : `${command} ${second}`))).toEqual(["consent revoke", "consent grant", `${PIXEL_A} · PageView`, `${PIXEL_A} · ViewContent`, `${PIXEL_A} · AddToCart`])
     // One pixel still: the second yes does not start it again.
     expect(calls().filter(([command]) => command === "init")).toHaveLength(1)
   })
@@ -200,6 +224,7 @@ describe("StorefrontTracking, two shops in one tab", () => {
   it("sends nothing to shop A's pixel from shop B's pages, and nothing to B's without B's own yes", async () => {
     // Shop A, where the visitor said yes.
     const tab = render(shop({ slug: "loja-a", pixelId: PIXEL_A, choice: "granted" }))
+    calls()
     await userEvent.click(screen.getByRole("button", { name: "Comprar" }))
     const atA = [`${PIXEL_A} · PageView`, `${PIXEL_A} · ViewContent`, `${PIXEL_A} · AddToCart`]
     expect(sent()).toEqual(atA)
@@ -223,6 +248,7 @@ describe("StorefrontTracking, two shops in one tab", () => {
 
   it("shuts the library at a shop with no pixel at all, and opens it again back at shop A without starting A's pixel twice", async () => {
     const tab = render(shop({ slug: "loja-a", pixelId: PIXEL_A, choice: "granted" }))
+    calls()
 
     at("/loja-b")
     tab.rerender(shop({ slug: "loja-b", pixelId: null }))
@@ -233,14 +259,18 @@ describe("StorefrontTracking, two shops in one tab", () => {
     tab.rerender(shop({ slug: "loja-a", pixelId: PIXEL_A, choice: "granted" }))
 
     expect(calls().filter(([command]) => command === "init")).toEqual([["init", PIXEL_A]])
-    expect(calls().slice(calls().findIndex(([, action]) => action === "revoke"))[1]).toEqual(["consent", "grant"])
+    expect(calls().filter(([command]) => command === "consent")).toEqual([
+      ["consent", "revoke"],
+      ["consent", "grant"],
+    ])
     expect(sent().every((event) => event.startsWith(PIXEL_A))).toBe(true)
   })
 
-  it("shuts the library when the visitor leaves the shops altogether", () => {
+  it("shuts the library when the visitor leaves the shops altogether", async () => {
     const tab = render(shop({ slug: "loja-a", pixelId: PIXEL_A, choice: "granted" }))
+    calls()
 
-    act(() => tab.unmount())
+    await act(async () => tab.unmount())
 
     expect(calls().at(-1)).toEqual(["consent", "revoke"])
   })

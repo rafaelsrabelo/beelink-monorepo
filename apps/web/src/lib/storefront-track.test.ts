@@ -38,7 +38,7 @@ describe("the storefront's one point of dispatch", () => {
     track({ name: "Search", term: "whey" })
     track({ name: "Search", term: "whey" })
 
-    const [first, second] = sent()
+    const [, first, second] = sent()
     expect(first?.slice(0, 4)).toEqual(["trackSingle", PIXEL, "Search", { search_string: "whey" }])
     const ids = [first, second].map((call) => (call?.[4] as { eventID: string }).eventID)
     expect(ids[0]).toMatch(/^[0-9a-f-]{36}$/)
@@ -46,9 +46,30 @@ describe("the storefront's one point of dispatch", () => {
   })
 
   it("keeps the id it is given, which is how an order's purchase is told once from two places", () => {
-    createTrack({ pixelId: PIXEL, allowed: true, quietPaths: QUIET })({ name: "PageView" }, { id: "purchase-01a0d395" })
+    createTrack({ pixelId: PIXEL, allowed: true, quietPaths: QUIET })({ name: "Search", term: "whey" }, { id: "purchase-01a0d395" })
 
-    expect(sent()[0]?.[4]).toEqual({ eventID: "purchase-01a0d395" })
+    expect(sent().at(-1)?.[4]).toEqual({ eventID: "purchase-01a0d395" })
+  })
+
+  it("tells the page before anything that happens on it, and once per path however it is asked", () => {
+    const track = createTrack({ pixelId: PIXEL, allowed: true, quietPaths: QUIET })
+    const names = () => sent().map(([, , name]) => name)
+
+    // What is on the page speaks first, as a page's effects may run in any order.
+    track({ name: "Search", term: "whey" })
+    track({ name: "PageView" })
+    track({ name: "PageView" })
+    expect(names()).toEqual(["PageView", "Search"])
+
+    window.history.pushState(null, "", "/loja/produtos")
+    track({ name: "PageView" })
+    track({ name: "Search", term: "creatina" })
+    expect(names()).toEqual(["PageView", "Search", "PageView", "Search"])
+
+    // The same path under another query is the same page.
+    window.history.replaceState(null, "", "/loja/produtos?pagina=2")
+    track({ name: "PageView" })
+    expect(names()).toHaveLength(4)
   })
 
   it("tells nothing from a page whose address carries a token", () => {

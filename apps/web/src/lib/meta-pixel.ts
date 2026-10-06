@@ -43,18 +43,16 @@ declare global {
 interface PixelState {
   /** The ids started. The tab's and not a shop's: `init` piles up, and a second one for the same id is a second pixel. */
   started: Set<string>
-  /**
-   * Which way consent was last turned. The library's consent is one lock for the whole tab, and
-   * whatever is called while it is shut is kept and sent at the next grant — so nothing is ever
-   * called without a yes.
-   */
+  /** Which way consent was last turned. */
   granted: boolean
+  /** A shop's pages were left, and no other shop's have said yes since. */
+  leaving: boolean
 }
 
 const states = new WeakMap<Fbq, PixelState>()
 
 function stateOf(fbq: Fbq): PixelState {
-  const state = states.get(fbq) ?? { started: new Set<string>(), granted: false }
+  const state = states.get(fbq) ?? { started: new Set<string>(), granted: true, leaving: false }
   states.set(fbq, state)
   return state
 }
@@ -79,6 +77,33 @@ function queueOf(): Fbq {
   return fbq
 }
 
+/** The calls still waiting for the library, without the ones `drop` names. In place: the library reads this very array. */
+function unqueue(fbq: Fbq, drop: (call: FbqArguments) => boolean): void {
+  fbq.queue.splice(0, fbq.queue.length, ...fbq.queue.filter((call) => !drop(call)))
+}
+
+/**
+ * The library's consent is one lock for the whole tab: `revoke` shuts it, and whatever is called
+ * while it is shut is kept and sent at the next `grant`. So nothing is ever called without a yes.
+ *
+ * Before the library arrives the queue is still ours, and it must never hold a `revoke` with a
+ * `grant` behind it: the library stops reading its queue at the lock, and would never reach the
+ * grant. There, consent is turned by editing the queue instead.
+ */
+function turn(fbq: Fbq, granted: boolean): void {
+  const state = stateOf(fbq)
+  state.leaving = false
+  if (state.granted === granted) return
+  state.granted = granted
+
+  if (fbq.callMethod) return fbq("consent", granted ? "grant" : "revoke")
+
+  if (granted) return unqueue(fbq, ([command]) => command === "consent")
+  // What was told and has not left yet does not leave after a no.
+  unqueue(fbq, ([command]) => command === "trackSingle")
+  fbq("consent", "revoke")
+}
+
 /**
  * This shop's pixel, ready to be told things: consent granted, and the pixel started if this tab
  * has not started it yet. Automatic collection is switched off before `init`, as Meta asks, so the
@@ -89,10 +114,7 @@ function start(pixelId: string): Fbq {
   const fbq = queueOf()
   const state = stateOf(fbq)
 
-  if (!state.granted) {
-    fbq("consent", "grant")
-    state.granted = true
-  }
+  turn(fbq, true)
   if (!state.started.has(pixelId)) {
     state.started.add(pixelId)
     fbq("set", "autoConfig", false, pixelId)
@@ -114,11 +136,23 @@ export function startMetaPixel(pixelId: string): void {
  * domain's, and another shop's yes may rest on them.
  */
 export function stopMetaPixel(): void {
-  const state = window.fbq ? stateOf(window.fbq) : null
-  if (!window.fbq || !state?.granted) return
+  if (window.fbq) turn(window.fbq, false)
+}
 
-  window.fbq("consent", "revoke")
-  state.granted = false
+/**
+ * A shop's pages were left. If no shop's pages say yes in the same breath — the next shop's, or
+ * these very ones mounted again — the library is shut: outside a shop that was given a yes, nothing
+ * is there to tell it anything, and it is not left open to find out.
+ */
+export function leaveMetaPixel(): void {
+  const fbq = window.fbq
+  if (!fbq) return
+
+  const state = stateOf(fbq)
+  state.leaving = true
+  queueMicrotask(() => {
+    if (state.leaving) turn(fbq, false)
+  })
 }
 
 /** One event, to one shop's pixel and no other. */

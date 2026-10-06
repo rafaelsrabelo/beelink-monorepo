@@ -6,7 +6,7 @@ import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
 
 // App
-import { META_PIXEL_SRC, sendToMetaPixel, startMetaPixel, stopMetaPixel } from "./meta-pixel"
+import { leaveMetaPixel, META_PIXEL_SRC, sendToMetaPixel, startMetaPixel, stopMetaPixel } from "./meta-pixel"
 
 const SHOP_A = "123456789012345"
 const SHOP_B = "999888777666555"
@@ -14,6 +14,13 @@ const PAGE_VIEW = { name: "PageView", params: {} }
 
 /** What the library would find waiting: with none loaded, every call stays in Meta's queue, in order. */
 const calls = () => (window.fbq?.queue ?? []).map((call) => [...call])
+
+/** The library arrives: it takes what waited, and answers every call from then on. */
+function arrive(): unknown[][] {
+  const heard: unknown[][] = window.fbq!.queue.splice(0).map((call) => [...call])
+  window.fbq!.callMethod = (...args) => void heard.push(args)
+  return heard
+}
 
 afterEach(() => {
   delete window.fbq
@@ -28,11 +35,10 @@ describe("Meta's pixel library, as the shop window drives it", () => {
     expect(window._fbq).toBeUndefined()
   })
 
-  it("starts a pixel as Meta's base code does, with consent granted and automatic collection off before init", () => {
+  it("starts a pixel as Meta's base code does, with automatic collection off before init", () => {
     startMetaPixel(SHOP_A)
 
     expect(calls()).toEqual([
-      ["consent", "grant"],
       ["set", "autoConfig", false, SHOP_A],
       ["init", SHOP_A],
       ["set", "trackSingleOnly", true, SHOP_A],
@@ -76,23 +82,63 @@ describe("Meta's pixel library, as the shop window drives it", () => {
   it("never sends to the pixels on the page: no bare track, whatever is sent and to however many shops", () => {
     sendToMetaPixel(SHOP_A, PAGE_VIEW, "e-1")
     sendToMetaPixel(SHOP_B, PAGE_VIEW, "e-2")
-    stopMetaPixel()
 
     expect(calls().map(([command]) => command)).not.toContain("track")
     expect(calls().filter(([command]) => command === "trackSingle").map(([, pixelId]) => pixelId)).toEqual([SHOP_A, SHOP_B])
   })
 
-  it("revokes consent when stopped, once, and grants it again before anything else when started anew", () => {
+  it("revokes the library's consent when stopped, once, and grants it again before the next event", () => {
     startMetaPixel(SHOP_A)
+    const heard = arrive()
+
     stopMetaPixel()
     stopMetaPixel()
     sendToMetaPixel(SHOP_A, PAGE_VIEW, "e-1")
 
-    expect(calls().slice(4)).toEqual([
+    expect(heard.slice(3)).toEqual([
       ["consent", "revoke"],
       ["consent", "grant"],
       ["trackSingle", SHOP_A, "PageView", {}, { eventID: "e-1" }],
     ])
+  })
+
+  it("stopped before the library arrived, leaves it shut on arrival and takes back what had not left yet", () => {
+    sendToMetaPixel(SHOP_A, PAGE_VIEW, "e-1")
+    stopMetaPixel()
+
+    expect(calls().at(-1)).toEqual(["consent", "revoke"])
+    expect(calls().map(([command]) => command)).not.toContain("trackSingle")
+  })
+
+  // The library stops reading its queue at a revoke: a grant queued behind one would never be reached.
+  it("never leaves a grant waiting behind a revoke: a yes given again before the library arrived takes the revoke out", () => {
+    startMetaPixel(SHOP_A)
+    stopMetaPixel()
+    sendToMetaPixel(SHOP_A, PAGE_VIEW, "e-2")
+
+    expect(calls().map(([command]) => command)).toEqual(["set", "init", "set", "trackSingle"])
+  })
+
+  it("is shut once a shop's pages are left for good", async () => {
+    startMetaPixel(SHOP_A)
+    const heard = arrive()
+
+    leaveMetaPixel()
+    expect(heard).toHaveLength(3)
+    await Promise.resolve()
+
+    expect(heard.at(-1)).toEqual(["consent", "revoke"])
+  })
+
+  it("stays open when the pages left are followed at once by a shop's that say yes — the next shop, or the same pages mounted again", async () => {
+    startMetaPixel(SHOP_A)
+    const heard = arrive()
+
+    leaveMetaPixel()
+    startMetaPixel(SHOP_B)
+    await Promise.resolve()
+
+    expect(heard.map(([command]) => command)).not.toContain("consent")
   })
 
   it("hands a call to the library once it has arrived", () => {

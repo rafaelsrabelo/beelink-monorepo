@@ -39,12 +39,14 @@ export function useTrackView(event: StorefrontEvent | null, key: string): void {
   const told = useRef<string | null>(null)
   const tell = useEffectEvent(() => {
     if (!event || told.current === key) return
-    // Remembered in a ref, so a yes taken back and given again, or an effect run twice, does not tell it twice.
+    // Remembered in a ref, so an effect run twice does not tell it twice.
     told.current = key
     tracking?.track(event)
   })
 
   useEffect(() => {
     if (allowed) tell()
+    // A yes taken back forgets what was told: given again, it is told where the visitor is, like any yes.
+    else told.current = null
   }, [allowed, key])
 }

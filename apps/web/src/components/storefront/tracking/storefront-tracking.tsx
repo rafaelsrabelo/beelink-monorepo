@@ -11,7 +11,7 @@ import { useConsent } from "../consent-provider"
 import { StorefrontPageViews } from "./storefront-page-views"
 import { TrackingContext } from "./use-track"
 import { marketingAllowed } from "@/lib/consent-cookie"
-import { META_PIXEL_SRC, startMetaPixel, stopMetaPixel } from "@/lib/meta-pixel"
+import { leaveMetaPixel, META_PIXEL_SRC, startMetaPixel, stopMetaPixel } from "@/lib/meta-pixel"
 import { createTrack } from "@/lib/storefront-track"
 
 export interface StorefrontTrackingProps {
@@ -45,7 +45,7 @@ export function StorefrontTracking({ pixelId, quietPaths, children }: Storefront
 
     startMetaPixel(pixelId)
     // Leaving the shop's pages — for another shop, the landing page, the panel — leaves the library shut behind.
-    return stopMetaPixel
+    return leaveMetaPixel
   }, [allowed, pixelId])
 
   return (
