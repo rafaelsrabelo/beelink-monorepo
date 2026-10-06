@@ -212,7 +212,13 @@ export class MelhorEnvioService {
 
   /** A failed trade, said with the shop it was for — the web sends the browser back to that shop's panel. */
   private failed(error: unknown, shop: { storeSlug: string }): never {
-    if (error instanceof MelhorEnvioRefused) throw new BadRequestException(integrationError('INTEGRATION_EXCHANGE_FAILED', 'Melhor Envio refused the code', shop));
+    if (error instanceof MelhorEnvioRefused) {
+      // Its status and its own words, which never carry the secret (see `MelhorEnvioClient.call`).
+      // Without them the shopkeeper's "recusou a autorização" is all anyone has, and a wrong secret,
+      // a redirect URI one slash off and an app of the other environment all read the same.
+      this.logger.warn({ status: error.status, reason: error.reason, storeSlug: shop.storeSlug }, 'Melhor Envio refused the authorization');
+      throw new BadRequestException(integrationError('INTEGRATION_EXCHANGE_FAILED', 'Melhor Envio refused the code', shop));
+    }
     throw new BadGatewayException(integrationError('INTEGRATION_UNREACHABLE', 'Melhor Envio did not answer', shop));
   }
 }
