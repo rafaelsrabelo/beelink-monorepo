@@ -63,6 +63,22 @@ describe("an order's page", () => {
     expect(screen.getByText("Pagamento combinado com a loja: Pix").nextElementSibling).toBeNull()
   })
 
+  /** BEELINK-205: an order charged online says where its payment stands; one settled with the shop is never "approved". */
+  it("says where an online payment stands, and leads to it only while there is something to pay", async () => {
+    const sums = { rows: [{ label: "Subtotal", value: "R$ 99,80" }], total: "R$ 99,80" }
+    const { container, rerender } = render(<StorefrontOrderPayment {...sums} method="Pagamento online: Pix" status={{ label: "Aguardando pagamento", tone: "wait" }} payHref="/loja/conta/pedidos/14?pagamento=1" />)
+    expect(screen.getByText("Aguardando pagamento")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Pagar agora" })).toHaveAttribute("href", "/loja/conta/pedidos/14?pagamento=1")
+    await expectNoA11yViolations(container)
+
+    rerender(<StorefrontOrderPayment {...sums} method="Pagamento online: Pix" status={{ label: "Pagamento aprovado", tone: "done" }} />)
+    expect(screen.getByText("Pagamento aprovado")).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Pagar agora" })).toBeNull()
+
+    rerender(<StorefrontOrderPayment {...sums} method="Pagamento combinado com a loja: Pix" />)
+    expect(screen.queryByText(/Aguardando|aprovado/)).toBeNull()
+  })
+
   it("titles the order, says who placed it, and trails back to the list", () => {
     render(header)
 

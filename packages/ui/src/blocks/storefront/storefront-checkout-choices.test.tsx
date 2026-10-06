@@ -35,7 +35,7 @@ describe("StorefrontCheckoutChoices", () => {
     expect(screen.queryByRole("radio", { name: "Cartão de débito" })).toBeNull()
 
     await userEvent.click(screen.getByRole("radio", { name: "Pix" }))
-    expect(onChange).toHaveBeenLastCalledWith({ fulfillment: "DELIVERY", addressId: "a1", paymentMethod: "PIX", wayId: null })
+    expect(onChange).toHaveBeenLastCalledWith({ fulfillment: "DELIVERY", addressId: "a1", paymentMethod: "PIX", paymentChannel: "OFFLINE", installments: 1, wayId: null })
     await userEvent.click(screen.getByRole("radio", { name: "Retirar na loja" }))
     expect(onChange).toHaveBeenLastCalledWith({ fulfillment: "PICKUP", addressId: "a1", paymentMethod: null, wayId: null })
   })

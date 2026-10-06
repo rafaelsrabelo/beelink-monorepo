@@ -365,6 +365,102 @@ export interface UiMessages {
     checkoutCouponGone: string
     /** The shopper's cashback moved between the price on screen and the order (BEELINK-244): the cart was priced again. */
     checkoutCashbackGone: string
+    /** The checkout's online ways, charged at the shop's own Asaas account (BEELINK-205). */
+    checkoutPayNow: string
+    checkoutPayLater: string
+    checkoutPayPixHint: string
+    checkoutPayCardHint: string
+    checkoutInstallments: string
+    /** `{amount}`: the whole total, in one payment. */
+    checkoutInstallmentFull: string
+    /** `{count}`, `{amount}`: each instalment, with no interest. */
+    checkoutInstallmentOption: string
+    /** While the delivery fee is not agreed, the total is open: no amount is promised. */
+    checkoutInstallmentOpenFull: string
+    checkoutInstallmentOpen: string
+    /** `{minimum}`: Asaas's least charge. */
+    checkoutOnlineBelowMinimum: string
+    checkoutOnlineOnlyBelowMinimum: string
+    checkoutOnlineFeeLater: string
+    checkoutNothingToPay: string
+    checkoutPayerDocument: string
+    checkoutPayerDocumentHint: string
+    checkoutPayerDocumentIssue: string
+    checkoutPayOnline: string
+    checkoutBelowMinimumGone: string
+    /** The payment screen of one order (BEELINK-205). `{number}`. */
+    paymentTitle: string
+    paymentBack: string
+    paymentAmount: string
+    paymentPixTitle: string
+    paymentPixSteps: string
+    paymentPixQrAlt: string
+    paymentPixCode: string
+    paymentPixCopy: string
+    paymentPixCopied: string
+    paymentPixSelected: string
+    /** `{date}`: until when the charge is paid here. */
+    paymentValidUntil: string
+    paymentConfirmsHere: string
+    paymentPixWaitingTitle: string
+    paymentPixWaitingBody: string
+    paymentPixExpiredTitle: string
+    paymentPixExpiredBody: string
+    paymentPixRenew: string
+    paymentCardTitle: string
+    paymentCardBody: string
+    paymentCardOpen: string
+    paymentNewTab: string
+    paymentInstallmentsFull: string
+    /** `{count}`, `{amount}`. */
+    paymentInstallments: string
+    paymentCardExpiredTitle: string
+    paymentCardExpiredBody: string
+    paymentNoneTitle: string
+    paymentNoneBody: string
+    paymentCancelledTitle: string
+    paymentCancelledBody: string
+    paymentCreate: string
+    paymentCreating: string
+    paymentAwaitingTotalTitle: string
+    paymentAwaitingTotalBody: string
+    paymentPaidTitle: string
+    paymentPaidBody: string
+    paymentRefundedTitle: string
+    paymentRefundedBody: string
+    paymentOrderCancelledTitle: string
+    paymentOrderCancelledBody: string
+    paymentUnreadTitle: string
+    paymentUnreadBody: string
+    paymentRetry: string
+    paymentAddDocument: string
+    /** Why a charge was not made, by the API's code. */
+    paymentRefusedNotOnline: string
+    paymentRefusedOrderCancelled: string
+    paymentRefusedAwaitingTotal: string
+    paymentRefusedAlreadyPaid: string
+    paymentRefusedInProgress: string
+    paymentRefusedBelowMinimum: string
+    paymentRefusedDocumentMissing: string
+    paymentRefusedRefused: string
+    paymentRefusedUnavailable: string
+    paymentRefusedSignedOut: string
+    paymentRefusedTooMany: string
+    paymentRefusedFailed: string
+    /** Where an order's online payment stands, on its page and its card (BEELINK-205). */
+    orderPayAwaiting: string
+    orderPayAwaitingTotal: string
+    orderPayApproved: string
+    orderPayOverdue: string
+    orderPayCancelled: string
+    orderPayRefunded: string
+    orderPayPartlyRefunded: string
+    orderPayNow: string
+    /** `{method}`: Pix, or the credit card. */
+    orderPaymentOnline: string
+    /** `{method}`, `{count}`. */
+    orderPaymentOnlineInstallments: string
+    orderCancelRefusedPaid: string
     /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
     checkoutSignInPrompt: string
     checkoutSignIn: string

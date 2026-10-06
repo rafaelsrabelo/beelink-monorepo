@@ -10,7 +10,7 @@ import { WhatsAppIcon } from "../store/store-brand-icons"
 import type { PaymentMethod } from "../store/store-types"
 import { StorefrontCheckoutChoices, type StorefrontCheckoutAddress, type StorefrontCheckoutChoice, type StorefrontCheckoutChoicesProps, type StorefrontCheckoutShipping } from "./storefront-checkout-choices"
 
-export type { CheckoutFulfillment, StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutShipping, StorefrontCheckoutWay } from "./storefront-checkout-choices"
+export type { CheckoutFulfillment, CheckoutOnlineMethod, CheckoutPaymentChannel, StorefrontCheckoutAddress, StorefrontCheckoutChoice, StorefrontCheckoutOnline, StorefrontCheckoutShipping, StorefrontCheckoutWay } from "./storefront-checkout-choices"
 
 export interface StorefrontCheckoutCustomer {
   /** Name and phone, a line each — only the ones on file; the addresses are `addresses`. */
@@ -29,14 +29,19 @@ export interface StorefrontCheckoutProps {
   /**
    * Where the conversation goes once the order is placed: the shop's WhatsApp, opened with the
    * order's number, or nowhere — a shop without WhatsApp still takes the order, and confirms it.
+   * `pay` is an order charged online (BEELINK-205): placing it leads to its payment, here in the shop.
    */
-  channel: "whatsapp" | "shop"
+  channel: "whatsapp" | "shop" | "pay"
   /** Who is ordering, as the shop keeps them. Null: nobody is signed in. */
   customer: StorefrontCheckoutCustomer | null
   /** Where a visitor signs in or signs up to order. The cart is a cookie, so it waits for them. */
   signIn: { signInHref: string; signUpHref: string }
-  /** The methods the shop takes. */
+  /** The methods the shop settles by on delivery or at pickup; none when it turned that off. */
   paymentMethods: readonly PaymentMethod[]
+  /** What the shop charges online for this cart; null when it charges nothing online. */
+  online?: StorefrontCheckoutChoicesProps["online"]
+  /** The order has nothing to pay: said in place of the payment's choices. */
+  nothingToPay?: string | null
   choice: StorefrontCheckoutChoice
   onChoiceChange: (choice: StorefrontCheckoutChoice) => void
   /** What the shop's delivery rules quote to the chosen address; null while nobody knows. */
@@ -62,13 +67,16 @@ const PRIMARY = "flex h-12 items-center justify-center gap-2 rounded-xl bg-shop-
  * the order asks who is placing it (docs/product/README.md: "buying requires a verified identity;
  * reaching the checkout does not"). A signed-in shopper sees their details as the shop keeps them,
  * chooses how to receive and pay, and places the order — which exists from then on, whether the
- * conversation goes on in the shop's WhatsApp or not. There is no payment here.
+ * conversation goes on in the shop's WhatsApp or not. Nothing is paid on this screen: an order
+ * charged online leads to its payment once placed.
  */
 export function StorefrontCheckout({
   channel,
   customer,
   signIn,
   paymentMethods,
+  online = null,
+  nothingToPay = null,
   choice,
   onChoiceChange,
   shipping = null,
@@ -103,7 +111,7 @@ export function StorefrontCheckout({
     )
   }
 
-  const label = pending ? text.checkoutPlacing : channel === "whatsapp" ? text.checkoutWhatsApp : text.checkoutPlace
+  const label = pending ? text.checkoutPlacing : channel === "whatsapp" ? text.checkoutWhatsApp : channel === "pay" ? text.checkoutPayOnline : text.checkoutPlace
 
   return (
     <div className="flex flex-col gap-4">
@@ -124,6 +132,8 @@ export function StorefrontCheckout({
         addresses={customer.addresses}
         addHref={customer.addAddressHref}
         paymentMethods={paymentMethods}
+        online={online}
+        nothingToPay={nothingToPay}
         shipping={shipping}
         recipientDocument={recipientDocument}
         disabled={pending}

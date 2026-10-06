@@ -35,7 +35,9 @@ const items = [
   { name: "Coqueteleira 700ml", href: null, imageUrl: null, meta: "Cor: Preta · Qtd. 1", price: "R$ 29,90" },
 ]
 
-function OrderPage({ status, pickup = false, cashback = null }: { status: StorefrontOrderStatusProps; pickup?: boolean; cashback?: string | null }) {
+type Paid = Pick<Parameters<typeof StorefrontOrderPayment>[0], "method" | "status" | "payHref">
+
+function OrderPage({ status, pickup = false, cashback = null, paid = { method: "Pagamento combinado com a loja: Pix" } }: { status: StorefrontOrderStatusProps; pickup?: boolean; cashback?: string | null; paid?: Paid }) {
   return (
     <StorefrontOrderLayout
       header={
@@ -64,7 +66,7 @@ function OrderPage({ status, pickup = false, cashback = null }: { status: Storef
               { label: "Cupom BEMVINDO5", value: "− R$ 4,99", positive: true },
             ]}
             total="R$ 237,22"
-            method="Pagamento combinado com a loja: Pix"
+            {...paid}
             cashback={cashback}
           />
           {pickup ? (
@@ -103,6 +105,16 @@ export const ComRastreio: Story = {
       tracking: <StorefrontOrderTracking by="Correios · SEDEX" code="AB123456789BR" href="#" hrefLabel="Ver no site da transportadora" />,
     },
   },
+}
+
+/** Pago online e aguardando (BEELINK-205): o pagamento diz onde está e leva à tela de pagar. */
+export const AguardandoPagamento: Story = {
+  args: { paid: { method: "Pagamento online: Pix", status: { label: "Aguardando pagamento", tone: "wait" }, payHref: "#" } },
+}
+
+/** Pago online, aprovado: sem mais nada a pagar. */
+export const PagamentoAprovado: Story = {
+  args: { paid: { method: "Pagamento online: Cartão de crédito em 3x", status: { label: "Pagamento aprovado", tone: "done" } } },
 }
 
 /** Uma retirada: sem "Saiu para entrega", sem linha de entrega no pagamento, e o endereço da loja. */
