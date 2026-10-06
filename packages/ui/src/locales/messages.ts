@@ -1148,6 +1148,43 @@ export interface UiMessages {
       opensInNewTab: string
     }
     /** The gallery a block is added from. */
+    /** The gallery of whole-page models, opened from the editor's bar. */
+    templateGallery: {
+      /** The bar's entry. */
+      open: string
+      title: string
+      description: string
+      /** The cards, named for a screen reader. */
+      listLabel: string
+      /** The switch that keeps only the models suggested for the shop's category. */
+      recommendedOnly: string
+      recommended: string
+      needsProduct: string
+      view: string
+      /** The button's name for a screen reader: `{name}` is the model's. */
+      viewNamed: string
+      selected: string
+      loading: string
+      loadingPreview: string
+      previewFailed: string
+      retry: string
+      /** On a card whose model is built around a product, until one is chosen. */
+      chooseProduct: string
+      /** On a card whose model asks for something this gallery cannot choose. */
+      previewUnavailable: string
+      product: string
+      productPlaceholder: string
+      productEmpty: string
+      productHint: string
+      empty: string
+      failed: string
+      /** In the large preview's place, before a model is chosen. */
+      largeHint: string
+      /** The large preview, named: `{name}` is the model's. */
+      previewOf: string
+      back: string
+      apply: string
+    }
     gallery: {
       title: string
       description: string
