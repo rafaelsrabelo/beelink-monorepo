@@ -188,8 +188,9 @@ export class AsaasHttpClient extends AsaasClient {
       description: charge.description.slice(0, 500),
       externalReference: charge.externalReference,
     }).catch((error: unknown) => {
-      // Refused is an answer. Anything else left a request that may have been carried out.
-      if (error instanceof AsaasUnreachable) throw new AsaasOutcomeUnknown(error.message);
+      // Refused is an answer, and so is a 429: Asaas turned the request away before it did anything.
+      // Anything else left a request that may have been carried out.
+      if (error instanceof AsaasUnreachable && !(error instanceof AsaasThrottled)) throw new AsaasOutcomeUnknown(error.message);
       throw error;
     });
     const created = chargeOf(answer);

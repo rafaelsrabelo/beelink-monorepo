@@ -215,6 +215,12 @@ describe('AsaasHttpClient', () => {
       answer(200, {});
       await expect(client.createCharge(config, KEY, request)).rejects.toBeInstanceOf(AsaasOutcomeUnknown);
 
+      // A 429 is turned away before anything is done: nothing was made, and the wait is told.
+      answer(429, { errors: [] });
+      const throttled = await client.createCharge(config, KEY, request).catch((error: unknown) => error);
+      expect(throttled).toBeInstanceOf(AsaasThrottled);
+      expect(throttled).not.toBeInstanceOf(AsaasOutcomeUnknown);
+
       answer(400, { errors: [{ code: 'invalid_customer', description: `Customer inválido para a chave ${KEY}.` }] });
       const refused = await client.createCharge(config, KEY, request).catch((error: unknown) => error);
       expect(refused).toBeInstanceOf(AsaasRefused);

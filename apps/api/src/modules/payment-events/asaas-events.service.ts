@@ -79,10 +79,12 @@ export class AsaasEvents {
     }
     this.sweeping = (async () => {
       try {
+        let full = false;
         do {
           this.again = false;
-          await this.flush();
-        } while (this.again);
+          // A full batch means more may wait behind it: they are not left for the next minute.
+          full = (await this.sweep()).claimed === ASAAS_EVENT_BATCH;
+        } while (this.again || full);
       } catch (error) {
         this.logger.error({ err: error }, 'Could not work the Asaas events');
       } finally {
@@ -98,6 +100,10 @@ export class AsaasEvents {
 
   /** Claims what waits and is due, works each, and answers how many were done. */
   async flush(): Promise<number> {
+    return (await this.sweep()).done;
+  }
+
+  private async sweep(): Promise<{ claimed: number; done: number }> {
     const now = new Date();
     const claimed = await this.prisma.$queryRaw<{ id: string; attempts: number }[]>(Prisma.sql`
       UPDATE "asaas_events"
@@ -128,7 +134,7 @@ export class AsaasEvents {
         await this.prisma.asaasEvent.update({ where: { id }, data: last ? { processedAt: new Date(), outcome: 'GIVEN_UP', lastError: reason } : { nextAttemptAt: waited, lastError: reason } });
       }
     }
-    return done;
+    return { claimed: claimed.length, done };
   }
 
   /** Events done a month ago are of no use: Asaas holds an undelivered one for fourteen days at most. Answers how many went. */

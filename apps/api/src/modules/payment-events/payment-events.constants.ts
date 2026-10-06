@@ -1,9 +1,9 @@
 /** Events claimed per sweep. */
-export const ASAAS_EVENT_BATCH = 20;
+export const ASAAS_EVENT_BATCH = 10;
 /** How many times an event is tried before it is given up: the last waits two hours, some four hours in all. */
 export const ASAAS_EVENT_ATTEMPTS_MAX = 8;
-/** How long a claimed event is one sweep's: longer than hearing Asaas and removing a charge may take. */
-export const ASAAS_EVENT_LEASE_MS = 5 * 60_000;
+/** How long a claimed event is one sweep's: longer than a whole batch may take, each event hearing Asaas and removing a charge at the client's ten seconds a call. */
+export const ASAAS_EVENT_LEASE_MS = 10 * 60_000;
 /** How long a done event is kept to tell a second delivery by. */
 export const ASAAS_EVENT_KEEP_MS = 30 * 24 * 60 * 60_000;
 

@@ -198,3 +198,123 @@ A etapa "Pagamento aprovado", o e-mail de pagamento aprovado, o filtro e o sino 
 pagamento no pedido do painel (Q6). Estorno, `refundedCents`, `PARTIALLY_REFUNDED` e cancelar pedido
 pago (Q7). O motivo "não foi pago" no aviso e no e-mail de cancelamento: saem como qualquer
 cancelamento.
+
+## Para os próximos tickets
+
+### Q6 (BEELINK-207): etapa e e-mail de pagamento aprovado, painel, sino
+
+- **Onde o pagamento aprovado é sabido:** `PaymentNews.tell` (`apps/api/src/modules/payments/payment-news.ts`)
+  é chamado depois do commit sempre que o que o pedido mostra muda, por qualquer caminho (webhook,
+  reconciliação, consulta do cliente, `ensure`, `release`). O e-mail deve ser **devido dentro da
+  transação** que grava o pago, como `oweStatusEmail` faz com o status: o lugar é `PaymentSync.sync`
+  (o bloco sob a trava, onde `before` e `status` são conhecidos) e os dois pontos de `OrderPayments`
+  que gravam um plano pago (`settle` e `release`). Um helper único de "virou pago" chamado dos três
+  evita esquecer um.
+- **O evento de tempo real já existe:** `{ type: "order.payment", orderNumber, status, stray }`. O
+  painel já relê a lista e o pedido aberto (`panelKeysOf`), e a vitrine relê a cobrança daquele
+  pedido e a página (`shopperReadOf`). O sino e o toast de "pedido pago" entram em
+  `apps/web/src/lib/panel-notifications.ts` (`toastOf` já trata `stray`; `status` pago com `stray`
+  nulo hoje não diz nada).
+- **`ShopOrderPayment.strays`** já vem no pedido do painel e não é desenhado em lugar nenhum: a tela
+  do pagamento no pedido do painel é sua. Hoje a loja só fica sabendo pelo toast, que some. Um aviso
+  fixo no pedido (e um filtro "com pagamento a resolver") fecha isso. `reason` é `ORDER_CANCELLED`
+  ou `ORDER_ALREADY_PAID`.
+- **`webhookState: PAUSED`** passa a acontecer de verdade (a checagem diária grava). O painel do Q2
+  já mostra o estado; confira a frase com a tela na frente.
+- **O cancelamento automático não diz o motivo.** A linha da conversa e o e-mail são os de qualquer
+  cancelamento. O evento do pedido tem `actor: SYSTEM`: dá para o Q6 dizer "cancelado por falta de
+  pagamento" quando o ator for `SYSTEM` e o canal `ONLINE`.
+- **`PAYMENT_POLL_MS` do web** (5 s na tela de pagamento, 10 s na página do pedido) pode ficar mais
+  lento agora que o evento chega: cada leitura de uma cobrança pendente continua barata (o Asaas só
+  é perguntado uma vez por minuto), então não é urgente.
+
+### Q7 (BEELINK-208): estorno e cancelar pedido pago
+
+O que cada evento de estorno e de chargeback faz **hoje** (todos são gravados em `asaas_events` e
+levam a uma leitura da conta, nada mais):
+
+| Evento | O que o Asaas passa a dizer | O que o bee-link grava hoje | O que falta (seu) |
+|---|---|---|---|
+| `PAYMENT_REFUNDED` | `status: REFUNDED` | a linha vira `REFUNDED`; `refundedCents` continua 0; o pedido não muda | gravar `refundedCents` a partir de `refunds`; decidir o que o pedido faz |
+| `PAYMENT_PARTIALLY_REFUNDED` | o status continua `RECEIVED` ou `CONFIRMED`, com `refunds` | nada muda (só `checkedAt`) | `PARTIALLY_REFUNDED` e `refundedCents`: `AsaasCharge` ainda não lê `refunds` |
+| `PAYMENT_REFUND_IN_PROGRESS` | `status: REFUND_IN_PROGRESS` | a linha fica como está; `providerStatus` diz | idem |
+| `PAYMENT_REFUND_DENIED` | volta a `RECEIVED` ou `CONFIRMED` | a linha fica como está; `providerStatus` diz | avisar a loja de que o estorno foi negado |
+| `PAYMENT_CHARGEBACK_REQUESTED`, `_DISPUTE`, `PAYMENT_AWAITING_CHARGEBACK_REVERSAL` | o status correspondente | a linha fica como está (paga); `providerStatus` diz; a loja **não** é avisada | avisar a loja; se ela perde, chega `REFUNDED` |
+
+- **O estorno de um `stray`** é pelo `providerId` de `order_stray_payments` (a cobrança paga a mais).
+  A tabela não tem coluna de "resolvido": acrescente (`refundedAt`, ou `settledAt`) quando o estorno
+  existir, para o painel parar de avisar.
+- **`applyCharge` segue o valor que o Asaas diz** numa linha viva (`changedOf`). Um estorno parcial
+  não muda `value` no Asaas, então não há conflito; se o Q7 passar a ler `refunds`, o lugar é o
+  mesmo `chargeOf` do cliente HTTP e um campo novo em `ChargePlan`.
+- **A única descida de status** é a de `RECEIVED_IN_CASH` desfeito, dentro de `applyCharge`.
+  `REFUNDED → ` qualquer coisa continua impossível por `statusAfter`.
+- **Cancelar um pedido pago** continua recusado por `refusePaidOrder`; `OrdersService.cancelUnpaid`
+  também passa por ela.
+- **O gate `api/order-payments-in-payments`** recusa escrita em `order_payments` e
+  `order_stray_payments` fora de `modules/payments`: o estorno escreve por uma função de
+  `payment-facts.ts`.
+
+## Acréscimos de 06/10/2026: o que mudou enquanto foi feito
+
+- **O prazo do pedido tem coluna própria,** `orders.paymentDueAt`, em vez de uma conta sobre
+  `createdAt`: um frete fechado dias depois do pedido dá 3 dias a partir dali, e mudar o frete de
+  novo dá mais 3. Um pedido `ONLINE` de antes desta migration, com `paymentDueAt` nulo, nunca é
+  cancelado pela rotina (não há nenhum em produção).
+- **Quando a conferência falha, o prazo do pedido anda uma hora** (`UNPAID_RETRY_MS`): sem isso, os
+  pedidos de uma loja desconectada ficariam para sempre na frente da fila e os outros não seriam
+  alcançados.
+- **A reconciliação só olha lojas com conexão `CONNECTED`.** As cobranças pendentes de uma loja
+  desconectada ou em `NEEDS_RECONNECT` esperam a reconexão.
+- **Uma cobrança pendente que não vem na listagem é lida pelo id antes de ser cancelada aqui:** é
+  o que o plano do Q3 deixou como "não aparecer na listagem é tratado como sumiu". Custa uma
+  requisição a mais só nesse caso.
+- **`hearOf` virou uma chamada a `PaymentSync.sync`.** Antes só gravava quando achava pago; agora
+  grava o que o Asaas disser (vencida, apagada). Cancelar e mudar o frete continuam não falhando
+  quando o Asaas não responde.
+- **`applyCharge` segue o valor e o vencimento do Asaas numa linha viva,** e apaga o QR guardado
+  quando mudam (a documentação do Pix manda ler o QR de novo). A reconciliação então vê uma cobrança
+  de valor diferente do pedido e a apaga, como o `ensure` faria.
+- **Um `429` na criação de uma cobrança deixou de ser "resultado desconhecido":** o Asaas recusa
+  antes de fazer qualquer coisa. A posse do pedido é solta na hora, em vez de segurar 45 segundos.
+- **O gate `api/order-payments-in-payments`** (sugerido no plano do Q3) entrou: a reconciliação
+  empurra a próxima conferência por `pushCheck` e `restChecks`, em `payment-facts.ts`.
+- **A checagem diária também registra de novo um webhook que sumiu** (apagado à mão no painel do
+  Asaas) ou que nunca foi registrado (`webhookState: ERROR` da conexão), com o token que a loja já
+  tem. Só existe onde o web é https público.
+- **O módulo novo não tem `dto/`:** o corpo do webhook é lido como `unknown`, de propósito (a
+  validação global recusaria um campo novo do Asaas), e a resposta é `{ result }`. É o molde do
+  receptor do Melhor Envio.
+- **Os lotes:** 10 eventos por varredura (com posse de 10 minutos), 40 cobranças e 20 pedidos por
+  passada, 20 lojas por passada da checagem diária.
+
+## Acréscimos de 06/10/2026: ver funcionando
+
+API na 3501 e web na 3500, banco `harness_asaas`. Na loja `loja-q4` (do Q4) foi gravada à mão uma
+conexão selada de verdade pelo cofre, com uma chave de mentira e um token conhecido, e a cobrança
+`pay_mentira_1` voltou a `PENDING`.
+
+| O quê | Rota | Resultado |
+|---|---|---|
+| Token errado | API e web | `401 INTEGRATION_SIGNATURE_INVALID` |
+| Sem o cabeçalho | API | `401` |
+| Evento de cobrança de fora | API | `200 {"result":"IGNORED"}`; linha em `asaas_events` já concluída, sem pedido |
+| Evento da cobrança do pedido | API e web | `200 {"result":"RECORDED"}`; linha com o pedido, uma tentativa |
+| O mesmo evento de novo | API e web | `200 {"result":"DUPLICATE"}`; nenhuma linha nova |
+| Corpo `[]`, e evento sem `id` duas vezes | API e web | `200 IGNORED`; o segundo sem `id` é `DUPLICATE` (pelo SHA-256 dos bytes) |
+| O que o processamento fez | banco e log | perguntou ao sandbox do Asaas com a chave de mentira, recebeu `401 invalid_access_token_format`, a conexão virou `NEEDS_RECONNECT`, o evento ficou para nova tentativa com o motivo em `lastError`, a cobrança continuou `PENDING` |
+| O token nos logs | `api.log`, `web.log` | zero ocorrências; o log da API mostra `"asaas-access-token":"[Redacted]"` |
+
+**O que não deu para exercitar:**
+
+- **O pedido virar pago por um evento mandado à mão.** É consequência direta da decisão 1: o corpo
+  do evento não é aplicado, e o estado vem de uma leitura na conta da loja, que sem chave de sandbox
+  responde `401`. O que o `curl` mostrou é justamente isso: um evento que diz "pago" não paga nada
+  sozinho. O caminho inteiro (evento, leitura, pago, aviso) está no e2e, com o Asaas falso.
+- **O tempo real no navegador:** o evento `order.payment` só é publicado quando uma leitura muda o
+  pagamento. Está nos testes de `realtime-invalidation` e no e2e (o publicador é espiado).
+- **Nada com o Asaas de verdade:** a entrega de um webhook real, a fila pausada e a reativação
+  (`PUT /v3/webhooks/{id}`), o `429` com `RateLimit-Reset`, os eventos `ACCESS_TOKEN_*`, a ordem em
+  que o Asaas manda os eventos de um parcelamento.
+- **A rotina rodando sozinha por dias:** os passos foram chamados nos testes com o relógio que cada
+  um nomeia; o `setInterval` de um minuto rodou só enquanto a API esteve de pé na verificação.
