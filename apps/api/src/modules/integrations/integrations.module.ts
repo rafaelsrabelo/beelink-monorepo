@@ -24,6 +24,8 @@ import { MelhorEnvioRefresher } from './melhor-envio/melhor-envio-refresher.js';
 import { MelhorEnvioSettingsController } from './melhor-envio/melhor-envio-settings.controller.js';
 import { MelhorEnvioSettingsService } from './melhor-envio/melhor-envio-settings.service.js';
 import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
+import { MetaPixelController } from './meta-pixel/meta-pixel.controller.js';
+import { MetaPixelService } from './meta-pixel/meta-pixel.service.js';
 
 /**
  * A shop's own accounts at the third parties that act in its name (BEELINK-182): Melhor Envio now,
@@ -40,10 +42,11 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  * token a request carries, `AsaasWebhookKeeper` keeps the webhook sending and the key in use, and
  * `AsaasConnectionService` is exported for its `beforeKeyLeaves` alone. `AsaasApproval` is exported for
  * the payments too (BEELINK-278): a charge Asaas refused makes it ask whether the account is approved.
+ * A shop's Meta Pixel (BEELINK-269) is kept here as well, by its ID alone: public, so never sealed.
  */
 @Module({
   imports: [StoresModule],
-  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController, AsaasSettingsController],
+  controllers: [MelhorEnvioController, MelhorEnvioCallbackController, MelhorEnvioSettingsController, OrderLabelsController, AsaasController, AsaasSettingsController, MetaPixelController],
   providers: [
     MelhorEnvioClient,
     MelhorEnvioService,
@@ -60,6 +63,7 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
     AsaasCharges,
     AsaasWebhookDoor,
     AsaasWebhookKeeper,
+    MetaPixelService,
   ],
   exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasApproval, AsaasCharges, AsaasConnectionService, AsaasWebhookDoor, AsaasWebhookKeeper],
 })
