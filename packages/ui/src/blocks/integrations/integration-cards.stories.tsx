@@ -3,14 +3,14 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 
 // Block
 import { IntegrationCards } from "./integration-cards"
-import { asaasCard, melhorEnvioCard } from "./integrations.fixtures"
+import { asaasCard, beeflowUpcoming, melhorEnvioCard } from "./integrations.fixtures"
 
 const noop = () => {}
 
 const meta = {
   title: "Blocos/Painel/Integrações/Lista",
   component: IntegrationCards,
-  decorators: [(Story) => <div className="max-w-4xl">{Story()}</div>],
+  decorators: [(Story) => <div className="max-w-6xl">{Story()}</div>],
   args: { cards: [melhorEnvioCard, asaasCard], onRetry: noop },
 } satisfies Meta<typeof IntegrationCards>
 
@@ -48,6 +48,11 @@ export const PrecisaReconectar: Story = {
 /** Sem o serviço configurado na instalação: a frase, e nada para apertar. */
 export const Indisponivel: Story = {
   args: { cards: [{ ...melhorEnvioCard, connection: { state: "unavailable", account: null, sandbox: false } }, asaasCard] },
+}
+
+/** Com o que vem por aí: o BeeFlow anunciado depois das integrações, com "Em breve" e nada para apertar. */
+export const ComEmBreve: Story = {
+  args: { cards: [{ ...melhorEnvioCard, connection: { state: "connected", account: "Loja Lessari", sandbox: true } }, asaasCard], upcoming: [beeflowUpcoming] },
 }
 
 /** Enquanto as conexões são lidas: o nome e a logo já estão lá, e só o estado e a ação esperam. */

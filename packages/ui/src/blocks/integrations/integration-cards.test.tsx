@@ -13,7 +13,7 @@ import { en } from "@harness-monorepo/ui/locales/index"
 import { expectNoA11yViolations } from "../../test/a11y"
 import type { LinkComponent } from "../auth/auth-link"
 import { IntegrationCards } from "./integration-cards"
-import { ASAAS_LOGO, MELHOR_ENVIO_LOGO, asaasCard, melhorEnvioCard } from "./integrations.fixtures"
+import { ASAAS_LOGO, BEEFLOW_LOGO, MELHOR_ENVIO_LOGO, asaasCard, beeflowUpcoming, melhorEnvioCard } from "./integrations.fixtures"
 
 /** The app's link, as a test can tell it from a plain anchor. */
 const AppLink: LinkComponent = ({ href, ...props }) => <a href={href} data-app-link="" {...props} />
@@ -34,6 +34,8 @@ describe("IntegrationCards", () => {
     const marks = [...container.querySelectorAll("img")]
     expect(marks.map((mark) => mark.getAttribute("src"))).toEqual([MELHOR_ENVIO_LOGO, ASAAS_LOGO])
     expect(marks.map((mark) => mark.getAttribute("alt"))).toEqual(["", ""])
+    // Nothing on its way unless the page is handed it.
+    expect(screen.queryByText("Em breve")).toBeNull()
     await expectNoA11yViolations(container)
   })
 
@@ -132,6 +134,25 @@ describe("IntegrationCards", () => {
 
     await userEvent.click(asaas.getByRole("button", { name: "Tentar de novo: Asaas" }))
     expect(onRetry).toHaveBeenCalledExactlyOnceWith("ASAAS")
+    await expectNoA11yViolations(container)
+  })
+
+  /** BeeFlow has no API, no page and no way in yet: its card announces it and offers nothing to follow or press. */
+  it("announces what is on its way after what there is, with nothing to follow or press, and no price", async () => {
+    const { container } = render(<IntegrationCards cards={[melhorEnvioCard, asaasCard]} onRetry={() => {}} upcoming={[beeflowUpcoming]} />)
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(3)
+    const beeflow = within(screen.getAllByRole("listitem")[2]!)
+    expect(beeflow.getByRole("heading", { level: 2, name: "BeeFlow" })).toBeInTheDocument()
+    expect(beeflow.getByText("Em breve")).toHaveAttribute("data-variant", "outline")
+    expect(beeflow.getByText(/avisos de pedido, cupons e promoções, e atendimento automático/)).toBeInTheDocument()
+    expect(beeflow.getByText("Disponível em breve.")).toBeInTheDocument()
+    expect(container.querySelector(`img[src="${BEEFLOW_LOGO}"]`)).toHaveAttribute("alt", "")
+    expect(beeflow.queryByRole("link")).toBeNull()
+    expect(beeflow.queryByRole("button")).toBeNull()
+    expect(beeflow.queryByRole("alert")).toBeNull()
+    expect(beeflow.queryByText(/R\$/)).toBeNull()
+    expect(card("BeeFlow")).not.toHaveAttribute("aria-busy")
     await expectNoA11yViolations(container)
   })
 

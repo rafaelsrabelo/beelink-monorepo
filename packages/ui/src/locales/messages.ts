@@ -3411,6 +3411,24 @@ export interface UiMessages {
       /** {name} */
       retryLabel: string
     }
+    /**
+     * What is on its way and cannot be connected yet: announced among the cards, with nothing to press.
+     * No price is said here — a figure in the panel is a commitment.
+     */
+    upcoming: {
+      badge: string
+      /** In the place a card's action would take. */
+      note: string
+      beeflow: {
+        title: string
+        summary: string
+        /**
+         * The banner on the panel's home, which leads to this page. `alt` says what the artwork shows,
+         * its price included: the figure is drawn in the art, and whoever cannot see it is owed the same.
+         */
+        banner: { alt: string; link: string }
+      }
+    }
     /** What came of a connection, on the way back from the third party. */
     result: {
       connected: string

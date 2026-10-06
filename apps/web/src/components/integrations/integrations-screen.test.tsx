@@ -39,11 +39,23 @@ describe("IntegrationsScreen", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Integrações" })).toBeInTheDocument()
     expect(mocks.connection).toHaveBeenCalledWith("mutante")
     expect(mocks.asaas).toHaveBeenCalledWith("mutante")
-    expect(screen.getAllByRole("article")).toHaveLength(2)
-    expect([...container.querySelectorAll("img")].map((mark) => mark.getAttribute("src"))).toEqual(["/brand/integrations/melhor-envio-icon.png", "/brand/integrations/asaas-icon.png"])
+    expect(screen.getAllByRole("article")).toHaveLength(3)
+    expect([...container.querySelectorAll("img")].map((mark) => mark.getAttribute("src"))).toEqual(["/brand/integrations/melhor-envio-icon.png", "/brand/integrations/asaas-icon.png", "/brand/integrations/beeflow.png"])
     // One page: nothing leads to a second one to add an integration, and no list is ever empty.
     expect(screen.queryByRole("link", { name: "Nova integração" })).toBeNull()
     expect(container.querySelector("a[href$='/integrations/new']")).toBeNull()
+  })
+
+  it("announces BeeFlow after them as coming soon, with nothing to follow or press, whatever the reads say", () => {
+    mocks.connection.mockReturnValue(reading)
+    mocks.asaas.mockReturnValue(unread())
+    view()
+
+    expect(card("BeeFlow").getByText("Em breve")).toBeInTheDocument()
+    expect(card("BeeFlow").getByText("Disponível em breve.")).toBeInTheDocument()
+    expect(card("BeeFlow").queryByRole("link")).toBeNull()
+    expect(card("BeeFlow").queryByRole("button")).toBeNull()
+    expect(screen.getByRole("article", { name: "BeeFlow" })).not.toHaveAttribute("aria-busy")
   })
 
   it("marks the connected one, with its account, leading to its page", () => {
