@@ -6,6 +6,9 @@ export const ptBR: WebMessages = {
     title: "bee-link",
     description: "Sua loja online com pedidos pelo WhatsApp. Monte a vitrine, receba os pedidos, converse com o cliente.",
   },
+  environment: {
+    homolog: "Ambiente de homologação",
+  },
   landing: {
     title: "Beelink — Tudo o que o seu e-commerce precisa",
     description: "Loja online, checkout, chat, envios e marketing num lugar só. Crie sua loja e comece a vender hoje.",

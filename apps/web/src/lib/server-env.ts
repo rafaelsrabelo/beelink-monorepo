@@ -21,6 +21,15 @@ const schema = z.object({
       .regex(/^[a-z0-9-]+$/)
       .optional(),
   ),
+  /**
+   * Which deployment this is. Only a stack that is not production sets it, so a variable copied
+   * wrong or left out leaves the site as production reads: unmarked. `homolog` marks every page
+   * with a flag and keeps search engines out, since it is the same site with made-up shops in it.
+   *
+   * Read at runtime and never `NEXT_PUBLIC_`: the same image is production or homologation by its
+   * environment alone, with nothing baked into a bundle.
+   */
+  APP_ENVIRONMENT: z.preprocess((value) => (value === "" ? undefined : value), z.enum(["production", "homolog"]).default("production")),
 })
 
 const parsed = schema.safeParse(process.env)

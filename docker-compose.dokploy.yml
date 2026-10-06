@@ -212,6 +212,9 @@ services:
       - API_URL=http://api:3001/api
       # The shop the landing page offers as an example. Unset, it arrives blank and the page offers none.
       - EXAMPLE_STORE_SLUG=${EXAMPLE_STORE_SLUG:-}
+      # `homolog` on the homologation stack and nowhere else: the flag over every page, and noindex.
+      # Unset, it arrives blank and the site is production's, unmarked.
+      - APP_ENVIRONMENT=${APP_ENVIRONMENT:-}
     # `service_started`, not `service_healthy`: Docker never restarts an unhealthy container, so an
     # API that is down would hold the web back forever, and a visitor would get nothing instead of
     # a page that says something went wrong.

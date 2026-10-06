@@ -6,22 +6,31 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Toaster } from "@harness-monorepo/ui/components/sonner"
 
 // App
+import { EnvironmentFlag } from "@/components/environment-flag"
 import { Providers } from "@/components/providers"
 import { getMessages } from "@/lib/locale"
+import { serverEnv } from "@/lib/server-env"
 
 import "./globals.css"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
 
+const homolog = serverEnv.APP_ENVIRONMENT === "homolog"
+
 export async function generateMetadata(): Promise<Metadata> {
   const { web } = await getMessages()
 
-  return { title: web.metadata.title, description: web.metadata.description }
+  return {
+    title: web.metadata.title,
+    description: web.metadata.description,
+    // A second copy of every shop, made up, competing in a search with the real one.
+    ...(homolog ? { robots: { index: false, follow: false } } : {}),
+  }
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { locale } = await getMessages()
+  const { locale, web } = await getMessages()
 
   return (
     // suppressHydrationWarning: next-themes writes the theme class before React hydrates.
@@ -37,6 +46,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         is the static literal on this line.
       */}
       <body suppressHydrationWarning className="min-h-full antialiased">
+        {homolog ? <EnvironmentFlag label={web.environment.homolog} /> : null}
         <Providers>{children}</Providers>
         <Toaster />
       </body>
