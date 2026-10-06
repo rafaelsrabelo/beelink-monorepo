@@ -7,6 +7,7 @@ import { catalogKeys } from "../catalog/catalog-hooks"
 import { conversationKeys } from "../conversations/conversation-keys"
 import { customerKeys } from "../customers/customer-hooks"
 import { orderKeys } from "../orders/order-hooks"
+import { orderPaymentKeys } from "../storefront/order-payment-hooks"
 
 /**
  * What the panel reads again when its room hears an event. An order placed or moved changes the
@@ -38,12 +39,16 @@ export function panelKeysOf(event: RealtimeEvent, slug: string): QueryKey[] {
  * What the shop window reads again. Its orders are drawn on the server, so an event about one
  * reads the page again (`page`); its conversations are queries, invalidated by key. A conversation
  * closes only with an order's move, whose own event already reads the page.
+ *
+ * An order's move reads its charge again too (BEELINK-205): a cancellation ends it, and a payment
+ * screen left open must say so. This is where the payment's own event lands (BEELINK-206): one more
+ * `case` answering the same keys and `page: true` — the screen and the order's page follow by themselves.
  */
 export function shopperReadOf(event: RealtimeEvent, slug: string): { keys: QueryKey[]; page: boolean } {
   switch (event.type) {
     case "order.created":
     case "order.status":
-      return { keys: [conversationKeys.shopper(slug)], page: true }
+      return { keys: [conversationKeys.shopper(slug), orderPaymentKeys.shop(slug)], page: true }
     case "conversation.message":
     case "conversation.read":
     case "conversation.closed":

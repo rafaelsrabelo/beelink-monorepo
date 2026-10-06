@@ -147,6 +147,26 @@ describe("an order's page, in the shopper's words", () => {
     expect(orderPaymentOf({ ...order, fulfillment: "PICKUP", discountCents: 0 }, context).rows.map((row) => row.label)).toEqual(["Subtotal"])
   })
 
+  /** BEELINK-205: an order charged online says how, where the payment stands, and where it is paid. */
+  it("says an online payment's way, its instalments and where it stands, and leads to the payment screen while it is owed", () => {
+    const now = new Date("2026-10-06T15:00:00.000Z")
+    const charge = { status: "PENDING", method: "PIX", installments: 1, amountCents: 9480, refundedCents: 0, expiresAt: "2026-10-08T02:59:59.999Z", paidAt: null } as const
+    const online: CustomerOrder = { ...order, status: "RECEIVED", paymentChannel: "ONLINE", payment: charge }
+
+    expect(orderPaymentOf(online, context, now)).toMatchObject({ method: "Pagamento online: Pix", status: { label: "Aguardando pagamento", tone: "wait" }, payHref: "/loja/conta/pedidos/14?pagamento=1" })
+    expect(orderPaymentOf({ ...online, payment: { ...charge, status: "RECEIVED" } }, context, now)).toMatchObject({ status: { label: "Pagamento aprovado", tone: "done" }, payHref: null })
+
+    // The instalments chosen, until there is a charge; then the charge's, which may be fewer.
+    const card: CustomerOrder = { ...online, paymentMethod: "CREDIT_CARD", installments: 6, payment: null }
+    expect(orderPaymentOf(card, context, now).method).toBe("Pagamento online: Cartão de crédito em 6x")
+    expect(orderPaymentOf({ ...card, payment: { ...charge, method: "CREDIT_CARD", installments: 3 } }, context, now).method).toBe("Pagamento online: Cartão de crédito em 3x")
+
+    // A fee not agreed: the payment waits on the shop, and there is nothing to press.
+    expect(orderPaymentOf({ ...online, deliveryFeeCents: null, payment: null }, context, now)).toMatchObject({ status: { label: "Pagamento liberado quando a loja informar o frete" }, payHref: null })
+    // Settled with the shop: agreed, never approved.
+    expect(orderPaymentOf(order, context, now)).toMatchObject({ method: "Pagamento combinado com a loja: Pix", status: null, payHref: null })
+  })
+
   /** BEELINK-244: the credit spent is the last row, apart from the discounts — on the page and on the receipt, which read these rows. */
   it("says the cashback used on a row of its own, after what came off", () => {
     const paid: CustomerOrder = { ...order, deliveryFeeCents: 1000, discountCents: 500, promotionDiscountCents: 0, couponDiscountCents: 0, coupon: null, cashbackUsedCents: 1500, totalCents: 8980 }

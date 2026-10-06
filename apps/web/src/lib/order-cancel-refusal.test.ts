@@ -15,6 +15,11 @@ describe("orderCancelRefusalOf", () => {
     expect(orderCancelRefusalOf("ORDER_CANCELLED", text)).toBe("Este pedido já foi cancelado.")
   })
 
+  /** BEELINK-205: paid between the page being drawn and the press. */
+  it("says an order paid meanwhile is not cancelled from here", () => {
+    expect(orderCancelRefusalOf("ORDER_PAID", text)).toBe("Este pedido já foi pago, e por isso não pode ser cancelado por aqui. Fale com a loja.")
+  })
+
   /** Not the checkout's sentence: the shopper was cancelling, not buying. */
   it("tells a shopper whose session ended to sign in again to cancel", () => {
     expect(orderCancelRefusalOf("AUTH_UNAUTHENTICATED", text)).toBe("Sua sessão terminou. Entre de novo para cancelar o pedido.")

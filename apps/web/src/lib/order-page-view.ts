@@ -19,6 +19,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 import { zipCodeOf } from "./customer-address"
 import { dayOf, momentOf, orderStatusLineOf, type OrderCardContext } from "./order-card-view"
 import { estimateLineOf } from "./order-estimate"
+import { orderPaymentLabelOf } from "./order-payment-label"
 import { orderStepsOf } from "./order-steps"
 import { reviewHrefOf } from "./review-view"
 
@@ -167,9 +168,11 @@ export function orderItemsOf(order: CustomerOrder, { routes, locale, messages }:
 
 /**
  * The sums that apply — delivery only on a delivery, and what came off part by part: the promotions,
- * the coupon by its code, what the shop took off by hand — and the way of paying agreed.
+ * the coupon by its code, what the shop took off by hand — and how it is paid: the way agreed with
+ * the shop, or the way it is charged online with where that payment stands, and the screen it is
+ * paid on while there is something to pay (BEELINK-205).
  */
-export function orderPaymentOf(order: CustomerOrder, { locale, messages }: Pick<OrderCardContext, "locale" | "messages">): Omit<StorefrontOrderPaymentProps, "messages"> {
+export function orderPaymentOf(order: CustomerOrder, { routes, locale, messages }: OrderCardContext, now: Date = new Date()): Omit<StorefrontOrderPaymentProps, "messages" | "linkComponent"> {
   const text = messages.storefront
   const money = (cents: number) => formatCents(cents, locale, "BRL")
   const fee = feeLineOf(order)
@@ -186,11 +189,18 @@ export function orderPaymentOf(order: CustomerOrder, { locale, messages }: Pick<
         ]),
     ...discountLinesOf(order, money, messages.orders.discountRows).map(({ label, value }) => ({ label, value, positive: true })),
   ]
+  const way = messages.orders.payments[order.paymentMethod]
+  const paid = orderPaymentLabelOf(order, text, now)
+  // The instalments are the charge's once there is one: fewer than chosen, when the total stopped holding them.
+  const installments = order.payment?.installments ?? order.installments
+  const online = installments > 1 ? format(text.orderPaymentOnlineInstallments, { method: way, count: String(installments) }) : format(text.orderPaymentOnline, { method: way })
   return {
     rows,
     total: customerTotalText(money(order.totalCents), order, text.orderTotalPlusFee),
-    method: format(text.orderPaymentAgreed, { method: messages.orders.payments[order.paymentMethod] }),
-    cashback: customerCashbackLineOf(order.cashback, { money, date: (iso) => dayOf(iso, locale), now: new Date(), text: text.orderCashback }),
+    method: order.paymentChannel === "ONLINE" ? online : format(text.orderPaymentAgreed, { method: way }),
+    status: paid ? { label: paid.label, tone: paid.tone } : null,
+    payHref: paid?.payable ? routes.accountOrder(order.number, { payment: true }) : null,
+    cashback: customerCashbackLineOf(order.cashback, { money, date: (iso) => dayOf(iso, locale), now, text: text.orderCashback }),
   }
 }
 

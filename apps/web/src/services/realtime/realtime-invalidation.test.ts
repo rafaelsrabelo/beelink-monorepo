@@ -27,7 +27,8 @@ describe("what an event reads again", () => {
 
   /** The shopper's orders are drawn on the server: news of one reads the page; a conversation is a query. */
   it("in the shop window: the page for an order, the conversations by key", () => {
-    expect(shopperReadOf({ type: "order.status", orderNumber: 7, status: "ACCEPTED" }, "loja")).toEqual({ keys: [["conversations", "shopper", "loja"]], page: true })
+    // An order's move reads its charge again too (BEELINK-205): a payment screen left open follows a cancellation.
+    expect(shopperReadOf({ type: "order.status", orderNumber: 7, status: "ACCEPTED" }, "loja")).toEqual({ keys: [["conversations", "shopper", "loja"], ["storefront", "loja", "payment"]], page: true })
     expect(shopperReadOf({ type: "conversation.message", orderNumber: 7, author: "SHOP" }, "loja")).toEqual({ keys: [["conversations", "shopper", "loja"]], page: false })
     // The move that closed it already read the page.
     expect(shopperReadOf({ type: "conversation.closed", orderNumber: 7 }, "loja").page).toBe(false)
