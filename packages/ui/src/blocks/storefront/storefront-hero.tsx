@@ -40,9 +40,11 @@ export interface StorefrontHeroProps {
    */
   bleed?: boolean
   /**
-   * The slice of the band it sits in. The whole band is the cover it always was, at fixed heights
-   * and a large headline. Any smaller slice is a card among cards: it takes the poster's proportion
-   * and headline for that slice, so it stands as tall as the posters beside it and its words fit.
+   * The slice of the band it sits in. It takes the poster's proportion for that slice, so it stands
+   * as tall as the posters beside it and one file fits a banner of one picture and a carousel alike.
+   * It was a fixed height across the whole band once, which is a different shape at every width:
+   * artwork drawn to the frame lost a third of its height on a monitor and its sides on a phone.
+   * Only the headline and its padding still tell the whole band from a smaller slice.
    */
   span?: StorefrontSpan
   linkComponent?: LinkComponent
@@ -79,7 +81,7 @@ export function StorefrontHero({
   const text = messages.storefront
   const card = span !== "FULL"
   const rounded = !bleed
-  const frame = cn("w-full object-cover", card ? SPAN_HEIGHT[span] : "h-44 shop-sm:h-72 shop-lg:h-96", rounded && "rounded-2xl")
+  const frame = cn("w-full object-cover", SPAN_HEIGHT[span], rounded && "rounded-2xl")
 
   function one(item: StorefrontHeroItem) {
     const picture = (

@@ -232,15 +232,14 @@ describe("StorefrontSections — a banner is a carousel or a grid by choice", ()
   })
 
   /**
-   * The card, not the cover: a banner of one picture sits in its slice at the slice's proportion,
-   * where the hero would stand at a full band's fixed height whatever the cell.
+   * The card, not the cover: a banner of one picture is drawn as the one card of a list, never as
+   * a carousel of one.
    */
   it("draws the one card for a banner of one picture, whichever it is", () => {
     const { container } = draw([band([banner("so-carrossel", "CAROUSEL", 1), banner("so-grade", "GRID", 1)])])
 
     for (const cell of container.querySelectorAll("[data-span]")) {
       expect(cell.querySelectorAll("ul > li")).toHaveLength(1)
-      expect(cell.querySelector("img")!.className).not.toContain("h-44")
     }
     expect(screen.queryByRole("button", { name: "Anterior" })).not.toBeInTheDocument()
   })

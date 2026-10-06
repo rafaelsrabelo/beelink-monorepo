@@ -36,12 +36,14 @@ describe("StorefrontShowcase", () => {
 
   /**
    * The width is the cell's, and the shape follows it: a full-width poster is a cinema frame, a
-   * third is nearly square. A card that kept one shape at every width would be a letterbox in a
-   * third and a tower across the band.
+   * third is nearly square. A card that kept one shape in every slice would be a letterbox in a
+   * third and a tower across the band. Across the band it is that one frame on every screen, so the
+   * artwork drawn to it is never cut.
    */
   it("takes its proportion from the slice it sits in", () => {
     const { rerender } = render(<StorefrontShowcase items={[creatina]} span="FULL" />)
-    expect(screen.getByRole("link").className).toContain("shop-lg:aspect-[21/9]")
+    expect(screen.getByRole("link").className).toContain("aspect-[21/9]")
+    expect(screen.getByRole("link").className).not.toMatch(/shop-\w+:aspect/)
 
     rerender(<StorefrontShowcase items={[creatina]} span="THIRD" />)
     expect(screen.getByRole("link").className).toContain("aspect-[4/3]")
