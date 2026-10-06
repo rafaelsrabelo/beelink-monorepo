@@ -1,14 +1,15 @@
 "use client"
 
 // Libs
-import { useQuery } from "@tanstack/react-query"
-import type { UseQueryResult } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { PagePreview, PageTemplateSummary } from "@harness-monorepo/contracts"
+import type { ApplyTemplatePayload, PageDraft, PagePreview, PageTemplateSummary } from "@harness-monorepo/contracts"
 
 // App
-import { fetchPageTemplates, fetchTemplatePreview } from "./page-template-requests"
+import { sectionKeys } from "./page-hooks"
+import { applyTemplate, fetchPageTemplates, fetchTemplatePreview } from "./page-template-requests"
 
 /** Keys built from their inputs at call time, as `pageKeys` are (docs/ai-rules/state-and-data.md). */
 export const templateKeys = {
@@ -51,5 +52,27 @@ export function useTemplatePreview({ slug, pageId, templateId, productId, enable
     enabled: enabled && slug !== "" && pageId !== "",
     staleTime: PREVIEW_STALE_MS,
     retry: false,
+  })
+}
+
+/**
+ * A model into the draft. The draft, its bands and its problems are read again rather than patched
+ * from the answer, as every draft write here does (`page-hooks.ts`); and the previews with them — a
+ * model keeps the draft's own announcement and form, so each was a picture of the draft it replaced.
+ *
+ * The promise is returned: the editor's list already holds the model's bands when the screen's own
+ * `onSuccess` closes the gallery. Settled and not only succeeded, since a refusal may be the first
+ * news that another tab changed the page.
+ */
+export function useApplyTemplate(slug: string, pageId: string): UseMutationResult<PageDraft, Error, ApplyTemplatePayload> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: ApplyTemplatePayload) => applyTemplate(slug, pageId, payload),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: sectionKeys.store(slug) }),
+        queryClient.invalidateQueries({ queryKey: templateKeys.all }),
+      ]),
   })
 }

@@ -1,7 +1,8 @@
 // Types
-import type { PagePreview, PageTemplateSummary, TemplatePreviewQuery } from "@harness-monorepo/contracts"
+import type { ApplyTemplatePayload, PageDraft, PagePreview, PageTemplateSummary, TemplatePreviewQuery } from "@harness-monorepo/contracts"
 
 // App
+import { draftWrite } from "./draft-write"
 import { call } from "./page-call"
 
 const templatesPath = (slug: string) => `/api/stores/${encodeURIComponent(slug)}/page-templates`
@@ -24,4 +25,20 @@ export function fetchTemplatePreview(slug: string, templateId: string, query: Te
   if (query.categoryId) asked.set("categoryId", query.categoryId)
 
   return call<PagePreview>(`${templatesPath(slug)}/${encodeURIComponent(templateId)}/preview?${asked.toString()}`, { method: "GET" })
+}
+
+/**
+ * A model written over the page's draft — a write to it like any other, queued behind the ones
+ * before it and naming their revision, so a second tab's change is refused (409) rather than
+ * written over. Answers the draft it left. The page has to be the one the editor has open: the
+ * revision named is that page's.
+ */
+export function applyTemplate(slug: string, pageId: string, payload: ApplyTemplatePayload): Promise<PageDraft> {
+  return draftWrite(slug, (revision) =>
+    call<PageDraft>(
+      `/api/stores/${encodeURIComponent(slug)}/pages/${encodeURIComponent(pageId)}/apply-template`,
+      { method: "POST", body: JSON.stringify(payload) },
+      revision,
+    ),
+  )
 }
