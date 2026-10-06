@@ -4,6 +4,7 @@ import type { ShippingWindowValue } from "@harness-monorepo/ui/lib/shipping"
 
 // Block
 import type { OrderCashbackView } from "@harness-monorepo/ui/lib/cashback"
+import type { OrderPaymentStatusValue, OrderPaymentView } from "@harness-monorepo/ui/lib/order-payment"
 
 /** Mirrors the wire's `OrderStatus`; this package imports no contracts. */
 export type OrderStatusValue = "RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED"
@@ -17,6 +18,12 @@ export interface OrderListItem {
   customer: { name: string; phone: string | null }
   fulfillment: OrderFulfillmentValue
   paymentMethod: OrderPaymentValue
+  /** Where it is paid; absent reads as settled with the shop. */
+  paymentChannel?: "OFFLINE" | "ONLINE"
+  /** Its charge at Asaas, when it is charged online and has one. */
+  payment?: { status: OrderPaymentStatusValue } | null
+  /** How many payments arrived that it did not ask for (BEELINK-207). */
+  strays?: number
   totalCents: number
   /** Null while a delivery's fee is not agreed: the total then reads "+ frete". */
   deliveryFeeCents: number | null
@@ -69,6 +76,10 @@ export interface OrderDetailView {
     state: string | null
   } | null
   paymentMethod: OrderPaymentValue
+  /** Where it is paid; absent reads as settled with the shop. */
+  paymentChannel?: "OFFLINE" | "ONLINE"
+  /** Its charge at Asaas (BEELINK-207): drawn on an order charged online, null while it has none. */
+  payment?: OrderPaymentView | null
   items: readonly OrderDetailItem[]
   subtotalCents: number
   /** Null while a delivery's fee is not agreed (BEELINK-170); zero is a free delivery. */

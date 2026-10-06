@@ -10,6 +10,7 @@ import { AdminNotifications, type AdminNotification } from "./admin-notification
 const items: AdminNotification[] = [
   { id: "o21", kind: "order", title: "Novo pedido nº 21", detail: "Bia Souza · R$ 129,90", when: "10:41", href: "/admin/loja/orders/21" },
   { id: "m18", kind: "message", title: "Mensagem no pedido nº 18", detail: "Carla: chega até sexta?", when: "10:12", href: "/admin/loja/orders/18" },
+  { id: "p20", kind: "payment", title: "Pedido nº 20 pago", detail: "Duda Reis · R$ 59,90", when: "09:58", href: "/admin/loja/orders/20" },
 ]
 
 describe("AdminNotifications", () => {
@@ -20,6 +21,8 @@ describe("AdminNotifications", () => {
 
     expect(await screen.findByRole("link", { name: /Novo pedido nº 21/ })).toHaveAttribute("href", "/admin/loja/orders/21")
     expect(screen.getByRole("link", { name: /Mensagem no pedido nº 18/ })).toHaveAttribute("href", "/admin/loja/orders/18")
+    // BEELINK-207: a payment approved is told here too, and leads to its order.
+    expect(screen.getByRole("link", { name: /Pedido nº 20 pago.*Duda Reis · R\$ 59,90/ })).toHaveAttribute("href", "/admin/loja/orders/20")
     expect(screen.getByRole("link", { name: "Ver pedidos novos" })).toHaveAttribute("href", "/admin/loja/orders?status=RECEIVED")
   })
 

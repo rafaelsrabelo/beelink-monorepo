@@ -107,14 +107,64 @@ export const ComRastreio: Story = {
   },
 }
 
-/** Pago online e aguardando (BEELINK-205): o pagamento diz onde está e leva à tela de pagar. */
+/** Pago online e aguardando (BEELINK-205): o pagamento diz onde está e leva à tela de pagar. A etapa do pagamento (BEELINK-207) é a atual e diz que aguarda. */
 export const AguardandoPagamento: Story = {
-  args: { paid: { method: "Pagamento online: Pix", status: { label: "Aguardando pagamento", tone: "wait" }, payHref: "#" } },
+  args: {
+    status: {
+      headline: "Pedido recebido",
+      detail: "A loja confirma em breve.",
+      tone: "progress",
+      steps: [
+        { label: "Pedido feito", when: "21 de set., 14:02", state: "done" },
+        { label: "Aguardando pagamento", when: null, state: "current" },
+        { label: "Loja confirmou", when: null, state: "todo" },
+        { label: "Em preparo", when: null, state: "todo" },
+        { label: "Saiu para entrega", when: null, state: "todo" },
+        { label: "Entregue", when: null, state: "todo" },
+      ],
+    },
+    paid: { method: "Pagamento online: Pix", status: { label: "Aguardando pagamento", tone: "wait" }, payHref: "#" },
+  },
 }
 
-/** Pago online, aprovado: sem mais nada a pagar. */
+/** Pago online, aprovado: sem mais nada a pagar, e a etapa "Pagamento aprovado" marcada com a data (BEELINK-207). */
 export const PagamentoAprovado: Story = {
-  args: { paid: { method: "Pagamento online: Cartão de crédito em 3x", status: { label: "Pagamento aprovado", tone: "done" } } },
+  args: {
+    status: {
+      headline: "Em preparo",
+      detail: "Atualizado em 22 de set., 10:30",
+      tone: "progress",
+      steps: [
+        { label: "Pedido feito", when: "21 de set., 14:02", state: "done" },
+        { label: "Pagamento aprovado", when: "21 de set., 14:05", state: "done" },
+        { label: "Loja confirmou", when: "21 de set., 15:10", state: "done" },
+        { label: "Em preparo", when: "22 de set., 10:30", state: "current" },
+        { label: "Saiu para entrega", when: null, state: "todo" },
+        { label: "Entregue", when: null, state: "todo" },
+      ],
+    },
+    paid: { method: "Pagamento online: Cartão de crédito em 3x", status: { label: "Pagamento aprovado", tone: "done" } },
+  },
+}
+
+/** A loja seguiu sem esperar o pagamento: a etapa dele continua por fazer, no meio das feitas. */
+export const AceitoSemPagamento: Story = {
+  args: {
+    status: {
+      headline: "Loja confirmou",
+      detail: "Atualizado em 21 de set., 15:10",
+      tone: "progress",
+      steps: [
+        { label: "Pedido feito", when: "21 de set., 14:02", state: "done" },
+        { label: "Aguardando pagamento", when: null, state: "todo" },
+        { label: "Loja confirmou", when: "21 de set., 15:10", state: "current" },
+        { label: "Em preparo", when: null, state: "todo" },
+        { label: "Saiu para entrega", when: null, state: "todo" },
+        { label: "Entregue", when: null, state: "todo" },
+      ],
+    },
+    paid: { method: "Pagamento online: Pix", status: { label: "Aguardando pagamento", tone: "wait" }, payHref: "#" },
+  },
 }
 
 /** Uma retirada: sem "Saiu para entrega", sem linha de entrega no pagamento, e o endereço da loja. */
@@ -165,6 +215,25 @@ export const Comprovante: Story = {
       total="R$ 237,22"
       method="Pagamento combinado com a loja: Pix"
       cashback="R$ 11,86 de cashback para usar até 30 de dez. de 2026."
+      backHref="#"
+    />
+  ),
+}
+
+/** O comprovante de um pedido cobrado online diz se foi pago (BEELINK-207). */
+export const ComprovantePago: Story = {
+  render: () => (
+    <StorefrontOrderReceipt
+      shop={{ name: "Loja do Design" }}
+      number={1042}
+      placedOn="21 de set. de 2026, 14:02"
+      customer="Rafael Souza"
+      handover={{ title: "Retirada na loja", lines: ["Loja do Design"] }}
+      items={items}
+      rows={[{ label: "Subtotal", value: "R$ 249,70" }]}
+      total="R$ 249,70"
+      method="Pagamento online: Pix"
+      status={{ label: "Pagamento aprovado" }}
       backHref="#"
     />
   ),

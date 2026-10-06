@@ -964,7 +964,7 @@ export interface UiMessages {
     conversationRead: string
     conversationFromShop: string
     /** A status notice in the conversation (BEELINK-236), by status — PICKED_UP is a pick-up's DELIVERED. */
-    conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
+    conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string; PAYMENT_APPROVED: string; CANCELLED_UNPAID: string }
     /** A delivery's notice with the cashback it made usable (BEELINK-239): "{notice}", then "{amount}" — the punctuation between them is the copy's. */
     conversationCashback: string
     /** The buy box (BEELINK-243): `{amount}`, the most the chosen price and quantity earn — the cart's discounts can only lower it. */
@@ -1878,6 +1878,13 @@ export interface UiMessages {
     searchPlaceholder: string
     filterLabel: string
     all: string
+    /** The list's second filter, by where the money stands (BEELINK-207). */
+    paymentFilterLabel: string
+    paymentFilters: Record<"ALL" | "PAID" | "PENDING" | "STRAY", string>
+    /** Where an online payment stands, beside the way it is paid in a row of the list. */
+    paymentStates: Record<"paid" | "awaiting" | "refunded" | "partlyRefunded", string>
+    /** A row's flag: money arrived that the order did not ask for. */
+    paymentStray: string
     /** A delivery's total while its fee is not agreed (BEELINK-170): "R$ 239,70 + frete". */
     totalPlusFee: string
     /** An order's discount, a row per part — shared by the shop window and the panel (BEELINK-194). */
@@ -2042,6 +2049,31 @@ export interface UiMessages {
       deliverySaved: string
       deliveryNeeded: string
       actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER", string>
+      /** The order's online payment, as the shop reads it (BEELINK-207). */
+      onlinePayment: {
+        title: string
+        method: string
+        /** "{count}" instalments. */
+        installments: string
+        inFull: string
+        amount: string
+        status: string
+        statuses: Record<"PENDING" | "CONFIRMED" | "RECEIVED" | "OVERDUE" | "REFUNDED" | "PARTIALLY_REFUNDED" | "CANCELLED" | "FAILED", string>
+        /** What a status means to the shop, under it; the ones that need no more words have none. */
+        statusHints: Record<"CONFIRMED" | "RECEIVED" | "OVERDUE" | "CANCELLED" | "FAILED", string>
+        /** Asaas's own word, where it says more than ours. */
+        providerStatuses: Record<"AWAITING_RISK_ANALYSIS" | "RECEIVED_IN_CASH" | "REFUND_REQUESTED" | "REFUND_IN_PROGRESS" | "CHARGEBACK_REQUESTED" | "CHARGEBACK_DISPUTE" | "AWAITING_CHARGEBACK_REVERSAL", string>
+        paidAt: string
+        expiresAt: string
+        /** Charged online, and no charge was made yet. */
+        none: string
+        lastError: string
+        strayTitle: string
+        strayReasons: Record<"ORDER_CANCELLED" | "ORDER_ALREADY_PAID", string>
+        /** "{amount}", "{method}", "{date}". */
+        strayLine: string
+        strayAction: string
+      }
       markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
       statusLabel: string
       moreStatuses: string
@@ -2293,7 +2325,7 @@ export interface UiMessages {
     read: string
     fromCustomer: string
     /** A status notice, as the shop reads what its customer was told (BEELINK-236). */
-    notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
+    notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string; PAYMENT_APPROVED: string; CANCELLED_UNPAID: string }
     /** A delivery's notice with the cashback its customer was told they earned: "{notice}", "{amount}". The shop's notices end with no full stop. */
     noticeCashback: string
     fromShop: string
@@ -2748,6 +2780,8 @@ export interface UiMessages {
     notificationsSeeOrders: string
     notificationNewOrder: string
     notificationNewMessage: string
+    /** An order charged online was paid (BEELINK-207): the toast and the bell's row. `{number}`. */
+    notificationOrderPaid: string
     /** A toast: money arrived that the order did not ask for (BEELINK-206). `{number}`. */
     notificationStrayCancelled: string
     notificationStrayDuplicate: string

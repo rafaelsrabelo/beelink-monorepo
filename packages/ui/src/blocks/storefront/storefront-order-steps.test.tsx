@@ -37,6 +37,18 @@ describe("StorefrontOrderSteps", () => {
     expect(items[3]).toHaveTextContent("Saiu para entrega, a seguir")
   })
 
+  /** BEELINK-207: an order charged online has its payment as a step; one the shop moved past unpaid still waits, between steps done. */
+  it("draws a payment step still waiting between steps done, and says so", () => {
+    const paidLater: StorefrontOrderStep[] = [steps[0]!, { label: "Aguardando pagamento", when: null, state: "todo" }, ...steps.slice(1)]
+    render(<StorefrontOrderSteps steps={paidLater} />)
+
+    const items = screen.getAllByRole("listitem")
+    expect(items).toHaveLength(6)
+    expect(items[1]).toHaveTextContent("Aguardando pagamento, a seguir")
+    expect(items[2]).toHaveTextContent("Loja confirmou, concluída")
+    expect(items[3]).toHaveAttribute("aria-current", "step")
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<StorefrontOrderSteps steps={steps} />)
     await expectNoA11yViolations(container)

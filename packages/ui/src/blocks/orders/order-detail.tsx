@@ -15,6 +15,7 @@ import { OrderCashback } from "../cashback/order-cashback"
 import { OrderFacts } from "./order-facts"
 import { OrderHistory } from "./order-history"
 import { OrderItems } from "./order-items"
+import { OrderPaymentCard } from "./order-payment-card"
 import { OrderStatusActions } from "./order-status-actions"
 import { OrderStatusBadge } from "./order-status-badge"
 import type { OrderDetailView, OrderStatusValue } from "./order-types"
@@ -101,6 +102,8 @@ export function OrderDetail({
           {conversation}
         </div>
         <div className="flex flex-col gap-6">
+          {/* First: whether the money came decides what the shop does with everything under it. */}
+          {order.paymentChannel === "ONLINE" ? <OrderPaymentCard payment={order.payment ?? null} money={money} when={when} messages={messages} /> : null}
           {delivery}
           {order.cashback ? <OrderCashback cashback={order.cashback} money={money} date={day} locale={locale} messages={messages} /> : null}
           <OrderFacts
