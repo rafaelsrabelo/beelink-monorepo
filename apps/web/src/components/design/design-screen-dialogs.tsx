@@ -20,6 +20,7 @@ import { GalleryPreview } from "./gallery-preview"
 import { DraftConflict } from "./draft-conflict"
 import { NewLanding } from "./new-landing"
 import { PublishPage } from "./publish-page"
+import { PageTemplates } from "./page-templates"
 import { PageSettings } from "./page-settings"
 import { previewable, stockOf } from "./gallery-samples"
 import type { useBlockInsert } from "./use-block-insert"
@@ -45,6 +46,8 @@ export interface DesignScreenDialogsProps {
     store: PublicStore
     categories: readonly PublicProductCategory[]
     colors: PublicStore["colors"]
+    /** The footer's year, for a model drawn as the whole page. */
+    year: number
   }
   /** The page being edited: Publicar freezes it, and its settings reload the screen's read. */
   page: StorePage
@@ -77,7 +80,13 @@ export function DesignScreenDialogs({
   const [openedAt] = useState(() => Date.now())
   // A page dialog left open does not outlive the editor: the store is the module's, and the next
   // editor — another shop's, even — would open on it unasked.
-  useEffect(() => () => useDesignPages.getState().close(), [])
+  useEffect(
+    () => () => {
+      useDesignPages.getState().close()
+      useDesignPages.getState().dismissApplied()
+    },
+    [],
+  )
   if (adding.insertAt && adding.insertAt !== shownAt) setShownAt(adding.insertAt)
   const placement = placementOf(shownAt, draft.rows, draft.saved, shelves, messages)
   const stock = stockOf(gallery.store, shelves, gallery.categories.length, openedAt)
@@ -91,6 +100,7 @@ export function DesignScreenDialogs({
       <NewLanding slug={gallery.store.slug} site={gallery.store.type === "INSTITUTIONAL"} go={guard.go} messages={messages} web={web} />
       <PageSettings slug={gallery.store.slug} currentPageId={page.id} messages={messages} web={web} />
       <PublishPage slug={gallery.store.slug} page={page} draft={draft} messages={messages} web={web} />
+      <PageTemplates {...gallery} page={page} draft={draft} messages={messages} web={web} />
 
       {/*
         The one gallery every "+" opens, already knowing where the block goes. Adding is a saved

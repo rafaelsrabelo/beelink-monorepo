@@ -135,6 +135,8 @@ export const en: WebMessages = {
     PAGE_TEMPLATE_UNAVAILABLE: "That template is not available for this shop.",
     PAGE_PRODUCT_REQUIRED: "Choose the page's main product.",
     PAGE_PRODUCT_INVALID: "That product is not from this shop. Choose another.",
+    PAGE_CATEGORY_REQUIRED: "Choose the page's main category.",
+    PAGE_CATEGORY_INVALID: "That category is not from this shop, or it is hidden. Choose another.",
     PAGE_DRAFT_STALE: "Another tab changed this page. Reload to see what changed.",
     PAGE_REVISION_INVALID: "This tab fell behind. Reload the page.",
     PAGE_VERSION_NOT_FOUND: "That version no longer exists.",

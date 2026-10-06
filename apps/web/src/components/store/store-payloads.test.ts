@@ -157,6 +157,34 @@ describe("toCreatePayload", () => {
     expect(payload.colors).toEqual(colors)
   })
 
+  // No model picked is no `template` key at all: the API then opens the page every shop always got.
+  it("sends a shop that picked no model exactly what it sent before there were models", () => {
+    const input = { slug: "doces-da-ana", identity: values.identity, social: values.social, address: values.address }
+
+    const untouched = toCreatePayload(input)
+    const folded = toCreatePayload({ ...input, homeTemplate: "" })
+
+    expect(untouched).not.toHaveProperty("template")
+    expect(folded).toEqual(untouched)
+    expect(Object.keys(untouched).sort()).toEqual(["address", "categoryId", "description", "logoUrl", "name", "slug", "socialNetworks", "type"])
+  })
+
+  it("sends the home model a shop picked, and none it does not know", () => {
+    const input = { slug: "doces-da-ana", identity: values.identity, social: values.social, address: values.address }
+
+    expect(toCreatePayload({ ...input, homeTemplate: "por-categorias" }).template).toBe("por-categorias")
+    expect(toCreatePayload({ ...input, homeTemplate: "lancamento" })).not.toHaveProperty("template")
+    expect(toCreatePayload({ ...input, homeTemplate: "servicos-b2b" })).not.toHaveProperty("template")
+  })
+
+  it("opens a site from its own model, whatever was picked while it was still a shop", () => {
+    const site = { ...values.identity, type: "INSTITUTIONAL" as const }
+    const input = { slug: "asfalto-norte", identity: site, social: values.social, address: values.address }
+
+    expect(toCreatePayload(input).template).toBe("servicos-b2b")
+    expect(toCreatePayload({ ...input, homeTemplate: "ofertas" }).template).toBe("servicos-b2b")
+  })
+
   it("strips the same masks the update path strips, so both verbs store one shape", () => {
     const payload = toCreatePayload({
       slug: "doces-da-ana",

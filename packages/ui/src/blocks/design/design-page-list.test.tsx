@@ -50,10 +50,34 @@ describe("DesignPageList", () => {
     expect(onStatus).toHaveBeenLastCalledWith("lp-1", "DRAFT")
   })
 
-  it("gives the home no menu: it is the shop's own address", () => {
-    renderList({ onStatus: vi.fn() })
+  it("gives the home no menu of statuses: it is the shop's own address", () => {
+    renderList({ onStatus: vi.fn(), onSettings: vi.fn() })
 
     expect(screen.queryByRole("button", { name: "Ações de Página inicial" })).not.toBeInTheDocument()
+  })
+
+  it("offers the models on the home and on a landing, and on the home nothing else", async () => {
+    const onTemplates = vi.fn()
+    renderList({ onTemplates, onStatus: vi.fn(), onSettings: vi.fn() })
+
+    await userEvent.click(screen.getByRole("button", { name: "Ações de Página inicial" }))
+    expect(await screen.findAllByRole("menuitem")).toHaveLength(1)
+    await userEvent.click(screen.getByRole("menuitem", { name: "Modelos" }))
+    expect(onTemplates).toHaveBeenLastCalledWith("home")
+
+    await userEvent.click(screen.getByRole("button", { name: "Ações de Black Friday" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Modelos" }))
+    expect(onTemplates).toHaveBeenLastCalledWith("lp-2")
+  })
+
+  // An archived page is served to nobody and edited by nobody: it is brought back first.
+  it("offers no models on an archived page", async () => {
+    renderList({ onTemplates: vi.fn(), onStatus: vi.fn() })
+
+    await userEvent.click(screen.getByText("Arquivadas (1)"))
+    await userEvent.click(screen.getByRole("button", { name: "Ações de Dia das Mães" }))
+    expect(await screen.findByRole("menuitem", { name: "Restaurar" })).toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: "Modelos" })).not.toBeInTheDocument()
   })
 
   it("invites the first landing when the home is all there is", async () => {

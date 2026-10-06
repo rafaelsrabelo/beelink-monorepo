@@ -21,6 +21,7 @@ const meta = {
     shopHref: "#",
     onOpenStructure: fn(),
     onOpenInspector: fn(),
+    onOpenTemplates: fn(),
   },
 } satisfies Meta<typeof DesignEditorBar>
 

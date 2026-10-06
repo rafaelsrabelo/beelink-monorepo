@@ -12,7 +12,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // Block
 import { slugify } from "../store/store-slug"
-import { LandingTemplatePicker, type LandingTemplateChoice } from "./landing-template-picker"
+import { LandingTemplatePicker, type LandingTemplateChoice, type LandingTemplateOption } from "./landing-template-picker"
 import { OptionSearch } from "./option-search"
 import { PageAddressField, type PageAddressState } from "./page-address-field"
 import { PageDisplayFields } from "./page-display-fields"
@@ -22,20 +22,21 @@ export interface NewLandingValue {
   title: string
   /** What the owner typed as the address, or null while it follows the name. */
   slug: string | null
-  template: LandingTemplateChoice
+  /** Null until one is chosen: the screen then takes the first the catalogue offers. */
+  template: LandingTemplateChoice | null
   productId: string | null
   inMenu: boolean
   usesChrome: boolean
 }
 
-/** A new landing's form, empty: in the shop's frame, out of its menu, as the first template this shop has. */
-export function emptyNewLanding(template: LandingTemplateChoice): NewLandingValue {
+/** A new landing's form, empty: in the shop's frame, out of its menu, with no template chosen yet. */
+export function emptyNewLanding(template: LandingTemplateChoice | null = null): NewLandingValue {
   return { title: "", slug: null, template, productId: null, inMenu: false, usesChrome: true }
 }
 
-/** Every template but the blank one is built around a product. */
-export function needsProduct(template: LandingTemplateChoice): boolean {
-  return template !== "em-branco"
+/** Whether the chosen template is built around a product — as the catalogue says, not as this file guesses. */
+export function needsProduct(template: LandingTemplateChoice | null, templates: readonly LandingTemplateOption[]): boolean {
+  return templates.find((option) => option.id === template)?.needsProduct ?? false
 }
 
 /** The address the form shows: the one typed, or the name's until one is — cut to the column as the API cuts it. */
@@ -51,8 +52,11 @@ export interface NewLandingDialogProps {
   /** What comes before the address: "/mutante/lp/". */
   addressPrefix: string
   addressState: PageAddressState
-  /** The templates this shop may open with. */
-  templates: readonly LandingTemplateChoice[]
+  /** The templates this shop may open with, as the API listed them. */
+  templates: readonly LandingTemplateOption[]
+  /** Whether that list has arrived. Nothing can be created until it has. */
+  templatesState?: "loading" | "failed" | "ready"
+  onRetryTemplates?: () => void
   products: readonly TargetOption[]
   productsState: "ready" | "loading" | "failed"
   /** What is typed in the product search, for a shop with more products than one page holds. */
@@ -77,6 +81,8 @@ export function NewLandingDialog({
   addressPrefix,
   addressState,
   templates,
+  templatesState = "ready",
+  onRetryTemplates,
   products,
   productsState,
   onProductQuery,
@@ -86,13 +92,15 @@ export function NewLandingDialog({
   messages = defaultMessages,
 }: NewLandingDialogProps) {
   const text = messages.design.pages.form
-  const product = needsProduct(value.template)
+  const product = needsProduct(value.template, templates)
+  const chosen = templatesState === "ready" && templates.some((option) => option.id === value.template)
   // An emptied address is not "follow the name" — the owner is typing one — so it waits for one.
   const ready =
     value.title.trim() !== "" &&
     addressOf(value).trim() !== "" &&
     addressState !== "taken" &&
     addressState !== "invalid" &&
+    chosen &&
     (!product || value.productId !== null) &&
     !pending
 
@@ -134,7 +142,9 @@ export function NewLandingDialog({
           <LandingTemplatePicker
             value={value.template}
             onChange={(template) => onChange({ ...value, template })}
-            available={templates}
+            templates={templates}
+            state={templatesState}
+            {...(onRetryTemplates ? { onRetry: onRetryTemplates } : {})}
             messages={messages}
           />
 
