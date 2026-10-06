@@ -2,6 +2,7 @@
 import type {
   CreateRestockRequestPayload,
   CustomerOrder,
+  CustomerOrderPaymentAnswer,
   CustomerOrderQuotePayload,
   OrderQuote,
   PlaceCustomerOrderPayload,
@@ -129,4 +130,34 @@ export async function cancelShopperOrder(slug: string, number: number): Promise<
     throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"))
   }
   return answer as CustomerOrder
+}
+
+async function orderPaymentCall(slug: string, number: number, method: "GET" | "POST"): Promise<CustomerOrderPaymentAnswer> {
+  const response = await fetch(`/${encodeURIComponent(slug)}/api/orders/${number}/payment`, {
+    method,
+    headers: { "content-type": "application/json", accept: "application/json" },
+    ...(method === "POST" ? { body: "{}" } : {}),
+  })
+  const answer: unknown = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const code = typeof answer === "object" && answer !== null && "errorCode" in answer ? String(answer.errorCode) : null
+    throw new ShopperOrderError(code ?? (response.status === 429 ? "RATE_LIMITED" : "UNKNOWN"))
+  }
+  // A 2xx that is not a payment's answer — a proxy's own page — is a failure, never "no charge yet".
+  if (typeof answer !== "object" || answer === null || !("payment" in answer)) throw new ShopperOrderError("UNKNOWN")
+  return answer as CustomerOrderPaymentAnswer
+}
+
+/**
+ * The charge of one of the shopper's orders (BEELINK-205), through the shop's handler: what the
+ * bee-link API knows of it. The payment screen asks here, again and again, and never Asaas.
+ */
+export function readOrderPayment(slug: string, number: number): Promise<CustomerOrderPaymentAnswer> {
+  return orderPaymentCall(slug, number, "GET")
+}
+
+/** Makes sure the order has a charge good to pay — a first one, or one in place of a Pix past its time. */
+export function makeOrderPayment(slug: string, number: number): Promise<CustomerOrderPaymentAnswer> {
+  return orderPaymentCall(slug, number, "POST")
 }

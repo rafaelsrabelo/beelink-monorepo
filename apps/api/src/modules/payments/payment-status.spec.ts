@@ -33,6 +33,10 @@ describe("Asaas's word on a charge, as ours", () => {
       expect(statusSaidBy(word, 'RECEIVED')).toBe('RECEIVED');
       expect(statusSaidBy(word, 'CONFIRMED')).toBe('CONFIRMED');
       expect(statusSaidBy(word, null)).toBe('CONFIRMED');
+      // A charge still waiting here missed the news that it was paid (BEELINK-206).
+      expect(statusSaidBy(word, 'PENDING')).toBe('CONFIRMED');
+      expect(statusSaidBy(word, 'OVERDUE')).toBe('CONFIRMED');
+      expect(statusSaidBy(word, 'REFUNDED')).toBe('REFUNDED');
     }
   });
 

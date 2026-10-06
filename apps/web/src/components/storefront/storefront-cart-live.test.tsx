@@ -17,6 +17,8 @@ import { cartViewOf } from "@/lib/cart-view"
 import { CartProvider } from "./cart-provider"
 import { StorefrontCartLive, type StorefrontCartLiveProps } from "./storefront-cart-live"
 
+const routeWords = { products: "produtos", categories: "categorias", search: "busca", cart: "carrinho", signIn: "entrar", verifyEmail: "confirmar-email", resetPassword: "nova-senha", account: "conta", accountTabs: { orders: "pedidos", favorites: "favoritos", reviews: "avaliacoes", cashback: "cashback", profile: "perfil", messages: "conversas" } }
+
 const mocks = vi.hoisted(() => ({ refresh: vi.fn() }))
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }) }))
@@ -126,6 +128,7 @@ function cartTree(client: QueryClient, goneOnArrival: boolean, shopper: Customer
           goneOnArrival={goneOnArrival}
           shopName="Loja"
           whatsapp="5511999998888"
+          routeWords={routeWords}
           paymentMethods={["PIX"]}
           shopper={shopper}
           identityHrefs={identityHrefs}
@@ -775,6 +778,7 @@ describe("the cart's price and its coupon", () => {
             goneOnArrival={false}
             shopName="Loja"
             whatsapp={null}
+            routeWords={routeWords}
             paymentMethods={["PIX"]}
             shopper={bia}
             identityHrefs={identityHrefs}

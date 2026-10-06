@@ -6,6 +6,16 @@ enum ConversationAuthor {
   SYSTEM
 }
 
+/// What a notice tells beyond a status (BEELINK-207).
+enum OrderMessageNotice {
+  /// The order's online payment was approved. Such a notice has no status.
+  PAYMENT_APPROVED
+  /// On a CANCELLED notice: bee-link cancelled the order because nobody paid it in time.
+  CANCELLED_UNPAID
+  /// Money of the order's payment was given back (BEELINK-208): `refundCents` says how much. No status.
+  PAYMENT_REFUNDED
+}
+
 /// The customer's conversation with the shop about one order (BEELINK-160). Born with the order when
 /// its customer has an account to read it, or with the order's next move for one placed before
 /// (BEELINK-236). Whether it takes messages is the order's status, never a column: it closes when the
@@ -41,11 +51,16 @@ model OrderMessage {
   /// Plain text, up to 2000 characters, never drawn as HTML. Empty on a notice, which each side
   /// words for itself from `status`.
   body      String       @db.VarChar(2000)
-  /// The status a notice tells of: set exactly when `author` is SYSTEM (a CHECK holds it).
+  /// The status a notice tells of. A SYSTEM line has a status, a `notice`, or both, and nothing else
+  /// has either (a CHECK holds it).
   status    OrderStatus?
+  /// What the notice tells beyond its status (BEELINK-207); null on a plain move and on a message.
+  notice    OrderMessageNotice?
   /// On a delivery's notice, the cashback it made usable (BEELINK-239): told as it was then, like
   /// the status itself. Null on every other message.
   cashbackCents Int?
+  /// On a refund's notice (BEELINK-208), how much went back. Null on every other message.
+  refundCents   Int?
   createdAt DateTime     @default(now())
   /// When the other side read it; null while they have not.
   readAt    DateTime?

@@ -69,8 +69,8 @@ const caio: StoreCustomerDetail = {
 
 const history: OrderPage = {
   orders: [
-    { id: "o14", number: 14, status: "PREPARING", customer: { id: ID, name: "Caio Lima", phone: "5511955554444" }, fulfillment: "DELIVERY", paymentMethod: "PIX", paymentChannel: "OFFLINE", payment: null, totalCents: 17980, deliveryFeeCents: 1000, itemsCount: 2, placedAt: "2026-09-20T14:30:00.000Z" },
-    { id: "o9", number: 9, status: "CANCELLED", customer: { id: ID, name: "Caio Lima", phone: "5511955554444" }, fulfillment: "PICKUP", paymentMethod: "MONEY", paymentChannel: "OFFLINE", payment: null, totalCents: 5990, deliveryFeeCents: 0, itemsCount: 1, placedAt: "2026-08-30T12:00:00.000Z" },
+    { id: "o14", number: 14, status: "PREPARING", customer: { id: ID, name: "Caio Lima", phone: "5511955554444" }, fulfillment: "DELIVERY", paymentMethod: "PIX", paymentChannel: "OFFLINE", payment: null, strays: 0, totalCents: 17980, deliveryFeeCents: 1000, itemsCount: 2, placedAt: "2026-09-20T14:30:00.000Z" },
+    { id: "o9", number: 9, status: "CANCELLED", customer: { id: ID, name: "Caio Lima", phone: "5511955554444" }, fulfillment: "PICKUP", paymentMethod: "MONEY", paymentChannel: "OFFLINE", payment: null, strays: 0, totalCents: 5990, deliveryFeeCents: 0, itemsCount: 1, placedAt: "2026-08-30T12:00:00.000Z" },
   ],
   total: 22,
   page: 1,

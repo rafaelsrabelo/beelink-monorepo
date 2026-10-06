@@ -4,7 +4,7 @@
 import { useState } from "react"
 
 // Libs
-import { MessageCircleIcon, ShoppingBagIcon } from "lucide-react"
+import { CircleDollarSignIcon, MessageCircleIcon, ShoppingBagIcon } from "lucide-react"
 
 // UI
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@harness-monorepo/ui/components/popover"
@@ -20,8 +20,8 @@ import { AdminBell } from "./admin-bell"
 /** One thing that came in, every line already in the shopkeeper's words. */
 export interface AdminNotification {
   id: string
-  kind: "order" | "message"
-  /** "Novo pedido nº 21", "Mensagem no pedido nº 18". */
+  kind: "order" | "message" | "payment"
+  /** "Novo pedido nº 21", "Mensagem no pedido nº 18", "Pedido nº 20 pago". */
   title: string
   /** Who, and the total or the message. */
   detail: string
@@ -30,7 +30,7 @@ export interface AdminNotification {
 }
 
 export interface AdminNotificationsProps {
-  /** What waits: unread messages and orders not accepted yet. */
+  /** What waits: unread messages, orders not accepted yet, and paid orders nobody opened since. */
   unread: number
   items: readonly AdminNotification[]
   /** Read for the first time: the menu draws its rows as shapes. */
@@ -42,8 +42,8 @@ export interface AdminNotificationsProps {
 }
 
 /**
- * The bell and what it holds (BEELINK-163): the latest of what came in, most recent first, each
- * leading to its order. Base UI closes it on Esc and gives the focus back to the bell.
+ * The bell and what it holds (BEELINK-163): the latest of what came in — an order, a message, a
+ * payment approved (BEELINK-207) — most recent first, each leading to its order. Base UI closes it on Esc and gives the focus back to the bell.
  */
 export function AdminNotifications({ unread, items, pending = false, ordersHref = null, linkComponent: Link = AnchorLink, messages = defaultMessages }: AdminNotificationsProps) {
   const text = messages.shell
@@ -76,7 +76,13 @@ export function AdminNotifications({ unread, items, pending = false, ordersHref 
               <li key={item.id}>
                 <Link href={item.href} onClick={close} className="hover:bg-muted focus-visible:bg-muted flex gap-2.5 px-3 py-2 outline-none">
                   <span className="bg-muted text-foreground grid size-7 shrink-0 place-items-center rounded-full">
-                    {item.kind === "order" ? <ShoppingBagIcon aria-hidden="true" className="size-3.5" /> : <MessageCircleIcon aria-hidden="true" className="size-3.5" />}
+                    {item.kind === "order" ? (
+                      <ShoppingBagIcon aria-hidden="true" className="size-3.5" />
+                    ) : item.kind === "payment" ? (
+                      <CircleDollarSignIcon aria-hidden="true" className="size-3.5" />
+                    ) : (
+                      <MessageCircleIcon aria-hidden="true" className="size-3.5" />
+                    )}
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="text-sm font-medium">{item.title}</span>

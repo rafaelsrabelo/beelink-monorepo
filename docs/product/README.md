@@ -139,7 +139,7 @@ A store may give **cashback**: a share of what a customer pays for the products 
 
 **Credit is the store's, not money.** It belongs to the customer's record at that store, is spent only there, and is never withdrawn, transferred or seen by another store. A customer with no account earns and spends it too, through the record the shop keeps of them.
 
-An order **earns** on the products, after the promotions, the coupon and any credit spent on it — never on the delivery. The credit is **pending** while the order is open and becomes **usable once the order is delivered**, the same proof of a sale reviews rest on, since the product does not see the payment; its validity counts from the delivery. An order that is cancelled, or that leaves *delivered*, takes back what it earned — and when the customer already spent that credit, the balance **stops at zero**: it never goes negative, and the shopkeeper is shown the difference.
+An order **earns** on the products, after the promotions, the coupon and any credit spent on it — never on the delivery. The credit is **pending** while the order is open and becomes **usable once the order is delivered**, the same proof of a sale reviews rest on, since most payments are settled out of the product's sight; its validity counts from the delivery. An order that is cancelled, or that leaves *delivered*, takes back what it earned — and when the customer already spent that credit, the balance **stops at zero**: it never goes negative, and the shopkeeper is shown the difference.
 
 The shop window says what comes back while the cashback is on — on a product, and in the cart with what the order would earn or what is missing to reach the minimum — and each order says what it earned and where that credit stands. A customer who deletes their account loses their credit: the statement says so, and the shop's record of them may stay for its books. Credit is **spent** at checkout, after the promotions and the coupon, on the products only — never the delivery — and at most the share of them the shopkeeper allows; the soonest-to-expire credit goes first. The customer is told what they have and the most the cart takes before they confirm, and an order asking for more than they can spend at that moment is refused rather than placed at another price. Credit already given can be spent even after the shopkeeper switches the cashback off. Credit spent on an order that is then cancelled comes back with the validity it had — and at least seven more days, so it can still be used. Credit **expires** by itself once its validity is over, leaving the balance with a line on the statement; a week before, the customer is told by e-mail, unless they turned that notice off — it starts on, since it is about credit they already hold, not an offer.
 
@@ -147,17 +147,29 @@ Each customer's credit is a **statement** that only grows: what was earned, spen
 
 ## Checkout and the handoff to WhatsApp
 
-Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp**. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil. It names the order by its number, and its lines, its discounts and its total are the ones the product recorded, not the ones the page computed.
+Checkout collects who the customer is, where the order goes, how it will be paid, and any coupon — then places the order and hands the conversation to **WhatsApp** — or, for an order paid online, takes the customer on to its payment. The order exists in the product the moment it is placed; the WhatsApp message is how the shopkeeper and the customer keep talking, which is how this trade already works in Brazil. It names the order by its number, and its lines, its discounts and its total are the ones the product recorded, not the ones the page computed.
 
 A sale the shopkeeper registers in the panel is priced the same way before it is saved: the summary they confirm is the total the product will record, a promotion running on the day of the sale included.
 
 An order placed at checkout starts **received**: the shopkeeper accepts it, or cancels it. A shop with no WhatsApp still takes orders — the customer is told the shop will confirm.
 
-**The product does not take payment.** The payment method on an order is a label saying how the two of them settled it. Nothing is charged, held or refunded by bee-link.
+**The product never receives or holds money.** An order is paid in one of two ways, and the order says which.
+
+*Settled with the shop*, as it always was: the payment method is a label saying how the two of them agreed — on delivery, at pickup, by a transfer between them — and nothing is charged by anyone here.
+
+*Paid online*, where the shopkeeper connected their own **Asaas** account and chose to take it: Pix, or a credit card in interest-free instalments up to the number the shop offers. The charge is created **in the shop's own Asaas account** and the money goes straight there; bee-link is never in its path, takes no commission, and keeps no card — a card is typed on Asaas's own page, never in the shop window. A shopkeeper may keep both ways side by side, or turn paying on delivery off.
+
+Paying online asks the customer's CPF, once. The customer pays without leaving the shop: a Pix shows its QR code and its copy-and-paste code right after the order is placed, and a card opens Asaas's page beside it. An order placed and not yet paid **exists** — the shop sees it, and the customer comes back to pay from the order, with a new Pix when the first one expired. Only a closed total is charged: an order whose delivery fee is still to be agreed is paid once the shop tells the fee. An order with nothing left to pay — a coupon or credit covered it — is charged nothing and settled with the shop.
+
+**An order is paid when Asaas says so to the product**, never because a page was reached or a browser said it. Until then it reads *awaiting payment*, and it turns to *payment approved* by itself. A paid order is not cancelled without its money being given back: its customer cannot cancel it and asks the shop, and the shop cancels it with the refund in the same act — the order is cancelled only once Asaas took the refund.
+
+**The shopkeeper gives money back from the order**, all of it or a part, saying why. The refund is asked of the shop's own Asaas account; the customer sees it on the order — how much, and whether it went back or is on its way, which on a card takes days — reads it in the order's conversation and is e-mailed once. The reason stays with the shop. Money that arrived without the order asking for it — paid after it was cancelled, or paid twice — is given back the same way, and stops being flagged once it is.
+
+A shop with no Asaas account connected, or whose connection needs mending, sells exactly as before: every order is settled with the shop.
 
 ## What the product does not do
 
-- It does not process payments.
+- It does not receive, hold or move money: an online payment happens in the shopkeeper's own Asaas account, and what is settled with the shop is between the two of them.
 - It does not send WhatsApp messages on the shopkeeper's behalf — it opens the conversation.
 - It has no cross-store identity: a customer's account belongs to the shop they signed up at.
 - It is not a marketplace: there is no page that lists every store, and no store discovers another's customers.

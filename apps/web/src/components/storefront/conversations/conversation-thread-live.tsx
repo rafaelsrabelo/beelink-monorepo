@@ -50,7 +50,7 @@ export function ConversationThreadLive({ slug, routeWords, number, onBack, onVie
   // not asked again in a loop, and the next one asks once more.
   const asked = useRef<string | null>(null)
   const unread = conversation.data?.unread ?? 0
-  const latestFromShop = conversation.data?.messages.findLast((message) => message.kind === "STATUS" || message.author === "SHOP")?.id ?? null
+  const latestFromShop = conversation.data?.messages.findLast((message) => message.kind !== "MESSAGE" || message.author === "SHOP")?.id ?? null
   useEffect(() => {
     if (unread === 0 || latestFromShop === null || asked.current === latestFromShop) return
     asked.current = latestFromShop

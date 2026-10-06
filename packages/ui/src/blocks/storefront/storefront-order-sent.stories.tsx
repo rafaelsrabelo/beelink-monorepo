@@ -21,3 +21,6 @@ export const Padrao: Story = {}
 
 /** Numa loja sem WhatsApp: o pedido está feito, e a loja confirma. */
 export const SemWhatsApp: Story = { args: { href: null } }
+
+/** Um pedido pago online: falta pagar, e a tela leva ao pagamento. */
+export const PagarAgora: Story = { args: { href: null, payHref: "#" } }

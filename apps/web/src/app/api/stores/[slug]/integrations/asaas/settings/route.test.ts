@@ -5,6 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 // App
 import { GET, PUT } from "./route"
 
+const revalidateStore = vi.hoisted(() => vi.fn())
+vi.mock("@/lib/revalidate", () => ({ revalidateStore }))
+
 type Fetched = (url: string, init?: RequestInit) => Promise<Response>
 
 const PATH = "/api/stores/lessari/integrations/asaas/settings"
@@ -24,7 +27,10 @@ function request(init: { method?: string; body?: object; origin?: string; signed
 
 const shop = { params: Promise.resolve({ slug: "lessari" }) }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  revalidateStore.mockClear()
+})
 
 describe("how the shop is paid through Asaas, for the panel (BEELINK-203)", () => {
   it("reads and saves the choices at the API, as the owner, the body as it came", async () => {
@@ -41,6 +47,20 @@ describe("how the shop is paid through Asaas, for the panel (BEELINK-203)", () =
     ])
     expect(JSON.parse(String(fetched.mock.calls[1]?.[1]?.body))).toEqual(CHOICES)
     for (const [, init] of fetched.mock.calls) expect(new Headers(init?.headers).get("authorization")).toBe("Bearer owner-access")
+  })
+
+  /** BEELINK-205: the checkout reads these choices, so a save drops what the shop window kept of them. */
+  it("drops the shop window's cache on a save, and never on a read or a refusal", async () => {
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ ...CHOICES, updatedAt: "2026-10-05T12:00:00.000Z" })))
+
+    await GET(request(), shop)
+    expect(revalidateStore).not.toHaveBeenCalled()
+    await PUT(request({ method: "PUT", body: CHOICES }), shop)
+    expect(revalidateStore).toHaveBeenCalledExactlyOnceWith("lessari")
+
+    vi.stubGlobal("fetch", vi.fn<Fetched>(async () => Response.json({ statusCode: 400, errorCode: "ASAAS_SETTINGS_INVALID", message: "x" }, { status: 400 })))
+    await PUT(request({ method: "PUT", body: CHOICES }), shop)
+    expect(revalidateStore).toHaveBeenCalledTimes(1)
   })
 
   it("answers the API's refusal as it came", async () => {

@@ -18,7 +18,7 @@ enum IntegrationWebhookState {
   REGISTERED
   /// Not registered: this deployment's web is not public https (development).
   SKIPPED
-  /// The party stopped sending after repeated failures; connecting again resumes it.
+  /// The party stopped sending after repeated failures; the daily check resumes it (BEELINK-206).
   PAUSED
   /// The party refused the registration, or did not answer it; connecting again retries.
   ERROR
@@ -60,6 +60,9 @@ model StoreIntegration {
   /// SHA-256, in hex, of the token the webhook sends back — the token itself is sealed with the key. How
   /// the receiver finds the shop without opening every shop's seal.
   webhookTokenHash String? @unique @db.Char(64)
+  /// When the webhook was last looked at in the shop's account (BEELINK-206): once a day, which also
+  /// keeps the key in use — Asaas disables one left idle for three months.
+  webhookCheckedAt DateTime?
 
   connectedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -1,5 +1,7 @@
 // App
 import { cashbackExpiring } from './cashback-expiring.template.js';
+import { paymentApproved } from './payment-approved.template.js';
+import { paymentRefunded } from './payment-refunded.template.js';
 import { emailVerification, escapeHtml, favoriteNotice, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
 
 describe('leadReceived — a stranger’s words in the owner’s inbox', () => {
@@ -112,6 +114,16 @@ describe("an order's move, told to its customer", () => {
   });
 
   /** BEELINK-239: a delivery makes the cashback usable, and the e-mail says how much and until when. */
+  /** BEELINK-207: bee-link's own cancellation says why; the shop's and the customer's do not. */
+  it('says why an order nobody paid was cancelled, and nothing of it on any other cancellation or move', () => {
+    const unpaid = orderStatusChanged({ ...base, status: 'CANCELLED', unpaid: true }, url, settings);
+    expect(unpaid.subject).toBe('Mutante & Cia — pedido nº 12 cancelado');
+    expect(unpaid.text).toContain('foi cancelado. O pagamento não foi identificado dentro do prazo, e por isso o pedido foi cancelado automaticamente. Se você já pagou, fale com a loja.');
+    expect(unpaid.html).toContain('O pagamento não foi identificado dentro do prazo');
+    expect(orderStatusChanged({ ...base, status: 'CANCELLED' }, url, settings).text).not.toContain('pagamento');
+    expect(orderStatusChanged({ ...base, status: 'ACCEPTED', unpaid: true }, url, settings).text).not.toContain('pagamento');
+  });
+
   it('tells the cashback a delivery made usable, until the day it expires in Brasília', () => {
     // 02:59 UTC on the 31st is still the 30th in Brasília.
     const mail = orderStatusChanged({ ...base, status: 'DELIVERED', cashback: { amountCents: 504, expiresAt: new Date('2026-10-31T02:59:00.000Z') } }, url, settings);
@@ -198,5 +210,56 @@ describe('escapeHtml', () => {
   it('escapes the five characters that matter and nothing else', () => {
     expect(escapeHtml(`<a href="x">Tom & Jerry's</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&#39;s&lt;/a&gt;');
     expect(escapeHtml('Olá, café!')).toBe('Olá, café!');
+  });
+});
+
+describe("a payment approved, told to its customer (BEELINK-207)", () => {
+  const url = 'https://beelink.biz/mutante/conta/pedidos/12';
+  const settings = 'https://beelink.biz/mutante/conta/perfil#avisos';
+  const base = { name: 'Bia', shopName: 'Mutante & Cia', number: 12, amountCents: 15990, method: 'PIX' as const, installments: 1 };
+
+  it('names the shop and the order in the subject, and says how much and how it was paid', () => {
+    const pix = paymentApproved(base, url, settings);
+    expect(pix.subject).toBe('Mutante & Cia — pagamento do pedido nº 12 aprovado');
+    expect(pix.text).toMatch(/O pagamento do seu pedido nº 12 em Mutante & Cia foi aprovado: R\$\s159,90 no Pix\./);
+    expect(paymentApproved({ ...base, method: 'CREDIT_CARD' }, url, settings).text).toContain('no cartão de crédito.');
+    expect(paymentApproved({ ...base, method: 'CREDIT_CARD', installments: 3 }, url, settings).text).toContain('no cartão de crédito, em 3x.');
+  });
+
+  it('leads to the order, escapes the names, and ends on how to stop these notices', () => {
+    const mail = paymentApproved({ ...base, name: 'Bia <b>' }, url, settings);
+    expect(mail.text).toContain(`Veja o pedido:\n${url}`);
+    expect(mail.text.trimEnd().endsWith(settings)).toBe(true);
+    expect(mail.html).toContain('Bia &lt;b&gt;');
+    expect(mail.html).toContain('Mutante &amp; Cia');
+    expect(mail.html).not.toContain('<b>');
+    expect(mail.html).toContain(`href="${settings}"`);
+  });
+});
+
+describe('the payment refunded e-mail (BEELINK-208)', () => {
+  const base = { name: 'Bia', shopName: 'Lessari', number: 7, amountCents: 5990, paidCents: 5990, method: 'PIX' as const, done: true };
+  const url = 'https://beelink.biz/lessari/conta/pedidos/7';
+  const settings = 'https://beelink.biz/lessari/conta/perfil#avisos';
+
+  it('tells a whole refund from a part of it, and when the money shows', () => {
+    const whole = paymentRefunded(base, url, settings);
+    expect(whole.subject).toBe('Lessari — estorno do pagamento do pedido nº 7');
+    expect(whole.text).toMatch(/Lessari estornou o pagamento do seu pedido nº 7: R\$\s59,90\./);
+    expect(whole.text).toContain('O valor volta para a conta de onde o Pix saiu.');
+    expect(whole.text).toContain(url);
+    expect(whole.text).toContain(settings);
+
+    const part = paymentRefunded({ ...base, amountCents: 1990 }, url, settings);
+    expect(part.text).toMatch(/estornou parte do pagamento do seu pedido nº 7: R\$\s19,90 de R\$\s59,90\./);
+    expect(paymentRefunded({ ...base, done: false }, url, settings).text).toContain('O estorno está em processamento');
+    expect(paymentRefunded({ ...base, method: 'CREDIT_CARD', done: false }, url, settings).text).toContain('até 10 dias úteis para aparecer na fatura');
+  });
+
+  it("escapes the customer's and the shop's names in the HTML", () => {
+    const mail = paymentRefunded({ ...base, name: 'Bia <b>', shopName: 'Lessari & Cia' }, url, settings);
+    expect(mail.html).toContain('Bia &lt;b&gt;');
+    expect(mail.html).toContain('Lessari &amp; Cia estornou');
+    expect(mail.html).not.toContain('<b>');
   });
 });

@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { OrderDetail } from "./order-detail"
-import { cashbackOrder, discountedOrder, order } from "./order-detail.fixtures"
+import { awaitingOnlineOrder, cashbackOrder, discountedOrder, order, paidAfterCancelledOrder, paidOnlineOrder } from "./order-detail.fixtures"
 import { nextStatusOf, otherStatusesOf } from "./order-status-actions"
 import type { OrderDetailView, OrderStatusValue } from "./order-types"
 
@@ -28,6 +28,28 @@ describe("the order's next step", () => {
   it("offers every other open status by hand, a pick-up's without 'out for delivery'", () => {
     expect(otherStatusesOf("ACCEPTED", "DELIVERY")).toEqual(["RECEIVED", "OUT_FOR_DELIVERY", "DELIVERED"])
     expect(otherStatusesOf("ACCEPTED", "PICKUP")).toEqual(["RECEIVED", "DELIVERED"])
+  })
+})
+
+describe("an order's online payment on its page (BEELINK-207)", () => {
+  it("draws the payment of an order charged online, and none on one settled with the shop", () => {
+    const { rerender } = render(<OrderDetail order={paidOnlineOrder} {...props} />)
+    expect(screen.getByRole("region", { name: "Pagamento online" })).toHaveTextContent("Pago")
+
+    rerender(<OrderDetail order={awaitingOnlineOrder} {...props} />)
+    expect(screen.getByRole("region", { name: "Pagamento online" })).toHaveTextContent("Aguardando pagamento")
+
+    rerender(<OrderDetail order={{ ...awaitingOnlineOrder, payment: null }} {...props} />)
+    expect(screen.getByRole("region", { name: "Pagamento online" })).toHaveTextContent("ainda não gerou a cobrança")
+
+    rerender(<OrderDetail order={order} {...props} />)
+    expect(screen.queryByRole("region", { name: "Pagamento online" })).not.toBeInTheDocument()
+  })
+
+  it("keeps money the order did not ask for on the page, with what to do about it", () => {
+    render(<OrderDetail order={paidAfterCancelledOrder} {...props} />)
+
+    expect(screen.getByRole("group", { name: "Pagamento a resolver" })).toHaveTextContent("Este pedido foi pago depois de cancelado.")
   })
 })
 
@@ -186,6 +208,19 @@ describe("OrderDetail", () => {
 
     await userEvent.click(within(dialog).getByRole("button", { name: "Cancelar pedido" }))
     expect(onStatusChange).toHaveBeenCalledWith("CANCELLED")
+  })
+
+  it("hands a paid order's cancel to its refund's screen instead of asking here (BEELINK-208)", async () => {
+    const onStatusChange = vi.fn()
+    const onCancel = vi.fn()
+    render(<OrderDetail order={order} {...props} onStatusChange={onStatusChange} onCancel={onCancel} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Outros status" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Cancelar pedido" }))
+
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+    expect(onStatusChange).not.toHaveBeenCalled()
   })
 
   it("offers no status change once the order is cancelled", () => {
