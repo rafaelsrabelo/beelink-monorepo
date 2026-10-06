@@ -1,14 +1,10 @@
 "use client"
 
 // React
-import { useState, type ReactNode } from "react"
-
-// Libs
-import { ArrowLeftIcon } from "lucide-react"
+import { useState } from "react"
 
 // UI
 import { IntegrationsFailed } from "@harness-monorepo/ui/blocks/integrations/integrations-failed"
-import { IntegrationsResult } from "@harness-monorepo/ui/blocks/integrations/integrations-result"
 import { IntegrationsSkeleton } from "@harness-monorepo/ui/blocks/integrations/integrations-skeleton"
 import { MelhorEnvioCard } from "@harness-monorepo/ui/blocks/integrations/melhor-envio-card"
 import { ShippingSettingsForm } from "@harness-monorepo/ui/blocks/integrations/shipping-settings-form"
@@ -17,7 +13,7 @@ import type { ShippingSettingsFormValues, ShippingSettingsIssues } from "@harnes
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
 // App
-import { AppLink } from "@/components/app-link"
+import { IntegrationFrame } from "@/components/integrations/integration-frame"
 import { integrationPagesOf } from "@/lib/integration-pages"
 import { melhorEnvioCardOf, shippingErrorOf, shippingFormOf, shippingPayloadOf } from "@/lib/melhor-envio-form"
 import { useDisconnectMelhorEnvio, useMelhorEnvioAccount, useMelhorEnvioConnection, useMelhorEnvioSettings, useSaveMelhorEnvioSettings } from "@/services/integrations/integration-hooks"
@@ -41,7 +37,7 @@ const NO_ISSUES: ShippingSettingsIssues = {}
  */
 export function MelhorEnvioScreen({ slug, result, locale, messages }: MelhorEnvioScreenProps) {
   const text = messages.integrations
-  const back = integrationPagesOf(slug).list
+  const back = { href: integrationPagesOf(slug).list, label: text.title }
   const connection = useMelhorEnvioConnection(slug)
   const connected = connection.data?.status === "CONNECTED"
   const account = useMelhorEnvioAccount(slug, connected)
@@ -54,8 +50,8 @@ export function MelhorEnvioScreen({ slug, result, locale, messages }: MelhorEnvi
 
   // Until the card is there to title the page, a reader is still told which page this is.
   const untitled = <h1 className="sr-only">{text.melhorEnvio.title}</h1>
-  if (connection.isPending) return <Frame back={back} text={text} result={result}>{untitled}<IntegrationsSkeleton /></Frame>
-  if (connection.isError) return <Frame back={back} text={text} result={result}>{untitled}<IntegrationsFailed onRetry={() => void connection.refetch()} messages={messages} /></Frame>
+  if (connection.isPending) return <IntegrationFrame back={back} result={result}>{untitled}<IntegrationsSkeleton /></IntegrationFrame>
+  if (connection.isError) return <IntegrationFrame back={back} result={result}>{untitled}<IntegrationsFailed onRetry={() => void connection.refetch()} messages={messages} /></IntegrationFrame>
 
   const services = account.data?.services ?? null
   // A shop that never chose offers every service: until their list is in hand there is nothing to save.
@@ -68,7 +64,7 @@ export function MelhorEnvioScreen({ slug, result, locale, messages }: MelhorEnvi
   }
 
   return (
-    <Frame back={back} text={text} result={result}>
+    <IntegrationFrame back={back} result={result}>
       <MelhorEnvioCard
         headingAs="h1"
         view={melhorEnvioCardOf(connection.data, account, money)}
@@ -97,23 +93,6 @@ export function MelhorEnvioScreen({ slug, result, locale, messages }: MelhorEnvi
           messages={messages}
         />
       ) : null}
-    </Frame>
-  )
-}
-
-/** The way back to the list over the page; the card under it is the page's title. */
-function Frame({ back, text, result, children }: { back: string; text: UiMessages["integrations"]; result: MelhorEnvioScreenProps["result"]; children: ReactNode }) {
-  return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">
-      <AppLink
-        href={back}
-        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1 rounded-sm text-sm outline-none focus-visible:ring-2"
-      >
-        <ArrowLeftIcon aria-hidden="true" className="size-4" />
-        {text.title}
-      </AppLink>
-      {result ? <IntegrationsResult tone={result.tone} message={result.message} /> : null}
-      {children}
-    </div>
+    </IntegrationFrame>
   )
 }

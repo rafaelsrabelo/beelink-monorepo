@@ -80,8 +80,25 @@ describe("StorefrontOrderCard", () => {
     expect(screen.getAllByText("Avaliar produto")).toHaveLength(1)
   })
 
+  /** BEELINK-205: an order charged online says where its payment stands, and leads to it while it is owed. */
+  it("says where an online payment stands under the headline, and puts paying before following the order", () => {
+    const { rerender } = render(<StorefrontOrderCard {...card} trackHref="/loja/conta/pedidos/1042" />)
+    expect(screen.queryByText("Aguardando pagamento")).toBeNull()
+    expect(screen.queryByRole("link", { name: /Pagar agora/ })).toBeNull()
+
+    rerender(<StorefrontOrderCard {...card} trackHref="/loja/conta/pedidos/1042" payment={{ label: "Aguardando pagamento", tone: "wait" }} payHref="/loja/conta/pedidos/1042?pagamento=1" />)
+    expect(screen.getByText("Aguardando pagamento")).toBeInTheDocument()
+    const pay = screen.getByRole("link", { name: "Pagar agora: Pedido nº 1042" })
+    expect(pay).toHaveAttribute("href", "/loja/conta/pedidos/1042?pagamento=1")
+    expect(pay.compareDocumentPosition(screen.getByRole("link", { name: "Acompanhar pedido" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    rerender(<StorefrontOrderCard {...card} trackHref="/loja/conta/pedidos/1042" payment={{ label: "Pagamento aprovado", tone: "done" }} />)
+    expect(screen.getByText("Pagamento aprovado")).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /Pagar agora/ })).toBeNull()
+  })
+
   it("has no accessibility violations", async () => {
-    const { container } = render(<StorefrontOrderCard {...card} detailsHref="#" trackHref="#" />)
+    const { container } = render(<StorefrontOrderCard {...card} detailsHref="#" trackHref="#" payment={{ label: "Aguardando pagamento", tone: "wait" }} payHref="#" />)
     await expectNoA11yViolations(container)
   })
 })

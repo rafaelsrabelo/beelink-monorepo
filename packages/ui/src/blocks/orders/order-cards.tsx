@@ -2,6 +2,7 @@
 import { format } from "@harness-monorepo/ui/locales/index"
 
 // Block
+import { OrderPaymentCell } from "./order-payment-cell"
 import { OrderStatusBadge } from "./order-status-badge"
 import { orderTotalText } from "@harness-monorepo/ui/lib/order-total"
 import { itemsLabel, type OrderRowsProps } from "./order-table"
@@ -40,8 +41,9 @@ export function OrderCards({ orders, hrefOf, money, when, linkComponent: Link, m
           </span>
           <span className="text-muted-foreground flex justify-between gap-2 text-xs">
             <span className="tabular-nums">{when(order.placedAt)}</span>
-            <span>
-              {itemsLabel(order.itemsCount, messages)} · {text.payments[order.paymentMethod]}
+            <span className="flex flex-col items-end gap-0.5">
+              <span>{itemsLabel(order.itemsCount, messages)}</span>
+              <OrderPaymentCell order={order} inline messages={messages} />
             </span>
           </span>
         </li>

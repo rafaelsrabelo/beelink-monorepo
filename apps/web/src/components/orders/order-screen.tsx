@@ -1,10 +1,17 @@
 "use client"
 
+// React
+import { useEffect, useRef } from "react"
+
+// Next
+import { useRouter } from "next/navigation"
+
 // UI
 import { OrderDeliveryCard } from "@harness-monorepo/ui/blocks/orders/order-delivery-card"
 import { OrderFeeCard } from "@harness-monorepo/ui/blocks/orders/order-fee-card"
 import { OrderDetail } from "@harness-monorepo/ui/blocks/orders/order-detail"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
+import { isRefundable } from "@harness-monorepo/ui/lib/order-payment"
 import { defaultLocale } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 
@@ -16,7 +23,7 @@ import { OrderLabelSection } from "@/components/orders/order-label-section"
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { addressLineOf } from "@/lib/customer-address"
 import { shopOrderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
-import { useOrder, useOrderDelivery, useOrderDeliveryFee, useUpdateOrderStatus } from "@/services/orders/order-hooks"
+import { useMarkOrderPaymentSeen, useOrder, useOrderDelivery, useOrderDeliveryFee, useUpdateOrderStatus } from "@/services/orders/order-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
 export interface OrderScreenProps {
@@ -33,7 +40,20 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
   const status = useUpdateOrderStatus(slug, number)
   const delivery = useOrderDelivery(slug, number)
   const fee = useOrderDeliveryFee(slug, number)
+  const { mutate: markSeen } = useMarkOrderPaymentSeen(slug, number)
+  const router = useRouter()
   const listHref = `/admin/${slug}/orders`
+  const refundHref = `/admin/${slug}/orders/${number}/refund`
+
+  // Opening a paid order is what tells the bell it was seen (BEELINK-207). Once per order on screen:
+  // a say that fails is not asked again in a loop, and the next opening asks once more.
+  const asked = useRef<number | null>(null)
+  const unseen = order.data?.payment?.unseen === true
+  useEffect(() => {
+    if (!unseen || asked.current === number) return
+    asked.current = number
+    markSeen()
+  }, [unseen, number, markSeen])
 
   if (order.isPending) {
     return (
@@ -76,6 +96,10 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
         whatsappHref={whatsappHref}
         customerHref={`/admin/${slug}/customers/${current.customer.id}`}
         onStatusChange={(next) => status.mutate(next)}
+        // An order that holds money is cancelled with its refund, which has a screen of its own (BEELINK-208).
+        onCancel={isRefundable(current.payment) ? () => router.push(`${refundHref}?cancel=1` as Parameters<typeof router.push>[0]) : undefined}
+        refundHref={refundHref}
+        strayRefundHref={(strayId) => `${refundHref}?stray=${encodeURIComponent(strayId)}`}
         statusPending={status.isPending}
         statusError={pageErrorCopy(status.error, web)}
         delivery={

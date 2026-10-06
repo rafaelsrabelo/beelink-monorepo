@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
-import { placeShopperOrder, RestockRequestError, sendRestockRequest, ShopperOrderError } from "./storefront-requests"
+import { makeOrderPayment, placeShopperOrder, readOrderPayment, RestockRequestError, sendRestockRequest, ShopperOrderError } from "./storefront-requests"
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -51,5 +51,46 @@ describe("placeShopperOrder", () => {
 
     vi.stubGlobal("fetch", vi.fn(async () => new Response("slow down", { status: 429 })))
     await expect(placeShopperOrder("lessari", cart)).rejects.toMatchObject({ errorCode: "RATE_LIMITED" })
+  })
+})
+
+/** BEELINK-205: the charge of an order is read and made at the shop's own handler — the bee-link API behind it, never Asaas. */
+describe("readOrderPayment and makeOrderPayment", () => {
+  const answer = { payment: { status: "PENDING", method: "PIX" } }
+
+  it("reads at the shop's handler with a GET, and makes with a POST that sends nothing of its own", async () => {
+    const fetchSpy = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async () => Response.json(answer))
+    vi.stubGlobal("fetch", fetchSpy)
+
+    expect(await readOrderPayment("lessari", 14)).toEqual(answer)
+    expect(await makeOrderPayment("lessari", 14)).toEqual(answer)
+
+    expect(fetchSpy.mock.calls.map(([url, init]) => [url, init?.method, init?.body])).toEqual([
+      ["/lessari/api/orders/14/payment", "GET", undefined],
+      ["/lessari/api/orders/14/payment", "POST", "{}"],
+    ])
+  })
+
+  it("answers an order with no charge yet as such: null is an answer, not a failure", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payment: null })))
+
+    expect(await readOrderPayment("lessari", 14)).toEqual({ payment: null })
+  })
+
+  it("throws the API's code, so the screen picks the sentence — and a limit with no body as one", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ statusCode: 409, errorCode: "PAYMENT_IN_PROGRESS", message: "x" }, { status: 409 })))
+    await expect(makeOrderPayment("lessari", 14)).rejects.toMatchObject({ errorCode: "PAYMENT_IN_PROGRESS" })
+    await expect(makeOrderPayment("lessari", 14)).rejects.toBeInstanceOf(ShopperOrderError)
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("slow down", { status: 429 })))
+    await expect(makeOrderPayment("lessari", 14)).rejects.toMatchObject({ errorCode: "RATE_LIMITED" })
+  })
+
+  it("takes a 2xx that is not a payment's answer for a failure, never for an order with no charge", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>", { status: 200 })))
+    await expect(readOrderPayment("lessari", 14)).rejects.toMatchObject({ errorCode: "UNKNOWN" })
+
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ ok: true })))
+    await expect(readOrderPayment("lessari", 14)).rejects.toMatchObject({ errorCode: "UNKNOWN" })
   })
 })

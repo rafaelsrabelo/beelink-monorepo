@@ -6,7 +6,7 @@ import type { PublicProductCategory, StorefrontCatalog } from "@harness-monorepo
 
 // App
 import { catalogTag, storeTag } from "./revalidate"
-import { catalogueAt, categoriesAt, landingAt, shopAt, signInOptionsAt } from "./storefront-data"
+import { catalogueAt, categoriesAt, landingAt, paymentOptionsAt, shopAt, signInOptionsAt } from "./storefront-data"
 
 /**
  * The reads the landing is built from. The network is stubbed at `fetch` because `callPublicApi`
@@ -170,5 +170,25 @@ describe("signInOptionsAt — whether the shop window offers Google", () => {
 
     vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 500 })))
     expect(await signInOptionsAt()).toEqual({ google: false })
+  })
+})
+
+describe("paymentOptionsAt — how the shop's checkout is paid (BEELINK-205)", () => {
+  const TAKES = { online: { pix: true, card: true, maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }, offline: false }
+
+  it("reads what the shop charges online, under the shop's tag: the panel's Asaas handlers drop it", async () => {
+    const asked = stubApi(() => TAKES)
+
+    expect(await paymentOptionsAt("loja")).toEqual(TAKES)
+    expect(asked[0]?.url.pathname).toMatch(/\/stores\/loja\/payment-options$/)
+    expect(asked[0]?.tags).toEqual([storeTag("loja")])
+  })
+
+  it("is the checkout of before when the read fails: a shop does not stop selling over it", async () => {
+    vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")))
+    expect(await paymentOptionsAt("loja")).toEqual({ online: null, offline: true })
+
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 500 })))
+    expect(await paymentOptionsAt("loja")).toEqual({ online: null, offline: true })
   })
 })

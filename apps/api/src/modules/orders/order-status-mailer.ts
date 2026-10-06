@@ -38,6 +38,9 @@ export class OrderStatusMailer extends OutboxMailer {
           select: {
             number: true,
             fulfillment: true,
+            paymentChannel: true,
+            // Who cancelled it last: bee-link itself cancels for want of payment alone (BEELINK-207).
+            events: { where: { status: 'CANCELLED' }, orderBy: { createdAt: 'desc' }, take: 1, select: { actor: true } },
             delivery: true,
             cashbackCredit: { select: { status: true, remainingCents: true, expiresAt: true } },
             store: { select: { name: true, slug: true, routeVocabulary: true } },
@@ -62,10 +65,11 @@ export class OrderStatusMailer extends OutboxMailer {
     const cashback = row.status === 'DELIVERED' && lot?.status === 'AVAILABLE' && lot.remainingCents > 0 ? { amountCents: lot.remainingCents, expiresAt: lot.expiresAt } : null;
     // Read when it goes, too (BEELINK-258): a code told between the move and the send rides along; one told later is read on the order.
     const shipment = row.status === 'OUT_FOR_DELIVERY' && order.delivery?.kind === 'CARRIER' ? toCustomerDelivery(order.delivery) : null;
+    const unpaid = row.status === 'CANCELLED' && order.paymentChannel === 'ONLINE' && order.events[0]?.actor === 'SYSTEM';
     const account = `${env.WEB_URL}/${order.store.slug}/${words.account}`;
     const went = await this.mail.sendOrderStatus(
       user.email,
-      { name: order.customer.name, shopName: order.store.name, number: order.number, status: row.status, pickup: order.fulfillment === 'PICKUP', cashback, shipment },
+      { name: order.customer.name, shopName: order.store.name, number: order.number, status: row.status, pickup: order.fulfillment === 'PICKUP', cashback, shipment, unpaid },
       `${account}/${words.accountTabs.orders}/${order.number}`,
       // Straight to the box that turns these off, in the shop's own words.
       `${account}/${words.accountTabs.profile}#avisos`,

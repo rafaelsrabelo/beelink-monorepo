@@ -20,8 +20,12 @@ export interface CheckoutRefusal {
  */
 const REREAD = new Set(["AUTH_UNAUTHENTICATED", "ORDER_DELIVERY_ADDRESS_MISSING", "ORDER_ADDRESS_NOT_FOUND", "ORDER_PAYMENT_NOT_ACCEPTED"])
 
-/** The refusals after which the cart is priced again: the coupon, the delivery's fee or the credit it was sent with no longer holds. */
-export const REPRICED: ReadonlySet<string> = new Set(["ORDER_COUPON_REFUSED", "ORDER_SHIPPING_UNAVAILABLE", "ORDER_SHIPPING_CHANGED", "ORDER_CASHBACK_REFUSED"])
+/**
+ * The refusals after which the cart is priced again: the coupon, the delivery's fee or the credit it
+ * was sent with no longer holds — or its total fell under what is charged online (BEELINK-205), and
+ * the ways and the instalments the checkout offers follow the new price.
+ */
+export const REPRICED: ReadonlySet<string> = new Set(["ORDER_COUPON_REFUSED", "ORDER_SHIPPING_UNAVAILABLE", "ORDER_SHIPPING_CHANGED", "ORDER_CASHBACK_REFUSED", "ORDER_PAYMENT_BELOW_MINIMUM"])
 
 export function rereadsTheCart(errorCode: string): boolean {
   return REREAD.has(errorCode)
@@ -54,6 +58,8 @@ function couponRefusalIn(details: unknown): OrderCouponRefusedDetails | null {
 export interface CheckoutRefusalContext {
   pickup: boolean
   money: (cents: number) => string
+  /** The order was to be charged online: a CPF refused is the payer's, not a carrier's recipient's. */
+  online?: boolean
 }
 
 /**
@@ -89,6 +95,11 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
       return text.checkoutCashbackGone
     case "ORDER_PAYMENT_NOT_ACCEPTED":
       return text.checkoutPaymentGone
+    // The total moved under Asaas's least charge, or under what that many instalments need (BEELINK-205).
+    case "ORDER_PAYMENT_BELOW_MINIMUM":
+      return text.checkoutBelowMinimumGone
+    case "ORDER_PAYER_DOCUMENT_MISSING":
+      return text.checkoutPayerDocumentIssue
     case "ORDER_DELIVERY_ADDRESS_MISSING":
       return text.checkoutAddressGone
     case "ORDER_ADDRESS_NOT_FOUND":
@@ -100,8 +111,9 @@ export function checkoutRefusalOf({ errorCode, details }: CheckoutRefusal, rows:
       return text.checkoutShippingChanged
     // A carrier's label needs a CPF of who receives it, and a real one (BEELINK-187).
     case "ORDER_RECIPIENT_DOCUMENT_MISSING":
-    case "CUSTOMER_CPF_INVALID":
       return text.checkoutRecipientDocumentIssue
+    case "CUSTOMER_CPF_INVALID":
+      return context.online ? text.checkoutPayerDocumentIssue : text.checkoutRecipientDocumentIssue
     case "AUTH_UNAUTHENTICATED":
       return text.checkoutSignedOut
     case "RATE_LIMITED":

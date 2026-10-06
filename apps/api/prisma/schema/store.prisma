@@ -179,8 +179,11 @@ model Store {
   accountIdentities AccountIdentity[]
   /// Its own accounts at the third parties that act in its name (BEELINK-182): Melhor Envio, Asaas.
   integrations      StoreIntegration[]
+  asaasEvents       AsaasEvent[]
   /// How it ships by carrier through Melhor Envio (BEELINK-183); none until first saved.
   melhorEnvioSettings MelhorEnvioSettings?
+  /// How it is paid through Asaas (BEELINK-203); none until first saved.
+  asaasSettings AsaasSettings?
   /// How it gets an order to its customer (BEELINK-175); none until first saved.
   deliverySettings DeliverySettings?
 

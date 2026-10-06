@@ -35,7 +35,9 @@ const items = [
   { name: "Coqueteleira 700ml", href: null, imageUrl: null, meta: "Cor: Preta · Qtd. 1", price: "R$ 29,90" },
 ]
 
-function OrderPage({ status, pickup = false, cashback = null }: { status: StorefrontOrderStatusProps; pickup?: boolean; cashback?: string | null }) {
+type Paid = Pick<Parameters<typeof StorefrontOrderPayment>[0], "method" | "status" | "payHref" | "refunds" | "refundNote">
+
+function OrderPage({ status, pickup = false, cashback = null, paid = { method: "Pagamento combinado com a loja: Pix" } }: { status: StorefrontOrderStatusProps; pickup?: boolean; cashback?: string | null; paid?: Paid }) {
   return (
     <StorefrontOrderLayout
       header={
@@ -64,7 +66,7 @@ function OrderPage({ status, pickup = false, cashback = null }: { status: Storef
               { label: "Cupom BEMVINDO5", value: "− R$ 4,99", positive: true },
             ]}
             total="R$ 237,22"
-            method="Pagamento combinado com a loja: Pix"
+            {...paid}
             cashback={cashback}
           />
           {pickup ? (
@@ -102,6 +104,84 @@ export const ComRastreio: Story = {
       steps,
       tracking: <StorefrontOrderTracking by="Correios · SEDEX" code="AB123456789BR" href="#" hrefLabel="Ver no site da transportadora" />,
     },
+  },
+}
+
+/** Pago online e aguardando (BEELINK-205): o pagamento diz onde está e leva à tela de pagar. A etapa do pagamento (BEELINK-207) é a atual e diz que aguarda. */
+export const AguardandoPagamento: Story = {
+  args: {
+    status: {
+      headline: "Pedido recebido",
+      detail: "A loja confirma em breve.",
+      tone: "progress",
+      steps: [
+        { label: "Pedido feito", when: "21 de set., 14:02", state: "done" },
+        { label: "Aguardando pagamento", when: null, state: "current" },
+        { label: "Loja confirmou", when: null, state: "todo" },
+        { label: "Em preparo", when: null, state: "todo" },
+        { label: "Saiu para entrega", when: null, state: "todo" },
+        { label: "Entregue", when: null, state: "todo" },
+      ],
+    },
+    paid: { method: "Pagamento online: Pix", status: { label: "Aguardando pagamento", tone: "wait" }, payHref: "#" },
+  },
+}
+
+/** Pago online, aprovado: sem mais nada a pagar, e a etapa "Pagamento aprovado" marcada com a data (BEELINK-207). */
+export const PagamentoAprovado: Story = {
+  args: {
+    status: {
+      headline: "Em preparo",
+      detail: "Atualizado em 22 de set., 10:30",
+      tone: "progress",
+      steps: [
+        { label: "Pedido feito", when: "21 de set., 14:02", state: "done" },
+        { label: "Pagamento aprovado", when: "21 de set., 14:05", state: "done" },
+        { label: "Loja confirmou", when: "21 de set., 15:10", state: "done" },
+        { label: "Em preparo", when: "22 de set., 10:30", state: "current" },
+        { label: "Saiu para entrega", when: null, state: "todo" },
+        { label: "Entregue", when: null, state: "todo" },
+      ],
+    },
+    paid: { method: "Pagamento online: Cartão de crédito em 3x", status: { label: "Pagamento aprovado", tone: "done" } },
+  },
+}
+
+/** Cancelado pela loja com o estorno junto (BEELINK-208): o cartão ainda em processamento, com o prazo. */
+export const CanceladoComEstorno: Story = {
+  args: {
+    status: { headline: "Cancelado em 22 de set. de 2026", detail: "Cancelado pela loja", tone: "cancelled", steps: null },
+    paid: {
+      method: "Pagamento online: Cartão de crédito em 3x",
+      status: { label: "Estorno em processamento", tone: "stop" },
+      refunds: ["R$ 237,22 em processamento desde 22 de set."],
+      refundNote: "No cartão, o estorno pode levar até 10 dias úteis para aparecer na fatura.",
+    },
+  },
+}
+
+/** Cancelado pelo bee-link porque ninguém pagou no prazo (BEELINK-208). */
+export const CanceladoPorFaltaDePagamento: Story = {
+  args: { status: { headline: "Cancelado em 22 de set. de 2026", detail: "Cancelado por falta de pagamento", tone: "cancelled", steps: null }, paid: { method: "Pagamento online: Pix", status: { label: "Pagamento cancelado", tone: "stop" } } },
+}
+
+/** A loja seguiu sem esperar o pagamento: a etapa dele continua por fazer, no meio das feitas. */
+export const AceitoSemPagamento: Story = {
+  args: {
+    status: {
+      headline: "Loja confirmou",
+      detail: "Atualizado em 21 de set., 15:10",
+      tone: "progress",
+      steps: [
+        { label: "Pedido feito", when: "21 de set., 14:02", state: "done" },
+        { label: "Aguardando pagamento", when: null, state: "todo" },
+        { label: "Loja confirmou", when: "21 de set., 15:10", state: "current" },
+        { label: "Em preparo", when: null, state: "todo" },
+        { label: "Saiu para entrega", when: null, state: "todo" },
+        { label: "Entregue", when: null, state: "todo" },
+      ],
+    },
+    paid: { method: "Pagamento online: Pix", status: { label: "Aguardando pagamento", tone: "wait" }, payHref: "#" },
   },
 }
 
@@ -153,6 +233,25 @@ export const Comprovante: Story = {
       total="R$ 237,22"
       method="Pagamento combinado com a loja: Pix"
       cashback="R$ 11,86 de cashback para usar até 30 de dez. de 2026."
+      backHref="#"
+    />
+  ),
+}
+
+/** O comprovante de um pedido cobrado online diz se foi pago (BEELINK-207). */
+export const ComprovantePago: Story = {
+  render: () => (
+    <StorefrontOrderReceipt
+      shop={{ name: "Loja do Design" }}
+      number={1042}
+      placedOn="21 de set. de 2026, 14:02"
+      customer="Rafael Souza"
+      handover={{ title: "Retirada na loja", lines: ["Loja do Design"] }}
+      items={items}
+      rows={[{ label: "Subtotal", value: "R$ 249,70" }]}
+      total="R$ 249,70"
+      method="Pagamento online: Pix"
+      status={{ label: "Pagamento aprovado" }}
       backHref="#"
     />
   ),

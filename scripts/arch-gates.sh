@@ -101,6 +101,24 @@ gate "api/sealed-secret-in-integrations" \
   "secretSealed|secret-vault" \
   --exclude-dir=integrations --exclude-dir=generated
 
+# Inside that folder, the Asaas key — which creates charges in a shop's own account — is opened in its
+# own: nothing else under integrations names the party, so nothing else can seal or open its secret.
+# Specs are left out: the vault's own proves a value sealed for one party does not open for another.
+gate "api/asaas-secret-in-asaas" \
+  "Only src/modules/integrations/asaas seals or opens a shop's Asaas key; nothing else under integrations names the ASAAS party (apps/api/AGENTS.md, BEELINK-202)." \
+  "apps/api/src/modules/integrations" \
+  "['\"]ASAAS['\"]" \
+  --exclude-dir=asaas --exclude='*.spec.ts'
+
+# A row of order_payments says whether a shop holds a customer's money. It is written in one folder,
+# by the door a fact from Asaas comes in by, so no other module can mark an order paid — or unpaid —
+# by a write of its own. Reading it is anyone's.
+gate "api/order-payments-in-payments" \
+  "Only src/modules/payments writes order_payments, order_stray_payments and order_refunds: a fact from Asaas comes in by applyCharge (apps/api/AGENTS.md rule 10, BEELINK-206, BEELINK-208)." \
+  "apps/api/src" \
+  "order(Stray)?(Payment|Refund)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(" \
+  --exclude-dir=payments --exclude-dir=generated --exclude='*.spec.ts'
+
 gate "web/no-fetch-in-components" \
   "Components never call fetch — a service function plus a TanStack Query hook does, and packages/ui blocks take data through props (docs/ai-rules/state-and-data.md)." \
   "apps/web/src/components packages/ui/src" \

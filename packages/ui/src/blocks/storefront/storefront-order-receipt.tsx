@@ -21,6 +21,8 @@ export interface StorefrontOrderReceiptProps {
   rows: readonly { label: string; value: string }[]
   total: string
   method: string
+  /** Where an online payment stands (BEELINK-207): "Pagamento aprovado", "Aguardando pagamento". Absent on an order settled with the shop. */
+  status?: { label: string } | null
   /** What the order earns in cashback, in words; none, and nothing is said (BEELINK-243). */
   cashback?: string | null
   /** Said over the order when it did not stand — "Cancelado em …" — so the paper never reads as a sale. */
@@ -47,6 +49,7 @@ export function StorefrontOrderReceipt({
   total,
   cashback = null,
   method,
+  status = null,
   note,
   backHref,
   linkComponent: Link = AnchorLink,
@@ -120,7 +123,11 @@ export function StorefrontOrderReceipt({
           </div>
         </dl>
 
-        <p className="text-shop-muted">{method}</p>
+        <p className="text-shop-muted">
+          {method}
+          {/* On paper there is no colour to tell paid from waiting: the words do, in the page's weight. */}
+          {status ? <span className="font-bold text-shop-on-background">{` · ${status.label}`}</span> : null}
+        </p>
         {cashback ? <p className="font-semibold">{cashback}</p> : null}
         <p className="border-t border-shop-line pt-4 text-xs font-semibold text-shop-muted">{text.receiptNotInvoice}</p>
       </article>

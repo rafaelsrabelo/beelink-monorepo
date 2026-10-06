@@ -5,7 +5,7 @@ import { IntegrationList } from "./integration-list"
 import { IntegrationsFailed } from "./integrations-failed"
 import { IntegrationsResult } from "./integrations-result"
 import { IntegrationsSkeleton } from "./integrations-skeleton"
-import { connected, melhorEnvioOption, melhorEnvioRow, services, shipping } from "./integrations.fixtures"
+import { asaasOption, asaasRow, connected, melhorEnvioOption, melhorEnvioRow, services, shipping } from "./integrations.fixtures"
 import { MelhorEnvioCard } from "./melhor-envio-card"
 import { ShippingSettingsForm } from "./shipping-settings-form"
 
@@ -91,8 +91,19 @@ export const CarregandoEFalha: Story = {
 /** A lista das integrações da loja: cada uma leva à sua própria página. */
 export const Lista: Story = {
   render: () => (
-    <div className="max-w-3xl">
-      <IntegrationList rows={[melhorEnvioRow, { ...melhorEnvioRow, status: "NEEDS_RECONNECT", sandbox: false }]} newHref="#nova" />
+    <div className="flex max-w-3xl flex-col gap-6">
+      <IntegrationList rows={[melhorEnvioRow, asaasRow]} newHref="#nova" />
+      <IntegrationList rows={[{ ...melhorEnvioRow, status: "NEEDS_RECONNECT", sandbox: false }, { ...asaasRow, status: "NEEDS_RECONNECT", sandbox: false }]} newHref="#nova" />
+    </div>
+  ),
+}
+
+/** Uma das conexões não pôde ser lida: a que foi lida aparece, e a falha é dita ao lado dela. */
+export const ListaComFalha: Story = {
+  render: () => (
+    <div className="flex max-w-3xl flex-col gap-6">
+      <IntegrationList rows={[melhorEnvioRow]} newHref="#nova" />
+      <IntegrationsFailed onRetry={noop} message="Não foi possível carregar todas as integrações." />
     </div>
   ),
 }
@@ -110,9 +121,9 @@ export const ListaVazia: Story = {
 export const NovaIntegracao: Story = {
   render: () => (
     <div className="flex max-w-3xl flex-col gap-6">
-      <IntegrationCatalog options={[melhorEnvioOption]} />
-      <IntegrationCatalog options={[{ ...melhorEnvioOption, state: "connected" }]} />
-      <IntegrationCatalog options={[{ ...melhorEnvioOption, state: "unavailable" }]} />
+      <IntegrationCatalog options={[melhorEnvioOption, asaasOption]} />
+      <IntegrationCatalog options={[{ ...melhorEnvioOption, state: "connected" }, { ...asaasOption, state: "connected" }]} />
+      <IntegrationCatalog options={[{ ...melhorEnvioOption, state: "unavailable" }, { ...asaasOption, state: "unavailable" }]} />
     </div>
   ),
 }

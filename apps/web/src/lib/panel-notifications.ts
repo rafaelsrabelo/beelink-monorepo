@@ -23,9 +23,12 @@ export function panelNewOrdersHrefOf(slug: string): string {
   return `/admin/${slug}/orders?status=RECEIVED`
 }
 
-/** What the bell counts: messages from customers not read, and orders nobody accepted yet. */
-export function notificationCountOf(unread: ShopConversationUnread | undefined, received: OrderPage | undefined): number {
-  return (unread?.messages ?? 0) + (received?.total ?? 0)
+/** The orders paid online that nobody at the shop opened since (BEELINK-207): what the bell reads beside the new ones. */
+export const PAID_UNSEEN_QUERY = { payment: "PAID_UNSEEN", pageSize: 5 } as const
+
+/** What the bell counts: messages from customers not read, orders nobody accepted yet, and paid orders nobody opened since. */
+export function notificationCountOf(unread: ShopConversationUnread | undefined, received: OrderPage | undefined, paid?: OrderPage): number {
+  return (unread?.messages ?? 0) + (received?.total ?? 0) + (paid?.total ?? 0)
 }
 
 interface NotificationContext {
@@ -34,8 +37,8 @@ interface NotificationContext {
   messages: UiMessages
 }
 
-/** The bell's menu: new orders and unread conversations, most recent first. */
-export function notificationsOf(received: OrderPage | undefined, unread: ShopConversationPage | undefined, { slug, locale, messages }: NotificationContext): AdminNotification[] {
+/** The bell's menu: new orders, payments approved and unread conversations, most recent first. */
+export function notificationsOf(received: OrderPage | undefined, unread: ShopConversationPage | undefined, { slug, locale, messages }: NotificationContext, paid?: OrderPage): AdminNotification[] {
   const text = messages.shell
   const money = new Intl.NumberFormat(locale, { style: "currency", currency: "BRL" })
   const orders = (received?.orders ?? []).map((order) => ({
@@ -49,6 +52,21 @@ export function notificationsOf(received: OrderPage | undefined, unread: ShopCon
       href: panelOrderHrefOf(slug, order.number),
     },
   }))
+  const payments = (paid?.orders ?? []).map((order) => {
+    // When the money came, not when the order did: that is the news.
+    const at = order.payment?.paidAt ?? order.placedAt
+    return {
+      at,
+      item: {
+        id: `payment-${order.number}`,
+        kind: "payment" as const,
+        title: format(text.notificationOrderPaid, { number: String(order.number) }),
+        detail: format(text.notificationOrderDetail, { customer: order.customer.name, total: orderTotalText(money.format(order.totalCents / 100), order, messages.orders.totalPlusFee) }),
+        when: momentOf(at, locale),
+        href: panelOrderHrefOf(slug, order.number),
+      },
+    }
+  })
   const conversations = (unread?.conversations ?? []).map((row) => ({
     at: row.lastMessage.createdAt,
     item: {
@@ -64,7 +82,7 @@ export function notificationsOf(received: OrderPage | undefined, unread: ShopCon
       href: panelOrderHrefOf(slug, row.order.number),
     },
   }))
-  return [...orders, ...conversations]
+  return [...orders, ...payments, ...conversations]
     .sort((a, b) => b.at.localeCompare(a.at))
     .slice(0, NOTIFICATIONS_SHOWN)
     .map(({ item }) => item)
@@ -75,6 +93,11 @@ export function toastOf(event: RealtimeEvent, messages: UiMessages): string | nu
   const text = messages.shell
   if (event.type === "order.created" && event.placedBy === "CUSTOMER") return format(text.notificationNewOrder, { number: String(event.orderNumber) })
   if (event.type === "conversation.message" && event.author === "CUSTOMER") return format(text.notificationNewMessage, { number: String(event.orderNumber) })
+  // A payment approved, on the one event that is its news (BEELINK-207): a card's money landing a month later is not.
+  if (event.type === "order.payment" && event.approved && event.stray === null) return format(text.notificationOrderPaid, { number: String(event.orderNumber) })
+  // Money the order did not ask for (BEELINK-206): nothing is refunded by itself, so the shop is told at once.
+  if (event.type === "order.payment" && event.stray === "ORDER_CANCELLED") return format(text.notificationStrayCancelled, { number: String(event.orderNumber) })
+  if (event.type === "order.payment" && event.stray === "ORDER_ALREADY_PAID") return format(text.notificationStrayDuplicate, { number: String(event.orderNumber) })
   return null
 }
 

@@ -9,6 +9,7 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // App
 import { AppLink } from "@/components/app-link"
 import { integrationPagesOf, integrationRowsOf } from "@/lib/integration-pages"
+import { useAsaasConnection } from "@/services/integrations/asaas-hooks"
 import { useMelhorEnvioConnection } from "@/services/integrations/integration-hooks"
 
 export interface IntegrationsScreenProps {
@@ -19,11 +20,18 @@ export interface IntegrationsScreenProps {
 /**
  * The shop's integrations, as a list: what it connected, each leading to its own page. Adding one is
  * a page of its own, `integrations/new`, as making anything else in the panel is.
+ *
+ * Each connection is read on its own. One that could not be read is said so beside the rows of those
+ * that were — and the list never claims the shop connected nothing while a read is missing.
  */
 export function IntegrationsScreen({ slug, messages }: IntegrationsScreenProps) {
   const text = messages.integrations
   const pages = integrationPagesOf(slug)
-  const connection = useMelhorEnvioConnection(slug)
+  const melhorEnvio = useMelhorEnvioConnection(slug)
+  const asaas = useAsaasConnection(slug)
+  const failed = [melhorEnvio, asaas].filter((connection) => connection.isError)
+  const reading = melhorEnvio.isPending || asaas.isPending
+  const rows = integrationRowsOf({ melhorEnvio: melhorEnvio.data, asaas: asaas.data }, pages)
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 lg:px-6">
@@ -38,11 +46,14 @@ export function IntegrationsScreen({ slug, messages }: IntegrationsScreenProps) 
         </AppLink>
       </header>
 
-      {connection.isError ? (
-        <IntegrationsFailed onRetry={() => void connection.refetch()} messages={messages} />
-      ) : (
-        <IntegrationList rows={connection.data ? integrationRowsOf(connection.data, pages) : "loading"} newHref={pages.new} linkComponent={AppLink} messages={messages} />
-      )}
+      {reading ? (
+        <IntegrationList rows="loading" newHref={pages.new} linkComponent={AppLink} messages={messages} />
+      ) : rows.length > 0 || failed.length === 0 ? (
+        <IntegrationList rows={rows} newHref={pages.new} linkComponent={AppLink} messages={messages} />
+      ) : null}
+      {failed.length > 0 ? (
+        <IntegrationsFailed onRetry={() => failed.forEach((connection) => void connection.refetch())} message={failed.length === 1 ? text.failedSome : undefined} messages={messages} />
+      ) : null}
     </div>
   )
 }

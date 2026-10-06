@@ -1,14 +1,17 @@
 // Nest
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import {
+  ApiBadGatewayResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiServiceUnavailableResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -23,6 +26,7 @@ import { SetOrderDeliveryFeeDto } from './dto/order-delivery-fee.dto.js';
 import { CreateOrderDto, ListOrdersDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
 import { OrderQuoteResponse, ShopOrderQuoteDto } from './dto/order-quote.dto.js';
 import { OrderPageResponse, OrderResponse } from './dto/order.response.js';
+import { RefundOrderDto } from '../payments/dto/refund-order.dto.js';
 import { OrderNumberPipe } from './order-number.pipe.js';
 import { OrderQuotes } from './order-quote.service.js';
 import { OrdersService } from './orders.service.js';
@@ -107,7 +111,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Tell the fee agreed for a delivery; the total and the customer’s books follow (BEELINK-170)' })
   @ApiOkResponse({ type: OrderResponse })
   @ApiBadRequestResponse({ description: 'ORDER_DELIVERY_FOR_PICKUP — a pick-up has no fee · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE' })
-  @ApiConflictResponse({ description: 'ORDER_CANCELLED' })
+  @ApiConflictResponse({ description: 'ORDER_CANCELLED · ORDER_PAID — a paid order keeps its total until it is refunded' })
   setDeliveryFee(
     @Param('storeSlug') storeSlug: string,
     @Param('number', OrderNumberPipe) number: number,
@@ -128,10 +132,38 @@ export class OrdersController {
     return this.orders.clearDelivery(storeSlug, current.id, number);
   }
 
-  @Patch(':number/status')
-  @ApiOperation({ summary: 'Move the order to another status; nothing leaves CANCELLED' })
+  @Post(':number/payment/seen')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "The shop opened a paid order: the bell stops telling of its payment (BEELINK-207). Saying it again, or of an order with no payment, changes nothing" })
+  @ApiNoContentResponse()
+  seePayment(
+    @Param('storeSlug') storeSlug: string,
+    @Param('number', OrderNumberPipe) number: number,
+    @CurrentUser() current: AuthenticatedUser,
+  ): Promise<void> {
+    return this.orders.seePayment(storeSlug, current.id, number);
+  }
+
+  @Post(':number/refunds')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Give back money of the order's payment, whole or in part, or a payment it did not ask for (BEELINK-208); the refund is asked of the shop's Asaas account, once" })
   @ApiOkResponse({ type: OrderResponse })
-  @ApiConflictResponse({ description: 'ORDER_CANCELLED · ORDER_STATUS_UNCHANGED' })
+  @ApiConflictResponse({ description: 'REFUND_NOTHING_TO_REFUND · REFUND_EXCEEDS (details: refundableCents) · REFUND_STALE — what is left changed since the screen read it · REFUND_IN_PROGRESS · REFUND_NOT_READY — Asaas does not let the charge be refunded now' })
+  @ApiBadGatewayResponse({ description: "REFUND_NO_BALANCE — the Asaas account has not the balance · REFUND_REFUSED (details: reason, in Asaas's words)" })
+  @ApiServiceUnavailableResponse({ description: 'REFUND_UNCONFIRMED — Asaas did not answer and the charge does not show the refund yet · PAYMENT_UNAVAILABLE' })
+  refund(
+    @Param('storeSlug') storeSlug: string,
+    @Param('number', OrderNumberPipe) number: number,
+    @CurrentUser() current: AuthenticatedUser,
+    @Body() dto: RefundOrderDto,
+  ): Promise<OrderResponse> {
+    return this.orders.refund(storeSlug, current.id, number, dto);
+  }
+
+  @Patch(':number/status')
+  @ApiOperation({ summary: 'Move the order to another status; nothing leaves CANCELLED. Cancelling a paid order carries its refund, asked of Asaas first (BEELINK-208)' })
+  @ApiOkResponse({ type: OrderResponse })
+  @ApiConflictResponse({ description: 'ORDER_CANCELLED · ORDER_STATUS_UNCHANGED · ORDER_PAID — a paid order is cancelled only with `refund` · and what a refund is refused with (`POST …/refunds`)' })
   updateStatus(
     @Param('storeSlug') storeSlug: string,
     @Param('number', OrderNumberPipe) number: number,

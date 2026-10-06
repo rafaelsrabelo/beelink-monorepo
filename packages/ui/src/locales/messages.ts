@@ -365,6 +365,104 @@ export interface UiMessages {
     checkoutCouponGone: string
     /** The shopper's cashback moved between the price on screen and the order (BEELINK-244): the cart was priced again. */
     checkoutCashbackGone: string
+    /** The checkout's online ways, charged at the shop's own Asaas account (BEELINK-205). */
+    checkoutPayNow: string
+    checkoutPayLater: string
+    checkoutPayPixHint: string
+    checkoutPayCardHint: string
+    checkoutInstallments: string
+    /** `{amount}`: the whole total, in one payment. */
+    checkoutInstallmentFull: string
+    /** `{count}`, `{amount}`: each instalment, with no interest. */
+    checkoutInstallmentOption: string
+    /** While the delivery fee is not agreed, the total is open: no amount is promised. */
+    checkoutInstallmentOpenFull: string
+    checkoutInstallmentOpen: string
+    /** `{minimum}`: Asaas's least charge. */
+    checkoutOnlineBelowMinimum: string
+    checkoutOnlineOnlyBelowMinimum: string
+    checkoutOnlineFeeLater: string
+    checkoutNothingToPay: string
+    checkoutPayerDocument: string
+    checkoutPayerDocumentHint: string
+    checkoutPayerDocumentIssue: string
+    checkoutPayOnline: string
+    checkoutBelowMinimumGone: string
+    /** After an order charged online is placed: its payment is the next screen (BEELINK-205). */
+    checkoutSentPayHint: string
+    /** The payment screen of one order (BEELINK-205). `{number}`. */
+    paymentTitle: string
+    paymentBack: string
+    paymentAmount: string
+    paymentPixTitle: string
+    paymentPixSteps: string
+    paymentPixQrAlt: string
+    paymentPixCode: string
+    paymentPixCopy: string
+    paymentPixCopied: string
+    paymentPixSelected: string
+    /** `{date}`: until when the charge is paid here. */
+    paymentValidUntil: string
+    paymentConfirmsHere: string
+    paymentPixWaitingTitle: string
+    paymentPixWaitingBody: string
+    paymentPixExpiredTitle: string
+    paymentPixExpiredBody: string
+    paymentPixRenew: string
+    paymentCardTitle: string
+    paymentCardBody: string
+    paymentCardOpen: string
+    paymentNewTab: string
+    paymentInstallmentsFull: string
+    /** `{count}`, `{amount}`. */
+    paymentInstallments: string
+    paymentCardExpiredTitle: string
+    paymentCardExpiredBody: string
+    paymentNoneTitle: string
+    paymentNoneBody: string
+    paymentCancelledTitle: string
+    paymentCancelledBody: string
+    paymentCreate: string
+    paymentCreating: string
+    paymentAwaitingTotalTitle: string
+    paymentAwaitingTotalBody: string
+    paymentPaidTitle: string
+    paymentPaidBody: string
+    paymentRefundedTitle: string
+    paymentRefundedBody: string
+    paymentOrderCancelledTitle: string
+    paymentOrderCancelledBody: string
+    paymentUnreadTitle: string
+    paymentUnreadBody: string
+    paymentRetry: string
+    paymentAddDocument: string
+    /** Why a charge was not made, by the API's code. */
+    paymentRefusedNotOnline: string
+    paymentRefusedOrderCancelled: string
+    paymentRefusedAwaitingTotal: string
+    paymentRefusedAlreadyPaid: string
+    paymentRefusedInProgress: string
+    paymentRefusedBelowMinimum: string
+    paymentRefusedDocumentMissing: string
+    paymentRefusedRefused: string
+    paymentRefusedUnavailable: string
+    paymentRefusedSignedOut: string
+    paymentRefusedTooMany: string
+    paymentRefusedFailed: string
+    /** Where an order's online payment stands, on its page and its card (BEELINK-205). */
+    orderPayAwaiting: string
+    orderPayAwaitingTotal: string
+    orderPayApproved: string
+    orderPayOverdue: string
+    orderPayCancelled: string
+    orderPayRefunded: string
+    orderPayPartlyRefunded: string
+    orderPayNow: string
+    /** `{method}`: Pix, or the credit card. */
+    orderPaymentOnline: string
+    /** `{method}`, `{count}`. */
+    orderPaymentOnlineInstallments: string
+    orderCancelRefusedPaid: string
     /** A visitor at the checkout: ordering asks who they are, the cart waits (G4). */
     checkoutSignInPrompt: string
     checkoutSignIn: string
@@ -645,6 +743,18 @@ export interface UiMessages {
     orderStatusPickedUp: string
     orderStatusCancelled: string
     orderCancelledByShop: string
+    /** bee-link's own cancellation, of an order charged online that nobody paid in time (BEELINK-208). */
+    orderCancelledBySystem: string
+    orderEventBySystem: string
+    /** Refunds on the customer's order (BEELINK-208): "{amount}", "{date}". */
+    orderPayRefunding: string
+    orderRefundsTitle: string
+    orderRefundDone: string
+    orderRefundProcessing: string
+    orderRefundCardNote: string
+    orderEventRefund: string
+    /** A paid order is not cancelled from the customer's side. */
+    orderCancelPaidHint: string
     orderCancelledByYou: string
     /** `{date}`. */
     orderPlacedByYou: string
@@ -866,7 +976,7 @@ export interface UiMessages {
     conversationRead: string
     conversationFromShop: string
     /** A status notice in the conversation (BEELINK-236), by status — PICKED_UP is a pick-up's DELIVERED. */
-    conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
+    conversationNotices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string; PAYMENT_APPROVED: string; CANCELLED_UNPAID: string; /** "{amount}". */ PAYMENT_REFUNDED: string }
     /** A delivery's notice with the cashback it made usable (BEELINK-239): "{notice}", then "{amount}" — the punctuation between them is the copy's. */
     conversationCashback: string
     /** The buy box (BEELINK-243): `{amount}`, the most the chosen price and quantity earn — the cart's discounts can only lower it. */
@@ -1862,6 +1972,13 @@ export interface UiMessages {
     searchPlaceholder: string
     filterLabel: string
     all: string
+    /** The list's second filter, by where the money stands (BEELINK-207). */
+    paymentFilterLabel: string
+    paymentFilters: Record<"ALL" | "PAID" | "PENDING" | "STRAY" | "REFUNDED", string>
+    /** Where an online payment stands, beside the way it is paid in a row of the list. */
+    paymentStates: Record<"paid" | "awaiting" | "refunding" | "refunded" | "partlyRefunded", string>
+    /** A row's flag: money arrived that the order did not ask for. */
+    paymentStray: string
     /** A delivery's total while its fee is not agreed (BEELINK-170): "R$ 239,70 + frete". */
     totalPlusFee: string
     /** An order's discount, a row per part — shared by the shop window and the panel (BEELINK-194). */
@@ -2026,6 +2143,73 @@ export interface UiMessages {
       deliverySaved: string
       deliveryNeeded: string
       actors: Record<"SHOPKEEPER" | "CUSTOMER" | "SYSTEM" | "CARRIER", string>
+      /** The order's online payment, as the shop reads it (BEELINK-207). */
+      onlinePayment: {
+        title: string
+        method: string
+        /** "{count}" instalments. */
+        installments: string
+        inFull: string
+        amount: string
+        status: string
+        statuses: Record<"PENDING" | "CONFIRMED" | "RECEIVED" | "OVERDUE" | "REFUNDED" | "PARTIALLY_REFUNDED" | "CANCELLED" | "FAILED", string>
+        /** What a status means to the shop, under it; the ones that need no more words have none. */
+        statusHints: Record<"CONFIRMED" | "RECEIVED" | "OVERDUE" | "CANCELLED" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED", string>
+        /** Asaas's own word, where it says more than ours. */
+        providerStatuses: Record<"AWAITING_RISK_ANALYSIS" | "RECEIVED_IN_CASH" | "REFUND_REQUESTED" | "REFUND_IN_PROGRESS" | "CHARGEBACK_REQUESTED" | "CHARGEBACK_DISPUTE" | "AWAITING_CHARGEBACK_REVERSAL", string>
+        paidAt: string
+        expiresAt: string
+        /** Charged online, and no charge was made yet. */
+        none: string
+        lastError: string
+        strayTitle: string
+        strayReasons: Record<"ORDER_CANCELLED" | "ORDER_ALREADY_PAID", string>
+        /** "{amount}", "{method}", "{date}". */
+        strayLine: string
+        strayAction: string
+        /** "{amount}": the link to the refund of money the order did not ask for. */
+        strayRefund: string
+        /** Money given back (BEELINK-208): the rows, the link to the form, and each refund's line. */
+        refunded: string
+        refunding: string
+        refundable: string
+        refund: string
+        refundsTitle: string
+        refundStatuses: Record<"REQUESTED" | "PROCESSING" | "DONE" | "REFUSED" | "DENIED", string>
+        refundOrigins: Record<"PANEL" | "CANCELLATION" | "ASAAS", string>
+        refundStray: string
+        /** Under a refund Asaas has not answered about. */
+        refundRequestedHint: string
+      }
+      /** The refund's own screen (BEELINK-208): how much, why, and what happens next. */
+      refund: {
+        /** "{number}". */
+        title: string
+        cancelTitle: string
+        strayTitle: string
+        back: string
+        paid: string
+        refunded: string
+        refunding: string
+        left: string
+        amount: string
+        /** "{amount}": the most it may be. */
+        amountHint: string
+        amountRequired: string
+        /** "{amount}". */
+        amountTooMuch: string
+        reason: string
+        reasonHint: string
+        reasonRequired: string
+        pixNote: string
+        cardNote: string
+        cancelNote: string
+        /** "{amount}". */
+        submit: string
+        submitCancel: string
+        submitting: string
+        nothing: string
+      }
       markAs: Record<"RECEIVED" | "ACCEPTED" | "PREPARING" | "OUT_FOR_DELIVERY" | "DELIVERED", string>
       statusLabel: string
       moreStatuses: string
@@ -2277,7 +2461,7 @@ export interface UiMessages {
     read: string
     fromCustomer: string
     /** A status notice, as the shop reads what its customer was told (BEELINK-236). */
-    notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string }
+    notices: { RECEIVED: string; ACCEPTED: string; PREPARING: string; OUT_FOR_DELIVERY: string; DELIVERED: string; PICKED_UP: string; CANCELLED: string; PAYMENT_APPROVED: string; CANCELLED_UNPAID: string; /** "{amount}". */ PAYMENT_REFUNDED: string }
     /** A delivery's notice with the cashback its customer was told they earned: "{notice}", "{amount}". The shop's notices end with no full stop. */
     noticeCashback: string
     fromShop: string
@@ -2732,6 +2916,11 @@ export interface UiMessages {
     notificationsSeeOrders: string
     notificationNewOrder: string
     notificationNewMessage: string
+    /** An order charged online was paid (BEELINK-207): the toast and the bell's row. `{number}`. */
+    notificationOrderPaid: string
+    /** A toast: money arrived that the order did not ask for (BEELINK-206). `{number}`. */
+    notificationStrayCancelled: string
+    notificationStrayDuplicate: string
     notificationOrderDetail: string
     notificationMessageDetail: string
     notificationOpen: string
@@ -3204,6 +3393,8 @@ export interface UiMessages {
     title: string
     intro: string
     failed: string
+    /** A connection could not be read while another was: said beside the rows of those that were. */
+    failedSome: string
     retry: string
     /** The way to the page that adds one, and that page's own title. */
     newIntegration: string
@@ -3217,18 +3408,10 @@ export interface UiMessages {
       /** By the code the way back carries; `UNKNOWN` for any other. */
       errors: Record<"INTEGRATION_CANCELLED" | "INTEGRATION_STATE_INVALID" | "INTEGRATION_EXCHANGE_FAILED" | "INTEGRATION_UNREACHABLE" | "INTEGRATION_UNAVAILABLE" | "AUTH_UNAUTHENTICATED" | "UNKNOWN", string>
     }
-    melhorEnvio: {
-      title: string
-      lead: string
-      unavailable: string
-      connect: string
+    melhorEnvio: IntegrationProviderMessages & {
       reconnect: string
       needsReconnect: string
-      connected: string
       disconnectedBadge: string
-      needsReconnectBadge: string
-      sandbox: string
-      sandboxHint: string
       account: string
       balance: string
       balanceHint: string
@@ -3239,6 +3422,71 @@ export interface UiMessages {
       disconnectConfirm: string
       disconnectCancel: string
       disconnectFailed: string
+    }
+    asaas: IntegrationProviderMessages & {
+      disconnectedBadge: string
+      /** Said in the card itself: on a phone the badge's hint cannot be hovered. */
+      sandboxNote: string
+      keyLabel: string
+      keyPlaceholder: string
+      /** Where a key is created at Asaas, and what bee-link does with it. */
+      keyHint: string
+      showKey: string
+      hideKey: string
+      connectSubmit: string
+      connecting: string
+      noAccount: string
+      signUp: string
+      /** Read out after a link that opens another tab. */
+      newTab: string
+      needsReconnect: string
+      reconnectSubmit: string
+      account: string
+      /** The shop's payment notices: the webhook at its account. */
+      webhook: string
+      webhookStates: Record<"REGISTERED" | "SKIPPED" | "PAUSED" | "ERROR", string>
+      webhookHints: Record<"REGISTERED" | "SKIPPED" | "PAUSED" | "ERROR", string>
+      replaceKey: string
+      replaceLabel: string
+      replaceSubmit: string
+      replaceCancel: string
+      /** Over the page once a key was taken, there and then. */
+      connectedNotice: string
+      disconnect: string
+      disconnectTitle: string
+      disconnectBody: string
+      disconnectConfirm: string
+      disconnectCancel: string
+      disconnectFailed: string
+      /** By the API's code; `UNKNOWN` for any other. */
+      errors: Record<"INTEGRATION_KEY_INVALID" | "INTEGRATION_UNREACHABLE" | "RATE_LIMITED" | "UNKNOWN", string>
+      /** A key of the other environment, by the one this deployment takes. */
+      wrongEnvironment: Record<"SANDBOX" | "PRODUCTION", string>
+    }
+    /** How the shop is paid once its Asaas is connected (BEELINK-203). */
+    payments: {
+      title: string
+      intro: string
+      pix: string
+      pixHint: string
+      card: string
+      cardHint: string
+      installments: string
+      installmentsHint: string
+      /** One instalment: the card in full. */
+      installmentsOnce: string
+      /** {count} */
+      installmentsUpTo: string
+      offline: string
+      offlineHint: string
+      save: string
+      saving: string
+      saved: string
+      /** Read out, never shown, while the choices are read. */
+      loading: string
+      failed: string
+      issues: { none: string }
+      errors: Record<"ASAAS_SETTINGS_INVALID" | "UNKNOWN", string>
     }
     shipping: {
       title: string
@@ -3266,6 +3514,23 @@ export interface UiMessages {
       errors: Record<"MELHOR_ENVIO_SETTINGS_INVALID" | "UNKNOWN", string>
     }
   }
+}
+
+/**
+ * What every third party says of itself wherever the Integrations pages list or offer it. Each
+ * provider's slice holds at least this, so the list and the catalogue read any of them alike.
+ */
+export interface IntegrationProviderMessages {
+  title: string
+  /** What connecting gives the shop. */
+  lead: string
+  unavailable: string
+  /** The way in, on the catalogue: names the provider, since several cards share the page. */
+  connect: string
+  connected: string
+  needsReconnectBadge: string
+  sandbox: string
+  sandboxHint: string
 }
 
 /** The two the product ships. `pt-BR` is the default; `en` is what the repository itself speaks. */

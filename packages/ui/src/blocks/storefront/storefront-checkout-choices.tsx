@@ -10,6 +10,9 @@ import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
 // Block
 import { AnchorLink, type LinkComponent } from "../auth/auth-link"
 import type { PaymentMethod } from "../store/store-types"
+import { StorefrontCheckoutPayment, type CheckoutPaymentChannel, type StorefrontCheckoutOnline } from "./storefront-checkout-payment"
+
+export type { CheckoutOnlineMethod, CheckoutPaymentChannel, StorefrontCheckoutOnline } from "./storefront-checkout-payment"
 
 /** Mirrors the wire's `OrderFulfillment`; this package imports no contracts. */
 export type CheckoutFulfillment = "DELIVERY" | "PICKUP"
@@ -22,6 +25,10 @@ export interface StorefrontCheckoutChoice {
   wayId: string | null
   /** Null until the shopper picks one — a shop takes several, and none is theirs to assume. */
   paymentMethod: PaymentMethod | null
+  /** Where it is paid (BEELINK-205): settled with the shop, or charged online. Absent is `OFFLINE`. */
+  paymentChannel?: CheckoutPaymentChannel
+  /** The instalments of a card charged online; absent is 1. */
+  installments?: number
 }
 
 /**
@@ -67,8 +74,12 @@ export interface StorefrontCheckoutChoicesProps {
   addresses: readonly StorefrontCheckoutAddress[]
   /** Where the shopper adds an address, coming back to the cart. */
   addHref: string
-  /** The methods the shop takes, in its own order. */
+  /** The methods the shop settles by on delivery or at pickup, in its own order; none when it turned that off. */
   paymentMethods: readonly PaymentMethod[]
+  /** What the shop charges online for this cart (BEELINK-205); null when it charges nothing online. */
+  online?: StorefrontCheckoutOnline | null
+  /** The order has nothing to pay: said in place of the payment's choices. */
+  nothingToPay?: string | null
   /**
    * What the shop's rules quote to the chosen address; null while nobody knows — a visitor, no
    * address, a price still being asked — and both ways are offered with the fee agreed afterwards.
@@ -93,8 +104,8 @@ const RADIO = "mt-0.5 size-4 shrink-0 accent-shop-primary"
  * (BEELINK-178): the fee and the window, a fee agreed afterwards, or that the shop does not go
  * there — said at once, with the other addresses still to choose from. With several ways to get
  * there — the shop's own delivery, each carrier (BEELINK-186) — they are listed to choose among. A
- * way the shop switched off is not offered. Nothing is charged here: the payment is a label the
- * shop and the shopper settle by.
+ * way the shop switched off is not offered. How it is paid is `StorefrontCheckoutPayment`'s: the
+ * shop's own labels, and what it charges online (BEELINK-205).
  */
 export function StorefrontCheckoutChoices({
   value,
@@ -102,6 +113,8 @@ export function StorefrontCheckoutChoices({
   addresses,
   addHref,
   paymentMethods,
+  online = null,
+  nothingToPay = null,
   shipping = null,
   recipientDocument = null,
   disabled = false,
@@ -226,23 +239,7 @@ export function StorefrontCheckoutChoices({
         {!delivers && !picksUp ? <p role="status" className="text-sm">{text.checkoutNoWay}</p> : null}
       </fieldset>
 
-      <fieldset disabled={disabled} className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-semibold">{text.checkoutPayment}</legend>
-        <div className="grid grid-cols-2 gap-2">
-          {paymentMethods.map((method) => (
-            <label key={method} className={OPTION}>
-              <input
-                type="radio"
-                name={`${id}-payment`}
-                className={RADIO}
-                checked={value.paymentMethod === method}
-                onChange={() => onChange({ ...value, paymentMethod: method })}
-              />
-              <span className="font-medium">{messages.orders.payments[method]}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <StorefrontCheckoutPayment value={value} onChange={onChange} offlineMethods={paymentMethods} online={online} nothingToPay={nothingToPay} disabled={disabled} messages={messages} />
     </div>
   )
 }
