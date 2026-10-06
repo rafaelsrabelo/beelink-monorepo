@@ -30,6 +30,7 @@ import type {
   OrderDeliveryPayload,
   OrderFulfillment,
   OrderListQuery,
+  OrderPaymentFilter,
   OrderShippingChoice,
   OrderStatus,
   PaymentMethod,
@@ -39,6 +40,7 @@ import type {
 // App
 import { MaxCodePoints } from '../../../shared/http/max-code-points.js';
 import { blankToNull, normaliseWhatsapp, trim } from '../../stores/dto/store-fields.dto.js';
+import { ORDER_PAYMENT_FILTERS } from '../../payments/dto/payment.response.js';
 import { PAYMENT_METHODS } from '../../stores/stores.constants.js';
 import {
   ORDER_AMOUNT_MAX_CENTS,
@@ -214,6 +216,15 @@ export class ListOrdersDto implements OrderListQuery {
   @blankToNull
   @IsIn(ORDER_STATUSES)
   status?: OrderStatus;
+
+  @ApiPropertyOptional({
+    enum: ORDER_PAYMENT_FILTERS,
+    description: 'By where the money stands (BEELINK-207): PAID holds the customer\'s money; PENDING is charged online, not cancelled and never paid; PAID_UNSEEN is paid and not opened since; STRAY has money it did not ask for.',
+  })
+  @IsOptional()
+  @blankToNull
+  @IsIn(ORDER_PAYMENT_FILTERS)
+  payment?: OrderPaymentFilter;
 
   @ApiPropertyOptional({ description: 'An order number, a customer name, or digits of their phone.' })
   @IsOptional()

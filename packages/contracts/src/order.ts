@@ -3,7 +3,7 @@
 // Types
 import type { OrderCashback, ShopOrderCashback } from "./cashback.js";
 import type { CustomerAddress } from "./customer.js";
-import type { OrderPayment, OrderPaymentBrief, OrderPaymentChannel, ShopOrderPayment } from "./payment.js";
+import type { OrderPayment, OrderPaymentBrief, OrderPaymentChannel, OrderPaymentFilter, ShopOrderPayment } from "./payment.js";
 import type { CouponKind } from "./promotion.js";
 import type { CarriersVerdict, OwnDeliveryVerdict, ShippingWindow } from "./shipping.js";
 import type { PaymentMethod } from "./store.js";
@@ -176,6 +176,8 @@ export interface OrderSummary {
   /** Where it is paid (BEELINK-204): `OFFLINE`, settled between the two of them, or `ONLINE`, charged at Asaas. */
   paymentChannel: OrderPaymentChannel;
   payment: OrderPaymentBrief | null;
+  /** How many payments arrived that it did not ask for (BEELINK-207): the shop settles them; zero on nearly every order. */
+  strays: number;
   totalCents: number;
   /** Null while a delivery's fee is not agreed: the total then says "+ frete" beside it. */
   deliveryFeeCents: number | null;
@@ -194,6 +196,8 @@ export interface OrderPage {
 
 export interface OrderListQuery {
   status?: OrderStatus;
+  /** By where the money stands (BEELINK-207); absent is every order. */
+  payment?: OrderPaymentFilter;
   /** An order number, a customer's name, or digits of their phone. */
   q?: string;
   /** One customer's orders only — their record's history. Another shop's customer finds none. */

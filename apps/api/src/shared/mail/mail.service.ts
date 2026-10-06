@@ -14,6 +14,7 @@ import type { AccountShop } from '../../modules/auth/account-scope.js';
 import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../modules/auth/auth.constants.js';
 import { env } from '../config/env.js';
 import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
+import { paymentApproved, type PaymentApprovedContent } from './payment-approved.template.js';
 import { emailVerification, favoriteNotice, leadReceived, orderStatusChanged, passwordReset, type FavoriteNoticeContent, type OrderStatusContent } from './mail.templates.js';
 
 /** What a lead's e-mail needs beyond the lead: who to greet, and which site's panel to point at. */
@@ -77,6 +78,11 @@ export class MailService implements OnApplicationBootstrap {
    */
   async sendOrderStatus(to: string, content: OrderStatusContent, url: string, settingsUrl: string): Promise<boolean> {
     return this.send(to, orderStatusChanged(content, url, settingsUrl), content.shopName);
+  }
+
+  /** A customer's online payment was approved (BEELINK-207); answers whether it went, for its outbox. */
+  async sendPaymentApproved(to: string, content: PaymentApprovedContent, url: string, settingsUrl: string): Promise<boolean> {
+    return this.send(to, paymentApproved(content, url, settingsUrl), content.shopName);
   }
 
   /** A favourite got cheaper or came back (BEELINK-155); answers whether it went, for its outbox. */

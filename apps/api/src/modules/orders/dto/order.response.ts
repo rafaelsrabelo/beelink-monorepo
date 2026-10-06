@@ -135,6 +135,7 @@ export class OrderSummaryResponse implements OrderSummary {
   @ApiProperty({ enum: PAYMENT_METHODS }) paymentMethod!: PaymentMethod;
   @ApiProperty({ enum: ORDER_PAYMENT_CHANNELS, description: 'OFFLINE is settled between the shop and the customer; ONLINE is charged at Asaas.' }) paymentChannel!: OrderPaymentChannel;
   @ApiProperty({ type: OrderPaymentBriefResponse, nullable: true }) payment!: OrderPaymentBriefResponse | null;
+  @ApiProperty({ description: 'How many payments arrived that the order did not ask for; the shop settles them (BEELINK-207).' }) strays!: number;
   @ApiProperty() totalCents!: number;
   @ApiProperty({ type: Number, nullable: true, description: 'Null while a delivery\'s fee is not agreed ("a combinar"); zero is a free delivery.' }) deliveryFeeCents!: number | null;
   @ApiProperty({ description: 'Units across every line.' }) itemsCount!: number;

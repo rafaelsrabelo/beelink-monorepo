@@ -286,6 +286,8 @@ export class OrderPayments implements OnModuleInit {
         if (plan.id !== paid.id && !isPaidPlan(plan)) await this.charges.remove(storeId, plan).catch((error: unknown) => this.logger.error({ storeId, orderId: want.orderId, chargeId: plan.id, reason: reasonOf(error) }, 'Could not remove a charge beside a paid one'));
       }
       await this.settle(talk, paid, goneBut(paid));
+      // Found paid by the customer's own asking: told as any payment approved is (BEELINK-207).
+      await this.news.tell(storeId, want.orderId, null);
       throw conflict('PAYMENT_ALREADY_PAID', 'The order was already paid');
     }
     if (keeper) return this.settle(talk, keeper, goneBut(keeper));

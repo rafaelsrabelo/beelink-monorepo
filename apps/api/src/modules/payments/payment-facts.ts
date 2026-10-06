@@ -6,7 +6,8 @@ import type { OrderPaymentModel } from '../../generated/prisma/models.js';
 // App
 import { methodOfPlan, type ChargePlan } from './charge-plan.js';
 import { nextCheckAfter } from './payment-checks.js';
-import { DEAD_STATUSES, isLive, statusAfter, statusSaidBy, wasPaid } from './payment-status.js';
+import { notePaymentApproved } from '../conversations/order-status-notice.js';
+import { DEAD_STATUSES, holdsMoney, isLive, statusAfter, statusSaidBy, wasPaid } from './payment-status.js';
 import { endOfBrasiliaDay } from './payment-terms.js';
 import { LAST_ERROR_MAX_LENGTH } from './payments.constants.js';
 
@@ -27,7 +28,8 @@ type Tx = Prisma.TransactionClient;
  * Asaas and then undid — no money ever went through. What Asaas changed of a charge still alive —
  * its amount, its due day — is followed, and a Pix's code dropped with it: Asaas makes another. It
  * talks to nobody: whatever must be removed at Asaas for the row to stand alone is `OrderPayments`'
- * to do first.
+ * to do first. This is also the one place a charge is known to have just been paid, whoever heard
+ * it: what that owes the customer is written here (`tellPaid`), in the same transaction.
  */
 export async function applyCharge(tx: Tx, order: { id: string; storeId: string; method: OnlinePaymentMethod }, plan: ChargePlan, now: Date): Promise<OrderPaymentModel> {
   const known =
@@ -50,21 +52,56 @@ export async function applyCharge(tx: Tx, order: { id: string; storeId: string; 
     // The code of a charge no longer to be paid is not kept: a QR is a few kilobytes of base64 a row.
     ...(paid || !isLive(status) ? { pixPayload: null, pixImage: null } : {}),
   };
-  if (known) return tx.orderPayment.update({ where: { id: known.id }, data: { ...told, ...(isLive(status) ? changedOf(known, plan) : {}) } });
+  const row = known
+    ? await tx.orderPayment.update({ where: { id: known.id }, data: { ...told, ...(isLive(status) ? changedOf(known, plan) : {}) } })
+    : await tx.orderPayment.create({
+        data: {
+          orderId: order.id,
+          storeId: order.storeId,
+          providerId: plan.id,
+          method: methodOfPlan(plan, order.method),
+          installments: plan.installments,
+          amountCents: plan.totalCents,
+          dueDate: plan.dueDate ? new Date(`${plan.dueDate}T00:00:00.000Z`) : null,
+          expiresAt: plan.dueDate ? endOfBrasiliaDay(plan.dueDate) : null,
+          ...told,
+        },
+      });
+  if (holdsMoney(status) && !(known && wasPaid(known.status))) await tellPaid(tx, order, now);
+  return row;
+}
 
-  return tx.orderPayment.create({
-    data: {
-      orderId: order.id,
-      storeId: order.storeId,
-      providerId: plan.id,
-      method: methodOfPlan(plan, order.method),
-      installments: plan.installments,
-      amountCents: plan.totalCents,
-      dueDate: plan.dueDate ? new Date(`${plan.dueDate}T00:00:00.000Z`) : null,
-      expiresAt: plan.dueDate ? endOfBrasiliaDay(plan.dueDate) : null,
-      ...told,
-    },
+/**
+ * The news that an order was paid (BEELINK-207), owed once an order — the unique order id of
+ * `OrderPaidNotice` is what makes a second hearing, or a card's `CONFIRMED` turning `RECEIVED`, owe
+ * nothing again. The line in the conversation is written with it; the e-mail is owed only to a
+ * customer whose account confirmed its e-mail and who has not turned order notices off, read here
+ * as an order's move reads them — one not owed is born done. `PaymentNews` tells the panel after
+ * the commit. A cancelled order's money is never "approved": it is a stray payment the shop gives
+ * back.
+ */
+async function tellPaid(tx: Tx, order: { id: string; storeId: string }, at: Date): Promise<void> {
+  const current = await tx.order.findUnique({
+    where: { id: order.id },
+    select: { status: true, customerId: true, customer: { select: { notifyOrders: true, user: { select: { emailVerifiedAt: true } } } } },
   });
+  if (!current || current.status === 'CANCELLED') return;
+
+  const owed = Boolean(current.customer.user?.emailVerifiedAt) && current.customer.notifyOrders;
+  const { count } = await tx.orderPaidNotice.createMany({ data: [{ orderId: order.id, storeId: order.storeId, createdAt: at, nextAttemptAt: at, sentAt: owed ? null : at }], skipDuplicates: true });
+  if (count > 0) await notePaymentApproved(tx, { id: order.id, customerId: current.customerId }, at);
+}
+
+/** Somebody at the shop opened a paid order: the bell stops telling of it. Answers whether it was still telling. */
+export async function markPaidSeen(db: Pick<Tx, 'orderPaidNotice'>, orderId: string, at: Date): Promise<boolean> {
+  const { count } = await db.orderPaidNotice.updateMany({ where: { orderId, seenAt: null }, data: { seenAt: at } });
+  return count > 0;
+}
+
+/** The one caller that tells the panel a payment was approved: whoever takes `toldAt` first. */
+export async function claimPaidNews(db: Pick<Tx, 'orderPaidNotice'>, orderId: string, at: Date): Promise<boolean> {
+  const { count } = await db.orderPaidNotice.updateMany({ where: { orderId, toldAt: null }, data: { toldAt: at } });
+  return count > 0;
 }
 
 /** What Asaas holds differently from the row: an amount or a due day the shop changed at Asaas's own panel. */

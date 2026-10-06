@@ -12,6 +12,8 @@ export interface OrderStatusNotice {
   seen: boolean;
   /** On a delivery, the cashback it made usable (BEELINK-239); absent otherwise. */
   cashbackCents?: number | null;
+  /** On a cancellation: bee-link's own, of an order nobody paid in time (BEELINK-207). */
+  unpaid?: boolean;
 }
 
 /**
@@ -22,9 +24,29 @@ export interface OrderStatusNotice {
  * Only for a customer with an account: one known only by an order has nowhere to read it. The
  * transaction's own event (`order.created`, `order.status`) is what makes both sides read it again.
  */
-export async function noteOrderStatus(tx: Tx, { order, status, at, seen, cashbackCents = null }: OrderStatusNotice): Promise<void> {
+export async function noteOrderStatus(tx: Tx, { order, status, at, seen, cashbackCents = null, unpaid = false }: OrderStatusNotice): Promise<void> {
+  const conversationId = await conversationOf(tx, order, at);
+  if (!conversationId) return;
+  const notice = unpaid && status === 'CANCELLED' ? ('CANCELLED_UNPAID' as const) : null;
+  await tx.orderMessage.create({ data: { conversationId, author: 'SYSTEM', status, notice, body: '', cashbackCents, createdAt: at, readAt: seen ? at : null } });
+}
+
+/**
+ * The order's online payment approved, told in its conversation (BEELINK-207) — inside the
+ * transaction that writes the payment, as a status is. Once an order: a conversation that already
+ * tells of it is left alone. The payment's own event (`order.payment`) makes both sides read again.
+ */
+export async function notePaymentApproved(tx: Tx, order: { id: string; customerId: string }, at: Date): Promise<void> {
+  const conversationId = await conversationOf(tx, order, at);
+  if (!conversationId) return;
+  const told = await tx.orderMessage.count({ where: { conversationId, notice: 'PAYMENT_APPROVED' } });
+  if (told === 0) await tx.orderMessage.create({ data: { conversationId, author: 'SYSTEM', notice: 'PAYMENT_APPROVED', body: '', createdAt: at } });
+}
+
+/** The order's conversation, opened when it has none; null for a customer with no account to read it. */
+async function conversationOf(tx: Tx, order: { id: string; customerId: string }, at: Date): Promise<string | null> {
   const customer = await tx.customer.findUnique({ where: { id: order.customerId }, select: { userId: true } });
-  if (!customer?.userId) return;
+  if (!customer?.userId) return null;
 
   // On the unique order id: a notice and the customer's first message at once open one conversation.
   const conversation = await tx.orderConversation.upsert({
@@ -33,5 +55,5 @@ export async function noteOrderStatus(tx: Tx, { order, status, at, seen, cashbac
     update: { lastMessageAt: at },
     select: { id: true },
   });
-  await tx.orderMessage.create({ data: { conversationId: conversation.id, author: 'SYSTEM', status, body: '', cashbackCents, createdAt: at, readAt: seen ? at : null } });
+  return conversation.id;
 }

@@ -150,3 +150,31 @@ model AsaasCustomer {
 
   @@map("asaas_customers")
 }
+
+/// The news that an order charged online was paid (BEELINK-207), told once: the row is written by
+/// the transaction that writes the payment, and its unique order id is what makes a repeated event,
+/// a reconciliation or a card's CONFIRMED turning RECEIVED tell nothing again. It is the outbox of
+/// the customer's e-mail — claimed and retried as every outbox is; one not owed (no confirmed
+/// e-mail, or the notice turned off) is born with `sentAt` set — and what the panel's bell reads.
+model OrderPaidNotice {
+  id      String @id @default(uuid(7)) @db.Uuid
+  orderId String @unique @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId String @db.Uuid
+
+  /// When the panel was told in real time: taken once, by whoever tells first.
+  toldAt DateTime?
+  /// When somebody at the shop opened the order since: the bell stops telling of it.
+  seenAt DateTime?
+
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  /// The bell's reading: a shop's paid orders nobody opened yet.
+  @@index([storeId], where: raw("(\"seenAt\" IS NULL)"), map: "order_paid_notices_unseen_idx")
+  /// The dispatcher's reading, as on every outbox.
+  @@index([nextAttemptAt], where: raw("(\"sentAt\" IS NULL) AND (attempts < 5)"), map: "order_paid_notices_owed_idx")
+  @@map("order_paid_notices")
+}

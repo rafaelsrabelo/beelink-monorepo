@@ -148,6 +148,7 @@ model Order {
   /// Its charges at Asaas, when it is paid online (BEELINK-204): every attempt, one alive at a time.
   payments OrderPayment[]
   strayPayments OrderStrayPayment[]
+  paidNotice OrderPaidNotice?
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])

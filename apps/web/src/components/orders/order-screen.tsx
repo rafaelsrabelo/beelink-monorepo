@@ -1,5 +1,8 @@
 "use client"
 
+// React
+import { useEffect, useRef } from "react"
+
 // UI
 import { OrderDeliveryCard } from "@harness-monorepo/ui/blocks/orders/order-delivery-card"
 import { OrderFeeCard } from "@harness-monorepo/ui/blocks/orders/order-fee-card"
@@ -16,7 +19,7 @@ import { OrderLabelSection } from "@/components/orders/order-label-section"
 import { pageErrorCopy } from "@/components/design/page-error-copy"
 import { addressLineOf } from "@/lib/customer-address"
 import { shopOrderMessageOf, whatsappOrderHref } from "@/lib/whatsapp-order"
-import { useOrder, useOrderDelivery, useOrderDeliveryFee, useUpdateOrderStatus } from "@/services/orders/order-hooks"
+import { useMarkOrderPaymentSeen, useOrder, useOrderDelivery, useOrderDeliveryFee, useUpdateOrderStatus } from "@/services/orders/order-hooks"
 import { useStore } from "@/services/stores/store-hooks"
 
 export interface OrderScreenProps {
@@ -33,7 +36,18 @@ export function OrderScreen({ slug, number, messages, web }: OrderScreenProps) {
   const status = useUpdateOrderStatus(slug, number)
   const delivery = useOrderDelivery(slug, number)
   const fee = useOrderDeliveryFee(slug, number)
+  const { mutate: markSeen } = useMarkOrderPaymentSeen(slug, number)
   const listHref = `/admin/${slug}/orders`
+
+  // Opening a paid order is what tells the bell it was seen (BEELINK-207). Once per order on screen:
+  // a say that fails is not asked again in a loop, and the next opening asks once more.
+  const asked = useRef<number | null>(null)
+  const unseen = order.data?.payment?.unseen === true
+  useEffect(() => {
+    if (!unseen || asked.current === number) return
+    asked.current = number
+    markSeen()
+  }, [unseen, number, markSeen])
 
   if (order.isPending) {
     return (

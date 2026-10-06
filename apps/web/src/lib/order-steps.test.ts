@@ -11,10 +11,15 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 import { orderStepsOf } from "./order-steps"
 
 const context = { locale: "pt-BR", messages: ptBR }
+const charge: NonNullable<CustomerOrder["payment"]> = { status: "PENDING", method: "PIX", installments: 1, amountCents: 5990, refundedCents: 0, expiresAt: "2026-09-29T02:59:59.999Z", paidAt: null }
 
-const order = (over: Partial<Pick<CustomerOrder, "status" | "fulfillment" | "placedAt" | "events">>) => ({
+type Stepped = Pick<CustomerOrder, "status" | "fulfillment" | "placedAt" | "events" | "paymentChannel" | "payment">
+
+const order = (over: Partial<Stepped>): Stepped => ({
   status: "PREPARING" as const,
   fulfillment: "DELIVERY" as const,
+  paymentChannel: "OFFLINE",
+  payment: null,
   placedAt: "2026-09-27T17:02:00.000Z",
   events: [
     { status: "RECEIVED" as const, at: "2026-09-27T17:02:00.000Z" },
@@ -73,5 +78,74 @@ describe("orderStepsOf", () => {
 
   it("draws no steps for a cancelled order, which is told in a sentence", () => {
     expect(orderStepsOf(order({ status: "CANCELLED" }), context)).toBeNull()
+    expect(orderStepsOf(order({ status: "CANCELLED", paymentChannel: "ONLINE", payment: { ...charge, status: "RECEIVED", paidAt: "2026-09-27T17:05:00.000Z" } }), context)).toBeNull()
+  })
+
+  describe("an order charged online (BEELINK-207)", () => {
+    const placed = { status: "RECEIVED" as const, events: [{ status: "RECEIVED" as const, at: "2026-09-27T17:02:00.000Z" }], paymentChannel: "ONLINE" as const }
+    const paid = { ...charge, status: "RECEIVED" as const, paidAt: "2026-09-27T17:05:00.000Z" }
+    const told = (over: Partial<Stepped>) => orderStepsOf(order({ paymentChannel: "ONLINE", ...over }), context)!.map((step) => [step.label, step.state])
+
+    it("waits for its payment right after it is placed, in the payment box's own words", () => {
+      const steps = orderStepsOf(order({ ...placed, payment: charge }), context)!
+
+      expect(steps.map((step) => [step.label, step.state])).toEqual([
+        ["Pedido feito", "done"],
+        ["Aguardando pagamento", "current"],
+        ["Loja confirmou", "todo"],
+        ["Em preparo", "todo"],
+        ["Saiu para entrega", "todo"],
+        ["Entregue", "todo"],
+      ])
+      expect(steps[1]!.label).toBe(ptBR.storefront.orderPayAwaiting)
+      expect(steps[1]!.when).toBeNull()
+      // With no charge made yet, with one past its day and with one Asaas refused: still to be paid.
+      for (const payment of [null, { ...charge, status: "OVERDUE" as const }, { ...charge, status: "FAILED" as const }, { ...charge, status: "CANCELLED" as const }]) {
+        expect(told({ ...placed, payment })[1]).toEqual(["Aguardando pagamento", "current"])
+      }
+    })
+
+    it("marks the payment approved, with when, once it is confirmed or received", () => {
+      const steps = orderStepsOf(order({ ...placed, payment: paid }), context)!
+
+      expect(steps.slice(0, 3).map((step) => [step.label, step.state])).toEqual([
+        ["Pedido feito", "done"],
+        ["Pagamento aprovado", "current"],
+        ["Loja confirmou", "todo"],
+      ])
+      expect(steps[1]!.label).toBe(ptBR.storefront.orderPayApproved)
+      expect(steps[1]!.when).toContain("14:05")
+      expect(told({ ...placed, payment: { ...paid, status: "CONFIRMED" } })[1]).toEqual(["Pagamento aprovado", "current"])
+    })
+
+    it("keeps it done behind an order that moved on, and a pick-up's line with five steps", () => {
+      expect(told({ payment: paid })).toEqual([
+        ["Pedido feito", "done"],
+        ["Pagamento aprovado", "done"],
+        ["Loja confirmou", "done"],
+        ["Em preparo", "current"],
+        ["Saiu para entrega", "todo"],
+        ["Entregue", "todo"],
+      ])
+      expect(told({ payment: paid, fulfillment: "PICKUP" }).map(([label]) => label)).toEqual(["Pedido feito", "Pagamento aprovado", "Loja confirmou", "Em preparo", "Retirado na loja"])
+    })
+
+    /** Accepting holds nothing (decision 12): the shop may go ahead, and the payment still waits. */
+    it("leaves the payment still to come when the shop moved on without it, even once delivered", () => {
+      expect(told({ payment: charge }).slice(0, 4)).toEqual([
+        ["Pedido feito", "done"],
+        ["Aguardando pagamento", "todo"],
+        ["Loja confirmou", "done"],
+        ["Em preparo", "current"],
+      ])
+      const delivered = told({ status: "DELIVERED", payment: charge })
+      expect(delivered[1]).toEqual(["Aguardando pagamento", "todo"])
+      expect(delivered.filter(([, state]) => state === "done")).toHaveLength(5)
+    })
+
+    it("still says approved of a payment refunded since: the payment box tells of the refund", () => {
+      expect(told({ payment: { ...paid, status: "REFUNDED" } })[1]).toEqual(["Pagamento aprovado", "done"])
+      expect(told({ payment: { ...paid, status: "PARTIALLY_REFUNDED" } })[1]).toEqual(["Pagamento aprovado", "done"])
+    })
   })
 })

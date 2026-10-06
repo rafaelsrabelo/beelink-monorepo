@@ -135,7 +135,7 @@ describe("orderActionOf", () => {
 /** BEELINK-205: an order charged online says where its payment stands. */
 describe("an order charged online, on its card", () => {
   const now = new Date("2026-10-06T15:00:00.000Z")
-  const online: CustomerOrderSummary = { ...order, paymentChannel: "ONLINE", payment: { status: "PENDING", expiresAt: "2026-10-08T02:59:59.999Z" } }
+  const online: CustomerOrderSummary = { ...order, paymentChannel: "ONLINE", payment: { status: "PENDING", expiresAt: "2026-10-08T02:59:59.999Z", paidAt: null } }
 
   it("says it awaits payment and leads to the payment screen, ahead of anything else", () => {
     expect(orderCardViewOf(online, context, now)).toMatchObject({ payment: { label: "Aguardando pagamento", tone: "wait" }, payHref: "/loja/conta/pedidos/12?pagamento=1" })
@@ -144,8 +144,8 @@ describe("an order charged online, on its card", () => {
   })
 
   it("says approved, expired and cancelled, and leads to paying only while there is something to pay", () => {
-    expect(orderCardViewOf({ ...online, payment: { status: "RECEIVED", expiresAt: null } }, context, now)).toMatchObject({ payment: { label: "Pagamento aprovado", tone: "done" }, payHref: null })
-    expect(orderCardViewOf({ ...online, payment: { status: "PENDING", expiresAt: "2026-10-06T02:59:59.999Z" } }, context, now)).toMatchObject({ payment: { label: "Pagamento vencido", tone: "stop" }, payHref: "/loja/conta/pedidos/12?pagamento=1" })
+    expect(orderCardViewOf({ ...online, payment: { status: "RECEIVED", expiresAt: null, paidAt: null } }, context, now)).toMatchObject({ payment: { label: "Pagamento aprovado", tone: "done" }, payHref: null })
+    expect(orderCardViewOf({ ...online, payment: { status: "PENDING", expiresAt: "2026-10-06T02:59:59.999Z", paidAt: null } }, context, now)).toMatchObject({ payment: { label: "Pagamento vencido", tone: "stop" }, payHref: "/loja/conta/pedidos/12?pagamento=1" })
     expect(orderCardViewOf({ ...online, status: "CANCELLED", cancelledBy: "CUSTOMER" }, context, now)).toMatchObject({ payment: { label: "Pagamento cancelado" }, payHref: null })
   })
 
@@ -154,11 +154,11 @@ describe("an order charged online, on its card", () => {
   })
 
   it("does not offer the cancel once the payment holds money: the API would refuse it", () => {
-    expect(orderActionOf("RECEIVED", { status: "PENDING", expiresAt: null })).toBe("cancel")
-    expect(orderActionOf("RECEIVED", { status: "CONFIRMED", expiresAt: null })).toBeNull()
-    expect(orderActionOf("RECEIVED", { status: "RECEIVED", expiresAt: null })).toBeNull()
-    expect(orderActionOf("RECEIVED", { status: "REFUNDED", expiresAt: null })).toBe("cancel")
-    expect(orderActionOf("DELIVERED", { status: "RECEIVED", expiresAt: null })).toBe("reorder")
+    expect(orderActionOf("RECEIVED", { status: "PENDING", expiresAt: null, paidAt: null })).toBe("cancel")
+    expect(orderActionOf("RECEIVED", { status: "CONFIRMED", expiresAt: null, paidAt: null })).toBeNull()
+    expect(orderActionOf("RECEIVED", { status: "RECEIVED", expiresAt: null, paidAt: null })).toBeNull()
+    expect(orderActionOf("RECEIVED", { status: "REFUNDED", expiresAt: null, paidAt: null })).toBe("cancel")
+    expect(orderActionOf("DELIVERED", { status: "RECEIVED", expiresAt: null, paidAt: null })).toBe("reorder")
   })
 })
 

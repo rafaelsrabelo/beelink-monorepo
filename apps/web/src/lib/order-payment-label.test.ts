@@ -13,9 +13,9 @@ import { holdsMoney, orderPaymentLabelOf, type PaidOrder } from "./order-payment
 const now = new Date("2026-10-06T15:00:00.000Z")
 const LATER = "2026-10-08T02:59:59.999Z"
 const EARLIER = "2026-10-06T02:59:59.999Z"
-const order = (over: Partial<PaidOrder> = {}): PaidOrder => ({ status: "RECEIVED", fulfillment: "PICKUP", deliveryFeeCents: 0, paymentChannel: "ONLINE", payment: { status: "PENDING", expiresAt: LATER }, ...over })
+const order = (over: Partial<PaidOrder> = {}): PaidOrder => ({ status: "RECEIVED", fulfillment: "PICKUP", deliveryFeeCents: 0, paymentChannel: "ONLINE", payment: { status: "PENDING", expiresAt: LATER, paidAt: null }, ...over })
 const label = (over: Partial<PaidOrder> = {}) => orderPaymentLabelOf(order(over), ptBR.storefront, now)
-const charge = (status: OrderPaymentStatus, expiresAt: string | null = LATER) => ({ payment: { status, expiresAt } })
+const charge = (status: OrderPaymentStatus, expiresAt: string | null = LATER) => ({ payment: { status, expiresAt, paidAt: null } })
 
 describe("orderPaymentLabelOf — where an order's online payment stands", () => {
   it("says nothing of an order settled with the shop: nothing there is ever approved", () => {

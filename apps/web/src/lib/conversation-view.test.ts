@@ -63,9 +63,9 @@ describe("a conversation's lines", () => {
         order: { number: 18, status: "DELIVERED", fulfillment: "PICKUP", open: false },
         unread: 1,
         messages: [
-          { kind: "STATUS", id: "1", status: "RECEIVED", cashbackCents: null, createdAt: at, readAt: at },
+          { kind: "STATUS", id: "1", status: "RECEIVED", unpaid: false, cashbackCents: null, createdAt: at, readAt: at },
           { kind: "MESSAGE", id: "2", author: "CUSTOMER", body: "Posso buscar hoje?", createdAt: at, readAt: at },
-          { kind: "STATUS", id: "3", status: "DELIVERED", cashbackCents: null, createdAt: at, readAt: null },
+          { kind: "STATUS", id: "3", status: "DELIVERED", unpaid: false, cashbackCents: null, createdAt: at, readAt: null },
         ],
       },
       context,
@@ -86,9 +86,40 @@ describe("a conversation's lines", () => {
     expect(noticeWithCashback("Pedido entregue.", null, ptBR.storefront.conversationCashback, "pt-BR")).toBe("Pedido entregue.")
   })
 
+  /** BEELINK-207: a payment approved is a notice of its own, and a cancellation nobody at the shop decided says why. */
+  it("word a payment approved, and say why an order nobody paid was cancelled", () => {
+    const at = "2026-10-06T13:00:00.000Z"
+    const lines = conversationLinesOf(
+      {
+        order: { number: 18, status: "CANCELLED", fulfillment: "DELIVERY", open: false },
+        unread: 2,
+        messages: [
+          { kind: "PAYMENT", id: "1", createdAt: at, readAt: null },
+          { kind: "STATUS", id: "2", status: "CANCELLED", unpaid: true, cashbackCents: null, createdAt: at, readAt: null },
+          { kind: "STATUS", id: "3", status: "CANCELLED", unpaid: false, cashbackCents: null, createdAt: at, readAt: null },
+        ],
+      },
+      context,
+    )
+
+    expect(lines.map((line) => [line.notice, line.mine, line.body])).toEqual([
+      [true, false, "Pagamento aprovado."],
+      [true, false, "Pedido cancelado: o pagamento não foi identificado dentro do prazo."],
+      [true, false, "Pedido cancelado."],
+    ])
+    const rows = conversationRowsOf(
+      [
+        { order: { number: 18, status: "RECEIVED", fulfillment: "DELIVERY", open: true }, lastMessage: { kind: "PAYMENT", createdAt: at }, unread: 1 },
+        { order: { number: 17, status: "CANCELLED", fulfillment: "DELIVERY", open: false }, lastMessage: { kind: "STATUS", status: "CANCELLED", unpaid: true, createdAt: at }, unread: 1 },
+      ],
+      { routes, ...context },
+    )
+    expect(rows.map((row) => row.preview)).toEqual(["Pagamento aprovado.", "Pedido cancelado: o pagamento não foi identificado dentro do prazo."])
+  })
+
   it("preview a move as its words, with no 'Você:'", () => {
     const [row] = conversationRowsOf(
-      [{ order: { number: 18, status: "OUT_FOR_DELIVERY", fulfillment: "DELIVERY", open: true }, lastMessage: { kind: "STATUS", status: "OUT_FOR_DELIVERY", createdAt: "2026-09-29T13:40:00.000Z" }, unread: 1 }],
+      [{ order: { number: 18, status: "OUT_FOR_DELIVERY", fulfillment: "DELIVERY", open: true }, lastMessage: { kind: "STATUS", status: "OUT_FOR_DELIVERY", unpaid: false, createdAt: "2026-09-29T13:40:00.000Z" }, unread: 1 }],
       { routes, ...context },
     )
 

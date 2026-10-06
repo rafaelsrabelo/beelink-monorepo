@@ -9,6 +9,7 @@ import { RealtimePublisherModule } from '../realtime/realtime-publisher.module.j
 import { StoresModule } from '../stores/stores.module.js';
 import { CustomerPaymentsController } from './customer-payments.controller.js';
 import { CustomerPayments } from './customer-payments.service.js';
+import { OrderPaidMailer } from './order-paid-mailer.js';
 import { OrderPayments } from './order-payments.service.js';
 import { PaymentNews } from './payment-news.js';
 import { PaymentSync } from './payment-sync.service.js';
@@ -20,12 +21,12 @@ import { PublicPaymentsController } from './public-payments.controller.js';
  * for the shopper's record and door; StoresModule for the shop a visitor's checkout names (BEELINK-205). OrdersModule imports this, never the other way: an order here is
  * read through Prisma, which is global. `PaymentSync` — what Asaas holds for an order, heard and written
  * — is exported for the webhook and the reconciliation (BEELINK-206); RealtimePublisherModule for telling
- * both sides a charge moved.
+ * both sides a charge moved. `OrderPaidMailer` is the outbox of a payment approved's e-mail (BEELINK-207).
  */
 @Module({
   imports: [IntegrationsModule, CustomersModule, AuthModule, StoresModule, RealtimePublisherModule],
   controllers: [CustomerPaymentsController, PublicPaymentsController],
-  providers: [OrderPayments, CustomerPayments, PaymentSync, PaymentNews],
+  providers: [OrderPayments, CustomerPayments, PaymentSync, PaymentNews, OrderPaidMailer],
   exports: [OrderPayments, PaymentSync],
 })
 export class PaymentsModule {}

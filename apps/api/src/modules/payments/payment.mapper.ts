@@ -5,7 +5,7 @@ import type { OrderPaymentModel, OrderStrayPaymentModel } from '../../generated/
 // App
 import { isLive } from './payment-status.js';
 
-type BriefRow = Pick<OrderPaymentModel, 'status' | 'expiresAt' | 'createdAt'>;
+type BriefRow = Pick<OrderPaymentModel, 'status' | 'expiresAt' | 'paidAt' | 'createdAt'>;
 
 /**
  * The charge an order shows, of every attempt it had: the one alive, else the last tried — a
@@ -18,7 +18,7 @@ export function shownPaymentOf<Row extends BriefRow>(rows: readonly Row[]): Row 
 
 export function toPaymentBrief(rows: readonly BriefRow[]): OrderPaymentBrief | null {
   const row = shownPaymentOf(rows);
-  return row ? { status: row.status, expiresAt: row.expiresAt?.toISOString() ?? null } : null;
+  return row ? { status: row.status, expiresAt: row.expiresAt?.toISOString() ?? null, paidAt: row.paidAt?.toISOString() ?? null } : null;
 }
 
 function toPayment(row: OrderPaymentModel): OrderPayment {
@@ -44,10 +44,11 @@ function toStray(row: OrderStrayPaymentModel): StrayPayment {
   return { reason: row.reason, method: row.method as OnlinePaymentMethod, amountCents: row.amountCents, paidAt: row.paidAt.toISOString() };
 }
 
-export function toShopOrderPayment(rows: readonly OrderPaymentModel[], strays: readonly OrderStrayPaymentModel[]): ShopOrderPayment | null {
+/** `notice` is the news that the order was paid (BEELINK-207): while nobody at the shop opened it since, the bell tells of it. */
+export function toShopOrderPayment(rows: readonly OrderPaymentModel[], strays: readonly OrderStrayPaymentModel[], notice: { seenAt: Date | null } | null): ShopOrderPayment | null {
   const row = shownPaymentOf(rows);
   const oldestFirst = [...strays].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  return row ? { ...toPayment(row), providerStatus: row.providerStatus, lastError: row.lastError, strays: oldestFirst.map(toStray) } : null;
+  return row ? { ...toPayment(row), providerStatus: row.providerStatus, lastError: row.lastError, strays: oldestFirst.map(toStray), unseen: notice !== null && notice.seenAt === null } : null;
 }
 
 /** With what it is paid with — only while it is still to be paid: a code or an invoice of a charge paid, removed or past its time leads nowhere. */

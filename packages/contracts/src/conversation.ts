@@ -26,6 +26,8 @@ export interface ConversationStatusNotice {
   kind: "STATUS";
   id: string;
   status: OrderStatus;
+  /** On a cancellation's notice: bee-link cancelled it because nobody paid it in time (BEELINK-207). False on every other. */
+  unpaid: boolean;
   /** On a delivery's notice, the cashback it made usable (BEELINK-239), as it was then; null otherwise. */
   cashbackCents: number | null;
   /** ISO-8601. */
@@ -34,7 +36,20 @@ export interface ConversationStatusNotice {
   readAt: string | null;
 }
 
-export type ConversationMessage = ConversationWrittenMessage | ConversationStatusNotice;
+/**
+ * The order's online payment was approved (BEELINK-207): told once an order, with no sentence — each
+ * side words it. Unread for the customer until they read it; never unread for the shop.
+ */
+export interface ConversationPaymentNotice {
+  kind: "PAYMENT";
+  id: string;
+  /** ISO-8601. */
+  createdAt: string;
+  /** When the customer read it; null while they have not. ISO-8601. */
+  readAt: string | null;
+}
+
+export type ConversationMessage = ConversationWrittenMessage | ConversationStatusNotice | ConversationPaymentNotice;
 
 /**
  * A conversation's head: the order it is about, and whether it takes messages — while the order is
@@ -55,10 +70,11 @@ export interface CustomerConversation {
   unread: number;
 }
 
-/** The last message, for a list: written, or the notice of a status. */
+/** The last message, for a list: written, the notice of a status, or of a payment approved. */
 export type ConversationLastMessage =
   | { kind: "MESSAGE"; author: ConversationAuthor; body: string; createdAt: string }
-  | { kind: "STATUS"; status: OrderStatus; createdAt: string };
+  | { kind: "STATUS"; status: OrderStatus; unpaid: boolean; createdAt: string }
+  | { kind: "PAYMENT"; createdAt: string };
 
 /** A row of the customer's conversations at a shop. */
 export interface CustomerConversationSummary {

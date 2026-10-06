@@ -6,6 +6,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -126,6 +127,18 @@ export class OrdersController {
     @CurrentUser() current: AuthenticatedUser,
   ): Promise<OrderResponse> {
     return this.orders.clearDelivery(storeSlug, current.id, number);
+  }
+
+  @Post(':number/payment/seen')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "The shop opened a paid order: the bell stops telling of its payment (BEELINK-207). Saying it again, or of an order with no payment, changes nothing" })
+  @ApiNoContentResponse()
+  seePayment(
+    @Param('storeSlug') storeSlug: string,
+    @Param('number', OrderNumberPipe) number: number,
+    @CurrentUser() current: AuthenticatedUser,
+  ): Promise<void> {
+    return this.orders.seePayment(storeSlug, current.id, number);
   }
 
   @Patch(':number/status')

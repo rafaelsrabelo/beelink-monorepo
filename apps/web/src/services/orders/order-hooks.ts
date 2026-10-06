@@ -11,7 +11,7 @@ import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, O
 import { cashbackKeys } from "../cashback/cashback-keys"
 import { catalogKeys } from "../catalog/catalog-hooks"
 import { customerKeys } from "../customers/customer-hooks"
-import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, quoteOrder, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
+import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, markOrderPaymentSeen, quoteOrder, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
 
 /** Built from their inputs, never spelled at a call site (docs/ai-rules/state-and-data.md). */
 export const orderKeys = {
@@ -131,5 +131,21 @@ export function useOrderDelivery(slug: string, number: number): UseMutationResul
   return useMutation({
     mutationFn: (delivery: OrderDeliveryPayload | null) => (delivery ? setOrderDelivery(slug, number, delivery) : clearOrderDelivery(slug, number)),
     onSuccess: (order) => queryClient.setQueryData(orderKeys.detail(slug, number), order),
+  })
+}
+
+/**
+ * Says the shop saw a paid order (BEELINK-207). The order in the cache stops reading as unseen at
+ * once — so the screen that asked does not ask again — and the lists are read again: the bell's is
+ * one of them.
+ */
+export function useMarkOrderPaymentSeen(slug: string, number: number): UseMutationResult<void, Error, void> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => markOrderPaymentSeen(slug, number),
+    onSuccess: () => {
+      queryClient.setQueryData<Order>(orderKeys.detail(slug, number), (order) => (order?.payment ? { ...order, payment: { ...order.payment, unseen: false } } : order))
+      return queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) })
+    },
   })
 }

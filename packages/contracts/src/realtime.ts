@@ -15,8 +15,10 @@ export type RealtimeEvent =
   /**
    * Where the order's charge stands changed, as Asaas told it (BEELINK-206). `stray` names money
    * that arrived and is not the order's payment — the one thing here the shop must act on.
+   * `approved` is true on one event per order alone (BEELINK-207): the news that it was paid, which
+   * the panel tells its shop — a card's `CONFIRMED` turning `RECEIVED` a month later is not news.
    */
-  | { type: "order.payment"; orderNumber: number; status: OrderPaymentStatus; stray: StrayPaymentReason | null }
+  | { type: "order.payment"; orderNumber: number; status: OrderPaymentStatus; stray: StrayPaymentReason | null; approved: boolean }
   | { type: "conversation.message"; orderNumber: number; author: ConversationAuthor }
   | { type: "conversation.read"; orderNumber: number; reader: ConversationAuthor }
   | { type: "conversation.closed"; orderNumber: number };

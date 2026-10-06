@@ -113,7 +113,10 @@ function eventTitleOf(status: OrderStatus, first: boolean, pickup: boolean, text
   }
 }
 
-/** Every change, most recent first. The first says who placed the order, and a cancel by whom. */
+/**
+ * Every change, most recent first. The first says who placed the order, and a cancel by whom. An
+ * online payment approved is a change too (BEELINK-207), told where it fell among the others.
+ */
 export function orderHistoryOf(order: CustomerOrder, { locale, messages }: Pick<OrderCardContext, "locale" | "messages">): StorefrontOrderHistoryEvent[] {
   const text = messages.storefront
   const pickup = order.fulfillment === "PICKUP"
@@ -121,22 +124,27 @@ export function orderHistoryOf(order: CustomerOrder, { locale, messages }: Pick<
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone: ZONE })
   const events = order.events.length ? order.events : [{ status: order.status, at: order.placedAt }]
 
-  return events
-    .map((event, index) => ({
-      day: day.format(new Date(event.at)),
-      time: time.format(new Date(event.at)),
-      title: eventTitleOf(event.status, index === 0, pickup, text),
-      detail:
-        index === 0
-          ? order.placedBy === "CUSTOMER"
-            ? text.orderEventPlacedByYou
-            : text.orderEventPlacedByShop
-          : event.status === "CANCELLED"
-            ? order.cancelledBy === "CUSTOMER"
-              ? text.orderEventByYou
-              : text.orderEventByShop
-            : null,
-    }))
+  const moves = events.map((event, index) => ({
+    at: event.at,
+    title: eventTitleOf(event.status, index === 0, pickup, text),
+    detail:
+      index === 0
+        ? order.placedBy === "CUSTOMER"
+          ? text.orderEventPlacedByYou
+          : text.orderEventPlacedByShop
+        : event.status === "CANCELLED"
+          ? order.cancelledBy === "CUSTOMER"
+            ? text.orderEventByYou
+            : text.orderEventByShop
+          : null,
+  }))
+  const paidAt = order.paymentChannel === "ONLINE" ? (order.payment?.paidAt ?? null) : null
+  // After the placing, always: a clock a moment apart must not tell of a payment before its order.
+  const paidAfter = paidAt === null ? -1 : Math.max(moves.findLastIndex((move) => move.at <= paidAt), 0)
+  const told = paidAt === null ? moves : [...moves.slice(0, paidAfter + 1), { at: paidAt, title: text.orderPayApproved, detail: null }, ...moves.slice(paidAfter + 1)]
+
+  return told
+    .map(({ at, title, detail }) => ({ day: day.format(new Date(at)), time: time.format(new Date(at)), title, detail }))
     .reverse()
 }
 

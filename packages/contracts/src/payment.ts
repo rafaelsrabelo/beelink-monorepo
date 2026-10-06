@@ -37,7 +37,15 @@ export interface OrderPayment {
 }
 
 /** What a list says of an order's charge. */
-export type OrderPaymentBrief = Pick<OrderPayment, "status" | "expiresAt">;
+export type OrderPaymentBrief = Pick<OrderPayment, "status" | "expiresAt" | "paidAt">;
+
+/**
+ * Which of a shop's orders, by where their money stands (BEELINK-207). `PAID` holds the customer's
+ * money — `CONFIRMED`, `RECEIVED`, or refunded only in part. `PENDING` is charged online, not
+ * cancelled, and was never paid. `PAID_UNSEEN` is paid and nobody at the shop opened it since: what
+ * the panel's bell lists. `STRAY` has money it did not ask for, to be settled by the shop.
+ */
+export type OrderPaymentFilter = "PAID" | "PENDING" | "PAID_UNSEEN" | "STRAY";
 
 /**
  * Why money that arrived at the shop's Asaas account is not the order's payment (BEELINK-206): the
@@ -63,6 +71,8 @@ export interface ShopOrderPayment extends OrderPayment {
   lastError: string | null;
   /** Money the order did not ask for, the oldest first; empty on nearly every order. */
   strays: StrayPayment[];
+  /** Paid, and nobody at the shop opened the order since (BEELINK-207): the bell still tells of it, until `POST …/orders/:number/payment/seen`. */
+  unseen: boolean;
 }
 
 /** A Pix to be paid inside the shop. */

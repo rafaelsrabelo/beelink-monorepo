@@ -9,6 +9,7 @@ import type {
   OrderPayment,
   OrderPaymentBrief,
   OrderPaymentChannel,
+  OrderPaymentFilter,
   OrderPaymentPix,
   OrderPaymentStatus,
   ShopOrderPayment,
@@ -27,7 +28,10 @@ export const ONLINE_PAYMENT_METHODS = ['PIX', 'CREDIT_CARD'] as const satisfies 
 export class OrderPaymentBriefResponse implements OrderPaymentBrief {
   @ApiProperty({ enum: ORDER_PAYMENT_STATUSES }) status!: OrderPaymentStatus;
   @ApiProperty({ nullable: true, type: String, format: 'date-time' }) expiresAt!: string | null;
+  @ApiProperty({ nullable: true, type: String, format: 'date-time' }) paidAt!: string | null;
 }
+
+export const ORDER_PAYMENT_FILTERS = ['PAID', 'PENDING', 'PAID_UNSEEN', 'STRAY'] as const satisfies readonly OrderPaymentFilter[];
 
 export class OrderPaymentResponse implements OrderPayment {
   @ApiProperty({ enum: ORDER_PAYMENT_STATUSES, description: 'Paid is CONFIRMED or RECEIVED. CANCELLED was removed from Asaas; FAILED is one Asaas refused to create.' }) status!: OrderPaymentStatus;
@@ -52,6 +56,7 @@ export class ShopOrderPaymentResponse extends OrderPaymentResponse implements Sh
   @ApiProperty({ nullable: true, type: String, example: 'AWAITING_RISK_ANALYSIS', description: "The status in Asaas's own word." }) providerStatus!: string | null;
   @ApiProperty({ nullable: true, type: String, description: 'What Asaas last refused about it, in its words.' }) lastError!: string | null;
   @ApiProperty({ type: [StrayPaymentResponse], description: "Money at the shop's Asaas account that the order did not ask for; bee-link refunds nothing on its own." }) strays!: StrayPaymentResponse[];
+  @ApiProperty({ description: 'Paid, and nobody at the shop opened the order since: the bell still tells of it (BEELINK-207).' }) unseen!: boolean;
 }
 
 export class OrderPaymentPixResponse implements OrderPaymentPix {

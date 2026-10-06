@@ -47,6 +47,7 @@ function errorCodeOf(payload: unknown): string {
 export async function fetchOrders(slug: string, query: OrderListQuery = {}): Promise<OrderPage> {
   const search = new URLSearchParams()
   if (query.status) search.set("status", query.status)
+  if (query.payment) search.set("payment", query.payment)
   if (query.q) search.set("q", query.q)
   if (query.customerId) search.set("customerId", query.customerId)
   if (query.page && query.page > 1) search.set("page", String(query.page))
@@ -106,6 +107,12 @@ export async function updateOrderStatus(slug: string, number: number, status: Or
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
   return payload as Order
+}
+
+/** The shop opened a paid order (BEELINK-207): the bell stops telling of its payment. */
+export async function markOrderPaymentSeen(slug: string, number: number): Promise<void> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/payment/seen`, { method: "POST", headers: JSON_HEADERS, body: "{}" })
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(await response.json().catch(() => null)))
 }
 
 /** Tells how a delivery goes: the whole record, replacing what was told. */

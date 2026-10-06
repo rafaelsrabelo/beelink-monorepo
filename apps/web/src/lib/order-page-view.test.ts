@@ -147,6 +147,26 @@ describe("an order's page, in the shopper's words", () => {
     expect(orderPaymentOf({ ...order, fulfillment: "PICKUP", discountCents: 0 }, context).rows.map((row) => row.label)).toEqual(["Subtotal"])
   })
 
+  /** BEELINK-207: the payment approved is a line of the history, where it fell, and the steps carry it. */
+  it("tells of an online payment approved in the history, between the moves it fell among", () => {
+    const paid = { status: "RECEIVED", method: "PIX", installments: 1, amountCents: 9480, refundedCents: 0, expiresAt: null, paidAt: "2026-09-28T17:30:00.000Z" } as const
+    const online: CustomerOrder = { ...order, paymentChannel: "ONLINE", payment: paid }
+
+    expect(orderHistoryOf(online, context).map((event) => [event.title, event.time])).toEqual([
+      ["Em preparo", "09:00"],
+      ["Loja confirmou", "15:10"],
+      ["Pagamento aprovado", "14:30"],
+      ["Pedido feito", "14:02"],
+    ])
+    expect(orderStatusViewOf(online, context).steps?.map((step) => step.label)).toContain("Pagamento aprovado")
+    // A clock a moment apart never tells of a payment before its order.
+    expect(orderHistoryOf({ ...online, payment: { ...paid, paidAt: "2026-09-28T17:01:59.000Z" } }, context).map((event) => event.title).slice(-2)).toEqual(["Pagamento aprovado", "Pedido feito"])
+    // Not paid yet, or settled with the shop: the history has only the moves.
+    expect(orderHistoryOf({ ...online, payment: { ...paid, status: "PENDING", paidAt: null } }, context)).toHaveLength(3)
+    expect(orderHistoryOf({ ...order, payment: paid }, context)).toHaveLength(3)
+    expect(orderStatusViewOf(order, context).steps).toHaveLength(5)
+  })
+
   /** BEELINK-205: an order charged online says how, where the payment stands, and where it is paid. */
   it("says an online payment's way, its instalments and where it stands, and leads to the payment screen while it is owed", () => {
     const now = new Date("2026-10-06T15:00:00.000Z")

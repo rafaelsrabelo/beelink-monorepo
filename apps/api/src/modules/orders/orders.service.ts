@@ -22,6 +22,8 @@ import { releaseOrderCashback, revokeOrderCashback } from '../cashback/cashback-
 import { isOpen } from '../conversations/conversations.constants.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { OrderPayments } from '../payments/order-payments.service.js';
+import { markPaidSeen } from '../payments/payment-facts.js';
+import { paymentFilterOf } from '../payments/payment-filter.js';
 import { refusePaidOrder } from '../payments/payment-guards.js';
 import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 
@@ -92,6 +94,9 @@ export class OrdersService {
     const digits = term.replace(/\D/g, '');
     const where: Prisma.OrderWhereInput = {
       storeId,
+      // Both asked: an order waiting for money that is also in that status. The payment's own
+      // condition on the status gives way to the one asked.
+      ...(query.payment ? paymentFilterOf(query.payment) : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.customerId ? { customerId: query.customerId } : {}),
       ...(term
@@ -129,6 +134,17 @@ export class OrdersService {
     const order = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, include: ORDER_INCLUDE });
     if (!order) throw this.notFound(number);
     return toOrder(order);
+  }
+
+  /**
+   * Somebody at the shop opened a paid order (BEELINK-207): the bell stops telling of it. Seen is
+   * the shop's, not a person's — one opening is enough for everyone — and saying it twice is fine.
+   */
+  async seePayment(storeSlug: string, userId: string, number: number): Promise<void> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const order = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true } });
+    if (!order) throw this.notFound(number);
+    await markPaidSeen(this.prisma, order.id, new Date());
   }
 
   /** Any status to any other, except out of `CANCELLED`, which is final. */
@@ -210,7 +226,8 @@ export class OrdersService {
       else if (current.status === 'DELIVERED') await revokeOrderCashback(tx, current.id, 'BACK', now);
       const cashbackCents = status === 'DELIVERED' ? await releaseOrderCashback(tx, current.id, now) : null;
       // Told to the customer in the conversation, before a move that closes it: the last line is why.
-      await noteOrderStatus(tx, { order: current, status, at: now, seen: false, cashbackCents });
+      // The system cancels for one reason alone, and the line says it (BEELINK-207).
+      await noteOrderStatus(tx, { order: current, status, at: now, seen: false, cashbackCents, unpaid: by.actor === 'SYSTEM' });
       const owed = await oweStatusEmail(tx, { order: current, status, byCustomer: false });
       const conversation = await tx.orderConversation.count({ where: { orderId: current.id } });
       // Read once everything the move did is written: its cashback included.

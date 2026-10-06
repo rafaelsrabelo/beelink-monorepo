@@ -22,7 +22,7 @@ export async function summariesOf(prisma: PrismaService, rows: readonly SummaryR
   const ids = rows.map((row) => row.id);
   const [lasts, unread] = await Promise.all([
     prisma.$queryRaw<LastMessageRow[]>(Prisma.sql`
-      SELECT DISTINCT ON ("conversationId") "conversationId", "author", "body", "status", "createdAt"
+      SELECT DISTINCT ON ("conversationId") "conversationId", "author", "body", "status", "notice", "createdAt"
       FROM "order_messages" WHERE "conversationId" = ANY(${ids}::uuid[])
       ORDER BY "conversationId", "createdAt" DESC, "id" DESC`),
     prisma.orderMessage.groupBy({

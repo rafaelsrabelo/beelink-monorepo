@@ -22,13 +22,15 @@ export const ORDER_INCLUDE = {
   cashbackCredit: true,
   payments: true,
   strayPayments: true,
+  paidNotice: { select: { seenAt: true } },
 } as const satisfies Prisma.OrderInclude;
 
 /** What a row of the list is read with: the units, not the lines. */
 export const ORDER_SUMMARY_INCLUDE = {
   customer: { select: customerSelect },
   items: { select: { quantity: true } },
-  payments: { select: { status: true, expiresAt: true, createdAt: true } },
+  payments: { select: { status: true, expiresAt: true, paidAt: true, createdAt: true } },
+  _count: { select: { strayPayments: true } },
 } as const satisfies Prisma.OrderInclude;
 
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
@@ -54,7 +56,7 @@ export function toOrder(row: OrderRow): Order {
     paymentMethod: row.paymentMethod,
     paymentChannel: row.paymentChannel,
     installments: row.paymentInstallments,
-    payment: toShopOrderPayment(row.payments, row.strayPayments),
+    payment: toShopOrderPayment(row.payments, row.strayPayments, row.paidNotice),
     items: row.items.map((item) => ({
       id: item.id,
       productId: item.productId,
@@ -96,6 +98,7 @@ export function toOrderSummary(row: OrderSummaryRow): OrderSummary {
     paymentMethod: row.paymentMethod,
     paymentChannel: row.paymentChannel,
     payment: toPaymentBrief(row.payments),
+    strays: row._count.strayPayments,
     totalCents: row.totalCents,
     deliveryFeeCents: row.deliveryFeeCents,
     itemsCount: row.items.reduce((sum, item) => sum + item.quantity, 0),

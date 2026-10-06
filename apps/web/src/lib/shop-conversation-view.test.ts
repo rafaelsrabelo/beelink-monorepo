@@ -80,6 +80,26 @@ describe("the conversations' tab", () => {
   })
 
   /** BEELINK-239: the shop reads what its customer was told they earned, as a sentence of its own. */
+  /** BEELINK-207: the shop reads what its customer was told of the payment, and why bee-link cancelled. */
+  it("draws a payment approved and a cancellation for want of payment as notices, in the shop's words", () => {
+    const conversation = {
+      order: { number: 18, status: "CANCELLED", fulfillment: "DELIVERY", open: false },
+      customer: { id: "c", name: "Carla", hasAccount: true },
+      unread: 0,
+      messages: [
+        { kind: "PAYMENT", id: "1", createdAt: at, readAt: null },
+        { kind: "STATUS", id: "2", status: "CANCELLED", unpaid: true, cashbackCents: null, createdAt: at, readAt: null },
+      ],
+    } satisfies ShopConversation
+
+    expect(shopConversationLinesOf(conversation, context).map((line) => [line.notice, line.body])).toEqual([
+      [true, "Pagamento aprovado"],
+      [true, "Pedido cancelado por falta de pagamento"],
+    ])
+    const page = { total: 1, page: 1, pageSize: 20, conversations: [{ order: conversation.order, customer: conversation.customer, lastMessage: { kind: "PAYMENT", createdAt: at }, unread: 0 }] } satisfies ShopConversationPage
+    expect(shopConversationRowsOf(page, { filter: "ALL", q: "", order: null, page: 1 }, "loja", context)[0]?.preview).toBe("Pagamento aprovado")
+  })
+
   it("tells the cashback a delivery made usable after its notice", () => {
     const delivered = {
       order: { number: 18, status: "DELIVERED", fulfillment: "PICKUP", open: false },

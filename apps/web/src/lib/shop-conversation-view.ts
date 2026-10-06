@@ -10,7 +10,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 // App
 import { noticeWithCashback } from "./conversation-view"
 import { momentOf } from "./order-card-view"
-import { statusNoticeKeyOf } from "./status-notice"
+import { noticeKeyOf } from "./status-notice"
 
 /** What the conversations' tab reads from its address: which filter, the search, and the one open. */
 export interface ShopConversationsAddress {
@@ -63,8 +63,8 @@ export function shopConversationRowsOf(page: ShopConversationPage, address: Shop
       customer: customer.name,
       order: `${format(text.orderLine, { number: String(order.number) })} · ${messages.orders.statuses[order.status]}`,
       preview:
-        lastMessage.kind === "STATUS"
-          ? text.notices[statusNoticeKeyOf(lastMessage.status, order.fulfillment)]
+        lastMessage.kind !== "MESSAGE"
+          ? text.notices[noticeKeyOf(lastMessage, order.fulfillment)]
           : lastMessage.author === "SHOP"
             ? format(text.youSaid, { body })
             : body,
@@ -81,12 +81,12 @@ export function shopConversationLinesOf(conversation: ShopConversation, { locale
   const text = messages.conversations
   const lastMine = conversation.messages.findLastIndex((message) => message.kind === "MESSAGE" && message.author === "SHOP")
   return conversation.messages.map((message, index) =>
-    message.kind === "STATUS"
+    message.kind !== "MESSAGE"
       ? {
           id: message.id,
           mine: false,
           notice: true,
-          body: noticeWithCashback(text.notices[statusNoticeKeyOf(message.status, conversation.order.fulfillment)], message.cashbackCents, text.noticeCashback, locale),
+          body: noticeWithCashback(text.notices[noticeKeyOf(message, conversation.order.fulfillment)], message.kind === "STATUS" ? message.cashbackCents : null, text.noticeCashback, locale),
           when: momentOf(message.createdAt, locale),
         }
       : {

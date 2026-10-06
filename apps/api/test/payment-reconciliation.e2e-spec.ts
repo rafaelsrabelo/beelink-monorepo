@@ -5,7 +5,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { MockInstance } from 'vitest';
 
 // Types
-import type { RealtimeEvent } from '@harness-monorepo/contracts';
+import type { CustomerConversation, RealtimeEvent } from '@harness-monorepo/contracts';
 
 // App
 import { AsaasClient, AsaasRefused, AsaasThrottled, AsaasUnreachable } from '../src/modules/integrations/asaas/asaas.client.js';
@@ -77,7 +77,7 @@ describe('what the clock does about an online payment (BEELINK-206)', () => {
       expect(await reconciliation.checkDue(later(FIRST_CHECK_MS + MINUTE_MS))).toBe(1);
 
       expect(await shop.rows()).toMatchObject([{ status: 'RECEIVED', nextCheckAt: null }]);
-      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: null }]);
+      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: null, approved: true }]);
       // Paid: nothing is left to ask.
       expect(await reconciliation.checkDue(later(48 * HOUR_MS))).toBe(0);
     });
@@ -189,7 +189,7 @@ describe('what the clock does about an online payment (BEELINK-206)', () => {
       await prisma.orderPayment.updateMany({ data: { checkedAt: new Date(Date.now() - READ_CHECK_EVERY_MS - 1000) } });
       expect(await shop.readPayment()).toMatchObject({ status: 'RECEIVED', pix: null });
       expect(asaas.count('charges')).toBe(made + 1);
-      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: null }]);
+      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: null, approved: true }]);
     });
 
     it('asks once for every read made in the same minute, and answers though Asaas does not', async () => {
@@ -237,7 +237,13 @@ describe('what the clock does about an online payment (BEELINK-206)', () => {
       // Told in the conversation, as news, and by e-mail.
       const messages = await prisma.orderMessage.findMany({ where: { conversation: { orderId: cancelled.id } }, orderBy: { createdAt: 'asc' } });
       expect(messages.at(-1)).toMatchObject({ author: 'SYSTEM', status: 'CANCELLED', readAt: null });
-      expect((await waitForMessage(shop.shopper.user.email)).Subject).toMatch(/cancel/i);
+      // And why (BEELINK-207): nobody at the shop decided it, and the customer would ask the shop.
+      expect(messages.at(-1)).toMatchObject({ notice: 'CANCELLED_UNPAID' });
+      const talk = (await shop.call('GET', '/api/stores/lessari/customer/orders/1/conversation', shop.shopper)).json<CustomerConversation>();
+      expect(talk.messages.at(-1)).toMatchObject({ kind: 'STATUS', status: 'CANCELLED', unpaid: true });
+      const mail = await waitForMessage(shop.shopper.user.email);
+      expect(mail.Subject).toMatch(/cancel/i);
+      expect(mail.Text).toContain('O pagamento não foi identificado dentro do prazo');
       expect(told).toHaveBeenCalledWith(expect.objectContaining({ storeId: shop.storeId }), { type: 'order.status', orderNumber: 1, status: 'CANCELLED' });
 
       // Once: a second pass finds nothing.
@@ -252,7 +258,7 @@ describe('what the clock does about an online payment (BEELINK-206)', () => {
 
       expect((await order()).status).toBe('RECEIVED');
       expect(await shop.rows()).toMatchObject([{ status: 'RECEIVED' }]);
-      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: null }]);
+      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: null, approved: true }]);
     });
 
     it('is not cancelled while Asaas cannot be asked, and is looked at again later', async () => {
