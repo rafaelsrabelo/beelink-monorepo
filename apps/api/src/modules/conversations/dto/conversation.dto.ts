@@ -65,7 +65,7 @@ export class ListShopConversationsDto implements ShopConversationQuery {
   page?: number;
 }
 
-const KINDS = ['MESSAGE', 'STATUS'] as const satisfies readonly ConversationMessage['kind'][];
+const KINDS = ['MESSAGE', 'STATUS', 'PAYMENT'] as const satisfies readonly ConversationMessage['kind'][];
 
 /**
  * A message or a status notice, as Swagger draws it: one shape with the fields of both. The wire type
@@ -73,14 +73,15 @@ const KINDS = ['MESSAGE', 'STATUS'] as const satisfies readonly ConversationMess
  * one are typed with the contract, and this class only documents it.
  */
 export class ConversationMessageResponse {
-  @ApiProperty({ enum: KINDS, description: 'MESSAGE is written by a side; STATUS tells of the order moving (BEELINK-236).' }) kind!: ConversationMessage['kind'];
+  @ApiProperty({ enum: KINDS, description: 'MESSAGE is written by a side; STATUS tells of the order moving (BEELINK-236); PAYMENT of its online payment approved (BEELINK-207).' }) kind!: ConversationMessage['kind'];
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiPropertyOptional({ enum: AUTHORS, description: 'On a MESSAGE.' }) author?: ConversationAuthor;
   @ApiPropertyOptional({ description: 'On a MESSAGE: plain text, never drawn as HTML.' }) body?: string;
   @ApiPropertyOptional({ enum: ORDER_STATUSES, description: 'On a STATUS: the status the order moved to; each side words it.' }) status?: OrderStatus;
+  @ApiPropertyOptional({ description: 'On a STATUS: a cancellation of bee-link\'s own, of an order nobody paid in time (BEELINK-207).' }) unpaid?: boolean;
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'On a STATUS: the cashback a delivery made usable (BEELINK-239); null on every other move.' }) cashbackCents?: number | null;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
-  @ApiProperty({ format: 'date-time', nullable: true, type: String, description: 'When the other side read it — the customer, for a STATUS.' }) readAt!: string | null;
+  @ApiProperty({ format: 'date-time', nullable: true, type: String, description: 'When the other side read it — the customer, for a STATUS and a PAYMENT.' }) readAt!: string | null;
 }
 
 export class ConversationOrderResponse implements ConversationOrder {
@@ -96,6 +97,7 @@ export class ConversationLastMessageResponse {
   @ApiPropertyOptional({ enum: AUTHORS, description: 'On a MESSAGE.' }) author?: ConversationAuthor;
   @ApiPropertyOptional({ description: 'On a MESSAGE.' }) body?: string;
   @ApiPropertyOptional({ enum: ORDER_STATUSES, description: 'On a STATUS.' }) status?: OrderStatus;
+  @ApiPropertyOptional({ description: 'On a STATUS: cancelled for want of payment.' }) unpaid?: boolean;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
 }
 

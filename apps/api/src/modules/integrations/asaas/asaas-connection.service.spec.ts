@@ -10,8 +10,9 @@ import type { StoresService } from '../../stores/stores.service.js';
 import type { AsaasConfig } from './asaas.config.js';
 
 // App
+import { AsaasWithoutCharges } from '../../../../test/support/asaas-stub.js';
 import { open, seal } from '../secret-vault.js';
-import { AsaasClient, AsaasRefused, AsaasUnreachable, type AsaasAccountInfo, type AsaasWebhookRequest } from './asaas.client.js';
+import { AsaasRefused, AsaasUnreachable, type AsaasAccountInfo, type AsaasWebhookRequest } from './asaas.client.js';
 import { AsaasConnectionService } from './asaas-connection.service.js';
 
 const STORE = '0199a0f1-0000-7000-8000-000000000001';
@@ -40,7 +41,7 @@ function configOf(over: Partial<AsaasConfig> = {}): AsaasConfig {
 }
 
 /** Asaas, as far as a connection can tell: the keys it knows, the webhooks each account holds, and whether it answers. */
-class FakeAsaas extends AsaasClient {
+class FakeAsaas extends AsaasWithoutCharges {
   readonly keys = new Map<string, AsaasAccountInfo>([[SANDBOX_KEY, { name: 'Lessari', document: '11222333000181' }], [OLD_KEY, { name: 'Conta antiga', document: '12345678909' }]]);
   readonly created: { apiKey: string; webhook: AsaasWebhookRequest }[] = [];
   readonly deleted: { apiKey: string; id: string }[] = [];

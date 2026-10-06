@@ -136,6 +136,17 @@ export const ComCashback: Story = {
   },
 }
 
+/** Pedidos pagos online (BEELINK-205): aguardando pagamento, com "Pagar agora" à frente, e aprovado. */
+export const PagamentoOnline: Story = {
+  args: {
+    cards: [
+      { ...received, trackHref: "#", payment: { label: "Aguardando pagamento", tone: "wait" }, payHref: "#" },
+      { ...received, number: 1041, trackHref: "#", payment: { label: "Pagamento aprovado", tone: "done" } },
+      { ...received, number: 1040, trackHref: "#", payment: { label: "Pagamento vencido", tone: "stop" }, payHref: "#" },
+    ],
+  },
+}
+
 /** Nunca pediu aqui: uma frase e a porta para as compras. */
 export const SemPedidos: Story = { render: () => <StorefrontOrdersEmpty variant="none" href="#" /> }
 

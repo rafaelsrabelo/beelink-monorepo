@@ -27,6 +27,18 @@ describe("StorefrontOrderReceipt", () => {
     expect(screen.getByText("Pagamento combinado com a loja: Pix").nextElementSibling).toHaveTextContent("R$ 2,00 de cashback para usar até 30/12/2026.")
   })
 
+  /** BEELINK-207: the receipt of an order charged online says whether it was paid; one settled with the shop says nothing of it. */
+  it("says whether an order charged online was paid, beside the way it is paid", () => {
+    const { rerender } = render(<StorefrontOrderReceipt {...receipt} method="Pagamento online: Pix" status={{ label: "Pagamento aprovado" }} />)
+    expect(screen.getByText(/Pagamento online: Pix/)).toHaveTextContent("Pagamento online: Pix · Pagamento aprovado")
+
+    rerender(<StorefrontOrderReceipt {...receipt} method="Pagamento online: Pix" status={{ label: "Aguardando pagamento" }} />)
+    expect(screen.getByText(/Pagamento online: Pix/)).toHaveTextContent("Pagamento online: Pix · Aguardando pagamento")
+
+    rerender(<StorefrontOrderReceipt {...receipt} />)
+    expect(screen.getByText("Pagamento combinado com a loja: Pix")).toHaveTextContent(/^Pagamento combinado com a loja: Pix$/)
+  })
+
   it("says who sold what to whom, for how much, and that it is not a tax invoice", () => {
     render(<StorefrontOrderReceipt {...receipt} />)
 

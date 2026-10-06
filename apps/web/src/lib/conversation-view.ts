@@ -9,7 +9,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { momentOf } from "./order-card-view"
-import { statusNoticeKeyOf } from "./status-notice"
+import { noticeTextOf } from "./status-notice"
 import type { StorefrontRoutes } from "./storefront-routes"
 
 // One limit for both sides of a conversation: the shopper's here, the shop's in the panel.
@@ -37,8 +37,8 @@ export function conversationRowsOf(summaries: readonly CustomerConversationSumma
       number: order.number,
       title: format(text.orderNumber, { number: String(order.number) }),
       preview:
-        lastMessage.kind === "STATUS"
-          ? text.conversationNotices[statusNoticeKeyOf(lastMessage.status, order.fulfillment)]
+        lastMessage.kind !== "MESSAGE"
+          ? noticeTextOf(lastMessage, order.fulfillment, text.conversationNotices, locale)
           : lastMessage.author === "CUSTOMER"
             ? format(text.conversationYouSaid, { body })
             : body,
@@ -55,12 +55,12 @@ export function conversationLinesOf(conversation: CustomerConversation, { locale
   const text = messages.storefront
   const lastMine = conversation.messages.findLastIndex((message) => message.kind === "MESSAGE" && message.author === "CUSTOMER")
   return conversation.messages.map((message, index) =>
-    message.kind === "STATUS"
+    message.kind !== "MESSAGE"
       ? {
           id: message.id,
           mine: false,
           notice: true,
-          body: noticeWithCashback(text.conversationNotices[statusNoticeKeyOf(message.status, conversation.order.fulfillment)], message.cashbackCents, text.conversationCashback, locale),
+          body: noticeWithCashback(noticeTextOf(message, conversation.order.fulfillment, text.conversationNotices, locale), message.kind === "STATUS" ? message.cashbackCents : null, text.conversationCashback, locale),
           when: momentOf(message.createdAt, locale),
         }
       : {

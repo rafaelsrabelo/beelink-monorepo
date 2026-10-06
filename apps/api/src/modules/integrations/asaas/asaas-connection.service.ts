@@ -39,7 +39,19 @@ interface Webhook {
  */
 const LOCKED_TIMEOUT_MS = 45_000;
 
+/** How long a connect or a disconnect waits for the shop's waiting charges to be taken out of the account being left. */
+export const KEY_LEAVING_BUDGET_MS = 20_000;
+
+/** Told just before a shop's key leaves bee-link, while it still opens the account: what must be done there is done now, by `deadline`. */
+export type KeyLeavingListener = (storeId: string, deadline: Date) => Promise<void>;
+
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
+
+/** The same account under another key: by its document — a name is changed at will — and by the name only when neither has a document. */
+function sameAccount(row: StoreIntegrationModel, account: { name: string; document: string | null }): boolean {
+  const masked = maskedDocumentOf(account.document);
+  return row.accountDocument || masked ? row.accountDocument === masked : row.accountName === account.name;
+}
 
 function connectionOf(row: StoreIntegrationModel | null): AsaasConnection {
   return {
@@ -62,12 +74,21 @@ function connectionOf(row: StoreIntegrationModel | null): AsaasConnection {
 @Injectable()
 export class AsaasConnectionService {
   private readonly logger = new Logger(AsaasConnectionService.name);
+  private readonly leaving: KeyLeavingListener[] = [];
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly asaas: AsaasClient,
   ) {}
+
+  /**
+   * Asks to be told before a shop's key leaves (BEELINK-206) — the payments, which take the shop's
+   * waiting charges out of the account while the key still opens it. This folder knows no charge.
+   */
+  beforeKeyLeaves(listener: KeyLeavingListener): void {
+    this.leaving.push(listener);
+  }
 
   async connection(storeSlug: string, userId: string): Promise<AsaasConnection> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
@@ -85,6 +106,11 @@ export class AsaasConnectionService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     this.refuseOtherEnvironment(config, apiKey);
     const account = await this.asaas.account(config, apiKey).catch((error: unknown) => this.refused(config, error));
+
+    // Another account's key: what waits to be paid at the one being left is taken out of it first.
+    // The same account under a new key keeps its charges — they are reached with the new one.
+    const standing = await this.prisma.storeIntegration.findUnique({ where: { storeId_provider: { storeId, provider: PROVIDER } } });
+    if (standing && !sameAccount(standing, account)) await this.keyLeaves(storeId);
 
     const row = await this.exclusively(storeId, async (tx) => {
       const previous = await tx.storeIntegration.findUnique({ where: { storeId_provider: { storeId, provider: PROVIDER } } });
@@ -120,6 +146,7 @@ export class AsaasConnectionService {
   async disconnect(storeSlug: string, userId: string): Promise<void> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     const config = asaasConfig();
+    await this.keyLeaves(storeId);
 
     await this.exclusively(storeId, async (tx) => {
       const row = await tx.storeIntegration.findUnique({ where: { storeId_provider: { storeId, provider: PROVIDER } } });
@@ -127,6 +154,18 @@ export class AsaasConnectionService {
       if (config) await this.removeWebhook(config, row);
       await tx.storeIntegration.delete({ where: { id: row.id } });
     });
+  }
+
+  /** Never fails and never waits past its budget: the shopkeeper asked for the key to go, and it goes. */
+  private async keyLeaves(storeId: string): Promise<void> {
+    const deadline = new Date(Date.now() + KEY_LEAVING_BUDGET_MS);
+    let timer: NodeJS.Timeout | undefined;
+    const told = Promise.all(this.leaving.map((listener) => listener(storeId, deadline))).then(
+      () => undefined,
+      (error: unknown) => this.logger.warn({ storeId, reason: error instanceof Error ? error.message : 'Unknown failure' }, "Could not settle a shop's waiting charges before its Asaas key left"),
+    );
+    await Promise.race([told, new Promise<void>((resolve) => (timer = setTimeout(resolve, KEY_LEAVING_BUDGET_MS + 2_000)))]);
+    clearTimeout(timer);
   }
 
   /** The prefix says which Asaas a key is for; one for the other is refused before Asaas is asked. */

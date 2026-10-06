@@ -54,6 +54,36 @@ describe("the panel's bell", () => {
     expect(toastOf({ type: "order.status", orderNumber: 18, status: "ACCEPTED" }, ptBR)).toBeNull()
   })
 
+  /** Money nobody asked for is told at once, since bee-link refunds nothing by itself (BEELINK-206). */
+  it("tells of money an order did not ask for, and not of a payment that only moved", () => {
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "RECEIVED", stray: null, approved: false }, ptBR)).toBeNull()
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "OVERDUE", stray: null, approved: false }, ptBR)).toBeNull()
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "RECEIVED", stray: "ORDER_CANCELLED", approved: false }, ptBR)).toBe("O pedido nº 18 foi pago depois de cancelado. O dinheiro está na sua conta Asaas.")
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "RECEIVED", stray: "ORDER_ALREADY_PAID", approved: false }, ptBR)).toBe("O pedido nº 18 foi pago duas vezes. O segundo pagamento está na sua conta Asaas.")
+  })
+
+  /** BEELINK-207: once a payment, on the event the API marks as its news. */
+  it("tells of a payment approved on the one event that is its news", () => {
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "CONFIRMED", stray: null, approved: true }, ptBR)).toBe("Pedido nº 18 pago")
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "RECEIVED", stray: null, approved: true }, ptBR)).toBe("Pedido nº 18 pago")
+  })
+
+  it("counts and lists the paid orders nobody opened yet, by when the money came", () => {
+    const paid = {
+      total: 1,
+      page: 1,
+      pageSize: 5,
+      orders: [{ number: 20, customer: { name: "Duda Reis" }, totalCents: 5990, deliveryFeeCents: 0, placedAt: "2026-09-29T12:00:00.000Z", payment: { status: "RECEIVED", expiresAt: null, paidAt: "2026-09-29T13:45:00.000Z" } }],
+    } as unknown as OrderPage
+
+    expect(notificationCountOf({ messages: 3, conversations: 2 }, received, paid)).toBe(6)
+    const items = notificationsOf(received, unread, { slug: "loja", locale: "pt-BR", messages: ptBR }, paid)
+    // Paid at 13:45: between the order of 13:41 and the message of 13:50, though it was placed before both.
+    expect(items.map((item) => item.title)).toEqual(["Mensagem no pedido nº 18", "Pedido nº 20 pago", "Novo pedido nº 21"])
+    expect(items[1]).toMatchObject({ id: "payment-20", kind: "payment", href: "/admin/loja/orders/20" })
+    expect(items[1]?.detail).toMatch(/^Duda Reis · R\$\s?59,90$/)
+  })
+
   it("puts the count in the tab's title, and takes it off at none", () => {
     expect(titledWith("Pedidos · bee-link", 3)).toBe("(3) Pedidos · bee-link")
     expect(titledWith("(3) Pedidos · bee-link", 4)).toBe("(4) Pedidos · bee-link")

@@ -4,13 +4,16 @@ import type {
   SetOrderDeliveryFeePayload,
   CreateOrderPayload,
   Order,
+  OrderCancellationRefund,
   OrderListQuery,
   OrderPage,
   OrderQuote,
   OrderStatus,
   OrderStockDetails,
   OrderStockShortage,
+  RefundOrderPayload,
   ShopOrderQuotePayload,
+  UpdateOrderStatusPayload,
 } from "@harness-monorepo/contracts"
 
 /**
@@ -47,6 +50,7 @@ function errorCodeOf(payload: unknown): string {
 export async function fetchOrders(slug: string, query: OrderListQuery = {}): Promise<OrderPage> {
   const search = new URLSearchParams()
   if (query.status) search.set("status", query.status)
+  if (query.payment) search.set("payment", query.payment)
   if (query.q) search.set("q", query.q)
   if (query.customerId) search.set("customerId", query.customerId)
   if (query.page && query.page > 1) search.set("page", String(query.page))
@@ -96,16 +100,37 @@ export async function fetchOrder(slug: string, number: number): Promise<Order> {
   return payload as Order
 }
 
-/** Moves the order; what comes back is the whole order, with the status it now has. */
-export async function updateOrderStatus(slug: string, number: number, status: OrderStatus): Promise<Order> {
+/**
+ * Moves the order; what comes back is the whole order, with the status it now has. A cancellation of
+ * a paid order carries its refund (BEELINK-208), and what Asaas refuses of it comes with its details.
+ */
+export async function updateOrderStatus(slug: string, number: number, status: OrderStatus, refund?: OrderCancellationRefund): Promise<Order> {
   const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/status`, {
     method: "PATCH",
     headers: JSON_HEADERS,
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, ...(refund ? { refund } : {}) } satisfies UpdateOrderStatusPayload),
   })
   const payload: unknown = await response.json().catch(() => null)
-  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload), (payload as { details?: unknown } | null)?.details)
   return payload as Order
+}
+
+/** Gives back money of the order's payment (BEELINK-208); what comes back is the order as it stands then. */
+export async function refundOrder(slug: string, number: number, refund: RefundOrderPayload): Promise<Order> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/refunds`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(refund),
+  })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload), (payload as { details?: unknown } | null)?.details)
+  return payload as Order
+}
+
+/** The shop opened a paid order (BEELINK-207): the bell stops telling of its payment. */
+export async function markOrderPaymentSeen(slug: string, number: number): Promise<void> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/payment/seen`, { method: "POST", headers: JSON_HEADERS, body: "{}" })
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(await response.json().catch(() => null)))
 }
 
 /** Tells how a delivery goes: the whole record, replacing what was told. */

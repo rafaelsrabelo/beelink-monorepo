@@ -23,6 +23,16 @@ describe("StorefrontOrderSent", () => {
     expect(screen.queryByRole("link", { name: /Tente de novo/ })).toBeNull()
   })
 
+  /** BEELINK-205: an order charged online is still to be paid, and the screen leads there. */
+  it("says an order charged online is still to be paid, and offers its payment rather than WhatsApp or the shelf", () => {
+    render(<StorefrontOrderSent number={12} href={null} payHref="/loja/conta/pedidos/12?pagamento=1" continueHref="/loja/produtos" />)
+
+    expect(screen.getByRole("status")).toHaveTextContent("Pedido #12 feito!")
+    expect(screen.getByRole("status")).toHaveTextContent("Falta pagar")
+    expect(screen.getByRole("link", { name: "Pagar agora" })).toHaveAttribute("href", "/loja/conta/pedidos/12?pagamento=1")
+    expect(screen.queryByRole("link", { name: "Continuar comprando" })).toBeNull()
+  })
+
   it("has no accessibility violations", async () => {
     const { container } = render(<StorefrontOrderSent number={12} href="#" continueHref="#" />)
 

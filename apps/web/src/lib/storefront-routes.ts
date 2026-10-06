@@ -275,13 +275,13 @@ export function storefrontRoutes(shop: StorefrontShop) {
 
     /**
      * One of the shopper's orders, under the orders tab: `/<shop>/conta/pedidos/14`. The receipt is
-     * the same address with `comprovante=1`. A shop read before its tabs were spelled leads to the
-     * area's front, as `accountTab` does.
+     * the same address with `comprovante=1`, and its payment screen (BEELINK-205) with `pagamento=1`.
+     * A shop read before its tabs were spelled leads to the area's front, as `accountTab` does.
      */
-    accountOrder: (number: number, { receipt = false }: { receipt?: boolean } = {}) => {
+    accountOrder: (number: number, { receipt = false, payment = false }: { receipt?: boolean; payment?: boolean } = {}) => {
       const word = routeWords.accountTabs?.orders
       if (!word) return `${home}/${routeWords.account}`
-      return withQuery(`${home}/${routeWords.account}/${word}/${number}`, { [RECEIPT_KEY]: receipt ? "1" : undefined })
+      return withQuery(`${home}/${routeWords.account}/${word}/${number}`, { [RECEIPT_KEY]: receipt ? "1" : undefined, [PAYMENT_KEY]: payment ? "1" : undefined })
     },
 
     /** One product. It never nests under a category: a product in two would have two addresses. */
@@ -339,6 +339,9 @@ export const REORDER_TRIMMED_KEY = "cheio"
 
 /** The receipt's key: the order's page drawn as a document to print. */
 export const RECEIPT_KEY = "comprovante"
+
+/** The payment's key: the order's page drawn as the screen it is paid on (BEELINK-205). */
+export const PAYMENT_KEY = "pagamento"
 
 /** Which order's conversation the conversations' tab opens on. */
 export const CONVERSATION_KEY = "pedido"

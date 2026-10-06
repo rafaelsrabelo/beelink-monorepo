@@ -3,6 +3,7 @@
 // Types
 import type { OrderCashback, ShopOrderCashback } from "./cashback.js";
 import type { CustomerAddress } from "./customer.js";
+import type { OrderCancellationRefund, OrderPayment, OrderPaymentBrief, OrderPaymentChannel, OrderPaymentFilter, ShopOrderPayment } from "./payment.js";
 import type { CouponKind } from "./promotion.js";
 import type { CarriersVerdict, OwnDeliveryVerdict, ShippingWindow } from "./shipping.js";
 import type { PaymentMethod } from "./store.js";
@@ -124,6 +125,12 @@ export interface Order {
    */
   deliveryAddress: OrderDeliveryAddress | null;
   paymentMethod: PaymentMethod;
+  /** Where it is paid (BEELINK-204): `OFFLINE`, settled between the two of them, or `ONLINE`, charged at Asaas. */
+  paymentChannel: OrderPaymentChannel;
+  /** The instalments its customer chose; 1 unless it is an online card. */
+  installments: number;
+  /** Its charge at Asaas: the one standing, else the last tried. Null offline, and online while it has none. */
+  payment: ShopOrderPayment | null;
   items: OrderItem[];
   subtotalCents: number;
   /**
@@ -166,6 +173,11 @@ export interface OrderSummary {
   customer: OrderCustomer;
   fulfillment: OrderFulfillment;
   paymentMethod: PaymentMethod;
+  /** Where it is paid (BEELINK-204): `OFFLINE`, settled between the two of them, or `ONLINE`, charged at Asaas. */
+  paymentChannel: OrderPaymentChannel;
+  payment: OrderPaymentBrief | null;
+  /** How many payments arrived that it did not ask for and the shop has not settled yet (BEELINK-207, BEELINK-208); zero on nearly every order. */
+  strays: number;
   totalCents: number;
   /** Null while a delivery's fee is not agreed: the total then says "+ frete" beside it. */
   deliveryFeeCents: number | null;
@@ -184,6 +196,8 @@ export interface OrderPage {
 
 export interface OrderListQuery {
   status?: OrderStatus;
+  /** By where the money stands (BEELINK-207); absent is every order. */
+  payment?: OrderPaymentFilter;
   /** An order number, a customer's name, or digits of their phone. */
   q?: string;
   /** One customer's orders only — their record's history. Another shop's customer finds none. */
@@ -232,6 +246,12 @@ export interface CreateOrderPayload {
 
 export interface UpdateOrderStatusPayload {
   status: OrderStatus;
+  /**
+   * On a cancellation of an order that holds its customer's money (BEELINK-208): the refund of all
+   * that is left, asked of Asaas first — the order is cancelled only once Asaas took it. Without
+   * it, such a cancellation is refused with `ORDER_PAID`.
+   */
+  refund?: OrderCancellationRefund;
 }
 
 /* ── the customer's side: an order placed from the shop's cart ──────────────── */
@@ -252,6 +272,10 @@ export interface PlaceCustomerOrderPayload {
   items: CreateOrderItemInput[];
   fulfillment: OrderFulfillment;
   paymentMethod: PaymentMethod;
+  /** Where it is paid (BEELINK-204); absent is `OFFLINE`. `ONLINE` takes `PIX` or `CREDIT_CARD`, of a shop whose Asaas is connected and takes it; anything else is `ORDER_PAYMENT_NOT_ACCEPTED`. */
+  paymentChannel?: OrderPaymentChannel;
+  /** How many instalments an online card is paid in, 1 to the shop's most; absent is 1. More than 1 on anything else is `ORDER_PAYMENT_NOT_ACCEPTED`. */
+  installments?: number;
   /** One of the customer's saved addresses (`CustomerSavedAddress.id`); ignored on a pick-up. Another's is `ORDER_ADDRESS_NOT_FOUND`. */
   addressId?: string;
   /** A coupon of the shop, in any case; one that does not hold refuses the order (`ORDER_COUPON_REFUSED`). */
@@ -261,9 +285,11 @@ export interface PlaceCustomerOrderPayload {
   /** The way a delivery goes by (BEELINK-186); absent, the shop's own delivery. One the quote no longer offers is `ORDER_SHIPPING_UNAVAILABLE`. Ignored on a pick-up. */
   shipping?: OrderShippingChoice;
   /**
-   * The CPF of who receives a carrier's delivery, asked at checkout when the customer's record has
-   * none (BEELINK-187): kept on their record, and on the order. One that is not a CPF is
-   * `CUSTOMER_CPF_INVALID`; none on a carrier's order of a record with none, `ORDER_RECIPIENT_DOCUMENT_MISSING`.
+   * The customer's CPF, asked at checkout when their record has none: a carrier's label is bought
+   * with it (BEELINK-187) and an online payment is charged to it (BEELINK-204). Kept on their record,
+   * and on a carrier's order. One that is not a CPF is `CUSTOMER_CPF_INVALID`; none where the record
+   * has none either is `ORDER_RECIPIENT_DOCUMENT_MISSING` on a carrier's order, else
+   * `ORDER_PAYER_DOCUMENT_MISSING` on one paid online.
    */
   recipientDocument?: string;
   /**
@@ -296,6 +322,12 @@ export interface CustomerOrderItem {
 /** Who placed an order, as its customer is told: they did, from the cart, or the shop registered it. */
 export type OrderPlacedBy = "CUSTOMER" | "SHOP";
 
+/**
+ * Who cancelled an order, as its customer is told: they did, the shop did, or bee-link itself — which
+ * cancels for one reason alone, an order charged online that nobody paid in time (BEELINK-206).
+ */
+export type OrderCancelledBy = OrderPlacedBy | "SYSTEM";
+
 /** A status the order had, and when — never who set it. */
 export interface CustomerOrderEvent {
   status: OrderStatus;
@@ -315,11 +347,17 @@ export interface CustomerOrder {
   number: number;
   status: OrderStatus;
   placedBy: OrderPlacedBy;
-  /** Who cancelled it — "pela loja ou por você" — on a cancelled order; null on any other. */
-  cancelledBy: OrderPlacedBy | null;
+  /** Who cancelled it — "pela loja", "por você", or for want of payment — on a cancelled order; null on any other. */
+  cancelledBy: OrderCancelledBy | null;
   fulfillment: OrderFulfillment;
   deliveryAddress: OrderDeliveryAddress | null;
   paymentMethod: PaymentMethod;
+  /** Where it is paid (BEELINK-204): `OFFLINE`, settled between the two of them, or `ONLINE`, charged at Asaas. */
+  paymentChannel: OrderPaymentChannel;
+  /** The instalments they chose; 1 unless it is an online card. */
+  installments: number;
+  /** Its charge: the one standing, else the last tried. Null offline, and online while it has none. What it is paid with is read at `…/orders/:number/payment`. */
+  payment: OrderPayment | null;
   items: CustomerOrderItem[];
   subtotalCents: number;
   /**
@@ -357,13 +395,16 @@ export interface CustomerOrderSummary {
   number: number;
   status: OrderStatus;
   placedBy: OrderPlacedBy;
-  cancelledBy: OrderPlacedBy | null;
+  cancelledBy: OrderCancelledBy | null;
   /** When it reached the status it is in: "Entregue em …", "Cancelado em …". ISO-8601. */
   statusAt: string;
   fulfillment: OrderFulfillment;
   /** Who a delivery goes to; null on a pick-up and on a delivery that recorded none. */
   recipientName: string | null;
   paymentMethod: PaymentMethod;
+  /** Where it is paid (BEELINK-204): `OFFLINE`, settled between the two of them, or `ONLINE`, charged at Asaas. */
+  paymentChannel: OrderPaymentChannel;
+  payment: OrderPaymentBrief | null;
   totalCents: number;
   /** Null while a delivery's fee is not agreed: the total then says "+ frete" beside it. */
   deliveryFeeCents: number | null;
@@ -490,7 +531,13 @@ export type OrderErrorCode =
   /** The delivery fee is not the one the quote showed. Its `details` are `OrderShippingChangedDetails`. */
   | "ORDER_SHIPPING_CHANGED"
   /** A carrier needs the CPF of who receives it, and the customer has none on their record (BEELINK-187). */
-  | "ORDER_RECIPIENT_DOCUMENT_MISSING";
+  | "ORDER_RECIPIENT_DOCUMENT_MISSING"
+  /** An order paid online is under Asaas's least charge, or one of its instalments is (BEELINK-204). Its `details` are `OrderPaymentBelowMinimumDetails`. */
+  | "ORDER_PAYMENT_BELOW_MINIMUM"
+  /** Paying online needs the customer's CPF, and their record has none. */
+  | "ORDER_PAYER_DOCUMENT_MISSING"
+  /** A paid order keeps its total, is not cancelled by its customer, and is cancelled by the shop only with its refund (BEELINK-208). */
+  | "ORDER_PAID";
 
 /** The `details` of `ORDER_SHIPPING_UNAVAILABLE`: what the quote says of each way now; both absent on a pick-up the shop does not offer. */
 export interface OrderShippingUnavailableDetails {

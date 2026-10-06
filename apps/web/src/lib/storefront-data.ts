@@ -1,5 +1,5 @@
 // Types
-import type { CustomerSignInOptions, PublicLanding, PublicProductCategory, PublicProductDetail, PublicProductReviews, PublicReviewListQuery, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontSort } from "@harness-monorepo/contracts"
+import type { CustomerSignInOptions, PublicLanding, PublicProductCategory, PublicProductDetail, PublicProductReviews, PublicReviewListQuery, PublicStore, StorefrontCartProducts, StorefrontCatalog, StorefrontPaymentOptions, StorefrontSort } from "@harness-monorepo/contracts"
 
 // App
 import { callPublicApi } from "./public-api"
@@ -30,6 +30,24 @@ export async function shopAt(slug: string): Promise<PublicStore | null> {
   if (!response.ok) return null
 
   return (await response.json()) as PublicStore
+}
+
+/** The checkout of before anything was charged online: the shop's own labels, settled with it. */
+export const NO_ONLINE_PAYMENTS: StorefrontPaymentOptions = { online: null, offline: true }
+
+/**
+ * How the shop's checkout is paid (BEELINK-205): what it charges online now, and whether paying on
+ * delivery stands. Under `storeTag`: the panel's handlers that connect, disconnect and save the
+ * Asaas choices drop it. A shop whose key Asaas refused changes with no write from the panel — the
+ * answer kept is then wrong until its minute closes, and an order placed in it is refused by the
+ * API, which is what makes the page read again.
+ *
+ * A read that failed is the checkout of before: a shop must not stop selling because this did not answer.
+ */
+export async function paymentOptionsAt(slug: string): Promise<StorefrontPaymentOptions> {
+  const response = await callPublicApi({ path: `/stores/${slug}/payment-options`, tags: [storeTag(slug)] }).catch(() => null)
+  if (!response?.ok) return NO_ONLINE_PAYMENTS
+  return (await response.json()) as StorefrontPaymentOptions
 }
 
 export interface CatalogueAsk {

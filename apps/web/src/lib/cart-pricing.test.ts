@@ -103,7 +103,7 @@ describe("the cart as the API priced it", () => {
   it("reads as the shelf prices it while there is no price: one subtotal, no row, no line touched", () => {
     const view = viewOf([row({}), creatine])
 
-    expect(cartPricingOf(null, view, context)).toEqual({ subtotalCents: 23490, discounts: [], delivery: null, deliveryFeeCents: undefined, shipping: null, total: null, lines: new Map(), offer: null, cashback: null })
+    expect(cartPricingOf(null, view, context)).toEqual({ subtotalCents: 23490, discounts: [], delivery: null, deliveryFeeCents: undefined, shipping: null, total: null, totalCents: null, lines: new Map(), offer: null, cashback: null })
   })
 
   it("says the subtotal before the promotion, what came off, the total, and the line the promotion reached", () => {

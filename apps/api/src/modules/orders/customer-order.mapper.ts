@@ -4,6 +4,7 @@ import type {
   CustomerOrder,
   CustomerOrderItem,
   CustomerOrderSummary,
+  OrderCancelledBy,
   OrderPlacedBy,
   OrderStatus,
 } from '@harness-monorepo/contracts';
@@ -11,6 +12,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 
 // App
 import { toOrderCashback } from '../cashback/cashback.mapper.js';
+import { toOrderPayment, toPaymentBrief } from '../payments/payment.mapper.js';
 import { toDeliveryAddress, toDeliveryWindow } from './order-delivery.js';
 import { toCustomerDelivery } from './order-tracking.js';
 import { toOrderCoupon } from './orders.mapper.js';
@@ -37,6 +39,8 @@ export const CUSTOMER_ORDER_INCLUDE = {
   events: { orderBy: { createdAt: 'asc' }, select: { status: true, actor: true, createdAt: true } },
   delivery: true,
   cashbackCredit: true,
+  payments: true,
+  refunds: true,
 } as const satisfies Prisma.OrderInclude;
 
 type CustomerOrderRow = Prisma.OrderGetPayload<{ include: typeof CUSTOMER_ORDER_INCLUDE }>;
@@ -68,10 +72,15 @@ function sideOf(actor: EventRow['actor']): OrderPlacedBy {
   return actor === 'CUSTOMER' ? 'CUSTOMER' : 'SHOP';
 }
 
+/** Who cancelled: bee-link itself is told apart — it cancels for want of payment alone (BEELINK-208). */
+function cancellerOf(actor: EventRow['actor']): OrderCancelledBy {
+  return actor === 'SYSTEM' ? 'SYSTEM' : sideOf(actor);
+}
+
 /** The facts the customer is told about who acted: who placed it, and who cancelled it. */
-function sidesOf(status: OrderStatus, events: readonly EventRow[]): { placedBy: OrderPlacedBy; cancelledBy: OrderPlacedBy | null } {
+function sidesOf(status: OrderStatus, events: readonly EventRow[]): { placedBy: OrderPlacedBy; cancelledBy: OrderCancelledBy | null } {
   const cancelled = status === 'CANCELLED' ? events.findLast((event) => event.status === 'CANCELLED') : undefined;
-  return { placedBy: events[0] ? sideOf(events[0].actor) : 'SHOP', cancelledBy: cancelled ? sideOf(cancelled.actor) : null };
+  return { placedBy: events[0] ? sideOf(events[0].actor) : 'SHOP', cancelledBy: cancelled ? cancellerOf(cancelled.actor) : null };
 }
 
 /** The order's cashback as its customer reads it: the shop's reading, less what the shop did not get back. */
@@ -90,6 +99,9 @@ export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
     fulfillment: row.fulfillment,
     deliveryAddress: toDeliveryAddress(row),
     paymentMethod: row.paymentMethod,
+    paymentChannel: row.paymentChannel,
+    installments: row.paymentInstallments,
+    payment: toOrderPayment(row.payments, row.refunds),
     items: row.items.map(toItem),
     subtotalCents: row.subtotalCents,
     deliveryFeeCents: row.deliveryFeeCents,
@@ -118,6 +130,8 @@ export function toCustomerOrderSummary(row: CustomerOrderRow): CustomerOrderSumm
     fulfillment: row.fulfillment,
     recipientName: toDeliveryAddress(row)?.recipientName ?? null,
     paymentMethod: row.paymentMethod,
+    paymentChannel: row.paymentChannel,
+    payment: toPaymentBrief(row.payments),
     totalCents: row.totalCents,
     deliveryFeeCents: row.deliveryFeeCents,
     discountCents: row.discountCents,

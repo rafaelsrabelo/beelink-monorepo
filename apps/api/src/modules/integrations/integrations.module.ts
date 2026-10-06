@@ -2,12 +2,16 @@
 import { Module } from '@nestjs/common';
 
 // App
+import { AsaasAcceptance } from './asaas/asaas-acceptance.js';
+import { AsaasCharges } from './asaas/asaas-charges.service.js';
 import { AsaasClient } from './asaas/asaas.client.js';
 import { AsaasController } from './asaas/asaas.controller.js';
 import { AsaasConnectionService } from './asaas/asaas-connection.service.js';
 import { AsaasHttpClient } from './asaas/asaas-http.client.js';
 import { AsaasSettingsController } from './asaas/asaas-settings.controller.js';
 import { AsaasSettingsService } from './asaas/asaas-settings.service.js';
+import { AsaasWebhookDoor } from './asaas/asaas-webhook-door.js';
+import { AsaasWebhookKeeper } from './asaas/asaas-webhook-keeper.js';
 import { CarrierGapsService } from './carrier-gaps.service.js';
 import { StoresModule } from '../stores/stores.module.js';
 import { CarrierQuotes } from './melhor-envio/carrier-quote.service.js';
@@ -29,7 +33,11 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
  * which lists the carriers beside the shop's own delivery (BEELINK-185). An order's label is bought
  * from the shop's wallet here too (BEELINK-187). A shop's Asaas account is connected with its own
  * key (BEELINK-202), through `AsaasClient` — a port, bound here to Asaas over HTTP — and how the shop
- * is paid through it is kept beside the connection (BEELINK-203).
+ * is paid through it is kept beside the connection (BEELINK-203). `AsaasAcceptance` and `AsaasCharges` are
+ * exported for the payments (BEELINK-204): what a shop takes now, and its charges by the shop's id —
+ * neither takes nor answers a key. For the shop's webhook (BEELINK-206): `AsaasWebhookDoor` says whose
+ * token a request carries, `AsaasWebhookKeeper` keeps the webhook sending and the key in use, and
+ * `AsaasConnectionService` is exported for its `beforeKeyLeaves` alone.
  */
 @Module({
   imports: [StoresModule],
@@ -45,7 +53,11 @@ import { MelhorEnvioService } from './melhor-envio/melhor-envio.service.js';
     { provide: AsaasClient, useClass: AsaasHttpClient },
     AsaasConnectionService,
     AsaasSettingsService,
+    AsaasAcceptance,
+    AsaasCharges,
+    AsaasWebhookDoor,
+    AsaasWebhookKeeper,
   ],
-  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient],
+  exports: [MelhorEnvioService, MelhorEnvioSettingsService, CarrierGapsService, CarrierQuotes, MelhorEnvioClient, AsaasAcceptance, AsaasCharges, AsaasConnectionService, AsaasWebhookDoor, AsaasWebhookKeeper],
 })
 export class IntegrationsModule {}
