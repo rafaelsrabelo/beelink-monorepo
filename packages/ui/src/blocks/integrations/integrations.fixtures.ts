@@ -1,5 +1,5 @@
 // Block
-import type { AsaasCardView, IntegrationCardView, MelhorEnvioCardView, PaymentSettingsFormValues, ShippingServiceView, ShippingSettingsFormValues } from "@harness-monorepo/ui/lib/integrations"
+import type { AsaasCardView, IntegrationCardView, MelhorEnvioCardView, PaymentSettingsFormValues, ShippingServiceView, ShippingSettingsFormValues, UpcomingIntegrationView } from "@harness-monorepo/ui/lib/integrations"
 
 export const connected: MelhorEnvioCardView = {
   available: true,
@@ -31,6 +31,11 @@ export const melhorEnvioCard: IntegrationCardView = {
   connectBy: "authorization",
   connection: { state: "disconnected", account: null, sandbox: true },
 }
+
+export const BEEFLOW_LOGO = "/brand/integrations/beeflow.png"
+
+/** On its way: announced, with nothing to connect. */
+export const beeflowUpcoming: UpcomingIntegrationView = { product: "BEEFLOW", logoSrc: BEEFLOW_LOGO }
 
 /** Connecting Asaas is typing a key on its own page: both ways lead there. */
 export const asaasCard: IntegrationCardView = {

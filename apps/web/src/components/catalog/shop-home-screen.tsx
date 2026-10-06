@@ -1,6 +1,7 @@
 "use client"
 
 // UI
+import { BeeflowBanner } from "@harness-monorepo/ui/blocks/dashboard/beeflow-banner"
 import { SetupCard } from "@harness-monorepo/ui/blocks/dashboard/setup-card"
 import { Skeleton } from "@harness-monorepo/ui/components/skeleton"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
@@ -10,6 +11,9 @@ import type { WebMessages } from "@/locales"
 
 // App
 import { AppLink } from "@/components/app-link"
+import { BrandPhoto } from "@/components/landing/brand-photo"
+import beeflowBanner from "@/assets/images/beeflow-banner.jpg"
+import { integrationPagesOf } from "@/lib/integration-pages"
 import { useSections } from "@/services/page/page-hooks"
 import { useProducts } from "@/services/catalog/catalog-hooks"
 import { useLeads } from "@/services/leads/lead-hooks"
@@ -21,8 +25,12 @@ export interface ShopHomeScreenProps {
   web: WebMessages
 }
 
+/** As wide as the page's column: the window, less the rail where the rail shows. */
+const BANNER_SIZES = "(min-width: 48rem) calc(100vw - 18rem), 100vw"
+
 /**
- * The panel's home for one shop: what is left to set up.
+ * The panel's home for one shop: what is left to set up — under BeeFlow's banner where it is a shop,
+ * which leads to the Integrations page where BeeFlow is announced.
  *
  * Every card knows whether its thing is done, and asks the screens that own it rather than keeping
  * a checklist of its own — a stored "you have finished this step" goes stale the moment a
@@ -123,6 +131,22 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
         <h1 className="text-2xl font-semibold">{store.data?.name ?? slug}</h1>
         <p className="text-muted-foreground text-sm">{site ? text.site.subtitle : text.subtitle}</p>
       </header>
+
+      {/*
+        A shop's alone: BeeFlow tells customers of their orders, and a site has neither orders nor an
+        Integrations page to be led to. Until the store says which it is, the banner's place is held
+        in its own shape, so the cards under it do not jump for the many that are shops.
+      */}
+      {store.isPending ? (
+        <Skeleton className="aspect-video w-full rounded-xl" />
+      ) : site ? null : (
+        <BeeflowBanner
+          href={integrationPagesOf(slug).list}
+          image={<BrandPhoto image={beeflowBanner} alt={ui.integrations.upcoming.beeflow.banner.alt} sizes={BANNER_SIZES} />}
+          linkComponent={AppLink}
+          messages={ui}
+        />
+      )}
 
       {loading ? (
         <div className="grid gap-4 lg:grid-cols-6">

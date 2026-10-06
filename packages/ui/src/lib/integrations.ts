@@ -86,6 +86,16 @@ export interface IntegrationCardView {
   connection: "loading" | "failed" | IntegrationCardConnection
 }
 
+/** What is announced on the Integrations page before it can be connected. No provider of the wire's: nothing is read of it. */
+export type UpcomingIntegrationValue = "BEEFLOW"
+
+/** Something on its way, as its card shows it: who it is and its mark. It has no connection, no page and no way in. */
+export interface UpcomingIntegrationView {
+  product: UpcomingIntegrationValue
+  /** Its own mark, as a file the app serves. */
+  logoSrc: string
+}
+
 /** A carrier's service, to switch on or off. Mirrors `MelhorEnvioShippingService`. */
 export interface ShippingServiceView {
   id: number

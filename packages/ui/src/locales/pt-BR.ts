@@ -2980,6 +2980,18 @@ export const ptBR: UiMessages = {
       failed: "Não foi possível carregar esta integração.",
       retryLabel: "Tentar de novo: {name}",
     },
+    upcoming: {
+      badge: "Em breve",
+      note: "Disponível em breve.",
+      beeflow: {
+        title: "BeeFlow",
+        summary: "O WhatsApp da loja trabalhando sozinho: avisos de pedido, cupons e promoções, e atendimento automático.",
+        banner: {
+          alt: "BeeFlow, da Beelink: “Seu WhatsApp trabalhando por você!” Automatize as notificações da sua loja e mantenha seus clientes informados pelo WhatsApp: status do pedido, cupons e promoções, avisos importantes e atendimento automático. Ativação por apenas R$ 39,90.",
+          link: "Conheça o BeeFlow em Integrações",
+        },
+      },
+    },
     result: {
       connected: "Melhor Envio conectado. Escolha abaixo como a loja envia.",
       errors: {

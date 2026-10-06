@@ -1,6 +1,6 @@
 // Types
 import type { AsaasConnection, MelhorEnvioConnection } from "@harness-monorepo/contracts"
-import type { IntegrationCardConnection, IntegrationCardView, IntegrationProviderValue } from "@harness-monorepo/ui/lib/integrations"
+import type { IntegrationCardConnection, IntegrationCardView, IntegrationProviderValue, UpcomingIntegrationView } from "@harness-monorepo/ui/lib/integrations"
 
 /**
  * The panel's Integrations as pages: the one that shows every third party there is, and each
@@ -19,6 +19,13 @@ export const INTEGRATION_LOGOS: Record<IntegrationProviderValue, string> = {
   MELHOR_ENVIO: "/brand/integrations/melhor-envio-icon.png",
   ASAAS: "/brand/integrations/asaas-icon.png",
 }
+
+/**
+ * What the page announces before it can be connected: BeeFlow, Beelink's own, which will put the
+ * shop's WhatsApp to work. No API, route or page of it exists yet, so it is no card with a
+ * connection — only its name and its mark, cut from the artwork to its yellow square.
+ */
+export const UPCOMING_INTEGRATIONS: readonly UpcomingIntegrationView[] = [{ product: "BEEFLOW", logoSrc: "/brand/integrations/beeflow.png" }]
 
 /** A connection as its query has it: read, still being read, or a read that failed. */
 export type ConnectionRead<T> = T | "loading" | "failed"
