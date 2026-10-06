@@ -250,3 +250,110 @@ volta sem cobrança e a conversa termina sozinha, sob a posse.
 BFF, checkout, tela de pagamento, leitura pública das formas aceitas e `docs/product` (Q4). Webhook,
 reconciliação, cancelamento automático e evento de tempo real (Q5). E-mail e a etapa "pagamento
 aprovado" (Q6). Estorno (Q7). Pedido registrado pela loja no painel continua `OFFLINE`.
+
+## Para os próximos tickets
+
+### Q4 (BEELINK-205): checkout e tela de pagamento
+
+- **O que a loja aceita agora:** `AsaasAcceptance.of(storeId)` (`integrations/asaas/asaas-acceptance.ts`,
+  exportado pelo `IntegrationsModule`) devolve `connected`, `pix`, `card`, `maxInstallments` e
+  `offline`. É a mesma leitura que `CustomerOrdersService.place` usa para recusar: a leitura pública
+  da vitrine deve sair dela, para o checkout nunca oferecer o que o `place` recusa. Ela ainda não tem
+  rota.
+- **Os mínimos:** `installmentsRoomOf(totalCents)` e `belowMinimumOf` (`payments/payment-terms.ts`)
+  dizem quantas parcelas um total comporta. Os dois números estão em
+  `integrations/asaas/asaas-limits.ts`. O contrato só leva tipos: o web precisa repetir o R$ 5,00
+  ou recebê-lo da leitura pública (melhor).
+- **Colocar o pedido:** `paymentChannel: "ONLINE"`, `paymentMethod` `PIX` ou `CREDIT_CARD`,
+  `installments` e, sem CPF no cadastro, `recipientDocument`. As recusas novas:
+  `ORDER_PAYMENT_NOT_ACCEPTED`, `ORDER_PAYMENT_BELOW_MINIMUM` (com `details`) e
+  `ORDER_PAYER_DOCUMENT_MISSING`. As frases dos três códigos novos de pedido já estão em
+  `apps/web/src/locales/` (o tipo do dicionário exige); revise-as com a tela na frente.
+- **A resposta do `place`** traz `payment` sem o QR. A tela chama `GET …/orders/:number/payment`
+  para o copia e cola e a imagem. `payment: null` num pedido `ONLINE` quer dizer "ainda não tem
+  cobrança": a tela oferece gerar, com `POST …/payment`.
+- **O `POST …/payment`** responde `409 PAYMENT_IN_PROGRESS` quando outra chamada está criando a
+  cobrança (inclusive a do próprio `place`, se o Asaas demorou mais de 8 s): a tela relê em alguns
+  segundos. Depois de um `POST` ao Asaas que ficou sem resposta, isso dura até 45 s.
+- **`pix: null` com `status: "PENDING"`** quer dizer que o Asaas não entregou o QR: releia. Com a
+  validade vencida (`expiresAt` no passado), ofereça "gerar novo Pix".
+- **`OrderPayment.expiresAt`** é até quando a cobrança é oferecida aqui. No Pix de uma conta sem
+  chave Pix cadastrada, o QR vale só até 23h59 do mesmo dia, e `expiresAt` encolhe para isso quando
+  o QR é lido.
+- **Os códigos `PAYMENT_*`** estão em `OrderPaymentErrorCode` e ainda não têm frase no web.
+- **`docs/product`** não mudou neste ticket (decisão 16 do briefing): muda no Q4.
+
+### Q5 (BEELINK-206): webhook, reconciliação e cancelamento automático
+
+- **A porta de um fato do Asaas é `applyCharge(tx, order, plan, now)`** (`payments/payment-facts.ts`).
+  Ela recebe a cobrança como o Asaas a descreve (`ChargePlan`; `plansOf` junta as parcelas de um
+  parcelamento) e grava na linha que tem aquele `providerId`, ou cria a linha se o bee-link nunca
+  ouviu falar da cobrança. O status só anda para a frente (`statusAfter`, em `payment-status.ts`).
+  Ela roda numa transação que segura a linha da loja e não fala com o Asaas. O webhook e a
+  reconciliação devem entrar por ela; hoje quem a chama é `OrderPayments` (ao listar o Asaas).
+- **Um evento de parcela** traz `payment.installment`: a linha guarda o id do parcelamento em
+  `providerInstallmentId` e o da primeira parcela em `providerId`. O Q5 precisa casar pelo
+  parcelamento quando o evento for de outra parcela (hoje `applyCharge` casa só por `providerId`).
+- **`PARTIALLY_REFUNDED` e `refundedCents`** não são escritos por ninguém ainda: são do Q7, pelos
+  eventos e por `refunds`.
+- **Uma conversa com o Asaas sobre um pedido é `OrderPayments.ensure`** (criar) e
+  **`OrderPayments.release`** (apagar o que o pedido não quer mais). O cancelamento automático deve
+  conferir no Asaas e chamar `release` depois de cancelar, como `CustomerOrdersService.cancel` faz.
+  Uma rotina de recuperação pode procurar pedidos `ONLINE` com `paymentClaimedUntil` vencido e não
+  nulo: é a marca de uma conversa que terminou sem resultado conhecido.
+- **O que o Q3 deixa sem dono até o Q5:**
+  - `release` que falha (Asaas fora do ar no cancelamento) deixa a cobrança pagável, com o motivo em
+    `lastError` e a linha ainda `PENDING` num pedido cancelado. Ninguém tenta de novo.
+  - Uma cobrança paga achada num pedido cancelado é gravada como paga e logada como erro
+    (`A paid charge stands on an order that was cancelled or changed`). Avisar a loja é do Q5.
+  - Trocar de conta Asaas ou desconectar não apaga as cobranças pendentes da conta antiga: com a
+    chave nova elas não são alcançadas (a linha vira `CANCELLED` na próxima conversa, mas o QR antigo
+    continua pagável lá). O gancho "antes de a chave sair", das propostas 1 e 2, resolve.
+  - `OVERDUE` só é gravado quando o pedido volta a conversar com o Asaas.
+- **Chave sem uso:** a documentação (`docs/chaves-de-api`, achado do Q2) diz que o Asaas desabilita
+  uma chave sem uso por 3 meses e a expira em 6, e avisa pelos eventos `ACCESS_TOKEN_DISABLED`,
+  `ACCESS_TOKEN_DELETED` e `ACCESS_TOKEN_EXPIRED`. O Q5 decide se o webhook passa a assiná-los; hoje
+  quem descobre uma chave morta é o primeiro `401` (`AsaasCharges` marca `NEEDS_RECONNECT`).
+- **Limite de requisições:** um `429` hoje é um `AsaasUnreachable` como outro qualquer. A
+  reconciliação vai precisar ler `RateLimit-Reset`.
+- **Um gate** `api/order-payments-in-payments` (ninguém escreve `orderPayment.*` fora de
+  `modules/payments`) vale a pena quando o Q5 trouxer mais escritores; hoje a regra 10 de
+  `apps/api/AGENTS.md` é só prosa.
+
+### Q6 e Q7
+
+- **Q6:** o painel já recebe `Order.payment` (`ShopOrderPayment`, com `providerStatus` e `lastError`)
+  e `OrderSummary.payment` (`status` e `expiresAt`). O filtro de pagos e pendentes tem o índice
+  `order_payments(storeId, status)`.
+- **Q7:** `refusePaidOrder(tx, orderId)` (`payments/payment-guards.ts`) é o que hoje recusa cancelar
+  e mudar o frete de um pedido pago (`ORDER_PAID`). O cancelamento com estorno passa por ela. Apagar
+  um parcelamento é `DELETE /v3/installments/{id}`, que não pode ser restaurado.
+
+## Acréscimos de 06/10/2026: o que mudou enquanto foi feito
+
+- **O `FAILED` também é gravado quando o Asaas recusa a listagem ou a leitura** (um 4xx que não é
+  401), não só a criação: a regra é "o Asaas disse não a esta tentativa". Recusar **apagar** uma
+  cobrança que continua de pé não vira `FAILED`: o motivo vai para o `lastError` da linha viva.
+- **`release` não apaga uma cobrança pendente do valor certo.** A loja que repete o mesmo frete não
+  derruba o Pix que o cliente está pagando.
+- **`release` não chama o Asaas para um pedido que nunca conversou com ele** (sem linha em
+  `order_payments` e sem `paymentClaimedUntil`): fechar o frete de um pedido `ONLINE` pela primeira
+  vez não custa requisição.
+- **O cliente vai para o Asaas só com nome, CPF e `externalReference`.** E-mail e telefone não são
+  enviados: o Asaas não precisa deles com as notificações desligadas.
+- **Os testes unitários do serviço.** `AsaasCharges` tem os seus, com o Asaas falso e um Prisma em
+  memória (a chave, o cliente, o `401`). As garantias de `OrderPayments.ensure` (idempotência, duas
+  chamadas ao mesmo tempo, o processo que morre, o pedido que muda no meio) são provadas no e2e,
+  contra o Postgres de verdade: elas dependem da trava de linha e do índice único, e um banco falso
+  provaria só o falso. As regras puras de que ela depende (`payment-status`, `payment-terms`,
+  `charge-plan`) têm testes unitários.
+- **Os três Asaas falsos antigos** estendem `AsaasWithoutCharges` (`test/support/asaas-stub.ts`). O
+  Asaas falso das cobranças é `test/support/fake-asaas.ts`, usado pelo e2e e pelo spec de
+  `AsaasCharges`.
+- **`apps/web` mudou em seis arquivos**, sem tela: quatro fixtures de teste ganharam os campos novos
+  do contrato, e os dois dicionários ganharam a frase dos três códigos novos de `OrderErrorCode`,
+  que o tipo `Record<…ErrorCode, string>` exige.
+- **As rotas existem no sandbox.** Sem chave válida, `GET /v3/payments?externalReference=`,
+  `GET /v3/customers?cpfCnpj=`, `GET /v3/payments/{id}/pixQrCode` e `/v3/installments/{id}`
+  respondem `401`, e um caminho inventado responde `404` (conferido com `curl` em 06/10). É tudo o
+  que dá para conferir sem chave: nenhum corpo de resposta foi visto de verdade.
