@@ -1184,6 +1184,35 @@ export interface UiMessages {
       previewOf: string
       back: string
       apply: string
+      /** Beside the button, while the chosen model is built around a product and none is chosen. */
+      applyNeedsProduct: string
+      /** Beside the button, for a model that asks for something this gallery cannot choose. */
+      applyUnavailable: string
+    }
+    /** The question before a model replaces a page's draft. */
+    templateApply: {
+      /** `{name}` is the model's. */
+      title: string
+      /** `{page}` is the page's name. */
+      replaces: string
+      shopUnchanged: string
+      /** Said only when the draft holds changes the shop does not serve yet. */
+      unpublishedLost: string
+      cancel: string
+      confirm: string
+      applying: string
+      /** When the API refused with a code the screen has no sentence for. */
+      failed: string
+    }
+    /** The line the editor shows once a model is in the draft. */
+    templateApplied: {
+      /** `{name}` is the model's. */
+      applied: string
+      /** Above the page's problems, when the model left any. */
+      problemsTitle: string
+      checking: string
+      publish: string
+      dismiss: string
     }
     gallery: {
       title: string

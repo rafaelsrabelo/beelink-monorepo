@@ -51,12 +51,11 @@ export interface TemplateGalleryProps {
    */
   renderPreview: (template: GalleryTemplate, size: TemplatePreviewSize) => ReactNode
   product?: TemplateGalleryProduct
-  /**
-   * Applying the chosen model. Without it — while the screen does not apply yet — the large preview
-   * has no such button: choosing a model only shows it.
-   */
+  /** Applying the chosen model: the screen asks first. Without it the large preview has no such button. */
   onApply?: (template: GalleryTemplate) => void
   applying?: boolean
+  /** Why the chosen model cannot be applied yet — it waits for its product — said beside the disabled button. */
+  applyBlocked?: string | null
   messages?: UiMessages
 }
 
@@ -81,6 +80,7 @@ export function TemplateGallery({
   product,
   onApply,
   applying = false,
+  applyBlocked = null,
   messages = defaultMessages,
 }: TemplateGalleryProps) {
   const text = messages.design.templateGallery
@@ -203,8 +203,9 @@ export function TemplateGallery({
                     <h3 className="truncate text-sm font-semibold">{names[selected.id].title}</h3>
                     <p className="text-muted-foreground hidden text-xs sm:block">{names[selected.id].description}</p>
                   </div>
+                  {onApply && applyBlocked ? <p className="text-muted-foreground text-xs">{applyBlocked}</p> : null}
                   {onApply ? (
-                    <Button type="button" size="sm" disabled={applying} onClick={() => onApply(selected)}>
+                    <Button type="button" size="sm" disabled={applying || applyBlocked !== null} onClick={() => onApply(selected)}>
                       {text.apply}
                     </Button>
                   ) : null}

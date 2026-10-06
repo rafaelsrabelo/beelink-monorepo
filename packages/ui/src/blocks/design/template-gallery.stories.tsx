@@ -72,7 +72,20 @@ export const PreviasEmCadaEstado: Story = {
   },
 }
 
-/** Como o W5 vai usar: com `onApply`, a prévia grande ganha o botão. */
-export const ComAplicar: Story = { args: { selectedId: "ofertas", onApply: fn() } }
-
 export const EmIngles: Story = { args: { messages: en, selectedId: "ofertas" } }
+
+/** Com `onApply`, a prévia grande ganha "Usar este modelo"; a tela pergunta antes de aplicar. */
+export const ComAplicar: Story = { args: { selectedId: "vitrine-com-capa", onApply: fn() } }
+
+/** Um modelo de produto sem produto escolhido: o botão espera, e diz o que falta. */
+export const AplicarEsperaProduto: Story = {
+  args: {
+    templates: LANDING_TEMPLATES,
+    selectedId: "lancamento",
+    onApply: fn(),
+    applyBlocked: "Escolha um produto para usar este modelo.",
+    product: { options: PRODUCTS, state: "ready", selectedId: null, onPick: fn() },
+    renderPreview: (template, size) =>
+      template.needsProduct ? <TemplatePreviewFrame state="needsProduct" size={size} /> : samplePreview(template, size),
+  },
+}
