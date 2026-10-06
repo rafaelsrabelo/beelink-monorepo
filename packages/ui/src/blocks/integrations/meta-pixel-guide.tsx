@@ -15,12 +15,13 @@ export interface MetaPixelGuideProps {
 }
 
 const STEPS = ["open", "sources", "pick", "copy"] as const
-const NOTES = ["domain", "reports", "unchecked"] as const
+const NOTES = ["domain", "reports", "unchecked", "consent"] as const
 
 /**
  * Where a shopkeeper finds their pixel's ID at Meta (BEELINK-270), step by step, and what is good to
  * know before pasting it: the domain needs no verifying there (BEELINK-268 — shops share one, and
- * none could verify it), reports and ads stay at Meta, and nobody checks the ID against Meta.
+ * none could verify it), reports and ads stay at Meta, nobody checks the ID against Meta, and a visitor
+ * is asked before anything of theirs reaches Meta (BEELINK-271).
  *
  * Under the card whether an ID is saved or not: whoever changes one needs it as much as whoever
  * gives the first. The link leaves for another tab that cannot reach back into the panel.

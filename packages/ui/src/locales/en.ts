@@ -914,6 +914,21 @@ export const en: UiMessages = {
     footerShop: "The shop",
     footerContact: "Get in touch",
     copyright: "© {year} {name}. All rights reserved.",
+    consent: {
+      title: "Advertising cookies",
+      body: "This shop uses the Meta Pixel to measure its ads on Facebook and Instagram. If you accept, Meta receives data about your browsing in this shop. If you refuse, nothing is sent and the shop works just the same. Learn more in the {privacy}.",
+      refuse: "Refuse",
+      accept: "Accept",
+      current: {
+        granted: "Your current choice: you accepted.",
+        denied: "Your current choice: you refused.",
+      },
+      saved: {
+        granted: "Choice saved: you accepted this shop's advertising cookies.",
+        denied: "Choice saved: you refused this shop's advertising cookies.",
+      },
+      footerLink: "Cookies",
+    },
     payments: {
       money: "Cash",
       pix: "Pix",
@@ -3162,6 +3177,7 @@ export const en: UiMessages = {
           domain: "You do not need to verify the domain at Meta to use the pixel on your shop.",
           reports: "Reports and ad creation stay at Meta: bee-link does not show how the ads perform.",
           unchecked: "bee-link has no way to check the ID with Meta. Copy and paste the number rather than typing it.",
+          consent: "With an ID saved, whoever visits your shop sees a cookie notice and chooses to accept or refuse. Without the visitor's yes, nothing is sent to Meta.",
         },
       },
     },

@@ -43,6 +43,8 @@ describe("MetaPixelGuide", () => {
       "Você não precisa verificar o domínio na Meta para usar o pixel na sua loja.",
       "Os relatórios e a criação dos anúncios continuam na Meta: o bee-link não mostra o resultado dos anúncios.",
       "O bee-link não tem como conferir o ID com a Meta. Copie e cole o número, em vez de digitar.",
+      // BEELINK-271: true before the storefront sends anything, and after.
+      "Com um ID salvo, quem visita a sua loja vê um aviso de cookies e escolhe aceitar ou recusar. Sem o aceite do visitante, nada é enviado à Meta.",
     ])
   })
 

@@ -1174,6 +1174,23 @@ export interface UiMessages {
     /** "© {year} {name}. Todos os direitos reservados." — the year is the screen's. */
     copyright: string
     /**
+     * The cookie strip of a shop with a Meta Pixel (BEELINK-271). It says what happens on a yes and
+     * on a no, and never calls one of them the better answer.
+     */
+    consent: {
+      title: string
+      /** {privacy} is the link to the privacy policy, worded by `legal.privacy`. */
+      body: string
+      refuse: string
+      accept: string
+      /** On a strip opened again from the footer: the answer in force. */
+      current: Record<"granted" | "denied", string>
+      /** Said aloud once an answer is given, since the strip leaves the page with it. */
+      saved: Record<"granted" | "denied", string>
+      /** The footer's way back to the choice. */
+      footerLink: string
+    }
+    /**
      * What the shop takes, said to a customer rather than to the shopkeeper. `admin.store.payment`
      * has the same four names, and they are not reusable here: its hints explain a checkbox to the
      * person ticking it ("Pagamento em espécie na entrega"), which is not what a band above the
@@ -3545,8 +3562,11 @@ export interface UiMessages {
         /** Read out after a link that opens another tab. */
         newTab: string
         notesTitle: string
-        /** The domain needs no verifying; reports and ads stay at Meta; nothing checks the ID against Meta. */
-        notes: Record<"domain" | "reports" | "unchecked", string>
+        /**
+         * The domain needs no verifying; reports and ads stay at Meta; nothing checks the ID against
+         * Meta; and a visitor is asked before anything reaches Meta (BEELINK-271).
+         */
+        notes: Record<"domain" | "reports" | "unchecked" | "consent", string>
       }
     }
     /** How the shop is paid once its Asaas is connected (BEELINK-203). */

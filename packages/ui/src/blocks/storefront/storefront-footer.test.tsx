@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest"
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
 import { StorefrontFooter, type StorefrontFooterProps } from "./storefront-footer"
+import { StorefrontFooterAction } from "./storefront-footer-action"
 
 function renderFooter(overrides: Partial<StorefrontFooterProps> = {}) {
   return render(<StorefrontFooter name="Padaria da Ana" {...overrides} />)
@@ -44,6 +45,27 @@ describe("StorefrontFooter", () => {
       "/padaria-da-ana/produtos",
     )
     expect(screen.getByText("© 2026 Padaria da Ana")).toBeInTheDocument()
+  })
+
+  /** BEELINK-271: the way back to the cookie choice is something to do here, not somewhere to go. */
+  it("draws an action among a column's links, as the screen handed it", () => {
+    renderFooter({
+      columns: [
+        {
+          id: "legal",
+          title: "Termos e privacidade",
+          items: [
+            { label: "Política de privacidade", href: "/privacidade" },
+            { id: "cookies", action: <StorefrontFooterAction onClick={() => {}}>Cookies</StorefrontFooterAction> },
+          ],
+        },
+      ],
+    })
+
+    const column = within(screen.getByRole("navigation", { name: "Termos e privacidade" }))
+    expect(column.getAllByRole("listitem")).toHaveLength(2)
+    expect(column.getByRole("button", { name: "Cookies" })).toBeInTheDocument()
+    expect(column.queryByRole("link", { name: "Cookies" })).not.toBeInTheDocument()
   })
 
   it("has no accessibility violations", async () => {

@@ -915,6 +915,21 @@ export const ptBR: UiMessages = {
     footerShop: "A loja",
     footerContact: "Atendimento",
     copyright: "© {year} {name}. Todos os direitos reservados.",
+    consent: {
+      title: "Cookies de anúncios",
+      body: "Esta loja usa o Pixel da Meta para medir os anúncios dela no Facebook e no Instagram. Se você aceitar, a Meta recebe dados da sua navegação nesta loja. Se recusar, nada é enviado e a loja funciona do mesmo jeito. Saiba mais na {privacy}.",
+      refuse: "Recusar",
+      accept: "Aceitar",
+      current: {
+        granted: "Sua escolha atual: você aceitou.",
+        denied: "Sua escolha atual: você recusou.",
+      },
+      saved: {
+        granted: "Escolha salva: você aceitou os cookies de anúncios desta loja.",
+        denied: "Escolha salva: você recusou os cookies de anúncios desta loja.",
+      },
+      footerLink: "Cookies",
+    },
     payments: {
       money: "Dinheiro",
       pix: "Pix",
@@ -3163,6 +3178,7 @@ export const ptBR: UiMessages = {
           domain: "Você não precisa verificar o domínio na Meta para usar o pixel na sua loja.",
           reports: "Os relatórios e a criação dos anúncios continuam na Meta: o bee-link não mostra o resultado dos anúncios.",
           unchecked: "O bee-link não tem como conferir o ID com a Meta. Copie e cole o número, em vez de digitar.",
+          consent: "Com um ID salvo, quem visita a sua loja vê um aviso de cookies e escolhe aceitar ou recusar. Sem o aceite do visitante, nada é enviado à Meta.",
         },
       },
     },
