@@ -227,6 +227,23 @@ describe("OrderPaymentLive — the payment screen of an order", () => {
     expect(shop.count("GET")).toBe(1)
   })
 
+  it("stops saying a refusal once the screen shows a charge to pay: it was of a try that no longer matters", async () => {
+    const shop = handler({ reads: [answer(null), answer(pix())], makes: [() => refusal(503, "PAYMENT_UNAVAILABLE")] })
+    renderScreen()
+    await settle()
+    fireEvent.click(screen.getByRole("button", { name: "Gerar pagamento" }))
+    await settle()
+    expect(screen.getByRole("alert")).toBeInTheDocument()
+
+    // The shop made the charge meanwhile, and the shopper comes back to the tab.
+    tab("visible")
+    await settle()
+
+    expect(shop.count("GET")).toBe(2)
+    expect(screen.getByRole("img", { name: "QR code do Pix" })).toBeInTheDocument()
+    expect(screen.queryByRole("alert")).toBeNull()
+  })
+
   it("leads to the shopper's record when the charge needs a CPF it does not have", async () => {
     handler({ reads: [answer(null)], makes: [() => refusal(409, "PAYMENT_DOCUMENT_MISSING")] })
     renderScreen()

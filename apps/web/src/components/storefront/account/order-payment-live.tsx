@@ -60,6 +60,8 @@ export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, 
   const screen = read.data && read.isFetchedAfterMount ? screenOf(read.data) : null
   const paid = screen?.kind === "notice" && screen.variant === "paid"
   const refused = make.error ? (make.error instanceof ShopperOrderError ? make.error.errorCode : "UNKNOWN") : null
+  // A refusal is of a try to make a charge: once the screen shows one to pay, or a state with none to make — paid, cancelled — it describes nothing here.
+  const stale = refused === null || (screen !== null && !(screen.kind === "notice" && screen.acts))
   const signedOut = (read.error instanceof ShopperOrderError && read.error.errorCode === "AUTH_UNAUTHENTICATED") || refused === "AUTH_UNAUTHENTICATED"
 
   useEffect(() => {
@@ -88,10 +90,9 @@ export function OrderPaymentLive({ slug, number, orderHref, profileHref, order, 
     <StorefrontPaymentLayout
       number={number}
       orderHref={orderHref}
-      // A refusal is of the charge that was on screen: once it is paid, there is nothing left to refuse.
-      alert={refused && !paid ? orderPaymentRefusalOf(refused, text) : null}
+      alert={stale ? null : orderPaymentRefusalOf(refused, text)}
       alertAction={
-        refused === "PAYMENT_DOCUMENT_MISSING" ? (
+        !stale && refused === "PAYMENT_DOCUMENT_MISSING" ? (
           <AppLink href={profileHref} className="w-fit font-semibold underline">
             {text.paymentAddDocument}
           </AppLink>
