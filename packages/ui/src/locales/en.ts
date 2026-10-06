@@ -2976,6 +2976,8 @@ export const en: UiMessages = {
       reconnect: "Reconnect",
       reconnectLabel: "Reconnect {name}",
       account: "Account: {name}",
+      unapprovedBadge: "Account not approved",
+      unapprovedCard: "This shop's account has not been approved yet, and paying on the site stays off until it is. See what to do under Set up.",
       failed: "This integration could not be loaded.",
       retryLabel: "Try again: {name}",
     },
@@ -3087,6 +3089,34 @@ export const en: UiMessages = {
       wrongEnvironment: {
         SANDBOX: "This key is not from the test environment. This installation only takes Asaas sandbox keys, which begin with $aact_hmlg_.",
         PRODUCTION: "This key is not a production one. This installation only takes Asaas production keys, which begin with $aact_prod_.",
+      },
+      approval: {
+        badge: {
+          PENDING: "Registration incomplete",
+          AWAITING_APPROVAL: "Account under review",
+          REJECTED: "Account rejected",
+        },
+        title: {
+          PENDING: "Your Asaas account's registration is not complete",
+          AWAITING_APPROVAL: "Your Asaas account is under review",
+          REJECTED: "Asaas rejected your account's registration",
+        },
+        body: {
+          PENDING: "Asaas has not received all the data and documents it needs to approve the account. Sign in to your Asaas account, complete the registration and wait for the approval.",
+          AWAITING_APPROVAL: "Asaas is checking the data and documents you sent. There is nothing to do here but wait for the approval.",
+          REJECTED: "Sign in to your Asaas account to see why and correct the registration, or talk to Asaas's support.",
+        },
+        meanwhile: "Until the account is approved, paying on the site (Pix and card) stays off, because Asaas would refuse the charges. The shop goes on selling as before: payment is settled directly with the customer.",
+        recheck: "Check again",
+        rechecking: "Checking…",
+        checkedAt: "Last checked: {when}",
+        still: "Asaas has not approved the account yet.",
+        approvedNotice: "Account approved by Asaas. The shop can take payment on the site now.",
+        recheckErrors: {
+          INTEGRATION_UNREACHABLE: "Asaas did not answer. Try again in a moment.",
+          RATE_LIMITED: "Too many attempts. Wait a minute and try again.",
+          UNKNOWN: "Could not check just now. Try again.",
+        },
       },
     },
     payments: {

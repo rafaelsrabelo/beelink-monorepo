@@ -45,6 +45,16 @@ export const PrecisaReconectar: Story = {
   },
 }
 
+/** Conectada, mas a conta ainda não foi aprovada do outro lado: nunca o selo verde, e "Configurar" leva ao que fazer. */
+export const ContaNaoAprovada: Story = {
+  args: {
+    cards: [
+      { ...melhorEnvioCard, connection: { state: "connected", account: "Loja Lessari", sandbox: false } },
+      { ...asaasCard, connection: { state: "unapproved", account: "Lessari Moda LTDA", sandbox: false } },
+    ],
+  },
+}
+
 /** Sem o serviço configurado na instalação: a frase, e nada para apertar. */
 export const Indisponivel: Story = {
   args: { cards: [{ ...melhorEnvioCard, connection: { state: "unavailable", account: null, sandbox: false } }, asaasCard] },

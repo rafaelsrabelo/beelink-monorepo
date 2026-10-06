@@ -24,6 +24,20 @@ const connected = (view: IntegrationCardView, account: string, sandbox = false):
 const mending = (view: IntegrationCardView, account: string): IntegrationCardView => ({ ...view, connection: { state: "needsReconnect", account, sandbox: false } })
 
 describe("IntegrationCards", () => {
+  /** BEELINK-278: a shop whose Asaas account is still being looked at was shown as "Conectado" while every charge was refused. */
+  it("never shows as connected one whose account was not approved: it warns, and leads to its page rather than to connecting again", async () => {
+    const { container } = show([connected(melhorEnvioCard, "Loja Lessari"), { ...asaasCard, connection: { state: "unapproved", account: "Lessari Moda LTDA", sandbox: false } }])
+    const asaas = within(card("Asaas"))
+
+    expect(asaas.getByText("Conta não aprovada")).toBeInTheDocument()
+    expect(asaas.queryByText("Conectado")).toBeNull()
+    expect(asaas.getByRole("alert")).toHaveTextContent(/o pagamento pelo site fica desligado até lá/)
+    expect(asaas.getByText("Conta: Lessari Moda LTDA")).toBeInTheDocument()
+    expect(asaas.getByRole("link", { name: "Configurar Asaas" })).toHaveAttribute("href", "/admin/lessari/integrations/asaas")
+    expect(asaas.queryByRole("link", { name: /Conectar|Reconectar/ })).toBeNull()
+    await expectNoA11yViolations(container)
+  })
+
   it("shows every third party there is, connected or not, each under its own mark and name", async () => {
     const { container } = show([melhorEnvioCard, asaasCard])
 

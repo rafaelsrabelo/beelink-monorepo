@@ -2977,6 +2977,8 @@ export const ptBR: UiMessages = {
       reconnect: "Reconectar",
       reconnectLabel: "Reconectar {name}",
       account: "Conta: {name}",
+      unapprovedBadge: "Conta não aprovada",
+      unapprovedCard: "A conta desta loja ainda não foi aprovada, e o pagamento pelo site fica desligado até lá. Veja o que fazer em Configurar.",
       failed: "Não foi possível carregar esta integração.",
       retryLabel: "Tentar de novo: {name}",
     },
@@ -3088,6 +3090,34 @@ export const ptBR: UiMessages = {
       wrongEnvironment: {
         SANDBOX: "Essa chave não é do ambiente de testes. Esta instalação só aceita chaves do sandbox do Asaas, que começam com $aact_hmlg_.",
         PRODUCTION: "Essa chave não é de produção. Esta instalação só aceita chaves de produção do Asaas, que começam com $aact_prod_.",
+      },
+      approval: {
+        badge: {
+          PENDING: "Cadastro incompleto",
+          AWAITING_APPROVAL: "Conta em análise",
+          REJECTED: "Conta recusada",
+        },
+        title: {
+          PENDING: "Falta completar o cadastro da sua conta no Asaas",
+          AWAITING_APPROVAL: "A sua conta no Asaas está em análise",
+          REJECTED: "O Asaas recusou o cadastro da sua conta",
+        },
+        body: {
+          PENDING: "O Asaas ainda não recebeu todos os dados e documentos de que precisa para aprovar a conta. Entre na sua conta Asaas, complete o cadastro e aguarde a aprovação.",
+          AWAITING_APPROVAL: "O Asaas está conferindo os dados e documentos que você enviou. Não há nada a fazer por aqui: é só aguardar a aprovação.",
+          REJECTED: "Entre na sua conta Asaas para ver o motivo e corrigir o cadastro, ou fale com o suporte do Asaas.",
+        },
+        meanwhile: "Enquanto a conta não for aprovada, o pagamento pelo site (Pix e cartão) fica desligado, porque o Asaas recusaria as cobranças. A loja continua vendendo como antes: o pagamento é combinado direto com o cliente.",
+        recheck: "Verificar de novo",
+        rechecking: "Verificando…",
+        checkedAt: "Última verificação: {when}",
+        still: "O Asaas ainda não aprovou a conta.",
+        approvedNotice: "Conta aprovada pelo Asaas. A loja já pode receber pelo site.",
+        recheckErrors: {
+          INTEGRATION_UNREACHABLE: "O Asaas não respondeu. Tente de novo em instantes.",
+          RATE_LIMITED: "Muitas tentativas. Espere um minuto e tente de novo.",
+          UNKNOWN: "Não foi possível verificar agora. Tente de novo.",
+        },
       },
     },
     payments: {

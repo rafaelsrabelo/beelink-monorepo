@@ -24,6 +24,12 @@ export interface MelhorEnvioCardView {
 /** Where the webhook bee-link registered at a shop's own account stands. Mirrors `IntegrationWebhookState`. */
 export type IntegrationWebhookStateValue = "REGISTERED" | "SKIPPED" | "PAUSED" | "ERROR"
 
+/** Whether Asaas approved the shop's account. Mirrors `AsaasAccountApproval`. */
+export type AsaasApprovalValue = "PENDING" | "AWAITING_APPROVAL" | "APPROVED" | "REJECTED"
+
+/** An account Asaas charges nothing of: every standing but approved. */
+export type AsaasUnapprovedValue = Exclude<AsaasApprovalValue, "APPROVED">
+
 /** The Asaas card. Mirrors `AsaasConnection`, with the address the screen worked out for its environment. */
 export interface AsaasCardView {
   /** This deployment can seal a key; without that there is nothing to connect. */
@@ -35,6 +41,8 @@ export interface AsaasCardView {
   account: { name: string; document: string | null } | null
   /** Null while disconnected. */
   webhook: IntegrationWebhookStateValue | null
+  /** Null while disconnected or not known, which is drawn as approved: only an account read as not approved is said to be so. */
+  approval: AsaasApprovalValue | null
   /** Which connection this is: it changes with every key connected. Null while disconnected. */
   connectedAt: string | null
   /** Where an Asaas account is opened, for a shopkeeper who has none: the sandbox's own site, or Asaas's. */
@@ -59,8 +67,11 @@ export type IntegrationProviderValue = "MELHOR_ENVIO" | "ASAAS"
 
 /** Where a card's connection stands once it was read. */
 export interface IntegrationCardConnection {
-  /** Not set up on this deployment; there to connect; working; or one the third party stopped accepting. */
-  state: "unavailable" | "disconnected" | "connected" | "needsReconnect"
+  /**
+   * Not set up on this deployment; there to connect; working; one the third party stopped accepting;
+   * or one whose account the third party has not approved, which stands and does nothing yet.
+   */
+  state: "unavailable" | "disconnected" | "connected" | "needsReconnect" | "unapproved"
   /** Whose account on the other side, as it names itself. */
   account: string | null
   /** The sandbox simulates what it does: said on the list too. */

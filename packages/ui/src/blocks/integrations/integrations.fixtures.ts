@@ -54,10 +54,11 @@ export const asaasConnected: AsaasCardView = {
   sandbox: true,
   account: { name: "Lessari Moda LTDA", document: "**.222.333/0001-**" },
   webhook: "REGISTERED",
+  approval: "APPROVED",
   connectedAt: "2026-10-05T12:00:00.000Z",
   signUpHref: "https://sandbox.asaas.com",
 }
 
-export const asaasDisconnected: AsaasCardView = { ...asaasConnected, status: "DISCONNECTED", account: null, webhook: null, connectedAt: null }
+export const asaasDisconnected: AsaasCardView = { ...asaasConnected, status: "DISCONNECTED", account: null, webhook: null, approval: null, connectedAt: null }
 
 export const payments: PaymentSettingsFormValues = { pix: true, card: true, maxInstallments: 3, offline: true }
