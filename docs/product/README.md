@@ -167,6 +167,17 @@ Paying online asks the customer's CPF, once. The customer pays without leaving t
 
 A shop with no Asaas account connected, or whose connection needs mending, sells exactly as before: every order is settled with the shop.
 
+## The shop's ad pixel
+
+A store may connect **its own Meta Pixel**, by its ID alone, so that Meta can measure and aim the ads the shopkeeper buys there. The pixel, the ads and the reports are the shopkeeper's, in their own Meta account: bee-link advertises with none of it and shows no result of it.
+
+- **A visitor is asked first, by each shop.** A shop with a pixel asks whoever opens it to accept or refuse, and the two answers weigh the same. Until a yes, nothing of Meta's is loaded and nothing is sent. Every shop lives on one domain, so the answer is the shop's: a yes given at one is not a yes at another.
+- **After a yes, the shop tells Meta the visitor's path through it**: each page opened, a product seen, a search made, a product liked, a product put in the cart, the checkout reached and a way of paying picked — with the product and its value in reais where there is one, and never which way of paying it was. What the visitor did before the yes is not told afterwards. The purchase itself is not told yet.
+- **Every event goes to that shop's pixel and to no other**, whatever shops the visitor opened before it.
+- **A yes can be taken back at any time**, from the shop's footer, and the shop stops telling Meta at once. Meta's own identifiers in the browser belong to the whole domain and stay until they expire: another shop's yes may rest on them.
+- Nothing is told from the panel, from a page being designed, or from a page opened by a single-use link — confirming an e-mail, setting a password.
+- The shop sends no name, e-mail or phone with an event. What reaches Meta beside the event is what any request carries — the address it came from and the browser — and Meta's own identifier. What the shopkeeper switches on in their own Meta account is theirs to answer for.
+
 ## What the product does not do
 
 - It does not receive, hold or move money: an online payment happens in the shopkeeper's own Asaas account, and what is settled with the shop is between the two of them.
