@@ -62,6 +62,23 @@ bee-link has **no app** at Asaas: each shop pastes its own account's API key (BE
 - **A shop's webhook token is a secret.** It is sealed with the key, never returned, and `asaas-access-token` is redacted from the API's request logs. Keep it out of any access log in front of the web that records request headers.
 - **Asaas's quota is per shop**, 25,000 requests in twelve hours of the shop's own account. A `429` is honoured until the time Asaas names; nothing is retried in a loop.
 
+## Homologation
+
+A second Compose service in Dokploy, on the branch `homolog`, from the same file. It is a stack of its own, and **none of its Environment is copied from production**: a value pasted across is how one of the two stops working.
+
+| Variable | In homologation |
+|---|---|
+| `APP_ENVIRONMENT` | `homolog` — the flag "AMBIENTE DE HOMOLOGAÇÃO" over every page, and `noindex`. Production leaves it unset |
+| `STACK_NAME` | its own, e.g. `beelink-homolog`. Traefik's router names are global: the same name as production and one of the two domains answers 404 |
+| `WEB_DOMAIN` | its own host, with its own `A` record |
+| `POSTGRES_PASSWORD`, `JWT_SECRET`, `INTEGRATIONS_SECRET_KEY` | generated again. The database is its own volume; a production session or sealed token must mean nothing here |
+| `SMTP_URL`, `MAIL_FROM` | a mailbox or a sandbox inbox of its own, so a made-up shop never writes to a real customer under production's sender |
+| `MELHOR_ENVIO_ENV` | `sandbox`, with the **sandbox app's** id and secret and `MELHOR_ENVIO_REDIRECT_URI` on this domain. The sandbox app registers this domain's callback and webhook |
+| `ASAAS_ENV` | `sandbox` (or unset, which is the same). Shops paste `$aact_hmlg_…` keys |
+| `GOOGLE_*` | left out, or a client with this domain's redirect URI registered |
+
+`homolog` moves forward to `main` by a fast-forward, never the other way: nothing is committed to it.
+
 ## Constraints
 
 - **HTTPS only.** Session cookies are `Secure` in production; over plain HTTP the browser drops them and nobody signs in.

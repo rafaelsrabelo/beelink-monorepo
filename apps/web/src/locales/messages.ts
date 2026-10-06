@@ -114,6 +114,10 @@ export interface WebMessages {
     title: string
     description: string
   }
+  /** The flag over every page of a deployment that is not production, so nobody takes it for the real site. */
+  environment: {
+    homolog: string
+  }
   /** The landing page at the site's root (BEELINK-256): what a search result and a shared link say of it. */
   landing: {
     title: string
