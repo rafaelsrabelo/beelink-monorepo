@@ -4,10 +4,12 @@ import { FavoritesProvider } from "@/components/storefront/favorites/favorites-p
 import { figtree, shopFontStyle } from "@/components/storefront/shop-font"
 import { ShopperRealtime } from "@/components/storefront/shopper-realtime"
 import { StorefrontConsentGate } from "@/components/storefront/storefront-consent-gate"
+import { StorefrontTracking } from "@/components/storefront/tracking/storefront-tracking"
 import { cartLinesAt } from "@/lib/cart"
 import { consentAt } from "@/lib/consent"
 import { getMessages } from "@/lib/locale"
 import { shopperAt } from "@/lib/shopper"
+import { quietPathsOf } from "@/lib/storefront-event"
 import { shopAt } from "@/lib/storefront-data"
 import { storefrontRoutes } from "@/lib/storefront-routes"
 
@@ -28,6 +30,11 @@ import { storefrontRoutes } from "@/lib/storefront-routes"
  * shop's frame: the panel's design preview draws the frame and never passes through this layout, so
  * a strip can never be drawn there. The answer is read from its cookie per request, like the cart,
  * and no kept read is keyed by it.
+ *
+ * What the shop tells Meta of a visitor who said yes is decided here as well (BEELINK-272), around
+ * the same pages and inside the answer: the pixel loads, and every event of the shop window passes
+ * through `StorefrontTracking`. A shop with no pixel gets it too, and it tells nothing — it is what
+ * shuts a library left in the tab by the shop the visitor came from.
  */
 export default async function StorefrontLayout({ children, params }: LayoutProps<"/[slug]">) {
   const { slug } = await params
@@ -47,7 +54,9 @@ export default async function StorefrontLayout({ children, params }: LayoutProps
       <CartProvider slug={slug} lines={lines}>
         {shopper ? <ShopperRealtime slug={slug} /> : null}
         <StorefrontConsentGate slug={slug} store={store} choice={choice} messages={ui}>
-          {pages}
+          <StorefrontTracking pixelId={store?.metaPixelId ?? null} quietPaths={store ? quietPathsOf(store) : []}>
+            {pages}
+          </StorefrontTracking>
         </StorefrontConsentGate>
       </CartProvider>
     </div>
