@@ -31,3 +31,15 @@ export interface PageTemplateSummary {
   /** Empty when the model is arranged from the shop alone. */
   needs: TemplateNeed[];
 }
+
+/**
+ * A model applied to a page that already exists: it replaces the page's draft, bands and blocks, and
+ * publishes nothing. Answered with the `PageDraft` it left, one revision on.
+ */
+export interface ApplyTemplatePayload {
+  template: TemplateId;
+  /** The product the model is built around, when it asks for one (`needs`). Ignored by a model that does not. */
+  productId?: string | null;
+  /** The category the model is built around, when it asks for one. Ignored by a model that does not. */
+  categoryId?: string | null;
+}
