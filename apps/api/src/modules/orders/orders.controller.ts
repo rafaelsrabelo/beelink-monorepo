@@ -107,7 +107,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Tell the fee agreed for a delivery; the total and the customer’s books follow (BEELINK-170)' })
   @ApiOkResponse({ type: OrderResponse })
   @ApiBadRequestResponse({ description: 'ORDER_DELIVERY_FOR_PICKUP — a pick-up has no fee · ORDER_DISCOUNT_TOO_LARGE · ORDER_TOTAL_TOO_LARGE' })
-  @ApiConflictResponse({ description: 'ORDER_CANCELLED' })
+  @ApiConflictResponse({ description: 'ORDER_CANCELLED · ORDER_PAID — a paid order keeps its total until it is refunded' })
   setDeliveryFee(
     @Param('storeSlug') storeSlug: string,
     @Param('number', OrderNumberPipe) number: number,
@@ -131,7 +131,7 @@ export class OrdersController {
   @Patch(':number/status')
   @ApiOperation({ summary: 'Move the order to another status; nothing leaves CANCELLED' })
   @ApiOkResponse({ type: OrderResponse })
-  @ApiConflictResponse({ description: 'ORDER_CANCELLED · ORDER_STATUS_UNCHANGED' })
+  @ApiConflictResponse({ description: 'ORDER_CANCELLED · ORDER_STATUS_UNCHANGED · ORDER_PAID — a paid order is not cancelled until it is refunded' })
   updateStatus(
     @Param('storeSlug') storeSlug: string,
     @Param('number', OrderNumberPipe) number: number,
