@@ -77,6 +77,8 @@ A second Compose service in Dokploy, on the branch `homolog`, from the same file
 | `ASAAS_ENV` | `sandbox` (or unset, which is the same). Shops paste `$aact_hmlg_…` keys |
 | `GOOGLE_*` | left out, or a client with this domain's redirect URI registered |
 
+**Two stacks share `dokploy-network`, and a service name is an alias on it.** The web reaches its API as `api-internal`, an alias on the stack's own network alone; `http://api:3001` would resolve to either stack's API once both are up, and production would read homologation's database (06/10/2026: it did). Anything else one service calls another by must be on `internal` only — `postgres` is — or go by an alias of its own.
+
 `homolog` moves forward to `main` by a fast-forward, never the other way: nothing is committed to it.
 
 ## Constraints

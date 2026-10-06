@@ -89,7 +89,16 @@ services:
     restart: unless-stopped
     logging: *logging
     # On Traefik's network for the socket alone: its router below is the only one the API has.
-    networks: [internal, dokploy-network]
+    #
+    # `api-internal` exists on this stack's own network and nowhere else, and it is the name the web
+    # calls. The service name cannot be: Docker gives `api` as an alias on EVERY network the
+    # container joins, and `dokploy-network` is shared by every stack on the server. With production
+    # and homologation both up, `api` there is two containers, and production's web was handed
+    # homologation's — every shop a 404 and every login refused, read from the wrong database.
+    networks:
+      internal:
+        aliases: [api-internal]
+      dokploy-network:
     # A LIST, not a map, on purpose. `NAME: ${NAME:-}` defines the variable as an EMPTY string when it
     # is unset, and the env schema (apps/api/src/shared/config/env.ts) refuses "" for the Cloudinary
     # and MapTiler keys — the API dies at boot. In the list form, `- NAME` with no `=` passes the
@@ -208,8 +217,9 @@ services:
     logging: *logging
     networks: [internal, dokploy-network]
     environment:
-      # Server-only, read at runtime by the route handlers — the service name on the internal network.
-      - API_URL=http://api:3001/api
+      # Server-only, read at runtime by the route handlers. The API's alias on the internal network,
+      # never its service name: see the api's `networks`.
+      - API_URL=http://api-internal:3001/api
       # The shop the landing page offers as an example. Unset, it arrives blank and the page offers none.
       - EXAMPLE_STORE_SLUG=${EXAMPLE_STORE_SLUG:-}
       # `homolog` on the homologation stack and nowhere else: the flag over every page, and noindex.
