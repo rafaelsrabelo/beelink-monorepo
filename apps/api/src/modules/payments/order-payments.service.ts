@@ -11,8 +11,8 @@ import { AsaasAcceptance, type AsaasAcceptanceOf } from '../integrations/asaas/a
 import { AsaasCharges, AsaasStoreUnavailable } from '../integrations/asaas/asaas-charges.service.js';
 import { AsaasOutcomeUnknown, AsaasRefused, AsaasUnreachable } from '../integrations/asaas/asaas.client.js';
 import { isPaidPlan, planCreated, planServes, plansOf, rowServes, type ChargePlan, type WantedCharge } from './charge-plan.js';
-import { applyCharge, cancelGone, noteRefusal, recordRefusal } from './payment-facts.js';
-import { DEAD_STATUSES, inReview, statusSaidBy, wasPaid } from './payment-status.js';
+import { applyCharge, cancelRows, noteRefusal, recordRefusal } from './payment-facts.js';
+import { DEAD_STATUSES, inReview, isLive, PAID_STATUSES, statusSaidBy, wasPaid } from './payment-status.js';
 import { belowMinimumOf, brasiliaDayOf, dueDateOf, installmentsFor, isOnlineMethod } from './payment-terms.js';
 import { CLAIM_MS, paymentError, UNKNOWN_OUTCOME_HOLD_MS } from './payments.constants.js';
 
@@ -94,6 +94,31 @@ export class OrderPayments {
   }
 
   /**
+   * Before an order is cancelled or its total changed: what Asaas knows of its waiting charge is heard
+   * first, so one paid since bee-link last asked is refused by `refusePaidOrder` instead of being
+   * cancelled over. Until a webhook tells of payments (BEELINK-206), asking is the only way to know.
+   * Never fails: with Asaas silent the change goes by what bee-link knows.
+   */
+  async hearOf(storeId: string, orderNumber: number): Promise<void> {
+    try {
+      const order = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number: orderNumber } }, select: { id: true, paymentMethod: true, payments: { where: { status: { in: ['PENDING', 'OVERDUE'] } } } } });
+      if (!order || order.payments.length === 0 || !isOnlineMethod(order.paymentMethod)) return;
+      const method = order.paymentMethod;
+      const paid = plansOf(await this.charges.find(storeId, order.id)).find(isPaidPlan);
+      if (!paid) return;
+
+      const now = new Date();
+      await this.underShopLock(storeId, async (tx) => {
+        // The paid charge may be another than the one waiting here: one row alive at a time.
+        await cancelRows(tx, order.payments.filter((row) => row.providerId !== paid.id).map((row) => row.id), now);
+        await applyCharge(tx, { id: order.id, storeId, method }, paid, now);
+      });
+    } catch (error) {
+      this.logger.warn({ storeId, orderNumber, reason: reasonOf(error) }, "Could not ask Asaas of an order's charge before the order changed");
+    }
+  }
+
+  /**
    * Takes out of Asaas the charges an order no longer asks for, once its change is committed: every
    * unpaid one of a cancelled order, and those of another amount when its total changed. Asaas is
    * listed rather than the rows trusted, so a charge left by a dead process goes too. Never fails:
@@ -101,34 +126,39 @@ export class OrderPayments {
    * the shop to read.
    */
   async release(storeId: string, orderId: string): Promise<void> {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      select: { status: true, paymentChannel: true, paymentMethod: true, totalCents: true, deliveryFeeCents: true, paymentClaimedUntil: true, _count: { select: { payments: true } } },
-    });
-    // An order nobody ever talked to Asaas about has nothing there.
-    if (!order || order.paymentChannel !== 'ONLINE' || !isOnlineMethod(order.paymentMethod) || (order._count.payments === 0 && !order.paymentClaimedUntil)) return;
-    const wanted = order.status !== 'CANCELLED' && order.deliveryFeeCents !== null ? order.totalCents : null;
-    const method = order.paymentMethod;
-
     try {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: { status: true, paymentChannel: true, paymentMethod: true, totalCents: true, deliveryFeeCents: true, paymentClaimedUntil: true, payments: true },
+      });
+      // An order nobody ever talked to Asaas about has nothing there.
+      if (!order || order.paymentChannel !== 'ONLINE' || !isOnlineMethod(order.paymentMethod) || (order.payments.length === 0 && !order.paymentClaimedUntil)) return;
+      const wanted = order.status !== 'CANCELLED' && order.deliveryFeeCents !== null ? order.totalCents : null;
+      const method = order.paymentMethod;
+      const rows = new Map(order.payments.map((row) => [row.providerId, row]));
+
       const listed = plansOf(await this.charges.find(storeId, orderId));
       let paid: ChargePlan | null = null;
       let fitting: ChargePlan | null = null;
       for (const plan of listed) {
+        const row = rows.get(plan.id);
         if (isPaidPlan(plan)) paid = plan;
-        // A total set again to what it was leaves its charge as good as before.
-        else if (!fitting && plan.totalCents === wanted) fitting = plan;
+        // A total set again to what it was leaves its charge as good as before — one bee-link has not given up on.
+        else if (!fitting && plan.totalCents === wanted && (!row || isLive(row.status))) fitting = plan;
         else paid = (await this.removeOrPaid(storeId, plan)) ?? paid;
       }
+      // Nothing waits beside money that arrived.
+      if (paid && fitting) await this.removeOrPaid(storeId, fitting);
       if (paid) this.logger.error({ storeId, orderId, chargeId: paid.id }, 'A paid charge stands on an order that was cancelled or changed');
       const kept = paid ?? fitting;
       const now = new Date();
       await this.underShopLock(storeId, async (tx) => {
-        await cancelGone(tx, orderId, kept?.id ?? null, now);
+        // Only the rows read before Asaas was listed: one written since is of a charge that listing never saw.
+        await cancelRows(tx, order.payments.filter((row) => row.providerId !== kept?.id).map((row) => row.id), now);
         if (kept) await applyCharge(tx, { id: orderId, storeId, method }, kept, now);
       });
     } catch (error) {
-      const reason = error instanceof Error ? error.message : 'Unknown failure';
+      const reason = reasonOf(error);
       this.logger.warn({ storeId, orderId, reason }, 'Could not remove the charge of an order that no longer asks for it');
       await this.underShopLock(storeId, (tx) => noteRefusal(tx, orderId, reason)).catch(() => undefined);
     }
@@ -182,72 +212,104 @@ export class OrderPayments {
     const { storeId, want } = talk;
     const now = new Date();
     const today = brasiliaDayOf(now);
+    // Read before Asaas is listed: only these may be given up on by what the listing says.
+    const known = await this.prisma.orderPayment.findMany({ where: { orderId: want.orderId, providerId: { not: null } } });
+    const rows = new Map(known.map((row) => [row.providerId, row]));
     const listed = plansOf(await this.charges.find(storeId, want.orderId));
-    const rows = new Map((await this.prisma.orderPayment.findMany({ where: { orderId: want.orderId, ...live } })).map((row) => [row.providerId, row]));
-    // A charge bee-link keeps a row of serves only while that row does: its Pix code may end before its due day.
+    // A charge bee-link keeps a row of serves only while that row does: its Pix code may end before
+    // its due day, and one given up on here — though it stands at Asaas again — is not taken back.
     const serves = (plan: ChargePlan) => {
       const row = rows.get(plan.id);
       return inReview(plan.status) || (planServes(plan, want, today) && (!row || rowServes(row, want, now, talk.connectedAt)));
     };
+    const alive = (plan: ChargePlan) => Number(isLive(rows.get(plan.id)?.status ?? 'CANCELLED'));
 
     let paid = listed.find(isPaidPlan) ?? null;
     let keeper: ChargePlan | null = null;
     if (!paid) {
       // The one already known here first: it keeps its row, and the code read for it.
-      for (const plan of [...listed].sort((a, b) => Number(rows.has(b.id)) - Number(rows.has(a.id)))) {
+      for (const plan of [...listed].sort((a, b) => alive(b) - alive(a))) {
         if (!keeper && serves(plan)) keeper = plan;
         else paid = await this.removeOrPaid(storeId, plan);
         if (paid) break;
       }
     }
+    const goneBut = (kept: ChargePlan | null) => known.filter((row) => row.providerId !== kept?.id).map((row) => row.id);
 
     if (paid) {
       // Money that arrived wins over everything else the order had waiting.
       for (const plan of listed) {
-        if (plan.id !== paid.id && !isPaidPlan(plan)) await this.charges.remove(storeId, plan).catch((error: unknown) => this.logger.warn({ storeId, orderId: want.orderId, chargeId: plan.id, reason: reasonOf(error) }, 'Could not remove a charge beside a paid one'));
+        if (plan.id !== paid.id && !isPaidPlan(plan)) await this.charges.remove(storeId, plan).catch((error: unknown) => this.logger.error({ storeId, orderId: want.orderId, chargeId: plan.id, reason: reasonOf(error) }, 'Could not remove a charge beside a paid one'));
       }
-      await this.settle(talk, paid);
+      await this.settle(talk, paid, goneBut(paid));
       throw conflict('PAYMENT_ALREADY_PAID', 'The order was already paid');
     }
-    if (keeper) return this.settle(talk, keeper);
+    if (keeper) return this.settle(talk, keeper, goneBut(keeper));
 
-    // Nothing of the order is left at Asaas: what stood here is gone, whatever comes of the creation.
-    await this.underShopLock(storeId, (tx) => cancelGone(tx, want.orderId, null, now));
+    // The claim first: one lost meanwhile must neither give up on rows nor create.
     await this.renew(talk);
-    const charge = await this.charges.create(storeId, {
-      orderId: want.orderId,
-      payer: talk.payer,
-      billingType: want.method,
-      totalCents: want.totalCents,
-      installments: want.installments,
-      dueDate: dueDateOf(want.method, now),
-      description: `Pedido nº ${talk.orderNumber} — ${talk.storeName}`,
-    });
-    return this.settle(talk, planCreated(charge, want));
+    // Nothing of the order is left at Asaas: what stood here is gone, whatever comes of the creation.
+    await this.underShopLock(storeId, (tx) => cancelRows(tx, goneBut(null), now));
+    const charge = await this.charges
+      .create(storeId, {
+        orderId: want.orderId,
+        payer: talk.payer,
+        billingType: want.method,
+        totalCents: want.totalCents,
+        installments: want.installments,
+        dueDate: dueDateOf(want.method, now),
+        description: `Pedido nº ${talk.orderNumber} — ${talk.storeName}`,
+      })
+      .catch(async (error: unknown) => {
+        // Asaas's no to this charge, kept for the shop in Asaas's words.
+        if (error instanceof AsaasRefused) await this.underShopLock(storeId, (tx) => recordRefusal(tx, { id: want.orderId, storeId, ...want }, error.reason));
+        throw error;
+      });
+    return this.settle(talk, planCreated(charge, want), []);
   }
 
   /**
    * The charge written as the order's, under the shop's lock and against the order as it is by now:
-   * one cancelled, or of another total, while Asaas was being asked no longer wants this charge, and
-   * it is removed again instead. A paid one is written whatever became of the order.
+   * one cancelled, of another total, or paid by another charge while Asaas was being asked no longer
+   * wants this one, and it is removed again instead. Written only by the request that still holds
+   * the claim: one that lost it leaves everything to whoever took it.
    */
-  private async settle(talk: Talk, plan: ChargePlan): Promise<OrderPaymentModel> {
+  private async settle(talk: Talk, plan: ChargePlan, gone: readonly string[]): Promise<OrderPaymentModel> {
     const { storeId, want } = talk;
     const now = new Date();
+    const order = { id: want.orderId, storeId, method: want.method };
     const written = await this.underShopLock(storeId, async (tx) => {
-      const order = await tx.order.findUniqueOrThrow({ where: { id: want.orderId }, select: { status: true, totalCents: true, deliveryFeeCents: true } });
-      const cancelled = order.status === 'CANCELLED';
-      if (!isPaidPlan(plan) && (cancelled || order.deliveryFeeCents === null || order.totalCents !== want.totalCents)) return { row: null, cancelled };
+      const current = await tx.order.findUniqueOrThrow({ where: { id: want.orderId }, select: { status: true, totalCents: true, deliveryFeeCents: true, paymentClaimedUntil: true } });
+      if (current.paymentClaimedUntil?.getTime() !== talk.until.getTime()) return { row: null, unwanted: 'LOST' as const };
+      const paidByAnother = await tx.orderPayment.count({ where: { orderId: want.orderId, providerId: { not: plan.id }, status: { in: [...PAID_STATUSES] } } });
+      if (paidByAnother > 0) return { row: null, unwanted: 'PAID' as const };
+      if (!isPaidPlan(plan)) {
+        if (current.status === 'CANCELLED') return { row: null, unwanted: 'CANCELLED' as const };
+        if (current.deliveryFeeCents === null || current.totalCents !== want.totalCents) return { row: null, unwanted: 'CHANGED' as const };
+      }
 
-      await cancelGone(tx, want.orderId, plan.id, now);
-      const row = await applyCharge(tx, { id: want.orderId, storeId, method: want.method }, plan, now);
-      await tx.order.updateMany({ where: { id: want.orderId, paymentClaimedUntil: talk.until }, data: { paymentClaimedUntil: null } });
-      return { row, cancelled };
+      await cancelRows(tx, gone, now);
+      const row = await applyCharge(tx, order, plan, now);
+      await tx.order.update({ where: { id: want.orderId }, data: { paymentClaimedUntil: null } });
+      return { row, unwanted: null };
     });
     if (written.row) return written.row;
 
-    await this.charges.remove(storeId, plan).catch((error: unknown) => this.logger.warn({ storeId, orderId: want.orderId, chargeId: plan.id, reason: reasonOf(error) }, 'Could not remove the charge of an order that changed while it was made'));
-    if (written.cancelled) throw conflict('ORDER_CANCELLED', 'A cancelled order is not charged');
+    if (written.unwanted === 'LOST') throw conflict('PAYMENT_IN_PROGRESS', "The order's charge is being made: read it again in a moment");
+    if (isPaidPlan(plan)) {
+      this.logger.error({ storeId, orderId: want.orderId, chargeId: plan.id }, 'A second paid charge stands on an order already paid');
+    } else {
+      await this.charges.remove(storeId, plan).catch(async (error: unknown) => {
+        // Still to be paid at Asaas and wanted by nobody: kept as the order's charge, with why, rather than left unknown here.
+        this.logger.error({ storeId, orderId: want.orderId, chargeId: plan.id, reason: reasonOf(error) }, 'Could not remove the charge of an order that changed while it was made');
+        await this.underShopLock(storeId, async (tx) => {
+          await applyCharge(tx, order, plan, now);
+          await noteRefusal(tx, want.orderId, reasonOf(error));
+        }).catch(() => undefined);
+      });
+    }
+    if (written.unwanted === 'CANCELLED') throw conflict('ORDER_CANCELLED', 'A cancelled order is not charged');
+    if (written.unwanted === 'PAID') throw conflict('PAYMENT_ALREADY_PAID', 'The order was already paid');
     throw conflict('PAYMENT_IN_PROGRESS', 'The order changed while its charge was being made: ask again');
   }
 
@@ -297,7 +359,7 @@ export class OrderPayments {
       return unavailable();
     }
     if (error instanceof AsaasRefused) {
-      await this.underShopLock(storeId, (tx) => recordRefusal(tx, { id: want.orderId, storeId, ...want }, error.reason));
+      this.logger.warn({ storeId, orderId: want.orderId, reason: error.message }, 'Asaas refused a request about a charge');
       return new BadGatewayException(paymentError('PAYMENT_REFUSED', 'The charge could not be made'));
     }
     if (error instanceof AsaasUnreachable) {

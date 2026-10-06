@@ -30,23 +30,24 @@ export class CustomerPayments {
 
   /** The order's charge with what it is paid with; null for an order settled with the shop, and for one with no charge yet. */
   async read(storeSlug: string, userId: string, number: number): Promise<CustomerOrderPaymentAnswer> {
-    const { storeId, orderId } = await this.orderOf(storeSlug, userId, number);
+    const { storeId, orderId, stands } = await this.orderOf(storeSlug, userId, number);
     const row = shownPaymentOf(await this.prisma.orderPayment.findMany({ where: { orderId } }));
-    return { payment: row ? toCustomerPayment(await this.withPix(storeId, row), new Date()) : null };
+    if (!row) return { payment: null };
+    return { payment: toCustomerPayment(stands ? await this.withPix(storeId, row) : row, new Date(), stands) };
   }
 
   /** The order's charge made sure of — the one it has, or a new one — and answered as `read` answers it. */
   async charge(storeSlug: string, userId: string, number: number): Promise<CustomerOrderPaymentAnswer> {
     const { storeId, orderId } = await this.orderOf(storeSlug, userId, number);
     const row = await this.payments.ensure(storeId, orderId);
-    return { payment: toCustomerPayment(await this.withPix(storeId, row), new Date()) };
+    return { payment: toCustomerPayment(await this.withPix(storeId, row), new Date(), true) };
   }
 
-  private async orderOf(storeSlug: string, userId: string, number: number): Promise<{ storeId: string; orderId: string }> {
+  private async orderOf(storeSlug: string, userId: string, number: number): Promise<{ storeId: string; orderId: string; stands: boolean }> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
-    const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, select: { id: true } });
+    const order = await this.prisma.order.findFirst({ where: { storeId, customerId, number }, select: { id: true, status: true } });
     if (!order) throw new NotFoundException(paymentError('ORDER_NOT_FOUND', `No order #${number} of yours in this shop`));
-    return { storeId, orderId: order.id };
+    return { storeId, orderId: order.id, stands: order.status !== 'CANCELLED' };
   }
 
   /**

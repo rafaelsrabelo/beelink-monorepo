@@ -6,6 +6,9 @@ export const ORDER_PAYMENT_STATUSES = ['PENDING', 'CONFIRMED', 'RECEIVED', 'OVER
 /** Out of the living: removed from Asaas, or never made there. Every other status is the order's one charge. */
 export const DEAD_STATUSES = ['CANCELLED', 'FAILED'] as const satisfies readonly OrderPaymentStatus[];
 
+/** Every status of a charge that was paid, wherever the money is now. */
+export const PAID_STATUSES = ['CONFIRMED', 'RECEIVED', 'PARTIALLY_REFUNDED', 'REFUNDED'] as const satisfies readonly OrderPaymentStatus[];
+
 export const isLive = (status: OrderPaymentStatus): boolean => status !== 'CANCELLED' && status !== 'FAILED';
 
 /** The shop holds the customer's money for it: such an order is not cancelled, nor its total changed, without a refund. */

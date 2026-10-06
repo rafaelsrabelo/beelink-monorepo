@@ -45,8 +45,9 @@ export function toShopOrderPayment(rows: readonly OrderPaymentModel[]): ShopOrde
 }
 
 /** With what it is paid with — only while it is still to be paid: a code or an invoice of a charge paid, removed or past its time leads nowhere. */
-export function toCustomerPayment(row: OrderPaymentModel, now: Date): CustomerOrderPayment {
-  const within = row.expiresAt !== null && row.expiresAt > now;
+export function toCustomerPayment(row: OrderPaymentModel, now: Date, orderStands: boolean): CustomerOrderPayment {
+  // A cancelled order's charge is not offered, even one Asaas has not removed yet.
+  const within = orderStands && row.expiresAt !== null && row.expiresAt > now;
   const pix = row.status === 'PENDING' && within && row.pixPayload && row.pixImage && row.expiresAt ? { payload: row.pixPayload, image: row.pixImage, expiresAt: row.expiresAt.toISOString() } : null;
   const invoiceUrl = row.method === 'CREDIT_CARD' && row.status === 'PENDING' && within ? row.invoiceUrl : null;
   return { ...toPayment(row), pix, invoiceUrl };

@@ -56,15 +56,14 @@ export async function applyCharge(tx: Tx, order: { id: string; storeId: string; 
 }
 
 /**
- * The order's unpaid charges that Asaas no longer holds — removed there, or never in the account the
- * shop has now — marked cancelled, all but the one that stays. Called only once Asaas was listed and
- * every other charge it held was removed: a row leaves the living on Asaas's word alone.
+ * Rows whose charges Asaas no longer holds — removed there, or not in the account the shop has now —
+ * marked cancelled, while they are still unpaid. By their ids, as they were read before Asaas was
+ * listed: a row written since belongs to a charge that listing never saw, and is not this caller's
+ * to cancel. A row leaves the living on Asaas's word alone.
  */
-export async function cancelGone(tx: Tx, orderId: string, keepProviderId: string | null, now: Date): Promise<void> {
-  await tx.orderPayment.updateMany({
-    where: { orderId, status: { in: ['PENDING', 'OVERDUE'] }, ...(keepProviderId ? { providerId: { not: keepProviderId } } : {}) },
-    data: { status: 'CANCELLED', cancelledAt: now, pixPayload: null, pixImage: null },
-  });
+export async function cancelRows(tx: Tx, ids: readonly string[], now: Date): Promise<void> {
+  if (ids.length === 0) return;
+  await tx.orderPayment.updateMany({ where: { id: { in: [...ids] }, status: { in: ['PENDING', 'OVERDUE'] } }, data: { status: 'CANCELLED', cancelledAt: now, pixPayload: null, pixImage: null } });
 }
 
 /** An attempt Asaas refused to make, kept for the shop to read why — in Asaas's words, which the customer is never told. Never alive. */

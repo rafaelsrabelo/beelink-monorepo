@@ -204,6 +204,9 @@ describe('AsaasHttpClient', () => {
 
       answer(404, { errors: [{ code: 'not_found', description: 'Cobrança não encontrada.' }] });
       expect(await client.charge(config, KEY, 'pay_x')).toBeNull();
+      // Only a 404 is "none such": an answer nobody can read is not a charge that is gone.
+      answer(200, { unexpected: true });
+      await expect(client.charge(config, KEY, 'pay_x')).rejects.toBeInstanceOf(AsaasUnreachable);
     });
 
     it('keeps only an https invoice link, and does not break on what Asaas leaves out', async () => {

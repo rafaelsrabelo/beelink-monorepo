@@ -357,3 +357,56 @@ aprovado" (Q6). Estorno (Q7). Pedido registrado pela loja no painel continua `OF
   `GET /v3/customers?cpfCnpj=`, `GET /v3/payments/{id}/pixQrCode` e `/v3/installments/{id}`
   respondem `401`, e um caminho inventado responde `404` (conferido com `curl` em 06/10). É tudo o
   que dá para conferir sem chave: nenhum corpo de resposta foi visto de verdade.
+
+## Acréscimos de 06/10/2026: a revisão antes da entrega
+
+Uma leitura independente do diff, feita contra as garantias e sem conhecer o desenho, achou oito
+pontos. O que mudou por causa dela:
+
+1. **`release` e `ensure` só desistem das linhas que leram antes de listar o Asaas.** Antes,
+   `cancelGone` marcava `CANCELLED` toda linha pendente do pedido. Com a mudança de frete e o
+   `POST …/payment` do cliente ao mesmo tempo, o `release` podia marcar como cancelada a cobrança
+   que o `ensure` tinha acabado de criar, e que continuava pagável. Agora é `cancelRows(tx, ids)`,
+   com os ids lidos antes da listagem. O `ensure` também renova a posse **antes** de desistir das
+   linhas, e `settle` só grava se a posse ainda é dele (`LOST` responde `PAYMENT_IN_PROGRESS`).
+2. **Uma linha `CANCELLED` cuja cobrança voltou a existir no Asaas não é readotada.** A cobrança
+   (restaurada no painel do Asaas, ou nunca apagada) era escolhida como a que serve, e a linha
+   continuava `CANCELLED`: o `POST` respondia 200 com um pagamento cancelado, para sempre. Agora uma
+   cobrança cuja linha local morreu não serve: é apagada, e outra nasce.
+3. **Cancelar e mudar o frete perguntam ao Asaas antes** (`OrderPayments.hearOf`). Sem webhook, a
+   linha de um Pix já pago continuava `PENDING`, e `refusePaidOrder` deixava cancelar por cima do
+   dinheiro. Com uma cobrança pendente, as três operações listam o Asaas antes da transação; uma
+   paga é gravada, e a recusa é `ORDER_PAID`. Se o Asaas não responder, a operação segue pelo que o
+   bee-link sabe. Isto corrige o que este plano dizia em "O resto do pedido": o custo é uma
+   listagem a mais em cada cancelamento de pedido com cobrança pendente. A janela que sobra (pago
+   entre a pergunta e a transação) é do webhook do Q5.
+4. **A leitura do cliente não oferece a cobrança de um pedido cancelado**, mesmo que o Asaas ainda
+   não a tenha apagado: `pix` e `invoiceUrl` vêm nulos.
+5. **Uma cobrança que não deu para apagar depois de o pedido mudar no meio** fica gravada como a
+   cobrança do pedido, com o motivo em `lastError`, em vez de ficar só no Asaas sem linha aqui.
+6. **Duas cobranças pagas no mesmo pedido** não estouram mais o índice único num 500: a segunda é
+   logada como erro (`A second paid charge stands on an order already paid`) e a resposta é
+   `PAYMENT_ALREADY_PAID`. Registrar a segunda e avisar a loja é do Q5.
+7. **`GET /v3/payments/{id}` com um corpo ilegível** não passa mais por "a cobrança sumiu": só o
+   `404` diz isso.
+8. **`FAILED` volta a ter um sentido só**, o do plano original: o Asaas recusou **criar**. Uma
+   listagem ou leitura recusada responde `502 PAYMENT_REFUSED` e fica no log, sem linha. Isto
+   desfaz o primeiro item dos acréscimos acima.
+
+O que a revisão apontou e fica como está, com dono:
+
+- **`release` que falha não é tentado de novo** (Q5: a reconciliação). A cobrança deixa de ser
+  oferecida aqui (item 4), mas quem guardou o copia e cola ainda consegue pagar.
+- **Não aparecer na listagem é tratado como "sumiu".** Vale para a conta trocada (a cobrança da
+  conta antiga continua pagável lá: Q5, com o gancho antes de a chave sair) e valeria para uma
+  listagem do Asaas que atrasasse em relação a uma cobrança recém-criada, o que só o sandbox diz.
+- **Ao lado de uma cobrança paga, outra que o Asaas não deixou apagar** tem a linha cancelada
+  mesmo assim (o índice só admite uma viva, e a paga vence). Fica logada como erro.
+- **Um pedido de total zero** (coberto por cupom ou cashback) é recusado como `ONLINE` pelo mínimo.
+  Numa loja conectada que desligou "pagar na entrega", esse pedido não tem como ser colocado. O Q4
+  decide: o mais simples é o checkout mandar `OFFLINE` quando não há nada a cobrar, e o `place`
+  aceitar `OFFLINE` de total zero mesmo com `offline` desligado.
+- **Um cliente que a loja já tinha no Asaas** é reaproveitado como está (decisão 20), com as
+  notificações que tiver.
+- **Cancelar e fechar o frete esperam o Asaas** antes de responder: uma listagem antes e, com
+  cobrança pendente, uma listagem e um `DELETE` depois.

@@ -144,10 +144,14 @@ export class AsaasHttpClient extends AsaasClient {
 
   async charge(config: AsaasConfig, apiKey: string, id: string): Promise<AsaasCharge | null> {
     const answer = await this.call(config, apiKey, 'GET', `/payments/${encodeURIComponent(id)}`).catch((error: unknown) => {
-      if (gone(error)) return null;
+      if (gone(error)) return undefined;
       throw error;
     });
-    return chargeOf(answer);
+    if (answer === undefined) return null;
+    // Only a 404 is "none such": an answer that cannot be read must not pass for a charge that is gone.
+    const charge = chargeOf(answer);
+    if (!charge) throw new AsaasUnreachable('Asaas answered the charge without an id');
+    return charge;
   }
 
   async createCharge(config: AsaasConfig, apiKey: string, charge: AsaasChargeRequest): Promise<AsaasCharge> {

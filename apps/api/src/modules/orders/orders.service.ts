@@ -158,6 +158,8 @@ export class OrdersService {
     by: { actor: 'SHOPKEEPER' | 'CARRIER'; userId: string | null },
     allowed: (current: OrderStatus) => boolean = () => true,
   ): Promise<Order | null> {
+    // A charge paid since bee-link last asked must be known before the order is cancelled over it (BEELINK-204).
+    if (status === 'CANCELLED') await this.payments.hearOf(storeId, number);
     const moved = await this.prisma.$transaction(async (tx) => {
       // The same row lock as a new order takes, so a status change and a placement never interleave.
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
@@ -274,6 +276,8 @@ export class OrdersService {
   /** The fee the shop agreed for a delivery; see `agreeDeliveryFee`. */
   async setDeliveryFee(storeSlug: string, userId: string, number: number, { deliveryFeeCents }: SetOrderDeliveryFeeDto): Promise<Order> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    // Money that arrived at the total as it was must be known before the total changes.
+    await this.payments.hearOf(storeId, number);
     const order = await agreeDeliveryFee(this.prisma, storeId, number, deliveryFeeCents);
     // A charge still waiting was made at the total as it was: it goes, and the next is made at this one.
     await this.payments.release(storeId, order.id);

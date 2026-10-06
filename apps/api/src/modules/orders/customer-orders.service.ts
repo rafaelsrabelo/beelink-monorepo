@@ -207,6 +207,8 @@ export class CustomerOrdersService {
   async cancel(storeSlug: string, userId: string, number: number): Promise<CustomerOrder> {
     const { storeId, customerId } = await this.customers.shopperAt(storeSlug, userId);
 
+    // A charge paid since bee-link last asked must be known before the order is cancelled over it (BEELINK-204).
+    await this.payments.hearOf(storeId, number);
     let orderId: string | null = null;
     const conversation = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;

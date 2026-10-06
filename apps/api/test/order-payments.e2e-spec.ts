@@ -330,6 +330,19 @@ describe("an order's charge at the shop's own Asaas account (BEELINK-204)", () =
       expect(asaas.calls).toEqual([]);
     });
 
+    it('does not take back a charge it had given up on, though it stands at Asaas again: it is removed and another made', async () => {
+      await placed();
+      const old = asaas.standing[0]!.id;
+      // Restored in Asaas's panel, or never removed: cancelled here, waiting there.
+      await prisma.orderPayment.updateMany({ data: { status: 'CANCELLED', cancelledAt: new Date() } });
+
+      const made = (await charge()).json<CustomerOrderPaymentAnswer>().payment!;
+      expect(made).toMatchObject({ status: 'PENDING', pix: { payload: expect.any(String) } });
+      expect(asaas.payment(old).deleted).toBe(true);
+      expect(asaas.standing).toHaveLength(1);
+      expect((await rows()).map((row) => row.status)).toEqual(['CANCELLED', 'PENDING']);
+    });
+
     it('never makes two charges for two requests at once: the second is told one is being made', async () => {
       asaas.failing('charges', new AsaasUnreachable('Asaas failed (503)'));
       await placed();
@@ -366,6 +379,25 @@ describe("an order's charge at the shop's own Asaas account (BEELINK-204)", () =
       expect(asaas.count('createCharge')).toBe(1);
       expect(await rows()).toMatchObject([{ providerId: asaas.standing[0]!.id, status: 'PENDING' }]);
       expect((await prisma.order.findFirstOrThrow()).paymentClaimedUntil).toBeNull();
+    });
+
+    it('takes back the charge it has just made when the order was cancelled, or its total changed, while Asaas was being asked', async () => {
+      asaas.failing('charges', new AsaasUnreachable('Asaas failed (503)'));
+      await placed();
+      asaas.failing('charges', new AsaasUnreachable('Asaas failed (503)'));
+      await placed();
+
+      asaas.before('createCharge', async () => void (await prisma.order.updateMany({ where: { number: 1 }, data: { status: 'CANCELLED' } })));
+      expect((await charge(1)).json()).toMatchObject({ statusCode: 409, errorCode: 'ORDER_CANCELLED' });
+      asaas.before('createCharge', async () => void (await prisma.order.updateMany({ where: { number: 2 }, data: { totalCents: 4990 } })));
+      expect((await charge(2)).json()).toMatchObject({ statusCode: 409, errorCode: 'PAYMENT_IN_PROGRESS' });
+
+      expect(asaas.count('createCharge')).toBe(2);
+      expect(asaas.standing).toHaveLength(0);
+      expect(await rows()).toHaveLength(0);
+      // The order as it is now is charged on the next ask.
+      asaas.before('createCharge', null);
+      expect((await charge(2)).json<CustomerOrderPaymentAnswer>().payment).toMatchObject({ status: 'PENDING', amountCents: 4990 });
     });
 
     it("marks the connection as needing reconnection on Asaas's 401, and tells the customer no more than that the shop cannot be paid now", async () => {
@@ -457,6 +489,64 @@ describe("an order's charge at the shop's own Asaas account (BEELINK-204)", () =
       expect(cancelled.statusCode).toBe(200);
       expect(cancelled.json<CustomerOrder>().status).toBe('CANCELLED');
       expect((await panelOrder()).payment).toMatchObject({ status: 'PENDING', lastError: 'Asaas failed (503)' });
+    });
+
+    it('stops offering the charge of a cancelled order, even one Asaas has not removed', async () => {
+      await placed();
+      expect(await readPayment()).toMatchObject({ pix: { payload: expect.any(String) } });
+      asaas.failing('deleteCharge', new AsaasUnreachable('Asaas failed (503)'));
+      await call('POST', '/api/stores/lessari/customer/orders/1/cancel', shopper);
+
+      expect(await readPayment()).toMatchObject({ status: 'PENDING', pix: null, invoiceUrl: null });
+    });
+
+    it('asks Asaas before cancelling or changing the fee: a charge paid since is found, and the order stays as it is', async () => {
+      await call('PUT', '/api/stores/lessari/delivery', owner, feeAgreedLater);
+      await placed({ fulfillment: 'DELIVERY' });
+      await call('PUT', '/api/stores/lessari/orders/1/delivery-fee', owner, { deliveryFeeCents: 1200 });
+      await charge();
+      // Paid at Asaas; nothing told bee-link.
+      asaas.pay(asaas.standing[0]!.id, 'RECEIVED');
+      expect(await rows()).toMatchObject([{ status: 'PENDING' }]);
+
+      expect((await call('POST', '/api/stores/lessari/customer/orders/1/cancel', shopper)).json()).toMatchObject({ statusCode: 409, errorCode: 'ORDER_PAID' });
+      expect(await rows()).toMatchObject([{ status: 'RECEIVED', paidAt: expect.any(Date) }]);
+      expect(await panelOrder()).toMatchObject({ status: 'RECEIVED', payment: { status: 'RECEIVED' } });
+
+      await placed();
+      asaas.pay(asaas.standing.at(-1)!.id, 'CONFIRMED');
+      expect((await call('PATCH', '/api/stores/lessari/orders/2/status', owner, { status: 'CANCELLED' })).json()).toMatchObject({ statusCode: 409, errorCode: 'ORDER_PAID' });
+
+      await placed({ fulfillment: 'DELIVERY' });
+      await call('PUT', '/api/stores/lessari/orders/3/delivery-fee', owner, { deliveryFeeCents: 1200 });
+      await charge(3);
+      asaas.pay(asaas.standing.at(-1)!.id, 'RECEIVED');
+      expect((await call('PUT', '/api/stores/lessari/orders/3/delivery-fee', owner, { deliveryFeeCents: 0 })).json()).toMatchObject({ statusCode: 409, errorCode: 'ORDER_PAID' });
+      expect(await panelOrder(3)).toMatchObject({ totalCents: 7190, payment: { status: 'RECEIVED' } });
+    });
+
+    it('cancels the order by what it knows when Asaas does not say whether it was paid', async () => {
+      await placed();
+      asaas.failing('charges', new AsaasUnreachable('Asaas failed (503)'));
+      asaas.failing('charges', new AsaasUnreachable('Asaas failed (503)'));
+
+      expect((await call('POST', '/api/stores/lessari/customer/orders/1/cancel', shopper)).json<CustomerOrder>().status).toBe('CANCELLED');
+    });
+
+    it('leaves alone a charge made while it was removing the old one: only what it saw at Asaas is given up on', async () => {
+      await call('PUT', '/api/stores/lessari/delivery', owner, feeAgreedLater);
+      await placed({ fulfillment: 'DELIVERY' });
+      await call('PUT', '/api/stores/lessari/orders/1/delivery-fee', owner, { deliveryFeeCents: 1200 });
+      await charge();
+      // While the fee change removes the old charge, the customer's own request has already made the new one.
+      asaas.before('deleteCharge', async () => {
+        const old = await prisma.orderPayment.findFirstOrThrow();
+        await prisma.orderPayment.update({ where: { id: old.id }, data: { status: 'CANCELLED' } });
+        await prisma.orderPayment.create({ data: { orderId: old.orderId, storeId: old.storeId, providerId: 'pay_made_meanwhile', method: 'PIX', amountCents: 5990, status: 'PENDING' } });
+      });
+
+      await call('PUT', '/api/stores/lessari/orders/1/delivery-fee', owner, { deliveryFeeCents: 0 });
+      expect(await prisma.orderPayment.findUniqueOrThrow({ where: { providerId: 'pay_made_meanwhile' } })).toMatchObject({ status: 'PENDING' });
     });
 
     it('asks Asaas nothing to cancel an order settled with the shop', async () => {
