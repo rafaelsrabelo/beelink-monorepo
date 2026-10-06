@@ -77,7 +77,7 @@ describe("a shop's Asaas connection (BEELINK-202)", () => {
     const response = await read();
 
     expect(response.statusCode).toBe(200);
-    expect(response.json<AsaasConnection>()).toEqual({ available: true, environment: 'SANDBOX', status: 'DISCONNECTED', account: null, webhook: null, connectedAt: null });
+    expect(response.json<AsaasConnection>()).toEqual({ available: true, environment: 'SANDBOX', status: 'DISCONNECTED', account: null, webhook: null, approval: null, approvalCheckedAt: null, connectedAt: null });
   });
 
   it('connects with the pasted key, sealed, and answers whose account it is — never the key', async () => {

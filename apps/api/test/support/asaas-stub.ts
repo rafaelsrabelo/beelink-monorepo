@@ -1,12 +1,26 @@
+// Types
+import type { AsaasAccountApproval } from '@harness-monorepo/contracts';
+
 // App
 import { AsaasClient, type AsaasCharge, type AsaasPixQrCode, type AsaasRefundsRead, type AsaasWebhookStanding } from '../../src/modules/integrations/asaas/asaas.client.js';
 
 /**
  * The charging half of the Asaas port, and the keeping of a webhook, for a suite that is about the connection or the settings and
  * asks Asaas for no charge: each call fails loudly, so one that starts charging is told to stand a
- * fake Asaas that answers it (`fake-asaas.ts`).
+ * fake Asaas that answers it (`fake-asaas.ts`). Every connect and every daily look asks whether
+ * the account is approved (BEELINK-278), so that one is answered: `approved` is what, and an `Error`
+ * there is Asaas not answering it.
  */
 export abstract class AsaasWithoutCharges extends AsaasClient {
+  approved: AsaasAccountApproval | null | Error = 'APPROVED';
+  approvalsAsked = 0;
+
+  async approval(): Promise<AsaasAccountApproval | null> {
+    this.approvalsAsked += 1;
+    if (this.approved instanceof Error) throw this.approved;
+    return this.approved;
+  }
+
   private unasked(call: string): never {
     throw new Error(`This suite's Asaas was not expected to be asked for ${call}`);
   }

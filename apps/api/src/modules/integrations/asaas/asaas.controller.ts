@@ -14,7 +14,10 @@ import { AsaasConnectionService } from './asaas-connection.service.js';
 import { AsaasConnectDto } from './dto/asaas.dto.js';
 import { AsaasConnectionResponse } from './dto/asaas.response.js';
 
-/** Connecting presents a credential: unlimited, it would let anyone signed in test leaked keys against Asaas from bee-link's address. */
+/**
+ * Connecting presents a credential: unlimited, it would let anyone signed in test leaked keys against
+ * Asaas from bee-link's address. Asking again of the approval spends the shop's own quota at Asaas.
+ */
 const rateLimit = { max: env.AUTH_RATE_LIMIT_MAX, timeWindow: env.AUTH_RATE_LIMIT_WINDOW };
 
 /** A shop's Asaas account (BEELINK-202), as its owner connects it with an API key. Closed, like every panel route. */
@@ -45,6 +48,18 @@ export class AsaasController {
   @ApiTooManyRequestsResponse({ description: 'Too many attempts from this address' })
   connect(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser, @Body() dto: AsaasConnectDto): Promise<AsaasConnection> {
     return this.asaas.connect(storeSlug, current.id, dto);
+  }
+
+  @Post('approval')
+  @HttpCode(HttpStatus.OK)
+  @RouteConfig({ rateLimit })
+  @ApiOperation({ summary: 'Ask Asaas again, now, whether it approved the account: an account not approved is charged nothing' })
+  @ApiOkResponse({ type: AsaasConnectionResponse })
+  @ApiBadGatewayResponse({ description: 'INTEGRATION_UNREACHABLE' })
+  @ApiServiceUnavailableResponse({ description: 'INTEGRATION_UNAVAILABLE' })
+  @ApiTooManyRequestsResponse({ description: 'Too many attempts from this address' })
+  recheckApproval(@Param('storeSlug') storeSlug: string, @CurrentUser() current: AuthenticatedUser): Promise<AsaasConnection> {
+    return this.asaas.recheckApproval(storeSlug, current.id);
   }
 
   @Delete()

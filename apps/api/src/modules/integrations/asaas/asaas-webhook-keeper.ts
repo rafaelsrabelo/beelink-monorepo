@@ -8,6 +8,7 @@ import type { StoreIntegrationModel } from '../../../generated/prisma/models.js'
 // App
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { open } from '../secret-vault.js';
+import { AsaasApproval, type ApprovalRead } from './asaas-approval.service.js';
 import { AsaasClient, AsaasRefused } from './asaas.client.js';
 import { asaasConfig, type AsaasConfig } from './asaas.config.js';
 
@@ -30,6 +31,9 @@ interface Sealed {
  * registered, or was removed there by hand, is registered again with the token the shop already
  * has. The call is also the key's use: Asaas disables one left idle for three months. A key Asaas
  * refuses marks the connection as needing to be reconnected, here as everywhere.
+ *
+ * The same look asks whether Asaas approved the account (BEELINK-278): one approved since yesterday
+ * is charged again from this pass on, with nothing done by the shopkeeper.
  */
 @Injectable()
 export class AsaasWebhookKeeper {
@@ -38,6 +42,7 @@ export class AsaasWebhookKeeper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly asaas: AsaasClient,
+    private readonly approval: AsaasApproval,
   ) {}
 
   /** One pass: the connected shops not looked at for a day, the longest-unseen first. Answers how many it looked at. One shop's failure is its own. */
@@ -69,15 +74,18 @@ export class AsaasWebhookKeeper {
   }
 
   private async check(config: AsaasConfig, row: StoreIntegrationModel, now: Date): Promise<void> {
+    // Read first and written whatever comes of the webhook: one that cannot be mended must not keep an approval unseen.
+    let approval: ApprovalRead = {};
     try {
       const sealed = this.sealedOf(config, row);
+      approval = await this.approval.read(config, sealed.apiKey, row.storeId, now);
       const state = await this.standing(config, row, sealed);
       // Only the connection that was looked at: one replaced meanwhile registered its own webhook.
-      await this.prisma.storeIntegration.updateMany({ where: { id: row.id, connectedAt: row.connectedAt }, data: { webhookCheckedAt: now, ...state } });
+      await this.prisma.storeIntegration.updateMany({ where: { id: row.id, connectedAt: row.connectedAt }, data: { webhookCheckedAt: now, ...approval, ...state } });
     } catch (error) {
       if (await this.refusedKey(row, error)) return;
       // Looked at, though nothing was learned: the next look is tomorrow's, not the next pass's.
-      await this.prisma.storeIntegration.updateMany({ where: { id: row.id, connectedAt: row.connectedAt }, data: { webhookCheckedAt: now } });
+      await this.prisma.storeIntegration.updateMany({ where: { id: row.id, connectedAt: row.connectedAt }, data: { webhookCheckedAt: now, ...approval } });
       this.logger.warn({ storeId: row.storeId, reason: error instanceof Error ? error.message : 'Unknown failure' }, "Could not check a shop's Asaas webhook");
     }
   }

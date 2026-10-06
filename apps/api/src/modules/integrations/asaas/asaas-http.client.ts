@@ -1,6 +1,9 @@
 // Nest
 import { Injectable } from '@nestjs/common';
 
+// Types
+import type { AsaasAccountApproval } from '@harness-monorepo/contracts';
+
 // App
 import {
   ASAAS_WEBHOOK_EVENTS,
@@ -26,6 +29,8 @@ import { centsOf, reaisOf } from './asaas-money.js';
 const TIMEOUT_MS = 10_000;
 /** The quota's own window: no wait Asaas names is longer. */
 const THROTTLE_MAX_S = 12 * 60 * 60;
+
+const APPROVALS = ['PENDING', 'AWAITING_APPROVAL', 'APPROVED', 'REJECTED'] as const satisfies readonly AsaasAccountApproval[];
 
 const filled = (value: unknown): value is string => typeof value === 'string' && value.trim() !== '';
 
@@ -112,6 +117,12 @@ export class AsaasHttpClient extends AsaasClient {
     // Letters are kept: a CNPJ issued since July 2026 may hold them in its first twelve places.
     const document = typeof body?.cpfCnpj === 'string' ? body.cpfCnpj.replace(/[^0-9a-z]/gi, '').toUpperCase() : '';
     return { name: name.trim(), document: document || null };
+  }
+
+  async approval(config: AsaasConfig, apiKey: string): Promise<AsaasAccountApproval | null> {
+    // `commercialInfo`, `bankAccountInfo` and `documentation` say which part waits; `general` is the verdict on all of it.
+    const body = (await this.call(config, apiKey, 'GET', '/myAccount/status/')) as { general?: unknown } | null;
+    return APPROVALS.find((known) => known === body?.general) ?? null;
   }
 
   async createWebhook(config: AsaasConfig, apiKey: string, webhook: AsaasWebhookRequest): Promise<string> {

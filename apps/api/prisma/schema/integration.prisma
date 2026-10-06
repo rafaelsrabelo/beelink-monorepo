@@ -24,6 +24,17 @@ enum IntegrationWebhookState {
   ERROR
 }
 
+/// Where a shop's own account stands with the party that holds it (Asaas, BEELINK-278), in the party's
+/// words: its verdict on the whole registration. Only `APPROVED` charges.
+enum IntegrationAccountApproval {
+  /// The shop has not sent everything the party asks for.
+  PENDING
+  /// Sent, and being looked at by the party.
+  AWAITING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
 /// A shop's connection to its own account at a third party: what that party gave bee-link to act with,
 /// sealed, and who the account is. One per shop and party.
 model StoreIntegration {
@@ -63,6 +74,12 @@ model StoreIntegration {
   /// When the webhook was last looked at in the shop's account (BEELINK-206): once a day, which also
   /// keeps the key in use — Asaas disables one left idle for three months.
   webhookCheckedAt DateTime?
+
+  /// Whether the party approved the shop's account (Asaas, BEELINK-278), as last read there, and when.
+  /// Null is not known — never read, or the party did not answer — and switches nothing off: only an
+  /// account read as not approved stops being charged.
+  accountApproval          IntegrationAccountApproval?
+  accountApprovalCheckedAt DateTime?
 
   connectedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt

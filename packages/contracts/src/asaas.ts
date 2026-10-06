@@ -18,6 +18,15 @@ export type AsaasEnvironment = "SANDBOX" | "PRODUCTION";
  */
 export type IntegrationWebhookState = "REGISTERED" | "SKIPPED" | "PAUSED" | "ERROR";
 
+/**
+ * Whether Asaas approved the shop's account (BEELINK-278), in Asaas's own words for its verdict on
+ * the whole registration. Only an `APPROVED` account charges: Asaas refuses a Pix or a card of any other.
+ * - `PENDING`: the shopkeeper has not sent Asaas everything it asks for.
+ * - `AWAITING_APPROVAL`: sent, and being looked at by Asaas.
+ * - `REJECTED`: Asaas turned the registration down; only the shopkeeper and Asaas mend it.
+ */
+export type AsaasAccountApproval = "PENDING" | "AWAITING_APPROVAL" | "APPROVED" | "REJECTED";
+
 /** Whose Asaas account the shop connected, as that account names itself. */
 export interface AsaasAccount {
   name: string;
@@ -25,7 +34,11 @@ export interface AsaasAccount {
   document: string | null;
 }
 
-/** `GET /stores/:slug/integrations/asaas`: the shop's connection. Never carries the key. */
+/**
+ * `GET /stores/:slug/integrations/asaas`: the shop's connection. Never carries the key. Also what
+ * `POST /stores/:slug/integrations/asaas/approval` answers (BEELINK-278), which takes no body: Asaas
+ * asked again, now, whether it approved the account.
+ */
 export interface AsaasConnection {
   /** This deployment can seal a key. Without it nothing below can change. */
   available: boolean;
@@ -35,6 +48,14 @@ export interface AsaasConnection {
   account: AsaasAccount | null;
   /** Null while disconnected. */
   webhook: IntegrationWebhookState | null;
+  /**
+   * Null while disconnected, and while it is not known — never read, or Asaas did not answer. Not
+   * known switches nothing off: the checkout stops offering Pix and card only for an account read
+   * as not `APPROVED`, which then sells as a shop with no Asaas does.
+   */
+  approval: AsaasAccountApproval | null;
+  /** ISO-8601, when `approval` was last read at Asaas; null while it is. */
+  approvalCheckedAt: string | null;
   /** ISO-8601; null while disconnected. */
   connectedAt: string | null;
 }

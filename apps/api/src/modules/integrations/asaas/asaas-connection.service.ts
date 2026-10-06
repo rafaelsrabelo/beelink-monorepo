@@ -14,6 +14,7 @@ import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { StoresService } from '../../stores/stores.service.js';
 import { integrationError } from '../integrations.constants.js';
 import { open, seal } from '../secret-vault.js';
+import { AsaasApproval } from './asaas-approval.service.js';
 import { AsaasClient, AsaasRefused, AsaasUnreachable } from './asaas.client.js';
 import { ASAAS_KEY_PREFIXES, asaasConfig, asaasEnvironment, type AsaasConfig } from './asaas.config.js';
 import { maskedDocumentOf } from './masked-document.js';
@@ -60,6 +61,8 @@ function connectionOf(row: StoreIntegrationModel | null): AsaasConnection {
     status: row?.status ?? 'DISCONNECTED',
     account: row ? { name: row.accountName ?? '', document: row.accountDocument } : null,
     webhook: row?.webhookState ?? null,
+    approval: row?.accountApproval ?? null,
+    approvalCheckedAt: row?.accountApprovalCheckedAt?.toISOString() ?? null,
     connectedAt: row?.connectedAt.toISOString() ?? null,
   };
 }
@@ -80,6 +83,7 @@ export class AsaasConnectionService {
     private readonly prisma: PrismaService,
     private readonly stores: StoresService,
     private readonly asaas: AsaasClient,
+    private readonly approval: AsaasApproval,
   ) {}
 
   /**
@@ -106,6 +110,9 @@ export class AsaasConnectionService {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
     this.refuseOtherEnvironment(config, apiKey);
     const account = await this.asaas.account(config, apiKey).catch((error: unknown) => this.refused(config, error));
+    // A good key of an account Asaas has not approved connects, and is charged nothing (BEELINK-278).
+    // Asaas not answering this leaves it not known, which is not a no: nothing kept of a key replaced stands for the new one.
+    const approval = { accountApproval: null, accountApprovalCheckedAt: null, ...(await this.approval.read(config, apiKey, storeId)) };
 
     // Another account's key: what waits to be paid at the one being left is taken out of it first.
     // The same account under a new key keeps its charges — they are reached with the new one.
@@ -124,6 +131,7 @@ export class AsaasConnectionService {
         secretSealed: seal(JSON.stringify(secret), config.vaultKey, { storeId, provider: PROVIDER }),
         accountName: account.name,
         accountDocument: maskedDocumentOf(account.document),
+        ...approval,
         webhookId: webhook.id,
         webhookState: webhook.state,
         webhookTokenHash: sha256(webhookToken),
@@ -137,6 +145,21 @@ export class AsaasConnectionService {
       });
     });
     return connectionOf(row);
+  }
+
+  /**
+   * Asaas asked now whether it approved the account (BEELINK-278), for the shopkeeper who was told
+   * it had not: the connection as it then stands. Asaas not answering is said, and changes nothing.
+   */
+  async recheckApproval(storeSlug: string, userId: string): Promise<AsaasConnection> {
+    this.config();
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    await this.approval.recheck(storeId).catch((error: unknown) => {
+      if (!(error instanceof AsaasRefused) && !(error instanceof AsaasUnreachable)) throw error;
+      this.logger.warn({ storeId, reason: error.message }, "Could not read whether Asaas approved a shop's account");
+      throw new BadGatewayException(integrationError('INTEGRATION_UNREACHABLE', 'Asaas did not answer'));
+    });
+    return connectionOf(await this.prisma.storeIntegration.findUnique({ where: { storeId_provider: { storeId, provider: PROVIDER } } }));
   }
 
   /**
