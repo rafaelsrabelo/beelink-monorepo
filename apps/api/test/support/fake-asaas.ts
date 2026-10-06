@@ -7,12 +7,14 @@ import {
   type AsaasChargeRequest,
   type AsaasCustomerRequest,
   type AsaasPixQrCode,
+  type AsaasRefundsRead,
+  type AsaasRefundTarget,
   type AsaasWebhookRequest,
   type AsaasWebhookStanding,
 } from '../../src/modules/integrations/asaas/asaas.client.js';
 import type { AsaasConfig } from '../../src/modules/integrations/asaas/asaas.config.js';
 
-type Call = 'findCustomer' | 'createCustomer' | 'charges' | 'charge' | 'createCharge' | 'deleteCharge' | 'deleteInstallment' | 'pixQrCode';
+type Call = 'findCustomer' | 'createCustomer' | 'charges' | 'charge' | 'createCharge' | 'deleteCharge' | 'deleteInstallment' | 'pixQrCode' | 'refund' | 'refundsOf';
 
 interface FakeCustomer extends AsaasCustomerRequest {
   id: string;
@@ -38,10 +40,16 @@ const PAID = new Set(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
  * hold it open, or to change the world meanwhile), and `pay` is the customer paying. It keeps the
  * webhooks registered at it too (BEELINK-206): `interrupt` is Asaas pausing one, `keyError` the key
  * refused wherever the account itself is read.
+ *
+ * It refunds too (BEELINK-208), as the reference says the real one does: only a paid charge, never
+ * past what is left of it, a Pix at once and a card pending until `concludeRefunds` — a plan across
+ * its instalments, in order. `refundOutside` is the shop refunding at Asaas's own panel, and
+ * `denyRefunds` Asaas cancelling what it had taken. `refunded` is every refund it was asked for.
  */
 export class FakeAsaas extends AsaasClient {
   readonly calls: Call[] = [];
   readonly requests: AsaasChargeRequest[] = [];
+  readonly refunded: { target: AsaasRefundTarget; valueCents: number; description: string }[] = [];
   readonly customers: FakeCustomer[] = [];
   readonly payments: AsaasCharge[] = [];
   readonly webhooks: FakeWebhook[] = [];
@@ -57,6 +65,7 @@ export class FakeAsaas extends AsaasClient {
   reset(): void {
     this.calls.length = 0;
     this.requests.length = 0;
+    this.refunded.length = 0;
     this.customers.length = 0;
     this.payments.length = 0;
     this.webhooks.length = 0;
@@ -159,13 +168,13 @@ export class FakeAsaas extends AsaasClient {
 
   async charges(_config: AsaasConfig, _apiKey: string, externalReference: string): Promise<AsaasCharge[]> {
     await this.enter('charges');
-    return this.standing.filter((payment) => payment.externalReference === externalReference).map((payment) => ({ ...payment }));
+    return this.standing.filter((payment) => payment.externalReference === externalReference).map(copyOf);
   }
 
   async charge(_config: AsaasConfig, _apiKey: string, id: string): Promise<AsaasCharge | null> {
     await this.enter('charge');
     const found = this.payments.find((payment) => payment.id === id);
-    return found ? { ...found } : null;
+    return found ? copyOf(found) : null;
   }
 
   async createCharge(_config: AsaasConfig, _apiKey: string, request: AsaasChargeRequest): Promise<AsaasCharge> {
@@ -187,10 +196,11 @@ export class FakeAsaas extends AsaasClient {
       installmentId,
       installmentNumber: installmentId ? index + 1 : null,
       externalReference: request.externalReference,
+      refunds: [],
     }));
     this.payments.push(...made);
     this.throwAfter('createCharge');
-    return { ...made[0]! };
+    return copyOf(made[0]!);
   }
 
   async deleteCharge(_config: AsaasConfig, _apiKey: string, id: string): Promise<void> {
@@ -209,8 +219,74 @@ export class FakeAsaas extends AsaasClient {
     return { payload: `00020126580014br.gov.bcb.pix-${id}`, encodedImage: Buffer.from(`qr-${id}`).toString('base64'), expiresAt: this.pixExpiresAt };
   }
 
+  async refund(_config: AsaasConfig, _apiKey: string, target: AsaasRefundTarget, refund: { valueCents: number; description: string }): Promise<AsaasRefundsRead> {
+    await this.enter('refund');
+    this.refunded.push({ target: { ...target }, ...refund });
+    this.give(this.targeted(target), refund.valueCents);
+    this.throwAfter('refund');
+    return this.read(target);
+  }
+
+  async refundsOf(_config: AsaasConfig, _apiKey: string, target: AsaasRefundTarget): Promise<AsaasRefundsRead | null> {
+    await this.enter('refundsOf');
+    return this.targeted(target).length > 0 ? this.read(target) : null;
+  }
+
+  /** The shop refunding at Asaas's own panel: no call of bee-link's made it. */
+  refundOutside(id: string, valueCents: number): void {
+    this.give([this.payment(id)], valueCents);
+  }
+
+  /** Asaas concluding what it had taken of a charge — every instalment's, on a plan. */
+  concludeRefunds(id: string): void {
+    for (const payment of this.planOf(id)) {
+      for (const refund of payment.refunds) if (refund.status === 'PENDING') refund.status = 'DONE';
+      payment.status = left(payment) === 0 ? 'REFUNDED' : 'CONFIRMED';
+    }
+  }
+
+  /** Asaas cancelling what it had taken: nothing went back. */
+  denyRefunds(id: string): void {
+    for (const payment of this.planOf(id)) {
+      for (const refund of payment.refunds) if (refund.status === 'PENDING') refund.status = 'CANCELLED';
+      payment.status = 'CONFIRMED';
+    }
+  }
+
+  private planOf(id: string): AsaasCharge[] {
+    const first = this.payment(id);
+    return first.installmentId ? this.payments.filter((payment) => payment.installmentId === first.installmentId) : [first];
+  }
+
+  private targeted(target: AsaasRefundTarget): AsaasCharge[] {
+    return this.payments.filter((payment) => (target.installmentId ? payment.installmentId === target.installmentId : payment.id === target.id));
+  }
+
+  private read(target: AsaasRefundTarget): AsaasRefundsRead {
+    const found = this.targeted(target);
+    // A plan's answer carries no status of its own.
+    return { whole: !target.installmentId && found[0]?.status === 'REFUNDED', refunds: found.flatMap((payment) => payment.refunds.map((refund) => ({ ...refund }))) };
+  }
+
+  /** Money back from the charges, in order: a Pix at once, a card pending until Asaas concludes it. */
+  private give(found: AsaasCharge[], valueCents: number): void {
+    if (found.length === 0) throw new AsaasRefused(404, 'not_found', 'Cobrança não encontrada.');
+    if (found.some((payment) => !PAID.has(payment.status))) throw new AsaasRefused(400, 'invalid_action', 'Só é possível estornar cobranças recebidas ou confirmadas.');
+    if (valueCents > found.reduce((sum, payment) => sum + left(payment), 0)) throw new AsaasRefused(400, 'invalid_value', 'O valor do estorno excede o valor disponível da cobrança.');
+    let owed = valueCents;
+    for (const payment of found) {
+      const taken = Math.min(owed, left(payment));
+      if (taken === 0) continue;
+      owed -= taken;
+      const card = payment.billingType === 'CREDIT_CARD';
+      payment.refunds.push({ status: card ? 'PENDING' : 'DONE', valueCents: taken });
+      if (card) payment.status = 'REFUND_IN_PROGRESS';
+      else if (left(payment) === 0) payment.status = 'REFUNDED';
+    }
+  }
+
   private remove(found: AsaasCharge[]): void {
-    if (found.some((payment) => PAID.has(payment.status))) throw new AsaasRefused(400, 'invalid_action', 'Não é possível remover uma cobrança já recebida.');
+    if (found.some((payment) => PAID.has(payment.status) || payment.refunds.length > 0)) throw new AsaasRefused(400, 'invalid_action', 'Não é possível remover uma cobrança já recebida.');
     for (const payment of found) payment.deleted = true;
   }
 
@@ -231,6 +307,11 @@ export class FakeAsaas extends AsaasClient {
     throw next.error;
   }
 }
+
+/** What of a charge no refund standing covers. */
+const left = (payment: AsaasCharge): number => payment.valueCents - payment.refunds.filter((refund) => refund.status !== 'CANCELLED').reduce((sum, refund) => sum + refund.valueCents, 0);
+
+const copyOf = (payment: AsaasCharge): AsaasCharge => ({ ...payment, refunds: payment.refunds.map((refund) => ({ ...refund })) });
 
 /** A failure that happens once the fake did what was asked: the answer was lost on the way back. */
 export const afterwards = (error: unknown) => ({ afterwards: true, error });

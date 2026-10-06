@@ -17,9 +17,10 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { zipCodeOf } from "./customer-address"
-import { dayOf, momentOf, orderStatusLineOf, type OrderCardContext } from "./order-card-view"
+import { cancelledByText, dayOf, momentOf, orderStatusLineOf, type OrderCardContext } from "./order-card-view"
 import { estimateLineOf } from "./order-estimate"
 import { orderPaymentLabelOf } from "./order-payment-label"
+import { orderRefundLinesOf, withRefundMoves } from "./order-refund-view"
 import { orderStepsOf } from "./order-steps"
 import { reviewHrefOf } from "./review-view"
 
@@ -65,7 +66,7 @@ export function orderStatusViewOf(order: CustomerOrder, context: OrderCardContex
   const { headline, tone } = orderStatusLineOf({ ...order, statusAt }, context)
 
   if (order.status === "CANCELLED") {
-    return { headline, detail: order.cancelledBy === "CUSTOMER" ? text.orderCancelledByYou : text.orderCancelledByShop, tone, steps: null }
+    return { headline, detail: cancelledByText(order.cancelledBy, text), tone, steps: null }
   }
   const estimate = estimateOf(order)
   // Received is the placing itself, already at the top: what it waits for says more than when.
@@ -133,9 +134,11 @@ export function orderHistoryOf(order: CustomerOrder, { locale, messages }: Pick<
           ? text.orderEventPlacedByYou
           : text.orderEventPlacedByShop
         : event.status === "CANCELLED"
-          ? order.cancelledBy === "CUSTOMER"
-            ? text.orderEventByYou
-            : text.orderEventByShop
+          ? order.cancelledBy === "SYSTEM"
+            ? text.orderEventBySystem
+            : order.cancelledBy === "CUSTOMER"
+              ? text.orderEventByYou
+              : text.orderEventByShop
           : null,
   }))
   const paidAt = order.paymentChannel === "ONLINE" ? (order.payment?.paidAt ?? null) : null
@@ -143,7 +146,9 @@ export function orderHistoryOf(order: CustomerOrder, { locale, messages }: Pick<
   const paidAfter = paidAt === null ? -1 : Math.max(moves.findLastIndex((move) => move.at <= paidAt), 0)
   const told = paidAt === null ? moves : [...moves.slice(0, paidAfter + 1), { at: paidAt, title: text.orderPayApproved, detail: null }, ...moves.slice(paidAfter + 1)]
 
-  return told
+  const all = withRefundMoves(told, order, { locale, messages })
+
+  return all
     .map(({ at, title, detail }) => ({ day: day.format(new Date(at)), time: time.format(new Date(at)), title, detail }))
     .reverse()
 }
@@ -207,6 +212,8 @@ export function orderPaymentOf(order: CustomerOrder, { routes, locale, messages 
     total: customerTotalText(money(order.totalCents), order, text.orderTotalPlusFee),
     method: order.paymentChannel === "ONLINE" ? online : format(text.orderPaymentAgreed, { method: way }),
     status: paid ? { label: paid.label, tone: paid.tone } : null,
+    refunds: orderRefundLinesOf(order, { locale, messages }),
+    refundNote: order.payment?.method === "CREDIT_CARD" && order.payment.refunds.some((refund) => refund.status !== "DONE") ? text.orderRefundCardNote : null,
     payHref: paid?.payable ? routes.accountOrder(order.number, { payment: true }) : null,
     cashback: customerCashbackLineOf(order.cashback, { money, date: (iso) => dayOf(iso, locale), now, text: text.orderCashback }),
   }

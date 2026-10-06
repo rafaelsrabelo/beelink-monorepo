@@ -43,6 +43,17 @@ export async function notePaymentApproved(tx: Tx, order: { id: string; customerI
   if (told === 0) await tx.orderMessage.create({ data: { conversationId, author: 'SYSTEM', notice: 'PAYMENT_APPROVED', body: '', createdAt: at } });
 }
 
+/**
+ * Money of the order's payment given back, told in its conversation (BEELINK-208) — inside the
+ * transaction that first writes the refund as taken by Asaas, once a refund: whoever writes that
+ * calls this once. The amount is told as it was.
+ */
+export async function noteRefund(tx: Tx, order: { id: string; customerId: string }, refundCents: number, at: Date): Promise<void> {
+  const conversationId = await conversationOf(tx, order, at);
+  if (!conversationId) return;
+  await tx.orderMessage.create({ data: { conversationId, author: 'SYSTEM', notice: 'PAYMENT_REFUNDED', refundCents, body: '', createdAt: at } });
+}
+
 /** The order's conversation, opened when it has none; null for a customer with no account to read it. */
 async function conversationOf(tx: Tx, order: { id: string; customerId: string }, at: Date): Promise<string | null> {
   const customer = await tx.customer.findUnique({ where: { id: order.customerId }, select: { userId: true } });

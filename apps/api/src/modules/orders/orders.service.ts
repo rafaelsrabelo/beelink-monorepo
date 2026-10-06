@@ -10,6 +10,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
 import type { SetOrderDeliveryFeeDto } from './dto/order-delivery-fee.dto.js';
 import type { CreateOrderDto, ListOrdersDto, OrderCustomerDto, OrderDeliveryDto, UpdateOrderStatusDto } from './dto/order.dto.js';
+import type { RefundOrderDto } from '../payments/dto/refund-order.dto.js';
 import { agreeDeliveryFee } from './order-delivery-fee.js';
 import { placedAtOf } from './order-placed-at.js';
 import { OrderPlacement } from './order-placement.js';
@@ -22,9 +23,10 @@ import { releaseOrderCashback, revokeOrderCashback } from '../cashback/cashback-
 import { isOpen } from '../conversations/conversations.constants.js';
 import { noteOrderStatus } from '../conversations/order-status-notice.js';
 import { OrderPayments } from '../payments/order-payments.service.js';
+import { OrderRefunds } from '../payments/order-refunds.service.js';
 import { markPaidSeen } from '../payments/payment-facts.js';
 import { paymentFilterOf } from '../payments/payment-filter.js';
-import { refusePaidOrder } from '../payments/payment-guards.js';
+import { refuseUnrefundedOrder } from '../payments/payment-guards.js';
 import { RealtimePublisher } from '../realtime/realtime-publisher.js';
 
 type Tx = Prisma.TransactionClient;
@@ -48,6 +50,7 @@ export class OrdersService {
     private readonly realtime: RealtimePublisher,
     private readonly mailer: OrderStatusMailer,
     private readonly payments: OrderPayments,
+    private readonly refunds: OrderRefunds,
   ) {}
 
   async create(storeSlug: string, userId: string, dto: CreateOrderDto): Promise<Order> {
@@ -147,10 +150,27 @@ export class OrdersService {
     await markPaidSeen(this.prisma, order.id, new Date());
   }
 
-  /** Any status to any other, except out of `CANCELLED`, which is final. */
-  async updateStatus(storeSlug: string, userId: string, number: number, { status }: UpdateOrderStatusDto): Promise<Order> {
+  /**
+   * Money of an order's payment given back (BEELINK-208): whole or in part, its own payment's or a
+   * stray one's. Answers the order as it stands once Asaas took the refund. Refunding does not
+   * cancel: the shop may give money back and keep the order.
+   */
+  async refund(storeSlug: string, userId: string, number: number, dto: RefundOrderDto): Promise<Order> {
     const storeId = await this.stores.ownedStoreId(storeSlug, userId);
-    const moved = await this.move(storeId, number, status, { actor: 'SHOPKEEPER', userId });
+    const order = await this.prisma.order.findUnique({ where: { storeId_number: { storeId, number } }, select: { id: true } });
+    if (!order) throw this.notFound(number);
+    await this.refunds.refund(storeId, order.id, { amountCents: dto.amountCents, reason: dto.reason, refundableCents: dto.refundableCents, strayId: dto.strayId, origin: 'PANEL', userId });
+    return toOrder(await this.prisma.order.findUniqueOrThrow({ where: { id: order.id }, include: ORDER_INCLUDE }));
+  }
+
+  /**
+   * Any status to any other, except out of `CANCELLED`, which is final. Cancelling an order that
+   * holds its customer's money carries its refund (BEELINK-208): asked of Asaas first, and the
+   * order is cancelled only once Asaas took it — a refund that fails leaves the order as it was.
+   */
+  async updateStatus(storeSlug: string, userId: string, number: number, { status, refund }: UpdateOrderStatusDto): Promise<Order> {
+    const storeId = await this.stores.ownedStoreId(storeSlug, userId);
+    const moved = await this.move(storeId, number, status, { actor: 'SHOPKEEPER', userId, refund });
     if (!moved) throw new ConflictException(orderError('ORDER_STATUS_UNCHANGED', `The order is already ${status}`));
     return moved;
   }
@@ -197,12 +217,14 @@ export class OrdersService {
     storeId: string,
     number: number,
     status: OrderStatus,
-    by: { actor: 'SHOPKEEPER' | 'CARRIER' | 'SYSTEM'; userId: string | null; heard?: boolean },
+    by: { actor: 'SHOPKEEPER' | 'CARRIER' | 'SYSTEM'; userId: string | null; heard?: boolean; refund?: { reason: string; refundableCents: number } },
     allowed: (current: OrderStatus) => boolean = () => true,
     stillSo: (tx: Tx, orderId: string) => Promise<boolean> = async () => true,
   ): Promise<Order | null> {
     // A charge paid since bee-link last asked must be known before the order is cancelled over it (BEELINK-204).
     if (status === 'CANCELLED' && !by.heard) await this.payments.hearOf(storeId, number);
+    // Money first (BEELINK-208): given back and the order still standing can be mended; cancelled with the money kept cannot.
+    if (status === 'CANCELLED' && by.actor === 'SHOPKEEPER') await this.refunds.refundBeforeCancelling(storeId, number, by.refund, by.userId);
     const moved = await this.prisma.$transaction(async (tx) => {
       // The same row lock as a new order takes, so a status change and a placement never interleave.
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
@@ -216,8 +238,8 @@ export class OrdersService {
         throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change status'));
       }
       if (current.status === status || !allowed(current.status) || !(await stillSo(tx, current.id))) return null;
-      // A paid order is not cancelled before it is refunded (BEELINK-204).
-      if (status === 'CANCELLED') await refusePaidOrder(tx, current.id);
+      // A paid order is cancelled only with the refund of what the shop still holds (BEELINK-208).
+      if (status === 'CANCELLED') await refuseUnrefundedOrder(tx, current.id);
 
       await tx.order.update({ where: { id: current.id }, data: { status, events: { create: { status, actor: by.actor, userId: by.userId } } } });
       const now = new Date();

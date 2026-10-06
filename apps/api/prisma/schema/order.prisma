@@ -149,6 +149,8 @@ model Order {
   payments OrderPayment[]
   strayPayments OrderStrayPayment[]
   paidNotice OrderPaidNotice?
+  /// Money of its payment given back, or being given back (BEELINK-208).
+  refunds OrderRefund[]
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])

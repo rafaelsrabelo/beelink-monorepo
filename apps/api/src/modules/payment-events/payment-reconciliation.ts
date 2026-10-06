@@ -6,11 +6,11 @@ import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { AsaasStoreUnavailable } from '../integrations/asaas/asaas-charges.service.js';
 import { AsaasThrottled } from '../integrations/asaas/asaas.client.js';
 import { OrderPayments } from '../payments/order-payments.service.js';
-import { pushCheck, restChecks } from '../payments/payment-facts.js';
+import { CHECKED, pushCheck, restChecks } from '../payments/payment-facts.js';
 import { PaymentSync } from '../payments/payment-sync.service.js';
 import { RECONCILE_BATCH } from './payment-events.constants.js';
 
-const WAITING = ['PENDING', 'OVERDUE'] as const;
+const WAITING: readonly string[] = ['PENDING', 'OVERDUE'];
 
 /**
  * Asks Asaas after the charges a webhook may have missed (BEELINK-206) — an event that never came,
@@ -21,6 +21,9 @@ const WAITING = ['PENDING', 'OVERDUE'] as const;
  * Each charge is asked about less and less often (`nextCheckAfter`), pushed before Asaas is asked,
  * so one that keeps failing waits longer too. A shop Asaas asked to wait for (429), or whose key
  * does not open, is left for the rest of the pass — the other shops still go.
+ *
+ * A paid charge with a refund on its way (BEELINK-208) is asked about too, until Asaas concludes it:
+ * on a card that takes days, and its event may be the one that never came.
  *
  * It also ends what was left owing: a charge still waiting on an order that was cancelled, or whose
  * total is no longer the charge's — a removal Asaas did not answer when the order changed — is
@@ -42,10 +45,10 @@ export class PaymentReconciliation {
     if (connected.length === 0) return 0;
 
     const due = await this.prisma.orderPayment.findMany({
-      where: { storeId: { in: connected.map((row) => row.storeId) }, status: { in: [...WAITING] }, providerId: { not: null }, OR: [{ nextCheckAt: null }, { nextCheckAt: { lte: now } }] },
+      where: { storeId: { in: connected.map((row) => row.storeId) }, providerId: { not: null }, AND: [CHECKED, { OR: [{ nextCheckAt: null }, { nextCheckAt: { lte: now } }] }] },
       orderBy: { createdAt: 'asc' },
       take: RECONCILE_BATCH,
-      select: { id: true, storeId: true, orderId: true, checks: true, amountCents: true, order: { select: { status: true, totalCents: true, deliveryFeeCents: true } } },
+      select: { id: true, storeId: true, orderId: true, checks: true, amountCents: true, status: true, order: { select: { status: true, totalCents: true, deliveryFeeCents: true } } },
     });
 
     const resting = new Set<string>();
@@ -55,7 +58,8 @@ export class PaymentReconciliation {
       if (!(await pushCheck(this.prisma, row, now))) continue;
       asked += 1;
       try {
-        const unwanted = row.order.status === 'CANCELLED' || row.order.deliveryFeeCents === null || row.order.totalCents !== row.amountCents;
+        // Only a charge still to be paid can be one the order no longer wants.
+        const unwanted = WAITING.includes(row.status) && (row.order.status === 'CANCELLED' || row.order.deliveryFeeCents === null || row.order.totalCents !== row.amountCents);
         const leftovers = unwanted || (await this.heard.sync(row.storeId, row.orderId)).leftovers;
         // Never fails: what Asaas still refuses stays on the charge, and is tried at its next turn.
         if (leftovers) await this.payments.release(row.storeId, row.orderId);

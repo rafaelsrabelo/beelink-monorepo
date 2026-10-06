@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 
 // Block
 import { OrderPaymentCard } from "./order-payment-card"
-import { paidAfterCancelled, paidCard, paidPix, paidTwice, pendingPix, refused } from "./order-payment.fixtures"
+import { paidAfterCancelled, paidCard, paidPix, paidTwice, partlyRefunded, pendingPix, refundedWhole, refundingCard, refundRefused, refused, strayResolved } from "./order-payment.fixtures"
 
 const money = (cents: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100)
 const when = (iso: string) => new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }).format(new Date(iso))
@@ -12,7 +12,7 @@ const meta = {
   title: "Blocks/Orders/OrderPaymentCard",
   component: OrderPaymentCard,
   parameters: { layout: "padded" },
-  args: { payment: pendingPix, money, when },
+  args: { payment: pendingPix, money, when, refundHref: "#estorno", strayRefundHref: (id: string) => `#estorno-${id}` },
   decorators: [(Story) => <div className="max-w-xs">{Story()}</div>],
 } satisfies Meta<typeof OrderPaymentCard>
 
@@ -46,5 +46,17 @@ export const PagoDepoisDeCancelado: Story = { args: { payment: paidAfterCancelle
 /** Pago duas vezes: o segundo pagamento a estornar. */
 export const PagoDuasVezes: Story = { args: { payment: paidTwice } }
 
-/** Estornado por inteiro. */
-export const Estornado: Story = { args: { payment: { ...paidPix, status: "REFUNDED", providerStatus: "REFUNDED" } } }
+/** Estornado em parte: o que voltou, o que resta, e o estorno com o motivo. */
+export const EstornadoEmParte: Story = { args: { payment: partlyRefunded } }
+
+/** Cartão com o estorno em processamento: o Asaas leva dias para concluir. */
+export const EstornoEmProcessamento: Story = { args: { payment: refundingCard } }
+
+/** Estornado por inteiro, parte por aqui e parte no painel do Asaas. */
+export const Estornado: Story = { args: { payment: refundedWhole } }
+
+/** Um estorno recusado por falta de saldo, e um que o Asaas não respondeu. */
+export const EstornoRecusado: Story = { args: { payment: refundRefused } }
+
+/** Pago duas vezes e já estornado: o aviso some, o estorno fica na lista. */
+export const PagamentoIndevidoEstornado: Story = { args: { payment: strayResolved } }

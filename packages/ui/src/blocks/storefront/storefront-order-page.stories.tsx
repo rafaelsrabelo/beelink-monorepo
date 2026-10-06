@@ -35,7 +35,7 @@ const items = [
   { name: "Coqueteleira 700ml", href: null, imageUrl: null, meta: "Cor: Preta · Qtd. 1", price: "R$ 29,90" },
 ]
 
-type Paid = Pick<Parameters<typeof StorefrontOrderPayment>[0], "method" | "status" | "payHref">
+type Paid = Pick<Parameters<typeof StorefrontOrderPayment>[0], "method" | "status" | "payHref" | "refunds" | "refundNote">
 
 function OrderPage({ status, pickup = false, cashback = null, paid = { method: "Pagamento combinado com a loja: Pix" } }: { status: StorefrontOrderStatusProps; pickup?: boolean; cashback?: string | null; paid?: Paid }) {
   return (
@@ -145,6 +145,24 @@ export const PagamentoAprovado: Story = {
     },
     paid: { method: "Pagamento online: Cartão de crédito em 3x", status: { label: "Pagamento aprovado", tone: "done" } },
   },
+}
+
+/** Cancelado pela loja com o estorno junto (BEELINK-208): o cartão ainda em processamento, com o prazo. */
+export const CanceladoComEstorno: Story = {
+  args: {
+    status: { headline: "Cancelado em 22 de set. de 2026", detail: "Cancelado pela loja", tone: "cancelled", steps: null },
+    paid: {
+      method: "Pagamento online: Cartão de crédito em 3x",
+      status: { label: "Estorno em processamento", tone: "stop" },
+      refunds: ["R$ 237,22 em processamento desde 22 de set."],
+      refundNote: "No cartão, o estorno pode levar até 10 dias úteis para aparecer na fatura.",
+    },
+  },
+}
+
+/** Cancelado pelo bee-link porque ninguém pagou no prazo (BEELINK-208). */
+export const CanceladoPorFaltaDePagamento: Story = {
+  args: { status: { headline: "Cancelado em 22 de set. de 2026", detail: "Cancelado por falta de pagamento", tone: "cancelled", steps: null }, paid: { method: "Pagamento online: Pix", status: { label: "Pagamento cancelado", tone: "stop" } } },
 }
 
 /** A loja seguiu sem esperar o pagamento: a etapa dele continua por fazer, no meio das feitas. */

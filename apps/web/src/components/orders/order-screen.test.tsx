@@ -1,5 +1,6 @@
 // Libs
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Types
@@ -12,7 +13,7 @@ import { ptBR as ui } from "@harness-monorepo/ui/locales/pt-BR"
 import { ptBR as web } from "@/locales/pt-BR"
 import { OrderScreen } from "./order-screen"
 
-const mocks = vi.hoisted(() => ({ order: vi.fn(), markSeen: vi.fn() }))
+const mocks = vi.hoisted(() => ({ order: vi.fn(), markSeen: vi.fn(), push: vi.fn() }))
 const idle = { mutate: vi.fn(), isPending: false, isSuccess: false, error: null, variables: undefined }
 
 vi.mock("@/services/orders/order-hooks", () => ({
@@ -22,6 +23,7 @@ vi.mock("@/services/orders/order-hooks", () => ({
   useOrderDeliveryFee: () => idle,
   useMarkOrderPaymentSeen: () => ({ mutate: mocks.markSeen }),
 }))
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }))
 vi.mock("@/services/stores/store-hooks", () => ({ useStore: () => ({ data: { name: "Loja do Design" } }) }))
 vi.mock("@/components/conversations/order-conversation-section", () => ({ OrderConversationSection: () => null }))
 vi.mock("@/components/orders/order-label-section", () => ({ OrderLabelSection: () => null }))
@@ -32,6 +34,9 @@ const payment: NonNullable<Order["payment"]> = {
   installments: 1,
   amountCents: 5990,
   refundedCents: 0,
+  refundingCents: 0,
+  refundableCents: 5990,
+  refunds: [],
   expiresAt: "2026-10-08T02:59:59.999Z",
   paidAt: "2026-10-06T13:05:00.000Z",
   providerStatus: "RECEIVED",
@@ -116,11 +121,34 @@ describe("OrderScreen — the order's online payment (BEELINK-207)", () => {
   })
 
   it("keeps money the order did not ask for on the page", () => {
-    mocks.order.mockReturnValue(read({ ...order, status: "CANCELLED", payment: { ...payment, unseen: false, strays: [{ reason: "ORDER_CANCELLED", method: "PIX", amountCents: 5990, paidAt: "2026-10-06T13:05:00.000Z" }] } }))
+    mocks.order.mockReturnValue(read({ ...order, status: "CANCELLED", payment: { ...payment, unseen: false, strays: [{ id: "s1", refundableCents: 5990, resolvedAt: null, reason: "ORDER_CANCELLED", method: "PIX", amountCents: 5990, paidAt: "2026-10-06T13:05:00.000Z" }] } }))
     renderScreen()
 
     expect(screen.getByRole("group", { name: "Pagamento a resolver" })).toHaveTextContent("Este pedido foi pago depois de cancelado.")
-    expect(screen.getByRole("group", { name: "Pagamento a resolver" })).toHaveTextContent("estorne ao cliente pelo painel do Asaas")
+    expect(screen.getByRole("link", { name: /Estornar R\$\s59,90/ })).toHaveAttribute("href", "/admin/loja/orders/7/refund?stray=s1")
+  })
+
+  it("leads to the refund's own screen while the shop holds money (BEELINK-208)", () => {
+    renderScreen()
+
+    expect(screen.getByRole("link", { name: "Estornar pagamento" })).toHaveAttribute("href", "/admin/loja/orders/7/refund")
+  })
+
+  it("sends a paid order's cancel to the refund's screen, and asks here for one that holds nothing", async () => {
+    const user = userEvent.setup()
+    const { unmount } = renderScreen()
+    await user.click(screen.getByRole("button", { name: "Outros status" }))
+    await user.click(await screen.findByRole("menuitem", { name: "Cancelar pedido" }))
+    expect(mocks.push).toHaveBeenCalledWith("/admin/loja/orders/7/refund?cancel=1")
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+    unmount()
+
+    mocks.order.mockReturnValue(read({ ...order, payment: { ...payment, status: "REFUNDED", refundedCents: 5990, refundableCents: 0, unseen: false } }))
+    renderScreen()
+    await user.click(screen.getByRole("button", { name: "Outros status" }))
+    await user.click(await screen.findByRole("menuitem", { name: "Cancelar pedido" }))
+    expect(await screen.findByRole("alertdialog")).toBeInTheDocument()
+    expect(mocks.push).toHaveBeenCalledTimes(1)
   })
 
   it("draws shapes while the order is read, and asks nothing yet", () => {

@@ -210,6 +210,19 @@ describe("OrderDetail", () => {
     expect(onStatusChange).toHaveBeenCalledWith("CANCELLED")
   })
 
+  it("hands a paid order's cancel to its refund's screen instead of asking here (BEELINK-208)", async () => {
+    const onStatusChange = vi.fn()
+    const onCancel = vi.fn()
+    render(<OrderDetail order={order} {...props} onStatusChange={onStatusChange} onCancel={onCancel} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Outros status" }))
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Cancelar pedido" }))
+
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+    expect(onStatusChange).not.toHaveBeenCalled()
+  })
+
   it("offers no status change once the order is cancelled", () => {
     render(<OrderDetail order={{ ...order, status: "CANCELLED" }} {...props} />)
 

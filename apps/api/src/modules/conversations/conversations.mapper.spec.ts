@@ -14,6 +14,7 @@ const message = (author: 'CUSTOMER' | 'SHOP', readAt: Date | null) => ({
   status: null,
   notice: null,
   cashbackCents: null,
+  refundCents: null,
   createdAt: at,
   readAt,
 });
@@ -26,6 +27,7 @@ const notice = (status: 'ACCEPTED' | 'OUT_FOR_DELIVERY' | 'CANCELLED', readAt: D
   status,
   notice: null,
   cashbackCents: null,
+  refundCents: null,
   createdAt: at,
   readAt,
 });

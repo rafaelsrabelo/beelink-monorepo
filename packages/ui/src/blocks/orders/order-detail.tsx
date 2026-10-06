@@ -30,6 +30,11 @@ export interface OrderDetailProps {
   /** The customer's record, which their name leads to. */
   customerHref?: string
   onStatusChange: (status: OrderStatusValue) => void
+  /** Cancelling a paid order goes to its refund's screen (BEELINK-208) instead of the confirmation here. */
+  onCancel?: () => void
+  /** The refund's screen, for the order's own payment and for money it did not ask for. */
+  refundHref?: string
+  strayRefundHref?: (strayId: string) => string
   statusPending?: boolean
   /** Why the last status change did not go through, in words. */
   statusError?: string
@@ -51,6 +56,9 @@ export function OrderDetail({
   whatsappHref,
   customerHref,
   onStatusChange,
+  onCancel,
+  refundHref,
+  strayRefundHref,
   statusPending = false,
   statusError,
   delivery,
@@ -86,6 +94,7 @@ export function OrderDetail({
           status={order.status}
           fulfillment={order.fulfillment}
           onChange={onStatusChange}
+          onCancel={onCancel}
           pending={statusPending}
           messages={messages}
         />
@@ -103,7 +112,7 @@ export function OrderDetail({
         </div>
         <div className="flex flex-col gap-6">
           {/* First: whether the money came decides what the shop does with everything under it. */}
-          {order.paymentChannel === "ONLINE" ? <OrderPaymentCard payment={order.payment ?? null} money={money} when={when} messages={messages} /> : null}
+          {order.paymentChannel === "ONLINE" ? <OrderPaymentCard payment={order.payment ?? null} money={money} when={when} refundHref={refundHref} strayRefundHref={strayRefundHref} linkComponent={Link} messages={messages} /> : null}
           {delivery}
           {order.cashback ? <OrderCashback cashback={order.cashback} money={money} date={day} locale={locale} messages={messages} /> : null}
           <OrderFacts

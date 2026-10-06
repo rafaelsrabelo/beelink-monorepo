@@ -21,7 +21,7 @@ export interface OrderListItem {
   /** Where it is paid; absent reads as settled with the shop. */
   paymentChannel?: "OFFLINE" | "ONLINE"
   /** Its charge at Asaas, when it is charged online and has one. */
-  payment?: { status: OrderPaymentStatusValue } | null
+  payment?: { status: OrderPaymentStatusValue; refundingCents?: number } | null
   /** How many payments arrived that it did not ask for (BEELINK-207). */
   strays?: number
   totalCents: number

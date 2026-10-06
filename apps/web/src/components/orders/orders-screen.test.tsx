@@ -24,8 +24,8 @@ vi.mock("@/services/orders/order-hooks", () => ({ useOrders: mocks.orders }))
 const row = { id: "o", customer: { id: "c", name: "Bia Souza", phone: null }, fulfillment: "PICKUP", totalCents: 5990, deliveryFeeCents: 0, itemsCount: 1, placedAt: "2026-10-06T13:00:00.000Z" } as const
 const page: OrderPage = {
   orders: [
-    { ...row, number: 3, status: "RECEIVED", paymentMethod: "PIX", paymentChannel: "ONLINE", payment: { status: "RECEIVED", expiresAt: null, paidAt: "2026-10-06T13:05:00.000Z" }, strays: 0 },
-    { ...row, number: 2, status: "RECEIVED", paymentMethod: "CREDIT_CARD", paymentChannel: "ONLINE", payment: { status: "PENDING", expiresAt: "2026-10-08T02:59:59.999Z", paidAt: null }, strays: 0 },
+    { ...row, number: 3, status: "RECEIVED", paymentMethod: "PIX", paymentChannel: "ONLINE", payment: { status: "RECEIVED", expiresAt: null, paidAt: "2026-10-06T13:05:00.000Z", refundingCents: 0 }, strays: 0 },
+    { ...row, number: 2, status: "RECEIVED", paymentMethod: "CREDIT_CARD", paymentChannel: "ONLINE", payment: { status: "PENDING", expiresAt: "2026-10-08T02:59:59.999Z", paidAt: null, refundingCents: 0 }, strays: 0 },
     { ...row, number: 1, status: "ACCEPTED", paymentMethod: "MONEY", paymentChannel: "OFFLINE", payment: null, strays: 0 },
   ],
   total: 3,

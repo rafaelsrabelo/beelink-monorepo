@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // Lib
-import { orderPaymentStateOf } from "./order-payment"
+import { isRefundable, orderPaymentStateOf } from "./order-payment"
 
 describe("orderPaymentStateOf", () => {
   const online = { status: "RECEIVED", paymentChannel: "ONLINE" } as const
@@ -31,5 +31,23 @@ describe("orderPaymentStateOf", () => {
     expect(orderPaymentStateOf({ status: "CANCELLED", paymentChannel: "ONLINE", payment: { status: "CANCELLED" } })).toBeNull()
     expect(orderPaymentStateOf({ status: "CANCELLED", paymentChannel: "ONLINE", payment: null })).toBeNull()
     expect(orderPaymentStateOf({ status: "CANCELLED", paymentChannel: "ONLINE", payment: { status: "RECEIVED" } })).toBe("paid")
+  })
+
+  it("says a refund is on its way while the shop still holds the money (BEELINK-208)", () => {
+    expect(orderPaymentStateOf({ ...online, payment: { status: "CONFIRMED", refundingCents: 5990 } })).toBe("refunding")
+    expect(orderPaymentStateOf({ ...online, payment: { status: "PARTIALLY_REFUNDED", refundingCents: 100 } })).toBe("refunding")
+    expect(orderPaymentStateOf({ status: "CANCELLED", paymentChannel: "ONLINE", payment: { status: "CONFIRMED", refundingCents: 5990 } })).toBe("refunding")
+    expect(orderPaymentStateOf({ ...online, payment: { status: "REFUNDED", refundingCents: 0 } })).toBe("refunded")
+  })
+})
+
+describe("isRefundable", () => {
+  it("is so only while the shop holds money a refund may still ask for", () => {
+    expect(isRefundable({ status: "RECEIVED", refundableCents: 5990 })).toBe(true)
+    expect(isRefundable({ status: "PARTIALLY_REFUNDED", refundableCents: 1 })).toBe(true)
+    expect(isRefundable({ status: "CONFIRMED", refundableCents: 0 })).toBe(false)
+    expect(isRefundable({ status: "REFUNDED", refundableCents: 0 })).toBe(false)
+    expect(isRefundable({ status: "PENDING", refundableCents: 5990 })).toBe(false)
+    expect(isRefundable(null)).toBe(false)
   })
 })

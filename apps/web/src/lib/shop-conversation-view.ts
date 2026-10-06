@@ -10,7 +10,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 // App
 import { noticeWithCashback } from "./conversation-view"
 import { momentOf } from "./order-card-view"
-import { noticeKeyOf } from "./status-notice"
+import { noticeTextOf } from "./status-notice"
 
 /** What the conversations' tab reads from its address: which filter, the search, and the one open. */
 export interface ShopConversationsAddress {
@@ -64,7 +64,7 @@ export function shopConversationRowsOf(page: ShopConversationPage, address: Shop
       order: `${format(text.orderLine, { number: String(order.number) })} · ${messages.orders.statuses[order.status]}`,
       preview:
         lastMessage.kind !== "MESSAGE"
-          ? text.notices[noticeKeyOf(lastMessage, order.fulfillment)]
+          ? noticeTextOf(lastMessage, order.fulfillment, text.notices, locale)
           : lastMessage.author === "SHOP"
             ? format(text.youSaid, { body })
             : body,
@@ -86,7 +86,7 @@ export function shopConversationLinesOf(conversation: ShopConversation, { locale
           id: message.id,
           mine: false,
           notice: true,
-          body: noticeWithCashback(text.notices[noticeKeyOf(message, conversation.order.fulfillment)], message.kind === "STATUS" ? message.cashbackCents : null, text.noticeCashback, locale),
+          body: noticeWithCashback(noticeTextOf(message, conversation.order.fulfillment, text.notices, locale), message.kind === "STATUS" ? message.cashbackCents : null, text.noticeCashback, locale),
           when: momentOf(message.createdAt, locale),
         }
       : {

@@ -29,7 +29,7 @@ import { useOrders } from "@/services/orders/order-hooks"
 const STATUSES = ["RECEIVED", "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"] as const satisfies readonly OrderStatus[]
 
 /** What the list is filtered by on the screen (BEELINK-207); `PAID_UNSEEN` is the bell's own reading. */
-const PAYMENTS = ["PAID", "PENDING", "STRAY"] as const satisfies readonly OrderPaymentFilter[]
+const PAYMENTS = ["PAID", "PENDING", "REFUNDED", "STRAY"] as const satisfies readonly OrderPaymentFilter[]
 type PaymentChoice = (typeof PAYMENTS)[number]
 
 const SEARCH_DEBOUNCE_MS = 350

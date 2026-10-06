@@ -4,13 +4,16 @@ import type {
   SetOrderDeliveryFeePayload,
   CreateOrderPayload,
   Order,
+  OrderCancellationRefund,
   OrderListQuery,
   OrderPage,
   OrderQuote,
   OrderStatus,
   OrderStockDetails,
   OrderStockShortage,
+  RefundOrderPayload,
   ShopOrderQuotePayload,
+  UpdateOrderStatusPayload,
 } from "@harness-monorepo/contracts"
 
 /**
@@ -97,15 +100,30 @@ export async function fetchOrder(slug: string, number: number): Promise<Order> {
   return payload as Order
 }
 
-/** Moves the order; what comes back is the whole order, with the status it now has. */
-export async function updateOrderStatus(slug: string, number: number, status: OrderStatus): Promise<Order> {
+/**
+ * Moves the order; what comes back is the whole order, with the status it now has. A cancellation of
+ * a paid order carries its refund (BEELINK-208), and what Asaas refuses of it comes with its details.
+ */
+export async function updateOrderStatus(slug: string, number: number, status: OrderStatus, refund?: OrderCancellationRefund): Promise<Order> {
   const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/status`, {
     method: "PATCH",
     headers: JSON_HEADERS,
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, ...(refund ? { refund } : {}) } satisfies UpdateOrderStatusPayload),
   })
   const payload: unknown = await response.json().catch(() => null)
-  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload))
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload), (payload as { details?: unknown } | null)?.details)
+  return payload as Order
+}
+
+/** Gives back money of the order's payment (BEELINK-208); what comes back is the order as it stands then. */
+export async function refundOrder(slug: string, number: number, refund: RefundOrderPayload): Promise<Order> {
+  const response = await fetch(`/api/stores/${encodeURIComponent(slug)}/orders/${number}/refunds`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(refund),
+  })
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) throw new OrderRequestError(errorCodeOf(payload), (payload as { details?: unknown } | null)?.details)
   return payload as Order
 }
 

@@ -19,13 +19,31 @@ const charge = (over: Partial<AsaasCharge> = {}): AsaasCharge => ({
   installmentId: null,
   installmentNumber: null,
   externalReference: 'order-1',
+  refunds: [],
   ...over,
 });
 const want: WantedCharge = { orderId: 'order-1', method: 'PIX', totalCents: 5990, installments: 1 };
 
 describe("Asaas's charges for one order, read as what there is to pay", () => {
+  it("adds up a plan's refunds, and calls it refunded only when every instalment is (BEELINK-208)", () => {
+    const instalment = (number: number, over: Partial<AsaasCharge>) => charge({ id: `pay_${number}`, installmentId: 'ins_1', installmentNumber: number, billingType: 'CREDIT_CARD', valueCents: 2000, status: 'CONFIRMED', ...over });
+
+    const part = plansOf([instalment(1, { status: 'REFUNDED' }), instalment(2, { refunds: [{ status: 'PENDING', valueCents: 500 }] }), instalment(3, {})])[0]!;
+    expect(part.status).toBe('CONFIRMED');
+    expect(part.refunds).toEqual({ doneCents: 2000, pendingCents: 500, cancelledCents: 0 });
+
+    const whole = plansOf([instalment(1, { status: 'REFUNDED' }), instalment(2, { status: 'REFUNDED' })])[0]!;
+    expect(whole.status).toBe('REFUNDED');
+    expect(whole.refunds).toEqual({ doneCents: 4000, pendingCents: 0, cancelledCents: 0 });
+    expect(isPaidPlan(whole)).toBe(true);
+  });
+
+  it('says nothing of refunds on the answer to a creation', () => {
+    expect(planCreated(charge(), want).refunds).toBeNull();
+  });
+
   it('reads a charge in full as itself', () => {
-    expect(plansOf([charge()])).toEqual([{ id: 'pay_1', installmentId: null, status: 'PENDING', deleted: false, billingType: 'PIX', totalCents: 5990, installments: 1, dueDate: '2026-10-07', invoiceUrl: 'https://sandbox.asaas.com/i/1' }]);
+    expect(plansOf([charge()])).toEqual([{ id: 'pay_1', installmentId: null, status: 'PENDING', deleted: false, billingType: 'PIX', totalCents: 5990, installments: 1, dueDate: '2026-10-07', invoiceUrl: 'https://sandbox.asaas.com/i/1', refunds: { doneCents: 0, pendingCents: 0, cancelledCents: 0 } }]);
   });
 
   it('reads the instalments of a plan as one payment: the first names it, the values add up, and one paid is the plan paid', () => {

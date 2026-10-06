@@ -23,14 +23,16 @@ export const ORDER_INCLUDE = {
   payments: true,
   strayPayments: true,
   paidNotice: { select: { seenAt: true } },
+  refunds: true,
 } as const satisfies Prisma.OrderInclude;
 
 /** What a row of the list is read with: the units, not the lines. */
 export const ORDER_SUMMARY_INCLUDE = {
   customer: { select: customerSelect },
   items: { select: { quantity: true } },
-  payments: { select: { status: true, expiresAt: true, paidAt: true, createdAt: true } },
-  _count: { select: { strayPayments: true } },
+  payments: { select: { status: true, expiresAt: true, paidAt: true, createdAt: true, refundingCents: true } },
+  // Only the ones the shop still has to settle (BEELINK-208).
+  _count: { select: { strayPayments: { where: { resolvedAt: null } } } },
 } as const satisfies Prisma.OrderInclude;
 
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
@@ -56,7 +58,7 @@ export function toOrder(row: OrderRow): Order {
     paymentMethod: row.paymentMethod,
     paymentChannel: row.paymentChannel,
     installments: row.paymentInstallments,
-    payment: toShopOrderPayment(row.payments, row.strayPayments, row.paidNotice),
+    payment: toShopOrderPayment(row.payments, row.strayPayments, row.paidNotice, row.refunds),
     items: row.items.map((item) => ({
       id: item.id,
       productId: item.productId,

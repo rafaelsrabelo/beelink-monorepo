@@ -5,13 +5,13 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, OrderPage, OrderQuote, OrderStatus, ShopOrderQuotePayload } from "@harness-monorepo/contracts"
+import type { CreateOrderPayload, Order, OrderDeliveryPayload, OrderListQuery, OrderPage, OrderQuote, OrderStatus, RefundOrderPayload, ShopOrderQuotePayload } from "@harness-monorepo/contracts"
 
 // App
 import { cashbackKeys } from "../cashback/cashback-keys"
 import { catalogKeys } from "../catalog/catalog-hooks"
 import { customerKeys } from "../customers/customer-hooks"
-import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, markOrderPaymentSeen, quoteOrder, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
+import { clearOrderDelivery, createOrder, fetchOrder, fetchOrders, markOrderPaymentSeen, quoteOrder, refundOrder, setOrderDelivery, setOrderDeliveryFee, updateOrderStatus } from "./order-requests"
 
 /** Built from their inputs, never spelled at a call site (docs/ai-rules/state-and-data.md). */
 export const orderKeys = {
@@ -84,6 +84,39 @@ export function useUpdateOrderStatus(slug: string, number: number): UseMutationR
         queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
         // A cancelled order gives its counted lines back to the stock the catalogue shows.
         ...(order.status === "CANCELLED" ? [queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) })] : []),
+      ])
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey: orderKeys.detail(slug, number) }),
+  })
+}
+
+/** What the refund's screen sends: the refund, and whether the order is cancelled with it. */
+export interface OrderRefundAsked extends RefundOrderPayload {
+  cancel?: boolean
+}
+
+/**
+ * Gives money back from an order (BEELINK-208) — on its own, or as the refund a paid order's
+ * cancellation carries. The answer is the whole order, which replaces the one in the cache; the
+ * lists read again, and with a cancellation everything a cancelled order touches. A refusal reads
+ * the order again: what is left to refund may be what changed.
+ */
+export function useRefundOrder(slug: string, number: number): UseMutationResult<Order, Error, OrderRefundAsked> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ cancel, ...refund }: OrderRefundAsked) =>
+      cancel ? updateOrderStatus(slug, number, "CANCELLED", { reason: refund.reason, refundableCents: refund.refundableCents }) : refundOrder(slug, number, refund),
+    onSuccess: (order) => {
+      queryClient.setQueryData(orderKeys.detail(slug, number), order)
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: orderKeys.lists(slug) }),
+        ...(order.status === "CANCELLED"
+          ? [
+              queryClient.invalidateQueries({ queryKey: customerKeys.store(slug) }),
+              queryClient.invalidateQueries({ queryKey: cashbackKeys.shop(slug) }),
+              queryClient.invalidateQueries({ queryKey: catalogKeys.products(slug) }),
+            ]
+          : []),
       ])
     },
     onError: () => queryClient.invalidateQueries({ queryKey: orderKeys.detail(slug, number) }),
