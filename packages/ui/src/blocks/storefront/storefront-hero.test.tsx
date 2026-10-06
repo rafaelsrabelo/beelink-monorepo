@@ -30,22 +30,29 @@ describe("StorefrontHero", () => {
   })
 
   /**
-   * A carousel in a third that kept the full band's fixed height stood half again as tall as the
-   * posters beside it and clipped its headline. Out of the full width it is a card among cards.
+   * A carousel in a third that kept the full band's height stood half again as tall as the posters
+   * beside it and clipped its headline. Out of the full width it is a card among cards.
    */
   it("takes a card's proportion and headline in a slice smaller than the band", () => {
     const { container } = render(<StorefrontHero items={[slide("1")]} span="THIRD" />)
 
     const picture = container.querySelector("img")!.className
     expect(picture).toContain("aspect-[4/3]")
-    expect(picture).not.toContain("h-44")
+    expect(picture).not.toContain("21/9")
     expect(screen.getByText("Banner 1").className).toContain("text-lg")
   })
 
-  it("stays the cover it was across the whole band", () => {
-    const { container } = render(<StorefrontHero items={[slide("1")]} span="FULL" />)
+  /**
+   * The shop's report: three slides drawn at 21:9 lost their logo and their button on a monitor and
+   * their sides on a phone, because a fixed height is a different shape at every width.
+   */
+  it("keeps one proportion across the whole band, at every width", () => {
+    const { container } = render(<StorefrontHero items={[slide("1"), slide("2")]} span="FULL" />)
 
-    expect(container.querySelector("img")!.className).toContain("h-44")
+    for (const picture of container.querySelectorAll("img")) {
+      expect(picture.className).toContain("aspect-[21/9]")
+      expect(picture.className).not.toMatch(/shop-\w+:aspect|\bh-\d/)
+    }
     expect(screen.getByText("Banner 1").className).toContain("shop-sm:text-4xl")
   })
 
