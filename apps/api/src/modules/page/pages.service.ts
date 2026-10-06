@@ -2,23 +2,21 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 
 // Types
-import type { LandingTemplateId, PageSlugAvailability, StorePage } from '@harness-monorepo/contracts';
+import type { PageSlugAvailability, PaymentMethod, StorePage } from '@harness-monorepo/contracts';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { CreateLandingDto, UpdatePageDto } from './dto/pages.dto.js';
-import type { LandingSubject } from './landing-templates.js';
+import type { PageTemplate, TemplateSubject } from './template-catalog.js';
 
 // App
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { StoresService } from '../stores/stores.service.js';
-import { coverImageOf, landingBands, PRODUCT_TEMPLATE_IDS, SITE_TEMPLATE_IDS } from './landing-templates.js';
-import { saleEndOf } from './page-countdown.js';
 import { writeBands } from './page-bands-write.js';
 import { freezePage } from './page-freeze.js';
-import { promisesOf } from './page-seed.js';
 import { pageSlugOf } from './page-slug.js';
 import { pageFor } from './page-scope.js';
 import { PageRules, pageError } from './page.rules.js';
 import { toStorePage } from './pages.mapper.js';
+import { shopSubject, templateOf } from './template-catalog.js';
 
 /** Postgres' unique violation, as Prisma reports it: the address was taken between the check and the write. */
 function isTaken(error: unknown): boolean {
@@ -62,14 +60,15 @@ export class PagesService {
       select: { type: true, paymentMethods: true },
     });
 
-    if (store.type === 'INSTITUTIONAL' && !(SITE_TEMPLATE_IDS as readonly LandingTemplateId[]).includes(dto.template)) {
+    const template = templateOf(dto.template);
+    if (!template.storeTypes.includes(store.type)) {
       throw new BadRequestException(pageError('PAGE_TEMPLATE_UNAVAILABLE', 'Este modelo é de loja; um site começa em branco.'));
     }
 
     const { slug, valid } = pageSlugOf(dto.slug ?? dto.title);
     if (!valid) throw new BadRequestException(pageError('PAGE_SLUG_INVALID', 'Use letras e números no endereço.'));
 
-    const subject = await this.subjectOf(storeId, dto, store.paymentMethods);
+    const subject = await this.subjectOf(storeId, template, dto, store.paymentMethods);
 
     try {
       const row = await this.prisma.$transaction(async (tx) => {
@@ -84,10 +83,10 @@ export class PagesService {
             title: dto.title,
             inMenu: dto.inMenu ?? false,
             usesChrome: dto.usesChrome ?? true,
-            seoImageUrl: coverImageOf(dto.template, subject),
+            seoImageUrl: template.coverImage(subject),
           },
         });
-        await writeBands(tx, storeId, page.id, landingBands(dto.template, subject));
+        await writeBands(tx, storeId, page.id, template.bands(subject));
 
         return page;
       });
@@ -181,15 +180,13 @@ export class PagesService {
    */
   private async subjectOf(
     storeId: string,
+    template: PageTemplate,
     dto: CreateLandingDto,
-    paymentMethods: Parameters<typeof promisesOf>[0],
-  ): Promise<LandingSubject> {
-    const promises = promisesOf(paymentMethods);
-    const needsProduct = (PRODUCT_TEMPLATE_IDS as readonly LandingTemplateId[]).includes(dto.template);
-
+    paymentMethods: readonly PaymentMethod[],
+  ): Promise<TemplateSubject> {
     // Now, and not a clock the caller hands in: a sale's end is the moment the page is made plus three days.
-    const saleEndsAt = saleEndOf(new Date());
-    if (!needsProduct) return { title: dto.title, product: null, category: null, promises, saleEndsAt };
+    const blank = shopSubject(dto.title, paymentMethods, new Date());
+    if (!template.needs.includes('PRODUCT')) return blank;
     if (!dto.productId) {
       throw new BadRequestException(pageError('PAGE_PRODUCT_REQUIRED', 'Escolha o produto da página.'));
     }
@@ -210,14 +207,12 @@ export class PagesService {
     const { category } = product;
 
     return {
-      title: dto.title,
+      ...blank,
       product: { id: product.id, name: product.name, description: product.description, imageUrl: product.images[0]?.url ?? null },
       // A hidden category is not a collection anybody can browse: the page is built around the product instead.
       category: category?.isActive
         ? { id: category.id, name: category.name, description: category.description, imageUrl: category.imageUrl }
         : null,
-      promises,
-      saleEndsAt,
     };
   }
 }
