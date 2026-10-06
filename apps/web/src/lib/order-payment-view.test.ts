@@ -16,7 +16,7 @@ const EARLIER = "2026-10-06T02:59:59.999Z"
 const STANDS = { cancelled: false, awaitingTotal: false }
 const PIX = { payload: "000201", image: "aGk=", expiresAt: LATER }
 
-const pix = (over: Partial<CustomerOrderPayment> = {}): CustomerOrderPayment => ({ status: "PENDING", method: "PIX", installments: 1, amountCents: 5990, refundedCents: 0, expiresAt: LATER, paidAt: null, pix: PIX, invoiceUrl: null, ...over })
+const pix = (over: Partial<CustomerOrderPayment> = {}): CustomerOrderPayment => ({ status: "PENDING", method: "PIX", installments: 1, amountCents: 5990, refundedCents: 0, refundingCents: 0, refunds: [], expiresAt: LATER, paidAt: null, pix: PIX, invoiceUrl: null, ...over })
 const card = (over: Partial<CustomerOrderPayment> = {}): CustomerOrderPayment => pix({ method: "CREDIT_CARD", installments: 3, amountCents: 23970, pix: null, invoiceUrl: "https://www.asaas.com/i/abc", ...over })
 const screen = (payment: CustomerOrderPayment | null, order = STANDS) => paymentScreenOf(payment, order, now)
 

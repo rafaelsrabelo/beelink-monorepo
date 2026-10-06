@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { OrderDeliveryCard } from "./order-delivery-card"
 import { OrderFeeCard } from "./order-fee-card"
 import { OrderDetail } from "./order-detail"
-import { cashbackOrder, order } from "./order-detail.fixtures"
+import { awaitingOnlineOrder, cashbackOrder, order, paidAfterCancelledOrder, paidOnlineOrder } from "./order-detail.fixtures"
 
 const meta = {
   title: "Blocks/Orders/OrderDetail",
@@ -49,6 +49,15 @@ export const Cancelado: Story = { args: { order: { ...order, status: "CANCELLED"
 
 /** Entregue, com o cashback que gerou: disponível para o cliente até uma data. */
 export const ComCashback: Story = { args: { order: cashbackOrder } }
+
+/** Cobrado online e pago (BEELINK-207): o pagamento abre a coluna lateral. */
+export const PagoOnline: Story = { args: { order: paidOnlineOrder } }
+
+/** Cobrado online, ainda sem pagamento: a loja pode seguir, mas vê que aguarda. */
+export const AguardandoPagamento: Story = { args: { order: awaitingOnlineOrder } }
+
+/** Cancelado e pago depois: o dinheiro indevido fica desenhado no pedido, com o que fazer. */
+export const PagoDepoisDeCancelado: Story = { args: { order: paidAfterCancelledOrder } }
 
 export const SemCelular: Story = { args: { order: { ...order, customer: { ...order.customer, phone: null } }, whatsappHref: null } }
 

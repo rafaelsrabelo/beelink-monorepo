@@ -7,7 +7,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 // Types
-import type { OrderStatus } from "@harness-monorepo/contracts"
+import type { OrderPaymentFilter, OrderStatus } from "@harness-monorepo/contracts"
 
 // UI
 import { TablePager } from "@harness-monorepo/ui/blocks/catalog/table-pager"
@@ -28,6 +28,10 @@ import { useOrders } from "@/services/orders/order-hooks"
 
 const STATUSES = ["RECEIVED", "ACCEPTED", "PREPARING", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"] as const satisfies readonly OrderStatus[]
 
+/** What the list is filtered by on the screen (BEELINK-207); `PAID_UNSEEN` is the bell's own reading. */
+const PAYMENTS = ["PAID", "PENDING", "REFUNDED", "STRAY"] as const satisfies readonly OrderPaymentFilter[]
+type PaymentChoice = (typeof PAYMENTS)[number]
+
 const SEARCH_DEBOUNCE_MS = 350
 
 /** The primitive's pressed grey is lost against the panel's surface; the filter on has to read as on. */
@@ -37,6 +41,16 @@ function statusOf(raw: string | null): OrderStatus | null {
   return STATUSES.find((status) => status === raw) ?? null
 }
 
+function paymentOf(raw: string | null): PaymentChoice | null {
+  return PAYMENTS.find((payment) => payment === raw) ?? null
+}
+
+interface Filters {
+  status: OrderStatus | null
+  payment: PaymentChoice | null
+  q: string
+}
+
 export interface OrdersScreenProps {
   slug: string
   messages: UiMessages
@@ -44,7 +58,8 @@ export interface OrdersScreenProps {
 }
 
 /**
- * A shop's orders: a status filter, a search over number, name and phone, and the list.
+ * A shop's orders: a status filter, a payment filter (BEELINK-207), a search over number, name and
+ * phone, and the list.
  *
  * The filter, the search and the page live in the address, as the product list's do: an order
  * opened from here and closed with Back lands on the same filtered page, and "the orders out for
@@ -56,6 +71,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
   const text = messages.orders
 
   const status = statusOf(params.get("status"))
+  const payment = paymentOf(params.get("payment"))
   const q = params.get("q") ?? ""
   const page = Math.max(Number(params.get("page") ?? 1) || 1, 1)
 
@@ -71,9 +87,10 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
   const settled = useDebouncedValue(typed, SEARCH_DEBOUNCE_MS)
 
   /** Writes the address. Any change but the page itself returns to page one. */
-  function apply(next: { status: OrderStatus | null; q: string }, nextPage = 1) {
+  function apply(next: Filters, nextPage = 1) {
     const search = new URLSearchParams()
     if (next.status) search.set("status", next.status)
+    if (next.payment) search.set("payment", next.payment)
     if (next.q.trim()) search.set("q", next.q.trim())
     if (nextPage > 1) search.set("page", String(nextPage))
     const query = search.toString()
@@ -83,12 +100,12 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
   useEffect(() => {
     // `settled === typed`: a debounce still holding the text from before a Back must not write it
     // back over the address the Back just restored.
-    if (settled === typed && settled.trim() !== q) apply({ status, q: settled })
-    // What this is about is the text settling; `apply` and `status` are read at that moment.
+    if (settled === typed && settled.trim() !== q) apply({ status, payment, q: settled })
+    // What this is about is the text settling; `apply` and the filters are read at that moment.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settled, typed, q])
 
-  const orders = useOrders(slug, { ...(status ? { status } : {}), ...(q ? { q } : {}), page })
+  const orders = useOrders(slug, { ...(status ? { status } : {}), ...(payment ? { payment } : {}), ...(q ? { q } : {}), page })
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 lg:px-6">
@@ -114,7 +131,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
         <ToggleGroup
           aria-label={text.filterLabel}
           value={[status ?? "ALL"]}
-          onValueChange={(next: string[]) => apply({ status: statusOf(next[0] ?? null), q })}
+          onValueChange={(next: string[]) => apply({ status: statusOf(next[0] ?? null), payment, q })}
           className="flex-wrap"
         >
           <ToggleGroupItem value="ALL" variant="outline" className={PRESSED}>
@@ -123,6 +140,21 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
           {STATUSES.map((option) => (
             <ToggleGroupItem key={option} value={option} variant="outline" className={PRESSED}>
               {text.statuses[option]}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+        <ToggleGroup
+          aria-label={text.paymentFilterLabel}
+          value={[payment ?? "ALL"]}
+          onValueChange={(next: string[]) => apply({ status, payment: paymentOf(next[0] ?? null), q })}
+          className="flex-wrap"
+        >
+          <ToggleGroupItem value="ALL" variant="outline" className={PRESSED}>
+            {text.paymentFilters.ALL}
+          </ToggleGroupItem>
+          {PAYMENTS.map((option) => (
+            <ToggleGroupItem key={option} value={option} variant="outline" className={PRESSED}>
+              {text.paymentFilters[option]}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -140,7 +172,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
         <>
           <OrderList
             orders={orders.data.orders}
-            filtered={status !== null || q !== ""}
+            filtered={status !== null || payment !== null || q !== ""}
             hrefOf={(number) => `/admin/${slug}/orders/${number}`}
             newHref={`/admin/${slug}/orders/new`}
             linkComponent={AppLink}
@@ -150,7 +182,7 @@ export function OrdersScreen({ slug, messages, web }: OrdersScreenProps) {
             page={orders.data.page}
             pageSize={orders.data.pageSize}
             total={orders.data.total}
-            onPageChange={(next) => apply({ status, q }, next)}
+            onPageChange={(next) => apply({ status, payment, q }, next)}
             busy={orders.isFetching}
             previousLabel={text.previous}
             nextLabel={text.next}

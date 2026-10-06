@@ -14,9 +14,11 @@ import type { AsaasCharge } from '../integrations/asaas/asaas.client.js';
 import { isPaidPlan, methodOfPlan, plansOf, type ChargePlan } from './charge-plan.js';
 import { applyCharge, cancelRows, noteStray } from './payment-facts.js';
 import { PaymentNews } from './payment-news.js';
+import { reconcileRefunds, refundMarkOf, settleRefundMoney } from './payment-refunds.js';
 import { shownPaymentOf } from './payment.mapper.js';
 import { holdsMoney, inReview, isLive, wasPaid } from './payment-status.js';
 import { isOnlineMethod } from './payment-terms.js';
+import { refundTotalsOf } from './refund-totals.js';
 
 /** What hearing Asaas about an order's charges came to. */
 export interface PaymentHeard {
@@ -24,7 +26,7 @@ export interface PaymentHeard {
   status: OrderPaymentStatus | null;
   /** The shop holds money for the order. */
   paid: boolean;
-  /** What the order shows moved, or money arrived that it did not ask for. */
+  /** What the order shows moved, money arrived that it did not ask for, or a refund of it moved (BEELINK-208). */
   changed: boolean;
   /**
    * Nobody can say the order is unpaid: its card is in Asaas's manual review, or its charge was made
@@ -44,7 +46,8 @@ const names = (plan: ChargePlan, row: OrderPaymentModel) => plan.id === row.prov
 /** One charge read by its id, as the plan its row stands for: of a plan, Asaas answers the first instalment alone. */
 function planOfRow(charge: AsaasCharge, row: OrderPaymentModel): ChargePlan {
   const [plan] = plansOf([charge]);
-  return { ...plan!, id: row.providerId ?? charge.id, totalCents: charge.installmentId ? row.amountCents : plan!.totalCents, installments: charge.installmentId ? row.installments : 1 };
+  // One instalment's refunds are not the plan's.
+  return { ...plan!, id: row.providerId ?? charge.id, totalCents: charge.installmentId ? row.amountCents : plan!.totalCents, installments: charge.installmentId ? row.installments : 1, refunds: charge.installmentId ? null : plan!.refunds };
 }
 
 /**
@@ -94,12 +97,23 @@ export class PaymentSync {
       else gone.push(row.id);
     }
 
+    // A refund bee-link knows Asaas took, which the listing does not show (BEELINK-208): the charge
+    // is read by its id, where its refunds are sure to be, so a refund on its way is seen to conclude.
+    for (const row of order.payments) {
+      const plan = listed.find((each) => names(each, row));
+      const known = row.refundedCents + row.refundingCents;
+      if (!plan?.refunds || row.refundingCents === 0 || plan.refunds.doneCents + plan.refunds.pendingCents >= known) continue;
+      const read = await this.charges.refundsOf(storeId, { id: row.providerId!, installmentId: row.providerInstallmentId });
+      if (read) plan.refunds = read.whole ? { doneCents: row.amountCents, pendingCents: 0, cancelledCents: 0 } : refundTotalsOf(read.refunds);
+    }
+
     const now = new Date();
     const heard = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
       const current = await tx.order.findUniqueOrThrow({ where: { id: orderId }, select: { status: true } });
       const rows = () => tx.orderPayment.findMany({ where: { orderId } });
       const before = shownPaymentOf(await rows())?.status ?? null;
+      const refundsBefore = await refundMarkOf(tx, orderId);
       let stray: StrayPaymentReason | null = null;
 
       await cancelRows(tx, gone, now);
@@ -120,6 +134,14 @@ export class PaymentSync {
         await applyCharge(tx, target, plan, now);
       }
 
+      // Money the order did not ask for, given back since (BEELINK-208) — here, or at Asaas's own panel: settled.
+      for (const strayed of await tx.orderStrayPayment.findMany({ where: { orderId, resolvedAt: null } })) {
+        const plan = listed.find((each) => each.id === strayed.providerId);
+        if (!plan?.refunds) continue;
+        await reconcileRefunds(tx, { orderId, storeId, providerId: strayed.providerId, amountCents: strayed.amountCents }, plan.refunds, now);
+        await settleRefundMoney(tx, strayed.providerId, now);
+      }
+
       const after = await rows();
       const held = after.find((row) => holdsMoney(row.status)) ?? null;
       if (current.status === 'CANCELLED' && held?.providerId && isOnlineMethod(held.method)) {
@@ -129,7 +151,8 @@ export class PaymentSync {
       const status = shownPaymentOf(after)?.status ?? null;
       const unwanted = current.status === 'CANCELLED' || after.some((row) => wasPaid(row.status));
       const reviewed = after.some((row) => waits(row) && inReview(row.providerStatus));
-      return { status, paid: held !== null, changed: status !== before || stray !== null, unsettled: unreachable || reviewed, leftovers: unwanted && listed.some((plan) => !isPaidPlan(plan)), stray };
+      const refunded = (await refundMarkOf(tx, orderId)) !== refundsBefore;
+      return { status, paid: held !== null, changed: status !== before || stray !== null || refunded, unsettled: unreachable || reviewed, leftovers: unwanted && listed.some((plan) => !isPaidPlan(plan)), stray };
     });
 
     if (heard.changed) await this.news.tell(storeId, orderId, heard.stray);

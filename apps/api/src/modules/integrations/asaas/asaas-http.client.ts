@@ -14,6 +14,9 @@ import {
   type AsaasChargeRequest,
   type AsaasCustomerRequest,
   type AsaasPixQrCode,
+  type AsaasRefund,
+  type AsaasRefundsRead,
+  type AsaasRefundTarget,
   type AsaasWebhookRequest,
   type AsaasWebhookStanding,
 } from './asaas.client.js';
@@ -46,6 +49,22 @@ const PAGES_MAX = 5;
 
 const gone = (error: unknown) => error instanceof AsaasRefused && error.status === 404;
 
+/** A charge's `refunds`, read leniently: null, absent or anything but a list is none. */
+function refundsOf(raw: unknown): AsaasRefund[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as ({ status?: unknown; value?: unknown } | null)[])
+    .filter((refund) => typeof refund?.value === 'number')
+    .map((refund) => ({ status: filled(refund!.status) ? refund!.status : 'UNKNOWN', valueCents: centsOf(refund!.value as number) }));
+}
+
+/** What a refund's answer, or a read for one, says: the charge's refunds — a plan's answer has no status of its own. */
+function refundsReadOf(answer: unknown): AsaasRefundsRead {
+  const body = answer as { status?: unknown; refunds?: unknown } | null;
+  return { whole: body?.status === 'REFUNDED', refunds: refundsOf(body?.refunds) };
+}
+
+const refundPathOf = (charge: AsaasRefundTarget): string => (charge.installmentId ? `/installments/${encodeURIComponent(charge.installmentId)}` : `/payments/${encodeURIComponent(charge.id)}`);
+
 /** A charge read leniently: Asaas asks its clients not to break on a field it adds. Null when it has no id to be known by. */
 function chargeOf(raw: unknown): AsaasCharge | null {
   const body = raw as Record<string, unknown> | null;
@@ -62,6 +81,7 @@ function chargeOf(raw: unknown): AsaasCharge | null {
     installmentId: filled(body.installment) ? body.installment : null,
     installmentNumber: typeof body.installmentNumber === 'number' ? body.installmentNumber : null,
     externalReference: filled(body.externalReference) ? body.externalReference : null,
+    refunds: refundsOf(body.refunds),
   };
 }
 
@@ -208,6 +228,30 @@ export class AsaasHttpClient extends AsaasClient {
     await this.call(config, apiKey, 'DELETE', `/installments/${encodeURIComponent(id)}`).catch((error: unknown) => {
       if (!gone(error)) throw error;
     });
+  }
+
+  async refund(config: AsaasConfig, apiKey: string, charge: AsaasRefundTarget, refund: { valueCents: number; description: string }): Promise<AsaasRefundsRead> {
+    // The amount always: without it Asaas gives back all of it, and a partial refund asked twice would empty the charge.
+    const value = reaisOf(refund.valueCents);
+    // A plan's refund takes no description.
+    const body = charge.installmentId ? { value } : { value, description: refund.description.slice(0, 500) };
+    const answer = await this.call(config, apiKey, 'POST', `${refundPathOf(charge)}/refund`, body).catch((error: unknown) => {
+      // As with a creation: refused is an answer, and so is a 429; anything else may have been carried out.
+      if (error instanceof AsaasUnreachable && !(error instanceof AsaasThrottled)) throw new AsaasOutcomeUnknown(error.message);
+      throw error;
+    });
+    return refundsReadOf(answer);
+  }
+
+  async refundsOf(config: AsaasConfig, apiKey: string, charge: AsaasRefundTarget): Promise<AsaasRefundsRead | null> {
+    const answer = await this.call(config, apiKey, 'GET', refundPathOf(charge)).catch((error: unknown) => {
+      if (gone(error)) return undefined;
+      throw error;
+    });
+    if (answer === undefined) return null;
+    // An answer that names nothing must not pass for a charge with no refund.
+    if (!filled((answer as { id?: unknown } | null)?.id)) throw new AsaasUnreachable('Asaas answered the refunds without an id');
+    return refundsReadOf(answer);
   }
 
   async pixQrCode(config: AsaasConfig, apiKey: string, id: string): Promise<AsaasPixQrCode> {

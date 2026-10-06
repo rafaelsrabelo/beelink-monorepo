@@ -42,7 +42,10 @@ model OrderPayment {
   method        PaymentMethod
   installments  Int                @default(1)
   amountCents   Int
-  refundedCents Int                @default(0)
+  /// What Asaas concluded giving back, and what it took and has not concluded (BEELINK-208): both
+  /// derived from `order_refunds`, never written on their own.
+  refundedCents  Int               @default(0)
+  refundingCents Int               @default(0)
   status        OrderPaymentStatus @default(PENDING)
   /// The status in Asaas's own word, which says more than ours: AWAITING_RISK_ANALYSIS, CHARGEBACK_REQUESTED…
   providerStatus String? @db.VarChar(40)
@@ -103,6 +106,8 @@ model OrderStrayPayment {
   amountCents Int
   /// When bee-link learned of it.
   paidAt      DateTime
+  /// When Asaas took the refund of all of it (BEELINK-208): the shop has nothing left to settle.
+  resolvedAt  DateTime?
   createdAt   DateTime           @default(now())
 
   @@index([orderId, createdAt])
@@ -149,4 +154,108 @@ model AsaasCustomer {
   updatedAt  DateTime @updatedAt
 
   @@map("asaas_customers")
+}
+
+/// The news that an order charged online was paid (BEELINK-207), told once: the row is written by
+/// the transaction that writes the payment, and its unique order id is what makes a repeated event,
+/// a reconciliation or a card's CONFIRMED turning RECEIVED tell nothing again. It is the outbox of
+/// the customer's e-mail — claimed and retried as every outbox is; one not owed (no confirmed
+/// e-mail, or the notice turned off) is born with `sentAt` set — and what the panel's bell reads.
+model OrderPaidNotice {
+  id      String @id @default(uuid(7)) @db.Uuid
+  orderId String @unique @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId String @db.Uuid
+
+  /// When the panel was told in real time: taken once, by whoever tells first.
+  toldAt DateTime?
+  /// When somebody at the shop opened the order since: the bell stops telling of it.
+  seenAt DateTime?
+
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  /// The bell's reading: a shop's paid orders nobody opened yet.
+  @@index([storeId], where: raw("(\"seenAt\" IS NULL)"), map: "order_paid_notices_unseen_idx")
+  /// The dispatcher's reading, as on every outbox.
+  @@index([nextAttemptAt], where: raw("(\"sentAt\" IS NULL) AND (attempts < 5)"), map: "order_paid_notices_owed_idx")
+  @@map("order_paid_notices")
+}
+
+/// Where a refund stands (BEELINK-208). REQUESTED is being asked of Asaas, or was asked and not
+/// answered; PROCESSING was taken and is not concluded; DONE is money back. REFUSED is one Asaas said
+/// no to, or never made; DENIED is one it took and cancelled afterwards.
+enum OrderRefundStatus {
+  REQUESTED
+  PROCESSING
+  DONE
+  REFUSED
+  DENIED
+}
+
+/// Where a refund came from: asked on the order's page, with the order's cancellation, or made at
+/// Asaas's own panel and learned of here.
+enum OrderRefundOrigin {
+  PANEL
+  CANCELLATION
+  ASAAS
+}
+
+/// One refund of a charge (BEELINK-208) — Asaas gives its own no id, so bee-link keeps them. What
+/// `order_payments` says of money given back, and whether a stray payment is settled, is derived
+/// from these rows. One REQUESTED a charge, by the partial unique index below: a second click, a
+/// second tab or a retry finds the first and asks Asaas for nothing. Whole cents.
+model OrderRefund {
+  id      String @id @default(uuid(7)) @db.Uuid
+  orderId String @db.Uuid
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId String @db.Uuid
+  /// Asaas's id of the charge refunded — the first instalment's, on a plan: an order's own payment,
+  /// or a stray one.
+  providerId String @db.VarChar(64)
+
+  amountCents Int
+  status      OrderRefundStatus @default(REQUESTED)
+  origin      OrderRefundOrigin
+  /// Why, as the shop wrote it; null on one made at Asaas.
+  reason      String?           @db.VarChar(300)
+  /// What Asaas said of one it refused or cancelled, in its words, for the shop to read.
+  lastError   String?           @db.VarChar(500)
+  /// The shopkeeper who asked; null on one made at Asaas.
+  requestedById String? @db.Uuid
+
+  /// On a REQUESTED one: until when nobody else asks Asaas about this charge's refund.
+  claimedUntil DateTime?
+  /// When Asaas took it: what the customer is told from.
+  acceptedAt   DateTime?
+  doneAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  notice OrderRefundNotice?
+
+  @@unique([providerId], where: raw("(status = 'REQUESTED'::\"OrderRefundStatus\")"), map: "order_refunds_one_requested_key")
+  @@index([orderId, createdAt])
+  @@index([providerId, createdAt])
+  @@map("order_refunds")
+}
+
+/// The news that money was given back (BEELINK-208), owed once a refund: written by the transaction
+/// that first writes the refund as taken by Asaas. The outbox of the customer's e-mail, claimed and
+/// retried as every outbox is; one not owed is born with `sentAt` set.
+model OrderRefundNotice {
+  id       String      @id @default(uuid(7)) @db.Uuid
+  refundId String      @unique @db.Uuid
+  refund   OrderRefund @relation(fields: [refundId], references: [id], onDelete: Cascade)
+
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  /// The dispatcher's reading, as on every outbox.
+  @@index([nextAttemptAt], where: raw("(\"sentAt\" IS NULL) AND (attempts < 5)"), map: "order_refund_notices_owed_idx")
+  @@map("order_refund_notices")
 }

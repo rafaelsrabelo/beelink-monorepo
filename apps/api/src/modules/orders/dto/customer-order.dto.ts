@@ -18,6 +18,7 @@ import type {
   CustomerOrderSummary,
   OrderFulfillment,
   OrderPaymentChannel,
+  OrderCancelledBy,
   OrderPlacedBy,
   OrderShippingChoice,
   OrderStatus,
@@ -48,6 +49,7 @@ import { OrderCouponResponse, OrderDeliveryAddressResponse, OrderDeliveryRespons
 
 const SITUATIONS = Object.keys(CUSTOMER_ORDER_SITUATIONS) as CustomerOrderSituation[];
 const SIDES = ['CUSTOMER', 'SHOP'] as const satisfies readonly OrderPlacedBy[];
+const CANCELLERS = [...SIDES, 'SYSTEM'] as const satisfies readonly OrderCancelledBy[];
 
 /** The cart as the shopper sends it: no price, no customer, no address — the API has them. */
 export class PlaceCustomerOrderDto implements PlaceCustomerOrderPayload {
@@ -132,7 +134,7 @@ export class CustomerOrderResponse implements CustomerOrder {
   @ApiProperty({ description: 'Sequential within the shop.' }) number!: number;
   @ApiProperty({ enum: ORDER_STATUSES }) status!: OrderStatus;
   @ApiProperty({ enum: SIDES, description: 'The customer from the cart, or the shop from its panel.' }) placedBy!: OrderPlacedBy;
-  @ApiProperty({ enum: SIDES, nullable: true, description: 'On a cancelled order; null on any other.' }) cancelledBy!: OrderPlacedBy | null;
+  @ApiProperty({ enum: CANCELLERS, nullable: true, description: 'On a cancelled order; null on any other. SYSTEM is bee-link itself, for want of payment.' }) cancelledBy!: OrderCancelledBy | null;
   @ApiProperty({ enum: ORDER_FULFILLMENTS }) fulfillment!: OrderFulfillment;
   @ApiProperty({ type: OrderDeliveryAddressResponse, nullable: true, description: 'Null on a pick-up.' })
   deliveryAddress!: OrderDeliveryAddressResponse | null;
@@ -169,7 +171,7 @@ export class CustomerOrderSummaryResponse implements CustomerOrderSummary {
   @ApiProperty() number!: number;
   @ApiProperty({ enum: ORDER_STATUSES }) status!: OrderStatus;
   @ApiProperty({ enum: SIDES }) placedBy!: OrderPlacedBy;
-  @ApiProperty({ enum: SIDES, nullable: true }) cancelledBy!: OrderPlacedBy | null;
+  @ApiProperty({ enum: CANCELLERS, nullable: true }) cancelledBy!: OrderCancelledBy | null;
   @ApiProperty({ format: 'date-time', description: 'When it reached the status it is in.' }) statusAt!: string;
   @ApiProperty({ enum: ORDER_FULFILLMENTS }) fulfillment!: OrderFulfillment;
   @ApiProperty({ nullable: true, type: String }) recipientName!: string | null;

@@ -1,5 +1,5 @@
 // App
-import { AsaasClient, type AsaasCharge, type AsaasPixQrCode, type AsaasWebhookStanding } from '../../src/modules/integrations/asaas/asaas.client.js';
+import { AsaasClient, type AsaasCharge, type AsaasPixQrCode, type AsaasRefundsRead, type AsaasWebhookStanding } from '../../src/modules/integrations/asaas/asaas.client.js';
 
 /**
  * The charging half of the Asaas port, and the keeping of a webhook, for a suite that is about the connection or the settings and
@@ -49,5 +49,13 @@ export abstract class AsaasWithoutCharges extends AsaasClient {
 
   async pixQrCode(): Promise<AsaasPixQrCode> {
     return this.unasked('pixQrCode');
+  }
+
+  async refund(): Promise<AsaasRefundsRead> {
+    return this.unasked('refund');
+  }
+
+  async refundsOf(): Promise<AsaasRefundsRead | null> {
+    return this.unasked('refundsOf');
   }
 }

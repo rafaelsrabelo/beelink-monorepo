@@ -14,7 +14,7 @@ const LEASE_MS = 10 * 60_000;
 const SWEEP_MS = 60_000;
 
 /** The outboxes: tables of e-mails owed, each written by the transaction that owes one. */
-export type OutboxTable = 'order_status_emails' | 'favorite_notices' | 'cashback_expiry_notices';
+export type OutboxTable = 'order_status_emails' | 'favorite_notices' | 'cashback_expiry_notices' | 'order_paid_notices' | 'order_refund_notices';
 
 /** A timestamp as Prisma writes these columns: UTC wall time, no zone. */
 function wallTimeOf(date: Date): string {

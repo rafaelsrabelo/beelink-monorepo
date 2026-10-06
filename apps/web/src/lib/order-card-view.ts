@@ -47,6 +47,12 @@ export function orderActionOf(status: CustomerOrderSummary["status"], payment: C
   return isOrderInProgress(status) ? null : "reorder"
 }
 
+/** Who cancelled it, in the shopper's words: bee-link itself cancels for want of payment alone (BEELINK-208). */
+export function cancelledByText(cancelledBy: CustomerOrderSummary["cancelledBy"], text: UiMessages["storefront"]): string {
+  if (cancelledBy === "SYSTEM") return text.orderCancelledBySystem
+  return cancelledBy === "CUSTOMER" ? text.orderCancelledByYou : text.orderCancelledByShop
+}
+
 /**
  * Where the order stands, in the shopper's words, and what to say under it: once the shop told the
  * window a delivery should arrive in, that — "Chega entre …" — is what a shopper looks for first.
@@ -75,7 +81,7 @@ export function orderStatusLineOf(
     case "CANCELLED":
       return {
         headline: format(text.orderStatusCancelled, { date: dayOf(order.statusAt, locale) }),
-        detail: `${order.cancelledBy === "CUSTOMER" ? text.orderCancelledByYou : text.orderCancelledByShop} · ${placed}`,
+        detail: `${cancelledByText(order.cancelledBy, text)} · ${placed}`,
         tone: "cancelled",
       }
   }

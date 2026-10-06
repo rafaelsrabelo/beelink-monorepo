@@ -78,7 +78,7 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       expect((await shop.panelOrder()).payment).toMatchObject({ status: 'RECEIVED', strays: [] });
 
       const customerId = (await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).customerId;
-      expect(told).toHaveBeenCalledWith({ storeId: shop.storeId, customerId }, { type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: null });
+      expect(told).toHaveBeenCalledWith({ storeId: shop.storeId, customerId }, { type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: null, approved: true });
       expect(await eventRows()).toMatchObject([{ storeId: shop.storeId, eventId: 'evt_1', event: 'PAYMENT_RECEIVED', orderId, outcome: 'APPLIED', attempts: 1, lastError: null }]);
     });
 
@@ -185,7 +185,7 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       await deliver(eventOf('evt_p2', 'PAYMENT_CONFIRMED', { id: second!.id, installment: second!.installmentId, installmentNumber: 2 }));
 
       expect(await shop.rows()).toMatchObject([{ status: 'CONFIRMED', providerId: first!.id, providerInstallmentId: first!.installmentId, installments: 3, amountCents: 5990 }]);
-      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'CONFIRMED', stray: null }]);
+      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'CONFIRMED', stray: null, approved: true }]);
     });
 
     it('answers 200 when the work fails, and tries it again later', async () => {
@@ -229,7 +229,7 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       await deliver(eventOf('evt_del', 'PAYMENT_DELETED', { id: charge().id, deleted: true }));
 
       expect(await shop.rows()).toMatchObject([{ status: 'CANCELLED', nextCheckAt: null }]);
-      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'CANCELLED', stray: null }]);
+      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'CANCELLED', stray: null, approved: false }]);
     });
 
     it('follows an amount or a due day the shop changed at Asaas, and drops the Pix code that went with the old one', async () => {
@@ -267,7 +267,7 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       expect(row!.paidAt).toBeInstanceOf(Date);
     });
 
-    it('keeps a refund and a chargeback as far as this ticket goes: refunded is said, a dispute leaves the money held', async () => {
+    it('leaves the money held through a dispute, and reads a charge Asaas calls refunded as all of it given back (BEELINK-208)', async () => {
       await shop.place();
       asaas.pay(charge().id, 'CONFIRMED');
       await deliver(eventOf('evt_1', 'PAYMENT_CONFIRMED', { id: charge().id }));
@@ -278,7 +278,9 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
 
       asaas.pay(charge().id, 'REFUNDED');
       await deliver(eventOf('evt_3', 'PAYMENT_REFUNDED', { id: charge().id }));
-      expect(await shop.rows()).toMatchObject([{ status: 'REFUNDED', refundedCents: 0 }]);
+      // A dispute lost leaves no refund on Asaas's list: its word for the charge is enough.
+      expect(await shop.rows()).toMatchObject([{ status: 'REFUNDED', refundedCents: 5990, refundingCents: 0 }]);
+      expect(await prisma.orderRefund.findMany()).toMatchObject([{ origin: 'ASAAS', status: 'DONE', amountCents: 5990 }]);
     });
   });
 
@@ -302,7 +304,7 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       const order = await shop.panelOrder();
       expect(order.status).toBe('CANCELLED');
       expect(order.payment).toMatchObject({ status: 'RECEIVED', strays: [{ reason: 'ORDER_CANCELLED', method: 'PIX', amountCents: 5990, paidAt: expect.any(String) }] });
-      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: 'ORDER_CANCELLED' }]);
+      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: 'ORDER_CANCELLED', approved: false }]);
       // Nothing is refunded by bee-link: the charge stands paid at the shop's account.
       expect(charge()).toMatchObject({ status: 'RECEIVED', deleted: false });
 
@@ -324,7 +326,7 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       expect(await shop.rows()).toMatchObject([{ status: 'RECEIVED', providerId: charge().id }]);
       expect((await shop.panelOrder()).payment?.strays).toMatchObject([{ reason: 'ORDER_ALREADY_PAID', amountCents: 5990 }]);
       expect(await prisma.orderStrayPayment.findMany()).toMatchObject([{ providerId: 'pay_segunda', storeId: shop.storeId }]);
-      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: 'ORDER_ALREADY_PAID' }]);
+      expect(paymentNews()).toEqual([{ type: 'order.payment', orderNumber: 1, status: 'RECEIVED', stray: 'ORDER_ALREADY_PAID', approved: false }]);
     });
 
     it('keeps the second of two paid charges as a stray when a cancellation finds both, and the first as the payment', async () => {

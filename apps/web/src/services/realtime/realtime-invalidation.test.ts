@@ -27,7 +27,7 @@ describe("what an event reads again", () => {
 
   /** A payment that moved (BEELINK-206): the panel reads the list and the order; the shop window, that order's charge and the page. */
   it("reads an order's charge again when its payment moves, on both sides", () => {
-    const paid = { type: "order.payment", orderNumber: 7, status: "RECEIVED", stray: null } as const
+    const paid = { type: "order.payment", orderNumber: 7, status: "RECEIVED", stray: null, approved: true } as const
     expect(panelKeysOf(paid, "loja")).toEqual([
       ["orders", "loja", "list"],
       ["orders", "loja", "detail", 7],
