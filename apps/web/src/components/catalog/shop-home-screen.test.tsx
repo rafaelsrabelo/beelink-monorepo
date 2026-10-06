@@ -46,7 +46,7 @@ describe("ShopHomeScreen", () => {
     mocks.store.mockReturnValue(reading)
     const { container, rerender } = render(<ShopHomeScreen slug="mutante" ui={ui} web={web} />)
     expect(screen.queryByRole("link")).toBeNull()
-    expect(container.querySelector("[data-slot='skeleton'][class*='aspect-[2103/748]']")).not.toBeNull()
+    expect(container.querySelector("[data-slot='skeleton'][class*='aspect-[2103/748]'].max-h-80")).not.toBeNull()
 
     mocks.store.mockReturnValue(read({ name: "Mutante Suplementos", type: "ECOMMERCE", logoUrl: null }))
     mocks.products.mockReturnValue(reading)

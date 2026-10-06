@@ -28,6 +28,9 @@ export interface ShopHomeScreenProps {
 /** As wide as the page's column: the window, less the rail where the rail shows. */
 const BANNER_SIZES = "(min-width: 48rem) calc(100vw - 18rem), 100vw"
 
+/** Only its outermost sliver shows, drawn out, and that is plain background: the smallest file Next offers. */
+const BACKDROP_SIZES = "64px"
+
 /**
  * The panel's home for one shop: what is left to set up — under BeeFlow's banner where it is a shop,
  * which leads to the Integrations page where BeeFlow is announced.
@@ -138,11 +141,12 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
         in its own shape, so the cards under it do not jump for the many that are shops.
       */}
       {store.isPending ? (
-        <Skeleton className="aspect-[2103/748] w-full rounded-xl" />
+        <Skeleton className="aspect-[2103/748] max-h-80 w-full rounded-xl" />
       ) : site ? null : (
         <BeeflowBanner
           href={integrationPagesOf(slug).list}
-          image={<BrandPhoto image={beeflowBanner} alt={ui.integrations.upcoming.beeflow.banner.alt} sizes={BANNER_SIZES} />}
+          image={<BrandPhoto image={beeflowBanner} alt={ui.integrations.upcoming.beeflow.banner.alt} sizes={BANNER_SIZES} fit="contain" />}
+          backdrop={<BrandPhoto image={beeflowBanner} alt="" sizes={BACKDROP_SIZES} fit="fill" />}
           linkComponent={AppLink}
           messages={ui}
         />
