@@ -34,6 +34,9 @@ type Tx = Prisma.TransactionClient;
 /** The statuses an order moves through towards its delivery, in order: a carrier only moves it forward. */
 const CARRIER_ORDER: readonly OrderStatus[] = ['RECEIVED', 'ACCEPTED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'];
 
+/** Where an unpaid order still is the shop's to give up on by itself: accepting one does not hold it (BEELINK-206), goods on their way do. */
+const UNPAID_CANCELLABLE: readonly OrderStatus[] = ['RECEIVED', 'ACCEPTED', 'PREPARING'];
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -146,6 +149,29 @@ export class OrdersService {
   }
 
   /**
+   * An order charged online that nobody paid in time (BEELINK-206), cancelled in the system's name:
+   * the same move as any cancellation — the stock, the coupon and the cashback back, the line in the
+   * conversation, the customer's e-mail, its charge taken out of Asaas. The caller has just heard
+   * Asaas say it is not paid; under the lock it is checked again that the order still waits, is
+   * still past its time — a fee agreed meanwhile gives it three more days — and holds no money.
+   * One already out for delivery or delivered is left to the shop: its goods are gone. Null when
+   * it moved nothing.
+   */
+  async cancelUnpaid(storeId: string, number: number, now: Date): Promise<Order | null> {
+    return this.move(
+      storeId,
+      number,
+      'CANCELLED',
+      { actor: 'SYSTEM', userId: null, heard: true },
+      (current) => UNPAID_CANCELLABLE.includes(current),
+      async (tx, orderId) => {
+        const order = await tx.order.findUniqueOrThrow({ where: { id: orderId }, select: { paymentChannel: true, paymentDueAt: true, payments: { where: { status: { in: ['CONFIRMED', 'RECEIVED', 'PARTIALLY_REFUNDED', 'REFUNDED'] } }, select: { id: true } } } });
+        return order.paymentChannel === 'ONLINE' && order.paymentDueAt !== null && order.paymentDueAt <= now && order.payments.length === 0;
+      },
+    );
+  }
+
+  /**
    * One move of an order's status, whoever makes it: under the shop's row lock, with what the move
    * owes — the stock back on a cancellation, the cashback after the delivery, the line in the
    * conversation, the customer's e-mail — and both sides told once it is committed. Null when the
@@ -155,11 +181,12 @@ export class OrdersService {
     storeId: string,
     number: number,
     status: OrderStatus,
-    by: { actor: 'SHOPKEEPER' | 'CARRIER'; userId: string | null },
+    by: { actor: 'SHOPKEEPER' | 'CARRIER' | 'SYSTEM'; userId: string | null; heard?: boolean },
     allowed: (current: OrderStatus) => boolean = () => true,
+    stillSo: (tx: Tx, orderId: string) => Promise<boolean> = async () => true,
   ): Promise<Order | null> {
     // A charge paid since bee-link last asked must be known before the order is cancelled over it (BEELINK-204).
-    if (status === 'CANCELLED') await this.payments.hearOf(storeId, number);
+    if (status === 'CANCELLED' && !by.heard) await this.payments.hearOf(storeId, number);
     const moved = await this.prisma.$transaction(async (tx) => {
       // The same row lock as a new order takes, so a status change and a placement never interleave.
       await tx.$queryRaw`SELECT 1 FROM "stores" WHERE "id" = ${storeId}::uuid FOR UPDATE`;
@@ -172,7 +199,7 @@ export class OrdersService {
       if (current.status === 'CANCELLED') {
         throw new ConflictException(orderError('ORDER_CANCELLED', 'A cancelled order does not change status'));
       }
-      if (current.status === status || !allowed(current.status)) return null;
+      if (current.status === status || !allowed(current.status) || !(await stillSo(tx, current.id))) return null;
       // A paid order is not cancelled before it is refunded (BEELINK-204).
       if (status === 'CANCELLED') await refusePaidOrder(tx, current.id);
 

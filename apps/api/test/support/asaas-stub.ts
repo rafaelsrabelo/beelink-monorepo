@@ -1,14 +1,22 @@
 // App
-import { AsaasClient, type AsaasCharge, type AsaasPixQrCode } from '../../src/modules/integrations/asaas/asaas.client.js';
+import { AsaasClient, type AsaasCharge, type AsaasPixQrCode, type AsaasWebhookStanding } from '../../src/modules/integrations/asaas/asaas.client.js';
 
 /**
- * The charging half of the Asaas port, for a suite that is about the connection or the settings and
+ * The charging half of the Asaas port, and the keeping of a webhook, for a suite that is about the connection or the settings and
  * asks Asaas for no charge: each call fails loudly, so one that starts charging is told to stand a
  * fake Asaas that answers it (`fake-asaas.ts`).
  */
 export abstract class AsaasWithoutCharges extends AsaasClient {
   private unasked(call: string): never {
     throw new Error(`This suite's Asaas was not expected to be asked for ${call}`);
+  }
+
+  async webhook(): Promise<AsaasWebhookStanding | null> {
+    return this.unasked('webhook');
+  }
+
+  async resumeWebhook(): Promise<void> {
+    return this.unasked('resumeWebhook');
   }
 
   async findCustomer(): Promise<string | null> {

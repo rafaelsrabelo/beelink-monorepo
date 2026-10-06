@@ -7,6 +7,7 @@ import {
   AsaasClient,
   AsaasOutcomeUnknown,
   AsaasRefused,
+  AsaasThrottled,
   AsaasUnreachable,
   type AsaasAccountInfo,
   type AsaasCharge,
@@ -14,11 +15,14 @@ import {
   type AsaasCustomerRequest,
   type AsaasPixQrCode,
   type AsaasWebhookRequest,
+  type AsaasWebhookStanding,
 } from './asaas.client.js';
 import type { AsaasConfig } from './asaas.config.js';
 import { centsOf, reaisOf } from './asaas-money.js';
 
 const TIMEOUT_MS = 10_000;
+/** The quota's own window: no wait Asaas names is longer. */
+const THROTTLE_MAX_S = 12 * 60 * 60;
 
 const filled = (value: unknown): value is string => typeof value === 'string' && value.trim() !== '';
 
@@ -67,6 +71,12 @@ function brasiliaInstantOf(value: unknown): Date | null {
   return match ? new Date(`${match[1]}T${match[2]}-03:00`) : null;
 }
 
+/** `RateLimit-Reset` is the seconds left until the limit lifts; anything else is no date to go by. */
+function retryAtOf(header: string | null): Date | null {
+  const seconds = header === null ? Number.NaN : Number(header);
+  return Number.isFinite(seconds) && seconds >= 0 ? new Date(Date.now() + Math.min(seconds, THROTTLE_MAX_S) * 1000) : null;
+}
+
 /**
  * Asaas over HTTP: `access_token` carries the shop's key, and the `User-Agent` names bee-link, which
  * Asaas requires. A 4xx is Asaas's no; a 5xx, a 429, a network failure or ten seconds of silence is not knowing.
@@ -106,6 +116,20 @@ export class AsaasHttpClient extends AsaasClient {
       if (error instanceof AsaasRefused && error.status === 404) return;
       throw error;
     });
+  }
+
+  async webhook(config: AsaasConfig, apiKey: string, id: string): Promise<AsaasWebhookStanding | null> {
+    const answer = await this.call(config, apiKey, 'GET', `/webhooks/${encodeURIComponent(id)}`).catch((error: unknown) => {
+      if (gone(error)) return undefined;
+      throw error;
+    });
+    if (answer === undefined) return null;
+    const body = answer as { enabled?: unknown; interrupted?: unknown } | null;
+    return { enabled: body?.enabled !== false, interrupted: body?.interrupted === true };
+  }
+
+  async resumeWebhook(config: AsaasConfig, apiKey: string, id: string): Promise<void> {
+    await this.call(config, apiKey, 'PUT', `/webhooks/${encodeURIComponent(id)}`, { enabled: true, interrupted: false });
   }
 
   async findCustomer(config: AsaasConfig, apiKey: string, cpf: string): Promise<string | null> {
@@ -191,7 +215,7 @@ export class AsaasHttpClient extends AsaasClient {
     return { payload: answer.payload, encodedImage: answer.encodedImage, expiresAt: brasiliaInstantOf(answer.expirationDate) };
   }
 
-  private async call(config: AsaasConfig, apiKey: string, method: 'GET' | 'POST' | 'DELETE', path: string, body?: object): Promise<unknown> {
+  private async call(config: AsaasConfig, apiKey: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: object): Promise<unknown> {
     const init: RequestInit = {
       method,
       headers: { accept: 'application/json', 'content-type': 'application/json', 'user-agent': config.userAgent, access_token: apiKey },
@@ -205,7 +229,8 @@ export class AsaasHttpClient extends AsaasClient {
 
     const answer: unknown = await response.json().catch(() => null);
     // Too many requests decides nothing about the key either: later, the same call may pass.
-    if (response.status >= 500 || response.status === 429) throw new AsaasUnreachable(`Asaas failed (${response.status})`);
+    if (response.status === 429) throw new AsaasThrottled('Asaas failed (429)', retryAtOf(response.headers.get('ratelimit-reset')));
+    if (response.status >= 500) throw new AsaasUnreachable(`Asaas failed (${response.status})`);
     if (!response.ok) {
       const { code, reason } = refusalOf(answer);
       // Asaas's words, never the request's — and the key cut out should they ever echo it.

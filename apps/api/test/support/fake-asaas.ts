@@ -7,6 +7,8 @@ import {
   type AsaasChargeRequest,
   type AsaasCustomerRequest,
   type AsaasPixQrCode,
+  type AsaasWebhookRequest,
+  type AsaasWebhookStanding,
 } from '../../src/modules/integrations/asaas/asaas.client.js';
 import type { AsaasConfig } from '../../src/modules/integrations/asaas/asaas.config.js';
 
@@ -17,6 +19,15 @@ interface FakeCustomer extends AsaasCustomerRequest {
   deleted: boolean;
 }
 
+/** What is asked of the account apart from its charges: counted on its own, so a suite about charges reads `calls` as before. */
+type Keeping = 'account' | 'createWebhook' | 'deleteWebhook' | 'webhook' | 'resumeWebhook';
+
+interface FakeWebhook extends AsaasWebhookStanding {
+  id: string;
+  authToken: string;
+  deleted: boolean;
+}
+
 const PAID = new Set(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
 
 /**
@@ -24,13 +35,19 @@ const PAID = new Set(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
  * splits a plan into one charge per instalment, lists by `externalReference` without the removed
  * ones, and refuses to remove a charge already paid — what the documentation says the real one does.
  * A test steers it: `failing` makes the next call of a kind throw, `before` runs ahead of one (to
- * hold it open, or to change the world meanwhile), and `pay` is the customer paying.
+ * hold it open, or to change the world meanwhile), and `pay` is the customer paying. It keeps the
+ * webhooks registered at it too (BEELINK-206): `interrupt` is Asaas pausing one, `keyError` the key
+ * refused wherever the account itself is read.
  */
 export class FakeAsaas extends AsaasClient {
   readonly calls: Call[] = [];
   readonly requests: AsaasChargeRequest[] = [];
   readonly customers: FakeCustomer[] = [];
   readonly payments: AsaasCharge[] = [];
+  readonly webhooks: FakeWebhook[] = [];
+  readonly keeping: Keeping[] = [];
+  /** Thrown by every call that keeps the webhook or reads the account, while set. */
+  keyError: unknown = null;
   /** When a Pix code ends; null leaves it to the charge's due day. */
   pixExpiresAt: Date | null = null;
   private readonly failures = new Map<Call, unknown[]>();
@@ -42,6 +59,10 @@ export class FakeAsaas extends AsaasClient {
     this.requests.length = 0;
     this.customers.length = 0;
     this.payments.length = 0;
+    this.webhooks.length = 0;
+    this.keeping.length = 0;
+    this.keyError = null;
+    this.accountInfo = { name: 'Lessari', document: '11222333000181' };
     this.pixExpiresAt = null;
     this.failures.clear();
     this.hooks.clear();
@@ -76,15 +97,53 @@ export class FakeAsaas extends AsaasClient {
     return found;
   }
 
+  /** The token the shop's webhook sends back: what a suite posts an event with. */
+  get webhookToken(): string {
+    const standing = this.webhooks.filter((webhook) => !webhook.deleted).at(-1);
+    if (!standing) throw new Error('The fake Asaas holds no webhook');
+    return standing.authToken;
+  }
+
+  /** Asaas stopping a webhook after fifteen failures in a row. */
+  interrupt(): void {
+    for (const webhook of this.webhooks) webhook.interrupted = true;
+  }
+
+  /** The account's name and document, for a suite that connects another one. */
+  accountInfo: AsaasAccountInfo = { name: 'Lessari', document: '11222333000181' };
+
   async account(): Promise<AsaasAccountInfo> {
-    return { name: 'Lessari', document: '11222333000181' };
+    this.keep('account');
+    return { ...this.accountInfo };
   }
 
-  async createWebhook(): Promise<string> {
-    return 'wh_1';
+  async createWebhook(_config: AsaasConfig, _apiKey: string, webhook: AsaasWebhookRequest): Promise<string> {
+    this.keep('createWebhook');
+    const id = `wh_${this.webhooks.length + 1}`;
+    this.webhooks.push({ id, authToken: webhook.authToken, enabled: true, interrupted: false, deleted: false });
+    return id;
   }
 
-  async deleteWebhook(): Promise<void> {}
+  async deleteWebhook(_config: AsaasConfig, _apiKey: string, id: string): Promise<void> {
+    this.keep('deleteWebhook');
+    for (const webhook of this.webhooks) if (webhook.id === id) webhook.deleted = true;
+  }
+
+  async webhook(_config: AsaasConfig, _apiKey: string, id: string): Promise<AsaasWebhookStanding | null> {
+    this.keep('webhook');
+    const found = this.webhooks.find((webhook) => webhook.id === id && !webhook.deleted);
+    return found ? { enabled: found.enabled, interrupted: found.interrupted } : null;
+  }
+
+  async resumeWebhook(_config: AsaasConfig, _apiKey: string, id: string): Promise<void> {
+    this.keep('resumeWebhook');
+    for (const webhook of this.webhooks) if (webhook.id === id) Object.assign(webhook, { enabled: true, interrupted: false });
+  }
+
+  private keep(call: Keeping): void {
+    this.keeping.push(call);
+    if (this.keyError) throw this.keyError;
+  }
 
   async findCustomer(_config: AsaasConfig, _apiKey: string, cpf: string): Promise<string | null> {
     await this.enter('findCustomer');

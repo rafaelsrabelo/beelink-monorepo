@@ -1,6 +1,6 @@
 // Types
-import type { CustomerOrderPayment, OnlinePaymentMethod, OrderPayment, OrderPaymentBrief, ShopOrderPayment } from '@harness-monorepo/contracts';
-import type { OrderPaymentModel } from '../../generated/prisma/models.js';
+import type { CustomerOrderPayment, OnlinePaymentMethod, OrderPayment, OrderPaymentBrief, ShopOrderPayment, StrayPayment } from '@harness-monorepo/contracts';
+import type { OrderPaymentModel, OrderStrayPaymentModel } from '../../generated/prisma/models.js';
 
 // App
 import { isLive } from './payment-status.js';
@@ -39,9 +39,15 @@ export function toOrderPayment(rows: readonly OrderPaymentModel[]): OrderPayment
   return row ? toPayment(row) : null;
 }
 
-export function toShopOrderPayment(rows: readonly OrderPaymentModel[]): ShopOrderPayment | null {
+function toStray(row: OrderStrayPaymentModel): StrayPayment {
+  // A CHECK keeps a charge to the two.
+  return { reason: row.reason, method: row.method as OnlinePaymentMethod, amountCents: row.amountCents, paidAt: row.paidAt.toISOString() };
+}
+
+export function toShopOrderPayment(rows: readonly OrderPaymentModel[], strays: readonly OrderStrayPaymentModel[]): ShopOrderPayment | null {
   const row = shownPaymentOf(rows);
-  return row ? { ...toPayment(row), providerStatus: row.providerStatus, lastError: row.lastError } : null;
+  const oldestFirst = [...strays].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return row ? { ...toPayment(row), providerStatus: row.providerStatus, lastError: row.lastError, strays: oldestFirst.map(toStray) } : null;
 }
 
 /** With what it is paid with — only while it is still to be paid: a code or an invoice of a charge paid, removed or past its time leads nowhere. */

@@ -8,6 +8,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { refreshBooks } from '../customers/customer-books.js';
 import { refusePaidOrder } from '../payments/payment-guards.js';
+import { paymentDueAtOf } from '../payments/payments.constants.js';
 import { totalRefusalOf } from './order-totals.js';
 import { orderError } from './orders.constants.js';
 import { ORDER_INCLUDE } from './orders.mapper.js';
@@ -27,7 +28,7 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
 
     const current = await tx.order.findUnique({
       where: { storeId_number: { storeId, number } },
-      select: { id: true, status: true, fulfillment: true, customerId: true, subtotalCents: true, discountCents: true, couponKind: true, couponDiscountCents: true, cashbackUsedCents: true },
+      select: { id: true, status: true, fulfillment: true, customerId: true, paymentChannel: true, subtotalCents: true, discountCents: true, couponKind: true, couponDiscountCents: true, cashbackUsedCents: true },
     });
     if (!current) throw new NotFoundException(orderError('ORDER_NOT_FOUND', `No order #${number} in this shop`));
     if (current.fulfillment === 'PICKUP') {
@@ -56,7 +57,8 @@ export async function agreeDeliveryFee(prisma: PrismaService, storeId: string, n
       throw new BadRequestException(orderError('ORDER_DISCOUNT_TOO_LARGE', 'The discount would be larger than the order'));
     }
 
-    const order = await tx.order.update({ where: { id: current.id }, data: { deliveryFeeCents, couponDiscountCents, discountCents, totalCents }, include: ORDER_INCLUDE });
+    // A total closed now is paid within three days of now, whatever stood before (BEELINK-206).
+    const order = await tx.order.update({ where: { id: current.id }, data: { deliveryFeeCents, couponDiscountCents, discountCents, totalCents, ...(current.paymentChannel === 'ONLINE' ? { paymentDueAt: paymentDueAtOf(new Date()) } : {}) }, include: ORDER_INCLUDE });
     if (waived) await tx.couponRedemption.updateMany({ where: { orderId: current.id }, data: { discountCents: couponDiscountCents } });
     await refreshBooks(tx, current.customerId);
     return order;

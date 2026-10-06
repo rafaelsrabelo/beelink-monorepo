@@ -75,6 +75,9 @@ export function toastOf(event: RealtimeEvent, messages: UiMessages): string | nu
   const text = messages.shell
   if (event.type === "order.created" && event.placedBy === "CUSTOMER") return format(text.notificationNewOrder, { number: String(event.orderNumber) })
   if (event.type === "conversation.message" && event.author === "CUSTOMER") return format(text.notificationNewMessage, { number: String(event.orderNumber) })
+  // Money the order did not ask for (BEELINK-206): nothing is refunded by itself, so the shop is told at once.
+  if (event.type === "order.payment" && event.stray === "ORDER_CANCELLED") return format(text.notificationStrayCancelled, { number: String(event.orderNumber) })
+  if (event.type === "order.payment" && event.stray === "ORDER_ALREADY_PAID") return format(text.notificationStrayDuplicate, { number: String(event.orderNumber) })
   return null
 }
 

@@ -13,6 +13,12 @@ export const UNKNOWN_OUTCOME_HOLD_MS = 45_000;
 /** How long placing an order waits for its charge. Past it the order answers without one, and the talk ends on its own. */
 export const PLACE_CHARGE_BUDGET_MS = 8_000;
 
+/** How long an order charged online waits to be paid once its total is closed: past it, unpaid, it is cancelled (BEELINK-206). */
+export const PAYMENT_WAIT_MS = 3 * 24 * 60 * 60 * 1000;
+
+/** `Order.paymentDueAt` for an order whose total closed at `at`. */
+export const paymentDueAtOf = (at: Date): Date => new Date(at.getTime() + PAYMENT_WAIT_MS);
+
 /** What `OrderPayment.lastError` holds. */
 export const LAST_ERROR_MAX_LENGTH = 500;
 

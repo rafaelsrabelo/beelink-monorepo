@@ -21,6 +21,7 @@ export const ORDER_INCLUDE = {
   delivery: true,
   cashbackCredit: true,
   payments: true,
+  strayPayments: true,
 } as const satisfies Prisma.OrderInclude;
 
 /** What a row of the list is read with: the units, not the lines. */
@@ -53,7 +54,7 @@ export function toOrder(row: OrderRow): Order {
     paymentMethod: row.paymentMethod,
     paymentChannel: row.paymentChannel,
     installments: row.paymentInstallments,
-    payment: toShopOrderPayment(row.payments),
+    payment: toShopOrderPayment(row.payments, row.strayPayments),
     items: row.items.map((item) => ({
       id: item.id,
       productId: item.productId,

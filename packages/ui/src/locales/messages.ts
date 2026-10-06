@@ -2748,6 +2748,9 @@ export interface UiMessages {
     notificationsSeeOrders: string
     notificationNewOrder: string
     notificationNewMessage: string
+    /** A toast: money arrived that the order did not ask for (BEELINK-206). `{number}`. */
+    notificationStrayCancelled: string
+    notificationStrayDuplicate: string
     notificationOrderDetail: string
     notificationMessageDetail: string
     notificationOpen: string

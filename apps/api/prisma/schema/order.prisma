@@ -60,6 +60,10 @@ model Order {
   /// under the shop's row lock and before any call, so two never create two charges. One that ran out
   /// without being cleared is a talk that ended nobody knows how — the next lists Asaas before creating.
   paymentClaimedUntil DateTime?
+  /// Until when an order charged online waits to be paid (BEELINK-206): three days after its total
+  /// closed — placed with it, or the shop agreeing the fee. Past it, unpaid, the order is cancelled.
+  /// Null offline, and while the fee is not agreed.
+  paymentDueAt        DateTime?
 
   subtotalCents    Int
   /// Zero on a pick-up. Null on a delivery whose fee is not agreed yet — "a combinar", never a free
@@ -143,11 +147,13 @@ model Order {
   cashbackRedemptions CashbackRedemption[]
   /// Its charges at Asaas, when it is paid online (BEELINK-204): every attempt, one alive at a time.
   payments OrderPayment[]
+  strayPayments OrderStrayPayment[]
 
   @@unique([storeId, number])
   @@index([storeId, placedAt])
   @@index([storeId, status])
   @@index([customerId, placedAt])
+  @@index([paymentDueAt])
   @@map("orders")
 }
 

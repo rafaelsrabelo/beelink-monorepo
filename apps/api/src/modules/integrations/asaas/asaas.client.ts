@@ -9,12 +9,21 @@ export interface AsaasAccountInfo {
 }
 
 /**
- * The payment events a shop's webhook sends: those that move a charge's state or its money. Asaas
- * sends nothing it was not asked for, and asking for more later means touching every shop's webhook.
+ * The events a shop's webhook sends (BEELINK-206): every one that says where a charge's money is, or
+ * that the charge changed, and the three that say a key of the account stopped working. Asaas sends
+ * nothing it was not asked for, and asking for more later means touching every shop's webhook. None
+ * of them is applied by what its body says: each makes bee-link read the shop's account.
  */
 export const ASAAS_WEBHOOK_EVENTS = [
+  'PAYMENT_AUTHORIZED',
+  'PAYMENT_AWAITING_RISK_ANALYSIS',
+  'PAYMENT_APPROVED_BY_RISK_ANALYSIS',
+  'PAYMENT_REPROVED_BY_RISK_ANALYSIS',
+  'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED',
+  'PAYMENT_UPDATED',
   'PAYMENT_CONFIRMED',
   'PAYMENT_RECEIVED',
+  'PAYMENT_RECEIVED_IN_CASH_UNDONE',
   'PAYMENT_OVERDUE',
   'PAYMENT_DELETED',
   'PAYMENT_RESTORED',
@@ -22,11 +31,12 @@ export const ASAAS_WEBHOOK_EVENTS = [
   'PAYMENT_PARTIALLY_REFUNDED',
   'PAYMENT_REFUND_IN_PROGRESS',
   'PAYMENT_REFUND_DENIED',
-  'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED',
-  'PAYMENT_REPROVED_BY_RISK_ANALYSIS',
   'PAYMENT_CHARGEBACK_REQUESTED',
   'PAYMENT_CHARGEBACK_DISPUTE',
   'PAYMENT_AWAITING_CHARGEBACK_REVERSAL',
+  'ACCESS_TOKEN_DISABLED',
+  'ACCESS_TOKEN_DELETED',
+  'ACCESS_TOKEN_EXPIRED',
 ] as const;
 
 /** A webhook to register at a shop's account. */
@@ -114,6 +124,26 @@ export class AsaasRefused extends Error {
 export class AsaasUnreachable extends Error {}
 
 /**
+ * Asaas answered 429: the account's quota — 25,000 requests in twelve hours — or its rate is spent.
+ * Nothing was decided; `retryAt` is when Asaas said to ask again (`RateLimit-Reset`), when it said.
+ */
+export class AsaasThrottled extends AsaasUnreachable {
+  constructor(
+    message: string,
+    readonly retryAt: Date | null,
+  ) {
+    super(message);
+  }
+}
+
+/** Where a webhook registered at a shop's account stands there. */
+export interface AsaasWebhookStanding {
+  enabled: boolean;
+  /** Asaas stopped sending after fifteen failures in a row; what it holds waits up to fourteen days. */
+  interrupted: boolean;
+}
+
+/**
  * No answer to a request that creates: Asaas may have made the charge or not. Whoever asked must not
  * ask again before looking for what the first request left.
  */
@@ -133,6 +163,12 @@ export abstract class AsaasClient {
 
   /** The webhook removed from the account; one already gone is not a failure. */
   abstract deleteWebhook(config: AsaasConfig, apiKey: string, id: string): Promise<void>;
+
+  /** Where the webhook stands at the account; null when the account has none such — removed there by hand. */
+  abstract webhook(config: AsaasConfig, apiKey: string, id: string): Promise<AsaasWebhookStanding | null>;
+
+  /** The webhook set to send again — on, its queue no longer interrupted: what Asaas held meanwhile is then sent. */
+  abstract resumeWebhook(config: AsaasConfig, apiKey: string, id: string): Promise<void>;
 
   /** Asaas's id of the customer with this CPF at the account — one not removed — or null: looked for before any is created, since Asaas takes duplicates. */
   abstract findCustomer(config: AsaasConfig, apiKey: string, cpf: string): Promise<string | null>;

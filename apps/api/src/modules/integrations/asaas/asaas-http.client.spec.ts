@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // App
-import { AsaasOutcomeUnknown, AsaasRefused, AsaasUnreachable } from './asaas.client.js';
+import { ASAAS_WEBHOOK_EVENTS, AsaasOutcomeUnknown, AsaasRefused, AsaasThrottled, AsaasUnreachable } from './asaas.client.js';
 import type { AsaasConfig } from './asaas.config.js';
 import { AsaasHttpClient } from './asaas-http.client.js';
 
@@ -77,6 +77,49 @@ describe('AsaasHttpClient', () => {
 
     answer(404, { errors: [{ code: 'not_found', description: 'Webhook não encontrado.' }] });
     await expect(client.deleteWebhook(config, KEY, 'wh_01')).resolves.toBeUndefined();
+  });
+
+  /** One webhook takes any event: the charge's own, and those of the account's keys (BEELINK-206). */
+  it('asks for every event the receiver reads — the risk review, the capture, a change, a receipt undone, and a key that stopped working', async () => {
+    const fetched = answer(200, { id: 'wh_01' });
+    await client.createWebhook(config, KEY, { name: 'n', url: 'u', email: 'e', authToken: 'a'.repeat(43) });
+
+    const { events } = sent(fetched).body as { events: string[] };
+    expect(events).toEqual([...ASAAS_WEBHOOK_EVENTS]);
+    expect(events).toEqual(expect.arrayContaining(['PAYMENT_AWAITING_RISK_ANALYSIS', 'PAYMENT_APPROVED_BY_RISK_ANALYSIS', 'PAYMENT_AUTHORIZED', 'PAYMENT_RECEIVED_IN_CASH_UNDONE', 'PAYMENT_UPDATED', 'ACCESS_TOKEN_DISABLED', 'ACCESS_TOKEN_DELETED', 'ACCESS_TOKEN_EXPIRED']));
+    expect(new Set(events).size).toBe(events.length);
+  });
+
+  it('reads where a webhook stands, answers none for one the account does not hold, and sets one going again', async () => {
+    const read = answer(200, { id: 'wh_01', enabled: true, interrupted: true, penalizedRequestsCount: 15, somethingNew: 1 });
+    expect(await client.webhook(config, KEY, 'wh_01')).toEqual({ enabled: true, interrupted: true });
+    expect([sent(read).url, sent(read).method]).toEqual(['https://api-sandbox.asaas.com/v3/webhooks/wh_01', 'GET']);
+
+    answer(200, { id: 'wh_01' });
+    expect(await client.webhook(config, KEY, 'wh_01')).toEqual({ enabled: true, interrupted: false });
+    answer(404, { errors: [{ code: 'not_found', description: 'Webhook não encontrado.' }] });
+    expect(await client.webhook(config, KEY, 'wh_01')).toBeNull();
+    answer(401, { errors: [{ code: 'invalid_access_token', description: 'A chave de API fornecida é inválida' }] });
+    await expect(client.webhook(config, KEY, 'wh_01')).rejects.toMatchObject({ status: 401 });
+
+    const resumed = answer(200, { id: 'wh_01', interrupted: false });
+    await client.resumeWebhook(config, KEY, 'wh_01');
+    expect([sent(resumed).url, sent(resumed).method, sent(resumed).body]).toEqual(['https://api-sandbox.asaas.com/v3/webhooks/wh_01', 'PUT', { enabled: true, interrupted: false }]);
+  });
+
+  it('says when Asaas asked to wait, by the seconds in RateLimit-Reset — and leaves the time out when it names none it can read', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ errors: [] }, { status: 429, headers: { 'RateLimit-Reset': '120' } })));
+    const before = Date.now();
+    const throttled = (await client.account(config, KEY).catch((error: unknown) => error)) as AsaasThrottled;
+    expect(throttled).toBeInstanceOf(AsaasThrottled);
+    expect(throttled).toBeInstanceOf(AsaasUnreachable);
+    expect(throttled.retryAt!.getTime()).toBeGreaterThanOrEqual(before + 120_000);
+    expect(throttled.retryAt!.getTime()).toBeLessThan(before + 125_000);
+
+    for (const header of [{}, { 'RateLimit-Reset': 'soon' }, { 'RateLimit-Reset': '-5' }] as Record<string, string>[]) {
+      vi.stubGlobal('fetch', vi.fn(async () => Response.json({}, { status: 429, headers: header })));
+      expect(((await client.account(config, KEY).catch((error: unknown) => error)) as AsaasThrottled).retryAt).toBeNull();
+    }
   });
 
   it('talks to production at its own address', async () => {

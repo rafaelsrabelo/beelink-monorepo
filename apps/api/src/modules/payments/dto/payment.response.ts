@@ -12,6 +12,8 @@ import type {
   OrderPaymentPix,
   OrderPaymentStatus,
   ShopOrderPayment,
+  StrayPayment,
+  StrayPaymentReason,
   StorefrontOnlinePayments,
   StorefrontPaymentOptions,
 } from '@harness-monorepo/contracts';
@@ -37,9 +39,19 @@ export class OrderPaymentResponse implements OrderPayment {
   @ApiProperty({ nullable: true, type: String, format: 'date-time' }) paidAt!: string | null;
 }
 
+export const STRAY_PAYMENT_REASONS = ['ORDER_CANCELLED', 'ORDER_ALREADY_PAID'] as const satisfies readonly StrayPaymentReason[];
+
+export class StrayPaymentResponse implements StrayPayment {
+  @ApiProperty({ enum: STRAY_PAYMENT_REASONS, description: 'The order had been cancelled when it was paid, or was already paid by another charge.' }) reason!: StrayPaymentReason;
+  @ApiProperty({ enum: ONLINE_PAYMENT_METHODS }) method!: OnlinePaymentMethod;
+  @ApiProperty() amountCents!: number;
+  @ApiProperty({ format: 'date-time', description: 'When bee-link learned of it.' }) paidAt!: string;
+}
+
 export class ShopOrderPaymentResponse extends OrderPaymentResponse implements ShopOrderPayment {
   @ApiProperty({ nullable: true, type: String, example: 'AWAITING_RISK_ANALYSIS', description: "The status in Asaas's own word." }) providerStatus!: string | null;
   @ApiProperty({ nullable: true, type: String, description: 'What Asaas last refused about it, in its words.' }) lastError!: string | null;
+  @ApiProperty({ type: [StrayPaymentResponse], description: "Money at the shop's Asaas account that the order did not ask for; bee-link refunds nothing on its own." }) strays!: StrayPaymentResponse[];
 }
 
 export class OrderPaymentPixResponse implements OrderPaymentPix {

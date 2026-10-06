@@ -25,6 +25,16 @@ describe("what an event reads again", () => {
     expect(panelKeysOf({ type: "order.status", orderNumber: 7, status: "CANCELLED" }, "loja")).toContainEqual(["catalog", "loja", "products"])
   })
 
+  /** A payment that moved (BEELINK-206): the panel reads the list and the order; the shop window, that order's charge and the page. */
+  it("reads an order's charge again when its payment moves, on both sides", () => {
+    const paid = { type: "order.payment", orderNumber: 7, status: "RECEIVED", stray: null } as const
+    expect(panelKeysOf(paid, "loja")).toEqual([
+      ["orders", "loja", "list"],
+      ["orders", "loja", "detail", 7],
+    ])
+    expect(shopperReadOf(paid, "loja")).toEqual({ keys: [["storefront", "loja", "payment", 7]], page: true })
+  })
+
   /** The shopper's orders are drawn on the server: news of one reads the page; a conversation is a query. */
   it("in the shop window: the page for an order, the conversations by key", () => {
     // An order's move reads its charge again too (BEELINK-205): a payment screen left open follows a cancellation.

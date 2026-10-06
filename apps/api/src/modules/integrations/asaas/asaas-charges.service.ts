@@ -4,13 +4,16 @@ import { Injectable, Logger } from '@nestjs/common';
 // App
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { open } from '../secret-vault.js';
-import { AsaasClient, AsaasRefused, type AsaasBillingType, type AsaasCharge, type AsaasPixQrCode } from './asaas.client.js';
+import { AsaasClient, AsaasRefused, AsaasThrottled, type AsaasBillingType, type AsaasCharge, type AsaasPixQrCode } from './asaas.client.js';
 import { asaasConfig, type AsaasConfig } from './asaas.config.js';
 
 const PROVIDER = 'ASAAS' as const;
 
 /** The shop cannot be reached at Asaas: it never connected, its key was refused, or this deployment cannot open one. */
 export class AsaasStoreUnavailable extends Error {}
+
+/** How long a shop is left alone after a 429 that named no time. */
+const THROTTLE_FALLBACK_MS = 5 * 60_000;
 
 /** Who a charge is for: the shop's own record of the customer. */
 export interface AsaasPayer {
@@ -41,10 +44,15 @@ type Work<T> = (config: AsaasConfig, apiKey: string) => Promise<T>;
  * Asaas refusing the key itself — a 401, whichever call met it — marks the connection as needing
  * to be reconnected, which the panel already shows, and is said as `AsaasStoreUnavailable`. Any other
  * refusal, and no answer at all, reach the caller as the port's own errors: Asaas's words, never the key.
+ *
+ * A 429 is remembered (BEELINK-206): until the time Asaas named, the shop's account is not asked at
+ * all, and every call answers `AsaasThrottled` at once. In this process's memory — another process
+ * learns from its own 429.
  */
 @Injectable()
 export class AsaasCharges {
   private readonly logger = new Logger(AsaasCharges.name);
+  private readonly throttledUntil = new Map<string, Date>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -119,11 +127,15 @@ export class AsaasCharges {
     const config = asaasConfig();
     const row = await this.prisma.storeIntegration.findUnique({ where: { storeId_provider: { storeId, provider: PROVIDER } } });
     if (!config || !row || row.status !== 'CONNECTED') throw new AsaasStoreUnavailable('The shop has no Asaas account in good standing');
+    const wait = this.throttledUntil.get(storeId);
+    if (wait && wait > new Date()) throw new AsaasThrottled('Asaas asked to wait before the shop is asked again', wait);
+    this.throttledUntil.delete(storeId);
 
     const { apiKey } = JSON.parse(open(row.secretSealed, config.vaultKey, { storeId, provider: PROVIDER })) as { apiKey: string };
     try {
       return await work(config, apiKey);
     } catch (error) {
+      if (error instanceof AsaasThrottled) this.throttledUntil.set(storeId, error.retryAt ?? new Date(Date.now() + THROTTLE_FALLBACK_MS));
       if (!(error instanceof AsaasRefused) || error.status !== 401) throw error;
       // Only the connection that was refused: one replaced meanwhile holds another key.
       await this.prisma.storeIntegration.updateMany({ where: { id: row.id, status: 'CONNECTED', connectedAt: row.connectedAt }, data: { status: 'NEEDS_RECONNECT', lastError: error.message } });

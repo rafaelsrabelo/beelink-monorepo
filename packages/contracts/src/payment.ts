@@ -39,12 +39,30 @@ export interface OrderPayment {
 /** What a list says of an order's charge. */
 export type OrderPaymentBrief = Pick<OrderPayment, "status" | "expiresAt">;
 
+/**
+ * Why money that arrived at the shop's Asaas account is not the order's payment (BEELINK-206): the
+ * order had been cancelled when it was paid, or it was already paid by another charge. bee-link
+ * refunds nothing on its own — the shop decides (BEELINK-208).
+ */
+export type StrayPaymentReason = "ORDER_CANCELLED" | "ORDER_ALREADY_PAID";
+
+/** A payment the order did not ask for, as the shop reads it. Whole cents. */
+export interface StrayPayment {
+  reason: StrayPaymentReason;
+  method: OnlinePaymentMethod;
+  amountCents: number;
+  /** ISO-8601: when bee-link learned of it. */
+  paidAt: string;
+}
+
 /** The charge as the shop reads it. */
 export interface ShopOrderPayment extends OrderPayment {
   /** The status in Asaas's own word — `AWAITING_RISK_ANALYSIS`, `CHARGEBACK_REQUESTED`… — which says more than ours. */
   providerStatus: string | null;
   /** What Asaas last refused about it, in its words; null when it refused nothing. */
   lastError: string | null;
+  /** Money the order did not ask for, the oldest first; empty on nearly every order. */
+  strays: StrayPayment[];
 }
 
 /** A Pix to be paid inside the shop. */

@@ -2327,6 +2327,8 @@ export const ptBR: UiMessages = {
     notificationsSeeOrders: "Ver pedidos novos",
     notificationNewOrder: "Novo pedido nº {number}",
     notificationNewMessage: "Mensagem no pedido nº {number}",
+    notificationStrayCancelled: "O pedido nº {number} foi pago depois de cancelado. O dinheiro está na sua conta Asaas.",
+    notificationStrayDuplicate: "O pedido nº {number} foi pago duas vezes. O segundo pagamento está na sua conta Asaas.",
     notificationOrderDetail: "{customer} · {total}",
     notificationMessageDetail: "{customer}: {body}",
     notificationOpen: "Ver",

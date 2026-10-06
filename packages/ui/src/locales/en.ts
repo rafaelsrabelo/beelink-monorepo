@@ -2326,6 +2326,8 @@ export const en: UiMessages = {
     notificationsSeeOrders: "See new orders",
     notificationNewOrder: "New order no. {number}",
     notificationNewMessage: "Message on order no. {number}",
+    notificationStrayCancelled: "Order no. {number} was paid after it was cancelled. The money is in your Asaas account.",
+    notificationStrayDuplicate: "Order no. {number} was paid twice. The second payment is in your Asaas account.",
     notificationOrderDetail: "{customer} · {total}",
     notificationMessageDetail: "{customer}: {body}",
     notificationOpen: "View",

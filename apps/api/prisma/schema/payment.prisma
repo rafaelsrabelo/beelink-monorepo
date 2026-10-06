@@ -62,13 +62,79 @@ model OrderPayment {
   paidAt      DateTime?
   cancelledAt DateTime?
 
+  /// When Asaas was last heard about it, by whichever way (BEELINK-206): a customer's read asks again
+  /// only a minute after.
+  checkedAt   DateTime?
+  /// How many times the reconciliation asked, and when it asks next — each wait longer than the last.
+  /// Null once the charge is paid or gone: nothing is left to ask.
+  checks      Int       @default(0)
+  nextCheckAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([orderId], where: raw("(status <> ALL (ARRAY['CANCELLED'::\"OrderPaymentStatus\", 'FAILED'::\"OrderPaymentStatus\"]))"), map: "order_payments_one_live_key")
   @@index([orderId, createdAt])
   @@index([storeId, status])
+  @@index([nextCheckAt])
   @@map("order_payments")
+}
+
+/// Why money that arrived is not its order's payment (BEELINK-206).
+enum StrayPaymentReason {
+  /// The order had been cancelled when its charge was paid.
+  ORDER_CANCELLED
+  /// The order was already paid by another charge.
+  ORDER_ALREADY_PAID
+}
+
+/// Money at the shop's Asaas account that its order did not ask for (BEELINK-206): a charge paid
+/// after the order was cancelled, or a second charge paid for an order already paid. bee-link refunds
+/// nothing on its own; the shop reads it on the order and decides (BEELINK-208). One per charge.
+model OrderStrayPayment {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  orderId     String             @db.Uuid
+  order       Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId     String             @db.Uuid
+  /// Asaas's id of the charge that was paid: what a refund is asked with.
+  providerId  String             @unique @db.VarChar(64)
+  reason      StrayPaymentReason
+  method      PaymentMethod
+  amountCents Int
+  /// When bee-link learned of it.
+  paidAt      DateTime
+  createdAt   DateTime           @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_stray_payments")
+}
+
+/// One event of a shop's Asaas webhook (BEELINK-206), written before it is answered: its id is what
+/// makes a second delivery a no-op. Nothing of its body is kept — what it tells is read from the
+/// shop's account — only which order it is about. One about a charge that is not bee-link's is
+/// written already done, with no order. Done ones are pruned after a month.
+model AsaasEvent {
+  id      String @id @default(uuid(7)) @db.Uuid
+  storeId String @db.Uuid
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  /// Asaas's id of the event, `evt_…`; the SHA-256 of the body for one that came with none.
+  eventId String @db.VarChar(160)
+  /// `PAYMENT_RECEIVED`, `ACCESS_TOKEN_DISABLED`…
+  event   String @db.VarChar(80)
+  /// The order its charge belongs to; null for an event about the key, and for one left alone.
+  orderId String? @db.Uuid
+  /// What came of it: APPLIED, IGNORED, or GIVEN_UP after the last try. Null while it waits.
+  outcome String? @db.VarChar(20)
+
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  processedAt   DateTime?
+  lastError     String?   @db.VarChar(500)
+  createdAt     DateTime  @default(now())
+
+  @@unique([storeId, eventId])
+  @@index([processedAt, nextAttemptAt])
+  @@map("asaas_events")
 }
 
 /// A shop's customer as the shop's Asaas account knows them (BEELINK-204): the id a charge is made

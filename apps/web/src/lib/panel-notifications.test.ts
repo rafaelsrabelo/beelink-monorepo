@@ -54,6 +54,13 @@ describe("the panel's bell", () => {
     expect(toastOf({ type: "order.status", orderNumber: 18, status: "ACCEPTED" }, ptBR)).toBeNull()
   })
 
+  /** A payment approved is not a toast yet (BEELINK-207); money nobody asked for is, since bee-link refunds nothing by itself. */
+  it("tells of money an order did not ask for, and not of a payment that only moved", () => {
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "RECEIVED", stray: null }, ptBR)).toBeNull()
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "RECEIVED", stray: "ORDER_CANCELLED" }, ptBR)).toBe("O pedido nº 18 foi pago depois de cancelado. O dinheiro está na sua conta Asaas.")
+    expect(toastOf({ type: "order.payment", orderNumber: 18, status: "RECEIVED", stray: "ORDER_ALREADY_PAID" }, ptBR)).toBe("O pedido nº 18 foi pago duas vezes. O segundo pagamento está na sua conta Asaas.")
+  })
+
   it("puts the count in the tab's title, and takes it off at none", () => {
     expect(titledWith("Pedidos · bee-link", 3)).toBe("(3) Pedidos · bee-link")
     expect(titledWith("(3) Pedidos · bee-link", 4)).toBe("(4) Pedidos · bee-link")
