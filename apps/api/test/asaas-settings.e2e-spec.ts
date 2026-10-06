@@ -7,6 +7,7 @@ import type { AsaasConnection, AsaasSettings, AuthSession } from '@harness-monor
 // App
 import { AsaasClient, type AsaasAccountInfo } from '../src/modules/integrations/asaas/asaas.client.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
+import { AsaasWithoutCharges } from './support/asaas-stub.js';
 import { newEmail, signUpAndSignIn } from './support/auth-flow.js';
 import { createTestApp } from './support/create-test-app.js';
 import { resetDatabase } from './support/reset-database.js';
@@ -16,7 +17,7 @@ const KEY = '$aact_hmlg_e2e-settings-first-key-000000000000';
 const OTHER_KEY = '$aact_hmlg_e2e-settings-second-key-00000000000';
 
 /** Asaas, as far as these settings can tell: any key is good, and it is asked nothing about them. */
-class FakeAsaas extends AsaasClient {
+class FakeAsaas extends AsaasWithoutCharges {
   readonly calls: string[] = [];
 
   async account(): Promise<AsaasAccountInfo> {
