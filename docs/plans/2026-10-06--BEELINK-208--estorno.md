@@ -175,3 +175,84 @@ pagamento cujo estorno já cobre tudo.
 Marcar um `stray` como resolvido à mão, sem estorno. Um toast de "estorno negado" ou "concluído" no
 painel (o cartão do pagamento mostra). Avisar a loja de um chargeback. Estornar um pedido `OFFLINE`.
 Desfazer um estorno.
+
+## Acréscimos de 06/10/2026: o que mudou enquanto foi feito
+
+- **Estornar um `stray` aceita valor parcial,** como o do pagamento: nada no Asaas impede, e o
+  registro só é dado como resolvido quando os estornos aceitos cobrem tudo.
+- **O parcelamento de um `stray` é perguntado ao Asaas.** `order_stray_payments` não guarda o id do
+  parcelamento; antes de estornar um `stray` que não é a cobrança do pedido, a cobrança é lida
+  (`GET /payments/{id}`) para saber se o estorno vai pelo parcelamento.
+- **A ordem das recusas:** tela desatualizada (`REFUND_STALE`) vem antes de "nada a estornar". Uma
+  segunda aba que ainda mostra valor disponível, depois de a primeira ter estornado tudo, lê "o
+  pagamento mudou", não "não há o que estornar".
+- **A reconciliação passa a olhar cobranças pagas com estorno em processamento**
+  (`refundingCents > 0`): no cartão a conclusão leva dias, e o evento pode ser o que não chegou.
+  `settleRefundMoney` marca `nextCheckAt`, e `CHECKED` (em `payment-facts.ts`) é o filtro comum.
+- **`plansOf` deixou de dizer `REFUNDED` de um parcelamento com uma parcela estornada e as outras
+  não:** a palavra do plano é a da parcela que ainda guarda dinheiro, e `refunds` diz quanto voltou.
+- **Um status `REFUNDED` sem `refunds`** (um chargeback perdido) vira uma linha `ASAAS` do valor
+  inteiro: o cliente lê que o dinheiro voltou. O teste do Q5 que dizia "`refundedCents` continua 0"
+  passou a dizer o valor.
+- **O filtro `STRAY` e `OrderSummary.strays`** contam só o que a loja ainda não resolveu.
+- **`release` não registra mais "cobrança paga em pedido cancelado" como erro** quando o pedido foi
+  cancelado com o estorno junto: não é anomalia.
+- **No cartão de um pedido pago depois de cancelado** o botão é um só, o do aviso: o pagamento e o
+  dinheiro a resolver são a mesma cobrança.
+- **Cancelar um pedido pago abre a tela do estorno** (`?cancel=1`) no lugar do diálogo de
+  confirmação: formulário tem rota própria, e ali o valor não é um campo (é tudo o que resta).
+- **O valor do formulário é lido com `centsFromStrict`:** "1.000" não vira um real.
+- **O cliente lê uma frase** ("Este pedido já foi pago. Para cancelar, fale com a loja.") no lugar
+  do botão de cancelar, que já não aparecia num pedido pago.
+- **Sem toast de estorno.** O evento `order.payment` continua o mesmo: as telas releem, e o cartão
+  do pagamento mostra. O `changed` de `PaymentSync` passou a considerar os estornos.
+
+## Acréscimos de 06/10/2026: ver funcionando
+
+API na 3501 e web na 3500, banco `harness_asaas`, loja `loja-q4`. Sem chave de sandbox, os estados
+foram gravados à mão (`order_refunds`, `refundedCents`, `refundingCents`, `providerStatus`, a linha
+`PAYMENT_REFUNDED` em `order_messages`, um evento `CANCELLED` com ator `SYSTEM` no pedido 2).
+Capturas em `.claude/worktrees/pagamentos-pr/shots-208/`, a 1280 e a 390 px, nenhuma com rolagem
+lateral.
+
+| O quê | Resultado |
+|---|---|
+| Pedido 1 pago (Pix), antes de qualquer estorno | "Estornar pagamento" no cartão; leva a `/orders/1/refund` |
+| Formulário | o valor começa em tudo o que resta (R$ 120,00); 150,00 e motivo vazio: "O valor passa do disponível para estorno (R$ 120,00)." e "Escreva o motivo…", sem chamada à API |
+| Enviar R$ 50,00 com motivo | a API tentou de verdade: a conexão da loja está `NEEDS_RECONNECT` (chave de mentira), a tela disse "Não foi possível falar com a sua conta Asaas agora…", e nenhuma linha ficou em `order_refunds` |
+| Pedido 1 com um estorno concluído de R$ 50,00 e um recusado por saldo | "Estornado em parte", Estornado R$ 50,00, Disponível R$ 70,00, a lista com o motivo de cada um e a frase do Asaas em vermelho |
+| Pedido 3 (cartão 3x) com estorno em processamento | "Em processamento R$ 120,00", "Estorno em processamento no Asaas. No cartão, pode levar até 10 dias úteis.", sem botão; a rota do estorno diz "não tem valor disponível" |
+| Pedido 4 (pago depois de cancelado) | o aviso "Pagamento a resolver" com "Estornar R$ 120,00", um botão só; o formulário do `stray` |
+| Cancelar o pedido 1 pelo menu "Outros status" | vai para `/orders/1/refund?cancel=1`: "Cancelar o pedido #1 e estornar o pagamento", sem campo de valor, "Estornar R$ 70,00 e cancelar o pedido" |
+| Lista | "Estornado em parte" e "Estorno em processamento" na célula; `?payment=REFUNDED` traz os pedidos 1 e 3 |
+| Cliente, pedido 1 | "Pagamento estornado em parte", "Estornos: R$ 50,00 devolvidos em 6 de out. de 2026", o histórico com "Estorno de R$ 50,00", e "Este pedido já foi pago. Para cancelar, fale com a loja." |
+| Cliente, pedido 3 | "Estorno em processamento", a linha do estorno e o prazo do cartão |
+| Cliente, pedido 2 | "Cancelado por falta de pagamento" |
+| Conversa do cliente | "A loja estornou R$ 50,00 do pagamento." |
+
+**O que não deu para exercitar no navegador:**
+
+- **Um estorno aceito de ponta a ponta** (a chamada, a linha, o e-mail, a volta para o pedido): só
+  no e2e, com o Asaas falso. No navegador a chamada para na conexão recusada.
+- **Cancelar um pedido pago até o fim,** e a recusa por saldo vinda do Asaas: idem.
+- **O e-mail de estorno no Mailpit pelo navegador:** saiu no e2e (`order-refunds.e2e-spec.ts` lê o
+  Mailpit de verdade).
+- **A tela mudar sozinha quando o estorno conclui:** depende do evento `order.payment`.
+- **Nada com o Asaas de verdade:** o formato real de `refunds` na listagem, o `code` das recusas, o
+  estorno parcial de um parcelamento, o tempo que um cartão leva.
+
+## O que fica em aberto no épico
+
+- **Validar no sandbox, com chave de verdade,** antes de ir para a produção: a pilha inteira (Q1 a
+  Q7) nunca falou com o Asaas. Para o estorno: se `GET /v3/payments?externalReference=` traz
+  `refunds`; o texto e o `code` da recusa por saldo; como um estorno parcial de parcelamento aparece.
+- **Marcar um `stray` como resolvido sem estornar** (a loja decidiu entregar mesmo assim) não existe.
+- **Chargeback:** a loja não é avisada; o cartão do pagamento mostra a palavra do Asaas, e um
+  chargeback perdido aparece como estorno feito no Asaas.
+- **Uma linha `REQUESTED` que ninguém tenta de novo** fica "Sem confirmação do Asaas" até a próxima
+  tentativa de estorno daquela cobrança, que começa lendo o Asaas. Um evento de estorno a resolve
+  antes, se o estorno aconteceu.
+- **O estorno de um `stray` em processamento** (cartão) só conclui pelo webhook: a reconciliação
+  olha `order_payments`, e um segundo pagamento não tem linha lá.
+- **As caudas que o Q5 anotou** continuam (cobrança pendente conferida a cada 12 horas para sempre,
+  `429` lembrado por processo, um webhook a mais se o registro se perder).

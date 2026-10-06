@@ -161,7 +161,9 @@ An order placed at checkout starts **received**: the shopkeeper accepts it, or c
 
 Paying online asks the customer's CPF, once. The customer pays without leaving the shop: a Pix shows its QR code and its copy-and-paste code right after the order is placed, and a card opens Asaas's page beside it. An order placed and not yet paid **exists** — the shop sees it, and the customer comes back to pay from the order, with a new Pix when the first one expired. Only a closed total is charged: an order whose delivery fee is still to be agreed is paid once the shop tells the fee. An order with nothing left to pay — a coupon or credit covered it — is charged nothing and settled with the shop.
 
-**An order is paid when Asaas says so to the product**, never because a page was reached or a browser said it. Until then it reads *awaiting payment*, and it turns to *payment approved* by itself. A paid order is not cancelled without its money being given back.
+**An order is paid when Asaas says so to the product**, never because a page was reached or a browser said it. Until then it reads *awaiting payment*, and it turns to *payment approved* by itself. A paid order is not cancelled without its money being given back: its customer cannot cancel it and asks the shop, and the shop cancels it with the refund in the same act — the order is cancelled only once Asaas took the refund.
+
+**The shopkeeper gives money back from the order**, all of it or a part, saying why. The refund is asked of the shop's own Asaas account; the customer sees it on the order — how much, and whether it went back or is on its way, which on a card takes days — reads it in the order's conversation and is e-mailed once. The reason stays with the shop. Money that arrived without the order asking for it — paid after it was cancelled, or paid twice — is given back the same way, and stops being flagged once it is.
 
 A shop with no Asaas account connected, or whose connection needs mending, sells exactly as before: every order is settled with the shop.
 
