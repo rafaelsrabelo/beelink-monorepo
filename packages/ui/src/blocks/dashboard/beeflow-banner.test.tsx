@@ -16,7 +16,7 @@ const AppLink: LinkComponent = ({ href, ...props }) => <a href={href} data-app-l
 const art = (alt: string) => <img src="/beeflow-banner.jpg" alt={alt} />
 
 describe("BeeflowBanner", () => {
-  /** The price is drawn in the artwork: whoever cannot see it is told the same, and then where the link leads. */
+  /** Whoever cannot see the artwork is told what it draws, and then where the link leads. */
   it("is one link to the Integrations page, read out as what the art says and where it leads", async () => {
     const { container } = render(<BeeflowBanner href={HREF} image={art(ptBR.integrations.upcoming.beeflow.banner.alt)} linkComponent={AppLink} />)
 
