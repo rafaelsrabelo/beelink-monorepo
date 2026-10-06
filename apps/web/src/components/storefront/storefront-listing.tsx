@@ -114,7 +114,7 @@ export async function StorefrontListing({ place, routes, catalogue: pending, loc
           showBadge={layout.showProductBadges ?? true}
           showRating={layout.showProductRating ?? true}
           {...(layout.showQuickAdd ?? true ? { cardAction: (product: StorefrontProduct) => <StorefrontCardCartLive product={product} messages={ui} /> } : {})}
-          cardFavorite={(product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} messages={ui} />}
+          cardFavorite={(product: StorefrontProduct) => <StorefrontFavoriteLive productId={product.id} productName={product.name} priceCents={product.priceCents} messages={ui} />}
           messages={ui}
         >
           <StorefrontPagination
