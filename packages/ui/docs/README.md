@@ -41,7 +41,7 @@ Every block takes its data, its callbacks and its links through props, which is 
 | `blocks/dashboard/site-header` | `title`, `actions` | Blocos/Painel/Cabeçalho |
 | `blocks/dashboard/section-cards` | `cards` | Blocos/Painel/Cartões |
 | `blocks/dashboard/chart-area-interactive` | `data`, `title`, `description` | Blocos/Painel/Gráfico |
-| `blocks/dashboard/beeflow-banner` | `href`, `image` (a slot for the app's own image component, carrying the banner's `alt`), `linkComponent` — BeeFlow's artwork on the panel's home, whole, in its own 16:9 frame, as one link; read out as what the art says (its price included, from `integrations.upcoming.beeflow.banner.alt`) and then where it leads | Blocos/Painel/Início/Banner do BeeFlow |
+| `blocks/dashboard/beeflow-banner` | `href`, `image` (a slot for the app's own image component, carrying the banner's `alt`), `linkComponent` — BeeFlow's artwork on the panel's home, whole, in its own low frame (2103 × 748), as one link; read out as what the art says (from `integrations.upcoming.beeflow.banner.alt`) and then where it leads | Blocos/Painel/Início/Banner do BeeFlow |
 | `blocks/store/store-card` | `store`, `panelHref`, `storefrontHref` | Blocos/Loja/Cartão da loja |
 | `blocks/store/store-empty-state` | `createHref` | Blocos/Loja/Sem lojas |
 | `blocks/store/store-list-skeleton` | `count` | Blocos/Loja/Esqueleto da lista |

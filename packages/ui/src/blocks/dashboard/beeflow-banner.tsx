@@ -23,16 +23,17 @@ export interface BeeflowBannerProps {
 /**
  * BeeFlow's banner on the panel's home: the finished artwork, whole, as one link.
  *
- * The frame is the artwork's own 16:9 and nothing else sizes it, so the art is never cut — on a
- * phone it is the same picture, smaller — and its place is held before the file arrives. The link is
- * read out as what the art says and then where it leads: the art's words, its price among them, are
- * the image's `alt`, and the way on is said after it.
+ * The frame is the artwork's own proportion, a low strip of 2103 × 748, and nothing else sizes it, so
+ * the art is never cut — on a phone it is the same picture, smaller — and its place is held before
+ * the file arrives. Low on purpose: the first artwork was 16:9 and took the whole screen, with the
+ * cards it sits over pushed under the fold. The link is read out as what the art says and then where
+ * it leads: the art's words are the image's `alt`, and the way on is said after it.
  */
 export function BeeflowBanner({ href, image, linkComponent: Link = AnchorLink, messages = defaultMessages }: BeeflowBannerProps) {
   return (
     <Link
       href={href}
-      className="border-shell-border bg-muted focus-visible:ring-ring relative block aspect-video w-full overflow-hidden rounded-xl border shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="border-shell-border bg-muted focus-visible:ring-ring relative block aspect-[2103/748] w-full overflow-hidden rounded-xl border shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
     >
       {image}
       <span className="sr-only">{messages.integrations.upcoming.beeflow.banner.link}</span>

@@ -138,7 +138,7 @@ export function ShopHomeScreen({ slug, ui, web }: ShopHomeScreenProps) {
         in its own shape, so the cards under it do not jump for the many that are shops.
       */}
       {store.isPending ? (
-        <Skeleton className="aspect-video w-full rounded-xl" />
+        <Skeleton className="aspect-[2103/748] w-full rounded-xl" />
       ) : site ? null : (
         <BeeflowBanner
           href={integrationPagesOf(slug).list}
