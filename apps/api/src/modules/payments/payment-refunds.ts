@@ -60,12 +60,27 @@ export async function reconcileRefunds(tx: Tx, charge: RefundedCharge, totals: R
   const standing = rows.filter((row) => row.status !== 'REFUSED' && row.status !== 'DENIED');
   let done = Math.min(totals.doneCents, charge.amountCents);
   let pending = Math.min(totals.pendingCents, charge.amountCents - done);
-  // A cancelled refund Asaas shows may be one already written as denied.
-  let cancelled = totals.cancelledCents - sumOf(rows.filter((row) => row.status === 'DENIED'));
   let wrote = false;
   let uncovered = false;
 
-  for (const row of standing) {
+  // Taken here and no longer at Asaas, with a cancelled refund in sight: that one was denied. Which
+  // row it was is told by the amount — the one that is exactly what is missing, else the oldest that
+  // fit — and never guessed past what Asaas shows cancelled. A cancelled refund already accounted
+  // for — written as denied, or given up on after a silence — is not counted again.
+  let cancelled = totals.cancelledCents - sumOf(rows.filter((row) => row.status === 'DENIED' || row.status === 'REFUSED'));
+  let missing = sumOf(standing.filter((row) => row.status !== 'REQUESTED')) - done - pending;
+  const underway = standing.filter((row) => row.status === 'PROCESSING');
+  const denied = new Set<string>();
+  for (const row of [...underway.filter((each) => each.amountCents === missing), ...underway]) {
+    if (missing <= 0 || denied.has(row.id) || row.amountCents > missing || row.amountCents > cancelled) continue;
+    await tx.orderRefund.update({ where: { id: row.id }, data: { status: 'DENIED', lastError: 'Asaas cancelled the refund after taking it' } });
+    denied.add(row.id);
+    missing -= row.amountCents;
+    cancelled -= row.amountCents;
+    wrote = true;
+  }
+
+  for (const row of standing.filter((each) => !denied.has(each.id))) {
     if (row.amountCents <= done) {
       done -= row.amountCents;
       if (row.status !== 'DONE') wrote = (await take(tx, charge, row, 'DONE', now)) || wrote;
@@ -73,10 +88,6 @@ export async function reconcileRefunds(tx: Tx, charge: RefundedCharge, totals: R
       pending -= row.amountCents - done;
       done = 0;
       if (row.status === 'REQUESTED') wrote = (await take(tx, charge, row, 'PROCESSING', now)) || wrote;
-    } else if (row.status === 'PROCESSING' && cancelled >= row.amountCents) {
-      cancelled -= row.amountCents;
-      await tx.orderRefund.update({ where: { id: row.id }, data: { status: 'DENIED', lastError: 'Asaas cancelled the refund after taking it' } });
-      wrote = true;
     } else if (row.status === 'REQUESTED' && authoritative && (!row.claimedUntil || row.claimedUntil <= now)) {
       await tx.orderRefund.update({ where: { id: row.id }, data: { status: 'REFUSED', claimedUntil: null, lastError: 'Asaas did not answer, and holds no such refund' } });
       wrote = true;

@@ -18,6 +18,7 @@ import { reconcileRefunds, refundMarkOf, settleRefundMoney } from './payment-ref
 import { shownPaymentOf } from './payment.mapper.js';
 import { holdsMoney, inReview, isLive, wasPaid } from './payment-status.js';
 import { isOnlineMethod } from './payment-terms.js';
+import { refundTotalsOf } from './refund-totals.js';
 
 /** What hearing Asaas about an order's charges came to. */
 export interface PaymentHeard {
@@ -94,6 +95,16 @@ export class PaymentSync {
       // account the shop left — this key cannot tell. It is neither written as gone nor as anything.
       else if (!charge && (!connectedAt || row.createdAt < connectedAt)) unreachable = true;
       else gone.push(row.id);
+    }
+
+    // A refund bee-link knows Asaas took, which the listing does not show (BEELINK-208): the charge
+    // is read by its id, where its refunds are sure to be, so a refund on its way is seen to conclude.
+    for (const row of order.payments) {
+      const plan = listed.find((each) => names(each, row));
+      const known = row.refundedCents + row.refundingCents;
+      if (!plan?.refunds || row.refundingCents === 0 || plan.refunds.doneCents + plan.refunds.pendingCents >= known) continue;
+      const read = await this.charges.refundsOf(storeId, { id: row.providerId!, installmentId: row.providerInstallmentId });
+      if (read) plan.refunds = read.whole ? { doneCents: row.amountCents, pendingCents: 0, cancelledCents: 0 } : refundTotalsOf(read.refunds);
     }
 
     const now = new Date();

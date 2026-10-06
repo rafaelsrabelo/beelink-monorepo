@@ -28,20 +28,18 @@ export function refundTotalsOf(refunds: readonly AsaasRefund[]): RefundTotals {
   return totals;
 }
 
-/** Asaas's words for a charge whose refund it took and has not concluded. */
-const REFUND_UNDERWAY = new Set(['REFUND_REQUESTED', 'REFUND_IN_PROGRESS']);
-
 /**
  * One charge's refunds as its own status and list tell them together: `REFUNDED` is all of it back,
- * whatever the list holds — a chargeback lost leaves none — and a refund under way with nothing
- * pending on the list is the rest of the charge on its way.
+ * whatever the list holds — a chargeback lost leaves none. Nothing else is read into the status: a
+ * refund under way that the list does not show has no amount anybody can name, and guessing the
+ * rest of the charge would write a refund that may not exist.
  */
 export function chargeRefundTotals(charge: { status: string; valueCents: number; refunds: readonly AsaasRefund[] }): RefundTotals {
   const listed = refundTotalsOf(charge.refunds);
   if (charge.status === 'REFUNDED') return { doneCents: charge.valueCents, pendingCents: 0, cancelledCents: listed.cancelledCents };
   const doneCents = Math.min(listed.doneCents, charge.valueCents);
   const left = charge.valueCents - doneCents;
-  const pendingCents = REFUND_UNDERWAY.has(charge.status) && listed.pendingCents === 0 ? left : Math.min(listed.pendingCents, left);
+  const pendingCents = Math.min(listed.pendingCents, left);
   return { doneCents, pendingCents, cancelledCents: listed.cancelledCents };
 }
 

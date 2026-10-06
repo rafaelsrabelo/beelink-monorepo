@@ -21,9 +21,9 @@ describe("a charge's refunds, added up (BEELINK-208)", () => {
     expect(chargeRefundTotals({ status: 'REFUNDED', valueCents: 5990, refunds: [] })).toEqual({ doneCents: 5990, pendingCents: 0, cancelledCents: 0 });
   });
 
-  it('takes a refund under way with nothing pending on the list as the rest of the charge on its way', () => {
-    expect(chargeRefundTotals({ status: 'REFUND_IN_PROGRESS', valueCents: 5990, refunds: [] })).toEqual({ doneCents: 0, pendingCents: 5990, cancelledCents: 0 });
-    expect(chargeRefundTotals({ status: 'REFUND_REQUESTED', valueCents: 5990, refunds: [{ status: 'DONE', valueCents: 990 }] })).toEqual({ doneCents: 990, pendingCents: 5000, cancelledCents: 0 });
+  it('reads no amount into a refund under way that the list does not show: the rest of the charge is not guessed', () => {
+    expect(chargeRefundTotals({ status: 'REFUND_IN_PROGRESS', valueCents: 5990, refunds: [] })).toEqual({ doneCents: 0, pendingCents: 0, cancelledCents: 0 });
+    expect(chargeRefundTotals({ status: 'REFUND_REQUESTED', valueCents: 5990, refunds: [{ status: 'DONE', valueCents: 990 }] })).toEqual({ doneCents: 990, pendingCents: 0, cancelledCents: 0 });
     expect(chargeRefundTotals({ status: 'REFUND_IN_PROGRESS', valueCents: 5990, refunds: [{ status: 'PENDING', valueCents: 1000 }] })).toEqual({ doneCents: 0, pendingCents: 1000, cancelledCents: 0 });
   });
 

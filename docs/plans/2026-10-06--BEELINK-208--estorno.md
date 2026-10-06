@@ -256,3 +256,37 @@ lateral.
   olha `order_payments`, e um segundo pagamento não tem linha lá.
 - **As caudas que o Q5 anotou** continuam (cobrança pendente conferida a cada 12 horas para sempre,
   `429` lembrado por processo, um webhook a mais se o registro se perder).
+
+## Acréscimos de 06/10/2026: a revisão antes da entrega
+
+Uma leitura independente do commit, feita contra as garantias e sem conhecer o desenho, confirmou
+que nenhuma chamada ao Asaas acontece com a trava da loja na mão, que o valor nunca passa do que
+resta, e que duplo clique, duas abas e nova tentativa não estornam em dobro. Achou três defeitos,
+todos corrigidos, cada um com o seu caso no e2e:
+
+1. **Um estorno parcial de cartão inventava um segundo estorno do resto.** `chargeRefundTotals`
+   lia o status `REFUND_IN_PROGRESS` sem estorno pendente na lista como "o resto da cobrança está
+   voltando". Se a listagem do Asaas não trouxer `refunds`, um estorno de R$ 30 virava também um de
+   R$ 29,90 que não existe: o cliente era avisado, o pedido podia ser cancelado sem estorno, e a
+   loja não conseguia estornar o resto. Agora nada é lido do status além de `REFUNDED`.
+2. **Um `stray` parcelado era lido pela primeira parcela depois de um silêncio.** Só o caminho do
+   estorno perguntava o parcelamento ao Asaas; a leitura que resolve um estorno sem resposta não.
+   Agora os dois passam por `aim`.
+3. **Um estorno cancelado menor do que um mais novo nunca era dado como negado.** A linha negada é
+   escolhida pelo valor que falta (a que é exatamente o que falta, senão as mais velhas que cabem),
+   antes de as outras serem casadas.
+
+E uma suspeita que virou mudança: **um estorno aceito cuja listagem não mostra `refunds` nunca
+concluiria.** `PaymentSync` passou a ler a cobrança pelo id (`GET /payments/{id}` ou o parcelamento,
+onde `refunds` está documentado) quando o bee-link sabe de um estorno em processamento que a
+listagem não mostra. Custa uma requisição, só nesse caso.
+
+O que a revisão apontou e fica como está:
+
+- **Um Asaas lento além dos 45 segundos.** Um estorno feito que não aparece na leitura por id depois
+  de a posse vencer é dado como não feito, e a loja pode pedir de novo. A janela é de propósito (sem
+  ela, um estorno sem resposta travaria a cobrança para sempre) e vale o que valer a consistência de
+  `GET /payments/{id}`: é o primeiro item a conferir no sandbox.
+- **Um cancelamento antigo e uma listagem atrasada** ainda podem, juntos, negar por engano um
+  estorno recém-aceito, quando o Asaas mostra como `CANCELLED` um estorno que o bee-link nunca
+  contou. O valor cancelado já descontado (linhas negadas e desistidas) diminui a chance.

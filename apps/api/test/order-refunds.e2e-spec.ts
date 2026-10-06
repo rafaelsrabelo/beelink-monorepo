@@ -272,6 +272,45 @@ describe('the shop gives money back from the order (BEELINK-208)', () => {
       expect(sent).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps one refund of the amount asked when the listing shows none, and still sees it conclude', async () => {
+      asaas.listsRefunds = false;
+      await paid({ paymentMethod: 'CREDIT_CARD' }, 'CONFIRMED');
+
+      const response = await refund({ amountCents: 3000 });
+      await hear('evt_progress', 'PAYMENT_REFUND_IN_PROGRESS');
+
+      // The rest of the charge is not guessed to be on its way too.
+      expect(response.statusCode).toBe(200);
+      expect((await shop.panelOrder()).payment).toMatchObject({ refundingCents: 3000, refundableCents: 2990, refunds: [{ amountCents: 3000, status: 'PROCESSING' }] });
+      expect(sent).toHaveBeenCalledTimes(1);
+      // A paid order with money still held is not cancelled on a refund nobody made.
+      expect(errorOf(await cancel()).errorCode).toBe('ORDER_PAID');
+
+      asaas.concludeRefunds(charge().id);
+      await hear('evt_done', 'PAYMENT_PARTIALLY_REFUNDED');
+
+      expect((await shop.panelOrder()).payment).toMatchObject({ status: 'PARTIALLY_REFUNDED', refundedCents: 3000, refundingCents: 0, refunds: [{ status: 'DONE' }] });
+      expect(await refunds()).toHaveLength(1);
+    });
+
+    it('denies the one of two refunds on their way that Asaas cancelled, by its amount', async () => {
+      await paid({ paymentMethod: 'CREDIT_CARD' }, 'CONFIRMED');
+      await refund({ amountCents: 2000 });
+      // Asaas lets a second one be asked while the first is on its way.
+      charge().status = 'CONFIRMED';
+      await hear('evt_back', 'PAYMENT_UPDATED');
+      expect((await refund({ amountCents: 3000, refundableCents: 3990 })).statusCode).toBe(200);
+
+      charge().refunds[0]!.status = 'CANCELLED';
+      await hear('evt_denied', 'PAYMENT_REFUND_DENIED');
+
+      expect((await refunds()).map((row) => [row.amountCents, row.status])).toEqual([
+        [2000, 'DENIED'],
+        [3000, 'PROCESSING'],
+      ]);
+      expect((await shop.panelOrder()).payment).toMatchObject({ refundingCents: 3000, refundableCents: 2990 });
+    });
+
     it('is asked about by the reconciliation while its refund is on its way, when the event never comes', async () => {
       await paid({ paymentMethod: 'CREDIT_CARD' }, 'CONFIRMED');
       await refund();
@@ -405,6 +444,27 @@ describe('the shop gives money back from the order (BEELINK-208)', () => {
       expect(sent).toHaveBeenCalledTimes(1);
 
       expect(errorOf(await refund({ strayId: stray.id, refundableCents: 0 })).errorCode).toBe('REFUND_NOTHING_TO_REFUND');
+    });
+
+    it('is refunded, and read after a silence, as the plan it is when it was paid in instalments', async () => {
+      await paid();
+      const instalment = (id: string, number: number) => ({ ...charge(), id, status: 'CONFIRMED', billingType: 'CREDIT_CARD', valueCents: 2995, installmentId: 'ins_segunda', installmentNumber: number, refunds: [] });
+      asaas.payments.push(instalment('pay_a', 1), instalment('pay_b', 2));
+      await hear('evt_second', 'PAYMENT_CONFIRMED', 'pay_a');
+      const stray = (await shop.panelOrder()).payment!.strays[0]!;
+      expect(stray).toMatchObject({ reason: 'ORDER_ALREADY_PAID', amountCents: TOTAL });
+      // Made, the answer lost, and the reading lost too.
+      asaas.failing('refund', afterwards(new AsaasOutcomeUnknown('Asaas did not answer')));
+      asaas.failing('refundsOf', new AsaasOutcomeUnknown('Asaas did not answer'));
+
+      expect(errorOf(await refund({ strayId: stray.id })).errorCode).toBe('REFUND_UNCONFIRMED');
+      await prisma.orderRefund.updateMany({ data: { claimedUntil: new Date(Date.now() - 1000) } });
+      const again = await refund({ strayId: stray.id });
+
+      // Read by its plan, where the whole refund shows: not asked a second time.
+      expect(errorOf(again).errorCode).toBe('REFUND_STALE');
+      expect(asaas.refunded).toEqual([{ target: { id: 'pay_a', installmentId: 'ins_segunda' }, valueCents: TOTAL, description: 'Produto com defeito' }]);
+      expect((await shop.panelOrder()).payment?.strays).toMatchObject([{ refundableCents: 0, resolvedAt: expect.any(String) }]);
     });
 
     it('is settled too when the shop refunds it at Asaas itself', async () => {

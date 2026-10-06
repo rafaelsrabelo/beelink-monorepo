@@ -32,7 +32,7 @@ export interface RefundAsked {
 }
 
 /** The first step's answer: the refund to ask Asaas for, or an earlier one nobody knows the end of. */
-type Claimed = { refundId: string; charge: RefundedCharge; target: AsaasRefundTarget; plain: boolean } | { unknown: { charge: RefundedCharge; target: AsaasRefundTarget } };
+type Claimed = { refundId: string; charge: RefundedCharge; target: AsaasRefundTarget; plain: boolean } | { unknown: { charge: RefundedCharge; target: AsaasRefundTarget; plain: boolean } };
 
 const refundError = (errorCode: RefundCode, message: string, details?: object) => ({ errorCode, message, ...(details ? { details } : {}) });
 const conflict = (code: RefundCode, message: string, details?: object) => new ConflictException(refundError(code, message, details));
@@ -79,8 +79,7 @@ export class OrderRefunds {
 
     let read: AsaasRefundsRead;
     try {
-      // A stray payment keeps no row to say whether it is a plan: Asaas is asked, and a plan is refunded as one.
-      if (!claimed.plain) claimed.target.installmentId = (await this.charges.read(storeId, charge.providerId))?.installmentId ?? null;
+      await this.aim(storeId, claimed);
       read = await this.charges.refund(storeId, claimed.target, asked.amountCents, asked.reason);
     } catch (error) {
       const failure = await this.failed(error, storeId, orderId, claimed);
@@ -143,7 +142,7 @@ export class OrderRefunds {
       const now = new Date();
       const asking = await tx.orderRefund.findFirst({ where: { providerId, status: 'REQUESTED' } });
       if (asking?.claimedUntil && asking.claimedUntil > now) throw conflict('REFUND_IN_PROGRESS', 'Another refund of this payment is being asked of Asaas');
-      if (asking) return { unknown: { charge, target } };
+      if (asking) return { unknown: { charge, target, plain: row !== undefined } };
 
       const refundableCents = await refundableOf(tx, charge);
       // Before anything else: a screen that shows another amount as left is told to read again, whatever it asked.
@@ -163,9 +162,11 @@ export class OrderRefunds {
    * that reading nothing is asked: a second refund on top of one that may exist is the one thing
    * this must not do.
    */
-  private async settleUnknown(storeId: string, orderId: string, { charge, target }: { charge: RefundedCharge; target: AsaasRefundTarget }): Promise<void> {
+  private async settleUnknown(storeId: string, orderId: string, unknown: { charge: RefundedCharge; target: AsaasRefundTarget; plain: boolean }): Promise<void> {
+    const { charge, target } = unknown;
     let read: AsaasRefundsRead | null;
     try {
+      await this.aim(storeId, unknown);
       read = await this.charges.refundsOf(storeId, target);
     } catch (error) {
       this.logger.warn({ storeId, orderId, reason: reasonOf(error) }, 'Could not read a charge whose refund nobody knows the end of');
@@ -177,6 +178,15 @@ export class OrderRefunds {
       await settleRefundMoney(tx, charge.providerId, now);
     });
     await this.told(storeId, orderId);
+  }
+
+  /**
+   * A stray payment keeps no row to say whether it is an instalment plan: Asaas is asked, so a plan
+   * is refunded — and read — as the one thing it is, never by its first instalment alone.
+   */
+  private async aim(storeId: string, aimed: { charge: RefundedCharge; target: AsaasRefundTarget; plain: boolean }): Promise<void> {
+    if (aimed.plain) return;
+    aimed.target.installmentId = (await this.charges.read(storeId, aimed.charge.providerId))?.installmentId ?? null;
   }
 
   /** What a failed asking leaves, and how it is told to the shop: a stable code, and Asaas's own words where it gave a reason. Null when the refund was made after all. */

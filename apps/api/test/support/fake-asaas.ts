@@ -56,6 +56,8 @@ export class FakeAsaas extends AsaasClient {
   readonly keeping: Keeping[] = [];
   /** Thrown by every call that keeps the webhook or reads the account, while set. */
   keyError: unknown = null;
+  /** Whether the listing of an order's charges carries their refunds: the reference does not say, so both are stood. A read by id always does. */
+  listsRefunds = true;
   /** When a Pix code ends; null leaves it to the charge's due day. */
   pixExpiresAt: Date | null = null;
   private readonly failures = new Map<Call, unknown[]>();
@@ -73,6 +75,7 @@ export class FakeAsaas extends AsaasClient {
     this.keyError = null;
     this.accountInfo = { name: 'Lessari', document: '11222333000181' };
     this.pixExpiresAt = null;
+    this.listsRefunds = true;
     this.failures.clear();
     this.hooks.clear();
   }
@@ -168,7 +171,7 @@ export class FakeAsaas extends AsaasClient {
 
   async charges(_config: AsaasConfig, _apiKey: string, externalReference: string): Promise<AsaasCharge[]> {
     await this.enter('charges');
-    return this.standing.filter((payment) => payment.externalReference === externalReference).map(copyOf);
+    return this.standing.filter((payment) => payment.externalReference === externalReference).map((payment) => (this.listsRefunds ? copyOf(payment) : { ...payment, refunds: [] }));
   }
 
   async charge(_config: AsaasConfig, _apiKey: string, id: string): Promise<AsaasCharge | null> {
