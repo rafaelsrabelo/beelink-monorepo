@@ -10,7 +10,7 @@ import { PageRules } from './page.rules.js';
 import { PageService } from './page.service.js';
 import { LandingReadService } from './landing-read.service.js';
 import { PagesController, PublicLandingsController } from './pages.controller.js';
-import { PageTemplatesController } from './page-templates.controller.js';
+import { OpeningTemplatesController, PageTemplatesController } from './page-templates.controller.js';
 import { PageTemplateApplyService } from './page-template-apply.service.js';
 import { PageTemplatesService } from './page-templates.service.js';
 import { PageVersionsController } from './page-versions.controller.js';
@@ -22,7 +22,7 @@ import { StoresModule } from '../stores/stores.module.js';
 
 @Module({
   imports: [StoresModule],
-  controllers: [SectionsController, ComponentsController, PagesController, PageVersionsController, PageTemplatesController, PublicLandingsController],
+  controllers: [SectionsController, ComponentsController, PagesController, PageVersionsController, PageTemplatesController, OpeningTemplatesController, PublicLandingsController],
   providers: [PageService, PageComponentsService, PageComponentMovesService, PagesService, PageVersionsService, PageTemplatesService, PageTemplateApplyService, LandingReadService, PageRules, ShowcaseRules, FeaturedRules],
 })
 export class PageModule {}

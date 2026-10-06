@@ -961,6 +961,25 @@ export const en: UiMessages = {
       previewOf: "Preview of {name}",
       back: "Back to the templates",
       apply: "Use this template",
+      applyNeedsProduct: "Pick a product to use this template.",
+      applyUnavailable: "This template cannot be applied from here yet.",
+    },
+    templateApply: {
+      title: "Use the {name} template?",
+      replaces: "Everything in the draft of {page} will be replaced by this template.",
+      shopUnchanged: "The published shop stays as it is until you publish.",
+      unpublishedLost: "The changes you have not published on this page will be lost.",
+      cancel: "Cancel",
+      confirm: "Use template",
+      applying: "Applying…",
+      failed: "The template could not be applied. Try again.",
+    },
+    templateApplied: {
+      applied: "The {name} template is now in the draft. The shop only changes when you publish.",
+      problemsTitle: "Before you publish, check:",
+      checking: "Checking the page…",
+      publish: "Publish",
+      dismiss: "Dismiss the notice",
     },
     gallery: {
       title: "Add a section",
@@ -2311,6 +2330,16 @@ export const en: UiMessages = {
       stepDone: "done",
       submit: "Create shop",
       submitting: "Creating…",
+      openingPage: {
+        heading: "Home page",
+        hint: "Your shop opens with the default page unless you pick a template. You can change it later, in design mode.",
+        choose: "Pick another template (optional)",
+        legend: "Home page template",
+        defaultTitle: "Default page",
+        defaultDescription: "The shop's benefits and a showcase of every product.",
+        emptyShopNote:
+          "A new shop has no products yet: the template opens with what there is to show now. Once you have added products, apply the template again in design mode to fill it in.",
+      },
     },
     image: {
       dropCta: "Click or drag the image here",

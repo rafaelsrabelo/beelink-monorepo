@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 // App
 import { GET as availability } from "./availability/route"
+import { POST as applyTemplate } from "./[pageId]/apply-template/route"
 import { GET as problems } from "./[pageId]/problems/route"
 import { POST as publish } from "./[pageId]/publish/route"
 import { POST as restore } from "./[pageId]/versions/[versionId]/restore/route"
@@ -101,6 +102,48 @@ describe("/api/stores/[slug]/pages", () => {
     expect(spy.mock.calls[0]?.[0]).toBe(`http://api.test/api/stores/${SLUG}/pages/${PAGE}/versions/${VERSION}/restore`)
     expect((spy.mock.calls[0]?.[1]?.headers as Record<string, string>)["x-page-revision"]).toBe("4")
     expect(revalidateStore).not.toHaveBeenCalled()
+  })
+
+  // Applying a model does not publish either: only the draft changed.
+  it("applies a model to the draft with the revision the editor read, and leaves the shop's cache alone", async () => {
+    const spy = answer(200, { revision: 5, sections: [] })
+    const PRODUCT = "0199e000-0000-7000-8000-000000000001"
+    const withRevision = request(`/${PAGE}/apply-template`, "POST", { template: "lancamento", productId: PRODUCT })
+    withRevision.headers.set("x-page-revision", "4")
+
+    const response = await applyTemplate(withRevision, { params: Promise.resolve({ slug: SLUG, pageId: PAGE }) })
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ revision: 5, sections: [] })
+    expect(spy.mock.calls[0]?.[0]).toBe(`http://api.test/api/stores/${SLUG}/pages/${PAGE}/apply-template`)
+    const sent = spy.mock.calls[0]?.[1]
+    expect(sent?.method).toBe("POST")
+    expect(JSON.parse(String(sent?.body))).toEqual({ template: "lancamento", productId: PRODUCT })
+    expect((sent?.headers as Record<string, string>)["x-page-revision"]).toBe("4")
+    expect((sent?.headers as Record<string, string>).authorization).toBe("Bearer access-token")
+    expect(revalidateStore).not.toHaveBeenCalled()
+  })
+
+  it("hands back a refused model as the API answered it: a stale draft, a product of another shop", async () => {
+    answer(409, { statusCode: 409, errorCode: "PAGE_DRAFT_STALE", message: "Outra aba" })
+    const stale = await applyTemplate(request(`/${PAGE}/apply-template`, "POST", { template: "ofertas" }), {
+      params: Promise.resolve({ slug: SLUG, pageId: PAGE }),
+    })
+
+    expect(stale.status).toBe(409)
+    expect(await stale.json()).toMatchObject({ errorCode: "PAGE_DRAFT_STALE" })
+    expect(revalidateStore).not.toHaveBeenCalled()
+  })
+
+  it("refuses to apply a model asked for from another site", async () => {
+    const spy = answer(200, {})
+
+    const response = await applyTemplate(request(`/${PAGE}/apply-template`, "POST", { template: "ofertas" }, "https://evil.example"), {
+      params: Promise.resolve({ slug: SLUG, pageId: PAGE }),
+    })
+
+    expect(response.status).toBe(403)
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it("reads the history and the problems of one page", async () => {

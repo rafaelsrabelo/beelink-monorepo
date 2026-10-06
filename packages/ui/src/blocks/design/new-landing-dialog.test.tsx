@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest"
 
 // Block
 import { expectNoA11yViolations } from "../../test/a11y"
-import { LANDING_TEMPLATES } from "./landing-template-picker"
+import { SHOP_LANDINGS } from "./landing-template.fixtures"
 import { addressOf, emptyNewLanding, NewLandingDialog, type NewLandingDialogProps, type NewLandingValue } from "./new-landing-dialog"
 
 const products = [
@@ -27,7 +27,7 @@ function Harness({ initial, onValue, ...props }: Partial<NewLandingDialogProps> 
       }}
       addressPrefix="/mutante/lp/"
       addressState="idle"
-      templates={LANDING_TEMPLATES}
+      templates={SHOP_LANDINGS}
       products={products}
       productsState="ready"
       onSubmit={vi.fn()}
@@ -77,6 +77,31 @@ describe("NewLandingDialog", () => {
 
     expect(screen.getByRole("button", { name: "Criar página" })).toBeDisabled()
     expect(screen.getByRole("alert")).toHaveTextContent("Já existe uma página com esse endereço")
+  })
+
+  // Which template asks for a product is the catalogue's to say, not this dialog's.
+  it("asks for a product only where the list says the template needs one", () => {
+    const { rerender } = render(<Harness initial={{ ...emptyNewLanding("colecao"), title: "Verão" }} templates={[{ id: "colecao", needsProduct: false }]} />)
+    expect(screen.queryByLabelText("Produto principal")).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Criar página" })).toBeEnabled()
+
+    rerender(<Harness initial={{ ...emptyNewLanding("colecao"), title: "Verão" }} templates={[{ id: "colecao", needsProduct: true }]} />)
+    expect(screen.getByLabelText("Produto principal")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Criar página" })).toBeDisabled()
+  })
+
+  it("creates nothing while the templates are on their way, could not be read, or none is chosen", async () => {
+    const filled = { ...emptyNewLanding("em-branco"), title: "Ofertas" }
+    const onRetryTemplates = vi.fn()
+    const { rerender } = render(<Harness initial={filled} templates={[]} templatesState="loading" />)
+    expect(screen.getByRole("status")).toHaveTextContent("Carregando os modelos")
+    expect(screen.getByRole("button", { name: "Criar página" })).toBeDisabled()
+
+    rerender(<Harness initial={filled} templates={[]} templatesState="failed" onRetryTemplates={onRetryTemplates} />)
+    expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar os modelos.")
+    expect(screen.getByRole("button", { name: "Criar página" })).toBeDisabled()
+    await userEvent.click(screen.getByRole("button", { name: "Tentar de novo" }))
+    expect(onRetryTemplates).toHaveBeenCalledTimes(1)
   })
 
   it("derives the address the API would, cut to its column", () => {

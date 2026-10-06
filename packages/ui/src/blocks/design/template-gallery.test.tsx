@@ -250,7 +250,7 @@ describe("TemplateGallery — the list's own states", () => {
   })
 })
 
-describe("TemplateGallery — applying, which the screen does not wire yet", () => {
+describe("TemplateGallery — applying", () => {
   it("offers no way to apply without `onApply`", () => {
     gallery({ selectedId: "ofertas" })
 
@@ -266,6 +266,16 @@ describe("TemplateGallery — applying, which the screen does not wire yet", () 
 
     rerender(<TemplateGallery {...props} applying />)
     expect(screen.getByRole("button", { name: "Usar este modelo" })).toBeDisabled()
+  })
+
+  it("does not apply a model that still waits for its product, and says what it waits for", async () => {
+    const onApply = vi.fn()
+    gallery({ templates: LANDING_TEMPLATES, selectedId: "lancamento", onApply, applyBlocked: "Escolha um produto para usar este modelo." })
+
+    expect(screen.getByRole("button", { name: "Usar este modelo" })).toBeDisabled()
+    expect(screen.getByText("Escolha um produto para usar este modelo.")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Usar este modelo" }))
+    expect(onApply).not.toHaveBeenCalled()
   })
 })
 

@@ -16,6 +16,7 @@ import { ptBR as web } from "@/locales/pt-BR"
 import { useDesignPages } from "@/stores/design-pages"
 import { PageTemplates } from "./page-templates"
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }), useSearchParams: () => new URLSearchParams() }))
 // next/font runs only in Next's compiler; the preview needs the class and the variable, not the font.
 vi.mock("@/components/storefront/shop-font", () => ({ figtree: { variable: "font-figtree" }, shopFontStyle: {} }))
 // The shop's header and footer are the storefront's own, tested there; here they would only need a whole shop.
@@ -61,8 +62,10 @@ interface Answers {
 function stubApi({ models = HOME_MODELS, refused = {} }: Answers = {}): string[] {
   const calls: string[] = []
   vi.stubGlobal("fetch", (path: string) => {
-    calls.push(path)
     const url = new URL(path, "http://localhost")
+    // The draft's read is the editor's own, shared with the bar: answered, and not counted as the gallery's.
+    if (url.pathname.endsWith("/draft")) return Promise.resolve(new Response(JSON.stringify({ page: HOME, revision: 1, hasUnpublishedChanges: false, published: null, sections: [] })))
+    calls.push(path)
     const preview = /page-templates\/([^/]+)\/preview/.exec(url.pathname)
 
     if (preview) {
@@ -88,7 +91,16 @@ function gallery(page: StorePage = HOME) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={client}>
-      <PageTemplates store={store} categories={[]} colors={colors} year={2026} page={page} messages={ptBR} web={web} />
+      <PageTemplates
+        store={store}
+        categories={[]}
+        colors={colors}
+        year={2026}
+        page={page}
+        draft={{ publish: (then) => then?.(), saving: false }}
+        messages={ptBR}
+        web={web}
+      />
     </QueryClientProvider>,
   )
 }
@@ -139,7 +151,7 @@ describe("PageTemplates", () => {
     expect(calls.some((call) => call.includes("/products"))).toBe(false)
   })
 
-  it("shows the chosen model as the whole page, from the request its card already made, and applies nothing", async () => {
+  it("shows the chosen model as the whole page, from the request its card already made, and applies nothing by it", async () => {
     const calls = stubApi()
     gallery()
     open()
@@ -150,8 +162,8 @@ describe("PageTemplates", () => {
     const region = screen.getByRole("region", { name: "Prévia de Ofertas" })
     expect(within(within(region).getByTestId("whole-page")).getByText("Modelo ofertas")).toBeInTheDocument()
     expect(previewsAsked(calls).filter((call) => call.includes("/ofertas/"))).toHaveLength(1)
-    // Choosing only shows: the button that applies is the next ticket's.
-    expect(screen.queryByRole("button", { name: "Usar este modelo" })).not.toBeInTheDocument()
+    // Choosing only shows: applying is its own button, and a question after it (`page-templates-apply.test.tsx`).
+    expect(screen.getByRole("button", { name: "Usar este modelo" })).toBeEnabled()
     expect(calls.some((call) => call.includes("apply-template"))).toBe(false)
   })
 

@@ -962,6 +962,25 @@ export const ptBR: UiMessages = {
       previewOf: "Prévia de {name}",
       back: "Voltar aos modelos",
       apply: "Usar este modelo",
+      applyNeedsProduct: "Escolha um produto para usar este modelo.",
+      applyUnavailable: "Este modelo ainda não pode ser aplicado por aqui.",
+    },
+    templateApply: {
+      title: "Usar o modelo {name}?",
+      replaces: "Tudo o que está no rascunho de {page} será substituído por este modelo.",
+      shopUnchanged: "A loja publicada continua igual até você publicar.",
+      unpublishedLost: "As alterações que você ainda não publicou nesta página serão perdidas.",
+      cancel: "Cancelar",
+      confirm: "Usar modelo",
+      applying: "Aplicando…",
+      failed: "Não foi possível aplicar o modelo. Tente de novo.",
+    },
+    templateApplied: {
+      applied: "Modelo {name} aplicado ao rascunho. A loja só muda quando você publicar.",
+      problemsTitle: "Antes de publicar, confira:",
+      checking: "Conferindo a página…",
+      publish: "Publicar",
+      dismiss: "Dispensar o aviso",
     },
     gallery: {
       title: "Adicionar seção",
@@ -2312,6 +2331,16 @@ export const ptBR: UiMessages = {
       stepDone: "concluído",
       submit: "Criar loja",
       submitting: "Criando…",
+      openingPage: {
+        heading: "Página inicial",
+        hint: "Sua loja abre com a página padrão, a não ser que você escolha um modelo. Dá para trocar depois, no modo design.",
+        choose: "Escolher outro modelo (opcional)",
+        legend: "Modelo da página inicial",
+        defaultTitle: "Página padrão",
+        defaultDescription: "As vantagens da loja e uma vitrine com todos os produtos.",
+        emptyShopNote:
+          "Uma loja nova ainda não tem produtos: o modelo abre com o que dá para mostrar agora. Depois de cadastrar produtos, aplique o modelo de novo pelo modo design para ele se completar.",
+      },
     },
     image: {
       dropCta: "Clique ou arraste a imagem aqui",
