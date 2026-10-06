@@ -144,3 +144,106 @@ palavra de rota nova, nenhum arquivo de rota novo. A página (servidor) lê o pe
 Webhook, reconciliação, cancelamento automático e o evento de tempo real (Q5). A etapa "Pagamento
 aprovado" nas etapas do pedido, o painel, o sino e o e-mail (Q6). Estorno (Q7). Pedido registrado
 pela loja no painel.
+
+## Acréscimos de 06/10/2026: o que mudou enquanto foi feito
+
+- **Nenhuma chamada nova ao Asaas.** Este ticket não acrescenta método à porta `AsaasClient`: a
+  leitura pública sai do banco (`AsaasAcceptance`), e a tela usa as duas rotas do Q3. Não houve
+  página da documentação do Asaas a conferir de novo além das do briefing.
+- **A regra do checkout ficou em três funções puras** (`lib/checkout-payment.ts`):
+  `checkoutPaymentOf` (o que se oferece), `heldPaymentOf` (a escolha presa ao que se oferece agora)
+  e `paymentPayloadOf` (como vai no pedido). `useCheckoutChoice` deixou de validar o pagamento: o
+  que a loja aceita depende do total, e o total é precificado a partir da escolha.
+- **Um pedido `OFFLINE` segue no fio como sempre**, sem `paymentChannel`: ausente é `OFFLINE`. Só o
+  `ONLINE` manda o canal, e as parcelas só quando são mais de uma.
+- **O envio do pedido saiu de `storefront-cart-live.tsx`** para `use-cart-order.ts` (a tela passaria
+  de 250 linhas): a aba do WhatsApp, o pedido e o caminho para a tela de pagamento.
+- **`StorefrontOrderSent` ganhou `payHref`:** entre o pedido existir e a navegação chegar, a tela diz
+  "Falta pagar" com a porta "Pagar agora". É a rede se a navegação não acontecer.
+- **A recusa de `OFFLINE` na loja que só recebe online passou para dentro da transação do pedido**
+  (`order-placement.ts`, `onlyIfNothingToPay`): só depois de precificar se sabe que o total é zero.
+  O código é o mesmo (`ORDER_PAYMENT_NOT_ACCEPTED`); muda a ordem em relação às recusas de estoque
+  e de cupom, que agora vêm antes.
+- **O CPF é um campo só para os dois motivos.** Com transportadora, ele aparece na entrega (como
+  no N6) e serve também ao pagamento; sem ela, aparece no pagamento quando a forma é online.
+- **A tela só desenha o que leu depois de abrir** (`isFetchedAfterMount`): a resposta guardada de
+  uma visita anterior pode ser a de um QR já pago. Até a primeira leitura, skeleton.
+- **Uma recusa do `POST` some quando a tela passa a ter uma cobrança a pagar** (ou um estado sem
+  cobrança a gerar): achado no navegador, com a frase de uma tentativa antiga sobre um Pix novo.
+- **`orderActionOf(status, payment)`** recebe o pagamento: "cancelar" some quando ele segura
+  dinheiro. `orderCancelRefusalOf` tem a frase de `ORDER_PAID`, para o pedido pago entre a página
+  ser desenhada e o clique.
+- **A página do pedido relê na metade da frequência da tela de pagamento** (10 s), e só enquanto o
+  rótulo é de espera.
+- **Os testes que seguram o relógio usam `shouldAdvanceTime`:** com o relógio totalmente parado, o
+  TanStack Query busca de novo e não avisa o observador. Vale para os próximos testes de intervalo.
+
+## Acréscimos de 06/10/2026: o que o navegador mostrou
+
+API na 3501 e web na 3500, loja `loja-q4` e cliente criados pelo fluxo normal (pela API, com a
+confirmação lida no Mailpit). A conexão `CONNECTED`, as formas (até 6x) e as cobranças foram gravadas
+à mão no banco `harness_asaas`. Capturas em `.claude/worktrees/pagamentos-pr/shots-205/`.
+
+| O quê | Resultado |
+|---|---|
+| Checkout com "Pagar agora" (Pix e cartão) ao lado das formas da loja, 1280 e 390 px | como desenhado, sem rolagem lateral |
+| Cartão: 1x a 6x de R$ 120,00, cada parcela com o valor | `1x de R$ 120,00 (à vista)` … `6x de R$ 20,00 sem juros` |
+| CPF pedido ao escolher online (cadastro sem CPF); incompleto não envia | "Para pagar online, informe um CPF válido, com 11 dígitos." |
+| Fechar pedido `ONLINE` de verdade | pedido 1 criado, nenhuma aba de WhatsApp, navegador em `…/pedidos/1?pagamento=1`, tela "O pagamento ainda não foi gerado" |
+| "Gerar pagamento" com a chave gravada à mão | a API responde `500` (o cofre não abre um valor que não selou) e a tela diz "Não foi possível gerar o pagamento agora. Tente de novo." |
+| Pix pendente com QR de mentira | QR, copia e cola, "Copiar código" copia (lido da área de transferência), "Vale até", 2 leituras em 11 s; relê ao voltar o foco sem recarregar |
+| Status mudado para `RECEIVED` com a tela aberta | "Pagamento aprovado" em até 5 s, e 4 s depois o navegador está no pedido, que diz "Pagamento aprovado" e não tem "Cancelar pedido" |
+| Página do pedido aberta e status mudado para `CONFIRMED` | virou "Pagamento aprovado" sozinha em 9 s (intervalo de 10 s) |
+| Pix vencido | "Este Pix venceu" com "Gerar novo Pix"; nenhuma leitura em 7 s; Meus pedidos diz "Pagamento vencido" com "Pagar agora" |
+| Cartão pendente em 3x | valor, "3x de R$ 40,00 sem juros", link com `target="_blank"` e `rel="noopener noreferrer"`; o pedido diz "Pagamento online: Cartão de crédito em 3x" |
+| Frete a combinar | checkout avisa "Você paga depois que a loja informar o frete"; pedido 2 criado; tela "Aguardando a loja informar o frete", sem botão; o pedido diz "Pagamento liberado quando a loja informar o frete" |
+| Total fechado de R$ 3,00 | Pix e cartão desligados, "O pagamento online vale para pedidos a partir de R$ 5,00." |
+| Cancelar um pedido pago por baixo do diálogo aberto | `409 ORDER_PAID`, "Este pedido já foi pago, e por isso não pode ser cancelado por aqui. Fale com a loja." |
+| `?pagamento=1` num pedido `OFFLINE` | volta para o pedido, que diz "Pagamento combinado com a loja" |
+| `?pagamento=1` num pedido cancelado | "Este pedido foi cancelado" |
+
+**O que não deu para exercitar:**
+
+- **Nada com o Asaas de verdade:** não há chave de sandbox. Nenhuma cobrança foi criada, nenhum QR
+  real foi lido, a fatura hospedada não foi aberta, e "Gerar novo Pix" não chegou a criar um Pix: o
+  caminho feliz do `POST` está nos testes (com o handler simulado) e no e2e do Q3 (com o Asaas falso).
+- **As recusas `PAYMENT_*` vindas da API de verdade:** com a chave gravada à mão a API responde `500`
+  antes de qualquer uma. Cada frase está nos testes de `OrderPaymentLive` e de
+  `order-payment-refusal`.
+- **A loja que só recebe online e o pedido de total zero, no navegador:** a troca de `offline` pelo
+  banco não derruba o cache da vitrine, e a troca pelo painel exige conectar de verdade. Os dois
+  estão nos testes da tela do carrinho e no e2e da API.
+- **O painel derrubando o cache ao conectar, desconectar e salvar:** o painel não conecta sem chave.
+  Está nos testes dos dois handlers.
+- **O evento de tempo real:** não existe até o Q5.
+- **O `500` da chave gravada à mão não é um caminho de produção:** uma linha de `store_integrations`
+  só nasce selada pelo cofre.
+
+## Para os próximos tickets
+
+### Q5 (BEELINK-206)
+
+- **O evento de pagamento encaixa em `shopperReadOf`** (`apps/web/src/services/realtime/realtime-invalidation.ts`):
+  um `case` novo que devolve `orderPaymentKeys.shop(slug)` e `page: true`. A tela de pagamento e a
+  página do pedido seguem sozinhas: a primeira relê a consulta, a segunda é redesenhada. O intervalo
+  (`PAYMENT_POLL_MS`) pode ficar mais lento depois disso, como rede.
+- **`NEEDS_RECONNECT` por um `401` não derruba o cache da vitrine:** por até um minuto o checkout
+  oferece online e o `place` recusa com `ORDER_PAYMENT_NOT_ACCEPTED`. Se o webhook passar a marcar a
+  conexão, o mesmo vale. Um `revalidate` disparado pela API (não existe esse caminho hoje) fecharia.
+- **O cancelamento automático em 3 dias** deve aparecer na tela como hoje aparece um pedido
+  cancelado: nada a fazer no web.
+- **O QR não tem margem branca própria** na tela: o PNG do Asaas, pela documentação, já vem com ela.
+  Conferir com um QR de verdade, lendo com o app de um banco, no escuro da paleta de uma loja.
+
+### Q6 (BEELINK-207)
+
+- **A etapa "Pagamento aprovado"** entra em `lib/order-steps.ts`; o rótulo que este ticket põe na
+  caixa de pagamento e no cartão vem de `lib/order-payment-label.ts`, e as duas coisas devem dizer
+  a mesma palavra.
+- **O comprovante** (`?comprovante=1`) de um pedido online diz só "Pagamento online: Pix": não diz se
+  foi pago.
+
+### Q7 (BEELINK-208)
+
+- **"Pagamento estornado" e "estornado em parte"** já têm rótulo e tela (`refunded`), sem valores.
+- **Cancelar um pedido pago** hoje não é oferecido ao cliente (`orderActionOf`) e a recusa tem frase.
