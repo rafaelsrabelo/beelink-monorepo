@@ -287,6 +287,7 @@ export const en: UiMessages = {
     checkoutPayerDocumentIssue: "To pay online, enter a valid CPF, with 11 digits.",
     checkoutPayOnline: "Place the order and pay",
     checkoutBelowMinimumGone: "The amount became too low to pay online, or for that many instalments. Choose again.",
+    checkoutSentPayHint: "It is still to be paid: we are opening the payment.",
     paymentTitle: "Payment of order #{number}",
     paymentBack: "See the order",
     paymentAmount: "Amount",

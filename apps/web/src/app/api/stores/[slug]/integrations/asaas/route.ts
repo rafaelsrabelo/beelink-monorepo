@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server"
 
 // App
 import { forwardSignedIn, readJsonBody, refuseCrossOrigin } from "@/lib/bff"
+import { revalidateStore } from "@/lib/revalidate"
 
 const pathOf = (slug: string) => `/stores/${encodeURIComponent(slug)}/integrations/asaas`
 
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest, context: RouteContext<"/api/sto
 
   const { slug } = await context.params
   const { status, payload } = await forwardSignedIn(request, { path: pathOf(slug), method: "POST", body: (await readJsonBody(request)) ?? {} })
+  // The checkout offers Pix and card from this moment (BEELINK-205): its cached ways are dropped.
+  if (status >= 200 && status < 300) revalidateStore(slug)
   return NextResponse.json(payload, { status })
 }
 
@@ -37,5 +40,7 @@ export async function DELETE(request: NextRequest, context: RouteContext<"/api/s
 
   const { slug } = await context.params
   const { status, payload } = await forwardSignedIn(request, { path: pathOf(slug), method: "DELETE" })
+  // A checkout left offering what the shop can no longer charge would have every online order refused.
+  if (status >= 200 && status < 300) revalidateStore(slug)
   return NextResponse.json(status === 204 ? {} : payload, { status: status === 204 ? 200 : status })
 }

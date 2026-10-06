@@ -32,7 +32,7 @@ import { customerOrdersAt, customerReorderAt } from "@/lib/customer-orders"
 import { reorderNoticeOf } from "@/lib/reorder-view"
 import { ADDRESS_KEY, checkoutAddressesOf, checkoutAddressIdOf, DELIVER_TO_KEY, NEW_ADDRESS } from "@/lib/saved-address"
 import { shopperAt } from "@/lib/shopper"
-import { catalogueAt } from "@/lib/storefront-data"
+import { catalogueAt, paymentOptionsAt } from "@/lib/storefront-data"
 import { BACK_KEY, orderNumberOf, paramOf, REORDER_FAILED_KEY, REORDER_TRIMMED_KEY, REORDERED_KEY, storefrontRoutes } from "@/lib/storefront-routes"
 import { canonicalOf, headingOf, isShelf, listingAskOf, placeOf } from "@/lib/storefront-section"
 import { filterCountOf } from "@/lib/storefront-filters"
@@ -88,7 +88,8 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
   // Asked once, awaited twice: by the band's count and by the grid, each under its own boundary.
   const catalogue = isShelf(place) ? catalogueAt(store.slug, listingAskOf(place)) : undefined
   // The basket: its lines from the cookie, priced by the catalogue, so the HTML already has them.
-  const [cart, shopper] = await Promise.all([place.section.kind === "cart" ? cartAt(store.slug) : null, shopperAt(store.slug)])
+  // With it, how the shop's checkout is paid (BEELINK-205): what it charges online is read by the cart alone.
+  const [cart, shopper, paymentOptions] = await Promise.all([place.section.kind === "cart" ? cartAt(store.slug) : null, shopperAt(store.slug), place.section.kind === "cart" ? paymentOptionsAt(store.slug) : undefined])
   // And its totals, priced by the API as the order would be (BEELINK-194) and for whoever is reading
   // (BEELINK-245): the promotions' rows are in the HTML too — and to the address a delivery would go
   // to (BEELINK-178), so the fee is as well.
@@ -166,7 +167,9 @@ export default async function StorefrontSectionPage({ params, searchParams }: Pa
           goneOnArrival={cart.gone > 0}
           shopName={store.name}
           whatsapp={store.socialNetworks.whatsapp?.replace(/\D/g, "") || null}
+          routeWords={store.routeWords}
           paymentMethods={store.paymentMethods}
+          paymentOptions={paymentOptions}
           shopper={shopper}
           identityHrefs={{
             signInHref: routes.signIn({ back: routes.cart() }),

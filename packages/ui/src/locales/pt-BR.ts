@@ -287,6 +287,7 @@ export const ptBR: UiMessages = {
     checkoutPayerDocumentIssue: "Para pagar online, informe um CPF válido, com 11 dígitos.",
     checkoutPayOnline: "Fechar pedido e pagar",
     checkoutBelowMinimumGone: "O valor ficou baixo demais para pagar online, ou para tantas parcelas. Escolha de novo.",
+    checkoutSentPayHint: "Falta pagar: estamos abrindo o pagamento.",
     paymentTitle: "Pagamento do pedido #{number}",
     paymentBack: "Ver pedido",
     paymentAmount: "Valor",

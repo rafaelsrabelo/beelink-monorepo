@@ -388,6 +388,8 @@ export interface UiMessages {
     checkoutPayerDocumentIssue: string
     checkoutPayOnline: string
     checkoutBelowMinimumGone: string
+    /** After an order charged online is placed: its payment is the next screen (BEELINK-205). */
+    checkoutSentPayHint: string
     /** The payment screen of one order (BEELINK-205). `{number}`. */
     paymentTitle: string
     paymentBack: string
