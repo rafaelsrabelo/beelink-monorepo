@@ -2,6 +2,7 @@
 import type { ComponentProps } from "react"
 
 // UI
+import { isOpeningTemplate } from "@harness-monorepo/ui/blocks/store/store-opening-template"
 import type { StoreCreateForm } from "@harness-monorepo/ui/blocks/store/store-create-form"
 import type { StoreSettingsForm } from "@harness-monorepo/ui/blocks/store/store-settings-form"
 
@@ -160,6 +161,21 @@ export interface StoreCreateInput {
   social: StoreSocialValues
   address: StoreAddressValues
   colors?: StoreColors
+  /** The model a shop's home opens with, or "" — or absent — for its default page. */
+  homeTemplate?: string
+}
+
+/**
+ * The model a new store opens with. A site opens from a template, and the first is the only one
+ * yet. A shop sends the home model it picked — and nothing at all when it picked none, which is what
+ * opens the default page: the key is absent, not empty. A model picked before the type was switched
+ * to a site is not sent.
+ */
+function openingTemplateOf(input: Pick<StoreCreateInput, "identity" | "homeTemplate">): Pick<CreateStorePayload, "template"> {
+  if (input.identity.type === "INSTITUTIONAL") return { template: "servicos-b2b" }
+
+  const picked = input.homeTemplate ?? ""
+  return isOpeningTemplate(picked) ? { template: picked } : {}
 }
 
 /**
@@ -176,8 +192,7 @@ export function toCreatePayload(input: StoreCreateInput): CreateStorePayload {
     name: input.identity.name.trim(),
     slug: input.slug,
     type: input.identity.type,
-    // A site opens from a template; the first is the only one yet. A shop opens with its own page.
-    ...(input.identity.type === "INSTITUTIONAL" ? { template: "servicos-b2b" as const } : {}),
+    ...openingTemplateOf(input),
     description: orNull(input.identity.description),
     logoUrl: orNull(input.identity.logoUrl),
     categoryId: orNull(input.identity.categoryId),

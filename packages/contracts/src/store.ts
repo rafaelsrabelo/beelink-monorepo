@@ -2,7 +2,7 @@ import type { PublicCashback } from "./cashback.js";
 import type { PublicPageLink } from "./store-pages.js";
 import type { PublicSection } from "./page.js";
 import type { StorefrontRouteWords } from "./catalog.js";
-import type { PageTemplateId } from "./page.js";
+import type { OpeningTemplateId } from "./page-templates.js";
 
 /**
  * How a shop sells — not what it sells. The storefront's wording follows it, and from phase 2 so
@@ -260,10 +260,11 @@ export interface CreateStorePayload {
   slug: string;
   type: StoreType;
   /**
-   * The arrangement a site opens with. Read only when `type` is `INSTITUTIONAL`; a shop opens with
-   * its own page. Absent picks the first template.
+   * The model the store's home opens with: a site's model, or one of a shop's home models, published
+   * with the store. Absent, a site opens with its first model and a shop with its default page — and
+   * so does a store sent a model that is not for its type (`OpeningTemplateId`).
    */
-  template?: PageTemplateId;
+  template?: OpeningTemplateId;
   /** At most 2000 characters — the bound is stated once, on `PublicStore.description`. */
   description?: string | null;
   logoUrl?: string | null;

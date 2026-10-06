@@ -5,16 +5,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query"
 
 // Types
-import type { ApplyTemplatePayload, PageDraft, PagePreview, PageTemplateSummary } from "@harness-monorepo/contracts"
+import type { ApplyTemplatePayload, PageDraft, PageKind, PagePreview, PageTemplateSummary, StoreType } from "@harness-monorepo/contracts"
 
 // App
 import { sectionKeys } from "./page-hooks"
-import { applyTemplate, fetchPageTemplates, fetchTemplatePreview } from "./page-template-requests"
+import { applyTemplate, fetchNewPageTemplates, fetchOpeningTemplates, fetchPageTemplates, fetchTemplatePreview } from "./page-template-requests"
 
 /** Keys built from their inputs at call time, as `pageKeys` are (docs/ai-rules/state-and-data.md). */
 export const templateKeys = {
   all: ["page-templates"] as const,
   list: (slug: string, pageId: string) => [...templateKeys.all, slug, pageId] as const,
+  /** A page that does not exist yet, by its kind. Apart from `list`: a page's id is never the word "new". */
+  forNew: (slug: string, kind: PageKind) => [...templateKeys.all, slug, "new", kind] as const,
+  /** A store that does not exist yet, by what the create form has picked. */
+  opening: (storeType: StoreType, categoryId: string | null) => [...templateKeys.all, "opening", storeType, categoryId] as const,
   /** Everything the drawing depends on: the model, the page it would land on and the product it is about. */
   preview: (slug: string, pageId: string, templateId: string, productId: string | null) =>
     [...templateKeys.all, slug, pageId, "preview", templateId, productId] as const,
@@ -28,6 +32,29 @@ export function usePageTemplates(slug: string, pageId: string, enabled = true): 
     queryKey: templateKeys.list(slug, pageId),
     queryFn: () => fetchPageTemplates(slug, pageId),
     enabled: enabled && slug !== "" && pageId !== "",
+  })
+}
+
+/** What a new page of this kind may open with in this shop: the list "Nova landing" draws. */
+export function useNewPageTemplates(slug: string, kind: PageKind, enabled = true): UseQueryResult<PageTemplateSummary[], Error> {
+  return useQuery({
+    queryKey: templateKeys.forNew(slug, kind),
+    queryFn: () => fetchNewPageTemplates(slug, kind),
+    enabled: enabled && slug !== "",
+  })
+}
+
+/**
+ * What a store of this type may open its home with, ordered by the category picked — the create
+ * form's optional choice. The catalogue changes with a deploy, not with a keystroke: one answer per
+ * type and category is kept for the life of the form.
+ */
+export function useOpeningTemplates(storeType: StoreType, categoryId: string | null, enabled = true): UseQueryResult<PageTemplateSummary[], Error> {
+  return useQuery({
+    queryKey: templateKeys.opening(storeType, categoryId),
+    queryFn: () => fetchOpeningTemplates({ storeType, ...(categoryId ? { categoryId } : {}) }),
+    enabled,
+    staleTime: Infinity,
   })
 }
 

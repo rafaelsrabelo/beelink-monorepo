@@ -124,6 +124,9 @@ export function createStoreCreateSchema(messages: ValidationMessages) {
     address: createStoreAddressSchema(messages),
     social: createStoreSocialSchema(messages),
     colors: createStoreColorsSchema(messages),
+    // The model a shop's home opens with, or "" for its default page. An id, checked by the API:
+    // which models there are is its catalogue's to say, and this package holds no list of them.
+    homeTemplate: z.string(),
   })
     .superRefine((values, ctx) => requireWhatsappOnShop(values, ctx, messages))
 }
