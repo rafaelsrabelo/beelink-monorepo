@@ -110,6 +110,15 @@ gate "api/asaas-secret-in-asaas" \
   "['\"]ASAAS['\"]" \
   --exclude-dir=asaas --exclude='*.spec.ts'
 
+# A row of order_payments says whether a shop holds a customer's money. It is written in one folder,
+# by the door a fact from Asaas comes in by, so no other module can mark an order paid — or unpaid —
+# by a write of its own. Reading it is anyone's.
+gate "api/order-payments-in-payments" \
+  "Only src/modules/payments writes order_payments and order_stray_payments: a fact from Asaas comes in by applyCharge (apps/api/AGENTS.md rule 10, BEELINK-206)." \
+  "apps/api/src" \
+  "order(Stray)?Payment\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(" \
+  --exclude-dir=payments --exclude-dir=generated --exclude='*.spec.ts'
+
 gate "web/no-fetch-in-components" \
   "Components never call fetch — a service function plus a TanStack Query hook does, and packages/ui blocks take data through props (docs/ai-rules/state-and-data.md)." \
   "apps/web/src/components packages/ui/src" \
