@@ -267,7 +267,7 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
       expect(row!.paidAt).toBeInstanceOf(Date);
     });
 
-    it('keeps a refund and a chargeback as far as this ticket goes: refunded is said, a dispute leaves the money held', async () => {
+    it('leaves the money held through a dispute, and reads a charge Asaas calls refunded as all of it given back (BEELINK-208)', async () => {
       await shop.place();
       asaas.pay(charge().id, 'CONFIRMED');
       await deliver(eventOf('evt_1', 'PAYMENT_CONFIRMED', { id: charge().id }));
@@ -278,7 +278,9 @@ describe("a shop's Asaas webhook (BEELINK-206)", () => {
 
       asaas.pay(charge().id, 'REFUNDED');
       await deliver(eventOf('evt_3', 'PAYMENT_REFUNDED', { id: charge().id }));
-      expect(await shop.rows()).toMatchObject([{ status: 'REFUNDED', refundedCents: 0 }]);
+      // A dispute lost leaves no refund on Asaas's list: its word for the charge is enough.
+      expect(await shop.rows()).toMatchObject([{ status: 'REFUNDED', refundedCents: 5990, refundingCents: 0 }]);
+      expect(await prisma.orderRefund.findMany()).toMatchObject([{ origin: 'ASAAS', status: 'DONE', amountCents: 5990 }]);
     });
   });
 

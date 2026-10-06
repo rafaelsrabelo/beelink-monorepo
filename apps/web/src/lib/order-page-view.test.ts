@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 
 // Types
-import type { CustomerOrder } from "@harness-monorepo/contracts"
+import type { CustomerOrder, OrderRefund } from "@harness-monorepo/contracts"
 
 // UI
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
@@ -149,7 +149,7 @@ describe("an order's page, in the shopper's words", () => {
 
   /** BEELINK-207: the payment approved is a line of the history, where it fell, and the steps carry it. */
   it("tells of an online payment approved in the history, between the moves it fell among", () => {
-    const paid = { status: "RECEIVED", method: "PIX", installments: 1, amountCents: 9480, refundedCents: 0, expiresAt: null, paidAt: "2026-09-28T17:30:00.000Z" } as const
+    const paid = { status: "RECEIVED", method: "PIX", installments: 1, amountCents: 9480, refundedCents: 0, refundingCents: 0, refunds: [] as OrderRefund[], expiresAt: null, paidAt: "2026-09-28T17:30:00.000Z" } as const
     const online: CustomerOrder = { ...order, paymentChannel: "ONLINE", payment: paid }
 
     expect(orderHistoryOf(online, context).map((event) => [event.title, event.time])).toEqual([
@@ -167,10 +167,45 @@ describe("an order's page, in the shopper's words", () => {
     expect(orderStatusViewOf(order, context).steps).toHaveLength(5)
   })
 
+  /** BEELINK-208: bee-link's own cancellation says why, and every refund is told in the box and in the history. */
+  it("tells an order nobody paid in time as cancelled for want of payment", () => {
+    const unpaid = { ...order, status: "CANCELLED" as const, cancelledBy: "SYSTEM" as const, events: [order.events[0]!, { status: "CANCELLED" as const, at: "2026-10-01T18:00:00.000Z" }] }
+
+    expect(orderStatusViewOf(unpaid, context).detail).toBe("Cancelado por falta de pagamento")
+    expect(orderHistoryOf(unpaid, context)[0]).toMatchObject({ title: "Pedido cancelado", detail: "Por falta de pagamento" })
+  })
+
+  it("tells of each refund of the payment: in the box with what to expect, and in the history where it fell", () => {
+    const refunds: OrderRefund[] = [
+      { id: "r1", amountCents: 2000, status: "DONE", requestedAt: "2026-09-28T18:00:00.000Z", doneAt: "2026-09-28T18:00:05.000Z" },
+      { id: "r2", amountCents: 7480, status: "PROCESSING", requestedAt: "2026-09-30T12:00:00.000Z", doneAt: null },
+    ]
+    const card = { status: "PARTIALLY_REFUNDED", method: "CREDIT_CARD", installments: 1, amountCents: 9480, refundedCents: 2000, refundingCents: 7480, refunds, expiresAt: null, paidAt: "2026-09-28T17:30:00.000Z" } as const
+    const refunded: CustomerOrder = { ...order, paymentChannel: "ONLINE", paymentMethod: "CREDIT_CARD", payment: card }
+
+    const box = orderPaymentOf(refunded, context)
+    expect(box.status).toEqual({ label: "Estorno em processamento", tone: "stop" })
+    expect(box.refunds?.map((line) => line.replace(/\s/g, " "))).toEqual(["R$ 20,00 devolvidos em 28 de set. de 2026", "R$ 74,80 em processamento desde 30 de set. de 2026"])
+    expect(box.refundNote).toBe("No cartão, o estorno pode levar até 10 dias úteis para aparecer na fatura.")
+    expect(orderHistoryOf(refunded, context).map((event) => [event.title.replace(/\s/g, " "), event.detail])).toEqual([
+      ["Estorno de R$ 74,80", "Estorno em processamento"],
+      ["Em preparo", null],
+      ["Loja confirmou", null],
+      ["Estorno de R$ 20,00", null],
+      ["Pagamento aprovado", null],
+      ["Pedido feito", "Feito por você na loja"],
+    ])
+
+    // Concluded, on a Pix, or with none: nothing to expect, nothing to tell.
+    expect(orderPaymentOf({ ...refunded, payment: { ...card, status: "REFUNDED", refundingCents: 0, refunds: [refunds[0]!] } }, context).refundNote).toBeNull()
+    expect(orderPaymentOf({ ...order, paymentChannel: "ONLINE", payment: { ...card, method: "PIX", status: "RECEIVED", refundedCents: 0, refundingCents: 0, refunds: [] } }, context).refunds).toEqual([])
+    expect(orderPaymentOf(order, context).refunds).toEqual([])
+  })
+
   /** BEELINK-205: an order charged online says how, where the payment stands, and where it is paid. */
   it("says an online payment's way, its instalments and where it stands, and leads to the payment screen while it is owed", () => {
     const now = new Date("2026-10-06T15:00:00.000Z")
-    const charge = { status: "PENDING", method: "PIX", installments: 1, amountCents: 9480, refundedCents: 0, expiresAt: "2026-10-08T02:59:59.999Z", paidAt: null } as const
+    const charge = { status: "PENDING", method: "PIX", installments: 1, amountCents: 9480, refundedCents: 0, refundingCents: 0, refunds: [] as OrderRefund[], expiresAt: "2026-10-08T02:59:59.999Z", paidAt: null } as const
     const online: CustomerOrder = { ...order, status: "RECEIVED", paymentChannel: "ONLINE", payment: charge }
 
     expect(orderPaymentOf(online, context, now)).toMatchObject({ method: "Pagamento online: Pix", status: { label: "Aguardando pagamento", tone: "wait" }, payHref: "/loja/conta/pedidos/14?pagamento=1" })

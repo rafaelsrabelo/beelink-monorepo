@@ -97,24 +97,28 @@ describe("a conversation's lines", () => {
           { kind: "PAYMENT", id: "1", createdAt: at, readAt: null },
           { kind: "STATUS", id: "2", status: "CANCELLED", unpaid: true, cashbackCents: null, createdAt: at, readAt: null },
           { kind: "STATUS", id: "3", status: "CANCELLED", unpaid: false, cashbackCents: null, createdAt: at, readAt: null },
+          { kind: "REFUND", id: "4", amountCents: 1990, createdAt: at, readAt: null },
         ],
       },
       context,
     )
 
-    expect(lines.map((line) => [line.notice, line.mine, line.body])).toEqual([
+    expect(lines.map((line) => [line.notice, line.mine, line.body.replace(/\s/g, " ")])).toEqual([
       [true, false, "Pagamento aprovado."],
       [true, false, "Pedido cancelado: o pagamento não foi identificado dentro do prazo."],
       [true, false, "Pedido cancelado."],
-    ])
+      // BEELINK-208: money given back, with how much.
+      [true, false, "A loja estornou R$ 19,90 do pagamento."],
+    ].map(([notice, mine, body]) => [notice, mine, String(body).replace(/\s/g, " ")]))
     const rows = conversationRowsOf(
       [
         { order: { number: 18, status: "RECEIVED", fulfillment: "DELIVERY", open: true }, lastMessage: { kind: "PAYMENT", createdAt: at }, unread: 1 },
         { order: { number: 17, status: "CANCELLED", fulfillment: "DELIVERY", open: false }, lastMessage: { kind: "STATUS", status: "CANCELLED", unpaid: true, createdAt: at }, unread: 1 },
+        { order: { number: 16, status: "RECEIVED", fulfillment: "DELIVERY", open: true }, lastMessage: { kind: "REFUND", amountCents: 5990, createdAt: at }, unread: 1 },
       ],
       { routes, ...context },
     )
-    expect(rows.map((row) => row.preview)).toEqual(["Pagamento aprovado.", "Pedido cancelado: o pagamento não foi identificado dentro do prazo."])
+    expect(rows.map((row) => row.preview.replace(/\s/g, " "))).toEqual(["Pagamento aprovado.", "Pedido cancelado: o pagamento não foi identificado dentro do prazo.", "A loja estornou R$ 59,90 do pagamento."])
   })
 
   it("preview a move as its words, with no 'Você:'", () => {

@@ -8,6 +8,7 @@ import { methodOfPlan, type ChargePlan } from './charge-plan.js';
 import { nextCheckAfter } from './payment-checks.js';
 import { notePaymentApproved } from '../conversations/order-status-notice.js';
 import { DEAD_STATUSES, holdsMoney, isLive, statusAfter, statusSaidBy, wasPaid } from './payment-status.js';
+import { reconcileRefunds, settleRefundMoney, unrefundedOf } from './payment-refunds.js';
 import { endOfBrasiliaDay } from './payment-terms.js';
 import { LAST_ERROR_MAX_LENGTH } from './payments.constants.js';
 
@@ -30,6 +31,11 @@ type Tx = Prisma.TransactionClient;
  * talks to nobody: whatever must be removed at Asaas for the row to stand alone is `OrderPayments`'
  * to do first. This is also the one place a charge is known to have just been paid, whoever heard
  * it: what that owes the customer is written here (`tellPaid`), in the same transaction.
+ *
+ * Money given back comes in here too (BEELINK-208): the charge's refunds as Asaas adds them up are
+ * written on `order_refunds` (`reconcileRefunds`), and what the row says of them — how much went
+ * back, how much is on its way, `PARTIALLY_REFUNDED`, `REFUNDED` — is derived from those rows
+ * (`settleRefundMoney`), whether the refund was asked here or made at Asaas's own panel.
  */
 export async function applyCharge(tx: Tx, order: { id: string; storeId: string; method: OnlinePaymentMethod }, plan: ChargePlan, now: Date): Promise<OrderPaymentModel> {
   const known =
@@ -68,7 +74,11 @@ export async function applyCharge(tx: Tx, order: { id: string; storeId: string; 
         },
       });
   if (holdsMoney(status) && !(known && wasPaid(known.status))) await tellPaid(tx, order, now);
-  return row;
+  if (!paid || !row.providerId) return row;
+
+  if (plan.refunds) await reconcileRefunds(tx, { orderId: order.id, storeId: order.storeId, providerId: row.providerId, amountCents: row.amountCents }, plan.refunds, now);
+  await settleRefundMoney(tx, row.providerId, now);
+  return tx.orderPayment.findUniqueOrThrow({ where: { id: row.id } });
 }
 
 /**
@@ -115,13 +125,18 @@ function changedOf(known: OrderPaymentModel, plan: ChargePlan) {
   };
 }
 
-/** A payment the order did not ask for (BEELINK-206), kept once per charge: answers whether this is the first bee-link hears of it. */
+/**
+ * A payment the order did not ask for (BEELINK-206), kept once per charge: answers whether this is
+ * the first bee-link hears of it. Money the shop has already begun to give back whole — a paid order
+ * cancelled with its refund (BEELINK-208) — is not one: nothing is left for the shop to settle.
+ */
 export async function noteStray(
   tx: Tx,
   stray: { orderId: string; storeId: string; providerId: string; method: OnlinePaymentMethod; amountCents: number },
   reason: StrayPaymentReason,
   now: Date,
 ): Promise<boolean> {
+  if ((await unrefundedOf(tx, stray)) === 0) return false;
   const { count } = await tx.orderStrayPayment.createMany({ data: [{ ...stray, reason, paidAt: now }], skipDuplicates: true });
   return count > 0;
 }
@@ -151,15 +166,18 @@ export async function noteRefusal(tx: Tx, orderId: string, reason: string): Prom
 
 type Db = Pick<Tx, 'orderPayment'>;
 
+/** What the reconciliation asks about: a charge still to be paid, and a paid one with a refund on its way (BEELINK-208). */
+export const CHECKED = { OR: [{ status: { in: ['PENDING', 'OVERDUE'] } }, { refundingCents: { gt: 0 } }] } satisfies Prisma.OrderPaymentWhereInput;
+
 /**
- * A waiting charge about to be asked about by the reconciliation (BEELINK-206): counted, and its next
+ * A charge about to be asked about by the reconciliation (BEELINK-206): counted, and its next
  * turn pushed before Asaas answers — one that keeps failing waits longer too. Answers whether the
  * turn was this caller's to take.
  */
 export async function pushCheck(db: Db, row: { id: string; checks: number }, now: Date): Promise<boolean> {
   // Only while it is still due: of two processes on the same pass, one takes the turn and asks.
   const { count } = await db.orderPayment.updateMany({
-    where: { id: row.id, status: { in: ['PENDING', 'OVERDUE'] }, OR: [{ nextCheckAt: null }, { nextCheckAt: { lte: now } }] },
+    where: { id: row.id, AND: [CHECKED, { OR: [{ nextCheckAt: null }, { nextCheckAt: { lte: now } }] }] },
     data: { checks: { increment: 1 }, nextCheckAt: nextCheckAfter(row.checks + 1, now) },
   });
   return count > 0;
@@ -167,5 +185,5 @@ export async function pushCheck(db: Db, row: { id: string; checks: number }, now
 
 /** Asaas asked for time at a shop's account: none of the shop's waiting charges is due before it. */
 export async function restChecks(db: Db, storeId: string, until: Date): Promise<void> {
-  await db.orderPayment.updateMany({ where: { storeId, status: { in: ['PENDING', 'OVERDUE'] }, OR: [{ nextCheckAt: null }, { nextCheckAt: { lt: until } }] }, data: { nextCheckAt: until } });
+  await db.orderPayment.updateMany({ where: { storeId, AND: [CHECKED, { OR: [{ nextCheckAt: null }, { nextCheckAt: { lt: until } }] }] }, data: { nextCheckAt: until } });
 }

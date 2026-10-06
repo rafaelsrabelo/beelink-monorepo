@@ -186,7 +186,6 @@ export class OrderPayments implements OnModuleInit {
       const second = paidPlans.filter((plan) => plan !== paid);
       // Nothing waits beside money that arrived.
       if (paid && fitting) await this.removeOrPaid(storeId, fitting);
-      if (paid) this.logger.error({ storeId, orderId, chargeId: paid.id }, 'A paid charge stands on an order that was cancelled or changed');
       const kept = paid ?? fitting;
       const now = new Date();
       const strayed = paid !== null && order.status === 'CANCELLED' && holdsMoney(statusSaidBy(paid.status, null)) ? paid : null;
@@ -200,6 +199,8 @@ export class OrderPayments implements OnModuleInit {
         for (const plan of second) again = (await noteStray(tx, { orderId, storeId, providerId: plan.id, method: methodOfPlan(plan, method), amountCents: plan.totalCents }, 'ORDER_ALREADY_PAID', now)) || again;
         return first ? 'ORDER_CANCELLED' : again ? 'ORDER_ALREADY_PAID' : null;
       });
+      // Not of a paid order cancelled with its refund (BEELINK-208): that money is already on its way back.
+      if (paid && (stray || order.status !== 'CANCELLED')) this.logger.error({ storeId, orderId, chargeId: paid.id }, 'A paid charge stands on an order that was cancelled or changed');
       if (paid) await this.news.tell(storeId, orderId, stray);
     } catch (error) {
       const reason = reasonOf(error);

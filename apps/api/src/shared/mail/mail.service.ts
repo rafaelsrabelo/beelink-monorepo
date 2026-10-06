@@ -15,6 +15,7 @@ import { EMAIL_VERIFICATION_TTL_HOURS, PASSWORD_RESET_TTL_MINUTES } from '../../
 import { env } from '../config/env.js';
 import { cashbackExpiring, type CashbackExpiringContent } from './cashback-expiring.template.js';
 import { paymentApproved, type PaymentApprovedContent } from './payment-approved.template.js';
+import { paymentRefunded, type PaymentRefundedContent } from './payment-refunded.template.js';
 import { emailVerification, favoriteNotice, leadReceived, orderStatusChanged, passwordReset, type FavoriteNoticeContent, type OrderStatusContent } from './mail.templates.js';
 
 /** What a lead's e-mail needs beyond the lead: who to greet, and which site's panel to point at. */
@@ -83,6 +84,11 @@ export class MailService implements OnApplicationBootstrap {
   /** A customer's online payment was approved (BEELINK-207); answers whether it went, for its outbox. */
   async sendPaymentApproved(to: string, content: PaymentApprovedContent, url: string, settingsUrl: string): Promise<boolean> {
     return this.send(to, paymentApproved(content, url, settingsUrl), content.shopName);
+  }
+
+  /** Money of a customer's online payment was given back (BEELINK-208); answers whether it went, for its outbox. */
+  async sendPaymentRefunded(to: string, content: PaymentRefundedContent, url: string, settingsUrl: string): Promise<boolean> {
+    return this.send(to, paymentRefunded(content, url, settingsUrl), content.shopName);
   }
 
   /** A favourite got cheaper or came back (BEELINK-155); answers whether it went, for its outbox. */

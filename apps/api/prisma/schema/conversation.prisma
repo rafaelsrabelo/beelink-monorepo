@@ -12,6 +12,8 @@ enum OrderMessageNotice {
   PAYMENT_APPROVED
   /// On a CANCELLED notice: bee-link cancelled the order because nobody paid it in time.
   CANCELLED_UNPAID
+  /// Money of the order's payment was given back (BEELINK-208): `refundCents` says how much. No status.
+  PAYMENT_REFUNDED
 }
 
 /// The customer's conversation with the shop about one order (BEELINK-160). Born with the order when
@@ -57,6 +59,8 @@ model OrderMessage {
   /// On a delivery's notice, the cashback it made usable (BEELINK-239): told as it was then, like
   /// the status itself. Null on every other message.
   cashbackCents Int?
+  /// On a refund's notice (BEELINK-208), how much went back. Null on every other message.
+  refundCents   Int?
   createdAt DateTime     @default(now())
   /// When the other side read it; null while they have not.
   readAt    DateTime?

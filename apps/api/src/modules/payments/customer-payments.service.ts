@@ -37,14 +37,18 @@ export class CustomerPayments {
     const shown = shownPaymentOf(await this.prisma.orderPayment.findMany({ where: { orderId } }));
     const row = shown && stands && (await this.asked(storeId, shown)) ? shownPaymentOf(await this.prisma.orderPayment.findMany({ where: { orderId } })) : shown;
     if (!row) return { payment: null };
-    return { payment: toCustomerPayment(stands ? await this.withPix(storeId, row) : row, new Date(), stands) };
+    return { payment: toCustomerPayment(stands ? await this.withPix(storeId, row) : row, new Date(), stands, await this.refundsOf(orderId)) };
   }
 
   /** The order's charge made sure of — the one it has, or a new one — and answered as `read` answers it. */
   async charge(storeSlug: string, userId: string, number: number): Promise<CustomerOrderPaymentAnswer> {
     const { storeId, orderId } = await this.orderOf(storeSlug, userId, number);
     const row = await this.payments.ensure(storeId, orderId);
-    return { payment: toCustomerPayment(await this.withPix(storeId, row), new Date(), true) };
+    return { payment: toCustomerPayment(await this.withPix(storeId, row), new Date(), true, await this.refundsOf(orderId)) };
+  }
+
+  private refundsOf(orderId: string) {
+    return this.prisma.orderRefund.findMany({ where: { orderId } });
   }
 
   private async orderOf(storeSlug: string, userId: string, number: number): Promise<{ storeId: string; orderId: string; stands: boolean }> {

@@ -1,15 +1,19 @@
 // React
 import { useId } from "react"
 
-// Libs
-import { TriangleAlertIcon } from "lucide-react"
-
 // UI
-import type { OrderPaymentView } from "@harness-monorepo/ui/lib/order-payment"
+import { buttonVariants } from "@harness-monorepo/ui/components/button"
+import { isRefundable, type OrderPaymentView } from "@harness-monorepo/ui/lib/order-payment"
+import { cn } from "@harness-monorepo/ui/lib/utils"
 
 // Locales
 import { defaultMessages, format } from "@harness-monorepo/ui/locales/index"
 import type { UiMessages } from "@harness-monorepo/ui/locales/messages"
+
+// Block
+import { AnchorLink, type LinkComponent } from "../auth/auth-link"
+import { OrderPaymentRefunds } from "./order-payment-refunds"
+import { OrderPaymentStrays } from "./order-payment-strays"
 
 export interface OrderPaymentCardProps {
   /** The order's charge: the one standing, else the last tried. Null while it has none. */
@@ -17,6 +21,11 @@ export interface OrderPaymentCardProps {
   money: (cents: number) => string
   /** "6 de outubro de 2026 às 10:02", in the shop's own words for a moment. */
   when: (iso: string) => string
+  /** The refund's own screen (BEELINK-208): offered while the shop holds money a refund may still ask for. */
+  refundHref?: string
+  /** The same screen for money the order did not ask for, by its id. */
+  strayRefundHref?: (strayId: string) => string
+  linkComponent?: LinkComponent
   messages?: UiMessages
 }
 
@@ -32,17 +41,22 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 /**
  * The online payment of an order, as its shop reads it (BEELINK-207): how it is paid, how much,
  * where it stands in words, when it was paid, and what Asaas last refused. Money the order did not
- * ask for — paid after it was cancelled, or paid twice — is drawn here for as long as it stands,
- * with what the shop does about it: bee-link gives nothing back on its own.
+ * ask for — paid after it was cancelled, or paid twice — is drawn here for as long as the shop has
+ * not given it back. What went back, what is on its way and what is left to refund are said too,
+ * with the way to the refund and every refund made (BEELINK-208).
  */
-export function OrderPaymentCard({ payment, money, when, messages = defaultMessages }: OrderPaymentCardProps) {
+export function OrderPaymentCard({ payment, money, when, refundHref, strayRefundHref, linkComponent: Link = AnchorLink, messages = defaultMessages }: OrderPaymentCardProps) {
   const text = messages.orders.detail.onlinePayment
   const methods = messages.orders.payments
   const titleId = useId()
-  const strayId = useId()
   const hint = payment ? (text.statusHints as Partial<Record<string, string>>)[payment.status] : null
   const said = payment?.providerStatus ? (text.providerStatuses as Partial<Record<string, string>>)[payment.providerStatus] : null
   const waiting = payment?.status === "PENDING" || payment?.status === "OVERDUE"
+  const refundable = isRefundable(payment)
+  const unsettled = payment ? payment.strays.filter((stray) => stray.resolvedAt === null) : []
+  // Paid after the order was cancelled: the payment itself is the money to give back, and its notice carries the way to it.
+  const strayIsPayment = unsettled.some((stray) => stray.reason === "ORDER_CANCELLED")
+  const gaveBack = payment ? payment.refundedCents > 0 || payment.refundingCents > 0 : false
 
   return (
     <section aria-labelledby={titleId} className="bg-shell-surface border-shell-border flex flex-col gap-3 rounded-xl border p-4 shadow-xs">
@@ -72,6 +86,21 @@ export function OrderPaymentCard({ payment, money, when, messages = defaultMessa
                 <time dateTime={payment.expiresAt}>{when(payment.expiresAt)}</time>
               </Row>
             ) : null}
+            {payment.refundedCents > 0 ? (
+              <Row label={text.refunded}>
+                <span className="tabular-nums">{money(payment.refundedCents)}</span>
+              </Row>
+            ) : null}
+            {payment.refundingCents > 0 ? (
+              <Row label={text.refunding}>
+                <span className="tabular-nums">{money(payment.refundingCents)}</span>
+              </Row>
+            ) : null}
+            {gaveBack && refundable ? (
+              <Row label={text.refundable}>
+                <span className="tabular-nums">{money(payment.refundableCents)}</span>
+              </Row>
+            ) : null}
           </dl>
           {said ?? hint ? <p className="text-muted-foreground text-sm">{said ?? hint}</p> : null}
           {payment.lastError ? (
@@ -81,23 +110,13 @@ export function OrderPaymentCard({ payment, money, when, messages = defaultMessa
               <span className="text-sm break-words">{payment.lastError}</span>
             </div>
           ) : null}
-          {payment.strays.length > 0 ? (
-            <div role="group" aria-labelledby={strayId} className="border-destructive/40 bg-destructive/5 flex flex-col gap-2 rounded-lg border p-3">
-              <h3 id={strayId} className="text-destructive flex items-center gap-1.5 text-sm font-semibold">
-                <TriangleAlertIcon aria-hidden="true" className="size-4 shrink-0" />
-                {text.strayTitle}
-              </h3>
-              <ul className="flex flex-col gap-2">
-                {payment.strays.map((stray, index) => (
-                  <li key={`${stray.paidAt}-${index}`} className="flex flex-col gap-0.5 text-sm">
-                    <span>{text.strayReasons[stray.reason]}</span>
-                    <span className="font-medium tabular-nums">{format(text.strayLine, { amount: money(stray.amountCents), method: methods[stray.method], date: when(stray.paidAt) })}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-sm">{text.strayAction}</p>
-            </div>
+          {refundable && refundHref && !strayIsPayment ? (
+            <Link href={refundHref} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-fit")}>
+              {text.refund}
+            </Link>
           ) : null}
+          <OrderPaymentRefunds refunds={payment.refunds} money={money} when={when} messages={messages} />
+          <OrderPaymentStrays strays={unsettled} refundHref={strayRefundHref} money={money} when={when} linkComponent={Link} messages={messages} />
         </>
       ) : (
         <p className="text-muted-foreground text-sm">{text.none}</p>

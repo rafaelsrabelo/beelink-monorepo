@@ -9,7 +9,7 @@ import { format } from "@harness-monorepo/ui/locales/index"
 
 // App
 import { momentOf } from "./order-card-view"
-import { noticeKeyOf } from "./status-notice"
+import { noticeTextOf } from "./status-notice"
 import type { StorefrontRoutes } from "./storefront-routes"
 
 // One limit for both sides of a conversation: the shopper's here, the shop's in the panel.
@@ -38,7 +38,7 @@ export function conversationRowsOf(summaries: readonly CustomerConversationSumma
       title: format(text.orderNumber, { number: String(order.number) }),
       preview:
         lastMessage.kind !== "MESSAGE"
-          ? text.conversationNotices[noticeKeyOf(lastMessage, order.fulfillment)]
+          ? noticeTextOf(lastMessage, order.fulfillment, text.conversationNotices, locale)
           : lastMessage.author === "CUSTOMER"
             ? format(text.conversationYouSaid, { body })
             : body,
@@ -60,7 +60,7 @@ export function conversationLinesOf(conversation: CustomerConversation, { locale
           id: message.id,
           mine: false,
           notice: true,
-          body: noticeWithCashback(text.conversationNotices[noticeKeyOf(message, conversation.order.fulfillment)], message.kind === "STATUS" ? message.cashbackCents : null, text.conversationCashback, locale),
+          body: noticeWithCashback(noticeTextOf(message, conversation.order.fulfillment, text.conversationNotices, locale), message.kind === "STATUS" ? message.cashbackCents : null, text.conversationCashback, locale),
           when: momentOf(message.createdAt, locale),
         }
       : {

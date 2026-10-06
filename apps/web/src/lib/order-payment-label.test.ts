@@ -13,13 +13,20 @@ import { holdsMoney, orderPaymentLabelOf, type PaidOrder } from "./order-payment
 const now = new Date("2026-10-06T15:00:00.000Z")
 const LATER = "2026-10-08T02:59:59.999Z"
 const EARLIER = "2026-10-06T02:59:59.999Z"
-const order = (over: Partial<PaidOrder> = {}): PaidOrder => ({ status: "RECEIVED", fulfillment: "PICKUP", deliveryFeeCents: 0, paymentChannel: "ONLINE", payment: { status: "PENDING", expiresAt: LATER, paidAt: null }, ...over })
+const order = (over: Partial<PaidOrder> = {}): PaidOrder => ({ status: "RECEIVED", fulfillment: "PICKUP", deliveryFeeCents: 0, paymentChannel: "ONLINE", payment: { status: "PENDING", expiresAt: LATER, paidAt: null, refundingCents: 0 }, ...over })
 const label = (over: Partial<PaidOrder> = {}) => orderPaymentLabelOf(order(over), ptBR.storefront, now)
-const charge = (status: OrderPaymentStatus, expiresAt: string | null = LATER) => ({ payment: { status, expiresAt, paidAt: null } })
+const charge = (status: OrderPaymentStatus, expiresAt: string | null = LATER) => ({ payment: { status, expiresAt, paidAt: null, refundingCents: 0 } })
 
 describe("orderPaymentLabelOf — where an order's online payment stands", () => {
   it("says nothing of an order settled with the shop: nothing there is ever approved", () => {
     expect(label({ paymentChannel: "OFFLINE", payment: null })).toBeNull()
+  })
+
+  it("says a refund is in progress while Asaas has not concluded it (BEELINK-208)", () => {
+    expect(label({ payment: { status: "CONFIRMED", expiresAt: LATER, paidAt: now.toISOString(), refundingCents: 5990 } })).toEqual({ label: "Estorno em processamento", tone: "stop", payable: false })
+    expect(label({ status: "CANCELLED", payment: { status: "PARTIALLY_REFUNDED", expiresAt: LATER, paidAt: now.toISOString(), refundingCents: 100 } })).toMatchObject({ label: "Estorno em processamento" })
+    // Nothing on its way: what stands is said.
+    expect(label({ payment: { status: "REFUNDED", expiresAt: LATER, paidAt: now.toISOString(), refundingCents: 0 } })).toMatchObject({ label: "Pagamento estornado" })
   })
 
   it("says a waiting charge is awaiting payment, and that there is something to pay", () => {

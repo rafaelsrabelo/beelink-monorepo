@@ -49,7 +49,22 @@ export interface ConversationPaymentNotice {
   readAt: string | null;
 }
 
-export type ConversationMessage = ConversationWrittenMessage | ConversationStatusNotice | ConversationPaymentNotice;
+/**
+ * Money of the order's payment was given back (BEELINK-208): told once a refund, when Asaas takes
+ * it, with the amount and no sentence. Unread for the customer until they read it.
+ */
+export interface ConversationRefundNotice {
+  kind: "REFUND";
+  id: string;
+  /** Whole cents. */
+  amountCents: number;
+  /** ISO-8601. */
+  createdAt: string;
+  /** When the customer read it; null while they have not. ISO-8601. */
+  readAt: string | null;
+}
+
+export type ConversationMessage = ConversationWrittenMessage | ConversationStatusNotice | ConversationPaymentNotice | ConversationRefundNotice;
 
 /**
  * A conversation's head: the order it is about, and whether it takes messages — while the order is
@@ -74,7 +89,8 @@ export interface CustomerConversation {
 export type ConversationLastMessage =
   | { kind: "MESSAGE"; author: ConversationAuthor; body: string; createdAt: string }
   | { kind: "STATUS"; status: OrderStatus; unpaid: boolean; createdAt: string }
-  | { kind: "PAYMENT"; createdAt: string };
+  | { kind: "PAYMENT"; createdAt: string }
+  | { kind: "REFUND"; amountCents: number; createdAt: string };
 
 /** A row of the customer's conversations at a shop. */
 export interface CustomerConversationSummary {

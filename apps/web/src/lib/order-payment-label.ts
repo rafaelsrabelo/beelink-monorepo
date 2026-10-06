@@ -34,6 +34,8 @@ export function orderPaymentLabelOf(order: PaidOrder, text: UiMessages["storefro
   if (order.paymentChannel !== "ONLINE") return null
 
   const payment = order.payment
+  // A refund Asaas took and has not concluded (BEELINK-208): days, on a card.
+  if (holdsMoney(payment) && (payment?.refundingCents ?? 0) > 0) return { label: text.orderPayRefunding, tone: "stop", payable: false }
   if (payment && PAID.includes(payment.status)) return { label: text.orderPayApproved, tone: "done", payable: false }
   if (payment?.status === "REFUNDED") return { label: text.orderPayRefunded, tone: "stop", payable: false }
   if (payment?.status === "PARTIALLY_REFUNDED") return { label: text.orderPayPartlyRefunded, tone: "stop", payable: false }

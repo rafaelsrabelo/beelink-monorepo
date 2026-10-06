@@ -7,6 +7,7 @@ import type {
   LeadErrorCode,
   ReviewErrorCode,
   OrderErrorCode,
+  OrderRefundErrorCode,
   PromotionErrorCode,
   ConversationErrorCode,
   StoreErrorCode,
@@ -261,6 +262,10 @@ export interface WebMessages {
     | StoreErrorCode
     | LeadErrorCode
     | OrderErrorCode
+    | OrderRefundErrorCode
+    /** The shop's Asaas account could not be asked, and a refusal of Asaas's that came with no words (BEELINK-208). */
+    | "PAYMENT_UNAVAILABLE"
+    | "REFUND_REFUSED_UNSAID"
     | PromotionErrorCode
     | ConversationErrorCode
     | HttpFallbackErrorCode

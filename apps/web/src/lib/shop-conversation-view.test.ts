@@ -89,12 +89,14 @@ describe("the conversations' tab", () => {
       messages: [
         { kind: "PAYMENT", id: "1", createdAt: at, readAt: null },
         { kind: "STATUS", id: "2", status: "CANCELLED", unpaid: true, cashbackCents: null, createdAt: at, readAt: null },
+        { kind: "REFUND", id: "3", amountCents: 1990, createdAt: at, readAt: null },
       ],
     } satisfies ShopConversation
 
-    expect(shopConversationLinesOf(conversation, context).map((line) => [line.notice, line.body])).toEqual([
+    expect(shopConversationLinesOf(conversation, context).map((line) => [line.notice, line.body.replace(/\s/g, " ")])).toEqual([
       [true, "Pagamento aprovado"],
       [true, "Pedido cancelado por falta de pagamento"],
+      [true, "Estorno de R$ 19,90"],
     ])
     const page = { total: 1, page: 1, pageSize: 20, conversations: [{ order: conversation.order, customer: conversation.customer, lastMessage: { kind: "PAYMENT", createdAt: at }, unread: 0 }] } satisfies ShopConversationPage
     expect(shopConversationRowsOf(page, { filter: "ALL", q: "", order: null, page: 1 }, "loja", context)[0]?.preview).toBe("Pagamento aprovado")

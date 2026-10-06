@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 // App
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { open } from '../secret-vault.js';
-import { AsaasClient, AsaasRefused, AsaasThrottled, type AsaasBillingType, type AsaasCharge, type AsaasPixQrCode } from './asaas.client.js';
+import { AsaasClient, AsaasRefused, AsaasThrottled, type AsaasBillingType, type AsaasCharge, type AsaasPixQrCode, type AsaasRefundsRead, type AsaasRefundTarget } from './asaas.client.js';
 import { asaasConfig, type AsaasConfig } from './asaas.config.js';
 
 const PROVIDER = 'ASAAS' as const;
@@ -108,6 +108,16 @@ export class AsaasCharges {
     return this.withKey(storeId, (config, apiKey) =>
       charge.installmentId ? this.asaas.deleteInstallment(config, apiKey, charge.installmentId) : this.asaas.deleteCharge(config, apiKey, charge.id),
     );
+  }
+
+  /** Money given back from a charge, or from a whole plan (BEELINK-208): the amount is always said. Answers its refunds as they stand then. */
+  refund(storeId: string, charge: AsaasRefundTarget, valueCents: number, description: string): Promise<AsaasRefundsRead> {
+    return this.withKey(storeId, (config, apiKey) => this.asaas.refund(config, apiKey, charge, { valueCents, description }));
+  }
+
+  /** The refunds of a charge, or of a plan, as the account holds them now; null when it has none such. */
+  refundsOf(storeId: string, charge: AsaasRefundTarget): Promise<AsaasRefundsRead | null> {
+    return this.withKey(storeId, (config, apiKey) => this.asaas.refundsOf(config, apiKey, charge));
   }
 
   pixQrCode(storeId: string, id: string): Promise<AsaasPixQrCode> {

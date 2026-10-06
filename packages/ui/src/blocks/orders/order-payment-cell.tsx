@@ -17,7 +17,7 @@ export interface OrderPaymentCellProps {
 
 /**
  * How a row of the list is paid (BEELINK-207): the way, and — on an order charged online — where
- * its money stands, in words. Money the order did not ask for is flagged, so the shop finds the
+ * its money stands, in words — a refund on its way included (BEELINK-208). Money the order did not ask for is flagged, so the shop finds the
  * order it has to settle without opening each one.
  */
 export function OrderPaymentCell({ order, inline = false, messages }: OrderPaymentCellProps) {

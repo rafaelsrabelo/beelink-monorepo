@@ -4,6 +4,7 @@ import type {
   CustomerOrder,
   CustomerOrderItem,
   CustomerOrderSummary,
+  OrderCancelledBy,
   OrderPlacedBy,
   OrderStatus,
 } from '@harness-monorepo/contracts';
@@ -39,6 +40,7 @@ export const CUSTOMER_ORDER_INCLUDE = {
   delivery: true,
   cashbackCredit: true,
   payments: true,
+  refunds: true,
 } as const satisfies Prisma.OrderInclude;
 
 type CustomerOrderRow = Prisma.OrderGetPayload<{ include: typeof CUSTOMER_ORDER_INCLUDE }>;
@@ -70,10 +72,15 @@ function sideOf(actor: EventRow['actor']): OrderPlacedBy {
   return actor === 'CUSTOMER' ? 'CUSTOMER' : 'SHOP';
 }
 
+/** Who cancelled: bee-link itself is told apart — it cancels for want of payment alone (BEELINK-208). */
+function cancellerOf(actor: EventRow['actor']): OrderCancelledBy {
+  return actor === 'SYSTEM' ? 'SYSTEM' : sideOf(actor);
+}
+
 /** The facts the customer is told about who acted: who placed it, and who cancelled it. */
-function sidesOf(status: OrderStatus, events: readonly EventRow[]): { placedBy: OrderPlacedBy; cancelledBy: OrderPlacedBy | null } {
+function sidesOf(status: OrderStatus, events: readonly EventRow[]): { placedBy: OrderPlacedBy; cancelledBy: OrderCancelledBy | null } {
   const cancelled = status === 'CANCELLED' ? events.findLast((event) => event.status === 'CANCELLED') : undefined;
-  return { placedBy: events[0] ? sideOf(events[0].actor) : 'SHOP', cancelledBy: cancelled ? sideOf(cancelled.actor) : null };
+  return { placedBy: events[0] ? sideOf(events[0].actor) : 'SHOP', cancelledBy: cancelled ? cancellerOf(cancelled.actor) : null };
 }
 
 /** The order's cashback as its customer reads it: the shop's reading, less what the shop did not get back. */
@@ -94,7 +101,7 @@ export function toCustomerOrder(row: CustomerOrderRow): CustomerOrder {
     paymentMethod: row.paymentMethod,
     paymentChannel: row.paymentChannel,
     installments: row.paymentInstallments,
-    payment: toOrderPayment(row.payments),
+    payment: toOrderPayment(row.payments, row.refunds),
     items: row.items.map(toItem),
     subtotalCents: row.subtotalCents,
     deliveryFeeCents: row.deliveryFeeCents,

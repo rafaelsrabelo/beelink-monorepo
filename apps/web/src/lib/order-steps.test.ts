@@ -11,7 +11,7 @@ import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 import { orderStepsOf } from "./order-steps"
 
 const context = { locale: "pt-BR", messages: ptBR }
-const charge: NonNullable<CustomerOrder["payment"]> = { status: "PENDING", method: "PIX", installments: 1, amountCents: 5990, refundedCents: 0, expiresAt: "2026-09-29T02:59:59.999Z", paidAt: null }
+const charge: NonNullable<CustomerOrder["payment"]> = { status: "PENDING", method: "PIX", installments: 1, amountCents: 5990, refundedCents: 0, refundingCents: 0, refunds: [], expiresAt: "2026-09-29T02:59:59.999Z", paidAt: null }
 
 type Stepped = Pick<CustomerOrder, "status" | "fulfillment" | "placedAt" | "events" | "paymentChannel" | "payment">
 
@@ -143,8 +143,8 @@ describe("orderStepsOf", () => {
       expect(delivered.filter(([, state]) => state === "done")).toHaveLength(5)
     })
 
-    it("still says approved of a payment refunded since: the payment box tells of the refund", () => {
-      expect(told({ payment: { ...paid, status: "REFUNDED" } })[1]).toEqual(["Pagamento aprovado", "done"])
+    it("says refunded once all of it went back, and still approved when only a part did (BEELINK-208)", () => {
+      expect(told({ payment: { ...paid, status: "REFUNDED" } })[1]).toEqual(["Pagamento estornado", "done"])
       expect(told({ payment: { ...paid, status: "PARTIALLY_REFUNDED" } })[1]).toEqual(["Pagamento aprovado", "done"])
     })
   })

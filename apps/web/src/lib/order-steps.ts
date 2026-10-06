@@ -17,7 +17,7 @@ const LINE: Record<CustomerOrder["fulfillment"], readonly StepStatus[]> = {
   PICKUP: ["RECEIVED", "ACCEPTED", "PREPARING", "DELIVERED"],
 }
 
-/** A charge that was paid, wherever the money is now: the step says it was approved, and the payment box says a refund. */
+/** A charge that was paid, wherever the money is now: the step is done, and the payment box says a refund. */
 const APPROVED: readonly OrderPaymentStatus[] = ["CONFIRMED", "RECEIVED", "PARTIALLY_REFUNDED", "REFUNDED"]
 
 /**
@@ -31,7 +31,9 @@ function paymentStepOf(order: Pick<CustomerOrder, "status" | "payment">, { local
   const payment = order.payment
   const approved = payment !== null && APPROVED.includes(payment.status)
   const state = order.status === "RECEIVED" ? "current" : approved ? "done" : "todo"
-  return { label: approved ? text.orderPayApproved : text.orderPayAwaiting, when: approved && payment.paidAt ? momentOf(payment.paidAt, locale) : null, state }
+  // All of it given back (BEELINK-208): the step says so, in the payment box's words; a part given back leaves it approved.
+  const label = payment?.status === "REFUNDED" ? text.orderPayRefunded : approved ? text.orderPayApproved : text.orderPayAwaiting
+  return { label, when: approved && payment.paidAt ? momentOf(payment.paidAt, locale) : null, state }
 }
 
 /**

@@ -31,6 +31,10 @@ export interface StorefrontOrderPaymentProps {
   method: string
   /** Where an online payment stands (BEELINK-205); absent on an order settled with the shop, which is never "approved" here. */
   status?: StorefrontOrderPaymentStatus | null
+  /** Money given back (BEELINK-208): one line a refund, already in words — how much, and whether it went back or is on its way. */
+  refunds?: readonly string[]
+  /** What to expect of a refund still on its way — a card's takes days. */
+  refundNote?: string | null
   /** The payment screen, while there is something to pay: "Pagar agora". */
   payHref?: string | null
   /** What the order earns in cashback and where that credit stands (BEELINK-243), in words; none, and nothing is said. */
@@ -41,9 +45,10 @@ export interface StorefrontOrderPaymentProps {
 
 /**
  * What the order cost (6e): the sums, the total, how it is paid and the cashback it earns. An order
- * charged online says where its payment stands, and leads to it while there is something to pay.
+ * charged online says where its payment stands, leads to it while there is something to pay, and
+ * tells of every refund of it.
  */
-export function StorefrontOrderPayment({ rows, total, method, status = null, payHref = null, cashback = null, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontOrderPaymentProps) {
+export function StorefrontOrderPayment({ rows, total, method, status = null, refunds = [], refundNote = null, payHref = null, cashback = null, linkComponent: Link = AnchorLink, messages = defaultMessages }: StorefrontOrderPaymentProps) {
   const text = messages.storefront
 
   return (
@@ -63,6 +68,18 @@ export function StorefrontOrderPayment({ rows, total, method, status = null, pay
       </dl>
       <p className="text-[13px] text-shop-muted">{method}</p>
       {status ? <p className={cn("text-sm font-bold", PAYMENT_STATUS_TONE[status.tone])}>{status.label}</p> : null}
+      {refunds.length > 0 ? (
+        <div className="mt-1 flex flex-col gap-1 border-t border-shop-line pt-3">
+          <h3 className="text-[13px] font-bold">{text.orderRefundsTitle}</h3>
+          <ul className="flex flex-col gap-1 text-[13px]">
+            {refunds.map((refund, index) => (
+              // Two refunds of one amount on one day read the same: the place tells them apart.
+              <li key={`${index}-${refund}`}>{refund}</li>
+            ))}
+          </ul>
+          {refundNote ? <p className="text-[13px] text-shop-muted">{refundNote}</p> : null}
+        </div>
+      ) : null}
       {payHref ? (
         <Link href={payHref} className="mt-1 flex h-11 items-center justify-center rounded-xl bg-shop-primary px-4 text-sm font-bold text-shop-on-primary hover:opacity-90">
           {text.orderPayNow}

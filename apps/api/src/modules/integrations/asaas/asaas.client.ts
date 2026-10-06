@@ -96,6 +96,31 @@ export interface AsaasCharge {
   installmentId: string | null;
   installmentNumber: number | null;
   externalReference: string | null;
+  /** Every refund Asaas keeps of it, whatever came of each; empty when it sent none. */
+  refunds: AsaasRefund[];
+}
+
+/**
+ * One refund of a charge, as Asaas tells it (BEELINK-208). It has no id there. Only `DONE` is money
+ * back; `CANCELLED` gave nothing back; `PENDING` and the words that wait for an authorization are
+ * on their way — and so is a word Asaas adds later.
+ */
+export interface AsaasRefund {
+  status: string;
+  valueCents: number;
+}
+
+/** A charge's refunds read on their own — one charge's, or a whole instalment plan's. */
+export interface AsaasRefundsRead {
+  /** Asaas says the charge itself is `REFUNDED`: all of it went back, whatever the list holds. Never said of a plan. */
+  whole: boolean;
+  refunds: AsaasRefund[];
+}
+
+/** Which charge a refund is of: a plan is refunded, and read, as the one thing it is. */
+export interface AsaasRefundTarget {
+  id: string;
+  installmentId: string | null;
 }
 
 /** A Pix charge's code, to be paid once. */
@@ -190,6 +215,16 @@ export abstract class AsaasClient {
 
   /** A whole instalment plan removed, every charge of it; one already gone is not a failure. */
   abstract deleteInstallment(config: AsaasConfig, apiKey: string, id: string): Promise<void>;
+
+  /**
+   * Money given back from a charge — from the whole plan, when it is one (BEELINK-208). The amount
+   * is always sent. Answers the charge's refunds as they stand then. No answer is
+   * `AsaasOutcomeUnknown`: it may have been made, and `refundsOf` is asked before anything else is.
+   */
+  abstract refund(config: AsaasConfig, apiKey: string, charge: AsaasRefundTarget, refund: { valueCents: number; description: string }): Promise<AsaasRefundsRead>;
+
+  /** The refunds of a charge, or of a plan, read by its id; null when the account has none such. */
+  abstract refundsOf(config: AsaasConfig, apiKey: string, charge: AsaasRefundTarget): Promise<AsaasRefundsRead | null>;
 
   /** A Pix charge's code and QR. */
   abstract pixQrCode(config: AsaasConfig, apiKey: string, id: string): Promise<AsaasPixQrCode>;

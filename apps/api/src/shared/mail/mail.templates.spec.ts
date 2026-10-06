@@ -1,6 +1,7 @@
 // App
 import { cashbackExpiring } from './cashback-expiring.template.js';
 import { paymentApproved } from './payment-approved.template.js';
+import { paymentRefunded } from './payment-refunded.template.js';
 import { emailVerification, escapeHtml, favoriteNotice, leadReceived, orderStatusChanged, passwordReset } from './mail.templates.js';
 
 describe('leadReceived — a stranger’s words in the owner’s inbox', () => {
@@ -233,5 +234,32 @@ describe("a payment approved, told to its customer (BEELINK-207)", () => {
     expect(mail.html).toContain('Mutante &amp; Cia');
     expect(mail.html).not.toContain('<b>');
     expect(mail.html).toContain(`href="${settings}"`);
+  });
+});
+
+describe('the payment refunded e-mail (BEELINK-208)', () => {
+  const base = { name: 'Bia', shopName: 'Lessari', number: 7, amountCents: 5990, paidCents: 5990, method: 'PIX' as const, done: true };
+  const url = 'https://beelink.biz/lessari/conta/pedidos/7';
+  const settings = 'https://beelink.biz/lessari/conta/perfil#avisos';
+
+  it('tells a whole refund from a part of it, and when the money shows', () => {
+    const whole = paymentRefunded(base, url, settings);
+    expect(whole.subject).toBe('Lessari — estorno do pagamento do pedido nº 7');
+    expect(whole.text).toMatch(/Lessari estornou o pagamento do seu pedido nº 7: R\$\s59,90\./);
+    expect(whole.text).toContain('O valor volta para a conta de onde o Pix saiu.');
+    expect(whole.text).toContain(url);
+    expect(whole.text).toContain(settings);
+
+    const part = paymentRefunded({ ...base, amountCents: 1990 }, url, settings);
+    expect(part.text).toMatch(/estornou parte do pagamento do seu pedido nº 7: R\$\s19,90 de R\$\s59,90\./);
+    expect(paymentRefunded({ ...base, done: false }, url, settings).text).toContain('O estorno está em processamento');
+    expect(paymentRefunded({ ...base, method: 'CREDIT_CARD', done: false }, url, settings).text).toContain('até 10 dias úteis para aparecer na fatura');
+  });
+
+  it("escapes the customer's and the shop's names in the HTML", () => {
+    const mail = paymentRefunded({ ...base, name: 'Bia <b>', shopName: 'Lessari & Cia' }, url, settings);
+    expect(mail.html).toContain('Bia &lt;b&gt;');
+    expect(mail.html).toContain('Lessari &amp; Cia estornou');
+    expect(mail.html).not.toContain('<b>');
   });
 });

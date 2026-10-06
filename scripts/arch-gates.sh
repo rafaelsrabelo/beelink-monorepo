@@ -114,9 +114,9 @@ gate "api/asaas-secret-in-asaas" \
 # by the door a fact from Asaas comes in by, so no other module can mark an order paid — or unpaid —
 # by a write of its own. Reading it is anyone's.
 gate "api/order-payments-in-payments" \
-  "Only src/modules/payments writes order_payments and order_stray_payments: a fact from Asaas comes in by applyCharge (apps/api/AGENTS.md rule 10, BEELINK-206)." \
+  "Only src/modules/payments writes order_payments, order_stray_payments and order_refunds: a fact from Asaas comes in by applyCharge (apps/api/AGENTS.md rule 10, BEELINK-206, BEELINK-208)." \
   "apps/api/src" \
-  "order(Stray)?Payment\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(" \
+  "order(Stray)?(Payment|Refund)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(" \
   --exclude-dir=payments --exclude-dir=generated --exclude='*.spec.ts'
 
 gate "web/no-fetch-in-components" \
