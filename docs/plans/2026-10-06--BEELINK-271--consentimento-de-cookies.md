@@ -93,3 +93,31 @@ Este ticket **não carrega nada da Meta**. Ele entrega a pergunta, a resposta gu
 
 - **Revisão do texto da política** (e, de preferência, de um advogado) antes de mesclar: é um rascunho factual, não um parecer.
 - Os `[PREENCHER: …]` do BEELINK-171 continuam no texto; a seção "Transferência internacional" passa a ter mais um fornecedor para considerar (a Meta).
+
+## 06/10, depois do código — o que mudou ao escrever
+
+- **A decisão sobre mostrar a faixa virou um componente próprio, `StorefrontConsentGate`**, que o layout da loja monta. É ele que tem teste: sem pixel não há faixa, nem estado, nem cookie. Um teste lê o código-fonte e prende onde a faixa é montada (só `app/[slug]/layout.tsx`), que é o que garante que o painel e a prévia nunca a desenham.
+- **"Tem pixel" é lido como valor presente, não como `!== null`** (`marketingAllowed`, `shopLegalColumnOf`, o gate). Uma resposta da loja guardada em cache de antes do campo existir não traz `metaPixelId`, e isso tem de ser "sem pixel".
+- **O rodapé não foi mexido no `StorefrontFrame`**, que já está no limite de 250 linhas: quem acrescenta "Cookies" é `shop-legal-column.ts`, usado pelos dois montadores de rodapé (loja e site institucional).
+- **A resposta dada é anunciada** numa linha `role="status"`: a faixa sai da página com o clique, e um leitor de tela não ouviria nada acontecer. Uma escolha lida do cookie não é anunciada a cada página.
+- **A política não promete que nome, e-mail ou telefone nunca vão para a Meta.** O "Advanced Matching" automático é uma opção que o lojista liga no Gerenciador de Eventos, na conta dele, e com ela o script da Meta pode recolher campos de formulário cifrados. **Para o X5:** conferir se dá para desligar isso pelo código (`autoConfig` não é a mesma coisa) e, se não der, a política precisa dizer; por ora o texto só afirma o que é enviado, sem dizer o que não é. *Do que conheço da Meta, não confirmado na documentação.*
+
+## 06/10 — o que foi visto na tela
+
+A tela foi aberta de verdade (`next dev` na 3800, API na 3801, banco `harness_meta_pixel`, loja `loja-do-pixel`) e percorrida pelo Playwright, com capturas olhadas uma a uma:
+
+- **sem pixel:** nenhuma faixa, nenhum "Cookies" no rodapé, nenhum cookie gravado;
+- **com pixel** (o ID foi salvo pela tela do painel, que agora traz a frase do consentimento em "Bom saber"): a faixa no topo, acima do cabeçalho, em 1280 px e em 390 px; os dois botões com as mesmas medidas (112×44 no computador, 173×44 lado a lado no celular) e o mesmo estilo calculado; `position: static`; nada transborda no celular;
+- **teclado:** Tab passa por "Política de privacidade", "Recusar", "Aceitar" e segue para o cabeçalho da loja;
+- **recusar:** a faixa sai, `bl_consent=denied` com `Path=/loja-do-pixel`, 180 dias, `SameSite=Lax`, sem `httpOnly`; recarregar não pergunta de novo, e o HTML do servidor já vem sem a faixa (conferido por `curl` com o cookie; um valor inventado, `bl_consent=yes`, volta a mostrar a faixa);
+- **o caminho do cookie, no cabeçalho que o navegador realmente enviou:** vai em `/loja-do-pixel` e `/loja-do-pixel/carrinho`; **não** vai em `/loja-do-pixel-2`, `/outra-loja`, `/` nem `/privacidade`;
+- **"Cookies" no rodapé:** reabre a faixa com "Sua escolha atual: você recusou.", o foco vai para a faixa e a página volta ao topo; "Aceitar" grava `granted` e devolve o foco ao botão do rodapé;
+- **o painel e o modo design:** nenhuma faixa; a prévia mostra "Cookies" no rodapé, e apertar não faz nada nem grava cookie;
+- **`/privacidade`:** "Vigente desde 6 de outubro de 2026" e a seção "Pixel da Meta nas lojas";
+- **nenhuma requisição saiu de `localhost`**, `window.fbq` não existe, nenhum cookie `_fb*`, console sem erros;
+- **axe na página real:** nenhuma violação dentro da faixa. A página inteira acusa 11 de contraste, que são do cabeçalho e do rodapé desta loja de teste (texto escuro sobre o azul que ela escolheu) e já estavam lá.
+- **a troca de versão, ao vivo:** para entrar no painel a senha da conta de teste foi redefinida pelo link do e-mail, e a conta, que tinha só o aceite `2026-10-02` (`SIGN_UP`), ganhou a linha `2026-10-06` (`PASSWORD_RESET`) — o comportamento descrito na decisão 22.
+
+Não visto: uma loja de página escura na tela real (só na story e no teste de componente), a página de produto com a barra de compra do celular (a loja de teste não tem produto; a faixa é `static`, então não há como cobri-la), duas lojas reais lado a lado (há uma só no banco; o isolamento foi visto pelo caminho do cookie), e o Storybook aberto no navegador.
+
+A loja `loja-do-pixel` ficou **com** o pixel `123456789012345` salvo, para o X5 ter onde olhar; a senha da conta de teste mudou.
