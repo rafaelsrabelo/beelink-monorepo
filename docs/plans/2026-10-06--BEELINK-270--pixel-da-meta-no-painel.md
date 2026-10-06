@@ -36,3 +36,17 @@ A API já guarda o ID do pixel e o BFF já o lê, salva e remove, mas nenhuma te
 - Carregar qualquer script da Meta (X5) e o aviso de consentimento (X4).
 - O campo do token da API de Conversões e o botão de evento de teste (X7).
 - `docs/product/`: o que o lojista ganha passa a ser verdade quando os eventos existirem (X5).
+
+## 06/10, depois do código — o que foi visto na tela
+
+A tela foi aberta uma vez, de verdade (`next dev` na 3800, API na 3801, banco `harness_meta_pixel`), com uma conta e uma loja de teste criadas pela API (`loja-do-pixel`), e percorrida pelo Playwright:
+
+- a lista com o cartão "Pixel da Meta" e a marca da Meta, "Não conectado" → "Conectar"; depois de salvar, o selo verde "Conectado" e "Configurar";
+- a página: colar `fbq('init', '…');` mostra a frase de recusa sob o campo e não envia nada; colar o ID com espaços (`  12345 67890 12345 `) salva `123456789012345`, com o aviso "Pixel da Meta conectado: o ID foi salvo." e a data;
+- "Trocar o ID", o diálogo de "Desconectar" e a volta ao campo vazio, sem o aviso de salvo;
+- em 390 px de largura nada transborda;
+- nenhuma requisição saiu para fora de `localhost` e o console ficou sem erros.
+
+Não visto: o tema escuro (emular `prefers-color-scheme` não troca o tema do painel) e o Storybook aberto no navegador — só o `storybook build`, que passou e levou `meta-icon.svg` junto.
+
+Decisão acrescentada ao escrever: um rótulo colado junto do número (`ID: 123…`) é recusado como qualquer outra coisa que não seja espaço em branco; a dica sob o campo pede só os números.
