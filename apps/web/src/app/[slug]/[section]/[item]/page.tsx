@@ -27,7 +27,8 @@ import { StorefrontRelated } from "@/components/storefront/storefront-related"
 import { getMessages } from "@/lib/locale"
 import { jsonLdText, productJsonLd } from "@/lib/product-json-ld"
 import { shopperAt } from "@/lib/shopper"
-import { catalogueAt, navigationAt, productAt, shopAt } from "@/lib/storefront-data"
+import { finishesOnWhatsAppOf } from "@/lib/checkout-payment"
+import { catalogueAt, navigationAt, paymentOptionsAt, productAt, shopAt } from "@/lib/storefront-data"
 import { sectionOf, storefrontRoutes } from "@/lib/storefront-routes"
 
 /**
@@ -123,7 +124,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   // One more than a rail holds, since the product itself is among them.
   const related = product.category ? catalogueAt(slug, { category: product.category.slug, pageSize: 19 }).catch(() => null) : null
   // The menu on this page as on every other: cached under the catalogue's tag, like the product.
-  const [{ ui, web }, { categories, onSale }] = await Promise.all([getMessages(), navigationAt(slug)])
+  const [{ ui, web }, { categories, onSale }, paymentOptions] = await Promise.all([getMessages(), navigationAt(slug), paymentOptionsAt(slug)])
   const routes = storefrontRoutes(store)
   const layout = store.layoutSettings
 
@@ -203,7 +204,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
         showBadge={layout.showProductBadges ?? true}
         showRating={layout.showProductRating ?? true}
         showStock={layout.showProductStock ?? true}
-        finishesOnWhatsApp={Boolean(order)}
+        finishesOnWhatsApp={finishesOnWhatsAppOf(order, paymentOptions)}
         seller={{ name: store.name, paymentMethods: store.paymentMethods, cashback: store.cashback }}
         restockCopy={{
           RESTOCK_VARIANT_INVALID: web.errors.RESTOCK_VARIANT_INVALID,

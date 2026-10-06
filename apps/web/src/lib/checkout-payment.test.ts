@@ -8,7 +8,7 @@ import type { StorefrontPaymentOptions } from "@harness-monorepo/contracts"
 import { ptBR } from "@harness-monorepo/ui/locales/pt-BR"
 
 // App
-import { checkoutPaymentOf, heldPaymentOf, paymentPayloadOf } from "./checkout-payment"
+import { checkoutPaymentOf, finishesOnWhatsAppOf, heldPaymentOf, paymentPayloadOf } from "./checkout-payment"
 
 const context = { money: (cents: number) => `R$ ${(cents / 100).toFixed(2).replace(".", ",")}`, text: ptBR.storefront }
 const ONLINE = { pix: true, card: true, maxInstallments: 6, minimumChargeCents: 500, minimumInstallmentCents: 500 }
@@ -133,5 +133,22 @@ describe("paymentPayloadOf — how the payment goes with the order", () => {
   it("settles an order with nothing to pay with the shop, by its first label, with no way chosen", () => {
     const free = checkoutPaymentOf(ONLINE_ONLY, SHOP, closed(0), context)
     expect(paymentPayloadOf(heldPaymentOf({ paymentChannel: "ONLINE", paymentMethod: "PIX" }, free), free, SHOP)).toEqual({ paymentMethod: "MONEY" })
+  })
+})
+
+describe("finishesOnWhatsAppOf — what the product page says of where the order ends", () => {
+  it("says so of a shop with a WhatsApp that charges nothing online", () => {
+    expect(finishesOnWhatsAppOf("5585999990000", BEFORE)).toBe(true)
+  })
+
+  // The owner's report: Pix and card on, paying on delivery off, and the page still sent shoppers to WhatsApp.
+  it("does not say so once the shop takes Pix or card, with paying on delivery or without", () => {
+    expect(finishesOnWhatsAppOf("5585999990000", ONLINE_ONLY)).toBe(false)
+    expect(finishesOnWhatsAppOf("5585999990000", BOTH)).toBe(false)
+  })
+
+  it("never says so of a shop with no WhatsApp", () => {
+    expect(finishesOnWhatsAppOf(undefined, BEFORE)).toBe(false)
+    expect(finishesOnWhatsAppOf("", BEFORE)).toBe(false)
   })
 })
