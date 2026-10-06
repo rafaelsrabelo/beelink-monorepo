@@ -33,6 +33,17 @@ export interface PageTemplateSummary {
 }
 
 /**
+ * What a model's preview is asked with, as a query: the page it would be arranged on — the home when
+ * none is named — and what it is built around. Answered with a `PagePreview`: the page as it is, and
+ * the bands the model would leave on it, as a visitor would be served them. Nothing is written.
+ */
+export interface TemplatePreviewQuery {
+  pageId?: string;
+  productId?: string;
+  categoryId?: string;
+}
+
+/**
  * A model applied to a page that already exists: it replaces the page's draft, bands and blocks, and
  * publishes nothing. Answered with the `PageDraft` it left, one revision on.
  */

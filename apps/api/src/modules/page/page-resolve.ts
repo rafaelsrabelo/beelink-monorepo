@@ -1,5 +1,6 @@
 // Types
-import type { PublicFeaturedProduct, ShowcaseProduct } from '@harness-monorepo/contracts';
+import type { PublicFeaturedProduct, PublicSection, ShowcaseProduct } from '@harness-monorepo/contracts';
+import type { RouteVocabulary } from '../../generated/prisma/enums.js';
 import type { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { SectionShape } from './page-document.js';
 
@@ -7,17 +8,37 @@ import type { SectionShape } from './page-document.js';
 import type { PricingPromotion } from '../promotions/discount-pricing.js';
 import { promotedCard } from '../promotions/shelf-pricing.js';
 import { runningShelfPromotions, shelfSaleOf } from '../promotions/shelf-sale.js';
+import { ROUTE_WORDS } from '../catalog/catalog.constants.js';
 import { isSoldOut } from '../catalog/catalog.visibility.js';
 import { SHOWCASE_CARD_SELECT, shelfOf, showcaseQuery, toShowcaseCard } from '../catalog/showcase.query.js';
 import { itemsOf } from './page.mapper.js';
 import { NO_SLUGS, slideTargetsOf, type SlugsByEntity } from './page-links.js';
-import { NO_SHELVES, type PageLookups, type ShelvesByComponent } from './page-public.mapper.js';
+import { NO_SHELVES, toPublicSection, type PageLookups, type ShelvesByComponent } from './page-public.mapper.js';
 
 /*
   What a page's public read resolves besides its rows: the showcases' products, the featured ones,
   and the slugs the slides and buttons point at. Functions over the client and not a service's methods, because the shop's home
   and a landing page are read the same way, by two services.
 */
+
+/** What a band's links are built from: the shop's address and the words its routes use. */
+export const SHOP_WORDS = { id: true, slug: true, routeVocabulary: true } as const;
+
+/**
+ * Bands as a visitor is served them, resolved now: a draft's rows, a version's document or the
+ * document a model would leave, all read by the same mapper. The caller has already dropped the
+ * hidden bands.
+ */
+export async function servedSections(
+  db: PrismaService,
+  store: { id: string; slug: string; routeVocabulary: RouteVocabulary },
+  sections: readonly SectionShape[],
+): Promise<PublicSection[]> {
+  const lookups = await lookupsOf(db, store.id, sections);
+  const words = ROUTE_WORDS[store.routeVocabulary];
+
+  return sections.map((section) => toPublicSection(section, store.slug, words, lookups));
+}
 
 /** Every lookup for a page's bands, in parallel. */
 export async function lookupsOf(db: PrismaService, storeId: string, sections: readonly SectionShape[]): Promise<PageLookups> {
