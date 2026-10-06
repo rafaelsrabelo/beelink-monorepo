@@ -34,6 +34,21 @@ describe("BeeflowBanner", () => {
     expect(screen.getByRole("link")).toHaveClass("aspect-[2103/748]", "overflow-hidden", "rounded-xl")
   })
 
+  /**
+   * The owner's report: on a wide monitor the banner was most of the screen. The column it fills has
+   * no measure, so the frame stops at a height instead, and the art's own edges fill the sides.
+   */
+  it("stops growing taller on a wide column, its sides drawn from the art's edges and said to nobody", () => {
+    const { container } = render(<BeeflowBanner href={HREF} image={art("A arte")} backdrop={art("")} />)
+
+    expect(screen.getByRole("link")).toHaveClass("max-h-80")
+    const sides = container.querySelectorAll("[aria-hidden='true']")
+    expect(sides).toHaveLength(2)
+    expect(sides[0]!.querySelector(".origin-left img")).not.toBeNull()
+    expect(sides[1]!.querySelector(".origin-right img")).not.toBeNull()
+    expect(screen.getByRole("link")).toHaveAccessibleName(/^A arte/)
+  })
+
   it("speaks the language it is handed", () => {
     render(<BeeflowBanner href={HREF} image={art(en.integrations.upcoming.beeflow.banner.alt)} messages={en} />)
 
